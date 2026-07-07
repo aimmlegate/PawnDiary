@@ -535,9 +535,11 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryUiStyleDef.xml` / `DiaryTextDecorationDefs.xml` | UI dimensions/colors and display-only rich-text decoration |
 
 `DiaryUiStyleDef.xml` owns the Diary tab's preferred size. `<tabHeight>` is a preferred height, not
-an absolute one: at draw time the tab clamps itself to the scaled UI screen height minus
-`<tabScreenHeightMargin>`, while `<tabMinHeight>` keeps it usable on ordinary resolutions. If the
-screen is shorter than that minimum, the tab shrinks further rather than running off-screen.
+an absolute one: before every draw the tab clamps itself to the space actually available above its
+bottom anchor — inspect tabs hang above the inspect pane's tab strip, not the screen bottom — minus
+`<tabScreenHeightMargin>` of clear screen kept above the tab, while `<tabMinHeight>` keeps it usable
+on ordinary resolutions. If the screen is shorter than that minimum, the tab shrinks further rather
+than running off-screen.
 
 Interaction groups match by domain, exact `defName`, optional package id, and ordered token matchers.
 Prefer exact names, `matchPrefixes`, `matchSuffixes`, and `matchSegments`; use legacy

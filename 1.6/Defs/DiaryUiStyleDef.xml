@@ -20,9 +20,10 @@
     <!-- Tab window -->
     <tabWidth>720</tabWidth>
     <tabHeight>800</tabHeight>
-    <!-- The tab treats tabHeight as a preferred height. On short screens it clamps to
-         UI.screenHeight - tabScreenHeightMargin, falling below tabMinHeight only when the screen
-         itself is too short to leave that much room. -->
+    <!-- The tab treats tabHeight as a preferred height. It clamps to the space available above
+         the inspect pane's tab strip (the tab hangs above the pane, not the screen bottom) minus
+         tabScreenHeightMargin of clear screen left above the tab, falling below tabMinHeight only
+         when the screen itself is too short to leave that much room. -->
     <tabMinHeight>360</tabMinHeight>
     <tabScreenHeightMargin>72</tabScreenHeightMargin>
 

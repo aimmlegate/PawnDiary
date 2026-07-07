@@ -73,6 +73,12 @@ namespace PawnDiary
         private const float FallbackTabHeight = 800f;
         private const float FallbackTabMinHeight = 360f;
         private const float FallbackTabScreenHeightMargin = 72f;
+        // Vanilla inspect-tab geometry, not tunable style: InspectTabBase.TabRect hangs the tab's
+        // bottom edge at PaneTopY minus the 30px tab-button strip, and MainTabWindow_Inspect puts
+        // PaneTopY at UI.screenHeight - 165 (inspect pane) - 35 (bottom button bar). The height
+        // clamp must subtract this chrome or the tab's top edge pokes above the screen top.
+        private const float VanillaTabButtonStripHeight = 30f;
+        private const float FallbackInspectChromeBelowTab = 230f; // 165 pane + 35 bottom bar + 30 strip
         private static float ControlLineHeight => UiStyle.controlLineHeight;
         private static float ControlGap => UiStyle.controlGap;
         private static float EntryTitleHeight => UiStyle.entryTitleHeight;
@@ -187,36 +193,50 @@ namespace PawnDiary
 
         public ITab_Pawn_Diary()
         {
-            ApplyResponsiveTabSize();
+            // The inspect window (and thus PaneTopY) may not exist yet while RimWorld is still
+            // constructing shared tab instances, so the constructor sizes from the vanilla chrome
+            // constants; UpdateSize re-derives from the live pane before every draw.
+            ApplyResponsiveTabSize(UI.screenHeight - FallbackInspectChromeBelowTab);
             labelKey = "PawnDiaryTabLabel";
         }
 
         /// <summary>
-        /// Applies the XML preferred tab size, clamping height to the current scaled UI screen.
-        /// This is UI-only state, so refreshing it during draw is safe and picks up resolution changes.
+        /// Vanilla hook: InspectTabBase.TabRect calls this immediately before computing the tab
+        /// rect each frame, so the refreshed size lands in the same frame and tracks resolution,
+        /// UI-scale, and pane-moving mods via the live PaneTopY.
         /// </summary>
-        private void ApplyResponsiveTabSize()
+        protected override void UpdateSize()
+        {
+            base.UpdateSize();
+            ApplyResponsiveTabSize(PaneTopY - VanillaTabButtonStripHeight);
+        }
+
+        /// <summary>
+        /// Applies the XML preferred tab size, clamping height to the space actually available
+        /// above the tab's bottom anchor (the inspect pane's tab strip, not the screen bottom).
+        /// This is UI-only state, so refreshing it during draw is safe.
+        /// </summary>
+        private void ApplyResponsiveTabSize(float tabBottomAnchorY)
         {
             DiaryUiStyleDef style = UiStyle;
             size = new Vector2(
                 PositiveFiniteOrFallback(style.tabWidth, FallbackTabWidth),
-                ResponsiveTabHeight(style));
+                ResponsiveTabHeight(style, tabBottomAnchorY));
         }
 
-        private static float ResponsiveTabHeight(DiaryUiStyleDef style)
+        private static float ResponsiveTabHeight(DiaryUiStyleDef style, float tabBottomAnchorY)
         {
             float preferred = PositiveFiniteOrFallback(style.tabHeight, FallbackTabHeight);
-            float screenHeight = UI.screenHeight;
-            if (!IsPositiveFinite(screenHeight))
+            if (!IsPositiveFinite(tabBottomAnchorY))
             {
                 return preferred;
             }
 
             float margin = NonNegativeFiniteOrFallback(style.tabScreenHeightMargin, FallbackTabScreenHeightMargin);
-            float maxHeight = screenHeight - margin;
+            float maxHeight = tabBottomAnchorY - margin;
             if (!IsPositiveFinite(maxHeight))
             {
-                maxHeight = screenHeight;
+                maxHeight = tabBottomAnchorY;
             }
 
             maxHeight = Mathf.Max(1f, maxHeight);
@@ -343,8 +363,6 @@ namespace PawnDiary
         /// </summary>
         protected override void FillTab()
         {
-            ApplyResponsiveTabSize();
-
             Pawn pawn = PawnToShow();
             if (pawn == null)
             {

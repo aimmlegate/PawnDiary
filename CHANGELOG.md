@@ -8,6 +8,16 @@ pre-release version ladder for project history.
 
 ## 2026-07-07
 
+- **Fixed the Diary tab running off the top of the screen** (user-reported; title/close button
+  colliding with the top-center message stack). The responsive height clamp measured against the
+  screen bottom, but vanilla hangs inspect tabs above the inspect pane's tab strip — 230px of
+  chrome (165 pane + 35 bottom bar + 30 strip, verified against decompiled
+  `InspectTabBase.TabRect` / `MainTabWindow_Inspect.PaneTopY`) the clamp never subtracted, so any
+  UI-scaled screen height under ~1030 pushed the tab top off-screen. The clamp now anchors to the
+  live `PaneTopY` (correct under pane-moving mods) via a new `UpdateSize()` override — vanilla's
+  pre-layout hook, replacing the one-frame-late refresh in `FillTab` — with the constant fallback
+  only for construction time. `<tabScreenHeightMargin>` now truly means "clear screen above the
+  tab".
 - **Integration API v2–v3 — LLM connection + event filters.** `PawnDiaryApi.ApiVersion` is now `3`.
   v2 adds `GetApiSetup()` / `AddApiLane(...)` to read and extend the player's LLM API lanes; v3 adds
   `GetEventFilters()` / `IsEventFilterEnabled` / `SetEventFilterEnabled` over the same saved flags as
