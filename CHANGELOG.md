@@ -6,6 +6,20 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-07 (error reporter: real version + Workshop-vs-local source)
+
+- **Report the real mod version.** The error reporter previously sent the assembly version
+  (`1.0.0.0`). The build now stamps the assembly version from `About.xml <modVersion>` via the new
+  `StampVersionFromAbout` MSBuild target (`Source/PawnDiary.csproj`), and the hardcoded attributes were
+  removed from `AssemblyInfo.cs` — so `About.xml` is the single source of truth and reports carry the
+  real version (e.g. `0.3.2`, via `AssemblyInformationalVersion`).
+- **Report the install source.** New pure `InstallSource.FromRootDir` classifies a Steam Workshop
+  install (`…/steamapps/workshop/content/294100/…`) vs a local one from our `ModContentPack.RootDir`
+  (captured in `PawnDiaryMod`). Added `installSource` (`workshop`/`local`/`unknown`) to the report
+  payload, the Cloudflare Worker's validation/storage, and an additive `install_source` column on the
+  D1 `error_groups` table (live DB migrated). Tests: `DiaryPipelineTests` now 862 assertions; endpoint
+  redeployed and verified end-to-end against production.
+
 ## 2026-07-07 (Fix — thought-capture crash on animals / not-fully-built pawns)
 
 - **Fixed a `NullReferenceException` in `ThoughtGainPatch` (reported by users; log refs `A2D21F2A`

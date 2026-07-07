@@ -33,6 +33,10 @@ namespace PawnDiary
         /// <summary>Shared settings instance available throughout the mod.</summary>
         public static PawnDiarySettings Settings;
 
+        /// <summary>This mod's content pack, captured at construction. Diagnostics read its RootDir to
+        /// tell a Steam Workshop install from a local one; see DiaryErrorReporter.</summary>
+        public static ModContentPack ModContent;
+
         // The settings window's API buttons start HTTP requests. This controller keeps their async
         // status, stale-result detection, and main-thread handoff out of the immediate-mode renderer.
         private readonly ApiConnectionController apiConnectionController;
@@ -87,6 +91,7 @@ namespace PawnDiary
         /// <summary>Initializes the mod, loading persisted settings from the save/config store.</summary>
         public PawnDiaryMod(ModContentPack content) : base(content)
         {
+            ModContent = content;
             Settings = GetSettings<PawnDiarySettings>();
             apiConnectionController = new ApiConnectionController(() => Settings);
             LlmClient.ApplyDebugLoggingSetting();

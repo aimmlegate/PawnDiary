@@ -86,6 +86,7 @@ namespace DiaryPipelineTests
             TestErrorScrubRemovesPersonalData();
             TestErrorFingerprintGroupsAndDistinguishes();
             TestErrorReportPayloadIsValidPiiFreeJson();
+            TestInstallSourceClassifier();
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
@@ -4354,6 +4355,7 @@ namespace DiaryPipelineTests
                 modVersion = "1.2.3.4",
                 rimworldVersion = "1.6.4241",
                 os = "Microsoft Windows NT 10.0",
+                installSource = "workshop",
                 installId = "abc123def456",
                 fingerprint = "00ff00ff00ff00ff",
                 timestampUtc = "2026-07-07T12:00:00.0000000Z",
@@ -4371,6 +4373,7 @@ namespace DiaryPipelineTests
             AssertEqual("payload schemaVersion", ErrorReportPayload.SchemaVersion, (int)(double)parsed["schemaVersion"]);
             AssertEqual("payload modVersion", "1.2.3.4", (string)parsed["modVersion"]);
             AssertEqual("payload installId", "abc123def456", (string)parsed["installId"]);
+            AssertEqual("payload installSource", "workshop", (string)parsed["installSource"]);
             AssertEqual("payload fingerprint", "00ff00ff00ff00ff", (string)parsed["fingerprint"]);
             // Message escaping survives the round trip exactly (quotes, newline, tab).
             AssertEqual("payload message round-trips", "Line \"one\"\nLine two\tindented", (string)parsed["message"]);
@@ -4384,6 +4387,21 @@ namespace DiaryPipelineTests
             AssertTrue("payload has no machine field", !parsed.ContainsKey("machineName") && !parsed.ContainsKey("hostname"));
             AssertTrue("payload has no path field", !parsed.ContainsKey("path") && !parsed.ContainsKey("filePath"));
             AssertTrue("payload has no apiKey field", !parsed.ContainsKey("apiKey"));
+        }
+
+        private static void TestInstallSourceClassifier()
+        {
+            AssertEqual("workshop windows path", InstallSource.Workshop,
+                InstallSource.FromRootDir(@"D:\SteamLibrary\steamapps\workshop\content\294100\2891407721\PawnDiary"));
+            AssertEqual("workshop unix path", InstallSource.Workshop,
+                InstallSource.FromRootDir("/home/u/.steam/steam/steamapps/workshop/content/294100/2891407721"));
+            AssertEqual("local mods path", InstallSource.Local,
+                InstallSource.FromRootDir(@"D:\SteamLibrary\steamapps\common\RimWorld\Mods\aimmlegate.pawndiary"));
+            // A different game's Workshop folder (not app 294100) must not read as ours.
+            AssertEqual("other-game workshop is local", InstallSource.Local,
+                InstallSource.FromRootDir(@"D:\Steam\steamapps\workshop\content\999999\123\Mod"));
+            AssertEqual("blank is unknown", InstallSource.Unknown, InstallSource.FromRootDir(""));
+            AssertEqual("null is unknown", InstallSource.Unknown, InstallSource.FromRootDir(null));
         }
 
         private static void AssertHeader(string name, HttpRequestMessage request, string headerName, string expected)

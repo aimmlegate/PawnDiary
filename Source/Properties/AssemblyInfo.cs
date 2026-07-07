@@ -29,12 +29,7 @@ using System.Runtime.InteropServices;
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("4d267dd4-d1f4-4662-86cd-50b68311a711")]
 
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version
-//      Build Number
-//      Revision
-//
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+// The assembly version attributes (AssemblyVersion / AssemblyFileVersion /
+// AssemblyInformationalVersion) are generated at BUILD TIME from About/About.xml <modVersion> by the
+// StampVersionFromAbout target in PawnDiary.csproj, so About.xml stays the single source of truth for
+// the mod version. Do NOT hardcode them here — a copy would duplicate-conflict with the generated one.

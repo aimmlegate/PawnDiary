@@ -1228,21 +1228,26 @@ can be found and fixed. There is no first-run prompt; the player turns it off wi
 - **Transport.** `DiaryErrorReporter` mirrors `LlmClient`'s shape — a shared static `HttpClient` and
   fire-and-forget `Task.Run` sends, so the game thread never blocks. It dedupes by fingerprint (each
   distinct error sent once per session), caps distinct reports per session and concurrent sends, and
-  never re-logs its own failures. It is **inert until an endpoint is compiled in**: the
-  `ErrorReportEndpoint` constant ships empty, so on-by-default sends nothing today. Per-session dedupe
-  resets in the `DiaryGameComponent` ctor alongside `LlmClient.BeginSession()`.
+  never re-logs its own failures. The `ErrorReportEndpoint` constant points at the deployed Cloudflare
+  Worker (`services/error-endpoint/`); set it to `""` to make the reporter inert again. Per-session
+  dedupe resets in the `DiaryGameComponent` ctor alongside `LlmClient.BeginSession()`.
 - **Privacy (pure, tested).** `ErrorScrub` masks the username segment of any file path, redacts the
   configured API keys/endpoint URLs (passed in) plus `Bearer`/`key=`/`sk-` shapes (reusing
   `ApiLaneLabels.RedactSecrets`), and caps length. `ErrorFingerprint` is a deterministic FNV-1a over
   the normalized stack (line numbers/addresses blanked) so the same crash groups across machines.
   `ErrorReportPayload` builds the wire JSON by hand (no serializer in Mono). The payload carries only:
-  schema version, mod version, RimWorld version, active DLC, coarse OS string, an **anonymous random
-  install GUID** (`errorReportInstallId`, not a machine/hardware id), the fingerprint, a UTC timestamp,
-  and the scrubbed message — never a username, path, save/colony/pawn name, API key, or diary text.
-  The three pure helpers are covered by `tests/DiaryPipelineTests`.
-- **Endpoint contract (TODO — not built yet).** `POST {ErrorReportEndpoint}`,
-  `Content-Type: application/json`, body = `ErrorReportPayload.ToJson`. A tiny serverless function
-  that size-checks and appends to storage is enough; `schemaVersion` lets the shape evolve.
+  schema version, mod version (stamped into the assembly from `About.xml` at build time by the
+  `StampVersionFromAbout` target in `PawnDiary.csproj`, so `About.xml` is the single source of truth),
+  RimWorld version, active DLC, coarse OS string, install source (`workshop`/`local`, from
+  `InstallSource.FromRootDir` on our `ModContentPack.RootDir`), an **anonymous random install GUID**
+  (`errorReportInstallId`, not a machine/hardware id), the fingerprint, a UTC timestamp, and the
+  scrubbed message — never a username, path, save/colony/pawn name, API key, or diary text. The pure
+  helpers (scrub, fingerprint, payload, install-source) are covered by `tests/DiaryPipelineTests`.
+- **Endpoint (deployed).** `POST {ErrorReportEndpoint}`, `Content-Type: application/json`, body =
+  `ErrorReportPayload.ToJson`. The receiver is a Cloudflare Worker + D1 in `services/error-endpoint/`
+  that validates/size-clamps the body and folds it into per-fingerprint and distinct-install
+  aggregates (including `install_source`), with a daily cron retention prune; `schemaVersion` lets the
+  shape evolve.
 
 ## 9. Save Data And Compatibility
 

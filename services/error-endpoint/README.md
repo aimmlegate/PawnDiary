@@ -17,6 +17,7 @@ The mod scrubs everything before sending. The body is exactly `ErrorReportPayloa
   "modVersion": "1.2.3.4",
   "rimworldVersion": "1.6.4241",
   "os": "Microsoft Windows NT 10.0.22631.0",
+  "installSource": "workshop",        // "workshop" | "local" | "unknown"
   "installId": "a1b2c3...",           // anonymous random GUID, not a machine id
   "fingerprint": "9f8e7d6c5b4a3210",  // deterministic hash of the normalized stack
   "timestampUtc": "2026-07-07T12:00:00.0000000Z",
@@ -98,6 +99,7 @@ SELECT
   g.first_seen,
   g.last_seen,
   g.rimworld_version,
+  g.install_source,
   g.active_dlc,
   substr(g.sample_message, 1, 300)     AS sample
 FROM error_groups g

@@ -84,4 +84,33 @@
     <Compile Include="**\*.cs" Exclude="obj\**\*.cs;bin\**\*.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- Single source of truth for the mod version: read About/About.xml <modVersion> and stamp it into
+       the assembly at build time. The version attributes are intentionally absent from
+       Properties/AssemblyInfo.cs; a generated file supplies them so bumping About.xml is the only
+       place a release version changes (Debug and Release both pick it up). -->
+  <Target Name="StampVersionFromAbout" BeforeTargets="CoreCompile">
+    <XmlPeek XmlInputPath="$(MSBuildProjectDirectory)\..\About\About.xml" Query="/ModMetaData/modVersion/text()">
+      <Output TaskParameter="Result" ItemName="_AboutModVersion" />
+    </XmlPeek>
+    <PropertyGroup>
+      <_ModVersion>@(_AboutModVersion)</_ModVersion>
+      <_ModVersion Condition="'$(_ModVersion)' == ''">0.0.0</_ModVersion>
+      <_VersionSourceFile>$(IntermediateOutputPath)PawnDiaryVersion.g.cs</_VersionSourceFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <_VersionAttribute Include="System.Reflection.AssemblyVersionAttribute">
+        <_Parameter1>$(_ModVersion)</_Parameter1>
+      </_VersionAttribute>
+      <_VersionAttribute Include="System.Reflection.AssemblyFileVersionAttribute">
+        <_Parameter1>$(_ModVersion)</_Parameter1>
+      </_VersionAttribute>
+      <_VersionAttribute Include="System.Reflection.AssemblyInformationalVersionAttribute">
+        <_Parameter1>$(_ModVersion)</_Parameter1>
+      </_VersionAttribute>
+    </ItemGroup>
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <WriteCodeFragment AssemblyAttributes="@(_VersionAttribute)" Language="C#" OutputFile="$(_VersionSourceFile)">
+      <Output TaskParameter="OutputFile" ItemName="Compile" />
+    </WriteCodeFragment>
+  </Target>
 </Project>

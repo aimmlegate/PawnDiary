@@ -14,8 +14,12 @@ CREATE TABLE IF NOT EXISTS error_groups (
   rimworld_version TEXT,
   os               TEXT,
   active_dlc       TEXT,            -- JSON array string, e.g. ["Royalty","Anomaly"]
+  install_source   TEXT,            -- "workshop", "local", or "unknown" (from the first sighting)
   PRIMARY KEY (fingerprint, mod_version)
 );
+-- Additive migration for databases created before install_source existed (safe to re-run; ignore
+-- "duplicate column name" if it has already been applied):
+--   ALTER TABLE error_groups ADD COLUMN install_source TEXT;
 
 -- One row per (crash, install). PRIMARY KEY makes INSERT OR IGNORE dedupe installs automatically.
 CREATE TABLE IF NOT EXISTS error_group_installs (

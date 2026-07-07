@@ -31,6 +31,7 @@ const LIMITS = {
   modVersion: 64,
   rimworldVersion: 64,
   os: 128,
+  installSource: 16,
   installId: 64,
   timestampUtc: 40,
   dlcItem: 32,
@@ -42,6 +43,7 @@ interface ErrorReport {
   modVersion: string;
   rimworldVersion: string;
   os: string;
+  installSource: string;
   installId: string;
   fingerprint: string;
   timestampUtc: string;
@@ -178,6 +180,7 @@ function validate(body: unknown): ErrorReport | null {
     modVersion: str(b.modVersion, LIMITS.modVersion) || "unknown",
     rimworldVersion: str(b.rimworldVersion, LIMITS.rimworldVersion) || "unknown",
     os: str(b.os, LIMITS.os) || "unknown",
+    installSource: str(b.installSource, LIMITS.installSource) || "unknown",
     installId: str(b.installId, LIMITS.installId) || "unknown",
     fingerprint,
     timestampUtc: str(b.timestampUtc, LIMITS.timestampUtc),
@@ -195,8 +198,8 @@ async function store(env: Env, report: ErrorReport): Promise<void> {
     // Group row keyed by (fingerprint, mod_version): bump count + last_seen, keep first sample.
     env.DB.prepare(
       `INSERT INTO error_groups
-         (fingerprint, mod_version, first_seen, last_seen, count, sample_message, rimworld_version, os, active_dlc)
-       VALUES (?1, ?2, ?3, ?3, 1, ?4, ?5, ?6, ?7)
+         (fingerprint, mod_version, first_seen, last_seen, count, sample_message, rimworld_version, os, active_dlc, install_source)
+       VALUES (?1, ?2, ?3, ?3, 1, ?4, ?5, ?6, ?7, ?8)
        ON CONFLICT(fingerprint, mod_version) DO UPDATE SET
          last_seen = ?3,
          count = count + 1`
@@ -207,7 +210,8 @@ async function store(env: Env, report: ErrorReport): Promise<void> {
       report.message,
       report.rimworldVersion,
       report.os,
-      dlcJson
+      dlcJson,
+      report.installSource
     ),
     // Distinct-install tracking: INSERT OR IGNORE so each install counts once per group.
     env.DB.prepare(

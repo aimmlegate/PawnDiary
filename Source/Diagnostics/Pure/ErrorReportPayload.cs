@@ -28,6 +28,9 @@ namespace PawnDiary
         /// <summary>Coarse OS string (no machine or user name).</summary>
         public string os;
 
+        /// <summary>Where the mod is installed from: "workshop", "local", or "unknown".</summary>
+        public string installSource;
+
         /// <summary>Anonymous per-install random GUID. Not a machine or hardware id.</summary>
         public string installId;
 
@@ -64,6 +67,8 @@ namespace PawnDiary
             AppendString(sb, "rimworldVersion", report.rimworldVersion);
             sb.Append(',');
             AppendString(sb, "os", report.os);
+            sb.Append(',');
+            AppendString(sb, "installSource", report.installSource);
             sb.Append(',');
             AppendString(sb, "installId", report.installId);
             sb.Append(',');

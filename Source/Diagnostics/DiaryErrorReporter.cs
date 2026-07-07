@@ -15,6 +15,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -166,6 +167,7 @@ namespace PawnDiary
                 modVersion = SafeModVersion(),
                 rimworldVersion = SafeRimWorldVersion(),
                 os = SafeOsString(),
+                installSource = SafeInstallSource(),
                 installId = SafeInstallId(settings),
                 fingerprint = fingerprint,
                 timestampUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
@@ -178,8 +180,17 @@ namespace PawnDiary
         {
             try
             {
-                // Assembly version; wire a richer build string here later if needed.
-                return typeof(DiaryErrorReporter).Assembly.GetName().Version?.ToString() ?? "unknown";
+                Assembly asm = typeof(DiaryErrorReporter).Assembly;
+                // The build stamps AssemblyInformationalVersion from About.xml <modVersion> (see
+                // PawnDiary.csproj StampVersionFromAbout), so this is the exact "0.3.2"-style string.
+                AssemblyInformationalVersionAttribute info = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+                if (info != null && !string.IsNullOrWhiteSpace(info.InformationalVersion))
+                {
+                    return info.InformationalVersion;
+                }
+
+                // Fallback to the numeric assembly version (AssemblyVersion) if the attribute is absent.
+                return asm.GetName().Version?.ToString() ?? "unknown";
             }
             catch
             {
@@ -210,6 +221,19 @@ namespace PawnDiary
             catch
             {
                 return "unknown";
+            }
+        }
+
+        private static string SafeInstallSource()
+        {
+            try
+            {
+                // ModContent is captured in the PawnDiaryMod ctor; its RootDir tells Workshop from local.
+                return InstallSource.FromRootDir(PawnDiaryMod.ModContent?.RootDir);
+            }
+            catch
+            {
+                return InstallSource.Unknown;
             }
         }
 
