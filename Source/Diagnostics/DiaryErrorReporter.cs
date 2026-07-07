@@ -30,10 +30,9 @@ namespace PawnDiary
     /// </summary>
     internal static class DiaryErrorReporter
     {
-        // The ingest URL. EMPTY on purpose: with no endpoint, Report() does nothing, so shipping this
-        // feature on-by-default sends zero traffic until we deploy an endpoint and set this constant.
-        // Compile-time (not a setting) so it is never player-editable — players cannot redirect it.
-        // TODO: set to the deployed ingest endpoint (see DOCUMENTATION.md "Error reporting").
+        // The deployed Cloudflare Worker ingest endpoint (services/error-endpoint/, see
+        // DOCUMENTATION.md "Error reporting"). Compile-time, not a setting, so it is never
+        // player-editable — players cannot redirect it. Set to "" to make the reporter inert again.
         private const string ErrorReportEndpoint = "https://pawndiary-error-endpoint.pawn-diary-aimm-error-reports.workers.dev";
 
         /// <summary>Max distinct errors reported per game session, so a spamming bug cannot flood the endpoint.</summary>
