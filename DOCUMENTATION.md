@@ -259,6 +259,35 @@ not ready yet" (`IsReady=false`) from "the player has disabled external API beha
 and registered providers/listeners are not invoked; registration itself remains accepted so a later
 re-enable works without restarting.
 
+Beyond diary events, the v2 API exposes the LLM connection itself (`ApiVersion` bumped `1 → 2`).
+`GetApiSetup()` returns a `DiaryApiSetupSnapshot` — routing mode, global request knobs, and one
+`DiaryApiLaneSnapshot` per configured endpoint/model lane — and `AddApiLane(ExternalApiLaneRequest)`
+appends a new lane that, when enabled, becomes active immediately: it is persisted via
+`PawnDiarySettings.Write` and pushed to the shared `LlmClient` through `ApplyLaneConfiguration`,
+mirroring the lane-relevant steps `PawnDiaryMod.WriteSettings` runs when the settings window closes.
+Both live in `Source/Settings/IntegrationApiSettings.cs`, with pure token↔enum mapping and add-request
+validation in `Source/Pipeline/ApiLaneImport.cs` (covered by `DiaryPipelineTests`). Unlike the diary
+reads, these operate on **global** mod settings, so they are gated by the main thread and the master
+toggle but **not** by `IsReady` — an adapter can read or configure lanes at the main menu. Public DTOs
+speak stable string tokens (`authMode`, `apiMode`, `routingMode`, `contextDetailOverride`) rather than
+the internal enums. `DiaryApiLaneSnapshot` returns the player's real `apiKey` in full on purpose — so
+an adapter can reuse the player's provider (the "one key serves both mods" case) — which is a
+deliberate exception to the "reads never leak secrets" rule; it is a secret adapters must not log, and
+`hasApiKey` is provided for presence-only checks.
+
+API v3 (`ApiVersion` `2 → 3`) exposes the automatic-capture **event filters** — the per-interaction-
+group on/off toggles on the settings *Events* tab. `GetEventFilters()` returns a
+`DiaryEventFilterSnapshot` per settings-visible group (key = defName, label, domain, `enabled`,
+`defaultEnabled`, `hasOverride`); `IsEventFilterEnabled(key)` reads one; `SetEventFilterEnabled(key,
+enabled)` flips it using the **same saved flag** as the tab — `PawnDiarySettings.SetGroupEnabled`,
+which drops the override when it matches the XML default — then persists via `PawnDiarySettings.Write`.
+The change takes effect for future captured events immediately (filters are read per event via
+`IsInteractionEnabled`/`IsTaleEnabled`/… at capture time), so no cache invalidation is needed. The API
+and the Events tab share one source of truth: `IntegrationApiSettings` calls the now-internal
+`PawnDiaryMod.EventFilterGroupsForSettings` / `IsSettingsEventFilterGroup` / `EventFilterLabel`, so the
+exposed set (non-External, non-package-gated groups) and its order cannot drift from the UI. Same
+gating as the v2 members (master toggle + main thread, no loaded game).
+
 For ordinary `SubmitEvent` calls, policy stays in XML: the request's `eventKey` string plays the
 defName role, and an External-domain `DiaryInteractionGroupDef` must claim it (required-match, like
 Romance — an unclaimed key records nothing and logs one warning naming the submitting mod). The

@@ -26,7 +26,8 @@ namespace PawnDiary.Integration
     /// writing-style catalog reads and overrides, per-pawn generation controls, prompt previews,
     /// wrapped prompt-entry submissions, read-only snapshots/status reads, single-entry reads, cheap
     /// entry stats, compact prose context bundles, prompt fragments/enchantment candidates on
-    /// external events, and pawn-context providers for prompt-summary context.
+    /// external events, pawn-context providers for prompt-summary context, LLM API setup reads
+    /// plus add-lane writes, and automatic-capture event-filter reads plus per-group toggles.
     /// </summary>
     public static class PawnDiaryApi
     {
@@ -35,7 +36,7 @@ namespace PawnDiary.Integration
         /// members never change behavior incompatibly. Adapters that need a newer member can check
         /// this at load time and degrade gracefully on older Pawn Diary builds.
         /// </summary>
-        public const int ApiVersion = 1;
+        public const int ApiVersion = 3;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time
@@ -1209,6 +1210,212 @@ namespace PawnDiary.Integration
                     + "' failed: " + e,
                     ("PawnDiary.Api.PromptEnchantments.Exception." + pawnForLog + "." + e.GetType().FullName).GetHashCode());
                 return new List<DiaryPromptEnchantmentCandidateSnapshot>();
+            }
+        }
+
+        /// <summary>
+        /// Returns a prompt-free snapshot of the player's current LLM API setup: the global routing
+        /// mode and request knobs, plus one lane row per configured endpoint/model (see
+        /// <see cref="DiaryApiLaneSnapshot"/>). Unlike the diary reads, this does NOT require a loaded
+        /// game — the API lanes are global mod settings, valid at the main menu too — so it is gated
+        /// only by the main thread and the master integration toggle. Returns null — never throws —
+        /// off the main thread, when the master toggle is off, or when settings are unavailable.
+        /// SECURITY: each lane's <c>apiKey</c> is returned in full (the player's real key). It is
+        /// exposed so an adapter can reuse the player's provider; never log or forward it.
+        /// </summary>
+        public static DiaryApiSetupSnapshot GetApiSetup()
+        {
+            try
+            {
+                // Reads global mod settings and Def-free lane data. Settings reads are not thread-safe,
+                // so keep the same main-thread rule as the other API members.
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: GetApiSetup was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.GetApiSetup.OffThread".GetHashCode());
+                    return null;
+                }
+
+                if (!ExternalIntegrationsAllowed || PawnDiaryMod.Settings == null)
+                {
+                    return null;
+                }
+
+                return IntegrationApiSettings.BuildSetupSnapshot(PawnDiaryMod.Settings);
+            }
+            catch (Exception e)
+            {
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: GetApiSetup failed: " + e,
+                    "PawnDiary.Api.GetApiSetup.Exception".GetHashCode());
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Adds a new LLM API lane (endpoint + model + auth) to Pawn Diary's connection settings from
+        /// an external request. A lane added with <see cref="ExternalApiLaneRequest.enabled"/> true
+        /// (the default) is "active": it participates in generation/failover immediately and is
+        /// persisted like a lane the player added by hand. Like <see cref="GetApiSetup"/> this does
+        /// NOT require a loaded game; it is gated by the main thread and the master integration toggle.
+        /// Never throws — the outcome (added / duplicate / missing field / off-thread / ineligible) is
+        /// reported on <see cref="AddApiLaneResult.reason"/>.
+        /// </summary>
+        public static AddApiLaneResult AddApiLane(ExternalApiLaneRequest request)
+        {
+            try
+            {
+                // Mutates + persists global settings and pushes lanes to the shared client; all of that
+                // is main-thread-only, so reject off-thread calls instead of racing.
+                if (!UnityData.IsInMainThread)
+                {
+                    string sourceForLog = request != null && !string.IsNullOrWhiteSpace(request.sourceId)
+                        ? request.sourceId.Trim()
+                        : "unknown-source";
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: AddApiLane from '" + sourceForLog
+                        + "' was called off the main thread; the call was ignored. Queue the work "
+                        + "yourself and drain it from a main-thread hook such as GameComponentUpdate or OnGUI.",
+                        ("PawnDiary.Api.AddApiLane.OffThread." + sourceForLog).GetHashCode());
+                    return new AddApiLaneResult { index = -1, reason = "offThread" };
+                }
+
+                if (request == null)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: AddApiLane called with a null request.",
+                        "PawnDiary.Api.AddApiLane.NullRequest".GetHashCode());
+                    return new AddApiLaneResult { index = -1, reason = "invalidRequest" };
+                }
+
+                if (!ExternalIntegrationsAllowed || PawnDiaryMod.Settings == null)
+                {
+                    return new AddApiLaneResult { index = -1, reason = "ineligible" };
+                }
+
+                return IntegrationApiSettings.AddLane(PawnDiaryMod.Settings, request);
+            }
+            catch (Exception e)
+            {
+                string sourceForLog = request != null && !string.IsNullOrWhiteSpace(request.sourceId)
+                    ? request.sourceId
+                    : "unknown-source";
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: AddApiLane from '" + sourceForLog + "' failed: " + e,
+                    ("PawnDiary.Api.AddApiLane.Exception." + sourceForLog).GetHashCode());
+                return new AddApiLaneResult { index = -1, reason = "invalidRequest" };
+            }
+        }
+
+        /// <summary>
+        /// Returns the automatic-capture event filters — the same per-interaction-group on/off toggles
+        /// the player edits on Pawn Diary's settings "Events" tab (all non-External, non-package-gated
+        /// groups), in the same order, each with its current saved state. Like the other settings reads
+        /// this does NOT require a loaded game; it is gated by the main thread and the master integration
+        /// toggle. Returns an empty list — never throws — off the main thread, when the master toggle is
+        /// off, or when settings are unavailable. Side-effect free.
+        /// </summary>
+        public static List<DiaryEventFilterSnapshot> GetEventFilters()
+        {
+            try
+            {
+                // Walks DefDatabase group data and translates labels — main-thread only, like the other reads.
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: GetEventFilters was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.GetEventFilters.OffThread".GetHashCode());
+                    return new List<DiaryEventFilterSnapshot>();
+                }
+
+                if (!ExternalIntegrationsAllowed || PawnDiaryMod.Settings == null)
+                {
+                    return new List<DiaryEventFilterSnapshot>();
+                }
+
+                return IntegrationApiSettings.BuildEventFilterSnapshots(PawnDiaryMod.Settings);
+            }
+            catch (Exception e)
+            {
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: GetEventFilters failed: " + e,
+                    "PawnDiary.Api.GetEventFilters.Exception".GetHashCode());
+                return new List<DiaryEventFilterSnapshot>();
+            }
+        }
+
+        /// <summary>
+        /// Returns whether Pawn Diary currently captures the event kind identified by one event-filter
+        /// group defName (from <see cref="GetEventFilters"/>). Returns false — never throws — for an
+        /// unknown key, a group outside the settings Events list (External / package-gated), an
+        /// off-thread call, the master toggle off, or no settings. Does not require a loaded game.
+        /// </summary>
+        public static bool IsEventFilterEnabled(string key)
+        {
+            try
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: IsEventFilterEnabled was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.IsEventFilterEnabled.OffThread".GetHashCode());
+                    return false;
+                }
+
+                if (!ExternalIntegrationsAllowed || PawnDiaryMod.Settings == null)
+                {
+                    return false;
+                }
+
+                return IntegrationApiSettings.IsEventFilterEnabled(PawnDiaryMod.Settings, key);
+            }
+            catch (Exception e)
+            {
+                string keyForLog = string.IsNullOrWhiteSpace(key) ? "unknown-key" : key.Trim();
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: IsEventFilterEnabled for '" + keyForLog + "' failed: " + e,
+                    ("PawnDiary.Api.IsEventFilterEnabled.Exception." + keyForLog).GetHashCode());
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Enables or disables automatic capture for one event-filter group (by defName), using the
+        /// exact same saved flag as the settings "Events" tab, then persists. Returns true on success;
+        /// false — never throws — for an unknown key, a group outside the settings Events list, an
+        /// off-thread call, the master toggle off, or no settings. Does not require a loaded game. The
+        /// change takes effect for future captured events immediately (filters are read per event).
+        /// </summary>
+        public static bool SetEventFilterEnabled(string key, bool enabled)
+        {
+            try
+            {
+                // Mutates + persists global settings — main-thread only, like the other settings writes.
+                if (!UnityData.IsInMainThread)
+                {
+                    string keyForLog = string.IsNullOrWhiteSpace(key) ? "unknown-key" : key.Trim();
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: SetEventFilterEnabled for '" + keyForLog
+                        + "' was called off the main thread; the call was ignored.",
+                        ("PawnDiary.Api.SetEventFilterEnabled.OffThread." + keyForLog).GetHashCode());
+                    return false;
+                }
+
+                if (!ExternalIntegrationsAllowed || PawnDiaryMod.Settings == null)
+                {
+                    return false;
+                }
+
+                return IntegrationApiSettings.TrySetEventFilter(PawnDiaryMod.Settings, key, enabled);
+            }
+            catch (Exception e)
+            {
+                string keyForLog = string.IsNullOrWhiteSpace(key) ? "unknown-key" : key.Trim();
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: SetEventFilterEnabled for '" + keyForLog + "' failed: " + e,
+                    ("PawnDiary.Api.SetEventFilterEnabled.Exception." + keyForLog).GetHashCode());
+                return false;
             }
         }
 

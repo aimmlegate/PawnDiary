@@ -19,11 +19,11 @@ lets *your* mod do the same thing: push a moment into a pawn's diary, read diary
 your own pawn context into Pawn Diary's prompts. Your adapter stays a normal mod — Pawn Diary owns
 the LLM call, prompt framing, safety text, parsing, persistence, and the Diary tab.
 
-Current contract version: `PawnDiaryApi.ApiVersion == 1`. Future additive members will bump this to
-`2+`; feature-detect before using those future members:
+Current contract version: `PawnDiaryApi.ApiVersion == 3`. Future additive members will bump this
+further; feature-detect before using version-gated members:
 
 ```csharp
-if (PawnDiaryApi.ApiVersion >= 2) { /* use a future member */ }
+if (PawnDiaryApi.ApiVersion >= 3) { /* use a v3 member such as GetEventFilters() */ }
 ```
 
 ---
@@ -90,6 +90,10 @@ That's it. Open the pawn's Diary tab and trigger your hook.
 | Read or set the pawn's writing style / generation toggle | `GetWritingStyle`, `SetWritingStyleOverride`, `IsDiaryGenerationEnabled`… |
 | Contribute one `key=value` context line to every pawn summary | `RegisterPawnContextProvider` |
 | Get style + summary + enchantments + recent memory in one call | `GetContextBundle` |
+| Read the player's current LLM API setup (routing + lanes, incl. keys) | `GetApiSetup` *(v2)* |
+| Add a new active LLM API lane (endpoint + model + auth) | `AddApiLane` *(v2)* |
+| List the automatic-capture event filters (the settings *Events* tab) | `GetEventFilters` *(v3)* |
+| Read / toggle one event filter by group defName | `IsEventFilterEnabled` / `SetEventFilterEnabled` *(v3)* |
 
 Full signatures and field semantics: [`INTEGRATIONS.md`](INTEGRATIONS.md) § API reference.
 
@@ -144,6 +148,10 @@ Every read returns plain DTOs (`DiaryEntryTitleSnapshot`, `DiaryEntrySnapshot`,
 `DiaryContextSnapshot`, `DiaryPawnSummarySnapshot`, …) — sealed field bags, no live RimWorld objects.
 They never include prompts, raw provider responses, fallback facts, or in-flight pages. List fields
 are independent copies: mutating game state after the call does not change a snapshot you already hold.
+
+**One deliberate exception:** the v2 `GetApiSetup` read returns each lane's `apiKey` in full, so an
+adapter can reuse the player's configured LLM provider. That is a secret — never log or forward it,
+and prefer `DiaryApiLaneSnapshot.hasApiKey` when you only need to know whether a key is set.
 
 ---
 

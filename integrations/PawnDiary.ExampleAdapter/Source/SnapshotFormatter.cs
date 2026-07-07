@@ -364,6 +364,90 @@ namespace PawnDiaryExampleAdapter
             return sb.ToString();
         }
 
+        // ---- LLM API setup ------------------------------------------------------
+
+        public static string Format(DiaryApiSetupSnapshot s)
+        {
+            if (s == null)
+            {
+                return "(null api setup — master switch off, off-thread, or no settings)";
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.Append("DiaryApiSetupSnapshot\n");
+            sb.Append("  routingMode = ").Append(NullEscape(s.routingMode)).Append('\n');
+            sb.Append("  temperature = ").Append(s.temperature).Append('\n');
+            sb.Append("  timeout / maxTokens / concurrency = ")
+              .Append(s.timeoutSeconds).Append(" / ").Append(s.maxTokens).Append(" / ").Append(s.maxConcurrentRequests).Append('\n');
+            sb.Append("  lanes = ").Append(s.laneCount).Append(" (active ").Append(s.activeLaneCount).Append(")\n");
+            if (s.lanes == null)
+            {
+                sb.Append("    (null)");
+                return sb.ToString();
+            }
+
+            for (int i = 0; i < s.lanes.Count; i++)
+            {
+                DiaryApiLaneSnapshot lane = s.lanes[i];
+                if (lane == null) continue;
+                sb.Append("    [").Append(lane.index).Append("] ")
+                  .Append(lane.active ? "active" : (lane.enabled ? "enabled" : "off"))
+                  .Append("  model=").Append(NullEscape(lane.model))
+                  .Append("  url=").Append(NullEscape(lane.url)).Append('\n');
+                // The DTO exposes lane.apiKey in full, but a well-behaved adapter shows PRESENCE only and
+                // never prints the secret. This example models that: hasApiKey, never the key text.
+                sb.Append("         auth=").Append(NullEscape(lane.authMode))
+                  .Append(string.Equals(lane.authMode, "customHeader") ? " (" + NullEscape(lane.customAuthHeaderName) + ")" : string.Empty)
+                  .Append("  apiMode=").Append(NullEscape(lane.apiMode))
+                  .Append("  key=").Append(lane.hasApiKey ? "(set)" : "(none)").Append('\n');
+                sb.Append("         reasoning=").Append(NullEscape(lane.reasoningEffort))
+                  .Append('/').Append(NullEscape(lane.reasoningTag))
+                  .Append("  contextDetail=").Append(NullEscape(lane.contextDetailOverride));
+                if (i < s.lanes.Count - 1) sb.Append('\n');
+            }
+            return sb.ToString();
+        }
+
+        public static string Format(AddApiLaneResult r)
+        {
+            if (r == null)
+            {
+                return "(null add-lane result)";
+            }
+
+            return "AddApiLaneResult\n"
+                + "  reason         = " + NullEscape(r.reason) + "\n"
+                + "  added          = " + r.added + "\n"
+                + "  alreadyExisted = " + r.alreadyExisted + "\n"
+                + "  index          = " + r.index + "\n"
+                + "  active         = " + r.active;
+        }
+
+        // ---- event filters ------------------------------------------------------
+
+        public static string Format(IReadOnlyList<DiaryEventFilterSnapshot> filters)
+        {
+            if (filters == null || filters.Count == 0)
+            {
+                return "GetEventFilters → (empty list — master switch off, off-thread, or no group data)";
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.Append("GetEventFilters → ").Append(filters.Count).Append(" filters\n");
+            for (int i = 0; i < filters.Count; i++)
+            {
+                DiaryEventFilterSnapshot f = filters[i];
+                if (f == null) continue;
+                sb.Append("  ").Append(f.enabled ? "[x] " : "[ ] ")
+                  .Append(NullEscape(f.key))
+                  .Append("  (").Append(NullEscape(f.domain)).Append(')')
+                  .Append(f.hasOverride ? "  *changed*" : string.Empty)
+                  .Append("  ").Append(NullEscape(f.label));
+                if (i < filters.Count - 1) sb.Append('\n');
+            }
+            return sb.ToString();
+        }
+
         // ---- helpers ------------------------------------------------------------
 
         private static string NullEscape(string s)

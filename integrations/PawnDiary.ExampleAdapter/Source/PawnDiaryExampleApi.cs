@@ -494,5 +494,84 @@ namespace PawnDiaryExampleAdapter
         {
             return PawnDiaryApi.ResetWritingStyleOverride(pawn, sourceId);
         }
+
+        /// <summary>Endpoint used by the demo API lane the explorer can add: a local, keyless
+        /// OpenAI-compatible server (e.g. Ollama), so the lane is harmless even if it is never used.</summary>
+        public const string DemoLaneUrl = "http://localhost:11434/v1";
+
+        /// <summary>Model name used by the demo API lane. Purely illustrative.</summary>
+        public const string DemoLaneModel = "pawndiary-demo-model";
+
+        /// <summary>
+        /// Reads the player's current LLM API setup: routing mode, global request knobs, and each
+        /// configured lane (endpoint, model, auth, and — sensitively — the real API key).
+        /// </summary>
+        /// <returns>A setup snapshot, or null when the master switch is off or the call is off-thread.</returns>
+        public static DiaryApiSetupSnapshot GetApiSetup()
+        {
+            return PawnDiaryApi.GetApiSetup();
+        }
+
+        /// <summary>
+        /// Builds the sample "add a new active lane" request used by the explorer's demo action. A real
+        /// adapter fills in its own url/model/apiKey; only url and model are required.
+        /// </summary>
+        /// <returns>A request that adds a local, keyless, enabled demo lane.</returns>
+        public static ExternalApiLaneRequest BuildDemoApiLaneRequest()
+        {
+            return new ExternalApiLaneRequest
+            {
+                sourceId = SourceId,
+                url = DemoLaneUrl,
+                model = DemoLaneModel,
+                apiKey = string.Empty,
+                // authMode/apiMode default to bearer/chatCompletions; enabled=true makes the lane active.
+                enabled = true,
+                avoidDuplicate = true
+            };
+        }
+
+        /// <summary>
+        /// Adds a new active LLM API lane to Pawn Diary's connection settings. This edits real player
+        /// settings and persists immediately; the lane can be removed in Pawn Diary's Connection settings.
+        /// </summary>
+        /// <param name="request">Lane request; url and model are required, other fields optional.</param>
+        /// <returns>The result: whether it was added, was a duplicate, or was rejected and why.</returns>
+        public static AddApiLaneResult AddApiLane(ExternalApiLaneRequest request)
+        {
+            return PawnDiaryApi.AddApiLane(request);
+        }
+
+        /// <summary>
+        /// Reads the automatic-capture event filters — the same per-group on/off toggles the player
+        /// edits on Pawn Diary's settings "Events" tab.
+        /// </summary>
+        /// <returns>Filter snapshots (empty when the master switch is off or the call is off-thread).</returns>
+        public static List<DiaryEventFilterSnapshot> GetEventFilters()
+        {
+            return PawnDiaryApi.GetEventFilters();
+        }
+
+        /// <summary>
+        /// Reads whether Pawn Diary currently captures one event kind, by event-filter group defName.
+        /// </summary>
+        /// <param name="key">Event-filter group defName (from <see cref="GetEventFilters"/>).</param>
+        /// <returns>True when the group is captured; false when disabled, unknown, or not allowed.</returns>
+        public static bool IsEventFilterEnabled(string key)
+        {
+            return PawnDiaryApi.IsEventFilterEnabled(key);
+        }
+
+        /// <summary>
+        /// Enables or disables automatic capture for one event-filter group, using the same saved flag
+        /// as the settings Events tab. Persists immediately.
+        /// </summary>
+        /// <param name="key">Event-filter group defName (from <see cref="GetEventFilters"/>).</param>
+        /// <param name="enabled">True to capture this event kind; false to stop capturing it.</param>
+        /// <returns>True when applied; false for an unknown key or a call that is not allowed.</returns>
+        public static bool SetEventFilterEnabled(string key, bool enabled)
+        {
+            return PawnDiaryApi.SetEventFilterEnabled(key, enabled);
+        }
     }
 }

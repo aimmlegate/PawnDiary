@@ -6,6 +6,55 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-07 (Integration API v3 — event-filter reads + per-group toggles)
+
+- **Integration API v3 — read and toggle automatic-capture event filters.** `PawnDiaryApi.ApiVersion`
+  is now `3`. Three additive members expose the per-interaction-group on/off toggles from the settings
+  **Events** tab, using the *same saved flags*:
+  - `GetEventFilters()` → `List<DiaryEventFilterSnapshot>` (each: `key` = group defName, `label`,
+    `domain`, `enabled`, `defaultEnabled`, `hasOverride`), listing the same non-External,
+    non-package-gated groups the Events tab shows, in the same order.
+  - `IsEventFilterEnabled(key)` reads one group's effective flag; `SetEventFilterEnabled(key, enabled)`
+    flips it via `PawnDiarySettings.SetGroupEnabled` (which clears the override when it matches the XML
+    default) and persists with `PawnDiarySettings.Write`. Changes take effect for future events at once
+    (filters are read per event), so no cache invalidation is needed.
+  - Gated by the master **Allow external mod integrations** toggle + main thread, and — like the v2
+    members — not by a loaded game (the flags are global settings). All three never throw and return
+    safe empty/false values when unavailable.
+  - Single source of truth: `EventFilterGroupsForSettings` / `EventFilterLabel` became `internal` and a
+    new `IsSettingsEventFilterGroup` predicate is shared, so the API's exposed set and the Events-tab UI
+    cannot drift. Impl in `Source/Settings/IntegrationApiSettings.cs`; DTO in
+    `Source/Integration/DiaryEventFilterSnapshot.cs`.
+  - Example adapter: the API Explorer gains an **Events** group (*Get event filters*, *toggle first
+    filter*). Docs updated across `INTEGRATIONS.md`, `EXTERNAL_API.md`, and `DOCUMENTATION.md §3.7`.
+
+## 2026-07-07 (Integration API v2 — LLM API setup read + add-lane write)
+
+- **Integration API v2 — read and extend the LLM connection.** `PawnDiaryApi.ApiVersion` is now `2`.
+  Two additive members let an adapter discover and grow the player's LLM API "lanes" (the endpoint/
+  model rows in Pawn Diary's Connection settings):
+  - `GetApiSetup()` returns a `DiaryApiSetupSnapshot`: routing mode, global request knobs
+    (temperature/timeout/maxTokens/concurrency), and one `DiaryApiLaneSnapshot` per lane (url, model,
+    enabled/active, auth + compatibility + reasoning as stable string tokens, `hasApiKey`, and — by
+    design — the player's real `apiKey` so an adapter can reuse the player's provider; documented as a
+    secret that must not be logged, with `hasApiKey` for presence-only checks).
+  - `AddApiLane(ExternalApiLaneRequest)` appends a new lane (only `url` + `model` required); with
+    `enabled=true` (default) it is active at once, persisted via `PawnDiarySettings.Write`, and pushed
+    live to the shared `LlmClient` through `ApplyLaneConfiguration`. Returns an `AddApiLaneResult`
+    (`reason` = `added`/`duplicate`/`missingUrl`/`missingModel`/`invalidRequest`/`offThread`/
+    `ineligible`); `avoidDuplicate` (default on) collapses a matching endpoint+model+auth into the
+    existing lane instead of a second row.
+  - Both are gated by the master **Allow external mod integrations** toggle + main thread, but — unlike
+    the diary reads — do **not** require a loaded game (lanes are global mod settings), so an adapter
+    can configure them at the main menu. New DTOs live in `Source/Integration/`; the impure settings
+    bridge is `Source/Settings/IntegrationApiSettings.cs`; pure token↔enum mapping + add-request
+    validation is `Source/Pipeline/ApiLaneImport.cs`, covered by new `DiaryPipelineTests` cases.
+  - Example adapter: the in-game API Explorer gains a **Connection** group (*Get API setup*, *Add demo
+    lane*); `PawnDiaryExampleApi` shows the wrappers and a `BuildDemoApiLaneRequest` (a local, keyless
+    demo lane). The explorer log models responsible key handling — it prints `hasApiKey`, never the key.
+  - Docs: `INTEGRATIONS.md` (member table + DTO section, now "API reference (v2)"), `EXTERNAL_API.md`,
+    `DOCUMENTATION.md §3.7`, and `design/EXTERNAL_API_CAPABILITIES.md` (first step toward GEN-1).
+
 ## 2026-07-07 (Diary UI low-resolution clamp)
 
 - **Diary tab height now clamps to the screen.** `DiaryUiStyleDef.xml` still owns the preferred

@@ -42,6 +42,7 @@
     <Compile Include="..\..\Source\Pipeline\ApiEndpointPolicy.cs" Link="ApiEndpointPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ModelReasoningCapability.cs" Link="ModelReasoningCapability.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiLaneIdentity.cs" Link="ApiLaneIdentity.cs" />
+    <Compile Include="..\..\Source\Pipeline\ApiLaneImport.cs" Link="ApiLaneImport.cs" />
     <Compile Include="..\..\Source\Pipeline\DiarySentenceExcerpt.cs" Link="DiarySentenceExcerpt.cs" />
     <Compile Include="..\..\Source\Pipeline\ExternalEventRequestText.cs" Link="ExternalEventRequestText.cs" />
     <Compile Include="..\..\Source\Pipeline\ExternalApiBudgetPolicy.cs" Link="ExternalApiBudgetPolicy.cs" />

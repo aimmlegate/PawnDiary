@@ -278,6 +278,64 @@ namespace PawnDiaryExampleAdapter
                     ExplorerState.AppendLog("SetDiaryGenerationEnabled", s, s);
                 }));
 
+            // ── CONNECTION (LLM API setup) ─────────────────────────────────────────────────────
+            list.Add(Leaf("Connection", "GetApiSetup()",
+                "Reads the player's current LLM API setup: routing mode, request knobs, and every configured lane.",
+                (f, r) => { },
+                f =>
+                {
+                    DiaryApiSetupSnapshot setup = PawnDiaryExampleApi.GetApiSetup();
+                    string oneLine = setup == null
+                        ? "null"
+                        : "lanes=" + setup.laneCount + " active=" + setup.activeLaneCount + " routing=" + setup.routingMode;
+                    ExplorerState.AppendLog("GetApiSetup", oneLine, SnapshotFormatter.Format(setup));
+                }));
+
+            list.Add(Leaf("Connection", "AddApiLane(demo)",
+                "Adds a new ACTIVE demo lane (local, keyless) to Pawn Diary's settings. This edits real player settings — remove it in Pawn Diary → Connection when done. Run twice to see the duplicate guard.",
+                (f, r) => { },
+                f =>
+                {
+                    ExternalApiLaneRequest req = PawnDiaryExampleApi.BuildDemoApiLaneRequest();
+                    AddApiLaneResult res = PawnDiaryExampleApi.AddApiLane(req);
+                    string oneLine = "reason=" + res.reason + " index=" + res.index + " active=" + res.active;
+                    ExplorerState.AppendLog("AddApiLane", oneLine, SnapshotFormatter.Format(res));
+                }));
+
+            // ── EVENTS (automatic-capture filters) ─────────────────────────────────────────────
+            list.Add(Leaf("Events", "GetEventFilters()",
+                "Lists the automatic-capture event filters (the settings Events tab), each with its current on/off state.",
+                (f, r) => { },
+                f =>
+                {
+                    List<DiaryEventFilterSnapshot> filters = PawnDiaryExampleApi.GetEventFilters();
+                    string oneLine = "count=" + filters.Count;
+                    ExplorerState.AppendLog("GetEventFilters", oneLine,
+                        SnapshotFormatter.Format(filters as IReadOnlyList<DiaryEventFilterSnapshot>));
+                }));
+
+            list.Add(Leaf("Events", "SetEventFilterEnabled(toggle first)",
+                "Flips the FIRST event filter's on/off state (demo of SetEventFilterEnabled — uses the same saved flag as the Events tab). Run twice to toggle it back.",
+                (f, r) => { },
+                f =>
+                {
+                    List<DiaryEventFilterSnapshot> filters = PawnDiaryExampleApi.GetEventFilters();
+                    if (filters.Count == 0)
+                    {
+                        ExplorerState.AppendLog("SetEventFilterEnabled", "no filters",
+                            "(no event filters available — master switch off, off-thread, or no group data)");
+                        return;
+                    }
+
+                    DiaryEventFilterSnapshot first = filters[0];
+                    bool target = !first.enabled;
+                    bool ok = PawnDiaryExampleApi.SetEventFilterEnabled(first.key, target);
+                    bool now = PawnDiaryExampleApi.IsEventFilterEnabled(first.key);
+                    string oneLine = "key=" + first.key + " set→" + target + " ok=" + ok + " now=" + now;
+                    ExplorerState.AppendLog("SetEventFilterEnabled", oneLine,
+                        oneLine + "\nlabel=" + first.label + "  domain=" + first.domain);
+                }));
+
             // ── SUBMIT EVENT ───────────────────────────────────────────────────────────────────
             list.Add(Leaf("Submit", "SubmitEvent(req)",
                 "Submits a factual event and lets Pawn Diary decide whether to record and write it.",

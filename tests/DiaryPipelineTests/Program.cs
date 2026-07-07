@@ -60,6 +60,7 @@ namespace DiaryPipelineTests
             TestPromptCaptureFormatting();
             TestApiLaneSelector();
             TestApiLaneIdentityAndLabels();
+            TestApiLaneImport();
             TestApiEndpointPolicy();
             TestApiRequestAuth();
             TestPromptSettingsMenuPolicy();
@@ -2889,6 +2890,58 @@ namespace DiaryPipelineTests
                 ApiLaneLabels.Label(" ", " ", ApiCompatibilityMode.OpenAIChatCompletions));
             AssertEqual("trim log makes one line", "first second third",
                 ApiLaneLabels.TrimForLog(" first\nsecond\tthird "));
+        }
+
+        private static void TestApiLaneImport()
+        {
+            // Auth-mode token round-trips, including the legacy header modes that normalize to custom.
+            AssertEqual("auth token bearer", "bearer", ApiLaneImport.AuthModeToken(ApiAuthMode.BearerToken));
+            AssertEqual("auth token none", "none", ApiLaneImport.AuthModeToken(ApiAuthMode.None));
+            AssertEqual("auth token custom", "customHeader", ApiLaneImport.AuthModeToken(ApiAuthMode.CustomHeader));
+            AssertEqual("auth token query", "queryParam", ApiLaneImport.AuthModeToken(ApiAuthMode.QueryParameterKey));
+            AssertEqual("legacy api-key header token maps to custom", "customHeader",
+                ApiLaneImport.AuthModeToken(ApiAuthMode.ApiKeyHeader));
+
+            AssertTrue("parse bearer default", ApiLaneImport.ParseAuthMode("bearer") == ApiAuthMode.BearerToken);
+            AssertTrue("parse none", ApiLaneImport.ParseAuthMode(" NONE ") == ApiAuthMode.None);
+            AssertTrue("parse custom synonym", ApiLaneImport.ParseAuthMode("custom") == ApiAuthMode.CustomHeader);
+            AssertTrue("parse query synonym", ApiLaneImport.ParseAuthMode("queryParameterKey") == ApiAuthMode.QueryParameterKey);
+            AssertTrue("parse unknown falls back to bearer", ApiLaneImport.ParseAuthMode("mystery") == ApiAuthMode.BearerToken);
+
+            // Compatibility-mode tokens.
+            AssertEqual("api mode chat token", "chatCompletions", ApiLaneImport.ApiModeToken(ApiCompatibilityMode.OpenAIChatCompletions));
+            AssertEqual("api mode responses token", "responses", ApiLaneImport.ApiModeToken(ApiCompatibilityMode.OpenAIResponses));
+            AssertTrue("parse responses", ApiLaneImport.ParseApiMode(" Responses ") == ApiCompatibilityMode.OpenAIResponses);
+            AssertTrue("parse api mode default", ApiLaneImport.ParseApiMode("something") == ApiCompatibilityMode.OpenAIChatCompletions);
+
+            // Routing + context-detail override tokens.
+            AssertEqual("routing balanced token", "balanced", ApiLaneImport.RoutingModeToken(ApiLaneRoutingMode.Balanced));
+            AssertEqual("routing prefer-top token", "preferTopRows", ApiLaneImport.RoutingModeToken(ApiLaneRoutingMode.PreferTopRows));
+            AssertEqual("routing failover token", "failoverOnly", ApiLaneImport.RoutingModeToken(ApiLaneRoutingMode.FailoverOnly));
+            AssertEqual("context inherit token", "inherit", ApiLaneImport.ContextDetailOverrideToken(PromptContextDetailOverride.Inherit));
+            AssertEqual("context compact token", "compact", ApiLaneImport.ContextDetailOverrideToken(PromptContextDetailOverride.Compact));
+            AssertTrue("parse context balanced", ApiLaneImport.ParseContextDetailOverride("balanced") == PromptContextDetailOverride.Balanced);
+            AssertTrue("parse context unknown inherits", ApiLaneImport.ParseContextDetailOverride("weird") == PromptContextDetailOverride.Inherit);
+
+            // Add-request validation: url and model are both required.
+            AssertEqual("validate blank url", ApiLaneImport.ReasonMissingUrl, ApiLaneImport.ValidateAddRequest("  ", "gpt-4o-mini"));
+            AssertEqual("validate blank model", ApiLaneImport.ReasonMissingModel, ApiLaneImport.ValidateAddRequest("https://x/v1", " "));
+            AssertEqual("validate ok", ApiLaneImport.ReasonOk, ApiLaneImport.ValidateAddRequest("https://x/v1", "gpt-4o-mini"));
+
+            // Duplicate identity check the add-lane path relies on (ApiLaneIdentity.ForGate): the
+            // normalized endpoint + trimmed model + apiMode + effective auth/key collapse a trailing
+            // slash, a /chat/completions suffix, host casing, model spacing, and a stale no-auth key
+            // into one identity, so two equivalent lanes compare equal.
+            AssertEqual("dup identity ignores url suffix, model spacing, and stale no-auth key",
+                ApiLaneIdentity.ForGate("https://example.test/v1/chat/completions", " gpt ",
+                    ApiCompatibilityMode.OpenAIChatCompletions, ApiAuthMode.None, string.Empty, "old"),
+                ApiLaneIdentity.ForGate("https://EXAMPLE.test/v1/", "gpt",
+                    ApiCompatibilityMode.OpenAIChatCompletions, ApiAuthMode.None, string.Empty, "new"));
+            AssertTrue("different model on the same endpoint is a distinct lane",
+                ApiLaneIdentity.ForGate("https://example.test/v1", "gpt-a",
+                    ApiCompatibilityMode.OpenAIChatCompletions, ApiAuthMode.BearerToken, string.Empty, "k")
+                != ApiLaneIdentity.ForGate("https://example.test/v1", "gpt-b",
+                    ApiCompatibilityMode.OpenAIChatCompletions, ApiAuthMode.BearerToken, string.Empty, "k"));
         }
 
         private static void TestApiRequestAuth()
