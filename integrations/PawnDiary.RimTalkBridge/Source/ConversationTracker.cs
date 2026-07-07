@@ -156,7 +156,14 @@ namespace PawnDiaryRimTalkBridge
                     continue;
                 }
 
-                Submit(conversation, subject, partner, partnerId, transcriptCap, reason, devLog);
+                if (!Submit(conversation, subject, partner, partnerId, transcriptCap, reason, devLog))
+                {
+                    // Pawn Diary rejected the entry (budget, eligibility, dedup, or integrations off), so it
+                    // never became a diary page. Refund the reservation so a rejected attempt does not burn
+                    // the per-pawn/colony cap or the pair gap and suppress a later, valid conversation.
+                    Throttle.Release(subjectId, throttlePartnerId, dayIndex, limits);
+                    DevLog(devLog, "refunded throttle for rejected conversation " + conversation.RootTalkId);
+                }
             }
         }
 
@@ -168,7 +175,9 @@ namespace PawnDiaryRimTalkBridge
             PawnById.Clear();
         }
 
-        private static void Submit(
+        // Returns true when the conversation was handed off (engine mode) or recorded by Pawn Diary, and
+        // false when Pawn Diary rejected it — the caller refunds the throttle reservation on false.
+        private static bool Submit(
             Conversation conversation,
             Pawn subject,
             Pawn partner,
@@ -204,12 +213,15 @@ namespace PawnDiaryRimTalkBridge
                 && RimTalkEngineClient.TryStartEngineSubmit(request, subject, partner))
             {
                 DevLog(devLog, "conversation " + conversation.RootTalkId + " reason=" + reason + " routed to RimTalk engine");
-                return;
+                // The engine owns the async submission from here; treat the reservation as consumed.
+                return true;
             }
 
             DiaryEventSubmissionResult result = PawnDiaryApi.SubmitPromptEntry(request);
+            bool recorded = result != null && result.recorded;
             DevLog(devLog, "submitted conversation " + conversation.RootTalkId + " reason=" + reason
-                + " recorded=" + (result != null && result.recorded));
+                + " recorded=" + recorded);
+            return recorded;
         }
 
         // Returns the participant with the most lines, skipping skipId. First appearance wins ties.

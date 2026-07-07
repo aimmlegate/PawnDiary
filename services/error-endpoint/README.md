@@ -26,7 +26,9 @@ The mod scrubs everything before sending. The body is exactly `ErrorReportPayloa
 }
 ```
 
-No usernames, file paths, save/colony/pawn names, API keys, or diary text ever leave the client.
+The client scrubs usernames in file paths, API keys, and the colony and colonist names before sending,
+and never sends diary text. Because `message` comes from exception text, an unusual message could still
+contain an in-game value the scrubber did not anticipate — treat the field as best-effort-scrubbed.
 
 ## Deploy
 
@@ -38,12 +40,30 @@ npx wrangler login
 # 1. Create the D1 database, then paste the printed database_id into wrangler.toml
 npx wrangler d1 create pawndiary_errors
 
-# 2. Create the tables (remote D1)
-npm run db:init
+# 2. Create/upgrade the tables (remote D1). Idempotent — safe to re-run; only unapplied migrations run.
+npm run db:migrate
 
 # 3. Deploy — prints your endpoint URL, e.g. https://pawndiary-error-endpoint.<you>.workers.dev
 npm run deploy
 ```
+
+Schema lives in ordered files under `migrations/` and is applied with
+[D1 migrations](https://developers.cloudflare.com/d1/reference/migrations/) (`wrangler d1 migrations
+apply`), which tracks what has run in a `d1_migrations` table, so `npm run db:migrate` only applies new
+migrations. Running it against a database created before a column existed adds the column
+(migration `0002` backfills `install_source`); running it against an up-to-date database is a no-op.
+
+> Upgrading a DB where you already added `install_source` by hand? SQLite has no "ADD COLUMN IF NOT
+> EXISTS", so migration `0002` will error with "duplicate column name". Mark it applied
+> (`wrangler d1 migrations apply … ` after inserting a row for it) instead of re-running the ALTER.
+
+### Rate limiting
+
+The endpoint is public and unauthenticated, so `wrangler.toml` binds a per-IP
+[rate limiter](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/)
+(`INGEST_RATE_LIMITER`, 60 requests/minute per client IP). Over-limit POSTs get `429` before any body
+read or DB write, so a script cannot flood D1 with rows. Local `wrangler dev` runs without the binding
+(the Worker skips the check when it is absent). Tune `simple.limit` / `simple.period` in `wrangler.toml`.
 
 Then point the mod at it: set the endpoint constant in
 [`Source/Diagnostics/DiaryErrorReporter.cs`](../../Source/Diagnostics/DiaryErrorReporter.cs) —
@@ -74,7 +94,7 @@ This is noise-filtering, **not** security — the token ships inside the DLL and
 ## Local run + smoke test
 
 ```bash
-npm run db:init:local
+npm run db:migrate:local
 npm run dev            # serves on http://localhost:8787
 
 curl -sS -X POST http://localhost:8787 \

@@ -48,6 +48,9 @@ namespace RimTalkBridgeLogicTests
             TestThrottle_ColonyCap();
             TestThrottle_PairGap();
             TestThrottle_DayRolloverResets();
+            TestThrottle_ReleaseRefundsCaps();
+            TestThrottle_ReleaseClearsPairGap();
+            TestThrottle_ReleaseIsSafeNoop();
 
             // ConversationContext
             TestContext_ExtraContextShape();
@@ -348,6 +351,39 @@ namespace RimTalkBridgeLogicTests
             Assert(t.TryReserve("alice", "", 0, 0, limits), "day 0 entry reserved");
             Assert(!t.TryReserve("alice", "", 1, 0, limits), "day 0 second entry blocked by per-pawn cap");
             Assert(t.TryReserve("alice", "", 60000, 1, limits), "day 1 resets the per-pawn counter");
+        }
+
+        private static void TestThrottle_ReleaseRefundsCaps()
+        {
+            ThrottlePolicy t = new ThrottlePolicy();
+            ThrottleLimits limits = new ThrottleLimits { perPawnDailyCap = 99, colonyDailyCap = 1, pairMinGapTicks = 0 };
+            Assert(t.TryReserve("a", "b", 0, 0, limits), "colony entry reserved");
+            Assert(!t.TryReserve("c", "d", 0, 0, limits), "colony cap blocks a second reservation");
+            t.Release("a", "b", 0, limits);
+            Assert(t.TryReserve("c", "d", 0, 0, limits), "release refunded the colony slot");
+        }
+
+        private static void TestThrottle_ReleaseClearsPairGap()
+        {
+            ThrottlePolicy t = new ThrottlePolicy();
+            ThrottleLimits limits = new ThrottleLimits { perPawnDailyCap = 99, colonyDailyCap = 99, pairMinGapTicks = 100 };
+            Assert(t.TryReserve("a", "b", 0, 0, limits), "pair entry reserved");
+            t.Release("a", "b", 0, limits);
+            // The entry never happened, so the pair is not blocked by its gap on the very next tick.
+            Assert(t.TryReserve("b", "a", 1, 0, limits), "release cleared the pair gap (order-insensitive)");
+        }
+
+        private static void TestThrottle_ReleaseIsSafeNoop()
+        {
+            ThrottlePolicy t = new ThrottlePolicy();
+            ThrottleLimits limits = new ThrottleLimits { perPawnDailyCap = 1, colonyDailyCap = 99, pairMinGapTicks = 0 };
+            // Release without a matching reserve must not underflow into negative headroom.
+            t.Release("alice", "", 0, limits);
+            Assert(t.TryReserve("alice", "", 0, 0, limits), "release-with-nothing left the cap intact (1st ok)");
+            Assert(!t.TryReserve("alice", "", 1, 0, limits), "release-with-nothing added no headroom (2nd blocked)");
+            // A release naming a day that already rolled is ignored (those counters were cleared already).
+            t.Release("alice", "", 5, limits);
+            Assert(!t.TryReserve("alice", "", 2, 0, limits), "stale-day release did not refund day 0");
         }
 
         // ---- ConversationContext -------------------------------------------------

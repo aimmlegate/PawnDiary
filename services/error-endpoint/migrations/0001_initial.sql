@@ -1,6 +1,7 @@
--- D1 (SQLite) schema for the Pawn Diary error endpoint.
--- Apply with:  npm run db:init         (remote)
---          or  npm run db:init:local   (local dev DB)
+-- D1 migration 0001: initial schema for the Pawn Diary error endpoint.
+-- Applied automatically by `npm run db:migrate` (wrangler d1 migrations apply). Uses IF NOT EXISTS so
+-- it is a safe no-op on a database that already has these tables (e.g. one created by the old
+-- schema.sql), letting the follow-up migrations bring it up to date.
 
 -- One row per distinct crash, keyed by fingerprint + mod version. `count` is total occurrences;
 -- distinct installs are counted from error_group_installs (see the triage query in README.md).
@@ -14,12 +15,8 @@ CREATE TABLE IF NOT EXISTS error_groups (
   rimworld_version TEXT,
   os               TEXT,
   active_dlc       TEXT,            -- JSON array string, e.g. ["Royalty","Anomaly"]
-  install_source   TEXT,            -- "workshop", "local", or "unknown" (from the first sighting)
   PRIMARY KEY (fingerprint, mod_version)
 );
--- Additive migration for databases created before install_source existed (safe to re-run; ignore
--- "duplicate column name" if it has already been applied):
---   ALTER TABLE error_groups ADD COLUMN install_source TEXT;
 
 -- One row per (crash, install). PRIMARY KEY makes INSERT OR IGNORE dedupe installs automatically.
 CREATE TABLE IF NOT EXISTS error_group_installs (

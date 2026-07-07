@@ -270,10 +270,15 @@ validation in `Source/Pipeline/ApiLaneImport.cs` (covered by `DiaryPipelineTests
 reads, these operate on **global** mod settings, so they are gated by the main thread and the master
 toggle but **not** by `IsReady` — an adapter can read or configure lanes at the main menu. Public DTOs
 speak stable string tokens (`authMode`, `apiMode`, `routingMode`, `contextDetailOverride`) rather than
-the internal enums. `DiaryApiLaneSnapshot` returns the player's real `apiKey` in full on purpose — so
-an adapter can reuse the player's provider (the "one key serves both mods" case) — which is a
-deliberate exception to the "reads never leak secrets" rule; it is a secret adapters must not log, and
-`hasApiKey` is provided for presence-only checks.
+the internal enums. `DiaryApiLaneSnapshot` can return the player's real `apiKey` — so an adapter can
+reuse the player's provider (the "one key serves both mods" case) — but because **any** loaded mod can
+call `GetApiSetup()`, the raw key is **withheld by default**: it is included only when the player opts
+in with the separate **Share API keys with other mods** checkbox (`enableExternalKeySharing`, default
+`false`), surfaced on the snapshot as `keySharingEnabled`. When off, `apiKey` is empty and `hasApiKey`
+still reports presence. The master integration toggle governs event/context/lane access; sharing a
+plaintext key is a strictly higher-trust action on its own switch. `AddApiLane` records the requesting
+mod's `sourceId` on the lane (`addedBySourceId`, echoed in the snapshot) so an API-injected lane stays
+attributable rather than indistinguishable from a hand-added row.
 
 API v3 (`ApiVersion` `2 → 3`) exposes the automatic-capture **event filters** — the per-interaction-
 group on/off toggles on the settings *Events* tab. `GetEventFilters()` returns a
@@ -1216,9 +1221,12 @@ code can run off-thread. (The **Fetch models** button on the same screen is stil
 ### 8.1 Error reporting (opt-out)
 
 Optional, **on by default** crash telemetry that reports **only the errors this mod raises** so bugs
-can be found and fixed. There is no first-run prompt; the player turns it off with the
-**Send anonymous error reports** checkbox on the main settings tab (`enableErrorReporting`, default
-`true`). Lives under `Source/Diagnostics/`.
+can be found and fixed. The player turns it off with the **Send anonymous error reports** checkbox on
+the main settings tab (`enableErrorReporting`, default `true`). A one-time informational notice
+(`DiaryGameComponent.MaybeShowErrorReportingNotice`, shown from the first `LoadedGame`/`StartedNewGame`
+and gated by the persisted `errorReportingNoticeShown` flag) tells the player it is on and offers a
+**Turn it off** button, so "on by default" is disclosed rather than silent. Lives under
+`Source/Diagnostics/`.
 
 - **Capture.** `DiaryLogReportPatch` is a Harmony postfix on `Verse.Log.Error` / `Log.ErrorOnce`
   (registered via `DiaryPatchRegistrar`). It forwards a message only when it starts with the mod's
@@ -1233,21 +1241,34 @@ can be found and fixed. There is no first-run prompt; the player turns it off wi
   dedupe resets in the `DiaryGameComponent` ctor alongside `LlmClient.BeginSession()`.
 - **Privacy (pure, tested).** `ErrorScrub` masks the username segment of any file path, redacts the
   configured API keys/endpoint URLs (passed in) plus `Bearer`/`key=`/`sk-` shapes (reusing
-  `ApiLaneLabels.RedactSecrets`), and caps length. `ErrorFingerprint` is a deterministic FNV-1a over
-  the normalized stack (line numbers/addresses blanked) so the same crash groups across machines.
-  `ErrorReportPayload` builds the wire JSON by hand (no serializer in Mono). The payload carries only:
-  schema version, mod version (stamped into the assembly from `About.xml` at build time by the
-  `StampVersionFromAbout` target in `PawnDiary.csproj`, so `About.xml` is the single source of truth),
-  RimWorld version, active DLC, coarse OS string, install source (`workshop`/`local`, from
-  `InstallSource.FromRootDir` on our `ModContentPack.RootDir`), an **anonymous random install GUID**
-  (`errorReportInstallId`, not a machine/hardware id), the fingerprint, a UTC timestamp, and the
-  scrubbed message — never a username, path, save/colony/pawn name, API key, or diary text. The pure
-  helpers (scrub, fingerprint, payload, install-source) are covered by `tests/DiaryPipelineTests`.
+  `ApiLaneLabels.RedactSecrets`), and caps length. As defense in depth against a future error site that
+  interpolates a name, `DiaryGameComponent.MaybeRefreshErrorRedactionNames` publishes the live colony
+  and colonist names to the reporter on a coarse tick cadence (main-thread read, `volatile` array); the
+  reporter feeds them through the same exact-substring redaction as the configured secrets. Today's
+  `[Pawn Diary]` error sites embed exceptions/defNames, not names, so this is belt-and-suspenders.
+  `ErrorFingerprint` is a deterministic FNV-1a over the normalized stack (line numbers/addresses
+  blanked) so the same crash groups across machines. `ErrorReportPayload` builds the wire JSON by hand
+  (no serializer in Mono). The payload carries only: schema version, mod version (stamped into the
+  assembly from `About.xml` at build time by the `StampVersionFromAbout` target in `PawnDiary.csproj`,
+  so `About.xml` is the single source of truth), RimWorld version, active DLC, coarse OS string, install
+  source (`workshop`/`local`, classified once on the main thread in the mod ctor via
+  `DiaryErrorReporter.CacheInstallSource` so the send thread never reads `ModContentPack`), an
+  **anonymous random install GUID** (`errorReportInstallId`, generated **and persisted** once on the
+  main thread by `EnsureErrorReportInstallIdPersisted` in the mod ctor, so it is stable across sessions
+  and not a machine/hardware id), the fingerprint, a UTC timestamp, and the scrubbed message. Because
+  the message comes from exception text, it is scrubbed best-effort — an unusual message could still
+  carry an unanticipated in-game value. The pure helpers (scrub, fingerprint, payload, install-source)
+  are covered by `tests/DiaryPipelineTests`.
 - **Endpoint (deployed).** `POST {ErrorReportEndpoint}`, `Content-Type: application/json`, body =
   `ErrorReportPayload.ToJson`. The receiver is a Cloudflare Worker + D1 in `services/error-endpoint/`
   that validates/size-clamps the body and folds it into per-fingerprint and distinct-install
   aggregates (including `install_source`), with a daily cron retention prune; `schemaVersion` lets the
-  shape evolve.
+  shape evolve. The endpoint is public and unauthenticated, so a per-IP rate limiter binding
+  (`INGEST_RATE_LIMITER`, 60/min) rejects floods with `429` before any DB write. The D1 schema is
+  applied via **D1 migrations** (`migrations/`, `npm run db:migrate`) rather than a one-shot
+  `schema.sql`, so re-running is idempotent and a database created before a column existed is upgraded
+  in place (migration `0002` backfills `install_source`) — a fresh clone can no longer silently drop
+  reports against an out-of-date DB.
 
 ## 9. Save Data And Compatibility
 

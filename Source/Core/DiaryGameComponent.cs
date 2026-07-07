@@ -266,6 +266,7 @@ namespace PawnDiary
             ResetDaySummaryState();
             ResetThoughtProgressionState(false);
             ResetHediffProgressionState(true);
+            MaybeShowErrorReportingNotice();
         }
 
         public override void LoadedGame()
@@ -309,6 +310,7 @@ namespace PawnDiary
             ResetHediffProgressionState(true);
             RunRequestedGenerationScan();
             QueueMissingTitles();
+            MaybeShowErrorReportingNotice();
         }
 
         public override void ExposeData()
@@ -426,6 +428,7 @@ namespace PawnDiary
             try
             {
                 GameComponentTickInner();
+                MaybeRefreshErrorRedactionNames();
             }
             catch (Exception e)
             {
@@ -454,6 +457,105 @@ namespace PawnDiary
                 Log.ErrorOnce("[Pawn Diary] GameComponentUpdate LLM drain failed and was skipped: " + e,
                     "DiaryGameComponent.GameComponentUpdate".GetHashCode());
             }
+        }
+
+        // ── Error-reporter support (see DiaryErrorReporter) ──────────────────────────────────────────
+        // Coarse cadence for republishing colony/colonist names to the error scrubber. ~1 in-game hour;
+        // names change slowly (recruits, renames), so this need not be frequent.
+        private const int ErrorRedactionNamesRefreshInterval = 2500;
+        // Safety cap so a very large colony cannot build an unbounded redaction list each refresh.
+        private const int ErrorRedactionNamesMax = 200;
+        // Instance field (one component per Game) so each loaded game starts refreshing from its own tick.
+        private int nextErrorRedactionNamesRefreshTick;
+
+        /// <summary>
+        /// Periodically publishes the colony name and colonist names to <see cref="DiaryErrorReporter"/>
+        /// so the scrubber can redact any that surface in an outgoing error message. Runs on the main
+        /// thread (reads live pawn/faction state); the reporter consumes the published copy off-thread.
+        /// </summary>
+        private void MaybeRefreshErrorRedactionNames()
+        {
+            int now = Find.TickManager != null ? Find.TickManager.TicksGame : 0;
+            if (now < nextErrorRedactionNamesRefreshTick)
+            {
+                return;
+            }
+
+            nextErrorRedactionNamesRefreshTick = now + ErrorRedactionNamesRefreshInterval;
+
+            List<string> names = new List<string>();
+            Faction player = Faction.OfPlayerSilentFail;
+            if (player != null && !string.IsNullOrWhiteSpace(player.Name))
+            {
+                names.Add(player.Name);
+            }
+
+            foreach (Pawn pawn in PawnsFinder.AllMaps_FreeColonists)
+            {
+                if (names.Count >= ErrorRedactionNamesMax)
+                {
+                    break;
+                }
+
+                if (pawn == null)
+                {
+                    continue;
+                }
+
+                if (pawn.Name != null)
+                {
+                    names.Add(pawn.Name.ToStringFull);
+                }
+
+                string shortName = pawn.LabelShort;
+                if (!string.IsNullOrWhiteSpace(shortName))
+                {
+                    names.Add(shortName);
+                }
+            }
+
+            DiaryErrorReporter.UpdateRedactionNames(names);
+        }
+
+        /// <summary>
+        /// Shows a one-time informational notice that opt-out error reporting is on by default, with a
+        /// button to turn it off. Persisted flag makes it appear once per install; the dialog is deferred
+        /// until the load long-event finishes so the window stack is ready.
+        /// </summary>
+        private void MaybeShowErrorReportingNotice()
+        {
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            if (settings == null || settings.errorReportingNoticeShown)
+            {
+                return;
+            }
+
+            // Mark shown + persist up front so the notice never reappears even if the dialog is dismissed
+            // without pressing a button, or fails to open at all.
+            settings.errorReportingNoticeShown = true;
+            settings.Write();
+
+            LongEventHandler.ExecuteWhenFinished(() =>
+            {
+                try
+                {
+                    Dialog_MessageBox dialog = new Dialog_MessageBox(
+                        "PawnDiary.ErrorReporting.NoticeText".Translate(),
+                        "PawnDiary.ErrorReporting.NoticeKeepOn".Translate(), null,
+                        "PawnDiary.ErrorReporting.NoticeTurnOff".Translate(),
+                        () =>
+                        {
+                            settings.enableErrorReporting = false;
+                            settings.Write();
+                        },
+                        "PawnDiary.ErrorReporting.NoticeTitle".Translate());
+                    Find.WindowStack.Add(dialog);
+                }
+                catch (Exception e)
+                {
+                    Log.Warning("[Pawn Diary] Failed to show error-reporting notice: " + e);
+                }
+            });
         }
 
         private void GameComponentTickInner()

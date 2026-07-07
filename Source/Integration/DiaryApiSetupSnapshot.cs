@@ -36,6 +36,10 @@ namespace PawnDiary.Integration
         /// <summary>Number of lanes that actually participate in generation (enabled + url + model).</summary>
         public int activeLaneCount;
 
+        /// <summary>True when the player opted into sharing raw API keys with other mods. When false,
+        /// each lane's apiKey is empty (hasApiKey still reports whether a key is set). Default is false.</summary>
+        public bool keySharingEnabled;
+
         /// <summary>The configured lanes, in the player's list order (also the failover order). Never
         /// null; an independent copy, so mutating game state after the read does not change it.</summary>
         public List<DiaryApiLaneSnapshot> lanes = new List<DiaryApiLaneSnapshot>();

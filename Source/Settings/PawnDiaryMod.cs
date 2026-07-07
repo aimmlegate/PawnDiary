@@ -95,6 +95,13 @@ namespace PawnDiary
             Settings = GetSettings<PawnDiarySettings>();
             apiConnectionController = new ApiConnectionController(() => Settings);
             LlmClient.ApplyDebugLoggingSetting();
+            // Classify the install source (Workshop vs local) here on the main thread so the error
+            // reporter never reads the RimWorld ModContent object from its background send thread.
+            DiaryErrorReporter.CacheInstallSource(content?.RootDir);
+            // Generate and persist the anonymous install id once, now, on the main thread. Doing it here
+            // (rather than lazily off-thread inside the reporter, which never wrote it) keeps one stable
+            // id per install so the server's distinct-install crash counts stay accurate.
+            Settings.EnsureErrorReportInstallIdPersisted();
         }
 
         /// <summary>Returns the title shown in the RimWorld mod-settings list.</summary>

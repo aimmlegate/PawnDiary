@@ -6,6 +6,39 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-07 (adversarial-review hardening: keys, telemetry, ingest, throttle)
+
+Fixes for the adversarial review of the day's changes (privacy/security-weighted).
+
+- **API keys no longer leak to other mods by default (H1).** `GetApiSetup()` returned every lane's
+  plaintext `apiKey` to any loaded caller, gated only by the default-on integration toggle. Raw keys are
+  now withheld unless the player enables the new, default-**off** **Share API keys with other mods**
+  switch (`enableExternalKeySharing`); the snapshot reports `keySharingEnabled` and always exposes
+  `hasApiKey` for presence-only checks. `AddApiLane` now records the requesting mod's `sourceId` on the
+  lane (`addedBySourceId`) so API-injected lanes stay attributable.
+- **Error-scrubber contract now matches reality (H2).** The disclosure promised pawn/colony names were
+  never sent, but `ErrorScrub` only masked path usernames + key shapes. Corrected the EN/RU tooltips,
+  and added defense-in-depth: `DiaryGameComponent.MaybeRefreshErrorRedactionNames` publishes live
+  colony/colonist names (main thread) that the reporter redacts via the existing exact-substring path.
+- **One-time telemetry notice (M2).** Opt-out reporting is on by default; a one-time in-game notice now
+  discloses it and offers a **Turn it off** button (`errorReportingNoticeShown`).
+- **Stable install id (M4).** The anonymous install GUID is now generated **and persisted** once on the
+  main thread in the mod ctor (`EnsureErrorReportInstallIdPersisted`), so a player who never opened
+  settings no longer minted a fresh id each run and inflated distinct-install counts.
+- **Install source read on the main thread (L5).** Classified once in the ctor
+  (`DiaryErrorReporter.CacheInstallSource`); the background send thread no longer touches `ModContentPack`.
+- **Endpoint: rate limiting + real migrations (H3, M1).** Added a per-IP rate-limit binding
+  (`INGEST_RATE_LIMITER`, 60/min → `429`) so the public, unauthenticated endpoint can't be flooded into
+  unbounded D1 rows. Replaced the one-shot `schema.sql` with **D1 migrations** (`migrations/`,
+  `npm run db:migrate`); `0002` backfills `install_source`, so an out-of-date DB is upgraded in place
+  instead of silently dropping every report.
+- **RimTalk bridge: refund rejected submissions (M3).** The bridge reserved its conversation throttle
+  before submitting but never refunded when Pawn Diary rejected the entry (budget/dedup/eligibility/API
+  off), so a rejected attempt burned the per-pawn/colony cap and pair gap and suppressed later valid
+  conversations. Added a pure `ThrottlePolicy.Release` (with tests) and refund it on rejection.
+- **Verification.** Debug MSBuild (mod + RimTalk bridge) clean; `RimTalkBridgeLogicTests` 72 passed,
+  `DiaryPipelineTests` 862 assertions; Worker `npm run typecheck` clean.
+
 ## 2026-07-07 (error reporter: real version + Workshop-vs-local source)
 
 - **Report the real mod version.** The error reporter previously sent the assembly version

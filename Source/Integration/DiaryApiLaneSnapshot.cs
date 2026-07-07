@@ -6,10 +6,10 @@
 // exposed as stable STRING TOKENS (see ApiLaneImport) so the contract does not break if an internal
 // enum is renamed.
 //
-// SECURITY: apiKey is the player's real, plaintext API key. Pawn Diary returns it in full on purpose
-// (so an adapter can reuse the player's provider), but treat it as a secret — never log it, never
-// send it anywhere the player did not intend. Use hasApiKey when you only need to know whether a key
-// is set.
+// SECURITY: apiKey is the player's real, plaintext API key. It is returned ONLY when the player has
+// opted into key sharing (DiaryApiSetupSnapshot.keySharingEnabled); otherwise it is empty even when
+// hasApiKey is true. When present, treat it as a secret — never log it, never send it anywhere the
+// player did not intend. Use hasApiKey when you only need to know whether a key is set.
 //
 // New to C#/RimWorld? See AGENTS.md.
 namespace PawnDiary.Integration
@@ -59,10 +59,15 @@ namespace PawnDiary.Integration
         public bool hasApiKey;
 
         /// <summary>
-        /// The player's real, plaintext API key for this lane (empty when none). SENSITIVE: never log
-        /// or forward this. It is exposed so an adapter can reuse the player's provider; that is the
-        /// only intended use.
+        /// The player's real, plaintext API key for this lane. Empty unless the player opted into key
+        /// sharing (see DiaryApiSetupSnapshot.keySharingEnabled) — so an empty value here with hasApiKey
+        /// true means "a key is set but not shared", not "no key". SENSITIVE: never log or forward this.
+        /// It is exposed so an adapter can reuse the player's provider; that is the only intended use.
         /// </summary>
         public string apiKey = string.Empty;
+
+        /// <summary>The integration sourceId of the mod that added this lane through the public API, or
+        /// empty for a lane the player configured by hand. Attribution only; does not affect behavior.</summary>
+        public string addedBySourceId = string.Empty;
     }
 }

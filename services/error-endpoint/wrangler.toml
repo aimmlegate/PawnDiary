@@ -12,11 +12,24 @@ RETENTION_DAYS = "90"
 
 # D1 binding used as `env.DB` in the Worker.
 # Create the database with `npx wrangler d1 create pawndiary_errors`, then paste the printed
-# database_id below (it is not a secret).
+# database_id below (it is not a secret). `migrations_dir` is applied by `npm run db:migrate`
+# (wrangler d1 migrations apply) — the ordered files under migrations/ create the tables and add later
+# columns idempotently, so both a fresh DB and one from an earlier schema converge.
 [[d1_databases]]
 binding = "DB"
 database_name = "pawndiary_errors"
 database_id = "35100bba-6753-46a0-b653-7d6b4082f504"
+migrations_dir = "migrations"
+
+# Per-IP rate limiter (Cloudflare rate limiting, open beta) surfaced as `env.INGEST_RATE_LIMITER`.
+# The ingest endpoint is public and unauthenticated, so this caps how fast one client can create rows.
+# `simple.limit` requests per `simple.period` seconds (period must be 10 or 60). namespace_id is an
+# arbitrary unique number per limiter in this account.
+[[unsafe.bindings]]
+name = "INGEST_RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 60, period = 60 }
 
 # Optional shared token gate. To enable, run `npx wrangler secret put INGEST_TOKEN` (do NOT commit it),
 # and send the same value from the mod in the X-PawnDiary-Token header. It only filters random

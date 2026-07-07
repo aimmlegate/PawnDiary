@@ -19,8 +19,10 @@ namespace PawnDiary
     {
         /// <summary>
         /// Builds a prompt-free snapshot of the current LLM API setup: global request knobs plus one
-        /// lane snapshot per configured endpoint row. Never null. The per-lane apiKey is copied in full
-        /// on purpose (see DiaryApiLaneSnapshot's security note); callers are gated by the master toggle.
+        /// lane snapshot per configured endpoint row. Never null. The raw per-lane apiKey is included ONLY
+        /// when the player has opted into key sharing (PawnDiarySettings.enableExternalKeySharing); every
+        /// snapshot still reports hasApiKey so an adapter can see a key is set without receiving it. See
+        /// DiaryApiLaneSnapshot's security note.
         /// </summary>
         public static DiaryApiSetupSnapshot BuildSetupSnapshot(PawnDiarySettings settings)
         {
@@ -29,6 +31,12 @@ namespace PawnDiary
             {
                 return snapshot;
             }
+
+            // Sharing a plaintext provider key is gated on its own opt-in, separate from the master
+            // integration toggle: any loaded mod can call GetApiSetup, so the raw key is withheld unless
+            // the player deliberately enabled sharing.
+            bool shareKeys = settings.enableExternalKeySharing;
+            snapshot.keySharingEnabled = shareKeys;
 
             // Normalizes routing mode + backfills a default row so what we report matches what would
             // actually be used (the same call the settings window makes before drawing).
@@ -73,7 +81,8 @@ namespace PawnDiary
                     reasoningTag = e.reasoningTag ?? string.Empty,
                     contextDetailOverride = ApiLaneImport.ContextDetailOverrideToken(e.contextDetailOverride),
                     hasApiKey = !string.IsNullOrEmpty(e.apiKey),
-                    apiKey = e.apiKey ?? string.Empty
+                    apiKey = shareKeys ? (e.apiKey ?? string.Empty) : string.Empty,
+                    addedBySourceId = e.addedBySourceId ?? string.Empty
                 });
             }
 
@@ -170,7 +179,11 @@ namespace PawnDiary
                 apiMode = apiMode,
                 reasoningEffort = reasoningEffort,
                 reasoningTag = reasoningTag,
-                contextDetailOverride = contextOverride
+                contextDetailOverride = contextOverride,
+                // Persist the requesting mod's id so an API-injected lane stays attributable (blank for a
+                // hand-added row). This does not gate anything; it keeps injected config from being silently
+                // indistinguishable from the player's own.
+                addedBySourceId = (request.sourceId ?? string.Empty).Trim()
             };
             settings.apiEndpoints.Add(lane);
             int index = settings.apiEndpoints.Count - 1;

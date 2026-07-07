@@ -58,6 +58,17 @@ namespace PawnDiary
         private static int uniqueDispatched;
         private static int inFlight;
 
+        // Install source classified once on the main thread (see CacheInstallSource). Report() can run on
+        // any thread, so it reads this cached string instead of touching the RimWorld ModContent object
+        // off-thread. `volatile` guarantees the worker thread sees the value the ctor published.
+        private static volatile string cachedInstallSource;
+
+        // Live in-game names (colony + colonists) published from the main thread by the game component,
+        // so the scrubber can redact any that happen to surface inside an exception message. This is
+        // defense in depth: the mod's own error text is exception/def data today, but a future message
+        // could interpolate a name. `volatile` reference swap = readers always see one whole array.
+        private static volatile string[] redactionNames = new string[0];
+
         /// <summary>
         /// Scrubs, deduplicates, and (best-effort) sends one raw error string. Safe to call from any
         /// thread. No-ops when reporting is off, the endpoint is unset, or caps are hit. Never throws.
@@ -115,6 +126,58 @@ namespace PawnDiary
             seenFingerprints.Clear();
             Interlocked.Exchange(ref uniqueDispatched, 0);
             Interlocked.Exchange(ref inFlight, 0);
+            // Drop the previous game's colony/colonist names; the new game republishes its own on tick.
+            redactionNames = new string[0];
+        }
+
+        /// <summary>
+        /// Records the mod install location (Workshop vs local) once, on the main thread. Classifying it
+        /// here — rather than in <see cref="Report"/>, which can run on any thread — keeps the only read
+        /// of the RimWorld ModContent object on the main thread. Called from the mod constructor.
+        /// </summary>
+        public static void CacheInstallSource(string rootDir)
+        {
+            try
+            {
+                cachedInstallSource = InstallSource.FromRootDir(rootDir);
+            }
+            catch
+            {
+                cachedInstallSource = InstallSource.Unknown;
+            }
+        }
+
+        /// <summary>
+        /// Publishes the current colony and colonist names so the scrubber can redact them from outgoing
+        /// error text. MUST be called from the main thread (it is handed live name strings the caller
+        /// already read from game state); the reporter reads the published array off-thread. A null or
+        /// empty list clears the set. Never throws.
+        /// </summary>
+        public static void UpdateRedactionNames(IEnumerable<string> names)
+        {
+            try
+            {
+                if (names == null)
+                {
+                    redactionNames = new string[0];
+                    return;
+                }
+
+                List<string> list = new List<string>();
+                foreach (string name in names)
+                {
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        list.Add(name);
+                    }
+                }
+
+                redactionNames = list.ToArray();
+            }
+            catch
+            {
+                // Keep the previous set on any unexpected failure — never destabilize the caller.
+            }
         }
 
         /// <summary>
@@ -153,6 +216,15 @@ namespace PawnDiary
             catch
             {
                 // Ignore — shape-based redaction in ErrorScrub still masks bearer tokens/keys.
+            }
+
+            // Colony/colonist names published from the main thread (see UpdateRedactionNames). ErrorScrub
+            // treats every secret as an exact-substring redaction (and already ignores values shorter than
+            // four characters), so short names never cause pathological over-redaction.
+            string[] names = redactionNames;
+            if (names != null && names.Length > 0)
+            {
+                secrets.AddRange(names);
             }
 
             return secrets;
@@ -228,7 +300,15 @@ namespace PawnDiary
         {
             try
             {
-                // ModContent is captured in the PawnDiaryMod ctor; its RootDir tells Workshop from local.
+                // Prefer the value classified on the main thread in the ctor (see CacheInstallSource), so
+                // this off-thread path does not read the RimWorld ModContent object. Fall back to a direct
+                // read only if the cache was never populated (e.g. an error before the ctor cached it).
+                string cached = cachedInstallSource;
+                if (!string.IsNullOrEmpty(cached))
+                {
+                    return cached;
+                }
+
                 return InstallSource.FromRootDir(PawnDiaryMod.ModContent?.RootDir);
             }
             catch

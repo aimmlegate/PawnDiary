@@ -42,6 +42,10 @@ namespace PawnDiary
         public string reasoningTag = PawnDiarySettings.DefaultReasoningTag;
         // Optional prompt-context detail override for this lane. Inherit preserves the global setting.
         public PromptContextDetailOverride contextDetailOverride = PromptContextDetailOverride.Inherit;
+        // Attribution for a lane added through the public integration API: the requesting mod's sourceId
+        // (empty for a lane the player added by hand). Persisted so an API-injected lane stays traceable
+        // and is never silently indistinguishable from a hand-added row. See IntegrationApiSettings.AddLane.
+        public string addedBySourceId = string.Empty;
 
         public ApiEndpointConfig()
         {
@@ -68,7 +72,8 @@ namespace PawnDiary
                 apiMode = apiMode,
                 reasoningEffort = reasoningEffort,
                 reasoningTag = reasoningTag,
-                contextDetailOverride = contextDetailOverride
+                contextDetailOverride = contextDetailOverride,
+                addedBySourceId = addedBySourceId
             };
         }
 
@@ -85,6 +90,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref reasoningEffort, "reasoningEffort", PawnDiarySettings.DefaultReasoningEffort);
             Scribe_Values.Look(ref reasoningTag, "reasoningTag", PawnDiarySettings.DefaultReasoningTag);
             Scribe_Values.Look(ref contextDetailOverride, "contextDetailOverride", PromptContextDetailOverride.Inherit);
+            Scribe_Values.Look(ref addedBySourceId, "addedBySourceId", string.Empty);
         }
     }
 
@@ -143,6 +149,12 @@ namespace PawnDiary
         // Master switch for public integration API behavior. Registration remains harmless while this
         // is off, but external submissions, reads, and provider invocations no-op.
         public bool allowExternalIntegrations = true;
+        // Separate, default-OFF opt-in for handing the player's raw API keys to other mods through the
+        // integration API (DiaryApiSetupSnapshot). The master toggle above governs event/context/lane
+        // access; sharing a plaintext provider key is a strictly higher-trust action, so it is gated on
+        // its own switch the player must deliberately enable. When off, GetApiSetup reports hasApiKey but
+        // returns an empty apiKey. See IntegrationApiSettings.BuildSetupSnapshot / DiaryApiLaneSnapshot.
+        public bool enableExternalKeySharing = false;
         // Opt-out crash reporting. When true (default), errors THIS mod raises are scrubbed of all
         // personal data and sent to a remote endpoint so bugs can be found and fixed. There is no
         // first-run prompt; the player turns it off here. See DiaryErrorReporter for what is/isn't sent.
@@ -150,6 +162,9 @@ namespace PawnDiary
         // Anonymous, random per-install id attached to error reports so repeats from one install can be
         // grouped. Generated once by EnsureErrorReportInstallId; never a machine/user/hardware id.
         public string errorReportInstallId = string.Empty;
+        // Whether the one-time "error reporting is on by default" notice has been shown. Persisted so the
+        // informational opt-out prompt appears exactly once per install, not on every game load.
+        public bool errorReportingNoticeShown = false;
         // Disabled compatibility field. Old configs may have this set, but the Social-log injection
         // path is hidden and forced off because RimWorld accepts the row without reliably showing it.
         public bool injectGeneratedSpeechToPlayLog;
@@ -241,8 +256,10 @@ namespace PawnDiary
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
             Scribe_Values.Look(ref contextDetailLevel, "contextDetailLevel", PromptContextDetailLevel.Full);
             Scribe_Values.Look(ref allowExternalIntegrations, "allowExternalIntegrations", true);
+            Scribe_Values.Look(ref enableExternalKeySharing, "enableExternalKeySharing", false);
             Scribe_Values.Look(ref enableErrorReporting, "enableErrorReporting", true);
             Scribe_Values.Look(ref errorReportInstallId, "errorReportInstallId", string.Empty);
+            Scribe_Values.Look(ref errorReportingNoticeShown, "errorReportingNoticeShown", false);
             Scribe_Values.Look(ref injectGeneratedSpeechToPlayLog, "injectGeneratedSpeechToPlayLog", false);
             Scribe_Values.Look(ref systemPromptOverride, "systemPromptOverride", string.Empty);
             Scribe_Values.Look(ref systemPromptReflectionOverride, "systemPromptReflectionOverride", string.Empty);
@@ -283,6 +300,23 @@ namespace PawnDiary
             }
 
             return errorReportInstallId;
+        }
+
+        /// <summary>
+        /// Main-thread startup helper: generates the install id if missing and persists it immediately, so
+        /// the same value survives across sessions. Without this, the id was generated lazily off-thread by
+        /// the reporter but never written, so a player who never opened settings got a fresh id each run —
+        /// inflating the server's distinct-install counts. Call once from the mod constructor.
+        /// </summary>
+        public void EnsureErrorReportInstallIdPersisted()
+        {
+            if (!string.IsNullOrEmpty(errorReportInstallId))
+            {
+                return;
+            }
+
+            EnsureErrorReportInstallId();
+            Write();
         }
 
         /// <summary>

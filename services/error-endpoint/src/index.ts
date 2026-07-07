@@ -8,13 +8,22 @@
 // It always answers fast and never asks the client to retry (a failed store still returns 204), so a
 // bug in the endpoint can never turn into a retry storm from thousands of games.
 
+// Minimal shape of Cloudflare's rate-limiting binding (open beta). Declared locally so the build does
+// not depend on the binding type being exported by the pinned @cloudflare/workers-types.
+interface RateLimiter {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
 export interface Env {
-  // D1 database binding (see wrangler.toml). Holds the two tables from schema.sql.
+  // D1 database binding (see wrangler.toml). Holds the two tables from the migrations/ folder.
   DB: D1Database;
   // Optional shared token. When set (via `wrangler secret put INGEST_TOKEN`), requests must send it
   // in the X-PawnDiary-Token header. NOTE: this is noise-filtering, not real auth — the token would
   // ship inside the mod DLL and is trivially extractable. Leave unset to accept unauthenticated POSTs.
   INGEST_TOKEN?: string;
+  // Per-IP rate limiter (see wrangler.toml [[unsafe.bindings]]). Optional so local `wrangler dev` runs
+  // without the binding still work; when present, POSTs over the limit get 429 before touching D1.
+  INGEST_RATE_LIMITER?: RateLimiter;
   // Retention window in days for the cron cleanup (see wrangler.toml [vars]). Default 90.
   RETENTION_DAYS?: string;
 }
@@ -69,6 +78,17 @@ export default {
     if (env.INGEST_TOKEN) {
       if (request.headers.get("X-PawnDiary-Token") !== env.INGEST_TOKEN) {
         return json({ error: "forbidden" }, 403);
+      }
+    }
+
+    // Per-IP rate limit (defense in depth: the client self-limits, but the endpoint is public and
+    // unauthenticated, so a script could otherwise flood D1 with distinct rows). Keyed by the
+    // Cloudflare-provided client IP; over-limit requests are rejected before any body read or DB write.
+    if (env.INGEST_RATE_LIMITER) {
+      const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+      const { success } = await env.INGEST_RATE_LIMITER.limit({ key: ip });
+      if (!success) {
+        return json({ error: "rate_limited" }, 429);
       }
     }
 

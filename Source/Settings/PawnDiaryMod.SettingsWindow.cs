@@ -205,6 +205,12 @@ namespace PawnDiary
                     "PawnDiary.Settings.AllowExternalIntegrations".Translate(),
                     ref Settings.allowExternalIntegrations,
                     "PawnDiary.Settings.AllowExternalIntegrationsTip".Translate());
+                // Only meaningful while integrations are allowed; the key-sharing opt-in is a strictly
+                // higher-trust switch, so keep it visually subordinate but always visible for clarity.
+                listing.CheckboxLabeled(
+                    "PawnDiary.Settings.EnableExternalKeySharing".Translate(),
+                    ref Settings.enableExternalKeySharing,
+                    "PawnDiary.Settings.EnableExternalKeySharingTip".Translate());
                 listing.CheckboxLabeled(
                     "PawnDiary.Settings.EnableErrorReporting".Translate(),
                     ref Settings.enableErrorReporting,

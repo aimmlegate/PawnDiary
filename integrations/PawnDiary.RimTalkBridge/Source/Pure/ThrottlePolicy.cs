@@ -97,6 +97,46 @@ namespace PawnDiaryRimTalkBridge
             return true;
         }
 
+        /// <summary>
+        /// Reverses a prior successful <see cref="TryReserve"/> for the same ids on the same day, for when
+        /// the downstream submission was rejected and the entry never materialized. Decrements the colony
+        /// and per-pawn day counts (never below zero) and clears the pair-gap marker so the pair is not
+        /// blocked by an entry that did not happen. A no-op if the day has since rolled (those counters were
+        /// already cleared). Pass the partner id as "" for a solo reservation.
+        /// </summary>
+        public void Release(string idA, string idB, int dayIndex, ThrottleLimits limits)
+        {
+            if (limits == null || string.IsNullOrEmpty(idA))
+            {
+                return;
+            }
+
+            // If the day already rolled since the reservation, RollDayIfNeeded already cleared the day
+            // counters, so there is nothing to refund. Do NOT roll the day here — release must not mutate
+            // the current-day marker.
+            if (!haveDay || dayIndex != currentDay)
+            {
+                return;
+            }
+
+            string partner = idB ?? string.Empty;
+
+            if (colonyToday > 0)
+            {
+                colonyToday--;
+            }
+
+            Decrement(idA);
+            if (partner.Length > 0)
+            {
+                Decrement(partner);
+            }
+
+            // Remove rather than restore the previous tick: the entry did not happen, so there is no
+            // reason to enforce a pair gap measured from it.
+            lastTickByPair.Remove(PairKey(idA, partner));
+        }
+
         /// <summary>Clears all counters. Used on new-game reset.</summary>
         public void Reset()
         {
@@ -133,6 +173,25 @@ namespace PawnDiaryRimTalkBridge
         {
             int count;
             perPawnToday[id] = (perPawnToday.TryGetValue(id, out count) ? count : 0) + 1;
+        }
+
+        // Reverses one Increment, dropping the key entirely at zero so the map stays bounded.
+        private void Decrement(string id)
+        {
+            int count;
+            if (!perPawnToday.TryGetValue(id, out count))
+            {
+                return;
+            }
+
+            if (count <= 1)
+            {
+                perPawnToday.Remove(id);
+            }
+            else
+            {
+                perPawnToday[id] = count - 1;
+            }
         }
 
         // Orders the two ids so (A,B) and (B,A) share one key. A solo entry keys on idA alone.
