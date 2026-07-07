@@ -1,0 +1,23 @@
+name = "pawndiary-error-endpoint"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+
+# Daily cleanup at 03:00 UTC. Prunes error groups older than RETENTION_DAYS (see [vars]).
+[triggers]
+crons = ["0 3 * * *"]
+
+# Plain (non-secret) vars. Change RETENTION_DAYS to keep data longer/shorter.
+[vars]
+RETENTION_DAYS = "90"
+
+# D1 binding used as `env.DB` in the Worker.
+# Create the database with `npx wrangler d1 create pawndiary_errors`, then paste the printed
+# database_id below (it is not a secret).
+[[d1_databases]]
+binding = "DB"
+database_name = "pawndiary_errors"
+database_id = "35100bba-6753-46a0-b653-7d6b4082f504"
+
+# Optional shared token gate. To enable, run `npx wrangler secret put INGEST_TOKEN` (do NOT commit it),
+# and send the same value from the mod in the X-PawnDiary-Token header. It only filters random
+# internet noise — it is not real authentication (the value would ship inside the mod DLL).

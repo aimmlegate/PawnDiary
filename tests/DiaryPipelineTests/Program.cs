@@ -82,6 +82,9 @@ namespace DiaryPipelineTests
             TestRedactSecrets();
             TestWritingStyleReachesSystemPrompt();
             TestShippedTemplatesWritingStyleContract();
+            TestErrorScrubRemovesPersonalData();
+            TestErrorFingerprintGroupsAndDistinguishes();
+            TestErrorReportPayloadIsValidPiiFreeJson();
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
@@ -4230,6 +4233,104 @@ namespace DiaryPipelineTests
         {
             return userPrompt != null
                 && userPrompt.IndexOf(labelFragment, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        // ---- Error reporter (ErrorScrub / ErrorFingerprint / ErrorReportPayload) ----
+
+        private static void TestErrorScrubRemovesPersonalData()
+        {
+            // Windows username segment is masked, rest of the path is kept for grouping.
+            string win = ErrorScrub.Scrub(
+                @"at Foo.Bar () in C:\Users\Alice\AppData\Mods\PawnDiary\Thing.cs:line 42",
+                null,
+                ErrorScrub.DefaultMaxChars);
+            AssertContains("scrub keeps path shape", win, @"C:\Users\~\");
+            AssertTrue("scrub drops windows username", win.IndexOf("Alice", StringComparison.Ordinal) < 0);
+
+            // Unix home segment is masked too.
+            string nix = ErrorScrub.Scrub("stack /home/bob/rimworld/mod.cs", null, ErrorScrub.DefaultMaxChars);
+            AssertContains("scrub keeps unix home shape", nix, "/home/~/");
+            AssertTrue("scrub drops unix username", nix.IndexOf("bob", StringComparison.Ordinal) < 0);
+
+            // Bearer tokens and bare sk- keys are masked by shape (no secrets list needed).
+            string bearer = ErrorScrub.Scrub("Authorization: Bearer sk-livesecrettoken0099", null, ErrorScrub.DefaultMaxChars);
+            AssertTrue("scrub masks bearer token", bearer.IndexOf("livesecrettoken", StringComparison.Ordinal) < 0);
+            string sk = ErrorScrub.Scrub("using key sk-ABCDEF1234567890 now", null, ErrorScrub.DefaultMaxChars);
+            AssertContains("scrub masks sk key", sk, "sk-<redacted>");
+            AssertTrue("scrub drops sk key tail", sk.IndexOf("ABCDEF1234567890", StringComparison.Ordinal) < 0);
+
+            // Exact configured secrets (an API key and an endpoint URL) are redacted verbatim.
+            List<string> secrets = new List<string> { "myLocalApiKey55", "https://api.example.com/v1" };
+            string configured = ErrorScrub.Scrub(
+                "POST https://api.example.com/v1 failed with key myLocalApiKey55",
+                secrets,
+                ErrorScrub.DefaultMaxChars);
+            AssertTrue("scrub redacts configured api key", configured.IndexOf("myLocalApiKey55", StringComparison.Ordinal) < 0);
+            AssertTrue("scrub redacts configured endpoint", configured.IndexOf("api.example.com", StringComparison.Ordinal) < 0);
+
+            // Length cap applies (and appends an ellipsis marker).
+            string big = new string('x', 5000);
+            string capped = ErrorScrub.Scrub(big, null, 100);
+            AssertTrue("scrub caps length", capped.Length <= 103);
+            AssertContains("scrub marks truncation", capped, "...");
+
+            AssertEqual("scrub null is empty", string.Empty, ErrorScrub.Scrub(null, null, ErrorScrub.DefaultMaxChars));
+        }
+
+        private static void TestErrorFingerprintGroupsAndDistinguishes()
+        {
+            // Same call path, different line numbers -> same fingerprint (numbers are normalized away).
+            string a = ErrorFingerprint.Compute("NullRef in Diary.Foo\n at Diary.Foo:line 42\n at Bar:line 9");
+            string b = ErrorFingerprint.Compute("NullRef in Diary.Foo\n at Diary.Foo:line 88\n at Bar:line 123");
+            AssertEqual("fingerprint groups by normalized stack", a, b);
+
+            // Genuinely different errors -> different fingerprints.
+            string c = ErrorFingerprint.Compute("IndexOutOfRange in Diary.Baz\n at Diary.Baz:line 5");
+            AssertTrue("fingerprint distinguishes different errors", !string.Equals(a, c, StringComparison.Ordinal));
+
+            // Deterministic and fixed width (16 hex chars).
+            AssertEqual("fingerprint is deterministic", a, ErrorFingerprint.Compute("NullRef in Diary.Foo\n at Diary.Foo:line 42\n at Bar:line 9"));
+            AssertEqual("fingerprint width", 16, a.Length);
+        }
+
+        private static void TestErrorReportPayloadIsValidPiiFreeJson()
+        {
+            ErrorReport report = new ErrorReport
+            {
+                schemaVersion = ErrorReportPayload.SchemaVersion,
+                modVersion = "1.2.3.4",
+                rimworldVersion = "1.6.4241",
+                os = "Microsoft Windows NT 10.0",
+                installId = "abc123def456",
+                fingerprint = "00ff00ff00ff00ff",
+                timestampUtc = "2026-07-07T12:00:00.0000000Z",
+                activeDlc = new List<string> { "Royalty", "Anomaly" },
+                message = "Line \"one\"\nLine two\tindented"
+            };
+
+            string json = ErrorReportPayload.ToJson(report);
+
+            // Round-trips through the real MiniJson parser -> proves it is well-formed JSON.
+            object parsedObj = MiniJson.Deserialize(json);
+            Dictionary<string, object> parsed = parsedObj as Dictionary<string, object>;
+            AssertTrue("payload is a json object", parsed != null);
+
+            AssertEqual("payload schemaVersion", ErrorReportPayload.SchemaVersion, (int)(double)parsed["schemaVersion"]);
+            AssertEqual("payload modVersion", "1.2.3.4", (string)parsed["modVersion"]);
+            AssertEqual("payload installId", "abc123def456", (string)parsed["installId"]);
+            AssertEqual("payload fingerprint", "00ff00ff00ff00ff", (string)parsed["fingerprint"]);
+            // Message escaping survives the round trip exactly (quotes, newline, tab).
+            AssertEqual("payload message round-trips", "Line \"one\"\nLine two\tindented", (string)parsed["message"]);
+
+            object[] dlc = parsed["activeDlc"] as object[];
+            AssertTrue("payload dlc array present", dlc != null && dlc.Length == 2);
+            AssertEqual("payload dlc first", "Royalty", (string)dlc[0]);
+
+            // Privacy contract: the wire object exposes no personal-data fields.
+            AssertTrue("payload has no username field", !parsed.ContainsKey("username") && !parsed.ContainsKey("userName"));
+            AssertTrue("payload has no machine field", !parsed.ContainsKey("machineName") && !parsed.ContainsKey("hostname"));
+            AssertTrue("payload has no path field", !parsed.ContainsKey("path") && !parsed.ContainsKey("filePath"));
+            AssertTrue("payload has no apiKey field", !parsed.ContainsKey("apiKey"));
         }
 
         private static void AssertHeader(string name, HttpRequestMessage request, string headerName, string expected)

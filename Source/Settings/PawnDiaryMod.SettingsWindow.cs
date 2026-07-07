@@ -205,6 +205,10 @@ namespace PawnDiary
                     "PawnDiary.Settings.AllowExternalIntegrations".Translate(),
                     ref Settings.allowExternalIntegrations,
                     "PawnDiary.Settings.AllowExternalIntegrationsTip".Translate());
+                listing.CheckboxLabeled(
+                    "PawnDiary.Settings.EnableErrorReporting".Translate(),
+                    ref Settings.enableErrorReporting,
+                    "PawnDiary.Settings.EnableErrorReportingTip".Translate());
 
                 listing.CheckboxLabeled(
                     "PawnDiary.Settings.ShowExperimentalAdvancedOverrides".Translate(),

@@ -13,6 +13,26 @@ pre-release version ladder for project history.
   the XML-owned `<tabScreenHeightMargin>`, with `<tabMinHeight>` as the normal floor. Very short
   screens can shrink below that floor instead of letting the tab run off-screen.
 
+## 2026-07-07 (opt-out error reporting)
+
+- **Optional, on-by-default error reporter (`Source/Diagnostics/`).** The mod can now send **its own**
+  errors to a remote endpoint so bugs can be found and fixed. Opt-out via the new **Send anonymous
+  error reports** settings checkbox (`enableErrorReporting`, default on); no first-run prompt.
+  - Capture: `DiaryLogReportPatch`, a Harmony postfix on `Verse.Log.Error`/`Log.ErrorOnce` (registered
+    in `DiaryPatchRegistrar`) that forwards only messages carrying the `[Pawn Diary]` prefix, guarded
+    by a `[ThreadStatic]` re-entrancy flag and a total `try/catch`.
+  - Transport: `DiaryErrorReporter`, mirroring `LlmClient` (static `HttpClient`, fire-and-forget
+    `Task.Run`), with per-fingerprint dedupe, per-session caps, and bounded concurrency. **Inert until
+    an endpoint URL is compiled in** — the `ErrorReportEndpoint` constant ships empty, so on-by-default
+    sends nothing today. Per-session state resets in the `DiaryGameComponent` ctor.
+  - Privacy (pure + unit-tested in `tests/DiaryPipelineTests`): `ErrorScrub` masks path usernames and
+    redacts API keys/URLs and `Bearer`/`sk-` shapes (reusing `ApiLaneLabels.RedactSecrets`);
+    `ErrorFingerprint` is a deterministic FNV-1a for cross-machine grouping; `ErrorReportPayload`
+    hand-builds a PII-free JSON body (schema/mod/RimWorld/DLC/OS versions, an anonymous random install
+    id `errorReportInstallId`, fingerprint, timestamp, scrubbed message — no names, paths, keys, or
+    diary text). English + Russian settings strings added. Endpoint schema documented in
+    `DOCUMENTATION.md §8.1`; the receiving service is not built yet.
+
 ## 2026-07-07 (adversarial-review fixes)
 
 Addressing findings from an adversarial review of the RimTalk bridge (PR #62). Each fix is shipped

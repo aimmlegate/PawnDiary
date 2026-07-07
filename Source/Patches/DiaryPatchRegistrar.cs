@@ -22,6 +22,7 @@ namespace PawnDiary
             VoidMonolithActivationEventWindowPatch.TryRegister(harmony);
             PrisonBreakEventWindowPatch.TryRegister(harmony);
             SpeakUpReplySchedulingGuardPatch.TryRegister(harmony);
+            DiaryLogReportPatch.TryRegister(harmony);
         }
     }
 }

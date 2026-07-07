@@ -1184,6 +1184,37 @@ main thread before calling `LlmClient`, which does not own prompt-prose fallback
 code can run off-thread. (The **Fetch models** button on the same screen is still single-flight global
 — only one fetch at a time across all rows.)
 
+### 8.1 Error reporting (opt-out)
+
+Optional, **on by default** crash telemetry that reports **only the errors this mod raises** so bugs
+can be found and fixed. There is no first-run prompt; the player turns it off with the
+**Send anonymous error reports** checkbox on the main settings tab (`enableErrorReporting`, default
+`true`). Lives under `Source/Diagnostics/`.
+
+- **Capture.** `DiaryLogReportPatch` is a Harmony postfix on `Verse.Log.Error` / `Log.ErrorOnce`
+  (registered via `DiaryPatchRegistrar`). It forwards a message only when it starts with the mod's
+  `[Pawn Diary]` prefix, so other mods' and base-game log lines are ignored. A `[ThreadStatic]`
+  re-entrancy flag plus a total `try/catch` mean a fault in reporting can never crash the caller or
+  loop. (Known limit: an error site without the prefix is not captured until its prefix is added.)
+- **Transport.** `DiaryErrorReporter` mirrors `LlmClient`'s shape — a shared static `HttpClient` and
+  fire-and-forget `Task.Run` sends, so the game thread never blocks. It dedupes by fingerprint (each
+  distinct error sent once per session), caps distinct reports per session and concurrent sends, and
+  never re-logs its own failures. It is **inert until an endpoint is compiled in**: the
+  `ErrorReportEndpoint` constant ships empty, so on-by-default sends nothing today. Per-session dedupe
+  resets in the `DiaryGameComponent` ctor alongside `LlmClient.BeginSession()`.
+- **Privacy (pure, tested).** `ErrorScrub` masks the username segment of any file path, redacts the
+  configured API keys/endpoint URLs (passed in) plus `Bearer`/`key=`/`sk-` shapes (reusing
+  `ApiLaneLabels.RedactSecrets`), and caps length. `ErrorFingerprint` is a deterministic FNV-1a over
+  the normalized stack (line numbers/addresses blanked) so the same crash groups across machines.
+  `ErrorReportPayload` builds the wire JSON by hand (no serializer in Mono). The payload carries only:
+  schema version, mod version, RimWorld version, active DLC, coarse OS string, an **anonymous random
+  install GUID** (`errorReportInstallId`, not a machine/hardware id), the fingerprint, a UTC timestamp,
+  and the scrubbed message — never a username, path, save/colony/pawn name, API key, or diary text.
+  The three pure helpers are covered by `tests/DiaryPipelineTests`.
+- **Endpoint contract (TODO — not built yet).** `POST {ErrorReportEndpoint}`,
+  `Content-Type: application/json`, body = `ErrorReportPayload.ToJson`. A tiny serverless function
+  that size-checks and appends to storage is enough; `schemaVersion` lets the shape evolve.
+
 ## 9. Save Data And Compatibility
 
 `DiaryGameComponent.ExposeData` owns the top-level save shape.

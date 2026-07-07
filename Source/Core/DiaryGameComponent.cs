@@ -201,6 +201,9 @@ namespace PawnDiary
             // entries (e.g. founding-colonist starting thoughts queued during InitNewGame), and a
             // second BeginSession would cancel those mid-flight and strand them forever on "Generating".
             LlmClient.BeginSession();
+            // Reset the error reporter's per-session dedupe/caps alongside the LLM session. Statics
+            // leak across exit-to-menu + load, so clearing here keeps each loaded game's reporting fresh.
+            DiaryErrorReporter.ResetSession();
             DeathContextCache.Clear();
             ArrivalContextCache.Clear();
             // TicksGame can repeat across different games, so drop the per-tick free-colonist snapshot

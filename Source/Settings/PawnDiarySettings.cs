@@ -143,6 +143,13 @@ namespace PawnDiary
         // Master switch for public integration API behavior. Registration remains harmless while this
         // is off, but external submissions, reads, and provider invocations no-op.
         public bool allowExternalIntegrations = true;
+        // Opt-out crash reporting. When true (default), errors THIS mod raises are scrubbed of all
+        // personal data and sent to a remote endpoint so bugs can be found and fixed. There is no
+        // first-run prompt; the player turns it off here. See DiaryErrorReporter for what is/isn't sent.
+        public bool enableErrorReporting = true;
+        // Anonymous, random per-install id attached to error reports so repeats from one install can be
+        // grouped. Generated once by EnsureErrorReportInstallId; never a machine/user/hardware id.
+        public string errorReportInstallId = string.Empty;
         // Disabled compatibility field. Old configs may have this set, but the Social-log injection
         // path is hidden and forced off because RimWorld accepts the row without reliably showing it.
         public bool injectGeneratedSpeechToPlayLog;
@@ -234,6 +241,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
             Scribe_Values.Look(ref contextDetailLevel, "contextDetailLevel", PromptContextDetailLevel.Full);
             Scribe_Values.Look(ref allowExternalIntegrations, "allowExternalIntegrations", true);
+            Scribe_Values.Look(ref enableErrorReporting, "enableErrorReporting", true);
+            Scribe_Values.Look(ref errorReportInstallId, "errorReportInstallId", string.Empty);
             Scribe_Values.Look(ref injectGeneratedSpeechToPlayLog, "injectGeneratedSpeechToPlayLog", false);
             Scribe_Values.Look(ref systemPromptOverride, "systemPromptOverride", string.Empty);
             Scribe_Values.Look(ref systemPromptReflectionOverride, "systemPromptReflectionOverride", string.Empty);
@@ -259,6 +268,21 @@ namespace PawnDiary
                 // (resolvers return fallbacks) and idempotent across later UI re-applies.
                 AdvancedFieldCatalog.EnsureApplied(advancedOverrides);
             }
+        }
+
+        /// <summary>
+        /// Returns the anonymous per-install id used to group error reports, generating and storing a
+        /// random one on first use. It is a random GUID — never derived from any machine, user, or
+        /// hardware value — so it identifies an install, not a person.
+        /// </summary>
+        public string EnsureErrorReportInstallId()
+        {
+            if (string.IsNullOrEmpty(errorReportInstallId))
+            {
+                errorReportInstallId = Guid.NewGuid().ToString("N");
+            }
+
+            return errorReportInstallId;
         }
 
         /// <summary>
