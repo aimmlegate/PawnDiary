@@ -6,6 +6,21 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-07 (Fix — thought-capture crash on animals / not-fully-built pawns)
+
+- **Fixed a `NullReferenceException` in `ThoughtGainPatch` (reported by users; log refs `A2D21F2A`
+  and `74E0E9CE`).** `ThoughtSignal`'s constructor called `Thought_Memory.MoodOffset()` *before*
+  checking diary eligibility. `MoodOffset()` re-runs RimWorld's `ThoughtUtility.ThoughtNullified`,
+  which dereferences the thought's own pawn `story` (trait nullifiers → ref `74E0E9CE`) and `health`
+  (hediff nullifiers → ref `A2D21F2A`) — both absent for animals, other non-humanlike pawns, or pawns
+  mid-generation — so it threw *inside* RimWorld. `DiaryPatchSafety` caught it (no save ever broke),
+  but the memory was dropped and the log filled with "ThoughtGainPatch failed and was skipped". The
+  constructor now gates on `IsDiaryEligible(pawn)` up front, matching the drop that
+  `ThoughtEventData.Decide` already applied one step later — so it is behavior-preserving, and it also
+  skips wasted payload/`MoodOffset` work on `MemoryThoughtHandler.TryGainMemory`, one of the hottest
+  hooks in the game (every meal, sleep, and social memory, for every pawn). Fix in
+  `Source/Ingestion/Sources/ThoughtSignal.cs`.
+
 ## 2026-07-07 (Integration API v3 — event-filter reads + per-group toggles)
 
 - **Integration API v3 — read and toggle automatic-capture event filters.** `PawnDiaryApi.ApiVersion`

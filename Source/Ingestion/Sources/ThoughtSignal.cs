@@ -34,7 +34,18 @@ namespace PawnDiary.Ingestion
             // old RecordThought's leading CanRecordGameplayEventNow guard: it runs before any
             // Find.TickManager access below, so a hook firing during pawn/world generation no-ops
             // safely (matches the old guard: pawn/thought/thought.def null).
-            if (!DiaryGameComponent.GamePlaying || pawn == null || thought == null || thought.def == null)
+            //
+            // IsDiaryEligible MUST be checked here, before thought.MoodOffset() below. MoodOffset re-runs
+            // RimWorld's ThoughtUtility.ThoughtNullified, which dereferences thought.pawn.story (trait
+            // nullifiers) and thought.pawn.health (hediff nullifiers). Those trackers are null for
+            // animals / non-humanlike or not-fully-built pawns, so calling MoodOffset for them threw an
+            // NRE *inside* RimWorld — caught by DiaryPatchSafety and logged as "ThoughtGainPatch failed
+            // and was skipped". TryGainMemory is one of the hottest hooks in the game (every meal, sleep,
+            // and social memory for every pawn, animals included), and ThoughtEventData.Decide already
+            // drops anything that is not diary-eligible at its first gate. So gating here is
+            // behavior-preserving, removes the crash, and skips wasted payload/MoodOffset work.
+            if (!DiaryGameComponent.GamePlaying || pawn == null || thought == null || thought.def == null
+                || !DiaryGameComponent.IsDiaryEligible(pawn))
             {
                 return;
             }
