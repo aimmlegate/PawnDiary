@@ -497,7 +497,7 @@ it onto the bus.
 | Arrivals | Starting-colonist scan and `Pawn.SetFaction` | Neutral first page. |
 | Deaths | `Pawn.Kill` plus XML death TaleDefs | Neutral final page. |
 | Mood events | `GameConditionManager.RegisterCondition` | One entry per eligible colonist on affected maps. |
-| Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. |
+| Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. Memories vanilla rejects (accept-gates fire before `thought.pawn` is assigned) are ignored — never gained, so never recorded. |
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
 | Pawn progression | Periodic scan | Passion-only skill milestones, psylink level gains, xenotype changes, and royal-title changes. The first scan baselines existing saves to avoid retroactive spam; major psylink/xenotype changes can request a rare arc reflection after the normal page records. |
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |

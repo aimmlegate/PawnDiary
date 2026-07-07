@@ -6,6 +6,18 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-08
+
+- **Fixed a thought-capture NRE on vanilla-rejected memories** (telemetry ref `475B9A13`; reported
+  under Vanilla Psycasts Expanded but reproducible without it). A postfix on
+  `MemoryThoughtHandler.TryGainMemory` also fires when vanilla's accept-gates (`CanGetThought`,
+  the social-thought filters) early-return — *before* `thought.pawn` is assigned — and
+  `Thought_Memory.MoodOffset()` then dereferences that null pawn inside
+  `ThoughtUtility.NullifyingHediff` (the trace's VPE `NullDarkness` line is just Harmony's
+  patched-method annotation, not the culprit). `ThoughtGainPatch` and `ThoughtSignal` now skip
+  memories with a null `thought.pawn`. Also a data fix: a rejected memory was never actually
+  gained, so it no longer produces a diary entry.
+
 ## 2026-07-07
 
 - **Fixed the Diary tab running off the top of the screen** (user-reported; title/close button

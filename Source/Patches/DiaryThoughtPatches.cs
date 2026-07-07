@@ -39,16 +39,25 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Harmony Postfix for MemoryThoughtHandler.TryGainMemory. Fires after a memory thought is
-        /// gained by a pawn. Forwards temporary thoughts (Thought_Memory with expiration) to the
-        /// diary. __instance is the owning pawn's handler; __0 is the gained memory.
+        /// Harmony Postfix for MemoryThoughtHandler.TryGainMemory. Fires after every TryGainMemory
+        /// call — including ones vanilla rejected — and forwards only memories the pawn actually
+        /// gained to the diary. __instance is the owning pawn's handler; __0 is the memory.
         /// </summary>
         public static void Postfix(MemoryThoughtHandler __instance, Thought_Memory __0)
         {
             // Hot hook: memories are gained constantly (meals, sleep, social slights). The
             // cheap guards stay outside the wrapper; the ThoughtSignal below is only built for
             // real, non-null memories.
-            if (__instance == null || __0 == null || __0.def == null || __instance.pawn == null)
+            //
+            // __0.pawn: a postfix also runs when TryGainMemory REJECTED the memory — vanilla's
+            // accept-gates (ThoughtUtility.CanGetThought, the social-thought filters) early-return
+            // BEFORE the line that assigns newThought.pawn. So a null thought.pawn means the pawn
+            // never gained this thought: there is nothing to record, and building the signal anyway
+            // crashed — ThoughtSignal calls thought.MoodOffset(), which reads the THOUGHT'S OWN
+            // pawn field (not the handler pawn checked below) and dereferences it inside RimWorld's
+            // nullifier chain. See the matching guard note in ThoughtSignal.
+            if (__instance == null || __0 == null || __0.def == null || __0.pawn == null
+                || __instance.pawn == null)
             {
                 return;
             }

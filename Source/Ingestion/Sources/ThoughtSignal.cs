@@ -44,8 +44,19 @@ namespace PawnDiary.Ingestion
             // and social memory for every pawn, animals included), and ThoughtEventData.Decide already
             // drops anything that is not diary-eligible at its first gate. So gating here is
             // behavior-preserving, removes the crash, and skips wasted payload/MoodOffset work.
+            //
+            // thought.pawn (the field on the thought, distinct from the pawn argument) guards the second
+            // MoodOffset crash avenue: MoodOffset passes the THOUGHT'S OWN pawn into ThoughtNullified,
+            // and 1.6's NullifyingHediff dereferences pawn.health unconditionally. Vanilla TryGainMemory
+            // assigns thought.pawn only AFTER its accept-gates pass, so a rejected memory reaches the
+            // postfix with thought.pawn still null and MoodOffset throws deep inside RimWorld. (In the
+            // wild the trace points at ThoughtUtility.NullifyingHediff and lists other mods' postfixes
+            // on it — e.g. Vanilla Psycasts Expanded's NullDarkness — but those annotations only mean
+            // the method is patched; the null pawn is ours to filter.) A rejected memory was never
+            // gained, so dropping it is a data fix, not just crash-proofing. ThoughtGainPatch filters
+            // these too; this keeps the invariant next to the MoodOffset call it protects.
             if (!DiaryGameComponent.GamePlaying || pawn == null || thought == null || thought.def == null
-                || !DiaryGameComponent.IsDiaryEligible(pawn))
+                || thought.pawn == null || !DiaryGameComponent.IsDiaryEligible(pawn))
             {
                 return;
             }
