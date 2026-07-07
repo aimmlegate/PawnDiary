@@ -6,6 +6,13 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-07 (Diary UI low-resolution clamp)
+
+- **Diary tab height now clamps to the screen.** `DiaryUiStyleDef.xml` still owns the preferred
+  `<tabHeight>`, but the inspect tab now shrinks automatically to the current scaled UI height minus
+  the XML-owned `<tabScreenHeightMargin>`, with `<tabMinHeight>` as the normal floor. Very short
+  screens can shrink below that floor instead of letting the tab run off-screen.
+
 ## 2026-07-07 (adversarial-review fixes)
 
 Addressing findings from an adversarial review of the RimTalk bridge (PR #62). Each fix is shipped

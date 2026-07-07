@@ -69,6 +69,10 @@ namespace PawnDiary
         // Diary tab presentation values are XML-backed via DiaryUiStyleDef. These accessors keep the
         // drawing code readable while letting modders retune spacing/colors without recompiling.
         private static DiaryUiStyleDef UiStyle => DiaryUiStyles.Current;
+        private const float FallbackTabWidth = 720f;
+        private const float FallbackTabHeight = 800f;
+        private const float FallbackTabMinHeight = 360f;
+        private const float FallbackTabScreenHeightMargin = 72f;
         private static float ControlLineHeight => UiStyle.controlLineHeight;
         private static float ControlGap => UiStyle.controlGap;
         private static float EntryTitleHeight => UiStyle.entryTitleHeight;
@@ -183,8 +187,61 @@ namespace PawnDiary
 
         public ITab_Pawn_Diary()
         {
-            size = new Vector2(UiStyle.tabWidth, UiStyle.tabHeight);
+            ApplyResponsiveTabSize();
             labelKey = "PawnDiaryTabLabel";
+        }
+
+        /// <summary>
+        /// Applies the XML preferred tab size, clamping height to the current scaled UI screen.
+        /// This is UI-only state, so refreshing it during draw is safe and picks up resolution changes.
+        /// </summary>
+        private void ApplyResponsiveTabSize()
+        {
+            DiaryUiStyleDef style = UiStyle;
+            size = new Vector2(
+                PositiveFiniteOrFallback(style.tabWidth, FallbackTabWidth),
+                ResponsiveTabHeight(style));
+        }
+
+        private static float ResponsiveTabHeight(DiaryUiStyleDef style)
+        {
+            float preferred = PositiveFiniteOrFallback(style.tabHeight, FallbackTabHeight);
+            float screenHeight = UI.screenHeight;
+            if (!IsPositiveFinite(screenHeight))
+            {
+                return preferred;
+            }
+
+            float margin = NonNegativeFiniteOrFallback(style.tabScreenHeightMargin, FallbackTabScreenHeightMargin);
+            float maxHeight = screenHeight - margin;
+            if (!IsPositiveFinite(maxHeight))
+            {
+                maxHeight = screenHeight;
+            }
+
+            maxHeight = Mathf.Max(1f, maxHeight);
+            float minHeight = PositiveFiniteOrFallback(style.tabMinHeight, FallbackTabMinHeight);
+            if (maxHeight < minHeight)
+            {
+                return maxHeight;
+            }
+
+            return Mathf.Clamp(preferred, minHeight, maxHeight);
+        }
+
+        private static float PositiveFiniteOrFallback(float value, float fallback)
+        {
+            return IsPositiveFinite(value) ? value : fallback;
+        }
+
+        private static float NonNegativeFiniteOrFallback(float value, float fallback)
+        {
+            return value >= 0f && !float.IsNaN(value) && !float.IsInfinity(value) ? value : fallback;
+        }
+
+        private static bool IsPositiveFinite(float value)
+        {
+            return value > 0f && !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
         /// <summary>
@@ -286,6 +343,8 @@ namespace PawnDiary
         /// </summary>
         protected override void FillTab()
         {
+            ApplyResponsiveTabSize();
+
             Pawn pawn = PawnToShow();
             if (pawn == null)
             {
