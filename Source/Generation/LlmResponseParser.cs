@@ -1212,7 +1212,9 @@ namespace PawnDiary
         /// Removes model-hallucinated bracket tags while preserving the one marker contract the UI
         /// understands: a complete [[speech]]...[[/speech]] block. Small local models sometimes copy
         /// the speech-marker shape for thoughts, stage directions, or malformed closing tags; saved
-        /// diary text should stay readable and parser-safe even when they do.
+        /// diary text should stay readable and parser-safe even when they do. It also drops stray
+        /// numbered format placeholders ({0}/{1}/{0:D2}/{}) that leaked from an unfilled prompt
+        /// template (e.g. "favor of {0}") or were echoed by a model that copied the template shape.
         /// </summary>
         private static string SanitizeGeneratedMarkup(string text)
         {
@@ -1224,6 +1226,7 @@ namespace PawnDiary
             string normalized = NormalizeMalformedSpeechMarkers(text);
             normalized = StripAngleMarkupTags(normalized);
             string sanitized = SanitizeGeneratedTagMarkers(normalized, true);
+            sanitized = StripStrayFormatPlaceholders(sanitized);
             sanitized = StripStandaloneSchemaPunctuationTokens(sanitized);
             return CompactGeneratedMarkupWhitespace(sanitized).Trim();
         }
@@ -1943,6 +1946,106 @@ namespace PawnDiary
         private static bool IsAtTokenBoundary(string text, int index)
         {
             return index < 0 || index >= text.Length || char.IsWhiteSpace(text[index]);
+        }
+
+        /// <summary>
+        /// Removes stray numbered format placeholders such as {0}, {1}, {0:D2}, or empty {} braces
+        /// that a model echoed into its answer. These are never valid diary prose: they appear when an
+        /// unfilled .Translate()/string.Format template (e.g. "favor of {0}") reaches the model, or
+        /// when a small model copies the template shape. A single space left stranded before
+        /// end-of-text or clause punctuation is dropped so "favor of {0}." collapses to "favor of."
+        /// rather than "favor of ."; other whitespace is left for the compaction pass. A brace run
+        /// containing letters ("{spawn}") is treated as prose and kept -- only numeric/empty go.
+        /// </summary>
+        private static string StripStrayFormatPlaceholders(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
+            StringBuilder builder = new StringBuilder(text.Length);
+            int i = 0;
+            while (i < text.Length)
+            {
+                if (text[i] == '{')
+                {
+                    int length = FormatPlaceholderLength(text, i);
+                    if (length > 0)
+                    {
+                        int after = i + length;
+                        if (builder.Length > 0
+                            && builder[builder.Length - 1] == ' '
+                            && (after >= text.Length || IsPlaceholderTrailingPunctuation(text[after])))
+                        {
+                            builder.Length -= 1;
+                        }
+
+                        i = after;
+                        continue;
+                    }
+                }
+
+                builder.Append(text[i]);
+                i++;
+            }
+
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Returns the length of a numbered format placeholder starting at <paramref name="index"/>
+        /// (which must be '{'), or 0 when the braces are not a placeholder. Matches an optional-
+        /// whitespace numeric index with an optional ,alignment/:format spec ("{0,-6}", "{0:D2}"),
+        /// plus bare empty braces ("{}"/"{ }"). A brace run containing letters returns 0 so real prose
+        /// survives, and an unclosed brace returns 0 so following text is never swallowed.
+        /// </summary>
+        private static int FormatPlaceholderLength(string text, int index)
+        {
+            if (index < 0 || index >= text.Length || text[index] != '{')
+            {
+                return 0;
+            }
+
+            int i = index + 1;
+            while (i < text.Length && char.IsWhiteSpace(text[i]))
+            {
+                i++;
+            }
+
+            int digitsStart = i;
+            while (i < text.Length && char.IsDigit(text[i]))
+            {
+                i++;
+            }
+
+            bool hasDigits = i > digitsStart;
+            if (hasDigits && i < text.Length && (text[i] == ':' || text[i] == ','))
+            {
+                // Consume an alignment/format spec up to the closing brace, staying on one line so a
+                // stray unclosed brace cannot swallow the prose that follows.
+                i++;
+                while (i < text.Length && text[i] != '}' && text[i] != '{' && text[i] != '\n' && text[i] != '\r')
+                {
+                    i++;
+                }
+            }
+            else
+            {
+                while (i < text.Length && char.IsWhiteSpace(text[i]))
+                {
+                    i++;
+                }
+            }
+
+            // Only a numeric placeholder ("{0}") or bare empty braces ("{}") strip; any brace run with
+            // letters between the braces has already forced a non-'}' char here and returns 0.
+            return i < text.Length && text[i] == '}' ? (i + 1) - index : 0;
+        }
+
+        private static bool IsPlaceholderTrailingPunctuation(char c)
+        {
+            return c == '.' || c == ',' || c == ';' || c == ':' || c == '!' || c == '?';
         }
 
         private static string CompactGeneratedMarkupWhitespace(string text)

@@ -470,6 +470,31 @@ namespace LlmResponseParserTests
                 "title sanitizes bracket tags",
                 "The Storm Watch",
                 LlmResponseParser.CleanGeneratedText("[[The Storm Watch]]", 20, true));
+
+            AssertEqual(
+                "stray numeric placeholder stripped and space before period healed",
+                "Loss: favor of. Gain: sleep.",
+                LlmResponseParser.CleanGeneratedText("Loss: favor of {0}. Gain: sleep.", 50, false));
+
+            AssertEqual(
+                "mid-sentence placeholder stripped without eating prose",
+                "We lost the ridge to them.",
+                LlmResponseParser.CleanGeneratedText("We lost the {0} ridge to them.", 50, false));
+
+            AssertEqual(
+                "format-spec placeholder stripped",
+                "Day count.",
+                LlmResponseParser.CleanGeneratedText("Day {0:D2} count.", 50, false));
+
+            AssertEqual(
+                "empty placeholder braces stripped",
+                "It ended.",
+                LlmResponseParser.CleanGeneratedText("It ended.{}", 50, false));
+
+            AssertEqual(
+                "braced word survives as prose",
+                "The {spawn} pulsed.",
+                LlmResponseParser.CleanGeneratedText("The {spawn} pulsed.", 50, false));
         }
 
         private static void TestTitleFallback()
