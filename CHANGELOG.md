@@ -33,6 +33,16 @@ pre-release version ladder for project history.
   and entry-less records roll a fresh one lazily on their next entry — the psychotype is always created
   if missing. New per-pawn fields (`psychotypeDefName`, custom/external psychotype rules, `voiceStageBand`,
   pin flags) default safely on old saves.
+- **Russian localization pass for the psychotype layer (native re-authoring, not translation).** All 23
+  RU psychotype rules rewritten as idiomatic Russian: fixes one inverted meaning (Detached's «общество
+  стоит усилий» read as *worth* the effort, the opposite of "company costs effort") plus grammar and
+  calque cleanups across the catalog; the Volatile / Wide-eyed picker labels are now «неровный» /
+  «восторженный». Child writing-style rules unify on the established «переданные факты» fact-anchor
+  phrasing. The per-pawn voice editor is now fully localized — 45 previously English-only Keyed strings
+  (`PawnDiary.Tab.WritingStyle*`, `PawnDiary.WritingStyle.*`, `PawnDiary.Psychotype.*`,
+  `PawnDiary.Tab.Psychotype`) translated. The psychotypes settings toggle/tip,
+  `PawnDiary.Prompt.PsychotypeLens`, and the RimTalk bridge's `Persona.LensRule` (now phrased as a rule
+  so it reads naturally inside the lens wrapper) were reworked natively as well.
 - **Fixed a mod-conflict NRE that silenced the whole diary on new games** (telemetry: every capture
   patch reporting the same `BackstoryDef.FullDescriptionFor` failure, e.g. refs `81AA8488`,
   `58B1F970`). With Vanilla Expanded Framework's transpiler on that vanilla method, certain modded

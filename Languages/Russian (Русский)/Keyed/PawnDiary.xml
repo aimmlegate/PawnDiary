@@ -288,8 +288,8 @@
   <PawnDiary.Settings.EnableAtmosphericFormattingTip>Если включено, крайние страницы могут получать необычные отступы, скачущие слова или искажённую странную речь. Затрагивает срывы, аномалии, тёмные записи, смерть и сильное нарушение состояния. Запросы и сохранённый текст не меняются.</PawnDiary.Settings.EnableAtmosphericFormattingTip>
   <PawnDiary.Settings.EnablePromptEnchantments>Игровой контекст в запросах</PawnDiary.Settings.EnablePromptEnchantments>
   <PawnDiary.Settings.EnablePromptEnchantmentsTip>Если включено, запрос от первого лица может получить одну важную подсказку о текущем состоянии поселенца или поселения. XML задаёт, какие подсказки возможны и как часто они выбираются.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
-  <PawnDiary.Settings.EnablePsychotypes>Психотипы поселенцев (слой взгляда)</PawnDiary.Settings.EnablePsychotypes>
-  <PawnDiary.Settings.EnablePsychotypesTip>Если включено, у каждого поселенца появляется психотип — взгляд/склад характера (что он замечает, ценит и чего боится), выпадающий из его увлечений навыками, — и вплетается в запросы от первого лица рядом с манерой письма. Если выключено, взгляд не попадает в запрос, а невыпавшие психотипы остаются отложенными; уже существующие поселенцы сохраняют свой психотип. Психотип пешки правится в её вкладке «Дневник», в редакторе манеры письма.</PawnDiary.Settings.EnablePsychotypesTip>
+  <PawnDiary.Settings.EnablePsychotypes>Психотипы поселенцев</PawnDiary.Settings.EnablePsychotypes>
+  <PawnDiary.Settings.EnablePsychotypesTip>Если включено, каждый поселенец получает психотип — склад характера и взгляд на мир: что он замечает, ценит и чего боится. Психотип разыгрывается по увлечениям в навыках и вплетается в запросы от первого лица рядом с манерой письма. Если выключено, взгляд в запросы не попадает, а ещё не разыгранные психотипы ждут включения; уже существующие поселенцы психотип сохраняют. Изменить его можно во вкладке «Дневник», в редакторе манеры письма.</PawnDiary.Settings.EnablePsychotypesTip>
   <PawnDiary.Settings.AllowExternalIntegrations>Разрешить интеграции сторонних модов</PawnDiary.Settings.AllowExternalIntegrations>
   <PawnDiary.Settings.AllowExternalIntegrationsTip>Если включено, другие моды могут через публичный API интеграции отправлять события в дневник, читать открытые сводки дневника и добавлять краткие строки контекста поселенца.</PawnDiary.Settings.AllowExternalIntegrationsTip>
   <PawnDiary.Settings.EnableExternalKeySharing>Передавать ключи API другим модам</PawnDiary.Settings.EnableExternalKeySharing>
@@ -972,7 +972,7 @@
   <PawnDiary.Prompt.PersonaVoice>Манера письма этого поселенца: {0} Сперва сохрани факты события, потом уже держи форму фраз, зачин, пунктуацию и отбор деталей из правила. Не разыгрывай персонажа, не вешай на поселенца словечек сверх правила и не выдумывай диалогов.</PawnDiary.Prompt.PersonaVoice>
   <!-- Блок психотипа (взгляда), ставится ПЕРЕД блоком манеры письма. {0} — только правило психотипа
        (без ярлыка: взгляд никогда не называют). -->
-  <PawnDiary.Prompt.PsychotypeLens>Как этот поселенец обычно смотрит на вещи: {0} Пусть это окрашивает то, что запись замечает, о чём тревожится и как судит, — но не то, что случилось. Строй только на данных фактах и никогда не описывай и не оценивай характер поселенца напрямую; пусть он проступает через саму запись.</PawnDiary.Prompt.PsychotypeLens>
+  <PawnDiary.Prompt.PsychotypeLens>Как этот поселенец обычно смотрит на вещи: {0} Пусть это определяет, что он замечает, о чём тревожится и как судит, — но не то, что случилось. Опирайся только на переданные факты; характер поселенца не называй и не оценивай прямо — пусть он проступает сквозь саму запись.</PawnDiary.Prompt.PsychotypeLens>
   <!-- Подсказка юмора на запись (скрытая, всегда включённая). {0} — одна структурная вольность формы
        предложения, выбранная по флёру ставок. Добавляется после блока манеры письма только для подходящих записей. -->
   <PawnDiary.Prompt.HumorVoice>Для этой записи даётся необязательная поблажка: {0} Используй её, только если она ложится на переданные факты. Уложись в одно предложение и не ломай манеру выше. Не шути в лоб, не вставляй анекдот и комический диалог.</PawnDiary.Prompt.HumorVoice>
@@ -1251,5 +1251,55 @@
   <PawnDiary.Bucket.Effect.StrongPositive>сильно положительный</PawnDiary.Bucket.Effect.StrongPositive>
   <PawnDiary.Bucket.Effect.Negative>отрицательный</PawnDiary.Bucket.Effect.Negative>
   <PawnDiary.Bucket.Effect.StrongNegative>сильно отрицательный</PawnDiary.Bucket.Effect.StrongNegative>
+
+  <!-- Редактор манеры письма поселенца (вкладка «Дневник»). -->
+  <PawnDiary.Tab.WritingStyle>Манера письма: {0}</PawnDiary.Tab.WritingStyle>
+  <PawnDiary.Tab.WritingStyleTip>Открыть редактор манеры письма этого поселенца: выбрать базовую манеру, написать правило лично для него или посмотреть, почему действует временное переопределение.</PawnDiary.Tab.WritingStyleTip>
+  <PawnDiary.Tab.WritingStyleUnavailable>Манера письма появится, когда поселенец дорастёт до дневника.</PawnDiary.Tab.WritingStyleUnavailable>
+  <PawnDiary.WritingStyle.EditorTitle>{0} — манера письма</PawnDiary.WritingStyle.EditorTitle>
+  <PawnDiary.WritingStyle.BaseStyle>Базовая манера: {0}</PawnDiary.WritingStyle.BaseStyle>
+  <PawnDiary.WritingStyle.BasePrompt>Базовое правило</PawnDiary.WritingStyle.BasePrompt>
+  <PawnDiary.WritingStyle.CustomPrompt>Своё правило (необязательно)</PawnDiary.WritingStyle.CustomPrompt>
+  <PawnDiary.WritingStyle.EffectivePrompt>Итоговое правило</PawnDiary.WritingStyle.EffectivePrompt>
+  <PawnDiary.WritingStyle.SaveForPawn>Сохранить</PawnDiary.WritingStyle.SaveForPawn>
+  <PawnDiary.WritingStyle.ResetToBase>Сбросить</PawnDiary.WritingStyle.ResetToBase>
+  <PawnDiary.WritingStyle.LoadBasePrompt>Вставить базовое</PawnDiary.WritingStyle.LoadBasePrompt>
+  <PawnDiary.WritingStyle.Close>Закрыть</PawnDiary.WritingStyle.Close>
+  <PawnDiary.WritingStyle.OverrideExternal>Манеру письма временно задаёт интеграция ({0}).</PawnDiary.WritingStyle.OverrideExternal>
+  <PawnDiary.WritingStyle.OverrideHediff>Манеру письма временно меняет состояние здоровья ({0}).</PawnDiary.WritingStyle.OverrideHediff>
+  <PawnDiary.WritingStyle.CustomInactiveDueToOverride>Своё правило сохранено, но не действует, пока активно переопределение.</PawnDiary.WritingStyle.CustomInactiveDueToOverride>
+  <PawnDiary.WritingStyle.CustomActive>Своё правило</PawnDiary.WritingStyle.CustomActive>
+  <PawnDiary.WritingStyle.OverrideActive>Переопределено</PawnDiary.WritingStyle.OverrideActive>
+  <PawnDiary.WritingStyle.ExternalSourceLabel>внешняя интеграция</PawnDiary.WritingStyle.ExternalSourceLabel>
+  <PawnDiary.WritingStyle.Saved>Манера письма сохранена.</PawnDiary.WritingStyle.Saved>
+  <PawnDiary.WritingStyle.Reset>Своё правило очищено.</PawnDiary.WritingStyle.Reset>
+  <PawnDiary.WritingStyle.SaveFailed>Этот поселенец больше не может вести дневник, поэтому манера письма не сохранена.</PawnDiary.WritingStyle.SaveFailed>
+
+  <!-- Слой психотипа (взгляда): линза характера поселенца, правится в том же окне, что и манера
+       письма. Ярлык психотипа — только текст выбора; модель его никогда не видит. -->
+  <PawnDiary.Psychotype.SectionTitle>Психотип (взгляд на мир)</PawnDiary.Psychotype.SectionTitle>
+  <PawnDiary.Psychotype.Current>Психотип: {0}</PawnDiary.Psychotype.Current>
+  <PawnDiary.Psychotype.BaseType>Базовый психотип: {0}</PawnDiary.Psychotype.BaseType>
+  <PawnDiary.Psychotype.BaseRule>Базовый взгляд</PawnDiary.Psychotype.BaseRule>
+  <PawnDiary.Psychotype.CustomRule>Свой взгляд (необязательно)</PawnDiary.Psychotype.CustomRule>
+  <PawnDiary.Psychotype.EffectiveRule>Итоговый взгляд</PawnDiary.Psychotype.EffectiveRule>
+  <PawnDiary.Psychotype.LoadBaseRule>Вставить базовый</PawnDiary.Psychotype.LoadBaseRule>
+  <PawnDiary.Psychotype.PickerHeader>Психотип</PawnDiary.Psychotype.PickerHeader>
+  <PawnDiary.Psychotype.Reroll>Перебросить</PawnDiary.Psychotype.Reroll>
+  <PawnDiary.Psychotype.RerollTip>Разыграть поселенцу новый психотип по его увлечениям в навыках. Результат закрепляется, и игра больше не меняет его сама.</PawnDiary.Psychotype.RerollTip>
+  <PawnDiary.Psychotype.Pinned>Закреплён</PawnDiary.Psychotype.Pinned>
+  <PawnDiary.Psychotype.PinnedTip>Этот психотип выбран вручную, поэтому игра не станет менять его сама (например, когда поселенец повзрослеет).</PawnDiary.Psychotype.PinnedTip>
+  <PawnDiary.Psychotype.Unpin>Открепить</PawnDiary.Psychotype.Unpin>
+  <PawnDiary.Psychotype.UnpinTip>Снова разрешить игре перебросить психотип при следующем взрослении.</PawnDiary.Psychotype.UnpinTip>
+  <PawnDiary.Psychotype.OverrideExternal>Психотип временно задаёт интеграция ({0}).</PawnDiary.Psychotype.OverrideExternal>
+  <PawnDiary.Psychotype.CustomInactiveDueToOverride>Свой психотип сохранён, но не действует, пока активно переопределение.</PawnDiary.Psychotype.CustomInactiveDueToOverride>
+  <PawnDiary.Psychotype.CustomActive>Свой взгляд</PawnDiary.Psychotype.CustomActive>
+  <PawnDiary.Psychotype.OverrideActive>Переопределено</PawnDiary.Psychotype.OverrideActive>
+  <PawnDiary.Psychotype.ExternalSourceLabel>внешняя интеграция</PawnDiary.Psychotype.ExternalSourceLabel>
+  <PawnDiary.Psychotype.NeutralLabel>нейтральный</PawnDiary.Psychotype.NeutralLabel>
+  <PawnDiary.Psychotype.Saved>Психотип сохранён.</PawnDiary.Psychotype.Saved>
+  <PawnDiary.Psychotype.Reset>Свой психотип очищен.</PawnDiary.Psychotype.Reset>
+  <PawnDiary.Psychotype.Disabled>Психотипы выключены в настройках — взгляд в запросы не попадает.</PawnDiary.Psychotype.Disabled>
+  <PawnDiary.Tab.Psychotype>Психотип: {0}</PawnDiary.Tab.Psychotype>
 
 </LanguageData>
