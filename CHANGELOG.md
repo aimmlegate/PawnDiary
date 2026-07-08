@@ -8,6 +8,22 @@ pre-release version ladder for project history.
 
 ## 2026-07-08
 
+- **Fixed a mod-conflict NRE that silenced the whole diary on new games** (telemetry: every capture
+  patch reporting the same `BackstoryDef.FullDescriptionFor` failure, e.g. refs `81AA8488`,
+  `58B1F970`). With Vanilla Expanded Framework's transpiler on that vanilla method, certain modded
+  backstories throw while the founding-arrival scan builds its backstory context. That scan gates
+  all capture in a new-game session (`EnsureStartingArrivalsBefore` plus the tick-scan guards), so
+  the pending flag never cleared: no entry was ever recorded and every signal re-threw the same
+  error. Two layers of hardening: `SafeBackstoryDescription` falls back to the raw backstory
+  template on failure (one warning per backstory def), and `TryRecordStartingColonistArrivals`
+  isolates each colonist so an unexpected per-pawn failure costs only that pawn's arrival page
+  instead of wedging the gate.
+- **Fixed a stale-lover-thought NRE that dropped interaction captures** (telemetry ref `237F2575`).
+  Vanilla `Thought_OpinionOfMyLover.BaseMoodOffset` dereferences the lover relation, which can be
+  gone by the time the pawn-summary top-thoughts picker calls `MoodOffset()`. `BuildTopThoughtsSummary`
+  now snapshots each thought's offset once inside a per-thought guard (skipping ones that throw),
+  and the weighted pick and label formatting reuse the snapshot instead of re-reading the fragile
+  getter.
 - **Fixed a thought-capture NRE on vanilla-rejected memories** (telemetry ref `475B9A13`; reported
   under Vanilla Psycasts Expanded but reproducible without it). A postfix on
   `MemoryThoughtHandler.TryGainMemory` also fires when vanilla's accept-gates (`CanGetThought`,

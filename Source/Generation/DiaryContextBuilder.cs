@@ -961,12 +961,42 @@ namespace PawnDiary
             List<Thought> thoughts = new List<Thought>();
             pawn.needs.mood.thoughts.GetAllMoodThoughts(thoughts);
 
-            List<Thought> visible = thoughts
-                .Where(t => t != null && t.VisibleInNeedsTab && Mathf.Abs(t.MoodOffset()) >= 1f)
-                .ToList();
+            // Snapshot each thought's mood offset exactly once, skipping any thought whose getters
+            // throw. Vanilla relation thoughts are fragile here — Thought_OpinionOfMyLover.MoodOffset
+            // NREs when the lover relation is already gone by the time we read it — and other mods
+            // postfix MoodOffset too. One stale thought must cost only itself, not the whole pawn
+            // summary (and with it the diary entry being built).
+            List<WeightedThought> visible = new List<WeightedThought>();
+            for (int i = 0; i < thoughts.Count; i++)
+            {
+                Thought thought = thoughts[i];
+                if (thought == null)
+                {
+                    continue;
+                }
 
-            List<Thought> positive = visible.Where(t => t.MoodOffset() > 0f).ToList();
-            List<Thought> negative = visible.Where(t => t.MoodOffset() < 0f).ToList();
+                try
+                {
+                    if (!thought.VisibleInNeedsTab)
+                    {
+                        continue;
+                    }
+
+                    float offset = thought.MoodOffset();
+                    if (Mathf.Abs(offset) >= 1f)
+                    {
+                        visible.Add(new WeightedThought(thought, offset));
+                    }
+                }
+                catch (Exception)
+                {
+                    // Deliberately silent: stale relation thoughts are routine pawn churn, and this
+                    // runs on every context build — logging would spam without being actionable.
+                }
+            }
+
+            List<WeightedThought> positive = visible.Where(t => t.Offset > 0f).ToList();
+            List<WeightedThought> negative = visible.Where(t => t.Offset < 0f).ToList();
 
             string posStr = PickWeightedThought(positive);
             string negStr = PickWeightedThought(negative);
@@ -985,8 +1015,10 @@ namespace PawnDiary
         }
 
         // Picks one thought from the list using weighted random: weight = |moodOffset|,
-        // so thoughts with stronger effect are more likely to be chosen.
-        private static string PickWeightedThought(List<Thought> thoughts)
+        // so thoughts with stronger effect are more likely to be chosen. Works on the offsets
+        // snapshotted by BuildTopThoughtsSummary — it never calls Thought.MoodOffset() again,
+        // because that getter can throw for stale relation thoughts (see the snapshot loop).
+        private static string PickWeightedThought(List<WeightedThought> thoughts)
         {
             if (thoughts == null || thoughts.Count == 0)
             {
@@ -996,7 +1028,7 @@ namespace PawnDiary
             float totalWeight = 0f;
             for (int i = 0; i < thoughts.Count; i++)
             {
-                totalWeight += Mathf.Abs(thoughts[i].MoodOffset());
+                totalWeight += Mathf.Abs(thoughts[i].Offset);
             }
 
             if (totalWeight <= 0f)
@@ -1008,16 +1040,46 @@ namespace PawnDiary
             float cumulative = 0f;
             for (int i = 0; i < thoughts.Count; i++)
             {
-                cumulative += Mathf.Abs(thoughts[i].MoodOffset());
+                cumulative += Mathf.Abs(thoughts[i].Offset);
                 if (roll <= cumulative)
                 {
-                    return ExternalText(thoughts[i].LabelCap) + " (" + DiaryBuckets.EffectBucket(thoughts[i].MoodOffset()) + ")";
+                    return ThoughtSummaryText(thoughts[i]);
                 }
             }
 
             // Fallback: return the last one (shouldn't reach here normally)
-            Thought last = thoughts[thoughts.Count - 1];
-            return ExternalText(last.LabelCap) + " (" + DiaryBuckets.EffectBucket(last.MoodOffset()) + ")";
+            return ThoughtSummaryText(thoughts[thoughts.Count - 1]);
+        }
+
+        // Formats one picked thought as "<label> (<effect bucket>)". LabelCap resolves through the
+        // same relation lookups that make MoodOffset fragile (e.g. the lover's name), so a thought
+        // that went stale after the snapshot degrades to an empty line instead of throwing.
+        private static string ThoughtSummaryText(WeightedThought pick)
+        {
+            try
+            {
+                return ExternalText(pick.Thought.LabelCap) + " (" + DiaryBuckets.EffectBucket(pick.Offset) + ")";
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
+        }
+
+        // Pairs a mood thought with the offset captured when it was snapshotted, so the fragile
+        // Thought.MoodOffset() getter runs exactly once per thought. A plain value pair, no behavior.
+        // New to C#? A readonly struct is like a frozen two-field object, allocated inline in the
+        // list rather than on the heap.
+        private readonly struct WeightedThought
+        {
+            public readonly Thought Thought;
+            public readonly float Offset;
+
+            public WeightedThought(Thought thought, float offset)
+            {
+                Thought = thought;
+                Offset = offset;
+            }
         }
 
         private static string BuildNearbyThingsSummary(Pawn pawn)

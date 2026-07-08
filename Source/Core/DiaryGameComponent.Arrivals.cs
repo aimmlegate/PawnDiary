@@ -42,7 +42,20 @@ namespace PawnDiary
                 List<Pawn> colonists = map.mapPawns.FreeColonists;
                 for (int i = 0; i < colonists.Count; i++)
                 {
-                    DiaryEvents.Submit(new ArrivalSignal(colonists[i], BuildStartingArrivalContext(colonists[i])));
+                    // Isolate each colonist. This scan gates ALL diary capture on a new game
+                    // (EnsureStartingArrivalsBefore retries it before every signal, and ticking waits
+                    // on it too), so a pawn whose context build or capture throws must cost only their
+                    // own arrival page — letting the exception escape kept the gate closed forever and
+                    // silenced the whole diary while erroring on every event.
+                    try
+                    {
+                        DiaryEvents.Submit(new ArrivalSignal(colonists[i], BuildStartingArrivalContext(colonists[i])));
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Warning("[Pawn Diary] Skipped the starting-arrival entry for "
+                            + (colonists[i]?.LabelShort ?? "an unnamed colonist") + ": " + e);
+                    }
                 }
             }
 
@@ -125,7 +138,7 @@ namespace PawnDiary
             // Starting-arrival entries need the full in-game backstory description so the model can
             // connect the pawn's past to the scenario. Use one-line cleanup only, not the
             // sentence-capping LocalizedPromptText helper used for scenario blurbs.
-            string description = PromptContextValue(backstory.FullDescriptionFor(pawn).Resolve());
+            string description = PromptContextValue(SafeBackstoryDescription(backstory, pawn));
             if (!string.IsNullOrWhiteSpace(description))
             {
                 parts.Add(prefix + "_backstory_description=" + description);
@@ -135,6 +148,32 @@ namespace PawnDiary
             if (!string.IsNullOrWhiteSpace(effects))
             {
                 parts.Add(prefix + "_backstory_effects=" + effects);
+            }
+        }
+
+        /// <summary>
+        /// Resolves the pawn-adjusted backstory description without trusting
+        /// <c>BackstoryDef.FullDescriptionFor</c>: other mods transpile that vanilla method (e.g.
+        /// Vanilla Expanded Framework), and a bad interaction can throw NullReferenceException for
+        /// specific modded backstories. Falls back to the raw description template — readable prose,
+        /// just with unresolved [PAWN_*] grammar tokens — so the arrival entry still gets its
+        /// backstory line and, more importantly, arrival recording itself never aborts.
+        /// </summary>
+        private static string SafeBackstoryDescription(BackstoryDef backstory, Pawn pawn)
+        {
+            try
+            {
+                return backstory.FullDescriptionFor(pawn).Resolve();
+            }
+            catch (Exception e)
+            {
+                // One warning per backstory def, not one per attempt: while the arrival gate is
+                // pending, the same broken def would otherwise report on every diary signal.
+                Log.WarningOnce(
+                    "[Pawn Diary] BackstoryDef.FullDescriptionFor threw for '" + backstory.defName
+                    + "' (another mod patches it?); using the raw description text instead: " + e,
+                    ("PawnDiary.ArrivalBackstoryDescription." + backstory.defName).GetHashCode());
+                return backstory.baseDesc ?? string.Empty;
             }
         }
 

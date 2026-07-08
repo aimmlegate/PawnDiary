@@ -188,7 +188,7 @@ the universal path:
 | Step | What happens |
 |---|---|
 | Guard | `CanRecordGameplayEventNow` rejects events when the game is not in normal play. |
-| Starting-arrival flush | On new games, any non-arrival signal first tries to record founding-colonist arrivals, so the arrival page remains the first diary page even if a Harmony source fires early. |
+| Starting-arrival flush | On new games, any non-arrival signal first tries to record founding-colonist arrivals, so the arrival page remains the first diary page even if a Harmony source fires early. Each colonist is isolated: a pawn whose context build or capture throws loses only their own arrival page, and the flush still completes so the gate cannot wedge the diary. |
 | Dedup check | `recentEvents` rejects duplicate source keys before payload/context work runs. |
 | Decide | `DiaryEventCatalog.Get(payload.EventType).Decide(payload, ctx)` applies pure XML-backed policy. |
 | Generic dedup | A short XML-tuned event-type safety key (`genericEventTypeDedupTicks`) rejects repeat type+subject emissions after the decision. Death descriptions share one key across Tale and fallback sources. |
@@ -894,7 +894,10 @@ compact mechanical effects (skill bonuses, disabled work/tasks/tags, required ta
 forced/disallowed traits). These backstory descriptions are flattened to one prompt-safe line and
 semicolon-stripped so they stay inside the saved arrival field, but they are not sentence-capped; the
 arrival instruction asks the model to connect those facts with the starting scenario to explain how
-the pawn plausibly reached that beginning.
+the pawn plausibly reached that beginning. The description read does not trust vanilla's
+`BackstoryDef.FullDescriptionFor` (other mods transpile it, and a bad interaction can throw for
+specific modded backstories): on failure it warns once per backstory def and falls back to the raw
+description template, so the arrival flush never aborts on a broken description.
 
 Direct speech is allowed only in selected first-person interaction prompts, and only inside a closed
 `[[speech]]...[[/speech]]` block. The speech instruction is phrased default-off: the model is told
