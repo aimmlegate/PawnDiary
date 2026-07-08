@@ -294,7 +294,13 @@ namespace PawnDiary
             Settings.psychotypePresets.EnsureList();
 
             Rect outRect = inRect;
-            float viewHeight = Mathf.Max(lastStyleSettingsContentHeight, inRect.height);
+            // Both studios draw fixed-height cards. Give the scroll view's inner rect enough height up
+            // front so Listing_Standard never auto-wraps a card into a hidden second column: a wrap makes
+            // CurHeight report only the new column's height, which then collapses the self-measured
+            // lastStyleSettingsContentHeight and blanks the whole tab. The floor covers both cards plus
+            // generous room for the section titles, help paragraphs, and the disabled-hint line.
+            float minStyleHeight = (412f + PersonaTagPickerHeight()) + PsychotypeStudioCardHeight + 460f;
+            float viewHeight = Mathf.Max(lastStyleSettingsContentHeight, minStyleHeight, inRect.height);
             Rect viewRect = new Rect(0f, 0f, inRect.width - 16f, viewHeight);
             Listing_Standard listing = new Listing_Standard();
             Widgets.BeginScrollView(outRect, ref styleSettingsScrollPosition, viewRect);
