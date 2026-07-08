@@ -1229,8 +1229,9 @@ carries a `Retry-After` header it skips the fast local retries and cools the lan
 the server's requested wait (capped at one hour) and the local exponential backoff, so a rate-limited
 endpoint is not re-hit before it allows. `LlmResponseParser` supports Chat and Responses output
 shapes, strips reasoning/transcript leaks, normalizes or removes malformed speech markers (including
-common `speach` typos and incomplete bracket tags), removes model-leaked Unity rich-text angle tags,
-unwraps whole-response Markdown fences from compatible models, strips leading final-answer labels
+common `speach` typos and incomplete bracket tags), removes model-leaked Unity rich-text angle tags
+and stray numbered format placeholders (`{0}`/`{1}`/`{0:D2}`/`{}`) echoed from an unfilled prompt
+template, unwraps whole-response Markdown fences from compatible models, strips leading final-answer labels
 after reasoning cleanup, and trims saved text locally. The reasoning-scrub stages are guarded so a
 malformed or mismatched reasoning tag, or an ordinary diary line that merely resembles a label or
 self-audit, can never empty or truncate an otherwise valid entry (which would surface as a spurious

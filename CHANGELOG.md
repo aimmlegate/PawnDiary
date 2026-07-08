@@ -8,6 +8,13 @@ pre-release version ladder for project history.
 
 ## 2026-07-08
 
+- **Strip leaked format placeholders from generated diary text.** The LLM output sanitizer
+  (`LlmResponseParser.SanitizeGeneratedMarkup`) now removes stray numbered format placeholders —
+  `{0}`, `{1}`, `{0:D2}`, and empty `{}` — that a model echoed after an unfilled
+  `.Translate()`/`string.Format` template (e.g. "favor of {0}") reached the prompt, or that a small
+  model copied from the template shape. Numeric/empty braces only; a brace run with letters
+  (`{spawn}`) is kept as prose, and a stranded space before clause punctuation is healed so
+  "favor of {0}." saves as "favor of.". Covered by new `LlmResponseParserTests` cases.
 - **New second voice layer: pawn psychotypes (outlook).** Each pawn now has a *psychotype* — a short
   semantic lens describing what they notice, value, and fear, and how they judge events — folded into
   first-person prompts alongside their writing style. The two layers roll **independently** (style from
