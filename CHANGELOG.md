@@ -43,6 +43,22 @@ pre-release version ladder for project history.
   `PawnDiary.Tab.Psychotype`) translated. The psychotypes settings toggle/tip,
   `PawnDiary.Prompt.PsychotypeLens`, and the RimTalk bridge's `Persona.LensRule` (now phrased as a rule
   so it reads naturally inside the lens wrapper) were reworked natively as well.
+- **Adversarial-review hardening pass on the new voice layers.** A prompt **preview** no longer mutates
+  saved state: `PersonaRuleFor`/`PsychotypeRuleFor` take an `ensureVoiceStage` flag so the read-only
+  `PreviewExternalEventPrompt` path never rolls, stamps, or crystallizes a real pawn's voice. The per-pawn
+  editor no longer clobbers a not-yet-recorded pawn's first-time rolls — **Save** writes the base
+  style/outlook only when the player actually changed them (opening + saving an untouched editor used to
+  overwrite the fresh trait/passion rolls with Default/Neutral). The psychotype custom-rule box no longer
+  auto-pins on a keystroke (typing then clearing left the layer pinned); pinning is decided from final
+  state at Save, matching the writing-style field. The "established pre-feature voice freezes to Neutral"
+  guarantee now survives a disable→enable of the layer (the band stamp no longer masks the pre-feature
+  signal while the layer is off). An external psychotype **override** (e.g. the RimTalk bridge's Tier B)
+  still applies while the automatic layer is toggled off, instead of being silently dropped. The
+  psychotype roll is wrapped in `Rand.PushState/PopState` so it no longer perturbs the seeded gameplay
+  RNG. "Reset to base" now reports clearing **both** voice layers. Smaller guards: the thought-progression
+  scan tolerates a throwing `MoodOffset()` (same stale-thought NRE class already fixed in the pawn
+  summary), the VEF backstory fallback strips unresolved `[PAWN_*]` grammar tokens, and skipped-thought
+  summaries log once per thought def instead of silently.
 - **Fixed a mod-conflict NRE that silenced the whole diary on new games** (telemetry: every capture
   patch reporting the same `BackstoryDef.FullDescriptionFor` failure, e.g. refs `81AA8488`,
   `58B1F970`). With Vanilla Expanded Framework's transpiler on that vanilla method, certain modded
@@ -57,7 +73,9 @@ pre-release version ladder for project history.
   arrival page (the wedge aborted the scan mid-loop, so pawns after the broken backstory never got
   theirs), letting such saves backfill the missing pages on next load. Also covers mid-game
   installs and joins recorded while capture was off; pawns with existing pages dedup, so healthy
-  saves see no change.
+  saves see no change — the "already has an arrival" check (`HasArrivalEventFor`) now also consults the
+  compact **archive**, so a founding colonist whose arrival page has aged out of the hot store (past the
+  100-page cap) is no longer re-detected as "missing" and re-minted as a duplicate on every load.
 - **Fixed a stale-lover-thought NRE that dropped interaction captures** (telemetry ref `237F2575`).
   Vanilla `Thought_OpinionOfMyLover.BaseMoodOffset` dereferences the lover relation, which can be
   gone by the time the pawn-summary top-thoughts picker calls `MoodOffset()`. `BuildTopThoughtsSummary`

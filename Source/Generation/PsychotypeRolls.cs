@@ -28,8 +28,20 @@ namespace PawnDiary
         {
             PsychotypeRollInput input = BuildInput(pawn, stageBand, usedCounts, childPsychotypeDefName);
             List<PsychotypeCandidate> candidates = DiaryPsychotypes.RollCandidates();
-            string defName = PsychotypeRollPolicy.Roll(input, candidates, () => Rand.Value);
-            return string.IsNullOrWhiteSpace(defName) ? DiaryPsychotypes.NeutralDefName : defName;
+
+            // Isolate the roll from the global gameplay RNG stream. This is a cosmetic per-pawn pick, not a
+            // simulation event, so it must not shift the seeded Rand sequence the rest of the game draws
+            // from. PushState/PopState checkpoints that stream and restores it exactly around the roll.
+            Rand.PushState();
+            try
+            {
+                string defName = PsychotypeRollPolicy.Roll(input, candidates, () => Rand.Value);
+                return string.IsNullOrWhiteSpace(defName) ? DiaryPsychotypes.NeutralDefName : defName;
+            }
+            finally
+            {
+                Rand.PopState();
+            }
         }
 
         private static PsychotypeRollInput BuildInput(Pawn pawn, string stageBand,

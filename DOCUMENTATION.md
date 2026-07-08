@@ -896,9 +896,11 @@ other trait feeds the roll — independence from the style layer is the point.
 
 The effective psychotype priority, resolved by the pure `PsychotypeResolutionPolicy`, is **External API
 override > pawn custom rule > base type** (there is no hediff psychotype layer in v1). The master
-setting **Use pawn psychotypes** (`enablePsychotypes`, default on) gates the whole layer: when off, the
-resolution returns an empty rule (the block is omitted) and pending rolls stay deferred. The prompt
-wrapper is the keyed string `PawnDiary.Prompt.PsychotypeLens`, placed before the writing-style block by
+setting **Use pawn psychotypes** (`enablePsychotypes`, default on) gates the *automatic* layer: when off,
+the base/custom outlook resolves to an empty rule (the block is omitted) and pending rolls stay deferred.
+An active **external API override** (e.g. the RimTalk bridge) is an explicit opt-in from another mod, so
+it still applies while the toggle is off rather than being silently dropped. The prompt wrapper is the
+keyed string `PawnDiary.Prompt.PsychotypeLens`, placed before the writing-style block by
 `CombinedVoiceBlock`.
 
 **Children and crystallization.** The first-person minimum age (`minimumFirstPersonAgeYears`) drops to
@@ -908,8 +910,11 @@ wrapper is the keyed string `PawnDiary.Prompt.PsychotypeLens`, placed before the
 the pawn's current age against `psychotypeCrystallizationAgeYears` (default 13, the final vanilla growth
 moment) and, on mismatch, re-rolls both unpinned layers onto the adult catalogs (psychotype with a +1
 continuity nudge from the child type). Player-made picks/edits/re-rolls are **pinned** and never
-auto-re-rolled. `EnsureVoiceStage` never runs during a UI draw (it consumes `Rand`); the tab tooltip and
-dialog repaint use the read-only `ResolvePsychotypeForDisplay`.
+auto-re-rolled. `EnsureVoiceStage` never runs during a UI draw or a read-only prompt preview (it consumes
+`Rand` and mutates the record); the tab tooltip and dialog repaint use the read-only
+`ResolvePsychotypeForDisplay`, and `PreviewExternalEventPrompt` resolves rules with `ensureVoiceStage:false`.
+The band stamp is also deferred for a still-unstamped legacy record while the layer is off, so enabling it
+later still freezes an established pre-feature voice to Neutral instead of re-rolling it.
 
 **Save compatibility.** New per-pawn fields (`psychotypeDefName`, `customPsychotypeRule`,
 `externalPsychotypeOverrideRule/SourceId`, `voiceStageBand`, `psychotypePinned`, `writingStylePinned`)

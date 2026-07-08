@@ -349,7 +349,7 @@ namespace PawnDiary
                 return weights;
             }
 
-            HashSet<string> comboTargets = ComboTargets(input);
+            HashSet<string> comboTargets = ComboTargets(input, profile);
             for (int i = 0; i < candidates.Count; i++)
             {
                 PsychotypeCandidate candidate = candidates[i];
@@ -496,7 +496,7 @@ namespace PawnDiary
         }
 
         // The set of member defNames boosted by a matching combo signature for this passion set.
-        private static HashSet<string> ComboTargets(PsychotypeRollInput input)
+        private static HashSet<string> ComboTargets(PsychotypeRollInput input, PsychotypeProfile profile)
         {
             HashSet<string> targets = new HashSet<string>(StringComparer.Ordinal);
             if (input?.passions == null)
@@ -505,18 +505,17 @@ namespace PawnDiary
             }
 
             HashSet<string> skills = new HashSet<string>(StringComparer.Ordinal);
-            int burningSingleLevel = 0;
             for (int i = 0; i < input.passions.Count; i++)
             {
                 PsychotypeSkillPassion passion = input.passions[i];
                 if (passion != null && !string.IsNullOrWhiteSpace(passion.skillDefName) && passion.level > 0)
                 {
                     skills.Add(passion.skillDefName);
-                    burningSingleLevel = passion.level;
                 }
             }
 
-            PsychotypeProfile profile = BuildProfile(input.passions);
+            // Reuse the profile the caller already folded; only rebuild if a direct caller passed none.
+            PsychotypeProfile prof = profile ?? BuildProfile(input.passions);
 
             // Artistic + Social -> Theatrical
             if (skills.Contains(SkillArtistic) && skills.Contains(SkillSocial))
@@ -554,14 +553,16 @@ namespace PawnDiary
 
             // Exactly one passion and it is burning -> Perfectionist and Ambitious (+1 each, so both
             // reach the combo target set; the +ComboBonus below applies to whichever family is rolled).
-            if (profile.passionCount == 1 && burningSingleLevel >= 2)
+            // Read straight off the profile (one passion, and that passion burns) rather than tracking a
+            // loose "last passion level" local that only happened to be correct when passionCount == 1.
+            if (prof.passionCount == 1 && prof.burningCount == 1)
             {
                 targets.Add(DefPerfectionist);
                 targets.Add(DefAmbitious);
             }
 
             // >= 4 passions across >= 3 domains -> Ambitious
-            if (profile.passionCount >= 4 && profile.domainsWithPoints >= 3)
+            if (prof.passionCount >= 4 && prof.domainsWithPoints >= 3)
             {
                 targets.Add(DefAmbitious);
             }
