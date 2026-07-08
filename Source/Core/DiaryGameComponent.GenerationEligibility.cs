@@ -129,11 +129,38 @@ namespace PawnDiary
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
+            // Resolve any pending crystallization/backfill first so the style below reflects the band the
+            // pawn is actually in (a just-grown-up child re-rolls onto the adult style catalog here).
+            if (pawn != null && diary != null)
+            {
+                EnsureVoiceStage(pawn, diary);
+            }
+
             return HediffPersonaOverrides.RuleFor(
                 pawn,
                 diary?.personaDefName,
                 ExternalWritingStyleOverrideRuleFor(diary),
                 diary?.customWritingStyleRule);
+        }
+
+        /// <summary>
+        /// Resolves the psychotype (outlook) rule string for a given POV, mirroring
+        /// <see cref="PersonaRuleFor"/>. Empty when the layer is disabled, the record is missing, or the
+        /// resolved psychotype is Neutral — in which case no psychotype block reaches the prompt.
+        /// Effective priority is External API override &gt; pawn custom rule &gt; base type.
+        /// </summary>
+        private string PsychotypeRuleFor(DiaryEvent diaryEvent, string povRole,
+            Dictionary<string, Pawn> livePawnsById = null)
+        {
+            string pawnId = PawnIdForRole(diaryEvent, povRole);
+            PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
+            Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
+            if (pawn != null && diary != null)
+            {
+                EnsureVoiceStage(pawn, diary);
+            }
+
+            return BuildPsychotypeResolution(diary).rule;
         }
 
         /// <summary>

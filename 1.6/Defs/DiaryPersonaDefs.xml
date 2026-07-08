@@ -510,4 +510,61 @@
     </themes>
   </PawnDiary.DiaryPersonaDef>
 
+  <!-- ============================ Child writing styles ============================ -->
+  <!-- Tagged lifeStage=child: rolled only for pawns below psychotypeCrystallizationAgeYears, and never
+       mixed into the adult roll (which excludes them). Naive-concrete mechanics: present tense, literal
+       observation, events in the order they happened, big plain feelings. One mechanical signature
+       each, no deliberate misspellings. Both voice layers re-roll onto the adult catalogs at
+       crystallization. -->
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_ChildPlainOrder</defName>
+    <label>and-then</label>
+    <lifeStage>child</lifeStage>
+    <rule>This pawn tends to write things in the exact order they happened, joined by "and then," in the present tense. Each sentence is one thing that happens. Keep to the supplied facts. For example: "I wake up and then it is cold and then we eat and then the dog barks and I laugh."</rule>
+    <themes>
+      <li>warm</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_ChildBigFeeling</defName>
+    <label>best-worst</label>
+    <lifeStage>child</lifeStage>
+    <rule>This pawn tends to write one plain event, then a big flat verdict about it — best ever, worst ever, so unfair. The feeling is stated outright, not implied, and it is huge. Do not invent new events. For example: "We had mush again for supper. It is the worst supper in the whole world and I am never eating mush again."</rule>
+    <themes>
+      <li>dramatic</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_ChildLiteralWatch</defName>
+    <label>i-see</label>
+    <lifeStage>child</lifeStage>
+    <rule>This pawn tends to write short literal observations, several starting with "I see" or "I hear," reporting exactly what was there with a child's concrete detail and no explanation. Stay with the supplied facts. For example: "I see a big bird on the wall. I hear the grown-ups talking low. I do not know what about."</rule>
+    <themes>
+      <li>analytical</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_ChildQuestion</defName>
+    <label>but-why</label>
+    <lifeStage>child</lifeStage>
+    <rule>This pawn tends to write the event plainly and then stop to ask a question about it that no one answered. End on the question, not a conclusion. Keep the facts as given. For example: "The doctor took the man away on the cart. Why do grown-ups get so quiet when someone is hurt?"</rule>
+    <themes>
+      <li>whimsical</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_ChildBrave</defName>
+    <label>not-scared</label>
+    <lifeStage>child</lifeStage>
+    <rule>This pawn tends to write in short brave sentences that insist they were not scared, while one small concrete detail quietly gives the fear away. Do not add events. For example: "There were raiders and I was not scared at all. I held my blanket the whole time but that is just because it was cold."</rule>
+    <themes>
+      <li>anxious</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
 </Defs>

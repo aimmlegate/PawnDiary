@@ -88,6 +88,7 @@ That's it. Open the pawn's Diary tab and trigger your hook.
 | Read the structured pawn summary Pawn Diary would prompt with | `GetPawnSummary` |
 | Read the live condition/enchantment candidates | `GetPromptEnchantments` |
 | Read or set the pawn's writing style / generation toggle | `GetWritingStyle`, `SetWritingStyleOverride`, `IsDiaryGenerationEnabled`… |
+| Read or set the pawn's psychotype (outlook) | `GetPsychotype`, `SetPsychotypeOverride`, `ResetPsychotypeOverride` |
 | Contribute one `key=value` context line to every pawn summary | `RegisterPawnContextProvider` |
 | Get style + summary + enchantments + recent memory in one call | `GetContextBundle` |
 | Read the player's current LLM API setup (routing + lanes, incl. keys) | `GetApiSetup` *(v2)* |

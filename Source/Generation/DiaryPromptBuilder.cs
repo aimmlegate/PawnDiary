@@ -17,6 +17,7 @@ namespace PawnDiary
             DiaryEvent diaryEvent,
             string povRole,
             string personaRule,
+            string psychotypeRule,
             string promptEnchantment,
             int maxTokens = 0,
             string humorCue = null,
@@ -30,19 +31,20 @@ namespace PawnDiary
                 ? DiaryLineCleaner.CleanLine(diaryEvent.initiatorGeneratedText)
                 : null;
 
-            return BuildPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment, humorCue, initiatorEntry, null, false, maxTokens, contextDetailLevel);
+            return BuildPromptPlan(diaryEvent, povRole, personaRule, psychotypeRule, promptEnchantment, humorCue, initiatorEntry, null, false, maxTokens, contextDetailLevel);
         }
 
         public static DiaryPromptPlan BuildInteractionPromptPlan(
             DiaryEvent diaryEvent,
             string povRole,
             string personaRule,
+            string psychotypeRule,
             string promptEnchantment,
             int maxTokens = 0,
             string humorCue = null,
             PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full)
         {
-            return BuildPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment, humorCue, null, null, false, maxTokens, contextDetailLevel);
+            return BuildPromptPlan(diaryEvent, povRole, personaRule, psychotypeRule, promptEnchantment, humorCue, null, null, false, maxTokens, contextDetailLevel);
         }
 
         /// <summary>
@@ -55,7 +57,7 @@ namespace PawnDiary
             int maxTokens = 0,
             PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full)
         {
-            return BuildPromptPlan(diaryEvent, DiaryEvent.NeutralRole, string.Empty, string.Empty, string.Empty, null, null, false, maxTokens, contextDetailLevel);
+            return BuildPromptPlan(diaryEvent, DiaryEvent.NeutralRole, string.Empty, string.Empty, string.Empty, string.Empty, null, null, false, maxTokens, contextDetailLevel);
         }
 
         /// <summary>
@@ -68,7 +70,7 @@ namespace PawnDiary
             int maxTokens = 0,
             PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full)
         {
-            return BuildPromptPlan(diaryEvent, DiaryEvent.NeutralRole, string.Empty, string.Empty, string.Empty, null, null, false, maxTokens, contextDetailLevel);
+            return BuildPromptPlan(diaryEvent, DiaryEvent.NeutralRole, string.Empty, string.Empty, string.Empty, string.Empty, null, null, false, maxTokens, contextDetailLevel);
         }
 
         /// <summary>
@@ -81,7 +83,7 @@ namespace PawnDiary
         public static DiaryPromptPlan BuildTitlePromptPlan(DiaryEvent diaryEvent, string povRole, int maxTokens = 0)
         {
             string entryText = diaryEvent == null ? string.Empty : diaryEvent.DisplayTextForRole(povRole);
-            return BuildPromptPlan(diaryEvent, povRole, string.Empty, string.Empty, string.Empty, null, entryText, true, maxTokens);
+            return BuildPromptPlan(diaryEvent, povRole, string.Empty, string.Empty, string.Empty, string.Empty, null, entryText, true, maxTokens);
         }
 
         /// <summary>
@@ -101,6 +103,7 @@ namespace PawnDiary
                 string.Empty,
                 string.Empty,
                 string.Empty,
+                string.Empty,
                 null,
                 null,
                 false,
@@ -115,6 +118,7 @@ namespace PawnDiary
             DiaryEvent diaryEvent,
             string povRole,
             string personaRule,
+            string psychotypeRule,
             string promptEnchantment,
             string humorCue,
             string priorInitiatorEntry,
@@ -127,6 +131,7 @@ namespace PawnDiary
                 diaryEvent,
                 povRole,
                 personaRule,
+                psychotypeRule,
                 promptEnchantment,
                 humorCue,
                 priorInitiatorEntry,

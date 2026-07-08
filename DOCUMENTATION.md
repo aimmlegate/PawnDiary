@@ -446,9 +446,11 @@ never raise `TypeLoadException`. Pure decision logic (conversation assembly, imp
 context/persona formatting) lives under `Source/Pure/` and is unit-tested by
 `tests/RimTalkBridgeLogicTests/` without loading the game.
 
-Advanced, off-by-default options: **Tier B** persona-led writing-style override (`PersonaSync` applies
-`SetWritingStyleOverride` from the persona's first sentence, reapplies on persona-hash change, and
-clears via `ResetWritingStyleOverride` when toggled off); **engine mode** (`RimTalkEngineClient` routes
+Advanced, off-by-default options: **Tier B** persona-led diary voice, now a **psychotype (outlook)**
+override (`PersonaSync` applies `SetPsychotypeOverride` from the persona's first sentence — RimTalk
+supplies who the pawn is, Pawn Diary keeps how they write — reapplies on persona-hash change, and clears
+via `ResetPsychotypeOverride` when toggled off; every reset also sweeps the stale writing-style override
+older bridge versions placed, so existing saves migrate cleanly); **engine mode** (`RimTalkEngineClient` routes
 a conversation entry through `PreviewPrompt` → `AIService.Query<DiaryTextPayload>` →
 `SubmitDirectEntry`, falling back to the normal wrapped submit on any miss so a conversation is never
 lost); and per-pawn/colony/pair throttle knobs (`ThrottlePolicy`, in-memory, not saved). The frozen
@@ -533,7 +535,8 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryObservedConditionDefs.xml` | live-state conditions such as map danger, game conditions, evidence things, and visible hediffs |
 | `DiaryEventPromptDefs.xml` | event prompt text, enhancements, and optional forced model names |
 | `DiaryPromptTemplateDefs.xml` / `DiaryPromptDef.xml` | prompt field shapes and shared system/final instructions |
-| `DiaryPersonaDefs.xml` / `DiaryHediffPersonaOverrideDefs.xml` | writing styles and temporary hediff-driven style overrides |
+| `DiaryPersonaDefs.xml` / `DiaryHediffPersonaOverrideDefs.xml` | writing styles (incl. child styles) and temporary hediff-driven style overrides |
+| `DiaryPsychotypeDefs.xml` | pawn psychotypes (outlook layer): Neutral + 17 adult + 5 child types, families and skill affinities |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
 | `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |
 | `DiaryUiStyleDef.xml` / `DiaryTextDecorationDefs.xml` | UI dimensions/colors and display-only rich-text decoration |
@@ -764,7 +767,9 @@ Prompt policy layers:
    angle instead of always receiving the same guidance. Most high-traffic groups now ship both
    pools.
 5. Writing style from the pawn's saved `DiaryPersonaDef`, unless temporarily overridden by hediff.
-6. Optional prompt enchantments, event windows, observed conditions, and humor cues.
+6. Psychotype (outlook) from the pawn's saved `DiaryPsychotypeDef` — an independent second voice layer
+   (see §6.1), folded into the same combined voice block, before the writing style.
+7. Optional prompt enchantments, event windows, observed conditions, and humor cues.
 
 Prompt context detail is applied after those layers have produced the full typed prompt value set,
 but before `PromptAssembler` renders the user prompt. `Full` is the compatibility preset and keeps
@@ -862,11 +867,64 @@ The integration API's `PawnDiaryApi.GetWritingStyle` continues to return the bas
 The writing-style rule is appended to the **system prompt** for first-person shapes, never rendered
 as a field in the **user** prompt. The single load-bearing line is
 `PromptAssembler.ComposeSystem(baseSystemPrompt, personaVoiceBlock, includePersona)`; the voice block
-is built by `DiaryPipelineAdapters.PersonaVoiceBlock`. The neutral death/arrival chronicles and the
-title follow-up set `includePersona=false` so they stay style-free. Two regression tests in
-`tests/DiaryPipelineTests` pin this contract: a pure unit test on `ComposeSystem`, and a shipped-XML
-contract test asserting every first-person template keeps `includePersona=true` and every
-neutral/title template opts out.
+is built by `DiaryPipelineAdapters.CombinedVoiceBlock`, which joins the psychotype lens, the writing
+style, and the humor cue in that fixed order (outlook first, style last as the harder mechanical
+constraint). The neutral death/arrival chronicles and the title follow-up set `includePersona=false`
+so they stay voice-free (psychotype included). Regression tests in `tests/DiaryPipelineTests` pin this
+contract: pure unit tests on `ComposeSystem`, an end-to-end test that the psychotype lens reaches the
+system prompt before the style and never the user prompt, and a shipped-XML contract test asserting
+every first-person template keeps `includePersona=true` and every neutral/title template opts out.
+
+### 6.1 Psychotypes (outlook layer)
+
+The **psychotype** is a second per-pawn voice layer, independent of the writing style. Where a writing
+style controls sentence *mechanics* (how a pawn writes), a psychotype is a 1-2 sentence semantic *lens*
+(who is looking; what they notice, value, and fear, and how they judge). Rolling the two independently
+multiplies them into many distinct diary voices. Psychotypes are backed by `DiaryPsychotypeDef`
+(`1.6/Defs/DiaryPsychotypeDefs.xml`): a Neutral (empty-rule) fallback, 17 adult types across four
+families (grounded, inward, intense, anxious), and 5 child types. The **label is picker text only and
+is never injected into the prompt** — `DiaryPsychotypes.RuleFor` deliberately drops it, a documented
+divergence from `DiaryPersonas.RuleFor`; the outlook must show through the entry, never be named.
+
+The initial roll (pure `PsychotypeRollPolicy`, snapshotted by `PsychotypeRolls`) is a two-stage draw
+from the pawn's **skill passions** (minor = 1 pt, burning = 2): stage 0 folds the 12 skills into five
+domains; stage 1 weights the four families; stage 2 weights the members inside the rolled family
+(per-skill nudges on the def, combo signatures, a child→adult continuity nudge, a band-aware duplicate
+penalty), with deliberate extra randomness (a 12% wildcard branch that ignores the profile, plus a
+per-candidate jitter). A Psychopath never rolls Dependent and a Kind pawn never rolls Ruthless; no
+other trait feeds the roll — independence from the style layer is the point.
+
+The effective psychotype priority, resolved by the pure `PsychotypeResolutionPolicy`, is **External API
+override > pawn custom rule > base type** (there is no hediff psychotype layer in v1). The master
+setting **Use pawn psychotypes** (`enablePsychotypes`, default on) gates the whole layer: when off, the
+resolution returns an empty rule (the block is omitted) and pending rolls stay deferred. The prompt
+wrapper is the keyed string `PawnDiary.Prompt.PsychotypeLens`, placed before the writing-style block by
+`CombinedVoiceBlock`.
+
+**Children and crystallization.** The first-person minimum age (`minimumFirstPersonAgeYears`) drops to
+7, so children keep a diary in the naive child catalogs of *both* layers. A record stamps which band
+("child"/"adult") its rolls were made for; a lazy main-thread check
+(`DiaryGameComponent.EnsureVoiceStage`, run before generation resolves the voice) compares that band to
+the pawn's current age against `psychotypeCrystallizationAgeYears` (default 13, the final vanilla growth
+moment) and, on mismatch, re-rolls both unpinned layers onto the adult catalogs (psychotype with a +1
+continuity nudge from the child type). Player-made picks/edits/re-rolls are **pinned** and never
+auto-re-rolled. `EnsureVoiceStage` never runs during a UI draw (it consumes `Rand`); the tab tooltip and
+dialog repaint use the read-only `ResolvePsychotypeForDisplay`.
+
+**Save compatibility.** New per-pawn fields (`psychotypeDefName`, `customPsychotypeRule`,
+`externalPsychotypeOverrideRule/SourceId`, `voiceStageBand`, `psychotypePinned`, `writingStylePinned`)
+default safely on old saves. On load, a legacy record with generated entries adopts **Neutral** (so an
+established voice does not shift) while an entry-less record rolls a fresh psychotype lazily on its next
+entry — the type is always created if missing. The `DiaryPsychotypeDef` XML is loaded at startup like
+any Def, so the "type" exists regardless of the save.
+
+**Editing and API.** The psychotype is edited from the **same** per-pawn editor as the writing style
+(`Dialog_PawnWritingStyle`, opened by the Diary tab header icon), as a second section with a
+stage-filtered picker, a re-roll button, a custom-rule area, a pin/unpin control, and an
+override-explanation panel; the header-icon tooltip shows both layers. The public integration API adds
+`GetPsychotype` (read the effective outlook) and `SetPsychotypeOverride` / `ResetPsychotypeOverride`
+(source-owned, mirroring the writing-style override pair). The RimTalk bridge's Tier B repoints to the
+psychotype override so RimTalk supplies *who* the pawn is while Pawn Diary keeps *how* they write.
 
 Prompt enchantments add one weighted live-context cue to eligible first-person prompts. Event windows
 and observed conditions feed the same planner, so active threats can bias otherwise unrelated diary

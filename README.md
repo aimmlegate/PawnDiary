@@ -21,6 +21,10 @@ buildings, or gameplay pressure.
 - Optional generated entry titles.
 - Display-only atmospheric formatting for some intense or strange entries.
 - Writing-style presets that can be tuned in the mod settings.
+- Per-pawn **psychotypes** — an independent "outlook" layer (what a pawn notices, values, and fears)
+  that colors their diary alongside the writing style, rolled from their skill passions. Children keep
+  a diary in a naive voice, and both layers re-roll when a pawn grows up. Edited from the same per-pawn
+  editor as the writing style; toggle it off in settings if you prefer.
 - Prompt Studio for editing shared and event-specific prompt text.
 
 ## Model And API Support

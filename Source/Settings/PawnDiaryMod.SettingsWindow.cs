@@ -202,6 +202,10 @@ namespace PawnDiary
                     ref Settings.enablePromptEnchantments,
                     "PawnDiary.Settings.EnablePromptEnchantmentsTip".Translate());
                 listing.CheckboxLabeled(
+                    "PawnDiary.Settings.EnablePsychotypes".Translate(),
+                    ref Settings.enablePsychotypes,
+                    "PawnDiary.Settings.EnablePsychotypesTip".Translate());
+                listing.CheckboxLabeled(
                     "PawnDiary.Settings.AllowExternalIntegrations".Translate(),
                     ref Settings.allowExternalIntegrations,
                     "PawnDiary.Settings.AllowExternalIntegrationsTip".Translate());

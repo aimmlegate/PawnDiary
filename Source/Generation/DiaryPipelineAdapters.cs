@@ -19,6 +19,7 @@ namespace PawnDiary
             DiaryEvent diaryEvent,
             string povRole,
             string personaRule,
+            string psychotypeRule,
             string promptEnchantment,
             string humorCue,
             string priorInitiatorEntry,
@@ -36,10 +37,15 @@ namespace PawnDiary
                 povRole = normalizedRole,
                 titleRequest = titleRequest,
                 personaRule = personaRule,
-                // The per-entry humor cue rides inside the persona voice block rather than on its own
-                // request field, so no planner/contract change is needed and it is automatically
-                // suppressed when a template opts out of persona text (neutral death/arrival/title).
-                personaVoiceBlock = CombinedVoiceBlock(PersonaVoiceBlock(personaRule), HumorVoiceBlock(humorCue)),
+                // The psychotype (outlook) block, the writing-style block, and the per-entry humor cue all
+                // ride inside one combined voice block rather than separate request fields, so no
+                // planner/contract change is needed and the whole block is automatically suppressed when a
+                // template opts out of persona text (neutral death/arrival/title). Order matters: outlook
+                // first, then style, then humor — style stays last as the harder mechanical constraint.
+                personaVoiceBlock = CombinedVoiceBlock(
+                    PsychotypeLensBlock(psychotypeRule),
+                    PersonaVoiceBlock(personaRule),
+                    HumorVoiceBlock(humorCue)),
                 promptEnchantment = promptEnchantment,
                 priorInitiatorEntry = priorInitiatorEntry,
                 entryText = entryText,
@@ -271,6 +277,20 @@ namespace PawnDiary
             return "PawnDiary.Prompt.PersonaVoice".Translate(personaRule.Trim()).Resolve();
         }
 
+        // Wraps the pawn's psychotype (outlook) rule in its model-facing frame. Placed BEFORE the writing
+        // style so the style — the harder mechanical constraint — stays the final instruction, which
+        // small models weight most. Blank rule => no block (Neutral, disabled, or neutral templates).
+        // The label is deliberately never passed: the outlook must show through the entry, never be named.
+        private static string PsychotypeLensBlock(string psychotypeRule)
+        {
+            if (string.IsNullOrWhiteSpace(psychotypeRule))
+            {
+                return string.Empty;
+            }
+
+            return "PawnDiary.Prompt.PsychotypeLens".Translate(psychotypeRule.Trim()).Resolve();
+        }
+
         // Wraps one chosen humor cue (a structural sentence-shape license) in the same kind of
         // model-facing frame as the writing style. Blank cue => no block, so the feature is a no-op
         // on the ~90% of entries that do not roll a cue. Main thread only: .Translate() is not
@@ -285,24 +305,28 @@ namespace PawnDiary
             return "PawnDiary.Prompt.HumorVoice".Translate(humorCue.Trim()).Resolve();
         }
 
-        // Joins the writing-style block and the humor block with a blank line between them. If either
-        // is empty, the other stands alone; if both are empty, the whole voice block is empty (which
-        // is the correct shape for neutral death/arrival/title prompts).
-        private static string CombinedVoiceBlock(string personaVoiceBlock, string humorVoiceBlock)
+        // Joins the psychotype, writing-style, and humor blocks in that fixed order, each separated by a
+        // blank line, skipping any that are empty. All three empty => the whole voice block is empty
+        // (the correct shape for neutral death/arrival/title prompts, which drop the block entirely).
+        private static string CombinedVoiceBlock(string psychotypeBlock, string personaVoiceBlock, string humorVoiceBlock)
         {
-            bool hasPersona = !string.IsNullOrWhiteSpace(personaVoiceBlock);
-            bool hasHumor = !string.IsNullOrWhiteSpace(humorVoiceBlock);
-            if (hasPersona && hasHumor)
+            List<string> parts = new List<string>(3);
+            if (!string.IsNullOrWhiteSpace(psychotypeBlock))
             {
-                return personaVoiceBlock + "\n\n" + humorVoiceBlock;
+                parts.Add(psychotypeBlock);
             }
 
-            if (hasPersona)
+            if (!string.IsNullOrWhiteSpace(personaVoiceBlock))
             {
-                return personaVoiceBlock;
+                parts.Add(personaVoiceBlock);
             }
 
-            return hasHumor ? humorVoiceBlock : string.Empty;
+            if (!string.IsNullOrWhiteSpace(humorVoiceBlock))
+            {
+                parts.Add(humorVoiceBlock);
+            }
+
+            return parts.Count == 0 ? string.Empty : string.Join("\n\n", parts);
         }
 
         private static string EventNoun(DiaryEvent diaryEvent)

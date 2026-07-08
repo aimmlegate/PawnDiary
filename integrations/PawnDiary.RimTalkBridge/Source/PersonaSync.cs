@@ -3,8 +3,10 @@
 //   • Tier A (ships at level 1): mutual awareness. Pawn Diary sees a compact "chat_persona=<first
 //     sentence of the RimTalk persona>" line via a registered context provider. Nothing is mutated.
 //   • Tier B (advanced, default OFF, experimental): persona-led diary voice. The pawn's RimTalk
-//     character description is turned into a Pawn Diary writing-style OVERRIDE, reapplied when the
-//     persona text changes and cleared when the toggle turns off.
+//     character description is turned into a Pawn Diary PSYCHOTYPE (outlook) OVERRIDE — RimTalk supplies
+//     WHO the pawn is; Pawn Diary keeps HOW they write. Reapplied when the persona text changes and
+//     cleared when the toggle turns off. (Earlier versions placed a writing-STYLE override here; every
+//     bridge reset now also sweeps that stale style override so old saves migrate cleanly.)
 //
 // Recorded design rule: pawns share identity/memory but keep SEPARATE voices. We only ever READ
 // RimTalk's persona; we never write into it (that would mutate another mod's save).
@@ -38,7 +40,7 @@ namespace PawnDiaryRimTalkBridge
 
         // Tier B bookkeeping: pawnId -> hash of the persona text we last turned into an override. Lets
         // us skip pawns whose persona has not changed. In-memory only (not saved): after a reload the
-        // first pass simply re-applies, which is harmless because SetWritingStyleOverride is idempotent.
+        // first pass simply re-applies, which is harmless because SetPsychotypeOverride is idempotent.
         private static readonly Dictionary<string, int> AppliedPersonaHash = new Dictionary<string, int>();
 
         // Whether Tier B was active on the previous pass, so we can detect the moment it turns off and
@@ -98,7 +100,7 @@ namespace PawnDiaryRimTalkBridge
         {
             foreach (Pawn pawn in TouchedPawns())
             {
-                PawnDiaryApi.ResetWritingStyleOverride(pawn, BridgeIds.ModId);
+                ResetBridgeOverrides(pawn);
             }
 
             AppliedPersonaHash.Clear();
@@ -112,14 +114,24 @@ namespace PawnDiaryRimTalkBridge
         public static void ResetForNewGame()
         {
             // Clear overrides BEFORE wiping the bookkeeping: TouchedPawns() reads AppliedPersonaHash to
-            // resolve pawns we tracked. Order matters here.
+            // resolve pawns we tracked. Order matters here. This also performs the one-time migration
+            // sweep of stale writing-style overrides an older bridge version placed under Tier B.
             foreach (Pawn pawn in TouchedPawns())
             {
-                PawnDiaryApi.ResetWritingStyleOverride(pawn, BridgeIds.ModId);
+                ResetBridgeOverrides(pawn);
             }
 
             AppliedPersonaHash.Clear();
             tierBWasActive = false;
+        }
+
+        // Clears BOTH bridge-owned overrides for a pawn: the current psychotype override and any stale
+        // writing-style override an older bridge version placed under Tier B. Pawn Diary refuses to clear
+        // another source's override, so both calls are safe no-ops on pawns the bridge never touched.
+        private static void ResetBridgeOverrides(Pawn pawn)
+        {
+            PawnDiaryApi.ResetPsychotypeOverride(pawn, BridgeIds.ModId);
+            PawnDiaryApi.ResetWritingStyleOverride(pawn, BridgeIds.ModId);
         }
 
         // Every pawn the bridge may have given a Tier B override: spawned free colonists, caravans and
@@ -164,7 +176,7 @@ namespace PawnDiaryRimTalkBridge
                 // Persona cleared: drop any override we had placed for this pawn.
                 if (AppliedPersonaHash.ContainsKey(id))
                 {
-                    PawnDiaryApi.ResetWritingStyleOverride(pawn, BridgeIds.ModId);
+                    ResetBridgeOverrides(pawn);
                     AppliedPersonaHash.Remove(id);
                 }
 
@@ -186,8 +198,10 @@ namespace PawnDiaryRimTalkBridge
                 return;
             }
 
-            string rule = "PawnDiaryRimTalkBridge.Persona.VoiceRule".Translate(firstSentence);
-            if (PawnDiaryApi.SetWritingStyleOverride(pawn, BridgeIds.ModId, rule))
+            // Tier B repointed: the persona feeds Pawn Diary's PSYCHOTYPE (outlook) override, not the
+            // writing style. RimTalk supplies who the pawn is; Pawn Diary keeps how they write.
+            string rule = "PawnDiaryRimTalkBridge.Persona.LensRule".Translate(firstSentence);
+            if (PawnDiaryApi.SetPsychotypeOverride(pawn, BridgeIds.ModId, rule))
             {
                 AppliedPersonaHash[id] = hash;
             }

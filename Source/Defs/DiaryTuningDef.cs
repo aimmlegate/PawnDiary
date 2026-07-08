@@ -254,9 +254,17 @@ namespace PawnDiary
         // thousands of entries in one draw. These cap per-frame work for the tab and command badges.
         public int uiHistoryScanMaxEventsPerFrame = 60;
         public float uiHistoryScanFrameBudgetSeconds = 0.00075f;
-        // Minimum biological age for first-person diary ownership/generation. Pre-teen colonists can
-        // still appear as context in someone else's entry, but they do not write their own pages.
-        public int minimumFirstPersonAgeYears = 13;
+        // Minimum biological age for first-person diary ownership/generation. Below this, colonists can
+        // still appear as context in someone else's entry, but they do not write their own pages. Lowered
+        // to 7 so children can keep a diary in the naive child voice/psychotype catalogs; both layers
+        // re-roll onto the adult catalogs when the pawn crosses psychotypeCrystallizationAgeYears.
+        public int minimumFirstPersonAgeYears = 7;
+
+        // Biological age at which a pawn's voice "crystallizes": both the writing style and the
+        // psychotype re-roll from the child catalogs onto the adult catalogs. 13 is the final vanilla
+        // growth moment (a pawn's passion set is complete by then). Pinned (player-chosen) layers are
+        // never auto-re-rolled. See DiaryGameComponent.EnsureVoiceStage.
+        public int psychotypeCrystallizationAgeYears = 13;
 
         // ---- Beauty buckets (the "notable" gate uses beautyPleasant as the ± threshold) ----
         public float beautyBeautiful = 2f;

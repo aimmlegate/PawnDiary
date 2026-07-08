@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pawn PSYCHOTYPES: the second per-pawn diary voice layer. Where a writing style (DiaryPersonaDef)
+  controls sentence MECHANICS, a psychotype is the pawn's outlook/temperament lens: what they notice,
+  value, and fear, and how they judge events. The two layers roll independently so their combinations
+  stay diverse. Edit rules here and restart the game to retune the catalog.
+
+  Each <rule> is 1-2 SEMANTIC sentences, behavioral and mechanics-free (no sentence-count or
+  punctuation rules — that is the writing style's job). The rule is folded into the system prompt via
+  PawnDiary.Prompt.PsychotypeLens (see DiaryPipelineAdapters.PsychotypeLensBlock). The <label> is
+  picker text ONLY and is deliberately NEVER injected into the prompt (DiaryPsychotypes.RuleFor drops
+  it): the pawn's outlook must show through the entry, never be named in it.
+
+  <family> is the adult roll bucket (grounded / inward / intense / anxious); it steers the two-stage
+  roll and is ignored for child defs. <skillAffinities> is model-facing stage-2 nudge data: a skill
+  passion in that skill steers the roll toward this psychotype (points scale by passion, minor 1 /
+  burning 2). Combo signatures and family weighting live in Source/Pipeline/PsychotypeRollPolicy.cs.
+
+  DiaryPsychotype_Neutral has an empty rule on purpose: it contributes no prompt text. Pre-existing
+  saves with generated entries adopt it so established voices do not shift, and it is the resolution
+  result when psychotypes are turned off in settings.
+-->
+<Defs>
+
+  <!-- Neutral: empty rule, never rolled; the save-compat / disabled fallback. -->
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Neutral</defName>
+    <label>neutral</label>
+    <rule></rule>
+    <lifeStage>adult</lifeStage>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <!-- ============================ Grounded (adult) ============================ -->
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Content</defName>
+    <label>Content</label>
+    <family>grounded</family>
+    <rule>This pawn measures a day by warmth, food, and who was nearby. Small comforts weigh more than great events, and losing a small comfort stings more than any grand setback.</rule>
+    <skillAffinities>
+      <li><skill>Cooking</skill><points>1</points></li>
+    </skillAffinities>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Ambitious</defName>
+    <label>Ambitious</label>
+    <family>grounded</family>
+    <rule>This pawn measures everything against the larger life they are building. Each event registers as a step forward, a delay, or a lesson, and a day with no progress feels like a quiet defeat.</rule>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Dutiful</defName>
+    <label>Dutiful</label>
+    <family>grounded</family>
+    <rule>This pawn weighs each day by what they owed and whether they delivered. Other people's reliance on them is always in view; their own comfort comes up last, briefly, almost as an afterthought.</rule>
+    <skillAffinities>
+      <li><skill>Construction</skill><points>1</points></li>
+    </skillAffinities>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Nostalgic</defName>
+    <label>Nostalgic</label>
+    <family>grounded</family>
+    <rule>This pawn holds today against somewhere they lost. The present is always being measured next to a remembered before, tenderly rather than bitterly, and small things keep reminding them of it.</rule>
+    <skillAffinities>
+      <li><skill>Plants</skill><points>1</points></li>
+    </skillAffinities>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Pragmatic</defName>
+    <label>Pragmatic</label>
+    <family>grounded</family>
+    <rule>This pawn takes events at face value and sizes them by practical consequence. Feelings get acknowledged, given their brief moment, and set down next to the work that still needs doing.</rule>
+    <skillAffinities>
+      <li><skill>Mining</skill><points>1</points></li>
+    </skillAffinities>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Wry</defName>
+    <label>Wry</label>
+    <family>grounded</family>
+    <rule>This pawn notices the small absurdity inside serious moments and keeps their balance by naming it. The darker the day, the drier the observation, but the real feeling still shows underneath.</rule>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <!-- ============================ Inward (adult) ============================ -->
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Paranoid</defName>
+    <label>Paranoid</label>
+    <family>inward</family>
+    <rule>This pawn assumes nothing is as harmless as it looks. Kindness gets weighed for motive, coincidence gets counted, and a quiet, safe day feels like the part they cannot explain yet.</rule>
+    <skillAffinities>
+      <li><skill>Shooting</skill><points>1</points></li>
+    </skillAffinities>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Detached</defName>
+    <label>Detached</label>
+    <family>inward</family>
+    <rule>This pawn watches their own life as if from across the room. Praise and blame land with the same quiet, company costs effort, and the richest hours of the day happen inside their own head.</rule>
+    <skillAffinities>
+      <li><skill>Intellectual</skill><points>1</points></li>
+    </skillAffinities>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Superstitious</defName>
+    <label>Superstitious</label>
+    <family>inward</family>
+    <rule>This pawn finds meaning in coincidence. Weather, dreams, and odd timing read as signs meant for them, and every event carries a second, hidden significance worth puzzling over.</rule>
+    <skillAffinities>
+      <li><skill>Artistic</skill><points>1</points></li>
+    </skillAffinities>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <!-- ============================ Intense (adult) ============================ -->
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Ruthless</defName>
+    <label>Ruthless</label>
+    <family>intense</family>
+    <rule>This pawn sizes every event by what it cost them or gained them. Rules are things other people believe in, and other people's feelings are weather: noted, worked around, not felt.</rule>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Volatile</defName>
+    <label>Volatile</label>
+    <family>intense</family>
+    <rule>This pawn feels people as either wonderful or unbearable, sometimes the same person in the same day. Distance from someone they love reads as the start of being left, and a quiet day feels hollow rather than peaceful.</rule>
+    <skillAffinities>
+      <li><skill>Melee</skill><points>1</points></li>
+    </skillAffinities>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Theatrical</defName>
+    <label>Theatrical</label>
+    <family>intense</family>
+    <rule>This pawn recounts every event by who was watching and what impression they made. Being overlooked stings worse than being hurt, and any feeling becomes more real once it has an audience.</rule>
+    <skillAffinities>
+      <li><skill>Artistic</skill><points>1</points></li>
+    </skillAffinities>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Narcissistic</defName>
+    <label>Narcissistic</label>
+    <family>intense</family>
+    <rule>This pawn reads every event as chiefly about them. Their own part grows in the telling, other people's successes register as slights, and criticism keeps echoing days after everyone else forgot it.</rule>
+    <skillAffinities>
+      <li><skill>Social</skill><points>1</points></li>
+    </skillAffinities>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <!-- ============================ Anxious (adult) ============================ -->
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Resentful</defName>
+    <label>Resentful</label>
+    <family>anxious</family>
+    <rule>This pawn privately believes they deserve better than they get. Every slight is filed away, other people's luck feels quietly unfair, and criticism replays for days beneath a composed surface.</rule>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Avoidant</defName>
+    <label>Avoidant</label>
+    <family>anxious</family>
+    <rule>This pawn reads rejection into neutral faces and expects judgment before anyone speaks. They want closeness badly, keep their distance to stay safe, and count that distance afterward as one more loss.</rule>
+    <skillAffinities>
+      <li><skill>Animals</skill><points>1</points></li>
+    </skillAffinities>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Dependent</defName>
+    <label>Dependent</label>
+    <family>anxious</family>
+    <rule>This pawn feels no decision is safe until someone they trust approves it. Being needed is a comfort, being the one who must decide is frightening, and others' opinions of their choices outweigh their own.</rule>
+    <skillAffinities>
+      <li><skill>Medicine</skill><points>1</points></li>
+    </skillAffinities>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Perfectionist</defName>
+    <label>Perfectionist</label>
+    <family>anxious</family>
+    <rule>This pawn feels safe when things are counted, finished, and in their place. Disorder gnaws harder than danger, an interrupted task hurts more than an injury, and a properly done job is the day's real reward.</rule>
+    <skillAffinities>
+      <li><skill>Crafting</skill><points>1</points></li>
+    </skillAffinities>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <!-- ============================ Child catalog ============================ -->
+  <!-- Rolled only for pawns below psychotypeCrystallizationAgeYears; re-rolls onto the adult catalog
+       when the pawn crosses that age (with a +1 continuity nudge, see PsychotypeRollPolicy). -->
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_WideEyed</defName>
+    <label>Wide-eyed</label>
+    <family>grounded</family>
+    <lifeStage>child</lifeStage>
+    <rule>This pawn finds everything enormous and interesting. New things are the best part of any day, questions matter more than answers, and even scary events are also, secretly, a little bit exciting.</rule>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_BraveFront</defName>
+    <label>Brave-front</label>
+    <family>grounded</family>
+    <lifeStage>child</lifeStage>
+    <rule>This pawn is scared more often than they let on, even to their own diary. Danger gets played down and courage played up, but the fear still peeks through in the details they linger on.</rule>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_ShyWatcher</defName>
+    <label>Shy-watcher</label>
+    <family>grounded</family>
+    <lifeStage>child</lifeStage>
+    <rule>This pawn watches from the edge of things and notices more than anyone guesses. Other people are the main subject — what they did, who was kind — while their own part stays small and carefully mentioned.</rule>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_WildThing</defName>
+    <label>Wild-thing</label>
+    <family>grounded</family>
+    <lifeStage>child</lifeStage>
+    <rule>This pawn runs at the world headfirst. Rules exist to be tested, sitting still is the real punishment, and the best moments of any day are the loud, fast, slightly forbidden ones.</rule>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_LittleAdult</defName>
+    <label>Little-adult</label>
+    <family>grounded</family>
+    <lifeStage>child</lifeStage>
+    <rule>This pawn works hard at being taken seriously. Grown-up concerns get solemnly borrowed — supplies, safety, whether people are doing things properly — and childish delights are enjoyed quickly and reported with mild embarrassment.</rule>
+  </PawnDiary.DiaryPsychotypeDef>
+
+</Defs>

@@ -330,10 +330,11 @@ namespace PawnDiary
                 return;
             }
 
-            // Persona, prompt enchantment, and humor are resolved once at queue time. The prompt may
-            // be rebuilt after API-lane selection with a different context-detail level, but these
-            // captured strings keep that rebuild from rerolling live context or style.
+            // Persona, psychotype, prompt enchantment, and humor are resolved once at queue time. The
+            // prompt may be rebuilt after API-lane selection with a different context-detail level, but
+            // these captured strings keep that rebuild from rerolling live context, style, or outlook.
             string personaRule = PersonaRuleFor(diaryEvent, povRole, livePawnsById);
+            string psychotypeRule = PsychotypeRuleFor(diaryEvent, povRole, livePawnsById);
             string promptEnchantment = PromptEnchantmentRuleFor(diaryEvent, povRole, livePawnsById);
             string humorCue = HumorCueFor(diaryEvent);
             QueuePrompt(
@@ -343,6 +344,7 @@ namespace PawnDiary
                     diaryEvent,
                     povRole,
                     personaRule,
+                    psychotypeRule,
                     promptEnchantment,
                     0,
                     humorCue,
@@ -459,6 +461,7 @@ namespace PawnDiary
             if (initiatorEnabled && diaryEvent.CanQueueGeneration(DiaryEvent.InitiatorRole))
             {
                 string personaRule = PersonaRuleFor(diaryEvent, DiaryEvent.InitiatorRole);
+                string psychotypeRule = PsychotypeRuleFor(diaryEvent, DiaryEvent.InitiatorRole);
                 string promptEnchantment = PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.InitiatorRole, livePawnsById);
                 string humorCue = HumorCueFor(diaryEvent);
                 QueuePrompt(
@@ -468,6 +471,7 @@ namespace PawnDiary
                         diaryEvent,
                         DiaryEvent.InitiatorRole,
                         personaRule,
+                        psychotypeRule,
                         promptEnchantment,
                         0,
                         humorCue,
@@ -509,6 +513,7 @@ namespace PawnDiary
             {
                 // Recipient prompt includes hidden initiator context only when that context exists.
                 string personaRule = PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole);
+                string psychotypeRule = PsychotypeRuleFor(diaryEvent, DiaryEvent.RecipientRole);
                 string promptEnchantment = PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole, livePawnsById);
                 string humorCue = HumorCueFor(diaryEvent);
                 QueuePrompt(
@@ -519,6 +524,7 @@ namespace PawnDiary
                             diaryEvent,
                             DiaryEvent.RecipientRole,
                             personaRule,
+                            psychotypeRule,
                             promptEnchantment,
                             0,
                             humorCue,
@@ -527,6 +533,7 @@ namespace PawnDiary
                             diaryEvent,
                             DiaryEvent.RecipientRole,
                             personaRule,
+                            psychotypeRule,
                             promptEnchantment,
                             0,
                             humorCue,

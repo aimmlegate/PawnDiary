@@ -8,6 +8,31 @@ pre-release version ladder for project history.
 
 ## 2026-07-08
 
+- **New second voice layer: pawn psychotypes (outlook).** Each pawn now has a *psychotype* — a short
+  semantic lens describing what they notice, value, and fear, and how they judge events — folded into
+  first-person prompts alongside their writing style. The two layers roll **independently** (style from
+  traits/backstory, psychotype from skill passions with wildcard + jitter), so they multiply into many
+  distinct diary voices. 17 adult psychotypes across four families (grounded/inward/intense/anxious)
+  plus 5 child ones, in `1.6/Defs/DiaryPsychotypeDefs.xml`; the pure roll/resolution/sanitizers live in
+  `Source/Pipeline/Psychotype*.cs` (test-covered). The psychotype **label is never shown to the model**
+  (only the rule), and the block is placed *before* the writing style so the style stays the final
+  mechanical instruction. Master toggle **Use pawn psychotypes** in settings (default on); off omits the
+  block and defers rolls. Edited from the same per-pawn editor as the writing style (Diary tab header
+  icon → two sections), with a picker, re-roll, custom rule, pin/unpin, and override explanation; the
+  tab tooltip shows both layers. Public API gains `GetPsychotype` / `SetPsychotypeOverride` /
+  `ResetPsychotypeOverride` (mirrors the writing-style pair); the RimTalk bridge's Tier B now supplies
+  the **psychotype** override (who the pawn is) instead of the writing style (how they write), and every
+  bridge reset sweeps the old style override so existing saves migrate cleanly.
+- **Children can keep a diary, and voices crystallize at adulthood.** The first-person minimum age drops
+  to 7 (`minimumFirstPersonAgeYears`, XML-tunable back to 13); children below 13 roll from naive
+  child-voice catalogs (both layers), and when a pawn crosses `psychotypeCrystallizationAgeYears`
+  (default 13, the final vanilla growth moment) both unpinned layers re-roll onto the adult catalogs
+  with a small continuity nudge. Player-picked layers are pinned and never auto-re-rolled.
+- **Save-compatible with no migration step.** Loading an older save never fails: records that already
+  have generated entries adopt an empty-rule **Neutral** psychotype so established voices do not shift,
+  and entry-less records roll a fresh one lazily on their next entry — the psychotype is always created
+  if missing. New per-pawn fields (`psychotypeDefName`, custom/external psychotype rules, `voiceStageBand`,
+  pin flags) default safely on old saves.
 - **Fixed a mod-conflict NRE that silenced the whole diary on new games** (telemetry: every capture
   patch reporting the same `BackstoryDef.FullDescriptionFor` failure, e.g. refs `81AA8488`,
   `58B1F970`). With Vanilla Expanded Framework's transpiler on that vanilla method, certain modded

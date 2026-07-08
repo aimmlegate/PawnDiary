@@ -38,8 +38,11 @@
   <PawnDiaryRimTalkBridge.Prompt.DiaryVoiceLine>голос дневника: {0}</PawnDiaryRimTalkBridge.Prompt.DiaryVoiceLine>
   <PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>Свежие записи дневника этого поселенца и, при желании, строка о голосе его дневника.</PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>
 
-  <!-- Голос дневника по характеру (уровень B) -->
+  <!-- Голос дневника по характеру (уровень B). Теперь уровень B задаёт ПСИХОТИП (взгляд на мир) —
+       кто пешка есть, — а Pawn Diary сохраняет то, как она пишет. Старый VoiceRule оставлен только
+       ради корректного чтения переопределений из старых сохранений до разовой миграции. -->
   <PawnDiaryRimTalkBridge.Persona.VoiceRule>голос, выточенный его характером: {0}</PawnDiaryRimTalkBridge.Persona.VoiceRule>
+  <PawnDiaryRimTalkBridge.Persona.LensRule>Эта пешка смотрит на события через то, кто она есть: {0}</PawnDiaryRimTalkBridge.Persona.LensRule>
 
   <!-- Записи важных разговоров (уровень 2) -->
   <PawnDiaryRimTalkBridge.Event.ConversationLabel>заметный разговор</PawnDiaryRimTalkBridge.Event.ConversationLabel>

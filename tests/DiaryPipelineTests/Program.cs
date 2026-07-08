@@ -79,9 +79,17 @@ namespace DiaryPipelineTests
             TestExternalWritingStyleOverrideText();
             TestPlayerWritingStyleText();
             TestWritingStyleResolutionPolicy();
+            TestPsychotypeText();
+            TestPsychotypeResolutionPolicy();
+            TestPsychotypeRollProfile();
+            TestPsychotypeFamilyWeights();
+            TestPsychotypeMemberWeights();
+            TestPsychotypeRollBranches();
+            TestPsychotypeRollDistribution();
             TestSurrogateSafeTruncation();
             TestRedactSecrets();
             TestWritingStyleReachesSystemPrompt();
+            TestPsychotypeVoiceReachesSystemPrompt();
             TestShippedTemplatesWritingStyleContract();
             TestErrorScrubRemovesPersonalData();
             TestErrorFingerprintGroupsAndDistinguishes();
@@ -4112,6 +4120,401 @@ namespace DiaryPipelineTests
                 !WritingStyleResolutionPolicy.CustomSuppressedByOverride(blankCustom));
         }
 
+        // ---- Psychotype layer (the second, semantic per-pawn voice) ----
+
+        // The psychotype text sanitizers mirror the writing-style pair: the player-authored custom rule
+        // keeps line breaks, and the external override rule/source id collapse to one capped line.
+        private static void TestPsychotypeText()
+        {
+            AssertEqual("psychotype custom rule preserves intended line breaks",
+                "First line.\nSecond line.\n\nParagraph two.",
+                PsychotypeText.CleanRule("First line.\r\nSecond line.\r\n\r\n\r\nParagraph two."));
+            AssertEqual("psychotype custom rule strips rich-text tags",
+                "Sees threats everywhere.",
+                PsychotypeText.CleanRule("<b>Sees</b> threats everywhere."));
+            string splitSurrogate = new string('a', PsychotypeText.MaxCustomRuleChars - 1)
+                + char.ConvertFromUtf32(0x1F600);
+            AssertEqual("psychotype custom rule cap does not split surrogate pairs",
+                new string('a', PsychotypeText.MaxCustomRuleChars - 1),
+                PsychotypeText.CleanRule(splitSurrogate));
+
+            AssertEqual("psychotype external rule is one prompt line",
+                "Weighs every kindness for motive.",
+                PsychotypeText.CleanExternalRule("<b>Weighs</b>\nevery kindness\tfor motive."));
+            AssertEqual("psychotype external source id is one line",
+                "adapter.source",
+                PsychotypeText.CleanSourceId(" adapter.source\r\n"));
+            AssertEqual("psychotype external source id is capped",
+                new string('s', PsychotypeText.MaxSourceIdChars),
+                PsychotypeText.CleanSourceId(new string('s', PsychotypeText.MaxSourceIdChars + 10)));
+        }
+
+        // The effective psychotype priority is External API override > Pawn custom rule > Base type.
+        // There is no hediff psychotype layer in v1 (hediff *style* overrides already cover altered states).
+        private static void TestPsychotypeResolutionPolicy()
+        {
+            const string baseRule = "base-lens";
+            const string customRule = "custom-lens";
+            const string externalRule = "external-lens";
+
+            PsychotypeResolution external = PsychotypeResolutionPolicy.Resolve(
+                baseRule, customRule, "adapter.source", externalRule);
+            AssertEqual("external psychotype override wins", externalRule, external.rule);
+            AssertTrue("external psychotype override is the source",
+                external.source == PsychotypeRuleSource.ExternalApiOverride);
+
+            PsychotypeResolution custom = PsychotypeResolutionPolicy.Resolve(baseRule, customRule, null, null);
+            AssertEqual("pawn custom psychotype wins over base", customRule, custom.rule);
+            AssertTrue("pawn custom psychotype is the source",
+                custom.source == PsychotypeRuleSource.PawnCustom);
+
+            PsychotypeResolution blankCustom = PsychotypeResolutionPolicy.Resolve(baseRule, "   ", null, null);
+            AssertEqual("blank custom psychotype falls back to base", baseRule, blankCustom.rule);
+            AssertTrue("base type reported when custom blank",
+                blankCustom.source == PsychotypeRuleSource.BaseType);
+
+            PsychotypeResolution blankExternal = PsychotypeResolutionPolicy.Resolve(baseRule, null, "adapter.source", "  ");
+            AssertEqual("blank external psychotype override ignored", baseRule, blankExternal.rule);
+
+            AssertTrue("custom is suppressed by external psychotype override",
+                PsychotypeResolutionPolicy.CustomSuppressedByOverride(external));
+            AssertTrue("custom is not suppressed when it is the active source",
+                !PsychotypeResolutionPolicy.CustomSuppressedByOverride(custom));
+        }
+
+        // Stage 0: the 12 skill passions fold into five domains plus summary signals (minor = 1 point,
+        // burning = 2), and focus is the share of points in the single top domain.
+        private static void TestPsychotypeRollProfile()
+        {
+            PsychotypeProfile profile = PsychotypeRollPolicy.BuildProfile(new List<PsychotypeSkillPassion>
+            {
+                new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillShooting, level = 2 },
+                new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillMelee, level = 1 },
+                new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillSocial, level = 1 },
+            });
+            AssertEqual("violence points sum shooting(2)+melee(1)", 3, profile.violence);
+            AssertEqual("people points sum social(1)", 1, profile.people);
+            AssertEqual("total points", 4, profile.total);
+            AssertEqual("burning count", 1, profile.burningCount);
+            AssertEqual("passion count", 3, profile.passionCount);
+            AssertEqual("domains with points", 2, profile.domainsWithPoints);
+            AssertNear("focus is top-domain share (3/4)", 0.75f, profile.focus);
+
+            PsychotypeProfile empty = PsychotypeRollPolicy.BuildProfile(new List<PsychotypeSkillPassion>());
+            AssertEqual("no passions => zero total", 0, empty.total);
+            AssertNear("no passions => zero focus", 0f, empty.focus);
+        }
+
+        // Stage 1: family weights follow the plan's table. Tested deterministically (no jitter/pick here).
+        private static void TestPsychotypeFamilyWeights()
+        {
+            // Zero passions: inward gets the +4 no-passion lean; grounded keeps its base (no no-burning
+            // bonus because there are no passions at all).
+            Dictionary<string, float> zero = PsychotypeRollPolicy.FamilyWeights(
+                PsychotypeRollPolicy.BuildProfile(new List<PsychotypeSkillPassion>()),
+                new PsychotypeRollInput());
+            AssertNear("zero-passion grounded base", 6f, zero[PsychotypeRollPolicy.FamilyGrounded]);
+            AssertNear("zero-passion inward +4", 6f, zero[PsychotypeRollPolicy.FamilyInward]);
+            AssertNear("zero-passion intense base", 2f, zero[PsychotypeRollPolicy.FamilyIntense]);
+
+            // Creepjoiner stacks another +4 onto inward.
+            Dictionary<string, float> creep = PsychotypeRollPolicy.FamilyWeights(
+                PsychotypeRollPolicy.BuildProfile(new List<PsychotypeSkillPassion>()),
+                new PsychotypeRollInput { isCreepJoiner = true });
+            AssertNear("creepjoiner inward +4 more", 10f, creep[PsychotypeRollPolicy.FamilyInward]);
+
+            // Passions but none burning => grounded +1.
+            Dictionary<string, float> settled = PsychotypeRollPolicy.FamilyWeights(
+                PsychotypeRollPolicy.BuildProfile(new List<PsychotypeSkillPassion>
+                {
+                    new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillPlants, level = 1 },
+                }),
+                new PsychotypeRollInput());
+            AssertNear("no-burning grounded +1 over nurture", 8f, settled[PsychotypeRollPolicy.FamilyGrounded]);
+
+            // Making-heavy, one dominant domain, >= 3 points => anxious +2.
+            Dictionary<string, float> anxious = PsychotypeRollPolicy.FamilyWeights(
+                PsychotypeRollPolicy.BuildProfile(new List<PsychotypeSkillPassion>
+                {
+                    new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillConstruction, level = 2 },
+                    new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillMining, level = 1 },
+                }),
+                new PsychotypeRollInput());
+            AssertNear("anxious base + making(3) + focus(2)", 7f, anxious[PsychotypeRollPolicy.FamilyAnxious]);
+
+            // Three burning passions => intense +2.
+            Dictionary<string, float> intense = PsychotypeRollPolicy.FamilyWeights(
+                PsychotypeRollPolicy.BuildProfile(new List<PsychotypeSkillPassion>
+                {
+                    new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillShooting, level = 2 },
+                    new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillMelee, level = 2 },
+                    new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillSocial, level = 2 },
+                }),
+                new PsychotypeRollInput());
+            AssertNear("intense base + violence(4) + people(2) + burning(2)", 10f, intense[PsychotypeRollPolicy.FamilyIntense]);
+        }
+
+        // Stage 2: member weights = base + skill nudges + combo signatures + continuity, times duplicate
+        // penalty. Vetoed candidates are dropped. Tested deterministically (no jitter/pick).
+        private static void TestPsychotypeMemberWeights()
+        {
+            List<PsychotypeCandidate> catalog = BuildPsychotypeCatalog();
+
+            // Artistic + Social fires the Theatrical combo (intense family).
+            PsychotypeRollInput theatrical = new PsychotypeRollInput
+            {
+                passions = new List<PsychotypeSkillPassion>
+                {
+                    new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillArtistic, level = 1 },
+                    new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillSocial, level = 1 },
+                }
+            };
+            Dictionary<string, float> intenseWeights = PsychotypeRollPolicy.MemberWeights(
+                PsychotypeRollPolicy.FamilyIntense, PsychotypeRollPolicy.BuildProfile(theatrical.passions),
+                theatrical, catalog);
+            AssertNear("Theatrical = base(1) + Artistic nudge(1) + combo(2)",
+                4f, intenseWeights["DiaryPsychotype_Theatrical"]);
+            AssertNear("Narcissistic = base(1) + Social nudge(1), no combo",
+                2f, intenseWeights["DiaryPsychotype_Narcissistic"]);
+
+            // Kind pawn never rolls Ruthless: it is dropped from the intense family entirely.
+            Dictionary<string, float> vetoed = PsychotypeRollPolicy.MemberWeights(
+                PsychotypeRollPolicy.FamilyIntense, new PsychotypeProfile(),
+                new PsychotypeRollInput { blockRuthless = true }, catalog);
+            AssertTrue("blockRuthless removes Ruthless candidate",
+                !vetoed.ContainsKey("DiaryPsychotype_Ruthless"));
+            AssertTrue("blockRuthless keeps other intense members",
+                vetoed.ContainsKey("DiaryPsychotype_Volatile"));
+
+            // Duplicate penalty compounds per existing holder (0.25^2 on a Theatrical weight of 4).
+            PsychotypeRollInput dup = new PsychotypeRollInput
+            {
+                passions = theatrical.passions,
+                usedCounts = new Dictionary<string, int> { { "DiaryPsychotype_Theatrical", 2 } }
+            };
+            Dictionary<string, float> dupWeights = PsychotypeRollPolicy.MemberWeights(
+                PsychotypeRollPolicy.FamilyIntense, PsychotypeRollPolicy.BuildProfile(dup.passions), dup, catalog);
+            AssertNear("duplicate penalty compounds (4 * 0.25^2)", 0.25f, dupWeights["DiaryPsychotype_Theatrical"]);
+
+            // Child-continuity nudge: a WideEyed child steers the adult roll toward Content/Superstitious.
+            PsychotypeRollInput continuity = new PsychotypeRollInput
+            {
+                childPsychotypeDefName = "DiaryPsychotype_WideEyed"
+            };
+            Dictionary<string, float> grounded = PsychotypeRollPolicy.MemberWeights(
+                PsychotypeRollPolicy.FamilyGrounded, new PsychotypeProfile(), continuity, catalog);
+            AssertNear("WideEyed continuity gives Content +1", 2f, grounded["DiaryPsychotype_Content"]);
+            AssertNear("non-continuity grounded member stays at base", 1f, grounded["DiaryPsychotype_Pragmatic"]);
+        }
+
+        // Roll branches: children roll flat over the child catalog; adults roll an adult defName; vetoes
+        // hold across many rolls; empty input yields empty.
+        private static void TestPsychotypeRollBranches()
+        {
+            List<PsychotypeCandidate> catalog = BuildPsychotypeCatalog();
+            HashSet<string> childDefs = new HashSet<string>
+            {
+                "DiaryPsychotype_WideEyed", "DiaryPsychotype_BraveFront", "DiaryPsychotype_ShyWatcher",
+                "DiaryPsychotype_WildThing", "DiaryPsychotype_LittleAdult"
+            };
+
+            // Children ignore skill signals entirely and always land in the child catalog.
+            PsychotypeRollInput childInput = new PsychotypeRollInput
+            {
+                stageBand = PsychotypeRollPolicy.StageChild,
+                passions = new List<PsychotypeSkillPassion>
+                {
+                    new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillShooting, level = 2 },
+                }
+            };
+            bool allChild = true;
+            Func<float> childRand = SeededRand01(7);
+            for (int i = 0; i < 200; i++)
+            {
+                if (!childDefs.Contains(PsychotypeRollPolicy.Roll(childInput, catalog, childRand)))
+                {
+                    allChild = false;
+                    break;
+                }
+            }
+            AssertTrue("child band only rolls child-catalog psychotypes", allChild);
+
+            // Adults roll an adult defName; a Kind veto is honored across many rolls.
+            PsychotypeRollInput adultInput = new PsychotypeRollInput { blockRuthless = true };
+            Func<float> adultRand = SeededRand01(11);
+            bool everRuthless = false;
+            bool everChild = false;
+            for (int i = 0; i < 500; i++)
+            {
+                string result = PsychotypeRollPolicy.Roll(adultInput, catalog, adultRand);
+                if (result == "DiaryPsychotype_Ruthless") everRuthless = true;
+                if (childDefs.Contains(result)) everChild = true;
+            }
+            AssertTrue("blockRuthless is honored across adult rolls", !everRuthless);
+            AssertTrue("adult band never leaks a child-catalog psychotype", !everChild);
+
+            AssertEqual("empty catalog rolls empty", string.Empty,
+                PsychotypeRollPolicy.Roll(adultInput, new List<PsychotypeCandidate>(), adultRand));
+        }
+
+        // Distribution smoke: 10k seeded rolls over diverse synthetic pawns. Grounded is the broad
+        // default, every adult psychotype is reachable, and the wildcard branch fires near its constant.
+        private static void TestPsychotypeRollDistribution()
+        {
+            List<PsychotypeCandidate> catalog = BuildPsychotypeCatalog();
+            Dictionary<string, string> familyByDef = new Dictionary<string, string>();
+            List<string> adultDefs = new List<string>();
+            for (int i = 0; i < catalog.Count; i++)
+            {
+                PsychotypeCandidate c = catalog[i];
+                if (c.stage == PsychotypeRollPolicy.StageAdult)
+                {
+                    familyByDef[c.defName] = c.family;
+                    adultDefs.Add(c.defName);
+                }
+            }
+
+            string[] skills =
+            {
+                PsychotypeRollPolicy.SkillShooting, PsychotypeRollPolicy.SkillMelee,
+                PsychotypeRollPolicy.SkillConstruction, PsychotypeRollPolicy.SkillMining,
+                PsychotypeRollPolicy.SkillCrafting, PsychotypeRollPolicy.SkillCooking,
+                PsychotypeRollPolicy.SkillPlants, PsychotypeRollPolicy.SkillAnimals,
+                PsychotypeRollPolicy.SkillMedicine, PsychotypeRollPolicy.SkillIntellectual,
+                PsychotypeRollPolicy.SkillArtistic, PsychotypeRollPolicy.SkillSocial
+            };
+
+            Random seed = new Random(2026);
+            int wildcardCount = 0;
+            bool sampleFirst = false;
+            Func<float> rand = () =>
+            {
+                double d = seed.NextDouble();
+                if (sampleFirst)
+                {
+                    if (d < PsychotypeRollPolicy.WildcardChance) wildcardCount++;
+                    sampleFirst = false;
+                }
+
+                return (float)d;
+            };
+
+            Dictionary<string, int> defCounts = new Dictionary<string, int>();
+            int grounded = 0;
+            const int rolls = 10000;
+            for (int i = 0; i < rolls; i++)
+            {
+                // Typical colonists carry 1-4 passions; bias toward having some so grounded stays dominant.
+                int passionCount = 1 + seed.Next(4);
+                List<PsychotypeSkillPassion> passions = new List<PsychotypeSkillPassion>();
+                for (int p = 0; p < passionCount; p++)
+                {
+                    passions.Add(new PsychotypeSkillPassion
+                    {
+                        skillDefName = skills[seed.Next(skills.Length)],
+                        level = seed.Next(3) == 0 ? 2 : 1
+                    });
+                }
+
+                PsychotypeRollInput input = new PsychotypeRollInput { passions = passions };
+                sampleFirst = true;
+                string result = PsychotypeRollPolicy.Roll(input, catalog, rand);
+                if (!defCounts.ContainsKey(result)) defCounts[result] = 0;
+                defCounts[result]++;
+                if (familyByDef.TryGetValue(result, out string fam) && fam == PsychotypeRollPolicy.FamilyGrounded)
+                {
+                    grounded++;
+                }
+            }
+
+            float groundedShare = (float)grounded / rolls;
+            AssertTrue("grounded family share lands 45-70% (was " + groundedShare.ToString("0.000") + ")",
+                groundedShare >= 0.45f && groundedShare <= 0.70f);
+
+            float wildcardShare = (float)wildcardCount / rolls;
+            AssertTrue("wildcard branch fires 10-14% (was " + wildcardShare.ToString("0.000") + ")",
+                wildcardShare >= 0.10f && wildcardShare <= 0.14f);
+
+            for (int i = 0; i < adultDefs.Count; i++)
+            {
+                defCounts.TryGetValue(adultDefs[i], out int count);
+                float share = (float)count / rolls;
+                AssertTrue("adult psychotype " + adultDefs[i] + " is reachable >=1% (was " + share.ToString("0.000") + ")",
+                    share >= 0.01f);
+            }
+        }
+
+        // A seeded [0,1) source so the roll's randomness is reproducible in tests.
+        private static Func<float> SeededRand01(int seed)
+        {
+            Random random = new Random(seed);
+            return () => (float)random.NextDouble();
+        }
+
+        // The synthetic v1 catalog: 17 adult psychotypes across four families plus 5 child options, with
+        // the same skill affinities the shipped defs declare. Kept in the test so the pure roll can be
+        // exercised without loading XML.
+        private static List<PsychotypeCandidate> BuildPsychotypeCatalog()
+        {
+            List<PsychotypeCandidate> catalog = new List<PsychotypeCandidate>();
+
+            void Adult(string defName, string family, params string[] affinitySkills)
+            {
+                Dictionary<string, int> affinities = new Dictionary<string, int>();
+                for (int i = 0; i < affinitySkills.Length; i++)
+                {
+                    affinities[affinitySkills[i]] = 1;
+                }
+
+                catalog.Add(new PsychotypeCandidate
+                {
+                    defName = defName,
+                    family = family,
+                    stage = PsychotypeRollPolicy.StageAdult,
+                    skillAffinities = affinities
+                });
+            }
+
+            Adult("DiaryPsychotype_Content", PsychotypeRollPolicy.FamilyGrounded, PsychotypeRollPolicy.SkillCooking);
+            Adult("DiaryPsychotype_Ambitious", PsychotypeRollPolicy.FamilyGrounded);
+            Adult("DiaryPsychotype_Dutiful", PsychotypeRollPolicy.FamilyGrounded, PsychotypeRollPolicy.SkillConstruction);
+            Adult("DiaryPsychotype_Nostalgic", PsychotypeRollPolicy.FamilyGrounded, PsychotypeRollPolicy.SkillPlants);
+            Adult("DiaryPsychotype_Pragmatic", PsychotypeRollPolicy.FamilyGrounded, PsychotypeRollPolicy.SkillMining);
+            Adult("DiaryPsychotype_Wry", PsychotypeRollPolicy.FamilyGrounded);
+
+            Adult("DiaryPsychotype_Paranoid", PsychotypeRollPolicy.FamilyInward, PsychotypeRollPolicy.SkillShooting);
+            Adult("DiaryPsychotype_Detached", PsychotypeRollPolicy.FamilyInward, PsychotypeRollPolicy.SkillIntellectual);
+            Adult("DiaryPsychotype_Superstitious", PsychotypeRollPolicy.FamilyInward, PsychotypeRollPolicy.SkillArtistic);
+
+            Adult("DiaryPsychotype_Ruthless", PsychotypeRollPolicy.FamilyIntense);
+            Adult("DiaryPsychotype_Volatile", PsychotypeRollPolicy.FamilyIntense, PsychotypeRollPolicy.SkillMelee);
+            Adult("DiaryPsychotype_Theatrical", PsychotypeRollPolicy.FamilyIntense, PsychotypeRollPolicy.SkillArtistic);
+            Adult("DiaryPsychotype_Narcissistic", PsychotypeRollPolicy.FamilyIntense, PsychotypeRollPolicy.SkillSocial);
+
+            Adult("DiaryPsychotype_Resentful", PsychotypeRollPolicy.FamilyAnxious);
+            Adult("DiaryPsychotype_Avoidant", PsychotypeRollPolicy.FamilyAnxious, PsychotypeRollPolicy.SkillAnimals);
+            Adult("DiaryPsychotype_Dependent", PsychotypeRollPolicy.FamilyAnxious, PsychotypeRollPolicy.SkillMedicine);
+            Adult("DiaryPsychotype_Perfectionist", PsychotypeRollPolicy.FamilyAnxious, PsychotypeRollPolicy.SkillCrafting);
+
+            string[] children =
+            {
+                "DiaryPsychotype_WideEyed", "DiaryPsychotype_BraveFront", "DiaryPsychotype_ShyWatcher",
+                "DiaryPsychotype_WildThing", "DiaryPsychotype_LittleAdult"
+            };
+            for (int i = 0; i < children.Length; i++)
+            {
+                catalog.Add(new PsychotypeCandidate
+                {
+                    defName = children[i],
+                    family = PsychotypeRollPolicy.StageChild,
+                    stage = PsychotypeRollPolicy.StageChild,
+                    skillAffinities = new Dictionary<string, int>()
+                });
+            }
+
+            return catalog;
+        }
+
         // S1: RedactSecrets masks key=/token= query parameters and Bearer tokens in arbitrary text.
         private static void TestRedactSecrets()
         {
@@ -4195,6 +4598,49 @@ namespace DiaryPipelineTests
                 !plan.userPrompt.Contains("How this pawn tends to write"));
             AssertTrue("persona never appears as a user-prompt field by source token",
                 !ContainsUserPromptField(plan.userPrompt, "writing style"));
+        }
+
+        // The psychotype (outlook) block travels the SAME seam as the writing style: it is merged into
+        // the combined voice block upstream (adapters) and reaches the SYSTEM prompt only, in the order
+        // psychotype -> style, and is dropped whole for neutral (includePersona=false) templates. The
+        // adapter's Translate() calls are main-thread-only, so this test pins the load-bearing planner
+        // seam with a pre-composed voice block rather than re-running the adapter.
+        private static void TestPsychotypeVoiceReachesSystemPrompt()
+        {
+            const string psychotypeBlock = "How this pawn tends to see things: assumes nothing is harmless.";
+            const string styleBlock = "How this pawn tends to write: spare-iceberg: short concrete sentences.";
+            // The adapter's CombinedVoiceBlock joins outlook first, then style, with a blank line between.
+            string voiceBlock = psychotypeBlock + "\n\n" + styleBlock;
+            const string baseSystem = "Write 1-3 first-person diary sentences.";
+
+            DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = SoloPayload("e-psy", "quiet work", "Alice repaired the generator alone."),
+                policy = Policy(combat: false, important: true),
+                povRole = DiaryPipelineRoles.Initiator,
+                personaVoiceBlock = voiceBlock,
+                maxTokens = 30
+            });
+            AssertContains("planner folds the psychotype lens into the system prompt",
+                plan.systemPrompt, psychotypeBlock);
+            AssertContains("planner keeps the writing style in the system prompt too",
+                plan.systemPrompt, styleBlock);
+            AssertTrue("psychotype lens precedes the writing style in the system prompt",
+                plan.systemPrompt.IndexOf(psychotypeBlock, StringComparison.Ordinal)
+                    < plan.systemPrompt.IndexOf(styleBlock, StringComparison.Ordinal));
+            AssertTrue("psychotype never appears as a user-prompt field",
+                !plan.userPrompt.Contains("How this pawn tends to see things"));
+
+            // Neutral chronicle/title shapes opt out via includePersona=false: the whole combined block,
+            // psychotype included, is dropped.
+            AssertEqual("includePersona=false drops the psychotype block too",
+                baseSystem,
+                PromptAssembler.ComposeSystem(baseSystem, voiceBlock, includePersona: false));
+
+            // An empty psychotype (Neutral / disabled) contributes no text: the combined block is just
+            // the style, and the outlook wrapper phrase never appears.
+            AssertTrue("empty psychotype leaves no outlook wrapper in the style-only block",
+                !styleBlock.Contains("How this pawn tends to see things"));
         }
 
         private static void TestShippedTemplatesWritingStyleContract()
