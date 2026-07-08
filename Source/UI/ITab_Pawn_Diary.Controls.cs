@@ -289,6 +289,8 @@ namespace PawnDiary
         private void DrawWritingStyleHeaderIcon(Rect rect, Pawn pawn, DiaryGameComponent component)
         {
             WritingStyleResolution resolution = component.ResolveWritingStyleFor(pawn);
+            // Read-only (no EnsureVoiceStage): the tooltip must not roll/mutate during a draw pass.
+            PsychotypeResolution psychotype = component.ResolvePsychotypeForDisplay(pawn);
 
             bool hover = Mouse.IsOver(rect);
             Color oldColor = GUI.color;
@@ -299,7 +301,7 @@ namespace PawnDiary
             }
             GUI.color = oldColor;
 
-            TooltipHandler.TipRegion(rect, WritingStyleTooltip(resolution));
+            TooltipHandler.TipRegion(rect, WritingStyleTooltip(resolution, psychotype, component));
         }
 
         /// <summary>
@@ -318,12 +320,20 @@ namespace PawnDiary
         /// Tooltip text for the icon button: current style first, then the editor affordance and any
         /// active custom/override status previously shown as row text.
         /// </summary>
-        private static string WritingStyleTooltip(WritingStyleResolution resolution)
+        private static string WritingStyleTooltip(WritingStyleResolution resolution,
+            PsychotypeResolution psychotype, DiaryGameComponent component)
         {
             string tooltip =
-                "PawnDiary.Tab.WritingStyle".Translate(WritingStyleLabel(resolution)).Resolve()
-                + "\n\n"
-                + "PawnDiary.Tab.WritingStyleTip".Translate().Resolve();
+                "PawnDiary.Tab.WritingStyle".Translate(WritingStyleLabel(resolution)).Resolve();
+
+            // Surface the psychotype (outlook) next to the style. Shown only when the layer is enabled,
+            // since a disabled layer never reaches the prompt. The same header icon edits both.
+            if (component != null && component.PsychotypeLayerEnabled)
+            {
+                tooltip += "\n" + "PawnDiary.Tab.Psychotype".Translate(PsychotypeLabel(psychotype)).Resolve();
+            }
+
+            tooltip += "\n\n" + "PawnDiary.Tab.WritingStyleTip".Translate().Resolve();
             string status = WritingStyleStatusLabel(resolution);
             if (!string.IsNullOrWhiteSpace(status))
             {
@@ -331,6 +341,27 @@ namespace PawnDiary
             }
 
             return tooltip;
+        }
+
+        // The psychotype label for the tooltip: the active external override's source, else the base
+        // type label, falling back to "neutral".
+        private static string PsychotypeLabel(PsychotypeResolution psychotype)
+        {
+            if (psychotype == null)
+            {
+                return "PawnDiary.Psychotype.NeutralLabel".Translate();
+            }
+
+            if (psychotype.source == PsychotypeRuleSource.ExternalApiOverride)
+            {
+                return string.IsNullOrWhiteSpace(psychotype.externalSourceId)
+                    ? "PawnDiary.Psychotype.ExternalSourceLabel".Translate().ToString()
+                    : psychotype.externalSourceId;
+            }
+
+            return string.IsNullOrWhiteSpace(psychotype.baseTypeLabel)
+                ? "PawnDiary.Psychotype.NeutralLabel".Translate().ToString()
+                : psychotype.baseTypeLabel;
         }
 
         /// <summary>

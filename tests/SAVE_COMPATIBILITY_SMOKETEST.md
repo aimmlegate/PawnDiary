@@ -9,6 +9,8 @@ in-game smoke procedure instead.
 
 Run this whenever you touch:
 - `Source/Models/DiaryEvent.cs` (`ExposeData`, `NormalizeOnLoad`, `ScribePawnSlot`, `ScribeNeutralSlot`),
+- `Source/Models/PawnDiaryRecord.cs` (`ExposeData` — writing-style + psychotype + pin/band fields),
+- `Source/Core/DiaryGameComponent.Voice.cs` (`EnsureVoiceStage` crystallization/backfill and the rolls),
 - `Source/Models/ArchivedDiaryEntry.cs` (`ExposeData`, `NormalizeOnLoad`),
 - `Source/Settings/PawnDiarySettings.cs` or anything under `Source/Settings/` that owns `ExposeData`,
 - the Scribe keys written by any of the above, or
@@ -46,6 +48,12 @@ fixtures:
 | **Neutral death** | A pair event where both POVs saw the same death text and no `neutralText` was saved. | The death line is duplicated, or the merge format changes. |
 | **Legacy settings (old persona/prompt/group)** | A `ModSettings` block written by an older Pawn Diary version (pre-persona-preset or pre-prompt-override fields). | Settings fail to load, defaults wipe saved overrides, or the group-enable map is reset. |
 | **Missing/blank fields** | A save missing one each of `eventId`, `gameContext`, `instruction`, `colorCue`, `moodImpact`, `year`. | NullReferenceException on load, or a blank diary card, or `5500`-style year shows as `0`. |
+| **Pre-psychotype adult with entries** | A save from a version before the psychotype layer, whose colonist already has generated first-person pages. | On load the pawn's psychotype must read **Neutral** and their *writing style must not change* (established voice frozen). Any shift, or an exception, is a regression. |
+| **Pre-psychotype entry-less record** | A pre-psychotype save whose diary record exists but has no generated first-person entries yet. | The pawn should roll a fresh psychotype lazily on its next entry (band-appropriate), not stay blank forever and not crash. |
+| **Child crossing the crystallization age** | A colonist younger than `psychotypeCrystallizationAgeYears` (default 13) with child-band voice rolls, aged past 13 (dev "set age" is fine). | Both **unpinned** layers must re-roll onto the adult catalogs and the band stamp must flip to `adult`; a **pinned** (player-chosen) layer must survive unchanged. |
+| **Player-pinned voice** | A colonist whose writing style and/or psychotype the player picked/edited/re-rolled in the per-pawn editor. | The pinned layer is never auto-re-rolled at crystallization or backfill. |
+| **RimTalk Tier B toggle** | RimTalk bridge active with Tier B on, then toggled off (and vice versa). | Toggling on places a **psychotype** (not writing-style) override; toggling off clears it. Loading an old save that had the *style*-based Tier B override must sweep that stale style override on load. |
+| **`enablePsychotypes` off** | The master psychotype toggle turned off in settings. | First-person prompts omit the psychotype block, pending rolls stay deferred, and existing saved psychotypes are preserved (re-enabling restores them). |
 
 The pure fixtures are duplicated here because the **Scribe read path itself** (key lookup, default
 fallback, `PostLoadInit` ordering) is what this runbook exercises — the pure tests only cover the

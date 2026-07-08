@@ -297,6 +297,8 @@
   <PawnDiary.Settings.EnableAtmosphericFormattingTip>When enabled, only extreme diary pages can use unusual spacing, staggered variable-size words, or dramatic strange-chat speech distortion. Mental breaks, anomaly/dark entries, death descriptions, and pages written while heavily impaired may be affected. Prompts and saved diary text are unchanged.</PawnDiary.Settings.EnableAtmosphericFormattingTip>
   <PawnDiary.Settings.EnablePromptEnchantments>Use live prompt context hints</PawnDiary.Settings.EnablePromptEnchantments>
   <PawnDiary.Settings.EnablePromptEnchantmentsTip>When enabled, first-person diary prompts may include one important live context cue. XML controls which health conditions and important-event status cues can appear and how often they win the weighted random pick.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
+  <PawnDiary.Settings.EnablePsychotypes>Use pawn psychotypes (outlook layer)</PawnDiary.Settings.EnablePsychotypes>
+  <PawnDiary.Settings.EnablePsychotypesTip>When enabled, each pawn gets a psychotype — an outlook/temperament lens (what they notice, value, and fear) rolled from their skill passions — folded into first-person prompts alongside their writing style. When disabled, the outlook is omitted from prompts and pending rolls stay deferred; existing pawns keep their saved psychotype. Edit a pawn's psychotype from their Diary tab's writing-style editor.</PawnDiary.Settings.EnablePsychotypesTip>
   <PawnDiary.Settings.AllowExternalIntegrations>Allow external mod integrations</PawnDiary.Settings.AllowExternalIntegrations>
   <PawnDiary.Settings.AllowExternalIntegrationsTip>When enabled, other mods can submit diary events, read public diary snapshots, and add compact pawn context lines through the public integration API.</PawnDiary.Settings.AllowExternalIntegrationsTip>
   <PawnDiary.Settings.EnableExternalKeySharing>Share API keys with other mods</PawnDiary.Settings.EnableExternalKeySharing>
@@ -1000,6 +1002,9 @@
   <!-- Writing-style block appended to the first-person system prompt at dispatch. {0} is the
        style label plus rule (e.g. "three-line-note: This pawn tends to write..."). -->
   <PawnDiary.Prompt.PersonaVoice>How this pawn tends to write: {0} Preserve the event facts first, then follow the rule's concrete sentence shape, opening move, punctuation, and detail choice. Do not roleplay a chat persona, add catchphrases, or invent dialogue.</PawnDiary.Prompt.PersonaVoice>
+  <!-- Psychotype (outlook) block, placed BEFORE the writing-style block on eligible first-person
+       entries. {0} is the psychotype rule ONLY (no label — the outlook is never named). -->
+  <PawnDiary.Prompt.PsychotypeLens>How this pawn tends to see things: {0} Let this color what the entry notices, what it worries over, and how it judges — never what happened. Build only from the supplied facts, and never describe or judge the pawn's personality; let it show through the entry.</PawnDiary.Prompt.PsychotypeLens>
   <!-- Per-entry humor cue (hidden, always-on). {0} is one structural sentence-shape license
        chosen by stakes flavor. Appended after the writing-style block on eligible entries only. -->
   <PawnDiary.Prompt.HumorVoice>For this one entry, an optional extra license is granted: {0} Use it only if it fits the supplied facts. Keep it to a single sentence and do not break the writing style above. Never force a joke, add a punchline, or invent comic dialogue.</PawnDiary.Prompt.HumorVoice>
@@ -1317,5 +1322,32 @@
   <PawnDiary.WritingStyle.Saved>Writing style saved.</PawnDiary.WritingStyle.Saved>
   <PawnDiary.WritingStyle.Reset>Custom prompt cleared.</PawnDiary.WritingStyle.Reset>
   <PawnDiary.WritingStyle.SaveFailed>This pawn can no longer keep a diary, so the writing style was not saved.</PawnDiary.WritingStyle.SaveFailed>
+
+  <!-- Psychotype (outlook) layer: the pawn's temperament lens, edited from the same per-pawn dialog
+       as the writing style. The psychotype label is picker text only; it is never shown to the model. -->
+  <PawnDiary.Psychotype.SectionTitle>Psychotype (outlook)</PawnDiary.Psychotype.SectionTitle>
+  <PawnDiary.Psychotype.Current>Psychotype: {0}</PawnDiary.Psychotype.Current>
+  <PawnDiary.Psychotype.BaseType>Base psychotype: {0}</PawnDiary.Psychotype.BaseType>
+  <PawnDiary.Psychotype.BaseRule>Base outlook</PawnDiary.Psychotype.BaseRule>
+  <PawnDiary.Psychotype.CustomRule>Custom outlook for this pawn (optional)</PawnDiary.Psychotype.CustomRule>
+  <PawnDiary.Psychotype.EffectiveRule>Effective outlook (what colors the writer)</PawnDiary.Psychotype.EffectiveRule>
+  <PawnDiary.Psychotype.LoadBaseRule>Load base outlook</PawnDiary.Psychotype.LoadBaseRule>
+  <PawnDiary.Psychotype.PickerHeader>Psychotype</PawnDiary.Psychotype.PickerHeader>
+  <PawnDiary.Psychotype.Reroll>Re-roll</PawnDiary.Psychotype.Reroll>
+  <PawnDiary.Psychotype.RerollTip>Roll a new psychotype for this pawn from their skill passions. This pins the result so it will not auto-re-roll.</PawnDiary.Psychotype.RerollTip>
+  <PawnDiary.Psychotype.Pinned>Pinned</PawnDiary.Psychotype.Pinned>
+  <PawnDiary.Psychotype.PinnedTip>You chose this psychotype, so it will not be auto-re-rolled (for example when the pawn grows up).</PawnDiary.Psychotype.PinnedTip>
+  <PawnDiary.Psychotype.Unpin>Unpin</PawnDiary.Psychotype.Unpin>
+  <PawnDiary.Psychotype.UnpinTip>Let this pawn's psychotype be auto-re-rolled again at the next crystallization.</PawnDiary.Psychotype.UnpinTip>
+  <PawnDiary.Psychotype.OverrideExternal>An integration ({0}) is temporarily supplying this pawn's psychotype.</PawnDiary.Psychotype.OverrideExternal>
+  <PawnDiary.Psychotype.CustomInactiveDueToOverride>The custom psychotype saved for this pawn is inactive while the override is in effect.</PawnDiary.Psychotype.CustomInactiveDueToOverride>
+  <PawnDiary.Psychotype.CustomActive>Custom outlook set</PawnDiary.Psychotype.CustomActive>
+  <PawnDiary.Psychotype.OverrideActive>Override active</PawnDiary.Psychotype.OverrideActive>
+  <PawnDiary.Psychotype.ExternalSourceLabel>external integration</PawnDiary.Psychotype.ExternalSourceLabel>
+  <PawnDiary.Psychotype.NeutralLabel>neutral</PawnDiary.Psychotype.NeutralLabel>
+  <PawnDiary.Psychotype.Saved>Psychotype saved.</PawnDiary.Psychotype.Saved>
+  <PawnDiary.Psychotype.Reset>Custom psychotype cleared.</PawnDiary.Psychotype.Reset>
+  <PawnDiary.Psychotype.Disabled>Psychotypes are turned off in mod settings, so this outlook is not applied to prompts.</PawnDiary.Psychotype.Disabled>
+  <PawnDiary.Tab.Psychotype>Psychotype: {0}</PawnDiary.Tab.Psychotype>
 
 </LanguageData>

@@ -827,14 +827,21 @@ namespace PawnDiary
                 return null;
             }
 
+            // Both voice layers roll for the pawn's current age band so a child gets the child catalogs
+            // and an adult the adult catalogs. The player can override either from the diary tab; a
+            // pinned/player-chosen pick is never auto-re-rolled.
+            string band = BandForPawn(pawn);
             PawnDiaryRecord diary = new PawnDiaryRecord
             {
                 pawnId = pawnId,
                 pawnName = pawn.LabelShortCap,
                 // Initial writing style is rolled once, biased toward the pawn's traits/backstory and
-                // softly steered away from styles other colonists already use. The player can
-                // still override it from the diary tab; that saved choice is never re-rolled.
-                personaDefName = DiaryPersonas.WeightedStartingPersona(pawn, BuildUsedPersonaCounts(pawnId)).defName,
+                // softly steered away from styles other colonists already use.
+                personaDefName = DiaryPersonas.WeightedStartingPersona(pawn, BuildUsedPersonaCounts(pawnId, band), band).defName,
+                // Psychotype rolls independently from skill passions (only when the layer is enabled; a
+                // disabled layer defers the roll and leaves this empty until re-enabled).
+                psychotypeDefName = PsychotypesEnabled ? RollPsychotypeFor(pawn, band, null, pawnId) : string.Empty,
+                voiceStageBand = band,
                 diaryGenerationEnabled = true
             };
             diaries.Add(diary);
@@ -843,12 +850,29 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Counts how many current, living colonists already use each writing style, so a new pawn's
-        /// initial roll can softly avoid duplicates (see <see cref="DiaryPersonas.WeightedStartingPersona"/>).
-        /// Keyed by style defName. The pawn being created is excluded via <paramref name="excludePawnId"/>;
-        /// dead/lost pawns and non-colonists are ignored so retired styles free up again.
+        /// Counts how many current, living colonists in the same age band already use each writing style,
+        /// so a new pawn's initial roll can softly avoid duplicates (see
+        /// <see cref="DiaryPersonas.WeightedStartingPersona"/>). Keyed by style defName. Band-aware so
+        /// child styles are not penalized by adult use and vice versa.
         /// </summary>
-        private Dictionary<string, int> BuildUsedPersonaCounts(string excludePawnId)
+        private Dictionary<string, int> BuildUsedPersonaCounts(string excludePawnId, string band = null)
+        {
+            return BuildUsedVoiceCounts(excludePawnId, band, diary => diary.personaDefName);
+        }
+
+        /// <summary>
+        /// Band-aware count of how many living colonists already hold each psychotype defName, mirroring
+        /// <see cref="BuildUsedPersonaCounts"/> for the psychotype layer's soft duplicate penalty.
+        /// </summary>
+        private Dictionary<string, int> BuildUsedPsychotypeCounts(string excludePawnId, string band = null)
+        {
+            return BuildUsedVoiceCounts(excludePawnId, band, diary => diary.psychotypeDefName);
+        }
+
+        // Shared living-colony counter for both voice layers. Ignores dead/lost pawns and non-colonists
+        // (so retired voices free up) and, when a band is given, only counts colonists in that band.
+        private Dictionary<string, int> BuildUsedVoiceCounts(string excludePawnId, string band,
+            Func<PawnDiaryRecord, string> selector)
         {
             Dictionary<string, int> counts = new Dictionary<string, int>();
             if (diaries == null)
@@ -856,34 +880,44 @@ namespace PawnDiary
                 return counts;
             }
 
-            // The set of pawn IDs that are colonists right now, so style "use" reflects the
-            // living colony rather than every record ever created.
-            HashSet<string> colonistIds = new HashSet<string>();
+            // Live colonist id -> current band, so "use" reflects the living colony rather than every
+            // record ever created, and stays within the band we are rolling for.
+            Dictionary<string, string> colonistBands = new Dictionary<string, string>();
             List<Pawn> colonists = SnapshotFreeColonists();
             for (int i = 0; i < colonists.Count; i++)
             {
                 Pawn colonist = colonists[i];
-                if (colonist != null)
+                if (colonist == null)
                 {
-                    colonistIds.Add(colonist.GetUniqueLoadID());
+                    continue;
+                }
+
+                string id = colonist.GetUniqueLoadID();
+                if (!string.IsNullOrWhiteSpace(id) && !colonistBands.ContainsKey(id))
+                {
+                    colonistBands[id] = BandForPawn(colonist);
                 }
             }
 
+            string wantedBand = band == null ? null : DiaryPersonas.NormalizeStage(band);
             for (int i = 0; i < diaries.Count; i++)
             {
                 PawnDiaryRecord diary = diaries[i];
-                if (diary == null || diary.pawnId == excludePawnId || string.IsNullOrWhiteSpace(diary.personaDefName))
+                if (diary == null || diary.pawnId == excludePawnId)
                 {
                     continue;
                 }
 
-                if (!colonistIds.Contains(diary.pawnId))
+                string value = selector(diary);
+                if (string.IsNullOrWhiteSpace(value)
+                    || !colonistBands.TryGetValue(diary.pawnId, out string colonistBand)
+                    || (wantedBand != null && colonistBand != wantedBand))
                 {
                     continue;
                 }
 
-                counts.TryGetValue(diary.personaDefName, out int current);
-                counts[diary.personaDefName] = current + 1;
+                counts.TryGetValue(value, out int current);
+                counts[value] = current + 1;
             }
 
             return counts;

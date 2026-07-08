@@ -23,6 +23,11 @@ namespace PawnDiary
         // simply ride the base weight.
         // Initialized so old/partial defs that omit <themes> never NullReference.
         public List<string> themes = new List<string>();
+
+        // Which age band this style belongs to: "adult" (default) or "child". Child styles use a naive,
+        // concrete voice and only roll for pawns below the crystallization age; adults never roll them
+        // and vice versa. Blank/unknown counts as adult, so existing style defs are unaffected.
+        public string lifeStage = DiaryPersonas.StageAdult;
     }
 
     /// <summary>
@@ -30,6 +35,11 @@ namespace PawnDiary
     /// </summary>
     internal static class DiaryPersonas
     {
+        // Age-band tags shared with DiaryPersonaDef.lifeStage. Kept as plain strings (not an enum) to
+        // match the XML tag and the sibling psychotype layer; blank/unknown normalizes to adult.
+        public const string StageAdult = "adult";
+        public const string StageChild = "child";
+
         // Fixed vocabulary used by PersonaAffinity and the writing-style settings editor. Players can
         // assign only these tags to custom styles, which keeps weighting behavior predictable.
         public static readonly string[] PredefinedThemeTags =
@@ -115,15 +125,50 @@ namespace PawnDiary
         /// Picks the initial style for a brand-new pawn diary record. Existing records keep
         /// their saved style; this is only used the first time a pawn enters the diary system.
         /// </summary>
-        public static DiaryPersonaDef RandomStartingPersona()
+        public static DiaryPersonaDef RandomStartingPersona(string lifeStage = StageAdult)
         {
-            IReadOnlyList<DiaryPersonaDef> personas = All;
+            IReadOnlyList<DiaryPersonaDef> personas = CandidatesForStage(lifeStage);
             if (personas == null || personas.Count == 0)
             {
                 return Default ?? Fallback;
             }
 
             return personas[Rand.Range(0, personas.Count)] ?? Default ?? Fallback;
+        }
+
+        /// <summary>
+        /// The styles eligible for a given age band. Child pawns roll only child-tagged styles; adults
+        /// roll everything that is not child-tagged. Never returns an empty list (falls back to the full
+        /// catalog) so a band with no authored styles cannot starve the roll.
+        /// </summary>
+        public static IReadOnlyList<DiaryPersonaDef> CandidatesForStage(string lifeStage)
+        {
+            IReadOnlyList<DiaryPersonaDef> all = All;
+            if (all == null || all.Count == 0)
+            {
+                return all;
+            }
+
+            string wanted = NormalizeStage(lifeStage);
+            List<DiaryPersonaDef> filtered = new List<DiaryPersonaDef>();
+            for (int i = 0; i < all.Count; i++)
+            {
+                DiaryPersonaDef persona = all[i];
+                if (persona != null && NormalizeStage(persona.lifeStage) == wanted)
+                {
+                    filtered.Add(persona);
+                }
+            }
+
+            return filtered.Count > 0 ? filtered : all;
+        }
+
+        // Blank/unknown lifeStage normalizes to adult, so existing style defs (no <lifeStage>) are adult.
+        public static string NormalizeStage(string lifeStage)
+        {
+            return string.Equals(lifeStage, StageChild, StringComparison.OrdinalIgnoreCase)
+                ? StageChild
+                : StageAdult;
         }
 
         // Base weight every style gets so the catalog never starves; the theme bonus is layered
@@ -142,9 +187,10 @@ namespace PawnDiary
         /// random pick if weights are unusable. Existing records keep their saved style — this
         /// only runs the first time a pawn enters the diary system.
         /// </summary>
-        public static DiaryPersonaDef WeightedStartingPersona(Pawn pawn, IDictionary<string, int> usedCounts)
+        public static DiaryPersonaDef WeightedStartingPersona(Pawn pawn, IDictionary<string, int> usedCounts,
+            string lifeStage = StageAdult)
         {
-            IReadOnlyList<DiaryPersonaDef> personas = All;
+            IReadOnlyList<DiaryPersonaDef> personas = CandidatesForStage(lifeStage);
             if (personas == null || personas.Count == 0)
             {
                 return Default ?? Fallback;
@@ -177,7 +223,7 @@ namespace PawnDiary
 
             if (total <= 0f)
             {
-                return RandomStartingPersona();
+                return RandomStartingPersona(lifeStage);
             }
 
             // Standard weighted pick: walk the cumulative weights until we pass the roll.
@@ -192,7 +238,7 @@ namespace PawnDiary
                 }
             }
 
-            return RandomStartingPersona();
+            return RandomStartingPersona(lifeStage);
         }
 
         /// <summary>
@@ -283,6 +329,9 @@ namespace PawnDiary
             persona.defName = settingsPreset?.defName ?? source?.defName ?? string.Empty;
             persona.label = settingsPreset?.label ?? source?.label ?? string.Empty;
             persona.rule = settingsPreset?.rule ?? source?.rule ?? string.Empty;
+            // The settings editor only creates adult styles, so preserve the XML source's band (a child
+            // style overridden in settings stays a child style; hand-created customs are adult).
+            persona.lifeStage = NormalizeStage(source?.lifeStage);
             persona.themes = new List<string>();
 
             List<string> themes = settingsPreset?.themes ?? source?.themes;

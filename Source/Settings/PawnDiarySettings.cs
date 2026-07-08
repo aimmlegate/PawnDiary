@@ -143,6 +143,10 @@ namespace PawnDiary
         // Master toggle for live prompt enchantments. When true, first-person diary prompts may get
         // one live health/status hint weighted by DiaryPromptEnchantmentDefs.xml.
         public bool enablePromptEnchantments = true;
+        // Master toggle for the psychotype (outlook) voice layer. When true, each pawn's psychotype rule
+        // is folded into first-person prompts alongside their writing style. When false, the block is
+        // omitted and pending psychotype rolls stay deferred; existing pawns keep their saved psychotype.
+        public bool enablePsychotypes = true;
         // Global prompt-context detail level. Full preserves the original prompt shape; smaller levels
         // dynamically choose the most relevant optional fields for small local models.
         public PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full;
@@ -254,6 +258,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref generateTitles, "generateTitles", true);
             Scribe_Values.Look(ref enableAtmosphericFormatting, "enableAtmosphericFormatting", true);
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
+            Scribe_Values.Look(ref enablePsychotypes, "enablePsychotypes", true);
             Scribe_Values.Look(ref contextDetailLevel, "contextDetailLevel", PromptContextDetailLevel.Full);
             Scribe_Values.Look(ref allowExternalIntegrations, "allowExternalIntegrations", true);
             Scribe_Values.Look(ref enableExternalKeySharing, "enableExternalKeySharing", false);

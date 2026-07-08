@@ -112,6 +112,7 @@ namespace PawnDiary
                     && initiatorQueueable;
 
                 string personaRule = PersonaRuleFor(previewEvent, povRole);
+                string psychotypeRule = PsychotypeRuleFor(previewEvent, povRole);
                 string promptEnchantment = PromptEnchantmentRuleFor(previewEvent, povRole);
                 string humorCue = HumorCueFor(previewEvent);
                 Func<PromptContextDetailLevel, DiaryPromptPlan> planFactory = level =>
@@ -119,6 +120,7 @@ namespace PawnDiary
                         previewEvent,
                         povRole,
                         personaRule,
+                        psychotypeRule,
                         promptEnchantment,
                         0,
                         humorCue,

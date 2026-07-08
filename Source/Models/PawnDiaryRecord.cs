@@ -34,6 +34,31 @@ namespace PawnDiary
         // The effective priority is External API override > Hediff override > Pawn custom > Base style.
         public string customWritingStyleRule;
 
+        // ---- Psychotype (outlook) layer: the second per-pawn voice, sibling to the style above ----
+        // Which DiaryPsychotypeDef this pawn uses. Empty string means "unset": either a pre-feature
+        // legacy record or a new record whose roll is still pending. The lazy generation-path check
+        // (DiaryGameComponent.EnsureVoiceStage) fills it in — Neutral for established pre-feature voices,
+        // a fresh band-appropriate roll otherwise — so old saves are always given a valid psychotype.
+        public string psychotypeDefName;
+
+        // Optional external integration psychotype override, sitting above the pawn's base/custom rule.
+        public string externalPsychotypeOverrideRule;
+        public string externalPsychotypeOverrideSourceId;
+
+        // Optional pawn-specific custom psychotype rule (player-authored, keeps line breaks). Priority is
+        // External API override > Pawn custom > Base type (no hediff psychotype layer in v1).
+        public string customPsychotypeRule;
+
+        // Which catalog band ("child"/"adult") this record's current voice rolls were made for. Empty
+        // means a pre-feature legacy record whose band has not been stamped yet. When the pawn crosses
+        // psychotypeCrystallizationAgeYears the band mismatches and both unpinned layers re-roll ("crystallize").
+        public string voiceStageBand;
+
+        // Player-made picks are pinned and never auto-re-rolled (e.g. when the pawn grows up). Set when
+        // the player manually chooses/re-rolls/edits a layer from the per-pawn editor.
+        public bool psychotypePinned;
+        public bool writingStylePinned;
+
         // Per-pawn toggle: when false, this pawn is skipped during diary generation.
         public bool diaryGenerationEnabled = true;
 
@@ -69,6 +94,15 @@ namespace PawnDiary
             Scribe_Values.Look(ref externalWritingStyleOverrideRule, "externalWritingStyleOverrideRule");
             Scribe_Values.Look(ref externalWritingStyleOverrideSourceId, "externalWritingStyleOverrideSourceId");
             Scribe_Values.Look(ref customWritingStyleRule, "customWritingStyleRule");
+            // Psychotype layer. No default on psychotypeDefName / voiceStageBand so a missing (legacy)
+            // value loads as null: the component's lazy defaults pass detects "unset" and backfills it.
+            Scribe_Values.Look(ref psychotypeDefName, "psychotypeDefName");
+            Scribe_Values.Look(ref externalPsychotypeOverrideRule, "externalPsychotypeOverrideRule");
+            Scribe_Values.Look(ref externalPsychotypeOverrideSourceId, "externalPsychotypeOverrideSourceId");
+            Scribe_Values.Look(ref customPsychotypeRule, "customPsychotypeRule");
+            Scribe_Values.Look(ref voiceStageBand, "voiceStageBand");
+            Scribe_Values.Look(ref psychotypePinned, "psychotypePinned", false);
+            Scribe_Values.Look(ref writingStylePinned, "writingStylePinned", false);
             Scribe_Values.Look(ref diaryGenerationEnabled, "diaryGenerationEnabled", true);
             Scribe_Values.Look(ref acknowledgedGeneratedEntryCount, "acknowledgedGeneratedEntryCount", -1);
             Scribe_Values.Look(ref hasUnreadGeneratedEntry, "hasUnreadGeneratedEntry", false);
@@ -100,6 +134,26 @@ namespace PawnDiary
                 // Player-authored custom prompt keeps its line breaks (so the editor stays readable),
                 // so it uses the multiline sanitizer rather than the one-line external override cleaner.
                 customWritingStyleRule = PlayerWritingStyleText.CleanRule(customWritingStyleRule);
+
+                // ---- Psychotype layer ----
+                // A named psychotype whose Def was removed/renamed falls back to Neutral so the prompt
+                // block is simply omitted; a blank value is left blank on purpose (the "unset" marker the
+                // component's lazy backfill looks for, so old saves are never crashed by a missing field).
+                if (!string.IsNullOrWhiteSpace(psychotypeDefName) && DiaryPsychotypes.ForDefName(psychotypeDefName) == null)
+                {
+                    psychotypeDefName = DiaryPsychotypes.NeutralDefName;
+                }
+
+                psychotypeDefName = psychotypeDefName ?? string.Empty;
+                voiceStageBand = voiceStageBand ?? string.Empty;
+                customPsychotypeRule = PsychotypeText.CleanRule(customPsychotypeRule);
+                externalPsychotypeOverrideRule = PsychotypeText.CleanExternalRule(externalPsychotypeOverrideRule);
+                externalPsychotypeOverrideSourceId = PsychotypeText.CleanSourceId(externalPsychotypeOverrideSourceId);
+                if (string.IsNullOrWhiteSpace(externalPsychotypeOverrideRule))
+                {
+                    externalPsychotypeOverrideRule = string.Empty;
+                    externalPsychotypeOverrideSourceId = string.Empty;
+                }
 
                 if (eventIds == null)
                 {

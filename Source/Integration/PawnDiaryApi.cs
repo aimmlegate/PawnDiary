@@ -877,6 +877,141 @@ namespace PawnDiary.Integration
         }
 
         /// <summary>
+        /// Returns a pawn's effective diary PSYCHOTYPE (outlook) as a small read-only snapshot, or null.
+        /// The sibling of <see cref="GetWritingStyle"/>: publishes the outlook lens (the <c>rule</c>) so a
+        /// chat/context mod can align with what the pawn notices and how they judge. Empty rule when the
+        /// psychotype layer is off or resolves to Neutral. Returns null — never throws — for a
+        /// null/ineligible pawn, no game loaded, or an off-thread call.
+        /// </summary>
+        public static DiaryPsychotypeSnapshot GetPsychotype(Pawn pawn)
+        {
+            try
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: GetPsychotype was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.Psychotype.OffThread".GetHashCode());
+                    return null;
+                }
+
+                if (!ExternalIntegrationsAllowed || !IsReady || pawn == null)
+                {
+                    return null;
+                }
+
+                return DiaryGameComponent.Instance.PsychotypeSnapshotFor(pawn);
+            }
+            catch (Exception e)
+            {
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: GetPsychotype failed: " + e,
+                    "PawnDiary.Api.Psychotype.Exception".GetHashCode());
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Saves a source-owned free-form PSYCHOTYPE (outlook) override for a pawn. The override sits
+        /// above the pawn's base/custom psychotype until the same source resets it, and colors what the
+        /// entry notices and how it judges — it does not change the pawn's writing style. Mirrors
+        /// <see cref="SetWritingStyleOverride"/> (main-thread only, source-owned, sanitized).
+        /// </summary>
+        public static bool SetPsychotypeOverride(Pawn pawn, string sourceId, string rule)
+        {
+            string cleanedSource = PsychotypeText.CleanSourceId(sourceId);
+            try
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: SetPsychotypeOverride was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.SetPsychotypeOverride.OffThread".GetHashCode());
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(cleanedSource))
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: SetPsychotypeOverride was called with a missing sourceId.",
+                        "PawnDiary.Api.SetPsychotypeOverride.MissingSource".GetHashCode());
+                    return false;
+                }
+
+                string cleanedRule = PsychotypeText.CleanExternalRule(rule);
+                if (string.IsNullOrWhiteSpace(cleanedRule))
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: SetPsychotypeOverride from '" + cleanedSource
+                        + "' cleaned to a blank rule; the call was ignored.",
+                        ("PawnDiary.Api.SetPsychotypeOverride.BlankRule." + cleanedSource).GetHashCode());
+                    return false;
+                }
+
+                if (!ExternalIntegrationsAllowed || !IsReady || pawn == null)
+                {
+                    return false;
+                }
+
+                return DiaryGameComponent.Instance.SetExternalPsychotypeOverride(pawn, cleanedSource, cleanedRule);
+            }
+            catch (Exception e)
+            {
+                string pawnForLog = PawnIdForLog(pawn);
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: SetPsychotypeOverride from '" + cleanedSource
+                    + "' for pawn '" + pawnForLog + "' failed: " + e,
+                    ("PawnDiary.Api.SetPsychotypeOverride.Exception." + cleanedSource + "."
+                        + pawnForLog + "." + e.GetType().FullName).GetHashCode());
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Clears a source-owned psychotype override. Returns true when no override remains, false when
+        /// the call is invalid or another source owns the active override.
+        /// </summary>
+        public static bool ResetPsychotypeOverride(Pawn pawn, string sourceId)
+        {
+            string cleanedSource = PsychotypeText.CleanSourceId(sourceId);
+            try
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: ResetPsychotypeOverride was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.ResetPsychotypeOverride.OffThread".GetHashCode());
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(cleanedSource))
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: ResetPsychotypeOverride was called with a missing sourceId.",
+                        "PawnDiary.Api.ResetPsychotypeOverride.MissingSource".GetHashCode());
+                    return false;
+                }
+
+                if (!ExternalIntegrationsAllowed || !IsReady || pawn == null)
+                {
+                    return false;
+                }
+
+                return DiaryGameComponent.Instance.ResetExternalPsychotypeOverride(pawn, cleanedSource);
+            }
+            catch (Exception e)
+            {
+                string pawnForLog = PawnIdForLog(pawn);
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: ResetPsychotypeOverride from '" + cleanedSource
+                    + "' for pawn '" + pawnForLog + "' failed: " + e,
+                    ("PawnDiary.Api.ResetPsychotypeOverride.Exception." + cleanedSource + "."
+                        + pawnForLog + "." + e.GetType().FullName).GetHashCode());
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Returns newest completed diary-page titles for one pawn, filtered by a plain query. The
         /// original v2 overload remains unchanged; this v5 overload only narrows which snapshots are
         /// returned and still never exposes prompts, raw responses, or live game objects.

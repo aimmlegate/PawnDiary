@@ -1,10 +1,12 @@
-// Player-facing dialog for editing one pawn's writing style from the Diary tab. It exposes the base
-// style picker, a read-only preview of the selected base prompt, an editable pawn-specific custom
-// prompt, an effective-prompt preview, and an explanation panel when a temporary override (hediff or
-// external API) shadows the player's choice.
+// Player-facing dialog for editing one pawn's VOICE from the Diary tab: the writing style (sentence
+// mechanics) and the psychotype (outlook/temperament). Both layers are edited here in one window, each
+// with a base picker, a read-only base preview, an editable pawn-specific custom rule, and an
+// explanation panel when a temporary override (hediff or external API) shadows the player's choice. A
+// manual pick / custom edit / re-roll pins the layer so it is not auto-re-rolled when the pawn grows up.
 //
-// RimWorld IMGUI draws this window repeatedly, so the editable buffer lives as a field and is only
-// flushed to the diary record through explicit Save/Reset button clicks — never during a draw pass.
+// RimWorld IMGUI draws this window repeatedly, so editable buffers live as fields and are only flushed
+// to the diary record through explicit Save/Reset button clicks — never during a draw pass. The whole
+// content area scrolls so both sections fit on small screens.
 //
 // New to C#/RimWorld? See AGENTS.md ("Window", "IExposable", "IMGUI").
 using System;
@@ -17,45 +19,46 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Modal window for inspecting and editing one pawn's writing style. Reads the effective
-    /// resolution (base / custom / hediff / external override) and writes only the pawn-specific
-    /// custom prompt and selected base style — never the global catalog or XML Defs.
+    /// Modal window for inspecting and editing one pawn's writing style and psychotype. Writes only the
+    /// pawn-specific custom rules, selected base defs, and pin flags — never the global catalog or XML Defs.
     /// </summary>
     internal sealed class Dialog_PawnWritingStyle : Window
     {
-        // Editable text buffer. Persisted across draw calls as a field; flushed to the record only on
-        // an explicit Save click. Captures the cursor/caret state through Widgets.TextArea's internal
-        // text editor keyed by this same string identity.
+        // ---- Writing-style editing state ----
         private string customRuleBuffer;
-
-        // Selected base style while editing. Defaults to the pawn's saved selection and is committed on
-        // Save alongside the custom prompt. Held separately so the dialog can preview changes before
-        // they are committed.
         private string pendingBaseStyleDefName;
+        private readonly string originalBaseStyleDefName;
+        private bool pendingWritingStylePinned;
+
+        // ---- Psychotype editing state ----
+        private string customPsychotypeBuffer;
+        private string pendingPsychotypeDefName;
+        private bool pendingPsychotypePinned;
 
         private readonly Pawn pawn;
         private readonly DiaryGameComponent component;
 
+        private Vector2 contentScroll;
         private Vector2 basePromptScroll;
         private Vector2 customScroll;
         private Vector2 effectiveScroll;
+        private Vector2 psychotypeBaseScroll;
+        private Vector2 psychotypeCustomScroll;
 
-        // Layout constants. These match the font line heights called out in AGENTS.md / the UI lore:
-        // Tiny 18, Small 22, Medium 28. The dialog uses Small for body text and Medium for the header.
+        // Layout constants (font line heights per AGENTS.md / UI lore: Tiny 18, Small 22, Medium 28).
         private const float HeaderHeight = 32f;
         private const float LineHeight = 22f;
         private const float LabelHeight = 20f;
         private const float ButtonHeight = 30f;
         private const float PromptAreaHeight = 96f;
+        private const float SmallPromptHeight = 72f;
+        private const float SectionTitleHeight = 24f;
+        private const float SectionGap = 12f;
         private const float Padding = 14f;
         private const float FieldGap = 6f;
         private const float ExplanationMinHeight = 40f;
         private const float ExplanationMaxHeight = 96f;
 
-        /// <summary>
-        /// Creates the dialog for <paramref name="pawn"/>. Callers must be on the main thread and pass
-        /// a non-null pawn + diary component (the Diary tab guarantees both).
-        /// </summary>
         public Dialog_PawnWritingStyle(Pawn pawn, DiaryGameComponent component)
         {
             this.pawn = pawn;
@@ -66,16 +69,26 @@ namespace PawnDiary
             closeOnClickedOutside = true;
             absorbInputAroundWindow = false;
 
-            // Seed the editable buffer from the saved custom prompt (already sanitized on save/load).
+            // Seed the writing-style editors from the saved record.
             customRuleBuffer = component == null ? string.Empty : component.CustomWritingStyleRuleFor(pawn);
-
-            // Seed the base-style picker from the pawn's current saved selection.
-            WritingStyleResolution current = component == null
+            WritingStyleResolution style = component == null
                 ? HediffPersonaOverrides.ResolveWritingStyle(null, null, null, null, null)
                 : component.ResolveWritingStyleFor(pawn);
-            pendingBaseStyleDefName = string.IsNullOrWhiteSpace(current.baseStyleDefName)
+            pendingBaseStyleDefName = string.IsNullOrWhiteSpace(style.baseStyleDefName)
                 ? (DiaryPersonas.Default?.defName ?? string.Empty)
-                : current.baseStyleDefName;
+                : style.baseStyleDefName;
+            originalBaseStyleDefName = pendingBaseStyleDefName;
+            pendingWritingStylePinned = component != null && component.WritingStylePinnedFor(pawn);
+
+            // Seed the psychotype editors from the saved record (resolving ensures a band/backfill first).
+            customPsychotypeBuffer = component == null ? string.Empty : component.CustomPsychotypeRuleFor(pawn);
+            PsychotypeResolution psycho = component == null
+                ? PsychotypeResolutionPolicy.Resolve(null, null, null, null)
+                : component.ResolvePsychotypeFor(pawn);
+            pendingPsychotypeDefName = string.IsNullOrWhiteSpace(psycho.baseTypeDefName)
+                ? DiaryPsychotypes.NeutralDefName
+                : psycho.baseTypeDefName;
+            pendingPsychotypePinned = component != null && component.PsychotypePinnedFor(pawn);
         }
 
         public override Vector2 InitialSize
@@ -83,72 +96,45 @@ namespace PawnDiary
             get
             {
                 float width = Mathf.Min(640f, UI.screenWidth - 64f);
-                float height = Mathf.Min(560f, UI.screenHeight - 64f);
+                float height = Mathf.Min(720f, UI.screenHeight - 64f);
                 return new Vector2(width, height);
             }
         }
 
-        /// <summary>
-        /// Draws the dialog contents. Called many times per second by RimWorld's IMGUI loop; this must
-        /// be side-effect free with respect to the saved record except inside explicit button handlers.
-        /// </summary>
         public override void DoWindowContents(Rect inRect)
         {
             Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(inRect.x, inRect.y, inRect.width, HeaderHeight), Title());
             Text.Font = GameFont.Small;
 
-            // Re-resolve every draw so override status (e.g. a hediff clearing mid-dialog) stays live.
-            // This is read-only with respect to the record; the editable buffer is the field above.
-            WritingStyleResolution resolution = component == null
+            // Re-resolve every draw so override status stays live (read-only w.r.t. the record).
+            WritingStyleResolution styleResolution = component == null
                 ? HediffPersonaOverrides.ResolveWritingStyle(null, null, null, null, null)
                 : component.ResolveWritingStyleFor(pawn);
+            // Display-only read (no EnsureVoiceStage): never rolls/mutates during a repaint. The
+            // constructor already backfilled via the mutating resolve when the editor opened.
+            PsychotypeResolution psychotypeResolution = component == null
+                ? PsychotypeResolutionPolicy.Resolve(null, null, null, null)
+                : component.ResolvePsychotypeForDisplay(pawn);
 
-            float y = inRect.y + HeaderHeight + FieldGap;
-            float contentWidth = inRect.width;
+            Rect buttonRow = new Rect(inRect.x, inRect.yMax - ButtonHeight - Padding, inRect.width, ButtonHeight);
+            Rect scrollOuter = new Rect(
+                inRect.x,
+                inRect.y + HeaderHeight + FieldGap,
+                inRect.width,
+                buttonRow.y - FieldGap - (inRect.y + HeaderHeight + FieldGap));
 
-            // Reserve the bottom button row up front so the override panel below can be clamped to the
-            // space above it instead of ever drawing over Save/Reset/Load/Close.
-            Rect buttonRow = new Rect(inRect.x, inRect.yMax - ButtonHeight - Padding, contentWidth, ButtonHeight);
+            float innerWidth = scrollOuter.width - 16f; // reserve scrollbar width
+            float contentHeight = MeasureContentHeight(innerWidth, styleResolution, psychotypeResolution);
+            Rect contentRect = new Rect(0f, 0f, innerWidth, contentHeight);
 
-            // Base style picker.
-            Rect pickerRect = new Rect(inRect.x, y, contentWidth, LineHeight);
-            DrawBaseStylePicker(pickerRect, resolution);
-            y += pickerRect.height + FieldGap;
+            Widgets.BeginScrollView(scrollOuter, ref contentScroll, contentRect);
+            float y = 0f;
+            DrawStyleSection(contentRect.x, innerWidth, ref y, styleResolution);
+            DrawPsychotypeSection(contentRect.x, innerWidth, ref y, psychotypeResolution);
+            Widgets.EndScrollView();
 
-            // Read-only base style prompt preview.
-            y += DrawLabeledScrollText(
-                new Rect(inRect.x, y, contentWidth, PromptAreaHeight),
-                "PawnDiary.WritingStyle.BasePrompt".Translate(),
-                BasePromptFor(pendingBaseStyleDefName),
-                ref basePromptScroll) + FieldGap;
-
-            // Editable custom prompt. The buffer is mutated in place by the text area (capped live to
-            // MaxRuleChars); commit to the record happens only on Save. The label shows a live count.
-            string customLabel = "PawnDiary.WritingStyle.CustomPrompt".Translate().ToString()
-                + "  " + customRuleBuffer.Length + "/" + PlayerWritingStyleText.MaxRuleChars;
-            y += DrawLabeledScrollText(
-                new Rect(inRect.x, y, contentWidth, PromptAreaHeight),
-                customLabel,
-                customRuleBuffer,
-                ref customScroll,
-                editable: true,
-                editedText: text => customRuleBuffer = ClampCustomInput(text)) + FieldGap;
-
-            // Effective prompt preview (reflects the live override status, not the edited buffer).
-            y += DrawLabeledScrollText(
-                new Rect(inRect.x, y, contentWidth, PromptAreaHeight),
-                "PawnDiary.WritingStyle.EffectivePrompt".Translate(),
-                EffectivePromptForDisplay(resolution),
-                ref effectiveScroll) + FieldGap;
-
-            // Override explanation panel (only when an override is active), clamped to the space left
-            // above the button row so it can never overlap the buttons.
-            float overrideAvailable = buttonRow.y - FieldGap - y;
-            DrawOverrideExplanation(new Rect(inRect.x, y, contentWidth, 0f), resolution, overrideAvailable);
-
-            // Buttons anchored to the bottom of the window.
-            DrawButtons(buttonRow, resolution);
+            DrawButtons(buttonRow);
         }
 
         private string Title()
@@ -157,67 +143,189 @@ namespace PawnDiary
             return "PawnDiary.WritingStyle.EditorTitle".Translate(name);
         }
 
-        /// <summary>
-        /// Draws the base-style picker button and opens a FloatMenu of <see cref="DiaryPersonas.All"/>.
-        /// Selecting an option only updates the in-dialog <see cref="pendingBaseStyleDefName"/>; the
-        /// record is updated on Save.
-        /// </summary>
+        // ---- Writing-style section --------------------------------------------------------------------
+
+        private void DrawStyleSection(float x, float width, ref float y, WritingStyleResolution resolution)
+        {
+            DrawBaseStylePicker(new Rect(x, y, width, LineHeight), resolution);
+            y += LineHeight + FieldGap;
+
+            y += DrawLabeledScrollText(
+                new Rect(x, y, width, PromptAreaHeight),
+                "PawnDiary.WritingStyle.BasePrompt".Translate(),
+                BaseStylePromptFor(pendingBaseStyleDefName),
+                ref basePromptScroll,
+                PromptAreaHeight) + FieldGap;
+
+            string customLabel = "PawnDiary.WritingStyle.CustomPrompt".Translate().ToString()
+                + "  " + customRuleBuffer.Length + "/" + PlayerWritingStyleText.MaxRuleChars;
+            y += DrawLabeledScrollText(
+                new Rect(x, y, width, PromptAreaHeight),
+                customLabel,
+                customRuleBuffer,
+                ref customScroll,
+                PromptAreaHeight,
+                editable: true,
+                editedText: text => customRuleBuffer = ClampInput(text, PlayerWritingStyleText.MaxRuleChars)) + FieldGap;
+
+            y += DrawLabeledScrollText(
+                new Rect(x, y, width, PromptAreaHeight),
+                "PawnDiary.WritingStyle.EffectivePrompt".Translate(),
+                EffectiveStylePromptForDisplay(resolution),
+                ref effectiveScroll,
+                PromptAreaHeight) + FieldGap;
+
+            string overrideMessage = WritingStyleOverrideMessage(resolution);
+            if (overrideMessage != null)
+            {
+                y += DrawMessagePanel(new Rect(x, y, width, 0f), overrideMessage,
+                    new Color(0.12f, 0.10f, 0.04f, 0.55f)) + FieldGap;
+            }
+        }
+
         private void DrawBaseStylePicker(Rect rect, WritingStyleResolution resolution)
         {
             DiaryPersonaDef selected = DiaryPersonas.Resolve(pendingBaseStyleDefName);
-            string selectedLabel = selected == null || string.IsNullOrWhiteSpace(selected.label)
-                ? (selected?.defName ?? "PawnDiary.Persona.DefaultLabel".Translate().ToString())
-                : selected.label;
-
+            string selectedLabel = LabelFor(selected);
             if (Widgets.ButtonText(rect, "PawnDiary.WritingStyle.BaseStyle".Translate(selectedLabel)))
             {
-                List<FloatMenuOption> options = DiaryPersonas.All
-                    .OrderBy(persona => persona == null ? string.Empty
-                        : (string.IsNullOrWhiteSpace(persona.label) ? persona.defName : persona.label))
+                // Only styles for the pawn's current age band so a child never picks an adult style.
+                string band = component == null ? DiaryPersonas.StageAdult : component.VoiceBandFor(pawn);
+                List<FloatMenuOption> options = DiaryPersonas.CandidatesForStage(band)
+                    .OrderBy(persona => LabelFor(persona))
                     .Select(persona =>
                     {
                         DiaryPersonaDef option = persona;
-                        string label = option == null || string.IsNullOrWhiteSpace(option.label)
-                            ? (option?.defName ?? string.Empty)
-                            : option.label;
-                        return new FloatMenuOption(label, delegate
+                        return new FloatMenuOption(LabelFor(option), delegate
                         {
                             if (option != null)
                             {
                                 pendingBaseStyleDefName = option.defName;
+                                pendingWritingStylePinned = true; // a manual pick pins the layer
                             }
                         });
                     })
                     .ToList();
-
                 Find.WindowStack.Add(new FloatMenu(options));
             }
         }
 
-        /// <summary>
-        /// Draws a label followed by a scrollable read-only or editable text block. Returns the height
-        /// actually used (label + text block) so the caller can advance the layout cursor. When
-        /// <paramref name="editable"/> is true, the <paramref name="editedText"/> callback receives the
-        /// new text on each edit (used to update the in-dialog buffer, not the saved record).
-        /// </summary>
+        // ---- Psychotype section -----------------------------------------------------------------------
+
+        private void DrawPsychotypeSection(float x, float width, ref float y, PsychotypeResolution resolution)
+        {
+            y += SectionGap;
+            Widgets.DrawLineHorizontal(x, y, width);
+            y += FieldGap;
+
+            Text.Font = GameFont.Small;
+            Widgets.Label(new Rect(x, y, width, SectionTitleHeight), "PawnDiary.Psychotype.SectionTitle".Translate());
+            y += SectionTitleHeight + FieldGap;
+
+            // Picker + Re-roll + Pin toggle on one row.
+            float pinWidth = 110f;
+            float rerollWidth = 90f;
+            float gap = 6f;
+            float pickerWidth = Mathf.Max(120f, width - pinWidth - rerollWidth - gap * 2f);
+            Rect pickerRect = new Rect(x, y, pickerWidth, ButtonHeight);
+            Rect rerollRect = new Rect(pickerRect.xMax + gap, y, rerollWidth, ButtonHeight);
+            Rect pinRect = new Rect(rerollRect.xMax + gap, y, pinWidth, ButtonHeight);
+            DrawPsychotypePicker(pickerRect);
+
+            if (Widgets.ButtonText(rerollRect, "PawnDiary.Psychotype.Reroll".Translate()))
+            {
+                if (component != null)
+                {
+                    pendingPsychotypeDefName = component.RollPsychotypePreview(pawn);
+                    pendingPsychotypePinned = true; // an explicit re-roll pins the result
+                }
+            }
+
+            TooltipHandler.TipRegion(rerollRect, "PawnDiary.Psychotype.RerollTip".Translate());
+            Widgets.CheckboxLabeled(pinRect, "PawnDiary.Psychotype.Pinned".Translate(), ref pendingPsychotypePinned);
+            TooltipHandler.TipRegion(pinRect, "PawnDiary.Psychotype.PinnedTip".Translate());
+            y += ButtonHeight + FieldGap;
+
+            y += DrawLabeledScrollText(
+                new Rect(x, y, width, SmallPromptHeight),
+                "PawnDiary.Psychotype.BaseRule".Translate(),
+                DiaryPsychotypes.RuleFor(pendingPsychotypeDefName),
+                ref psychotypeBaseScroll,
+                SmallPromptHeight) + FieldGap;
+
+            string customLabel = "PawnDiary.Psychotype.CustomRule".Translate().ToString()
+                + "  " + customPsychotypeBuffer.Length + "/" + PsychotypeText.MaxCustomRuleChars;
+            y += DrawLabeledScrollText(
+                new Rect(x, y, width, SmallPromptHeight),
+                customLabel,
+                customPsychotypeBuffer,
+                ref psychotypeCustomScroll,
+                SmallPromptHeight,
+                editable: true,
+                editedText: text =>
+                {
+                    string clamped = ClampInput(text, PsychotypeText.MaxCustomRuleChars);
+                    if (!string.Equals(clamped, customPsychotypeBuffer, StringComparison.Ordinal)
+                        && !string.IsNullOrWhiteSpace(clamped))
+                    {
+                        pendingPsychotypePinned = true; // authoring a custom outlook pins the layer
+                    }
+
+                    customPsychotypeBuffer = clamped;
+                }) + FieldGap;
+
+            string hint = PsychotypeHintMessage(resolution);
+            if (hint != null)
+            {
+                y += DrawMessagePanel(new Rect(x, y, width, 0f), hint,
+                    new Color(0.12f, 0.10f, 0.04f, 0.55f)) + FieldGap;
+            }
+        }
+
+        private void DrawPsychotypePicker(Rect rect)
+        {
+            DiaryPsychotypeDef selected = DiaryPsychotypes.Resolve(pendingPsychotypeDefName);
+            string selectedLabel = PsychotypeLabelFor(selected);
+            if (Widgets.ButtonText(rect, "PawnDiary.Psychotype.Current".Translate(selectedLabel)))
+            {
+                string band = component == null ? DiaryPersonas.StageAdult : component.VoiceBandFor(pawn);
+                List<FloatMenuOption> options = DiaryPsychotypes.PickerDefsFor(band)
+                    .Select(type =>
+                    {
+                        DiaryPsychotypeDef option = type;
+                        return new FloatMenuOption(PsychotypeLabelFor(option), delegate
+                        {
+                            if (option != null)
+                            {
+                                pendingPsychotypeDefName = option.defName;
+                                pendingPsychotypePinned = true; // a manual pick pins the layer
+                            }
+                        });
+                    })
+                    .ToList();
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+        }
+
+        // ---- Shared drawing helpers -------------------------------------------------------------------
+
         private float DrawLabeledScrollText(
             Rect rect,
             string label,
             string text,
             ref Vector2 scroll,
+            float bodyHeight,
             bool editable = false,
             Action<string> editedText = null)
         {
             Rect labelRect = new Rect(rect.x, rect.y, rect.width, LabelHeight);
             Widgets.Label(labelRect, label);
 
-            Rect bodyRect = new Rect(rect.x, labelRect.yMax + 2f, rect.width, PromptAreaHeight);
+            Rect bodyRect = new Rect(rect.x, labelRect.yMax + 2f, rect.width, bodyHeight);
             Widgets.DrawBoxSolid(bodyRect, new Color(0f, 0f, 0f, 0.25f));
 
-            // Reserve scrollbar width so wrapped text does not slide under the grip.
             float innerWidth = Mathf.Max(20f, bodyRect.width - 16f);
-            Rect viewRect = new Rect(bodyRect.x, bodyRect.y, innerWidth, PromptAreaHeight);
-
+            Rect viewRect = new Rect(bodyRect.x, bodyRect.y, innerWidth, bodyHeight);
             float contentHeight = Text.CalcHeight(text ?? string.Empty, viewRect.width);
             Rect contentRect = new Rect(0f, 0f, viewRect.width, Mathf.Max(viewRect.height, contentHeight));
 
@@ -226,10 +334,7 @@ namespace PawnDiary
             if (editable)
             {
                 string edited = Widgets.TextArea(textRect, text ?? string.Empty);
-                if (editedText != null)
-                {
-                    editedText(edited);
-                }
+                editedText?.Invoke(edited);
             }
             else
             {
@@ -237,29 +342,65 @@ namespace PawnDiary
             }
 
             Widgets.EndScrollView();
-            return labelRect.height + 2f + PromptAreaHeight;
+            return labelRect.height + 2f + bodyHeight;
         }
 
-        /// <summary>
-        /// Draws the override explanation panel and returns the height used (0 when no override and no
-        /// shadowed custom prompt). The panel explains *why* the effective prompt differs from the
-        /// base/custom choice, using distinct text for external-API vs hediff overrides.
-        /// </summary>
-        private float DrawOverrideExplanation(Rect rect, WritingStyleResolution resolution, float availableHeight)
+        private float DrawMessagePanel(Rect rect, string message, Color color)
+        {
+            float height = Mathf.Clamp(
+                Text.CalcHeight(message, rect.width - Padding * 2f) + Padding * 2f,
+                ExplanationMinHeight,
+                ExplanationMaxHeight);
+            Rect panelRect = new Rect(rect.x, rect.y, rect.width, height);
+            Widgets.DrawBoxSolid(panelRect, color);
+            Widgets.Label(panelRect.ContractedBy(Padding), message);
+            return height;
+        }
+
+        // Total height of the scrolling content, so the scroll view is sized before drawing.
+        private float MeasureContentHeight(float width, WritingStyleResolution styleResolution,
+            PsychotypeResolution psychotypeResolution)
+        {
+            float h = 0f;
+
+            // Style section.
+            h += LineHeight + FieldGap;
+            h += (LabelHeight + 2f + PromptAreaHeight) + FieldGap;
+            h += (LabelHeight + 2f + PromptAreaHeight) + FieldGap;
+            h += (LabelHeight + 2f + PromptAreaHeight) + FieldGap;
+            h += MessagePanelHeight(WritingStyleOverrideMessage(styleResolution), width);
+
+            // Psychotype section.
+            h += SectionGap + FieldGap; // gap + separator line
+            h += SectionTitleHeight + FieldGap;
+            h += ButtonHeight + FieldGap;
+            h += (LabelHeight + 2f + SmallPromptHeight) + FieldGap;
+            h += (LabelHeight + 2f + SmallPromptHeight) + FieldGap;
+            h += MessagePanelHeight(PsychotypeHintMessage(psychotypeResolution), width);
+
+            return h;
+        }
+
+        private float MessagePanelHeight(string message, float width)
+        {
+            if (message == null)
+            {
+                return 0f;
+            }
+
+            return Mathf.Clamp(
+                Text.CalcHeight(message, width - Padding * 2f) + Padding * 2f,
+                ExplanationMinHeight,
+                ExplanationMaxHeight) + FieldGap;
+        }
+
+        private static string WritingStyleOverrideMessage(WritingStyleResolution resolution)
         {
             if (resolution == null
                 || (resolution.source != WritingStyleRuleSource.ExternalApiOverride
                     && resolution.source != WritingStyleRuleSource.HediffOverride))
             {
-                return 0f;
-            }
-
-            // Never draw past the reserved button row: cap to the space actually left above it. If
-            // there is not even room for the minimum panel, skip it (the status hint still conveys it).
-            float maxHeight = Mathf.Min(ExplanationMaxHeight, availableHeight);
-            if (maxHeight < ExplanationMinHeight)
-            {
-                return 0f;
+                return null;
             }
 
             string explanation;
@@ -283,21 +424,38 @@ namespace PawnDiary
                 explanation += "\n" + "PawnDiary.WritingStyle.CustomInactiveDueToOverride".Translate();
             }
 
-            float height = Mathf.Clamp(
-                Text.CalcHeight(explanation, rect.width - Padding * 2f) + Padding * 2f,
-                ExplanationMinHeight,
-                maxHeight);
-            Rect panelRect = new Rect(rect.x, rect.y, rect.width, height);
-            Widgets.DrawBoxSolid(panelRect, new Color(0.12f, 0.10f, 0.04f, 0.55f));
-            Widgets.Label(panelRect.ContractedBy(Padding), explanation);
-            return height;
+            return explanation;
         }
 
-        /// <summary>
-        /// Draws the action buttons. Save / Reset mutate the record; Load / Close do not. Buttons are
-        /// sized to share the row evenly.
-        /// </summary>
-        private void DrawButtons(Rect rect, WritingStyleResolution resolution)
+        // The psychotype hint panel: a disabled-layer note, and/or an active external-override explanation.
+        private string PsychotypeHintMessage(PsychotypeResolution resolution)
+        {
+            string message = null;
+            if (component != null && !component.PsychotypeLayerEnabled)
+            {
+                message = "PawnDiary.Psychotype.Disabled".Translate();
+            }
+
+            if (resolution != null && resolution.source == PsychotypeRuleSource.ExternalApiOverride)
+            {
+                string source = string.IsNullOrWhiteSpace(resolution.externalSourceId)
+                    ? "PawnDiary.Psychotype.ExternalSourceLabel".Translate().ToString()
+                    : resolution.externalSourceId;
+                string overrideText = "PawnDiary.Psychotype.OverrideExternal".Translate(source);
+                if (PsychotypeResolutionPolicy.CustomSuppressedByOverride(resolution))
+                {
+                    overrideText += "\n" + "PawnDiary.Psychotype.CustomInactiveDueToOverride".Translate();
+                }
+
+                message = message == null ? overrideText : message + "\n" + overrideText;
+            }
+
+            return message;
+        }
+
+        // ---- Buttons + commit -------------------------------------------------------------------------
+
+        private void DrawButtons(Rect rect)
         {
             float gap = 6f;
             int buttonCount = 4;
@@ -312,35 +470,24 @@ namespace PawnDiary
             {
                 if (Save())
                 {
-                    Messages.Message(
-                        "PawnDiary.WritingStyle.Saved".Translate(),
-                        MessageTypeDefOf.NeutralEvent,
-                        false);
+                    Messages.Message("PawnDiary.WritingStyle.Saved".Translate(), MessageTypeDefOf.NeutralEvent, false);
                     Close();
                 }
                 else
                 {
-                    // The setters no-op for a pawn that is no longer diary-eligible (e.g. it died and
-                    // became a corpse while the dialog was open). Tell the player instead of lying.
-                    Messages.Message(
-                        "PawnDiary.WritingStyle.SaveFailed".Translate(),
-                        MessageTypeDefOf.RejectInput,
-                        false);
+                    Messages.Message("PawnDiary.WritingStyle.SaveFailed".Translate(), MessageTypeDefOf.RejectInput, false);
                 }
             }
 
             if (Widgets.ButtonText(resetRect, "PawnDiary.WritingStyle.ResetToBase".Translate()))
             {
                 ResetToBase();
-                Messages.Message(
-                    "PawnDiary.WritingStyle.Reset".Translate(),
-                    MessageTypeDefOf.NeutralEvent,
-                    false);
+                Messages.Message("PawnDiary.WritingStyle.Reset".Translate(), MessageTypeDefOf.NeutralEvent, false);
             }
 
             if (Widgets.ButtonText(loadRect, "PawnDiary.WritingStyle.LoadBasePrompt".Translate()))
             {
-                customRuleBuffer = BasePromptFor(pendingBaseStyleDefName);
+                customRuleBuffer = BaseStylePromptFor(pendingBaseStyleDefName);
             }
 
             if (Widgets.ButtonText(closeRect, "PawnDiary.WritingStyle.Close".Translate()))
@@ -349,10 +496,6 @@ namespace PawnDiary
             }
         }
 
-        /// <summary>
-        /// Commits the in-dialog base style selection and custom prompt to the pawn's diary record.
-        /// Sanitization happens inside the setters; a blank custom prompt clears the override.
-        /// </summary>
         private bool Save()
         {
             if (component == null || pawn == null)
@@ -361,47 +504,45 @@ namespace PawnDiary
             }
 
             bool ok = true;
+
+            // Writing style.
             if (!string.IsNullOrWhiteSpace(pendingBaseStyleDefName))
             {
                 ok &= component.SetPersona(pawn, pendingBaseStyleDefName);
             }
 
             ok &= component.SetCustomWritingStyleRule(pawn, customRuleBuffer);
+            // Changing the base style or authoring a custom rule counts as a manual pick.
+            if (!string.Equals(pendingBaseStyleDefName, originalBaseStyleDefName, StringComparison.Ordinal)
+                || !string.IsNullOrWhiteSpace(customRuleBuffer))
+            {
+                pendingWritingStylePinned = true;
+            }
 
-            // Reflect the sanitized save back into the buffer so a follow-up edit starts clean.
+            ok &= component.SetWritingStylePinned(pawn, pendingWritingStylePinned);
+
+            // Psychotype.
+            if (!string.IsNullOrWhiteSpace(pendingPsychotypeDefName))
+            {
+                ok &= component.SetPsychotype(pawn, pendingPsychotypeDefName);
+            }
+
+            ok &= component.SetCustomPsychotypeRule(pawn, customPsychotypeBuffer);
+            ok &= component.SetPsychotypePinned(pawn, pendingPsychotypePinned);
+
+            // Reflect the sanitized saves back into the buffers so a follow-up edit starts clean.
             customRuleBuffer = component.CustomWritingStyleRuleFor(pawn);
+            customPsychotypeBuffer = component.CustomPsychotypeRuleFor(pawn);
             return ok;
         }
 
-        /// <summary>
-        /// Caps live editor input to <see cref="PlayerWritingStyleText.MaxRuleChars"/> without splitting
-        /// a UTF-16 surrogate pair, so a large paste cannot balloon the buffer (nor the per-repaint
-        /// sanitizer that runs over it). Final sanitization still happens on Save.
-        /// </summary>
-        private static string ClampCustomInput(string text)
-        {
-            string next = text ?? string.Empty;
-            if (next.Length > PlayerWritingStyleText.MaxRuleChars)
-            {
-                next = TextTruncation.SafePrefix(next, PlayerWritingStyleText.MaxRuleChars);
-            }
-
-            return next;
-        }
-
-        /// <summary>
-        /// True when this dialog is editing <paramref name="candidate"/>. The Diary tab checks this
-        /// before opening a second editor for the same pawn, whose Save would clobber the first.
-        /// </summary>
         internal bool IsFor(Pawn candidate)
         {
             return candidate != null && candidate == pawn;
         }
 
-        /// <summary>
-        /// Clears the custom prompt and resets the base-style selection to the pawn's current saved
-        /// style. Does not close the dialog so the player can see the result.
-        /// </summary>
+        // Clears both custom rules, unpins both layers, and repoints the pickers to the current saved
+        // (auto-managed) base, so the pawn's voice goes back to being managed automatically.
         private void ResetToBase()
         {
             if (component == null || pawn == null)
@@ -410,28 +551,64 @@ namespace PawnDiary
             }
 
             component.SetCustomWritingStyleRule(pawn, string.Empty);
-            WritingStyleResolution current = component.ResolveWritingStyleFor(pawn);
-            pendingBaseStyleDefName = string.IsNullOrWhiteSpace(current.baseStyleDefName)
+            component.SetCustomPsychotypeRule(pawn, string.Empty);
+            component.SetWritingStylePinned(pawn, false);
+            component.SetPsychotypePinned(pawn, false);
+
+            WritingStyleResolution style = component.ResolveWritingStyleFor(pawn);
+            pendingBaseStyleDefName = string.IsNullOrWhiteSpace(style.baseStyleDefName)
                 ? (DiaryPersonas.Default?.defName ?? string.Empty)
-                : current.baseStyleDefName;
+                : style.baseStyleDefName;
+            PsychotypeResolution psycho = component.ResolvePsychotypeFor(pawn);
+            pendingPsychotypeDefName = string.IsNullOrWhiteSpace(psycho.baseTypeDefName)
+                ? DiaryPsychotypes.NeutralDefName
+                : psycho.baseTypeDefName;
+
             customRuleBuffer = string.Empty;
+            customPsychotypeBuffer = string.Empty;
+            pendingWritingStylePinned = false;
+            pendingPsychotypePinned = false;
         }
 
-        /// <summary>
-        /// The base style's prompt-facing rule for the picker preview. Uses DiaryPersonas.RuleFor so it
-        /// matches what generation would actually receive for that style (label-prefixed).
-        /// </summary>
-        private static string BasePromptFor(string defName)
+        // ---- Small helpers ----------------------------------------------------------------------------
+
+        private static string ClampInput(string text, int maxChars)
+        {
+            string next = text ?? string.Empty;
+            if (next.Length > maxChars)
+            {
+                next = TextTruncation.SafePrefix(next, maxChars);
+            }
+
+            return next;
+        }
+
+        private static string LabelFor(DiaryPersonaDef persona)
+        {
+            if (persona == null)
+            {
+                return "PawnDiary.Persona.DefaultLabel".Translate().ToString();
+            }
+
+            return string.IsNullOrWhiteSpace(persona.label) ? (persona.defName ?? string.Empty) : persona.label;
+        }
+
+        private static string PsychotypeLabelFor(DiaryPsychotypeDef type)
+        {
+            if (type == null)
+            {
+                return "PawnDiary.Psychotype.NeutralLabel".Translate().ToString();
+            }
+
+            return string.IsNullOrWhiteSpace(type.label) ? (type.defName ?? string.Empty) : type.label;
+        }
+
+        private static string BaseStylePromptFor(string defName)
         {
             return DiaryPersonas.RuleFor(defName);
         }
 
-        /// <summary>
-        /// The effective prompt text to show in the preview. When no override is active, this reflects
-        /// the in-dialog custom buffer (if any) so the player sees what Save would produce; when an
-        /// override is active, it shows the override's rule so the player understands the live state.
-        /// </summary>
-        private string EffectivePromptForDisplay(WritingStyleResolution resolution)
+        private string EffectiveStylePromptForDisplay(WritingStyleResolution resolution)
         {
             if (resolution == null)
             {
@@ -444,14 +621,13 @@ namespace PawnDiary
                 return resolution.rule;
             }
 
-            // No live override: preview the edited custom buffer if present, else the selected base.
             string editedCustom = PlayerWritingStyleText.CleanRule(customRuleBuffer);
             if (!string.IsNullOrWhiteSpace(editedCustom))
             {
                 return editedCustom;
             }
 
-            return BasePromptFor(pendingBaseStyleDefName);
+            return BaseStylePromptFor(pendingBaseStyleDefName);
         }
     }
 }

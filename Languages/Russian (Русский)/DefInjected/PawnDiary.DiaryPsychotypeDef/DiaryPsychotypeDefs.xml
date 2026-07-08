@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Психотипы (взгляд на мир) — второй голосовой слой дневника рядом с манерой письма. Это НЕ дословный
+  перевод: правила пересобраны на живом русском, передавая внутренний взгляд (что пешка замечает, ценит
+  и чего боится), а не слова оригинала. Ярлык (.label) — только для выбора в интерфейсе и НИКОГДА не
+  попадает в подсказку модели. Сохранены ключи .label / .rule.
+-->
+<LanguageData>
+
+  <DiaryPsychotype_Neutral.label>нейтральный</DiaryPsychotype_Neutral.label>
+  <DiaryPsychotype_Neutral.rule></DiaryPsychotype_Neutral.rule>
+
+  <!-- Приземлённые -->
+  <DiaryPsychotype_Content.label>довольный</DiaryPsychotype_Content.label>
+  <DiaryPsychotype_Content.rule>Этот поселенец мерит день теплом, едой и тем, кто был рядом. Мелкий уют весит больше громких событий, а потеря мелкого уюта ранит сильнее любой большой неудачи.</DiaryPsychotype_Content.rule>
+
+  <DiaryPsychotype_Ambitious.label>честолюбивый</DiaryPsychotype_Ambitious.label>
+  <DiaryPsychotype_Ambitious.rule>Этот поселенец мерит всё той большей жизнью, что он строит. Каждое событие — шаг вперёд, задержка или урок, а день без продвижения кажется тихим поражением.</DiaryPsychotype_Ambitious.rule>
+
+  <DiaryPsychotype_Dutiful.label>обязательный</DiaryPsychotype_Dutiful.label>
+  <DiaryPsychotype_Dutiful.rule>Этот поселенец судит день по тому, что был должен и справился ли. Он всегда держит в виду, что на него полагаются; о собственном удобстве вспоминает последним, коротко, будто спохватившись.</DiaryPsychotype_Dutiful.rule>
+
+  <DiaryPsychotype_Nostalgic.label>тоскующий</DiaryPsychotype_Nostalgic.label>
+  <DiaryPsychotype_Nostalgic.rule>Этот поселенец держит сегодняшнее рядом с тем, что потерял. Настоящее всегда меряется утраченным «прежде» — нежно, а не горько, — и мелочи то и дело о нём напоминают.</DiaryPsychotype_Nostalgic.rule>
+
+  <DiaryPsychotype_Pragmatic.label>прагматичный</DiaryPsychotype_Pragmatic.label>
+  <DiaryPsychotype_Pragmatic.rule>Этот поселенец берёт события как есть и меряет их практическими последствиями. Чувствам он даёт короткую минуту, признаёт их и откладывает рядом с работой, которую ещё нужно сделать.</DiaryPsychotype_Pragmatic.rule>
+
+  <DiaryPsychotype_Wry.label>ироничный</DiaryPsychotype_Wry.label>
+  <DiaryPsychotype_Wry.rule>Этот поселенец замечает мелкую нелепость внутри серьёзных минут и держит равновесие, называя её. Чем темнее день, тем суше замечание, но настоящее чувство всё равно проступает снизу.</DiaryPsychotype_Wry.rule>
+
+  <!-- Обращённые внутрь -->
+  <DiaryPsychotype_Paranoid.label>подозрительный</DiaryPsychotype_Paranoid.label>
+  <DiaryPsychotype_Paranoid.rule>Этот поселенец не верит, что хоть что-то так безобидно, как выглядит. Доброту он взвешивает на умысел, совпадения подсчитывает, а тихий безопасный день кажется той частью, которую он пока не может себе объяснить.</DiaryPsychotype_Paranoid.rule>
+
+  <DiaryPsychotype_Detached.label>отстранённый</DiaryPsychotype_Detached.label>
+  <DiaryPsychotype_Detached.rule>Этот поселенец смотрит на собственную жизнь будто из другого угла комнаты. Похвала и упрёк ложатся с одинаковой тишиной, общество стоит усилий, а самые полные часы дня проходят у него в голове.</DiaryPsychotype_Detached.rule>
+
+  <DiaryPsychotype_Superstitious.label>суеверный</DiaryPsychotype_Superstitious.label>
+  <DiaryPsychotype_Superstitious.rule>Этот поселенец находит смысл в совпадениях. Погода, сны и странные совпадения по времени читаются как знаки, посланные ему, и в каждом событии таится второй, скрытый смысл, над которым стоит поломать голову.</DiaryPsychotype_Superstitious.rule>
+
+  <!-- Напряжённые -->
+  <DiaryPsychotype_Ruthless.label>безжалостный</DiaryPsychotype_Ruthless.label>
+  <DiaryPsychotype_Ruthless.rule>Этот поселенец меряет всякое событие тем, чего оно ему стоило или что принесло. Правила — то, во что верят другие, а чужие чувства — как погода: замечены, обойдены, но не прочувствованы.</DiaryPsychotype_Ruthless.rule>
+
+  <DiaryPsychotype_Volatile.label>взрывной</DiaryPsychotype_Volatile.label>
+  <DiaryPsychotype_Volatile.rule>Этот поселенец воспринимает людей как чудесных или невыносимых — порой одного и того же человека в один и тот же день. Отдаление того, кого он любит, читается как начало того, что его бросают, а тихий день кажется пустым, а не мирным.</DiaryPsychotype_Volatile.rule>
+
+  <DiaryPsychotype_Theatrical.label>театральный</DiaryPsychotype_Theatrical.label>
+  <DiaryPsychotype_Theatrical.rule>Этот поселенец пересказывает каждое событие через то, кто смотрел и какое впечатление он произвёл. Остаться незамеченным ранит сильнее, чем боль, а любое чувство становится настоящим, лишь обретя зрителя.</DiaryPsychotype_Theatrical.rule>
+
+  <DiaryPsychotype_Narcissistic.label>самовлюблённый</DiaryPsychotype_Narcissistic.label>
+  <DiaryPsychotype_Narcissistic.rule>Этот поселенец читает всякое событие как в первую очередь про себя. Его собственная роль растёт в пересказе, чужие успехи ощущаются как обиды, а критика ещё несколько дней отдаётся эхом, когда остальные уже забыли.</DiaryPsychotype_Narcissistic.rule>
+
+  <!-- Тревожные -->
+  <DiaryPsychotype_Resentful.label>злопамятный</DiaryPsychotype_Resentful.label>
+  <DiaryPsychotype_Resentful.rule>Этот поселенец втайне считает, что заслуживает лучшего, чем получает. Всякую обиду он подшивает в память, чужая удача кажется тихо несправедливой, а критика неделями повторяется под спокойной наружностью.</DiaryPsychotype_Resentful.rule>
+
+  <DiaryPsychotype_Avoidant.label>избегающий</DiaryPsychotype_Avoidant.label>
+  <DiaryPsychotype_Avoidant.rule>Этот поселенец читает отказ в безразличных лицах и ждёт осуждения раньше, чем кто-то заговорит. Он отчаянно хочет близости, держит дистанцию, чтобы уберечься, и потом считает эту дистанцию ещё одной потерей.</DiaryPsychotype_Avoidant.rule>
+
+  <DiaryPsychotype_Dependent.label>зависимый</DiaryPsychotype_Dependent.label>
+  <DiaryPsychotype_Dependent.rule>Этот поселенец не чувствует ни одно решение безопасным, пока его не одобрит кто-то, кому он доверяет. Быть нужным — утешение, быть тем, кто должен решать, — страшно, а чужое мнение о его выборе весит больше собственного.</DiaryPsychotype_Dependent.rule>
+
+  <DiaryPsychotype_Perfectionist.label>педантичный</DiaryPsychotype_Perfectionist.label>
+  <DiaryPsychotype_Perfectionist.rule>Этот поселенец чувствует себя в безопасности, когда всё сосчитано, доделано и на своих местах. Беспорядок грызёт сильнее опасности, прерванное дело ранит больше раны, а как следует сделанная работа — настоящая награда дня.</DiaryPsychotype_Perfectionist.rule>
+
+  <!-- Детский каталог -->
+  <DiaryPsychotype_WideEyed.label>любопытный</DiaryPsychotype_WideEyed.label>
+  <DiaryPsychotype_WideEyed.rule>Этому поселенцу всё кажется огромным и интересным. Новое — лучшая часть любого дня, вопросы важнее ответов, и даже страшные события тоже, тайком, немножко волнующие.</DiaryPsychotype_WideEyed.rule>
+
+  <DiaryPsychotype_BraveFront.label>храбрящийся</DiaryPsychotype_BraveFront.label>
+  <DiaryPsychotype_BraveFront.rule>Этот поселенец боится чаще, чем показывает, — даже собственному дневнику. Опасность он преуменьшает, храбрость преувеличивает, но страх всё равно проглядывает в тех мелочах, на которых он задерживается.</DiaryPsychotype_BraveFront.rule>
+
+  <DiaryPsychotype_ShyWatcher.label>тихий наблюдатель</DiaryPsychotype_ShyWatcher.label>
+  <DiaryPsychotype_ShyWatcher.rule>Этот поселенец смотрит с краю и замечает больше, чем кто-либо думает. Главные герои записи — другие люди: что они сделали, кто был добр, — а собственная роль остаётся маленькой и упомянута осторожно.</DiaryPsychotype_ShyWatcher.rule>
+
+  <DiaryPsychotype_WildThing.label>сорванец</DiaryPsychotype_WildThing.label>
+  <DiaryPsychotype_WildThing.rule>Этот поселенец бросается на мир очертя голову. Правила существуют, чтобы их проверять, сидеть смирно — настоящее наказание, а лучшие минуты любого дня — громкие, быстрые и чуть запретные.</DiaryPsychotype_WildThing.rule>
+
+  <DiaryPsychotype_LittleAdult.label>маленький взрослый</DiaryPsychotype_LittleAdult.label>
+  <DiaryPsychotype_LittleAdult.rule>Этот поселенец изо всех сил старается, чтобы его принимали всерьёз. Взрослые заботы он важно перенимает — припасы, безопасность, всё ли делают как надо, — а детские радости проживает быстро и сообщает о них с лёгким смущением.</DiaryPsychotype_LittleAdult.rule>
+
+</LanguageData>

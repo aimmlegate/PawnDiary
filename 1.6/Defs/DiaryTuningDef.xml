@@ -200,9 +200,14 @@
          thousands of pages does not freeze the game. -->
     <uiHistoryScanMaxEventsPerFrame>60</uiHistoryScanMaxEventsPerFrame>
     <uiHistoryScanFrameBudgetSeconds>0.00075</uiHistoryScanFrameBudgetSeconds>
-    <!-- Minimum biological age for first-person diary ownership/generation. Pre-teen colonists can
-         still appear as context in someone else's entry, but do not write their own pages. -->
-    <minimumFirstPersonAgeYears>13</minimumFirstPersonAgeYears>
+    <!-- Minimum biological age for first-person diary ownership/generation. Below this, colonists can
+         still appear as context in someone else's entry, but do not write their own pages. Set to 7 so
+         children keep a diary in the naive child voice/psychotype catalogs; raise back to 13 to disable
+         child diary writing (the child catalogs then only matter for crystallization continuity). -->
+    <minimumFirstPersonAgeYears>7</minimumFirstPersonAgeYears>
+    <!-- Biological age at which both voice layers (writing style + psychotype) re-roll from the child
+         catalogs onto the adult catalogs. 13 is the final vanilla growth moment. -->
+    <psychotypeCrystallizationAgeYears>13</psychotypeCrystallizationAgeYears>
 
     <!-- Beauty buckets -->
     <beautyBeautiful>2</beautyBeautiful>

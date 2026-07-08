@@ -38,8 +38,12 @@
   <PawnDiaryRimTalkBridge.Prompt.DiaryVoiceLine>diary voice: {0}</PawnDiaryRimTalkBridge.Prompt.DiaryVoiceLine>
   <PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>Recent Pawn Diary memories for this pawn, plus an optional line describing their diary-writing voice.</PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>
 
-  <!-- Tier B persona-led diary voice: the style rule Pawn Diary receives as an override. -->
+  <!-- Tier B persona-led diary voice: the rule Pawn Diary receives as an override. Tier B now supplies
+       the pawn's PSYCHOTYPE (outlook) — who they are — while Pawn Diary keeps how they write. The old
+       VoiceRule (a writing-style override) is retained only so old saves' bridge overrides still read
+       cleanly until the one-time migration sweep clears them. -->
   <PawnDiaryRimTalkBridge.Persona.VoiceRule>voice shaped by their character: {0}</PawnDiaryRimTalkBridge.Persona.VoiceRule>
+  <PawnDiaryRimTalkBridge.Persona.LensRule>This pawn reads events through who they are: {0}</PawnDiaryRimTalkBridge.Persona.LensRule>
 
   <!-- Important-conversation diary entries (level 2). -->
   <PawnDiaryRimTalkBridge.Event.ConversationLabel>notable conversation</PawnDiaryRimTalkBridge.Event.ConversationLabel>
