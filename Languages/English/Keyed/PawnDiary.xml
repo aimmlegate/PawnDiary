@@ -401,6 +401,29 @@
   <PawnDiary.Settings.PersonaTag.whimsical>whimsical</PawnDiary.Settings.PersonaTag.whimsical>
   <PawnDiary.Settings.PersonaTag.noble>noble</PawnDiary.Settings.PersonaTag.noble>
   <PawnDiary.Settings.PersonaTag.void>void</PawnDiary.Settings.PersonaTag.void>
+
+  <!-- Psychotype (outlook) catalog editor, shown under Writing styles on the Styles tab -->
+  <PawnDiary.Settings.PsychotypeStudioTitle>Psychotypes</PawnDiary.Settings.PsychotypeStudioTitle>
+  <PawnDiary.Settings.PsychotypeStudioHelp>Edit psychotype labels, outlook rules, and family from DiaryPsychotypeDefs.xml, or add your own. Custom psychotypes can be assigned to a pawn by hand but are never auto-rolled; editing a built-in changes what new pawns can roll.</PawnDiary.Settings.PsychotypeStudioHelp>
+  <PawnDiary.Settings.PsychotypeStudioSummary>{0} psychotypes total, {1} custom, {2} edited</PawnDiary.Settings.PsychotypeStudioSummary>
+  <PawnDiary.Settings.PsychotypeStudioDisabledHint>Psychotypes are turned off in Main settings; edits here take effect once you re-enable them.</PawnDiary.Settings.PsychotypeStudioDisabledHint>
+  <PawnDiary.Settings.AddPsychotypePreset>Add custom psychotype</PawnDiary.Settings.AddPsychotypePreset>
+  <PawnDiary.Settings.NewPsychotypeLabel>New Psychotype</PawnDiary.Settings.NewPsychotypeLabel>
+  <PawnDiary.Settings.ResetPsychotypePresets>Restore all psychotype defaults</PawnDiary.Settings.ResetPsychotypePresets>
+  <PawnDiary.Settings.PsychotypePickerHeader>Psychotype</PawnDiary.Settings.PsychotypePickerHeader>
+  <PawnDiary.Settings.EditingPsychotype>Editing psychotype: {0}</PawnDiary.Settings.EditingPsychotype>
+  <PawnDiary.Settings.PsychotypeBadgeBuiltIn>Built-in psychotype</PawnDiary.Settings.PsychotypeBadgeBuiltIn>
+  <PawnDiary.Settings.PsychotypeBadgeCustom>Custom psychotype</PawnDiary.Settings.PsychotypeBadgeCustom>
+  <PawnDiary.Settings.PsychotypeLabel>Label</PawnDiary.Settings.PsychotypeLabel>
+  <PawnDiary.Settings.PsychotypeRule>Outlook rule (used in first-person prompts)</PawnDiary.Settings.PsychotypeRule>
+  <PawnDiary.Settings.PsychotypeFamily>Family (roll grouping)</PawnDiary.Settings.PsychotypeFamily>
+  <PawnDiary.Settings.RestorePsychotypePreset>Restore psychotype</PawnDiary.Settings.RestorePsychotypePreset>
+  <PawnDiary.Settings.DeletePsychotypePreset>Delete this custom psychotype</PawnDiary.Settings.DeletePsychotypePreset>
+  <PawnDiary.Settings.PsychotypeFamily.grounded>grounded</PawnDiary.Settings.PsychotypeFamily.grounded>
+  <PawnDiary.Settings.PsychotypeFamily.inward>inward</PawnDiary.Settings.PsychotypeFamily.inward>
+  <PawnDiary.Settings.PsychotypeFamily.intense>intense</PawnDiary.Settings.PsychotypeFamily.intense>
+  <PawnDiary.Settings.PsychotypeFamily.anxious>anxious</PawnDiary.Settings.PsychotypeFamily.anxious>
+
   <PawnDiary.Settings.PickModel>Pick</PawnDiary.Settings.PickModel>
   <PawnDiary.Settings.NoModelsYet>No models fetched yet</PawnDiary.Settings.NoModelsYet>
 

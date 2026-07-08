@@ -164,6 +164,31 @@ namespace PawnDiary
         };
 
         /// <summary>
+        /// Normalizes a family string to one of the four adult family constants, defaulting to
+        /// <see cref="FamilyGrounded"/> for blank/unknown input. Pure helper shared by the settings
+        /// psychotype catalog editor so a hand-edited or custom family never falls outside a roll bucket.
+        /// </summary>
+        public static string NormalizeFamily(string family)
+        {
+            if (string.IsNullOrWhiteSpace(family))
+            {
+                return FamilyGrounded;
+            }
+
+            switch (family.Trim().ToLowerInvariant())
+            {
+                case FamilyInward:
+                    return FamilyInward;
+                case FamilyIntense:
+                    return FamilyIntense;
+                case FamilyAnxious:
+                    return FamilyAnxious;
+                default:
+                    return FamilyGrounded;
+            }
+        }
+
+        /// <summary>
         /// Rolls a psychotype defName for the pawn. Returns the winning candidate's defName, or empty
         /// string when no usable candidates were supplied (the adapter then falls back to Neutral).
         /// <paramref name="rand01"/> returns a value in [0,1); it is called for the wildcard gate, each

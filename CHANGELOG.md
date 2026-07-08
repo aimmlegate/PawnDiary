@@ -8,6 +8,15 @@ pre-release version ladder for project history.
 
 ## 2026-07-08
 
+- **Edit psychotypes from settings (Styles tab).** The Styles settings tab now hosts a *Psychotypes*
+  catalog editor beside *Writing styles* (`PawnDiaryMod.PsychotypeStudio`, backed by the new
+  `PsychotypePresetStore`, Scribe key `psychotypePresets`): retune a built-in psychotype's
+  label/rule/family or add your own (label + rule + family). `DiaryPsychotypes.All` now merges those
+  edits over the XML defs and caches the result like `DiaryPersonas.All`, so overrides reach the roll,
+  the per-pawn picker, and generation from one place. Custom psychotypes are **manual-only** — pickable
+  per pawn but never auto-rolled (`RollCandidates` skips `custom` rows); built-in overrides still roll
+  with their edited family. Full EN + RU strings; new pure `PsychotypeRollPolicy.NormalizeFamily`
+  (test-covered in `DiaryPipelineTests`).
 - **Strip leaked format placeholders from generated diary text.** The LLM output sanitizer
   (`LlmResponseParser.SanitizeGeneratedMarkup`) now removes stray numbered format placeholders —
   `{0}`, `{1}`, `{0:D2}`, and empty `{}` — that a model echoed after an unfilled

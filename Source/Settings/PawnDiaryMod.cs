@@ -44,6 +44,8 @@ namespace PawnDiary
         private string selectedPromptStudioKey;
         // Which writing-style card is open in the settings "Writing styles" section.
         private string selectedPersonaKey;
+        // Which psychotype card is open in the settings "Psychotypes" section (same Styles tab).
+        private string selectedPsychotypeKey;
         // Scroll position for the settings window scroll view.
         private Vector2 settingsScrollPosition;
         // Separate scroll positions keep each page from inheriting a surprising offset from another page.
