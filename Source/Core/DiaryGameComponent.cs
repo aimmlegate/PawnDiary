@@ -302,7 +302,14 @@ namespace PawnDiary
             nextHediffProgressionScanTick = 0;
             nextProgressionScanTick = 0;
             baselineQuestAcceptancesOnNextScan = !BaselineAcceptedQuests();
-            initialArrivalScanPending = false;
+            // Loaded saves normally have their arrival pages already, so the founding-arrival
+            // bootstrap stays off. But when a free colonist is missing one — a save from a session
+            // where the founding scan was wedged by a broken BackstoryDef patch (pre-2026-07-08), the
+            // mod added to an existing colony, or a join that happened while recording was off — the
+            // bootstrap is re-armed so the first tick/signal writes the missing pages. Safe on healthy
+            // saves: the scan submits per colonist and the ArrivalSignal capture drops every pawn that
+            // already has a page, and late pages are forced to the front of the pawn's diary anyway.
+            initialArrivalScanPending = AnyFreeColonistMissingArrivalPage();
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
             ResetDaySummaryState();
             RebuildWrittenDayReflectionsFromEvents();

@@ -17,7 +17,12 @@ pre-release version ladder for project history.
   error. Two layers of hardening: `SafeBackstoryDescription` falls back to the raw backstory
   template on failure (one warning per backstory def), and `TryRecordStartingColonistArrivals`
   isolates each colonist so an unexpected per-pawn failure costs only that pawn's arrival page
-  instead of wedging the gate.
+  instead of wedging the gate. Same-day follow-up for saves the wedge already damaged: `LoadedGame`
+  now re-arms the founding-arrival bootstrap when any diary-eligible free colonist is missing an
+  arrival page (the wedge aborted the scan mid-loop, so pawns after the broken backstory never got
+  theirs), letting such saves backfill the missing pages on next load. Also covers mid-game
+  installs and joins recorded while capture was off; pawns with existing pages dedup, so healthy
+  saves see no change.
 - **Fixed a stale-lover-thought NRE that dropped interaction captures** (telemetry ref `237F2575`).
   Vanilla `Thought_OpinionOfMyLover.BaseMoodOffset` dereferences the lover relation, which can be
   gone by the time the pawn-summary top-thoughts picker calls `MoodOffset()`. `BuildTopThoughtsSummary`

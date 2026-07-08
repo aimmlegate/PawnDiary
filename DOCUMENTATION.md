@@ -26,7 +26,11 @@ generated first and the recipient entry gets hidden continuity from it.
 
 Arrivals and deaths are neutral boundary pages. Arrival pages introduce a pawn's diary and are forced
 to the front of that pawn's saved event list; on a new game, non-arrival capture waits until founding
-colonist arrivals have been recorded. Death pages end the diary and hide later same-tick events for
+colonist arrivals have been recorded. Loading a save re-arms that founding bootstrap when any
+diary-eligible free colonist is missing an arrival page (a session wedged by the pre-2026-07-08
+backstory bug, a mid-game install of the mod, or a join that happened while recording was off); the
+ArrivalSignal capture drops pawns that already have their page, so healthy saves are untouched.
+Death pages end the diary and hide later same-tick events for
 that pawn. If RimWorld resurrects the same saved pawn, the death page stays in history but stops
 acting as a terminal boundary, so later diary pages can attach, generate, render, and compact normally
 until another death occurs.

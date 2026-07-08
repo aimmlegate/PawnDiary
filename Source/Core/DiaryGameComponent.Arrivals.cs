@@ -62,6 +62,43 @@ namespace PawnDiary
             return true;
         }
 
+        /// <summary>
+        /// Load-time check for the arrival bootstrap: true when any free map colonist eligible for a
+        /// diary has no arrival page yet. Mirrors TryRecordStartingColonistArrivals' iteration
+        /// (maps -> FreeColonists) so a re-armed scan can always reach every pawn this reports. Saves
+        /// in this state exist: the pre-2026-07-08 wedge aborted the founding scan mid-loop (pawns
+        /// after the broken one never got pages), the mod can be added to an existing colony, and a
+        /// join can happen while recording is off.
+        /// </summary>
+        internal bool AnyFreeColonistMissingArrivalPage()
+        {
+            if (Find.Maps == null)
+            {
+                return false;
+            }
+
+            for (int mapIndex = 0; mapIndex < Find.Maps.Count; mapIndex++)
+            {
+                Map map = Find.Maps[mapIndex];
+                if (map?.mapPawns?.FreeColonists == null)
+                {
+                    continue;
+                }
+
+                List<Pawn> colonists = map.mapPawns.FreeColonists;
+                for (int i = 0; i < colonists.Count; i++)
+                {
+                    Pawn pawn = colonists[i];
+                    if (pawn != null && IsDiaryEligible(pawn) && !HasArrivalEventFor(pawn.GetUniqueLoadID()))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         // internal: the ArrivalSignal capture reads this through DiaryGameComponent.Instance to drop a
         // duplicate arrival page (the pawn already has one).
         internal bool HasArrivalEventFor(string pawnId)
