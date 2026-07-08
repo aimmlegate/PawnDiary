@@ -42,12 +42,19 @@ namespace PawnDiary
         // Model-facing stage-2 nudge data: which skill passions steer the roll toward this psychotype.
         // Initialized so old/partial defs that omit <skillAffinities> never NullReference.
         public List<DiaryPsychotypeSkillAffinity> skillAffinities = new List<DiaryPsychotypeSkillAffinity>();
+
+        // Runtime-only marker set by the settings merge (DiaryPsychotypes.MergeWithSettings) for
+        // player-created custom psychotypes; it is NEVER authored in XML, so built-in defs default false.
+        // A custom row is excluded from the auto-roll (RollCandidates) but kept in the manual per-pawn
+        // picker (PickerDefsFor) — that is the whole "manual-only customs" contract.
+        public bool custom;
     }
 
     /// <summary>
-    /// Central lookup/fallback helper for the psychotype catalog. Mirrors <see cref="DiaryPersonas"/>
-    /// but has no settings-preset merge in v1 (psychotypes are edited from the same per-pawn UI as
-    /// styles, not a separate studio).
+    /// Central lookup/fallback helper for the psychotype catalog. Mirrors <see cref="DiaryPersonas"/>:
+    /// XML defs are merged with settings-backed edits from the psychotype studio (built-in overrides +
+    /// player customs) and cached. Custom rows are manual-only — flagged so <see cref="RollCandidates"/>
+    /// skips them, while <see cref="PickerDefsFor"/> keeps them for hand assignment.
     /// </summary>
     internal static class DiaryPsychotypes
     {
@@ -67,14 +74,50 @@ namespace PawnDiary
 
         private static readonly List<DiaryPsychotypeDef> FallbackList = new List<DiaryPsychotypeDef> { Fallback };
 
-        /// <summary>All loaded psychotype defs, or the hardcoded Neutral fallback if none exist in XML.</summary>
+        // Merged-catalog cache, invalidated on preset edits/load. Same shape as DiaryPersonas' cache:
+        // reference-compare the base list + settings so the merge only reruns when something changed.
+        private static IReadOnlyList<DiaryPsychotypeDef> cachedAll;
+        private static IReadOnlyList<DiaryPsychotypeDef> cachedBaseList;
+        private static int cachedBaseCount = -1;
+        private static PawnDiarySettings cachedSettings;
+
+        /// <summary>
+        /// All psychotype defs the game should see: XML defs merged with settings-backed edits (built-in
+        /// overrides + player customs), or the hardcoded Neutral fallback if none exist in XML. Cached and
+        /// invalidated on preset edits/load, exactly like <see cref="DiaryPersonas.All"/>.
+        /// </summary>
         public static IReadOnlyList<DiaryPsychotypeDef> All
         {
             get
             {
                 List<DiaryPsychotypeDef> defs = DefDatabase<DiaryPsychotypeDef>.AllDefsListForReading;
-                return defs != null && defs.Count > 0 ? (IReadOnlyList<DiaryPsychotypeDef>)defs : FallbackList;
+                IReadOnlyList<DiaryPsychotypeDef> baseList = defs != null && defs.Count > 0
+                    ? (IReadOnlyList<DiaryPsychotypeDef>)defs
+                    : FallbackList;
+                PawnDiarySettings settings = PawnDiaryMod.Settings;
+                if (cachedAll != null
+                    && ReferenceEquals(cachedBaseList, baseList)
+                    && cachedBaseCount == baseList.Count
+                    && ReferenceEquals(cachedSettings, settings))
+                {
+                    return cachedAll;
+                }
+
+                cachedBaseList = baseList;
+                cachedBaseCount = baseList.Count;
+                cachedSettings = settings;
+                cachedAll = MergeWithSettings(baseList, settings);
+                return cachedAll;
             }
+        }
+
+        /// <summary>Clears the merged psychotype catalog after settings-backed preset edits or load-time cleanup.</summary>
+        public static void InvalidateCache()
+        {
+            cachedAll = null;
+            cachedBaseList = null;
+            cachedBaseCount = -1;
+            cachedSettings = null;
         }
 
         /// <summary>The empty-rule Neutral psychotype, falling back to the hardcoded one if XML is absent.</summary>
@@ -159,6 +202,13 @@ namespace PawnDiary
                     continue;
                 }
 
+                // Manual-only customs never enter the auto-roll; they are hand-picked from the per-pawn
+                // editor. Built-in overrides keep custom=false, so they still roll with their edited family.
+                if (type.custom)
+                {
+                    continue;
+                }
+
                 Dictionary<string, int> affinities = new Dictionary<string, int>();
                 if (type.skillAffinities != null)
                 {
@@ -182,6 +232,88 @@ namespace PawnDiary
             }
 
             return candidates;
+        }
+
+        // Builds the effective runtime psychotype catalog from XML defs plus settings-based edits/customs.
+        // Mirrors DiaryPersonas.MergeWithSettings. Overrides keep the built-in defName (custom=false) so
+        // they still roll; appended customs are flagged custom=true so RollCandidates skips them.
+        private static IReadOnlyList<DiaryPsychotypeDef> MergeWithSettings(IReadOnlyList<DiaryPsychotypeDef> baseList,
+            PawnDiarySettings settings)
+        {
+            if (settings == null)
+            {
+                return baseList;
+            }
+
+            settings.psychotypePresets.EnsureList();
+            if (settings.psychotypePresets.presets == null || settings.psychotypePresets.presets.Count == 0)
+            {
+                return baseList;
+            }
+
+            List<DiaryPsychotypeDef> merged = new List<DiaryPsychotypeDef>();
+            for (int i = 0; i < baseList.Count; i++)
+            {
+                DiaryPsychotypeDef source = baseList[i];
+                if (source == null || string.IsNullOrWhiteSpace(source.defName))
+                {
+                    continue;
+                }
+
+                PsychotypePresetConfig overridePreset = settings.psychotypePresets.OverrideFor(source.defName);
+                merged.Add(BuildPsychotype(source, overridePreset));
+            }
+
+            List<PsychotypePresetConfig> custom = settings.psychotypePresets.Customs();
+            for (int i = 0; i < custom.Count; i++)
+            {
+                PsychotypePresetConfig customPreset = custom[i];
+                if (customPreset == null || string.IsNullOrWhiteSpace(customPreset.defName))
+                {
+                    continue;
+                }
+
+                merged.Add(BuildPsychotype(null, customPreset));
+            }
+
+            return merged.Count > 0 ? merged : FallbackList;
+        }
+
+        // Projects one XML source def and/or one settings preset into an effective psychotype. For an
+        // override (source + preset), edited label/rule/family win but the source's lifeStage and
+        // skillAffinities (its roll identity) are preserved. For a custom (source == null), the row is a
+        // brand-new adult psychotype flagged custom=true with no skill affinities.
+        private static DiaryPsychotypeDef BuildPsychotype(DiaryPsychotypeDef source, PsychotypePresetConfig preset)
+        {
+            DiaryPsychotypeDef type = new DiaryPsychotypeDef();
+            type.defName = preset?.defName ?? source?.defName ?? string.Empty;
+            type.label = preset?.label ?? source?.label ?? string.Empty;
+            type.rule = preset?.rule ?? source?.rule ?? string.Empty;
+            type.family = PsychotypeRollPolicy.NormalizeFamily(preset?.family ?? source?.family);
+            // Custom rows are adult (the editor never creates child customs); overrides keep the XML band.
+            type.lifeStage = NormalizeStage(source?.lifeStage);
+            type.custom = source == null;
+
+            // Preserve the source's skill-passion nudges so an overridden built-in keeps its roll behavior.
+            // Customs never roll, so they carry none.
+            type.skillAffinities = new List<DiaryPsychotypeSkillAffinity>();
+            if (source?.skillAffinities != null)
+            {
+                for (int i = 0; i < source.skillAffinities.Count; i++)
+                {
+                    DiaryPsychotypeSkillAffinity affinity = source.skillAffinities[i];
+                    if (affinity != null && !string.IsNullOrWhiteSpace(affinity.skill))
+                    {
+                        type.skillAffinities.Add(new DiaryPsychotypeSkillAffinity
+                        {
+                            skill = affinity.skill,
+                            points = affinity.points
+                        });
+                    }
+                }
+            }
+
+            return type;
         }
 
         // Blank/unknown lifeStage counts as adult (the common case), keeping old/partial defs safe.

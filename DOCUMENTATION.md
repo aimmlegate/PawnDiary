@@ -923,13 +923,22 @@ established voice does not shift) while an entry-less record rolls a fresh psych
 entry — the type is always created if missing. The `DiaryPsychotypeDef` XML is loaded at startup like
 any Def, so the "type" exists regardless of the save.
 
-**Editing and API.** The psychotype is edited from the **same** per-pawn editor as the writing style
+**Editing and API.** Per-pawn, the psychotype is edited from the **same** editor as the writing style
 (`Dialog_PawnWritingStyle`, opened by the Diary tab header icon), as a second section with a
 stage-filtered picker, a re-roll button, a custom-rule area, a pin/unpin control, and an
-override-explanation panel; the header-icon tooltip shows both layers. The public integration API adds
-`GetPsychotype` (read the effective outlook) and `SetPsychotypeOverride` / `ResetPsychotypeOverride`
-(source-owned, mirroring the writing-style override pair). The RimTalk bridge's Tier B repoints to the
-psychotype override so RimTalk supplies *who* the pawn is while Pawn Diary keeps *how* they write.
+override-explanation panel; the header-icon tooltip shows both layers. The **catalog** itself is edited
+from the settings **Styles** tab — a *Psychotypes* studio under *Writing styles*
+(`PawnDiaryMod.PsychotypeStudio`, backed by `PsychotypePresetStore`, Scribe key `psychotypePresets`) that
+mirrors the writing-style Persona Studio: the player retunes a built-in's label/rule/family or adds a
+**custom** psychotype (label + rule + family). `DiaryPsychotypes.All` merges those edits over the XML
+defs and caches the result (mirroring `DiaryPersonas.All`), so overrides flow to the roll, the per-pawn
+picker, and generation in one place. Custom rows are **manual-only**: the merge flags them `custom` so
+`RollCandidates` skips them (never auto-assigned) while `PickerDefsFor` keeps them for hand assignment;
+built-in *overrides* keep the built-in defName, so they still roll with the edited family/rule. The
+public integration API adds `GetPsychotype` (read the effective outlook) and `SetPsychotypeOverride` /
+`ResetPsychotypeOverride` (source-owned, mirroring the writing-style override pair). The RimTalk bridge's
+Tier B repoints to the psychotype override so RimTalk supplies *who* the pawn is while Pawn Diary keeps
+*how* they write.
 
 Prompt enchantments add one weighted live-context cue to eligible first-person prompts. Event windows
 and observed conditions feed the same planner, so active threats can bias otherwise unrelated diary

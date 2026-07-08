@@ -291,6 +291,7 @@ namespace PawnDiary
         private void DrawStyleSettingsTab(Rect inRect)
         {
             Settings.personaPresets.EnsureList();
+            Settings.psychotypePresets.EnsureList();
 
             Rect outRect = inRect;
             float viewHeight = Mathf.Max(lastStyleSettingsContentHeight, inRect.height);
@@ -302,6 +303,8 @@ namespace PawnDiary
             {
                 listing.Gap(4f);
                 DrawPersonaStudio(listing);
+                listing.Gap(16f);
+                DrawPsychotypeStudio(listing);
             }
             finally
             {

@@ -82,6 +82,7 @@ namespace DiaryPipelineTests
             TestPsychotypeText();
             TestPsychotypeResolutionPolicy();
             TestPsychotypeRollProfile();
+            TestPsychotypeNormalizeFamily();
             TestPsychotypeFamilyWeights();
             TestPsychotypeMemberWeights();
             TestPsychotypeRollBranches();
@@ -4203,6 +4204,28 @@ namespace DiaryPipelineTests
             PsychotypeProfile empty = PsychotypeRollPolicy.BuildProfile(new List<PsychotypeSkillPassion>());
             AssertEqual("no passions => zero total", 0, empty.total);
             AssertNear("no passions => zero focus", 0f, empty.focus);
+        }
+
+        // NormalizeFamily maps blank/unknown input to grounded and preserves each known family
+        // case-insensitively, so a hand-edited or custom family never falls outside a roll bucket.
+        private static void TestPsychotypeNormalizeFamily()
+        {
+            AssertEqual("null family => grounded", PsychotypeRollPolicy.FamilyGrounded,
+                PsychotypeRollPolicy.NormalizeFamily(null));
+            AssertEqual("blank family => grounded", PsychotypeRollPolicy.FamilyGrounded,
+                PsychotypeRollPolicy.NormalizeFamily("   "));
+            AssertEqual("unknown family => grounded", PsychotypeRollPolicy.FamilyGrounded,
+                PsychotypeRollPolicy.NormalizeFamily("sunshine"));
+            AssertEqual("grounded preserved", PsychotypeRollPolicy.FamilyGrounded,
+                PsychotypeRollPolicy.NormalizeFamily("grounded"));
+            AssertEqual("inward preserved", PsychotypeRollPolicy.FamilyInward,
+                PsychotypeRollPolicy.NormalizeFamily("inward"));
+            AssertEqual("intense preserved", PsychotypeRollPolicy.FamilyIntense,
+                PsychotypeRollPolicy.NormalizeFamily("intense"));
+            AssertEqual("anxious preserved", PsychotypeRollPolicy.FamilyAnxious,
+                PsychotypeRollPolicy.NormalizeFamily("anxious"));
+            AssertEqual("mixed case + whitespace normalized", PsychotypeRollPolicy.FamilyIntense,
+                PsychotypeRollPolicy.NormalizeFamily("  Intense "));
         }
 
         // Stage 1: family weights follow the plan's table. Tested deterministically (no jitter/pick here).

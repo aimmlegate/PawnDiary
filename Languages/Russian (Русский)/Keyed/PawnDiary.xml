@@ -375,6 +375,29 @@
   <PawnDiary.Settings.PersonaTag.whimsical>чудаковатый</PawnDiary.Settings.PersonaTag.whimsical>
   <PawnDiary.Settings.PersonaTag.noble>благородный</PawnDiary.Settings.PersonaTag.noble>
   <PawnDiary.Settings.PersonaTag.void>пустотный</PawnDiary.Settings.PersonaTag.void>
+
+  <!-- Редактор психотипов (взгляда на мир), на вкладке «Стили» под манерами письма -->
+  <PawnDiary.Settings.PsychotypeStudioTitle>Психотипы</PawnDiary.Settings.PsychotypeStudioTitle>
+  <PawnDiary.Settings.PsychotypeStudioHelp>Редактируйте названия, правила взгляда и семейство из DiaryPsychotypeDefs.xml или добавляйте свои. Свой психотип можно назначить поселенцу вручную, но случайно он не выпадает; правка готового меняет то, что может выпасть новым поселенцам.</PawnDiary.Settings.PsychotypeStudioHelp>
+  <PawnDiary.Settings.PsychotypeStudioSummary>Психотипов: {0}; своих: {1}; изменено: {2}</PawnDiary.Settings.PsychotypeStudioSummary>
+  <PawnDiary.Settings.PsychotypeStudioDisabledHint>Психотипы выключены в основных настройках; правки применятся, когда вы их снова включите.</PawnDiary.Settings.PsychotypeStudioDisabledHint>
+  <PawnDiary.Settings.AddPsychotypePreset>Добавить свой психотип</PawnDiary.Settings.AddPsychotypePreset>
+  <PawnDiary.Settings.NewPsychotypeLabel>Новый психотип</PawnDiary.Settings.NewPsychotypeLabel>
+  <PawnDiary.Settings.ResetPsychotypePresets>Сбросить все психотипы</PawnDiary.Settings.ResetPsychotypePresets>
+  <PawnDiary.Settings.PsychotypePickerHeader>Психотип</PawnDiary.Settings.PsychotypePickerHeader>
+  <PawnDiary.Settings.EditingPsychotype>Правка психотипа: {0}</PawnDiary.Settings.EditingPsychotype>
+  <PawnDiary.Settings.PsychotypeBadgeBuiltIn>Готовый</PawnDiary.Settings.PsychotypeBadgeBuiltIn>
+  <PawnDiary.Settings.PsychotypeBadgeCustom>Свой</PawnDiary.Settings.PsychotypeBadgeCustom>
+  <PawnDiary.Settings.PsychotypeLabel>Название</PawnDiary.Settings.PsychotypeLabel>
+  <PawnDiary.Settings.PsychotypeRule>Правило взгляда для записи от первого лица</PawnDiary.Settings.PsychotypeRule>
+  <PawnDiary.Settings.PsychotypeFamily>Семейство (для случайного выбора)</PawnDiary.Settings.PsychotypeFamily>
+  <PawnDiary.Settings.RestorePsychotypePreset>Вернуть психотип из XML</PawnDiary.Settings.RestorePsychotypePreset>
+  <PawnDiary.Settings.DeletePsychotypePreset>Удалить свой психотип</PawnDiary.Settings.DeletePsychotypePreset>
+  <PawnDiary.Settings.PsychotypeFamily.grounded>устойчивый</PawnDiary.Settings.PsychotypeFamily.grounded>
+  <PawnDiary.Settings.PsychotypeFamily.inward>замкнутый</PawnDiary.Settings.PsychotypeFamily.inward>
+  <PawnDiary.Settings.PsychotypeFamily.intense>пылкий</PawnDiary.Settings.PsychotypeFamily.intense>
+  <PawnDiary.Settings.PsychotypeFamily.anxious>тревожный</PawnDiary.Settings.PsychotypeFamily.anxious>
+
   <PawnDiary.Settings.PickModel>Выбрать</PawnDiary.Settings.PickModel>
   <PawnDiary.Settings.NoModelsYet>Модели ещё не получены</PawnDiary.Settings.NoModelsYet>
   <PawnDiary.Settings.Tab.Main>Основное</PawnDiary.Settings.Tab.Main>

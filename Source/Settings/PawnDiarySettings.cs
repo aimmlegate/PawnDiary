@@ -204,6 +204,9 @@ namespace PawnDiary
         // Writing-style preset edits made in settings: XML override rows plus user-created custom
         // styles. Owned by PersonaPresetStore, which holds the CRUD and normalization logic.
         public PersonaPresetStore personaPresets = new PersonaPresetStore();
+        // Psychotype (outlook) preset edits made in settings: XML override rows plus user-created custom
+        // psychotypes. Owned by PsychotypePresetStore. Custom rows are manual-only (never auto-rolled).
+        public PsychotypePresetStore psychotypePresets = new PsychotypePresetStore();
         // Player overrides for Advanced-tab Def tuning/prompt-policy fields. Owned here for save/load;
         // AdvancedFieldCatalog applies them to the live Def instances so existing readers see the new
         // values with no call-site changes.
@@ -278,6 +281,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref maxArchivedDiaryEvents, "maxArchivedDiaryEvents", DefaultMaxArchivedDiaryEvents);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
             personaPresets.ExposeData();
+            psychotypePresets.ExposeData();
             advancedOverrides.ExposeData();
 
             ClampValues();
@@ -285,6 +289,7 @@ namespace PawnDiary
             {
                 NormalizeEndpointUrls();
                 DiaryPersonas.InvalidateCache();
+                DiaryPsychotypes.InvalidateCache();
                 // Snapshot pristine XML defaults, then push saved Advanced overrides into the live
                 // Def fields so they take effect for this session. Safe to call before Defs bind
                 // (resolvers return fallbacks) and idempotent across later UI re-applies.
@@ -883,6 +888,7 @@ namespace PawnDiary
             eventEnhancementOverrides.Normalize();
             eventForcedModelOverrides.Normalize();
             personaPresets.Normalize();
+            psychotypePresets.Normalize();
 
             EnsureEndpointsList();
 
