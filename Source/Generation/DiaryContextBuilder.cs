@@ -988,10 +988,15 @@ namespace PawnDiary
                         visible.Add(new WeightedThought(thought, offset));
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    // Deliberately silent: stale relation thoughts are routine pawn churn, and this
-                    // runs on every context build — logging would spam without being actionable.
+                    // Stale relation thoughts are routine pawn churn, so this stays quiet on the common
+                    // path. But a genuinely broken (e.g. mod-patched) thought getter should be findable:
+                    // WarningOnce keyed by the thought def surfaces each such def at most once per session.
+                    Log.WarningOnce(
+                        "[Pawn Diary] Skipped a mood thought whose getter threw while summarizing (stale "
+                        + "relation, or another mod's MoodOffset patch?): " + e,
+                        ("PawnDiary.ThoughtSummarySkip." + (thought.def?.defName ?? "unknown")).GetHashCode());
                 }
             }
 

@@ -111,8 +111,10 @@ namespace PawnDiary
                     && DiaryEvent.RoleEquals(povRole, DiaryEvent.RecipientRole)
                     && initiatorQueueable;
 
-                string personaRule = PersonaRuleFor(previewEvent, povRole);
-                string psychotypeRule = PsychotypeRuleFor(previewEvent, povRole);
+                // Read-only preview: pass ensureVoiceStage:false so inspecting a prompt never rolls,
+                // stamps, or crystallizes the subject's saved voice (a preview must not mutate the save).
+                string personaRule = PersonaRuleFor(previewEvent, povRole, null, ensureVoiceStage: false);
+                string psychotypeRule = PsychotypeRuleFor(previewEvent, povRole, null, ensureVoiceStage: false);
                 string promptEnchantment = PromptEnchantmentRuleFor(previewEvent, povRole);
                 string humorCue = HumorCueFor(previewEvent);
                 Func<PromptContextDetailLevel, DiaryPromptPlan> planFactory = level =>

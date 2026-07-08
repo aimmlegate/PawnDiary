@@ -69,7 +69,20 @@ namespace PawnDiary
 
                 for (int j = 0; j < thoughts.Count; j++)
                 {
-                    ThoughtProgressionMatch match = MatchThoughtProgression(thoughts[j], rules);
+                    ThoughtProgressionMatch match;
+                    try
+                    {
+                        // MatchThoughtProgression reads thought.MoodOffset()/LabelCap, which another mod
+                        // can postfix and which can throw on a stale thought. Isolate a bad thought so it
+                        // costs only itself, not the whole colony's progression scan (mirrors the guard in
+                        // DiaryContextBuilder.BuildTopThoughtsSummary).
+                        match = MatchThoughtProgression(thoughts[j], rules);
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+
                     if (match == null)
                     {
                         continue;

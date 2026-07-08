@@ -123,7 +123,7 @@ namespace PawnDiary
         /// so a non-blank custom prompt replaces the saved style only when no higher override is active.
         /// </summary>
         private string PersonaRuleFor(DiaryEvent diaryEvent, string povRole,
-            Dictionary<string, Pawn> livePawnsById = null)
+            Dictionary<string, Pawn> livePawnsById = null, bool ensureVoiceStage = true)
         {
             // Missing records fall back to the XML default writing style.
             string pawnId = PawnIdForRole(diaryEvent, povRole);
@@ -131,7 +131,9 @@ namespace PawnDiary
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
             // Resolve any pending crystallization/backfill first so the style below reflects the band the
             // pawn is actually in (a just-grown-up child re-rolls onto the adult style catalog here).
-            if (pawn != null && diary != null)
+            // Read-only callers (prompt previews) pass ensureVoiceStage:false so an inspection never rolls
+            // or stamps a real pawn's saved voice.
+            if (ensureVoiceStage && pawn != null && diary != null)
             {
                 EnsureVoiceStage(pawn, diary);
             }
@@ -150,12 +152,14 @@ namespace PawnDiary
         /// Effective priority is External API override &gt; pawn custom rule &gt; base type.
         /// </summary>
         private string PsychotypeRuleFor(DiaryEvent diaryEvent, string povRole,
-            Dictionary<string, Pawn> livePawnsById = null)
+            Dictionary<string, Pawn> livePawnsById = null, bool ensureVoiceStage = true)
         {
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
-            if (pawn != null && diary != null)
+            // Read-only callers (prompt previews) pass ensureVoiceStage:false so an inspection never rolls
+            // or stamps a real pawn's saved voice.
+            if (ensureVoiceStage && pawn != null && diary != null)
             {
                 EnsureVoiceStage(pawn, diary);
             }

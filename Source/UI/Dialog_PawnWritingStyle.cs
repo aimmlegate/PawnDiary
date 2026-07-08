@@ -33,6 +33,7 @@ namespace PawnDiary
         // ---- Psychotype editing state ----
         private string customPsychotypeBuffer;
         private string pendingPsychotypeDefName;
+        private readonly string originalPsychotypeDefName;
         private bool pendingPsychotypePinned;
 
         private readonly Pawn pawn;
@@ -88,6 +89,7 @@ namespace PawnDiary
             pendingPsychotypeDefName = string.IsNullOrWhiteSpace(psycho.baseTypeDefName)
                 ? DiaryPsychotypes.NeutralDefName
                 : psycho.baseTypeDefName;
+            originalPsychotypeDefName = pendingPsychotypeDefName;
             pendingPsychotypePinned = component != null && component.PsychotypePinnedFor(pawn);
         }
 
@@ -262,17 +264,11 @@ namespace PawnDiary
                 ref psychotypeCustomScroll,
                 SmallPromptHeight,
                 editable: true,
-                editedText: text =>
-                {
-                    string clamped = ClampInput(text, PsychotypeText.MaxCustomRuleChars);
-                    if (!string.Equals(clamped, customPsychotypeBuffer, StringComparison.Ordinal)
-                        && !string.IsNullOrWhiteSpace(clamped))
-                    {
-                        pendingPsychotypePinned = true; // authoring a custom outlook pins the layer
-                    }
-
-                    customPsychotypeBuffer = clamped;
-                }) + FieldGap;
+                // Pin state is decided from the final buffer at Save (see Save), never per keystroke, so
+                // typing a custom outlook and then clearing it does not leave the layer pinned. Mirrors
+                // the writing-style custom field above.
+                editedText: text => customPsychotypeBuffer = ClampInput(text, PsychotypeText.MaxCustomRuleChars))
+                + FieldGap;
 
             string hint = PsychotypeHintMessage(resolution);
             if (hint != null)
@@ -482,7 +478,7 @@ namespace PawnDiary
             if (Widgets.ButtonText(resetRect, "PawnDiary.WritingStyle.ResetToBase".Translate()))
             {
                 ResetToBase();
-                Messages.Message("PawnDiary.WritingStyle.Reset".Translate(), MessageTypeDefOf.NeutralEvent, false);
+                Messages.Message("PawnDiary.Voice.Reset".Translate(), MessageTypeDefOf.NeutralEvent, false);
             }
 
             if (Widgets.ButtonText(loadRect, "PawnDiary.WritingStyle.LoadBasePrompt".Translate()))
@@ -505,8 +501,11 @@ namespace PawnDiary
 
             bool ok = true;
 
-            // Writing style.
-            if (!string.IsNullOrWhiteSpace(pendingBaseStyleDefName))
+            // Writing style. Only write the base style when the player actually changed it: for a pawn
+            // with no record yet, SetPersona would create+roll a record and then overwrite the fresh roll
+            // with the seeded default, silently discarding the pawn's rolled style.
+            if (!string.IsNullOrWhiteSpace(pendingBaseStyleDefName)
+                && !string.Equals(pendingBaseStyleDefName, originalBaseStyleDefName, StringComparison.Ordinal))
             {
                 ok &= component.SetPersona(pawn, pendingBaseStyleDefName);
             }
@@ -521,13 +520,24 @@ namespace PawnDiary
 
             ok &= component.SetWritingStylePinned(pawn, pendingWritingStylePinned);
 
-            // Psychotype.
-            if (!string.IsNullOrWhiteSpace(pendingPsychotypeDefName))
+            // Psychotype. Same first-time-roll guard as the writing style: only write the base outlook
+            // when the player changed it, so opening + saving unchanged does not replace a freshly rolled
+            // outlook with the seeded Neutral default.
+            if (!string.IsNullOrWhiteSpace(pendingPsychotypeDefName)
+                && !string.Equals(pendingPsychotypeDefName, originalPsychotypeDefName, StringComparison.Ordinal))
             {
                 ok &= component.SetPsychotype(pawn, pendingPsychotypeDefName);
             }
 
             ok &= component.SetCustomPsychotypeRule(pawn, customPsychotypeBuffer);
+            // Changing the base outlook or authoring a custom rule counts as a manual pick (decided from
+            // final state here, so typing then clearing the custom rule does not leave the layer pinned).
+            if (!string.Equals(pendingPsychotypeDefName, originalPsychotypeDefName, StringComparison.Ordinal)
+                || !string.IsNullOrWhiteSpace(customPsychotypeBuffer))
+            {
+                pendingPsychotypePinned = true;
+            }
+
             ok &= component.SetPsychotypePinned(pawn, pendingPsychotypePinned);
 
             // Reflect the sanitized saves back into the buffers so a follow-up edit starts clean.

@@ -1273,6 +1273,8 @@
   <PawnDiary.WritingStyle.ExternalSourceLabel>внешняя интеграция</PawnDiary.WritingStyle.ExternalSourceLabel>
   <PawnDiary.WritingStyle.Saved>Манера письма сохранена.</PawnDiary.WritingStyle.Saved>
   <PawnDiary.WritingStyle.Reset>Своё правило очищено.</PawnDiary.WritingStyle.Reset>
+  <!-- Показывается кнопкой «Сбросить», которая очищает сразу оба слоя голоса (манеру письма и взгляд). -->
+  <PawnDiary.Voice.Reset>Голос сброшен — манера письма и мироощущение снова подбираются автоматически.</PawnDiary.Voice.Reset>
   <PawnDiary.WritingStyle.SaveFailed>Этот поселенец больше не может вести дневник, поэтому манера письма не сохранена.</PawnDiary.WritingStyle.SaveFailed>
 
   <!-- Слой психотипа (взгляда): линза характера поселенца, правится в том же окне, что и манера

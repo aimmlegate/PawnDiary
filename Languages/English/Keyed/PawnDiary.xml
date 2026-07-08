@@ -1321,6 +1321,8 @@
   <PawnDiary.WritingStyle.ExternalSourceLabel>external integration</PawnDiary.WritingStyle.ExternalSourceLabel>
   <PawnDiary.WritingStyle.Saved>Writing style saved.</PawnDiary.WritingStyle.Saved>
   <PawnDiary.WritingStyle.Reset>Custom prompt cleared.</PawnDiary.WritingStyle.Reset>
+  <!-- Shown by "Reset to base", which clears BOTH voice layers (writing style + outlook) at once. -->
+  <PawnDiary.Voice.Reset>Voice reset — writing style and outlook are managed automatically again.</PawnDiary.Voice.Reset>
   <PawnDiary.WritingStyle.SaveFailed>This pawn can no longer keep a diary, so the writing style was not saved.</PawnDiary.WritingStyle.SaveFailed>
 
   <!-- Psychotype (outlook) layer: the pawn's temperament lens, edited from the same per-pawn dialog

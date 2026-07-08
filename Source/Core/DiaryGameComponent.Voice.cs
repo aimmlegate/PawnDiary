@@ -67,15 +67,16 @@ namespace PawnDiary
             bool crystallizing = string.Equals(diary.voiceStageBand, DiaryPersonas.StageChild, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(targetBand, DiaryPersonas.StageAdult, StringComparison.OrdinalIgnoreCase);
             bool bandChanged = bandStamped && !bandMatches;
-            bool established = legacyUnstamped && RecordHasGeneratedEntries(diary);
 
             // ---- Psychotype layer (only managed while the feature is enabled; otherwise deferred) ----
             if (PsychotypesEnabled && !diary.psychotypePinned)
             {
-                if (legacyUnstamped && established)
+                // Freeze an established PRE-FEATURE voice (legacy record whose band was never stamped and
+                // which already has generated prose): Neutral contributes no prompt text, so the diary the
+                // player has already been reading does not suddenly shift. RecordHasGeneratedEntries walks
+                // the archive/events, so it is checked lazily here (a legacy record) rather than up front.
+                if (legacyUnstamped && RecordHasGeneratedEntries(diary))
                 {
-                    // Freeze an established pre-feature voice: Neutral contributes no prompt text, so the
-                    // diary the player has already been reading does not suddenly shift.
                     diary.psychotypeDefName = DiaryPsychotypes.NeutralDefName;
                 }
                 else if (!psychotypeSet || crystallizing || bandChanged)
@@ -106,7 +107,15 @@ namespace PawnDiary
                 diary.personaDefName = DiaryPersonas.Default.defName;
             }
 
-            diary.voiceStageBand = targetBand;
+            // Stamp the band — but keep a still-unstamped LEGACY record unstamped while the psychotype
+            // layer is OFF. New records always carry a band from creation, so this only defers stamping for
+            // genuine pre-feature records; it preserves the "pre-feature" signal so enabling the layer
+            // later still freezes an established voice to Neutral instead of re-rolling it. Stamping
+            // unconditionally would mask that and defeat the freeze across a disable->enable sequence.
+            if (PsychotypesEnabled || bandStamped)
+            {
+                diary.voiceStageBand = targetBand;
+            }
         }
 
         private string RollPsychotypeFor(Pawn pawn, string band, string childCarryDefName, string excludePawnId)
@@ -425,8 +434,11 @@ namespace PawnDiary
             resolution.baseTypeDefName = type.defName;
             resolution.baseTypeLabel = type.label ?? string.Empty;
 
-            // Disabled => omit the block entirely (pending rolls stay deferred elsewhere).
-            if (!PsychotypesEnabled)
+            // Disabled => omit the automatic outlook (pending rolls stay deferred elsewhere). An explicit
+            // EXTERNAL integration override (e.g. the RimTalk bridge's persona-led voice) is an opt-in
+            // signal from another mod, so it still applies — otherwise that integration would silently do
+            // nothing whenever the player has the automatic psychotype layer switched off.
+            if (!PsychotypesEnabled && resolution.source != PsychotypeRuleSource.ExternalApiOverride)
             {
                 resolution.rule = string.Empty;
             }

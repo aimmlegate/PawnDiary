@@ -6,6 +6,7 @@
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using PawnDiary.Capture;
 using PawnDiary.Ingestion;
 using RimWorld;
@@ -100,7 +101,11 @@ namespace PawnDiary
         }
 
         // internal: the ArrivalSignal capture reads this through DiaryGameComponent.Instance to drop a
-        // duplicate arrival page (the pawn already has one).
+        // duplicate arrival page (the pawn already has one). Checks BOTH the hot event store AND the
+        // compact archive: a founding colonist's arrival page compacts into the archive once the pawn
+        // passes the hot page cap (100). Missing the archive here made the load-time backfill
+        // (AnyFreeColonistMissingArrivalPage) re-arm the founding scan and mint a SECOND arrival page on
+        // every load of a mature colony, since the capture drop reads this same method.
         internal bool HasArrivalEventFor(string pawnId)
         {
             if (string.IsNullOrWhiteSpace(pawnId))
@@ -117,7 +122,9 @@ namespace PawnDiary
                 }
             }
 
-            return false;
+            // Old arrival refs compact into the archive before their hot ref is dropped; a compacted
+            // arrival still means "this pawn already has an arrival page".
+            return archive.FirstArrivalTickForPawn(pawnId).HasValue;
         }
 
         private static string BuildStartingArrivalContext(Pawn pawn)
@@ -192,9 +199,9 @@ namespace PawnDiary
         /// Resolves the pawn-adjusted backstory description without trusting
         /// <c>BackstoryDef.FullDescriptionFor</c>: other mods transpile that vanilla method (e.g.
         /// Vanilla Expanded Framework), and a bad interaction can throw NullReferenceException for
-        /// specific modded backstories. Falls back to the raw description template — readable prose,
-        /// just with unresolved [PAWN_*] grammar tokens — so the arrival entry still gets its
-        /// backstory line and, more importantly, arrival recording itself never aborts.
+        /// specific modded backstories. Falls back to the raw description template with its unresolved
+        /// [PAWN_*] grammar tokens stripped (so the model does not see "[PAWN_nameDef] grew up...") — the
+        /// arrival entry still gets its backstory line and, more importantly, arrival recording never aborts.
         /// </summary>
         private static string SafeBackstoryDescription(BackstoryDef backstory, Pawn pawn)
         {
@@ -210,8 +217,21 @@ namespace PawnDiary
                     "[Pawn Diary] BackstoryDef.FullDescriptionFor threw for '" + backstory.defName
                     + "' (another mod patches it?); using the raw description text instead: " + e,
                     ("PawnDiary.ArrivalBackstoryDescription." + backstory.defName).GetHashCode());
-                return backstory.baseDesc ?? string.Empty;
+                return StripGrammarTokens(backstory.baseDesc);
             }
+        }
+
+        // Removes unresolved [PAWN_*]/[ANYONE_*] grammar tokens from a raw backstory template and collapses
+        // the whitespace they leave behind. Only used on the rare FullDescriptionFor-threw fallback path.
+        private static string StripGrammarTokens(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
+            string stripped = Regex.Replace(text, @"\[[^\]]*\]", " ");
+            return Regex.Replace(stripped, @"\s{2,}", " ").Trim();
         }
 
         private static string BuildBackstoryEffects(BackstoryDef backstory, Pawn pawn)
