@@ -457,6 +457,46 @@ lost); and per-pawn/colony/pair throttle knobs (`ThrottlePolicy`, in-memory, not
 save/registry tokens (source id, `rimtalkbridge_conversation` event key, provider/listener ids) live
 in `BridgeIds`. The full design rationale is in `design/RIMTALK_BRIDGE_PLAN.md`.
 
+Two further Level-1 outbound context variables extend the bridge (both follow the same
+main-thread-refresh / background-read cache split, `design/RIMTALK_BRIDGE_CONTEXT_EXTENSION_PLAN.md`):
+
+- **`{{colony_events}}` — colony situation (`ColonyContextInjector`, default OFF).** A short curated
+  line about the colony *right now*: threat level (`Map.dangerWatcher.DangerRating`), active game
+  conditions (`GameConditionManager.ActiveConditions`), an atmospheric Anomaly note (DLC-gated on
+  `ModsConfig.AnomalyActive` via `Find.Anomaly`), and the top ongoing quests
+  (`QuestManager.QuestsListForReading`). Weather/season are left to RimTalk. Lines are weighted, then
+  ordered/trimmed by the pure `ColonyEventsFormat` (settings cap `colonyEventCount`, hard cap 400
+  chars). Registered as a `RegisterEnvironmentVariable` **and** an `InjectEnvironmentSection` after
+  `Environment.Weather`; the per-map cache is keyed by `map.uniqueID` and refreshed on the tick pass.
+  Off by default because it overlaps RimTalk's own live-event mods — Pawn Diary contributes a curated,
+  atmospheric summary instead of a live feed.
+- **`{{diary_shared}}` — pair shared memory (`SharedMemoryInjector`, default ON).** When two colonists
+  talk, the diary moments they *share* (entries where one is subject and the other partner, via
+  `DiaryEntryTitleQuery.partnerPawnId`) are injected as "previous interactions", picked
+  weighted-randomly by the pure `SharedMemorySelection` (recency × importance, seeded from a stable
+  per-pair value — **never `Verse.Rand`**; settings cap `sharedMemoryCount`, hard cap 500 chars). This
+  is a **context** variable (RimTalk hands the provider a `RimTalk.Prompt.PromptContext` with all
+  participants), so it registers via `ContextHookRegistry.RegisterContextVariable`. Because a context
+  variable is invoked at prompt time for a pair only then known, the provider is *lazy*: it serves the
+  cached block or enqueues the pair on a `ConcurrentQueue` and returns "" once; the main-thread pass
+  drains the queue, reads the shared entries, and fills a `pairKey`-keyed cache (a second entry-status
+  listener marks a pair stale when either pawn's diary changes). `IsPreview` returns a cheap localized
+  sample. Zero-config delivery: since RimTalk has no context-*section* injection, an optional system
+  **prompt entry** embedding `{{diary_shared}}` is auto-registered (`autoInjectSharedMemory`, default
+  ON) via `RimTalkPromptAPI.CreatePromptEntry`/`AddPromptEntry`; it is reconciled idempotently
+  (remove-by-modId then add) from the tick pass and `Mod.WriteSettings`, and **removed** when the
+  feature is turned off — prompt entries persist in the user's active RimTalk preset, so that cleanup
+  is mandatory.
+
+Verified against the installed `cj.rimtalk` **v1.0.13** DLL (plan ⚠️ V1): `RegisterContextVariable`,
+`RegisterEnvironmentVariable`, `InjectEnvironmentSection`, `RegisterEnvironmentHook`, the
+`PromptContext` fields (`AllPawns`/`Pawns`, `IsMonologue`, `IsPreview`), and the prompt-entry API all
+exist, so no degrade path was needed. **⚠️ U1 (open, verify in-game):** whether RimTalk renders an
+`InjectEnvironmentSection` into its *default* prompt is still unconfirmed for `{{colony_events}}` (the
+same open question the shipped `InjectPawnSection` carries). The `{{colony_events}}` variable and the
+`{{diary_shared}}` prompt entry work regardless; if the injected environment *section* does not render,
+switch `ColonyContextInjector.RegisterAll` to `RegisterEnvironmentHook(Environment.Weather, Append, …)`.
+
 Compatibility groups shipped inside this repo for other mods use the group gate
 `enableWhenPackageIdsLoaded` (inverse of `disableWhenPackageIdsLoaded`): the group is enabled only
 while one of the listed target mods is in the mod list, so it sits fully inert otherwise.

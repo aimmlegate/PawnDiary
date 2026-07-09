@@ -6,6 +6,37 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-09
+
+- **RimTalk bridge: colony situation + pair shared memory context.** Two new Level-1 outbound context
+  variables for the `PawnDiary: RimTalk bridge` adapter (`design/RIMTALK_BRIDGE_CONTEXT_EXTENSION_PLAN.md`),
+  both cache-read-only on RimTalk's background prompt thread and refreshed on the main-thread tick pass:
+  - **`{{colony_events}}` — colony situation (`ColonyContextInjector`, default OFF).** A short curated,
+    weighted line about the colony now — threat level, active game conditions, an atmospheric Anomaly
+    note (DLC-gated), and top ongoing quests; weather/season left to RimTalk. Registered as an
+    environment variable + an injected section after Weather; per-map cache keyed by `map.uniqueID`.
+    Off by default (overlaps RimTalk's live-event mods). Pure `ColonyEventsFormat` orders/trims it
+    (settings `colonyEventCount`, hard cap 400 chars).
+  - **`{{diary_shared}}` — pair shared memory (`SharedMemoryInjector`, default ON).** When two colonists
+    talk, the diary moments they share (filtered by `DiaryEntryTitleQuery.partnerPawnId`) are injected as
+    "previous interactions", picked weighted-randomly by the pure `SharedMemorySelection` (recency ×
+    importance, seeded from a stable per-pair value — never `Verse.Rand`; settings `sharedMemoryCount`,
+    hard cap 500 chars). A `context` variable (sees all participants), so it uses a lazy request queue:
+    the provider serves the cached block or enqueues the pair; the pass builds it and caches by pair key,
+    with a second entry-status listener invalidating a pair when either pawn's diary changes. Optional
+    zero-config auto prompt-entry embedding `{{diary_shared}}` (`autoInjectSharedMemory`, default ON),
+    reconciled idempotently and removed on toggle-off (prompt entries persist in the RimTalk preset).
+  - New Advanced settings (frozen Scribe keys, defensive clamps): `injectSharedMemory`,
+    `autoInjectSharedMemory`, `injectColonyContext`, `sharedMemoryCount` (0–4), `colonyEventCount`
+    (0–6), with the shared-memory sub-rows gated on the parent toggle. The bridge settings window is
+    now wrapped in a scroll view so the fuller list stays reachable (it otherwise overflowed the fixed
+    mod-settings rect at larger UI scales / longer translations, clipping the bottom controls).
+  - Verified against the **installed cj.rimtalk v1.0.13** DLL (`RegisterContextVariable`, `PromptContext`,
+    the prompt-entry API all present — no degrade needed). Full EN + native RU strings (RU flagged for a
+    human pass); new pure tests in `RimTalkBridgeLogicTests` (98 assertions green). Bridge builds clean.
+    **In-game matrix + the `InjectEnvironmentSection` render question (U1) are pending a maintainer
+    playtest** — see DOCUMENTATION.md.
+
 ## 2026-07-08
 
 - **Edit psychotypes from settings (Styles tab).** The Styles settings tab now hosts a *Psychotypes*

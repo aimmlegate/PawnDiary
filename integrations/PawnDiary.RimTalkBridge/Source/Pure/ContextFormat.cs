@@ -188,9 +188,10 @@ namespace PawnDiaryRimTalkBridge
 
         /// <summary>
         /// Collapses whitespace/newlines to single spaces and trims. Keeps section lines single-line
-        /// so the newline layout above stays exact.
+        /// so the newline layout above stays exact. Public so sibling pure formatters
+        /// (e.g. <see cref="ColonyEventsFormat"/>) share one definition of "clean single line".
         /// </summary>
-        private static string Clean(string text)
+        public static string Clean(string text)
         {
             if (string.IsNullOrEmpty(text))
             {

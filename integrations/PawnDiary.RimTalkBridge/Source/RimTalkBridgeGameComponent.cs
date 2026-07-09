@@ -49,6 +49,8 @@ namespace PawnDiaryRimTalkBridge
         public override void FinalizeInit()
         {
             DiaryContextInjector.ResetForNewGame();
+            ColonyContextInjector.ResetForNewGame();
+            SharedMemoryInjector.ResetForNewGame();
             PersonaSync.ResetForNewGame();
             ConversationTracker.ResetForNewGame();
             RimTalkEngineClient.ResetForNewGame();
@@ -79,9 +81,44 @@ namespace PawnDiaryRimTalkBridge
         private void RunPass(int now)
         {
             RefreshContextCaches(now);
+            RefreshColonyContext(now);              // Feature 1: colony-situation block per map
+            SharedMemoryInjector.ProcessQueue(now); // Feature 3: build pairs the provider requested
+            SharedMemoryInjector.SyncAutoInject();  // Feature 3: reconcile the optional prompt entry
             PersonaSync.RunTierBPass();
             ConversationTracker.ProcessDueConversations(now);
             RimTalkEngineClient.DrainResults();
+        }
+
+        /// <summary>
+        /// Feature 1: rebuild the {{colony_events}} block for each colonist-bearing map whose cache is
+        /// expired. Default OFF; skips entirely unless the toggle is on. Uses the same TTL floor as the
+        /// diary section — colony state changes coarsely and the block is served from cache meanwhile.
+        /// </summary>
+        private void RefreshColonyContext(int now)
+        {
+            if (!PawnDiaryRimTalkBridgeMod.LevelAtLeast(1))
+            {
+                return;
+            }
+
+            PawnDiaryRimTalkBridgeSettings settings = PawnDiaryRimTalkBridgeMod.Settings;
+            if (settings == null || !settings.injectColonyContext)
+            {
+                return;
+            }
+
+            foreach (Map map in Find.Maps)
+            {
+                if (map == null || map.mapPawns == null || map.mapPawns.FreeColonistsSpawnedCount <= 0)
+                {
+                    continue;
+                }
+
+                if (ColonyContextInjector.NeedsRefresh(map, now, ContextRefreshTtlFloorTicks))
+                {
+                    ColonyContextInjector.RefreshFor(map);
+                }
+            }
         }
 
         /// <summary>

@@ -40,7 +40,16 @@ namespace PawnDiaryRimTalkBridge
         // buffer that survives between frames while the player is typing (half-typed numbers are not
         // valid ints yet). They are UI state only and never saved.
         private string contextEntryCountBuffer;
+        private string colonyEventCountBuffer;
+        private string sharedMemoryCountBuffer;
         private string conversationQuietTicksBuffer;
+
+        // Scroll state for the settings window. The bridge now has enough rows (level chooser + the
+        // advanced toggles and numeric tunables) to overflow the fixed mod-settings rect, especially at
+        // larger UI scales or with longer translations, which would clip the bottom controls. The view
+        // height self-corrects to the measured content height after the first frame.
+        private Vector2 settingsScrollPosition;
+        private float settingsViewHeight = 720f;
         private string minRepliesBuffer;
         private string perPawnDailyCapBuffer;
         private string colonyDailyCapBuffer;
@@ -99,6 +108,24 @@ namespace PawnDiaryRimTalkBridge
                 Log.Error(LogPrefix + " failed to register the persona context provider; Tier A is disabled: " + e);
             }
 
+            try
+            {
+                ColonyContextInjector.RegisterAll();     // Feature 1: {{colony_events}} env variable + section
+            }
+            catch (Exception e)
+            {
+                Log.Error(LogPrefix + " failed to register the colony-context hooks; {{colony_events}} is disabled: " + e);
+            }
+
+            try
+            {
+                SharedMemoryInjector.RegisterAll();       // Feature 3: {{diary_shared}} context variable + listener
+            }
+            catch (Exception e)
+            {
+                Log.Error(LogPrefix + " failed to register the shared-memory hooks; {{diary_shared}} is disabled: " + e);
+            }
+
             Log.Message(LogPrefix + " initialized.");
         }
 
@@ -119,11 +146,32 @@ namespace PawnDiaryRimTalkBridge
             return "PawnDiaryRimTalkBridge.Settings.Category".Translate();
         }
 
-        /// <summary>Draws the bridge settings: the level chooser, then the advanced block.</summary>
+        /// <summary>
+        /// Saves the settings, then reconciles the optional {{diary_shared}} prompt entry so a change
+        /// made from the main menu (no game loaded, so no tick pass runs) takes effect immediately —
+        /// including removing the entry when the player turns the feature off. SyncAutoInject is a
+        /// cheap no-op when nothing changed.
+        /// </summary>
+        public override void WriteSettings()
+        {
+            base.WriteSettings();
+
+            if (RimTalkActive)
+            {
+                SharedMemoryInjector.SyncAutoInject();
+            }
+        }
+
+        /// <summary>Draws the bridge settings: the level chooser, then the advanced block. Wrapped in a
+        /// scroll view so the full list stays reachable when it is taller than the settings window.</summary>
         public override void DoSettingsWindowContents(Rect inRect)
         {
+            // 24px leaves room for the scrollbar so the rightmost content is not hidden under it.
+            Rect viewRect = new Rect(0f, 0f, inRect.width - 24f, settingsViewHeight);
+            Widgets.BeginScrollView(inRect, ref settingsScrollPosition, viewRect, true);
+
             Listing_Standard listing = new Listing_Standard();
-            listing.Begin(inRect);
+            listing.Begin(viewRect);
 
             if (!RimTalkActive)
             {
@@ -173,6 +221,33 @@ namespace PawnDiaryRimTalkBridge
                 "PawnDiaryRimTalkBridge.Settings.IncludeDiaryVoiceLineDesc".Translate());
             Settings.includeDiaryVoiceLine = includeVoice;
 
+            // Feature 3: pair shared memory ({{diary_shared}}). On by default. The auto-inject and count
+            // sub-rows only appear while the feature is on (gated, per the plan).
+            bool sharedMemory = Settings.injectSharedMemory;
+            listing.CheckboxLabeled(
+                "PawnDiaryRimTalkBridge.Settings.InjectSharedMemory".Translate(),
+                ref sharedMemory,
+                "PawnDiaryRimTalkBridge.Settings.InjectSharedMemoryDesc".Translate());
+            Settings.injectSharedMemory = sharedMemory;
+
+            if (Settings.injectSharedMemory)
+            {
+                bool autoInject = Settings.autoInjectSharedMemory;
+                listing.CheckboxLabeled(
+                    "PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemory".Translate(),
+                    ref autoInject,
+                    "PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemoryDesc".Translate());
+                Settings.autoInjectSharedMemory = autoInject;
+            }
+
+            // Feature 1: colony situation ({{colony_events}}). Off by default (overlaps RimTalk event mods).
+            bool colonyContext = Settings.injectColonyContext;
+            listing.CheckboxLabeled(
+                "PawnDiaryRimTalkBridge.Settings.InjectColonyContext".Translate(),
+                ref colonyContext,
+                "PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc".Translate());
+            Settings.injectColonyContext = colonyContext;
+
             bool personaLed = Settings.personaLedDiaryVoice;
             listing.CheckboxLabeled(
                 "PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoice".Translate(),
@@ -200,6 +275,18 @@ namespace PawnDiaryRimTalkBridge
             listing.TextFieldNumericLabeled(
                 "PawnDiaryRimTalkBridge.Settings.ContextEntryCount".Translate(),
                 ref Settings.contextEntryCount, ref contextEntryCountBuffer, 0f, 10f);
+            if (Settings.injectSharedMemory)
+            {
+                listing.TextFieldNumericLabeled(
+                    "PawnDiaryRimTalkBridge.Settings.SharedMemoryCount".Translate(),
+                    ref Settings.sharedMemoryCount, ref sharedMemoryCountBuffer, 0f, 4f);
+            }
+            if (Settings.injectColonyContext)
+            {
+                listing.TextFieldNumericLabeled(
+                    "PawnDiaryRimTalkBridge.Settings.ColonyEventCount".Translate(),
+                    ref Settings.colonyEventCount, ref colonyEventCountBuffer, 0f, 6f);
+            }
             listing.TextFieldNumericLabeled(
                 "PawnDiaryRimTalkBridge.Settings.ConversationQuietTicks".Translate(),
                 ref Settings.conversationQuietTicks, ref conversationQuietTicksBuffer, 250f, 60000f);
@@ -219,7 +306,11 @@ namespace PawnDiaryRimTalkBridge
                 "PawnDiaryRimTalkBridge.Settings.TranscriptLineCap".Translate(),
                 ref Settings.transcriptLineCap, ref transcriptLineCapBuffer, 0f, 16f);
 
+            // Remember the measured height so next frame's scroll view is sized to the real content
+            // (rows are gated, so the total varies with which features are on). +12 keeps a little slack.
+            settingsViewHeight = listing.CurHeight + 12f;
             listing.End();
+            Widgets.EndScrollView();
         }
     }
 
@@ -245,8 +336,25 @@ namespace PawnDiaryRimTalkBridge
         /// <summary>Engine mode (off): let RimTalk's configured LLM write bridge conversation entries.</summary>
         public bool useRimTalkEngine;
 
+        /// <summary>Feature 1 (off by default): inject a curated colony-situation line as {{colony_events}}.
+        /// Off because it overlaps RimTalk's own live-event mods; opt in for the curated/atmospheric angle.</summary>
+        public bool injectColonyContext;
+
+        /// <summary>Feature 3 (on): inject the memories two talking pawns share as {{diary_shared}}.</summary>
+        public bool injectSharedMemory = true;
+
+        /// <summary>Feature 3 (on): also auto-register a RimTalk prompt entry embedding {{diary_shared}}
+        /// so it works with no template editing. Cleaned up when the feature is turned off.</summary>
+        public bool autoInjectSharedMemory = true;
+
         /// <summary>How many recent diary entries feed the RimTalk prompt section.</summary>
         public int contextEntryCount = 3;
+
+        /// <summary>Feature 1: max colony-situation lines injected per prompt (0 disables the block).</summary>
+        public int colonyEventCount = 3;
+
+        /// <summary>Feature 3: max shared memories injected per talking pair (0 disables the block).</summary>
+        public int sharedMemoryCount = 3;
 
         /// <summary>Ticks of silence after which a RimTalk conversation counts as finished.</summary>
         public int conversationQuietTicks = 2500;
@@ -275,7 +383,12 @@ namespace PawnDiaryRimTalkBridge
             Scribe_Values.Look(ref includeDiaryVoiceLine, "includeDiaryVoiceLine", true);
             Scribe_Values.Look(ref personaLedDiaryVoice, "personaLedDiaryVoice", false);
             Scribe_Values.Look(ref useRimTalkEngine, "useRimTalkEngine", false);
+            Scribe_Values.Look(ref injectColonyContext, "injectColonyContext", false);
+            Scribe_Values.Look(ref injectSharedMemory, "injectSharedMemory", true);
+            Scribe_Values.Look(ref autoInjectSharedMemory, "autoInjectSharedMemory", true);
             Scribe_Values.Look(ref contextEntryCount, "contextEntryCount", 3);
+            Scribe_Values.Look(ref colonyEventCount, "colonyEventCount", 3);
+            Scribe_Values.Look(ref sharedMemoryCount, "sharedMemoryCount", 3);
             Scribe_Values.Look(ref conversationQuietTicks, "conversationQuietTicks", 2500);
             Scribe_Values.Look(ref minRepliesForImportant, "minRepliesForImportant", 4);
             Scribe_Values.Look(ref perPawnDailyCap, "perPawnDailyCap", 2);
@@ -287,6 +400,8 @@ namespace PawnDiaryRimTalkBridge
             // impossible states (negative caps, level 99, a zero quiet window that flushes every tick).
             integrationLevel = Clamp(integrationLevel, 0, 2);
             contextEntryCount = Clamp(contextEntryCount, 0, 10);
+            colonyEventCount = Clamp(colonyEventCount, 0, 6);
+            sharedMemoryCount = Clamp(sharedMemoryCount, 0, 4);
             conversationQuietTicks = Clamp(conversationQuietTicks, 250, 60000);
             minRepliesForImportant = Clamp(minRepliesForImportant, 1, 64);
             perPawnDailyCap = Clamp(perPawnDailyCap, 0, 99);

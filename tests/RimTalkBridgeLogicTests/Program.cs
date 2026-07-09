@@ -28,6 +28,20 @@ namespace RimTalkBridgeLogicTests
             TestFirstSentenceCap();
             TestCapAtWord();
 
+            // ColonyEventsFormat
+            TestColony_WeightOrdering();
+            TestColony_EmptyAndBlankHandling();
+            TestColony_MaxLinesCap();
+            TestColony_MaxCharsWholeLineTruncation();
+            TestColony_EqualWeightKeepsInsertionOrder();
+
+            // SharedMemorySelection
+            TestPairKey_OrderIndependentAndStable();
+            TestSelect_EdgeCases();
+            TestSelect_RecencyBias();
+            TestSelect_ImportanceBias();
+            TestSelect_DeterministicForSeed();
+
             // ConversationAssembler
             TestAssembly_ReplyChainJoins();
             TestAssembly_UnknownParentStartsNewRoot();
@@ -173,6 +187,182 @@ namespace RimTalkBridgeLogicTests
             Assert(ContextFormat.CapAtWord("aaaaaaaa", 4) == "aaaa", "no whitespace → hard cut");
             Assert(ContextFormat.CapAtWord("anything", 0) == "anything", "non-positive cap → unchanged");
             Assert(ContextFormat.CapAtWord(null, 5) == string.Empty, "null → empty");
+        }
+
+        // ---- ColonyEventsFormat --------------------------------------------------
+
+        private const string ColonyHeader = "colony situation:";
+
+        private static void TestColony_WeightOrdering()
+        {
+            List<ColonyEventLine> lines = new List<ColonyEventLine>
+            {
+                new ColonyEventLine { Text = "a quest is open", Weight = 30 },
+                new ColonyEventLine { Text = "the colony is under attack", Weight = 100 },
+                new ColonyEventLine { Text = "toxic fallout blankets the area", Weight = 50 }
+            };
+
+            string result = ColonyEventsFormat.BuildColonySituation(lines, ColonyHeader, 6, 1000);
+            string expected = "colony situation:\n- the colony is under attack\n- toxic fallout blankets the area\n- a quest is open";
+            Assert(result == expected, "lines ordered by weight desc; got:\n" + result);
+        }
+
+        private static void TestColony_EmptyAndBlankHandling()
+        {
+            Assert(ColonyEventsFormat.BuildColonySituation(null, ColonyHeader, 6, 1000) == string.Empty,
+                "null lines → empty");
+            Assert(ColonyEventsFormat.BuildColonySituation(new List<ColonyEventLine>(), ColonyHeader, 6, 1000) == string.Empty,
+                "no lines → empty (no lone header)");
+
+            List<ColonyEventLine> blanks = new List<ColonyEventLine>
+            {
+                new ColonyEventLine { Text = "   ", Weight = 100 },
+                null,
+                new ColonyEventLine { Text = "", Weight = 50 }
+            };
+            Assert(ColonyEventsFormat.BuildColonySituation(blanks, ColonyHeader, 6, 1000) == string.Empty,
+                "all-blank/null lines → empty");
+
+            Assert(ColonyEventsFormat.BuildColonySituation(
+                new List<ColonyEventLine> { new ColonyEventLine { Text = "x", Weight = 1 } }, ColonyHeader, 0, 1000) == string.Empty,
+                "maxLines 0 → empty");
+        }
+
+        private static void TestColony_MaxLinesCap()
+        {
+            List<ColonyEventLine> lines = new List<ColonyEventLine>
+            {
+                new ColonyEventLine { Text = "one", Weight = 100 },
+                new ColonyEventLine { Text = "two", Weight = 90 },
+                new ColonyEventLine { Text = "three", Weight = 80 }
+            };
+            string result = ColonyEventsFormat.BuildColonySituation(lines, ColonyHeader, 2, 1000);
+            Assert(result == "colony situation:\n- one\n- two", "maxLines keeps only the top 2; got:\n" + result);
+            Assert(!result.Contains("three"), "third line dropped by the line cap");
+        }
+
+        private static void TestColony_MaxCharsWholeLineTruncation()
+        {
+            List<ColonyEventLine> lines = new List<ColonyEventLine>
+            {
+                new ColonyEventLine { Text = "first", Weight = 100 },
+                new ColonyEventLine { Text = "second", Weight = 90 }
+            };
+            // Header (17) + \n + "- first" (7) = 25. Adding "- second" (1+8) would exceed 30, so only
+            // the first line survives — and it survives WHOLE (no mid-line cut).
+            string result = ColonyEventsFormat.BuildColonySituation(lines, ColonyHeader, 6, 30);
+            Assert(result == "colony situation:\n- first", "budget drops the whole second line; got:\n" + result);
+            Assert(!result.Contains("second"), "second line fully dropped, never partially included");
+
+            // Budget smaller than header + one line → nothing worth emitting.
+            Assert(ColonyEventsFormat.BuildColonySituation(lines, ColonyHeader, 6, 20) == string.Empty,
+                "no line fits under budget → empty");
+        }
+
+        private static void TestColony_EqualWeightKeepsInsertionOrder()
+        {
+            List<ColonyEventLine> lines = new List<ColonyEventLine>
+            {
+                new ColonyEventLine { Text = "alpha", Weight = 50 },
+                new ColonyEventLine { Text = "bravo", Weight = 50 },
+                new ColonyEventLine { Text = "charlie", Weight = 50 }
+            };
+            string result = ColonyEventsFormat.BuildColonySituation(lines, ColonyHeader, 6, 1000);
+            Assert(result == "colony situation:\n- alpha\n- bravo\n- charlie",
+                "equal weights keep insertion order (stable sort); got:\n" + result);
+        }
+
+        // ---- SharedMemorySelection -----------------------------------------------
+
+        private static void TestPairKey_OrderIndependentAndStable()
+        {
+            Assert(SharedMemorySelection.PairKey("bob", "alice") == SharedMemorySelection.PairKey("alice", "bob"),
+                "pair key is order-independent");
+            Assert(SharedMemorySelection.PairKey("alice", "bob") == "alice|bob", "ordered min|max");
+            Assert(SharedMemorySelection.PairKey("alice", "alice") == "alice|alice", "self-pair is stable");
+            Assert(SharedMemorySelection.PairKey(null, "bob") == "|bob", "null id treated as empty, order-independent");
+        }
+
+        private static void TestSelect_EdgeCases()
+        {
+            Assert(SharedMemorySelection.Select(null, 3, 1).Count == 0, "null → empty");
+            Assert(SharedMemorySelection.Select(new List<SharedMemoryCandidate>(), 3, 1).Count == 0, "empty → empty");
+
+            List<SharedMemoryCandidate> three = Candidates(3);
+            Assert(SharedMemorySelection.Select(three, 0, 1).Count == 0, "maxPick 0 → empty");
+            Assert(SharedMemorySelection.Select(three, -1, 1).Count == 0, "maxPick < 0 → empty");
+
+            List<SharedMemoryCandidate> all = SharedMemorySelection.Select(three, 5, 1);
+            Assert(all.Count == 3, "maxPick >= count returns all; got " + all.Count);
+            // Returned newest-first: ticks 3,2,1 (Candidates builds ascending tick by index).
+            Assert(all[0].Tick == 3 && all[1].Tick == 2 && all[2].Tick == 1,
+                "all returned newest-first; got " + all[0].Tick + "," + all[1].Tick + "," + all[2].Tick);
+        }
+
+        private static void TestSelect_RecencyBias()
+        {
+            // Two candidates, equal importance, different age. Across many seeds the newer one (higher
+            // tick) should be picked first far more often than the older one.
+            int newerFirst = 0;
+            int olderFirst = 0;
+            for (int seed = 0; seed < 4000; seed++)
+            {
+                List<SharedMemoryCandidate> c = new List<SharedMemoryCandidate>
+                {
+                    new SharedMemoryCandidate { Title = "old", Tick = 10 },
+                    new SharedMemoryCandidate { Title = "new", Tick = 100 }
+                };
+                List<SharedMemoryCandidate> picked = SharedMemorySelection.Select(c, 1, seed);
+                if (picked[0].Title == "new") newerFirst++; else olderFirst++;
+            }
+            // recencyWeight 1.0 vs 0.5 → newer expected ~2x. Assert a clear margin.
+            Assert(newerFirst > olderFirst * 3 / 2, "newer picked far more often; new=" + newerFirst + " old=" + olderFirst);
+            Assert(olderFirst > 0, "older still occasionally picked (weighted, not deterministic); old=" + olderFirst);
+        }
+
+        private static void TestSelect_ImportanceBias()
+        {
+            // Same age, one has both bonuses (cue + conversation), one is plain. The boosted one should
+            // win the first pick far more often.
+            int boostedFirst = 0;
+            int plainFirst = 0;
+            for (int seed = 0; seed < 4000; seed++)
+            {
+                List<SharedMemoryCandidate> c = new List<SharedMemoryCandidate>
+                {
+                    new SharedMemoryCandidate { Title = "plain", Tick = 50 },
+                    new SharedMemoryCandidate { Title = "boosted", Tick = 50, HasAtmosphereCue = true, IsConversationEntry = true }
+                };
+                List<SharedMemoryCandidate> picked = SharedMemorySelection.Select(c, 1, seed);
+                if (picked[0].Title == "boosted") boostedFirst++; else plainFirst++;
+            }
+            Assert(boostedFirst > plainFirst, "cued+conversation candidate outranks plain of equal age; boosted="
+                + boostedFirst + " plain=" + plainFirst);
+        }
+
+        private static void TestSelect_DeterministicForSeed()
+        {
+            List<SharedMemoryCandidate> a = Candidates(5);
+            List<SharedMemoryCandidate> b = Candidates(5);
+            List<SharedMemoryCandidate> pa = SharedMemorySelection.Select(a, 3, 12345);
+            List<SharedMemoryCandidate> pb = SharedMemorySelection.Select(b, 3, 12345);
+            Assert(pa.Count == 3 && pb.Count == 3, "maxPick respected; got " + pa.Count + "," + pb.Count);
+            bool same = true;
+            for (int i = 0; i < pa.Count; i++)
+            {
+                if (pa[i].Tick != pb[i].Tick) same = false;
+            }
+            Assert(same, "same seed + inputs → identical selection (deterministic)");
+        }
+
+        private static List<SharedMemoryCandidate> Candidates(int n)
+        {
+            List<SharedMemoryCandidate> list = new List<SharedMemoryCandidate>();
+            for (int i = 0; i < n; i++)
+            {
+                list.Add(new SharedMemoryCandidate { Title = "m" + i, Summary = "s" + i, Date = "d" + i, Tick = i + 1 });
+            }
+            return list;
         }
 
         // ---- ConversationAssembler ----------------------------------------------
