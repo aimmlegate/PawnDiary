@@ -1,10 +1,14 @@
 # RimTalk Bridge — detailed implementation plan (post-API-v1)
 
-> Status: approved 2026-07-06; implementation in progress. Reset baseline completed 2026-07-06:
-> the old log-only bridge source was removed and replaced with an example-adapter-derived
-> `PawnDiaryApi` facade plus `GameComponent` hook owner. This is a working plan, not a contract —
-> shipped behavior is documented in `../DOCUMENTATION.md`, the public API contract in
-> `../INTEGRATIONS.md`.
+> Status: **shipped** — steps 0–8 are implemented and merged (Level 0/1/2, persona sync Tiers A/B,
+> conversation capture, engine mode). Reset baseline completed 2026-07-06: the old log-only bridge
+> source was removed and replaced with an example-adapter-derived `PawnDiaryApi` facade plus
+> `GameComponent` hook owner. This is a working plan, not a contract — shipped behavior is documented
+> in `../DOCUMENTATION.md`, the public API contract in `../INTEGRATIONS.md`.
+>
+> **Follow-up work** — the two remaining features from the 2026-07-09 research handoff (global
+> `{{colony_events}}` context and `{{diary_shared}}` pair shared memory) are **not** covered here;
+> they are planned separately in [RIMTALK_BRIDGE_CONTEXT_EXTENSION_PLAN.md](RIMTALK_BRIDGE_CONTEXT_EXTENSION_PLAN.md).
 
 Turn the reset scaffold in `integrations/PawnDiary.RimTalkBridge/` into the real Pawn Diary ⇄
 RimTalk bridge, plus one core XML compat group. Written to be executable by a less-capable coding
