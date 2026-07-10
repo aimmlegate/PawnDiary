@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Русская локализация моста 1-2-3 Personalities. Текст написан как родной русский, а не калькой с
-     английского. ВНИМАНИЕ: это черновик агента — требуется финальная вычитка носителем.
+<!-- Русская локализация моста 1-2-3 Personalities. Текст авторский русский, не калька с английского;
+     вычитан 2026-07-10 (термины и регистр сведены с ядром).
      Правила взгляда (Outlook.SP_Root1..9) пересобраны на живом русском в том же регистре, что и
      психотипы ядра (DiaryPsychotypeDefs): 1-2 поведенческие фразы «Этот поселенец ...», без называния
      самого типа. Английский оригинал этих правил живёт в Source/Pure/EnneagramLensMapping.cs (он же
@@ -11,9 +11,9 @@
   <PawnDiaryPersonalities123.Settings.Category>Pawn Diary: 1-2-3 Personalities</PawnDiaryPersonalities123.Settings.Category>
   <PawnDiaryPersonalities123.Settings.Missing>1-2-3 Personalities нет в списке активных модов, так что мост сейчас ничего не делает. Включите 1-2-3 Personalities (M1), чтобы им пользоваться.</PawnDiaryPersonalities123.Settings.Missing>
   <PawnDiaryPersonalities123.Settings.ProvideContextLine>Показывать характер в контексте дневника</PawnDiaryPersonalities123.Settings.ProvideContextLine>
-  <PawnDiaryPersonalities123.Settings.ProvideContextLineDesc>Добавляет в контекст, который видит дневник при записи, короткую строку о типе характера поселенца (вариант и главная черта). Только чтение; в 1-2-3 Personalities ничего не меняется.</PawnDiaryPersonalities123.Settings.ProvideContextLineDesc>
+  <PawnDiaryPersonalities123.Settings.ProvideContextLineDesc>Добавляет короткую строку о характере поселенца (вариант и главная черта) в контекст, который дневник видит при записи. Только чтение; в 1-2-3 Personalities ничего не меняется.</PawnDiaryPersonalities123.Settings.ProvideContextLineDesc>
   <PawnDiaryPersonalities123.Settings.UsePersonalityOutlook>Характер как взгляд дневника на мир</PawnDiaryPersonalities123.Settings.UsePersonalityOutlook>
-  <PawnDiaryPersonalities123.Settings.UsePersonalityOutlookDesc>Позволяет типу характера поселенца задавать взгляд дневника — что он замечает, ценит и чего боится, — сохраняя при этом его собственную манеру письма. Выключение убирает этот эффект у всех поселенцев. По умолчанию включено.</PawnDiaryPersonalities123.Settings.UsePersonalityOutlookDesc>
+  <PawnDiaryPersonalities123.Settings.UsePersonalityOutlookDesc>Тип характера поселенца задаёт взгляд его дневника — что поселенец замечает, что ценит и чего боится, — а манера письма остаётся его собственной. Выключение снимает эффект со всех поселенцев. По умолчанию включено.</PawnDiaryPersonalities123.Settings.UsePersonalityOutlookDesc>
 
   <!-- Взгляд на мир по корню эннеаграммы (SP_Root1..9). Ключ = EnneagramLensMapping.KeyForRoot. -->
   <PawnDiaryPersonalities123.Outlook.SP_Root1>Этот поселенец мерит день тем, как всё должно было пройти. Он замечает сделанное небрежно или неправильно — собственные промахи острее всего, — и исправленная мелочь успокаивает его сильнее, чем крупный успех.</PawnDiaryPersonalities123.Outlook.SP_Root1>
