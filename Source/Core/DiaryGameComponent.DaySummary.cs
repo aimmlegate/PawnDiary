@@ -369,7 +369,13 @@ namespace PawnDiary
                     continue;
                 }
 
-                int delta = pawn.relations.OpinionOf(other) - baseline;
+                int current;
+                if (!TryReadOpinion(pawn, other, out current))
+                {
+                    continue;
+                }
+
+                int delta = current - baseline;
                 if (Mathf.Abs(delta) < threshold)
                 {
                     continue;
@@ -822,7 +828,11 @@ namespace PawnDiary
                         continue;
                     }
 
-                    dayStartOpinions[fromId + "|" + to.GetUniqueLoadID()] = from.relations.OpinionOf(to);
+                    int opinion;
+                    if (TryReadOpinion(from, to, out opinion))
+                    {
+                        dayStartOpinions[fromId + "|" + to.GetUniqueLoadID()] = opinion;
+                    }
                 }
             }
 

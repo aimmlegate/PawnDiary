@@ -246,6 +246,43 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Reads <paramref name="from"/>'s opinion of <paramref name="to"/> through the guard vanilla's
+        /// opinion math needs. <c>Pawn_RelationsTracker.OpinionOf</c> walks the other pawn's social
+        /// thoughts, and that walk can throw: an <see cref="ArgumentOutOfRangeException"/> from
+        /// <c>ThoughtHandler.OpinionOffsetOfGroup</c> when a pawn's memory list is momentarily
+        /// inconsistent, or an NRE from a stale relation thought / another mod's OpinionOf patch. Since
+        /// callers here loop every colonist pair, one fragile pawn must cost only its own read, not
+        /// abort the whole GameComponent tick or day-start snapshot. Returns false (and leaves
+        /// <paramref name="opinion"/> at 0) when the opinion cannot be read.
+        /// </summary>
+        private static bool TryReadOpinion(Pawn from, Pawn to, out int opinion)
+        {
+            opinion = 0;
+            if (from == null || to == null || from.relations == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                opinion = from.relations.OpinionOf(to);
+                return true;
+            }
+            catch (Exception e)
+            {
+                // Routine pawn churn (a relation ending the same tick we read it) stays quiet on the
+                // common path; a genuinely broken getter — vanilla's own list race, or another mod's
+                // OpinionOf/thought patch — surfaces at most once per session, keyed by the thrown
+                // exception type so distinct failure modes each get one line instead of spamming the log.
+                Log.WarningOnce(
+                    "[Pawn Diary] Skipped an opinion read that threw (stale relation, vanilla thought-list "
+                    + "race, or another mod's OpinionOf patch?): " + e,
+                    ("PawnDiary.OpinionReadSkip." + e.GetType().Name).GetHashCode());
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Adds an event ID to a pawn's diary, creating the diary record if necessary.
         /// </summary>
         private void AddEventRef(Pawn pawn, string eventId)

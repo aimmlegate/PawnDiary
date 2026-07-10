@@ -62,8 +62,12 @@ namespace PawnDiary
             float chance = promo.baseChance;
 
             // Social dynamic: intense mutual feeling, or a lopsided one-way bond, both raise interest.
-            int opinionAB = a.relations?.OpinionOf(b) ?? 0;
-            int opinionBA = b.relations?.OpinionOf(a) ?? 0;
+            // TryReadOpinion leaves the value at 0 on a null tracker or a throwing read, matching the
+            // old "?? 0" fallback while also surviving vanilla's fragile opinion math.
+            int opinionAB;
+            TryReadOpinion(a, b, out opinionAB);
+            int opinionBA;
+            TryReadOpinion(b, a, out opinionBA);
             if (Mathf.Max(Mathf.Abs(opinionAB), Mathf.Abs(opinionBA)) >= promo.opinionStrongThreshold)
             {
                 chance += promo.opinionStrongBonus;

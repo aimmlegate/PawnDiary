@@ -8,6 +8,16 @@ pre-release version ladder for project history.
 
 ## 2026-07-10
 
+- **Fixed an opinion-read crash that skipped the day-summary tick** (telemetry ref `E335F9E6`).
+  Vanilla `Pawn_RelationsTracker.OpinionOf` walks the other pawn's social thoughts, and that walk can
+  throw an `ArgumentOutOfRangeException` from `ThoughtHandler.OpinionOffsetOfGroup` when a pawn's
+  memory list is momentarily inconsistent. The throw propagated out of `CollectOpinionSignals` and
+  aborted the whole `GameComponentTick`, so *every* sleeping pawn's ambient/day-summary flush was
+  skipped that tick. A shared `TryReadOpinion` guard now wraps the fragile read — one bad pawn costs
+  only its own opinion signal, not the tick — and the two identical reads in the day-start opinion
+  snapshot (`SnapshotDayStartOpinions`) and the interaction-promotion scorer (`PromotionChance`) route
+  through it too, so a broken read degrades gracefully (no baseline recorded / a neutral `0`) instead
+  of crashing. Warns at most once per session per exception type.
 - **RimTalk bridge: review fixes for the colony-situation + shared-memory context (bridge modVersion
   0.2.0).** Follow-up correctness/consistency fixes from an adversarial review of the 2026-07-09 change,
   no new features:
