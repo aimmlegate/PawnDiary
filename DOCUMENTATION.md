@@ -468,8 +468,10 @@ main-thread-refresh / background-read cache split, `design/RIMTALK_BRIDGE_CONTEX
   ordered/trimmed by the pure `ColonyEventsFormat` (settings cap `colonyEventCount`, hard cap 400
   chars). Registered as a `RegisterEnvironmentVariable` **and** an `InjectEnvironmentSection` after
   `Environment.Weather`; the per-map cache is keyed by `map.uniqueID` and refreshed on the tick pass.
-  Off by default because it overlaps RimTalk's own live-event mods — Pawn Diary contributes a curated,
-  atmospheric summary instead of a live feed.
+  The read path has no expiry of its own, so the refresh pass clears a map's block when it has no free
+  colonists (an old line such as "under serious attack" stops once everyone has left) and evicts blocks
+  for maps that no longer exist. Off by default because it overlaps RimTalk's own live-event mods —
+  Pawn Diary contributes a curated, atmospheric summary instead of a live feed.
 - **`{{diary_shared}}` — pair shared memory (`SharedMemoryInjector`, default ON).** When two colonists
   talk, the diary moments they *share* (entries where one is subject and the other partner, via
   `DiaryEntryTitleQuery.partnerPawnId`) are injected as "previous interactions", picked
@@ -480,8 +482,13 @@ main-thread-refresh / background-read cache split, `design/RIMTALK_BRIDGE_CONTEX
   variable is invoked at prompt time for a pair only then known, the provider is *lazy*: it serves the
   cached block or enqueues the pair on a `ConcurrentQueue` and returns "" once; the main-thread pass
   drains the queue, reads the shared entries, and fills a `pairKey`-keyed cache (a second entry-status
-  listener marks a pair stale when either pawn's diary changes). `IsPreview` returns a cheap localized
-  sample. Zero-config delivery: since RimTalk has no context-*section* injection, an optional system
+  listener marks a pair stale when either pawn's diary changes; `Mod.WriteSettings` marks all pairs
+  stale so a changed `sharedMemoryCount`/toggle takes effect at once). The block is symmetric, so the
+  pass prefers the lower-load-id pawn as subject but falls back to the other pawn when the first is
+  unreadable (unspawned or diary-ineligible, e.g. a prisoner) — so a colonist↔non-colonist pair still
+  surfaces the colonist's shared memories; a build where neither pawn can be read retries later rather
+  than caching a permanent empty. `IsPreview` returns a cheap localized sample. Zero-config delivery:
+  since RimTalk has no context-*section* injection, an optional system
   **prompt entry** embedding `{{diary_shared}}` is auto-registered (`autoInjectSharedMemory`, default
   ON) via `RimTalkPromptAPI.CreatePromptEntry`/`AddPromptEntry`; it is reconciled idempotently
   (remove-by-modId then add) from the tick pass and `Mod.WriteSettings`, and **removed** when the

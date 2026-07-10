@@ -175,9 +175,51 @@ namespace PawnDiaryRimTalkBridge
             }
         }
 
-        // True when the colony-context feature should contribute anything at all. Read from both the
-        // main-thread build and the background provider; all reads are cheap settings/flag reads.
-        private static bool FeatureActive()
+        /// <summary>Drops one map's cached block (e.g. a map that no longer has colonists to talk) so
+        /// <see cref="SectionFor"/> stops serving a stale situation line for it. The read path has no
+        /// other expiry, so the refresh pass must clear maps it stops refreshing. Main thread.</summary>
+        public static void ClearFor(int mapId)
+        {
+            lock (Gate)
+            {
+                Cache.Remove(mapId);
+            }
+        }
+
+        /// <summary>Evicts cache entries for maps that no longer exist (map ids are not reused within a
+        /// game, so any key not in <paramref name="liveMapIds"/> is gone for good). Main thread.</summary>
+        public static void RetainOnly(ICollection<int> liveMapIds)
+        {
+            lock (Gate)
+            {
+                if (Cache.Count == 0)
+                {
+                    return;
+                }
+
+                List<int> drop = null;
+                foreach (int id in Cache.Keys)
+                {
+                    if (liveMapIds == null || !liveMapIds.Contains(id))
+                    {
+                        (drop ?? (drop = new List<int>())).Add(id);
+                    }
+                }
+
+                if (drop != null)
+                {
+                    for (int i = 0; i < drop.Count; i++)
+                    {
+                        Cache.Remove(drop[i]);
+                    }
+                }
+            }
+        }
+
+        // True when the colony-context feature should contribute anything at all. Read from the
+        // main-thread build, the background provider, and the game component's refresh gate; all reads
+        // are cheap settings/flag reads.
+        internal static bool FeatureActive()
         {
             PawnDiaryRimTalkBridgeSettings settings = PawnDiaryRimTalkBridgeMod.Settings;
             return PawnDiaryRimTalkBridgeMod.LevelAtLeast(1)

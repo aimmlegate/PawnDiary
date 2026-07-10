@@ -156,6 +156,11 @@ namespace PawnDiaryRimTalkBridge
         {
             base.WriteSettings();
 
+            // A settings change can alter the shape of already-cached shared-memory blocks (the count or
+            // the toggles); the pair cache is keyed only by pair, so mark it stale to force a rebuild
+            // with the new settings. Touches no RimTalk types, so it is safe with or without RimTalk.
+            SharedMemoryInjector.InvalidateAllPairs();
+
             if (RimTalkActive)
             {
                 SharedMemoryInjector.SyncAutoInject();

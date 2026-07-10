@@ -188,10 +188,7 @@ namespace PawnDiaryRimTalkBridge
         /// </summary>
         public static void ProcessQueue(int now)
         {
-            bool active = PawnDiaryRimTalkBridgeMod.LevelAtLeast(1)
-                && PawnDiaryRimTalkBridgeMod.Settings != null
-                && PawnDiaryRimTalkBridgeMod.Settings.injectSharedMemory
-                && PawnDiaryApi.IsExternalApiEnabled;
+            bool active = FeatureActive();
 
             HashSet<string> processed = new HashSet<string>();
             PairRequest req;
@@ -226,9 +223,12 @@ namespace PawnDiaryRimTalkBridge
         public static void SyncAutoInject()
         {
             PawnDiaryRimTalkBridgeSettings settings = PawnDiaryRimTalkBridgeMod.Settings;
-            bool desired = PawnDiaryRimTalkBridgeMod.LevelAtLeast(1)
+
+            // FeatureActive() already folds in level + master toggle + external-API enabled, so the auto
+            // entry is torn down whenever the feature itself is off. (This gate previously omitted the
+            // external-API check, which could leave the prompt entry registered while output was off.)
+            bool desired = FeatureActive()
                 && settings != null
-                && settings.injectSharedMemory
                 && settings.autoInjectSharedMemory;
 
             if (autoInjectApplied.HasValue && autoInjectApplied.Value == desired)
@@ -254,10 +254,20 @@ namespace PawnDiaryRimTalkBridge
                         0,
                         BridgeIds.ModId);
 
-                    if (entry != null)
+                    // If RimTalk could not build the entry (rejected the params / returned null rather
+                    // than throwing), we have already removed the old one but added nothing back. Do NOT
+                    // record the desired state: leaving autoInjectApplied unchanged makes a later pass
+                    // retry, instead of the feature going silently dead for the rest of the process.
+                    if (entry == null)
                     {
-                        RimTalkPromptAPI.AddPromptEntry(entry);
+                        Log.WarningOnce(
+                            PawnDiaryRimTalkBridgeMod.LogPrefix + " RimTalk returned no {{diary_shared}} prompt "
+                            + "entry; will retry. Place the variable in a template manually if this persists.",
+                            "PawnDiaryRimTalkBridge.AutoInjectNullEntry".GetHashCode());
+                        return;
                     }
+
+                    RimTalkPromptAPI.AddPromptEntry(entry);
                 }
 
                 autoInjectApplied = desired;
@@ -288,6 +298,23 @@ namespace PawnDiaryRimTalkBridge
                     {
                         kv.Value.Stale = true;
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Marks every cached pair stale so the next prompt rebuilds it. Called when settings change
+        /// (e.g. <c>sharedMemoryCount</c>): the cache is keyed only by pair, not by the settings that
+        /// shaped the block, so without this a changed count keeps serving the previously built block
+        /// until an unrelated diary edit happens to invalidate it. Touches no RimTalk types.
+        /// </summary>
+        public static void InvalidateAllPairs()
+        {
+            lock (Gate)
+            {
+                foreach (KeyValuePair<string, CachedPair> kv in PairCache)
+                {
+                    kv.Value.Stale = true;
                 }
             }
         }
@@ -359,16 +386,39 @@ namespace PawnDiaryRimTalkBridge
             }
         }
 
-        // Builds one pair's block on the main thread and stores it. Subject is picked deterministically
-        // (the lower-ordered id) so the block is symmetric — the same shared history whichever pawn is
-        // speaking — which also halves the cache.
+        // Builds one pair's block on the main thread and stores it. The block is symmetric (the same
+        // shared history whichever pawn speaks) and keyed once per pair. We prefer the deterministic
+        // lower-id pawn as the subject, but if that pawn cannot be read right now (unspawned, or
+        // diary-ineligible — e.g. a prisoner/guest), we fall back to the other pawn, so a colonist's
+        // genuine shared memories still surface for a colonist↔non-colonist pair (the diary event is
+        // stored once and viewable from either participant, so a readable-but-empty primary means the
+        // other pawn is empty too — we only retry the other pawn when the primary was unreadable).
         private static void BuildPair(PairRequest req, int now)
         {
             string minId = string.CompareOrdinal(req.IdA, req.IdB) <= 0 ? req.IdA : req.IdB;
-            Pawn subject = req.IdA == minId ? req.A : req.B;
-            string partnerId = subject == req.A ? req.IdB : req.IdA;
+            Pawn primary = req.IdA == minId ? req.A : req.B;
+            string primaryPartnerId = primary == req.A ? req.IdB : req.IdA;
+            Pawn secondary = primary == req.A ? req.B : req.A;
+            string secondaryPartnerId = primary == req.A ? req.IdA : req.IdB;
 
-            string text = BuildBlock(subject, partnerId, req.Key, now);
+            bool primaryUnreadable;
+            string text = BuildBlock(primary, primaryPartnerId, req.Key, now, out primaryUnreadable);
+            if (string.IsNullOrEmpty(text) && primaryUnreadable)
+            {
+                bool secondaryUnreadable;
+                string alt = BuildBlock(secondary, secondaryPartnerId, req.Key, now, out secondaryUnreadable);
+                if (!string.IsNullOrEmpty(alt))
+                {
+                    text = alt;
+                }
+                else if (secondaryUnreadable)
+                {
+                    // Neither pawn could be read this pass (both unspawned/ineligible — e.g. the colonist
+                    // is away in a caravan). Do not cache a permanent empty; leave the pair to retry on a
+                    // later pass rather than serving "" until an unrelated diary change invalidates it.
+                    return;
+                }
+            }
 
             lock (Gate)
             {
@@ -387,11 +437,16 @@ namespace PawnDiaryRimTalkBridge
         }
 
         // Reads the pair's shared diary entries (subject's entries partnered with partnerId), runs the
-        // weighted pick, and formats the block. MAIN THREAD. Returns "" when there is nothing to show.
-        private static string BuildBlock(Pawn subject, string partnerId, string key, int now)
+        // weighted pick, and formats the block. MAIN THREAD. Returns "" when there is nothing to show;
+        // sets <paramref name="unreadable"/> when the subject could not be read at all (unspawned or
+        // diary-ineligible) as opposed to readable-but-sharing-nothing, so the caller can decide between
+        // trying the other pawn / retrying later and caching a genuine empty.
+        private static string BuildBlock(Pawn subject, string partnerId, string key, int now, out bool unreadable)
         {
+            unreadable = false;
             if (subject == null || !subject.Spawned)
             {
+                unreadable = true;
                 return string.Empty;
             }
 
@@ -404,7 +459,15 @@ namespace PawnDiaryRimTalkBridge
 
             DiaryEntryTitleQuery query = new DiaryEntryTitleQuery { partnerPawnId = partnerId };
             DiaryContextSnapshot snapshot = PawnDiaryApi.GetContextSnapshot(subject, CandidateFetch, query);
-            if (snapshot == null || snapshot.entries == null || snapshot.entries.Count == 0)
+            if (snapshot == null)
+            {
+                // A null snapshot means the pawn is diary-ineligible (the humanlike-colonist gate); the
+                // OTHER pawn may still hold the linked entries, so treat this as unreadable, not empty.
+                unreadable = true;
+                return string.Empty;
+            }
+
+            if (snapshot.entries == null || snapshot.entries.Count == 0)
             {
                 return string.Empty;
             }

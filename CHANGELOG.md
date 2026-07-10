@@ -6,6 +6,33 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-10
+
+- **RimTalk bridge: review fixes for the colony-situation + shared-memory context (bridge modVersion
+  0.2.0).** Follow-up correctness/consistency fixes from an adversarial review of the 2026-07-09 change,
+  no new features:
+  - **Shared memory now reads whichever pawn is diary-eligible.** `SharedMemoryInjector` picked the
+    lower-load-id pawn as the subject and read only that pawn's diary; for a colonist↔non-colonist pair
+    (prisoner/guest) where the ineligible pawn sorted first, the block cached empty in *both*
+    directions. It now falls back to the other pawn when the primary is unreadable (unspawned or
+    diary-ineligible), and a null snapshot is distinguished from "readable but shares nothing".
+  - **Transient empties no longer stick.** A block built while a pawn was away (caravan) was cached
+    non-stale and served until an unrelated diary edit; a build where neither pawn can be read now
+    retries on a later pass instead of caching a permanent empty.
+  - **Settings changes invalidate the shared-memory cache.** `Mod.WriteSettings` now marks all cached
+    pairs stale, so changing `sharedMemoryCount`/toggles takes effect immediately instead of after the
+    next diary edit.
+  - **Auto-inject no longer disables itself silently.** If `RimTalkPromptAPI.CreatePromptEntry` returns
+    null (rather than throwing), `SyncAutoInject` no longer records success — it warns once and retries,
+    instead of leaving `{{diary_shared}}` unregistered for the rest of the process.
+  - **Colony-situation cache no longer serves stale lines.** The refresh pass now clears a map's cached
+    block when it has no free colonists (so e.g. an old "under serious attack" line stops), and evicts
+    blocks for maps that no longer exist.
+  - **One shared feature gate.** The `level + toggle + external-API-enabled` predicate was hand-copied
+    in several places (two omitted the external-API check); the injectors and the game-component refresh
+    now route through a single `FeatureActive()` each. Doc comment on `SharedMemoryPromptEntryName`
+    corrected (cleanup is keyed on the mod id, not the entry name).
+
 ## 2026-07-09
 
 - **RimTalk bridge: colony situation + pair shared memory context.** Two new Level-1 outbound context

@@ -10,6 +10,7 @@
 // mod constructor instead, because that runs once per process; this component runs once per game.
 //
 // New to C#/RimWorld? See AGENTS.md in the Pawn Diary repo.
+using System.Collections.Generic;
 using RimWorld;
 using Verse;
 
@@ -96,21 +97,29 @@ namespace PawnDiaryRimTalkBridge
         /// </summary>
         private void RefreshColonyContext(int now)
         {
-            if (!PawnDiaryRimTalkBridgeMod.LevelAtLeast(1))
+            // Single shared gate (level + colony toggle + external-API enabled) so the refresh pass and
+            // the read/build paths cannot disagree about whether the feature is on.
+            if (!ColonyContextInjector.FeatureActive())
             {
                 return;
             }
 
-            PawnDiaryRimTalkBridgeSettings settings = PawnDiaryRimTalkBridgeMod.Settings;
-            if (settings == null || !settings.injectColonyContext)
-            {
-                return;
-            }
-
+            HashSet<int> liveMaps = new HashSet<int>();
             foreach (Map map in Find.Maps)
             {
-                if (map == null || map.mapPawns == null || map.mapPawns.FreeColonistsSpawnedCount <= 0)
+                if (map == null)
                 {
+                    continue;
+                }
+
+                liveMaps.Add(map.uniqueID);
+
+                // A map with no free colonists has no one to talk: drop any block cached earlier (e.g. a
+                // raid line) so SectionFor stops serving it once everyone has left or gone down. The read
+                // path has no expiry of its own, so this is the only place that staleness is cleared.
+                if (map.mapPawns == null || map.mapPawns.FreeColonistsSpawnedCount <= 0)
+                {
+                    ColonyContextInjector.ClearFor(map.uniqueID);
                     continue;
                 }
 
@@ -119,6 +128,9 @@ namespace PawnDiaryRimTalkBridge
                     ColonyContextInjector.RefreshFor(map);
                 }
             }
+
+            // Evict blocks for maps that no longer exist (e.g. an abandoned settlement).
+            ColonyContextInjector.RetainOnly(liveMaps);
         }
 
         /// <summary>

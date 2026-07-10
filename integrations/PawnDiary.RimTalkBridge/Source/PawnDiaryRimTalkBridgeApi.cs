@@ -45,9 +45,10 @@ namespace PawnDiaryRimTalkBridge
         /// <c>{{diary_shared}}</c> (Feature 3). Frozen token.</summary>
         public const string SharedMemoryVariableName = "diary_shared";
 
-        /// <summary>Name of the optional auto-injected RimTalk prompt entry that embeds
-        /// <c>{{diary_shared}}</c>. Frozen token — used to find/remove the entry idempotently. This is
-        /// an internal registry name, not player-facing prose, so it stays English (not localized).</summary>
+        /// <summary>Display name of the optional auto-injected RimTalk prompt entry that embeds
+        /// <c>{{diary_shared}}</c>. Label only — cleanup is keyed on <see cref="ModId"/> via
+        /// <c>RemovePromptEntriesByModId</c>, not on this name. Frozen token; an internal registry name,
+        /// not player-facing prose, so it stays English (not localized).</summary>
         public const string SharedMemoryPromptEntryName = "PawnDiary shared memory";
     }
 }
