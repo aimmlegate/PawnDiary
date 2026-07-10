@@ -109,11 +109,14 @@ these manual checks when you touch either adapter's Defs or the Personalities br
 **VSIE compat (`PawnDiary.Vsie`, XML only).** With Pawn Diary + Vanilla Social Interactions Expanded
 active:
 1. Dev-trigger (or wait for) a `VSIE_Vent`, a `VSIE_Teaching*`, a `VSIE_Discord`, and a
-   `VSIE_BestFriend` relation. Confirm each is captured with the intended shape: venting/teaching/
-   discord fold into the ambient day-note (a charged vent may promote to its own confiding entry), and
-   best-friend appears as a relationship-milestone entry (not a chat log).
-2. Remove VSIE from the mod list. Confirm the five `vsie_*` groups do **not** appear in Pawn Diary's
-   event settings and produce no warnings — the whole adapter is inert.
+   `VSIE_BestFriend` relation. Confirm each is captured with the intended shape: venting and teaching
+   fold into the ambient day-note (a charged vent may promote to its own confiding entry); `VSIE_Discord`
+   is an insult, so it lands in the core **insults & fights** entry (batched with the social fight it
+   usually starts), NOT as a co-working note; and best-friend appears as a relationship-milestone entry
+   (not a chat log).
+2. Remove VSIE from the mod list. Confirm the four `vsie_*` groups do **not** appear in Pawn Diary's
+   event settings, the core `insults` group shows no `VSIE_Discord` behavior, and there are no
+   warnings — the whole adapter (Defs + the `1.6/Patches/` Discord routing) is inert.
 
 **1-2-3 Personalities bridge (`PawnDiary.PersonalitiesBridge`, XML + assembly).** With Pawn Diary +
 1-2-3 Personalities M1 (and, for the interaction/thought groups, M2) active:

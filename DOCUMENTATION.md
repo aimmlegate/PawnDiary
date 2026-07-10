@@ -518,12 +518,14 @@ Two further personality/social integrations ship as **standalone adapter mods** 
 player installs only the ones matching their mod list:
 
 - **`PawnDiary.Vsie` (`Pawn Diary: Vanilla Social Interactions Expanded`)** — XML only, no assembly.
-  Five gated `DiaryInteractionGroupDef`s for VSIE
+  Four gated `DiaryInteractionGroupDef`s for VSIE
   (`VanillaExpanded.VanillaSocialInteractionsExpanded`): `vsie_vent` (Interaction, ambient batch +
   promotion), `vsie_teaching` (Interaction, prefix matcher `VSIE_Teaching` covering the base def and
-  all 12 skill variants, ambient batch), `vsie_discord` (Interaction, ambient batch),
-  `friendship_relation` (Romance, `VSIE_BestFriend`), and `vsie_thoughts` (Thought, `matchPackageIds`).
-  Every group is `enableWhenPackageIdsLoaded`-gated, so the mod is inert without VSIE.
+  all 12 skill variants, ambient batch), `friendship_relation` (Romance, `VSIE_BestFriend`), and
+  `vsie_thoughts` (Thought, `matchPackageIds`). Every group is `enableWhenPackageIdsLoaded`-gated, so
+  the mod is inert without VSIE. `VSIE_Discord` (an anger-driven insult, not co-working chatter) is
+  routed into the core `insults` group via a VSIE-gated `PatchOperationFindMod` in `1.6/Patches/`
+  rather than a group of its own, so it batches with the social fight it usually triggers.
 - **`PawnDiary.PersonalitiesBridge` (`Pawn Diary: 1-2-3 Personalities`)** — XML **plus** a small
   assembly. Tier 1 (XML): `personalities123_thoughts` (Thought, `matchPackageIds` on M1+M2) and
   `personalities123_interactions` (Interaction, `matchPackageIds` on M2, not batched). Tier 2

@@ -155,8 +155,14 @@ gated `enableWhenPackageIdsLoaded: VanillaExpanded.VanillaSocialInteractionsExpa
   - `vsie_teaching` — `matchDefNames` for `VSIE_Teaching` + the 12 `VSIE_Teaching_<Skill>` defs
     (or `matchPrefixes: VSIE_Teaching`); ambient day-note batch, instruction themed on
     teaching/learning between the pair.
-  - `vsie_discord` — `matchDefNames: VSIE_Discord` (cooperative-work chatter); ambient day-note
-    batch like `rimtalk_chatter`.
+  - ~~`vsie_discord` — `matchDefNames: VSIE_Discord` (cooperative-work chatter); ambient day-note
+    batch like `rimtalk_chatter`.~~ **CORRECTION (2026-07-10):** `VSIE_Discord` is NOT cooperative-work
+    chatter — it is an anger-driven INSULT (`symbol=Insult`, `socialFightBaseChance=100`,
+    `recipientThought=Insulted`; `InteractionWorker_Discord` only fires for angry pawns). There is no
+    "cooperative-work chatter" interaction in VSIE; that was an unverified guess. It is now routed into
+    Pawn Diary's core `insults` group via `PawnDiary.Vsie/1.6/Patches/AddDiscordToInsults.xml` (VSIE-gated
+    `PatchOperationFindMod`), so it batches with the social fight it usually starts instead of getting its
+    own mis-voiced group.
 - `domain=Romance`: add a **new sibling group** `friendship_relation` claiming `VSIE_BestFriend`
   (do not widen the existing `romance_relation` group — its tone/instructions stay
   romance-specific; `GroupDomain.Romance` matches any PawnRelationDef defName). Instruction:

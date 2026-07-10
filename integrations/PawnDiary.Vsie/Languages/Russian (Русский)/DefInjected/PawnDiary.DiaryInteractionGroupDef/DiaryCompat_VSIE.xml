@@ -27,16 +27,6 @@
   <vsie_teaching.tones.0>внимательно и по делу, один ум тянется к другому</vsie_teaching.tones.0>
   <vsie_teaching.tones.1>просто и ровно, будничный труд освоения нового</vsie_teaching.tones.1>
 
-  <!-- vsie_discord -->
-  <vsie_discord.label>Работа бок о бок</vsie_discord.label>
-  <vsie_discord.instruction>разговор за общей работой; пусть он останется фоном общего дела, а не событием</vsie_discord.instruction>
-  <vsie_discord.instructions.0>работа бок о бок: напиши, ладилась ли общая работа или шла со скрипом, а не стенограмму разговора</vsie_discord.instructions.0>
-  <vsie_discord.instructions.1>работа бок о бок: держись самого дела; разговором лишь коротали за ним время</vsie_discord.instructions.1>
-  <vsie_discord.instructions.2>работа бок о бок: пиши мелко и честно, если только состояние этих двоих не заставило какое-то слово задеть сильнее</vsie_discord.instructions.2>
-  <vsie_discord.tone>в свободном ритме общей работы</vsie_discord.tone>
-  <vsie_discord.tones.0>легко и между делом, перекидываясь словами поверх работы</vsie_discord.tones.0>
-  <vsie_discord.tones.1>просто и по-товарищески, спокойнее оттого, что работаешь не один</vsie_discord.tones.1>
-
   <!-- friendship_relation -->
   <friendship_relation.label>Вехи дружбы</friendship_relation.label>
   <friendship_relation.instruction>дружба названа вслух; пиши, кем этот человек незаметно стал для поселенца — теперь это наконец сказано</friendship_relation.instruction>

@@ -14,9 +14,11 @@ pre-release version ladder for project history.
   installs only the ones matching their mod list. Both are inert without their target mod.
   - **`Pawn Diary: Vanilla Social Interactions Expanded`** (`PawnDiary.Vsie`, XML only) — teaches the
     diary about VSIE's new social moments in their own voice: venting (ambient day-note that can
-    promote a charged moment to its own confiding entry), teaching/learning and cooperative-work
-    chatter (ambient day-notes), becoming best friends (`VSIE_BestFriend`, a relationship milestone
-    like the vanilla romance milestones), and VSIE's extra mood thoughts. All groups gated by
+    promote a charged moment to its own confiding entry), teaching/learning (ambient day-note),
+    becoming best friends (`VSIE_BestFriend`, a relationship milestone like the vanilla romance
+    milestones), and VSIE's extra mood thoughts. VSIE's `Discord` interaction — an anger-driven insult
+    despite the name, not co-working chatter — is routed into the core `insults` group via a VSIE-gated
+    patch so it batches with the social fight it usually starts. All groups gated by
     `enableWhenPackageIdsLoaded`.
   - **`Pawn Diary: 1-2-3 Personalities`** (`PawnDiary.PersonalitiesBridge`, XML + assembly) — Tier 1
     (XML) routes Module 2's compatibility interactions (Harmonious/Diversive/Turmoil) and its

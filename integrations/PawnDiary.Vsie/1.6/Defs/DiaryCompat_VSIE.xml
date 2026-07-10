@@ -23,8 +23,11 @@
   are claimed here first. Thought orders sit below the core thought groups (which start at 490).
 
   VSIE def names are taken from the mod's published source (verified 2026-07-10):
-    Interactions: VSIE_Vent, VSIE_Discord, VSIE_Teaching, VSIE_Teaching_<Skill> (12 skills)
+    Interactions: VSIE_Vent, VSIE_Teaching, VSIE_Teaching_<Skill> (12 skills)
     Relation:     VSIE_BestFriend
+  VSIE_Discord is deliberately NOT captured here. Despite the name it is an anger-driven INSULT
+  (symbol=Insult, socialFightBaseChance=100), so 1.6/Patches/AddDiscordToInsults.xml routes it into
+  Pawn Diary's core "insults" group, where it batches with the social fight it usually starts.
   Vanilla Chitchat/DeepTalk keep their defNames and are already handled by core capture — not touched.
 -->
 <Defs>
@@ -123,47 +126,6 @@
     <matchPrefixes>
       <li>VSIE_Teaching</li>
     </matchPrefixes>
-  </PawnDiary.DiaryInteractionGroupDef>
-
-  <!-- Cooperative-work chatter (VSIE_Discord = talk while working alongside each other). Ambient
-       day-note; no promotion. -->
-  <PawnDiary.DiaryInteractionGroupDef>
-    <defName>vsie_discord</defName>
-    <label>working alongside</label>
-    <order>15</order>
-    <domain>Interaction</domain>
-    <defaultEnabled>true</defaultEnabled>
-    <important>false</important>
-    <captureRenderedGameText>true</captureRenderedGameText>
-    <enableWhenPackageIdsLoaded>
-      <li>VanillaExpanded.VanillaSocialInteractionsExpanded</li>
-    </enableWhenPackageIdsLoaded>
-    <batch>
-      <mode>AmbientDayNote</mode>
-      <windowTicks>60000</windowTicks>
-      <maxEvents>999</maxEvents>
-      <syntheticDefName>VsieDiscordAmbientDay</syntheticDefName>
-      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
-      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
-      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
-      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
-      <minEventsToWrite>8</minEventsToWrite>
-      <maxSampleLines>3</maxSampleLines>
-    </batch>
-    <instruction>talk that happens while two people work side by side - keep it as the background hum of a shared task</instruction>
-    <instructions>
-      <li>working alongside - write the ease or friction of sharing the labor, not a transcript</li>
-      <li>working alongside - let the task be the anchor; the talk is what passed the time over it</li>
-      <li>working alongside - stay small and true unless the pair's state makes a line land harder</li>
-    </instructions>
-    <tone>with the loose rhythm of shared work</tone>
-    <tones>
-      <li>easy and offhand, words traded over busy hands</li>
-      <li>plain and companionable, the comfort of not working alone</li>
-    </tones>
-    <matchDefNames>
-      <li>VSIE_Discord</li>
-    </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
   <!-- Becoming best friends. Romance domain matches any PawnRelationDef defName; this is a sibling to

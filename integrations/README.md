@@ -89,9 +89,9 @@ and deployed manually.
 each a separate mod for one target so a player installs only what matches their mod list:
 
 - **`PawnDiary.Vsie/`** (`Pawn Diary: Vanilla Social Interactions Expanded`) — **XML only, no
-  assembly.** Five `enableWhenPackageIdsLoaded`-gated `DiaryInteractionGroupDef`s that give VSIE's
-  venting, teaching, cooperative-work chatter, best-friend milestone, and extra mood thoughts their own
-  diary voice. Inert without VSIE.
+  assembly.** Four `enableWhenPackageIdsLoaded`-gated `DiaryInteractionGroupDef`s that give VSIE's
+  venting, teaching, best-friend milestone, and extra mood thoughts their own diary voice, plus a
+  VSIE-gated patch routing VSIE's angry `Discord` insult into the core insults group. Inert without VSIE.
 - **`PawnDiary.PersonalitiesBridge/`** (`Pawn Diary: 1-2-3 Personalities`) — **XML + a small
   assembly.** Tier 1 (XML) routes Module 2's compatibility interactions and personality mood thoughts.
   Tier 2 (`PawnDiaryPersonalities123.dll`, net472, reads 1-2-3 Personalities' public Enneagram API,

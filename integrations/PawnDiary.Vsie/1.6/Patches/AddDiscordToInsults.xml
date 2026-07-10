@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Route VSIE's "discord" interaction into Pawn Diary's core "insults & fights" group.
+
+  Despite the name, VSIE_Discord is NOT cooperative-work chatter: it is an anger-driven INSULT
+  (symbol=Insult, socialFightBaseChance=100, recipientThought=Insulted; InteractionWorker_Discord
+  only fires for pawns flagged as angry). It belongs with vanilla insults, and - because it usually
+  starts a social fight - routing it into the same `insults` group makes the insult and the fight it
+  triggers batch into ONE coherent InsultBatch entry instead of two mismatched ones.
+
+  Gated on VSIE via PatchOperationFindMod (which matches the mod's display NAME, not its packageId),
+  with <success>Always</success> so nothing is logged when VSIE is absent - the adapter stays fully
+  inert without its target, exactly like the enableWhenPackageIdsLoaded groups in 1.6/Defs/.
+-->
+<Patch>
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>Vanilla Social Interactions Expanded</li>
+    </mods>
+    <success>Always</success>
+    <match Class="PatchOperationAdd">
+      <xpath>/Defs/PawnDiary.DiaryInteractionGroupDef[defName="insults"]/matchDefNames</xpath>
+      <value>
+        <li>VSIE_Discord</li>
+      </value>
+    </match>
+  </Operation>
+</Patch>
