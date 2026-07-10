@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Pawn Diary: 1-2-3 Personalities</name>
+  <author>aimmlegate</author>
+  <packageId>aimmlegate.pawndiary.adapter.personalities123</packageId>
+  <modVersion IgnoreIfNoMatchingField="True">0.1.0</modVersion>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <!-- Both hard dependencies are load-order + assembly-resolution requirements, not just hints:
+       - Pawn Diary owns the DiaryInteractionGroupDef type this mod's Defs are, and the integration API
+         this mod's assembly calls.
+       - 1-2-3 Personalities M1 owns SP_Module1.dll, which this mod's assembly references to read each
+         colonist's Enneagram. Without M1 the assembly would fail to resolve, so it is a real dependency.
+       Module 2 (the ThoughtDef/InteractionDef expansion) is OPTIONAL: it is only referenced by string
+       package-id in XML, so the module-2 groups sit inert until it is installed. -->
+  <modDependencies>
+    <li>
+      <packageId>aimmlegate.pawndiary.development</packageId>
+      <displayName>Pawn Diary</displayName>
+    </li>
+    <li>
+      <packageId>hahkethomemah.simplepersonalities</packageId>
+      <displayName>1-2-3 Personalities M1</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2527258500</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>aimmlegate.pawndiary.development</li>
+    <li>hahkethomemah.simplepersonalities</li>
+    <li>hahkethomemah.simplepersonalities.module2</li>
+  </loadAfter>
+  <description>Bridges Pawn Diary and 1-2-3 Personalities so a colonist's Enneagram personality shapes their diary.
+
+Two layers:
+- Personality-aware entries (XML, always on): Module 2's compatibility interactions (Harmonious / Diversive / Turmoil) and its personality mood thoughts are recorded in their own voice — the felt fit or friction between two people — instead of the generic "other" bucket. Module 2 is optional; these sit inert without it.
+- Personality as diary lens (this mod's assembly): each colonist's Enneagram type is shown to the diary as context, and — with the "personality as diary outlook" option on (default) — it becomes the pawn's diary OUTLOOK: what they notice, value, and fear. 1-2-3 Personalities supplies WHO the pawn is; Pawn Diary keeps HOW they write. The override follows the pawn's current personality and is cleared cleanly when the option is turned off or a new colony is started. Nothing is ever written back into 1-2-3 Personalities.
+
+Requires Pawn Diary and 1-2-3 Personalities M1. Module 2 recommended for the full effect. Deployed as a separate RimWorld mod via scripts/deploy-integrations.ps1.</description>
+</ModMetaData>

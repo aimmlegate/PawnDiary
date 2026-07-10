@@ -101,6 +101,32 @@ field-level math that runs after Scribe has populated the fields.
 
 ---
 
+## Mod-compatibility adapters (1-2-3 Personalities / VSIE)
+
+These separate adapter mods live under `integrations/` and are inert without their target mod. Run
+these manual checks when you touch either adapter's Defs or the Personalities bridge assembly.
+
+**VSIE compat (`PawnDiary.Vsie`, XML only).** With Pawn Diary + Vanilla Social Interactions Expanded
+active:
+1. Dev-trigger (or wait for) a `VSIE_Vent`, a `VSIE_Teaching*`, a `VSIE_Discord`, and a
+   `VSIE_BestFriend` relation. Confirm each is captured with the intended shape: venting/teaching/
+   discord fold into the ambient day-note (a charged vent may promote to its own confiding entry), and
+   best-friend appears as a relationship-milestone entry (not a chat log).
+2. Remove VSIE from the mod list. Confirm the five `vsie_*` groups do **not** appear in Pawn Diary's
+   event settings and produce no warnings — the whole adapter is inert.
+
+**1-2-3 Personalities bridge (`PawnDiary.PersonalitiesBridge`, XML + assembly).** With Pawn Diary +
+1-2-3 Personalities M1 (and, for the interaction/thought groups, M2) active:
+1. Open a colonist's pawn summary path and confirm the Tier-A `personality=<variant>, <trait>` line is
+   present in the context the diary sees (dev-inspect or via the Example Adapter's context snapshot).
+2. Turn **on** "Use personality as diary outlook", let one bridge pass run, and confirm
+   `GetPsychotype` for a colonist reflects the bridge override (owner = the adapter's sourceId).
+3. **Save, reload.** The override is owned by Pawn Diary's per-pawn saved state, so it must survive the
+   round-trip while the toggle stays on. Then turn the toggle **off**, let one pass run, and confirm
+   the override clears from every colonist (including one sent to a caravan / downed / world pawn).
+4. Start a **new colony** in the same session with the toggle on: confirm no stale override bleeds in
+   from the previous colony (the `FinalizeInit` sweep walks the broad pawn set).
+
 ## What counts as a regression
 
 Any of:

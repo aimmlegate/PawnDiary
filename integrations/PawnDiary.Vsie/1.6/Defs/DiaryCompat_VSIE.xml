@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Compatibility groups for Vanilla Social Interactions Expanded (VanillaExpanded.VanillaSocialInteractionsExpanded).
+  Every group is gated by enableWhenPackageIdsLoaded, so this file is completely inert (records nothing,
+  emits no warnings, is not listed as capturable) unless VSIE is in the active mod list.
+
+  Design notes / how these route:
+    * Interaction-domain groups can ambient-batch (mode=AmbientDayNote) and, if given a <promotion>
+      block, occasionally promote one moment into its own entry. The ambient day-note's PROMPT text
+      comes from this group's <instruction>/<instructions> (see DiaryGameComponent.InteractionBatching:
+      note.instruction = InteractionGroups.InstructionFor(def)), while the label/header/fallback reuse
+      Pawn Diary's shared ambient-social keys.
+    * Thought-domain groups only supply instruction/tone for the thoughts they claim. Whether a thought
+      is recorded at all (and whether it goes to the ambient thought note) is decided by Pawn Diary's
+      global thought policy (mood-offset thresholds), NOT by any <batch> here — a <batch> on a Thought
+      group is silently ignored. matchPackageIds is used so we don't have to enumerate VSIE's ~20+
+      version-dependent thought defs.
+    * Romance-domain matches any PawnRelationDef defName (not only romantic ones); we add a friendship
+      sibling rather than widening the vanilla romance milestone group.
+
+  Order: low orders keep the specific VSIE matchers ahead of Pawn Diary's broad core groups (e.g. the
+  vanilla "teaching" group at order 120 and the Interaction catch-all "other" at 150), so VSIE_* defs
+  are claimed here first. Thought orders sit below the core thought groups (which start at 490).
+
+  VSIE def names are taken from the mod's published source (verified 2026-07-10):
+    Interactions: VSIE_Vent, VSIE_Discord, VSIE_Teaching, VSIE_Teaching_<Skill> (12 skills)
+    Relation:     VSIE_BestFriend
+  Vanilla Chitchat/DeepTalk keep their defNames and are already handled by core capture — not touched.
+-->
+<Defs>
+
+  <!-- Venting: one colonist unloading on another. Emotionally loaded, so it batches into the ambient
+       day-note by default but carries a promotion policy (cloned from rimtalk_chatter) so a charged
+       moment — strong/lopsided opinion, low need, low mood — can surface as its own confiding entry. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>vsie_vent</defName>
+    <label>venting</label>
+    <order>13</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VanillaSocialInteractionsExpanded</li>
+    </enableWhenPackageIdsLoaded>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>VsieVentAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>6</minEventsToWrite>
+      <maxSampleLines>3</maxSampleLines>
+    </batch>
+    <promotion>
+      <baseChance>0.005</baseChance>
+      <maxChance>0.08</maxChance>
+      <opinionStrongBonus>0.025</opinionStrongBonus>
+      <opinionStrongThreshold>40</opinionStrongThreshold>
+      <opinionAsymmetryBonus>0.025</opinionAsymmetryBonus>
+      <opinionAsymmetryThreshold>40</opinionAsymmetryThreshold>
+      <needLowBonus>0.025</needLowBonus>
+      <needLowThreshold>0.25</needLowThreshold>
+      <moodExtremeBonus>0.025</moodExtremeBonus>
+      <moodLowThreshold>0.25</moodLowThreshold>
+    </promotion>
+    <instruction>one person unburdening to another - center what was carried and set down, not the exact words</instruction>
+    <instructions>
+      <li>venting - write what pressure was let out, and whether saying it eased anything or just moved it</li>
+      <li>venting - the listener matters: was it safe, patient, awkward, or barely there at all</li>
+      <li>venting - keep it to what the pair's mood and history make believable; invent no new confession</li>
+    </instructions>
+    <tone>with the rawness of something held too long</tone>
+    <tones>
+      <li>tired and honest, the small relief of saying it out loud</li>
+      <li>close and unguarded, trust showing through the complaint</li>
+    </tones>
+    <matchDefNames>
+      <li>VSIE_Vent</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Teaching &amp; learning: VSIE_Teaching plus VSIE_Teaching_<Skill> for the 12 skills. One prefix
+       matcher covers the base def and every skill variant. Ambient day-note; no promotion (a lesson is
+       ordinary texture, not a milestone). -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>vsie_teaching</defName>
+    <label>teaching &amp; learning</label>
+    <order>14</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VanillaSocialInteractionsExpanded</li>
+    </enableWhenPackageIdsLoaded>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>VsieTeachingAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>6</minEventsToWrite>
+      <maxSampleLines>3</maxSampleLines>
+    </batch>
+    <instruction>knowledge passing between two people - who was teaching, who was learning, and whether it took</instruction>
+    <instructions>
+      <li>teaching - write the small dynamic: patience or impatience, a thing finally understood or not</li>
+      <li>teaching - note who held the knowledge and how that sat between them, only from what is supplied</li>
+      <li>teaching - keep it low-key day texture unless mood or the pair's history gives it more weight</li>
+    </instructions>
+    <tone>with the quiet focus of a lesson</tone>
+    <tones>
+      <li>attentive and practical, one mind reaching toward another</li>
+      <li>plain and steady, the ordinary work of learning a thing</li>
+    </tones>
+    <matchPrefixes>
+      <li>VSIE_Teaching</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Cooperative-work chatter (VSIE_Discord = talk while working alongside each other). Ambient
+       day-note; no promotion. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>vsie_discord</defName>
+    <label>working alongside</label>
+    <order>15</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VanillaSocialInteractionsExpanded</li>
+    </enableWhenPackageIdsLoaded>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>VsieDiscordAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>8</minEventsToWrite>
+      <maxSampleLines>3</maxSampleLines>
+    </batch>
+    <instruction>talk that happens while two people work side by side - keep it as the background hum of a shared task</instruction>
+    <instructions>
+      <li>working alongside - write the ease or friction of sharing the labor, not a transcript</li>
+      <li>working alongside - let the task be the anchor; the talk is what passed the time over it</li>
+      <li>working alongside - stay small and true unless the pair's state makes a line land harder</li>
+    </instructions>
+    <tone>with the loose rhythm of shared work</tone>
+    <tones>
+      <li>easy and offhand, words traded over busy hands</li>
+      <li>plain and companionable, the comfort of not working alone</li>
+    </tones>
+    <matchDefNames>
+      <li>VSIE_Discord</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Becoming best friends. Romance domain matches any PawnRelationDef defName; this is a sibling to
+       the vanilla romance-milestone group (whose tone stays romance-specific), reused here for a
+       platonic milestone. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>friendship_relation</defName>
+    <label>friendship milestones</label>
+    <order>21</order>
+    <domain>Romance</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VanillaSocialInteractionsExpanded</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a friendship becoming official - what this person has quietly become to the pawn, now named out loud</instruction>
+    <instructions>
+      <li>a bond made plain - write what changed by giving it a name: what is now assumed that was not before</li>
+      <li>a bond made plain - the private read: relief, warmth, or the small fear of mattering to someone</li>
+      <li>a bond made plain - keep it grounded in this pair's history; no sudden grand declaration</li>
+    </instructions>
+    <tone>with understated, steady warmth</tone>
+    <tones>
+      <li>quiet and glad, a closeness finally acknowledged</li>
+      <li>plain and sincere, the weight of being counted on</li>
+    </tones>
+    <matchDefNames>
+      <li>VSIE_BestFriend</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- VSIE's ~20+ extra mood thoughts. Themed via matchPackageIds (don't hand-enumerate version-
+       dependent def names). No <batch> here on purpose: a Thought group only supplies instruction/tone;
+       Pawn Diary's global thought policy (mood thresholds) decides recording, so low-impact VSIE
+       thoughts are naturally filtered and only a notable one becomes an entry. Order sits below the
+       core thought groups (490+) so VSIE thoughts get this themed voice first. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>vsie_thoughts</defName>
+    <label>social afterthoughts</label>
+    <order>481</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VanillaSocialInteractionsExpanded</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a mood left behind by a social moment - write the feeling it left, not the mechanic that caused it</instruction>
+    <instructions>
+      <li>social afterthought - name the lingering feeling and, lightly, who or what it traces back to</li>
+      <li>social afterthought - keep it to a single honest beat; this is a mood, not an event</li>
+    </instructions>
+    <tone>with the faint aftertaste of a social moment</tone>
+    <tones>
+      <li>reflective and small, a feeling still settling</li>
+      <li>quiet and inward, the residue of being around others</li>
+    </tones>
+    <matchPackageIds>
+      <li>VanillaExpanded.VanillaSocialInteractionsExpanded</li>
+    </matchPackageIds>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

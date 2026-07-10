@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Русский перевод групп совместимости 1-2-3 Personalities. Написано родным русским (не калькой);
+     нужна финальная вычитка носителем. Индексы instructions.N / tones.N соответствуют порядку <li> в
+     1.6/Defs/DiaryCompat_123Personalities.xml — НЕ менять порядок и НЕ удалять строки (иначе индексы
+     разъедутся). Ключи .label / .instruction попадают в интерфейс и подсказку модели. -->
+<LanguageData>
+
+  <personalities123_thoughts.label>настроения по характеру</personalities123_thoughts.label>
+  <personalities123_thoughts.instruction>настроение, легшее по характеру этой пешки — опиши чувство и дай нраву проступить в том, как она его принимает, не называя тип характера</personalities123_thoughts.instruction>
+  <personalities123_thoughts.instructions.0>настроение по характеру — передай чувство в свойственном пешке ключе: как такое воспримет именно она</personalities123_thoughts.instructions.0>
+  <personalities123_thoughts.instructions.1>настроение по характеру — держись одной честной ноты; это нрав, окрашивающий настроение, а не событие</personalities123_thoughts.instructions.1>
+  <personalities123_thoughts.tone>в оттенке собственного нрава пешки</personalities123_thoughts.tone>
+  <personalities123_thoughts.tones.0>верно характеру — то же событие, прочувствованное так, как прочувствовала бы его эта пешка</personalities123_thoughts.tones.0>
+  <personalities123_thoughts.tones.1>тихо и обращённо внутрь, настроение, пропущенное через то, кто она есть</personalities123_thoughts.tones.1>
+
+  <personalities123_interactions.label>совместимость характеров</personalities123_interactions.label>
+  <personalities123_interactions.instruction>встреча двух нравов — в центре ощущаемое совпадение или трение между этими двоими, а не сказанные слова</personalities123_interactions.instruction>
+  <personalities123_interactions.instructions.0>совместимость характеров — напиши, легче ли пешке рядом с этим человеком или он её раздражает, и отчего так вышло</personalities123_interactions.instructions.0>
+  <personalities123_interactions.instructions.1>совместимость характеров — назови различие или сходство под этим, но лишь так, как чувствует их пешка, и никогда как категорию</personalities123_interactions.instructions.1>
+  <personalities123_interactions.instructions.2>совместимость характеров — держись этой одной встречи; без окончательного приговора всем отношениям</personalities123_interactions.instructions.2>
+  <personalities123_interactions.tone>чутко к химии между двумя людьми</personalities123_interactions.tone>
+  <personalities123_interactions.tones.0>внимательно к совпадению и трению, к тихому считыванию чужого нрава</personalities123_interactions.tones.0>
+  <personalities123_interactions.tones.1>тихо и лично — с каким чувством оставляет пешку именно этот человек</personalities123_interactions.tones.1>
+
+</LanguageData>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Русский перевод групп совместимости Vanilla Social Interactions Expanded. Написано родным русским
+     (не калькой); нужна финальная вычитка носителем. Индексы instructions.N / tones.N соответствуют
+     порядку <li> в 1.6/Defs/DiaryCompat_VSIE.xml — НЕ менять порядок и НЕ удалять строки. Ключи batch
+     (label/header/fallback/instruction) переиспользуют общие ключи ядра и здесь не дублируются. -->
+<LanguageData>
+
+  <!-- vsie_vent -->
+  <vsie_vent.label>излить душу</vsie_vent.label>
+  <vsie_vent.instruction>один изливает душу другому — в центре то, что было в тягость и что удалось сбросить, а не точные слова</vsie_vent.instruction>
+  <vsie_vent.instructions.0>излить душу — напиши, какое напряжение вышло наружу и стало ли легче от сказанного или лишь переместилось</vsie_vent.instructions.0>
+  <vsie_vent.instructions.1>излить душу — важен слушающий: было ли рядом безопасно, терпеливо, неловко или почти никак</vsie_vent.instructions.1>
+  <vsie_vent.instructions.2>излить душу — держись того, что настроение и история этих двоих делают правдоподобным; не выдумывай нового признания</vsie_vent.instructions.2>
+  <vsie_vent.tone>с надрывом того, что держали слишком долго</vsie_vent.tone>
+  <vsie_vent.tones.0>устало и честно, с тихим облегчением сказанного вслух</vsie_vent.tones.0>
+  <vsie_vent.tones.1>близко и без брони, сквозь жалобу проступает доверие</vsie_vent.tones.1>
+
+  <!-- vsie_teaching -->
+  <vsie_teaching.label>учить и учиться</vsie_teaching.label>
+  <vsie_teaching.instruction>знание, переходящее между двумя — кто учил, кто учился и прижилось ли оно</vsie_teaching.instruction>
+  <vsie_teaching.instructions.0>учить и учиться — передай маленькую динамику: терпение или его нехватку, понятое наконец или так и нет</vsie_teaching.instructions.0>
+  <vsie_teaching.instructions.1>учить и учиться — отметь, у кого было знание и как это легло между ними, только по тому, что дано</vsie_teaching.instructions.1>
+  <vsie_teaching.instructions.2>учить и учиться — оставь это тихой тканью дня, если только настроение или история пары не придают этому веса</vsie_teaching.instructions.2>
+  <vsie_teaching.tone>с тихой сосредоточенностью урока</vsie_teaching.tone>
+  <vsie_teaching.tones.0>внимательно и по делу, один ум тянется к другому</vsie_teaching.tones.0>
+  <vsie_teaching.tones.1>просто и ровно, обычная работа по освоению нового</vsie_teaching.tones.1>
+
+  <!-- vsie_discord -->
+  <vsie_discord.label>работа бок о бок</vsie_discord.label>
+  <vsie_discord.instruction>разговор во время работы бок о бок — оставь его фоновым гулом общего дела</vsie_discord.instruction>
+  <vsie_discord.instructions.0>работа бок о бок — напиши лёгкость или трение общего труда, а не стенограмму</vsie_discord.instructions.0>
+  <vsie_discord.instructions.1>работа бок о бок — пусть якорем будет само дело; разговор лишь скоротал за ним время</vsie_discord.instructions.1>
+  <vsie_discord.instructions.2>работа бок о бок — держись малого и правдивого, если только состояние пары не заставляет какую-то реплику ударить сильнее</vsie_discord.instructions.2>
+  <vsie_discord.tone>в свободном ритме общей работы</vsie_discord.tone>
+  <vsie_discord.tones.0>легко и мимоходом, слова через занятые руки</vsie_discord.tones.0>
+  <vsie_discord.tones.1>просто и по-товарищески, с уютом того, что работаешь не один</vsie_discord.tones.1>
+
+  <!-- friendship_relation -->
+  <friendship_relation.label>вехи дружбы</friendship_relation.label>
+  <friendship_relation.instruction>дружба, ставшая официальной — кем этот человек тихо стал для пешки, теперь названо вслух</friendship_relation.instruction>
+  <friendship_relation.instructions.0>названная связь — напиши, что изменилось оттого, что ей дали имя: что теперь само собой разумеется, а прежде нет</friendship_relation.instructions.0>
+  <friendship_relation.instructions.1>названная связь — личное прочтение: облегчение, тепло или тихий страх кому-то быть важным</friendship_relation.instructions.1>
+  <friendship_relation.instructions.2>названная связь — держись истории этих двоих; без внезапных громких признаний</friendship_relation.instructions.2>
+  <friendship_relation.tone>со сдержанным, ровным теплом</friendship_relation.tone>
+  <friendship_relation.tones.0>тихо и радостно, близость наконец признана</friendship_relation.tones.0>
+  <friendship_relation.tones.1>просто и искренне, с весом того, что на тебя рассчитывают</friendship_relation.tones.1>
+
+  <!-- vsie_thoughts -->
+  <vsie_thoughts.label>отголоски общения</vsie_thoughts.label>
+  <vsie_thoughts.instruction>настроение, оставшееся после общения — напиши чувство, которое оно оставило, а не механику, что его вызвала</vsie_thoughts.instruction>
+  <vsie_thoughts.instructions.0>отголосок общения — назови оставшееся чувство и, слегка, к кому или чему оно восходит</vsie_thoughts.instructions.0>
+  <vsie_thoughts.instructions.1>отголосок общения — держись одной честной ноты; это настроение, а не событие</vsie_thoughts.instructions.1>
+  <vsie_thoughts.tone>с лёгким послевкусием общения</vsie_thoughts.tone>
+  <vsie_thoughts.tones.0>задумчиво и негромко, чувство ещё оседает</vsie_thoughts.tones.0>
+  <vsie_thoughts.tones.1>тихо и внутрь, осадок от того, что был среди других</vsie_thoughts.tones.1>
+
+</LanguageData>
