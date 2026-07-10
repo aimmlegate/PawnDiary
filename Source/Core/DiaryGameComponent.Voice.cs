@@ -367,6 +367,25 @@ namespace PawnDiary
                 return false;
             }
 
+            // Arbitrate BEFORE materializing a record: when a DIFFERENT source already owns a live
+            // override, the later-loading mod keeps the slot (ExternalOverrideArbitration; falls back
+            // to last-writer-wins for sourceIds that are not active-mod packageIds). Read without
+            // creating — a rejected write must not leave an empty record behind.
+            PawnDiaryRecord existing = FindDiary(pawn, false);
+            string existingRule = PsychotypeText.CleanExternalRule(existing?.externalPsychotypeOverrideRule);
+            if (!string.IsNullOrWhiteSpace(existingRule))
+            {
+                string owner = PsychotypeText.CleanSourceId(existing.externalPsychotypeOverrideSourceId);
+                if (!string.Equals(owner, cleanedSource, StringComparison.OrdinalIgnoreCase)
+                    && !ExternalOverrideArbitration.MayDisplace(
+                        ExternalSourceLoadOrder.IndexFor(cleanedSource),
+                        ExternalSourceLoadOrder.IndexFor(owner)))
+                {
+                    ExternalSourceLoadOrder.LogKeptOwnerOnce("psychotype", cleanedSource, owner);
+                    return false;
+                }
+            }
+
             PawnDiaryRecord diary = FindDiary(pawn, true);
             if (diary == null)
             {

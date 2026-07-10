@@ -49,6 +49,7 @@
     <Compile Include="..\..\Source\Pipeline\ExternalDirectEntryText.cs" Link="ExternalDirectEntryText.cs" />
     <Compile Include="..\..\Source\Pipeline\ExternalEntryAttribution.cs" Link="ExternalEntryAttribution.cs" />
     <Compile Include="..\..\Source\Pipeline\ExternalWritingStyleOverrideText.cs" Link="ExternalWritingStyleOverrideText.cs" />
+    <Compile Include="..\..\Source\Pipeline\ExternalOverrideArbitration.cs" Link="ExternalOverrideArbitration.cs" />
     <Compile Include="..\..\Source\Pipeline\PlayerWritingStyleText.cs" Link="PlayerWritingStyleText.cs" />
     <Compile Include="..\..\Source\Pipeline\WritingStyleResolutionPolicy.cs" Link="WritingStyleResolutionPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\PsychotypeRollPolicy.cs" Link="PsychotypeRollPolicy.cs" />

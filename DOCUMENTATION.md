@@ -378,7 +378,10 @@ or in-flight pages.
 The public v1 context side exposes the machinery Pawn Diary already builds for prompts without
 driving another LLM call. `GetWritingStyle` publishes the pawn's base saved diary voice;
 `GetAvailableWritingStyles` lists the effective style catalog; `SetWritingStyleOverride` and
-`ResetWritingStyleOverride` manage source-owned temporary voice rules; `RegisterPawnContextProvider`
+`ResetWritingStyleOverride` manage source-owned temporary voice rules (when two adapters contend for
+the same slot and both sourceIds are packageIds of active mods, the later-loading mod wins —
+`ExternalOverrideArbitration` + `ExternalSourceLoadOrder`; unresolvable sourceIds keep
+last-writer-wins); `RegisterPawnContextProvider`
 adds compact adapter-owned `key=value` lines to pawn summaries; `GetPawnSummary` returns structured
 identity/mood/health/thought/provider facts; `GetPromptEnchantments` returns the prompt-enchantment
 candidate set before the final weighted roll; and `GetContextBundle` packages style, summary,
@@ -1015,7 +1018,12 @@ built-in *overrides* keep the built-in defName, so they still roll with the edit
 public integration API adds `GetPsychotype` (read the effective outlook) and `SetPsychotypeOverride` /
 `ResetPsychotypeOverride` (source-owned, mirroring the writing-style override pair). The RimTalk bridge's
 Tier B repoints to the psychotype override so RimTalk supplies *who* the pawn is while Pawn Diary keeps
-*how* they write.
+*how* they write. When two adapters contend for the same pawn's slot (e.g. the 1-2-3 Personalities
+bridge and the RimTalk bridge's Tier B both on), the LATER-loading mod wins and the earlier mod's write
+returns `false` — the RimWorld "lower in the list overrides" convention, decided by the pure
+`ExternalOverrideArbitration.MayDisplace` over load-order indexes resolved (and process-cached) by
+`ExternalSourceLoadOrder`. SourceIds that are not active-mod packageIds keep the old last-writer-wins,
+and a stale owner whose mod was removed is always displaceable. `Reset*` stays owner-guarded.
 
 Prompt enchantments add one weighted live-context cue to eligible first-person prompts. Event windows
 and observed conditions feed the same planner, so active threats can bias otherwise unrelated diary

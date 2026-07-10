@@ -8,6 +8,19 @@ pre-release version ladder for project history.
 
 ## 2026-07-10
 
+- **External override collisions are now arbitrated by mod load order (later mod wins).** When two
+  integration adapters both target the same pawn's external writing-style or psychotype override slot
+  (e.g. the 1-2-3 Personalities bridge and the RimTalk bridge's Tier B persona voice, both enabled),
+  `Set*Override` no longer silently last-writer-wins between them: if both `sourceId`s are packageIds
+  of active mods, the later-loading mod keeps the slot and the earlier mod's write returns `false`
+  with one quiet log line — the standard RimWorld "lower in the list overrides" convention, so the
+  player picks the winner by reordering. SourceIds that are not active-mod packageIds keep the old
+  last-writer-wins behavior, and a stale override from an uninstalled mod is always displaceable;
+  `Reset*Override` stays owner-guarded. Guardrail-only change, no `ApiVersion` bump. New pure policy
+  `Source/Pipeline/ExternalOverrideArbitration.cs` (tested in `DiaryPipelineTests`, 945 assertions
+  green) + impure load-order resolver `Source/Util/ExternalSourceLoadOrder.cs`; both setters in
+  `DiaryGameComponent` arbitrate before writing.
+
 - **New mod-compatibility adapters for 1-2-3 Personalities and Vanilla Social Interactions Expanded,
   each shipped as its own standalone mod** under `integrations/` (deployed by
   `scripts/deploy-integrations.ps1`), rather than as compat groups inside the core mod — so a player

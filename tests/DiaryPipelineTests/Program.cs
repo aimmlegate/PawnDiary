@@ -77,6 +77,7 @@ namespace DiaryPipelineTests
             TestDiarySentenceExcerpt();
             TestExternalDirectEntryText();
             TestExternalWritingStyleOverrideText();
+            TestExternalOverrideArbitration();
             TestPlayerWritingStyleText();
             TestWritingStyleResolutionPolicy();
             TestPsychotypeText();
@@ -4027,6 +4028,31 @@ namespace DiaryPipelineTests
                 new string('s', ExternalWritingStyleOverrideText.MaxSourceIdChars),
                 ExternalWritingStyleOverrideText.CleanSourceId(
                     new string('s', ExternalWritingStyleOverrideText.MaxSourceIdChars + 10)));
+        }
+
+        // Two adapters targeting the same external override slot: when both sourceIds resolve to
+        // active mods, the later-loading mod wins; any unresolved side falls back to last-writer-wins
+        // (the pre-arbitration contract, and how a stale owner from an uninstalled mod is displaced).
+        private static void TestExternalOverrideArbitration()
+        {
+            AssertTrue("later-loading caller displaces earlier-loading owner",
+                ExternalOverrideArbitration.MayDisplace(7, 3));
+            AssertTrue("earlier-loading caller cannot displace later-loading owner",
+                !ExternalOverrideArbitration.MayDisplace(3, 7));
+            AssertTrue("same load-order index (same mod) may update its own slot",
+                ExternalOverrideArbitration.MayDisplace(5, 5));
+            AssertTrue("unresolvable caller keeps last-writer-wins",
+                ExternalOverrideArbitration.MayDisplace(ExternalOverrideArbitration.UnknownLoadOrder, 4));
+            AssertTrue("unresolvable owner (e.g. uninstalled mod) is displaceable",
+                ExternalOverrideArbitration.MayDisplace(4, ExternalOverrideArbitration.UnknownLoadOrder));
+            AssertTrue("both unresolvable keeps last-writer-wins",
+                ExternalOverrideArbitration.MayDisplace(
+                    ExternalOverrideArbitration.UnknownLoadOrder,
+                    ExternalOverrideArbitration.UnknownLoadOrder));
+            AssertTrue("any negative index counts as unresolved, not just the sentinel",
+                ExternalOverrideArbitration.MayDisplace(-2, 0));
+            AssertTrue("index 0 (first mod in the list) is a valid resolved position",
+                ExternalOverrideArbitration.MayDisplace(0, 0));
         }
 
         // Player-authored custom writing-style prompts keep their line breaks (so the editor stays
