@@ -20,7 +20,10 @@ Build an adapter the same way as the core mod:
 ```
 MSBuild integrations\PawnDiary.ExampleAdapter\Source\PawnDiaryExampleAdapter.csproj /t:Build /p:Configuration=Debug
 MSBuild integrations\PawnDiary.RimTalkBridge\Source\PawnDiaryRimTalkBridge.csproj /t:Build /p:Configuration=Debug
+MSBuild integrations\PawnDiary.PersonalitiesBridge\Source\PawnDiaryPersonalities123.csproj /t:Build /p:Configuration=Debug
 ```
+
+(`PawnDiary.Vsie/` is XML only — no assembly to build.)
 
 `PawnDiary.ExampleAdapter/` is both the **canonical integration example** and an **in-game API
 Explorer**: a developer tool that lets you exercise every public `PawnDiaryApi` method from a
@@ -81,6 +84,25 @@ dotnet run --project tests/RimTalkBridgeLogicTests/RimTalkBridgeLogicTests.cspro
 
 The pre-commit verify hook builds only the core mod; adapters (and their pure tests) are built, run,
 and deployed manually.
+
+`PawnDiary.Vsie/` and `PawnDiary.PersonalitiesBridge/` are personality/social compatibility adapters,
+each a separate mod for one target so a player installs only what matches their mod list:
+
+- **`PawnDiary.Vsie/`** (`Pawn Diary: Vanilla Social Interactions Expanded`) — **XML only, no
+  assembly.** Five `enableWhenPackageIdsLoaded`-gated `DiaryInteractionGroupDef`s that give VSIE's
+  venting, teaching, cooperative-work chatter, best-friend milestone, and extra mood thoughts their own
+  diary voice. Inert without VSIE.
+- **`PawnDiary.PersonalitiesBridge/`** (`Pawn Diary: 1-2-3 Personalities`) — **XML + a small
+  assembly.** Tier 1 (XML) routes Module 2's compatibility interactions and personality mood thoughts.
+  Tier 2 (`PawnDiaryPersonalities123.dll`, net472, reads 1-2-3 Personalities' public Enneagram API,
+  **no Harmony**) adds a `personality=` context line and a default-on Tier-B outlook override
+  (`SetPsychotypeOverride` from the Enneagram root), cleared on toggle-off/new-game — the same shape as
+  the RimTalk bridge's `PersonaSync`, minus the RimTalk half. Its pure root→outlook mapping is
+  unit-tested:
+
+```
+dotnet run --project tests/Personalities123BridgeLogicTests/Personalities123BridgeLogicTests.csproj
+```
 
 The explorer's pure text-parsing helpers (`ExplorerParsing.cs`) are unit-tested by
 `tests/ExampleAdapterParsingTests/`:

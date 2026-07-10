@@ -513,6 +513,34 @@ the broad `other` fallback can see them, captures the rendered chat text, and ro
 through the same `AmbientDayNote` batching/promotion policy as SpeakUp. With RimTalk absent, the row
 does not appear in event settings and has no runtime effect.
 
+Two further personality/social integrations ship as **standalone adapter mods** under `integrations/`
+(deployed by `scripts/deploy-integrations.ps1`), not as compat groups inside the core mod — so a
+player installs only the ones matching their mod list:
+
+- **`PawnDiary.Vsie` (`Pawn Diary: Vanilla Social Interactions Expanded`)** — XML only, no assembly.
+  Five gated `DiaryInteractionGroupDef`s for VSIE
+  (`VanillaExpanded.VanillaSocialInteractionsExpanded`): `vsie_vent` (Interaction, ambient batch +
+  promotion), `vsie_teaching` (Interaction, prefix matcher `VSIE_Teaching` covering the base def and
+  all 12 skill variants, ambient batch), `vsie_discord` (Interaction, ambient batch),
+  `friendship_relation` (Romance, `VSIE_BestFriend`), and `vsie_thoughts` (Thought, `matchPackageIds`).
+  Every group is `enableWhenPackageIdsLoaded`-gated, so the mod is inert without VSIE.
+- **`PawnDiary.PersonalitiesBridge` (`Pawn Diary: 1-2-3 Personalities`)** — XML **plus** a small
+  assembly. Tier 1 (XML): `personalities123_thoughts` (Thought, `matchPackageIds` on M1+M2) and
+  `personalities123_interactions` (Interaction, `matchPackageIds` on M2, not batched). Tier 2
+  (`PawnDiaryPersonalities123.dll`, net472, hard-refs `SP_Module1.dll`): a Tier-A context provider
+  emitting `personality=<variant>, <trait>`, and a default-on Tier-B outlook override mapping the
+  pawn's Enneagram root (`SP_Root1..9`) to a `SetPsychotypeOverride` rule through the pure
+  `EnneagramLensMapping` (unit-tested by `tests/Personalities123BridgeLogicTests/`). Read-only toward
+  1-2-3 Personalities; overrides clear on toggle-off and new-game, walking the same broad pawn set as
+  the RimTalk bridge's `PersonaSync`. SP_Module1-typed methods are `[NoInlining]` behind the cached
+  `SimplePersonalitiesActive` (`hahkethomemah.simplepersonalities`) guard.
+
+Thought-domain caveat (applies to both `*_thoughts` groups above): a Thought-domain group only assigns
+instruction/tone; whether a thought is recorded, and whether it folds into the ambient thought note, is
+governed by Pawn Diary's global thought policy (mood-offset thresholds), **not** by a per-group
+`<batch>` (which is Interaction-only and silently ignored elsewhere). Those groups therefore theme
+their thoughts and lean on the mood threshold as the flood guard.
+
 ## 4. Event Sources
 
 The catalog of every event the diary reacts to (`DiaryEventType`), with the `DiarySignal` that carries

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+
+  <!-- Mod options list label. -->
+  <PawnDiaryPersonalities123.Settings.Category>Pawn Diary: 1-2-3 Personalities</PawnDiaryPersonalities123.Settings.Category>
+
+  <!-- Shown at the top of the settings when 1-2-3 Personalities is not in the mod list. -->
+  <PawnDiaryPersonalities123.Settings.Missing>1-2-3 Personalities is not active, so this bridge does nothing right now. Enable 1-2-3 Personalities (M1) to use it.</PawnDiaryPersonalities123.Settings.Missing>
+
+  <!-- Tier A toggle. -->
+  <PawnDiaryPersonalities123.Settings.ProvideContextLine>Show personality in diary context</PawnDiaryPersonalities123.Settings.ProvideContextLine>
+  <PawnDiaryPersonalities123.Settings.ProvideContextLineDesc>Adds a short line about each colonist's Enneagram type (variant and main trait) to the context the diary sees when it writes. Read-only; nothing is changed in 1-2-3 Personalities.</PawnDiaryPersonalities123.Settings.ProvideContextLineDesc>
+
+  <!-- Tier B toggle. -->
+  <PawnDiaryPersonalities123.Settings.UsePersonalityOutlook>Use personality as diary outlook</PawnDiaryPersonalities123.Settings.UsePersonalityOutlook>
+  <PawnDiaryPersonalities123.Settings.UsePersonalityOutlookDesc>Lets each colonist's Enneagram type shape their diary outlook — what they notice, value, and fear — while keeping their own writing style. Turning this off clears the effect from every colonist. On by default.</PawnDiaryPersonalities123.Settings.UsePersonalityOutlookDesc>
+
+</LanguageData>

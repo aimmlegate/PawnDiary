@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Русская локализация моста RimTalk. Текст написан как родной русский, а не калькой с английского.
-     ВНИМАНИЕ (план, п. U4): это черновик агента — требуется финальная вычитка носителем, особенно
-     согласование числительных ("{1} реплик") и тон подсказок. Структурные ключи схемы
-     (chat_persona=, talk_type=, said_N=) остаются английскими и здесь не переводятся. -->
+<!-- Русская локализация моста RimTalk. Текст авторский русский, не калька с английского; вычитан
+     2026-07-10 — термины и регистр сведены с ядром (поселенец, задание, «в тиках», ярлыки записей с
+     заглавной). Структурные ключи схемы (chat_persona=, talk_type=, said_N=) остаются английскими и
+     здесь не переводятся. -->
 <LanguageData>
 
   <!-- Окно настроек -->
@@ -23,57 +23,57 @@
   <PawnDiaryRimTalkBridge.Settings.UseRimTalkEngine>Писать записи разговоров через ИИ RimTalk</PawnDiaryRimTalkBridge.Settings.UseRimTalkEngine>
   <PawnDiaryRimTalkBridge.Settings.UseRimTalkEngineDesc>Использует ИИ-провайдера RimTalk для записей разговоров вместо провайдера Pawn Diary. Если ИИ RimTalk занят или дал сбой, мост возвращается к обычному пути.</PawnDiaryRimTalkBridge.Settings.UseRimTalkEngineDesc>
   <PawnDiaryRimTalkBridge.Settings.DevChatLogging>Отладочный журнал чата</PawnDiaryRimTalkBridge.Settings.DevChatLogging>
-  <PawnDiaryRimTalkBridge.Settings.DevChatLoggingDesc>Пишет в консоль разработчика каждую замеченную строку чата RimTalk и каждое решение моста: сброс разговоров, причины важности, троттлинг, отправки.</PawnDiaryRimTalkBridge.Settings.DevChatLoggingDesc>
-  <PawnDiaryRimTalkBridge.Settings.ContextEntryCount>Записей дневника на подсказку чата</PawnDiaryRimTalkBridge.Settings.ContextEntryCount>
-  <PawnDiaryRimTalkBridge.Settings.ConversationQuietTicks>Окно тишины разговора (тики)</PawnDiaryRimTalkBridge.Settings.ConversationQuietTicks>
-  <PawnDiaryRimTalkBridge.Settings.MinRepliesForImportant>Строк чата, делающих разговор важным</PawnDiaryRimTalkBridge.Settings.MinRepliesForImportant>
+  <PawnDiaryRimTalkBridge.Settings.DevChatLoggingDesc>Пишет в консоль разработчика каждую замеченную строку чата RimTalk и каждое решение моста: закрытие разговоров, причины важности, ограничения частоты, отправку запросов.</PawnDiaryRimTalkBridge.Settings.DevChatLoggingDesc>
+  <PawnDiaryRimTalkBridge.Settings.ContextEntryCount>Записей дневника в подсказке чата</PawnDiaryRimTalkBridge.Settings.ContextEntryCount>
+  <PawnDiaryRimTalkBridge.Settings.ConversationQuietTicks>Тишина, завершающая разговор (в тиках)</PawnDiaryRimTalkBridge.Settings.ConversationQuietTicks>
+  <PawnDiaryRimTalkBridge.Settings.MinRepliesForImportant>Сколько реплик делает разговор важным</PawnDiaryRimTalkBridge.Settings.MinRepliesForImportant>
   <PawnDiaryRimTalkBridge.Settings.PerPawnDailyCap>Записей разговоров на поселенца в день</PawnDiaryRimTalkBridge.Settings.PerPawnDailyCap>
   <PawnDiaryRimTalkBridge.Settings.ColonyDailyCap>Записей разговоров на колонию в день</PawnDiaryRimTalkBridge.Settings.ColonyDailyCap>
-  <PawnDiaryRimTalkBridge.Settings.PairMinGapTicks>Мин. промежуток на пару (тики)</PawnDiaryRimTalkBridge.Settings.PairMinGapTicks>
-  <PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>Цитируемых строк чата на запись</PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>
+  <PawnDiaryRimTalkBridge.Settings.PairMinGapTicks>Мин. промежуток для пары (в тиках)</PawnDiaryRimTalkBridge.Settings.PairMinGapTicks>
+  <PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>Цитируемых реплик на одну запись</PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>
 
   <!-- Тумблеры и счётчики: положение колонии (функция 1) и общая память пары (функция 3). -->
   <PawnDiaryRimTalkBridge.Settings.InjectSharedMemory>Делиться общими воспоминаниями в разговоре</PawnDiaryRimTalkBridge.Settings.InjectSharedMemory>
   <PawnDiaryRimTalkBridge.Settings.InjectSharedMemoryDesc>Когда двое поселенцев беседуют, к разговору добавляются общие записи дневника — былая ссора, доброта, пережитая вместе беда, — чтобы они могли вспомнить, что было между ними.</PawnDiaryRimTalkBridge.Settings.InjectSharedMemoryDesc>
   <PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemory>Добавлять общие воспоминания автоматически</PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemory>
-  <PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemoryDesc>Вплетает общие воспоминания в разговоры без настройки. Выключите, если хотите сами поставить переменную общих воспоминаний в шаблон чата. При выключении добавленная запись убирается обратно.</PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemoryDesc>
+  <PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemoryDesc>Сам вплетает общие воспоминания в разговоры — ничего настраивать не нужно. Выключите, если хотите вручную вставить переменную общих воспоминаний в шаблон чата: автоматическая вставка при этом убирается.</PawnDiaryRimTalkBridge.Settings.AutoInjectSharedMemoryDesc>
   <PawnDiaryRimTalkBridge.Settings.InjectColonyContext>Учитывать положение колонии в разговоре</PawnDiaryRimTalkBridge.Settings.InjectColonyContext>
-  <PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc>Добавляет к контексту разговора короткую выверенную строку о том, чем сейчас живёт колония, — рейд, суровая погода, жуткое присутствие, незакрытый квест. По умолчанию выключено: другие моды могут уже передавать события в чат.</PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc>
+  <PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc>Добавляет к контексту разговора короткую выверенную строку о том, чем сейчас живёт колония, — рейд, суровая погода, жуткое присутствие, незакрытое задание. По умолчанию выключено: другие моды могут уже передавать события в чат.</PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc>
   <PawnDiaryRimTalkBridge.Settings.SharedMemoryCount>Общих воспоминаний на разговор</PawnDiaryRimTalkBridge.Settings.SharedMemoryCount>
-  <PawnDiaryRimTalkBridge.Settings.ColonyEventCount>Строк о положении колонии на чат</PawnDiaryRimTalkBridge.Settings.ColonyEventCount>
+  <PawnDiaryRimTalkBridge.Settings.ColonyEventCount>Строк о положении колонии на разговор</PawnDiaryRimTalkBridge.Settings.ColonyEventCount>
 
   <!-- Текст, вставляемый в подсказки RimTalk (уровень 1) -->
   <PawnDiaryRimTalkBridge.Prompt.DiaryMemoriesHeader>свежие записи дневника:</PawnDiaryRimTalkBridge.Prompt.DiaryMemoriesHeader>
   <PawnDiaryRimTalkBridge.Prompt.MemoryLine>— {0} ({1}): {2}</PawnDiaryRimTalkBridge.Prompt.MemoryLine>
   <PawnDiaryRimTalkBridge.Prompt.DiaryVoiceLine>голос дневника: {0}</PawnDiaryRimTalkBridge.Prompt.DiaryVoiceLine>
-  <PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>Свежие записи дневника этого поселенца и, при желании, строка о голосе его дневника.</PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>
+  <PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>Свежие записи дневника этого поселенца и, если включено, строка о его манере вести дневник.</PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>
 
   <!-- Функция 1: блок положения колонии ({{colony_events}}). Проза, которую читает ИИ чата как
        окружение пешки, — настоящее время, атмосферно, без упоминания мода. {0} в Colony.Quest —
-       собственное имя квеста. Активные состояния берут ярлык из самой игры (ключа здесь нет). -->
+       собственное имя задания. Активные состояния берут ярлык из самой игры (ключа здесь нет). -->
   <PawnDiaryRimTalkBridge.Prompt.ColonyEventsHeader>что творится в колонии:</PawnDiaryRimTalkBridge.Prompt.ColonyEventsHeader>
-  <PawnDiaryRimTalkBridge.Prompt.ColonyEventsVariableDesc>Короткая выверенная сводка о том, чем сейчас живёт колония, — угрозы, погодные напасти, аномальное присутствие, открытые квесты — из Pawn Diary.</PawnDiaryRimTalkBridge.Prompt.ColonyEventsVariableDesc>
-  <PawnDiaryRimTalkBridge.Colony.ThreatHigh>на колонию идёт тяжёлое нападение</PawnDiaryRimTalkBridge.Colony.ThreatHigh>
+  <PawnDiaryRimTalkBridge.Prompt.ColonyEventsVariableDesc>Короткая выверенная сводка о том, чем сейчас живёт колония, — угрозы, погодные напасти, присутствие аномалии, незакрытые задания — из Pawn Diary.</PawnDiaryRimTalkBridge.Prompt.ColonyEventsVariableDesc>
+  <PawnDiaryRimTalkBridge.Colony.ThreatHigh>колония под серьёзным ударом</PawnDiaryRimTalkBridge.Colony.ThreatHigh>
   <PawnDiaryRimTalkBridge.Colony.ThreatLow>рядом с колонией неспокойно</PawnDiaryRimTalkBridge.Colony.ThreatLow>
-  <PawnDiaryRimTalkBridge.Colony.Anomaly>над колонией нависла неестественная тревога</PawnDiaryRimTalkBridge.Colony.Anomaly>
+  <PawnDiaryRimTalkBridge.Colony.Anomaly>над колонией нависла неестественная жуть</PawnDiaryRimTalkBridge.Colony.Anomaly>
   <PawnDiaryRimTalkBridge.Colony.Quest>всех гнетёт нерешённое дело: {0}</PawnDiaryRimTalkBridge.Colony.Quest>
 
   <!-- Функция 3: блок общей памяти пары ({{diary_shared}}). Заголовок — проза для ИИ чата; строки
        используют Prompt.MemoryLine выше. Образец виден только в предпросмотре настроек RimTalk. -->
   <PawnDiaryRimTalkBridge.Prompt.SharedMemoriesHeader>что связывает их двоих:</PawnDiaryRimTalkBridge.Prompt.SharedMemoriesHeader>
-  <PawnDiaryRimTalkBridge.Prompt.SharedMemoriesSample>что связывает их двоих:&#10;— Долгая зима (5-е весны): они пережили похолодание бок о бок.</PawnDiaryRimTalkBridge.Prompt.SharedMemoriesSample>
+  <PawnDiaryRimTalkBridge.Prompt.SharedMemoriesSample>что связывает их двоих:&#10;— Долгая зима (5-й день квадрума): они пережили похолодание бок о бок.</PawnDiaryRimTalkBridge.Prompt.SharedMemoriesSample>
   <PawnDiaryRimTalkBridge.Prompt.SharedMemoryVariableDesc>Записи дневника, общие для двух беседующих поселенцев, — их прежние заметные моменты вместе — из Pawn Diary.</PawnDiaryRimTalkBridge.Prompt.SharedMemoryVariableDesc>
 
   <!-- Голос дневника по характеру (уровень B). Теперь уровень B задаёт ПСИХОТИП (взгляд на мир) —
        кто пешка есть, — а Pawn Diary сохраняет то, как она пишет. Старый VoiceRule оставлен только
        ради корректного чтения переопределений из старых сохранений до разовой миграции. -->
-  <PawnDiaryRimTalkBridge.Persona.VoiceRule>голос, выточенный его характером: {0}</PawnDiaryRimTalkBridge.Persona.VoiceRule>
+  <PawnDiaryRimTalkBridge.Persona.VoiceRule>голос, продиктованный характером: {0}</PawnDiaryRimTalkBridge.Persona.VoiceRule>
   <PawnDiaryRimTalkBridge.Persona.LensRule>Этот поселенец судит обо всём, исходя из того, кто он: {0}</PawnDiaryRimTalkBridge.Persona.LensRule>
 
   <!-- Записи важных разговоров (уровень 2) -->
-  <PawnDiaryRimTalkBridge.Event.ConversationLabel>заметный разговор</PawnDiaryRimTalkBridge.Event.ConversationLabel>
+  <PawnDiaryRimTalkBridge.Event.ConversationLabel>Заметный разговор</PawnDiaryRimTalkBridge.Event.ConversationLabel>
   <PawnDiaryRimTalkBridge.Event.ConversationSummary>Разговор с {0} — реплик: {1}.</PawnDiaryRimTalkBridge.Event.ConversationSummary>
-  <PawnDiaryRimTalkBridge.Event.ConversationInstruction>Напиши, что этот разговор всколыхнул или изменил в пишущем — чувство и послевкусие, а не пересказ.</PawnDiaryRimTalkBridge.Event.ConversationInstruction>
-  <PawnDiaryRimTalkBridge.Event.SomeonePartner>кое с кем</PawnDiaryRimTalkBridge.Event.SomeonePartner>
+  <PawnDiaryRimTalkBridge.Event.ConversationInstruction>Напиши, что этот разговор всколыхнул или изменил в авторе дневника — чувство и послевкусие, а не пересказ.</PawnDiaryRimTalkBridge.Event.ConversationInstruction>
+  <PawnDiaryRimTalkBridge.Event.SomeonePartner>кем-то</PawnDiaryRimTalkBridge.Event.SomeonePartner>
 
 </LanguageData>

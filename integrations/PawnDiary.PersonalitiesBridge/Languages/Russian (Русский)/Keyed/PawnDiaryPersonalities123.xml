@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Русская локализация моста 1-2-3 Personalities. Текст авторский русский, не калька с английского;
+     вычитан 2026-07-10 (термины и регистр сведены с ядром).
+     Правила взгляда (Outlook.SP_Root1..9) пересобраны на живом русском в том же регистре, что и
+     психотипы ядра (DiaryPsychotypeDefs): 1-2 поведенческие фразы «Этот поселенец ...», без называния
+     самого типа. Английский оригинал этих правил живёт в Source/Pure/EnneagramLensMapping.cs (он же
+     запасной вариант, если перевода нет). Структурный ключ схемы (personality=) остаётся английским. -->
+<LanguageData>
+
+  <!-- Окно настроек -->
+  <PawnDiaryPersonalities123.Settings.Category>Pawn Diary: 1-2-3 Personalities</PawnDiaryPersonalities123.Settings.Category>
+  <PawnDiaryPersonalities123.Settings.Missing>1-2-3 Personalities нет в списке активных модов, так что мост сейчас ничего не делает. Включите 1-2-3 Personalities (M1), чтобы им пользоваться.</PawnDiaryPersonalities123.Settings.Missing>
+  <PawnDiaryPersonalities123.Settings.ProvideContextLine>Показывать характер в контексте дневника</PawnDiaryPersonalities123.Settings.ProvideContextLine>
+  <PawnDiaryPersonalities123.Settings.ProvideContextLineDesc>Добавляет короткую строку о характере поселенца (вариант и главная черта) в контекст, который дневник видит при записи. Только чтение; в 1-2-3 Personalities ничего не меняется.</PawnDiaryPersonalities123.Settings.ProvideContextLineDesc>
+  <PawnDiaryPersonalities123.Settings.UsePersonalityOutlook>Характер как взгляд дневника на мир</PawnDiaryPersonalities123.Settings.UsePersonalityOutlook>
+  <PawnDiaryPersonalities123.Settings.UsePersonalityOutlookDesc>Тип характера поселенца задаёт взгляд его дневника — что поселенец замечает, что ценит и чего боится, — а манера письма остаётся его собственной. Выключение снимает эффект со всех поселенцев. По умолчанию включено.</PawnDiaryPersonalities123.Settings.UsePersonalityOutlookDesc>
+
+  <!-- Взгляд на мир по корню эннеаграммы (SP_Root1..9). Ключ = EnneagramLensMapping.KeyForRoot. -->
+  <PawnDiaryPersonalities123.Outlook.SP_Root1>Этот поселенец мерит день тем, как всё должно было пройти. Он замечает сделанное небрежно или неправильно — собственные промахи острее всего, — и исправленная мелочь успокаивает его сильнее, чем крупный успех.</PawnDiaryPersonalities123.Outlook.SP_Root1>
+  <PawnDiaryPersonalities123.Outlook.SP_Root2>Этот поселенец судит день по тому, кому он был нужен и оказался ли рядом. Чужие желания он замечает задолго до своих, и остаться ненужным тревожит его сильнее, чем остаться без благодарности.</PawnDiaryPersonalities123.Outlook.SP_Root2>
+  <PawnDiaryPersonalities123.Outlook.SP_Root3>Этот поселенец ведёт внутренний счёт тому, что успел и как это выглядело со стороны. Продвижение и признание держат его в равновесии, а праздный или незамеченный день кажется отставанием.</PawnDiaryPersonalities123.Outlook.SP_Root3>
+  <PawnDiaryPersonalities123.Outlook.SP_Root4>Этот поселенец переживает день остро и лично, всё время чувствуя нехватку чего-то, что у других будто есть. Обыденное несёт для него скрытый вес, и он скорее проживёт чувство до конца, чем сгладит его.</PawnDiaryPersonalities123.Outlook.SP_Root4>
+  <PawnDiaryPersonalities123.Outlook.SP_Root5>Этот поселенец держится на шаг в стороне от дня и разбирает его, чтобы понять. Он бережёт своё время и уединение, доверяет тому, до чего дошёл сам, а не тому, что ему сказали, и общество утомляет его сильнее, чем большинство.</PawnDiaryPersonalities123.Outlook.SP_Root5>
+  <PawnDiaryPersonalities123.Outlook.SP_Root6>Этот поселенец высматривает в дне то, что может пойти не так, и тех, на кого можно положиться. Верность и подготовка успокаивают его, а тихую полосу он часто проводит в ожидании беды, которой ещё не случилось.</PawnDiaryPersonalities123.Outlook.SP_Root6>
+  <PawnDiaryPersonalities123.Outlook.SP_Root7>Этот поселенец встречает день в поиске того, что впереди и что в нём хорошего. Он держит пути открытыми и превращает тяготы в историю или план, а теснота и необходимость задерживаться на потере гнетут его сильнее самой беды.</PawnDiaryPersonalities123.Outlook.SP_Root7>
+  <PawnDiaryPersonalities123.Outlook.SP_Root8>Этот поселенец берёт день в лоб и читает его через силу и власть: у кого она, кто давит, что нужно защитить. Он ценит прямоту, не терпит, когда им управляют, и скорее встретит беду лицом, чем признает, что она его задела.</PawnDiaryPersonalities123.Outlook.SP_Root8>
+  <PawnDiaryPersonalities123.Outlook.SP_Root9>Этот поселенец мерит день тем, насколько спокойным и безмятежным он вышел. Он сглаживает трения и легко подстраивается под чужие желания, так что собственные предпочтения остаются размытыми и трудноуловимыми, а открытая ссора обходится ему дороже почти всего.</PawnDiaryPersonalities123.Outlook.SP_Root9>
+
+</LanguageData>

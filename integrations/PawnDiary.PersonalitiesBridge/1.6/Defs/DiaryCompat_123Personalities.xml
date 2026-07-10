@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Tier 1 (pure XML) compatibility groups for 1-2-3 Personalities.
+    M1 packageId: hahkethomemah.simplepersonalities          (confirmed 1.6; adds NO Thought/Interaction defs)
+    M2 packageId: hahkethomemah.simplepersonalities.module2  (adds SP_ ThoughtDefs + the compatibility
+                                                              interactions; About.xml caps at 1.5, so treat
+                                                              as best-effort on 1.6 — inert if unloaded)
+
+  Both groups are gated by enableWhenPackageIdsLoaded, so they record nothing (and emit no warnings)
+  unless the relevant module is active. They match by matchPackageIds rather than enumerating def names,
+  because no verified exhaustive SP_ def list exists and package-id matching was built for exactly that gap.
+
+  Tier 2 (the Enneagram context line + outlook override) lives in this mod's assembly, not here.
+-->
+<Defs>
+
+  <!-- Personality mood thoughts (M2's SP_ ThoughtDefs). A Thought-domain group only THEMES the
+       instruction/tone of the thoughts it claims; whether a thought is recorded at all — and whether it
+       folds into Pawn Diary's ambient thought note — is governed by Pawn Diary's global thought policy
+       (mood-offset thresholds), NOT by any batch here. So low-impact personality thoughts are filtered
+       naturally and only a notable one becomes an entry, in this personality-flavored voice.
+       Gated on M1 OR M2 (M1 ships no thoughts today, but that keeps the group correct if it ever does).
+       Order sits below the core thought groups (490+) so these are claimed first. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>personalities123_thoughts</defName>
+    <label>personality moods</label>
+    <order>480</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <enableWhenPackageIdsLoaded>
+      <li>hahkethomemah.simplepersonalities</li>
+      <li>hahkethomemah.simplepersonalities.module2</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a mood that fits the grain of who this pawn is - write the feeling and let their temperament show in how they take it, without naming a personality type</instruction>
+    <instructions>
+      <li>personality mood - write the feeling in the pawn's own characteristic key: what someone like them makes of it</li>
+      <li>personality mood - keep it to one honest beat; this is temperament coloring a mood, not an event</li>
+    </instructions>
+    <tone>colored by the pawn's own temperament</tone>
+    <tones>
+      <li>true to character, the same event felt the way this pawn would feel it</li>
+      <li>quiet and inward, a mood filtered through who they are</li>
+    </tones>
+    <matchPackageIds>
+      <li>hahkethomemah.simplepersonalities</li>
+      <li>hahkethomemah.simplepersonalities.module2</li>
+    </matchPackageIds>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Personality-compatibility interactions (M2's Harmonious / Diversive / Turmoil interactions).
+       Gated on M2 only (M1 has no InteractionDefs). NOT batched: these are meant to be notable, so each
+       becomes its own pairwise entry. The prompt asks for the felt compatibility or friction between the
+       two people, not a transcript. Low order keeps these SP_ interactions ahead of the broad core
+       Interaction groups and the "other" catch-all (order 150). -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>personalities123_interactions</defName>
+    <label>personality chemistry</label>
+    <order>12</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>hahkethomemah.simplepersonalities.module2</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>two temperaments meeting - center the felt fit or friction between these two people, not the words traded</instruction>
+    <instructions>
+      <li>personality chemistry - write whether being around this person eased the pawn or grated on them, and why it sat that way</li>
+      <li>personality chemistry - name the difference or likeness underneath it, only as the pawn would feel it, never as a category</li>
+      <li>personality chemistry - keep it to this one meeting; no grand verdict on the whole relationship</li>
+    </instructions>
+    <tone>attuned to the chemistry between two people</tone>
+    <tones>
+      <li>observant of fit and friction, the small read of another temperament</li>
+      <li>quietly personal, how this particular person leaves the pawn feeling</li>
+    </tones>
+    <matchPackageIds>
+      <li>hahkethomemah.simplepersonalities.module2</li>
+    </matchPackageIds>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

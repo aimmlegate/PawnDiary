@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Русский перевод группы важных разговоров моста. Написано родным русским (план, п. U4 — нужна
-     финальная вычитка носителем). Индексы tones.N соответствуют порядку <li> в
+<!-- Русский перевод группы важных разговоров моста. Вычитан 2026-07-10 под регистр ядра (ярлык с
+     заглавной, как у групп в DiaryInteractionGroupDefs). Индексы tones.N соответствуют порядку <li> в
      1.6/Defs/DiaryExternalGroups_RimTalkBridge.xml — не менять порядок и не удалять строки. -->
 <LanguageData>
-  <rimtalkbridgeConversation.label>заметные разговоры</rimtalkbridgeConversation.label>
+  <rimtalkbridgeConversation.label>Заметные разговоры</rimtalkbridgeConversation.label>
   <rimtalkbridgeConversation.instruction>разговор, который сегодня что-то значил; напиши, что он всколыхнул или уладил, а не пересказ</rimtalkbridgeConversation.instruction>
   <rimtalkbridgeConversation.tones.0>внимательно к сказанному и к тому, что осталось невысказанным</rimtalkbridgeConversation.tones.0>
   <rimtalkbridgeConversation.tones.1>честно о том, как беседа отозвалась</rimtalkbridgeConversation.tones.1>

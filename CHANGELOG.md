@@ -8,6 +8,45 @@ pre-release version ladder for project history.
 
 ## 2026-07-10
 
+- **New mod-compatibility adapters for 1-2-3 Personalities and Vanilla Social Interactions Expanded,
+  each shipped as its own standalone mod** under `integrations/` (deployed by
+  `scripts/deploy-integrations.ps1`), rather than as compat groups inside the core mod — so a player
+  installs only the ones matching their mod list. Both are inert without their target mod.
+  - **`Pawn Diary: Vanilla Social Interactions Expanded`** (`PawnDiary.Vsie`, XML only) — teaches the
+    diary about VSIE's new social moments in their own voice: venting (ambient day-note that can
+    promote a charged moment to its own confiding entry), teaching/learning and cooperative-work
+    chatter (ambient day-notes), becoming best friends (`VSIE_BestFriend`, a relationship milestone
+    like the vanilla romance milestones), and VSIE's extra mood thoughts. All groups gated by
+    `enableWhenPackageIdsLoaded`.
+  - **`Pawn Diary: 1-2-3 Personalities`** (`PawnDiary.PersonalitiesBridge`, XML + assembly) — Tier 1
+    (XML) routes Module 2's compatibility interactions (Harmonious/Diversive/Turmoil) and its
+    personality mood thoughts into their own diary voice. Tier 2 (`PawnDiaryPersonalities123.dll`,
+    net472, reads 1-2-3 Personalities' public Enneagram API) adds a `personality=<variant>, <trait>`
+    context line and a default-on option that turns each colonist's Enneagram root into their diary
+    **outlook** via `SetPsychotypeOverride` — the same pattern the RimTalk bridge proved, now shown to
+    generalize. Read-only toward 1-2-3 Personalities; overrides clear on toggle-off and new-game. The
+    root→outlook mapping is pure and unit-tested (`tests/Personalities123BridgeLogicTests/`, 74 checks).
+  - **Both mods are localized** (English source + native Russian, matching the repo's RU-prompt
+    rule): DefInjected for every group's label/instruction/tone and Keyed for the Personalities
+    settings. The initial RU draft was re-edited the same day to the core RU register — «поселенец»
+    (never «пешка»), capitalized group labels, the core's `тема: пиши…` instruction pattern — with
+    calqued lines rewritten as native idiom; key sets and instruction/tone indices verified
+    unchanged against the English sources. The 9 Enneagram→outlook rules were made
+    localizable — the pure mapper now exposes a per-root translation key that the bridge resolves
+    through RimWorld's Keyed system (native Russian shipped), falling back to the English source rule
+    — so a Russian player no longer gets English outlook text injected into their prompts.
+  - Verify note: the plan's Thought-domain "ambient batch" does not exist — `<batch>` is
+    Interaction-only, so both `*_thoughts` groups theme instruction/tone and rely on the global
+    mood-offset threshold as the flood guard. Psychology compatibility is deliberately not included in
+    this pass.
+- **Russian proofread pass over the RimTalk bridge** (same register sweep as the new compat mods).
+  Fixes in `PawnDiary.RimTalkBridge` RU files: ungrammatical "Разговор с кое с кем"
+  (`Event.SomeonePartner` → «кем-то»), «троттлинг» → «ограничения частоты», quest → «задание» to
+  match the core's «Задание» groups, the shared-memory sample date "(5-е весны)" → "(5-й день
+  квадрума)" (RimWorld has quadrums, not seasons), the diary-entry label capitalized like core event
+  labels, gendered «его характером» in the legacy `Persona.VoiceRule` made gender-neutral, and
+  smoother settings labels (core's «в тиках» convention). Text-only change — no keys added or
+  removed, no behavior change.
 - **Fixed an opinion-read crash that skipped the day-summary tick** (telemetry ref `E335F9E6`).
   Vanilla `Pawn_RelationsTracker.OpinionOf` walks the other pawn's social thoughts, and that walk can
   throw an `ArgumentOutOfRangeException` from `ThoughtHandler.OpinionOffsetOfGroup` when a pawn's
