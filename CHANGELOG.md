@@ -59,6 +59,27 @@ pre-release version ladder for project history.
   ignore-code/IDs rule for the raw `details:` blob, and two contrasting micro-examples. Transform
   output budget raised 200 → 300 tokens for reasoning-model headroom. Pure mapper drops the
   type-number line (`tests/Personalities123BridgeLogicTests/`, 91 checks green).
+- **Traits now steer the psychotype roll — and dominate it.** A new pure weight table
+  (`Source/Pipeline/PsychotypeTraitAffinities.cs`) adds a deliberate trait channel on top of the
+  skill-passion signals, scaled above them so the trait wins against even a contrary passion profile
+  (pinned by a seeded dominance test: a Sanguine pawn with burning violence passions still rolls
+  Content more than anything else): each supported trait adds stage-1 family weight and stage-2
+  member weight toward its compatible psychotypes — Jealous → Resentful/Narcissistic, Greedy → Ruthless/Ambitious,
+  Too smart → Detached, Tortured artist → Resentful/Nostalgic/Theatrical, Kind → Content/Dutiful,
+  Abrasive → Wry/Pragmatic, Recluse → Detached/Avoidant, Depressive → Nostalgic/Avoidant, Pessimist →
+  Resentful/Paranoid/Wry, Sanguine/Optimist → Content, Nervous → Avoidant/Dependent, Volatile →
+  Volatile, Neurotic/Very neurotic → Perfectionist/Paranoid. Spectrum traits map per degree
+  (NaturalMood / Nerves / Neurotic); unknown or modded traits contribute nothing; the two existing
+  vetoes (Psychopath never rolls Dependent, Kind never rolls Ruthless) are unchanged.
+- **Three new trait-gated psychotypes for the extreme traits: Hollow (Psychopath), Ravenous
+  (Cannibal), Bloodthirsty (Bloodlust)** — all intense-family, each rollable ONLY by pawns carrying
+  the named trait via the new `<requiredTrait>` def field (the gate holds on every roll branch; the
+  manual per-pawn picker still allows hand-assigning anything). A pawn with such a trait adopts its
+  gated psychotype outright 45% of the time (`GatedTakeoverChance`) and keeps a strong weight bonus
+  toward it in the normal roll, so a Psychopath usually — but not always — reads as Hollow. English +
+  native Russian rule texts shipped. Pure policy covered in `DiaryPipelineTests` (973 assertions
+  green: canonical trait keys, family/member bonuses, trait-over-profile dominance, the gate holding
+  without the trait across profile/wildcard/child branches, and a dominant-but-not-total share with it).
 
 ## 2026-07-10
 

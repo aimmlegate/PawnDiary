@@ -14,7 +14,9 @@
   <family> is the adult roll bucket (grounded / inward / intense / anxious); it steers the two-stage
   roll and is ignored for child defs. <skillAffinities> is model-facing stage-2 nudge data: a skill
   passion in that skill steers the roll toward this psychotype (points scale by passion, minor 1 /
-  burning 2). Combo signatures and family weighting live in Source/Pipeline/PsychotypeRollPolicy.cs.
+  burning 2). <requiredTrait> (optional) gates a def to pawns holding that trait. Combo signatures and
+  family weighting live in Source/Pipeline/PsychotypeRollPolicy.cs; the trait weight table (which
+  traits pull toward which psychotypes) lives in Source/Pipeline/PsychotypeTraitAffinities.cs.
 
   DiaryPsychotype_Neutral has an empty rule on purpose: it contributes no prompt text. Pre-existing
   saves with generated entries adopt it so established voices do not shift, and it is the resolution
@@ -155,6 +157,35 @@
     <skillAffinities>
       <li><skill>Social</skill><points>1</points></li>
     </skillAffinities>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <!-- ===================== Trait-gated (adult, intense) ===================== -->
+  <!-- <requiredTrait> is a canonical trait key (PsychotypeTraitAffinities): these three roll ONLY for
+       pawns carrying the extreme trait named, and that trait's weight rules make them the usual — but
+       not guaranteed — outcome for such pawns. The manual per-pawn picker ignores the gate. -->
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Hollow</defName>
+    <label>Hollow</label>
+    <family>intense</family>
+    <requiredTrait>Psychopath</requiredTrait>
+    <rule>This pawn feels almost nothing where others feel much, and has learned to fake the difference. Other people's emotions are read like weather instruments — useful data, nothing felt — and every event is quietly sized by what it can be used for.</rule>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Ravenous</defName>
+    <label>Ravenous</label>
+    <family>intense</family>
+    <requiredTrait>Cannibal</requiredTrait>
+    <rule>This pawn's appetite sits close beneath every other thought. Bodies register as meat before they register as people, meals are the true events of any day, and the taboo everyone else flinches from feels, privately, like plain sense.</rule>
+  </PawnDiary.DiaryPsychotypeDef>
+
+  <PawnDiary.DiaryPsychotypeDef>
+    <defName>DiaryPsychotype_Bloodthirsty</defName>
+    <label>Bloodthirsty</label>
+    <family>intense</family>
+    <requiredTrait>Bloodlust</requiredTrait>
+    <rule>This pawn only feels fully awake when something bleeds or breaks. Fights are relived fondly, blow by blow, while peaceful days blur into gray waiting between the moments that actually count.</rule>
   </PawnDiary.DiaryPsychotypeDef>
 
   <!-- ============================ Anxious (adult) ============================ -->

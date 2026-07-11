@@ -648,7 +648,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryEventPromptDefs.xml` | event prompt text, enhancements, and optional forced model names |
 | `DiaryPromptTemplateDefs.xml` / `DiaryPromptDef.xml` | prompt field shapes and shared system/final instructions |
 | `DiaryPersonaDefs.xml` / `DiaryHediffPersonaOverrideDefs.xml` | writing styles (incl. child styles) and temporary hediff-driven style overrides |
-| `DiaryPsychotypeDefs.xml` | pawn psychotypes (outlook layer): Neutral + 17 adult + 5 child types, families and skill affinities |
+| `DiaryPsychotypeDefs.xml` | pawn psychotypes (outlook layer): Neutral + 17 adult + 3 trait-gated + 5 child types, families, skill affinities, trait gates |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
 | `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |
 | `DiaryUiStyleDef.xml` / `DiaryTextDecorationDefs.xml` | UI dimensions/colors and display-only rich-text decoration |
@@ -994,17 +994,34 @@ style controls sentence *mechanics* (how a pawn writes), a psychotype is a 1-2 s
 (who is looking; what they notice, value, and fear, and how they judge). Rolling the two independently
 multiplies them into many distinct diary voices. Psychotypes are backed by `DiaryPsychotypeDef`
 (`1.6/Defs/DiaryPsychotypeDefs.xml`): a Neutral (empty-rule) fallback, 17 adult types across four
-families (grounded, inward, intense, anxious), and 5 child types. The **label is picker text only and
-is never injected into the prompt** — `DiaryPsychotypes.RuleFor` deliberately drops it, a documented
-divergence from `DiaryPersonas.RuleFor`; the outlook must show through the entry, never be named.
+families (grounded, inward, intense, anxious), 3 **trait-gated** adult types, and 5 child types. The
+**label is picker text only and is never injected into the prompt** — `DiaryPsychotypes.RuleFor`
+deliberately drops it, a documented divergence from `DiaryPersonas.RuleFor`; the outlook must show
+through the entry, never be named.
 
 The initial roll (pure `PsychotypeRollPolicy`, snapshotted by `PsychotypeRolls`) is a two-stage draw
 from the pawn's **skill passions** (minor = 1 pt, burning = 2): stage 0 folds the 12 skills into five
 domains; stage 1 weights the four families; stage 2 weights the members inside the rolled family
 (per-skill nudges on the def, combo signatures, a child→adult continuity nudge, a band-aware duplicate
 penalty), with deliberate extra randomness (a 12% wildcard branch that ignores the profile, plus a
-per-candidate jitter). A Psychopath never rolls Dependent and a Kind pawn never rolls Ruthless; no
-other trait feeds the roll — independence from the style layer is the point.
+per-candidate jitter). A Psychopath never rolls Dependent and a Kind pawn never rolls Ruthless.
+
+**Traits feed the roll** through the pure table `PsychotypeTraitAffinities`, additively on top of the
+passion signals and deliberately scaled above them — a supported trait dominates the outcome while
+the passions break ties and colour the rest (a Sanguine pawn leans Content even against a burning
+violence profile). Each supported trait maps to a canonical key — simple traits by
+defName (Psychopath, Cannibal, Bloodlust, Jealous, Greedy, TooSmart, TorturedArtist, Kind, Abrasive,
+Recluse), spectrum traits per degree (NaturalMood → Depressive/Pessimist/Optimist/Sanguine, Nerves →
+Nervous/Volatile, Neurotic → Neurotic/VeryNeurotic) — and adds stage-1 family weight plus stage-2
+member weight toward its compatible psychotypes (a Sanguine pawn leans Content, a Very neurotic one
+Perfectionist/Paranoid, and so on). The three **extreme traits** go further: Psychopath, Cannibal, and
+Bloodlust each unlock a psychotype of their own — **Hollow**, **Ravenous**, **Bloodthirsty** (all
+intense) — gated by `<requiredTrait>` on the def so no other pawn can ever roll them (the gate holds
+on every branch: profile, wildcard, and flat rolls). A pawn holding such a trait adopts its gated
+psychotype outright `GatedTakeoverChance` (45%) of the time; otherwise the normal roll continues with
+the gate open and the trait bonuses applying, so the outcome is dominant, not guaranteed. The manual
+per-pawn picker ignores the gate — the player may hand-assign anything. Unknown/modded traits simply
+contribute nothing.
 
 The effective psychotype priority, resolved by the pure `PsychotypeResolutionPolicy`, is **External API
 override > pawn custom rule > base type** (there is no hediff psychotype layer in v1). The master

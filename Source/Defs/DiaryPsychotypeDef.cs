@@ -43,6 +43,12 @@ namespace PawnDiary
         // Initialized so old/partial defs that omit <skillAffinities> never NullReference.
         public List<DiaryPsychotypeSkillAffinity> skillAffinities = new List<DiaryPsychotypeSkillAffinity>();
 
+        // Canonical trait key (PsychotypeTraitAffinities.CanonicalTraitKey vocabulary) gating this
+        // psychotype: blank/absent means everyone can roll it (the normal catalog); a key like
+        // "Psychopath" makes it rollable ONLY by pawns holding that trait. The manual per-pawn picker
+        // ignores the gate — the player may always hand-assign anything.
+        public string requiredTrait = string.Empty;
+
         // Runtime-only marker set by the settings merge (DiaryPsychotypes.MergeWithSettings) for
         // player-created custom psychotypes; it is NEVER authored in XML, so built-in defs default false.
         // A custom row is excluded from the auto-roll (RollCandidates) but kept in the manual per-pawn
@@ -227,7 +233,8 @@ namespace PawnDiary
                     defName = type.defName,
                     family = string.IsNullOrWhiteSpace(type.family) ? PsychotypeRollPolicy.FamilyGrounded : type.family,
                     stage = NormalizeStage(type.lifeStage),
-                    skillAffinities = affinities
+                    skillAffinities = affinities,
+                    requiredTraitKey = type.requiredTrait ?? string.Empty
                 });
             }
 
@@ -293,6 +300,9 @@ namespace PawnDiary
             // Custom rows are adult (the editor never creates child customs); overrides keep the XML band.
             type.lifeStage = NormalizeStage(source?.lifeStage);
             type.custom = source == null;
+            // The trait gate is roll identity like skillAffinities: overrides keep it, customs (which
+            // never auto-roll anyway) carry none.
+            type.requiredTrait = source?.requiredTrait ?? string.Empty;
 
             // Preserve the source's skill-passion nudges so an overridden built-in keeps its roll behavior.
             // Customs never roll, so they carry none.
