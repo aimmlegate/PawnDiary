@@ -36,7 +36,7 @@
   <PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorInvalid>Invalid: term {0} must contain a Unicode letter or number.</PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorInvalid>
   <PawnDiaryRimTalkBridge.Settings.ReactionTermsNotSaved>Reaction terms were not saved: {0}</PawnDiaryRimTalkBridge.Settings.ReactionTermsNotSaved>
   <PawnDiaryRimTalkBridge.Settings.AssessmentPrompt>Semantic assessment prompt</PawnDiaryRimTalkBridge.Settings.AssessmentPrompt>
-  <PawnDiaryRimTalkBridge.Settings.AssessmentPromptDesc>This replaces the localized system prompt used only for conversation assessment. Keep the JSON schema and the stable ignore, related, standalone, decision, and reason tokens. Blank text uses the localized default.</PawnDiaryRimTalkBridge.Settings.AssessmentPromptDesc>
+  <PawnDiaryRimTalkBridge.Settings.AssessmentPromptDesc>This replaces the localized editorial policy used only for conversation assessment. The required JSON schema is appended automatically and cannot be edited. Blank text uses the localized default.</PawnDiaryRimTalkBridge.Settings.AssessmentPromptDesc>
   <PawnDiaryRimTalkBridge.Settings.AssessmentPromptChars>{0}/{1} characters</PawnDiaryRimTalkBridge.Settings.AssessmentPromptChars>
   <PawnDiaryRimTalkBridge.Settings.ResetLocalizedDefault>Reset to localized default</PawnDiaryRimTalkBridge.Settings.ResetLocalizedDefault>
   <PawnDiaryRimTalkBridge.Settings.DevChatLogging>Developer chat logging</PawnDiaryRimTalkBridge.Settings.DevChatLogging>

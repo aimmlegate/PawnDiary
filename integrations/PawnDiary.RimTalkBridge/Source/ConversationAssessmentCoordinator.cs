@@ -81,6 +81,7 @@ namespace PawnDiaryRimTalkBridge
             PawnDiaryRimTalkBridgeSettings settings = PawnDiaryRimTalkBridgeMod.Settings;
             bool shouldApply = !discard
                 && PawnDiaryRimTalkBridgeMod.LevelAtLeast(2)
+                && PawnDiaryApi.IsExternalApiEnabled
                 && settings != null
                 && settings.useSemanticConversationAssessment;
             if (!shouldApply)
@@ -257,7 +258,9 @@ namespace PawnDiaryRimTalkBridge
                 return;
             }
 
-            ConversationAssessmentBatch batch = ConversationAssessmentBatchFormatter.Format(valid, policy.FormatOptions());
+            ConversationAssessmentFormatOptions formatOptions = policy.FormatOptions();
+            formatOptions.KeywordLexicon = policy.KeywordLexicon(settings.conversationReactionTermsCsv);
+            ConversationAssessmentBatch batch = ConversationAssessmentBatchFormatter.Format(valid, formatOptions);
             if (batch.CandidateAliases.Count == 0 || string.IsNullOrWhiteSpace(batch.UserText))
             {
                 // Defensive bad-policy escape hatch: ignore the strongest candidate so an impossible
@@ -317,6 +320,18 @@ namespace PawnDiaryRimTalkBridge
             activeHandle = 0;
             activeBatch = null;
             discardActiveResult = false;
+        }
+
+        /// <summary>Detached paid-cadence state for the per-game save component.</summary>
+        public static ConversationAssessmentBatchGateState AssessmentGateSnapshot()
+        {
+            return BatchGate.Snapshot();
+        }
+
+        /// <summary>Restores paid cadence after the process-global coordinator reset on load.</summary>
+        public static void RestoreAssessmentGate(ConversationAssessmentBatchGateState state)
+        {
+            BatchGate.Restore(state);
         }
 
         private static void ProcessLocalOnly(

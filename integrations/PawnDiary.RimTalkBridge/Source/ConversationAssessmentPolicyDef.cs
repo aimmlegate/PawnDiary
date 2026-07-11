@@ -147,10 +147,15 @@ namespace PawnDiaryRimTalkBridge
         /// <summary>Resolves a saved player prompt or the localized DefInjected default.</summary>
         public string AssessmentPrompt(string overridePrompt)
         {
-            return ConversationAssessmentPromptEditor.Resolve(
+            string editorial = ConversationAssessmentPromptEditor.Resolve(
                 assessmentSystemPrompt,
                 overridePrompt,
                 Math.Max(1, assessmentPromptOverrideChars));
+            // Preserve the conservative missing-Def fallback: a wire schema without editorial policy
+            // is not enough evidence to spend a request or trust a classification.
+            return string.IsNullOrWhiteSpace(editorial)
+                ? string.Empty
+                : ConversationAssessmentWireContract.Compose(editorial);
         }
 
         /// <summary>Copies compact batch limits into the pure formatter contract.</summary>

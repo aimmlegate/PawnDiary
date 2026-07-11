@@ -37,6 +37,31 @@ namespace PawnDiaryRimTalkBridge
         }
     }
 
+    /// <summary>
+    /// Code-owned English machine contract. Editorial instructions may be localized or player-edited,
+    /// but these parser tokens must never be translated or removed from the actual system prompt.
+    /// </summary>
+    public static class ConversationAssessmentWireContract
+    {
+        public const string SystemPromptPrefix =
+            "MACHINE OUTPUT CONTRACT (follow exactly): Return one object per supplied conversation as a JSON array only. "
+            + "Every object must have exactly these fields: "
+            + "{\"id\":\"c1\",\"decision\":\"ignore\",\"event\":\"\",\"reason\":\"banter\",\"focus\":\"\"}. "
+            + "decision must be ignore, related, or standalone. reason must be echo, banter, disclosure, "
+            + "commitment, conflict, reconciliation, rejection, or other. related requires one supplied eN "
+            + "event alias; every other decision requires an empty event. related and standalone require a "
+            + "short explicit focus; ignore requires an empty focus.";
+
+        /// <summary>Prefixes the immutable schema so downstream defensive prompt caps preserve it.</summary>
+        public static string Compose(string editorialInstructions)
+        {
+            string editorial = editorialInstructions == null ? string.Empty : editorialInstructions.Trim();
+            return editorial.Length == 0
+                ? SystemPromptPrefix
+                : SystemPromptPrefix + "\n\nEDITORIAL POLICY:\n" + editorial;
+        }
+    }
+
     /// <summary>One validated result, mapped back from aliases to actual stable ids.</summary>
     public sealed class ConversationAssessmentResult
     {

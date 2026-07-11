@@ -164,6 +164,27 @@ namespace PawnDiaryRimTalkBridge
             return cleaned.Substring(0, end).TrimEnd();
         }
 
+        /// <summary>
+        /// Caps by user-perceived Unicode text elements. Unlike a UTF-16-unit cap, this preserves the
+        /// exact unit used by editable-term validation for non-BMP letters and combining sequences.
+        /// </summary>
+        public static string CapTextElements(string value, int maxTextElements)
+        {
+            string cleaned = value ?? string.Empty;
+            if (maxTextElements <= 0)
+            {
+                return string.Empty;
+            }
+
+            int[] starts = StringInfo.ParseCombiningCharacters(cleaned);
+            if (starts.Length <= maxTextElements)
+            {
+                return cleaned;
+            }
+
+            return cleaned.Substring(0, starts[maxTextElements]).TrimEnd();
+        }
+
         /// <summary>Counts user-perceived Unicode text elements rather than UTF-16 code units.</summary>
         public static int TextElementCount(string value)
         {

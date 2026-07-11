@@ -37,12 +37,22 @@ namespace PawnDiaryRimTalkBridge
         // time-skip or save/load cannot desync the cadence (SKILL.md "Persistence & ticking").
         private int lastPassTick;
 
-        // Rolling anti-spam timestamps are the only conversation-funnel state that survives a save.
-        // The queue and in-flight handle remain transient by design. Value/value Scribing keeps this
-        // plain pawn-id -> tick map independent of live Pawn references.
+        // Rolling anti-spam timestamps are the only accepted-conversation state that survives a save.
+        // The queue and in-flight handle remain transient by design; separate primitive fields below
+        // preserve only assessment request cadence. Value/value Scribing keeps this plain pawn-id ->
+        // tick map independent of live Pawn references.
         private Dictionary<string, int> conversationCooldownTicksByPawn = new Dictionary<string, int>();
         private List<string> conversationCooldownPawnKeys;
         private List<int> conversationCooldownTickValues;
+
+        // Assessment requests spend tokens even when every candidate is later ignored. Persist the
+        // day/gap counters so reloading cannot reopen the XML maxBatchesPerDay allowance. The queue and
+        // active request remain transient; only these primitive cadence facts survive.
+        private bool assessmentGateHaveDay;
+        private int assessmentGateDayIndex;
+        private int assessmentGateBatchesStartedToday;
+        private bool assessmentGateHaveAttempt;
+        private int assessmentGateLastAttemptTick;
 
         /// <summary>Required GameComponent constructor. RimWorld supplies the current game.</summary>
         /// <param name="game">The current RimWorld game instance.</param>
@@ -64,6 +74,14 @@ namespace PawnDiaryRimTalkBridge
             ConversationTracker.ResetForNewGame();
             ConversationTracker.RestorePawnCooldowns(conversationCooldownTicksByPawn);
             ConversationAssessmentCoordinator.ResetForNewGame();
+            ConversationAssessmentCoordinator.RestoreAssessmentGate(new ConversationAssessmentBatchGateState
+            {
+                HaveDay = assessmentGateHaveDay,
+                DayIndex = assessmentGateDayIndex,
+                BatchesStartedToday = assessmentGateBatchesStartedToday,
+                HaveAttempt = assessmentGateHaveAttempt,
+                LastAttemptTick = assessmentGateLastAttemptTick
+            });
             // The next GameComponentTick fires the first pass immediately (now - 0 >= interval for any
             // loaded game's TicksGame), which is fine — the caches were just cleared above.
             lastPassTick = 0;
@@ -77,6 +95,14 @@ namespace PawnDiaryRimTalkBridge
             {
                 int now = Find.TickManager != null ? Find.TickManager.TicksGame : 0;
                 conversationCooldownTicksByPawn = ConversationTracker.PawnCooldownSnapshot(now);
+
+                ConversationAssessmentBatchGateState gate =
+                    ConversationAssessmentCoordinator.AssessmentGateSnapshot();
+                assessmentGateHaveDay = gate.HaveDay;
+                assessmentGateDayIndex = gate.DayIndex;
+                assessmentGateBatchesStartedToday = gate.BatchesStartedToday;
+                assessmentGateHaveAttempt = gate.HaveAttempt;
+                assessmentGateLastAttemptTick = gate.LastAttemptTick;
             }
 
             Scribe_Collections.Look(
@@ -86,6 +112,15 @@ namespace PawnDiaryRimTalkBridge
                 LookMode.Value,
                 ref conversationCooldownPawnKeys,
                 ref conversationCooldownTickValues);
+
+            Scribe_Values.Look(ref assessmentGateHaveDay, "rimTalkAssessmentGateHaveDay", false);
+            Scribe_Values.Look(ref assessmentGateDayIndex, "rimTalkAssessmentGateDayIndex", 0);
+            Scribe_Values.Look(
+                ref assessmentGateBatchesStartedToday,
+                "rimTalkAssessmentGateBatchesStartedToday",
+                0);
+            Scribe_Values.Look(ref assessmentGateHaveAttempt, "rimTalkAssessmentGateHaveAttempt", false);
+            Scribe_Values.Look(ref assessmentGateLastAttemptTick, "rimTalkAssessmentGateLastAttemptTick", 0);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit && conversationCooldownTicksByPawn == null)
             {

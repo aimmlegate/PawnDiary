@@ -37,7 +37,7 @@
   <PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorInvalid>Ошибка: термин {0} должен содержать букву или цифру Юникода.</PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorInvalid>
   <PawnDiaryRimTalkBridge.Settings.ReactionTermsNotSaved>Термины отбора не сохранены: {0}</PawnDiaryRimTalkBridge.Settings.ReactionTermsNotSaved>
   <PawnDiaryRimTalkBridge.Settings.AssessmentPrompt>Подсказка семантической оценки</PawnDiaryRimTalkBridge.Settings.AssessmentPrompt>
-  <PawnDiaryRimTalkBridge.Settings.AssessmentPromptDesc>Полностью заменяет локализованную системную подсказку только для оценки разговоров. Сохраните схему JSON и неизменные маркеры ignore, related, standalone, decision и reason. Пустое поле возвращает локализованный стандартный текст.</PawnDiaryRimTalkBridge.Settings.AssessmentPromptDesc>
+  <PawnDiaryRimTalkBridge.Settings.AssessmentPromptDesc>Полностью заменяет локализованную редакторскую политику только для оценки разговоров. Обязательная схема JSON добавляется автоматически и не редактируется. Пустое поле возвращает локализованный стандартный текст.</PawnDiaryRimTalkBridge.Settings.AssessmentPromptDesc>
   <PawnDiaryRimTalkBridge.Settings.AssessmentPromptChars>Знаков: {0}/{1}</PawnDiaryRimTalkBridge.Settings.AssessmentPromptChars>
   <PawnDiaryRimTalkBridge.Settings.ResetLocalizedDefault>Вернуть локализованный стандарт</PawnDiaryRimTalkBridge.Settings.ResetLocalizedDefault>
   <PawnDiaryRimTalkBridge.Settings.DevChatLogging>Отладочный журнал чата</PawnDiaryRimTalkBridge.Settings.DevChatLogging>

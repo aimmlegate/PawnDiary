@@ -472,10 +472,11 @@ namespace PawnDiaryRimTalkBridge
             listing.Label("PawnDiaryRimTalkBridge.Settings.ReactionTermsDesc".Translate());
             Rect textRect = listing.GetRect(108f);
             string editedTerms = Widgets.TextArea(textRect, reactionTermsBuffer ?? string.Empty);
-            long derivedInputCap = (long)Math.Max(1, policy.maxEditableReactionTerms)
-                * (Math.Max(1, policy.maxEditableReactionTermChars) + 2L);
+            long termCount = Math.Max(1, policy.maxEditableReactionTerms);
+            long derivedInputCap = termCount * Math.Max(1, policy.maxEditableReactionTermChars)
+                + Math.Max(0L, termCount - 1L) * 2L; // comma + optional space between terms
             int inputCap = derivedInputCap > 32768L ? 32768 : (int)derivedInputCap;
-            reactionTermsBuffer = UnicodeText.CapUtf16(editedTerms, inputCap);
+            reactionTermsBuffer = UnicodeText.CapTextElements(editedTerms, inputCap);
 
             ConversationReactionTermsValidationResult validation =
                 ConversationReactionTermsEditor.Validate(
@@ -593,6 +594,11 @@ namespace PawnDiaryRimTalkBridge
     /// </summary>
     public class PawnDiaryRimTalkBridgeSettings : ModSettings
     {
+        // v1 changed a legacy zero cap from "unlimited" to "conversation recording off". Keep an
+        // explicit schema key so old zeroes can be migrated once without changing the new UI meaning.
+        private const int CurrentSettingsSchemaVersion = 1;
+        private int settingsSchemaVersion;
+
         /// <summary>0 = Off, 1 = Shared context, 2 = + Conversations. Int (not enum) for save stability.</summary>
         public int integrationLevel = 1;
 
@@ -685,6 +691,26 @@ namespace PawnDiaryRimTalkBridge
             Scribe_Values.Look(ref colonyDailyCap, "colonyDailyCap", 6);
             Scribe_Values.Look(ref pairMinGapTicks, "pairMinGapTicks", 30000);
             Scribe_Values.Look(ref transcriptLineCap, "transcriptLineCap", 4);
+            Scribe_Values.Look(ref settingsSchemaVersion, "settingsSchemaVersion", 0);
+
+            if (Scribe.mode == LoadSaveMode.LoadingVars
+                && settingsSchemaVersion < CurrentSettingsSchemaVersion)
+            {
+                // In bridge v0.2, zero disabled an individual cap rather than recording. Preserve the
+                // closest meanings under v0.3: the rolling one-entry pawn gate remains enabled, while
+                // the old unlimited colony ceiling becomes the largest supported saved value.
+                if (perPawnDailyCap == 0)
+                {
+                    perPawnDailyCap = 1;
+                }
+
+                if (colonyDailyCap == 0)
+                {
+                    colonyDailyCap = 999;
+                }
+
+                settingsSchemaVersion = CurrentSettingsSchemaVersion;
+            }
 
             // Defensive clamps: hand-edited or corrupted config XML must not wedge the bridge into
             // impossible states (negative caps, level 99, a zero quiet window that flushes every tick).

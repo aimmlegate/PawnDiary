@@ -30,6 +30,7 @@ namespace PawnDiaryRimTalkBridge
         public int LineChars;
         public int InputChars;
         public int RecentEventCount;
+        public ConversationKeywordLexicon KeywordLexicon;
     }
 
     /// <summary>Formatted request plus the alias maps needed for strict response validation.</summary>
@@ -144,20 +145,14 @@ namespace PawnDiaryRimTalkBridge
                     .Append(" | kind=").Append(ConversationContext.DominantKind(candidate.Conversation).ToString().ToLowerInvariant())
                     .Append('\n');
 
-                int added = 0;
-                for (int lineIndex = 0; lineIndex < candidate.Conversation.Lines.Count; lineIndex++)
+                List<int> selectedLineIndexes = SelectTranscriptLineIndexes(
+                    candidate.Conversation,
+                    options.TranscriptLines,
+                    options.KeywordLexicon);
+                for (int selectedIndex = 0; selectedIndex < selectedLineIndexes.Count; selectedIndex++)
                 {
-                    if (added >= options.TranscriptLines)
-                    {
-                        break;
-                    }
-
+                    int lineIndex = selectedLineIndexes[selectedIndex];
                     ConversationLine line = candidate.Conversation.Lines[lineIndex];
-                    if (line == null || string.IsNullOrWhiteSpace(line.Text))
-                    {
-                        continue;
-                    }
-
                     string speaker = string.IsNullOrWhiteSpace(line.SpeakerName) ? "?" : Field(line.SpeakerName, 48);
                     string quote = Field(line.Text, options.LineChars);
                     if (quote.Length == 0)
@@ -166,7 +161,6 @@ namespace PawnDiaryRimTalkBridge
                     }
 
                     text.Append(speaker).Append(": ").Append(quote).Append('\n');
-                    added++;
                 }
 
                 text.Append('\n');
@@ -174,6 +168,66 @@ namespace PawnDiaryRimTalkBridge
 
             batch.UserText = text.ToString().TrimEnd();
             return batch;
+        }
+
+        /// <summary>
+        /// Keeps every bounded batch evidence-aware: charged, user-authored, and keyword-bearing lines
+        /// claim slots first, then earliest ordinary lines fill remaining context. Final output returns
+        /// to transcript order so a late qualifying statement is visible without scrambling chronology.
+        /// </summary>
+        private static List<int> SelectTranscriptLineIndexes(
+            Conversation conversation,
+            int maxLines,
+            ConversationKeywordLexicon lexicon)
+        {
+            List<int> usable = new List<int>();
+            List<int> evidence = new List<int>();
+            if (conversation == null || conversation.Lines == null || maxLines <= 0)
+            {
+                return usable;
+            }
+
+            for (int i = 0; i < conversation.Lines.Count; i++)
+            {
+                ConversationLine line = conversation.Lines[i];
+                if (line == null || string.IsNullOrWhiteSpace(line.Text))
+                {
+                    continue;
+                }
+
+                usable.Add(i);
+                bool charged = line.Social == BridgeSocialKind.Insult
+                    || line.Social == BridgeSocialKind.Slight
+                    || line.Social == BridgeSocialKind.Kind;
+                bool keyword = ConversationCandidatePolicy.CountKeywordCategories(
+                    UnicodeText.NormalizeForMatching(line.Text), lexicon, 1) > 0;
+                if (charged || line.Kind == BridgeTalkKind.User || keyword)
+                {
+                    evidence.Add(i);
+                }
+            }
+
+            List<int> selected = new List<int>();
+            HashSet<int> selectedSet = new HashSet<int>();
+            AddIndexes(evidence, maxLines, selected, selectedSet);
+            AddIndexes(usable, maxLines, selected, selectedSet);
+            selected.Sort();
+            return selected;
+        }
+
+        private static void AddIndexes(
+            List<int> source,
+            int maxLines,
+            List<int> selected,
+            HashSet<int> selectedSet)
+        {
+            for (int i = 0; i < source.Count && selected.Count < maxLines; i++)
+            {
+                if (selectedSet.Add(source[i]))
+                {
+                    selected.Add(source[i]);
+                }
+            }
         }
 
         private static List<RecentDiaryEvent> SelectEvents(

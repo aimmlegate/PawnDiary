@@ -8,6 +8,17 @@ pre-release version ladder for project history.
 
 ## 2026-07-12
 
+- **Adversarial RimTalk funnel follow-up closes save, lifecycle, evidence, migration, and Unicode
+  gaps.** The two-assessment daily count and retry gap now survive save/load while queues/requests stay
+  transient; failed/skipped/prompt-only diary outcomes remove pending recent-event seeds; bounded
+  assessment transcripts reserve slots for late charged/user/keyword evidence; and pre-0.3 zero-cap
+  settings migrate from their old “unlimited” meaning before zero adopts its new “recording off” role.
+  Existing one-shot completion handles remain pollable for slot cleanup after the core integration
+  master switch is disabled, while the bridge discards those results. The frozen English JSON wire
+  schema is now a code-owned prefix that translations and editable editorial policy cannot erase, and
+  reaction-editor total limits use Unicode text elements consistently with validation. Added focused
+  pure coverage for cadence restore, late evidence selection, immutable schema composition, and non-BMP
+  editor caps; EN/RU policy/help text and the committed core/bridge DLLs were updated.
 - **RimTalk bridge 0.3.1 adds a persistent one-game-day pawn cooldown and editable selection
   policy.** Every successfully submitted pairwise chat event now charges both POV pawns for 60,000
   ticks; conversations involving either pawn are discarded before scoring/assessment and rechecked at

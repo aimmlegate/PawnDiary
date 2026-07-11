@@ -291,6 +291,19 @@ namespace PawnDiaryRimTalkBridge
         }
     }
 
+    /// <summary>
+    /// Detached saveable cadence state. In-flight work is deliberately absent: core session reset
+    /// cancels that request on load, while the paid day count and retry gap must survive.
+    /// </summary>
+    public sealed class ConversationAssessmentBatchGateState
+    {
+        public bool HaveDay;
+        public int DayIndex;
+        public int BatchesStartedToday;
+        public bool HaveAttempt;
+        public int LastAttemptTick;
+    }
+
     /// <summary>Pure one-in-flight/day/gap gate used by the runtime completion coordinator.</summary>
     public sealed class ConversationAssessmentBatchGate
     {
@@ -337,6 +350,38 @@ namespace PawnDiaryRimTalkBridge
         public void MarkFinished()
         {
             inFlight = false;
+        }
+
+        /// <summary>Returns detached cadence state suitable for primitive value scribing.</summary>
+        public ConversationAssessmentBatchGateState Snapshot()
+        {
+            return new ConversationAssessmentBatchGateState
+            {
+                HaveDay = haveDay,
+                DayIndex = dayIndex,
+                BatchesStartedToday = batchesStartedToday,
+                HaveAttempt = haveAttempt,
+                LastAttemptTick = lastAttemptTick
+            };
+        }
+
+        /// <summary>
+        /// Restores saved cadence without restoring an in-flight slot. Negative hand-edited counts are
+        /// clamped away; the next CanAttempt call naturally rolls stale day state forward.
+        /// </summary>
+        public void Restore(ConversationAssessmentBatchGateState state)
+        {
+            Reset();
+            if (state == null)
+            {
+                return;
+            }
+
+            haveDay = state.HaveDay;
+            dayIndex = state.DayIndex;
+            batchesStartedToday = Math.Max(0, state.BatchesStartedToday);
+            haveAttempt = state.HaveAttempt;
+            lastAttemptTick = state.LastAttemptTick;
         }
 
         /// <summary>Clears all transient cadence state on a new game.</summary>

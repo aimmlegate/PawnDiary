@@ -69,6 +69,18 @@ namespace RimTalkBridgeLogicTests
             string capped = ConversationAssessmentPromptEditor.Resolve(defaultPrompt, "123456789😀tail", 10);
             assert(capped == "123456789" && !char.IsHighSurrogate(capped[capped.Length - 1]),
                 "editable prompt: character cap never splits a UTF-16 surrogate pair");
+
+            string nonBmpLetters = "\U00010400\U00010401\U00010402tail";
+            string textElementCapped = UnicodeText.CapTextElements(nonBmpLetters, 3);
+            assert(UnicodeText.TextElementCount(textElementCapped) == 3
+                && textElementCapped == "\U00010400\U00010401\U00010402",
+                "editable terms: total editor cap uses the same Unicode text elements as validation");
+
+            string composed = ConversationAssessmentWireContract.Compose("custom editorial policy");
+            assert(composed.StartsWith(ConversationAssessmentWireContract.SystemPromptPrefix)
+                && composed.EndsWith("custom editorial policy")
+                && composed.IndexOf("\"decision\"", StringComparison.Ordinal) >= 0,
+                "editable prompt: code-owned wire contract survives every editorial override");
         }
 
         private static void CandidateScoring()
@@ -233,6 +245,11 @@ namespace RimTalkBridgeLogicTests
             gate.MarkStarted(200, 0);
             gate.MarkFinished();
             assert(!gate.CanAttempt(300, 0, 2, 50), "gate: daily batch cap is enforced");
+
+            ConversationAssessmentBatchGate restoredGate = new ConversationAssessmentBatchGate();
+            restoredGate.Restore(gate.Snapshot());
+            assert(!restoredGate.InFlight && !restoredGate.CanAttempt(300, 0, 2, 50),
+                "gate: save/load preserves the paid daily count but never an in-flight slot");
             assert(gate.CanAttempt(60000, 1, 2, 50), "gate: in-game day rollover resets batch count");
             gate.MarkRejectedAttempt(60000);
             assert(!gate.CanAttempt(60020, 1, 2, 50) && gate.CanAttempt(60050, 1, 2, 50),
@@ -298,6 +315,27 @@ namespace RimTalkBridgeLogicTests
             ConversationAssessmentBatch capped = ConversationAssessmentBatchFormatter.Format(
                 new List<QueuedConversationCandidate> { first, second }, candidateCap);
             assert(capped.CandidateAliases.Count == 1, "formatter: candidate count limit is enforced");
+
+            Conversation lateEvidenceConversation = ConversationOf("late-evidence",
+                Line("A", "B", "ordinary one", BridgeTalkKind.Chitchat, BridgeSocialKind.Chat, 1),
+                Line("B", "A", "ordinary two", BridgeTalkKind.Chitchat, BridgeSocialKind.Chat, 2),
+                Line("A", "B", "ordinary three", BridgeTalkKind.Chitchat, BridgeSocialKind.Chat, 3),
+                Line("B", "A", "ordinary four", BridgeTalkKind.Chitchat, BridgeSocialKind.Chat, 4),
+                Line("A", "B", "I promise I will stay", BridgeTalkKind.Chitchat, BridgeSocialKind.Chat, 5));
+            QueuedConversationCandidate lateEvidence = new QueuedConversationCandidate
+            {
+                ConversationId = "late-evidence",
+                PairKey = "a|b",
+                Conversation = lateEvidenceConversation
+            };
+            ConversationAssessmentFormatOptions evidenceOptions = FormatOptions();
+            evidenceOptions.TranscriptLines = 2;
+            ConversationAssessmentBatch evidenceBatch = ConversationAssessmentBatchFormatter.Format(
+                new List<QueuedConversationCandidate> { lateEvidence }, evidenceOptions);
+            assert(evidenceBatch.UserText.Contains("A: ordinary one")
+                && evidenceBatch.UserText.Contains("A: I promise I will stay")
+                && !evidenceBatch.UserText.Contains("ordinary two"),
+                "formatter: a late keyword line claims a bounded slot while early context is retained");
         }
 
         private static void ResponseParser()
@@ -546,7 +584,8 @@ namespace RimTalkBridgeLogicTests
                 TranscriptLines = 4,
                 LineChars = 160,
                 InputChars = 3600,
-                RecentEventCount = 3
+                RecentEventCount = 3,
+                KeywordLexicon = Lexicon()
             };
         }
 

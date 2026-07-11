@@ -1650,7 +1650,11 @@ namespace PawnDiary.Integration
         {
             try
             {
-                if (handle <= 0 || !ExternalIntegrationsAllowed)
+                // Starting new adapter work is gated by ExternalIntegrationsAllowed, but an opaque
+                // handle already admitted before the player turned that switch off must remain
+                // pollable. Terminal reads consume the core slot; returning Unknown here used to make
+                // adapters abandon it and slowly fill the bounded completion table until game reload.
+                if (handle <= 0)
                 {
                     return new LlmCompletionResult { status = LlmCompletionStatus.Unknown };
                 }

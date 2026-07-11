@@ -309,7 +309,10 @@ the main-thread poller. It spends the player's tokens, so it is master-toggle-ga
 one-shot, and input/output-capped. Unlike the global lane-management reads, completion requests require
 a loaded game so they can reserve the same XML-tuned per-source/global rolling prompt budget as other
 token-spending adapter calls. They share normal diary lane concurrency, cooldown, timeout, and game-
-session cancellation; at most 64 handles are admitted until terminal results are polled.
+session cancellation; at most 64 handles are admitted until terminal results are polled. Turning the
+master integration toggle off blocks new work but does not block polling an already-issued handle:
+terminal polling is the cleanup operation that consumes its bounded service slot. Adapters must still
+discard such a result when their own feature or the master integration switch is off.
 
 API v5 (`ApiVersion` `4 → 5`) adds `RegisterExternalPsychotypeGenerator(ExternalPsychotypeGenerator)` — an
 adapter that produces a pawn's outlook asynchronously (e.g. the 1-2-3 Personalities bridge's LLM transform)
@@ -493,13 +496,17 @@ deduplicates root ids, enforces its global and per-pair limits, replaces the wea
 stronger candidate arrives, and expires old work. Defaults live in
 `1.6/Defs/RimTalkConversationAssessmentDefs.xml`: 12 queued, 6 per batch, 2 per pair, no more than 2
 assessment batches per in-game day, a 15,000-tick minimum batch gap, and 60,000-tick expiry. Local
-scoring is free; chat volume beyond those bounds cannot increase assessment spend.
+scoring is free; chat volume beyond those bounds cannot increase assessment spend. The batch day/count
+and last-attempt gap are primitive-value-scribed by `RimTalkBridgeGameComponent`, while the queue and
+in-flight request stay transient, so reloading cannot reopen the paid daily allowance.
 
 `RecentDiaryEventCache` is fed by the third frozen entry-status listener id
 `aimmlegate.pawndiary.rimtalkbridge.assessmentstatus`. It indexes pending/completed plain event facts
 by pawn/event under a lock, excludes entries authored by this bridge, and is enriched on the main
 thread from the existing `GetContextSnapshot` API for both participants. The cache is XML-window/count
-bounded. It lets the assessor distinguish a raid/insult/break echo from an explicit new personal
+bounded. Failed, skipped, and prompt-only terminal notifications remove any earlier pending seed, so a
+nonexistent page cannot survive as a phantom related-event alias. It lets the assessor distinguish a
+raid/insult/break echo from an explicit new personal
 consequence without adding a core public API.
 
 `ConversationAssessmentCoordinator` owns one transient queue and one completion handle. On the
@@ -507,7 +514,9 @@ existing ~250-tick main-thread pass it polls first, then starts at most one new 
 `PawnDiaryApi.RequestLlmCompletion`; it creates no HTTP client, Task, or background-to-main-thread
 queue. `ConversationAssessmentBatchFormatter` sends only short aliases, at most four capped transcript
 lines per candidate, and at most three recent event label/title/summary rows (default user-text cap
-3,600 chars). It never sends persona, pawn summary, surroundings, writing style, or diary prose.
+3,600 chars). Charged, user-authored, or configured-keyword lines claim bounded transcript slots before
+ordinary early context, then return to chronological order, so the evidence that nominated a long
+exchange is not omitted. It never sends persona, pawn summary, surroundings, writing style, or diary prose.
 `ConversationAssessmentResponseParser` extracts the first JSON array, accepts only active aliases and
 the frozen decision/reason tokens, validates per-candidate event aliases, caps focus text, resolves
 duplicates deterministically, fills missing rows with `ignore`, and fails closed on malformed output.
@@ -530,13 +539,16 @@ value-scribed by `RimTalkBridgeGameComponent` under the frozen save key
 `rimTalkConversationCooldownTicksByPawn`, then restored after static caches reset in `FinalizeInit`, so
 save/load cannot bypass the anti-spam interval. The legacy per-pawn daily setting is constrained to
 `0` (disable conversation recording) or `1`; the rolling gate remains the authoritative one-event-per-
-game-day guarantee across calendar boundaries.
+game-day guarantee across calendar boundaries. Settings schema v1 migrates pre-0.3 zeroes—where zero
+meant an unlimited individual cap—to enabled pawn recording and the largest supported colony ceiling
+before applying the new zero-means-off semantics.
 
 Semantic assessment defaults on and has a saved lane selector (`assessmentLaneIndex=-1` means first
 active lane). With no active lane, candidates remain only until expiry. API budget/concurrency rejection
 keeps the bounded queue and retries after the batch gap; transport failure drops that already-started
 batch without another spend; malformed/blank/unknown output records nothing. Turning semantic mode off
-while a handle is in flight still polls once to release the core handle but discards the result. With
+while a handle is in flight still polls once to release the core handle but discards the result; the
+same cleanup happens when Pawn Diary's master integration toggle is turned off. With
 semantic mode off, the same local scorer uses the higher XML `strictLocalRecordThreshold`, rejects
 strong event overlap, and can produce standalone entries without an extra assessment request; this is
 explicitly stricter and less semantically accurate. Game changes clear all transient bridge state while
@@ -544,12 +556,16 @@ the core session cancels its request.
 
 The mod settings expose both editable selection inputs. `conversationReactionTermsCsv` stores a valid
 comma-separated lexicon override (blank means the current English/Russian DefInjected defaults), and
-`assessmentPromptOverride` stores an optional full semantic system-prompt replacement (blank means the
-localized `assessmentSystemPrompt` Def value). The prompt editor caps text using the XML
-`assessmentPromptOverrideChars` policy and reminds players to retain the stable JSON schema tokens;
-the strict response parser still fails closed if a custom prompt produces invalid output. Reaction
+`assessmentPromptOverride` stores an optional editorial-policy replacement (blank means the localized
+`assessmentSystemPrompt` Def value). The frozen English JSON field/decision/reason contract is a
+code-owned prefix appended automatically, before the editable text, so neither translation nor an
+override can remove it and downstream defensive caps preserve it. The prompt editor caps text using the
+XML `assessmentPromptOverrideChars` policy; the strict response parser still fails closed if a provider
+produces invalid output. Reaction
 terms affect both semantic nomination and the no-LLM local fallback. The XML policy owns their edit
-limits as well as the fixed pawn cooldown, so no user-facing prompt prose or tuning moved into C#.
+limits as well as the fixed pawn cooldown. The reaction editor's total cap uses the same Unicode text-
+element unit as per-term validation, so non-BMP letters cannot silently shorten an otherwise-valid list.
+Only the structured machine schema—not user-facing prompt prose or tuning—lives in C#.
 
 Threading and lifecycle are the two subtle parts. The diary-memory section is served to RimTalk from
 a **cache** that is refreshed only on the main thread (`DiaryContextInjector.RefreshFor`), because

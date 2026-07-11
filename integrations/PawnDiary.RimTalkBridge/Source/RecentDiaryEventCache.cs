@@ -132,7 +132,7 @@ namespace PawnDiaryRimTalkBridge
         private static void OnEntryStatus(DiaryEntryStatusSnapshot snapshot)
         {
             if (!PawnDiaryRimTalkBridgeMod.LevelAtLeast(2)
-                || snapshot == null || snapshot.handle == null || (!snapshot.pending && !snapshot.complete))
+                || snapshot == null || snapshot.handle == null)
             {
                 return;
             }
@@ -147,6 +147,20 @@ namespace PawnDiaryRimTalkBridge
             if (IsBridgeSource(snapshot.externalSourceId))
             {
                 Remove(pawnId, eventId);
+                return;
+            }
+
+            // A pending notification may already have seeded this event. Terminal outcomes without
+            // prose are not diary memories and must remove that seed instead of leaving a phantom fact
+            // available to overlap scoring/related-event aliases until the time window expires.
+            if (!snapshot.complete && (snapshot.failed || snapshot.skipped || snapshot.promptOnly))
+            {
+                Remove(pawnId, eventId);
+                return;
+            }
+
+            if (!snapshot.pending && !snapshot.complete)
+            {
                 return;
             }
 
