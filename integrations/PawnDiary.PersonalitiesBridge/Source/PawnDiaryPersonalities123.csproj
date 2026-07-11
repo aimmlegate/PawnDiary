@@ -55,6 +55,10 @@
       <HintPath>$(RimWorldManaged)\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(RimWorldManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="PawnDiary">
       <HintPath>..\..\..\1.6\Assemblies\PawnDiary.dll</HintPath>
       <Private>False</Private>

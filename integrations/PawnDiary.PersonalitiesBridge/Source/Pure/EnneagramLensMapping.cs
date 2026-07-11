@@ -2,33 +2,38 @@
 // "personality -> diary text" decision, isolated so the console test harness
 // (tests/Personalities123BridgeLogicTests) can exercise it without loading RimWorld.
 //
-// Three responsibilities:
+// Four responsibilities, one per bridge tier's data need:
 //   * RuleForRoot: the 9 Enneagram ROOTS (SP_Root1..SP_Root9) -> a diary OUTLOOK rule, in the exact
 //     register of Pawn Diary's own DiaryPsychotypeDefs: 1-2 behavioral, mechanics-free sentences in the
 //     "This pawn ..." voice, describing what the pawn notices / values / fears and how they judge
 //     events. The personality TYPE is never named in the rule. This is the ENGLISH source text AND the
-//     universal fallback used when no localization is present.
+//     universal fallback used when no localization is present. Feeds Tier 2 (override text) and the
+//     Tier 3 fallback.
 //   * KeyForRoot: the localization key for each root (e.g. "PawnDiaryPersonalities123.Outlook.SP_Root1").
 //     EnneagramSync resolves this through RimWorld's Keyed system when it can, so a Russian player gets
 //     natively-authored Russian outlook text (see Languages/*/Keyed) instead of the English fallback —
 //     the outlook rule reaches the model's prompt, so it must localize like every other prompt string.
 //     English is deliberately NOT duplicated in a Keyed file: the source of truth stays here.
-//   * ContextLine: the Tier A pawn-summary line built from the (already-localized) variant + trait
-//     labels, which come from 1-2-3 Personalities' own Defs.
+//   * InternalPsychotypeForRoot: maps each root to the closest built-in Pawn Diary psychotype defName,
+//     so Tier 1 can point the pawn's BASE psychotype at a real, swappable internal type. Pawn Diary
+//     resolves an unknown/renamed defName to Neutral, so a stale mapping degrades gracefully.
+//   * BuildTransformInput: assembles the compact personality-data block (variant + trait + root + raw
+//     serialization) that Tier 3 sends to the LLM as the text to rewrite.
 //
 // Roots carry no <label> in 1-2-3 Personalities (only variants and traits do), so the tables are keyed
 // by the stable root defName. The classic Enneagram type numbers map straight to SP_Root1..9.
+using System.Collections.Generic;
+
 namespace PawnDiaryPersonalities123.Pure
 {
     /// <summary>Pure personality-to-diary-text mapping. Deterministic, RimWorld-free, unit-testable.</summary>
     public static class EnneagramLensMapping
     {
-        // Structured prompt-schema key. Stays English on purpose: it is a machine key the diary prompt
-        // reads, not prose. The VALUE after it is the pawn's personality label text.
-        public const string ContextSchemaKey = "personality=";
-
         // Keyed-translation prefix for the outlook rules. Concatenated with the canonical root defName.
         public const string OutlookKeyPrefix = "PawnDiaryPersonalities123.Outlook.";
+
+        // Canonical root defName prefix; the trailing digit is the classic Enneagram type number.
+        private const string RootDefNamePrefix = "SP_Root";
 
         /// <summary>
         /// The English diary outlook rule for one Enneagram root, or null when the root defName is
@@ -73,40 +78,80 @@ namespace PawnDiaryPersonalities123.Pure
         }
 
         /// <summary>
-        /// Builds the Tier A context value from the player-facing labels, e.g.
-        /// "personality=reformer, principled". Returns null when there is nothing worth adding. Pawn
-        /// Diary cleans and caps the final line, so this only assembles it.
+        /// Maps one Enneagram root to the closest built-in Pawn Diary psychotype defName (Tier 1), or null
+        /// for an unknown root. These target the ADULT psychotype catalog; Pawn Diary resolves an unknown
+        /// defName to Neutral, so a rename on either side degrades to Neutral rather than throwing. The
+        /// pairing is a deliberate, editable design choice — not a 1:1 truth — so it lives here beside the
+        /// outlook rules rather than in XML, matching how this bridge already owns its personality mapping.
         /// </summary>
-        public static string ContextLine(string variantLabel, string mainTraitLabel)
+        public static string InternalPsychotypeForRoot(string rootDefName)
         {
+            switch (CanonicalRoot(rootDefName))
+            {
+                case "SP_Root1":
+                    return "DiaryPsychotype_Perfectionist";
+                case "SP_Root2":
+                    return "DiaryPsychotype_Dutiful";
+                case "SP_Root3":
+                    return "DiaryPsychotype_Ambitious";
+                case "SP_Root4":
+                    return "DiaryPsychotype_Nostalgic";
+                case "SP_Root5":
+                    return "DiaryPsychotype_Detached";
+                case "SP_Root6":
+                    return "DiaryPsychotype_Paranoid";
+                case "SP_Root7":
+                    return "DiaryPsychotype_Wry";
+                case "SP_Root8":
+                    return "DiaryPsychotype_Ruthless";
+                case "SP_Root9":
+                    return "DiaryPsychotype_Content";
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
+        /// Builds the compact personality-data block that Tier 3 sends to the LLM as the text to rewrite.
+        /// Includes only the fields that are present: the player-facing variant + main-trait labels (from
+        /// 1-2-3's own Defs), the Enneagram type number, and the raw personality serialization. Returns
+        /// null when there is nothing worth sending. This is INPUT data only — the transform prompt is
+        /// what tells the model to keep the type unnamed in its OUTPUT.
+        /// </summary>
+        public static string BuildTransformInput(string variantLabel, string mainTraitLabel, string rootDefName, string serialization)
+        {
+            List<string> lines = new List<string>();
+
             string variant = Clean(variantLabel);
+            if (variant.Length > 0)
+            {
+                lines.Add("personality style: " + variant);
+            }
+
             string trait = Clean(mainTraitLabel);
-
-            if (variant.Length == 0 && trait.Length == 0)
+            if (trait.Length > 0)
             {
-                return null;
+                lines.Add("main trait: " + trait);
             }
 
-            string value;
-            if (variant.Length == 0)
+            string canonicalRoot = CanonicalRoot(rootDefName);
+            if (canonicalRoot != null)
             {
-                value = trait;
-            }
-            else if (trait.Length == 0)
-            {
-                value = variant;
-            }
-            else
-            {
-                value = variant + ", " + trait;
+                lines.Add("enneagram type: " + canonicalRoot.Substring(RootDefNamePrefix.Length));
             }
 
-            return ContextSchemaKey + value;
+            string extra = Clean(serialization);
+            if (extra.Length > 0)
+            {
+                lines.Add("details: " + extra);
+            }
+
+            return lines.Count == 0 ? null : string.Join("\n", lines.ToArray());
         }
 
         // Normalizes any casing/padding of a root defName to its canonical "SP_Root1".."SP_Root9" form,
         // or null when it is not one of the nine humanlike roots. Single source of root validity for
-        // both RuleForRoot and KeyForRoot, so they can never disagree about which roots are mapped.
+        // every table above, so they can never disagree about which roots are mapped.
         private static string CanonicalRoot(string rootDefName)
         {
             if (string.IsNullOrWhiteSpace(rootDefName))

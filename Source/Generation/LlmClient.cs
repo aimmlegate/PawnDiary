@@ -416,6 +416,62 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Runs a single one-shot chat completion for an adapter-facing transform: sends
+        /// <paramref name="systemPrompt"/> + <paramref name="userText"/> to one endpoint and returns the
+        /// cleaned text. Sibling of <see cref="TestConnection"/>, but with a real system prompt, a
+        /// caller-supplied token budget, and no title post-processing — so it can return a couple of
+        /// sentences instead of a 32-token connection ping. Runs on a background thread; throws on
+        /// transport/permanent errors so the caller can wrap and report them.
+        /// </summary>
+        public static async Task<string> SendSingleCompletion(ApiEndpointConfig endpoint, string systemPrompt, string userText, int maxTokens, int timeoutSeconds, float temperature)
+        {
+            if (endpoint == null)
+            {
+                throw new InvalidOperationException("No API lane was selected.");
+            }
+
+            if (string.IsNullOrWhiteSpace(endpoint.url))
+            {
+                throw new InvalidOperationException("The API endpoint URL is blank.");
+            }
+
+            if (string.IsNullOrWhiteSpace(endpoint.model))
+            {
+                throw new InvalidOperationException("The API model name is blank.");
+            }
+
+            if (string.IsNullOrWhiteSpace(userText))
+            {
+                throw new InvalidOperationException("No completion input text was provided.");
+            }
+
+            using (CancellationTokenSource cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds))))
+            {
+                SendResponse response = await SendOnce(new LlmGenerationRequest
+                {
+                    eventId = "external-completion",
+                    povRole = "external",
+                    systemPrompt = systemPrompt ?? string.Empty,
+                    rawText = userText,
+                    endpointUrl = endpoint.url,
+                    modelName = endpoint.model,
+                    apiKey = endpoint.apiKey,
+                    authMode = PawnDiarySettings.NormalizeAuthMode(endpoint.authMode),
+                    customAuthHeaderName = endpoint.customAuthHeaderName,
+                    apiMode = endpoint.apiMode,
+                    reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort),
+                    reasoningTag = PawnDiarySettings.NormalizeReasoningTag(endpoint.reasoningTag),
+                    timeoutSeconds = timeoutSeconds,
+                    maxTokens = Math.Max(1, maxTokens),
+                    temperature = temperature,
+                    isTitleRequest = false
+                }, cancellation.Token);
+
+                return response.CleanText;
+            }
+        }
+
+        /// <summary>
         /// Returns the next round-robin index for spreading new events across the configured
         /// API lanes. Callers take it modulo the lane count. Always non-negative.
         /// </summary>

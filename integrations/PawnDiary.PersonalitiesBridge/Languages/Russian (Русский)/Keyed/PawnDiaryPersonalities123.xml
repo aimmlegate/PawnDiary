@@ -1,19 +1,44 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Русская локализация моста 1-2-3 Personalities. Текст авторский русский, не калька с английского;
-     вычитан 2026-07-10 (термины и регистр сведены с ядром).
-     Правила взгляда (Outlook.SP_Root1..9) пересобраны на живом русском в том же регистре, что и
-     психотипы ядра (DiaryPsychotypeDefs): 1-2 поведенческие фразы «Этот поселенец ...», без называния
-     самого типа. Английский оригинал этих правил живёт в Source/Pure/EnneagramLensMapping.cs (он же
-     запасной вариант, если перевода нет). Структурный ключ схемы (personality=) остаётся английским. -->
+<!-- Русская локализация моста 1-2-3 Personalities. Текст авторский русский, не калька с английского.
+     Настройки переписаны под перестройку в один выбор из трёх ступеней (2026-07-11); правила взгляда
+     (Outlook.SP_Root1..9) вычитаны 2026-07-10.
+     Правила взгляда собраны на живом русском в том же регистре, что и психотипы ядра
+     (DiaryPsychotypeDefs): 1-2 поведенческие фразы «Этот поселенец ...», без называния самого типа.
+     Английский оригинал этих правил живёт в Source/Pure/EnneagramLensMapping.cs (он же запасной вариант,
+     если перевода нет). -->
 <LanguageData>
 
   <!-- Окно настроек -->
   <PawnDiaryPersonalities123.Settings.Category>Pawn Diary: 1-2-3 Personalities</PawnDiaryPersonalities123.Settings.Category>
   <PawnDiaryPersonalities123.Settings.Missing>1-2-3 Personalities нет в списке активных модов, так что мост сейчас ничего не делает. Включите 1-2-3 Personalities (M1), чтобы им пользоваться.</PawnDiaryPersonalities123.Settings.Missing>
-  <PawnDiaryPersonalities123.Settings.ProvideContextLine>Показывать характер в контексте дневника</PawnDiaryPersonalities123.Settings.ProvideContextLine>
-  <PawnDiaryPersonalities123.Settings.ProvideContextLineDesc>Добавляет короткую строку о характере поселенца (вариант и главная черта) в контекст, который дневник видит при записи. Только чтение; в 1-2-3 Personalities ничего не меняется.</PawnDiaryPersonalities123.Settings.ProvideContextLineDesc>
-  <PawnDiaryPersonalities123.Settings.UsePersonalityOutlook>Характер как взгляд дневника на мир</PawnDiaryPersonalities123.Settings.UsePersonalityOutlook>
-  <PawnDiaryPersonalities123.Settings.UsePersonalityOutlookDesc>Тип характера поселенца задаёт взгляд его дневника — что поселенец замечает, что ценит и чего боится, — а манера письма остаётся его собственной. Выключение снимает эффект со всех поселенцев. По умолчанию включено.</PawnDiaryPersonalities123.Settings.UsePersonalityOutlookDesc>
+
+  <!-- Выбор режима -->
+  <PawnDiaryPersonalities123.Settings.Mode>Как характер поселенца влияет на его дневник:</PawnDiaryPersonalities123.Settings.Mode>
+
+  <PawnDiaryPersonalities123.Settings.Mode.Off>Выключено</PawnDiaryPersonalities123.Settings.Mode.Off>
+  <PawnDiaryPersonalities123.Settings.Mode.OffDesc>Мост ничего не делает. Психотипы дневника у поселенцев остаются как есть.</PawnDiaryPersonalities123.Settings.Mode.OffDesc>
+
+  <PawnDiaryPersonalities123.Settings.Mode.Internal>Подобрать встроенный психотип</PawnDiaryPersonalities123.Settings.Mode.Internal>
+  <PawnDiaryPersonalities123.Settings.Mode.InternalDesc>Поставить каждому поселенцу ближайший встроенный психотип Pawn Diary под его тип характера. Он показывается как обычный психотип — его можно в любой момент сменить вручную.</PawnDiaryPersonalities123.Settings.Mode.InternalDesc>
+
+  <PawnDiaryPersonalities123.Settings.Mode.Override>Переопределить по характеру</PawnDiaryPersonalities123.Settings.Mode.Override>
+  <PawnDiaryPersonalities123.Settings.Mode.OverrideDesc>Заполнить редактируемый психотип поселенца коротким взглядом на мир по его типу характера — что он замечает, ценит и чего боится. Его можно поправить или очистить для каждого поселенца, а при смене характера он обновляется.</PawnDiaryPersonalities123.Settings.Mode.OverrideDesc>
+
+  <PawnDiaryPersonalities123.Settings.Mode.Llm>Экспериментально: переработка языковой моделью</PawnDiaryPersonalities123.Settings.Mode.Llm>
+  <PawnDiaryPersonalities123.Settings.Mode.LlmDesc>Языковая модель переписывает характер из 1-2-3 в короткий взгляд на мир и заполняет им редактируемый психотип поселенца. Если модель не выбрана или запрос не удался — берётся встроенный текст. Тратит токены вашего API.</PawnDiaryPersonalities123.Settings.Mode.LlmDesc>
+
+  <!-- Блок настройки третьей ступени (переработка языковой моделью) -->
+  <PawnDiaryPersonalities123.Settings.LlmSectionTitle>Переработка языковой моделью</PawnDiaryPersonalities123.Settings.LlmSectionTitle>
+  <PawnDiaryPersonalities123.Settings.TransformLane>Модель / линия</PawnDiaryPersonalities123.Settings.TransformLane>
+  <PawnDiaryPersonalities123.Settings.TransformLaneAuto>Автоматически (первая активная линия)</PawnDiaryPersonalities123.Settings.TransformLaneAuto>
+  <PawnDiaryPersonalities123.Settings.LaneFallback>линия {0}</PawnDiaryPersonalities123.Settings.LaneFallback>
+  <PawnDiaryPersonalities123.Settings.LaneInactive>{0} (неактивна)</PawnDiaryPersonalities123.Settings.LaneInactive>
+  <PawnDiaryPersonalities123.Settings.NoLanesHint>Активная линия ИИ не найдена. Сначала настройте её в разделе «Подключение» у Pawn Diary.</PawnDiaryPersonalities123.Settings.NoLanesHint>
+  <PawnDiaryPersonalities123.Settings.TransformPrompt>Инструкция для модели</PawnDiaryPersonalities123.Settings.TransformPrompt>
+  <PawnDiaryPersonalities123.Settings.ResetPrompt>Сбросить по умолчанию</PawnDiaryPersonalities123.Settings.ResetPrompt>
+
+  <!-- Инструкция по умолчанию для третьей ступени. Нарочно простая и прямая, чтобы её тянули и малые модели. -->
+  <PawnDiaryPersonalities123.Settings.TransformPromptDefault>Ты превращаешь заметки о характере персонажа в короткий «взгляд дневника» для игры про колонию. Ответь ОДНИМ или ДВУМЯ предложениями в настоящем времени и начни со слов «Этот поселенец». Скажи, что он замечает, что ценит и чего боится и как судит о своём дне. НЕ называй сам тип характера, систему, букву, число или слово-черту. Пиши просто и конкретно. Пример: Этот поселенец мерит день тем, что успел и заметил ли это кто-нибудь; безделье не даёт ему покоя.</PawnDiaryPersonalities123.Settings.TransformPromptDefault>
 
   <!-- Взгляд на мир по корню эннеаграммы (SP_Root1..9). Ключ = EnneagramLensMapping.KeyForRoot. -->
   <PawnDiaryPersonalities123.Outlook.SP_Root1>Этот поселенец мерит день тем, как всё должно было пройти. Он замечает сделанное небрежно или неправильно — собственные промахи острее всего, — и исправленная мелочь успокаивает его сильнее, чем крупный успех.</PawnDiaryPersonalities123.Outlook.SP_Root1>

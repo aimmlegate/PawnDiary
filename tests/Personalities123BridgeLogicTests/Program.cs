@@ -2,8 +2,8 @@
 // console projects: a static Main runs focused assertions and returns non-zero when any fail.
 //
 // These run without RimWorld/SP_Module1/Verse/Unity — the logic under test (Enneagram root -> outlook
-// rule, and the Tier A context line) is deliberately pure so its edge cases are covered without booting
-// the game.
+// rule, root -> internal psychotype defName, and the LLM transform-input block) is deliberately pure so
+// its edge cases are covered without booting the game.
 using System;
 using System.Collections.Generic;
 using PawnDiaryPersonalities123.Pure;
@@ -26,11 +26,13 @@ namespace Personalities123BridgeLogicTests
             TestKeyForRoot_CanonicalAndDistinct();
             TestKeyForRoot_UnknownReturnsNull();
 
-            TestContextLine_VariantAndTrait();
-            TestContextLine_VariantOnly();
-            TestContextLine_TraitOnly();
-            TestContextLine_BothBlankReturnsNull();
-            TestContextLine_TrimsAndKeepsSchemaKey();
+            TestInternalPsychotype_AllNineMapped();
+            TestInternalPsychotype_CaseInsensitiveAndUnknownNull();
+            TestInternalPsychotype_AgreesWithRuleAndKey();
+
+            TestTransformInput_AllFieldsAndTypeNumber();
+            TestTransformInput_OmitsBlankFields();
+            TestTransformInput_AllBlankReturnsNull();
 
             Console.WriteLine();
             Console.WriteLine("Personalities123BridgeLogicTests: " + passed + " passed, " + failed + " failed.");
@@ -115,49 +117,79 @@ namespace Personalities123BridgeLogicTests
             Check("unknown root -> null key", EnneagramLensMapping.KeyForRoot("SP_Root10") == null);
             Check("animal root -> null key", EnneagramLensMapping.KeyForRoot("SP_Animal_Chonk") == null);
             Check("null -> null key", EnneagramLensMapping.KeyForRoot(null) == null);
-            // A mapped root always yields both a rule and a key, or neither — they never disagree.
+        }
+
+        // ---- InternalPsychotypeForRoot (Tier 1) ----
+
+        private static void TestInternalPsychotype_AllNineMapped()
+        {
+            HashSet<string> seen = new HashSet<string>();
+            for (int i = 1; i <= 9; i++)
+            {
+                string defName = EnneagramLensMapping.InternalPsychotypeForRoot("SP_Root" + i);
+                Check("Root" + i + " maps to a DiaryPsychotype_ defName",
+                    !string.IsNullOrWhiteSpace(defName) && defName.StartsWith("DiaryPsychotype_"));
+                seen.Add(defName);
+            }
+
+            // The pairing is subjective, but each root should point at a distinct built-in type so the
+            // colony does not collapse to one psychotype.
+            Check("all 9 internal psychotypes are distinct", seen.Count == 9);
+        }
+
+        private static void TestInternalPsychotype_CaseInsensitiveAndUnknownNull()
+        {
+            Check("case/padding independent",
+                EnneagramLensMapping.InternalPsychotypeForRoot("  sp_root8 ") == EnneagramLensMapping.InternalPsychotypeForRoot("SP_Root8"));
+            Check("unknown root -> null", EnneagramLensMapping.InternalPsychotypeForRoot("SP_Root10") == null);
+            Check("animal root -> null", EnneagramLensMapping.InternalPsychotypeForRoot("SP_Animal_Chonk") == null);
+            Check("null -> null", EnneagramLensMapping.InternalPsychotypeForRoot(null) == null);
+        }
+
+        private static void TestInternalPsychotype_AgreesWithRuleAndKey()
+        {
+            // A mapped root always yields a rule, a key, AND an internal type — or none of them. The three
+            // tables share CanonicalRoot, so they can never disagree about which roots are mapped.
             for (int i = 1; i <= 9; i++)
             {
                 bool hasRule = EnneagramLensMapping.RuleForRoot("SP_Root" + i) != null;
                 bool hasKey = EnneagramLensMapping.KeyForRoot("SP_Root" + i) != null;
-                Check("Root" + i + " rule and key agree", hasRule && hasKey);
+                bool hasType = EnneagramLensMapping.InternalPsychotypeForRoot("SP_Root" + i) != null;
+                Check("Root" + i + " rule/key/type agree", hasRule && hasKey && hasType);
             }
+
+            Check("unmapped root: rule/key/type all null",
+                EnneagramLensMapping.RuleForRoot("SP_Root10") == null
+                && EnneagramLensMapping.KeyForRoot("SP_Root10") == null
+                && EnneagramLensMapping.InternalPsychotypeForRoot("SP_Root10") == null);
         }
 
-        // ---- ContextLine ----
+        // ---- BuildTransformInput (Tier 3) ----
 
-        private static void TestContextLine_VariantAndTrait()
+        private static void TestTransformInput_AllFieldsAndTypeNumber()
         {
-            Check("variant + trait joins with comma",
-                EnneagramLensMapping.ContextLine("reformer", "principled") == "personality=reformer, principled");
+            string input = EnneagramLensMapping.BuildTransformInput("The Achiever", "image-driven", "SP_Root3", "raw=blob");
+            Check("input includes the variant", input != null && input.Contains("personality style: The Achiever"));
+            Check("input includes the main trait", input.Contains("main trait: image-driven"));
+            // The root defName is reduced to the bare Enneagram type number, never the SP_Root token.
+            Check("input includes the type number", input.Contains("enneagram type: 3"));
+            Check("input does not leak the root defName", !input.Contains("SP_Root"));
+            Check("input includes the serialization", input.Contains("details: raw=blob"));
+            Check("input is newline-joined", input.Contains("\n"));
         }
 
-        private static void TestContextLine_VariantOnly()
+        private static void TestTransformInput_OmitsBlankFields()
         {
-            Check("variant only",
-                EnneagramLensMapping.ContextLine("helper", null) == "personality=helper");
-            Check("variant with blank trait",
-                EnneagramLensMapping.ContextLine("helper", "   ") == "personality=helper");
+            // Only a variant present: the other labels must not appear.
+            string input = EnneagramLensMapping.BuildTransformInput("The Helper", "  ", null, null);
+            Check("variant-only line present", input == "personality style: The Helper");
         }
 
-        private static void TestContextLine_TraitOnly()
+        private static void TestTransformInput_AllBlankReturnsNull()
         {
-            Check("trait only falls back to trait",
-                EnneagramLensMapping.ContextLine(null, "calm") == "personality=calm");
-        }
-
-        private static void TestContextLine_BothBlankReturnsNull()
-        {
-            Check("both null -> null", EnneagramLensMapping.ContextLine(null, null) == null);
-            Check("both blank -> null", EnneagramLensMapping.ContextLine(" ", "\t") == null);
-        }
-
-        private static void TestContextLine_TrimsAndKeepsSchemaKey()
-        {
-            Check("labels are trimmed",
-                EnneagramLensMapping.ContextLine("  investigator ", " secretive ") == "personality=investigator, secretive");
-            Check("schema key prefix is present",
-                EnneagramLensMapping.ContextLine("peacemaker", null).StartsWith(EnneagramLensMapping.ContextSchemaKey));
+            Check("all null -> null", EnneagramLensMapping.BuildTransformInput(null, null, null, null) == null);
+            Check("all blank / unknown root -> null",
+                EnneagramLensMapping.BuildTransformInput(" ", "\t", "SP_Animal_Chonk", "   ") == null);
         }
 
         // ---- tiny assert harness ----

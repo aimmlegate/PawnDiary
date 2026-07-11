@@ -6,6 +6,38 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-11
+
+- **1-2-3 Personalities bridge redesigned around one setting + an experimental LLM transform; public
+  API → `ApiVersion 4`.** The bridge's two toggles and its always-on `personality=` context line are
+  gone, replaced by a single **mode** selector with three escalating tiers of how a colonist's Enneagram
+  shapes their **editable** Pawn Diary psychotype:
+  - *Map to a built-in psychotype* — sets the pawn's base psychotype to the closest built-in
+    `DiaryPsychotype_*` (pinned), a real swappable type in the Psychotype Studio.
+  - *Override from personality* — seeds the pawn's editable custom rule from the built-in root→outlook
+    text (default mode; the old locked-override behavior, now player-editable).
+  - *Experimental LLM transform* — rewrites the pawn's 1-2-3 data into a compact outlook via the player's
+    language model, on a lane they pick (styled like the main mod's connection UI) with an editable,
+    small-model-friendly prompt; falls back to the override text when no lane is set or the call fails.
+  Seeding is change-detected by `<mode>:<root>` and **saved with the game**, so a reload never re-seeds
+  over a hand-edit; it re-seeds on a mode or root change. A one-time `FinalizeInit` sweep releases the
+  locked overrides earlier bridge versions placed. Read-only toward 1-2-3 Personalities; SP_Module1 reads
+  stay `[NoInlining]` behind the `SimplePersonalitiesActive` guard.
+- **Public integration API v4** (additive; existing members unchanged). `SetPsychotype(pawn, defName,
+  pin)` and `SetPsychotypeCustomRule(pawn, rule)` write the pawn's **player-editable** psychotype layers
+  (base type / custom rule) — the Psychotype Studio's own slots — so an adapter can *seed* an outlook the
+  player then owns, rather than the source-locked override. `RequestLlmCompletion(request)` +
+  `GetLlmCompletionResult(handle)` run one prompt on a chosen (or first-active) lane and poll the result;
+  they wrap a new one-shot `LlmClient.SendSingleCompletion` behind `ExternalLlmCompletionService`, are
+  master-toggle-gated + sourceId-attributed + one-shot + input/output-capped, and never throw. The bridge
+  no longer writes the external psychotype override, so it no longer participates in override arbitration.
+- **Settings migration:** the bridge's old `provideContextLine` / `usePersonalityOutlook` scribe keys are
+  dropped; the new `mode` defaults to *Override*, preserving the prior default-on outlook effect (now
+  editable). The pure mapper gains root→built-in-psychotype and transform-input helpers; the bridge test
+  suite drops the retired context-line checks and adds new ones
+  (`tests/Personalities123BridgeLogicTests/`, 90 checks green). Both committed DLLs (`PawnDiary.dll`,
+  `PawnDiaryPersonalities123.dll`) rebuilt.
+
 ## 2026-07-10
 
 - **External override collisions are now arbitrated by mod load order (later mod wins).** When two

@@ -94,11 +94,12 @@ each a separate mod for one target so a player installs only what matches their 
   VSIE-gated patch routing VSIE's angry `Discord` insult into the core insults group. Inert without VSIE.
 - **`PawnDiary.PersonalitiesBridge/`** (`Pawn Diary: 1-2-3 Personalities`) — **XML + a small
   assembly.** Tier 1 (XML) routes Module 2's compatibility interactions and personality mood thoughts.
-  Tier 2 (`PawnDiaryPersonalities123.dll`, net472, reads 1-2-3 Personalities' public Enneagram API,
-  **no Harmony**) adds a `personality=` context line and a default-on Tier-B outlook override
-  (`SetPsychotypeOverride` from the Enneagram root), cleared on toggle-off/new-game — the same shape as
-  the RimTalk bridge's `PersonaSync`, minus the RimTalk half. Its pure root→outlook mapping is
-  unit-tested:
+  The assembly (`PawnDiaryPersonalities123.dll`, net472, reads 1-2-3 Personalities' public Enneagram
+  API, **no Harmony**) turns each colonist's Enneagram root into their **editable** Pawn Diary
+  psychotype via one single-choice mode: off, map to the closest built-in psychotype, override from the
+  built-in outlook text, or an experimental LLM transform on a selectable lane with an editable prompt
+  (falling back to the built-in text). Change-detected and saved so player edits survive reloads. Its
+  pure mapping is unit-tested:
 
 ```
 dotnet run --project tests/Personalities123BridgeLogicTests/Personalities123BridgeLogicTests.csproj

@@ -34,7 +34,7 @@
 
 Two layers:
 - Personality-aware entries (XML, always on): Module 2's compatibility interactions (Harmonious / Diversive / Turmoil) and its personality mood thoughts are recorded in their own voice — the felt fit or friction between two people — instead of the generic "other" bucket. Module 2 is optional; these sit inert without it.
-- Personality as diary lens (this mod's assembly): each colonist's Enneagram type is shown to the diary as context, and — with the "personality as diary outlook" option on (default) — it becomes the pawn's diary OUTLOOK: what they notice, value, and fear. 1-2-3 Personalities supplies WHO the pawn is; Pawn Diary keeps HOW they write. The override follows the pawn's current personality and is cleared cleanly when the option is turned off or a new colony is started. Nothing is ever written back into 1-2-3 Personalities.
+- Personality as diary psychotype (this mod's assembly): one setting picks how a colonist's Enneagram shapes their EDITABLE Pawn Diary psychotype — off; map to the closest built-in psychotype; fill their custom outlook from built-in text; or (experimental) have your language model rewrite their personality into a compact outlook, on a chosen API lane with an editable prompt. What it writes is the normal, player-editable psychotype — tweak or clear it per pawn — and it refreshes when the personality changes. 1-2-3 Personalities supplies WHO the pawn is; Pawn Diary keeps HOW they write, and nothing is ever written back into 1-2-3 Personalities.
 
 Requires Pawn Diary and 1-2-3 Personalities M1. Module 2 recommended for the full effect. Deployed as a separate RimWorld mod via scripts/deploy-integrations.ps1.</description>
 </ModMetaData>

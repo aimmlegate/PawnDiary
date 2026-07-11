@@ -27,7 +27,8 @@ namespace PawnDiary.Integration
     /// wrapped prompt-entry submissions, read-only snapshots/status reads, single-entry reads, cheap
     /// entry stats, compact prose context bundles, prompt fragments/enchantment candidates on
     /// external events, pawn-context providers for prompt-summary context, LLM API setup reads
-    /// plus add-lane writes, and automatic-capture event-filter reads plus per-group toggles.
+    /// plus add-lane writes, automatic-capture event-filter reads plus per-group toggles, editable
+    /// base/custom psychotype setters, and one-shot LLM completions on a chosen lane.
     /// </summary>
     public static class PawnDiaryApi
     {
@@ -36,7 +37,7 @@ namespace PawnDiary.Integration
         /// members never change behavior incompatibly. Adapters that need a newer member can check
         /// this at load time and degrade gracefully on older Pawn Diary builds.
         /// </summary>
-        public const int ApiVersion = 3;
+        public const int ApiVersion = 4;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time
@@ -1012,6 +1013,102 @@ namespace PawnDiary.Integration
         }
 
         /// <summary>
+        /// Sets the pawn's BASE psychotype to a built-in Pawn Diary type by defName — the same editable
+        /// layer the Psychotype Studio's picker writes — and, when <paramref name="pin"/> is true, pins it
+        /// so Pawn Diary's automatic roll never overwrites the integration's choice. Unlike
+        /// <see cref="SetPsychotypeOverride"/> (a source-locked layer), this writes the player-visible,
+        /// swappable base type; the player can freely re-pick or unpin it afterward. An unknown defName
+        /// resolves to Neutral rather than failing. Main-thread only; never throws. Honors the player's
+        /// global psychotype-layer toggle at prompt time, since it uses the normal editable layer.
+        /// </summary>
+        public static bool SetPsychotype(Pawn pawn, string psychotypeDefName, bool pin = true)
+        {
+            try
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: SetPsychotype was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.SetPsychotype.OffThread".GetHashCode());
+                    return false;
+                }
+
+                if (!ExternalIntegrationsAllowed || !IsReady || pawn == null)
+                {
+                    return false;
+                }
+
+                if (!DiaryGameComponent.Instance.SetPsychotype(pawn, psychotypeDefName))
+                {
+                    return false;
+                }
+
+                if (pin)
+                {
+                    DiaryGameComponent.Instance.SetPsychotypePinned(pawn, true);
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                string pawnForLog = PawnIdForLog(pawn);
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: SetPsychotype for pawn '" + pawnForLog + "' failed: " + e,
+                    ("PawnDiary.Api.SetPsychotype.Exception." + pawnForLog + "." + e.GetType().FullName).GetHashCode());
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Seeds the pawn's PLAYER-OWNED custom psychotype rule — the same editable per-pawn layer the
+        /// Psychotype Studio writes. Unlike <see cref="SetPsychotypeOverride"/> (a source-locked layer the
+        /// player cannot edit), this writes directly into the player's custom slot: an integration can
+        /// pre-fill it from external personality data, and the player is then free to edit or clear it.
+        /// There is no source ownership and no arbitration — the last writer wins — so callers should
+        /// write sparingly (once, or only when their upstream data changes) rather than every tick, to
+        /// avoid stomping an edit the player just made. Main-thread only; sanitized; returns false when
+        /// the call is invalid, the pawn is ineligible, or the rule cleans to blank.
+        /// </summary>
+        public static bool SetPsychotypeCustomRule(Pawn pawn, string rule)
+        {
+            try
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: SetPsychotypeCustomRule was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.SetPsychotypeCustomRule.OffThread".GetHashCode());
+                    return false;
+                }
+
+                string cleanedRule = PsychotypeText.CleanRule(rule);
+                if (string.IsNullOrWhiteSpace(cleanedRule))
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: SetPsychotypeCustomRule cleaned to a blank rule; the call was ignored.",
+                        "PawnDiary.Api.SetPsychotypeCustomRule.BlankRule".GetHashCode());
+                    return false;
+                }
+
+                if (!ExternalIntegrationsAllowed || !IsReady || pawn == null)
+                {
+                    return false;
+                }
+
+                return DiaryGameComponent.Instance.SetCustomPsychotypeRule(pawn, cleanedRule);
+            }
+            catch (Exception e)
+            {
+                string pawnForLog = PawnIdForLog(pawn);
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: SetPsychotypeCustomRule for pawn '" + pawnForLog + "' failed: " + e,
+                    ("PawnDiary.Api.SetPsychotypeCustomRule.Exception." + pawnForLog + "." + e.GetType().FullName).GetHashCode());
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Returns newest completed diary-page titles for one pawn, filtered by a plain query. The
         /// original v2 overload remains unchanged; this v5 overload only narrows which snapshots are
         /// returned and still never exposes prompts, raw responses, or live game objects.
@@ -1440,6 +1537,77 @@ namespace PawnDiary.Integration
                     "[Pawn Diary] Integration API: AddApiLane from '" + sourceForLog + "' failed: " + e,
                     ("PawnDiary.Api.AddApiLane.Exception." + sourceForLog).GetHashCode());
                 return new AddApiLaneResult { index = -1, reason = "invalidRequest" };
+            }
+        }
+
+        /// <summary>
+        /// Starts a one-shot LLM completion on the player's configured lane and returns a poll handle
+        /// (&gt; 0), or 0 when rejected. The adapter supplies an instruction + input text; Pawn Diary runs
+        /// it on the requested lane (or the first active lane) and the adapter reads the outcome later via
+        /// <see cref="GetLlmCompletionResult"/>. This spends the player's tokens, so it is gated by the
+        /// master integration switch and attributed to the caller's sourceId; it is one-shot (no
+        /// failover), input- and output-capped, main-thread only, and never throws.
+        /// </summary>
+        public static int RequestLlmCompletion(ExternalLlmCompletionRequest request)
+        {
+            string cleanedSource = request != null ? PsychotypeText.CleanSourceId(request.sourceId) : string.Empty;
+            try
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: RequestLlmCompletion was called off the main thread; the call was ignored. "
+                        + "Queue the work yourself and start it from a main-thread hook such as GameComponentTick.",
+                        "PawnDiary.Api.RequestLlmCompletion.OffThread".GetHashCode());
+                    return 0;
+                }
+
+                if (request == null || string.IsNullOrWhiteSpace(cleanedSource))
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: RequestLlmCompletion needs a request with a sourceId; the call was ignored.",
+                        "PawnDiary.Api.RequestLlmCompletion.MissingSource".GetHashCode());
+                    return 0;
+                }
+
+                if (!ExternalIntegrationsAllowed || PawnDiaryMod.Settings == null)
+                {
+                    return 0;
+                }
+
+                return ExternalLlmCompletionService.Begin(request, PawnDiaryMod.Settings);
+            }
+            catch (Exception e)
+            {
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: RequestLlmCompletion from '" + cleanedSource + "' failed: " + e,
+                    ("PawnDiary.Api.RequestLlmCompletion.Exception." + cleanedSource + "." + e.GetType().FullName).GetHashCode());
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Reads the current state of a handle from <see cref="RequestLlmCompletion"/>. Poll each frame
+        /// until the status is Succeeded or Failed; a terminal result is dropped after it is read once, and
+        /// an unknown/expired handle reports <see cref="LlmCompletionStatus.Unknown"/>. Never throws.
+        /// </summary>
+        public static LlmCompletionResult GetLlmCompletionResult(int handle)
+        {
+            try
+            {
+                if (handle <= 0 || !ExternalIntegrationsAllowed)
+                {
+                    return new LlmCompletionResult { status = LlmCompletionStatus.Unknown };
+                }
+
+                return ExternalLlmCompletionService.Poll(handle);
+            }
+            catch (Exception e)
+            {
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: GetLlmCompletionResult failed: " + e,
+                    "PawnDiary.Api.GetLlmCompletionResult.Exception".GetHashCode());
+                return new LlmCompletionResult { status = LlmCompletionStatus.Unknown };
             }
         }
 

@@ -120,15 +120,21 @@ active:
 
 **1-2-3 Personalities bridge (`PawnDiary.PersonalitiesBridge`, XML + assembly).** With Pawn Diary +
 1-2-3 Personalities M1 (and, for the interaction/thought groups, M2) active:
-1. Open a colonist's pawn summary path and confirm the Tier-A `personality=<variant>, <trait>` line is
-   present in the context the diary sees (dev-inspect or via the Example Adapter's context snapshot).
-2. Turn **on** "Use personality as diary outlook", let one bridge pass run, and confirm
-   `GetPsychotype` for a colonist reflects the bridge override (owner = the adapter's sourceId).
-3. **Save, reload.** The override is owned by Pawn Diary's per-pawn saved state, so it must survive the
-   round-trip while the toggle stays on. Then turn the toggle **off**, let one pass run, and confirm
-   the override clears from every colonist (including one sent to a caravan / downed / world pawn).
-4. Start a **new colony** in the same session with the toggle on: confirm no stale override bleeds in
-   from the previous colony (the `FinalizeInit` sweep walks the broad pawn set).
+1. Set the bridge mode to **Override** (default). Let one pass run and confirm each colonist's Psychotype
+   Studio shows a **pre-filled, editable** custom rule matching their Enneagram root.
+2. **Edit** one colonist's custom rule by hand, then **save and reload.** The edit must survive the
+   round-trip (change detection is saved as `<mode>:<root>`, so an unchanged pawn is never re-seeded).
+   Change a colonist's personality (dev-mode) and confirm the rule re-seeds on the next pass.
+3. Switch to **Map to a built-in psychotype** and confirm each colonist's base psychotype becomes the
+   mapped built-in type (pinned); switch to **Off** and confirm existing player-owned values are left
+   untouched (nothing is destructively cleared).
+4. **Experimental LLM transform:** with a lane configured, set the mode to the LLM tier, keep or edit the
+   prompt, and confirm one call fires per personality change and replaces the custom rule with compact
+   text; with no lane (or a forced failure) confirm it falls back to the built-in override text.
+5. **Migration:** loading a save made by the *previous* bridge version once releases its locked external
+   overrides (the `FinalizeInit` sweep) so the new editable layers are visible. The old
+   `provideContextLine` / `usePersonalityOutlook` settings keys are dropped; the new `mode` defaults to
+   Override.
 
 ## What counts as a regression
 

@@ -7,12 +7,32 @@
   <!-- Shown at the top of the settings when 1-2-3 Personalities is not in the mod list. -->
   <PawnDiaryPersonalities123.Settings.Missing>1-2-3 Personalities is not active, so this bridge does nothing right now. Enable 1-2-3 Personalities (M1) to use it.</PawnDiaryPersonalities123.Settings.Missing>
 
-  <!-- Tier A toggle. -->
-  <PawnDiaryPersonalities123.Settings.ProvideContextLine>Show personality in diary context</PawnDiaryPersonalities123.Settings.ProvideContextLine>
-  <PawnDiaryPersonalities123.Settings.ProvideContextLineDesc>Adds a short line about each colonist's Enneagram type (variant and main trait) to the context the diary sees when it writes. Read-only; nothing is changed in 1-2-3 Personalities.</PawnDiaryPersonalities123.Settings.ProvideContextLineDesc>
+  <!-- Mode selector header. -->
+  <PawnDiaryPersonalities123.Settings.Mode>How a colonist's personality shapes their diary:</PawnDiaryPersonalities123.Settings.Mode>
 
-  <!-- Tier B toggle. -->
-  <PawnDiaryPersonalities123.Settings.UsePersonalityOutlook>Use personality as diary outlook</PawnDiaryPersonalities123.Settings.UsePersonalityOutlook>
-  <PawnDiaryPersonalities123.Settings.UsePersonalityOutlookDesc>Lets each colonist's Enneagram type shape their diary outlook — what they notice, value, and fear — while keeping their own writing style. Turning this off clears the effect from every colonist. On by default.</PawnDiaryPersonalities123.Settings.UsePersonalityOutlookDesc>
+  <PawnDiaryPersonalities123.Settings.Mode.Off>Off</PawnDiaryPersonalities123.Settings.Mode.Off>
+  <PawnDiaryPersonalities123.Settings.Mode.OffDesc>The bridge does nothing. Colonists' diary psychotypes are left exactly as they are.</PawnDiaryPersonalities123.Settings.Mode.OffDesc>
+
+  <PawnDiaryPersonalities123.Settings.Mode.Internal>Map to a built-in psychotype</PawnDiaryPersonalities123.Settings.Mode.Internal>
+  <PawnDiaryPersonalities123.Settings.Mode.InternalDesc>Set each colonist's diary psychotype to the closest built-in Pawn Diary type for their Enneagram. It shows as a normal, swappable psychotype you can re-pick any time.</PawnDiaryPersonalities123.Settings.Mode.InternalDesc>
+
+  <PawnDiaryPersonalities123.Settings.Mode.Override>Override from personality</PawnDiaryPersonalities123.Settings.Mode.Override>
+  <PawnDiaryPersonalities123.Settings.Mode.OverrideDesc>Fill each colonist's editable psychotype with a short outlook written from their Enneagram — what they notice, value, and fear. You can tweak or clear it per pawn, and it refreshes if their personality changes.</PawnDiaryPersonalities123.Settings.Mode.OverrideDesc>
+
+  <PawnDiaryPersonalities123.Settings.Mode.Llm>Experimental: LLM transform</PawnDiaryPersonalities123.Settings.Mode.Llm>
+  <PawnDiaryPersonalities123.Settings.Mode.LlmDesc>Use your language model to rewrite each colonist's 1-2-3 personality into a compact outlook, then fill their editable psychotype with it. Falls back to the built-in text when no model is set or the call fails. Spends tokens on your configured API.</PawnDiaryPersonalities123.Settings.Mode.LlmDesc>
+
+  <!-- Tier 3 (LLM transform) configuration block. -->
+  <PawnDiaryPersonalities123.Settings.LlmSectionTitle>LLM transform</PawnDiaryPersonalities123.Settings.LlmSectionTitle>
+  <PawnDiaryPersonalities123.Settings.TransformLane>Model / lane</PawnDiaryPersonalities123.Settings.TransformLane>
+  <PawnDiaryPersonalities123.Settings.TransformLaneAuto>Automatic (first active lane)</PawnDiaryPersonalities123.Settings.TransformLaneAuto>
+  <PawnDiaryPersonalities123.Settings.LaneFallback>lane {0}</PawnDiaryPersonalities123.Settings.LaneFallback>
+  <PawnDiaryPersonalities123.Settings.LaneInactive>{0} (inactive)</PawnDiaryPersonalities123.Settings.LaneInactive>
+  <PawnDiaryPersonalities123.Settings.NoLanesHint>No active LLM lane found. Set one up in Pawn Diary's Connection settings first.</PawnDiaryPersonalities123.Settings.NoLanesHint>
+  <PawnDiaryPersonalities123.Settings.TransformPrompt>Transform prompt</PawnDiaryPersonalities123.Settings.TransformPrompt>
+  <PawnDiaryPersonalities123.Settings.ResetPrompt>Reset to default</PawnDiaryPersonalities123.Settings.ResetPrompt>
+
+  <!-- Default Tier-3 instruction. Deliberately plain and directive so small local models follow it. -->
+  <PawnDiaryPersonalities123.Settings.TransformPromptDefault>You turn a character's personality notes into a short 'diary outlook' for a colony game. Reply with ONE or TWO sentences only, in present tense, beginning with 'This pawn'. Say what they notice, value, or fear, and how they judge their day. Do NOT name any personality type, system, letter, number, or trait word. Keep it plain and concrete. Example: This pawn measures the day by what they finished and whether anyone noticed; idle time leaves them restless.</PawnDiaryPersonalities123.Settings.TransformPromptDefault>
 
 </LanguageData>

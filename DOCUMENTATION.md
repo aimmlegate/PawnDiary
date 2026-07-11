@@ -297,6 +297,18 @@ and the Events tab share one source of truth: `IntegrationApiSettings` calls the
 exposed set (non-External, non-package-gated groups) and its order cannot drift from the UI. Same
 gating as the v2 members (master toggle + main thread, no loaded game).
 
+API v4 (`ApiVersion` `3 → 4`) adds editable-psychotype setters and one-shot LLM completions.
+`SetPsychotype(pawn, defName, pin)` and `SetPsychotypeCustomRule(pawn, rule)` write the pawn's
+player-editable psychotype — its base type / custom rule, the layers the Psychotype Studio edits — so an
+adapter can *seed* an outlook the player can then tweak or clear, rather than the source-locked override
+slot. `RequestLlmCompletion(request)` runs one instruction+input prompt on a chosen (or the first active)
+lane and returns a poll handle read via `GetLlmCompletionResult(handle)`; it wraps a new one-shot
+`LlmClient.SendSingleCompletion` (sibling of the connection test, but with a real system prompt and token
+budget) behind a handle store (`ExternalLlmCompletionService`) that marshals the background result back to
+the main-thread poller. It spends the player's tokens, so it is master-toggle-gated, sourceId-attributed,
+one-shot, and input/output-capped. Same gating as the v2/v3 members (master toggle + main thread, no
+loaded game).
+
 For ordinary `SubmitEvent` calls, policy stays in XML: the request's `eventKey` string plays the
 defName role, and an External-domain `DiaryInteractionGroupDef` must claim it (required-match, like
 Romance — an unclaimed key records nothing and logs one warning naming the submitting mod). The
@@ -531,14 +543,20 @@ player installs only the ones matching their mod list:
   rather than a group of its own, so it batches with the social fight it usually triggers.
 - **`PawnDiary.PersonalitiesBridge` (`Pawn Diary: 1-2-3 Personalities`)** — XML **plus** a small
   assembly. Tier 1 (XML): `personalities123_thoughts` (Thought, `matchPackageIds` on M1+M2) and
-  `personalities123_interactions` (Interaction, `matchPackageIds` on M2, not batched). Tier 2
-  (`PawnDiaryPersonalities123.dll`, net472, hard-refs `SP_Module1.dll`): a Tier-A context provider
-  emitting `personality=<variant>, <trait>`, and a default-on Tier-B outlook override mapping the
-  pawn's Enneagram root (`SP_Root1..9`) to a `SetPsychotypeOverride` rule through the pure
-  `EnneagramLensMapping` (unit-tested by `tests/Personalities123BridgeLogicTests/`). Read-only toward
-  1-2-3 Personalities; overrides clear on toggle-off and new-game, walking the same broad pawn set as
-  the RimTalk bridge's `PersonaSync`. SP_Module1-typed methods are `[NoInlining]` behind the cached
-  `SimplePersonalitiesActive` (`hahkethomemah.simplepersonalities`) guard.
+  `personalities123_interactions` (Interaction, `matchPackageIds` on M2, not batched). The assembly
+  (`PawnDiaryPersonalities123.dll`, net472, hard-refs `SP_Module1.dll`) turns each colonist's Enneagram
+  root (`SP_Root1..9`) into their **editable** Pawn Diary psychotype through one single-choice **mode**
+  setting with three escalating tiers: *map to a built-in psychotype* (`SetPsychotype` to the mapped
+  `DiaryPsychotype_*`, pinned), *override from personality* (`SetPsychotypeCustomRule` from the pure
+  `EnneagramLensMapping` outlook text), or *experimental LLM transform* (`RequestLlmCompletion` on a
+  selectable lane with an editable prompt, seeding the custom rule from the model's rewrite and falling
+  back to the override text on any miss). Change-detected by `<mode>:<root>` and **saved** with the game
+  (a reload never re-seeds over the player's edits); re-seeds on a mode or root change. The pure mapper
+  (root → outlook rule, root → built-in psychotype, transform-input assembly) is unit-tested by
+  `tests/Personalities123BridgeLogicTests/`. Read-only toward 1-2-3 Personalities; a one-time
+  `FinalizeInit` sweep releases the locked overrides earlier versions placed so the new editable layers
+  show. SP_Module1-typed reads are `[NoInlining]` behind the cached `SimplePersonalitiesActive`
+  (`hahkethomemah.simplepersonalities`) guard.
 
 Thought-domain caveat (applies to both `*_thoughts` groups above): a Thought-domain group only assigns
 instruction/tone; whether a thought is recorded, and whether it folds into the ambient thought note, is
@@ -1015,15 +1033,18 @@ defs and caches the result (mirroring `DiaryPersonas.All`), so overrides flow to
 picker, and generation in one place. Custom rows are **manual-only**: the merge flags them `custom` so
 `RollCandidates` skips them (never auto-assigned) while `PickerDefsFor` keeps them for hand assignment;
 built-in *overrides* keep the built-in defName, so they still roll with the edited family/rule. The
-public integration API adds `GetPsychotype` (read the effective outlook) and `SetPsychotypeOverride` /
-`ResetPsychotypeOverride` (source-owned, mirroring the writing-style override pair). The RimTalk bridge's
-Tier B repoints to the psychotype override so RimTalk supplies *who* the pawn is while Pawn Diary keeps
-*how* they write. When two adapters contend for the same pawn's slot (e.g. the 1-2-3 Personalities
-bridge and the RimTalk bridge's Tier B both on), the LATER-loading mod wins and the earlier mod's write
+public integration API adds `GetPsychotype` (read the effective outlook), the source-owned
+`SetPsychotypeOverride` / `ResetPsychotypeOverride` pair (mirroring the writing-style override), and — in
+v4 — the **editable-layer** setters `SetPsychotype` (base type, pinned) and `SetPsychotypeCustomRule`
+(the player's custom rule), which let an adapter *seed* an outlook the player can then edit rather than
+locking one. The RimTalk bridge's Tier B uses the source-owned override so RimTalk supplies *who* the pawn
+is while Pawn Diary keeps *how* they write; the 1-2-3 Personalities bridge instead seeds the editable
+layers. When two adapters contend for the same pawn's **override** slot, the LATER-loading mod wins and the earlier mod's write
 returns `false` — the RimWorld "lower in the list overrides" convention, decided by the pure
 `ExternalOverrideArbitration.MayDisplace` over load-order indexes resolved (and process-cached) by
 `ExternalSourceLoadOrder`. SourceIds that are not active-mod packageIds keep the old last-writer-wins,
-and a stale owner whose mod was removed is always displaceable. `Reset*` stays owner-guarded.
+and a stale owner whose mod was removed is always displaceable. `Reset*` stays owner-guarded. The
+v4 editable-layer setters are plain last-writer-wins — no arbitration — since they write the player's own slot.
 
 Prompt enchantments add one weighted live-context cue to eligible first-person prompts. Event windows
 and observed conditions feed the same planner, so active threats can bias otherwise unrelated diary

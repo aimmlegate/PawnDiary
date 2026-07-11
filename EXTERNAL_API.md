@@ -19,11 +19,11 @@ lets *your* mod do the same thing: push a moment into a pawn's diary, read diary
 your own pawn context into Pawn Diary's prompts. Your adapter stays a normal mod — Pawn Diary owns
 the LLM call, prompt framing, safety text, parsing, persistence, and the Diary tab.
 
-Current contract version: `PawnDiaryApi.ApiVersion == 3`. Future additive members will bump this
+Current contract version: `PawnDiaryApi.ApiVersion == 4`. Future additive members will bump this
 further; feature-detect before using version-gated members:
 
 ```csharp
-if (PawnDiaryApi.ApiVersion >= 3) { /* use a v3 member such as GetEventFilters() */ }
+if (PawnDiaryApi.ApiVersion >= 4) { /* use a v4 member such as RequestLlmCompletion() */ }
 ```
 
 ---
@@ -88,13 +88,14 @@ That's it. Open the pawn's Diary tab and trigger your hook.
 | Read the structured pawn summary Pawn Diary would prompt with | `GetPawnSummary` |
 | Read the live condition/enchantment candidates | `GetPromptEnchantments` |
 | Read or set the pawn's writing style / generation toggle | `GetWritingStyle`, `SetWritingStyleOverride`, `IsDiaryGenerationEnabled`… |
-| Read or set the pawn's psychotype (outlook) | `GetPsychotype`, `SetPsychotypeOverride`, `ResetPsychotypeOverride` |
+| Read or set the pawn's psychotype (outlook) | `GetPsychotype`, `SetPsychotype` *(v4)*, `SetPsychotypeCustomRule` *(v4)*, `SetPsychotypeOverride`, `ResetPsychotypeOverride` |
 | Contribute one `key=value` context line to every pawn summary | `RegisterPawnContextProvider` |
 | Get style + summary + enchantments + recent memory in one call | `GetContextBundle` |
 | Read the player's current LLM API setup (routing + lanes, incl. keys) | `GetApiSetup` *(v2)* |
 | Add a new active LLM API lane (endpoint + model + auth) | `AddApiLane` *(v2)* |
 | List the automatic-capture event filters (the settings *Events* tab) | `GetEventFilters` *(v3)* |
 | Read / toggle one event filter by group defName | `IsEventFilterEnabled` / `SetEventFilterEnabled` *(v3)* |
+| Run a one-shot LLM completion on a chosen lane | `RequestLlmCompletion` / `GetLlmCompletionResult` *(v4)* |
 
 Full signatures and field semantics: [`INTEGRATIONS.md`](INTEGRATIONS.md) § API reference.
 

@@ -10,7 +10,8 @@
   unless the relevant module is active. They match by matchPackageIds rather than enumerating def names,
   because no verified exhaustive SP_ def list exists and package-id matching was built for exactly that gap.
 
-  Tier 2 (the Enneagram context line + outlook override) lives in this mod's assembly, not here.
+  The Enneagram-driven psychotype seeding (map to a built-in psychotype / editable outlook override /
+  experimental LLM transform, chosen by one setting) lives in this mod's assembly, not here.
 -->
 <Defs>
 
