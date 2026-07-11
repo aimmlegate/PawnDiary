@@ -28,7 +28,8 @@ namespace PawnDiary.Integration
     /// entry stats, compact prose context bundles, prompt fragments/enchantment candidates on
     /// external events, pawn-context providers for prompt-summary context, LLM API setup reads
     /// plus add-lane writes, automatic-capture event-filter reads plus per-group toggles, editable
-    /// base/custom psychotype setters, and one-shot LLM completions on a chosen lane.
+    /// base/custom psychotype setters, one-shot LLM completions on a chosen lane, and an external
+    /// psychotype-generator hook that gives the voice editor a Regenerate button + loading status.
     /// </summary>
     public static class PawnDiaryApi
     {
@@ -37,7 +38,7 @@ namespace PawnDiary.Integration
         /// members never change behavior incompatibly. Adapters that need a newer member can check
         /// this at load time and degrade gracefully on older Pawn Diary builds.
         /// </summary>
-        public const int ApiVersion = 4;
+        public const int ApiVersion = 5;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time
@@ -1355,6 +1356,49 @@ namespace PawnDiary.Integration
                     "[Pawn Diary] Integration API: RegisterPawnContextProvider for '" + providerForLog
                     + "' failed: " + e,
                     ("PawnDiary.Api.ContextProvider.Exception." + providerForLog).GetHashCode());
+            }
+        }
+
+        /// <summary>
+        /// Registers (or replaces, by sourceId) an external psychotype GENERATOR — an adapter that produces
+        /// a pawn's outlook asynchronously (e.g. an LLM transform). It gives the per-pawn voice editor a
+        /// "Regenerate" button and a "generating…" status for pawns the generator owns, without the adapter
+        /// needing any UI code. The three callbacks (all optional except <c>reroll</c>) run on the main
+        /// thread while the editor is open: <c>canReroll</c> gates whether the button shows, <c>isBusy</c>
+        /// drives the loading status, and <c>reroll</c> starts a fresh generation. Main-thread only; safe
+        /// before a game loads; never throws (a generator that later throws is disabled for the session).
+        /// </summary>
+        public static void RegisterExternalPsychotypeGenerator(ExternalPsychotypeGenerator generator)
+        {
+            string sourceForLog = generator == null || string.IsNullOrWhiteSpace(generator.sourceId)
+                ? "unknown-source"
+                : generator.sourceId.Trim();
+            try
+            {
+                if (generator == null || string.IsNullOrWhiteSpace(generator.sourceId) || generator.reroll == null)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: RegisterExternalPsychotypeGenerator needs a sourceId and a reroll callback; the call was ignored.",
+                        ("PawnDiary.Api.PsychotypeGenerator.Invalid." + sourceForLog).GetHashCode());
+                    return;
+                }
+
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: RegisterExternalPsychotypeGenerator for '" + sourceForLog
+                        + "' was called off the main thread; the generator was ignored.",
+                        ("PawnDiary.Api.PsychotypeGenerator.OffThread." + sourceForLog).GetHashCode());
+                    return;
+                }
+
+                ExternalPsychotypeGenerators.Register(generator);
+            }
+            catch (Exception e)
+            {
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: RegisterExternalPsychotypeGenerator for '" + sourceForLog + "' failed: " + e,
+                    ("PawnDiary.Api.PsychotypeGenerator.Exception." + sourceForLog).GetHashCode());
             }
         }
 

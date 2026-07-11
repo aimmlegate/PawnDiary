@@ -12,6 +12,7 @@
 //                         on a selectable lane with an editable prompt (falls back to Override).
 //
 // New to C#/RimWorld? See AGENTS.md in the Pawn Diary repo.
+using System;
 using System.Collections.Generic;
 using PawnDiary.Integration;
 using UnityEngine;
@@ -79,10 +80,63 @@ namespace PawnDiaryPersonalities123
                     + ") is not in the active mod list; the bridge stays idle.",
                     "PawnDiaryPersonalities123.Missing".GetHashCode());
             }
+            else
+            {
+                RegisterPsychotypeGenerator();
+            }
 
             // Record the starting signature so the first settings-window close only bumps the generation
             // if the player actually changed something.
             appliedSignature = SettingsSignature();
+        }
+
+        // Registers the voice editor's Regenerate/loading hook for the LLM tier. Isolated + try/caught so
+        // an older Pawn Diary without this API (or a rename) degrades to "no Regenerate button" instead of
+        // breaking the whole mod constructor.
+        private static void RegisterPsychotypeGenerator()
+        {
+            try
+            {
+                PawnDiaryApi.RegisterExternalPsychotypeGenerator(new ExternalPsychotypeGenerator
+                {
+                    sourceId = BridgeIds.ModId,
+                    canReroll = CanRerollPawn,
+                    isBusy = IsPawnTransformBusy,
+                    reroll = RerollPawn
+                });
+            }
+            catch (Exception e)
+            {
+                Log.Error(LogPrefix + " failed to register the psychotype generator; the editor's Regenerate button is unavailable: " + e);
+            }
+        }
+
+        // The Regenerate button shows only while the LLM transform tier is the active mode.
+        private static bool CanRerollPawn(Pawn pawn)
+        {
+            return SimplePersonalitiesActive
+                && Settings != null
+                && Settings.mode == Personalities123Mode.LlmTransform;
+        }
+
+        private static bool IsPawnTransformBusy(Pawn pawn)
+        {
+            Personalities123GameComponent component = ActiveComponent();
+            return component != null && component.IsTransformInFlight(pawn);
+        }
+
+        private static void RerollPawn(Pawn pawn)
+        {
+            Personalities123GameComponent component = ActiveComponent();
+            if (component != null)
+            {
+                component.RerollTransform(pawn);
+            }
+        }
+
+        private static Personalities123GameComponent ActiveComponent()
+        {
+            return Current.Game == null ? null : Current.Game.GetComponent<Personalities123GameComponent>();
         }
 
         /// <summary>Returns the settings-list label shown by RimWorld's mod options menu.</summary>

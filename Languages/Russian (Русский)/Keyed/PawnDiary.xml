@@ -1312,6 +1312,9 @@
   <PawnDiary.Psychotype.PickerHeader>Психотип</PawnDiary.Psychotype.PickerHeader>
   <PawnDiary.Psychotype.Reroll>Перебросить</PawnDiary.Psychotype.Reroll>
   <PawnDiary.Psychotype.RerollTip>Разыграть поселенцу новый психотип по его увлечениям в навыках. Результат закрепляется, и игра больше не меняет его сама.</PawnDiary.Psychotype.RerollTip>
+  <PawnDiary.Psychotype.RegenerateExternal>Сгенерировать заново</PawnDiary.Psychotype.RegenerateExternal>
+  <PawnDiary.Psychotype.RegenerateExternalTip>Попросить внешнее дополнение (например, мост характеров) заново собрать взгляд этого поселенца на мир. Когда оно закончит, правило ниже обновится.</PawnDiary.Psychotype.RegenerateExternalTip>
+  <PawnDiary.Psychotype.RegeneratingExternal>Генерация…</PawnDiary.Psychotype.RegeneratingExternal>
   <PawnDiary.Psychotype.Pinned>Закреплён</PawnDiary.Psychotype.Pinned>
   <PawnDiary.Psychotype.PinnedTip>Этот психотип выбран вручную, поэтому игра не станет менять его сама (например, когда поселенец повзрослеет).</PawnDiary.Psychotype.PinnedTip>
   <PawnDiary.Psychotype.Unpin>Открепить</PawnDiary.Psychotype.Unpin>

@@ -19,11 +19,11 @@ lets *your* mod do the same thing: push a moment into a pawn's diary, read diary
 your own pawn context into Pawn Diary's prompts. Your adapter stays a normal mod — Pawn Diary owns
 the LLM call, prompt framing, safety text, parsing, persistence, and the Diary tab.
 
-Current contract version: `PawnDiaryApi.ApiVersion == 4`. Future additive members will bump this
+Current contract version: `PawnDiaryApi.ApiVersion == 5`. Future additive members will bump this
 further; feature-detect before using version-gated members:
 
 ```csharp
-if (PawnDiaryApi.ApiVersion >= 4) { /* use a v4 member such as RequestLlmCompletion() */ }
+if (PawnDiaryApi.ApiVersion >= 5) { /* use a v5 member such as RegisterExternalPsychotypeGenerator() */ }
 ```
 
 ---
@@ -96,6 +96,7 @@ That's it. Open the pawn's Diary tab and trigger your hook.
 | List the automatic-capture event filters (the settings *Events* tab) | `GetEventFilters` *(v3)* |
 | Read / toggle one event filter by group defName | `IsEventFilterEnabled` / `SetEventFilterEnabled` *(v3)* |
 | Run a one-shot LLM completion on a chosen lane | `RequestLlmCompletion` / `GetLlmCompletionResult` *(v4)* |
+| Give the voice editor a Regenerate button + loading status for an async outlook | `RegisterExternalPsychotypeGenerator` *(v5)* |
 
 Full signatures and field semantics: [`INTEGRATIONS.md`](INTEGRATIONS.md) § API reference.
 

@@ -36,6 +36,12 @@ namespace PawnDiary
         private readonly string originalPsychotypeDefName;
         private bool pendingPsychotypePinned;
 
+        // ---- External (integration) psychotype-generation state ----
+        // Set while we wait for an adapter's Regenerate to land, with the saved rule captured at click
+        // time so we can pull the freshly generated outlook into the editable buffer when it changes.
+        private bool awaitingRegen;
+        private string regenBaseline = string.Empty;
+
         private readonly Pawn pawn;
         private readonly DiaryGameComponent component;
 
@@ -248,6 +254,8 @@ namespace PawnDiary
             TooltipHandler.TipRegion(pinRect, "PawnDiary.Psychotype.PinnedTip".Translate());
             y += ButtonHeight + FieldGap;
 
+            DrawExternalRegenRow(x, width, ref y);
+
             y += DrawLabeledScrollText(
                 new Rect(x, y, width, SmallPromptHeight),
                 "PawnDiary.Psychotype.BaseRule".Translate(),
@@ -276,6 +284,56 @@ namespace PawnDiary
                 y += DrawMessagePanel(new Rect(x, y, width, 0f), hint,
                     new Color(0.12f, 0.10f, 0.04f, 0.55f)) + FieldGap;
             }
+        }
+
+        // When an integration (e.g. an LLM transform) can regenerate this pawn's outlook, show a
+        // Regenerate button and a live "generating…" status. The button is disabled while a generation is
+        // in flight, and the editable custom buffer refreshes once the newly generated rule lands, so the
+        // fresh outlook appears without reopening the window.
+        private void DrawExternalRegenRow(float x, float width, ref float y)
+        {
+            if (pawn == null || !Integration.ExternalPsychotypeGenerators.CanReroll(pawn))
+            {
+                return;
+            }
+
+            bool busy = Integration.ExternalPsychotypeGenerators.IsBusy(pawn);
+
+            if (awaitingRegen && component != null)
+            {
+                string current = component.CustomPsychotypeRuleFor(pawn);
+                if (!string.Equals(current, regenBaseline, StringComparison.Ordinal))
+                {
+                    customPsychotypeBuffer = current;
+                    awaitingRegen = false;
+                }
+            }
+
+            const float gap = 6f;
+            Rect buttonRect = new Rect(x, y, Mathf.Min(200f, width), ButtonHeight);
+            Rect statusRect = new Rect(buttonRect.xMax + gap, y, Mathf.Max(0f, width - buttonRect.width - gap), ButtonHeight);
+
+            if (Widgets.ButtonText(buttonRect, "PawnDiary.Psychotype.RegenerateExternal".Translate(), true, true, !busy))
+            {
+                regenBaseline = component == null ? string.Empty : component.CustomPsychotypeRuleFor(pawn);
+                awaitingRegen = true;
+                Integration.ExternalPsychotypeGenerators.Reroll(pawn);
+            }
+
+            TooltipHandler.TipRegion(buttonRect, "PawnDiary.Psychotype.RegenerateExternalTip".Translate());
+
+            if (busy)
+            {
+                TextAnchor previousAnchor = Text.Anchor;
+                Color previousColor = GUI.color;
+                Text.Anchor = TextAnchor.MiddleLeft;
+                GUI.color = new Color(1f, 1f, 1f, 0.7f);
+                Widgets.Label(statusRect, "PawnDiary.Psychotype.RegeneratingExternal".Translate());
+                GUI.color = previousColor;
+                Text.Anchor = previousAnchor;
+            }
+
+            y += ButtonHeight + FieldGap;
         }
 
         private void DrawPsychotypePicker(Rect rect)
@@ -370,6 +428,11 @@ namespace PawnDiary
             h += SectionGap + FieldGap; // gap + separator line
             h += SectionTitleHeight + FieldGap;
             h += ButtonHeight + FieldGap;
+            if (pawn != null && Integration.ExternalPsychotypeGenerators.CanReroll(pawn))
+            {
+                h += ButtonHeight + FieldGap; // external Regenerate row
+            }
+
             h += (LabelHeight + 2f + SmallPromptHeight) + FieldGap;
             h += (LabelHeight + 2f + SmallPromptHeight) + FieldGap;
             h += MessagePanelHeight(PsychotypeHintMessage(psychotypeResolution), width);

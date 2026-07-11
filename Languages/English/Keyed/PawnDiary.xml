@@ -1360,6 +1360,9 @@
   <PawnDiary.Psychotype.PickerHeader>Psychotype</PawnDiary.Psychotype.PickerHeader>
   <PawnDiary.Psychotype.Reroll>Re-roll</PawnDiary.Psychotype.Reroll>
   <PawnDiary.Psychotype.RerollTip>Roll a new psychotype for this pawn from their skill passions. This pins the result so it will not auto-re-roll.</PawnDiary.Psychotype.RerollTip>
+  <PawnDiary.Psychotype.RegenerateExternal>Regenerate</PawnDiary.Psychotype.RegenerateExternal>
+  <PawnDiary.Psychotype.RegenerateExternalTip>Ask the external integration (for example a personality bridge) to regenerate this pawn's outlook from scratch. It replaces the custom rule below when it finishes.</PawnDiary.Psychotype.RegenerateExternalTip>
+  <PawnDiary.Psychotype.RegeneratingExternal>Generating…</PawnDiary.Psychotype.RegeneratingExternal>
   <PawnDiary.Psychotype.Pinned>Pinned</PawnDiary.Psychotype.Pinned>
   <PawnDiary.Psychotype.PinnedTip>You chose this psychotype, so it will not be auto-re-rolled (for example when the pawn grows up).</PawnDiary.Psychotype.PinnedTip>
   <PawnDiary.Psychotype.Unpin>Unpin</PawnDiary.Psychotype.Unpin>

@@ -39,6 +39,14 @@ pre-release version ladder for project history.
   suite drops the retired context-line checks and adds new ones
   (`tests/Personalities123BridgeLogicTests/`, 90 checks green). Both committed DLLs (`PawnDiary.dll`,
   `PawnDiaryPersonalities123.dll`) rebuilt.
+- **Per-pawn Regenerate button + loading status for the LLM tier (`ApiVersion 4 → 5`).** New public
+  `RegisterExternalPsychotypeGenerator(ExternalPsychotypeGenerator)`: an adapter registers `canReroll` /
+  `isBusy` / `reroll` callbacks and the per-pawn voice editor (`Dialog_PawnWritingStyle`) shows a
+  **Regenerate** button and a live **generating…** status for pawns it owns, refreshing the editable
+  custom rule when the new outlook lands (new `ExternalPsychotypeGenerators` registry, mirroring the
+  context-provider hook). The 1-2-3 Personalities bridge registers one while in the LLM tier and gains
+  `Personalities123GameComponent.RerollTransform` / `IsTransformInFlight`; the button re-fires the
+  transform for that colonist on demand. No Harmony. Main-mod EN/RU strings added; both DLLs rebuilt.
 
 ## 2026-07-10
 

@@ -140,6 +140,45 @@ namespace PawnDiaryPersonalities123
             }
         }
 
+        /// <summary>
+        /// True while a Tier-3 LLM transform is in flight for this pawn. Drives the voice editor's
+        /// "generating…" status through the registered psychotype generator.
+        /// </summary>
+        public bool IsTransformInFlight(Pawn pawn)
+        {
+            return pawn != null && inFlight.ContainsKey(pawn.GetUniqueLoadID());
+        }
+
+        /// <summary>
+        /// Forces a fresh Tier-3 transform for one pawn — the voice editor's Regenerate button. Only acts
+        /// in the LLM mode with a usable personality; clears the pawn's change-detection and starts the
+        /// transform right away so the loading status appears at once (main thread; the editor invokes it).
+        /// </summary>
+        public void RerollTransform(Pawn pawn)
+        {
+            if (pawn == null || !PawnDiaryPersonalities123Mod.SimplePersonalitiesActive)
+            {
+                return;
+            }
+
+            PawnDiaryPersonalities123Settings settings = PawnDiaryPersonalities123Mod.Settings;
+            if (settings == null || settings.mode != Personalities123Mode.LlmTransform)
+            {
+                return;
+            }
+
+            string root = EnneagramSync.RootDefNameFor(pawn);
+            if (string.IsNullOrEmpty(root))
+            {
+                return;
+            }
+
+            string id = pawn.GetUniqueLoadID();
+            handledKey.Remove(id);
+            inFlight.Remove(id);
+            StartOrFallbackTransform(pawn, id, KeyFor(settings.mode, root), root, settings);
+        }
+
         // Applies the active tier to one pawn, or advances an in-flight transform. Change-detected so an
         // already-handled (mode, root) is left alone — that is what keeps player edits.
         private void SyncPawn(Pawn pawn, PawnDiaryPersonalities123Settings settings)

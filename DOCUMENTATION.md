@@ -309,6 +309,14 @@ the main-thread poller. It spends the player's tokens, so it is master-toggle-ga
 one-shot, and input/output-capped. Same gating as the v2/v3 members (master toggle + main thread, no
 loaded game).
 
+API v5 (`ApiVersion` `4 → 5`) adds `RegisterExternalPsychotypeGenerator(ExternalPsychotypeGenerator)` — an
+adapter that produces a pawn's outlook asynchronously (e.g. the 1-2-3 Personalities bridge's LLM transform)
+registers three main-thread callbacks (`canReroll` / `isBusy` / `reroll`), and the per-pawn voice editor
+(`Dialog_PawnWritingStyle`) shows a **Regenerate** button and a live **generating…** status for pawns it
+owns, refreshing the editable custom rule when the new outlook lands. Registration mirrors
+`RegisterPawnContextProvider` (process-global, main-thread, replace-by-sourceId, a throwing generator
+disabled for the session) through the `ExternalPsychotypeGenerators` registry.
+
 For ordinary `SubmitEvent` calls, policy stays in XML: the request's `eventKey` string plays the
 defName role, and an External-domain `DiaryInteractionGroupDef` must claim it (required-match, like
 Romance — an unclaimed key records nothing and logs one warning naming the submitting mod). The
@@ -553,7 +561,9 @@ player installs only the ones matching their mod list:
   back to the override text on any miss). Change-detected by `<mode>:<root>` and **saved** with the game
   (a reload never re-seeds over the player's edits); re-seeds on a mode or root change, and re-seeds the
   whole colony on **any** settings change (mode/lane/prompt) via a process-global `SettingsGeneration` the
-  mod bumps from `WriteSettings` and the component watches. The pure mapper
+  mod bumps from `WriteSettings` and the component watches. In the LLM tier the bridge also registers an
+  external psychotype generator (`RegisterExternalPsychotypeGenerator`), so the per-pawn voice editor gets
+  a Regenerate button + loading status wired to the component's `RerollTransform` / `IsTransformInFlight`. The pure mapper
   (root → outlook rule, root → built-in psychotype, transform-input assembly) is unit-tested by
   `tests/Personalities123BridgeLogicTests/`. Read-only toward 1-2-3 Personalities; a one-time
   `FinalizeInit` sweep releases the locked overrides earlier versions placed so the new editable layers
