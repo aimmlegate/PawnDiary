@@ -71,6 +71,9 @@ namespace DiaryCapturePolicyTests
             TestThoughtProgressionBuildGameContextFormat();
             TestProgressionDecide();
             TestProgressionBuildGameContextFormat();
+            TestTraitProgressionKey();
+            TestTraitProgressionNewlyGained();
+            TestProgressionTraitBuildGameContextFormat();
             TestDayReflectionDecide();
             TestDayReflectionImportantSignalKindPolicy();
             TestDayReflectionBuildGameContextFormat();
@@ -1321,6 +1324,77 @@ namespace DiaryCapturePolicyTests
                     null,
                     "4",
                     null));
+        }
+
+        // -- Trait-gain progression --
+
+        private static void TestTraitProgressionKey()
+        {
+            AssertEqual("trait key joins defName and degree", "Nerves|-1",
+                TraitProgressionPolicy.BuildTraitKey("Nerves", -1));
+            AssertEqual("trait key degree zero", "Kind|0",
+                TraitProgressionPolicy.BuildTraitKey("Kind", 0));
+            AssertEqual("trait key trims defName", "Industriousness|1",
+                TraitProgressionPolicy.BuildTraitKey("  Industriousness  ", 1));
+            AssertEqual("trait key blank defName is empty", string.Empty,
+                TraitProgressionPolicy.BuildTraitKey("   ", 2));
+            AssertEqual("trait key null defName is empty", string.Empty,
+                TraitProgressionPolicy.BuildTraitKey(null, 2));
+        }
+
+        private static void TestTraitProgressionNewlyGained()
+        {
+            // Only keys absent from the previous snapshot count as gained, and current order is kept.
+            AssertEqual("newly gained keeps current order, drops known",
+                "Kind|0,Nerves|-1",
+                Join(TraitProgressionPolicy.NewlyGainedTraitKeys(
+                    new List<string> { "Bloodlust|0" },
+                    new List<string> { "Bloodlust|0", "Kind|0", "Nerves|-1" })));
+            // Null/empty previous means "no baseline yet" -> everything current is new.
+            AssertEqual("null previous means all current new",
+                "Bloodlust|0,Kind|0",
+                Join(TraitProgressionPolicy.NewlyGainedTraitKeys(
+                    null,
+                    new List<string> { "Bloodlust|0", "Kind|0" })));
+            // Case-insensitive so a save round-trip cannot re-fire, and blanks/dupes are dropped.
+            AssertEqual("known match is case-insensitive; blanks and dupes dropped",
+                "Kind|0",
+                Join(TraitProgressionPolicy.NewlyGainedTraitKeys(
+                    new List<string> { "nerves|-1" },
+                    new List<string> { "Nerves|-1", "", "Kind|0", "Kind|0" })));
+            // A degree change (same spectrum defName, new degree) reads as a new trait.
+            AssertEqual("degree change counts as new",
+                "Nerves|1",
+                Join(TraitProgressionPolicy.NewlyGainedTraitKeys(
+                    new List<string> { "Nerves|-1" },
+                    new List<string> { "Nerves|1" })));
+            AssertEqual("no change yields nothing",
+                string.Empty,
+                Join(TraitProgressionPolicy.NewlyGainedTraitKeys(
+                    new List<string> { "Kind|0" },
+                    new List<string> { "Kind|0" })));
+        }
+
+        private static void TestProgressionTraitBuildGameContextFormat()
+        {
+            // The trait description rides along in extraContext so the model voices the change from the
+            // trait's own words. The defName token is the constant the XML group matches on. A gain has
+            // no previous value, so previous_value is blank and omitted.
+            AssertEqual("trait gained context carries label and description",
+                "progression=TraitGained; progression_kind=trait; label=Nervous; new_value=Nervous; "
+                    + "trait=Nervous; trait_def=Nerves; trait_description=Prone to anxiety and tension.",
+                ProgressionEventData.BuildGameContext(
+                    ProgressionEventData.TraitGainedDefName,
+                    "trait",
+                    "Nervous",
+                    string.Empty,
+                    "Nervous",
+                    "trait=Nervous; trait_def=Nerves; trait_description=Prone to anxiety and tension."));
+        }
+
+        private static string Join(List<string> values)
+        {
+            return values == null ? string.Empty : string.Join(",", values.ToArray());
         }
 
         // ── Day reflection ──

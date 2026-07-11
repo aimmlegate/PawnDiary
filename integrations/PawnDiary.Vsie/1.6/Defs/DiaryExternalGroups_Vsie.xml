@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  The adapter's half of the Pawn Diary contract for the gathering bridge: External-domain groups that
+  CLAIM the eventKeys VsieGatheringBridge submits. Without a claiming group, SubmitEvent records nothing
+  (Pawn Diary logs one warning naming the source). label/instruction/tones are DefInjected-localizable
+  inside this adapter mod, exactly like Pawn Diary's own groups. See INTEGRATIONS.md in the Pawn Diary repo.
+
+  matchDefNames MUST stay in sync with VsieGatheringMap's eventKeys ("vsie_birthday" / "vsie_funeral").
+  These are frozen save tokens — never rename them after release.
+
+  Gated by enableWhenPackageIdsLoaded like the rest of this adapter, so both groups are completely inert
+  (not listed as capturable, no warnings) unless VSIE is in the active mod list — which matches the C#
+  side, where the gathering hook is only installed when VSIE is active.
+
+  These capture the discrete colony MOMENT (a birthday party / a funeral happened), from the organizer's
+  point of view. Each attendee's private FEELING about the gathering already reaches the diary through
+  the vsie_thoughts group (VSIE's VSIE_AttendedBirthdayParty / VSIE_HadBirthdayParty / ... mood thoughts),
+  so these two groups deliberately do not try to re-capture that.
+-->
+<Defs>
+
+  <!-- Birthday party: the organizer throwing a celebration for the colony. Low-key gladness, but the
+       diary voice should let the rest of colony life bleed through rather than read as pure cheer. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>vsieBirthdayGathering</defName>
+    <label>birthday party</label>
+    <order>1020</order>
+    <domain>External</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VanillaSocialInteractionsExpanded</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a birthday the colony gathered to mark; write the warmth of the day and what it meant to stop and celebrate here, not a guest list</instruction>
+    <instructions>
+      <li>birthday - write the small brightness of it, and how it sat against everything else the colony is carrying</li>
+      <li>birthday - keep it to a believable moment for this pawn; a hard place makes a little celebration matter more, not less</li>
+    </instructions>
+    <tone>gladness with the ordinary weight of the day still underneath</tone>
+    <tones>
+      <li>warm and a little tired, a real celebration snatched from a hard place</li>
+      <li>fond and low-key, glad the colony made the time</li>
+    </tones>
+    <matchDefNames>
+      <li>vsie_birthday</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Funeral: the colony gathering over a grave. Grief held among others; the organizer is a living
+       mourner, so this is written from their point of view. The deceased is not named here (the hook
+       does not carry them), so keep the instruction about the shared grief, not the specific person. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>vsieFuneralGathering</defName>
+    <label>funeral</label>
+    <order>1021</order>
+    <domain>External</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VanillaSocialInteractionsExpanded</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a funeral the colony held; write the grief and the standing-together of it — what was lost and how the pawn carried it — not the ceremony's mechanics</instruction>
+    <instructions>
+      <li>funeral - write the weight of the gathering and the pawn's own private grief, only as far as their mood and the moment make believable</li>
+      <li>funeral - it is a shared loss; let the presence of the others matter, whether it was comfort or made it heavier</li>
+    </instructions>
+    <tone>quiet, heavy, and communal</tone>
+    <tones>
+      <li>subdued and raw, grief held among others</li>
+      <li>still and heavy, the colony closing around a loss</li>
+    </tones>
+    <matchDefNames>
+      <li>vsie_funeral</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

@@ -3,7 +3,7 @@
   <name>Pawn Diary: Vanilla Social Interactions Expanded</name>
   <author>aimmlegate</author>
   <packageId>aimmlegate.pawndiary.adapter.vsie</packageId>
-  <modVersion IgnoreIfNoMatchingField="True">0.1.0</modVersion>
+  <modVersion IgnoreIfNoMatchingField="True">0.2.0</modVersion>
   <supportedVersions>
     <li>1.6</li>
   </supportedVersions>
@@ -30,8 +30,7 @@ With both mods active, VSIE's extra social life shows up in the diary in its own
 - Discord — a colonist's angry insult at another; recorded with its sting alongside the vanilla "insults and fights" it belongs with (and the social fight it can spark), not as friendly chatter.
 - Becoming best friends (VSIE_BestFriend) — recorded as a real relationship milestone, like the vanilla romance milestones.
 - VSIE's extra mood thoughts — themed so they read as social afterthoughts rather than generic mood notes.
+- Group gatherings — a birthday party or a funeral becomes its own diary entry (from the organizer's point of view), so the colony moment is remembered, not just each colonist's private feeling about it. Birthdays and funerals each have their own on/off toggle in this mod's settings. VSIE's other gatherings (movie night, skygazing, dates, and so on) are left to the mood-thought capture above.
 
-Pure XML: no new assembly, nothing written unless VSIE is installed. Requires Pawn Diary. Deployed as a separate RimWorld mod via scripts/deploy-integrations.ps1.
-
-Not covered yet: VSIE's group Gatherings (birthdays, funerals, movie nights) — they have no interaction/tale signal to hook, so they need a small C# bridge planned for a later pass.</description>
+Mostly XML, plus a tiny assembly for the gathering hook. Nothing is written unless VSIE is installed. Requires Pawn Diary. Deployed as a separate RimWorld mod via scripts/deploy-integrations.ps1. (VSIE's venting, teaching, best-friend, and mood-thought entries stay toggleable in Pawn Diary's own Events tab.)</description>
 </ModMetaData>

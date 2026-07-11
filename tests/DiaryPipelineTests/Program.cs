@@ -100,6 +100,7 @@ namespace DiaryPipelineTests
             TestErrorFingerprintGroupsAndDistinguishes();
             TestErrorReportPayloadIsValidPiiFreeJson();
             TestInstallSourceClassifier();
+            TestModErrorPrefixPolicyCoversSubmods();
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
@@ -5137,6 +5138,40 @@ namespace DiaryPipelineTests
                 InstallSource.FromRootDir(@"D:\Steam\steamapps\workshop\content\999999\123\Mod"));
             AssertEqual("blank is unknown", InstallSource.Unknown, InstallSource.FromRootDir(""));
             AssertEqual("null is unknown", InstallSource.Unknown, InstallSource.FromRootDir(null));
+        }
+
+        // The error reporter only forwards messages this policy calls "ours". This locks in that the
+        // main mod AND its first-party integration submods are covered, while the copy-me example
+        // adapter template, other mods, and base-game lines are not. Add a row here with each new submod.
+        private static void TestModErrorPrefixPolicyCoversSubmods()
+        {
+            // The main mod's own lines are ours.
+            AssertTrue("main mod prefix is ours",
+                ModErrorPrefixPolicy.IsModErrorMessage("[Pawn Diary] something broke: System.NullReferenceException"));
+
+            // First-party integration submods are ours too — the point of this change. The spaced
+            // "[Pawn Diary: X]" root covers every such bridge (Personalities, VSIE, ...) with no
+            // per-submod entry; the RimTalk bridge uses the no-space root.
+            AssertTrue("1-2-3 Personalities bridge prefix is ours",
+                ModErrorPrefixPolicy.IsModErrorMessage("[Pawn Diary: 1-2-3 Personalities] failed to register the psychotype generator"));
+            AssertTrue("VSIE bridge prefix is ours",
+                ModErrorPrefixPolicy.IsModErrorMessage("[Pawn Diary: VSIE] failed to install the gathering hook"));
+            AssertTrue("RimTalk bridge prefix is ours",
+                ModErrorPrefixPolicy.IsModErrorMessage("[PawnDiary: RimTalk bridge] failed to install Harmony patches"));
+
+            // The example adapter is a copy-me template for third parties, so its lines are NOT ours.
+            AssertTrue("example adapter template is not ours",
+                !ModErrorPrefixPolicy.IsModErrorMessage("[Pawn Diary Example Adapter] PreviewPrompt returned null"));
+
+            // Other mods and unprefixed base-game lines are never ours.
+            AssertTrue("other mod prefix is not ours",
+                !ModErrorPrefixPolicy.IsModErrorMessage("[Some Other Mod] null reference in OnGUI"));
+            AssertTrue("unprefixed base-game line is not ours",
+                !ModErrorPrefixPolicy.IsModErrorMessage("Root level exception in OnGUI(): System.Exception"));
+
+            // Guard inputs.
+            AssertTrue("null is not ours", !ModErrorPrefixPolicy.IsModErrorMessage(null));
+            AssertTrue("empty is not ours", !ModErrorPrefixPolicy.IsModErrorMessage(string.Empty));
         }
 
         private static void AssertHeader(string name, HttpRequestMessage request, string headerName, string expected)

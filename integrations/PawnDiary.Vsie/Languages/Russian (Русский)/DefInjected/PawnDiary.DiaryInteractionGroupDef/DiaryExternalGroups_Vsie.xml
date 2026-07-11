@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Русский перевод External-групп моста собраний VSIE. Написан по-русски (не калька), в том же
+     регистре, что и DiaryCompat_VSIE.xml: «поселенец», ярлыки с заглавной, нумерованные инструкции в
+     стиле «тема: пиши…». Индексы instructions.N / tones.N соответствуют порядку <li> в
+     1.6/Defs/DiaryExternalGroups_Vsie.xml — НЕ менять порядок и НЕ удалять строки. -->
+<LanguageData>
+
+  <!-- vsieBirthdayGathering -->
+  <vsieBirthdayGathering.label>Праздник дня рождения</vsieBirthdayGathering.label>
+  <vsieBirthdayGathering.instruction>колония собралась отметить день рождения; пиши тепло этого дня и то, что значило выкроить время на праздник здесь, а не список гостей</vsieBirthdayGathering.instruction>
+  <vsieBirthdayGathering.instructions.0>день рождения: пиши короткую светлую ноту дня и то, как она легла рядом со всем, что колония тянет на себе</vsieBirthdayGathering.instructions.0>
+  <vsieBirthdayGathering.instructions.1>день рождения: пусть это будет правдоподобный для поселенца миг; в суровом месте маленький праздник значит больше, а не меньше</vsieBirthdayGathering.instructions.1>
+  <vsieBirthdayGathering.tone>радость, под которой всё ещё чувствуется обычная тяжесть дня</vsieBirthdayGathering.tone>
+  <vsieBirthdayGathering.tones.0>тепло и немного устало — настоящий праздник, урванный у трудного места</vsieBirthdayGathering.tones.0>
+  <vsieBirthdayGathering.tones.1>ласково и негромко, с благодарностью, что колония нашла на это время</vsieBirthdayGathering.tones.1>
+
+  <!-- vsieFuneralGathering -->
+  <vsieFuneralGathering.label>Похороны</vsieFuneralGathering.label>
+  <vsieFuneralGathering.instruction>колония простилась с погибшим; пиши горе и то, как стояли плечом к плечу — что потеряно и как поселенец это нёс, — а не обряд</vsieFuneralGathering.instruction>
+  <vsieFuneralGathering.instructions.0>похороны: пиши тяжесть этого схода и личное горе поселенца — лишь настолько, насколько это правдоподобно при его настроении и в этот миг</vsieFuneralGathering.instructions.0>
+  <vsieFuneralGathering.instructions.1>похороны: это общая утрата; пусть присутствие других что-то значит — было ли это опорой или сделало горе тяжелее</vsieFuneralGathering.instructions.1>
+  <vsieFuneralGathering.tone>тихо, тяжело и сообща</vsieFuneralGathering.tone>
+  <vsieFuneralGathering.tones.0>подавленно и обнажённо, горе среди своих</vsieFuneralGathering.tones.0>
+  <vsieFuneralGathering.tones.1>неподвижно и тяжело — колония смыкается вокруг утраты</vsieFuneralGathering.tones.1>
+
+</LanguageData>

@@ -21,9 +21,10 @@ Build an adapter the same way as the core mod:
 MSBuild integrations\PawnDiary.ExampleAdapter\Source\PawnDiaryExampleAdapter.csproj /t:Build /p:Configuration=Debug
 MSBuild integrations\PawnDiary.RimTalkBridge\Source\PawnDiaryRimTalkBridge.csproj /t:Build /p:Configuration=Debug
 MSBuild integrations\PawnDiary.PersonalitiesBridge\Source\PawnDiaryPersonalities123.csproj /t:Build /p:Configuration=Debug
+MSBuild integrations\PawnDiary.Vsie\Source\PawnDiaryVsie.csproj /t:Build /p:Configuration=Debug
 ```
 
-(`PawnDiary.Vsie/` is XML only — no assembly to build.)
+(`PawnDiary.Vsie/` is mostly XML; its only assembly is the small gathering hook — `PawnDiaryVsie.dll`.)
 
 `PawnDiary.ExampleAdapter/` is both the **canonical integration example** and an **in-game API
 Explorer**: a developer tool that lets you exercise every public `PawnDiaryApi` method from a
@@ -88,10 +89,22 @@ and deployed manually.
 `PawnDiary.Vsie/` and `PawnDiary.PersonalitiesBridge/` are personality/social compatibility adapters,
 each a separate mod for one target so a player installs only what matches their mod list:
 
-- **`PawnDiary.Vsie/`** (`Pawn Diary: Vanilla Social Interactions Expanded`) — **XML only, no
-  assembly.** Four `enableWhenPackageIdsLoaded`-gated `DiaryInteractionGroupDef`s that give VSIE's
-  venting, teaching, best-friend milestone, and extra mood thoughts their own diary voice, plus a
-  VSIE-gated patch routing VSIE's angry `Discord` insult into the core insults group. Inert without VSIE.
+- **`PawnDiary.Vsie/`** (`Pawn Diary: Vanilla Social Interactions Expanded`) — **mostly XML, plus a
+  tiny assembly** (`PawnDiaryVsie.dll`). Four `enableWhenPackageIdsLoaded`-gated
+  `DiaryInteractionGroupDef`s give VSIE's venting, teaching, best-friend milestone, and extra mood
+  thoughts their own diary voice, plus a VSIE-gated patch routing VSIE's angry `Discord` insult into the
+  core insults group. The assembly adds the **gathering bridge**: a Harmony postfix on the base-game
+  `GatheringWorker.TryExecute` (matches `def.defName` as a string — **no VSIE assembly reference**)
+  forwards `VSIE_BirthdayParty` / `VSIE_Funeral` to the public API as External events claimed by two
+  `domain=External` groups. Because External events are excluded from Pawn Diary's Events tab, the adapter
+  carries its **own mod settings** (`VsieBridgeMod`) with a per-type birthday/funeral toggle. Its pure
+  defName→plan map is unit-tested by `tests/VsieBridgeLogicTests/`. Inert without VSIE (groups gated;
+  `PatchAll` skipped unless VSIE is active).
+
+```
+dotnet run --project tests/VsieBridgeLogicTests/VsieBridgeLogicTests.csproj
+```
+
 - **`PawnDiary.PersonalitiesBridge/`** (`Pawn Diary: 1-2-3 Personalities`) — **XML + a small
   assembly.** Tier 1 (XML) routes Module 2's compatibility interactions and personality mood thoughts.
   The assembly (`PawnDiaryPersonalities123.dll`, net472, reads 1-2-3 Personalities' public Enneagram

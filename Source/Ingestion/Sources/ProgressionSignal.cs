@@ -20,9 +20,12 @@ namespace PawnDiary.Ingestion
         private readonly bool eligible;
         private readonly bool userEnabled;
         private readonly bool signalEnabled;
+        private readonly string dedupKey;
+        private readonly int dedupWindowTicks;
 
         public ProgressionSignal(ProgressionEventData payload, Pawn pawn, string label, string text,
-            string instruction, string gameContext, bool eligible, bool userEnabled, bool signalEnabled)
+            string instruction, string gameContext, bool eligible, bool userEnabled, bool signalEnabled,
+            string dedupKey = null, int dedupWindowTicks = 0)
         {
             this.payload = payload;
             this.pawn = pawn;
@@ -33,6 +36,8 @@ namespace PawnDiary.Ingestion
             this.eligible = eligible;
             this.userEnabled = userEnabled;
             this.signalEnabled = signalEnabled;
+            this.dedupKey = dedupKey;
+            this.dedupWindowTicks = dedupWindowTicks;
         }
 
         public override DiaryEventData Payload => payload;
@@ -45,6 +50,15 @@ namespace PawnDiary.Ingestion
                 signalEnabled: signalEnabled,
                 ambientSignalEnabled: true);
         }
+
+        // Scalar progression kinds (skill, psylink, xenotype, royal title) emit at most one page per
+        // pawn per scan, so they leave this empty and rely on the dispatcher's generic type+subject
+        // safety key. The trait-gain scanner sets a per-trait key so that a pawn gaining more than one
+        // trait in a single scan produces a distinct page for each instead of colliding on that generic
+        // key. Empty (the default) keeps the pre-existing behavior for every other caller.
+        public override string DedupKey => string.IsNullOrEmpty(dedupKey) ? string.Empty : dedupKey;
+
+        public override int DedupWindowTicks => dedupWindowTicks;
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {

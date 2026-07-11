@@ -8,6 +8,47 @@ pre-release version ladder for project history.
 
 ## 2026-07-11
 
+- **Error reporter now covers the integration submods, not just the main mod.** The opt-out crash
+  reporter's capture filter (`DiaryLogReportPatch`) matched only the main mod's `[Pawn Diary]` log
+  prefix, so a bridge tagging with the spaced family name — e.g. the 1-2-3 Personalities bridge's
+  `[Pawn Diary: 1-2-3 Personalities]` — was never reported (the RimTalk bridge's `[PawnDiary: …]` lines
+  already were, by luck of the shared root). The "is this one of ours?" test moved out of the Harmony
+  patch into a new pure, unit-tested `ModErrorPrefixPolicy` (`Source/Diagnostics/Pure/`) that matches
+  the whole Pawn Diary family by its two log-prefix **roots** (`[Pawn Diary:` and `[PawnDiary`), so
+  every first-party bridge — 1-2-3 Personalities, RimTalk, and the new VSIE adapter (`[Pawn Diary: VSIE]`)
+  — is captured with no per-submod entry, while other mods, base-game lines, and the copy-me
+  `ExampleAdapter` template stay ignored. The bridges log through the same `Verse.Log`, so the one
+  existing global postfix now captures them all; no wire-schema or endpoint change, and a submod error
+  is identified by its message prefix (`modVersion` stays the main mod's).
+- **VSIE adapter now captures group gatherings (birthdays & funerals).** The `Pawn Diary: Vanilla Social
+  Interactions Expanded` adapter — previously XML-only — gains a tiny assembly (`PawnDiaryVsie.dll`) that
+  records VSIE's two colony-important gatherings as their own diary entries. VSIE gatherings emit no
+  InteractionDef/TaleDef, so a Harmony postfix on the **base-game** `RimWorld.GatheringWorker.TryExecute`
+  (matched by `def.defName` **string**, so the adapter references no VSIE type and cannot TypeLoad-fail
+  without it) forwards `VSIE_BirthdayParty` and `VSIE_Funeral` to the public API as External events
+  (`vsie_birthday` / `vsie_funeral`), claimed by two new `domain=External` groups in
+  `1.6/Defs/DiaryExternalGroups_Vsie.xml` (EN + RU localized). One entry per gathering, from the
+  organizer's point of view — the colony **moment** — while each attendee's private feeling keeps arriving
+  through the existing `vsie_thoughts` group. Birthdays and funerals each have their **own on/off toggle**
+  in the adapter's mod settings (new `VsieBridgeMod`/`VsieBridgeSettings`, both default on): the gathering
+  entries are External-domain, which Pawn Diary's Events tab excludes, so the adapter owns its settings
+  entry like the RimTalk and 1-2-3 Personalities bridges. VSIE's four non-External XML groups stay
+  toggleable in Pawn Diary's own Events tab. VSIE's flavor gatherings (dates, movie night, skygazing,
+  snowmen, beer/binge/outdoor parties) are intentionally left to that thought capture. Pure defName→plan
+  map in `Source/Pure/VsieGatheringMap.cs`, covered by the new `tests/VsieBridgeLogicTests/`. The mod
+  stays fully inert without VSIE (groups `enableWhenPackageIdsLoaded`-gated; `PatchAll` skipped unless
+  VSIE is active). Verified against the installed VSIE 1.6 source: neither gathering worker overrides
+  `TryExecute`, so the base-method hook fires for both.
+- **New "important" diary page when a colonist gains a personality trait.** The pawn-progression scanner
+  now snapshots each colonist's trait set (`<defName>|<degree>`) and, on a later scan, writes a page for
+  any newly gained trait. It feeds the trait's **own** character-card description — resolved for the pawn
+  and stripped of stat/skill/mechanic lines — into the prompt, so any trait (vanilla or modded) is voiced
+  as a felt personality shift with no hardcoded per-trait table. The prompt instructs a first-person,
+  from-the-inside account and forbids naming the game trait/stat/number. Lives in the existing
+  `Progression` domain: new XML group `progressionTraitGained` (important, toggleable, EN+RU localized),
+  baselined on first scan so a pawn's starting traits never record, and a per-trait dedup key so gaining
+  more than one trait at once yields one page each. Pure key/diff logic in `TraitProgressionPolicy` with
+  tests in `DiaryCapturePolicyTests`.
 - **1-2-3 Personalities bridge redesigned around one setting + an experimental LLM transform; public
   API → `ApiVersion 4`.** The bridge's two toggles and its always-on `personality=` context line are
   gone, replaced by a single **mode** selector with three escalating tiers of how a colonist's Enneagram

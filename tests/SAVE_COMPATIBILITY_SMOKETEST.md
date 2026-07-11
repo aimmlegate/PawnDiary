@@ -106,17 +106,32 @@ field-level math that runs after Scribe has populated the fields.
 These separate adapter mods live under `integrations/` and are inert without their target mod. Run
 these manual checks when you touch either adapter's Defs or the Personalities bridge assembly.
 
-**VSIE compat (`PawnDiary.Vsie`, XML only).** With Pawn Diary + Vanilla Social Interactions Expanded
-active:
+**VSIE compat (`PawnDiary.Vsie`, XML + a small assembly).** With Pawn Diary + Vanilla Social
+Interactions Expanded active:
 1. Dev-trigger (or wait for) a `VSIE_Vent`, a `VSIE_Teaching*`, a `VSIE_Discord`, and a
    `VSIE_BestFriend` relation. Confirm each is captured with the intended shape: venting and teaching
    fold into the ambient day-note (a charged vent may promote to its own confiding entry); `VSIE_Discord`
    is an insult, so it lands in the core **insults & fights** entry (batched with the social fight it
    usually starts), NOT as a co-working note; and best-friend appears as a relationship-milestone entry
    (not a chat log).
-2. Remove VSIE from the mod list. Confirm the four `vsie_*` groups do **not** appear in Pawn Diary's
-   event settings, the core `insults` group shows no `VSIE_Discord` behavior, and there are no
-   warnings — the whole adapter (Defs + the `1.6/Patches/` Discord routing) is inert.
+2. **Gatherings.** Dev-trigger a `VSIE_BirthdayParty` and a `VSIE_Funeral` (Debug Actions → try both;
+   they run through `GatheringWorker.TryExecute`). Confirm each produces exactly **one** diary entry for
+   the organizer — a birthday-party entry (`vsieBirthdayGathering`) and a funeral entry
+   (`vsieFuneralGathering`) — with no "unclaimed external eventKey" warning. Trigger a flavor gathering
+   (e.g. `VSIE_MovieNight` or `VSIE_Skygazing`) and confirm it does **not** create its own event entry
+   (its mood residue may still show up later as a `vsie_thoughts` social-afterthought). Note the two
+   gathering groups are External-domain, so they do **not** appear in Pawn Diary's Events tab — their
+   toggles live in this adapter's own mod settings (next check). VSIE's four non-External XML groups
+   (venting, teaching, best-friend, mood thoughts) **do** appear in Pawn Diary's Events tab.
+   - **Settings toggle.** Open `Options → Mod settings → Pawn Diary: VSIE gatherings`. Turn **off**
+     "Funerals", dev-trigger a `VSIE_Funeral`, and confirm **no** funeral entry is written (birthdays,
+     still on, are unaffected). Turn it back on and confirm funerals record again. With VSIE absent the
+     settings page still opens and saves (shows the "not in the active mod list" note).
+3. Remove VSIE from the mod list. Confirm the four `vsie_*` groups **and** the two External gathering
+   groups do **not** appear in Pawn Diary's event settings, the core `insults` group shows no
+   `VSIE_Discord` behavior, and there are no warnings — the whole adapter (Defs, the `1.6/Patches/`
+   Discord routing, and the `PawnDiaryVsie.dll` gathering hook, whose `PatchAll` is skipped when VSIE is
+   absent) is inert.
 
 **1-2-3 Personalities bridge (`PawnDiary.PersonalitiesBridge`, XML + assembly).** With Pawn Diary +
 1-2-3 Personalities M1 (and, for the interaction/thought groups, M2) active:

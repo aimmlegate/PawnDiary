@@ -46,6 +46,7 @@ namespace PawnDiary
                 ScanPsylinkLevel(pawn, state, baseline);
                 ScanXenotypeChange(pawn, state, baseline);
                 ScanRoyalTitleChange(pawn, state, baseline);
+                ScanTraitGain(pawn, state);
                 if (baseline)
                 {
                     state.baselineProgressionOnNextScan = false;
@@ -243,8 +244,167 @@ namespace PawnDiary
             DispatchProgression(pawn, data, label, text, majorArcCandidate: false);
         }
 
+        // Watches the pawn's trait set for newly gained traits. Traits rarely change through a clean
+        // one-shot vanilla hook (TraitSet.GainTrait also fires all through pawn generation), so like the
+        // xenotype scanner this compares a saved snapshot against the live set and baselines silently on
+        // the first scan — that keeps a pawn's starting traits out of the diary and only records traits
+        // acquired during play. It uses its OWN baseline flag rather than the shared one so a save made
+        // before this feature (empty snapshot, already-false shared flag) baselines instead of spamming.
+        private void ScanTraitGain(Pawn pawn, PawnProgressionState state)
+        {
+            // story/traits is null for some pawn kinds; guard and treat it as "no traits".
+            List<Trait> traits = pawn?.story?.traits?.allTraits;
+            List<string> currentKeys = new List<string>();
+            Dictionary<string, Trait> traitByKey = new Dictionary<string, Trait>(StringComparer.OrdinalIgnoreCase);
+            if (traits != null)
+            {
+                for (int i = 0; i < traits.Count; i++)
+                {
+                    Trait trait = traits[i];
+                    string defName = trait?.def?.defName;
+                    string key = TraitProgressionPolicy.BuildTraitKey(defName, trait?.Degree ?? 0);
+                    if (string.IsNullOrEmpty(key) || traitByKey.ContainsKey(key))
+                    {
+                        continue;
+                    }
+
+                    currentKeys.Add(key);
+                    traitByKey[key] = trait;
+                }
+            }
+
+            if (state.baselineTraitGainOnNextScan)
+            {
+                state.knownTraitKeys = currentKeys;
+                state.baselineTraitGainOnNextScan = false;
+                return;
+            }
+
+            List<string> newKeys = TraitProgressionPolicy.NewlyGainedTraitKeys(state.knownTraitKeys, currentKeys);
+            // Advance the snapshot unconditionally, mirroring the scalar progression scanners above: a
+            // gain the user has filtered off is intentionally missed rather than retried every scan.
+            state.knownTraitKeys = currentKeys;
+
+            for (int i = 0; i < newKeys.Count; i++)
+            {
+                Trait trait;
+                if (traitByKey.TryGetValue(newKeys[i], out trait) && trait != null)
+                {
+                    EmitTraitGain(pawn, trait, newKeys[i]);
+                }
+            }
+        }
+
+        private void EmitTraitGain(Pawn pawn, Trait trait, string traitKey)
+        {
+            string traitLabel = TraitGainLabel(pawn, trait);
+            string description = TraitPersonalityDescription(pawn, trait);
+            string traitDefName = trait?.def?.defName ?? string.Empty;
+
+            // The description is the character-card flavor prose RimWorld shows for the trait, resolved
+            // for this pawn and free of stat/mechanic lines. Feeding it (not a hardcoded per-trait table)
+            // is the whole point: the model writes the felt personality shift from the supplied words, so
+            // any trait — vanilla or modded — works. Semicolons are flattened so the prose cannot split
+            // the "; key=value" game-context string.
+            string extraContext = "trait=" + traitLabel + "; trait_def=" + traitDefName;
+            if (!string.IsNullOrWhiteSpace(description))
+            {
+                extraContext += "; trait_description=" + description.Replace(";", ",");
+            }
+
+            // A trait gain is an addition, not a transition from a prior value, so previous_value is left
+            // blank (BuildGameContext omits blank fields).
+            ProgressionEventData data = ProgressionData(
+                pawn,
+                ProgressionEventData.TraitGainedDefName,
+                "trait",
+                traitLabel,
+                string.Empty,
+                traitLabel,
+                extraContext);
+            string label = "PawnDiary.Event.ProgressionTraitLabel".Translate(traitLabel).Resolve();
+            string text = "PawnDiary.Event.ProgressionTraitText".Translate(pawn.LabelShortCap, traitLabel).Resolve();
+            // A per-trait key so two traits gained in the same scan each record instead of colliding on
+            // the dispatcher's generic type+subject key. The saved snapshot already blocks cross-scan
+            // repeats, so the short generic window is enough here.
+            string dedupKey = "progression-trait|" + pawn.GetUniqueLoadID() + "|" + traitKey;
+            DispatchProgression(pawn, data, label, text, majorArcCandidate: false,
+                dedupKey: dedupKey, dedupWindowTicks: DiaryTuning.Current.genericEventTypeDedupTicks);
+        }
+
+        // Gender-aware, cleaned degree label ("Nervous", "Kind", ...). CurrentData can throw for a
+        // malformed modded trait, so fall back to the plain label and finally the defName.
+        private static string TraitGainLabel(Pawn pawn, Trait trait)
+        {
+            if (trait == null)
+            {
+                return string.Empty;
+            }
+
+            string label = null;
+            try
+            {
+                label = trait.CurrentData?.GetLabelCapFor(pawn);
+            }
+            catch
+            {
+                label = null;
+            }
+
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                try
+                {
+                    label = trait.LabelCap;
+                }
+                catch
+                {
+                    label = null;
+                }
+            }
+
+            string cleaned = DiaryLineCleaner.CleanLine(label);
+            return string.IsNullOrWhiteSpace(cleaned) ? (trait.def?.defName ?? string.Empty) : cleaned;
+        }
+
+        // Resolves ONLY the trait's flavor description — the first block of RimWorld's Trait.TipString,
+        // before it appends skill gains, stat offsets, meditation foci, memes, and genes. Those trailing
+        // sections are exactly the "game mechanic" wording we keep out of the diary. Returns empty when a
+        // trait has no description (some modded traits) so the model works from the label alone.
+        private static string TraitPersonalityDescription(Pawn pawn, Trait trait)
+        {
+            string resolved = null;
+            try
+            {
+                string description = trait?.CurrentData?.description;
+                if (!string.IsNullOrWhiteSpace(description))
+                {
+                    resolved = description.Formatted(pawn.Named("PAWN")).AdjustedFor(pawn).Resolve();
+                }
+            }
+            catch
+            {
+                resolved = null;
+            }
+
+            string cleaned = DiaryLineCleaner.CleanLine(resolved);
+            if (string.IsNullOrWhiteSpace(cleaned))
+            {
+                return string.Empty;
+            }
+
+            // Defensive cap so an unusually long modded description cannot bloat the prompt game-context.
+            const int MaxDescriptionChars = 400;
+            if (cleaned.Length > MaxDescriptionChars)
+            {
+                cleaned = cleaned.Substring(0, MaxDescriptionChars).TrimEnd() + "…";
+            }
+
+            return cleaned;
+        }
+
         private bool DispatchProgression(Pawn pawn, ProgressionEventData data, string label, string text,
-            bool majorArcCandidate)
+            bool majorArcCandidate, string dedupKey = null, int dedupWindowTicks = 0)
         {
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyProgression(data.DefName);
             bool userEnabled = group != null && PawnDiaryMod.Settings != null
@@ -267,7 +427,9 @@ namespace PawnDiary
                 gameContext,
                 IsDiaryEligible(pawn),
                 userEnabled,
-                signalEnabled));
+                signalEnabled,
+                dedupKey,
+                dedupWindowTicks));
             if (emitted && majorArcCandidate)
             {
                 ConsiderArcReflectionAfterMajorEvent(pawn);

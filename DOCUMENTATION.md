@@ -540,15 +540,30 @@ Two further personality/social integrations ship as **standalone adapter mods** 
 (deployed by `scripts/deploy-integrations.ps1`), not as compat groups inside the core mod — so a
 player installs only the ones matching their mod list:
 
-- **`PawnDiary.Vsie` (`Pawn Diary: Vanilla Social Interactions Expanded`)** — XML only, no assembly.
-  Four gated `DiaryInteractionGroupDef`s for VSIE
-  (`VanillaExpanded.VanillaSocialInteractionsExpanded`): `vsie_vent` (Interaction, ambient batch +
-  promotion), `vsie_teaching` (Interaction, prefix matcher `VSIE_Teaching` covering the base def and
-  all 12 skill variants, ambient batch), `friendship_relation` (Romance, `VSIE_BestFriend`), and
-  `vsie_thoughts` (Thought, `matchPackageIds`). Every group is `enableWhenPackageIdsLoaded`-gated, so
-  the mod is inert without VSIE. `VSIE_Discord` (an anger-driven insult, not co-working chatter) is
-  routed into the core `insults` group via a VSIE-gated `PatchOperationFindMod` in `1.6/Patches/`
-  rather than a group of its own, so it batches with the social fight it usually triggers.
+- **`PawnDiary.Vsie` (`Pawn Diary: Vanilla Social Interactions Expanded`)** — mostly XML, **plus** a
+  tiny assembly (`PawnDiaryVsie.dll`) for the gathering hook. Four gated `DiaryInteractionGroupDef`s
+  for VSIE (`VanillaExpanded.VanillaSocialInteractionsExpanded`): `vsie_vent` (Interaction, ambient
+  batch + promotion), `vsie_teaching` (Interaction, prefix matcher `VSIE_Teaching` covering the base
+  def and all 12 skill variants, ambient batch), `friendship_relation` (Romance, `VSIE_BestFriend`),
+  and `vsie_thoughts` (Thought, `matchPackageIds`). `VSIE_Discord` (an anger-driven insult, not
+  co-working chatter) is routed into the core `insults` group via a VSIE-gated `PatchOperationFindMod`
+  in `1.6/Patches/` rather than a group of its own, so it batches with the social fight it usually
+  triggers. **Gathering bridge:** VSIE's group gatherings emit no InteractionDef/TaleDef, so a Harmony
+  postfix on the **base-game** `RimWorld.GatheringWorker.TryExecute` (no VSIE assembly reference —
+  `__instance.def.defName` is matched as a string, like the core capture pattern) forwards the two
+  colony-important ones — `VSIE_BirthdayParty` and `VSIE_Funeral` — to the public API as External
+  events (`vsie_birthday` / `vsie_funeral`), claimed by two `domain=External` groups
+  (`vsieBirthdayGathering` / `vsieFuneralGathering`) in `1.6/Defs/DiaryExternalGroups_Vsie.xml`. The
+  event is recorded once, from the organizer's POV, so the colony **moment** is remembered; each
+  attendee's private feeling already arrives via `vsie_thoughts` (VSIE's `VSIE_Attended…`/`VSIE_Had…`
+  mood thoughts). The flavor gatherings (dates, movie night, skygazing, snowmen, beer/binge/outdoor
+  parties) are intentionally not captured (pure map `Source/Pure/VsieGatheringMap.cs`, covered by
+  `tests/VsieBridgeLogicTests/`). Every group is `enableWhenPackageIdsLoaded`-gated and the gathering
+  `PatchAll` is skipped unless VSIE is active, so the whole mod is inert without VSIE. Because the
+  gathering entries are External-domain (which Pawn Diary's Events tab deliberately excludes — see
+  `IsSettingsEventFilterGroup`), the adapter carries its **own mod settings** (`VsieBridgeMod` +
+  `VsieBridgeSettings`) with a per-type toggle for birthdays and funerals (both default on; the postfix
+  checks `AllowsEventKey`); VSIE's four non-External XML groups stay toggleable in Pawn Diary's Events tab.
 - **`PawnDiary.PersonalitiesBridge` (`Pawn Diary: 1-2-3 Personalities`)** — XML **plus** a small
   assembly. Tier 1 (XML): `personalities123_thoughts` (Thought, `matchPackageIds` on M1+M2) and
   `personalities123_interactions` (Interaction, `matchPackageIds` on M2, not batched). The assembly
@@ -617,7 +632,7 @@ it onto the bus.
 | Mood events | `GameConditionManager.RegisterCondition` | One entry per eligible colonist on affected maps. |
 | Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. Memories vanilla rejects (accept-gates fire before `thought.pawn` is assigned) are ignored — never gained, so never recorded. |
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
-| Pawn progression | Periodic scan | Passion-only skill milestones, psylink level gains, xenotype changes, and royal-title changes. The first scan baselines existing saves to avoid retroactive spam; major psylink/xenotype changes can request a rare arc reflection after the normal page records. |
+| Pawn progression | Periodic scan | Passion-only skill milestones, psylink level gains, xenotype changes, royal-title changes, and newly gained personality traits. Trait gains feed the trait's own character-card description (no stat/mechanic lines) into the prompt so any trait — vanilla or modded — is voiced as a felt personality shift without a hardcoded per-trait table. The first scan baselines existing saves to avoid retroactive spam (a pawn's starting traits never record); major psylink/xenotype changes can request a rare arc reflection after the normal page records. |
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |
 | Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions, artificial/anomalous body-part gains, and living-pawn natural body-part losses. |
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns and the shared random-generation setting. |
@@ -1439,8 +1454,8 @@ code can run off-thread. (The **Fetch models** button on the same screen is stil
 
 ### 8.1 Error reporting (opt-out)
 
-Optional, **on by default** crash telemetry that reports **only the errors this mod raises** so bugs
-can be found and fixed. The player turns it off with the **Send anonymous error reports** checkbox on
+Optional, **on by default** crash telemetry that reports **only the errors the Pawn Diary mod family
+raises** (the main mod and its first-party integration submods) so bugs can be found and fixed. The player turns it off with the **Send anonymous error reports** checkbox on
 the main settings tab (`enableErrorReporting`, default `true`). A one-time informational notice
 (`DiaryGameComponent.MaybeShowErrorReportingNotice`, shown from the first `LoadedGame`/`StartedNewGame`
 and gated by the persisted `errorReportingNoticeShown` flag) tells the player it is on and offers a
@@ -1448,10 +1463,17 @@ and gated by the persisted `errorReportingNoticeShown` flag) tells the player it
 `Source/Diagnostics/`.
 
 - **Capture.** `DiaryLogReportPatch` is a Harmony postfix on `Verse.Log.Error` / `Log.ErrorOnce`
-  (registered via `DiaryPatchRegistrar`). It forwards a message only when it starts with the mod's
-  `[Pawn Diary]` prefix, so other mods' and base-game log lines are ignored. A `[ThreadStatic]`
-  re-entrancy flag plus a total `try/catch` mean a fault in reporting can never crash the caller or
-  loop. (Known limit: an error site without the prefix is not captured until its prefix is added.)
+  (registered via `DiaryPatchRegistrar`). It forwards a message only when it starts with a **Pawn Diary
+  family** log prefix — the main mod (`[Pawn Diary]`) **or** a first-party integration submod
+  (`[Pawn Diary: 1-2-3 Personalities]`, `[Pawn Diary: VSIE]`, `[PawnDiary: RimTalk bridge]`). The
+  bridges log through the same `Verse.Log`, so this one global postfix captures the whole family; other
+  mods, base-game lines, and the copy-me `PawnDiary.ExampleAdapter` template (a third-party starting
+  point) are ignored. Which prefixes count as "ours" is the pure, unit-tested `ModErrorPrefixPolicy`,
+  which matches by the two family name **roots** (`[Pawn Diary:` and `[PawnDiary`) so a new
+  `[Pawn Diary: X]` bridge is covered without a code change. A `[ThreadStatic]` re-entrancy flag plus a total `try/catch` mean a fault in
+  reporting can never crash the caller or loop. (Known limits: an error site without a family prefix is
+  not captured until its prefix is added; and the report's `modVersion` is always the *main* mod's
+  assembly version, so a submod error is identified by its message prefix rather than a separate field.)
 - **Transport.** `DiaryErrorReporter` mirrors `LlmClient`'s shape — a shared static `HttpClient` and
   fire-and-forget `Task.Run` sends, so the game thread never blocks. It dedupes by fingerprint (each
   distinct error sent once per session), caps distinct reports per session and concurrent sends, and
@@ -1464,7 +1486,8 @@ and gated by the persisted `errorReportingNoticeShown` flag) tells the player it
   interpolates a name, `DiaryGameComponent.MaybeRefreshErrorRedactionNames` publishes the live colony
   and colonist names to the reporter on a coarse tick cadence (main-thread read, `volatile` array); the
   reporter feeds them through the same exact-substring redaction as the configured secrets. Today's
-  `[Pawn Diary]` error sites embed exceptions/defNames, not names, so this is belt-and-suspenders.
+  Pawn Diary error sites (main mod and submods) embed exceptions/defNames, not names, so this is
+  belt-and-suspenders.
   `ErrorFingerprint` is a deterministic FNV-1a over the normalized stack (line numbers/addresses
   blanked) so the same crash groups across machines. `ErrorReportPayload` builds the wire JSON by hand
   (no serializer in Mono). The payload carries only: schema version, mod version (stamped into the
@@ -1524,7 +1547,8 @@ scans.
 
 `PawnDiaryRecord` also owns nullable per-pawn progression state and arc schedule state. Old saves load
 with those fields absent, then normalize to empty baseline-pending state. The progression state stores
-only highest passion-skill milestones and last observed psylink/xenotype/royal-title values. The arc
+only highest passion-skill milestones, last observed psylink/xenotype/royal-title values, and the set
+of known trait keys (`<defName>|<degree>`) used to detect newly gained traits. The arc
 schedule stores only cadence bookkeeping (`lastArcEntryTick`, `lastArcEntryYear`,
 `arcEntriesThisYear`, `forcedArcYear`, recently used memory ids, and the last retryable
 memory-shortfall tick/year). Neither field is a history database; existing diary pages remain the

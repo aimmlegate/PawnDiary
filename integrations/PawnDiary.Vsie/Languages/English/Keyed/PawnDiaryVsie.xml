@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Player-facing / LLM-facing strings for the VSIE gathering bridge (VsieGatheringBridge.cs). The
+     Label strings become the diary event's label; the Summary strings become the entry's factual
+     "what happened" line and the LLM's event evidence. {0} is the organizer's short name. Resolved on
+     the main thread, so .Translate() is safe (see AGENTS.md §4 localization). -->
+<LanguageData>
+
+  <PawnDiaryVsie.Event.BirthdayLabel>birthday party</PawnDiaryVsie.Event.BirthdayLabel>
+  <PawnDiaryVsie.Event.BirthdaySummary>{0} threw a birthday party for the colony.</PawnDiaryVsie.Event.BirthdaySummary>
+
+  <PawnDiaryVsie.Event.FuneralLabel>funeral</PawnDiaryVsie.Event.FuneralLabel>
+  <PawnDiaryVsie.Event.FuneralSummary>{0} gathered with the colony at a funeral.</PawnDiaryVsie.Event.FuneralSummary>
+
+  <!-- Settings window (VsieBridgeMod). These decide which VSIE gatherings become their own diary
+       entries; VSIE's other social moments (venting, teaching, best-friend, mood thoughts) are toggled
+       in Pawn Diary's own Events tab, since those are not External events. -->
+  <PawnDiaryVsie.Settings.Category>Pawn Diary: VSIE gatherings</PawnDiaryVsie.Settings.Category>
+  <PawnDiaryVsie.Settings.VsieMissing>Vanilla Social Interactions Expanded is not in the active mod list, so nothing is recorded. Your choices below still save.</PawnDiaryVsie.Settings.VsieMissing>
+  <PawnDiaryVsie.Settings.GatheringsSection>Record these VSIE gatherings as diary entries:</PawnDiaryVsie.Settings.GatheringsSection>
+  <PawnDiaryVsie.Settings.RecordBirthdays>Birthday parties</PawnDiaryVsie.Settings.RecordBirthdays>
+  <PawnDiaryVsie.Settings.RecordBirthdaysDesc>When VSIE throws a birthday party, write a diary entry for it, from the organizer's point of view. Off leaves birthdays to the ambient mood-thought notes only.</PawnDiaryVsie.Settings.RecordBirthdaysDesc>
+  <PawnDiaryVsie.Settings.RecordFunerals>Funerals</PawnDiaryVsie.Settings.RecordFunerals>
+  <PawnDiaryVsie.Settings.RecordFuneralsDesc>When VSIE holds a funeral, write a diary entry for it, from the organizer's point of view. Off leaves funerals to the ambient mood-thought notes only.</PawnDiaryVsie.Settings.RecordFuneralsDesc>
+
+</LanguageData>

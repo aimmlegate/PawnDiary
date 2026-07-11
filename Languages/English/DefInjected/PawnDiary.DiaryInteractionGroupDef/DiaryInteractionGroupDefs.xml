@@ -370,6 +370,11 @@
   <progressionRoyalTitle.tone>with formal weight and personal cost</progressionRoyalTitle.tone>
   <progressionRoyalTitle.tones.0>measured and self-conscious, aware that a title changes how others look</progressionRoyalTitle.tones.0>
   <progressionRoyalTitle.tones.1>quietly burdened, treating rank as both honor and obligation</progressionRoyalTitle.tones.1>
+  <progressionTraitGained.label>New trait</progressionTraitGained.label>
+  <progressionTraitGained.instruction>a lasting turn in who the pawn is; using only the supplied trait name and its description, write the change from the inside — new urges, reactions, fears, or ways of seeing the world settling into them — as something lived, never as a game trait, stat, number, or mechanic</progressionTraitGained.instruction>
+  <progressionTraitGained.tone>with unsettled self-recognition</progressionTraitGained.tone>
+  <progressionTraitGained.tones.0>quietly startled, noticing the self think or want something new</progressionTraitGained.tones.0>
+  <progressionTraitGained.tones.1>reflective and intimate, tracing where the change shows in ordinary moments</progressionTraitGained.tones.1>
   <progressionOther.label>Progression</progressionOther.label>
   <progressionOther.instruction>a pawn changed in a notable way; write the supplied before-and-after fact plainly and personally</progressionOther.instruction>
   <externalDevTest.label>External test event</externalDevTest.label>

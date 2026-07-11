@@ -100,6 +100,8 @@
   <PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Text>{0}'s body changed from baseliner to sanguophage.</PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Label>Royal title changed</PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Text>{0}'s title changed from Yeoman to Knight.</PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Text>
+  <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>New trait gained</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>
+  <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>{0}'s character took a lasting turn: they became nervous.</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>
   <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>Forced yearly arc</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>
   <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>{0}'s memories from year 5504:&#10;- 4 Aprimay: survived a raid that left the workshop burned.&#10;- 8 Aprimay: reached Construction 12.&#10;- 2 Jugust: gained psylink level 3.&#10;- 9 Decembary: became a sanguophage.</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>
   <PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Label>Major-event arc</PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Label>
@@ -1263,6 +1265,8 @@
   <PawnDiary.Event.ProgressionXenotypeText>{0}'s xenotype changed from {1} to {2}.</PawnDiary.Event.ProgressionXenotypeText>
   <PawnDiary.Event.ProgressionRoyalTitleLabel>Royal title: {0}</PawnDiary.Event.ProgressionRoyalTitleLabel>
   <PawnDiary.Event.ProgressionRoyalTitleText>{0}'s royal title changed from {1} to {2}.</PawnDiary.Event.ProgressionRoyalTitleText>
+  <PawnDiary.Event.ProgressionTraitLabel>New trait: {0}</PawnDiary.Event.ProgressionTraitLabel>
+  <PawnDiary.Event.ProgressionTraitText>{0}'s character took a lasting turn: they became {1}.</PawnDiary.Event.ProgressionTraitText>
   <PawnDiary.Event.ArcReflectionLabel>Year {0} reflection</PawnDiary.Event.ArcReflectionLabel>
   <PawnDiary.Event.ArcReflectionHeader>{0}'s memories from year {1}:</PawnDiary.Event.ArcReflectionHeader>
   <PawnDiary.Event.ArcReflectionEvidenceLine>{0}: {1}</PawnDiary.Event.ArcReflectionEvidenceLine>

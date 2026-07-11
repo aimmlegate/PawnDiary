@@ -94,6 +94,8 @@
   <PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Text>Тело {0} перестало быть базовым и стало телом сангофага.</PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Label>Королевский титул изменился</PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Text>Титул {0} сменился с йомена на рыцаря.</PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Text>
+  <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>Получена новая черта</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>
+  <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>В характере {0} произошёл надлом: теперь это нервный человек.</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>
   <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>Обязательный годовой итог</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>
   <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>Воспоминания {0} за 5504 год:&#10;- 4-е апримая: рейд, после которого мастерская выгорела.&#10;- 8-е апримая: строительство поднялось до 12.&#10;- 2-е джугуста: третий уровень пси-связи.&#10;- 9-е децембария: превращение в сангофага.</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>
   <PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Label>Итог после важного события</PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Label>
@@ -900,6 +902,8 @@
   <PawnDiary.Event.ProgressionXenotypeText>Ксенотип {0} изменился: {1} -> {2}.</PawnDiary.Event.ProgressionXenotypeText>
   <PawnDiary.Event.ProgressionRoyalTitleLabel>Королевский титул: {0}</PawnDiary.Event.ProgressionRoyalTitleLabel>
   <PawnDiary.Event.ProgressionRoyalTitleText>Королевский титул {0} изменился: {1} -> {2}.</PawnDiary.Event.ProgressionRoyalTitleText>
+  <PawnDiary.Event.ProgressionTraitLabel>Новая черта: {0}</PawnDiary.Event.ProgressionTraitLabel>
+  <PawnDiary.Event.ProgressionTraitText>В характере {0} закрепилась новая черта: {1}.</PawnDiary.Event.ProgressionTraitText>
   <PawnDiary.Event.ArcReflectionLabel>Размышление о {0} годе</PawnDiary.Event.ArcReflectionLabel>
   <PawnDiary.Event.ArcReflectionHeader>Воспоминания {0} за {1} год:</PawnDiary.Event.ArcReflectionHeader>
   <PawnDiary.Event.ArcReflectionEvidenceLine>{0}: {1}</PawnDiary.Event.ArcReflectionEvidenceLine>

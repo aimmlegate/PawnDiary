@@ -1,6 +1,9 @@
 // Capture hook for the error reporter. A Harmony postfix on Verse.Log.Error / Log.ErrorOnce sees
-// every error the game logs, but we forward ONLY the ones this mod raised — identified by our
-// "[Pawn Diary]" message prefix — so other mods' and the base game's errors are never reported.
+// every error the game logs, but we forward ONLY the ones the Pawn Diary mod family raised — the main
+// mod AND its first-party integration submods (the bridges), which all log through Verse.Log — so this
+// one global postfix captures them all. The "is this one of ours?" test is the pure, unit-tested
+// ModErrorPrefixPolicy (it matches each family log prefix); other mods' and the base game's errors are
+// never reported.
 //
 // Two safety rails, because Log.Error is a shared, hot-ish choke point on any thread:
 //   * A [ThreadStatic] re-entrancy flag: if reporting ever triggers a Log.Error, we must not capture
@@ -15,15 +18,12 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Forwards this mod's own logged errors to <see cref="DiaryErrorReporter"/>. Registered manually
-    /// from <see cref="DiaryPatchRegistrar"/>.
+    /// Forwards the Pawn Diary family's logged errors (main mod + first-party submods) to
+    /// <see cref="DiaryErrorReporter"/>, as classified by <see cref="ModErrorPrefixPolicy"/>. Registered
+    /// manually from <see cref="DiaryPatchRegistrar"/>.
     /// </summary>
     internal static class DiaryLogReportPatch
     {
-        // Prefixes our own log lines start with. Only messages beginning with one of these are ours;
-        // everything else in the game's log is ignored.
-        private static readonly string[] ModLogPrefixes = { "[Pawn Diary]", "[PawnDiary" };
-
         // Guards against a report path that itself logs an error re-entering this postfix and looping.
         [ThreadStatic]
         private static bool capturing;
@@ -72,7 +72,8 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(string text)
         {
-            if (capturing || string.IsNullOrEmpty(text) || !IsModMessage(text))
+            // ModErrorPrefixPolicy already treats null/empty as "not ours", so no separate guard here.
+            if (capturing || !ModErrorPrefixPolicy.IsModErrorMessage(text))
             {
                 return;
             }
@@ -90,19 +91,6 @@ namespace PawnDiary
             {
                 capturing = false;
             }
-        }
-
-        private static bool IsModMessage(string text)
-        {
-            for (int i = 0; i < ModLogPrefixes.Length; i++)
-            {
-                if (text.StartsWith(ModLogPrefixes[i], StringComparison.Ordinal))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }

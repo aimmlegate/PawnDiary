@@ -171,16 +171,29 @@ gated `enableWhenPackageIdsLoaded: VanillaExpanded.VanillaSocialInteractionsExpa
   (don't hand-enumerate; they are numerous and version-dependent).
 - Vanilla `Chitchat`/`DeepTalk`: no action needed (see research findings).
 
-**Tier 2 — optional, lowest priority: gathering events.** `GatheringDef` activities have no
-domain to match, so the only route is the External path from `EXTERNAL_API.md`'s quickstart:
-a tiny adapter `integrations/PawnDiary.VsieBridge/` with one Harmony postfix on the gathering
-start/end, calling `PawnDiaryApi.SubmitEvent` with `eventKey="vsiebridge_<gathering>"` for the
-celebrant/attendees, claimed by matching `domain=External` groups in a
-`1.6/Defs/DiaryExternalGroups_Vsie.xml`. Scope strictly to `VSIE_BirthdayParty` and `VSIE_Funeral`
-(colony-narratively important); skip the flavor gatherings (skygazing, snowmen, …) — list defNames
-explicitly, no catch-all. Re-confirm VSIE's gathering hook points against the installed version's
-source before writing the patch; gathering internals shift between versions more than
-InteractionDefs do.
+**Tier 2 — gathering events. SHIPPED 2026-07-11 (folded into `PawnDiary.Vsie`, not a separate mod).**
+`GatheringDef` activities have no domain to match, so the route is the External path from
+`EXTERNAL_API.md`'s quickstart. The implementation refined the original sketch after verifying the
+installed VSIE 1.6 source:
+
+- **One adapter, not two.** Rather than a separate `integrations/PawnDiary.VsieBridge/`, the hook was
+  folded into the existing `PawnDiary.Vsie` adapter, which grew a tiny assembly (`PawnDiaryVsie.dll`).
+  A player installs one VSIE adapter, not two.
+- **Base-game hook, no VSIE reference.** Reflection confirmed neither `GatheringWorker_Funeral` nor
+  `GatheringWorker_BirthdayParty` overrides `TryExecute` (they override `CreateLordJob`/`SendLetter`/
+  `CanExecute`), so a Postfix on the **base-game** `RimWorld.GatheringWorker.TryExecute` fires for both.
+  `__instance.def.defName` is matched as a **string** (pure `Source/Pure/VsieGatheringMap.cs`), so the
+  adapter references no VSIE type — the core string-matcher pattern, robust across VSIE versions.
+- **Scope:** strictly `VSIE_BirthdayParty` and `VSIE_Funeral`; the flavor gatherings (dates, movie
+  night, skygazing, snowmen, beer/binge/outdoor parties) are listed and deliberately skipped. eventKeys
+  are `vsie_birthday` / `vsie_funeral` (not the sketch's `vsiebridge_*`), claimed by two `domain=External`
+  groups in `1.6/Defs/DiaryExternalGroups_Vsie.xml`.
+- **One entry per gathering, organizer POV.** Attendees join the lord over subsequent ticks (not known
+  at `TryExecute`), and each attendee's feeling already reaches the diary via `vsie_thoughts` (VSIE's
+  `VSIE_Attended…`/`VSIE_Had…` mood thoughts), so the bridge records the discrete colony **moment** once,
+  from the organizer, rather than fanning out per attendee. Skips gracefully if the organizer is null.
+- Inert without VSIE: groups `enableWhenPackageIdsLoaded`-gated and `PatchAll` skipped unless VSIE is
+  active. Pure map covered by `tests/VsieBridgeLogicTests/`.
 
 ## New files summary
 
@@ -197,8 +210,13 @@ integrations/PawnDiary.PersonalitiesBridge/          Tier 2 (mirrors PawnDiary.R
   Source/Pure/EnneagramLensMapping.cs                pure Root→rule table (test-covered)
 tests/PersonalitiesBridgeLogicTests/                 console harness, mirrors RimTalkBridgeLogicTests
 
-integrations/PawnDiary.VsieBridge/                   Tier 2, optional (gatherings only)
-  + 1.6/Defs/DiaryExternalGroups_Vsie.xml            claims vsiebridge_* eventKeys
+integrations/PawnDiary.Vsie/                         Tier 2 SHIPPED — folded into the existing adapter:
+  Source/PawnDiaryVsie.csproj                        net472, refs PawnDiary.dll + Harmony, NO VSIE ref
+  Source/VsieGatheringBridge.cs                      [StaticConstructorOnStartup] + GatheringWorker.TryExecute postfix
+  Source/Pure/VsieGatheringMap.cs                    pure defName→plan map (test-covered)
+  1.6/Defs/DiaryExternalGroups_Vsie.xml              claims vsie_birthday / vsie_funeral eventKeys
+  Languages/{English,Russian}/…                       Keyed summaries + RU DefInjected for the two groups
+tests/VsieBridgeLogicTests/                          console harness, mirrors the other bridge tests
 ```
 
 Psychology Tier 2 is deliberately absent from this list until its API is verified.
@@ -210,7 +228,8 @@ Psychology Tier 2 is deliberately absent from this list until its API is verifie
 2. `PawnDiary.PersonalitiesBridge` (the only target with a confirmed, purpose-built external API;
    lowest-risk proof that the psychotype-bridge pattern generalizes beyond RimTalk).
 3. Psychology Tier 2 — only after direct DLL/source verification of `CompPsychology`.
-4. VSIE gathering bridge — smallest value-add; do last or drop.
+4. VSIE gathering bridge — DONE 2026-07-11 (folded into `PawnDiary.Vsie`; base-game
+   `GatheringWorker.TryExecute` hook, birthday + funeral only).
 
 ## Risks / decision points
 

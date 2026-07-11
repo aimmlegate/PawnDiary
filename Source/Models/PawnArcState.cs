@@ -39,6 +39,15 @@ namespace PawnDiary
         public string lastObservedXenotypeLabel;
         public string lastObservedRoyalTitleDefName;
         public string lastObservedRoyalTitleLabel;
+        // Snapshot of the pawn's trait keys ("<defName>|<degree>") at the last scan. The trait-gain
+        // scanner diffs the live traits against this to find newly gained traits; the first scan
+        // baselines it silently so traits present at pawn creation never generate a page.
+        public List<string> knownTraitKeys = new List<string>();
+        // Trait gain has its OWN baseline flag (not the shared one below): this field was added after
+        // the scalar scanners, so a save made before it has no knownTraitKeys AND an already-false
+        // baselineProgressionOnNextScan. Defaulting this to true means the first scan after upgrading
+        // baselines the pawn's existing traits silently instead of spamming a page for each one.
+        public bool baselineTraitGainOnNextScan = true;
         public bool baselineProgressionOnNextScan = true;
 
         public void ExposeData()
@@ -49,6 +58,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref lastObservedXenotypeLabel, "lastObservedXenotypeLabel");
             Scribe_Values.Look(ref lastObservedRoyalTitleDefName, "lastObservedRoyalTitleDefName");
             Scribe_Values.Look(ref lastObservedRoyalTitleLabel, "lastObservedRoyalTitleLabel");
+            Scribe_Collections.Look(ref knownTraitKeys, "knownTraitKeys", LookMode.Value);
+            Scribe_Values.Look(ref baselineTraitGainOnNextScan, "baselineTraitGainOnNextScan", true);
             Scribe_Values.Look(ref baselineProgressionOnNextScan, "baselineProgressionOnNextScan", true);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
@@ -89,6 +100,25 @@ namespace PawnDiary
             lastObservedXenotypeLabel = lastObservedXenotypeLabel ?? string.Empty;
             lastObservedRoyalTitleDefName = lastObservedRoyalTitleDefName ?? string.Empty;
             lastObservedRoyalTitleLabel = lastObservedRoyalTitleLabel ?? string.Empty;
+
+            if (knownTraitKeys == null)
+            {
+                knownTraitKeys = new List<string>();
+            }
+
+            HashSet<string> seenTraitKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < knownTraitKeys.Count; i++)
+            {
+                string key = knownTraitKeys[i];
+                if (string.IsNullOrWhiteSpace(key) || !seenTraitKeys.Add(key.Trim()))
+                {
+                    knownTraitKeys.RemoveAt(i);
+                    i--;
+                    continue;
+                }
+
+                knownTraitKeys[i] = key.Trim();
+            }
         }
 
         public int HighestSkillMilestone(string skillDefName)

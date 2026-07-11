@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Assembly for the "Pawn Diary: Vanilla Social Interactions Expanded" adapter. The adapter was
+     XML-only until the gathering bridge (VsieGatheringBridge.cs) was added; the Defs still do all the
+     interaction/thought/relation work, and this small DLL only adds the birthday/funeral gathering hook.
+
+     All references are compile-time only (Private=False): RimWorld loads Assembly-CSharp and Harmony,
+     and the core mod loads PawnDiary.dll. Deliberately NO reference to VanillaSocialInteractionsExpanded
+     — the bridge patches a base-game method and matches VSIE defNames as strings (see AGENTS.md
+     "DLC-safety"), so it needs no VSIE assembly and cannot TypeLoad-fail when VSIE is absent. That also
+     lets this stay net472/AnyCPU like the core mod, rather than chasing a target mod's framework. -->
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>3d1b6a2c-9f47-4c8a-bd1e-6c2a7f9e4b30</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>PawnDiaryVsie</RootNamespace>
+    <AssemblyName>PawnDiaryVsie</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <LangVersion>7.3</LangVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <!-- Same overridable managed-folder property as the core project. -->
+    <RimWorldManaged Condition="'$(RimWorldManaged)'=='' and '$(RIMWORLD_MANAGED)'!=''">$(RIMWORLD_MANAGED)</RimWorldManaged>
+    <RimWorldManaged Condition="'$(RimWorldManaged)'==''">D:\SteamLibrary\steamapps\common\RimWorld\RimWorldWin64_Data\Managed</RimWorldManaged>
+    <PawnDiaryReference Condition="'$(PawnDiaryReference)'==''">..\..\..\1.6\Assemblies\PawnDiary.dll</PawnDiaryReference>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\1.6\Assemblies\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\1.6\Assemblies\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(RimWorldManaged)\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(RimWorldManaged)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <!-- IMGUI + TextRendering modules: the settings window uses Listing_Standard / Widgets.CheckboxLabeled
+         / GUI.color / TextAnchor, which CoreModule alone does not cover. -->
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(RimWorldManaged)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(RimWorldManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <!-- Harmony: build-time compile reference only; the runtime copy comes from the brrainz.harmony
+         mod, exactly as the core PawnDiary project does. -->
+    <Reference Include="0Harmony">
+      <HintPath>..\..\..\Source\Libs\0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <!-- The core Pawn Diary assembly: gives us PawnDiary.Integration.PawnDiaryApi / ExternalEventRequest.
+         Private=False: the game loads the real PawnDiary.dll from the core mod; never ship a copy. -->
+    <Reference Include="PawnDiary">
+      <HintPath>$(PawnDiaryReference)</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="**\*.cs" Exclude="obj\**\*.cs;bin\**\*.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

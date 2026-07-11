@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Русский текст строк моста собраний VSIE (VsieGatheringBridge.cs). Строки Summary становятся
+     фактической строкой «что произошло» и уликой для модели, строки Label — ярлыком записи. {0} —
+     краткое имя устроителя. Написано по-русски, а не калькой с английского: имя вынесено так, чтобы
+     не цеплять глагол с родовым окончанием (пол поселенца заранее неизвестен). -->
+<LanguageData>
+
+  <PawnDiaryVsie.Event.BirthdayLabel>праздник дня рождения</PawnDiaryVsie.Event.BirthdayLabel>
+  <PawnDiaryVsie.Event.BirthdaySummary>Колония собралась на праздник дня рождения; в самом центре торжества — {0}.</PawnDiaryVsie.Event.BirthdaySummary>
+
+  <PawnDiaryVsie.Event.FuneralLabel>похороны</PawnDiaryVsie.Event.FuneralLabel>
+  <PawnDiaryVsie.Event.FuneralSummary>Колония собралась у могилы проститься с погибшим; {0} — среди провожающих.</PawnDiaryVsie.Event.FuneralSummary>
+
+  <!-- Окно настроек (VsieBridgeMod). Здесь выбирают, какие собрания VSIE становятся отдельными записями
+       в дневнике; остальные социальные моменты VSIE (наболевшее, наставничество, лучший друг, настроение)
+       включаются на вкладке «События» самого Pawn Diary — это не External-события. -->
+  <PawnDiaryVsie.Settings.Category>Pawn Diary: собрания VSIE</PawnDiaryVsie.Settings.Category>
+  <PawnDiaryVsie.Settings.VsieMissing>Vanilla Social Interactions Expanded нет в активном списке модов, поэтому записывать нечего. Ваш выбор ниже всё равно сохранится.</PawnDiaryVsie.Settings.VsieMissing>
+  <PawnDiaryVsie.Settings.GatheringsSection>Заносить эти собрания VSIE в дневник:</PawnDiaryVsie.Settings.GatheringsSection>
+  <PawnDiaryVsie.Settings.RecordBirthdays>Праздники дня рождения</PawnDiaryVsie.Settings.RecordBirthdays>
+  <PawnDiaryVsie.Settings.RecordBirthdaysDesc>Когда в VSIE устраивают праздник дня рождения, делать об этом запись — от лица организатора. Если выключено, дни рождения остаются только в фоновых заметках о настроении.</PawnDiaryVsie.Settings.RecordBirthdaysDesc>
+  <PawnDiaryVsie.Settings.RecordFunerals>Похороны</PawnDiaryVsie.Settings.RecordFunerals>
+  <PawnDiaryVsie.Settings.RecordFuneralsDesc>Когда в VSIE проходят похороны, делать об этом запись — от лица организатора. Если выключено, похороны остаются только в фоновых заметках о настроении.</PawnDiaryVsie.Settings.RecordFuneralsDesc>
+
+</LanguageData>

@@ -439,6 +439,11 @@
   <progressionRoyalTitle.tone>с официальной тяжестью и личной ценой</progressionRoyalTitle.tone>
   <progressionRoyalTitle.tones.0>размеренно и неловко, с пониманием, что титул меняет чужие взгляды</progressionRoyalTitle.tones.0>
   <progressionRoyalTitle.tones.1>тихо обременённо, ранг ощущается и честью, и обязанностью</progressionRoyalTitle.tones.1>
+  <progressionTraitGained.label>Новая черта</progressionTraitGained.label>
+  <progressionTraitGained.instruction>у поселенца закрепилась новая черта характера; опираясь только на переданные название черты и её описание, пиши перемену изнутри — новые порывы, реакции, страхи или взгляд на мир, — как прожитое, а не как игровую черту, характеристику, число или механику</progressionTraitGained.instruction>
+  <progressionTraitGained.tone>с тревожным узнаванием себя</progressionTraitGained.tone>
+  <progressionTraitGained.tones.0>тихо ошеломлённо, ловя в себе новую мысль или желание</progressionTraitGained.tones.0>
+  <progressionTraitGained.tones.1>вдумчиво и близко, прослеживая, где перемена проступает в обычных мелочах</progressionTraitGained.tones.1>
   <progressionOther.label>Развитие</progressionOther.label>
   <progressionOther.instruction>поселенец заметно изменился; переданный факт «до и после» подай просто, лично и без лишних объяснений</progressionOther.instruction>
   <externalDevTest.label>Внешнее тестовое событие</externalDevTest.label>

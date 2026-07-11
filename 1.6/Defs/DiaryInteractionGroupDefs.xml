@@ -2747,6 +2747,29 @@
   </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionTraitGained</defName>
+    <label>New trait</label>
+    <order>825</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <!-- The pawn gained a personality trait. The supplied trait_description is the trait's own
+         character-card prose (no stats or numbers), so the model can voice ANY trait — vanilla or
+         modded — without a hardcoded table. The instruction keeps it experiential and forbids naming
+         the game mechanic. -->
+    <instruction>a lasting turn in who the pawn is; using only the supplied trait name and its description, write the change from the inside — new urges, reactions, fears, or ways of seeing the world settling into them — as something lived, never as a game trait, stat, number, or mechanic</instruction>
+    <tone>with unsettled self-recognition</tone>
+    <tones>
+      <li>quietly startled, noticing the self think or want something new</li>
+      <li>reflective and intimate, tracing where the change shows in ordinary moments</li>
+    </tones>
+    <colorCue>quiet</colorCue>
+    <matchDefNames>
+      <li>TraitGained</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionOther</defName>
     <label>Progression</label>
     <order>899</order>

@@ -15,6 +15,7 @@ namespace PawnDiary.Capture
         public const string PsylinkLevelDefName = "PsylinkLevel";
         public const string XenotypeChangedDefName = "XenotypeChanged";
         public const string RoyalTitleChangedDefName = "RoyalTitleChanged";
+        public const string TraitGainedDefName = "TraitGained";
         public const string OtherDefName = "ProgressionOther";
 
         public override DiaryEventType EventType => DiaryEventType.Progression;

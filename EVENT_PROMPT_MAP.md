@@ -323,7 +323,8 @@ flowchart LR
         P2["progressionPsylink<br/>important SoloImportant"]
         P3["progressionXenotype<br/>important SoloImportant"]
         P4["progressionRoyalTitle<br/>important SoloImportant"]
-        P5["progressionOther<br/>non-important catch-all"]
+        P5["progressionTraitGained<br/>important SoloImportant<br/>feeds the trait's own description"]
+        P6["progressionOther<br/>non-important catch-all"]
     end
 ```
 
