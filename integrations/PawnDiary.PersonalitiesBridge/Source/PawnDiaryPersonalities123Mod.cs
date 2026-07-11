@@ -55,17 +55,6 @@ namespace PawnDiaryPersonalities123
         /// </summary>
         internal static bool SimplePersonalitiesActive;
 
-        /// <summary>
-        /// Bumped whenever the player changes a bridge setting (mode / lane / prompt). The per-game
-        /// component watches this and re-seeds every colonist when it moves, so a settings edit takes
-        /// effect for the whole colony at once instead of only on each pawn's next personality change.
-        /// </summary>
-        internal static int SettingsGeneration;
-
-        // Signature of the settings already folded into SettingsGeneration, so an open→close with no
-        // real change does not force a needless re-seed (which, in the LLM tier, would re-spend tokens).
-        private static string appliedSignature = string.Empty;
-
         public PawnDiaryPersonalities123Mod(ModContentPack content) : base(content)
         {
             Settings = GetSettings<PawnDiaryPersonalities123Settings>();
@@ -85,9 +74,6 @@ namespace PawnDiaryPersonalities123
                 RegisterPsychotypeGenerator();
             }
 
-            // Record the starting signature so the first settings-window close only bumps the generation
-            // if the player actually changed something.
-            appliedSignature = SettingsSignature();
         }
 
         // Registers the voice editor's Regenerate/loading hook for the LLM tier. Isolated + try/caught so
@@ -145,25 +131,8 @@ namespace PawnDiaryPersonalities123
             return "PawnDiaryPersonalities123.Settings.Category".Translate();
         }
 
-        /// <summary>
-        /// Called when the mod settings window closes. If the player actually changed a seeding-relevant
-        /// setting, bump <see cref="SettingsGeneration"/> so the per-game component re-seeds every colonist
-        /// with the new mode / lane / prompt.
-        /// </summary>
-        public override void WriteSettings()
-        {
-            base.WriteSettings();
-
-            string signature = SettingsSignature();
-            if (signature != appliedSignature)
-            {
-                appliedSignature = signature;
-                SettingsGeneration++;
-            }
-        }
-
-        // A cheap identity of the seeding-relevant settings, compared on window close to detect changes.
-        private static string SettingsSignature()
+        // Effective bridge settings folded into the per-save configuration fingerprint by the component.
+        internal static string SettingsSignature()
         {
             PawnDiaryPersonalities123Settings settings = Settings;
             if (settings == null)
@@ -171,7 +140,9 @@ namespace PawnDiaryPersonalities123
                 return string.Empty;
             }
 
-            return (int)settings.mode + "|" + settings.transformLaneIndex + "|" + (settings.transformPrompt ?? string.Empty);
+            // Compare effective prompt text: clicking Reset after merely viewing the default must not
+            // look like a behavioral change and needlessly re-spend LLM tokens.
+            return (int)settings.mode + "|" + settings.transformLaneIndex + "|" + settings.ResolveTransformPrompt();
         }
 
         /// <summary>Draws the mode selector plus, when the LLM tier is chosen, its lane + prompt block.</summary>
@@ -379,7 +350,29 @@ namespace PawnDiaryPersonalities123
 
         public override void ExposeData()
         {
-            Scribe_Values.Look(ref mode, "mode", Personalities123Mode.Override);
+            if (Scribe.mode == LoadSaveMode.LoadingVars)
+            {
+                // The first bridge version saved usePersonalityOutlook=false as an explicit opt-out.
+                // A missing new enum must preserve that choice instead of taking the new default.
+                Personalities123Mode loadedMode = (Personalities123Mode)(-1);
+                Scribe_Values.Look(ref loadedMode, "mode", (Personalities123Mode)(-1));
+                if ((int)loadedMode < (int)Personalities123Mode.Off
+                    || (int)loadedMode > (int)Personalities123Mode.LlmTransform)
+                {
+                    bool oldUsePersonalityOutlook = true;
+                    Scribe_Values.Look(ref oldUsePersonalityOutlook, "usePersonalityOutlook", true);
+                    mode = oldUsePersonalityOutlook ? Personalities123Mode.Override : Personalities123Mode.Off;
+                }
+                else
+                {
+                    mode = loadedMode;
+                }
+            }
+            else
+            {
+                Scribe_Values.Look(ref mode, "mode", Personalities123Mode.Override);
+            }
+
             Scribe_Values.Look(ref transformLaneIndex, "transformLaneIndex", -1);
             Scribe_Values.Look(ref transformPrompt, "transformPrompt", string.Empty);
         }

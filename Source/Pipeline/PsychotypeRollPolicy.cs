@@ -63,6 +63,8 @@ namespace PawnDiary
         // traits. They add family/member weight toward compatible psychotypes and unlock trait-gated
         // candidates; traits outside the table are simply absent here.
         public List<string> traitKeys = new List<string>();
+        // XML-owned trait mapping/bonuses snapshotted by the impure adapter for this roll.
+        public PsychotypeTraitAffinityPolicy traitPolicy = new PsychotypeTraitAffinityPolicy();
         // The child psychotype this pawn crystallized from, if any, so the adult roll can keep a thread
         // of continuity (a +1 nudge toward the mapped adult members). Empty for a first adult roll.
         public string childPsychotypeDefName = string.Empty;
@@ -124,11 +126,6 @@ namespace PawnDiary
         public const float MemberBaseWeight = 1f;
         public const float ComboBonus = 2f;
         public const float ContinuityBonus = 1f;
-        // Extreme-trait takeover: a pawn whose trait unlocks a gated psychotype (requiredTraitKey)
-        // adopts one outright this often, before wildcard/profile logic. The remaining rolls fall
-        // through to the normal machinery, where the gate stays open and the trait table still
-        // weights the gated member — so the trait dominates the outlook without monopolizing it.
-        public const float GatedTakeoverChance = 0.45f;
         // Wildcard branch: skip all profile logic this often and roll flat over the stage candidates.
         public const float WildcardChance = 0.12f;
         public const float WildcardGroundedBase = 2f;
@@ -231,10 +228,11 @@ namespace PawnDiary
             }
 
             // Extreme-trait takeover: when the pawn's traits unlock gated psychotypes, adopt one of
-            // them outright GatedTakeoverChance of the time (duplicate penalty + jitter still apply).
+            // them outright at the XML policy's takeover rate (duplicate penalty + jitter still apply).
             // Trait-less pawns skip this draw entirely, keeping their rand stream unchanged.
             List<PsychotypeCandidate> gated = UnlockedGated(adults, input);
-            if (gated.Count > 0 && rand01() < GatedTakeoverChance)
+            float takeoverChance = Math.Max(0f, Math.Min(1f, input.traitPolicy?.gatedTakeoverChance ?? 0f));
+            if (gated.Count > 0 && rand01() < takeoverChance)
             {
                 Dictionary<string, float> takeover = new Dictionary<string, float>();
                 for (int i = 0; i < gated.Count; i++)
@@ -385,10 +383,10 @@ namespace PawnDiary
             // Trait pull (PsychotypeTraitAffinities): additive on top of the passion signals, so a
             // Sanguine shooter still weighs both halves of who they are.
             List<string> traitKeys = input?.traitKeys;
-            grounded += PsychotypeTraitAffinities.FamilyBonus(FamilyGrounded, traitKeys);
-            inward += PsychotypeTraitAffinities.FamilyBonus(FamilyInward, traitKeys);
-            intense += PsychotypeTraitAffinities.FamilyBonus(FamilyIntense, traitKeys);
-            anxious += PsychotypeTraitAffinities.FamilyBonus(FamilyAnxious, traitKeys);
+            grounded += PsychotypeTraitAffinities.FamilyBonus(FamilyGrounded, traitKeys, input?.traitPolicy);
+            inward += PsychotypeTraitAffinities.FamilyBonus(FamilyInward, traitKeys, input?.traitPolicy);
+            intense += PsychotypeTraitAffinities.FamilyBonus(FamilyIntense, traitKeys, input?.traitPolicy);
+            anxious += PsychotypeTraitAffinities.FamilyBonus(FamilyAnxious, traitKeys, input?.traitPolicy);
 
             return new Dictionary<string, float>
             {
@@ -434,7 +432,8 @@ namespace PawnDiary
                     weight += ComboBonus;
                 }
 
-                weight += PsychotypeTraitAffinities.MemberBonus(candidate.defName, input?.traitKeys);
+                weight += PsychotypeTraitAffinities.MemberBonus(
+                    candidate.defName, input?.traitKeys, input?.traitPolicy);
                 weight += ContinuityNudge(candidate.defName, input);
                 weight *= DuplicateMultiplier(candidate.defName, input);
                 weights[candidate.defName] = Math.Max(weight, WeightFloor);

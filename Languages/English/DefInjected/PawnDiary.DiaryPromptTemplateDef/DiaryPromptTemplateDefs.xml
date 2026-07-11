@@ -337,4 +337,17 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_ArrivalDescription.fields.6.label>colonist pawn</DiaryPromptTemplate_ArrivalDescription.fields.6.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.7.label>setting</DiaryPromptTemplate_ArrivalDescription.fields.7.label>
   <DiaryPromptTemplate_Title.fields.0.label>entry</DiaryPromptTemplate_Title.fields.0.label>
+  <!-- Appended prompt fields: indexes intentionally follow the live XML lists so existing indexed
+       translations remain stable. -->
+  <DiaryPromptTemplate_SoloDefault.fields.40.label>trait</DiaryPromptTemplate_SoloDefault.fields.40.label>
+  <DiaryPromptTemplate_SoloDefault.fields.41.label>trait description</DiaryPromptTemplate_SoloDefault.fields.41.label>
+  <DiaryPromptTemplate_SoloImportant.fields.41.label>trait</DiaryPromptTemplate_SoloImportant.fields.41.label>
+  <DiaryPromptTemplate_SoloImportant.fields.42.label>trait description</DiaryPromptTemplate_SoloImportant.fields.42.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.36.label>trait</DiaryPromptTemplate_SoloInternalState.fields.36.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.37.label>trait description</DiaryPromptTemplate_SoloInternalState.fields.37.label>
+  <DiaryPromptTemplate_SoloBatched.fields.36.label>trait</DiaryPromptTemplate_SoloBatched.fields.36.label>
+  <DiaryPromptTemplate_SoloBatched.fields.37.label>trait description</DiaryPromptTemplate_SoloBatched.fields.37.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.35.label>trait</DiaryPromptTemplate_SoloDayReflection.fields.35.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.36.label>trait description</DiaryPromptTemplate_SoloDayReflection.fields.36.label>
+
 </LanguageData>

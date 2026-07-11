@@ -327,9 +327,9 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Read-only snapshot of a pawn's effective psychotype for the public integration API. Returns
-        /// null for an ineligible pawn; the rule is empty when the layer is disabled or Neutral. Does not
-        /// run EnsureVoiceStage (no roll/mutation from a read).
+        /// Read-only snapshot of a pawn's effective psychotype plus its saved custom layer for the public
+        /// integration API. Returns null for an ineligible pawn; the effective rule is empty when the
+        /// layer is disabled or Neutral. Does not run EnsureVoiceStage (no roll/mutation from a read).
         /// </summary>
         internal Integration.DiaryPsychotypeSnapshot PsychotypeSnapshotFor(Pawn pawn)
         {
@@ -339,11 +339,13 @@ namespace PawnDiary
             }
 
             PsychotypeResolution resolution = ResolvePsychotypeForDisplay(pawn);
+            PawnDiaryRecord diary = FindDiary(pawn, false);
             return new Integration.DiaryPsychotypeSnapshot
             {
                 psychotypeDefName = resolution.baseTypeDefName ?? string.Empty,
                 label = resolution.baseTypeLabel ?? string.Empty,
-                rule = resolution.rule ?? string.Empty
+                rule = resolution.rule ?? string.Empty,
+                savedCustomRule = diary?.customPsychotypeRule ?? string.Empty
             };
         }
 

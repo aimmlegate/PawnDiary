@@ -71,13 +71,13 @@ namespace PawnDiary.Integration
         private const int MaxInputChars = 4000;
         private const int MinMaxTokens = 16;
         private const int MaxMaxTokens = 600;
-        // Ring cap: an adapter that stops polling must not leak slots. Oldest terminal/pending slots are
-        // evicted once this many are tracked; a bounded few dozen covers any sane in-flight fan-out.
+        // Admission cap: an adapter that stops polling must not leak slots OR keep starting paid work.
+        // Once full, Begin rejects new requests until callers consume terminal handles or a game reset
+        // clears the session. Pending work is never silently evicted while its HTTP request keeps running.
         private const int MaxTrackedRequests = 64;
 
         private static readonly object gate = new object();
         private static readonly Dictionary<int, LlmCompletionResult> results = new Dictionary<int, LlmCompletionResult>();
-        private static readonly Queue<int> issueOrder = new Queue<int>();
         private static int nextHandle;
 
         /// <summary>
@@ -114,14 +114,35 @@ namespace PawnDiary.Integration
             int handle;
             lock (gate)
             {
+                if (results.Count >= MaxTrackedRequests)
+                {
+                    return 0;
+                }
+
                 handle = AllocateHandle();
                 results[handle] = new LlmCompletionResult { status = LlmCompletionStatus.Pending };
-                issueOrder.Enqueue(handle);
-                EvictOverflow();
             }
 
             RunAsync(handle, laneSnapshot, systemPrompt, userText, maxTokens, timeoutSeconds, temperature);
             return handle;
+        }
+
+        /// <summary>
+        /// Clears every tracked handle for a newly constructed Game. The linked LLM session token cancels
+        /// the actual HTTP work; clearing here ensures late continuations cannot surface in the next game.
+        /// </summary>
+        public static void ResetSession()
+        {
+            lock (gate)
+            {
+                results.Clear();
+            }
+        }
+
+        /// <summary>Returns the defensively clamped output-token estimate used for budget admission.</summary>
+        public static int EffectiveMaxTokens(ExternalLlmCompletionRequest request)
+        {
+            return Clamp(request == null ? 0 : request.maxTokens, MinMaxTokens, MaxMaxTokens);
         }
 
         /// <summary>
@@ -166,7 +187,10 @@ namespace PawnDiary.Integration
             }
             catch (Exception e)
             {
-                Complete(handle, LlmCompletionStatus.Failed, string.Empty, e.Message);
+                // This string crosses the public adapter boundary. Networking exceptions can contain a
+                // key-bearing query URL, so apply the same redaction invariant as saved diary failures.
+                Complete(handle, LlmCompletionStatus.Failed, string.Empty,
+                    ApiLaneLabels.TrimForLog(e.Message));
             }
         }
 
@@ -181,7 +205,8 @@ namespace PawnDiary.Integration
                     slot.text = text ?? string.Empty;
                     slot.error = error ?? string.Empty;
                 }
-                // If the slot was already evicted (abandoned + overflow), drop the result silently.
+                // A game-session reset can remove the slot while cancellation is still unwinding.
+                // In that case the old result is deliberately dropped.
             }
         }
 
@@ -190,16 +215,6 @@ namespace PawnDiary.Integration
         {
             nextHandle = nextHandle >= int.MaxValue ? 1 : nextHandle + 1;
             return nextHandle;
-        }
-
-        // Caller holds the lock. Keeps the tracked set bounded by dropping the oldest issued handles.
-        private static void EvictOverflow()
-        {
-            while (issueOrder.Count > MaxTrackedRequests)
-            {
-                int oldest = issueOrder.Dequeue();
-                results.Remove(oldest);
-            }
         }
 
         // Picks the requested lane when it is usable, else the first usable (enabled + url + model) lane.

@@ -37,10 +37,10 @@ namespace PawnDiary
         private bool pendingPsychotypePinned;
 
         // ---- External (integration) psychotype-generation state ----
-        // Set while we wait for an adapter's Regenerate to land, with the saved rule captured at click
-        // time so we can pull the freshly generated outlook into the editable buffer when it changes.
+        // Set while we wait for an adapter's Regenerate to finish. The editor buffer captured at click
+        // time lets us refresh only if the player did not type meanwhile.
         private bool awaitingRegen;
-        private string regenBaseline = string.Empty;
+        private string regenEditorBufferAtStart = string.Empty;
 
         private readonly Pawn pawn;
         private readonly DiaryGameComponent component;
@@ -292,21 +292,33 @@ namespace PawnDiary
         // fresh outlook appears without reopening the window.
         private void DrawExternalRegenRow(float x, float width, ref float y)
         {
-            if (pawn == null || !Integration.ExternalPsychotypeGenerators.CanReroll(pawn))
+            if (pawn == null)
             {
+                return;
+            }
+
+            if (!Integration.ExternalPsychotypeGenerators.CanReroll(pawn))
+            {
+                // The adapter/mode may disappear while a request is running. Do not carry a stale wait
+                // across a later re-enable and then refresh the editor from an unrelated value.
+                awaitingRegen = false;
                 return;
             }
 
             bool busy = Integration.ExternalPsychotypeGenerators.IsBusy(pawn);
 
-            if (awaitingRegen && component != null)
+            if (awaitingRegen && !busy)
             {
-                string current = component.CustomPsychotypeRuleFor(pawn);
-                if (!string.Equals(current, regenBaseline, StringComparison.Ordinal))
+                // Completion (including immediate rejection) ends the wait. Never overwrite text the
+                // player typed while the asynchronous request was running.
+                if (component != null
+                    && string.Equals(customPsychotypeBuffer, regenEditorBufferAtStart,
+                        StringComparison.Ordinal))
                 {
-                    customPsychotypeBuffer = current;
-                    awaitingRegen = false;
+                    customPsychotypeBuffer = component.CustomPsychotypeRuleFor(pawn);
                 }
+
+                awaitingRegen = false;
             }
 
             const float gap = 6f;
@@ -315,7 +327,7 @@ namespace PawnDiary
 
             if (Widgets.ButtonText(buttonRect, "PawnDiary.Psychotype.RegenerateExternal".Translate(), true, true, !busy))
             {
-                regenBaseline = component == null ? string.Empty : component.CustomPsychotypeRuleFor(pawn);
+                regenEditorBufferAtStart = customPsychotypeBuffer ?? string.Empty;
                 awaitingRegen = true;
                 Integration.ExternalPsychotypeGenerators.Reroll(pawn);
             }

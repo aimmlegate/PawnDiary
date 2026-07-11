@@ -306,8 +306,10 @@ lane and returns a poll handle read via `GetLlmCompletionResult(handle)`; it wra
 `LlmClient.SendSingleCompletion` (sibling of the connection test, but with a real system prompt and token
 budget) behind a handle store (`ExternalLlmCompletionService`) that marshals the background result back to
 the main-thread poller. It spends the player's tokens, so it is master-toggle-gated, sourceId-attributed,
-one-shot, and input/output-capped. Same gating as the v2/v3 members (master toggle + main thread, no
-loaded game).
+one-shot, and input/output-capped. Unlike the global lane-management reads, completion requests require
+a loaded game so they can reserve the same XML-tuned per-source/global rolling prompt budget as other
+token-spending adapter calls. They share normal diary lane concurrency, cooldown, timeout, and game-
+session cancellation; at most 64 handles are admitted until terminal results are polled.
 
 API v5 (`ApiVersion` `4 → 5`) adds `RegisterExternalPsychotypeGenerator(ExternalPsychotypeGenerator)` — an
 adapter that produces a pawn's outlook asynchronously (e.g. the 1-2-3 Personalities bridge's LLM transform)
@@ -316,6 +318,11 @@ registers three main-thread callbacks (`canReroll` / `isBusy` / `reroll`), and t
 owns, refreshing the editable custom rule when the new outlook lands. Registration mirrors
 `RegisterPawnContextProvider` (process-global, main-thread, replace-by-sourceId, a throwing generator
 disabled for the session) through the `ExternalPsychotypeGenerators` registry.
+
+API v6 (`ApiVersion` `5 → 6`) additively exposes `DiaryPsychotypeSnapshot.savedCustomRule`: the saved
+player-editable custom outlook before external-override resolution. `rule` remains the effective prompt
+rule. This lets an adapter migrate away from its own old locked override without mistaking that override
+for, or overwriting, player-authored custom text.
 
 For ordinary `SubmitEvent` calls, policy stays in XML: the request's `eventKey` string plays the
 defName role, and an External-domain `DiaryInteractionGroupDef` must claim it (required-match, like
@@ -577,14 +584,15 @@ player installs only the ones matching their mod list:
   text to rewrite, so a small model reshapes known-good text rather than inventing from a type number).
   Change-detected by `<mode>:<root>` and **saved** with the game
   (a reload never re-seeds over the player's edits); re-seeds on a mode or root change, and re-seeds the
-  whole colony on **any** settings change (mode/lane/prompt) via a process-global `SettingsGeneration` the
-  mod bumps from `WriteSettings` and the component watches. In the LLM tier the bridge also registers an
+  whole colony on **any effective** bridge or selected Pawn Diary lane change. The component saves a
+  deterministic, secret-free configuration fingerprint, so changes are detected across process restarts
+  and no raw prompt/endpoint credential is written to the game save. In the LLM tier the bridge also registers an
   external psychotype generator (`RegisterExternalPsychotypeGenerator`), so the per-pawn voice editor gets
   a Regenerate button + loading status wired to the component's `RerollTransform` / `IsTransformInFlight`. The pure mapper
   (root → outlook rule, root → built-in psychotype, transform-input assembly) is unit-tested by
-  `tests/Personalities123BridgeLogicTests/`. Read-only toward 1-2-3 Personalities; a one-time
-  `FinalizeInit` sweep releases the locked overrides earlier versions placed so the new editable layers
-  show. SP_Module1-typed reads are `[NoInlining]` behind the cached `SimplePersonalitiesActive`
+  `tests/Personalities123BridgeLogicTests/`. Read-only toward 1-2-3 Personalities; a one-time first-tick
+  sweep releases locked overrides earlier versions placed (even when 1-2-3 is inactive) and preserves
+  any player custom rule underneath. SP_Module1-typed reads are `[NoInlining]` behind the cached `SimplePersonalitiesActive`
   (`hahkethomemah.simplepersonalities`) guard.
 
 Thought-domain caveat (applies to both `*_thoughts` groups above): a Thought-domain group only assigns
@@ -664,6 +672,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPromptTemplateDefs.xml` / `DiaryPromptDef.xml` | prompt field shapes and shared system/final instructions |
 | `DiaryPersonaDefs.xml` / `DiaryHediffPersonaOverrideDefs.xml` | writing styles (incl. child styles) and temporary hediff-driven style overrides |
 | `DiaryPsychotypeDefs.xml` | pawn psychotypes (outlook layer): Neutral + 17 adult + 3 trait-gated + 5 child types, families, skill affinities, trait gates |
+| `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
 | `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |
 | `DiaryUiStyleDef.xml` / `DiaryTextDecorationDefs.xml` | UI dimensions/colors and display-only rich-text decoration |
@@ -1021,7 +1030,8 @@ domains; stage 1 weights the four families; stage 2 weights the members inside t
 penalty), with deliberate extra randomness (a 12% wildcard branch that ignores the profile, plus a
 per-candidate jitter). A Psychopath never rolls Dependent and a Kind pawn never rolls Ruthless.
 
-**Traits feed the roll** through the pure table `PsychotypeTraitAffinities`, additively on top of the
+**Traits feed the roll** through `DiaryPsychotypeTraitPolicyDefs.xml`, projected into the pure
+`PsychotypeTraitAffinities` algorithm, additively on top of the
 passion signals and deliberately scaled above them — a supported trait dominates the outcome while
 the passions break ties and colour the rest (a Sanguine pawn leans Content even against a burning
 violence profile). Each supported trait maps to a canonical key — simple traits by
@@ -1033,7 +1043,7 @@ Perfectionist/Paranoid, and so on). The three **extreme traits** go further: Psy
 Bloodlust each unlock a psychotype of their own — **Hollow**, **Ravenous**, **Bloodthirsty** (all
 intense) — gated by `<requiredTrait>` on the def so no other pawn can ever roll them (the gate holds
 on every branch: profile, wildcard, and flat rolls). A pawn holding such a trait adopts its gated
-psychotype outright `GatedTakeoverChance` (45%) of the time; otherwise the normal roll continues with
+psychotype outright `<gatedTakeoverChance>` (45% in the shipped Def) of the time; otherwise the normal roll continues with
 the gate open and the trait bonuses applying, so the outcome is dominant, not guaranteed. The manual
 per-pawn picker ignores the gate — the player may hand-assign anything. Unknown/modded traits simply
 contribute nothing.

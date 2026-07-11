@@ -445,29 +445,58 @@ namespace PawnDiary
                 throw new InvalidOperationException("No completion input text was provided.");
             }
 
-            using (CancellationTokenSource cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds))))
+            LlmGenerationRequest request = new LlmGenerationRequest
             {
-                SendResponse response = await SendOnce(new LlmGenerationRequest
-                {
-                    eventId = "external-completion",
-                    povRole = "external",
-                    systemPrompt = systemPrompt ?? string.Empty,
-                    rawText = userText,
-                    endpointUrl = endpoint.url,
-                    modelName = endpoint.model,
-                    apiKey = endpoint.apiKey,
-                    authMode = PawnDiarySettings.NormalizeAuthMode(endpoint.authMode),
-                    customAuthHeaderName = endpoint.customAuthHeaderName,
-                    apiMode = endpoint.apiMode,
-                    reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort),
-                    reasoningTag = PawnDiarySettings.NormalizeReasoningTag(endpoint.reasoningTag),
-                    timeoutSeconds = timeoutSeconds,
-                    maxTokens = Math.Max(1, maxTokens),
-                    temperature = temperature,
-                    isTitleRequest = false
-                }, cancellation.Token);
+                eventId = "external-completion",
+                povRole = "external",
+                systemPrompt = systemPrompt ?? string.Empty,
+                rawText = userText,
+                endpointUrl = endpoint.url,
+                modelName = endpoint.model,
+                apiKey = endpoint.apiKey,
+                authMode = PawnDiarySettings.NormalizeAuthMode(endpoint.authMode),
+                customAuthHeaderName = endpoint.customAuthHeaderName,
+                apiMode = endpoint.apiMode,
+                reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort),
+                reasoningTag = PawnDiarySettings.NormalizeReasoningTag(endpoint.reasoningTag),
+                timeoutSeconds = timeoutSeconds,
+                maxTokens = Math.Max(1, maxTokens),
+                temperature = temperature,
+                isTitleRequest = false
+            };
 
-                return response.CleanText;
+            // Adapter work shares the same per-lane semaphore and cooldown as diary generation. Without
+            // this gate, a colony-wide transform can burst one HTTP request per pawn even when the player
+            // configured a single-request local model.
+            SemaphoreSlim gate = GetOrCreateGate(request);
+            CancellationToken sessionToken = sessionCancellation.Token;
+            using (CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(sessionToken))
+            {
+                cancellation.CancelAfter(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds)));
+                await gate.WaitAsync(cancellation.Token);
+                try
+                {
+                    if (IsLaneCooling(LaneIdentity(request)))
+                    {
+                        throw new LlmTransientException("The selected API lane is cooling down after a recent transient failure.");
+                    }
+
+                    try
+                    {
+                        SendResponse response = await SendOnce(request, cancellation.Token);
+                        ClearLaneCooldown(request);
+                        return response.CleanText;
+                    }
+                    catch (LlmTransientException e)
+                    {
+                        MarkLaneCooldown(request, e.Message, e.RetryAfterSeconds);
+                        throw;
+                    }
+                }
+                finally
+                {
+                    gate.Release();
+                }
             }
         }
 

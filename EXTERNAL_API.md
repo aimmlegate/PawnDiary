@@ -19,11 +19,11 @@ lets *your* mod do the same thing: push a moment into a pawn's diary, read diary
 your own pawn context into Pawn Diary's prompts. Your adapter stays a normal mod — Pawn Diary owns
 the LLM call, prompt framing, safety text, parsing, persistence, and the Diary tab.
 
-Current contract version: `PawnDiaryApi.ApiVersion == 5`. Future additive members will bump this
+Current contract version: `PawnDiaryApi.ApiVersion == 6`. Future additive members will bump this
 further; feature-detect before using version-gated members:
 
 ```csharp
-if (PawnDiaryApi.ApiVersion >= 5) { /* use a v5 member such as RegisterExternalPsychotypeGenerator() */ }
+if (PawnDiaryApi.ApiVersion >= 6) { /* use v6's DiaryPsychotypeSnapshot.savedCustomRule */ }
 ```
 
 ---

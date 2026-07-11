@@ -54,6 +54,20 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Reserves rolling-window budget for one adapter-authored completion. The request declares its
+        /// whole output cap, so admission uses that defensively clamped value directly.
+        /// </summary>
+        internal bool TryReserveExternalApiBudgetForCompletion(
+            ExternalLlmCompletionRequest request, out ExternalApiBudgetReservation reservation)
+        {
+            return TryReserveExternalApiBudget(
+                request == null ? null : request.sourceId,
+                "RequestLlmCompletion",
+                ExternalLlmCompletionService.EffectiveMaxTokens(request),
+                out reservation);
+        }
+
+        /// <summary>
         /// Refunds a reservation whose event the dispatcher ultimately dropped (dedup window, pawn
         /// state) so a burst of duplicate/invalid submissions cannot exhaust an adapter's
         /// rolling window without any tokens actually being queued. No-op when the request was allowed

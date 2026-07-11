@@ -38,7 +38,7 @@ namespace PawnDiary.Integration
         /// members never change behavior incompatibly. Adapters that need a newer member can check
         /// this at load time and degrade gracefully on older Pawn Diary builds.
         /// </summary>
-        public const int ApiVersion = 5;
+        public const int ApiVersion = 6;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time
@@ -1586,11 +1586,14 @@ namespace PawnDiary.Integration
         /// it on the requested lane (or the first active lane) and the adapter reads the outcome later via
         /// <see cref="GetLlmCompletionResult"/>. This spends the player's tokens, so it is gated by the
         /// master integration switch and attributed to the caller's sourceId; it is one-shot (no
-        /// failover), input- and output-capped, main-thread only, and never throws.
+        /// failover), input- and output-capped, main-thread only, requires a live game for rolling
+        /// prompt-budget admission, shares normal lane concurrency/cooldown/session cancellation,
+        /// and never throws.
         /// </summary>
         public static int RequestLlmCompletion(ExternalLlmCompletionRequest request)
         {
             string cleanedSource = request != null ? PsychotypeText.CleanSourceId(request.sourceId) : string.Empty;
+            ExternalApiBudgetReservation reservation = null;
             try
             {
                 if (!UnityData.IsInMainThread)
@@ -1610,15 +1613,27 @@ namespace PawnDiary.Integration
                     return 0;
                 }
 
-                if (!ExternalIntegrationsAllowed || PawnDiaryMod.Settings == null)
+                if (!ExternalIntegrationsAllowed || !IsReady || PawnDiaryMod.Settings == null)
                 {
                     return 0;
                 }
 
-                return ExternalLlmCompletionService.Begin(request, PawnDiaryMod.Settings);
+                if (!DiaryGameComponent.Instance.TryReserveExternalApiBudgetForCompletion(request, out reservation))
+                {
+                    return 0;
+                }
+
+                int handle = ExternalLlmCompletionService.Begin(request, PawnDiaryMod.Settings);
+                if (handle <= 0)
+                {
+                    DiaryGameComponent.Instance.ReleaseExternalApiBudgetReservation(reservation);
+                }
+
+                return handle;
             }
             catch (Exception e)
             {
+                DiaryGameComponent.Instance?.ReleaseExternalApiBudgetReservation(reservation);
                 ApiLogErrorOnce(
                     "[Pawn Diary] Integration API: RequestLlmCompletion from '" + cleanedSource + "' failed: " + e,
                     ("PawnDiary.Api.RequestLlmCompletion.Exception." + cleanedSource + "." + e.GetType().FullName).GetHashCode());

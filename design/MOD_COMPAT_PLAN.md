@@ -212,7 +212,7 @@ tests/PersonalitiesBridgeLogicTests/                 console harness, mirrors Ri
 
 integrations/PawnDiary.Vsie/                         Tier 2 SHIPPED — folded into the existing adapter:
   Source/PawnDiaryVsie.csproj                        net472, refs PawnDiary.dll + Harmony, NO VSIE ref
-  Source/VsieGatheringBridge.cs                      [StaticConstructorOnStartup] + GatheringWorker.TryExecute postfix
+  Source/VsieGatheringBridge.cs                      HarmonyPatch on GatheringWorker.TryExecute; installed by VsieBridgeMod
   Source/Pure/VsieGatheringMap.cs                    pure defName→plan map (test-covered)
   1.6/Defs/DiaryExternalGroups_Vsie.xml              claims vsie_birthday / vsie_funeral eventKeys
   Languages/{English,Russian}/…                       Keyed summaries + RU DefInjected for the two groups

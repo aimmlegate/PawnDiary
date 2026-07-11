@@ -8,6 +8,20 @@ pre-release version ladder for project history.
 
 ## 2026-07-11
 
+- **Adversarial hardening of today’s trait, integration-API, and 1-2-3 bridge work.** One-shot external
+  completions now require a live game, reserve the existing per-source/global prompt budget, share the
+  normal lane semaphore/cooldown/session cancellation, reject admission at 64 tracked handles instead
+  of evicting still-paid work, clear handles between games, and redact public failure text. The public
+  API is now v6: `DiaryPsychotypeSnapshot.savedCustomRule` exposes the player-owned custom layer so an
+  adapter can remove its legacy locked override without erasing text underneath it. The Personalities
+  bridge persists a secret-free fingerprint of its effective mode/prompt and Pawn Diary lane setup,
+  reacts to changes across restarts, preserves old `usePersonalityOutlook=false` opt-outs and existing
+  custom rules, runs legacy cleanup even when 1-2-3 is inactive, retries temporary request/write
+  rejection without re-spending a successful completion, and no longer lets async Regenerate overwrite
+  text typed meanwhile or remain waiting after immediate rejection. Trait-gain prompts now explicitly
+  include the trait name/description fields. Psychotype trait mappings, family/member bonuses, and the
+  gated takeover rate moved from hardcoded C# into `DiaryPsychotypeTraitPolicyDefs.xml`, projected into
+  the same pure tested roll policy. Both committed DLLs rebuilt.
 - **Error reporter now covers the integration submods, not just the main mod.** The opt-out crash
   reporter's capture filter (`DiaryLogReportPatch`) matched only the main mod's `[Pawn Diary]` log
   prefix, so a bridge tagging with the spaced family name — e.g. the 1-2-3 Personalities bridge's
@@ -62,8 +76,8 @@ pre-release version ladder for project history.
     small-model-friendly prompt; falls back to the override text when no lane is set or the call fails.
   Seeding is change-detected by `<mode>:<root>` and **saved with the game**, so a reload never re-seeds
   over a hand-edit; it re-seeds on a mode or root change, and re-seeds the whole colony whenever the
-  player changes any bridge setting (a `SettingsGeneration` counter bumped from `WriteSettings`). A
-  one-time `FinalizeInit` sweep releases the
+  effective bridge or selected core-lane configuration changes (tracked by a saved secret-free
+  fingerprint). A one-time first-tick sweep releases the
   locked overrides earlier bridge versions placed. Read-only toward 1-2-3 Personalities; SP_Module1 reads
   stay `[NoInlining]` behind the `SimplePersonalitiesActive` guard.
 - **Public integration API v4** (additive; existing members unchanged). `SetPsychotype(pawn, defName,
@@ -74,9 +88,9 @@ pre-release version ladder for project history.
   they wrap a new one-shot `LlmClient.SendSingleCompletion` behind `ExternalLlmCompletionService`, are
   master-toggle-gated + sourceId-attributed + one-shot + input/output-capped, and never throw. The bridge
   no longer writes the external psychotype override, so it no longer participates in override arbitration.
-- **Settings migration:** the bridge's old `provideContextLine` / `usePersonalityOutlook` scribe keys are
-  dropped; the new `mode` defaults to *Override*, preserving the prior default-on outlook effect (now
-  editable). The pure mapper gains root→built-in-psychotype and transform-input helpers; the bridge test
+- **Settings migration:** the retired `provideContextLine` key is dropped; saves without the new `mode`
+  read the old `usePersonalityOutlook` key so an explicit false remains *Off*, while a missing/default-on
+  value becomes *Override* (now editable). The pure mapper gains root→built-in-psychotype and transform-input helpers; the bridge test
   suite drops the retired context-line checks and adds new ones
   (`tests/Personalities123BridgeLogicTests/`, 90 checks green). Both committed DLLs (`PawnDiary.dll`,
   `PawnDiaryPersonalities123.dll`) rebuilt.
@@ -100,8 +114,9 @@ pre-release version ladder for project history.
   ignore-code/IDs rule for the raw `details:` blob, and two contrasting micro-examples. Transform
   output budget raised 200 → 300 tokens for reasoning-model headroom. Pure mapper drops the
   type-number line (`tests/Personalities123BridgeLogicTests/`, 91 checks green).
-- **Traits now steer the psychotype roll — and dominate it.** A new pure weight table
-  (`Source/Pipeline/PsychotypeTraitAffinities.cs`) adds a deliberate trait channel on top of the
+- **Traits now steer the psychotype roll — and dominate it.** A new XML-owned weight policy
+  (`1.6/Defs/DiaryPsychotypeTraitPolicyDefs.xml`, projected through the pure
+  `Source/Pipeline/PsychotypeTraitAffinities.cs`) adds a deliberate trait channel on top of the
   skill-passion signals, scaled above them so the trait wins against even a contrary passion profile
   (pinned by a seeded dominance test: a Sanguine pawn with burning violence passions still rolls
   Content more than anything else): each supported trait adds stage-1 family weight and stage-2
@@ -116,7 +131,7 @@ pre-release version ladder for project history.
   (Cannibal), Bloodthirsty (Bloodlust)** — all intense-family, each rollable ONLY by pawns carrying
   the named trait via the new `<requiredTrait>` def field (the gate holds on every roll branch; the
   manual per-pawn picker still allows hand-assigning anything). A pawn with such a trait adopts its
-  gated psychotype outright 45% of the time (`GatedTakeoverChance`) and keeps a strong weight bonus
+  gated psychotype outright 45% of the time (`<gatedTakeoverChance>` in the trait policy Def) and keeps a strong weight bonus
   toward it in the normal roll, so a Psychopath usually — but not always — reads as Hollow. English +
   native Russian rule texts shipped. Pure policy covered in `DiaryPipelineTests` (973 assertions
   green: canonical trait keys, family/member bonuses, trait-over-profile dominance, the gate holding

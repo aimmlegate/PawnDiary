@@ -16,7 +16,7 @@
   passion in that skill steers the roll toward this psychotype (points scale by passion, minor 1 /
   burning 2). <requiredTrait> (optional) gates a def to pawns holding that trait. Combo signatures and
   family weighting live in Source/Pipeline/PsychotypeRollPolicy.cs; the trait weight table (which
-  traits pull toward which psychotypes) lives in Source/Pipeline/PsychotypeTraitAffinities.cs.
+  traits pull toward which psychotypes) lives in DiaryPsychotypeTraitPolicyDefs.xml.
 
   DiaryPsychotype_Neutral has an empty rule on purpose: it contributes no prompt text. Pre-existing
   saves with generated entries adopt it so established voices do not shift, and it is the resolution

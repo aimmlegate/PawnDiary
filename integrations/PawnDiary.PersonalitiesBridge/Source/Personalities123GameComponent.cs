@@ -3,8 +3,8 @@
 //
 //   • A throttled pass (~every 250 ticks) that, per spawned free colonist, applies the active tier
 //     (Off / map-to-internal-psychotype / built-in override / LLM transform) — but only when the pawn's
-//     Enneagram ROOT or the selected mode has changed since we last handled them, so a player's own edits
-//     to the seeded psychotype survive between personality changes.
+//     Enneagram ROOT or effective bridge/lane configuration has changed since we last handled them, so
+//     a player's own edits to the seeded psychotype survive between personality/configuration changes.
 //   • The change-detection bookkeeping (pawnId -> "<mode>:<root>") is SAVED with the game, so a reload
 //     never re-seeds an unchanged pawn and clobbers those edits.
 //   • Draining the async Tier-3 LLM transform: the pass fires a completion request, then later passes
@@ -16,7 +16,9 @@
 // [NoInlining] readers, and only after the SimplePersonalitiesActive guard.
 //
 // New to C#/RimWorld? See AGENTS.md in the Pawn Diary repo.
+using System;
 using System.Collections.Generic;
+using System.Text;
 using PawnDiary.Integration;
 using PawnDiaryPersonalities123.Pure;
 using RimWorld;
@@ -37,15 +39,15 @@ namespace PawnDiaryPersonalities123
         // Requested output budget for one transform (a couple of sentences). Sized with headroom for
         // reasoning models whose thinking tokens count against the budget before the visible reply.
         private const int TransformMaxTokens = 300;
+        private const string PreservedCustomMarker = "__preserved_custom__";
 
         // Last tick the pass ran. Compared by elapsed time (now - last), never TicksGame % N, so a dev
         // time-skip or save/load cannot desync the cadence.
         private int lastPassTick;
 
-        // The SettingsGeneration we have already reacted to. When the process-global counter moves ahead
-        // (the player changed a bridge setting), the next tick clears the change-detection and re-seeds
-        // every colonist. Initialized on load so a reload never counts as a change.
-        private int lastSeenSettingsGeneration;
+        // Effective bridge + Pawn Diary lane configuration last applied to this SAVE. Persisting this
+        // catches menu edits after a restart and changes made in Pawn Diary's own API settings.
+        private string lastAppliedConfigurationSignature = string.Empty;
 
         // pawnId -> "<mode>:<root>" we last successfully applied. SAVED: this is what lets a reload skip
         // an unchanged pawn instead of re-seeding over the player's edits. Re-seeds when either the mode
@@ -65,12 +67,14 @@ namespace PawnDiaryPersonalities123
         {
         }
 
-        /// <summary>Saves the per-pawn change-detection state and the migration flag with the game.</summary>
+        /// <summary>Saves per-pawn change detection, the configuration fingerprint, and migration state.</summary>
         public override void ExposeData()
         {
             base.ExposeData();
             Scribe_Collections.Look(ref handledKey, "handledKey", LookMode.Value, LookMode.Value);
             Scribe_Values.Look(ref overridesSwept, "overridesSwept", false);
+            Scribe_Values.Look(ref lastAppliedConfigurationSignature,
+                "lastAppliedConfigurationSignature", string.Empty);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit && handledKey == null)
             {
@@ -83,43 +87,51 @@ namespace PawnDiaryPersonalities123
         /// RimWorld 1.6, where the override-reset API would be rejected).</summary>
         public override void FinalizeInit()
         {
-            if (!PawnDiaryPersonalities123Mod.SimplePersonalitiesActive)
-            {
-                return;
-            }
-
             // now - 0 >= interval for any loaded game's TicksGame, so the first tick fires a pass at once.
             lastPassTick = 0;
-            // Adopt the current generation so loading a save is not mistaken for a settings change.
-            lastSeenSettingsGeneration = PawnDiaryPersonalities123Mod.SettingsGeneration;
         }
 
         /// <summary>Throttled periodic seeding. Does nothing when 1-2-3 Personalities is absent, the mode
         /// is Off, or we are between intervals.</summary>
         public override void GameComponentTick()
         {
-            if (!PawnDiaryPersonalities123Mod.SimplePersonalitiesActive)
+            int now = Find.TickManager != null ? Find.TickManager.TicksGame : 0;
+            if (now - lastPassTick < PassIntervalTicks)
             {
                 return;
             }
 
-            // Runs here (main thread), not in FinalizeInit, because RimWorld 1.6 loads saves off the main
-            // thread and the override-reset API rejects off-thread calls. Idempotent + gated by
-            // overridesSwept, so it costs nothing after the one-time sweep.
-            MigrateOldOverridesOnce();
+            // Keep setup snapshots and signature building off the per-tick hot path. The same coarse
+            // cadence already governs seeding, so checking configuration once per pass loses nothing.
+            lastPassTick = now;
+            PawnDiaryPersonalities123Settings settings = PawnDiaryPersonalities123Mod.Settings;
+            DiaryApiSetupSnapshot setup = settings != null && settings.mode == Personalities123Mode.LlmTransform
+                ? PawnDiaryApi.GetApiSetup()
+                : null;
+            string configurationSignature = ConfigurationSignature(settings, setup);
 
-            // The player changed a bridge setting: forget what we applied so every colonist is re-seeded
-            // with the new mode / lane / prompt on this tick, and abandon any in-flight transform.
-            int settingsGeneration = PawnDiaryPersonalities123Mod.SettingsGeneration;
-            if (settingsGeneration != lastSeenSettingsGeneration)
+            // An empty signature is an old save from before this field existed. Adopt its current
+            // configuration without clearing handled keys, which preserves player edits on upgrade.
+            if (string.IsNullOrEmpty(lastAppliedConfigurationSignature))
             {
-                lastSeenSettingsGeneration = settingsGeneration;
+                lastAppliedConfigurationSignature = configurationSignature;
+            }
+            else if (!string.Equals(lastAppliedConfigurationSignature, configurationSignature,
+                StringComparison.Ordinal))
+            {
+                lastAppliedConfigurationSignature = configurationSignature;
                 handledKey.Clear();
                 inFlight.Clear();
-                lastPassTick = 0;
             }
 
-            PawnDiaryPersonalities123Settings settings = PawnDiaryPersonalities123Mod.Settings;
+            // The old locked-override migration must run even when 1-2-3 Personalities is currently
+            // inactive; otherwise disabling that mod would strand its old override forever.
+            MigrateOldOverridesOnce();
+
+            if (!PawnDiaryPersonalities123Mod.SimplePersonalitiesActive)
+            {
+                return;
+            }
             if (settings == null || settings.mode == Personalities123Mode.Off)
             {
                 // Disabled: drop any pending transform so a result cannot land after the player turned it
@@ -132,17 +144,9 @@ namespace PawnDiaryPersonalities123
                 return;
             }
 
-            int now = Find.TickManager != null ? Find.TickManager.TicksGame : 0;
-            if (now - lastPassTick < PassIntervalTicks)
-            {
-                return;
-            }
-
-            lastPassTick = now;
-
             foreach (Pawn pawn in PawnsFinder.AllMaps_FreeColonistsSpawned)
             {
-                SyncPawn(pawn, settings);
+                SyncPawn(pawn, settings, HasUsableLane(setup));
             }
         }
 
@@ -182,12 +186,14 @@ namespace PawnDiaryPersonalities123
             string id = pawn.GetUniqueLoadID();
             handledKey.Remove(id);
             inFlight.Remove(id);
-            StartOrFallbackTransform(pawn, id, KeyFor(settings.mode, root), root, settings);
+            DiaryApiSetupSnapshot setup = PawnDiaryApi.GetApiSetup();
+            StartOrFallbackTransform(pawn, id, KeyFor(settings.mode, root), root, settings,
+                HasUsableLane(setup));
         }
 
         // Applies the active tier to one pawn, or advances an in-flight transform. Change-detected so an
         // already-handled (mode, root) is left alone — that is what keeps player edits.
-        private void SyncPawn(Pawn pawn, PawnDiaryPersonalities123Settings settings)
+        private void SyncPawn(Pawn pawn, PawnDiaryPersonalities123Settings settings, bool hasUsableLane)
         {
             if (pawn == null)
             {
@@ -195,6 +201,21 @@ namespace PawnDiaryPersonalities123
             }
 
             string id = pawn.GetUniqueLoadID();
+
+            // Drain accepted work before current eligibility/root checks. A pawn can be disabled or
+            // change personality mid-flight; polling still frees the bounded core handle, while a
+            // rejected write remains cached on the job until the pawn becomes writable again.
+            if (inFlight.TryGetValue(id, out InFlightJob job))
+            {
+                ResolvePendingTransform(pawn, id, job);
+                return;
+            }
+
+            if (!PawnDiaryApi.IsDiaryEligible(pawn))
+            {
+                return;
+            }
+
             string root = EnneagramSync.RootDefNameFor(pawn);
             if (string.IsNullOrEmpty(root))
             {
@@ -204,15 +225,16 @@ namespace PawnDiaryPersonalities123
                 return;
             }
 
-            // A Tier-3 transform in flight takes priority: drain it before considering a fresh seed.
-            InFlightJob job;
-            if (inFlight.TryGetValue(id, out job))
+            string key = KeyFor(settings.mode, root);
+            if (handledKey.TryGetValue(id, out string preserved)
+                && string.Equals(preserved, PreservedCustomMarker, StringComparison.Ordinal))
             {
-                ResolvePendingTransform(pawn, id, job);
+                // The migration found player-authored custom text beneath our old locked override.
+                // Adopt it for the current mode/root instead of immediately overwriting it.
+                handledKey[id] = key;
                 return;
             }
 
-            string key = KeyFor(settings.mode, root);
             string applied;
             if (handledKey.TryGetValue(id, out applied) && applied == key)
             {
@@ -225,10 +247,10 @@ namespace PawnDiaryPersonalities123
                     ApplyInternalPsychotype(pawn, id, key, root);
                     break;
                 case Personalities123Mode.Override:
-                    ApplyOverrideRule(pawn, id, key, root);
+                    ApplyOverrideRule(pawn, id, key, root, true);
                     break;
                 case Personalities123Mode.LlmTransform:
-                    StartOrFallbackTransform(pawn, id, key, root, settings);
+                    StartOrFallbackTransform(pawn, id, key, root, settings, hasUsableLane);
                     break;
             }
         }
@@ -250,27 +272,36 @@ namespace PawnDiaryPersonalities123
         }
 
         // Tier 2 (and the Tier-3 fallback): seed the editable custom rule from the built-in outlook text.
-        private void ApplyOverrideRule(Pawn pawn, string id, string key, string root)
+        private bool ApplyOverrideRule(Pawn pawn, string id, string key, string root, bool markHandled)
         {
             string rule = EnneagramSync.ResolveOutlookRule(root);
             if (string.IsNullOrWhiteSpace(rule))
             {
-                return;
+                return false;
             }
 
             if (PawnDiaryApi.SetPsychotypeCustomRule(pawn, rule))
             {
-                handledKey[id] = key;
+                if (markHandled)
+                {
+                    handledKey[id] = key;
+                }
+
+                return true;
             }
+
+            return false;
         }
 
         // Tier 3: fire the LLM transform (tracked as in-flight), or fall back to Tier 2 immediately when
         // there is no input or no usable lane / the API rejected the call.
-        private void StartOrFallbackTransform(Pawn pawn, string id, string key, string root, PawnDiaryPersonalities123Settings settings)
+        private void StartOrFallbackTransform(Pawn pawn, string id, string key, string root,
+            PawnDiaryPersonalities123Settings settings, bool hasUsableLane)
         {
             string input = EnneagramSync.BuildTransformInputFor(pawn);
             if (string.IsNullOrWhiteSpace(input))
             {
+                ApplyOverrideRule(pawn, id, key, root, true);
                 return;
             }
 
@@ -289,13 +320,36 @@ namespace PawnDiaryPersonalities123
                 return;
             }
 
-            ApplyOverrideRule(pawn, id, key, root);
+            // A durable lack of API/lane is handled until the configuration signature changes. A
+            // temporary rejection (budget/admission pressure) keeps the key open so the next pass retries.
+            ApplyOverrideRule(pawn, id, key, root, !hasUsableLane);
         }
 
         // Polls one in-flight transform. Success writes the transformed text into the editable custom
         // rule; anything else (failed / unknown / blank text) falls back to the built-in outlook rule.
         private void ResolvePendingTransform(Pawn pawn, string id, InFlightJob job)
         {
+            if (!string.IsNullOrWhiteSpace(job.completedText))
+            {
+                if (PawnDiaryApi.SetPsychotypeCustomRule(pawn, job.completedText))
+                {
+                    handledKey[id] = job.key;
+                    inFlight.Remove(id);
+                }
+
+                return;
+            }
+
+            if (job.fallbackPending)
+            {
+                if (ApplyOverrideRule(pawn, id, job.key, job.root, true))
+                {
+                    inFlight.Remove(id);
+                }
+
+                return;
+            }
+
             LlmCompletionResult result = PawnDiaryApi.GetLlmCompletionResult(job.handle);
             if (result.status == LlmCompletionStatus.Pending)
             {
@@ -304,17 +358,16 @@ namespace PawnDiaryPersonalities123
 
             if (result.status == LlmCompletionStatus.Succeeded && !string.IsNullOrWhiteSpace(result.text))
             {
-                if (PawnDiaryApi.SetPsychotypeCustomRule(pawn, result.text))
-                {
-                    handledKey[id] = job.key;
-                }
+                // Keep the paid result in memory until the main-thread write succeeds. Never issue a
+                // second HTTP request merely because a transient game-state guard rejected the write.
+                job.completedText = result.text;
             }
             else
             {
-                ApplyOverrideRule(pawn, id, job.key, job.root);
+                job.fallbackPending = true;
             }
 
-            inFlight.Remove(id);
+            ResolvePendingTransform(pawn, id, job);
         }
 
         // Releases the locked external psychotype overrides placed by earlier bridge versions (sourceId =
@@ -330,7 +383,12 @@ namespace PawnDiaryPersonalities123
 
             foreach (Pawn pawn in MigrationSweepPawns())
             {
+                DiaryPsychotypeSnapshot before = PawnDiaryApi.GetPsychotype(pawn);
                 PawnDiaryApi.ResetPsychotypeOverride(pawn, BridgeIds.ModId);
+                if (!string.IsNullOrWhiteSpace(before?.savedCustomRule))
+                {
+                    handledKey[pawn.GetUniqueLoadID()] = PreservedCustomMarker;
+                }
             }
 
             overridesSwept = true;
@@ -367,6 +425,93 @@ namespace PawnDiaryPersonalities123
             return mode + ":" + root;
         }
 
+        private static bool HasUsableLane(DiaryApiSetupSnapshot setup)
+        {
+            return PawnDiaryApi.IsExternalApiEnabled && setup != null && setup.activeLaneCount > 0;
+        }
+
+        // Stable, secret-free identity of every value that changes seeding output. Including Pawn
+        // Diary's lane setup makes core-menu changes visible even when the bridge menu was never opened.
+        private static string ConfigurationSignature(PawnDiaryPersonalities123Settings settings,
+            DiaryApiSetupSnapshot setup)
+        {
+            StringBuilder signature = new StringBuilder(PawnDiaryPersonalities123Mod.SettingsSignature());
+            signature.Append('|').Append(PawnDiaryApi.IsExternalApiEnabled);
+            if (settings == null || settings.mode != Personalities123Mode.LlmTransform || setup == null)
+            {
+                return StableConfigurationHash(signature.ToString());
+            }
+
+            signature.Append('|').Append(setup.temperature)
+                .Append('|').Append(setup.timeoutSeconds);
+            DiaryApiLaneSnapshot lane = EffectiveLane(setup, settings.transformLaneIndex);
+            if (lane != null)
+            {
+                signature.Append('|').Append(lane.index)
+                    .Append(':').Append(lane.active)
+                    .Append(':').Append(lane.url)
+                    .Append(':').Append(lane.model)
+                    .Append(':').Append(lane.authMode)
+                    .Append(':').Append(lane.apiMode)
+                    .Append(':').Append(lane.reasoningEffort)
+                    .Append(':').Append(lane.reasoningTag)
+                    .Append(':').Append(lane.hasApiKey)
+                    // apiKey is normally withheld; when the player opted into key sharing, hashing it
+                    // lets a key replacement trigger a retry without ever persisting the secret itself.
+                    .Append(':').Append(lane.apiKey);
+            }
+
+            return StableConfigurationHash(signature.ToString());
+        }
+
+        private static DiaryApiLaneSnapshot EffectiveLane(DiaryApiSetupSnapshot setup, int requestedIndex)
+        {
+            if (setup?.lanes == null)
+            {
+                return null;
+            }
+
+            DiaryApiLaneSnapshot firstActive = null;
+            for (int i = 0; i < setup.lanes.Count; i++)
+            {
+                DiaryApiLaneSnapshot lane = setup.lanes[i];
+                if (lane == null || !lane.active)
+                {
+                    continue;
+                }
+
+                if (firstActive == null)
+                {
+                    firstActive = lane;
+                }
+
+                if (lane.index == requestedIndex)
+                {
+                    return lane;
+                }
+            }
+
+            return firstActive;
+        }
+
+        // Persist only a deterministic fingerprint, never raw prompts or endpoint URLs (which can
+        // contain query credentials). FNV-1a is stable across processes unlike string.GetHashCode().
+        private static string StableConfigurationHash(string value)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(value ?? string.Empty);
+            ulong hash = 14695981039346656037UL;
+            unchecked
+            {
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    hash ^= bytes[i];
+                    hash *= 1099511628211UL;
+                }
+            }
+
+            return hash.ToString("x16");
+        }
+
         // One tracked Tier-3 transform: the poll handle plus the (mode, root) it is seeding, so the result
         // is recorded against the right key even if the pawn's root changed while it was in flight.
         private sealed class InFlightJob
@@ -374,6 +519,8 @@ namespace PawnDiaryPersonalities123
             public int handle;
             public string key;
             public string root;
+            public string completedText;
+            public bool fallbackPending;
         }
     }
 }

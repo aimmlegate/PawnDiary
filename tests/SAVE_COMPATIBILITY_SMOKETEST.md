@@ -145,11 +145,14 @@ Interactions Expanded active:
    untouched (nothing is destructively cleared).
 4. **Experimental LLM transform:** with a lane configured, set the mode to the LLM tier, keep or edit the
    prompt, and confirm one call fires per personality change and replaces the custom rule with compact
-   text; with no lane (or a forced failure) confirm it falls back to the built-in override text.
+   text. Type into the editor while it runs and confirm completion does not overwrite that unsaved text.
+   With no lane (or a forced failure) confirm it falls back to the built-in override text; then configure
+   a lane and confirm the saved configuration fingerprint makes the pawn retry.
 5. **Migration:** loading a save made by the *previous* bridge version once releases its locked external
-   overrides (the `FinalizeInit` sweep) so the new editable layers are visible. The old
-   `provideContextLine` / `usePersonalityOutlook` settings keys are dropped; the new `mode` defaults to
-   Override.
+   overrides (the first-tick sweep, including when 1-2-3 is inactive) so the new editable layers are
+   visible, while a player custom rule beneath the override survives. The retired `provideContextLine`
+   key is dropped; a legacy `usePersonalityOutlook=false` loads as Off, otherwise a missing new mode
+   migrates to Override.
 
 ## What counts as a regression
 

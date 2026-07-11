@@ -773,6 +773,25 @@ namespace DiaryPipelineTests
             AssertContains("progression skill prompt field", plan.userPrompt, "skill: Construction");
             AssertContains("progression level prompt field", plan.userPrompt, "skill level: 12");
             AssertContains("progression passion prompt field", plan.userPrompt, "passion: major");
+
+            DiaryEventPayload traitPayload = SoloPayload(
+                "e-trait-progression",
+                "new trait",
+                "Alice became nervous.");
+            traitPayload.gameContext = "progression=TraitGained; progression_kind=trait; trait=Nervous; "
+                + "trait_description=Prone to anxiety and tension.";
+            DiaryPromptPlan traitPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = traitPayload,
+                policy = Policy(combat: false, important: true),
+                povRole = DiaryPipelineRoles.Initiator,
+                personaVoiceBlock = "Write like Alice.",
+                maxTokens = 30
+            });
+            AssertContains("trait progression name reaches assembled prompt", traitPlan.userPrompt,
+                "trait: Nervous");
+            AssertContains("trait progression description reaches assembled prompt", traitPlan.userPrompt,
+                "trait description: Prone to anxiety and tension.");
         }
 
         private static void TestDualPovPromptPlans()
@@ -3673,6 +3692,8 @@ namespace DiaryPipelineTests
                     ContextField("quest faction", "quest_faction"),
                     ContextField("quest rewards", "quest_rewards"),
                     ContextField("progression kind", "progression_kind"),
+                    ContextField("trait", "trait"),
+                    ContextField("trait description", "trait_description"),
                     ContextField("skill", "skill"),
                     ContextField("skill level", "skill_level"),
                     ContextField("passion", "passion"),
@@ -3817,6 +3838,62 @@ namespace DiaryPipelineTests
             }
 
             throw new InvalidOperationException("Could not locate repository root from " + AppContext.BaseDirectory);
+        }
+
+        // Test the exact shipped XML policy rather than duplicating its tunable numbers in C# fixtures.
+        private static PsychotypeTraitAffinityPolicy LoadPsychotypeTraitPolicy()
+        {
+            XDocument document = XDocument.Load(RepoPath(
+                "1.6", "Defs", "DiaryPsychotypeTraitPolicyDefs.xml"));
+            XElement def = FindDef(document, "PawnDiary.DiaryPsychotypeTraitPolicyDef",
+                "Diary_PsychotypeTraitPolicy");
+            PsychotypeTraitAffinityPolicy policy = new PsychotypeTraitAffinityPolicy
+            {
+                gatedTakeoverChance = float.Parse(ChildValue(def, "gatedTakeoverChance"),
+                    System.Globalization.CultureInfo.InvariantCulture)
+            };
+
+            XElement rules = def?.Element("rules");
+            if (rules == null)
+            {
+                return policy;
+            }
+
+            foreach (XElement item in rules.Elements("li"))
+            {
+                PsychotypeTraitAffinityRule rule = new PsychotypeTraitAffinityRule
+                {
+                    traitDefName = ChildValue(item, "traitDefName"),
+                    key = ChildValue(item, "key"),
+                    matchDegree = string.Equals(ChildValue(item, "matchDegree"), "true",
+                        StringComparison.OrdinalIgnoreCase)
+                };
+                int.TryParse(ChildValue(item, "degree"), out rule.degree);
+                LoadTraitBonuses(item.Element("familyBonuses"), rule.familyBonuses);
+                LoadTraitBonuses(item.Element("memberBonuses"), rule.memberBonuses);
+                policy.rules.Add(rule);
+            }
+
+            return policy;
+        }
+
+        private static void LoadTraitBonuses(XElement source, Dictionary<string, float> destination)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            foreach (XElement item in source.Elements("li"))
+            {
+                string target = ChildValue(item, "target");
+                if (float.TryParse(ChildValue(item, "bonus"),
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out float bonus))
+                {
+                    destination[target] = bonus;
+                }
+            }
         }
 
         private static XElement FindDef(XDocument document, string elementName, string defName)
@@ -4507,40 +4584,42 @@ namespace DiaryPipelineTests
         // Nerves / Neurotic) key each mapped degree separately, everything else contributes nothing.
         private static void TestPsychotypeTraitKeys()
         {
+            PsychotypeTraitAffinityPolicy policy = LoadPsychotypeTraitPolicy();
             AssertEqual("simple trait maps to its defName", PsychotypeTraitAffinities.KeyPsychopath,
-                PsychotypeTraitAffinities.CanonicalTraitKey("Psychopath", 0));
+                PsychotypeTraitAffinities.CanonicalTraitKey("Psychopath", 0, policy));
             AssertEqual("simple trait key is whitespace-tolerant", PsychotypeTraitAffinities.KeyTooSmart,
-                PsychotypeTraitAffinities.CanonicalTraitKey(" TooSmart ", 0));
+                PsychotypeTraitAffinities.CanonicalTraitKey(" TooSmart ", 0, policy));
             AssertEqual("NaturalMood -2 => Depressive", PsychotypeTraitAffinities.KeyDepressive,
-                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", -2));
+                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", -2, policy));
             AssertEqual("NaturalMood -1 => Pessimist", PsychotypeTraitAffinities.KeyPessimist,
-                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", -1));
+                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", -1, policy));
             AssertEqual("NaturalMood +1 => Optimist", PsychotypeTraitAffinities.KeyOptimist,
-                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", 1));
+                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", 1, policy));
             AssertEqual("NaturalMood +2 => Sanguine", PsychotypeTraitAffinities.KeySanguine,
-                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", 2));
+                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", 2, policy));
             AssertEqual("NaturalMood degree 0 carries no key", string.Empty,
-                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", 0));
+                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", 0, policy));
             AssertEqual("Nerves -1 => Nervous", PsychotypeTraitAffinities.KeyNervous,
-                PsychotypeTraitAffinities.CanonicalTraitKey("Nerves", -1));
+                PsychotypeTraitAffinities.CanonicalTraitKey("Nerves", -1, policy));
             AssertEqual("Nerves -2 => Volatile", PsychotypeTraitAffinities.KeyVolatile,
-                PsychotypeTraitAffinities.CanonicalTraitKey("Nerves", -2));
+                PsychotypeTraitAffinities.CanonicalTraitKey("Nerves", -2, policy));
             AssertEqual("iron-willed side of Nerves carries no key", string.Empty,
-                PsychotypeTraitAffinities.CanonicalTraitKey("Nerves", 2));
+                PsychotypeTraitAffinities.CanonicalTraitKey("Nerves", 2, policy));
             AssertEqual("Neurotic 1 => Neurotic", PsychotypeTraitAffinities.KeyNeurotic,
-                PsychotypeTraitAffinities.CanonicalTraitKey("Neurotic", 1));
+                PsychotypeTraitAffinities.CanonicalTraitKey("Neurotic", 1, policy));
             AssertEqual("Neurotic 2 => VeryNeurotic", PsychotypeTraitAffinities.KeyVeryNeurotic,
-                PsychotypeTraitAffinities.CanonicalTraitKey("Neurotic", 2));
+                PsychotypeTraitAffinities.CanonicalTraitKey("Neurotic", 2, policy));
             AssertEqual("unknown trait carries no key", string.Empty,
-                PsychotypeTraitAffinities.CanonicalTraitKey("NightOwl", 0));
+                PsychotypeTraitAffinities.CanonicalTraitKey("NightOwl", 0, policy));
             AssertEqual("blank trait carries no key", string.Empty,
-                PsychotypeTraitAffinities.CanonicalTraitKey("  ", 0));
+                PsychotypeTraitAffinities.CanonicalTraitKey("  ", 0, policy));
         }
 
         // Trait pull: family bonuses land in stage 1, member bonuses in stage 2, and multiple trait
         // keys stack additively on top of the passion signals.
         private static void TestPsychotypeTraitWeights()
         {
+            PsychotypeTraitAffinityPolicy policy = LoadPsychotypeTraitPolicy();
             List<PsychotypeCandidate> catalog = BuildPsychotypeCatalog();
             PsychotypeProfile emptyProfile = PsychotypeRollPolicy.BuildProfile(new List<PsychotypeSkillPassion>());
 
@@ -4552,7 +4631,8 @@ namespace DiaryPipelineTests
                     {
                         new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillSocial, level = 1 },
                     },
-                    traitKeys = new List<string> { PsychotypeTraitAffinities.KeyVeryNeurotic }
+                    traitKeys = new List<string> { PsychotypeTraitAffinities.KeyVeryNeurotic },
+                    traitPolicy = policy
                 });
             AssertNear("VeryNeurotic adds +6 anxious family weight", 8f,
                 veryNeurotic[PsychotypeRollPolicy.FamilyAnxious]);
@@ -4564,7 +4644,8 @@ namespace DiaryPipelineTests
                     traitKeys = new List<string>
                     {
                         PsychotypeTraitAffinities.KeySanguine, PsychotypeTraitAffinities.KeyKind
-                    }
+                    },
+                    traitPolicy = policy
                 });
             AssertNear("Sanguine + Kind stack on grounded family", 16f,
                 sunny[PsychotypeRollPolicy.FamilyGrounded]);
@@ -4573,7 +4654,8 @@ namespace DiaryPipelineTests
             // compatible spillovers get their bonuses, unrelated members stay at base.
             PsychotypeRollInput psychopath = new PsychotypeRollInput
             {
-                traitKeys = new List<string> { PsychotypeTraitAffinities.KeyPsychopath }
+                traitKeys = new List<string> { PsychotypeTraitAffinities.KeyPsychopath },
+                traitPolicy = policy
             };
             Dictionary<string, float> hollow = PsychotypeRollPolicy.MemberWeights(
                 PsychotypeRollPolicy.FamilyIntense, emptyProfile, psychopath, catalog);
@@ -4584,7 +4666,8 @@ namespace DiaryPipelineTests
             // Jealous pawn: Resentful (anxious) +6, Narcissistic (intense) +4.
             PsychotypeRollInput jealous = new PsychotypeRollInput
             {
-                traitKeys = new List<string> { PsychotypeTraitAffinities.KeyJealous }
+                traitKeys = new List<string> { PsychotypeTraitAffinities.KeyJealous },
+                traitPolicy = policy
             };
             Dictionary<string, float> jealousAnxious = PsychotypeRollPolicy.MemberWeights(
                 PsychotypeRollPolicy.FamilyAnxious, emptyProfile, jealous, catalog);
@@ -4601,7 +4684,8 @@ namespace DiaryPipelineTests
                 {
                     new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillMelee, level = 1 },
                 },
-                traitKeys = new List<string> { PsychotypeTraitAffinities.KeyVolatile }
+                traitKeys = new List<string> { PsychotypeTraitAffinities.KeyVolatile },
+                traitPolicy = policy
             };
             Dictionary<string, float> volatileWeights = PsychotypeRollPolicy.MemberWeights(
                 PsychotypeRollPolicy.FamilyIntense, PsychotypeRollPolicy.BuildProfile(volatileTrait.passions),
@@ -4619,7 +4703,8 @@ namespace DiaryPipelineTests
                     new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillShooting, level = 2 },
                     new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillMelee, level = 2 },
                 },
-                traitKeys = new List<string> { PsychotypeTraitAffinities.KeySanguine }
+                traitKeys = new List<string> { PsychotypeTraitAffinities.KeySanguine },
+                traitPolicy = policy
             };
             Func<float> dominanceRand = SeededRand01(73);
             Dictionary<string, int> dominanceCounts = new Dictionary<string, int>();
@@ -4649,6 +4734,7 @@ namespace DiaryPipelineTests
         // branch (profile, wildcard, flat), and reachable — indeed likely — with it.
         private static void TestPsychotypeTraitGating()
         {
+            PsychotypeTraitAffinityPolicy policy = LoadPsychotypeTraitPolicy();
             List<PsychotypeCandidate> catalog = BuildPsychotypeCatalog();
             HashSet<string> gatedDefs = new HashSet<string>
             {
@@ -4680,7 +4766,8 @@ namespace DiaryPipelineTests
             // family pull + member bonus), and never on the OTHER two gated psychotypes.
             PsychotypeRollInput bloodlust = new PsychotypeRollInput
             {
-                traitKeys = new List<string> { PsychotypeTraitAffinities.KeyBloodlust }
+                traitKeys = new List<string> { PsychotypeTraitAffinities.KeyBloodlust },
+                traitPolicy = policy
             };
             Func<float> bloodlustRand = SeededRand01(41);
             int bloodthirstyCount = 0;

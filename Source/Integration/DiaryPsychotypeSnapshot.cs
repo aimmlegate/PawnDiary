@@ -3,8 +3,9 @@
 // the psychotype is the lens they see through: what they notice, value, and fear. Keep this class
 // plain: fields only, strings only, no live RimWorld objects.
 //
-// This is the EFFECTIVE psychotype (external override > pawn custom > base type). It is empty when the
-// psychotype layer is turned off in settings, since nothing then reaches the prompt.
+// The primary fields describe the EFFECTIVE psychotype (external override > pawn custom > base type).
+// v6 additionally exposes the saved custom layer for ownership-safe adapter migrations. The effective
+// rule is empty when the psychotype layer is turned off, since nothing then reaches the prompt.
 //
 // New to C#/RimWorld? See AGENTS.md.
 namespace PawnDiary.Integration
@@ -26,5 +27,12 @@ namespace PawnDiary.Integration
         /// resolved psychotype is Neutral.
         /// </summary>
         public string rule = string.Empty;
+
+        /// <summary>
+        /// The pawn's saved editable custom rule before external-override resolution. This may differ
+        /// from <see cref="rule"/> when another mod currently owns an external override. Added so
+        /// adapters can migrate their old override without overwriting a player's custom text.
+        /// </summary>
+        public string savedCustomRule = string.Empty;
     }
 }

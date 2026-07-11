@@ -49,6 +49,7 @@ namespace PawnDiary
         private static PsychotypeRollInput BuildInput(Pawn pawn, string stageBand,
             IDictionary<string, int> usedCounts, string childPsychotypeDefName)
         {
+            PsychotypeTraitAffinityPolicy traitPolicy = DiaryPsychotypeTraitPolicy.Snapshot();
             PsychotypeRollInput input = new PsychotypeRollInput
             {
                 stageBand = string.Equals(stageBand, PsychotypeRollPolicy.StageChild, System.StringComparison.OrdinalIgnoreCase)
@@ -57,7 +58,8 @@ namespace PawnDiary
                 isCreepJoiner = DlcContext.IsCreepJoiner(pawn),
                 childPsychotypeDefName = childPsychotypeDefName ?? string.Empty,
                 usedCounts = usedCounts != null ? new Dictionary<string, int>(usedCounts) : new Dictionary<string, int>(),
-                passions = PassionsFor(pawn)
+                passions = PassionsFor(pawn),
+                traitPolicy = traitPolicy
             };
 
             // Trait vetoes + canonical trait keys (weight pull and gated-psychotype unlocks; see
@@ -83,7 +85,8 @@ namespace PawnDiary
                         input.blockRuthless = true;
                     }
 
-                    string key = PsychotypeTraitAffinities.CanonicalTraitKey(defName, trait.Degree);
+                    string key = PsychotypeTraitAffinities.CanonicalTraitKey(
+                        defName, trait.Degree, traitPolicy);
                     if (!string.IsNullOrEmpty(key) && !input.traitKeys.Contains(key))
                     {
                         input.traitKeys.Add(key);

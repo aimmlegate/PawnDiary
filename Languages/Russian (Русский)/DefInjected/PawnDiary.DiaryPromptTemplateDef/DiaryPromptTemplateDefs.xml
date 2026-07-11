@@ -373,4 +373,16 @@
   <DiaryPromptTemplate_ArrivalDescription.fields.6.label>сведения о поселенце</DiaryPromptTemplate_ArrivalDescription.fields.6.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.7.label>обстановка</DiaryPromptTemplate_ArrivalDescription.fields.7.label>
   <DiaryPromptTemplate_Title.fields.0.label>запись дневника для заголовка</DiaryPromptTemplate_Title.fields.0.label>
+  <!-- Добавленные в конец поля; индексы совпадают с живыми XML-списками. -->
+  <DiaryPromptTemplate_SoloDefault.fields.40.label>черта</DiaryPromptTemplate_SoloDefault.fields.40.label>
+  <DiaryPromptTemplate_SoloDefault.fields.41.label>описание черты</DiaryPromptTemplate_SoloDefault.fields.41.label>
+  <DiaryPromptTemplate_SoloImportant.fields.41.label>черта</DiaryPromptTemplate_SoloImportant.fields.41.label>
+  <DiaryPromptTemplate_SoloImportant.fields.42.label>описание черты</DiaryPromptTemplate_SoloImportant.fields.42.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.36.label>черта</DiaryPromptTemplate_SoloInternalState.fields.36.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.37.label>описание черты</DiaryPromptTemplate_SoloInternalState.fields.37.label>
+  <DiaryPromptTemplate_SoloBatched.fields.36.label>черта</DiaryPromptTemplate_SoloBatched.fields.36.label>
+  <DiaryPromptTemplate_SoloBatched.fields.37.label>описание черты</DiaryPromptTemplate_SoloBatched.fields.37.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.35.label>черта</DiaryPromptTemplate_SoloDayReflection.fields.35.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.36.label>описание черты</DiaryPromptTemplate_SoloDayReflection.fields.36.label>
+
 </LanguageData>
