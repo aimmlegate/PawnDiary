@@ -558,7 +558,9 @@ player installs only the ones matching their mod list:
   `DiaryPsychotype_*`, pinned), *override from personality* (`SetPsychotypeCustomRule` from the pure
   `EnneagramLensMapping` outlook text), or *experimental LLM transform* (`RequestLlmCompletion` on a
   selectable lane with an editable prompt, seeding the custom rule from the model's rewrite and falling
-  back to the override text on any miss). Change-detected by `<mode>:<root>` and **saved** with the game
+  back to the override text on any miss; the transform input carries the localized base outlook as the
+  text to rewrite, so a small model reshapes known-good text rather than inventing from a type number).
+  Change-detected by `<mode>:<root>` and **saved** with the game
   (a reload never re-seeds over the player's edits); re-seeds on a mode or root change, and re-seeds the
   whole colony on **any** settings change (mode/lane/prompt) via a process-global `SettingsGeneration` the
   mod bumps from `WriteSettings` and the component watches. In the LLM tier the bridge also registers an

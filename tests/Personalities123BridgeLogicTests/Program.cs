@@ -168,11 +168,12 @@ namespace Personalities123BridgeLogicTests
 
         private static void TestTransformInput_AllFieldsAndTypeNumber()
         {
-            string input = EnneagramLensMapping.BuildTransformInput("The Achiever", "image-driven", "SP_Root3", "raw=blob");
+            string baseRule = EnneagramLensMapping.RuleForRoot("SP_Root3");
+            string input = EnneagramLensMapping.BuildTransformInput("The Achiever", "image-driven", baseRule, "raw=blob");
             Check("input includes the variant", input != null && input.Contains("personality style: The Achiever"));
             Check("input includes the main trait", input.Contains("main trait: image-driven"));
-            // The root defName is reduced to the bare Enneagram type number, never the SP_Root token.
-            Check("input includes the type number", input.Contains("enneagram type: 3"));
+            // The base outlook rides along as the text to rewrite; the root defName never appears.
+            Check("input includes the base outlook", input.Contains("base outlook: " + baseRule));
             Check("input does not leak the root defName", !input.Contains("SP_Root"));
             Check("input includes the serialization", input.Contains("details: raw=blob"));
             Check("input is newline-joined", input.Contains("\n"));
@@ -183,13 +184,17 @@ namespace Personalities123BridgeLogicTests
             // Only a variant present: the other labels must not appear.
             string input = EnneagramLensMapping.BuildTransformInput("The Helper", "  ", null, null);
             Check("variant-only line present", input == "personality style: The Helper");
+            // Only a base outlook present (labels blank): the single base line survives.
+            Check("base-outlook-only line present",
+                EnneagramLensMapping.BuildTransformInput(null, " ", "This pawn tests things.", null)
+                    == "base outlook: This pawn tests things.");
         }
 
         private static void TestTransformInput_AllBlankReturnsNull()
         {
             Check("all null -> null", EnneagramLensMapping.BuildTransformInput(null, null, null, null) == null);
-            Check("all blank / unknown root -> null",
-                EnneagramLensMapping.BuildTransformInput(" ", "\t", "SP_Animal_Chonk", "   ") == null);
+            Check("all blank -> null",
+                EnneagramLensMapping.BuildTransformInput(" ", "\t", "  ", "   ") == null);
         }
 
         // ---- tiny assert harness ----

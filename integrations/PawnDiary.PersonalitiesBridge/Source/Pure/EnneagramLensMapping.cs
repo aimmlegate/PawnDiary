@@ -32,9 +32,6 @@ namespace PawnDiaryPersonalities123.Pure
         // Keyed-translation prefix for the outlook rules. Concatenated with the canonical root defName.
         public const string OutlookKeyPrefix = "PawnDiaryPersonalities123.Outlook.";
 
-        // Canonical root defName prefix; the trailing digit is the classic Enneagram type number.
-        private const string RootDefNamePrefix = "SP_Root";
-
         /// <summary>
         /// The English diary outlook rule for one Enneagram root, or null when the root defName is
         /// unknown (a future/renamed root, or an animal variant with no humanlike root). Case-insensitive.
@@ -114,11 +111,15 @@ namespace PawnDiaryPersonalities123.Pure
         /// <summary>
         /// Builds the compact personality-data block that Tier 3 sends to the LLM as the text to rewrite.
         /// Includes only the fields that are present: the player-facing variant + main-trait labels (from
-        /// 1-2-3's own Defs), the Enneagram type number, and the raw personality serialization. Returns
-        /// null when there is nothing worth sending. This is INPUT data only — the transform prompt is
-        /// what tells the model to keep the type unnamed in its OUTPUT.
+        /// 1-2-3's own Defs), the LOCALIZED base outlook for the pawn's root (the same text Tier 2 would
+        /// seed — deliberately included so a small model rewrites known-good, on-register text instead of
+        /// inventing an outlook from a bare type number; its worst failure, copying it verbatim, is still
+        /// correct), and the raw personality serialization. Returns null when there is nothing worth
+        /// sending. This is INPUT data only — the transform prompt is what tells the model to keep the
+        /// type unnamed in its OUTPUT. The schema labels stay English on purpose (machine keys, like the
+        /// core prompt schema); the default prompts reference the "base outlook" label by name.
         /// </summary>
-        public static string BuildTransformInput(string variantLabel, string mainTraitLabel, string rootDefName, string serialization)
+        public static string BuildTransformInput(string variantLabel, string mainTraitLabel, string baseOutlookRule, string serialization)
         {
             List<string> lines = new List<string>();
 
@@ -134,10 +135,10 @@ namespace PawnDiaryPersonalities123.Pure
                 lines.Add("main trait: " + trait);
             }
 
-            string canonicalRoot = CanonicalRoot(rootDefName);
-            if (canonicalRoot != null)
+            string baseOutlook = Clean(baseOutlookRule);
+            if (baseOutlook.Length > 0)
             {
-                lines.Add("enneagram type: " + canonicalRoot.Substring(RootDefNamePrefix.Length));
+                lines.Add("base outlook: " + baseOutlook);
             }
 
             string extra = Clean(serialization);

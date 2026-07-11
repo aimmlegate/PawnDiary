@@ -34,8 +34,9 @@ namespace PawnDiaryPersonalities123
         // so a coarse cadence keeps overhead off the hot path.
         private const int PassIntervalTicks = 250;
 
-        // Requested output budget for one transform (a couple of sentences).
-        private const int TransformMaxTokens = 200;
+        // Requested output budget for one transform (a couple of sentences). Sized with headroom for
+        // reasoning models whose thinking tokens count against the budget before the visible reply.
+        private const int TransformMaxTokens = 300;
 
         // Last tick the pass ran. Compared by elapsed time (now - last), never TicksGame % N, so a dev
         // time-skip or save/load cannot desync the cadence.

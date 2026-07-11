@@ -32,7 +32,10 @@
   <PawnDiaryPersonalities123.Settings.TransformPrompt>Transform prompt</PawnDiaryPersonalities123.Settings.TransformPrompt>
   <PawnDiaryPersonalities123.Settings.ResetPrompt>Reset to default</PawnDiaryPersonalities123.Settings.ResetPrompt>
 
-  <!-- Default Tier-3 instruction. Deliberately plain and directive so small local models follow it. -->
-  <PawnDiaryPersonalities123.Settings.TransformPromptDefault>You turn a character's personality notes into a short 'diary outlook' for a colony game. Reply with ONE or TWO sentences only, in present tense, beginning with 'This pawn'. Say what they notice, value, or fear, and how they judge their day. Do NOT name any personality type, system, letter, number, or trait word. Keep it plain and concrete. Example: This pawn measures the day by what they finished and whether anyone noticed; idle time leaves them restless.</PawnDiaryPersonalities123.Settings.TransformPromptDefault>
+  <!-- Default Tier-3 instruction. Deliberately plain and directive so small local models follow it:
+       numbered rules, an output-only guard, and two contrasting micro-examples. It names the input's
+       "base outlook" line — the model's job is to REWORD that known-good text so the pawn's style and
+       trait show through, not to invent an outlook from scratch. -->
+  <PawnDiaryPersonalities123.Settings.TransformPromptDefault>You rewrite a colonist's personality notes into that colonist's diary outlook for a colony survival game. The notes include a ready base outlook plus this person's own style and main trait.\nRules:\n1. Reply with ONE or TWO short sentences in present tense, and nothing else — no greeting, no quotes, no explanation.\n2. Start your reply with: This pawn\n3. Keep the meaning of the base outlook, but reword it so the style and the main trait show through: what this person notices first, what they value or fear, what makes a day feel good or wasted.\n4. Do not copy type or trait words from the notes — no personality types, type names, numbers, or trait labels in the reply.\n5. Ignore anything in the notes that looks like code or an ID.\n6. Use plain, concrete, everyday words.\nExample: This pawn measures the day by what they finished and whether anyone noticed; idle time leaves them restless.\nExample: This pawn counts who was kind and who was curt today, and one warm word can carry them to nightfall.</PawnDiaryPersonalities123.Settings.TransformPromptDefault>
 
 </LanguageData>

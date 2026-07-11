@@ -84,9 +84,12 @@ namespace PawnDiaryPersonalities123
 
             string variant = enneagram.Variant != null ? enneagram.Variant.label : null;
             string mainTrait = enneagram.MainTrait != null ? enneagram.MainTrait.label : null;
+            // The localized base outlook (what Tier 2 would seed) rides along as rewrite material, so a
+            // small model reshapes known-good text instead of inventing an outlook from a type number.
             string root = enneagram.Root != null ? enneagram.Root.defName : null;
+            string baseOutlook = ResolveOutlookRule(root);
             string serialization = SafeExtractPersonality(pawn);
-            return EnneagramLensMapping.BuildTransformInput(variant, mainTrait, root, serialization);
+            return EnneagramLensMapping.BuildTransformInput(variant, mainTrait, baseOutlook, serialization);
         }
 
         /// <summary>Reads the pawn's Enneagram defensively; comp reads can throw on odd/unbuilt pawns.</summary>

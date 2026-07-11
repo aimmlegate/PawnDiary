@@ -50,6 +50,15 @@ pre-release version ladder for project history.
   thread, so it works from the mod constructor that RimWorld 1.6 runs off the main thread (the bridge's
   one-time override-migration sweep moved from `FinalizeInit` to the first tick for the same reason).
   Main-mod EN/RU strings added; both DLLs rebuilt.
+- **LLM transform tuned for small models: rewrite a base outlook instead of inventing one.** The
+  transform input now carries the pawn's LOCALIZED built-in outlook (`base outlook:` — the same text
+  Tier 2 would seed) instead of a bare `enneagram type: N`, so the model's job becomes "reword this
+  known-good text so the style and main trait show through" — and its worst failure (copying it
+  verbatim) is still correct, on-register text. The default prompt (EN + native RU) was reauthored to
+  match: numbered rules, an output-only guard, an anti-echo rule for type/trait labels, an
+  ignore-code/IDs rule for the raw `details:` blob, and two contrasting micro-examples. Transform
+  output budget raised 200 → 300 tokens for reasoning-model headroom. Pure mapper drops the
+  type-number line (`tests/Personalities123BridgeLogicTests/`, 91 checks green).
 
 ## 2026-07-10
 
