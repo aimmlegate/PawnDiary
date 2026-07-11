@@ -54,6 +54,17 @@ namespace PawnDiaryPersonalities123
         /// </summary>
         internal static bool SimplePersonalitiesActive;
 
+        /// <summary>
+        /// Bumped whenever the player changes a bridge setting (mode / lane / prompt). The per-game
+        /// component watches this and re-seeds every colonist when it moves, so a settings edit takes
+        /// effect for the whole colony at once instead of only on each pawn's next personality change.
+        /// </summary>
+        internal static int SettingsGeneration;
+
+        // Signature of the settings already folded into SettingsGeneration, so an open→close with no
+        // real change does not force a needless re-seed (which, in the LLM tier, would re-spend tokens).
+        private static string appliedSignature = string.Empty;
+
         public PawnDiaryPersonalities123Mod(ModContentPack content) : base(content)
         {
             Settings = GetSettings<PawnDiaryPersonalities123Settings>();
@@ -68,12 +79,45 @@ namespace PawnDiaryPersonalities123
                     + ") is not in the active mod list; the bridge stays idle.",
                     "PawnDiaryPersonalities123.Missing".GetHashCode());
             }
+
+            // Record the starting signature so the first settings-window close only bumps the generation
+            // if the player actually changed something.
+            appliedSignature = SettingsSignature();
         }
 
         /// <summary>Returns the settings-list label shown by RimWorld's mod options menu.</summary>
         public override string SettingsCategory()
         {
             return "PawnDiaryPersonalities123.Settings.Category".Translate();
+        }
+
+        /// <summary>
+        /// Called when the mod settings window closes. If the player actually changed a seeding-relevant
+        /// setting, bump <see cref="SettingsGeneration"/> so the per-game component re-seeds every colonist
+        /// with the new mode / lane / prompt.
+        /// </summary>
+        public override void WriteSettings()
+        {
+            base.WriteSettings();
+
+            string signature = SettingsSignature();
+            if (signature != appliedSignature)
+            {
+                appliedSignature = signature;
+                SettingsGeneration++;
+            }
+        }
+
+        // A cheap identity of the seeding-relevant settings, compared on window close to detect changes.
+        private static string SettingsSignature()
+        {
+            PawnDiaryPersonalities123Settings settings = Settings;
+            if (settings == null)
+            {
+                return string.Empty;
+            }
+
+            return (int)settings.mode + "|" + settings.transformLaneIndex + "|" + (settings.transformPrompt ?? string.Empty);
         }
 
         /// <summary>Draws the mode selector plus, when the LLM tier is chosen, its lane + prompt block.</summary>

@@ -551,7 +551,9 @@ player installs only the ones matching their mod list:
   `EnneagramLensMapping` outlook text), or *experimental LLM transform* (`RequestLlmCompletion` on a
   selectable lane with an editable prompt, seeding the custom rule from the model's rewrite and falling
   back to the override text on any miss). Change-detected by `<mode>:<root>` and **saved** with the game
-  (a reload never re-seeds over the player's edits); re-seeds on a mode or root change. The pure mapper
+  (a reload never re-seeds over the player's edits); re-seeds on a mode or root change, and re-seeds the
+  whole colony on **any** settings change (mode/lane/prompt) via a process-global `SettingsGeneration` the
+  mod bumps from `WriteSettings` and the component watches. The pure mapper
   (root → outlook rule, root → built-in psychotype, transform-input assembly) is unit-tested by
   `tests/Personalities123BridgeLogicTests/`. Read-only toward 1-2-3 Personalities; a one-time
   `FinalizeInit` sweep releases the locked overrides earlier versions placed so the new editable layers

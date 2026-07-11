@@ -20,7 +20,9 @@ pre-release version ladder for project history.
     language model, on a lane they pick (styled like the main mod's connection UI) with an editable,
     small-model-friendly prompt; falls back to the override text when no lane is set or the call fails.
   Seeding is change-detected by `<mode>:<root>` and **saved with the game**, so a reload never re-seeds
-  over a hand-edit; it re-seeds on a mode or root change. A one-time `FinalizeInit` sweep releases the
+  over a hand-edit; it re-seeds on a mode or root change, and re-seeds the whole colony whenever the
+  player changes any bridge setting (a `SettingsGeneration` counter bumped from `WriteSettings`). A
+  one-time `FinalizeInit` sweep releases the
   locked overrides earlier bridge versions placed. Read-only toward 1-2-3 Personalities; SP_Module1 reads
   stay `[NoInlining]` behind the `SimplePersonalitiesActive` guard.
 - **Public integration API v4** (additive; existing members unchanged). `SetPsychotype(pawn, defName,

@@ -41,6 +41,11 @@ namespace PawnDiaryPersonalities123
         // time-skip or save/load cannot desync the cadence.
         private int lastPassTick;
 
+        // The SettingsGeneration we have already reacted to. When the process-global counter moves ahead
+        // (the player changed a bridge setting), the next tick clears the change-detection and re-seeds
+        // every colonist. Initialized on load so a reload never counts as a change.
+        private int lastSeenSettingsGeneration;
+
         // pawnId -> "<mode>:<root>" we last successfully applied. SAVED: this is what lets a reload skip
         // an unchanged pawn instead of re-seeding over the player's edits. Re-seeds when either the mode
         // or the pawn's Enneagram root changes.
@@ -83,6 +88,8 @@ namespace PawnDiaryPersonalities123
 
             // now - 0 >= interval for any loaded game's TicksGame, so the first tick fires a pass at once.
             lastPassTick = 0;
+            // Adopt the current generation so loading a save is not mistaken for a settings change.
+            lastSeenSettingsGeneration = PawnDiaryPersonalities123Mod.SettingsGeneration;
             MigrateOldOverridesOnce();
         }
 
@@ -93,6 +100,17 @@ namespace PawnDiaryPersonalities123
             if (!PawnDiaryPersonalities123Mod.SimplePersonalitiesActive)
             {
                 return;
+            }
+
+            // The player changed a bridge setting: forget what we applied so every colonist is re-seeded
+            // with the new mode / lane / prompt on this tick, and abandon any in-flight transform.
+            int settingsGeneration = PawnDiaryPersonalities123Mod.SettingsGeneration;
+            if (settingsGeneration != lastSeenSettingsGeneration)
+            {
+                lastSeenSettingsGeneration = settingsGeneration;
+                handledKey.Clear();
+                inFlight.Clear();
+                lastPassTick = 0;
             }
 
             PawnDiaryPersonalities123Settings settings = PawnDiaryPersonalities123Mod.Settings;
