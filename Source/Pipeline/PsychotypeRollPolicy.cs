@@ -9,9 +9,12 @@
 //
 // Two-stage adult roll (see design/PSYCHOTYPE_PLAN.md):
 //   Stage 0  BuildProfile   - fold the 12 skill passions into five domains + summary signals.
-//   Stage 1  FamilyWeights  - weight the four families (grounded/inward/intense/anxious) from the profile.
+//   Stage 1  FamilyWeights  - weight the four families (grounded/inward/intense/anxious) from the
+//                             profile plus the pawn's trait pull (PsychotypeTraitAffinities).
 //   Stage 2  MemberWeights  - weight the members inside the rolled family (skill nudges + combo
-//                             signatures + child-continuity nudge + duplicate penalty), then jitter.
+//                             signatures + trait member bonuses + child-continuity nudge + duplicate
+//                             penalty), then jitter. Trait-gated candidates (requiredTraitKey) are
+//                             only eligible for pawns holding the trait — on every branch.
 // A wildcard branch (WildcardChance) skips all profile logic and rolls flat over stage-appropriate
 // candidates. Children (stageBand == Child) always roll flat over the child catalog.
 //
@@ -33,6 +36,8 @@ namespace PawnDiary
     /// is one of the <see cref="PsychotypeRollPolicy"/> family constants for adults; child options set
     /// <see cref="stage"/> to <see cref="PsychotypeRollPolicy.StageChild"/>. <see cref="skillAffinities"/>
     /// maps a skill defName to its nudge points (the model-facing stage-2 data authored on the def).
+    /// <see cref="requiredTraitKey"/> is the canonical trait key gating a trait-only psychotype
+    /// (blank for the ordinary catalog); see <see cref="PsychotypeTraitAffinities"/>.
     /// </summary>
     internal sealed class PsychotypeCandidate
     {
@@ -40,6 +45,7 @@ namespace PawnDiary
         public string family = string.Empty;
         public string stage = PsychotypeRollPolicy.StageAdult;
         public Dictionary<string, int> skillAffinities = new Dictionary<string, int>();
+        public string requiredTraitKey = string.Empty;
     }
 
     /// <summary>
@@ -53,6 +59,10 @@ namespace PawnDiary
         // Trait vetoes: a Psychopath never rolls Dependent; a Kind pawn never rolls Ruthless.
         public bool blockDependent;
         public bool blockRuthless;
+        // Canonical trait keys (PsychotypeTraitAffinities.CanonicalTraitKey) for the pawn's supported
+        // traits. They add family/member weight toward compatible psychotypes and unlock trait-gated
+        // candidates; traits outside the table are simply absent here.
+        public List<string> traitKeys = new List<string>();
         // The child psychotype this pawn crystallized from, if any, so the adult roll can keep a thread
         // of continuity (a +1 nudge toward the mapped adult members). Empty for a first adult roll.
         public string childPsychotypeDefName = string.Empty;
@@ -114,6 +124,11 @@ namespace PawnDiary
         public const float MemberBaseWeight = 1f;
         public const float ComboBonus = 2f;
         public const float ContinuityBonus = 1f;
+        // Extreme-trait takeover: a pawn whose trait unlocks a gated psychotype (requiredTraitKey)
+        // adopts one outright this often, before wildcard/profile logic. The remaining rolls fall
+        // through to the normal machinery, where the gate stays open and the trait table still
+        // weights the gated member — so the trait dominates the outlook without monopolizing it.
+        public const float GatedTakeoverChance = 0.45f;
         // Wildcard branch: skip all profile logic this often and roll flat over the stage candidates.
         public const float WildcardChance = 0.12f;
         public const float WildcardGroundedBase = 2f;
@@ -191,8 +206,9 @@ namespace PawnDiary
         /// <summary>
         /// Rolls a psychotype defName for the pawn. Returns the winning candidate's defName, or empty
         /// string when no usable candidates were supplied (the adapter then falls back to Neutral).
-        /// <paramref name="rand01"/> returns a value in [0,1); it is called for the wildcard gate, each
-        /// weighted pick, and each candidate's jitter.
+        /// <paramref name="rand01"/> returns a value in [0,1); it is called for the takeover gate
+        /// (only when a gated psychotype is unlocked), the wildcard gate, each weighted pick, and each
+        /// candidate's jitter.
         /// </summary>
         public static string Roll(PsychotypeRollInput input, IReadOnlyList<PsychotypeCandidate> candidates,
             Func<float> rand01)
@@ -212,6 +228,22 @@ namespace PawnDiary
             if (adults.Count == 0)
             {
                 return string.Empty;
+            }
+
+            // Extreme-trait takeover: when the pawn's traits unlock gated psychotypes, adopt one of
+            // them outright GatedTakeoverChance of the time (duplicate penalty + jitter still apply).
+            // Trait-less pawns skip this draw entirely, keeping their rand stream unchanged.
+            List<PsychotypeCandidate> gated = UnlockedGated(adults, input);
+            if (gated.Count > 0 && rand01() < GatedTakeoverChance)
+            {
+                Dictionary<string, float> takeover = new Dictionary<string, float>();
+                for (int i = 0; i < gated.Count; i++)
+                {
+                    takeover[gated[i].defName] = Math.Max(
+                        MemberBaseWeight * DuplicateMultiplier(gated[i].defName, input), WeightFloor);
+                }
+
+                return JitteredPick(takeover, rand01);
             }
 
             // Wildcard: ignore the whole profile and roll flat over the adult catalog (grounded/skewed
@@ -350,6 +382,14 @@ namespace PawnDiary
                 anxious += FocusAnxiousBonus;
             }
 
+            // Trait pull (PsychotypeTraitAffinities): additive on top of the passion signals, so a
+            // Sanguine shooter still weighs both halves of who they are.
+            List<string> traitKeys = input?.traitKeys;
+            grounded += PsychotypeTraitAffinities.FamilyBonus(FamilyGrounded, traitKeys);
+            inward += PsychotypeTraitAffinities.FamilyBonus(FamilyInward, traitKeys);
+            intense += PsychotypeTraitAffinities.FamilyBonus(FamilyIntense, traitKeys);
+            anxious += PsychotypeTraitAffinities.FamilyBonus(FamilyAnxious, traitKeys);
+
             return new Dictionary<string, float>
             {
                 { FamilyGrounded, Math.Max(grounded, WeightFloor) },
@@ -361,9 +401,10 @@ namespace PawnDiary
 
         /// <summary>
         /// Weights the members inside one family: flat base + per-skill nudges + combo signatures +
-        /// child-continuity nudge, all times the soft duplicate penalty. Vetoed candidates (Dependent
-        /// for a Psychopath, Ruthless for a Kind pawn) are dropped before weighting. Deterministic —
-        /// jitter is applied by <see cref="Roll"/>. Exposed for tests.
+        /// trait member bonuses + child-continuity nudge, all times the soft duplicate penalty. Vetoed
+        /// candidates (Dependent for a Psychopath, Ruthless for a Kind pawn) and trait-locked
+        /// candidates are dropped before weighting. Deterministic — jitter is applied by
+        /// <see cref="Roll"/>. Exposed for tests.
         /// </summary>
         public static Dictionary<string, float> MemberWeights(string family, PsychotypeProfile profile,
             PsychotypeRollInput input, IReadOnlyList<PsychotypeCandidate> candidates)
@@ -381,7 +422,8 @@ namespace PawnDiary
                 if (candidate == null
                     || string.IsNullOrWhiteSpace(candidate.defName)
                     || !string.Equals(candidate.family, family, StringComparison.OrdinalIgnoreCase)
-                    || IsVetoed(candidate.defName, input))
+                    || IsVetoed(candidate.defName, input)
+                    || IsTraitLocked(candidate, input))
                 {
                     continue;
                 }
@@ -392,6 +434,7 @@ namespace PawnDiary
                     weight += ComboBonus;
                 }
 
+                weight += PsychotypeTraitAffinities.MemberBonus(candidate.defName, input?.traitKeys);
                 weight += ContinuityNudge(candidate.defName, input);
                 weight *= DuplicateMultiplier(candidate.defName, input);
                 weights[candidate.defName] = Math.Max(weight, WeightFloor);
@@ -401,7 +444,8 @@ namespace PawnDiary
         }
 
         // Flat roll shared by the wildcard branch (adult catalog, grounded/skewed base) and the child
-        // catalog (uniform base). Duplicate penalty and jitter always apply; vetoes always apply.
+        // catalog (uniform base). Duplicate penalty and jitter always apply; vetoes and trait gates
+        // always apply (a gated psychotype must be unreachable without its trait on EVERY branch).
         private static string FlatRoll(PsychotypeRollInput input, IReadOnlyList<PsychotypeCandidate> candidates,
             Func<float> rand01, bool childRoll)
         {
@@ -411,7 +455,8 @@ namespace PawnDiary
                 PsychotypeCandidate candidate = candidates[i];
                 if (candidate == null
                     || string.IsNullOrWhiteSpace(candidate.defName)
-                    || IsVetoed(candidate.defName, input))
+                    || IsVetoed(candidate.defName, input)
+                    || IsTraitLocked(candidate, input))
                 {
                     continue;
                 }
@@ -639,6 +684,34 @@ namespace PawnDiary
             }
 
             return input.blockRuthless && string.Equals(defName, DefRuthless, StringComparison.Ordinal);
+        }
+
+        // A trait-gated candidate (non-blank requiredTraitKey) is only rollable when the pawn holds
+        // the matching canonical trait key. Hard eligibility, same standing as IsVetoed.
+        private static bool IsTraitLocked(PsychotypeCandidate candidate, PsychotypeRollInput input)
+        {
+            return !PsychotypeTraitAffinities.IsUnlocked(candidate.requiredTraitKey, input?.traitKeys);
+        }
+
+        // The gated candidates this pawn's traits unlock (feeds the takeover branch in Roll).
+        private static List<PsychotypeCandidate> UnlockedGated(IReadOnlyList<PsychotypeCandidate> candidates,
+            PsychotypeRollInput input)
+        {
+            List<PsychotypeCandidate> unlocked = new List<PsychotypeCandidate>();
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                PsychotypeCandidate candidate = candidates[i];
+                if (candidate != null
+                    && !string.IsNullOrWhiteSpace(candidate.defName)
+                    && !string.IsNullOrWhiteSpace(candidate.requiredTraitKey)
+                    && !IsTraitLocked(candidate, input)
+                    && !IsVetoed(candidate.defName, input))
+                {
+                    unlocked.Add(candidate);
+                }
+            }
+
+            return unlocked;
         }
 
         private static List<PsychotypeCandidate> StageCandidates(IReadOnlyList<PsychotypeCandidate> candidates,

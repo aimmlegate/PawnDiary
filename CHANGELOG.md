@@ -6,6 +6,28 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-11
+
+- **Traits now steer the psychotype roll.** A new pure weight table
+  (`Source/Pipeline/PsychotypeTraitAffinities.cs`) adds a deliberate trait channel on top of the
+  skill-passion signals: each supported trait nudges stage-1 family weight and stage-2 member weight
+  toward its compatible psychotypes — Jealous → Resentful/Narcissistic, Greedy → Ruthless/Ambitious,
+  Too smart → Detached, Tortured artist → Resentful/Nostalgic/Theatrical, Kind → Content/Dutiful,
+  Abrasive → Wry/Pragmatic, Recluse → Detached/Avoidant, Depressive → Nostalgic/Avoidant, Pessimist →
+  Resentful/Paranoid/Wry, Sanguine/Optimist → Content, Nervous → Avoidant/Dependent, Volatile →
+  Volatile, Neurotic/Very neurotic → Perfectionist/Paranoid. Spectrum traits map per degree
+  (NaturalMood / Nerves / Neurotic); unknown or modded traits contribute nothing; the two existing
+  vetoes (Psychopath never rolls Dependent, Kind never rolls Ruthless) are unchanged.
+- **Three new trait-gated psychotypes for the extreme traits: Hollow (Psychopath), Ravenous
+  (Cannibal), Bloodthirsty (Bloodlust)** — all intense-family, each rollable ONLY by pawns carrying
+  the named trait via the new `<requiredTrait>` def field (the gate holds on every roll branch; the
+  manual per-pawn picker still allows hand-assigning anything). A pawn with such a trait adopts its
+  gated psychotype outright 45% of the time (`GatedTakeoverChance`) and keeps a strong weight bonus
+  toward it in the normal roll, so a Psychopath usually — but not always — reads as Hollow. English +
+  native Russian rule texts shipped. Pure policy covered in `DiaryPipelineTests` (972 assertions
+  green: canonical trait keys, family/member bonuses, the gate holding without the trait across
+  profile/wildcard/child branches, and a dominant-but-not-total share with it).
+
 ## 2026-07-10
 
 - **External override collisions are now arbitrated by mod load order (later mod wins).** When two

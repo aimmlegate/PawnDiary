@@ -1,7 +1,8 @@
 // Impure adapter for the psychotype roll. It snapshots live Pawn skill passions, the creepjoiner flag,
-// and the two veto traits on the main thread into a plain PsychotypeRollInput, projects the psychotype
-// catalog into pure candidates, then delegates to the pure PsychotypeRollPolicy with Rand.Value. Keep
-// all Verse/DefDatabase/Rand access here; the policy stays pure and unit-tested.
+// the two veto traits, and the canonical trait keys (PsychotypeTraitAffinities: trait weight pull +
+// trait-gated psychotype unlocks) on the main thread into a plain PsychotypeRollInput, projects the
+// psychotype catalog into pure candidates, then delegates to the pure PsychotypeRollPolicy with
+// Rand.Value. Keep all Verse/DefDatabase/Rand access here; the policy stays pure and unit-tested.
 //
 // New to C#/RimWorld? See AGENTS.md. Passion is RimWorld's per-skill interest level (None/Minor/Major);
 // "burning" is Passion.Major.
@@ -13,8 +14,9 @@ namespace PawnDiary
 {
     internal static class PsychotypeRolls
     {
-        // Trait defNames that veto a psychotype (independence is the point, so only these two feed in):
-        // a Psychopath never rolls Dependent; a Kind pawn never rolls Ruthless.
+        // Trait defNames that veto a psychotype: a Psychopath never rolls Dependent; a Kind pawn never
+        // rolls Ruthless. The broader trait channel (weight pull + gated unlocks) goes through
+        // PsychotypeTraitAffinities.CanonicalTraitKey below instead of ad-hoc constants.
         private const string PsychopathTraitDefName = "Psychopath";
         private const string KindTraitDefName = "Kind";
 
@@ -58,13 +60,20 @@ namespace PawnDiary
                 passions = PassionsFor(pawn)
             };
 
-            // Trait vetoes. story/traits is null for some pawn kinds, so guard.
+            // Trait vetoes + canonical trait keys (weight pull and gated-psychotype unlocks; see
+            // PsychotypeTraitAffinities). story/traits is null for some pawn kinds, so guard.
             List<Trait> traits = pawn?.story?.traits?.allTraits;
             if (traits != null)
             {
                 for (int i = 0; i < traits.Count; i++)
                 {
-                    string defName = traits[i]?.def?.defName;
+                    Trait trait = traits[i];
+                    string defName = trait?.def?.defName;
+                    if (string.IsNullOrEmpty(defName))
+                    {
+                        continue;
+                    }
+
                     if (defName == PsychopathTraitDefName)
                     {
                         input.blockDependent = true;
@@ -72,6 +81,12 @@ namespace PawnDiary
                     else if (defName == KindTraitDefName)
                     {
                         input.blockRuthless = true;
+                    }
+
+                    string key = PsychotypeTraitAffinities.CanonicalTraitKey(defName, trait.Degree);
+                    if (!string.IsNullOrEmpty(key) && !input.traitKeys.Contains(key))
+                    {
+                        input.traitKeys.Add(key);
                     }
                 }
             }

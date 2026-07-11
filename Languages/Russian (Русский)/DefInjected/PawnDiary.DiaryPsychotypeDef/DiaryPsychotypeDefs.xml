@@ -52,6 +52,16 @@
   <DiaryPsychotype_Narcissistic.label>самовлюблённый</DiaryPsychotype_Narcissistic.label>
   <DiaryPsychotype_Narcissistic.rule>Для этого поселенца любое событие — прежде всего о нём самом. Его роль растёт с каждым пересказом, чужие успехи он принимает как личную обиду, а критика ещё несколько дней отдаётся эхом, когда остальные уже забыли.</DiaryPsychotype_Narcissistic.rule>
 
+  <!-- Привязанные к чертам (выпадают только носителям черты) -->
+  <DiaryPsychotype_Hollow.label>бесчувственный</DiaryPsychotype_Hollow.label>
+  <DiaryPsychotype_Hollow.rule>Там, где другие чувствуют, этот поселенец не чувствует почти ничего — и давно научился притворяться. Чужие эмоции он считывает, как показания приборов: полезные сведения, не более, — а каждое событие втихую оценивает по тому, какую пользу из него можно извлечь.</DiaryPsychotype_Hollow.rule>
+
+  <DiaryPsychotype_Ravenous.label>ненасытный</DiaryPsychotype_Ravenous.label>
+  <DiaryPsychotype_Ravenous.rule>Голод у этого поселенца всегда прячется под самой поверхностью мыслей. Тела он видит сначала как мясо и лишь потом как людей, настоящие события дня — это трапезы, а запрет, от которого остальных передёргивает, ему втайне кажется простым здравым смыслом.</DiaryPsychotype_Ravenous.rule>
+
+  <DiaryPsychotype_Bloodthirsty.label>кровожадный</DiaryPsychotype_Bloodthirsty.label>
+  <DiaryPsychotype_Bloodthirsty.rule>Этот поселенец по-настоящему просыпается, лишь когда что-то ломается или льётся кровь. Драки он с удовольствием переживает заново, удар за ударом, а мирные дни сливаются в серое ожидание тех минут, которые действительно чего-то стоят.</DiaryPsychotype_Bloodthirsty.rule>
+
   <!-- Тревожные -->
   <DiaryPsychotype_Resentful.label>злопамятный</DiaryPsychotype_Resentful.label>
   <DiaryPsychotype_Resentful.rule>Этот поселенец втайне считает, что заслуживает лучшего, чем получает. Каждую обиду он подшивает в память, чужая удача выглядит незаслуженной, а критика ещё неделями крутится в голове, хотя снаружи он невозмутим.</DiaryPsychotype_Resentful.rule>

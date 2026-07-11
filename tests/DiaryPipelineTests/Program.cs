@@ -88,6 +88,9 @@ namespace DiaryPipelineTests
             TestPsychotypeMemberWeights();
             TestPsychotypeRollBranches();
             TestPsychotypeRollDistribution();
+            TestPsychotypeTraitKeys();
+            TestPsychotypeTraitWeights();
+            TestPsychotypeTraitGating();
             TestSurrogateSafeTruncation();
             TestRedactSecrets();
             TestWritingStyleReachesSystemPrompt();
@@ -4419,7 +4422,13 @@ namespace DiaryPipelineTests
                 if (c.stage == PsychotypeRollPolicy.StageAdult)
                 {
                     familyByDef[c.defName] = c.family;
-                    adultDefs.Add(c.defName);
+                    // Trait-gated psychotypes are unreachable for the trait-less synthetic pawns rolled
+                    // here, so they stay out of the >=1% reachability assertion (gating is covered by
+                    // TestPsychotypeTraitGating).
+                    if (string.IsNullOrEmpty(c.requiredTraitKey))
+                    {
+                        adultDefs.Add(c.defName);
+                    }
                 }
             }
 
@@ -4493,6 +4502,184 @@ namespace DiaryPipelineTests
             }
         }
 
+        // Trait canonicalization: simple traits map to their defName, spectrum traits (NaturalMood /
+        // Nerves / Neurotic) key each mapped degree separately, everything else contributes nothing.
+        private static void TestPsychotypeTraitKeys()
+        {
+            AssertEqual("simple trait maps to its defName", PsychotypeTraitAffinities.KeyPsychopath,
+                PsychotypeTraitAffinities.CanonicalTraitKey("Psychopath", 0));
+            AssertEqual("simple trait key is whitespace-tolerant", PsychotypeTraitAffinities.KeyTooSmart,
+                PsychotypeTraitAffinities.CanonicalTraitKey(" TooSmart ", 0));
+            AssertEqual("NaturalMood -2 => Depressive", PsychotypeTraitAffinities.KeyDepressive,
+                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", -2));
+            AssertEqual("NaturalMood -1 => Pessimist", PsychotypeTraitAffinities.KeyPessimist,
+                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", -1));
+            AssertEqual("NaturalMood +1 => Optimist", PsychotypeTraitAffinities.KeyOptimist,
+                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", 1));
+            AssertEqual("NaturalMood +2 => Sanguine", PsychotypeTraitAffinities.KeySanguine,
+                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", 2));
+            AssertEqual("NaturalMood degree 0 carries no key", string.Empty,
+                PsychotypeTraitAffinities.CanonicalTraitKey("NaturalMood", 0));
+            AssertEqual("Nerves -1 => Nervous", PsychotypeTraitAffinities.KeyNervous,
+                PsychotypeTraitAffinities.CanonicalTraitKey("Nerves", -1));
+            AssertEqual("Nerves -2 => Volatile", PsychotypeTraitAffinities.KeyVolatile,
+                PsychotypeTraitAffinities.CanonicalTraitKey("Nerves", -2));
+            AssertEqual("iron-willed side of Nerves carries no key", string.Empty,
+                PsychotypeTraitAffinities.CanonicalTraitKey("Nerves", 2));
+            AssertEqual("Neurotic 1 => Neurotic", PsychotypeTraitAffinities.KeyNeurotic,
+                PsychotypeTraitAffinities.CanonicalTraitKey("Neurotic", 1));
+            AssertEqual("Neurotic 2 => VeryNeurotic", PsychotypeTraitAffinities.KeyVeryNeurotic,
+                PsychotypeTraitAffinities.CanonicalTraitKey("Neurotic", 2));
+            AssertEqual("unknown trait carries no key", string.Empty,
+                PsychotypeTraitAffinities.CanonicalTraitKey("NightOwl", 0));
+            AssertEqual("blank trait carries no key", string.Empty,
+                PsychotypeTraitAffinities.CanonicalTraitKey("  ", 0));
+        }
+
+        // Trait pull: family bonuses land in stage 1, member bonuses in stage 2, and multiple trait
+        // keys stack additively on top of the passion signals.
+        private static void TestPsychotypeTraitWeights()
+        {
+            List<PsychotypeCandidate> catalog = BuildPsychotypeCatalog();
+            PsychotypeProfile emptyProfile = PsychotypeRollPolicy.BuildProfile(new List<PsychotypeSkillPassion>());
+
+            // Very neurotic pawn: anxious family = skewed base(2) + StrongBonus(3).
+            Dictionary<string, float> veryNeurotic = PsychotypeRollPolicy.FamilyWeights(emptyProfile,
+                new PsychotypeRollInput
+                {
+                    passions = new List<PsychotypeSkillPassion>
+                    {
+                        new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillSocial, level = 1 },
+                    },
+                    traitKeys = new List<string> { PsychotypeTraitAffinities.KeyVeryNeurotic }
+                });
+            AssertNear("VeryNeurotic adds +3 anxious family weight", 5f,
+                veryNeurotic[PsychotypeRollPolicy.FamilyAnxious]);
+
+            // Sanguine + Kind stack on the grounded family: base(6) + 3 + 2.
+            Dictionary<string, float> sunny = PsychotypeRollPolicy.FamilyWeights(emptyProfile,
+                new PsychotypeRollInput
+                {
+                    traitKeys = new List<string>
+                    {
+                        PsychotypeTraitAffinities.KeySanguine, PsychotypeTraitAffinities.KeyKind
+                    }
+                });
+            AssertNear("Sanguine + Kind stack on grounded family", 11f,
+                sunny[PsychotypeRollPolicy.FamilyGrounded]);
+
+            // Psychopath member weights inside intense: the gated Hollow dominates (base 1 + 4), the
+            // compatible spillovers get their bonuses, unrelated members stay at base.
+            PsychotypeRollInput psychopath = new PsychotypeRollInput
+            {
+                traitKeys = new List<string> { PsychotypeTraitAffinities.KeyPsychopath }
+            };
+            Dictionary<string, float> hollow = PsychotypeRollPolicy.MemberWeights(
+                PsychotypeRollPolicy.FamilyIntense, emptyProfile, psychopath, catalog);
+            AssertNear("Psychopath: Hollow = base(1) + gated bonus(4)", 5f, hollow["DiaryPsychotype_Hollow"]);
+            AssertNear("Psychopath: Ruthless spillover = base(1) + 2", 3f, hollow["DiaryPsychotype_Ruthless"]);
+            AssertNear("Psychopath: unrelated intense member stays at base", 1f, hollow["DiaryPsychotype_Theatrical"]);
+
+            // Jealous pawn: Resentful (anxious) +3, Narcissistic (intense) +2.
+            PsychotypeRollInput jealous = new PsychotypeRollInput
+            {
+                traitKeys = new List<string> { PsychotypeTraitAffinities.KeyJealous }
+            };
+            Dictionary<string, float> jealousAnxious = PsychotypeRollPolicy.MemberWeights(
+                PsychotypeRollPolicy.FamilyAnxious, emptyProfile, jealous, catalog);
+            AssertNear("Jealous: Resentful = base(1) + 3", 4f, jealousAnxious["DiaryPsychotype_Resentful"]);
+            Dictionary<string, float> jealousIntense = PsychotypeRollPolicy.MemberWeights(
+                PsychotypeRollPolicy.FamilyIntense, emptyProfile, jealous, catalog);
+            AssertNear("Jealous: Narcissistic = base(1) + 2", 3f, jealousIntense["DiaryPsychotype_Narcissistic"]);
+
+            // Volatile (Nerves -2) steers toward the Volatile psychotype and stacks with a Melee nudge.
+            PsychotypeRollInput volatileTrait = new PsychotypeRollInput
+            {
+                passions = new List<PsychotypeSkillPassion>
+                {
+                    new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillMelee, level = 1 },
+                },
+                traitKeys = new List<string> { PsychotypeTraitAffinities.KeyVolatile }
+            };
+            Dictionary<string, float> volatileWeights = PsychotypeRollPolicy.MemberWeights(
+                PsychotypeRollPolicy.FamilyIntense, PsychotypeRollPolicy.BuildProfile(volatileTrait.passions),
+                volatileTrait, catalog);
+            AssertNear("Volatile trait + Melee nudge stack on the Volatile psychotype", 5f,
+                volatileWeights["DiaryPsychotype_Volatile"]);
+        }
+
+        // Trait gating: Hollow/Ravenous/Bloodthirsty are unreachable without their trait on every
+        // branch (profile, wildcard, flat), and reachable — indeed likely — with it.
+        private static void TestPsychotypeTraitGating()
+        {
+            List<PsychotypeCandidate> catalog = BuildPsychotypeCatalog();
+            HashSet<string> gatedDefs = new HashSet<string>
+            {
+                "DiaryPsychotype_Hollow", "DiaryPsychotype_Ravenous", "DiaryPsychotype_Bloodthirsty"
+            };
+
+            // No traits: the gated members never even enter the intense member weighting.
+            Dictionary<string, float> traitless = PsychotypeRollPolicy.MemberWeights(
+                PsychotypeRollPolicy.FamilyIntense, new PsychotypeProfile(), new PsychotypeRollInput(), catalog);
+            AssertTrue("gated psychotypes are absent from trait-less member weights",
+                !traitless.ContainsKey("DiaryPsychotype_Hollow")
+                && !traitless.ContainsKey("DiaryPsychotype_Ravenous")
+                && !traitless.ContainsKey("DiaryPsychotype_Bloodthirsty"));
+
+            // 600 trait-less adult rolls (wildcard branch included): a gated psychotype never wins.
+            Func<float> traitlessRand = SeededRand01(23);
+            bool everGated = false;
+            for (int i = 0; i < 600; i++)
+            {
+                if (gatedDefs.Contains(PsychotypeRollPolicy.Roll(new PsychotypeRollInput(), catalog, traitlessRand)))
+                {
+                    everGated = true;
+                    break;
+                }
+            }
+            AssertTrue("gated psychotypes never roll without their trait", !everGated);
+
+            // A Bloodlust pawn lands on Bloodthirsty dominantly (takeover branch + gate open + intense
+            // family pull + member bonus), and never on the OTHER two gated psychotypes.
+            PsychotypeRollInput bloodlust = new PsychotypeRollInput
+            {
+                traitKeys = new List<string> { PsychotypeTraitAffinities.KeyBloodlust }
+            };
+            Func<float> bloodlustRand = SeededRand01(41);
+            int bloodthirstyCount = 0;
+            bool everForeignGated = false;
+            const int bloodlustRolls = 600;
+            for (int i = 0; i < bloodlustRolls; i++)
+            {
+                string result = PsychotypeRollPolicy.Roll(bloodlust, catalog, bloodlustRand);
+                if (result == "DiaryPsychotype_Bloodthirsty") bloodthirstyCount++;
+                else if (gatedDefs.Contains(result)) everForeignGated = true;
+            }
+            AssertTrue("Bloodlust never unlocks the other gated psychotypes", !everForeignGated);
+            float bloodthirstyShare = (float)bloodthirstyCount / bloodlustRolls;
+            AssertTrue("Bloodlust rolls Bloodthirsty a dominant-but-not-total share (was "
+                + bloodthirstyShare.ToString("0.000") + ")",
+                bloodthirstyShare >= 0.30f && bloodthirstyShare <= 0.80f);
+
+            // The gate holds on the child branch too: a psychopathic child still rolls the child catalog.
+            PsychotypeRollInput psychoChild = new PsychotypeRollInput
+            {
+                stageBand = PsychotypeRollPolicy.StageChild,
+                traitKeys = new List<string> { PsychotypeTraitAffinities.KeyPsychopath }
+            };
+            Func<float> childRand = SeededRand01(59);
+            bool childEverGated = false;
+            for (int i = 0; i < 200; i++)
+            {
+                if (gatedDefs.Contains(PsychotypeRollPolicy.Roll(psychoChild, catalog, childRand)))
+                {
+                    childEverGated = true;
+                    break;
+                }
+            }
+            AssertTrue("child band never rolls an adult trait-gated psychotype", !childEverGated);
+        }
+
         // A seeded [0,1) source so the roll's randomness is reproducible in tests.
         private static Func<float> SeededRand01(int seed)
         {
@@ -4500,9 +4687,10 @@ namespace DiaryPipelineTests
             return () => (float)random.NextDouble();
         }
 
-        // The synthetic v1 catalog: 17 adult psychotypes across four families plus 5 child options, with
-        // the same skill affinities the shipped defs declare. Kept in the test so the pure roll can be
-        // exercised without loading XML.
+        // The synthetic catalog mirroring the shipped defs: 17 ordinary adult psychotypes across four
+        // families, 3 trait-gated adult psychotypes (Hollow/Ravenous/Bloodthirsty), and 5 child options,
+        // with the same skill affinities and trait gates the shipped XML declares. Kept in the test so
+        // the pure roll can be exercised without loading XML.
         private static List<PsychotypeCandidate> BuildPsychotypeCatalog()
         {
             List<PsychotypeCandidate> catalog = new List<PsychotypeCandidate>();
@@ -4544,6 +4732,22 @@ namespace DiaryPipelineTests
             Adult("DiaryPsychotype_Avoidant", PsychotypeRollPolicy.FamilyAnxious, PsychotypeRollPolicy.SkillAnimals);
             Adult("DiaryPsychotype_Dependent", PsychotypeRollPolicy.FamilyAnxious, PsychotypeRollPolicy.SkillMedicine);
             Adult("DiaryPsychotype_Perfectionist", PsychotypeRollPolicy.FamilyAnxious, PsychotypeRollPolicy.SkillCrafting);
+
+            void Gated(string defName, string requiredTraitKey)
+            {
+                catalog.Add(new PsychotypeCandidate
+                {
+                    defName = defName,
+                    family = PsychotypeRollPolicy.FamilyIntense,
+                    stage = PsychotypeRollPolicy.StageAdult,
+                    skillAffinities = new Dictionary<string, int>(),
+                    requiredTraitKey = requiredTraitKey
+                });
+            }
+
+            Gated("DiaryPsychotype_Hollow", PsychotypeTraitAffinities.KeyPsychopath);
+            Gated("DiaryPsychotype_Ravenous", PsychotypeTraitAffinities.KeyCannibal);
+            Gated("DiaryPsychotype_Bloodthirsty", PsychotypeTraitAffinities.KeyBloodlust);
 
             string[] children =
             {
