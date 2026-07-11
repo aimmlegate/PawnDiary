@@ -975,7 +975,9 @@ penalty), with deliberate extra randomness (a 12% wildcard branch that ignores t
 per-candidate jitter). A Psychopath never rolls Dependent and a Kind pawn never rolls Ruthless.
 
 **Traits feed the roll** through the pure table `PsychotypeTraitAffinities`, additively on top of the
-passion signals (which stay primary). Each supported trait maps to a canonical key — simple traits by
+passion signals and deliberately scaled above them — a supported trait dominates the outcome while
+the passions break ties and colour the rest (a Sanguine pawn leans Content even against a burning
+violence profile). Each supported trait maps to a canonical key — simple traits by
 defName (Psychopath, Cannibal, Bloodlust, Jealous, Greedy, TooSmart, TorturedArtist, Kind, Abrasive,
 Recluse), spectrum traits per degree (NaturalMood → Depressive/Pessimist/Optimist/Sanguine, Nerves →
 Nervous/Volatile, Neurotic → Neurotic/VeryNeurotic) — and adds stage-1 family weight plus stage-2

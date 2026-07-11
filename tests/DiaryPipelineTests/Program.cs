@@ -4543,7 +4543,7 @@ namespace DiaryPipelineTests
             List<PsychotypeCandidate> catalog = BuildPsychotypeCatalog();
             PsychotypeProfile emptyProfile = PsychotypeRollPolicy.BuildProfile(new List<PsychotypeSkillPassion>());
 
-            // Very neurotic pawn: anxious family = skewed base(2) + StrongBonus(3).
+            // Very neurotic pawn: anxious family = skewed base(2) + StrongBonus(6).
             Dictionary<string, float> veryNeurotic = PsychotypeRollPolicy.FamilyWeights(emptyProfile,
                 new PsychotypeRollInput
                 {
@@ -4553,10 +4553,10 @@ namespace DiaryPipelineTests
                     },
                     traitKeys = new List<string> { PsychotypeTraitAffinities.KeyVeryNeurotic }
                 });
-            AssertNear("VeryNeurotic adds +3 anxious family weight", 5f,
+            AssertNear("VeryNeurotic adds +6 anxious family weight", 8f,
                 veryNeurotic[PsychotypeRollPolicy.FamilyAnxious]);
 
-            // Sanguine + Kind stack on the grounded family: base(6) + 3 + 2.
+            // Sanguine + Kind stack on the grounded family: base(6) + 6 + 4.
             Dictionary<string, float> sunny = PsychotypeRollPolicy.FamilyWeights(emptyProfile,
                 new PsychotypeRollInput
                 {
@@ -4565,10 +4565,10 @@ namespace DiaryPipelineTests
                         PsychotypeTraitAffinities.KeySanguine, PsychotypeTraitAffinities.KeyKind
                     }
                 });
-            AssertNear("Sanguine + Kind stack on grounded family", 11f,
+            AssertNear("Sanguine + Kind stack on grounded family", 16f,
                 sunny[PsychotypeRollPolicy.FamilyGrounded]);
 
-            // Psychopath member weights inside intense: the gated Hollow dominates (base 1 + 4), the
+            // Psychopath member weights inside intense: the gated Hollow dominates (base 1 + 6), the
             // compatible spillovers get their bonuses, unrelated members stay at base.
             PsychotypeRollInput psychopath = new PsychotypeRollInput
             {
@@ -4576,23 +4576,24 @@ namespace DiaryPipelineTests
             };
             Dictionary<string, float> hollow = PsychotypeRollPolicy.MemberWeights(
                 PsychotypeRollPolicy.FamilyIntense, emptyProfile, psychopath, catalog);
-            AssertNear("Psychopath: Hollow = base(1) + gated bonus(4)", 5f, hollow["DiaryPsychotype_Hollow"]);
-            AssertNear("Psychopath: Ruthless spillover = base(1) + 2", 3f, hollow["DiaryPsychotype_Ruthless"]);
+            AssertNear("Psychopath: Hollow = base(1) + gated bonus(6)", 7f, hollow["DiaryPsychotype_Hollow"]);
+            AssertNear("Psychopath: Ruthless spillover = base(1) + 4", 5f, hollow["DiaryPsychotype_Ruthless"]);
             AssertNear("Psychopath: unrelated intense member stays at base", 1f, hollow["DiaryPsychotype_Theatrical"]);
 
-            // Jealous pawn: Resentful (anxious) +3, Narcissistic (intense) +2.
+            // Jealous pawn: Resentful (anxious) +6, Narcissistic (intense) +4.
             PsychotypeRollInput jealous = new PsychotypeRollInput
             {
                 traitKeys = new List<string> { PsychotypeTraitAffinities.KeyJealous }
             };
             Dictionary<string, float> jealousAnxious = PsychotypeRollPolicy.MemberWeights(
                 PsychotypeRollPolicy.FamilyAnxious, emptyProfile, jealous, catalog);
-            AssertNear("Jealous: Resentful = base(1) + 3", 4f, jealousAnxious["DiaryPsychotype_Resentful"]);
+            AssertNear("Jealous: Resentful = base(1) + 6", 7f, jealousAnxious["DiaryPsychotype_Resentful"]);
             Dictionary<string, float> jealousIntense = PsychotypeRollPolicy.MemberWeights(
                 PsychotypeRollPolicy.FamilyIntense, emptyProfile, jealous, catalog);
-            AssertNear("Jealous: Narcissistic = base(1) + 2", 3f, jealousIntense["DiaryPsychotype_Narcissistic"]);
+            AssertNear("Jealous: Narcissistic = base(1) + 4", 5f, jealousIntense["DiaryPsychotype_Narcissistic"]);
 
-            // Volatile (Nerves -2) steers toward the Volatile psychotype and stacks with a Melee nudge.
+            // Volatile (Nerves -2) steers toward the Volatile psychotype and stacks with a Melee nudge:
+            // base(1) + StrongBonus(6) + nudge(1). The trait term alone outweighs any skill nudge.
             PsychotypeRollInput volatileTrait = new PsychotypeRollInput
             {
                 passions = new List<PsychotypeSkillPassion>
@@ -4604,8 +4605,43 @@ namespace DiaryPipelineTests
             Dictionary<string, float> volatileWeights = PsychotypeRollPolicy.MemberWeights(
                 PsychotypeRollPolicy.FamilyIntense, PsychotypeRollPolicy.BuildProfile(volatileTrait.passions),
                 volatileTrait, catalog);
-            AssertNear("Volatile trait + Melee nudge stack on the Volatile psychotype", 5f,
+            AssertNear("Volatile trait + Melee nudge stack on the Volatile psychotype", 8f,
                 volatileWeights["DiaryPsychotype_Volatile"]);
+
+            // Dominance pin: the trait channel outweighs a CONTRARY skill profile. A Sanguine pawn
+            // with burning violence passions must still roll Content more often than any other
+            // psychotype across many seeded rolls.
+            PsychotypeRollInput sanguineBrawler = new PsychotypeRollInput
+            {
+                passions = new List<PsychotypeSkillPassion>
+                {
+                    new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillShooting, level = 2 },
+                    new PsychotypeSkillPassion { skillDefName = PsychotypeRollPolicy.SkillMelee, level = 2 },
+                },
+                traitKeys = new List<string> { PsychotypeTraitAffinities.KeySanguine }
+            };
+            Func<float> dominanceRand = SeededRand01(73);
+            Dictionary<string, int> dominanceCounts = new Dictionary<string, int>();
+            const int dominanceRolls = 1000;
+            for (int i = 0; i < dominanceRolls; i++)
+            {
+                string result = PsychotypeRollPolicy.Roll(sanguineBrawler, catalog, dominanceRand);
+                if (!dominanceCounts.ContainsKey(result)) dominanceCounts[result] = 0;
+                dominanceCounts[result]++;
+            }
+
+            dominanceCounts.TryGetValue("DiaryPsychotype_Content", out int contentCount);
+            int runnerUp = 0;
+            foreach (KeyValuePair<string, int> pair in dominanceCounts)
+            {
+                if (pair.Key != "DiaryPsychotype_Content" && pair.Value > runnerUp)
+                {
+                    runnerUp = pair.Value;
+                }
+            }
+            AssertTrue("Sanguine beats a contrary violence profile: Content is the top roll (Content "
+                + contentCount + " vs runner-up " + runnerUp + " of " + dominanceRolls + ")",
+                contentCount > runnerUp && contentCount >= dominanceRolls * 0.15f);
         }
 
         // Trait gating: Hollow/Ravenous/Bloodthirsty are unreachable without their trait on every

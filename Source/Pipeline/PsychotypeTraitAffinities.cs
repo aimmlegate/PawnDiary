@@ -4,14 +4,16 @@
 // it is compatible with, and the three EXTREME traits (Psychopath / Cannibal / Bloodlust) each unlock
 // a psychotype of their own that no other pawn can roll (the def's requiredTrait gate).
 //
-// Two kinds of trait input, both additive on top of the skill-passion signals (which stay primary):
-//   * Family bonuses  - stage-1 pull toward the family holding the compatible members, on the same
-//                       scale as the profile signals (zero-passion inward +4, creepjoiner +4).
-//   * Member bonuses  - stage-2 additive weight for specific defNames, on the same scale as the
-//                       combo signatures (+2) and skill nudges (1-4).
+// Two kinds of trait input, both additive on top of the skill-passion signals — and deliberately
+// SCALED ABOVE them, so a trait's pull dominates the profile's (a Sanguine pawn leans Content even
+// when their passions say otherwise; the passions still break ties and colour the rest):
+//   * Family bonuses  - stage-1 pull toward the family holding the compatible members, sized to
+//                       outweigh the profile signals (zero-passion inward +4, creepjoiner +4).
+//   * Member bonuses  - stage-2 additive weight for specific defNames, sized to outweigh the combo
+//                       signatures (+2) and skill nudges (1-4).
 // Gated psychotypes additionally ride the roll policy's takeover branch (GatedTakeoverChance): the
 // trait's owner adopts the gated psychotype outright almost half the time, and the large member
-// bonus (+4) keeps it favored in the normal roll too — but the skill profile, jitter, and duplicate
+// bonus (+6) keeps it favored in the normal roll too — but the skill profile, jitter, and duplicate
 // penalty still get a vote, so the outcome is dominant, not guaranteed.
 //
 // Trait identity is a CANONICAL KEY, not a raw defName: spectrum traits (NaturalMood, Nerves,
@@ -57,11 +59,11 @@ namespace PawnDiary
         private const string TraitNerves = "Nerves";
         private const string TraitNeurotic = "Neurotic";
 
-        // ---- Bonus scale (mirrors the roll policy's signal scale; see file header) ----
-        public const float GatedMemberBonus = 4f;
-        public const float StrongBonus = 3f;
-        public const float ModerateBonus = 2f;
-        public const float MildBonus = 1f;
+        // ---- Bonus scale (deliberately above the roll policy's signal scale; see file header) ----
+        public const float GatedMemberBonus = 6f;
+        public const float StrongBonus = 6f;
+        public const float ModerateBonus = 4f;
+        public const float MildBonus = 2f;
 
         // ---- Target defNames (adult catalog + the three trait-gated additions) ----
         private const string DefContent = "DiaryPsychotype_Content";
