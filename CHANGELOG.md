@@ -46,7 +46,10 @@ pre-release version ladder for project history.
   custom rule when the new outlook lands (new `ExternalPsychotypeGenerators` registry, mirroring the
   context-provider hook). The 1-2-3 Personalities bridge registers one while in the LLM tier and gains
   `Personalities123GameComponent.RerollTransform` / `IsTransformInFlight`; the button re-fires the
-  transform for that colonist on demand. No Harmony. Main-mod EN/RU strings added; both DLLs rebuilt.
+  transform for that colonist on demand. No Harmony. Registration is thread-safe and requires no main
+  thread, so it works from the mod constructor that RimWorld 1.6 runs off the main thread (the bridge's
+  one-time override-migration sweep moved from `FinalizeInit` to the first tick for the same reason).
+  Main-mod EN/RU strings added; both DLLs rebuilt.
 
 ## 2026-07-10
 

@@ -3,9 +3,14 @@
 // per-pawn voice editor (Dialog_PawnWritingStyle) can show a "Regenerate" button and a "generating…"
 // status without the adapter needing Harmony or any UI code of its own.
 //
-// Mirrors the pawn-context-provider registry: process-global, main-thread, replace-by-sourceId, capped,
-// and a generator that throws is disabled for the rest of the session. The public contract is
-// PawnDiaryApi.RegisterExternalPsychotypeGenerator; everything here is internal plumbing.
+// Thread-safety: adapters typically register from their Mod constructor, which RimWorld 1.6 runs on a
+// BACKGROUND thread (mod loading is parallelized), while the voice editor reads on the main thread — so
+// registration must NOT require the main thread, and every dictionary access is guarded by a lock. The
+// callbacks themselves are only ever invoked here from the main-thread editor, and are invoked OUTSIDE
+// the lock (off a snapshot) so a slow/misbehaving callback cannot stall a registering thread. A generator
+// that throws is disabled for the rest of the session.
+//
+// The public contract is PawnDiaryApi.RegisterExternalPsychotypeGenerator; everything here is internal.
 //
 // New to C#/RimWorld? See AGENTS.md.
 using System;
@@ -15,7 +20,7 @@ using Verse;
 namespace PawnDiary.Integration
 {
     /// <summary>
-    /// An adapter's hook for driving the per-pawn psychotype editor's "Regenerate" affordance. All three
+    /// An adapter's hook for driving the per-pawn psychotype editor's "Regenerate" affordance. The three
     /// callbacks run on the main thread while the editor is open. Only <see cref="reroll"/> is required.
     /// </summary>
     public sealed class ExternalPsychotypeGenerator
@@ -44,11 +49,12 @@ namespace PawnDiary.Integration
         // A churning sourceId must not grow this without bound; adapters register a small fixed set.
         private const int MaxGenerators = 16;
 
+        private static readonly object gate = new object();
         private static readonly Dictionary<string, ExternalPsychotypeGenerator> generators =
             new Dictionary<string, ExternalPsychotypeGenerator>();
         private static readonly List<string> order = new List<string>();
 
-        /// <summary>Registers or replaces a generator by its (trimmed) sourceId. Main thread.</summary>
+        /// <summary>Registers or replaces a generator by its (trimmed) sourceId. Any thread.</summary>
         public static void Register(ExternalPsychotypeGenerator generator)
         {
             if (generator == null)
@@ -62,32 +68,35 @@ namespace PawnDiary.Integration
                 return;
             }
 
-            if (!generators.ContainsKey(id))
+            lock (gate)
             {
-                if (order.Count >= MaxGenerators)
+                if (!generators.ContainsKey(id))
                 {
-                    return;
+                    if (order.Count >= MaxGenerators)
+                    {
+                        return;
+                    }
+
+                    order.Add(id);
                 }
 
-                order.Add(id);
+                generators[id] = generator;
             }
-
-            generators[id] = generator;
         }
 
         /// <summary>True when any registered generator reports it can (re)generate this pawn's outlook.</summary>
         public static bool CanReroll(Pawn pawn)
         {
-            if (pawn == null || order.Count == 0)
+            if (pawn == null)
             {
                 return false;
             }
 
-            string[] ids = order.ToArray();
-            for (int i = 0; i < ids.Length; i++)
+            ExternalPsychotypeGenerator[] snapshot = Snapshot();
+            for (int i = 0; i < snapshot.Length; i++)
             {
-                ExternalPsychotypeGenerator generator;
-                if (!generators.TryGetValue(ids[i], out generator))
+                ExternalPsychotypeGenerator generator = snapshot[i];
+                if (generator == null)
                 {
                     continue;
                 }
@@ -106,7 +115,7 @@ namespace PawnDiary.Integration
                 }
                 catch (Exception e)
                 {
-                    Disable(ids[i], e);
+                    Disable(generator, e);
                 }
             }
 
@@ -116,16 +125,16 @@ namespace PawnDiary.Integration
         /// <summary>True when any registered generator reports a generation is in flight for this pawn.</summary>
         public static bool IsBusy(Pawn pawn)
         {
-            if (pawn == null || order.Count == 0)
+            if (pawn == null)
             {
                 return false;
             }
 
-            string[] ids = order.ToArray();
-            for (int i = 0; i < ids.Length; i++)
+            ExternalPsychotypeGenerator[] snapshot = Snapshot();
+            for (int i = 0; i < snapshot.Length; i++)
             {
-                ExternalPsychotypeGenerator generator;
-                if (!generators.TryGetValue(ids[i], out generator) || generator.isBusy == null)
+                ExternalPsychotypeGenerator generator = snapshot[i];
+                if (generator == null || generator.isBusy == null)
                 {
                     continue;
                 }
@@ -139,7 +148,7 @@ namespace PawnDiary.Integration
                 }
                 catch (Exception e)
                 {
-                    Disable(ids[i], e);
+                    Disable(generator, e);
                 }
             }
 
@@ -149,16 +158,16 @@ namespace PawnDiary.Integration
         /// <summary>Triggers a fresh generation on every generator that can currently reroll this pawn.</summary>
         public static void Reroll(Pawn pawn)
         {
-            if (pawn == null || order.Count == 0)
+            if (pawn == null)
             {
                 return;
             }
 
-            string[] ids = order.ToArray();
-            for (int i = 0; i < ids.Length; i++)
+            ExternalPsychotypeGenerator[] snapshot = Snapshot();
+            for (int i = 0; i < snapshot.Length; i++)
             {
-                ExternalPsychotypeGenerator generator;
-                if (!generators.TryGetValue(ids[i], out generator) || generator.reroll == null)
+                ExternalPsychotypeGenerator generator = snapshot[i];
+                if (generator == null || generator.reroll == null)
                 {
                     continue;
                 }
@@ -172,17 +181,45 @@ namespace PawnDiary.Integration
                 }
                 catch (Exception e)
                 {
-                    Disable(ids[i], e);
+                    Disable(generator, e);
                 }
+            }
+        }
+
+        // Copies the current generators (in registration order) under the lock, so the callbacks can then
+        // be invoked without holding it.
+        private static ExternalPsychotypeGenerator[] Snapshot()
+        {
+            lock (gate)
+            {
+                ExternalPsychotypeGenerator[] snapshot = new ExternalPsychotypeGenerator[order.Count];
+                for (int i = 0; i < order.Count; i++)
+                {
+                    generators.TryGetValue(order[i], out snapshot[i]);
+                }
+
+                return snapshot;
             }
         }
 
         // A throwing generator is removed for the rest of the session, logged once, so a broken adapter
         // never spams the editor or the log.
-        private static void Disable(string id, Exception e)
+        private static void Disable(ExternalPsychotypeGenerator generator, Exception e)
         {
-            generators.Remove(id);
-            order.Remove(id);
+            string id = generator == null || string.IsNullOrWhiteSpace(generator.sourceId)
+                ? string.Empty
+                : generator.sourceId.Trim();
+            if (id.Length == 0)
+            {
+                return;
+            }
+
+            lock (gate)
+            {
+                generators.Remove(id);
+                order.Remove(id);
+            }
+
             Log.ErrorOnce(
                 "[Pawn Diary] Integration API: external psychotype generator '" + id
                 + "' threw and was disabled for this session: " + e,

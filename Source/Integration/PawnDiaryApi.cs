@@ -1365,8 +1365,10 @@ namespace PawnDiary.Integration
         /// "Regenerate" button and a "generating…" status for pawns the generator owns, without the adapter
         /// needing any UI code. The three callbacks (all optional except <c>reroll</c>) run on the main
         /// thread while the editor is open: <c>canReroll</c> gates whether the button shows, <c>isBusy</c>
-        /// drives the loading status, and <c>reroll</c> starts a fresh generation. Main-thread only; safe
-        /// before a game loads; never throws (a generator that later throws is disabled for the session).
+        /// drives the loading status, and <c>reroll</c> starts a fresh generation. Registration is a
+        /// thread-safe dictionary add, so it is safe from ANY thread — including a mod constructor, which
+        /// RimWorld 1.6 runs off the main thread — and before a game loads; never throws (a generator that
+        /// later throws is disabled for the session).
         /// </summary>
         public static void RegisterExternalPsychotypeGenerator(ExternalPsychotypeGenerator generator)
         {
@@ -1383,15 +1385,9 @@ namespace PawnDiary.Integration
                     return;
                 }
 
-                if (!UnityData.IsInMainThread)
-                {
-                    ApiLogErrorOnce(
-                        "[Pawn Diary] Integration API: RegisterExternalPsychotypeGenerator for '" + sourceForLog
-                        + "' was called off the main thread; the generator was ignored.",
-                        ("PawnDiary.Api.PsychotypeGenerator.OffThread." + sourceForLog).GetHashCode());
-                    return;
-                }
-
+                // No main-thread guard: registration only mutates a lock-guarded dictionary, and adapters
+                // register from their Mod constructor, which RimWorld 1.6 runs off the main thread. The
+                // callbacks are invoked later, on the main thread, by the voice editor.
                 ExternalPsychotypeGenerators.Register(generator);
             }
             catch (Exception e)

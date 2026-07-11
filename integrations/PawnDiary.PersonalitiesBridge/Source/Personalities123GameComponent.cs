@@ -77,8 +77,9 @@ namespace PawnDiaryPersonalities123
             }
         }
 
-        /// <summary>Runs after the game is fully loaded. Schedules an immediate first pass and performs the
-        /// one-time old-override migration.</summary>
+        /// <summary>Runs after the game is fully loaded. Schedules an immediate first pass; the one-time
+        /// old-override migration runs from the first tick (FinalizeInit is off the main thread in
+        /// RimWorld 1.6, where the override-reset API would be rejected).</summary>
         public override void FinalizeInit()
         {
             if (!PawnDiaryPersonalities123Mod.SimplePersonalitiesActive)
@@ -90,7 +91,6 @@ namespace PawnDiaryPersonalities123
             lastPassTick = 0;
             // Adopt the current generation so loading a save is not mistaken for a settings change.
             lastSeenSettingsGeneration = PawnDiaryPersonalities123Mod.SettingsGeneration;
-            MigrateOldOverridesOnce();
         }
 
         /// <summary>Throttled periodic seeding. Does nothing when 1-2-3 Personalities is absent, the mode
@@ -101,6 +101,11 @@ namespace PawnDiaryPersonalities123
             {
                 return;
             }
+
+            // Runs here (main thread), not in FinalizeInit, because RimWorld 1.6 loads saves off the main
+            // thread and the override-reset API rejects off-thread calls. Idempotent + gated by
+            // overridesSwept, so it costs nothing after the one-time sweep.
+            MigrateOldOverridesOnce();
 
             // The player changed a bridge setting: forget what we applied so every colonist is re-seeded
             // with the new mode / lane / prompt on this tick, and abandon any in-flight transform.
