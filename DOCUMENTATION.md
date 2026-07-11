@@ -453,39 +453,132 @@ gated by an **integration-level** setting (`PawnDiaryRimTalkBridgeSettings.integ
 Scribe key so save data stays stable), with `PawnDiaryRimTalkBridgeMod.LevelAtLeast(n)` as the
 null-safe gate everywhere:
 
-- **Off (0)** — no data crosses in either direction.
+- **Off (0)** — no data crosses in either direction and no chat-originated entry is possible.
 - **Shared context (1, default)** — outbound, `DiaryContextInjector` registers a diary-memories
   section into RimTalk's prompt builder (`ContextHookRegistry.InjectPawnSection` on
   `ContextCategories.Pawn.Thoughts`, plus a `{{pawn1.diary}}` Scriban variable) and inbound,
   `PersonaSync` registers a `chat_persona=` pawn-context provider so Pawn Diary summaries see the
-  RimTalk persona. Both directions are additive context only; nothing is mutated.
-- **Shared context + conversations (2)** — additionally, `ConversationTracker` (fed by the
+  RimTalk persona. Both directions are additive context only; no diary entry originates from chat.
+- **Shared context + conversations (2)** — `ConversationTracker` (fed by the
   `RimTalkCreateInteractionPatch` Harmony postfix on `TalkService.CreateInteraction`) groups displayed
-  chat into conversations, and the important ones become diary entries via `SubmitPromptEntry`.
-  Ordinary chatter is left to the core `rimtalk_chatter` ambient-day-note group (below).
+  chat by reply chain and quiet window, then passes each finished conversation through the bounded
+  editorial funnel below. Per-line PlayLog capture is disabled while the bridge package is installed,
+  so only an accepted whole conversation can create an entry.
+
+The Level-2 funnel is:
+
+```text
+RimTalk reply chain
+→ cheap local scoring
+→ bounded ranked queue
+→ small batched LLM assessment
+→ accepted candidates use normal Pawn Diary generation
+→ exactly one linked pairwise DiaryEvent (two POV pages)
+```
+
+`ConversationCandidatePolicy` is pure and receives only `ConversationCandidateFacts` plus policy
+copied from `RimTalk_ConversationAssessment`. It hard-rejects monologues, blank/one-speaker chains,
+duplicates, and zero daily caps. Charged reciprocal talk, user talk, speaker alternation, localized
+keyword **categories**, and bounded length bonuses contribute to a score; recent-native-event overlap,
+announcement-only talk, and an already-queued same pair subtract from it. Length never supplies the
+required personal signal by itself. `UnicodeText`/`ConversationTextOverlap` use invariant Unicode
+normalization, letter/digit token sets, and an optional character-trigram fallback; there is no
+English stop-word table. `ConversationReactionTermsEditor` validates the player-editable comma-separated
+term list before it can enter saved settings: entries are Unicode-normalized, trimmed, de-duplicated,
+count/length bounded, and must contain a letter or number. Retained XML terms keep their original
+category; additions share one extra bounded custom category, so variants cannot add unlimited score.
+
+`ConversationCandidateQueue` ranks by score descending, older first, then stable root-talk id. It
+deduplicates root ids, enforces its global and per-pair limits, replaces the weakest only when a
+stronger candidate arrives, and expires old work. Defaults live in
+`1.6/Defs/RimTalkConversationAssessmentDefs.xml`: 12 queued, 6 per batch, 2 per pair, no more than 2
+assessment batches per in-game day, a 15,000-tick minimum batch gap, and 60,000-tick expiry. Local
+scoring is free; chat volume beyond those bounds cannot increase assessment spend.
+
+`RecentDiaryEventCache` is fed by the third frozen entry-status listener id
+`aimmlegate.pawndiary.rimtalkbridge.assessmentstatus`. It indexes pending/completed plain event facts
+by pawn/event under a lock, excludes entries authored by this bridge, and is enriched on the main
+thread from the existing `GetContextSnapshot` API for both participants. The cache is XML-window/count
+bounded. It lets the assessor distinguish a raid/insult/break echo from an explicit new personal
+consequence without adding a core public API.
+
+`ConversationAssessmentCoordinator` owns one transient queue and one completion handle. On the
+existing ~250-tick main-thread pass it polls first, then starts at most one new batch through
+`PawnDiaryApi.RequestLlmCompletion`; it creates no HTTP client, Task, or background-to-main-thread
+queue. `ConversationAssessmentBatchFormatter` sends only short aliases, at most four capped transcript
+lines per candidate, and at most three recent event label/title/summary rows (default user-text cap
+3,600 chars). It never sends persona, pawn summary, surroundings, writing style, or diary prose.
+`ConversationAssessmentResponseParser` extracts the first JSON array, accepts only active aliases and
+the frozen decision/reason tokens, validates per-candidate event aliases, caps focus text, resolves
+duplicates deterministically, fills missing rows with `ignore`, and fails closed on malformed output.
+
+Every assessed conversation has one outcome: `ignore`; `related` (new explicit personal consequence
+linked to one supplied event); or `standalone` (explicit durable interpersonal content independent of
+the supplied events). Only the latter two reserve the existing per-pawn/colony/pair throttle and call
+`SubmitPromptEntry`. Their extra context carries `conversation_assessment`, stable reason, explicit
+`conversation_focus`, and—only for related outcomes—the actual `related_event_id` plus
+`avoid_related_event_recap=true`. The final localized prompt tells normal generation to focus on that
+consequence and not retell the native event. A rejected Pawn Diary submission refunds the throttle.
+The root dedup token remains `rimtalkbridge|<RootTalkId>`.
+
+Accepted chat events also charge a rolling **60,000-tick (one full game day) cooldown to both POV
+pawns**. A conversation involving either pawn is discarded before scoring/assessment while that gate
+is active, and the final `TryReserve` check closes races between candidates in the same assessment
+batch. Only a successful `SubmitPromptEntry` keeps the timestamps; a rejected submission refunds
+them. Unlike the transient ranked queue and daily colony counters, this pawn-id → accepted-tick map is
+value-scribed by `RimTalkBridgeGameComponent` under the frozen save key
+`rimTalkConversationCooldownTicksByPawn`, then restored after static caches reset in `FinalizeInit`, so
+save/load cannot bypass the anti-spam interval. The legacy per-pawn daily setting is constrained to
+`0` (disable conversation recording) or `1`; the rolling gate remains the authoritative one-event-per-
+game-day guarantee across calendar boundaries.
+
+Semantic assessment defaults on and has a saved lane selector (`assessmentLaneIndex=-1` means first
+active lane). With no active lane, candidates remain only until expiry. API budget/concurrency rejection
+keeps the bounded queue and retries after the batch gap; transport failure drops that already-started
+batch without another spend; malformed/blank/unknown output records nothing. Turning semantic mode off
+while a handle is in flight still polls once to release the core handle but discards the result. With
+semantic mode off, the same local scorer uses the higher XML `strictLocalRecordThreshold`, rejects
+strong event overlap, and can produce standalone entries without an extra assessment request; this is
+explicitly stricter and less semantically accurate. Game changes clear all transient bridge state while
+the core session cancels its request.
+
+The mod settings expose both editable selection inputs. `conversationReactionTermsCsv` stores a valid
+comma-separated lexicon override (blank means the current English/Russian DefInjected defaults), and
+`assessmentPromptOverride` stores an optional full semantic system-prompt replacement (blank means the
+localized `assessmentSystemPrompt` Def value). The prompt editor caps text using the XML
+`assessmentPromptOverrideChars` policy and reminds players to retain the stable JSON schema tokens;
+the strict response parser still fails closed if a custom prompt produces invalid output. Reaction
+terms affect both semantic nomination and the no-LLM local fallback. The XML policy owns their edit
+limits as well as the fixed pawn cooldown, so no user-facing prompt prose or tuning moved into C#.
 
 Threading and lifecycle are the two subtle parts. The diary-memory section is served to RimTalk from
 a **cache** that is refreshed only on the main thread (`DiaryContextInjector.RefreshFor`), because
 RimTalk may call the section delegate on a background prompt-assembly task and `PawnDiaryApi` reads
 are main-thread-only; a lock guards the shared cache. `RimTalkBridgeGameComponent` runs one throttled
-(~250-tick) pass that refreshes stale caches, runs the Tier-B persona pass, flushes quiet
-conversations, and drains engine-mode results, and it resets every static cache in `FinalizeInit`
-(statics leak across exit-to-menu + load). All RimTalk-typed methods are `[MethodImpl(NoInlining)]`
+(~250-tick) pass that refreshes stale diary/colony/shared-memory caches, runs Tier-B persona sync,
+flushes quiet conversations into the candidate queue, polls/applies assessment, then starts new work.
+It resets the recent-event cache, queue, in-flight map, assembler, throttle, and other static caches in
+`FinalizeInit`, then restores only the scribed rolling pawn cooldown (statics leak across exit-to-menu +
+load). All RimTalk-typed methods are `[MethodImpl(NoInlining)]`
 and only reached after the mod's cached `RimTalkActive` (`cj.rimtalk`) guard, so a missing RimTalk can
-never raise `TypeLoadException`. Pure decision logic (conversation assembly, importance, throttling,
-context/persona formatting) lives under `Source/Pure/` and is unit-tested by
+never raise `TypeLoadException`. Pure decision logic (assembly, Unicode matching/overlap, scoring,
+queue ranking/gating, editable-policy validation, batch formatting, response parsing, submission
+planning, throttling, and context
+formatting) lives under `Source/Pure/` and is unit-tested by
 `tests/RimTalkBridgeLogicTests/` without loading the game.
 
 Advanced, off-by-default options: **Tier B** persona-led diary voice, now a **psychotype (outlook)**
 override (`PersonaSync` applies `SetPsychotypeOverride` from the persona's first sentence — RimTalk
 supplies who the pawn is, Pawn Diary keeps how they write — reapplies on persona-hash change, and clears
 via `ResetPsychotypeOverride` when toggled off; every reset also sweeps the stale writing-style override
-older bridge versions placed, so existing saves migrate cleanly); **engine mode** (`RimTalkEngineClient` routes
-a conversation entry through `PreviewPrompt` → `AIService.Query<DiaryTextPayload>` →
-`SubmitDirectEntry`, falling back to the normal wrapped submit on any miss so a conversation is never
-lost); and per-pawn/colony/pair throttle knobs (`ThrottlePolicy`, in-memory, not saved). The frozen
-save/registry tokens (source id, `rimtalkbridge_conversation` event key, provider/listener ids) live
-in `BridgeIds`. The full design rationale is in `design/RIMTALK_BRIDGE_PLAN.md`.
+older bridge versions placed, so existing saves migrate cleanly); semantic/local-only assessment and
+lane selection; editable reaction terms and semantic prompt; and per-pawn/colony/pair throttle knobs
+(`ThrottlePolicy`; daily/colony counters are transient, but the one-day pawn cooldown is saved; a zero
+per-pawn daily cap disables conversation recording). The old `useRimTalkEngine` Scribe key remains readable but
+its toggle is hidden and its value is ignored: accepted conversations always use normal pairwise
+`SubmitPromptEntry`. The legacy `minRepliesForImportant` key is likewise still read but no longer shown
+or used. Frozen save/registry tokens (source id, `rimtalkbridge_conversation` event key, three listener
+ids) live in `BridgeIds`. The full design rationale is in `design/RIMTALK_BRIDGE_PLAN.md`.
 
 Two further Level-1 outbound context variables extend the bridge (both follow the same
 main-thread-refresh / background-read cache split, `design/RIMTALK_BRIDGE_CONTEXT_EXTENSION_PLAN.md`):
@@ -540,7 +633,11 @@ while one of the listed target mods is in the mod list, so it sits fully inert o
 `1.6/Defs/Compat/DiaryCompat_RimTalk.xml` adds `rimtalk_chatter`, an Interaction-domain compat
 group gated on RimTalk's packageId (`cj.rimtalk`). It claims `RimTalkInteraction` PlayLog rows before
 the broad `other` fallback can see them, captures the rendered chat text, and routes ordinary chatter
-through the same `AmbientDayNote` batching/promotion policy as SpeakUp. With RimTalk absent, the row
+through the same `AmbientDayNote` batching/promotion policy as SpeakUp **only when the bridge is not
+installed**. Its `disableWhenPackageIdsLoaded` contains
+`aimmlegate.pawndiary.rimtalkbridge`, removing the old parallel ambient/promotion path at all bridge
+levels. Therefore: RimTalk alone keeps the ambient fallback; bridge Level 0 is fully off; Level 1 is
+context-only; and Level 2 can record only an assessed whole conversation. With RimTalk absent, the row
 does not appear in event settings and has no runtime effect.
 
 Two further personality/social integrations ship as **standalone adapter mods** under `integrations/`

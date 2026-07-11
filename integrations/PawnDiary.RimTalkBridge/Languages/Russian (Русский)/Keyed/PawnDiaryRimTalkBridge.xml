@@ -14,21 +14,39 @@
   <PawnDiaryRimTalkBridge.Settings.LevelSharedContext>Общий контекст</PawnDiaryRimTalkBridge.Settings.LevelSharedContext>
   <PawnDiaryRimTalkBridge.Settings.LevelSharedContextDesc>Поселенцы помнят свой дневник в разговоре: свежие записи попадают в подсказки RimTalk, а персона RimTalk видна дневнику как контекст. Записи из болтовни не создаются.</PawnDiaryRimTalkBridge.Settings.LevelSharedContextDesc>
   <PawnDiaryRimTalkBridge.Settings.LevelConversations>Общий контекст и разговоры</PawnDiaryRimTalkBridge.Settings.LevelConversations>
-  <PawnDiaryRimTalkBridge.Settings.LevelConversationsDesc>Всё перечисленное выше, а ещё важные разговоры RimTalk (ссоры, доброта, срочные вести, долгие беседы) становятся записями дневника для обоих участников. Обычная болтовня остаётся в фоновой дневной заметке самого Pawn Diary.</PawnDiaryRimTalkBridge.Settings.LevelConversationsDesc>
+  <PawnDiaryRimTalkBridge.Settings.LevelConversationsDesc>Всё перечисленное выше и ограниченный редакционный отбор завершённых разговоров. Только явно значимое и долговечное содержание отношений создаёт одно связанное событие дневника для обоих участников; болтовня, объявления, пояснения и повторы событий не создают ничего.</PawnDiaryRimTalkBridge.Settings.LevelConversationsDesc>
   <PawnDiaryRimTalkBridge.Settings.AdvancedSection>Дополнительно</PawnDiaryRimTalkBridge.Settings.AdvancedSection>
   <PawnDiaryRimTalkBridge.Settings.IncludeDiaryVoiceLine>Добавлять строку голоса дневника в контекст чата</PawnDiaryRimTalkBridge.Settings.IncludeDiaryVoiceLine>
   <PawnDiaryRimTalkBridge.Settings.IncludeDiaryVoiceLineDesc>Добавляет в подсказку RimTalk одну строку о том, как поселенец ведёт дневник, чтобы чат повторял тот же голос.</PawnDiaryRimTalkBridge.Settings.IncludeDiaryVoiceLineDesc>
   <PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoice>Голос дневника по характеру (эксперимент)</PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoice>
   <PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoiceDesc>Выводит голос дневника из описания характера в RimTalk. Экспериментально: описание характера — более грубое правило голоса, чем выверенные стили дневника. Выключение возвращает обычные стили.</PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoiceDesc>
-  <PawnDiaryRimTalkBridge.Settings.UseRimTalkEngine>Писать записи разговоров через ИИ RimTalk</PawnDiaryRimTalkBridge.Settings.UseRimTalkEngine>
-  <PawnDiaryRimTalkBridge.Settings.UseRimTalkEngineDesc>Использует ИИ-провайдера RimTalk для записей разговоров вместо провайдера Pawn Diary. Если ИИ RimTalk занят или дал сбой, мост возвращается к обычному пути.</PawnDiaryRimTalkBridge.Settings.UseRimTalkEngineDesc>
+  <PawnDiaryRimTalkBridge.Settings.SemanticAssessment>Семантически оценивать разговоры</PawnDiaryRimTalkBridge.Settings.SemanticAssessment>
+  <PawnDiaryRimTalkBridge.Settings.SemanticAssessmentDesc>Оценивает сильнейших кандидатов после локального отбора небольшими ограниченными пакетами через линию API Pawn Diary. Выключите, чтобы сохранить те же ограничения и очередь, но перейти на более строгую локальную оценку без дополнительных запросов.</PawnDiaryRimTalkBridge.Settings.SemanticAssessmentDesc>
+  <PawnDiaryRimTalkBridge.Settings.AssessmentLane>Линия API для оценки</PawnDiaryRimTalkBridge.Settings.AssessmentLane>
+  <PawnDiaryRimTalkBridge.Settings.AssessmentLaneAuto>Автоматически — первая активная линия</PawnDiaryRimTalkBridge.Settings.AssessmentLaneAuto>
+  <PawnDiaryRimTalkBridge.Settings.AssessmentLaneUnnamed>безымянная линия</PawnDiaryRimTalkBridge.Settings.AssessmentLaneUnnamed>
+  <PawnDiaryRimTalkBridge.Settings.AssessmentLaneFormat>Линия {0}: {1}</PawnDiaryRimTalkBridge.Settings.AssessmentLaneFormat>
+  <PawnDiaryRimTalkBridge.Settings.NoAssessmentLane>Нет активной линии API Pawn Diary. Отбор уровня 2 ненадолго сохранит небольшую ограниченную очередь и будет ждать; записи из чата создаваться не будут.</PawnDiaryRimTalkBridge.Settings.NoAssessmentLane>
+  <PawnDiaryRimTalkBridge.Settings.ReactionTerms>Слова и фразы для отбора разговоров</PawnDiaryRimTalkBridge.Settings.ReactionTerms>
+  <PawnDiaryRimTalkBridge.Settings.ReactionTermsDesc>Термины через запятую для бесплатного локального отбора. Они только выдвигают разговор в кандидаты и никогда не создают запись сами. Сохранённые стандартные термины остаются в своих категориях, а все добавленные входят в одну ограниченную категорию.</PawnDiaryRimTalkBridge.Settings.ReactionTermsDesc>
+  <PawnDiaryRimTalkBridge.Settings.ReactionTermsValid>Уникальных терминов: {0} — всё верно</PawnDiaryRimTalkBridge.Settings.ReactionTermsValid>
+  <PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorEmpty>Ошибка: введите хотя бы одно слово или фразу.</PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorEmpty>
+  <PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorNewline>Ошибка: разделяйте слова и фразы запятыми, а не переносами строк.</PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorNewline>
+  <PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorTooMany>Ошибка: допускается не более {0} уникальных терминов.</PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorTooMany>
+  <PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorTooLong>Ошибка: длина каждого термина — не более {0} знаков.</PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorTooLong>
+  <PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorInvalid>Ошибка: термин {0} должен содержать букву или цифру Юникода.</PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorInvalid>
+  <PawnDiaryRimTalkBridge.Settings.ReactionTermsNotSaved>Термины отбора не сохранены: {0}</PawnDiaryRimTalkBridge.Settings.ReactionTermsNotSaved>
+  <PawnDiaryRimTalkBridge.Settings.AssessmentPrompt>Подсказка семантической оценки</PawnDiaryRimTalkBridge.Settings.AssessmentPrompt>
+  <PawnDiaryRimTalkBridge.Settings.AssessmentPromptDesc>Полностью заменяет локализованную системную подсказку только для оценки разговоров. Сохраните схему JSON и неизменные маркеры ignore, related, standalone, decision и reason. Пустое поле возвращает локализованный стандартный текст.</PawnDiaryRimTalkBridge.Settings.AssessmentPromptDesc>
+  <PawnDiaryRimTalkBridge.Settings.AssessmentPromptChars>Знаков: {0}/{1}</PawnDiaryRimTalkBridge.Settings.AssessmentPromptChars>
+  <PawnDiaryRimTalkBridge.Settings.ResetLocalizedDefault>Вернуть локализованный стандарт</PawnDiaryRimTalkBridge.Settings.ResetLocalizedDefault>
   <PawnDiaryRimTalkBridge.Settings.DevChatLogging>Отладочный журнал чата</PawnDiaryRimTalkBridge.Settings.DevChatLogging>
-  <PawnDiaryRimTalkBridge.Settings.DevChatLoggingDesc>Пишет в консоль разработчика каждую замеченную строку чата RimTalk и каждое решение моста: закрытие разговоров, причины важности, ограничения частоты, отправку запросов.</PawnDiaryRimTalkBridge.Settings.DevChatLoggingDesc>
+  <PawnDiaryRimTalkBridge.Settings.DevChatLoggingDesc>Пишет в консоль разработчика каждую замеченную строку чата RimTalk и каждое решение моста: локальные баллы, судьбу очереди, результат оценки, ограничения частоты и отправку записи.</PawnDiaryRimTalkBridge.Settings.DevChatLoggingDesc>
   <PawnDiaryRimTalkBridge.Settings.ContextEntryCount>Записей дневника в подсказке чата</PawnDiaryRimTalkBridge.Settings.ContextEntryCount>
   <PawnDiaryRimTalkBridge.Settings.ConversationQuietTicks>Тишина, завершающая разговор (в тиках)</PawnDiaryRimTalkBridge.Settings.ConversationQuietTicks>
-  <PawnDiaryRimTalkBridge.Settings.MinRepliesForImportant>Сколько реплик делает разговор важным</PawnDiaryRimTalkBridge.Settings.MinRepliesForImportant>
-  <PawnDiaryRimTalkBridge.Settings.PerPawnDailyCap>Записей разговоров на поселенца в день</PawnDiaryRimTalkBridge.Settings.PerPawnDailyCap>
-  <PawnDiaryRimTalkBridge.Settings.ColonyDailyCap>Записей разговоров на колонию в день</PawnDiaryRimTalkBridge.Settings.ColonyDailyCap>
+  <PawnDiaryRimTalkBridge.Settings.PerPawnDailyCap>Записей разговоров на поселенца (0 — выкл., 1 — макс. в день)</PawnDiaryRimTalkBridge.Settings.PerPawnDailyCap>
+  <PawnDiaryRimTalkBridge.Settings.PawnCooldownInfo>После одного принятого события чата оба участника игнорируют новые события чата {0} тиков — полный игровой день. Таймер сохраняется вместе с игрой.</PawnDiaryRimTalkBridge.Settings.PawnCooldownInfo>
+  <PawnDiaryRimTalkBridge.Settings.ColonyDailyCap>Макс. записей разговоров на колонию в день (0 — выкл.)</PawnDiaryRimTalkBridge.Settings.ColonyDailyCap>
   <PawnDiaryRimTalkBridge.Settings.PairMinGapTicks>Мин. промежуток для пары (в тиках)</PawnDiaryRimTalkBridge.Settings.PairMinGapTicks>
   <PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>Цитируемых реплик на одну запись</PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>
 
@@ -73,7 +91,7 @@
   <!-- Записи важных разговоров (уровень 2) -->
   <PawnDiaryRimTalkBridge.Event.ConversationLabel>Заметный разговор</PawnDiaryRimTalkBridge.Event.ConversationLabel>
   <PawnDiaryRimTalkBridge.Event.ConversationSummary>Разговор с {0} — реплик: {1}.</PawnDiaryRimTalkBridge.Event.ConversationSummary>
-  <PawnDiaryRimTalkBridge.Event.ConversationInstruction>Напиши, что этот разговор всколыхнул или изменил в авторе дневника — чувство и послевкусие, а не пересказ.</PawnDiaryRimTalkBridge.Event.ConversationInstruction>
+  <PawnDiaryRimTalkBridge.Event.ConversationInstruction>Возьми conversation_focus как тему и опирайся на переданные реплики. Если указан related_event_id, напиши только о новом личном последствии и не пересказывай связанное событие.</PawnDiaryRimTalkBridge.Event.ConversationInstruction>
   <PawnDiaryRimTalkBridge.Event.SomeonePartner>кем-то</PawnDiaryRimTalkBridge.Event.SomeonePartner>
 
 </LanguageData>

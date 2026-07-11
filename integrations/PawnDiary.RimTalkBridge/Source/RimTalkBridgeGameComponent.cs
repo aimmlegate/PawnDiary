@@ -37,6 +37,13 @@ namespace PawnDiaryRimTalkBridge
         // time-skip or save/load cannot desync the cadence (SKILL.md "Persistence & ticking").
         private int lastPassTick;
 
+        // Rolling anti-spam timestamps are the only conversation-funnel state that survives a save.
+        // The queue and in-flight handle remain transient by design. Value/value Scribing keeps this
+        // plain pawn-id -> tick map independent of live Pawn references.
+        private Dictionary<string, int> conversationCooldownTicksByPawn = new Dictionary<string, int>();
+        private List<string> conversationCooldownPawnKeys;
+        private List<int> conversationCooldownTickValues;
+
         /// <summary>Required GameComponent constructor. RimWorld supplies the current game.</summary>
         /// <param name="game">The current RimWorld game instance.</param>
         public RimTalkBridgeGameComponent(Game game)
@@ -53,11 +60,37 @@ namespace PawnDiaryRimTalkBridge
             ColonyContextInjector.ResetForNewGame();
             SharedMemoryInjector.ResetForNewGame();
             PersonaSync.ResetForNewGame();
+            RecentDiaryEventCache.ResetForNewGame();
             ConversationTracker.ResetForNewGame();
-            RimTalkEngineClient.ResetForNewGame();
+            ConversationTracker.RestorePawnCooldowns(conversationCooldownTicksByPawn);
+            ConversationAssessmentCoordinator.ResetForNewGame();
             // The next GameComponentTick fires the first pass immediately (now - 0 >= interval for any
             // loaded game's TicksGame), which is fine — the caches were just cleared above.
             lastPassTick = 0;
+        }
+
+        /// <summary>Saves the rolling per-pawn chat-event cooldown so reload cannot bypass it.</summary>
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                int now = Find.TickManager != null ? Find.TickManager.TicksGame : 0;
+                conversationCooldownTicksByPawn = ConversationTracker.PawnCooldownSnapshot(now);
+            }
+
+            Scribe_Collections.Look(
+                ref conversationCooldownTicksByPawn,
+                "rimTalkConversationCooldownTicksByPawn",
+                LookMode.Value,
+                LookMode.Value,
+                ref conversationCooldownPawnKeys,
+                ref conversationCooldownTickValues);
+
+            if (Scribe.mode == LoadSaveMode.PostLoadInit && conversationCooldownTicksByPawn == null)
+            {
+                conversationCooldownTicksByPawn = new Dictionary<string, int>();
+            }
         }
 
         /// <summary>Throttled periodic work. Does nothing when RimTalk is absent or between intervals.</summary>
@@ -87,7 +120,8 @@ namespace PawnDiaryRimTalkBridge
             SharedMemoryInjector.SyncAutoInject();  // Feature 3: reconcile the optional prompt entry
             PersonaSync.RunTierBPass();
             ConversationTracker.ProcessDueConversations(now);
-            RimTalkEngineClient.DrainResults();
+            ConversationAssessmentCoordinator.PollAndApply(now);
+            ConversationAssessmentCoordinator.TryStartNewBatch(now);
         }
 
         /// <summary>

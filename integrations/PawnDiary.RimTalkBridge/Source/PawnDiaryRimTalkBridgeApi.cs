@@ -18,7 +18,7 @@ namespace PawnDiaryRimTalkBridge
         /// <c>modId</c> for prompt registrations, and the owner id for writing-style overrides.</summary>
         public const string ModId = "aimmlegate.pawndiary.rimtalkbridge";
 
-        /// <summary>Frozen event key for important-conversation submissions. Must match the
+        /// <summary>Frozen event key for editorially accepted conversation submissions. Must match the
         /// <c>matchDefNames</c> entry in the bridge's External-domain group XML.</summary>
         public const string ConversationEventKey = "rimtalkbridge_conversation";
 
@@ -31,6 +31,9 @@ namespace PawnDiaryRimTalkBridge
         /// <summary>Second entry-status listener id, for the pair shared-memory cache (Feature 3).
         /// A separate id so it coexists with <see cref="StatusListenerId"/> (one id = one listener).</summary>
         public const string SharedStatusListenerId = ModId + ".sharedstatus";
+
+        /// <summary>Third entry-status listener id, for recent native-event assessment context.</summary>
+        public const string AssessmentStatusListenerId = ModId + ".assessmentstatus";
 
         /// <summary>RimTalk injected-section name for the diary-memories block (also the Scriban
         /// pawn variable name, usable as <c>{{pawn1.diary}}</c> by template editors).</summary>

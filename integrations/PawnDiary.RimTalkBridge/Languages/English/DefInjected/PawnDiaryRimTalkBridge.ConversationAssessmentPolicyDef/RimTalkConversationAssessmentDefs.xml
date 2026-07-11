@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English DefInjected policy text. List indices mirror 1.6/Defs/RimTalkConversationAssessmentDefs.xml. -->
+<LanguageData>
+  <RimTalk_ConversationAssessment.disclosureTerms.0>i feel</RimTalk_ConversationAssessment.disclosureTerms.0>
+  <RimTalk_ConversationAssessment.disclosureTerms.1>i am afraid</RimTalk_ConversationAssessment.disclosureTerms.1>
+  <RimTalk_ConversationAssessment.disclosureTerms.2>i&apos;m afraid</RimTalk_ConversationAssessment.disclosureTerms.2>
+  <RimTalk_ConversationAssessment.disclosureTerms.3>i miss</RimTalk_ConversationAssessment.disclosureTerms.3>
+  <RimTalk_ConversationAssessment.disclosureTerms.4>i regret</RimTalk_ConversationAssessment.disclosureTerms.4>
+  <RimTalk_ConversationAssessment.disclosureTerms.5>i need you</RimTalk_ConversationAssessment.disclosureTerms.5>
+  <RimTalk_ConversationAssessment.disclosureTerms.6>i trust you</RimTalk_ConversationAssessment.disclosureTerms.6>
+  <RimTalk_ConversationAssessment.disclosureTerms.7>i do not trust you</RimTalk_ConversationAssessment.disclosureTerms.7>
+  <RimTalk_ConversationAssessment.disclosureTerms.8>i don&apos;t trust you</RimTalk_ConversationAssessment.disclosureTerms.8>
+  <RimTalk_ConversationAssessment.commitmentTerms.0>i promise</RimTalk_ConversationAssessment.commitmentTerms.0>
+  <RimTalk_ConversationAssessment.commitmentTerms.1>i swear</RimTalk_ConversationAssessment.commitmentTerms.1>
+  <RimTalk_ConversationAssessment.commitmentTerms.2>i will never</RimTalk_ConversationAssessment.commitmentTerms.2>
+  <RimTalk_ConversationAssessment.commitmentTerms.3>i won&apos;t leave</RimTalk_ConversationAssessment.commitmentTerms.3>
+  <RimTalk_ConversationAssessment.commitmentTerms.4>i will stay</RimTalk_ConversationAssessment.commitmentTerms.4>
+  <RimTalk_ConversationAssessment.commitmentTerms.5>count on me</RimTalk_ConversationAssessment.commitmentTerms.5>
+  <RimTalk_ConversationAssessment.conflictTerms.0>i hate</RimTalk_ConversationAssessment.conflictTerms.0>
+  <RimTalk_ConversationAssessment.conflictTerms.1>do not trust</RimTalk_ConversationAssessment.conflictTerms.1>
+  <RimTalk_ConversationAssessment.conflictTerms.2>don&apos;t trust</RimTalk_ConversationAssessment.conflictTerms.2>
+  <RimTalk_ConversationAssessment.conflictTerms.3>you betrayed</RimTalk_ConversationAssessment.conflictTerms.3>
+  <RimTalk_ConversationAssessment.conflictTerms.4>your fault</RimTalk_ConversationAssessment.conflictTerms.4>
+  <RimTalk_ConversationAssessment.conflictTerms.5>blame you</RimTalk_ConversationAssessment.conflictTerms.5>
+  <RimTalk_ConversationAssessment.conflictTerms.6>never forgive</RimTalk_ConversationAssessment.conflictTerms.6>
+  <RimTalk_ConversationAssessment.conflictTerms.7>leave me alone</RimTalk_ConversationAssessment.conflictTerms.7>
+  <RimTalk_ConversationAssessment.conflictTerms.8>you liar</RimTalk_ConversationAssessment.conflictTerms.8>
+  <RimTalk_ConversationAssessment.reconciliationTerms.0>i forgive</RimTalk_ConversationAssessment.reconciliationTerms.0>
+  <RimTalk_ConversationAssessment.reconciliationTerms.1>forgive me</RimTalk_ConversationAssessment.reconciliationTerms.1>
+  <RimTalk_ConversationAssessment.reconciliationTerms.2>i am sorry</RimTalk_ConversationAssessment.reconciliationTerms.2>
+  <RimTalk_ConversationAssessment.reconciliationTerms.3>i&apos;m sorry</RimTalk_ConversationAssessment.reconciliationTerms.3>
+  <RimTalk_ConversationAssessment.reconciliationTerms.4>make peace</RimTalk_ConversationAssessment.reconciliationTerms.4>
+  <RimTalk_ConversationAssessment.reconciliationTerms.5>start over</RimTalk_ConversationAssessment.reconciliationTerms.5>
+  <RimTalk_ConversationAssessment.reconciliationTerms.6>thank you for</RimTalk_ConversationAssessment.reconciliationTerms.6>
+  <RimTalk_ConversationAssessment.assessmentSystemPrompt>You are an editorial filter for RimWorld conversations. Classify each supplied conversation using only explicit transcript evidence and supplied recent events. An important topic alone is insufficient. Never infer gameplay effects. Choose ignore for banter, announcements, exposition, event repetition, or uncertainty. Choose related only for an explicit new personal consequence tied to one supplied event. Choose standalone only for explicit durable interpersonal content independent of those events. Return one object per conversation as a JSON array only, with exactly these fields: {&quot;id&quot;:&quot;c1&quot;,&quot;decision&quot;:&quot;ignore&quot;,&quot;event&quot;:&quot;&quot;,&quot;reason&quot;:&quot;banter&quot;,&quot;focus&quot;:&quot;&quot;}. Decision must be ignore, related, or standalone. Reason must be echo, banter, disclosure, commitment, conflict, reconciliation, rejection, or other. For related, event must be one supplied eN alias; otherwise event must be empty. Focus is a short explicit consequence for recorded results and empty for ignore. Prefer ignore when uncertain.</RimTalk_ConversationAssessment.assessmentSystemPrompt>
+</LanguageData>

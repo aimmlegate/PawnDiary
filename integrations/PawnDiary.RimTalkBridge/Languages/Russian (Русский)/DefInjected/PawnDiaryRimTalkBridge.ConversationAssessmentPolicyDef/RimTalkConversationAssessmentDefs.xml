@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Русская DefInjected-локализация редакционной политики. Индексы повторяют основной Def. -->
+<LanguageData>
+  <RimTalk_ConversationAssessment.disclosureTerms.0>я чувствую</RimTalk_ConversationAssessment.disclosureTerms.0>
+  <RimTalk_ConversationAssessment.disclosureTerms.1>мне страшно</RimTalk_ConversationAssessment.disclosureTerms.1>
+  <RimTalk_ConversationAssessment.disclosureTerms.2>я боюсь</RimTalk_ConversationAssessment.disclosureTerms.2>
+  <RimTalk_ConversationAssessment.disclosureTerms.3>я скучаю</RimTalk_ConversationAssessment.disclosureTerms.3>
+  <RimTalk_ConversationAssessment.disclosureTerms.4>я жалею</RimTalk_ConversationAssessment.disclosureTerms.4>
+  <RimTalk_ConversationAssessment.disclosureTerms.5>ты мне нужен</RimTalk_ConversationAssessment.disclosureTerms.5>
+  <RimTalk_ConversationAssessment.disclosureTerms.6>я тебе доверяю</RimTalk_ConversationAssessment.disclosureTerms.6>
+  <RimTalk_ConversationAssessment.disclosureTerms.7>я тебе не доверяю</RimTalk_ConversationAssessment.disclosureTerms.7>
+  <RimTalk_ConversationAssessment.disclosureTerms.8>ты мне нужна</RimTalk_ConversationAssessment.disclosureTerms.8>
+  <RimTalk_ConversationAssessment.commitmentTerms.0>я обещаю</RimTalk_ConversationAssessment.commitmentTerms.0>
+  <RimTalk_ConversationAssessment.commitmentTerms.1>я клянусь</RimTalk_ConversationAssessment.commitmentTerms.1>
+  <RimTalk_ConversationAssessment.commitmentTerms.2>я никогда не</RimTalk_ConversationAssessment.commitmentTerms.2>
+  <RimTalk_ConversationAssessment.commitmentTerms.3>я тебя не брошу</RimTalk_ConversationAssessment.commitmentTerms.3>
+  <RimTalk_ConversationAssessment.commitmentTerms.4>я останусь</RimTalk_ConversationAssessment.commitmentTerms.4>
+  <RimTalk_ConversationAssessment.commitmentTerms.5>можешь на меня рассчитывать</RimTalk_ConversationAssessment.commitmentTerms.5>
+  <RimTalk_ConversationAssessment.conflictTerms.0>я тебя ненавижу</RimTalk_ConversationAssessment.conflictTerms.0>
+  <RimTalk_ConversationAssessment.conflictTerms.1>я тебе не доверяю</RimTalk_ConversationAssessment.conflictTerms.1>
+  <RimTalk_ConversationAssessment.conflictTerms.2>ты меня предал</RimTalk_ConversationAssessment.conflictTerms.2>
+  <RimTalk_ConversationAssessment.conflictTerms.3>это твоя вина</RimTalk_ConversationAssessment.conflictTerms.3>
+  <RimTalk_ConversationAssessment.conflictTerms.4>я виню тебя</RimTalk_ConversationAssessment.conflictTerms.4>
+  <RimTalk_ConversationAssessment.conflictTerms.5>никогда не прощу</RimTalk_ConversationAssessment.conflictTerms.5>
+  <RimTalk_ConversationAssessment.conflictTerms.6>оставь меня</RimTalk_ConversationAssessment.conflictTerms.6>
+  <RimTalk_ConversationAssessment.conflictTerms.7>ты лжёшь</RimTalk_ConversationAssessment.conflictTerms.7>
+  <RimTalk_ConversationAssessment.conflictTerms.8>ты меня предала</RimTalk_ConversationAssessment.conflictTerms.8>
+  <RimTalk_ConversationAssessment.reconciliationTerms.0>я тебя прощаю</RimTalk_ConversationAssessment.reconciliationTerms.0>
+  <RimTalk_ConversationAssessment.reconciliationTerms.1>прости меня</RimTalk_ConversationAssessment.reconciliationTerms.1>
+  <RimTalk_ConversationAssessment.reconciliationTerms.2>мне жаль</RimTalk_ConversationAssessment.reconciliationTerms.2>
+  <RimTalk_ConversationAssessment.reconciliationTerms.3>извини меня</RimTalk_ConversationAssessment.reconciliationTerms.3>
+  <RimTalk_ConversationAssessment.reconciliationTerms.4>давай помиримся</RimTalk_ConversationAssessment.reconciliationTerms.4>
+  <RimTalk_ConversationAssessment.reconciliationTerms.5>начнём сначала</RimTalk_ConversationAssessment.reconciliationTerms.5>
+  <RimTalk_ConversationAssessment.reconciliationTerms.6>спасибо тебе за</RimTalk_ConversationAssessment.reconciliationTerms.6>
+  <RimTalk_ConversationAssessment.assessmentSystemPrompt>Ты — редакторский фильтр разговоров в RimWorld. Классифицируй каждый разговор только по явным словам в репликах и переданным недавним событиям. Важной темы самой по себе недостаточно. Не выдумывай игровых последствий. Выбирай ignore для болтовни, объявлений, пояснений, повторов события и при сомнении. Выбирай related только при явном новом личном последствии, связанном с одним переданным событием. Выбирай standalone только при явном долговечном содержании отношений, независимом от этих событий. Верни по одному объекту на разговор и только JSON-массив ровно с такими полями: {&quot;id&quot;:&quot;c1&quot;,&quot;decision&quot;:&quot;ignore&quot;,&quot;event&quot;:&quot;&quot;,&quot;reason&quot;:&quot;banter&quot;,&quot;focus&quot;:&quot;&quot;}. Decision — только ignore, related или standalone. Reason — только echo, banter, disclosure, commitment, conflict, reconciliation, rejection или other. Для related в event должен быть один переданный псевдоним eN; иначе event пуст. Focus — краткое явное последствие для записываемого результата и пустая строка для ignore. При сомнении выбирай ignore.</RimTalk_ConversationAssessment.assessmentSystemPrompt>
+</LanguageData>

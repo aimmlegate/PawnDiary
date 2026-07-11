@@ -6,11 +6,14 @@
 //   0 = Off             — nothing flows in either direction.
 //   1 = Shared context  — diary memories are injected into RimTalk prompts and the RimTalk
 //                         persona is injected into Pawn Diary pawn summaries (default).
-//   2 = + Conversations — additionally, important RimTalk conversations become diary entries.
+//   2 = + Conversations — selected conversations pass through the bounded editorial funnel.
 //
 // New to C#/RimWorld? See AGENTS.md in the Pawn Diary repo.
 using System;
+using System.Collections.Generic;
 using HarmonyLib;
+using PawnDiary.Integration;
+using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -50,11 +53,15 @@ namespace PawnDiaryRimTalkBridge
         // height self-corrects to the measured content height after the first frame.
         private Vector2 settingsScrollPosition;
         private float settingsViewHeight = 720f;
-        private string minRepliesBuffer;
         private string perPawnDailyCapBuffer;
         private string colonyDailyCapBuffer;
         private string pairMinGapTicksBuffer;
         private string transcriptLineCapBuffer;
+
+        // Multiline editor buffers deliberately live outside ModSettings. Half-written CSV/prompt
+        // text must not enter the saved settings until the pure validator accepts it.
+        private string reactionTermsBuffer;
+        private string assessmentPromptBuffer;
 
         public PawnDiaryRimTalkBridgeMod(ModContentPack content) : base(content)
         {
@@ -126,6 +133,15 @@ namespace PawnDiaryRimTalkBridge
                 Log.Error(LogPrefix + " failed to register the shared-memory hooks; {{diary_shared}} is disabled: " + e);
             }
 
+            try
+            {
+                RecentDiaryEventCache.Register();          // Level 2: native/other-adapter assessment context
+            }
+            catch (Exception e)
+            {
+                Log.Error(LogPrefix + " failed to register the assessment status listener; recent-event context is disabled: " + e);
+            }
+
             Log.Message(LogPrefix + " initialized.");
         }
 
@@ -154,6 +170,27 @@ namespace PawnDiaryRimTalkBridge
         /// </summary>
         public override void WriteSettings()
         {
+            // Do the validation pass before Scribe writes ModSettings. The editor updates Settings
+            // only after a valid edit, so an invalid half-written CSV leaves the last valid value in
+            // place and can never enter the settings XML.
+            if (reactionTermsBuffer != null)
+            {
+                ConversationAssessmentPolicyDef policy = ConversationAssessmentPolicyDef.Current;
+                ConversationReactionTermsValidationResult validation =
+                    ConversationReactionTermsEditor.Validate(
+                        reactionTermsBuffer,
+                        policy.maxEditableReactionTerms,
+                        policy.maxEditableReactionTermChars);
+                if (!validation.IsValid)
+                {
+                    Messages.Message(
+                        "PawnDiaryRimTalkBridge.Settings.ReactionTermsNotSaved".Translate(
+                            ReactionTermsValidationMessage(validation)),
+                        MessageTypeDefOf.RejectInput,
+                        false);
+                }
+            }
+
             base.WriteSettings();
 
             // A settings change can alter the shape of already-cached shared-memory blocks (the count or
@@ -260,12 +297,45 @@ namespace PawnDiaryRimTalkBridge
                 "PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoiceDesc".Translate());
             Settings.personaLedDiaryVoice = personaLed;
 
-            bool useEngine = Settings.useRimTalkEngine;
+            // Level-2 selection mode. Semantic mode uses the core one-shot completion API; local-only
+            // mode spends no extra assessment request and applies the stricter XML threshold.
+            bool semanticAssessment = Settings.useSemanticConversationAssessment;
             listing.CheckboxLabeled(
-                "PawnDiaryRimTalkBridge.Settings.UseRimTalkEngine".Translate(),
-                ref useEngine,
-                "PawnDiaryRimTalkBridge.Settings.UseRimTalkEngineDesc".Translate());
-            Settings.useRimTalkEngine = useEngine;
+                "PawnDiaryRimTalkBridge.Settings.SemanticAssessment".Translate(),
+                ref semanticAssessment,
+                "PawnDiaryRimTalkBridge.Settings.SemanticAssessmentDesc".Translate());
+            Settings.useSemanticConversationAssessment = semanticAssessment;
+
+            ConversationAssessmentPolicyDef assessmentPolicy = ConversationAssessmentPolicyDef.Current;
+            DrawReactionTermsEditor(listing, assessmentPolicy);
+
+            if (Settings.useSemanticConversationAssessment)
+            {
+                DiaryApiSetupSnapshot setup = PawnDiaryApi.GetApiSetup();
+                Rect laneRect = listing.GetRect(28f);
+                float laneLabelWidth = Mathf.Min(190f, laneRect.width * 0.44f);
+                Rect laneLabelRect = new Rect(laneRect.x, laneRect.y, laneLabelWidth, laneRect.height);
+                Rect laneButtonRect = new Rect(
+                    laneLabelRect.xMax + 8f,
+                    laneRect.y,
+                    laneRect.width - laneLabelWidth - 8f,
+                    laneRect.height);
+                Widgets.Label(laneLabelRect, "PawnDiaryRimTalkBridge.Settings.AssessmentLane".Translate());
+                if (Widgets.ButtonText(laneButtonRect, CurrentAssessmentLaneLabel(setup)))
+                {
+                    Find.WindowStack.Add(new FloatMenu(BuildAssessmentLaneOptions(setup)));
+                }
+
+                if (setup == null || setup.activeLaneCount <= 0)
+                {
+                    Color previous = GUI.color;
+                    GUI.color = Color.yellow;
+                    listing.Label("PawnDiaryRimTalkBridge.Settings.NoAssessmentLane".Translate());
+                    GUI.color = previous;
+                }
+
+                DrawAssessmentPromptEditor(listing, assessmentPolicy);
+            }
 
             bool devLogging = Settings.devChatLogging;
             listing.CheckboxLabeled(
@@ -296,11 +366,10 @@ namespace PawnDiaryRimTalkBridge
                 "PawnDiaryRimTalkBridge.Settings.ConversationQuietTicks".Translate(),
                 ref Settings.conversationQuietTicks, ref conversationQuietTicksBuffer, 250f, 60000f);
             listing.TextFieldNumericLabeled(
-                "PawnDiaryRimTalkBridge.Settings.MinRepliesForImportant".Translate(),
-                ref Settings.minRepliesForImportant, ref minRepliesBuffer, 1f, 64f);
-            listing.TextFieldNumericLabeled(
                 "PawnDiaryRimTalkBridge.Settings.PerPawnDailyCap".Translate(),
-                ref Settings.perPawnDailyCap, ref perPawnDailyCapBuffer, 0f, 99f);
+                ref Settings.perPawnDailyCap, ref perPawnDailyCapBuffer, 0f, 1f);
+            listing.Label("PawnDiaryRimTalkBridge.Settings.PawnCooldownInfo".Translate(
+                assessmentPolicy.perPawnConversationCooldownTicks));
             listing.TextFieldNumericLabeled(
                 "PawnDiaryRimTalkBridge.Settings.ColonyDailyCap".Translate(),
                 ref Settings.colonyDailyCap, ref colonyDailyCapBuffer, 0f, 999f);
@@ -316,6 +385,205 @@ namespace PawnDiaryRimTalkBridge
             settingsViewHeight = listing.CurHeight + 12f;
             listing.End();
             Widgets.EndScrollView();
+        }
+
+        private string CurrentAssessmentLaneLabel(DiaryApiSetupSnapshot setup)
+        {
+            if (Settings.assessmentLaneIndex < 0)
+            {
+                return "PawnDiaryRimTalkBridge.Settings.AssessmentLaneAuto".Translate();
+            }
+
+            if (setup != null && setup.lanes != null)
+            {
+                for (int i = 0; i < setup.lanes.Count; i++)
+                {
+                    DiaryApiLaneSnapshot lane = setup.lanes[i];
+                    if (lane != null && lane.active && lane.index == Settings.assessmentLaneIndex)
+                    {
+                        return AssessmentLaneLabel(lane);
+                    }
+                }
+            }
+
+            // A removed/disabled saved lane falls back exactly as RequestLlmCompletion does.
+            return "PawnDiaryRimTalkBridge.Settings.AssessmentLaneAuto".Translate();
+        }
+
+        private List<FloatMenuOption> BuildAssessmentLaneOptions(DiaryApiSetupSnapshot setup)
+        {
+            List<FloatMenuOption> options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("PawnDiaryRimTalkBridge.Settings.AssessmentLaneAuto".Translate(), delegate
+                {
+                    Settings.assessmentLaneIndex = -1;
+                })
+            };
+
+            if (setup != null && setup.lanes != null)
+            {
+                for (int i = 0; i < setup.lanes.Count; i++)
+                {
+                    DiaryApiLaneSnapshot lane = setup.lanes[i];
+                    if (lane == null || !lane.active)
+                    {
+                        continue;
+                    }
+
+                    int index = lane.index;
+                    string label = AssessmentLaneLabel(lane);
+                    options.Add(new FloatMenuOption(label, delegate
+                    {
+                        Settings.assessmentLaneIndex = index;
+                    }));
+                }
+            }
+
+            return options;
+        }
+
+        private static string AssessmentLaneLabel(DiaryApiLaneSnapshot lane)
+        {
+            string model = !string.IsNullOrWhiteSpace(lane.model)
+                ? lane.model
+                : (!string.IsNullOrWhiteSpace(lane.url)
+                    ? lane.url
+                    : "PawnDiaryRimTalkBridge.Settings.AssessmentLaneUnnamed".Translate().ToString());
+            return "PawnDiaryRimTalkBridge.Settings.AssessmentLaneFormat".Translate(lane.index + 1, model).Resolve();
+        }
+
+        private void DrawReactionTermsEditor(
+            Listing_Standard listing,
+            ConversationAssessmentPolicyDef policy)
+        {
+            EnsureAssessmentEditorBuffers(policy);
+
+            Rect header = listing.GetRect(30f);
+            float buttonWidth = Mathf.Min(220f, header.width * 0.46f);
+            Rect labelRect = new Rect(header.x, header.y, header.width - buttonWidth - 8f, header.height);
+            Rect resetRect = new Rect(labelRect.xMax + 8f, header.y, buttonWidth, header.height);
+            Widgets.Label(labelRect, "PawnDiaryRimTalkBridge.Settings.ReactionTerms".Translate());
+            if (Widgets.ButtonText(resetRect, "PawnDiaryRimTalkBridge.Settings.ResetLocalizedDefault".Translate()))
+            {
+                reactionTermsBuffer = policy.DefaultReactionTermsCsv();
+                Settings.conversationReactionTermsCsv = string.Empty;
+            }
+
+            listing.Label("PawnDiaryRimTalkBridge.Settings.ReactionTermsDesc".Translate());
+            Rect textRect = listing.GetRect(108f);
+            string editedTerms = Widgets.TextArea(textRect, reactionTermsBuffer ?? string.Empty);
+            long derivedInputCap = (long)Math.Max(1, policy.maxEditableReactionTerms)
+                * (Math.Max(1, policy.maxEditableReactionTermChars) + 2L);
+            int inputCap = derivedInputCap > 32768L ? 32768 : (int)derivedInputCap;
+            reactionTermsBuffer = UnicodeText.CapUtf16(editedTerms, inputCap);
+
+            ConversationReactionTermsValidationResult validation =
+                ConversationReactionTermsEditor.Validate(
+                    reactionTermsBuffer,
+                    policy.maxEditableReactionTerms,
+                    policy.maxEditableReactionTermChars);
+            if (validation.IsValid)
+            {
+                List<string> defaults = ConversationReactionTermsEditor.Flatten(policy.KeywordLexicon());
+                Settings.conversationReactionTermsCsv = ConversationReactionTermsEditor.SameTerms(
+                    validation.Terms, defaults)
+                    ? string.Empty
+                    : validation.NormalizedCsv;
+                listing.Label("PawnDiaryRimTalkBridge.Settings.ReactionTermsValid".Translate(
+                    validation.Terms.Count));
+            }
+            else
+            {
+                listing.Label(ReactionTermsValidationMessage(validation));
+            }
+        }
+
+        private void DrawAssessmentPromptEditor(
+            Listing_Standard listing,
+            ConversationAssessmentPolicyDef policy)
+        {
+            EnsureAssessmentEditorBuffers(policy);
+
+            Rect header = listing.GetRect(30f);
+            float buttonWidth = Mathf.Min(220f, header.width * 0.46f);
+            Rect labelRect = new Rect(header.x, header.y, header.width - buttonWidth - 8f, header.height);
+            Rect resetRect = new Rect(labelRect.xMax + 8f, header.y, buttonWidth, header.height);
+            Widgets.Label(labelRect, "PawnDiaryRimTalkBridge.Settings.AssessmentPrompt".Translate());
+            if (Widgets.ButtonText(resetRect, "PawnDiaryRimTalkBridge.Settings.ResetLocalizedDefault".Translate()))
+            {
+                assessmentPromptBuffer = policy.assessmentSystemPrompt ?? string.Empty;
+                Settings.assessmentPromptOverride = string.Empty;
+            }
+
+            listing.Label("PawnDiaryRimTalkBridge.Settings.AssessmentPromptDesc".Translate());
+            Rect textRect = listing.GetRect(156f);
+            string edited = Widgets.TextArea(textRect, assessmentPromptBuffer ?? string.Empty);
+            assessmentPromptBuffer = UnicodeText.CapUtf16(
+                edited,
+                Math.Max(1, policy.assessmentPromptOverrideChars));
+
+            string cleaned = ConversationAssessmentPromptEditor.Clean(
+                assessmentPromptBuffer,
+                policy.assessmentPromptOverrideChars);
+            string defaultPrompt = ConversationAssessmentPromptEditor.Clean(
+                policy.assessmentSystemPrompt,
+                policy.assessmentPromptOverrideChars);
+            Settings.assessmentPromptOverride = string.Equals(
+                cleaned, defaultPrompt, StringComparison.Ordinal)
+                ? string.Empty
+                : cleaned;
+            listing.Label("PawnDiaryRimTalkBridge.Settings.AssessmentPromptChars".Translate(
+                assessmentPromptBuffer.Length,
+                policy.assessmentPromptOverrideChars));
+        }
+
+        private void EnsureAssessmentEditorBuffers(ConversationAssessmentPolicyDef policy)
+        {
+            if (reactionTermsBuffer == null)
+            {
+                reactionTermsBuffer = !string.IsNullOrWhiteSpace(Settings.conversationReactionTermsCsv)
+                    ? Settings.conversationReactionTermsCsv
+                    : policy.DefaultReactionTermsCsv();
+
+                ConversationReactionTermsValidationResult savedValidation =
+                    ConversationReactionTermsEditor.Validate(
+                        reactionTermsBuffer,
+                        policy.maxEditableReactionTerms,
+                        policy.maxEditableReactionTermChars);
+                if (!savedValidation.IsValid)
+                {
+                    // Keep the invalid hand-edited text visible for correction, but make the actual
+                    // setting fall back to the safe localized XML list before any future save.
+                    Settings.conversationReactionTermsCsv = string.Empty;
+                }
+            }
+
+            if (assessmentPromptBuffer == null)
+            {
+                assessmentPromptBuffer = !string.IsNullOrWhiteSpace(Settings.assessmentPromptOverride)
+                    ? Settings.assessmentPromptOverride
+                    : policy.assessmentSystemPrompt ?? string.Empty;
+            }
+        }
+
+        private static string ReactionTermsValidationMessage(
+            ConversationReactionTermsValidationResult validation)
+        {
+            string error = validation != null ? validation.Error : ConversationReactionTermsEditor.ErrorEmpty;
+            int value = validation != null ? validation.ErrorValue : 0;
+            switch (error)
+            {
+                case ConversationReactionTermsEditor.ErrorNewline:
+                    return "PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorNewline".Translate();
+                case ConversationReactionTermsEditor.ErrorTooMany:
+                    return "PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorTooMany".Translate(value);
+                case ConversationReactionTermsEditor.ErrorTooLong:
+                    return "PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorTooLong".Translate(value);
+                case ConversationReactionTermsEditor.ErrorInvalidTerm:
+                    return "PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorInvalid".Translate(value);
+                default:
+                    return "PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorEmpty".Translate();
+            }
         }
     }
 
@@ -338,8 +606,20 @@ namespace PawnDiaryRimTalkBridge
         /// <summary>Tier B (experimental, off): derive the diary voice from the RimTalk persona.</summary>
         public bool personaLedDiaryVoice;
 
-        /// <summary>Engine mode (off): let RimTalk's configured LLM write bridge conversation entries.</summary>
+        /// <summary>Legacy engine-writing key. Still read for migration, intentionally never acted on.</summary>
         public bool useRimTalkEngine;
+
+        /// <summary>Use a small batched semantic assessment before normal diary generation.</summary>
+        public bool useSemanticConversationAssessment = true;
+
+        /// <summary>-1 = first active Pawn Diary lane; otherwise the saved configured lane index.</summary>
+        public int assessmentLaneIndex = -1;
+
+        /// <summary>Optional comma-separated replacement for the localized XML reaction terms.</summary>
+        public string conversationReactionTermsCsv = string.Empty;
+
+        /// <summary>Optional player-authored semantic system prompt; blank keeps the localized Def.</summary>
+        public string assessmentPromptOverride = string.Empty;
 
         /// <summary>Feature 1 (off by default): inject a curated colony-situation line as {{colony_events}}.
         /// Off because it overlaps RimTalk's own live-event mods; opt in for the curated/atmospheric angle.</summary>
@@ -364,11 +644,11 @@ namespace PawnDiaryRimTalkBridge
         /// <summary>Ticks of silence after which a RimTalk conversation counts as finished.</summary>
         public int conversationQuietTicks = 2500;
 
-        /// <summary>Minimum chat lines for a conversation to count as important by length alone.</summary>
+        /// <summary>Legacy pre-funnel key. Still read from old settings; no longer shown or used.</summary>
         public int minRepliesForImportant = 4;
 
         /// <summary>Max explicit conversation entries per pawn per in-game day.</summary>
-        public int perPawnDailyCap = 2;
+        public int perPawnDailyCap = 1;
 
         /// <summary>Max explicit conversation entries colony-wide per in-game day.</summary>
         public int colonyDailyCap = 6;
@@ -387,7 +667,12 @@ namespace PawnDiaryRimTalkBridge
             Scribe_Values.Look(ref integrationLevel, "integrationLevel", 1);
             Scribe_Values.Look(ref includeDiaryVoiceLine, "includeDiaryVoiceLine", true);
             Scribe_Values.Look(ref personaLedDiaryVoice, "personaLedDiaryVoice", false);
+            // Frozen legacy key: retained only so old settings continue to deserialize cleanly.
             Scribe_Values.Look(ref useRimTalkEngine, "useRimTalkEngine", false);
+            Scribe_Values.Look(ref useSemanticConversationAssessment, "useSemanticConversationAssessment", true);
+            Scribe_Values.Look(ref assessmentLaneIndex, "assessmentLaneIndex", -1);
+            Scribe_Values.Look(ref conversationReactionTermsCsv, "conversationReactionTermsCsv", string.Empty);
+            Scribe_Values.Look(ref assessmentPromptOverride, "assessmentPromptOverride", string.Empty);
             Scribe_Values.Look(ref injectColonyContext, "injectColonyContext", false);
             Scribe_Values.Look(ref injectSharedMemory, "injectSharedMemory", true);
             Scribe_Values.Look(ref autoInjectSharedMemory, "autoInjectSharedMemory", true);
@@ -396,7 +681,7 @@ namespace PawnDiaryRimTalkBridge
             Scribe_Values.Look(ref sharedMemoryCount, "sharedMemoryCount", 3);
             Scribe_Values.Look(ref conversationQuietTicks, "conversationQuietTicks", 2500);
             Scribe_Values.Look(ref minRepliesForImportant, "minRepliesForImportant", 4);
-            Scribe_Values.Look(ref perPawnDailyCap, "perPawnDailyCap", 2);
+            Scribe_Values.Look(ref perPawnDailyCap, "perPawnDailyCap", 1);
             Scribe_Values.Look(ref colonyDailyCap, "colonyDailyCap", 6);
             Scribe_Values.Look(ref pairMinGapTicks, "pairMinGapTicks", 30000);
             Scribe_Values.Look(ref transcriptLineCap, "transcriptLineCap", 4);
@@ -409,10 +694,16 @@ namespace PawnDiaryRimTalkBridge
             sharedMemoryCount = Clamp(sharedMemoryCount, 0, 4);
             conversationQuietTicks = Clamp(conversationQuietTicks, 250, 60000);
             minRepliesForImportant = Clamp(minRepliesForImportant, 1, 64);
-            perPawnDailyCap = Clamp(perPawnDailyCap, 0, 99);
+            perPawnDailyCap = Clamp(perPawnDailyCap, 0, 1);
             colonyDailyCap = Clamp(colonyDailyCap, 0, 999);
             pairMinGapTicks = Clamp(pairMinGapTicks, 0, 600000);
             transcriptLineCap = Clamp(transcriptLineCap, 0, 16);
+            if (assessmentLaneIndex < -1)
+            {
+                assessmentLaneIndex = -1;
+            }
+            conversationReactionTermsCsv = conversationReactionTermsCsv ?? string.Empty;
+            assessmentPromptOverride = assessmentPromptOverride ?? string.Empty;
         }
 
         private static int Clamp(int value, int min, int max)

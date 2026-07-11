@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  XML-owned editorial policy for Level-2 RimTalk conversations. Prompt prose and all term variants
+  are DefInjected-localizable; weights/caps remain language-neutral. Terms only nominate a bounded
+  candidate for assessment — they never directly force a diary entry.
+-->
+<Defs>
+  <PawnDiaryRimTalkBridge.ConversationAssessmentPolicyDef>
+    <defName>RimTalk_ConversationAssessment</defName>
+
+    <candidateScoreThreshold>5</candidateScoreThreshold>
+    <strictLocalRecordThreshold>8</strictLocalRecordThreshold>
+
+    <chargedSocialWeight>3</chargedSocialWeight>
+    <reciprocalChargedWeight>2</reciprocalChargedWeight>
+    <userTalkWeight>2</userTalkWeight>
+    <alternationWeight>2</alternationWeight>
+    <alternationThreshold>2</alternationThreshold>
+    <mediumLengthWeight>1</mediumLengthWeight>
+    <mediumLengthLines>4</mediumLengthLines>
+    <longLengthWeight>1</longLengthWeight>
+    <longLengthLines>8</longLengthLines>
+    <firstKeywordCategoryWeight>2</firstKeywordCategoryWeight>
+    <additionalKeywordCategoryWeight>1</additionalKeywordCategoryWeight>
+    <maxKeywordCategories>4</maxKeywordCategories>
+    <recentEventOverlapPenalty>2</recentEventOverlapPenalty>
+    <announcementOnlyPenalty>3</announcementOnlyPenalty>
+    <samePairQueuedPenalty>2</samePairQueuedPenalty>
+
+    <maxQueuedCandidates>12</maxQueuedCandidates>
+    <maxCandidatesPerBatch>6</maxCandidatesPerBatch>
+    <maxCandidatesPerPair>2</maxCandidatesPerPair>
+    <maxBatchesPerDay>2</maxBatchesPerDay>
+    <minBatchGapTicks>15000</minBatchGapTicks>
+    <candidateExpiryTicks>60000</candidateExpiryTicks>
+    <!-- One full RimWorld day. Charged to both POV pawns only after a successful submission. -->
+    <perPawnConversationCooldownTicks>60000</perPawnConversationCooldownTicks>
+
+    <assessmentTranscriptLines>4</assessmentTranscriptLines>
+    <assessmentLineChars>160</assessmentLineChars>
+    <assessmentInputChars>3600</assessmentInputChars>
+    <assessmentMaxTokens>180</assessmentMaxTokens>
+    <assessmentFocusChars>200</assessmentFocusChars>
+    <recentEventCount>3</recentEventCount>
+    <recentEventWindowTicks>60000</recentEventWindowTicks>
+    <overlapMinimumTokenChars>3</overlapMinimumTokenChars>
+    <useCharacterTrigramOverlap>true</useCharacterTrigramOverlap>
+    <recentEventOverlapThreshold>0.45</recentEventOverlapThreshold>
+    <maxEditableReactionTerms>64</maxEditableReactionTerms>
+    <maxEditableReactionTermChars>80</maxEditableReactionTermChars>
+    <assessmentPromptOverrideChars>6000</assessmentPromptOverrideChars>
+
+    <disclosureTerms>
+      <li>i feel</li>
+      <li>i am afraid</li>
+      <li>i&apos;m afraid</li>
+      <li>i miss</li>
+      <li>i regret</li>
+      <li>i need you</li>
+      <li>i trust you</li>
+      <li>i do not trust you</li>
+      <li>i don&apos;t trust you</li>
+    </disclosureTerms>
+    <commitmentTerms>
+      <li>i promise</li>
+      <li>i swear</li>
+      <li>i will never</li>
+      <li>i won&apos;t leave</li>
+      <li>i will stay</li>
+      <li>count on me</li>
+    </commitmentTerms>
+    <conflictTerms>
+      <li>i hate</li>
+      <li>do not trust</li>
+      <li>don&apos;t trust</li>
+      <li>you betrayed</li>
+      <li>your fault</li>
+      <li>blame you</li>
+      <li>never forgive</li>
+      <li>leave me alone</li>
+      <li>you liar</li>
+    </conflictTerms>
+    <reconciliationTerms>
+      <li>i forgive</li>
+      <li>forgive me</li>
+      <li>i am sorry</li>
+      <li>i&apos;m sorry</li>
+      <li>make peace</li>
+      <li>start over</li>
+      <li>thank you for</li>
+    </reconciliationTerms>
+
+    <assessmentSystemPrompt>You are an editorial filter for RimWorld conversations. Classify each supplied conversation using only explicit transcript evidence and supplied recent events. An important topic alone is insufficient. Never infer gameplay effects. Choose ignore for banter, announcements, exposition, event repetition, or uncertainty. Choose related only for an explicit new personal consequence tied to one supplied event. Choose standalone only for explicit durable interpersonal content independent of those events. Return one object per conversation as a JSON array only, with exactly these fields: {&quot;id&quot;:&quot;c1&quot;,&quot;decision&quot;:&quot;ignore&quot;,&quot;event&quot;:&quot;&quot;,&quot;reason&quot;:&quot;banter&quot;,&quot;focus&quot;:&quot;&quot;}. Decision must be ignore, related, or standalone. Reason must be echo, banter, disclosure, commitment, conflict, reconciliation, rejection, or other. For related, event must be one supplied eN alias; otherwise event must be empty. Focus is a short explicit consequence for recorded results and empty for ignore. Prefer ignore when uncertain.</assessmentSystemPrompt>
+  </PawnDiaryRimTalkBridge.ConversationAssessmentPolicyDef>
+</Defs>

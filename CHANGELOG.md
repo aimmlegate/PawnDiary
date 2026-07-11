@@ -6,8 +6,43 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-12
+
+- **RimTalk bridge 0.3.1 adds a persistent one-game-day pawn cooldown and editable selection
+  policy.** Every successfully submitted pairwise chat event now charges both POV pawns for 60,000
+  ticks; conversations involving either pawn are discarded before scoring/assessment and rechecked at
+  submission, while a rejected Pawn Diary request refunds the reservation. The pawn-id/tick map is
+  value-scribed by the bridge GameComponent and restored after static reset, so reload cannot bypass the
+  limit; the legacy per-pawn daily setting is now constrained to 0/1. The settings window exposes the
+  localized reaction words/phrases in a comma-separated text area with pure Unicode-aware validation,
+  de-duplication, count/length bounds, and safe last-valid-value saving. Retained defaults preserve
+  their scoring categories and additions share one bounded category. Semantic assessment remains
+  optional and its off state uses the existing stricter local-only path with zero assessment requests;
+  its localized system prompt is now fully editable with a reset-to-Def default. New Scribe keys are
+  additive, XML owns the cooldown/editor caps, EN/RU UI text is complete, 173 pure assertions pass,
+  bridge XML parses, and the committed bridge DLL was rebuilt.
+
 ## 2026-07-11
 
+- **RimTalk bridge 0.3.0: bounded editorial conversation funnel replaces the “important kind or four
+  lines” rule.** Finished reply chains now pass through pure Unicode-aware local scoring, a deterministic
+  12-candidate ranked queue (pair limit 2), and small batches of at most 6 using the existing
+  `RequestLlmCompletion` handle API. The XML/DefInjected policy owns weights, thresholds, English/Russian
+  keyword categories and assessor prompt, overlap/event windows, formatter/token caps, and the default
+  ceiling of 2 assessment requests per in-game day with a 15,000-tick gap. A locked third status-listener
+  cache merges pending/completed native or other-adapter events with subject/partner context snapshots,
+  excludes this bridge's output, and supplies event-repetition context. The strict JSON parser accepts
+  only active conversation/event aliases plus frozen decision/reason tokens and fails closed. Only
+  `related`/`standalone` results reserve existing pawn/colony/pair throttle space and call one normal
+  pairwise `SubmitPromptEntry`; related results carry the actual event id/focus and a no-recap guard, so
+  one accepted conversation yields one `DiaryEvent` with two POV pages. No-lane/admission failure keeps
+  only the bounded expiring queue; transport/malformed/blank/toggle-off/save-load paths create nothing.
+  New saved settings select semantic vs stricter zero-extra-request local mode and an Automatic/active
+  Pawn Diary lane. Frozen `minRepliesForImportant` and `useRimTalkEngine` keys still read but are hidden
+  and ignored; engine writing is temporarily retired. Core `rimtalk_chatter` is now fallback-only and
+  disables itself whenever the bridge package is loaded, eliminating ambient/promotion duplication at
+  Levels 0/1/2. Added 150 passing pure assertions, EN/RU Keyed + DefInjected text, updated bridge About/
+  integration/design docs, validated XML, and rebuilt both Debug DLLs.
 - **Adversarial hardening of today’s trait, integration-API, and 1-2-3 bridge work.** One-shot external
   completions now require a live game, reserve the existing per-source/global prompt budget, share the
   normal lane semaphore/cooldown/session cancellation, reject admission at 64 tracked handles instead

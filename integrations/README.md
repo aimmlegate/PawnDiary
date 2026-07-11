@@ -66,18 +66,32 @@ RimTalk, gated by an **integration-level** dropdown in its own mod settings (see
 - **Shared context** (default, level 1) — recent diary memories are injected into RimTalk's chat
   prompts (via `ContextHookRegistry.InjectPawnSection` + a `{{pawn1.diary}}` variable), and each
   pawn's RimTalk persona is surfaced to Pawn Diary as a `chat_persona=` context-provider line. Purely
-  additive context; no state is mutated.
-- **Shared context + conversations** (level 2) — important RimTalk conversations additionally become
-  diary entries for both participants (`SubmitPromptEntry`), while ordinary chatter is left to the
-  core `rimtalk_chatter` ambient-day-note compat group.
+  additive context; no chat-originated diary entry is created.
+- **Shared context + conversations** (level 2) — finished reply chains enter a bounded editorial
+  funnel: pure local scoring → ranked 12-candidate queue → batches of at most 6 through the existing
+  Pawn Diary completion API → `ignore`, `related`, or `standalone`. Only accepted results call normal
+  pairwise `SubmitPromptEntry`, creating one `DiaryEvent` with two POV pages. The core
+  `rimtalk_chatter` group is fallback-only and disables itself whenever this bridge is installed, so
+  per-line ambient/promotion capture cannot duplicate a selected whole conversation.
 
-Advanced toggles cover a Tier-B persona-led writing-style override, an experimental "RimTalk as the
-diary LLM" engine mode (`PreviewPrompt` → `AIService.Query` → `SubmitDirectEntry`, with a safe
-fallback), and per-pawn/colony/pair throttles. Its project stays net48/x64 because the RimTalk hook
-code references the RimTalk workshop assembly (`$(RimTalkAssembly)` MSBuild property).
+Local scoring is free. The XML defaults allow at most two small assessment requests per in-game day,
+independent of chat volume, and normal diary generation is spent only on accepted conversations.
+Semantic assessment can use Automatic/any active Pawn Diary lane or be disabled for a stricter,
+less-accurate zero-extra-request mode. No lane waits with a bounded expiring queue; failed/malformed
+assessment records nothing. Each successfully submitted conversation starts a saved rolling 60,000-tick
+cooldown for both participants, so neither can receive another chat event for one full game day even
+across save/load; rejected submissions refund it. Settings also expose a validated comma-separated
+reaction-term editor used by both selection modes and a full semantic-prompt editor. Blank overrides
+track the localized XML/DefInjected defaults. Advanced toggles also cover Tier-B persona-led psychotype
+context and colony/pair throttles. The former RimTalk-engine writing toggle is retired: its frozen Scribe
+key still reads, but accepted entries always use Pawn Diary's pairwise prompt path. The project stays
+net48/x64 because RimTalk-typed hook code references the workshop assembly
+(`$(RimTalkAssembly)` MSBuild property).
 
-The bridge's pure decision logic (conversation assembly, importance, throttling, context formatting)
-is unit-tested by `tests/RimTalkBridgeLogicTests/`, run the same way as the example adapter's tests:
+The bridge's pure decision logic (conversation assembly, Unicode matching/overlap, editable-term/prompt
+validation, local scoring,
+bounded queue/day gating, batch formatting, strict response parsing, submission planning, throttling,
+and context formatting) is unit-tested by `tests/RimTalkBridgeLogicTests/`:
 
 ```
 dotnet run --project tests/RimTalkBridgeLogicTests/RimTalkBridgeLogicTests.csproj

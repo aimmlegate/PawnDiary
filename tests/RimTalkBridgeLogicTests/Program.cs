@@ -2,7 +2,7 @@
 // projects: a static Main runs focused assertions and returns non-zero when any fail.
 //
 // These run without RimWorld/RimTalk/Verse/Unity — the logic under test (conversation assembly,
-// importance, throttling, context formatting) is deliberately pure so its edge cases are covered
+// candidate selection, throttling, context formatting) is deliberately pure so its edge cases are covered
 // without booting the game.
 using System;
 using System.Collections.Generic;
@@ -50,12 +50,8 @@ namespace RimTalkBridgeLogicTests
             TestAssembly_RunawayCapForceFlushes();
             TestAssembly_FlushAllDrainsEverything();
 
-            // ImportancePolicy
-            TestImportance_TalkKindTrigger();
-            TestImportance_SocialTrigger();
-            TestImportance_LengthTriggerAndBoundary();
-            TestImportance_MonologueNeverImportant();
-            TestImportance_ShortChitchatNeverImportant();
+            // Bounded conversation-assessment funnel
+            AssessmentTests.Run(Assert);
 
             // ThrottlePolicy
             TestThrottle_PerPawnCap();
@@ -65,6 +61,9 @@ namespace RimTalkBridgeLogicTests
             TestThrottle_ReleaseRefundsCaps();
             TestThrottle_ReleaseClearsPairGap();
             TestThrottle_ReleaseIsSafeNoop();
+            TestThrottle_RollingPawnCooldown();
+            TestThrottle_CooldownChargesBothPawns();
+            TestThrottle_CooldownReleaseAndPersistence();
 
             // ConversationContext
             TestContext_ExtraContextShape();
@@ -450,61 +449,6 @@ namespace RimTalkBridgeLogicTests
             Assert(asm.FlushAll().Count == 0, "state cleared after FlushAll");
         }
 
-        // ---- ImportancePolicy ----------------------------------------------------
-
-        private static void TestImportance_TalkKindTrigger()
-        {
-            Conversation c = Conv(
-                LineKind("alice", "bob", BridgeTalkKind.Chitchat, BridgeSocialKind.None),
-                LineKind("bob", "alice", BridgeTalkKind.Urgent, BridgeSocialKind.None));
-            // minReplies high so only the talk-kind path can trigger.
-            Assert(ImportancePolicy.IsImportant(c, 99), "urgent talk kind makes it important");
-            Assert(ImportancePolicy.Explain(c, 99).StartsWith("talk_kind=Urgent"), "reason names the kind");
-        }
-
-        private static void TestImportance_SocialTrigger()
-        {
-            Conversation c = Conv(
-                LineKind("alice", "bob", BridgeTalkKind.Chitchat, BridgeSocialKind.None),
-                LineKind("bob", "alice", BridgeTalkKind.Chitchat, BridgeSocialKind.Insult));
-            Assert(ImportancePolicy.IsImportant(c, 99), "an insult makes it important");
-            Assert(ImportancePolicy.Explain(c, 99).StartsWith("social=Insult"), "reason names the social kind");
-        }
-
-        private static void TestImportance_LengthTriggerAndBoundary()
-        {
-            Conversation four = Conv(
-                LineKind("alice", "bob", BridgeTalkKind.Chitchat, BridgeSocialKind.None),
-                LineKind("bob", "alice", BridgeTalkKind.Chitchat, BridgeSocialKind.None),
-                LineKind("alice", "bob", BridgeTalkKind.Chitchat, BridgeSocialKind.None),
-                LineKind("bob", "alice", BridgeTalkKind.Chitchat, BridgeSocialKind.None));
-            Assert(ImportancePolicy.IsImportant(four, 4), "exactly minReplies lines is important");
-
-            Conversation three = Conv(
-                LineKind("alice", "bob", BridgeTalkKind.Chitchat, BridgeSocialKind.None),
-                LineKind("bob", "alice", BridgeTalkKind.Chitchat, BridgeSocialKind.None),
-                LineKind("alice", "bob", BridgeTalkKind.Chitchat, BridgeSocialKind.None));
-            Assert(!ImportancePolicy.IsImportant(three, 4), "below minReplies and otherwise plain → not important");
-        }
-
-        private static void TestImportance_MonologueNeverImportant()
-        {
-            // Single participant (no target), many lines, urgent kind — still never important.
-            Conversation c = Conv(
-                LineKind("alice", "", BridgeTalkKind.Urgent, BridgeSocialKind.Kind),
-                LineKind("alice", "", BridgeTalkKind.Urgent, BridgeSocialKind.Kind),
-                LineKind("alice", "", BridgeTalkKind.Urgent, BridgeSocialKind.Kind));
-            Assert(!ImportancePolicy.IsImportant(c, 2), "a monologue is never important");
-        }
-
-        private static void TestImportance_ShortChitchatNeverImportant()
-        {
-            Conversation c = Conv(
-                LineKind("alice", "bob", BridgeTalkKind.Chitchat, BridgeSocialKind.Chat),
-                LineKind("bob", "alice", BridgeTalkKind.Chitchat, BridgeSocialKind.Chat));
-            Assert(!ImportancePolicy.IsImportant(c, 4), "plain 2-line chitchat is not important");
-        }
-
         // ---- ThrottlePolicy ------------------------------------------------------
 
         private static void TestThrottle_PerPawnCap()
@@ -574,6 +518,68 @@ namespace RimTalkBridgeLogicTests
             // A release naming a day that already rolled is ignored (those counters were cleared already).
             t.Release("alice", "", 5, limits);
             Assert(!t.TryReserve("alice", "", 2, 0, limits), "stale-day release did not refund day 0");
+        }
+
+        private static void TestThrottle_RollingPawnCooldown()
+        {
+            ThrottlePolicy t = new ThrottlePolicy();
+            ThrottleLimits limits = new ThrottleLimits
+            {
+                perPawnDailyCap = 99,
+                colonyDailyCap = 99,
+                pairMinGapTicks = 0,
+                perPawnCooldownTicks = 60000
+            };
+            Assert(t.TryReserve("alice", "bob", 100, 0, limits), "cooldown: first pair event reserved");
+            Assert(!t.TryReserve("alice", "carol", 60099, 1, limits),
+                "cooldown: pawn stays blocked until a full game day of ticks elapsed");
+            Assert(t.TryReserve("alice", "carol", 60100, 1, limits),
+                "cooldown: exact one-day boundary permits the next event");
+        }
+
+        private static void TestThrottle_CooldownChargesBothPawns()
+        {
+            ThrottlePolicy t = new ThrottlePolicy();
+            ThrottleLimits limits = new ThrottleLimits
+            {
+                perPawnDailyCap = 99,
+                colonyDailyCap = 99,
+                perPawnCooldownTicks = 60000
+            };
+            Assert(t.TryReserve("alice", "bob", 10, 0, limits), "cooldown pair: first event reserved");
+            Assert(t.IsEitherPawnOnCooldown("carol", "bob", 20, 60000),
+                "cooldown pair: partner POV is charged too");
+            Assert(!t.TryReserve("carol", "bob", 20, 0, limits),
+                "cooldown pair: either cooling participant blocks a new event");
+        }
+
+        private static void TestThrottle_CooldownReleaseAndPersistence()
+        {
+            ThrottlePolicy source = new ThrottlePolicy();
+            ThrottleLimits limits = new ThrottleLimits
+            {
+                perPawnDailyCap = 99,
+                colonyDailyCap = 99,
+                perPawnCooldownTicks = 60000
+            };
+            Assert(source.TryReserve("alice", "bob", 1234, 0, limits),
+                "cooldown persistence: source reservation succeeds");
+            Dictionary<string, int> snapshot = source.PawnCooldownSnapshot();
+            ThrottlePolicy restored = new ThrottlePolicy();
+            restored.RestorePawnCooldowns(snapshot);
+            Assert(restored.IsEitherPawnOnCooldown("alice", "bob", 2000, 60000),
+                "cooldown persistence: saved timestamps restore for both pawns");
+            restored.PruneExpiredPawnCooldowns(61234, 60000);
+            Assert(restored.PawnCooldownSnapshot().Count == 0,
+                "cooldown persistence: expired timestamps are pruned before saving");
+            restored.RestorePawnCooldowns(snapshot);
+            restored.Reset();
+            Assert(!restored.IsPawnOnCooldown("alice", 2000, 60000),
+                "cooldown persistence: new-game reset clears restored state");
+
+            source.Release("alice", "bob", 0, limits);
+            Assert(!source.IsEitherPawnOnCooldown("alice", "bob", 1235, 60000),
+                "cooldown release: rejected diary submission refunds both timestamps");
         }
 
         // ---- ConversationContext -------------------------------------------------

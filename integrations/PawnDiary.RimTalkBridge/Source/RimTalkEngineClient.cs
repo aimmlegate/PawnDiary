@@ -1,5 +1,7 @@
-// Engine mode (advanced, default OFF): route a conversation entry's generation through RimTalk's own
-// configured AI provider instead of Pawn Diary's, so one API key can serve both mods.
+// RETIRED legacy engine-mode implementation. No runtime caller reaches this class: accepted
+// conversations now always use Pawn Diary's normal pairwise SubmitPromptEntry path. The old saved
+// useRimTalkEngine key remains readable for migration, but its UI is hidden and its value is ignored.
+// A future redesign may replace this with one pairwise direct request carrying both final POV texts.
 //
 // Flow (all failure paths fall back to the normal wrapped submit, so a conversation is NEVER lost):
 //   1. PreviewPrompt(request) — the exact prompt Pawn Diary would send (main thread).

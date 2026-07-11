@@ -14,7 +14,14 @@
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\SharedMemorySelection.cs" Link="SharedMemorySelection.cs" />
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ConversationAssembly.cs" Link="ConversationAssembly.cs" />
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ConversationContext.cs" Link="ConversationContext.cs" />
-    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ImportancePolicy.cs" Link="ImportancePolicy.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\UnicodeText.cs" Link="UnicodeText.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ConversationTextOverlap.cs" Link="ConversationTextOverlap.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ConversationCandidatePolicy.cs" Link="ConversationCandidatePolicy.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ConversationEditableAssessmentPolicy.cs" Link="ConversationEditableAssessmentPolicy.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ConversationCandidateQueuePolicy.cs" Link="ConversationCandidateQueuePolicy.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ConversationAssessmentBatchFormatter.cs" Link="ConversationAssessmentBatchFormatter.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ConversationAssessmentResponseParser.cs" Link="ConversationAssessmentResponseParser.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ConversationSubmissionPlan.cs" Link="ConversationSubmissionPlan.cs" />
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ThrottlePolicy.cs" Link="ThrottlePolicy.cs" />
   </ItemGroup>
 </Project>
