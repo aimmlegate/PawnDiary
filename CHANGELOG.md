@@ -8,6 +8,10 @@ pre-release version ladder for project history.
 
 ## 2026-07-12
 
+- **Fixed the RimTalk bridge settings window appearing empty.** Its scrollable Verse listing could
+  overflow into invisible side-by-side columns, then repeatedly shrink its measured canvas until only
+  the section heading remained. The settings now stay in one vertical column and the scroll canvas
+  never becomes shorter than its viewport; the bridge DLL was rebuilt.
 - **Adversarial RimTalk funnel follow-up closes save, lifecycle, evidence, migration, and Unicode
   gaps.** The two-assessment daily count and retry gap now survive save/load while queues/requests stay
   transient; failed/skipped/prompt-only diary outcomes remove pending recent-event seeds; bounded

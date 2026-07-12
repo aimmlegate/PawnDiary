@@ -209,10 +209,19 @@ namespace PawnDiaryRimTalkBridge
         public override void DoSettingsWindowContents(Rect inRect)
         {
             // 24px leaves room for the scrollbar so the rightmost content is not hidden under it.
-            Rect viewRect = new Rect(0f, 0f, inRect.width - 24f, settingsViewHeight);
+            // A Listing starts a new column when its content passes the listing rect's height unless
+            // maxOneColumn is set. That behavior is useful for menus, but fatal inside this vertical
+            // scroll view: the extra columns land beyond viewRect.xMax, and CurHeight then measures only
+            // the final column. The measured canvas consequently shrinks every frame until nearly every
+            // control is off-screen. Keep the canvas at least viewport-height and force one long column.
+            float viewHeight = Mathf.Max(inRect.height, settingsViewHeight);
+            Rect viewRect = new Rect(0f, 0f, inRect.width - 24f, viewHeight);
             Widgets.BeginScrollView(inRect, ref settingsScrollPosition, viewRect, true);
 
-            Listing_Standard listing = new Listing_Standard();
+            Listing_Standard listing = new Listing_Standard
+            {
+                maxOneColumn = true
+            };
             listing.Begin(viewRect);
 
             if (!RimTalkActive)

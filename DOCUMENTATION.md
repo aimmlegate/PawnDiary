@@ -456,6 +456,11 @@ gated by an **integration-level** setting (`PawnDiaryRimTalkBridgeSettings.integ
 Scribe key so save data stays stable), with `PawnDiaryRimTalkBridgeMod.LevelAtLeast(n)` as the
 null-safe gate everywhere:
 
+The bridge settings use one vertically scrolling `Listing_Standard`. The listing explicitly sets
+`maxOneColumn`: without it, Verse moves overflowing rows into off-screen columns and `CurHeight`
+measures only the last column, causing the scroll canvas to collapse until the window appears empty.
+The canvas is also floored to the visible viewport height before drawing.
+
 - **Off (0)** — no data crosses in either direction and no chat-originated entry is possible.
 - **Shared context (1, default)** — outbound, `DiaryContextInjector` registers a diary-memories
   section into RimTalk's prompt builder (`ContextHookRegistry.InjectPawnSection` on
