@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Русский перевод групп совместимости Vanilla Ideology Expanded - Memes and Structures.
+     Индексы instructions.N / tones.N соответствуют порядку элементов в XML Defs. -->
+<LanguageData>
+
+  <viememes_darkrites.label>Мрачные обряды VIE</viememes_darkrites.label>
+  <viememes_darkrites.instruction>суровый общий обряд; пиши трепет, ужас и сопричастность с отведённого поселенцу места, опираясь лишь на переданные церемонию и итог</viememes_darkrites.instruction>
+  <viememes_darkrites.instructions.0>мрачный обряд: держись того, что поселенец видел, слышал, обонял или помогал делать; сопричастность важнее объяснений</viememes_darkrites.instructions.0>
+  <viememes_darkrites.instructions.1>мрачный обряд: пиши общую цель толпы рядом с личным страхом, убеждённостью, отвращением или оцепенением поселенца</viememes_darkrites.instructions.1>
+  <viememes_darkrites.instructions.2>мрачный обряд: смерть, чума, огонь или насильственное обращение остаются человеческим последствием, а не зрелищем ради зрелища</viememes_darkrites.instructions.2>
+  <viememes_darkrites.tone>с ритуальным ужасом, публичной убеждённостью и личным последствием</viememes_darkrites.tone>
+  <viememes_darkrites.tones.0>с трепетом и сопричастностью, церемония больше любой отдельной совести</viememes_darkrites.tones.0>
+  <viememes_darkrites.tones.1>мрачно и телесно, общая уверенность давит на личный страх</viememes_darkrites.tones.1>
+
+  <viememes_rituals.label>Праздники и обряды VIE</viememes_rituals.label>
+  <viememes_rituals.instruction>общий обряд праздника, политики, поклонения или освобождения; пиши роль поселенца и то, каким ощущалось поселение в самом разгаре</viememes_rituals.instruction>
+  <viememes_rituals.instructions.0>общий обряд: название задаёт лад — тёплый праздник, торжественный гимн, борьба за власть, ярмарка, обращение или освобождение</viememes_rituals.instructions.0>
+  <viememes_rituals.instructions.1>общий обряд: пиши место поселенца среди толпы и одну конкретную деталь, из-за которой поселение ненадолго стало другим</viememes_rituals.instructions.1>
+  <viememes_rituals.instructions.2>общий обряд: в центре праздник, убеждение или освобождение; не выдумывай речи, связи, сделки и итоги сверх переданных фактов</viememes_rituals.instructions.2>
+  <viememes_rituals.tone>общо и ярко, церемония превращает веру в совместное действие</viememes_rituals.tone>
+  <viememes_rituals.tones.0>тепло и публично, люди ненадолго собрались вокруг одной цели</viememes_rituals.tones.0>
+  <viememes_rituals.tones.1>празднично, но наблюдательно, радость и политика делят одно пространство</viememes_rituals.tones.1>
+
+  <viememes_thoughts.label>Отголоски обрядов VIE</viememes_thoughts.label>
+  <viememes_thoughts.instruction>послеобраз обряда или праздника; пиши славу, неловкость, стыд, страх или облегчение как одно честное личное чувство</viememes_thoughts.instruction>
+  <viememes_thoughts.instructions.0>послеобраз обряда: публичная церемония остаётся фоном, а оставленное ею чувство выходит вперёд</viememes_thoughts.instructions.0>
+  <viememes_thoughts.instructions.1>послеобраз обряда: одно оставшееся чувство — гордость, смущение, свобода, страх, нежность или сожаление</viememes_thoughts.instructions.1>
+  <viememes_thoughts.tone>задумчиво, эмоциональный след церемонии ещё рядом</viememes_thoughts.tone>
+  <viememes_thoughts.tones.0>тихо и про себя, толпа разошлась, а чувство осталось</viememes_thoughts.tones.0>
+  <viememes_thoughts.tones.1>изнурённо и честно, публичный ритуал становится личным воспоминанием</viememes_thoughts.tones.1>
+
+  <viememes_interrogation.label>Допросы</viememes_interrogation.label>
+  <viememes_interrogation.instruction>давление через стол; пиши, что поселенец делал с другим человеком или чему сопротивлялся, через власть, вину, страх или холодную процедуру, не выдумывая признаний</viememes_interrogation.instruction>
+  <viememes_interrogation.instructions.0>допрос: в центре тот, кто держал помещение под контролем, само ощущение давления и то, что изменил переданный результат</viememes_interrogation.instructions.0>
+  <viememes_interrogation.instructions.1>допрос: пиши моральную близость или пропасть между допрашивающим и пленником; не добавляй реплик, которых нет в журнале общения</viememes_interrogation.instructions.1>
+  <viememes_interrogation.instructions.2>допрос: различай запугивание, отказ и успех, но не выдумывай ни преступление, ни сведения, которых добивались</viememes_interrogation.instructions.2>
+  <viememes_interrogation.tone>сдержанно и принудительно, каждая пауза несёт давление</viememes_interrogation.tone>
+  <viememes_interrogation.tones.0>холодно и процедурно, власть стала обыденностью</viememes_interrogation.tones.0>
+  <viememes_interrogation.tones.1>напряжённо и обнажённо, сопротивление измеряется паузами</viememes_interrogation.tones.1>
+
+</LanguageData>

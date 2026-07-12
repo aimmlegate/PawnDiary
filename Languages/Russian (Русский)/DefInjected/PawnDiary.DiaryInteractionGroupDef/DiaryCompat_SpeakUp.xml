@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <speakup_chitchat.label>Болтовня SpeakUp</speakup_chitchat.label>
+  <speakup_chitchat.instruction>обычный разговор SpeakUp; считай его болтовнёй, если настроение, нужда или напряжение пары не делают момент важнее</speakup_chitchat.instruction>
+  <speakup_chitchat.instructions.0>болтовня SpeakUp: используй переданную реплику, если она есть; иначе напиши мелкий обмен словами без выдуманной цитаты</speakup_chitchat.instructions.0>
+  <speakup_chitchat.instructions.1>болтовня SpeakUp: покажи чувство под пустяком, будь то лёгкость, неловкость, давление или отстранённость</speakup_chitchat.instructions.1>
+  <speakup_chitchat.instructions.2>болтовня SpeakUp: обычный ритм важен только настолько, насколько его делает важным состояние поселенца</speakup_chitchat.instructions.2>
+  <speakup_chitchat.tone>с лёгкой, повседневной социальной фактурой</speakup_chitchat.tone>
+  <speakup_chitchat.tones.0>свободно и разговорно, как обычная речь, проходящая через комнату</speakup_chitchat.tones.0>
+  <speakup_chitchat.tones.1>просто и наблюдательно, давая крошечному социальному давлению нести вес</speakup_chitchat.tones.1>
+</LanguageData>

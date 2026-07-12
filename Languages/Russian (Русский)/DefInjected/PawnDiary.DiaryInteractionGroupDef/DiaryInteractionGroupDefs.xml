@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
-  <speakup_chitchat.label>Болтовня SpeakUp</speakup_chitchat.label>
-  <speakup_chitchat.instruction>обычный разговор SpeakUp; считай его болтовнёй, если настроение, нужда или напряжение пары не делают момент важнее</speakup_chitchat.instruction>
-  <speakup_chitchat.instructions.0>болтовня SpeakUp: используй переданную реплику, если она есть; иначе напиши мелкий обмен словами без выдуманной цитаты</speakup_chitchat.instructions.0>
-  <speakup_chitchat.instructions.1>болтовня SpeakUp: покажи чувство под пустяком, будь то лёгкость, неловкость, давление или отстранённость</speakup_chitchat.instructions.1>
-  <speakup_chitchat.instructions.2>болтовня SpeakUp: обычный ритм важен только настолько, насколько его делает важным состояние поселенца</speakup_chitchat.instructions.2>
-  <speakup_chitchat.tone>с лёгкой, повседневной социальной фактурой</speakup_chitchat.tone>
   <rimtalk_chatter.label>Разговоры RimTalk</rimtalk_chatter.label>
   <rimtalk_chatter.instruction>обычный дневной разговор; считай его проходной речью, если настроение, нужда или история пары не делают строку важнее</rimtalk_chatter.instruction>
   <rimtalk_chatter.instructions.0>повседневный разговор: выбери одну переданную реплику или момент, оставивший след, и почему он задел</rimtalk_chatter.instructions.0>
@@ -375,8 +369,6 @@
   <rimtalk_chatter.tones.1>просто и наблюдательно, маленькие слова несут малый вес</rimtalk_chatter.tones.1>
   <slavery.tones.0>гнетуще и тяжело, с упором на контроль</slavery.tones.0>
   <slavery.tones.1>тихо непокорно, со злостью, удержанной под давлением</slavery.tones.1>
-  <speakup_chitchat.tones.0>свободно и разговорно, как обычная речь, проходящая через комнату</speakup_chitchat.tones.0>
-  <speakup_chitchat.tones.1>просто и наблюдательно, давая крошечному социальному давлению нести вес</speakup_chitchat.tones.1>
   <smalltalk.tones.0>свободно и разговорно, ведомо мелкими паузами</smalltalk.tones.0>
   <smalltalk.tones.1>просто и по-приятельски, обычная деталь делает работу</smalltalk.tones.1>
   <socialfight.tones.0>быстро и телесно, ведомо ударом и дыханием</socialfight.tones.0>

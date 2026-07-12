@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Compatibility for Way Better Romance (divineDerivative.Romance), verified against the upstream
+  1.6-capable source on 2026-07-12. All groups are package-gated and match only the mod's event
+  surface; orientation traits and static ideology precepts are deliberately not surfaced as events.
+
+  WBR currently owns three InteractionDefs. Its apparent Hookup/Date/Hangout Succeeded/Failed
+  names are RulePackDefs attached to those PlayLog rows, not separate interactions. The fourteen
+  current ThoughtDefs are listed exactly for saved-event recovery and paired with matchPackageIds
+  so future WBR memories receive the same voice without a code update. Every instruction remains
+  pairing- and orientation-neutral.
+-->
+<Defs>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>wbr_hookup</defName>
+    <label>Hookup attempts</label>
+    <order>15</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>divineDerivative.Romance</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>wanting someone and saying so with the whole colony nearby - write nerve, the supplied answer, and what tomorrow may feel like without inventing intimacy</instruction>
+    <instructions>
+      <li>a hookup attempt - center the risk of asking plainly and the immediate answer carried by the rendered interaction</li>
+      <li>a hookup attempt - keep attraction tasteful and personal: nerve, desire, relief, embarrassment, or the new distance between two people</li>
+      <li>a hookup attempt - write what changes in the next ordinary meeting, not explicit acts or an orientation label</li>
+    </instructions>
+    <tone>intimate and exposed, desire made public enough to be answered</tone>
+    <tones>
+      <li>nervous and candid, attraction no longer hidden</li>
+      <li>close but restrained, focused on risk and response</li>
+    </tones>
+    <matchDefNames>
+      <li>TriedHookupWith</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>wbr_askedout</defName>
+    <label>Date and hangout invitations</label>
+    <order>16</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>divineDerivative.Romance</li>
+    </enableWhenPackageIdsLoaded>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>WbrAskedOutAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>2</minEventsToWrite>
+      <maxSampleLines>3</maxSampleLines>
+    </batch>
+    <promotion>
+      <baseChance>0.05</baseChance>
+      <maxChance>0.08</maxChance>
+      <opinionStrongBonus>0.025</opinionStrongBonus>
+      <opinionStrongThreshold>40</opinionStrongThreshold>
+      <opinionAsymmetryBonus>0.025</opinionAsymmetryBonus>
+      <opinionAsymmetryThreshold>40</opinionAsymmetryThreshold>
+      <needLowBonus>0.025</needLowBonus>
+      <needLowThreshold>0.25</needLowThreshold>
+      <moodExtremeBonus>0.025</moodExtremeBonus>
+      <moodLowThreshold>0.25</moodLowThreshold>
+    </promotion>
+    <instruction>asking for someone's time - a date or simple company, hope dressed as casualness; use the rendered answer and do not assume rejection</instruction>
+    <instructions>
+      <li>asking someone out - write the hopeful preparation hidden inside a casual invitation, then stay faithful to the supplied answer</li>
+      <li>asking for company - keep date and hangout distinct where the log does, but let both turn on nerve, expectation, and shared time</li>
+      <li>asking someone out - this is the invitation, not its later emotional memory; save rejection language for evidence that actually says no</li>
+    </instructions>
+    <tone>hopeful and carefully casual, waiting for an answer</tone>
+    <tones>
+      <li>light on the surface, nervous underneath</li>
+      <li>warm and tentative, possibility held without certainty</li>
+    </tones>
+    <matchDefNames>
+      <li>AskedForDate</li>
+      <li>AskedForHangout</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Thought groups do not batch; the global mood threshold is the flood guard. Exact names keep
+       saved pages classified, while package matching covers new WBR memories in live capture. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>wbr_thoughts</defName>
+    <label>Romantic aftermath</label>
+    <order>488</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <enableWhenPackageIdsLoaded>
+      <li>divineDerivative.Romance</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>the aftermath of romantic courage - write feeling rebuffed, relieved, quietly glad, or close on the pawn's own terms, with dignity intact</instruction>
+    <instructions>
+      <li>romantic aftermath - write the feeling left after asking or answering: sting, relief, warmth, awkwardness, or a wish to try again</li>
+      <li>romantic aftermath - for chosen asexual closeness, center consent and contentment; for discomfort, keep affection and unease able to coexist</li>
+      <li>romantic aftermath - never reduce the pawn to an orientation label or assume gender from the pairing</li>
+    </instructions>
+    <tone>private and emotionally honest, courage settling into consequence</tone>
+    <tones>
+      <li>tender but self-aware, closeness negotiated rather than assumed</li>
+      <li>bruised or relieved, the answer still fresh</li>
+    </tones>
+    <matchPackageIds>
+      <li>divineDerivative.Romance</li>
+    </matchPackageIds>
+    <matchDefNames>
+      <li>RebuffedMyHookupAttempt</li>
+      <li>RebuffedMyHookupAttemptMood</li>
+      <li>FailedHookupAttemptOnMe</li>
+      <li>RebuffedMyDateAttempt</li>
+      <li>RebuffedMyDateAttemptMood</li>
+      <li>FailedDateAttemptOnMe</li>
+      <li>RebuffedMyHangoutAttempt</li>
+      <li>RebuffedMyHangoutAttemptMood</li>
+      <li>FailedHangoutAttemptOnMe</li>
+      <li>GotSomeLovinAsexual</li>
+      <li>LovinAsexualPositive</li>
+      <li>LovinAsexualNegative</li>
+      <li>PassionateLovinAsexualPositive</li>
+      <li>PassionateLovinAsexualNegative</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

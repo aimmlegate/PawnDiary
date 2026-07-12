@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Русский перевод одноразовых окон событий Hospitality. Текст самой страницы берётся из
+     Keyed/PawnDiary_Hospitality.xml; здесь локализованы видимые названия и инструкции модели. -->
+<LanguageData>
+  <HospitalityGuestsArrived.label>прибыли гости</HospitalityGuestsArrived.label>
+  <HospitalityGuestsArrived.instruction>чужаки приняты за стены; пиши любопытство, торговлю, осторожность и изменившееся ощущение дома, не выдумывая будущие поступки гостей</HospitalityGuestsArrived.instruction>
+  <HospitalityGuestJoined.label>гость попросился в поселение</HospitalityGuestJoined.label>
+  <HospitalityGuestJoined.instruction>человек со стороны предложил остаться; пиши, что эта просьба говорит о поселении и каково получить её, не предполагая, что предложение приняли</HospitalityGuestJoined.instruction>
+</LanguageData>

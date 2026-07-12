@@ -45,6 +45,7 @@ namespace PawnDiary.Ingestion
         internal string Label { get; }
         internal string BehaviorClass { get; }
         internal string Quality { get; }
+        internal string GroupInstruction { get; }
 
         public RitualFanoutSignal(LordJob_Ritual ritualJob, float progress, bool cancelled)
         {
@@ -72,6 +73,14 @@ namespace PawnDiary.Ingestion
             {
                 return;
             }
+
+            // Snapshot one XML-owned thematic variant once for the whole ritual. Every pawn keeps
+            // the same ceremony framing, while the child signal appends its own localized role guide.
+            // A deterministic local seed avoids consuming RimWorld's global simulation RNG merely
+            // to choose cosmetic prompt prose.
+            int instructionTick = Find.TickManager == null ? 0 : Find.TickManager.TicksGame;
+            int instructionSeed = PromptVariants.HashSeed(defName + "|" + instructionTick);
+            GroupInstruction = PromptVariants.Pick(group.instructions, group.instruction, instructionSeed);
 
             RitualJob = ritualJob;
             DefName = defName;
@@ -343,7 +352,9 @@ namespace PawnDiary.Ingestion
             string text = "PawnDiary.Event.RitualFinished"
                 .Translate(pawn.LabelShortCap, source.Title, RitualFanoutSignal.RitualPerspectiveLabel(perspective), ritualRole)
                 .Resolve();
-            string instruction = RitualFanoutSignal.RitualInstructionFor(perspective);
+            string instruction = RitualEventData.CombineInstructions(
+                source.GroupInstruction,
+                RitualFanoutSignal.RitualInstructionFor(perspective));
 
             DiaryEvent ritualEvent = sink.AddSoloEvent(pawn, otherPawn, source.DefName, source.Label, text, instruction, context);
             if (ritualEvent == null)

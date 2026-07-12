@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
-  <speakup_chitchat.label>SpeakUp chatter</speakup_chitchat.label>
-  <speakup_chitchat.instruction>ordinary SpeakUp conversation - treat it as chitchat unless the pair&apos;s mood, need, or relationship tension makes the small moment land harder</speakup_chitchat.instruction>
-  <speakup_chitchat.instructions.0>SpeakUp chatter - use the supplied line if present; otherwise write low-stakes back-and-forth without inventing a quote</speakup_chitchat.instructions.0>
-  <speakup_chitchat.instructions.1>SpeakUp chatter - focus on the feeling under the small talk: ease, awkwardness, pressure, or distance</speakup_chitchat.instructions.1>
-  <speakup_chitchat.instructions.2>SpeakUp chatter - let the ordinary rhythm matter only if the pawn&apos;s state makes it matter</speakup_chitchat.instructions.2>
-  <speakup_chitchat.tone>with light, everyday social texture</speakup_chitchat.tone>
   <rimtalk_chatter.label>RimTalk conversations</rimtalk_chatter.label>
   <rimtalk_chatter.instruction>ordinary conversation during the day - treat it as passing talk unless mood, need, or the pair&apos;s history makes a line land harder</rimtalk_chatter.instruction>
   <rimtalk_chatter.instructions.0>day-to-day talk - pick the one supplied line or moment that left a trace, and why it did</rimtalk_chatter.instructions.0>
@@ -306,8 +300,6 @@
   <rimtalk_chatter.tones.1>plain and observant, small words carrying small weights</rimtalk_chatter.tones.1>
   <slavery.tones.0>oppressive and heavy, focused on control</slavery.tones.0>
   <slavery.tones.1>quietly defiant, with anger kept under pressure</slavery.tones.1>
-  <speakup_chitchat.tones.0>loose and conversational, like ordinary talk passing through the room</speakup_chitchat.tones.0>
-  <speakup_chitchat.tones.1>plain and observant, letting tiny social pressure carry the weight</speakup_chitchat.tones.1>
   <smalltalk.tones.0>loose and conversational, carried by small pauses</smalltalk.tones.0>
   <smalltalk.tones.1>plain and companionable, ordinary detail doing the work</smalltalk.tones.1>
   <socialfight.tones.0>fast and physical, driven by impact and breath</socialfight.tones.0>

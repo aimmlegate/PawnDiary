@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Pawn Diary: Rimpsyche</name>
+  <author>aimmlegate</author>
+  <packageId>aimmlegate.pawndiary.adapter.rimpsyche</packageId>
+  <modVersion IgnoreIfNoMatchingField="True">0.1.0</modVersion>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <!-- Both are true assembly/load-order dependencies:
+       - Pawn Diary owns the public integration API and DiaryInteractionGroupDef XML type.
+       - Rimpsyche owns RimPsyche.dll, whose documented personality tracker this adapter reads.
+       Harmony is supplied transitively by Rimpsyche's own hard dependency and is never bundled. -->
+  <modDependencies>
+    <li>
+      <packageId>aimmlegate.pawndiary.development</packageId>
+      <displayName>Pawn Diary</displayName>
+    </li>
+    <li>
+      <packageId>Maux36.Rimpsyche</packageId>
+      <displayName>Rimpsyche - Personality Core</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/3535112473</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+    <li>aimmlegate.pawndiary.development</li>
+    <li>Maux36.Rimpsyche</li>
+  </loadAfter>
+  <description>Connects Rimpsyche's personality model and conversations to Pawn Diary.
+
+Three layers work independently:
+- Rimpsyche conversations and their social afterfeel are routed into dedicated diary themes. Ordinary conversation becomes an ambient day note, while an unusually charged exchange can stand alone.
+- Each modeled colonist contributes a compact, localized psyche line to diary prompts: only the strongest plain-language traits, plus up to two interests. Raw personality numbers never enter the prompt.
+- Two default-on settings can let Rimpsyche shape a source-owned diary outlook and record charged conversation outcomes. Turning the outlook setting off releases every override owned by this bridge; it never writes back into Rimpsyche.
+
+Requires Pawn Diary and Rimpsyche - Personality Core. The bridge is inert if Rimpsyche is not active.</description>
+</ModMetaData>

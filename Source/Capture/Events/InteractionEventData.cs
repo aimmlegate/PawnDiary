@@ -1,10 +1,11 @@
 // Payload + pure decision for a "social interaction logged" event (the PlayLog.Add hook). This is
 // the seventh existing source migrated to the Event Catalog.
 //
-// Interaction has four shapes (Solo when only one pawn is eligible / Pair when both eligible /
-// Batched when the classified group has a normal XML batch policy / Ambient when the group batches
-// into per-pawn day notes). DiaryGameComponent pre-computes the impure group classification and
-// promotion RNG result, then this pure Decide chooses the final outcome.
+// Interaction has four shapes (Solo when only one pawn is eligible unless XML explicitly opts that
+// group into solo-owner batching / Pair when both eligible / Batched when the classified group has a
+// normal XML batch policy / Ambient when the group batches into per-pawn day notes).
+// DiaryGameComponent pre-computes the impure group classification and promotion RNG result, then
+// this pure Decide chooses the final outcome.
 //
 // This locks the source registry entry, the pure drop-gate, final routing, and the
 // `interaction=<defName>; label=…` gameContext format with tests.
@@ -70,11 +71,10 @@ namespace PawnDiary.Capture
                 return CaptureDecision.Drop;
             }
 
-            if (!data.InitiatorEligible || !data.RecipientEligible)
-            {
-                return CaptureDecision.GenerateSolo;
-            }
-
+            // Route flags are only set by the impure adapter when the classified XML policy permits
+            // this exact eligibility shape. Checking them before the ordinary solo fallback allows an
+            // opt-in compatibility group to ambient-batch colonist↔guest interactions while every
+            // existing group (whose flags remain false) keeps the old one-eligible-pawn behavior.
             if (data.RouteToAmbient)
             {
                 return CaptureDecision.RouteAmbient;
@@ -83,6 +83,11 @@ namespace PawnDiary.Capture
             if (data.RouteToBatch)
             {
                 return CaptureDecision.RouteBatch;
+            }
+
+            if (!data.InitiatorEligible || !data.RecipientEligible)
+            {
+                return CaptureDecision.GenerateSolo;
             }
 
             return CaptureDecision.GeneratePair;

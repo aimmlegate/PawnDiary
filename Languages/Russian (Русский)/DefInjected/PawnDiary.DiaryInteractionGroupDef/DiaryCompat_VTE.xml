@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Русский перевод групп Vanilla Traits Expanded. Таблица сродства психотипов не содержит
+     видимого текста и потому отдельного перевода не требует. -->
+<LanguageData>
+
+  <vte_thoughts.label>Воспоминания через характер</vte_thoughts.label>
+  <vte_thoughts.instruction>событие стало личным из-за особого склада поселенца; пиши, почему именно эта работа, машина, кровь, животное, дорога, еда или неудача задели его иначе</vte_thoughts.instruction>
+  <vte_thoughts.instructions.0>воспоминание через характер: событие остаётся конкретным, а привычки или неприязнь поселенца меняют его смысл без названия механики черты</vte_thoughts.instructions.0>
+  <vte_thoughts.instructions.1>воспоминание через характер: пиши личную мерку, которую удалось выдержать или нарушить — совершенство, тягу к дороге, отвращение, привязанность или одержимость</vte_thoughts.instructions.1>
+  <vte_thoughts.instructions.2>воспоминание через характер: соразмеряй реакцию с переданным влиянием на настроение; лёгкое прикосновение животного или мокрая одежда не становятся жизненным крахом</vte_thoughts.instructions.2>
+  <vte_thoughts.tone>лично и выразительно, обычное событие задевает особый нерв</vte_thoughts.tone>
+  <vte_thoughts.tones.0>конкретно и про себя, характер превращает факт в чувство</vte_thoughts.tones.0>
+  <vte_thoughts.tones.1>наблюдательно и откровенно, реакция важнее механики</vte_thoughts.tones.1>
+
+  <vte_mentalbreaks.label>Срывы из-за характера</vte_mentalbreaks.label>
+  <vte_mentalbreaks.instruction>нить потеряна самым личным образом; пиши изнутри потребность красть, крушить машины или замирать от паники, без осуждения</vte_mentalbreaks.instruction>
+  <vte_mentalbreaks.instructions.0>срыв из-за характера: тело движется раньше разрешения — руки тянутся, ярость ищет машину или все мышцы разом цепенеют</vte_mentalbreaks.instructions.0>
+  <vte_mentalbreaks.instructions.1>срыв из-за характера: импульс остаётся немедленным и человеческим; стыд может прийти потом, но осуждению нет места в голосе</vte_mentalbreaks.instructions.1>
+  <vte_mentalbreaks.instructions.2>срыв из-за характера: переданное состояние различает скрытный порыв, разрушительную ярость и беспомощную неподвижность</vte_mentalbreaks.instructions.2>
+  <vte_mentalbreaks.tone>неудержимо и обнажённо, контроль сужается до одного невыносимого импульса</vte_mentalbreaks.tone>
+  <vte_mentalbreaks.tones.0>срочно и изнутри, действие обгоняет мысль</vte_mentalbreaks.tones.0>
+  <vte_mentalbreaks.tones.1>потрясённо и с весом последствий, контроль возвращается рывками</vte_mentalbreaks.tones.1>
+
+</LanguageData>

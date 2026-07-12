@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Colonist-perspective compatibility for Hospitality (Orion.Hospitality), verified against the
+  upstream 1.6 source on 2026-07-12. The original and community-maintained Workshop distributions
+  retain the same package ID, so one gate covers both.
+
+  Hospitality places its social thoughts on non-colonist guests; those pawns never gain diaries
+  here. GuestDiplomacy and CharmGuestAttempt are initiated by the colonist, so their one eligible
+  POV opts into the generic allowSingleEligiblePawn ambient batch. ScroungeFoodAttempt starts on a
+  guest and may target a colonist or another guest; ordinary eligibility checks record it only when
+  a colonist actually participated.
+
+  Deliberately skipped: every guest-held/bookkeeping thought, including GuestClaimedBed,
+  GuestAngered, GuestRecruitmentForced, GuestOffendedRelationship, GuestPleasedRelationship,
+  GuestDismissiveAttitude, GuestExpensiveFood, GuestCheapFood, and EndorsedByRecruiter. The last is
+  easy to misread: EndorseColonists selects a FreeColonistSpawned as the social-memory subject, but
+  GainSocialThought grants the memory to the guest. No Thought group is shipped, so guest memories
+  can never be force-captured by this pack.
+-->
+<Defs>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hospitality_guestwork</defName>
+    <label>Hosting guests</label>
+    <order>21</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>Orion.Hospitality</li>
+    </enableWhenPackageIdsLoaded>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>HospitalityGuestworkAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>4</minEventsToWrite>
+      <maxSampleLines>3</maxSampleLines>
+      <allowSingleEligiblePawn>true</allowSingleEligiblePawn>
+    </batch>
+    <promotion>
+      <baseChance>0.005</baseChance>
+      <maxChance>0.08</maxChance>
+      <opinionStrongBonus>0.025</opinionStrongBonus>
+      <opinionStrongThreshold>40</opinionStrongThreshold>
+      <opinionAsymmetryBonus>0.025</opinionAsymmetryBonus>
+      <opinionAsymmetryThreshold>40</opinionAsymmetryThreshold>
+      <needLowBonus>0.025</needLowBonus>
+      <needLowThreshold>0.25</needLowThreshold>
+      <moodExtremeBonus>0.025</moodExtremeBonus>
+      <moodLowThreshold>0.25</moodLowThreshold>
+    </promotion>
+    <instruction>hosting as social labor and theater - write the colonist reading an outsider, working for trust, and minding the colony's reputation without inventing the guest's answer</instruction>
+    <instructions>
+      <li>hosting guests - write the effort behind warmth: attention, patience, charm, and the private read of a stranger inside the walls</li>
+      <li>hosting guests - keep the guest's response to what the rendered log actually supplies; the diary belongs to the colonist doing the work</li>
+      <li>hosting guests - let curiosity, caution, ambition, or exhaustion color the performance of welcome</li>
+    </instructions>
+    <tone>welcoming but observant, hospitality treated as work</tone>
+    <tones>
+      <li>socially alert and measured, warmth with a purpose</li>
+      <li>curious and guarded, an outsider close enough to study</li>
+    </tones>
+    <matchDefNames>
+      <li>GuestDiplomacy</li>
+      <li>CharmGuestAttempt</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hospitality_scrounge</defName>
+    <label>Guests scrounging food</label>
+    <order>23</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>Orion.Hospitality</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a hungry guest asking or scrounging for food - write the participating colonist's irritation, pity, embarrassment, or practical response without inventing motive</instruction>
+    <instructions>
+      <li>a guest scrounging - keep it small and human: food in hand, hunger visible, generosity or annoyance arriving before judgment</li>
+      <li>a guest scrounging - write only when a colonist actually shared the moment; never create a colony witness for guest-to-guest business</li>
+    </instructions>
+    <tone>awkward and practical, hunger testing the welcome</tone>
+    <tones>
+      <li>irritated but observant, hospitality wearing thin</li>
+      <li>quietly sympathetic, hunger making dignity difficult</li>
+    </tones>
+    <matchDefNames>
+      <li>ScroungeFoodAttempt</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

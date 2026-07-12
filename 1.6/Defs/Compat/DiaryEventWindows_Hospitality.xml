@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One-shot Hospitality incident pages. IncidentWorker.TryExecute supplies a map but no subject
+  pawn, so MapWitness writes exactly one deterministic colonist page instead of the nonfunctional
+  SubjectPawn scope or Map's page-per-colonist fan-out. Both windows and both matching display
+  groups are package-gated, so the plain-string observers remain inert and stay out of event
+  settings when Hospitality is absent.
+
+  VisitorGroupMax and VisitorGroupSelectFaction have baseChance=0 upstream and are normally dev or
+  utility variants; matching them is harmless and makes forced testing behave like VisitorGroup.
+  Despite its defName, HappyGuestJoins only sends a ChoiceLetter_GuestJoinRequest; the player can
+  still reject it. The page therefore records the offer to join, never a completed faction change.
+-->
+<Defs>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>HospitalityGuestsArrived</defName>
+    <label>guests arrived</label>
+    <windowKey>HospitalityGuestsArrived</windowKey>
+    <enabled>true</enabled>
+    <enableWhenPackageIdsLoaded>
+      <li>Orion.Hospitality</li>
+    </enableWhenPackageIdsLoaded>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>30000</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>MapWitness</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>strangers welcomed inside the walls - write curiosity, commerce, caution, and the altered feeling of home without inventing what the guests will do</instruction>
+    <colorCue>quiet</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.HospitalityGuestsArrived.Start</startTextKey>
+    <startSignals>
+      <li>
+        <source>Incident</source>
+        <signal>executed</signal>
+        <matchDefNames>
+          <li>VisitorGroup</li>
+          <li>VisitorGroupMax</li>
+          <li>VisitorGroupSelectFaction</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>HospitalityGuestJoined</defName>
+    <label>a guest asked to join</label>
+    <windowKey>HospitalityGuestJoined</windowKey>
+    <enabled>true</enabled>
+    <enableWhenPackageIdsLoaded>
+      <li>Orion.Hospitality</li>
+    </enableWhenPackageIdsLoaded>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>30000</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>MapWitness</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>an outsider offered to stay - write what the request says about the colony and how it feels to be asked, without assuming the offer was accepted</instruction>
+    <colorCue>white</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.HospitalityGuestJoined.Start</startTextKey>
+    <startSignals>
+      <li>
+        <source>Incident</source>
+        <signal>executed</signal>
+        <matchDefNames>
+          <li>HappyGuestJoins</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowHospitalityGuestsArrived</defName>
+    <label>Guests arrived</label>
+    <order>148</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>quiet</colorCue>
+    <enableWhenPackageIdsLoaded>
+      <li>Orion.Hospitality</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>strangers are staying inside the colony - write welcome as curiosity and labor, with sensible caution but no invented threat</instruction>
+    <tone>watchful and hospitable, home temporarily shared</tone>
+    <tones>
+      <li>curious and measured, new faces changing familiar rooms</li>
+      <li>welcoming but alert, generosity kept practical</li>
+    </tones>
+    <matchDefNames>
+      <li>HospitalityGuestsArrived</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowHospitalityGuestJoined</defName>
+    <label>A guest asked to join</label>
+    <order>149</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>white</colorCue>
+    <enableWhenPackageIdsLoaded>
+      <li>Orion.Hospitality</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>an outsider asked to make this colony home - write the meaning of the offer and the choice now facing the colony, without claiming it was accepted</instruction>
+    <tone>quietly hopeful, belonging offered but not decided</tone>
+    <tones>
+      <li>warm and reflective, the colony seen through an outsider's request</li>
+      <li>hopeful but grounded, one more life asking to share the common risk</li>
+    </tones>
+    <matchDefNames>
+      <li>HospitalityGuestJoined</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

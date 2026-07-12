@@ -7,6 +7,11 @@
       PawnAge, Hediff, or PrisonBreak today.
     - signal examples: executed, accepted, completed, failed, spawned, received, birthday, added.
     - matchDefNames are plain strings, so DLC/modded content is safe when absent.
+    - optional enableWhenPackageIdsLoaded keeps a compatibility window inactive at every lifecycle
+      boundary unless at least one listed package is loaded; omit it for ordinary core windows.
+    - recordScope Map writes one page per eligible map colonist; SubjectPawn requires the signal
+      adapter to provide a pawn; MapWitness deterministically writes one page for map-level signals
+      such as incidents, whose hooks provide a map but no subject pawn.
 
     To watch a mech cluster, add another PawnDiary.DiaryEventWindowDef with:
       <source>Incident</source>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Русский перевод групп совместимости Hospitality. Индексы instructions.N / tones.N
+     соответствуют порядку элементов в XML Defs. -->
+<LanguageData>
+
+  <hospitality_guestwork.label>Забота о гостях</hospitality_guestwork.label>
+  <hospitality_guestwork.instruction>гостеприимство как общение, труд и представление; пиши, как поселенец присматривается к чужаку, добивается доверия и бережёт репутацию поселения, не выдумывая ответ гостя</hospitality_guestwork.instruction>
+  <hospitality_guestwork.instructions.0>забота о гостях: пиши усилие за приветливостью — внимание, терпение, обаяние и личную оценку чужака внутри стен</hospitality_guestwork.instructions.0>
+  <hospitality_guestwork.instructions.1>забота о гостях: ответ гостя ограничен тем, что действительно передано в журнале; дневник принадлежит поселенцу, который старается</hospitality_guestwork.instructions.1>
+  <hospitality_guestwork.instructions.2>забота о гостях: любопытство, осторожность, расчёт или усталость окрашивают само представление радушия</hospitality_guestwork.instructions.2>
+  <hospitality_guestwork.tone>приветливо, но наблюдательно, гостеприимство остаётся трудом</hospitality_guestwork.tone>
+  <hospitality_guestwork.tones.0>внимательно и сдержанно, у тепла есть цель</hospitality_guestwork.tones.0>
+  <hospitality_guestwork.tones.1>любопытно и настороженно, чужак достаточно близко, чтобы его изучать</hospitality_guestwork.tones.1>
+
+  <hospitality_scrounge.label>Гости ищут еду</hospitality_scrounge.label>
+  <hospitality_scrounge.instruction>голодный гость просит или добывает еду; пиши раздражение, жалость, неловкость или деловую реакцию участвующего поселенца, не выдумывая мотивов</hospitality_scrounge.instruction>
+  <hospitality_scrounge.instructions.0>гость ищет еду: малый человеческий момент — еда в руке, заметный голод, щедрость или досада раньше осуждения</hospitality_scrounge.instructions.0>
+  <hospitality_scrounge.instructions.1>гость ищет еду: пиши лишь тогда, когда поселенец действительно участвовал; не создавай свидетеля из поселения для дел между двумя гостями</hospitality_scrounge.instructions.1>
+  <hospitality_scrounge.tone>неловко и по делу, голод испытывает радушие</hospitality_scrounge.tone>
+  <hospitality_scrounge.tones.0>раздражённо, но внимательно, радушие истончается</hospitality_scrounge.tones.0>
+  <hospitality_scrounge.tones.1>с тихим сочувствием, голод мешает сохранить достоинство</hospitality_scrounge.tones.1>
+
+  <eventWindowHospitalityGuestsArrived.label>Прибыли гости</eventWindowHospitalityGuestsArrived.label>
+  <eventWindowHospitalityGuestsArrived.instruction>чужаки остаются внутри поселения; пиши радушие как любопытство и труд, с разумной осторожностью, но без выдуманной угрозы</eventWindowHospitalityGuestsArrived.instruction>
+  <eventWindowHospitalityGuestsArrived.tone>настороженно и гостеприимно, дом временно делят с чужими</eventWindowHospitalityGuestsArrived.tone>
+  <eventWindowHospitalityGuestsArrived.tones.0>любопытно и сдержанно, новые лица меняют знакомые комнаты</eventWindowHospitalityGuestsArrived.tones.0>
+  <eventWindowHospitalityGuestsArrived.tones.1>приветливо, но начеку, щедрость остаётся практичной</eventWindowHospitalityGuestsArrived.tones.1>
+
+  <eventWindowHospitalityGuestJoined.label>Гость попросился в поселение</eventWindowHospitalityGuestJoined.label>
+  <eventWindowHospitalityGuestJoined.instruction>человек со стороны попросил сделать это поселение домом; пиши смысл предложения и выбор, который теперь стоит перед поселением, не утверждая, что просьбу приняли</eventWindowHospitalityGuestJoined.instruction>
+  <eventWindowHospitalityGuestJoined.tone>с тихой надеждой, принадлежность предложена, но ещё не решена</eventWindowHospitalityGuestJoined.tone>
+  <eventWindowHospitalityGuestJoined.tones.0>тепло и задумчиво, поселение видно через просьбу чужака</eventWindowHospitalityGuestJoined.tones.0>
+  <eventWindowHospitalityGuestJoined.tones.1>с надеждой, но без прикрас, ещё одна жизнь просится разделить общий риск</eventWindowHospitalityGuestJoined.tones.1>
+
+</LanguageData>

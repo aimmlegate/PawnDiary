@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Русские названия, инструкции и тон групп совместимости с Vanilla Events Expanded. -->
+<LanguageData>
+
+  <vee_raids.label>Фиолетовые налёты VEE</vee_raids.label>
+  <vee_raids.instruction>налёт, в котором масштаб или момент кажутся неестественными; пиши, как поселение готовится к знакомой угрозе, которая больше не кажется знакомой, и не выдумывай исход боя</vee_raids.instruction>
+  <vee_raids.instructions.0>фиолетовый налёт — покажи неправильный масштаб через то, что поселенец успевает сосчитать, услышать или увидеть на позиции; не выдумывай потери или победу</vee_raids.instructions.0>
+  <vee_raids.instructions.1>фиолетовый налёт — пиши, как привычная оборона трещит под атакой, чьи сроки или численность не укладываются в норму</vee_raids.instructions.1>
+  <vee_raids.instructions.2>фиолетовый налёт — оставайся у предупреждения и первого столкновения, если предоставленные факты не показывают большего</vee_raids.instructions.2>
+  <vee_raids.tone>с тревогой перед знакомой угрозой, разросшейся до неестественных размеров</vee_raids.tone>
+  <vee_raids.tones.0>напряжённо и недоверчиво: опасности не должно быть так много</vee_raids.tones.0>
+  <vee_raids.tones.1>резко и тактически: привычная оборона внезапно кажется слишком малой</vee_raids.tones.1>
+
+  <vee_hediffs.label>Фоновые состояния VEE</vee_hediffs.label>
+  <vee_hediffs.instruction>состояние VEE, общее для поселения; вплети его телесное или псионическое давление в итог дня и не изображай его внезапным личным диагнозом</vee_hediffs.instruction>
+  <vee_hediffs.instructions.0>фоновое состояние VEE — покажи, как тело или ум несли его через одно обычное дело за этот день</vee_hediffs.instructions.0>
+  <vee_hediffs.instructions.1>фоновое состояние VEE — оставь его частью атмосферы дня, а не отдельным медицинским открытием, если факты не требуют обратного</vee_hediffs.instructions.1>
+  <vee_hediffs.instructions.2>фоновое состояние VEE — соотнеси облегчение или страдание с названным состоянием и не считай каждый эффект вредным</vee_hediffs.instructions.2>
+  <vee_hediffs.tone>с общим псионическим или телесным давлением, нависшим над днём</vee_hediffs.tone>
+  <vee_hediffs.tones.0>телесно и атмосферно: всё поселение живёт под одним состоянием</vee_hediffs.tones.0>
+  <vee_hediffs.tones.1>тихо и непривычно: облегчение либо напряжение стало частью распорядка</vee_hediffs.tones.1>
+
+  <eventWindowVeeEarthquake.label>Землетрясение</eventWindowVeeEarthquake.label>
+  <eventWindowVeeEarthquake.instruction>сама земля становится врагом; пиши тряску и первый честный подсчёт ущерба, но никогда не выдумывай исход</eventWindowVeeEarthquake.instruction>
+  <eventWindowVeeEarthquake.instructions.0>землетрясение — начни с равновесия, звука, пыли или с того, как нечто неподвижное начинает двигаться</eventWindowVeeEarthquake.instructions.0>
+  <eventWindowVeeEarthquake.instructions.1>землетрясение — опиши первую неподвижную минуту после толчков и только тот ущерб, который поселенец действительно видит</eventWindowVeeEarthquake.instructions.1>
+  <eventWindowVeeEarthquake.tone>с беспомощной тревогой, идущей из глубины земли</eventWindowVeeEarthquake.tone>
+  <eventWindowVeeEarthquake.tones.0>потрясённо и телесно: полу больше нельзя доверять</eventWindowVeeEarthquake.tones.0>
+  <eventWindowVeeEarthquake.tones.1>ошеломлённо и практично: считая, что ещё стоит</eventWindowVeeEarthquake.tones.1>
+
+  <eventWindowVeeMeteoriteShower.label>Метеоритный дождь</eventWindowVeeMeteoriteShower.label>
+  <eventWindowVeeMeteoriteShower.instruction>огонь с неба смешивает восхищение с опасностью; пиши первые удары и не выдумывай, куда упал каждый камень</eventWindowVeeMeteoriteShower.instruction>
+  <eventWindowVeeMeteoriteShower.instructions.0>метеоритный дождь — пиши свет, звук и страшную красоту первого падения</eventWindowVeeMeteoriteShower.instructions.0>
+  <eventWindowVeeMeteoriteShower.instructions.1>метеоритный дождь — поставь рядом восхищение и практический страх: укрытие, огонь и открытая земля, но только по указанным фактам</eventWindowVeeMeteoriteShower.instructions.1>
+  <eventWindowVeeMeteoriteShower.tone>с восхищением перед небом посреди прямой опасности</eventWindowVeeMeteoriteShower.tone>
+  <eventWindowVeeMeteoriteShower.tones.0>восхищённо и испуганно: невозможно отвести взгляд</eventWindowVeeMeteoriteShower.tones.0>
+  <eventWindowVeeMeteoriteShower.tones.1>ярко, жестоко и настороженно к каждому удару</eventWindowVeeMeteoriteShower.tones.1>
+
+  <eventWindowVeeSpaceBattle.label>Орбитальная катастрофа</eventWindowVeeSpaceBattle.label>
+  <eventWindowVeeSpaceBattle.instruction>битва или крушение над головой одновременно не имеют и имеют прямое отношение к поселению; пиши то, что падает в их жизнь, а не выдуманную историю войны</eventWindowVeeSpaceBattle.instruction>
+  <eventWindowVeeSpaceBattle.instructions.0>орбитальная катастрофа — оставь далёкую войну непостижимой, а падающие обломки непосредственными</eventWindowVeeSpaceBattle.instructions.0>
+  <eventWindowVeeSpaceBattle.instructions.1>орбитальная катастрофа — покажи масштаб наверху и малость поселения под ним, используя только предоставленные факты</eventWindowVeeSpaceBattle.instructions.1>
+  <eventWindowVeeSpaceBattle.tone>с ошеломлением от далёкой войны и близким практическим страхом</eventWindowVeeSpaceBattle.tone>
+  <eventWindowVeeSpaceBattle.tones.0>с чувством малости и беспомощности под огромным безразличным конфликтом</eventWindowVeeSpaceBattle.tones.0>
+  <eventWindowVeeSpaceBattle.tones.1>настороженно и ошеломлённо: небо проливает чужую катастрофу</eventWindowVeeSpaceBattle.tones.1>
+
+  <eventWindowVeeStampede.label>Массовое нападение зверей</eventWindowVeeStampede.label>
+  <eventWindowVeeStampede.instruction>звери обезумели в невозможном масштабе; пиши массу, шум и панику при первом приближении и никогда не выдумывай победу</eventWindowVeeStampede.instruction>
+  <eventWindowVeeStampede.instructions.0>массовое нападение зверей — начни со слишком многих тел, которые движутся как одно, и со звука, доходящего до поселения</eventWindowVeeStampede.instructions.0>
+  <eventWindowVeeStampede.instructions.1>массовое нападение зверей — пиши, как оборона становится арифметикой: двери, поля, боеприпасы и совсем недостаточно времени</eventWindowVeeStampede.instructions.1>
+  <eventWindowVeeStampede.tone>с паникой перед бесчисленным топотом</eventWindowVeeStampede.tone>
+  <eventWindowVeeStampede.tones.0>подавленно от масштаба: опасность приближается на слишком многих ногах</eventWindowVeeStampede.tones.0>
+  <eventWindowVeeStampede.tones.1>быстро и оборонительно: паника загнана в практические решения</eventWindowVeeStampede.tones.1>
+
+</LanguageData>

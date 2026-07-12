@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <PawnDiary.Event.EventWindow.HospitalityGuestsArrived.Start>У {0}: прибыла группа гостей — {1}.</PawnDiary.Event.EventWindow.HospitalityGuestsArrived.Start>
+  <PawnDiary.Event.EventWindow.HospitalityGuestJoined.Start>У {0}: человек со стороны попросил разрешения остаться — {1}.</PawnDiary.Event.EventWindow.HospitalityGuestJoined.Start>
+</LanguageData>

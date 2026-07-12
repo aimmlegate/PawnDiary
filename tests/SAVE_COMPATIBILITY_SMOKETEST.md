@@ -154,6 +154,92 @@ Interactions Expanded active:
    key is dropped; a legacy `usePersonalityOutlook=false` loads as Off, otherwise a missing new mode
    migrates to Override.
 
+## Core XML compatibility packs (Alpha/VIE/WBR/VTE/Hospitality/VEE)
+
+Run each target both present and absent; absent means no groups in the Events settings, no capture,
+and no warning. Exact-string matchers should also stay inert when optional DLC content is unavailable.
+
+**Alpha Memes.** With Alpha Memes + Ideology, complete one configured funeral and one non-funeral
+ceremony (rodeo/sparring are useful). Confirm `alphamemes_funeral` and `alphamemes_rituals` win before
+core `ritualFinished`, and that the group-specific instruction is present alongside the pawn's ritual
+role. Let an eligible `AM_UnforgettableRodeo`-style memory clear the global mood threshold, trigger
+`AM_Speech_Baptism`, and confirm the thought/baptism groups. Vanilla funerals must remain in their
+existing group. If Funeral Framework also reports the rite, verify one ceremony does not become two
+near-identical pages.
+
+**VIE Memes.** Complete a bonfire and a wicker-man burning: they must classify to
+`viememes_rituals` and `viememes_darkrites`, with role + group guidance and no core fallback. Verify one
+eligible outcome memory, then interrogate a prisoner and confirm the participating colonist owns the
+`viememes_interrogation` entry. A fleshcrafted part should remain in the appropriate core added-part
+group. With Alpha Memes loaded simultaneously, both ritual prefixes must keep their own groups.
+
+**Way Better Romance.** Force the three real interactions: a hookup attempt should produce a paired
+`wbr_hookup` entry; date/hangout invitations should enter the min-2 ambient batch (with a promoted
+single tested separately). Let one rebuff/failure memory clear the global threshold and confirm
+`wbr_thoughts`. Vanilla `RomanceAttempt`, `MarriageProposal`, and new Lover relations must still route
+to the core romance groups. Review one rejection day for interaction + thought near-duplication.
+
+**Vanilla Traits Expanded.** Create/re-roll several new `VTE_Vengeful` pawns and inspect the intended
+psychotype affinity pull; dev-trigger the kleptomaniac, technophobe-tantrum, and panic-freezing states
+and confirm `vte_mentalbreaks`. Trigger an allowlisted memory such as `VTE_CouldNotFinishItem`, then keep
+situational thoughts such as `VTE_MyRivalsAreAlive` / `VTE_AnimalsInColony` active and confirm only the
+real memory gets VTE voice. Without VTE, inspect the psychotype policy and confirm the `PatchOperationFindMod` added no
+rules. Save/load a rolled core psychotype, remove VTE, and confirm it remains valid.
+
+**Hospitality.** Receive a visitor group and confirm exactly one package-gated
+`HospitalityGuestsArrived` MapWitness page, not one per colonist and never one in a vanilla/no-Hospitality
+game. Repeated colonist diplomacy/charm with a guest must reach the colonist's min-4 ambient hosting
+note despite the ineligible guest; guest-to-guest scrounging must create nothing, while a colonist who
+actually participates may receive `hospitality_scrounge`. Trigger `HappyGuestJoins` and confirm the
+page describes a guest asking/wanting to join—not a completed join before the player answers the
+ChoiceLetter. Repeat with the Continued fork (same package ID). Phase-2 guest-presence context is not
+implemented and should not appear.
+
+**Vanilla Events Expanded.** While `VEE_Drought` is active, API Explorer prompt preview should show the
+condition tint but no standalone start page; clear it and wait through debounce. Repeat one tint in the
+No-Odyssey configuration. `RaidEnemyPurple` and `InfestationPurple` must classify to `vee_raids`, while
+the neutral `VEE_VisitorGroupRaid` must not be labeled a betrayal. Earthquake, meteorites, space
+battle/shuttle crash, and purple manhunter families must each create one labeled MapWitness page and
+dedup a retry inside 2,500 ticks. A visible VEE hediff may feed a day reflection, never N immediate
+pages. Hidden `MightJoin`/`Traitor` state and situational VEE thoughts are deliberately uncaptured.
+
+## SpeakUp adapter
+
+1. With SpeakUp but no adapter, compare against a pre-change save: frozen `speakup_chitchat` setting
+   and `SpeakUpAmbientDay` pages still work, ambient/promotion behavior is unchanged, and the core
+   reply-scheduling guard prevents render-time reply storms.
+2. Add `PawnDiary.SpeakUp`: the fallback disappears from Events settings, the five lower-order groups
+   appear, a conversation meeting the default ≥3 reply threshold produces one
+   `speakupbridge_conversation`, and deep-talk promotion can stand alone without an unclaimed-key warning.
+   Exercise SpeakUp's 1- and 5-lines-per-conversation settings and adapter thresholds 1 and 5.
+3. Force-load the adapter without SpeakUp: it must stay inert—gated groups absent, no patches, no
+   repeated missing-member warnings.
+4. Load a pre-adapter save containing `SpeakUpAmbientDay` pages and a `speakup_chitchat` toggle in both
+   configurations. Old pages display and the saved fallback toggle survives.
+5. Let either participant die, despawn, enter a caravan/gravship, or leave the map mid-talk. The
+   transient accumulation must be dropped without an exception or partial event.
+6. Read a full diary day with whole-conversation capture enabled. Confirm whether retained Tier-1
+   fragments plus Tier-2 summaries feel duplicative; record the playtest decision before changing the
+   intentional coexistence policy.
+
+## Rimpsyche bridge
+
+1. With Pawn Diary + Rimpsyche + bridge, stress 20+ conversations. Ordinary rows should feed the
+   ambient group without grammar reentrancy; a high-|alignment| exchange should produce one claimed
+   `rimpsyche_conversation` entry with localized topic/sign and no raw float.
+2. Inspect a prompt preview for the localized top descriptors/interests. Toggle Tier B off/on and use
+   `GetPsychotype`/the pawn editor to confirm the source-owned override clears and reapplies; load a new
+   game and confirm no previous colony value leaks.
+3. Force-load the bridge without Rimpsyche: gated groups stay absent, the game loads, and Tier C emits
+   at most one graceful disabled warning. With Rimpsyche but no bridge, Pawn Diary should log nothing
+   Rimpsyche-specific.
+4. Save with a Tier-B override, remove the bridge, then load. Core override-source-missing behavior must
+   fall back cleanly with no Scribe or missing-type exception.
+5. Save immediately after an accepted charged conversation, reload, and trigger the pair again inside
+   60,000 ticks. The persisted pair cooldown must suppress it; after the boundary it may record again.
+6. Confirm the reflection postfix fires once on the installed 1.0.41 hook and embedded interest labels
+   localize correctly. Tune the XML `0.55` threshold only from observed alignment distribution.
+
 ## What counts as a regression
 
 Any of:

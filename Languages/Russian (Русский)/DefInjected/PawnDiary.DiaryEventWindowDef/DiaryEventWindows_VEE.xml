@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Названия и инструкции одноразовых окон событий Vanilla Events Expanded. -->
+<LanguageData>
+
+  <VeeEarthquake.label>землетрясение VEE</VeeEarthquake.label>
+  <VeeEarthquake.instruction>напиши, как сама земля становится врагом под ногами поселенца; оставайся внутри тряски, а затем считай только тот ущерб, который действительно указан в фактах</VeeEarthquake.instruction>
+
+  <VeeMeteoriteShower.label>метеоритный дождь VEE</VeeMeteoriteShower.label>
+  <VeeMeteoriteShower.instruction>напиши, как огонь падает с неба, смешивая восхищение с опасностью; используй только те удары, жар и ущерб, которые подтверждены фактами</VeeMeteoriteShower.instruction>
+
+  <VeeSpaceBattle.label>орбитальная катастрофа VEE</VeeSpaceBattle.label>
+  <VeeSpaceBattle.instruction>напиши о войне или крушении над головой, которые одновременно не имеют и имеют прямое отношение к поселению; держись того, что поселенец видит падающим, и не выдумывай историю участников битвы</VeeSpaceBattle.instruction>
+
+  <VeeStampede.label>массовое нападение зверей VEE</VeeStampede.label>
+  <VeeStampede.instruction>напиши о зверях, которые обезумели в невозможном масштабе; сосредоточься на приближающейся массе, шуме и панике и не выдумывай исход боя</VeeStampede.instruction>
+
+</LanguageData>

@@ -246,7 +246,7 @@ flowchart TD
     Collect --> WindowCandidates["ActiveEventWindowPromptCandidates<br/>code-supported"]
     WindowCandidates --> WindowCurrent["Current XML: MechClusterLanded,<br/>ShortCircuitAftermath, SelfTameJoined<br/>keepActive tone windows"]
     Collect --> ObservedCandidates["ActiveObservedConditionPromptCandidates<br/>active saved state only"]
-    ObservedCandidates --> ObservedWeights["Extra candidates:<br/>MapThreat 6, ToxicFallout 4, SolarFlare 4,<br/>GrayFlesh 40 and normal multiplier 0"]
+    ObservedCandidates --> ObservedWeights["Extra candidates:<br/>core lasting-state weights<br/>plus package-safe XML compat tints"]
     Collect --> NormalCandidates["PromptEnchantmentCollector.Collect<br/>live hediff, capacity, RoyalTitle, IdeologyRole"]
     NormalCandidates --> ChanceGate["Per-def chance or severity-tier chance"]
     ChanceGate --> NormalWeight["Normal candidate weight formula"]
@@ -289,7 +289,7 @@ Template side effects:
 flowchart LR
     subgraph Batches["Current batch groups"]
         BG0["rimtalk_chatter<br/>AmbientDayNote<br/>window 60000<br/>min 8, sample 3<br/>promotion enabled<br/>RimTalk gated"]
-        BG1["speakup_chitchat<br/>AmbientDayNote<br/>window 60000<br/>min 8, sample 3<br/>promotion enabled"]
+        BG1["speakup_chitchat fallback<br/>AmbientDayNote<br/>window 60000<br/>min 8, sample 3<br/>SpeakUp-gated; adapter disables"]
         BG2["strangechat<br/>AmbientDayNote<br/>window 60000<br/>min 3, sample 5<br/>promotion enabled"]
         BG3["smalltalk<br/>AmbientDayNote<br/>window 60000<br/>min 3, sample 5<br/>promotion enabled"]
         BG4["insults<br/>PairEvent batch<br/>window 7500<br/>max 8"]
@@ -334,6 +334,25 @@ finally legacy substring tokens. Group `important` controls `SoloImportant`/`Pai
 and day/quadrum evidence. Group `combat` controls `PairCombat`, weapon prompt fields, and some
 high-stakes humor classification.
 
+Ritual fan-out keeps both layers of guidance: the matched XML group's instruction establishes the
+specific rite, then the localized participant-role instruction establishes what this pawn did. This
+is why Alpha/VIE ritual groups affect prompt content instead of only the settings label.
+
+Mod-compatibility groups that materially change routing/shape (all target-gated; Thought rows still
+use the global mood-memory policy):
+
+| Mod / groups | Domain + order | Shape |
+|---|---|---|
+| SpeakUp adapter: deep talk / jokes / prisoner / reactions / chatter | Interaction `5/6/7/8/10` | Five 60,000-tick `AmbientDayNote` families: min/sample `3/5`, `6/4`, `3/5`, `8/3`, `8/3`; deep-talk promotion `0.02..0.08`, chatter `0.005..0.08`. |
+| Rimpsyche: conversations / afterfeel | Interaction `11`; Thought `479` | Conversations ambient-batch at min 6/sample 3 with `0.005..0.08` promotion; afterfeel is normal Thought routing. |
+| Way Better Romance: hookup / date-hangout / thoughts | Interaction `15/16`; Thought `488` | Hookup immediate; invitations ambient-batch at min 2/sample 3 with `0.05..0.08` promotion; memories use global Thought policy. |
+| Alpha Memes | Ritual `766/767`, Thought `486`, Interaction `19`, Hediff `656` | Funeral/ritual/baptism immediate; memories use global Thought policy; visible hediffs feed `DayReflection`. |
+| VIE Memes | Ritual `764/765`, Thought `487`, Interaction `22` | Dark/general rites and interrogation immediate; memories use global Thought policy. |
+| Hospitality: guest work / scrounging | Interaction `21/23` | Guest work ambient-batches the one eligible colonist (min 4/sample 3, `0.005..0.08` promotion); scrounging is immediate only when a colonist participates. |
+| Vanilla Traits Expanded | MentalState `198`; Thought `489` | Three trait-driven breaks immediate; recordable memories use global Thought policy. |
+| Vanilla Events Expanded | Raid `704`; Hediff `655` | Purple raid/infestation immediate; six visible colony-wide hediffs feed `DayReflection`. |
+| Adapter whole-conversation events | External `1022/1030` | SpeakUp claims `speakupbridge_conversation`; Rimpsyche claims `rimpsyche_conversation`. Both submit through normal external budgets/dedup. |
+
 ## 5. Current Weights And Chance Formulas
 
 ```mermaid
@@ -354,7 +373,11 @@ Source recording weights:
 |---|---|
 | Shared generation chance | `PawnDiarySettings.generationChanceWeight`, default `1`, clamped `0..5`. |
 | RimTalk chatter promotion | Same as SpeakUp: `base 0.005 + bonuses`, capped `0.08`, then multiplied by shared generation chance. Gated on packageId `cj.rimtalk` and exact interaction defName `RimTalkInteraction`. |
-| SpeakUp chatter promotion | `base 0.005 + bonuses`, capped `0.08`, then multiplied by shared generation chance. Bonuses: strong opinion `+0.025` at abs opinion `>=40`; opinion asymmetry `+0.025` at delta `>=40`; low food/rest/joy `+0.025` at `<=0.25`; low mood `+0.025` at `<=0.25`. |
+| SpeakUp fallback/chatter promotion | `base 0.005 + bonuses`, capped `0.08`, then multiplied by shared generation chance. Bonuses: strong opinion `+0.025` at abs opinion `>=40`; opinion asymmetry `+0.025` at delta `>=40`; low food/rest/joy `+0.025` at `<=0.25`; low mood `+0.025` at `<=0.25`. The frozen `speakup_chitchat` fallback is used without the adapter; adapter chatter uses the same policy. |
+| SpeakUp adapter deep-talk promotion | `base 0.02` with the same `+0.025` pressure bonuses and cap `0.08`, then shared generation chance. |
+| Rimpsyche conversation promotion | Same `base 0.005`, bonuses, and `0.08` cap as ordinary SpeakUp chatter. Tier-C charged-conversation capture is separate: absolute alignment `>=0.55`, then a saved 60,000-tick pair cooldown. |
+| Hospitality guest-work promotion | Same `base 0.005`, bonuses, and `0.08` cap; `allowSingleEligiblePawn=true` permits the colonist side of guest interactions to reach the ambient batch. |
+| WBR date/hangout promotion | `base 0.05` plus the standard `+0.025` pressure bonuses, capped at `0.08`, then shared generation chance. |
 | Strange chat promotion | `base 0.04 + bonuses`, capped `0.6`, then multiplied by shared generation chance. Bonuses: strong opinion `+0.25`; opinion asymmetry `+0.2`; low need `+0.2`; low mood `+0.2`; same thresholds as above. |
 | Small talk promotion | Same as strange chat: `base 0.04`, cap `0.6`, bonuses `+0.25/+0.2/+0.2/+0.2`, then shared generation chance. |
 | Work sampling | Scan every `2500` ticks. Chance starts at `0.08`; passion multiplier `1.4`; negative chore/low skill multiplier `1.2`; dark study multiplier `1.5`; recent different work multiplier `0.5`; same work cooldown `180000` ticks; then shared generation chance and clamp. Social/violent work types are ignored. |
@@ -497,6 +520,12 @@ Current observed-condition prompt candidates:
 | `AlphabeaversActive` | yes | `ThingPresent` | Map | `5` | `1` | no; capped 2 days active, 2-day restart cooldown |
 | `CropBlightActive` | yes | `ThingPresent` | Map | `5` | `1` | no; capped 3 days active, 1-day restart cooldown |
 | `AmbrosiaSprouted` | yes | `ThingPresent` | Map | `3` | `1` | no; capped 2 days active, 10-day restart cooldown |
+| `VeeDroughtActive` | yes | `GameCondition` | Map | `4` | `1` | no; VEE exact-string tint, decay 120000 |
+| `VeeLongNightActive` | yes | `GameCondition` | Map | `5` | `1` | no; VEE exact-string tint, decay 120000 |
+| `VeeScorchActive` | yes | `GameCondition` | Map | `4` | `1` | no; VEE exact-string tint, decay 120000 |
+| `VeeWhiteoutActive` | yes | `GameCondition` | Map | `5` | `1` | no; VEE exact-string tint, decay 120000 |
+| `VeePsychicBloomActive` | yes | `GameCondition` | Map | `3` | `1` | no; VEE exact-string tint, decay 120000 |
+| `VeePsychicHumActive` | yes | `GameCondition` | Map | `3` | `1` | no; hum/overdrive/stimulation/`PsychicRain`, decay 120000 |
 
 Current event-window prompt candidates: three windows keep a decaying prompt bias while active.
 `MechClusterLanded` (incident `MechCluster`) records a start page for map colonists and then biases
@@ -507,6 +536,13 @@ sometimes flavors a page. The six original event windows (`VoidMonolithDiscovery
 `VoidMonolithActivation`, `Birthday`, `HeartAttack`, `PrisonBreak`, `AncientDanger`) still set
 `keepActive=false`, `promptEnabled=false`, and `promptWeight=0`; they record one-shot pages but do
 not bias later prompts while active.
+
+Six compatibility windows use the same one-shot/no-prompt shape plus the package-gated
+`MapWitness` scope: VEE earthquake, meteorite shower, space battle/shuttle crash, and purple
+manhunter incidents (four windows, `dedupTicks=2500`), plus Hospitality visitor arrival and guest
+join-request incidents (two windows, `dedupTicks=30000`). Each selects one deterministic eligible
+colonist on the incident map and has a matching Interaction display group at orders `145..149`.
+Exact target-mod package gates prevent base-game `VisitorGroup` from starting Hospitality pages.
 
 The three page-recording defs from the event-coverage pass (`MechClusterLanded`,
 `PitGatePresence`, `FleshmassHeartPresence`) have companion Interaction-domain display groups

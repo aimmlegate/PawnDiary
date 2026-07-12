@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- English prompt and event text for the core Vanilla Events Expanded compatibility defs. -->
+<LanguageData>
+
+  <PawnDiary.Prompt.ObservedCondition.VeeDroughtActive.Priority>let the drought's dust and rationing press on the day</PawnDiary.Prompt.ObservedCondition.VeeDroughtActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.VeeDroughtActive.Condition>a long drought drying the colony</PawnDiary.Prompt.ObservedCondition.VeeDroughtActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.VeeDroughtActive.Description>rain has failed for too long; dust gets into everything, water is counted carefully, and the crops look brittle</PawnDiary.Prompt.ObservedCondition.VeeDroughtActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.VeeDroughtActive.Cue.Dust>dust, rationed water, brittle crops</PawnDiary.Prompt.ObservedCondition.VeeDroughtActive.Cue.Dust>
+
+  <PawnDiary.Prompt.ObservedCondition.VeeLongNightActive.Priority>let the missing dawn make time and routine feel unmoored</PawnDiary.Prompt.ObservedCondition.VeeLongNightActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.VeeLongNightActive.Condition>a long night with no dawn</PawnDiary.Prompt.ObservedCondition.VeeLongNightActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.VeeLongNightActive.Description>the sun has not returned; lamps keep burning, sleep and work lose their old boundaries, and nobody can quite feel what hour it should be</PawnDiary.Prompt.ObservedCondition.VeeLongNightActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.VeeLongNightActive.Cue.NoDawn>no dawn, lamps burning, time unmoored</PawnDiary.Prompt.ObservedCondition.VeeLongNightActive.Cue.NoDawn>
+
+  <PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Priority>let the punishing heat bend the colony's routine around survival</PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Condition>a lasting scorch over the colony</PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Description>daylight carries punishing heat; ordinary work waits for darkness where it can, and every exposed task costs more</PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Cue.NightWork>punishing heat, work pushed into the night</PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Cue.NightWork>
+
+  <PawnDiary.Prompt.ObservedCondition.VeeWhiteoutActive.Priority>let the whiteout close the world down to walls, snow, and shared nerves</PawnDiary.Prompt.ObservedCondition.VeeWhiteoutActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.VeeWhiteoutActive.Condition>a whiteout burying the colony</PawnDiary.Prompt.ObservedCondition.VeeWhiteoutActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.VeeWhiteoutActive.Description>walls of snow erase the world outside; paths and landmarks disappear, people stay close indoors, and cabin pressure keeps building</PawnDiary.Prompt.ObservedCondition.VeeWhiteoutActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.VeeWhiteoutActive.Cue.Buried>walls of snow, a buried world, cabin pressure</PawnDiary.Prompt.ObservedCondition.VeeWhiteoutActive.Cue.Buried>
+
+  <PawnDiary.Prompt.ObservedCondition.VeePsychicBloomActive.Priority>let the strange flowering make the familiar landscape feel lightly unreal</PawnDiary.Prompt.ObservedCondition.VeePsychicBloomActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.VeePsychicBloomActive.Condition>a psychic bloom changing the land</PawnDiary.Prompt.ObservedCondition.VeePsychicBloomActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.VeePsychicBloomActive.Description>unnatural flowering spreads through familiar ground while a light psychic sensation hangs over everyone's thoughts</PawnDiary.Prompt.ObservedCondition.VeePsychicBloomActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.VeePsychicBloomActive.Cue.Flowering>strange flowering, heads feeling too light</PawnDiary.Prompt.ObservedCondition.VeePsychicBloomActive.Cue.Flowering>
+
+  <PawnDiary.Prompt.ObservedCondition.VeePsychicHumActive.Priority>keep the shared psychic pressure present beneath ordinary thought</PawnDiary.Prompt.ObservedCondition.VeePsychicHumActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.VeePsychicHumActive.Condition>a psychic pressure shared across the colony</PawnDiary.Prompt.ObservedCondition.VeePsychicHumActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.VeePsychicHumActive.Description>something presses through many minds at once; the exact effect differs, but nobody experiencing it can treat their own thoughts as entirely private</PawnDiary.Prompt.ObservedCondition.VeePsychicHumActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.VeePsychicHumActive.Cue.Pressure>pressure in the mind that everyone shares</PawnDiary.Prompt.ObservedCondition.VeePsychicHumActive.Cue.Pressure>
+
+  <PawnDiary.Event.EventWindow.VeeEarthquake.Start>{0} felt the ground turn against the colony: {1}.</PawnDiary.Event.EventWindow.VeeEarthquake.Start>
+  <PawnDiary.Event.EventWindow.VeeMeteoriteShower.Start>{0} watched fire fall out of the sky: {1}.</PawnDiary.Event.EventWindow.VeeMeteoriteShower.Start>
+  <PawnDiary.Event.EventWindow.VeeSpaceBattle.Start>{0} saw a war overhead spill down toward the colony: {1}.</PawnDiary.Event.EventWindow.VeeSpaceBattle.Start>
+  <PawnDiary.Event.EventWindow.VeeStampede.Start>{0} saw animals come in numbers that felt impossible: {1}.</PawnDiary.Event.EventWindow.VeeStampede.Start>
+
+</LanguageData>

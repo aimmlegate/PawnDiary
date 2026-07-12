@@ -1,6 +1,6 @@
 # Pawn Diary - Maintainer Guide
 
-Last updated: 2026-07-07
+Last updated: 2026-07-12
 
 Related files:
 
@@ -57,9 +57,9 @@ Workshop payload omits source code and other development-only folders.
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper test projects. |
 | `prompt-lab/` | Prompt fixture and variant validation harness. |
-| `integrations/` | Adapter mods for other mods (each its own mod; template: `PawnDiary.ExampleAdapter`; first real target: `PawnDiary.RimTalkBridge`). Not loaded in-game until deployed. |
-| `scripts/publish.ps1` | Local Workshop payload prep. |
-| `scripts/deploy-integrations.ps1` | Copies `integrations/` adapters to the RimWorld `Mods/` root as sibling mods. |
+| `integrations/` | Separate adapter mods for other mods: example/API explorer, RimTalk, SpeakUp, Rimpsyche, VSIE, and 1-2-3 Personalities. Not loaded in-game until deployed. |
+| `scripts/publish.ps1` | Local Workshop payload prep; also builds/packages the example and reflection-only SpeakUp adapters by default. |
+| `scripts/deploy-integrations.ps1` | Creates sibling-mod junctions for every adapter under `integrations/` in the RimWorld `Mods/` root. |
 
 ## 3. Runtime Flow
 
@@ -484,47 +484,34 @@ RimTalk reply chain
 → exactly one linked pairwise DiaryEvent (two POV pages)
 ```
 
-`ConversationCandidatePolicy` is pure and receives only `ConversationCandidateFacts` plus policy
-copied from `RimTalk_ConversationAssessment`. It hard-rejects monologues, blank/one-speaker chains,
-duplicates, and zero daily caps. Charged reciprocal talk, user talk, speaker alternation, localized
-keyword **categories**, and bounded length bonuses contribute to a score; recent-native-event overlap,
-announcement-only talk, and an already-queued same pair subtract from it. Length never supplies the
-required personal signal by itself. `UnicodeText`/`ConversationTextOverlap` use invariant Unicode
-normalization, letter/digit token sets, and an optional character-trigram fallback; there is no
-English stop-word table. `ConversationReactionTermsEditor` validates the player-editable comma-separated
-term list before it can enter saved settings: entries are Unicode-normalized, trimmed, de-duplicated,
-count/length bounded, and must contain a letter or number. Retained XML terms keep their original
-category; additions share one extra bounded custom category, so variants cannot add unlimited score.
+`ConversationCandidatePolicy` is pure. It rejects monologues, duplicate chains, empty speakers, and
+zero caps, then scores personal signals such as reciprocal talk, speaker alternation, and localized
+keyword categories. Event overlap, announcements, and duplicate pairs reduce the score; length alone
+is never enough. Reaction terms are normalized, de-duplicated, and count/length-limited before saving,
+with XML categories retained and custom additions kept in one bounded category.
 
 `ConversationCandidateQueue` ranks by score descending, older first, then stable root-talk id. It
 deduplicates root ids, enforces its global and per-pair limits, replaces the weakest only when a
 stronger candidate arrives, and expires old work. Defaults live in
-`1.6/Defs/RimTalkConversationAssessmentDefs.xml`: 12 queued, 6 per batch, 2 per pair, no more than 2
-assessment batches per in-game day, a 15,000-tick minimum batch gap, and 60,000-tick expiry. Local
-scoring is free; chat volume beyond those bounds cannot increase assessment spend. The batch day/count
-and last-attempt gap are primitive-value-scribed by `RimTalkBridgeGameComponent`, while the queue and
-in-flight request stay transient, so reloading cannot reopen the paid daily allowance.
+`1.6/Defs/RimTalkConversationAssessmentDefs.xml`: 12 queued candidates, 6 per batch, 2 per pair, at
+most 2 assessment batches per in-game day, a 15,000-tick retry gap, and 60,000-tick expiry. Local
+scoring is free. The daily count and retry gap are saved; the queue and request are transient, so
+reloading cannot reopen the paid allowance.
 
-`RecentDiaryEventCache` is fed by the third frozen entry-status listener id
-`aimmlegate.pawndiary.rimtalkbridge.assessmentstatus`. It indexes pending/completed plain event facts
-by pawn/event under a lock, excludes entries authored by this bridge, and is enriched on the main
-thread from the existing `GetContextSnapshot` API for both participants. The cache is XML-window/count
-bounded. Failed, skipped, and prompt-only terminal notifications remove any earlier pending seed, so a
-nonexistent page cannot survive as a phantom related-event alias. It lets the assessor distinguish a
-raid/insult/break echo from an explicit new personal
-consequence without adding a core public API.
+`RecentDiaryEventCache` listens through the frozen id
+`aimmlegate.pawndiary.rimtalkbridge.assessmentstatus`. It keeps bounded, locked event facts, excludes
+this bridge's own entries, and adds both participants' context on the main thread. Failed, skipped,
+and prompt-only outcomes remove pending seeds, so nonexistent pages cannot become related-event
+aliases. This helps distinguish a native-event echo from a new personal consequence without expanding
+the core API.
 
-`ConversationAssessmentCoordinator` owns one transient queue and one completion handle. On the
-existing ~250-tick main-thread pass it polls first, then starts at most one new batch through
-`PawnDiaryApi.RequestLlmCompletion`; it creates no HTTP client, Task, or background-to-main-thread
-queue. `ConversationAssessmentBatchFormatter` sends only short aliases, at most four capped transcript
-lines per candidate, and at most three recent event label/title/summary rows (default user-text cap
-3,600 chars). Charged, user-authored, or configured-keyword lines claim bounded transcript slots before
-ordinary early context, then return to chronological order, so the evidence that nominated a long
-exchange is not omitted. It never sends persona, pawn summary, surroundings, writing style, or diary prose.
-`ConversationAssessmentResponseParser` extracts the first JSON array, accepts only active aliases and
-the frozen decision/reason tokens, validates per-candidate event aliases, caps focus text, resolves
-duplicates deterministically, fills missing rows with `ignore`, and fails closed on malformed output.
+`ConversationAssessmentCoordinator` owns one transient queue and one completion handle. Its ~250-tick
+main-thread pass polls first, then starts at most one batch through
+`PawnDiaryApi.RequestLlmCompletion`. Each candidate sends short aliases, up to four capped transcript
+lines, and up to three recent event summaries (default user-text cap: 3,600 characters). Charged,
+user-authored, and keyword lines receive priority slots. No persona, pawn summary, surroundings,
+writing style, or diary prose is sent. The response parser accepts only the frozen schema and active
+aliases, caps focus text, fills missing rows with `ignore`, and fails closed on invalid output.
 
 Every assessed conversation has one outcome: `ignore`; `related` (new explicit personal consequence
 linked to one supplied event); or `standalone` (explicit durable interpersonal content independent of
@@ -535,42 +522,25 @@ the supplied events). Only the latter two reserve the existing per-pawn/colony/p
 consequence and not retell the native event. A rejected Pawn Diary submission refunds the throttle.
 The root dedup token remains `rimtalkbridge|<RootTalkId>`.
 
-Accepted chat events also charge a rolling **60,000-tick (one full game day) cooldown to both POV
-pawns**. A conversation involving either pawn is discarded before scoring/assessment while that gate
-is active, and the final `TryReserve` check closes races between candidates in the same assessment
-batch. Only a successful `SubmitPromptEntry` keeps the timestamps; a rejected submission refunds
-them. Unlike the transient ranked queue and daily colony counters, this pawn-id → accepted-tick map is
-value-scribed by `RimTalkBridgeGameComponent` under the frozen save key
-`rimTalkConversationCooldownTicksByPawn`, then restored after static caches reset in `FinalizeInit`, so
-save/load cannot bypass the anti-spam interval. The legacy per-pawn daily setting is constrained to
-`0` (disable conversation recording) or `1`; the rolling gate remains the authoritative one-event-per-
-game-day guarantee across calendar boundaries. Settings schema v1 migrates pre-0.3 zeroes—where zero
-meant an unlimited individual cap—to enabled pawn recording and the largest supported colony ceiling
-before applying the new zero-means-off semantics.
+Accepted chat events charge both POV pawns a rolling **60,000-tick (one game day) cooldown**.
+Conversations involving either pawn are discarded early and checked again before submission; rejected
+submissions refund the reservation. The pawn-id/tick map is saved under
+`rimTalkConversationCooldownTicksByPawn`, so reloads cannot bypass it. The legacy per-pawn setting is
+now `0` or `1`, and pre-0.3 zero values migrate to enabled recording before the new zero-means-off
+behavior is applied.
 
-Semantic assessment defaults on and has a saved lane selector (`assessmentLaneIndex=-1` means first
-active lane). With no active lane, candidates remain only until expiry. API budget/concurrency rejection
-keeps the bounded queue and retries after the batch gap; transport failure drops that already-started
-batch without another spend; malformed/blank/unknown output records nothing. Turning semantic mode off
-while a handle is in flight still polls once to release the core handle but discards the result; the
-same cleanup happens when Pawn Diary's master integration toggle is turned off. With
-semantic mode off, the same local scorer uses the higher XML `strictLocalRecordThreshold`, rejects
-strong event overlap, and can produce standalone entries without an extra assessment request; this is
-explicitly stricter and less semantically accurate. Game changes clear all transient bridge state while
-the core session cancels its request.
+Semantic assessment defaults on and uses a saved lane selector (`assessmentLaneIndex=-1` means first
+active lane). Candidates wait until expiry when no lane is active. Budget or concurrency rejection
+keeps the queue for retry; transport or invalid-output failure creates nothing. Turning semantic mode
+or the master integration switch off still polls an in-flight handle to release it, then discards the
+result. Off mode uses the stricter XML-tuned local scorer and makes no assessment request.
 
-The mod settings expose both editable selection inputs. `conversationReactionTermsCsv` stores a valid
-comma-separated lexicon override (blank means the current English/Russian DefInjected defaults), and
-`assessmentPromptOverride` stores an optional editorial-policy replacement (blank means the localized
-`assessmentSystemPrompt` Def value). The frozen English JSON field/decision/reason contract is a
-code-owned prefix appended automatically, before the editable text, so neither translation nor an
-override can remove it and downstream defensive caps preserve it. The prompt editor caps text using the
-XML `assessmentPromptOverrideChars` policy; the strict response parser still fails closed if a provider
-produces invalid output. Reaction
-terms affect both semantic nomination and the no-LLM local fallback. The XML policy owns their edit
-limits as well as the fixed pawn cooldown. The reaction editor's total cap uses the same Unicode text-
-element unit as per-term validation, so non-BMP letters cannot silently shorten an otherwise-valid list.
-Only the structured machine schema—not user-facing prompt prose or tuning—lives in C#.
+The settings expose two editable inputs. `conversationReactionTermsCsv` overrides the localized
+reaction lexicon (blank restores the DefInjected defaults); `assessmentPromptOverride` replaces the
+localized assessment policy (blank restores `assessmentSystemPrompt`). A code-owned English JSON
+schema prefix is always added before the editable text, so overrides and translations cannot remove the
+contract. XML owns the editor limits and cooldown. Unicode text-element counting is used consistently,
+and invalid provider output fails closed.
 
 Threading and lifecycle are the two subtle parts. The diary-memory section is served to RimTalk from
 a **cache** that is refreshed only on the main thread (`DiaryContextInjector.RefreshFor`), because
@@ -661,10 +631,69 @@ levels. Therefore: RimTalk alone keeps the ambient fallback; bridge Level 0 is f
 context-only; and Level 2 can record only an assessed whole conversation. With RimTalk absent, the row
 does not appear in event settings and has no runtime effect.
 
-Two further personality/social integrations ship as **standalone adapter mods** under `integrations/`
+The remaining core compatibility packs are pure XML and Russian-localized. All target content is
+matched by plain strings and package gates, so none creates a target-mod or DLC assembly dependency:
+
+- **Alpha Memes** (`Sarg.AlphaMemes`) separates funerals, other rituals, eligible thoughts, baptism,
+  and two visible reflective hediffs. Ritual matchers use the runtime classifier shape
+  `PreceptDefName;BehaviorWorkerClass`: exact precept stems are therefore `matchPrefixes`, followed by
+  the broader `AM_` ritual family.
+- **Vanilla Ideology Expanded - Memes and Structures** (`VanillaExpanded.VMemesE`) separates four
+  verified severe rites from the general `VME_` ceremony family, plus eligible ritual afterthoughts
+  and interrogation. The severe rows use the installed `*Precept` names, not similarly named workers.
+- **Way Better Romance** (`divineDerivative.Romance`) themes its three real InteractionDefs and fourteen
+  memory ThoughtDefs with pairing/orientation-neutral prose. Date/hangout invitations ambient-batch;
+  hookup attempts remain immediate. Its apparent succeeded/failed names are RulePackDefs, not events.
+- **Vanilla Traits Expanded** (`VanillaExpanded.VanillaTraitsExpanded`) adds exact allowlists for its
+  recordable memories and three actual MentalStateDefs. A target-gated XML patch appends twenty
+  trait-to-psychotype affinity rules without referencing a VTE Def directly.
+- **Hospitality** (`Orion.Hospitality`) records colonist-owned guest diplomacy/charm as ambient hosting
+  work and guest scrounging only when a colonist actually participates. Guest-held recruitment and
+  bookkeeping thoughts are deliberately excluded. The generic `allowSingleEligiblePawn` batch flag
+  lets XML batch the one diary-eligible side of a colonist/guest interaction while every group that
+  does not opt in keeps the old solo route. Guest arrival and the `HappyGuestJoins` join-request
+  incident use one-shot `MapWitness` pages; the latter never claims the player has accepted the
+  request. The optional guest-presence context-provider phase remains deliberately deferred; Phase 1
+  is complete.
+- **Vanilla Events Expanded** (`VanillaExpanded.VEE`) adds purple-raid and visible ambient-hediff
+  groups, six live GameCondition prompt tints, and four one-shot incident families (earthquake,
+  meteorites, space battle/shuttle crash, and purple manhunters). Each incident chooses one stable map
+  witness instead of fanning out. Verification intentionally omitted the neutral
+  `VEE_VisitorGroupRaid`, hidden traitor hediffs, and situational-not-memory thoughts so the diary never
+  records a betrayal too early or exposes secret state.
+
+`EventWindowRecordScope.MapWitness` is the reusable middle ground for an incident hook that supplies a
+map but no subject pawn: the eligible colonist with the smallest stable load ID owns exactly one page.
+`Map` still fans out and `SubjectPawn` still requires a pawn supplied by the signal. Thought capture now
+classifies the live `ThoughtDef`, so package-wide Thought groups can inspect `modContentPack`; saved-event
+recovery remains defName-only by design.
+
+Four further personality/social integrations ship as **standalone adapter mods** under `integrations/`
 (deployed by `scripts/deploy-integrations.ps1`), not as compat groups inside the core mod — so a
 player installs only the ones matching their mod list:
 
+- **`PawnDiary.SpeakUp` (`Pawn Diary: SpeakUp`)** — five target-gated Tier-1 Interaction groups classify
+  deep talks, jokes, prisoner talks, thought reactions, and catch-all chatter. They preserve rendered
+  dialogue; core's SpeakUp `Ensue` suppression guard prevents rendering from scheduling another reply.
+  A default-on reflection-only Tier 2 observes the verified `DialogManager`/`Talk` surface without a
+  SpeakUp.dll build reference, samples already-rendered emitter-POV lines, and submits one
+  `speakupbridge_conversation` External pair event at the configurable threshold (default 3, range 1–5).
+  In-flight Talk state clears on load/toggle-off; pawn departure or death drops it. Tier-1 ambient
+  fragments deliberately coexist with the whole-conversation event pending the diary-level duplication
+  smoketest. The old `speakup_chitchat`/`SpeakUpAmbientDay` fallback and saved setting token moved
+  unchanged into `Defs/Compat`: SpeakUp alone keeps that behavior, loading the adapter disables only the
+  fallback, and force-loading the adapter without SpeakUp is inert. Core `teaching`'s existing SpeakUp
+  disable gate remains unchanged until its original collision rationale is reproduced.
+- **`PawnDiary.RimpsycheBridge` (`Pawn Diary: Rimpsyche`)** — XML assigns Rimpsyche conversation rows
+  (ambient min 6/sample 3) and package-owned memories their own voice. Tier A contributes a cached
+  `psyche=` context line: up to three localized descriptors above the XML magnitude floor and two
+  interests, never raw floats. Default-on Tier B maps the two dominant nodes from distinct behavioral
+  families into a source-owned psychotype outlook on a 250-tick change-detected pass and releases owned
+  overrides on toggle/new-game. Default-on Tier C signature-checks Rimpsyche v1.0.41's
+  `InteractionHook`, records only conversations over the XML absolute-alignment threshold (`0.55`)
+  under frozen key `rimpsyche_conversation`, and persists a per-pair 60,000-tick cooldown. The
+  six-family mapping, compact formatter, stable hash, threshold, and cooldown are pure-tested. Typed
+  RimPsyche reads stay behind the active-package guard; core code and the public API are unchanged.
 - **`PawnDiary.Vsie` (`Pawn Diary: Vanilla Social Interactions Expanded`)** — mostly XML, **plus** a
   tiny assembly (`PawnDiaryVsie.dll`) for the gathering hook. Four gated `DiaryInteractionGroupDef`s
   for VSIE (`VanillaExpanded.VanillaSocialInteractionsExpanded`): `vsie_vent` (Interaction, ambient
@@ -713,8 +742,9 @@ player installs only the ones matching their mod list:
   any player custom rule underneath. SP_Module1-typed reads are `[NoInlining]` behind the cached `SimplePersonalitiesActive`
   (`hahkethomemah.simplepersonalities`) guard.
 
-Thought-domain caveat (applies to both `*_thoughts` groups above): a Thought-domain group only assigns
-instruction/tone; whether a thought is recorded, and whether it folds into the ambient thought note, is
+Thought-domain caveat (applies to all `*_thoughts` compatibility groups above): a Thought-domain
+group only assigns instruction/tone; whether a thought is recorded, and whether it folds into the
+ambient thought note, is
 governed by Pawn Diary's global thought policy (mood-offset thresholds), **not** by a per-group
 `<batch>` (which is Interaction-only and silently ignored elsewhere). Those groups therefore theme
 their thoughts and lean on the mood threshold as the flood guard.
@@ -742,7 +772,7 @@ it onto the bus.
 | DayReflection | Sleep/rest flush | `DayReflectionSignal` (aggregation flush) | solo day/quadrum reflection |
 | ArcReflection | Sleep/rest flush + major psylink/xenotype progression trigger | `ArcReflectionSignal` (memory aggregation flush) | solo yearly arc reflection |
 | Quest | `Quest.Accept`/`End` + state scan | `QuestFanoutSignal` | fan-out |
-| Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out |
+| Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out; XML group guidance plus role/perspective instruction |
 | Death | `Pawn.Kill` + death TaleDefs | `DeathFallbackSignal` (+ Tale death routes) | neutral description |
 | Arrival | Starting scan + `Pawn.SetFaction` | `ArrivalSignal` | neutral description |
 | External | `PawnDiaryApi.SubmitEvent` / `SubmitPromptEntry` (other mods) | `ExternalEventSignal` | solo / pair |
@@ -814,6 +844,12 @@ one of its target mods is present. Both gates are enforced uniformly: `IsGroupEn
 sits harmless across automatic capture, the settings UI, and the integration API. External-domain
 groups classify the integration-API `eventKey` strings other mods submit (see §3.7).
 
+`DiaryEventWindowDef.enableWhenPackageIdsLoaded` provides the corresponding gate for compatibility
+windows. Start matching, restored active state, prompt candidates, timeout scanning, and direct
+recording all reject a missing target package, so removing a mod also clears its saved active window.
+Observed-condition compatibility still uses exact live-state strings because that Def type never
+resolves target content and a missing condition can never become active.
+
 Hediff body-part events use the same XML classifier, but classify by a synthetic key when the live
 HediffDef is a body-part change: `BionicArm_addedpart`, `Tentacle_addedpart_organicpart`, or
 `MissingBodyPart_missingpart`. The saved `gameContext` carries `part_kind=`, `part_tier=`,
@@ -857,7 +893,9 @@ suppressed on behalf of a hediff style while the external rule is active.
 Event windows are for one-shot signals and bounded story phases. A `DiaryEventWindowDef` can start,
 end, time out, write phase pages, and add a weighted prompt candidate while it is active.
 `keepActive=false` turns the start signal into a one-shot page. `recordScope=SubjectPawn` records only
-the pawn carried by the signal. Load-time `ConfigErrors` reject a persistent window with
+the pawn carried by the signal; `recordScope=MapWitness` deterministically records one eligible
+colonist from a map-level signal that has no subject, while `Map` retains colony-wide fan-out.
+Load-time `ConfigErrors` reject a persistent window with
 `keepActive=true`, no positive `timeoutTicks`, and no usable `endSignals` trigger, because that shape
 has no guaranteed close path and could leave prompt context active forever.
 
@@ -996,6 +1034,11 @@ Shipped notable defs:
   weighted-random flavor with `maxActiveTicks` caps and `restartCooldownTicks` so long-lived
   evidence cannot push prompts forever. `ThingPresent` matches exact defNames only, so every row
   above lists verified ThingDef names; a wrong name is silently inert.
+- VEE adds six exact-string `GameCondition` observers: drought, long night, scorch, whiteout,
+  psychic bloom, and a psychic-hum family (`VEE_PsychicHum`, overdrive, stimulation, and unprefixed
+  `PsychicRain`). They are tone-only, decay over 120,000 ticks, and disappear through the ordinary
+  live-state debounce; no VEE Def is resolved when the mod is absent. Short `SpaceBattle` is handled
+  by its one-shot incident window instead of receiving a second, lingering tint.
 
 Page recording is transactional: start/end state is committed only after a page is actually written.
 `ConfigErrors` rejects `recordScope=SubjectPawn` unless `scope=Pawn`.
@@ -1164,7 +1207,9 @@ on every branch: profile, wildcard, and flat rolls). A pawn holding such a trait
 psychotype outright `<gatedTakeoverChance>` (45% in the shipped Def) of the time; otherwise the normal roll continues with
 the gate open and the trait bonuses applying, so the outcome is dominant, not guaranteed. The manual
 per-pawn picker ignores the gate — the player may hand-assign anything. Unknown/modded traits simply
-contribute nothing.
+contribute nothing unless a compatibility patch supplies an affinity. The shipped
+`1.6/Patches/VtePsychotypeAffinities.xml` does exactly that for twenty Vanilla Traits Expanded
+trait/degree keys through `PatchOperationFindMod`; without VTE, the patch is a clean no-op.
 
 The effective psychotype priority, resolved by the pure `PsychotypeResolutionPolicy`, is **External API
 override > pawn custom rule > base type** (there is no hediff psychotype layer in v1). The master
@@ -1817,6 +1862,16 @@ dotnet run --project tests/DiaryCapturePolicyTests/DiaryCapturePolicyTests.cspro
 dotnet run --project tests/PromptVariantsTests/PromptVariantsTests.csproj
 dotnet run --project tests/DiarySaveNormalizationTests/DiarySaveNormalizationTests.csproj
 dotnet run --project tests/DiaryObservedConditionTests/DiaryObservedConditionTests.csproj
+dotnet run --project tests/SpeakUpBridgeLogicTests/SpeakUpBridgeLogicTests.csproj
+dotnet run --project tests/RimpsycheBridgeLogicTests/RimpsycheBridgeLogicTests.csproj
+```
+
+Adapter assemblies are built from their own projects; notably SpeakUp stays reflection-only, while
+Rimpsyche needs the installed `RimPsyche.dll` compile reference:
+
+```powershell
+MSBuild integrations/PawnDiary.SpeakUp/Source/PawnDiarySpeakUp.csproj /t:Build /p:Configuration=Debug
+MSBuild integrations/PawnDiary.RimpsycheBridge/Source/PawnDiaryRimpsyche.csproj /t:Build /p:Configuration=Debug
 ```
 
 Prompt lab:
@@ -1850,6 +1905,10 @@ Release payloads are prepared with:
 ```powershell
 scripts\publish.ps1
 ```
+
+The publish script builds the example/API-explorer and SpeakUp adapter payloads by default; pass
+`-PublishExampleAdapter:$false` or `-PublishSpeakUpAdapter:$false` to skip either. Other typed adapters
+remain independently built/deployed through their project and `scripts/deploy-integrations.ps1`.
 
 The source `About/About.xml` carries the mod's `<modVersion>` (`0.2.0` for the current release). The publish
 script stamps that value into the generated main and Russian localization `About.xml` files; pass

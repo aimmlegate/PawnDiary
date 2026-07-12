@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  One-shot incident windows and their display groups for Vanilla Events Expanded
+  (VanillaExpanded.VEE).
+
+  How this works: Pawn Diary already observes every successful IncidentWorker.TryExecute. Each
+  DiaryEventWindowDef below matches one or more exact VEE IncidentDef names, writes one immediate
+  page, and then closes (timeoutTicks=-1 + keepActive=false means there is no guessed lingering
+  state). recordScope=MapWitness asks the core event-window recorder for one deterministic eligible
+  witness on the incident map, avoiding a page for every colonist. The matching Interaction-domain
+  display group then gives that synthetic page a real label and voice before the core "other"
+  catch-all at order 150.
+
+  Both windows and display groups use the VanillaExpanded.VEE package gate. Exact plain-string
+  matchers remain the content boundary, and the gate also keeps the display rows out of settings and
+  discards any restored active window after VEE is removed. All names were rechecked against official
+  VEE v2.01 commit 112f0324238b352dad8ca54aa0d2a391d10ec99a (2026-07-11).
+
+  Considered and deliberately skipped:
+    * VEE_HuntingParty, VEE_WildMenWanderIn, and VEE_WhiteoutRefugees — flavor/arrival events that
+      do not warrant another guaranteed page.
+    * VEE_Drought, VEE_LongNight, VEE_Scorch, VEE_Whiteout, VEE_PsychicBloom, VEE_PsychicHum,
+      VEE_PsychicOverdrive, VEE_PsychicStimulation, and VEE_PsychicRain — their live conditions are
+      covered by DiaryObservedConditions_VEE.xml, while normal game letters announce the start.
+    * VEE_VisitorGroupRaid — it starts as a neutral visitor incident and turns hostile later through
+      a hidden hediff; recording the incident execution as a betrayal would be false and premature.
+    * Quest/event-chain plumbing and cargo/animal pod incidents — too routine or indirect for a
+      guaranteed standalone page.
+-->
+<Defs>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>VeeEarthquake</defName>
+    <label>VEE earthquake</label>
+    <windowKey>VeeEarthquake</windowKey>
+    <enabled>true</enabled>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VEE</li>
+    </enableWhenPackageIdsLoaded>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>MapWitness</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>write the ground itself turning traitor beneath the pawn; stay inside the shaking, then count only damage the supplied facts actually show</instruction>
+    <colorCue>danger</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.VeeEarthquake.Start</startTextKey>
+    <startSignals>
+      <li>
+        <source>Incident</source>
+        <signal>executed</signal>
+        <matchDefNames>
+          <li>VEE_Earthquake</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>VeeMeteoriteShower</defName>
+    <label>VEE meteorite shower</label>
+    <windowKey>VeeMeteoriteShower</windowKey>
+    <enabled>true</enabled>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VEE</li>
+    </enableWhenPackageIdsLoaded>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>MapWitness</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>write fire coming down from the sky with awe and danger mixed together; use only impacts, heat, or damage that the supplied facts support</instruction>
+    <colorCue>danger</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.VeeMeteoriteShower.Start</startTextKey>
+    <startSignals>
+      <li>
+        <source>Incident</source>
+        <signal>executed</signal>
+        <matchDefNames>
+          <li>VEE_MeteoriteShower</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>VeeSpaceBattle</defName>
+    <label>VEE orbital disaster</label>
+    <windowKey>VeeSpaceBattle</windowKey>
+    <enabled>true</enabled>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VEE</li>
+    </enableWhenPackageIdsLoaded>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>MapWitness</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>write a war or wreck overhead that has nothing and everything to do with the colony; stay with what the pawn can see falling and never invent the combatants' story</instruction>
+    <colorCue>danger</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.VeeSpaceBattle.Start</startTextKey>
+    <startSignals>
+      <li>
+        <source>Incident</source>
+        <signal>executed</signal>
+        <matchDefNames>
+          <li>VEE_SpaceBattle</li>
+          <li>VEE_ShuttleCrash</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>VeeStampede</defName>
+    <label>VEE mass animal attack</label>
+    <windowKey>VeeStampede</windowKey>
+    <enabled>true</enabled>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VEE</li>
+    </enableWhenPackageIdsLoaded>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>MapWitness</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>write animals gone wrong at impossible scale; focus on the approaching mass, noise, and panic without inventing how the fight ends</instruction>
+    <colorCue>danger</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.VeeStampede.Start</startTextKey>
+    <startSignals>
+      <li>
+        <source>Incident</source>
+        <signal>executed</signal>
+        <matchDefNames>
+          <li>ManhunterPackPurple</li>
+          <li>AnimalInsanityMassPurple</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <!-- Display groups: orders 145-147 are intentionally between the existing event groups
+       (137-144) and the Interaction catch-all (150). Disjoint exact names make sharing order 145
+       deterministic and harmless. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowVeeEarthquake</defName>
+    <label>Earthquake</label>
+    <order>145</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>danger</colorCue>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VEE</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>the ground itself turning traitor; write the shaking and the first honest damage count, never an invented outcome</instruction>
+    <instructions>
+      <li>an earthquake — open on balance, sound, dust, or something fixed beginning to move</li>
+      <li>an earthquake — write the first still moment afterward and only the damage the pawn can actually see</li>
+    </instructions>
+    <tone>with helpless, ground-deep alarm</tone>
+    <tones>
+      <li>shaken and physical, the floor no longer trustworthy</li>
+      <li>stunned and practical, counting what still stands</li>
+    </tones>
+    <matchDefNames>
+      <li>VEE_Earthquake</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowVeeMeteoriteShower</defName>
+    <label>Meteorite shower</label>
+    <order>145</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>danger</colorCue>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VEE</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>fire from the sky with awe and danger mixed; write the first impacts without inventing where every stone lands</instruction>
+    <instructions>
+      <li>a meteorite shower — write light, sound, and the terrible beauty of the first descent</li>
+      <li>a meteorite shower — keep awe beside practical fear: shelter, fire, and exposed ground, only as supplied</li>
+    </instructions>
+    <tone>with sky-struck awe under immediate danger</tone>
+    <tones>
+      <li>awed and frightened, unable to look away</li>
+      <li>bright, violent, and alert to every impact</li>
+    </tones>
+    <matchDefNames>
+      <li>VEE_MeteoriteShower</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowVeeSpaceBattle</defName>
+    <label>Orbital disaster</label>
+    <order>146</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>danger</colorCue>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VEE</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a battle or wreck overhead that has nothing and everything to do with the colony; write what falls into their lives, not an invented war story</instruction>
+    <instructions>
+      <li>an orbital disaster — keep the distant war unknowable and the falling wreckage immediate</li>
+      <li>an orbital disaster — write the scale above and the smallness of the colony beneath it, using only supplied facts</li>
+    </instructions>
+    <tone>with distant-war awe and close practical fear</tone>
+    <tones>
+      <li>small beneath an enormous, indifferent conflict</li>
+      <li>watchful and stunned, the sky spilling someone else's disaster</li>
+    </tones>
+    <matchDefNames>
+      <li>VEE_SpaceBattle</li>
+      <li>VEE_ShuttleCrash</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowVeeStampede</defName>
+    <label>Mass animal attack</label>
+    <order>147</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <combat>true</combat>
+    <colorCue>danger</colorCue>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VEE</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>animals gone wrong at impossible scale; write the mass, noise, and panic at first approach, never an invented victory</instruction>
+    <instructions>
+      <li>a mass animal attack — open on too many bodies moving as one and the sound reaching the colony</li>
+      <li>a mass animal attack — write the defense becoming arithmetic: doors, fields, ammunition, and nowhere enough time</li>
+    </instructions>
+    <tone>with stampeding, numberless panic</tone>
+    <tones>
+      <li>overwhelmed by scale, danger arriving on too many feet</li>
+      <li>fast and defensive, panic forced into practical choices</li>
+    </tones>
+    <matchDefNames>
+      <li>ManhunterPackPurple</li>
+      <li>AnimalInsanityMassPurple</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

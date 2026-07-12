@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Tier 1 SpeakUp routing, verified against the installed JPT.speakup 1.6 Defs on 2026-07-12:
+  186 InteractionDef nodes (one abstract SpeakUpReply parent, 185 concrete defs). Specific families
+  claim first at orders 5-8; the package catch-all at order 10 receives everything left. These orders
+  are intentionally below every other shipped core/adapter Interaction group (the next occupied order is 11).
+
+  Every group is package-gated so a force-loaded adapter without SpeakUp stays inert. Every group keeps
+  captureRenderedGameText=true: core Pawn Diary's reflection-only Ensue guard suppresses SpeakUp's reply
+  scheduling side effect while the PlayLog text is rendered.
+
+  Tier 2 does not disable these ambient groups. One completed conversation may therefore supply a whole-
+  conversation External event while its individual lines remain low-frequency ambient texture. That is
+  the conservative default until an in-game duplication review shows the fragments are intrusive.
+-->
+<Defs>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>speakupbridge_deeptalk</defName>
+    <label>SpeakUp deep talks</label>
+    <order>5</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>JPT.speakup</li>
+    </enableWhenPackageIdsLoaded>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>SpeakUpBridgeDeepTalkAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>3</minEventsToWrite>
+      <maxSampleLines>5</maxSampleLines>
+    </batch>
+    <promotion>
+      <baseChance>0.02</baseChance>
+      <maxChance>0.08</maxChance>
+      <opinionStrongBonus>0.025</opinionStrongBonus>
+      <opinionStrongThreshold>40</opinionStrongThreshold>
+      <opinionAsymmetryBonus>0.025</opinionAsymmetryBonus>
+      <opinionAsymmetryThreshold>40</opinionAsymmetryThreshold>
+      <needLowBonus>0.025</needLowBonus>
+      <needLowThreshold>0.25</needLowThreshold>
+      <moodExtremeBonus>0.025</moodExtremeBonus>
+      <moodLowThreshold>0.25</moodLowThreshold>
+    </promotion>
+    <instruction>a conversation that went below the surface; write what the pair reached for and what the exchange exposed, using only the supplied lines and context</instruction>
+    <instructions>
+      <li>deep talk - let the meaning sit between the pair: why this subject mattered today and what changed by saying it aloud</li>
+      <li>deep talk - use a supplied line as evidence, never as permission to invent the rest of the conversation</li>
+      <li>deep talk - a dream or psychic vision is intimate evidence, not proof of a new event beyond what the context states</li>
+    </instructions>
+    <tone>thoughtful, intimate, and a little exposed</tone>
+    <tones>
+      <li>quietly searching, with the weight below ordinary words</li>
+      <li>close and reflective, two people testing what can be said</li>
+    </tones>
+    <matchDefNames>
+      <li>DeepTalkConvo</li>
+      <li>DeepTalkConvoResponse</li>
+      <li>MeaningOfLife</li>
+      <li>ChildhoodDiscussions</li>
+      <li>Dream_nice</li>
+      <li>PsyVision</li>
+      <li>PsyVisionGood</li>
+      <li>PsyVisionBad</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>speakupbridge_jokes</defName>
+    <label>SpeakUp jokes</label>
+    <order>6</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>JPT.speakup</li>
+    </enableWhenPackageIdsLoaded>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>SpeakUpBridgeJokesAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>6</minEventsToWrite>
+      <maxSampleLines>4</maxSampleLines>
+    </batch>
+    <instruction>the day's running comedy; remember who kept trying to be funny, who laughed, and who groaned without inventing a punchline</instruction>
+    <instructions>
+      <li>jokes - use the supplied lines to show the pair's rhythm, not to manufacture a better joke</li>
+      <li>jokes - notice whether the humor brought relief, affection, embarrassment, or irritation</li>
+      <li>jokes - keep it light unless the pawn's mood or relationship makes the reaction carry more</li>
+    </instructions>
+    <tone>playful, loose, and socially observant</tone>
+    <tones>
+      <li>dryly amused, including the groans</li>
+      <li>fond and quick, laughter breaking up the work</li>
+    </tones>
+    <matchPrefixes>
+      <li>Joke_</li>
+    </matchPrefixes>
+    <matchDefNames>
+      <li>JokeReaction</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>speakupbridge_prisoner</defName>
+    <label>SpeakUp prisoner talks</label>
+    <order>7</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>JPT.speakup</li>
+    </enableWhenPackageIdsLoaded>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>SpeakUpBridgePrisonerAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>3</minEventsToWrite>
+      <maxSampleLines>5</maxSampleLines>
+    </batch>
+    <instruction>talking through the bars; write the rapport, wariness, refusal, or strange intimacy of guarding someone, from the eligible colonist's view when the prisoner cannot own a diary</instruction>
+    <instructions>
+      <li>prisoner talk - keep the imbalance of freedom and control present without inventing cruelty or trust</li>
+      <li>prisoner talk - use acceptance or refusal as the emotional turn, not as a mechanical recruitment report</li>
+      <li>prisoner talk - a repeated skill conversation can become familiar without pretending the bars disappeared</li>
+    </instructions>
+    <tone>wary and close, shaped by the barrier between them</tone>
+    <tones>
+      <li>guarded, with rapport arriving by inches</li>
+      <li>uneasy and observant, familiarity under confinement</li>
+    </tones>
+    <matchPrefixes>
+      <li>Prisoner</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>speakupbridge_reactions</defName>
+    <label>SpeakUp thought reactions</label>
+    <order>8</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>JPT.speakup</li>
+    </enableWhenPackageIdsLoaded>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>SpeakUpBridgeReactionsAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>8</minEventsToWrite>
+      <maxSampleLines>3</maxSampleLines>
+    </batch>
+    <instruction>passing reactions to what people were already carrying; use them as the day's social texture, not as separate dramatic events</instruction>
+    <instructions>
+      <li>thought reaction - choose only the supplied reactions that reveal a pattern in the pawn's day</li>
+      <li>thought reaction - show how feelings leaked into ordinary talk without inventing their cause</li>
+      <li>thought reaction - keep frequent remarks folded small; texture matters more than a transcript</li>
+    </instructions>
+    <tone>brief, observant, and woven into the day</tone>
+    <tones>
+      <li>fragmentary and honest, feelings escaping in passing</li>
+      <li>low-key and cumulative, small reactions forming a pattern</li>
+    </tones>
+    <matchPrefixes>
+      <li>ReactToThought</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>speakupbridge_chatter</defName>
+    <label>SpeakUp chatter</label>
+    <order>10</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <!-- SpeakUp schedules follow-up dialogue from social-log grammar rendering. Pawn Diary renders
+         text only when its optional reply-suppression guard is active; otherwise tagged grammar
+         still falls back safely. -->
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>JPT.speakup</li>
+    </enableWhenPackageIdsLoaded>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>SpeakUpBridgeAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>8</minEventsToWrite>
+      <maxSampleLines>3</maxSampleLines>
+    </batch>
+    <promotion>
+      <baseChance>0.005</baseChance>
+      <maxChance>0.08</maxChance>
+      <opinionStrongBonus>0.025</opinionStrongBonus>
+      <opinionStrongThreshold>40</opinionStrongThreshold>
+      <opinionAsymmetryBonus>0.025</opinionAsymmetryBonus>
+      <opinionAsymmetryThreshold>40</opinionAsymmetryThreshold>
+      <needLowBonus>0.025</needLowBonus>
+      <needLowThreshold>0.25</needLowThreshold>
+      <moodExtremeBonus>0.025</moodExtremeBonus>
+      <moodLowThreshold>0.25</moodLowThreshold>
+    </promotion>
+    <instruction>ordinary SpeakUp conversation - treat it as chitchat unless the pair's mood, need, or relationship tension makes the small moment land harder</instruction>
+    <instructions>
+      <li>SpeakUp chatter - use the supplied line if present; otherwise write low-stakes back-and-forth without inventing a quote</li>
+      <li>SpeakUp chatter - focus on the feeling under the small talk: ease, awkwardness, pressure, or distance</li>
+      <li>SpeakUp chatter - let the ordinary rhythm matter only if the pawn's state makes it matter</li>
+    </instructions>
+    <tone>with light, everyday social texture</tone>
+    <tones>
+      <li>loose and conversational, like ordinary talk passing through the room</li>
+      <li>plain and observant, letting tiny social pressure carry the weight</li>
+    </tones>
+    <matchPackageIds>
+      <li>JPT.speakup</li>
+    </matchPackageIds>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

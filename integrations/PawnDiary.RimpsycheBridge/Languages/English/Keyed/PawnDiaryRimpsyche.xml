@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  English Keyed strings emitted by the adapter assembly. Def label/instruction/tone text stays inline
+  in 1.6/Defs and is localized through DefInjected in non-English languages.
+
+  Outlook/adjective text is duplicated as an English Keyed source even though the pure mapper carries
+  the same fallback. The fallback keeps a partially-installed language playable; Keyed keeps all normal
+  prompt text on RimWorld's localization path.
+-->
+<LanguageData>
+
+  <!-- Settings UI -->
+  <PawnDiaryRimpsyche.Settings.Category>Pawn Diary: Rimpsyche</PawnDiaryRimpsyche.Settings.Category>
+  <PawnDiaryRimpsyche.Settings.Missing>Rimpsyche is not active, so this bridge is idle. Enable Rimpsyche - Personality Core to use it.</PawnDiaryRimpsyche.Settings.Missing>
+  <PawnDiaryRimpsyche.Settings.Section>Rimpsyche integration</PawnDiaryRimpsyche.Settings.Section>
+  <PawnDiaryRimpsyche.Settings.PsychotypeOverride>Let psyche shape diary outlook</PawnDiaryRimpsyche.Settings.PsychotypeOverride>
+  <PawnDiaryRimpsyche.Settings.PsychotypeOverrideDesc>Use the pawn's two strongest, distinct personality families as a source-owned diary outlook. Turning this off releases every outlook override owned by this bridge.</PawnDiaryRimpsyche.Settings.PsychotypeOverrideDesc>
+  <PawnDiaryRimpsyche.Settings.ChargedConversations>Record charged conversations</PawnDiaryRimpsyche.Settings.ChargedConversations>
+  <PawnDiaryRimpsyche.Settings.ChargedConversationsDesc>Record only Rimpsyche conversations whose signed alignment clears the XML threshold. Each pawn pair has a saved cooldown; ordinary conversations remain ambient social texture.</PawnDiaryRimpsyche.Settings.ChargedConversationsDesc>
+
+  <!-- Tier-C factual event fields. {0} is Rimpsyche's localized topic label. -->
+  <PawnDiaryRimpsyche.Event.ConversationLabel>charged conversation</PawnDiaryRimpsyche.Event.ConversationLabel>
+  <PawnDiaryRimpsyche.Event.UnknownTopic>something that mattered</PawnDiaryRimpsyche.Event.UnknownTopic>
+  <PawnDiaryRimpsyche.Event.ConversationSummary.Positive>Talked about {0}; it landed well.</PawnDiaryRimpsyche.Event.ConversationSummary.Positive>
+  <PawnDiaryRimpsyche.Event.ConversationSummary.Negative>Talked about {0}; it landed badly.</PawnDiaryRimpsyche.Event.ConversationSummary.Negative>
+
+  <!-- Six families × two aligned signs. Rules are behavioral/mechanics-free and never echo node names. -->
+  <PawnDiaryRimpsyche.Outlook.Social.Positive>This pawn reads a day through the people around them, noticing easy connection and chances to reach out before solitude.</PawnDiaryRimpsyche.Outlook.Social.Positive>
+  <PawnDiaryRimpsyche.Outlook.Social.Negative>This pawn keeps their distance and judges company carefully; privacy and room to retreat weigh heavily in how a day feels.</PawnDiaryRimpsyche.Outlook.Social.Negative>
+  <PawnDiaryRimpsyche.Outlook.Mind.Positive>This pawn leans toward questions, possibilities, and meanings beneath the obvious; novelty makes a day feel alive.</PawnDiaryRimpsyche.Outlook.Mind.Positive>
+  <PawnDiaryRimpsyche.Outlook.Mind.Negative>This pawn trusts what is familiar, concrete, and already proven; a good day is one that stays understandable and grounded.</PawnDiaryRimpsyche.Outlook.Mind.Negative>
+  <PawnDiaryRimpsyche.Outlook.Drive.Positive>This pawn measures the day by movement and progress, and a challenge matters most when it can be met head-on.</PawnDiaryRimpsyche.Outlook.Drive.Positive>
+  <PawnDiaryRimpsyche.Outlook.Drive.Negative>This pawn resists being hurried toward other people's goals and values room to settle, recover, or leave well enough alone.</PawnDiaryRimpsyche.Outlook.Drive.Negative>
+  <PawnDiaryRimpsyche.Outlook.Emotion.Positive>This pawn lets the day's emotional weather decide what matters; strain and sudden feeling leave marks that linger.</PawnDiaryRimpsyche.Outlook.Emotion.Positive>
+  <PawnDiaryRimpsyche.Outlook.Emotion.Negative>This pawn returns quickly to an even surface and gives passing feelings little authority over the meaning of a day.</PawnDiaryRimpsyche.Outlook.Emotion.Negative>
+  <PawnDiaryRimpsyche.Outlook.Moral.Positive>This pawn weighs events by who was helped, who kept faith, and whether people acted with decency when it counted.</PawnDiaryRimpsyche.Outlook.Moral.Positive>
+  <PawnDiaryRimpsyche.Outlook.Moral.Negative>This pawn judges first by consequence for themselves and is slow to grant trust, sympathy, or obligation without proof.</PawnDiaryRimpsyche.Outlook.Moral.Negative>
+  <PawnDiaryRimpsyche.Outlook.Order.Positive>This pawn feels steadier when duties are clear, details are in place, and the day ends with things properly finished.</PawnDiaryRimpsyche.Outlook.Order.Positive>
+  <PawnDiaryRimpsyche.Outlook.Order.Negative>This pawn works by instinct and adaptation, preferring room to improvise over plans, routines, or tidy conclusions.</PawnDiaryRimpsyche.Outlook.Order.Negative>
+
+  <!-- 34 raw node signs -> bucketed adjectives. Raw numeric values never reach the prompt. -->
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Talkativeness.High>outspoken</PawnDiaryRimpsyche.Adjective.Rimpsyche_Talkativeness.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Talkativeness.Low>taciturn</PawnDiaryRimpsyche.Adjective.Rimpsyche_Talkativeness.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Sociability.High>friendly</PawnDiaryRimpsyche.Adjective.Rimpsyche_Sociability.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Sociability.Low>reserved</PawnDiaryRimpsyche.Adjective.Rimpsyche_Sociability.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Tact.High>diplomatic</PawnDiaryRimpsyche.Adjective.Rimpsyche_Tact.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Tact.Low>brash</PawnDiaryRimpsyche.Adjective.Rimpsyche_Tact.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Playfulness.High>playful</PawnDiaryRimpsyche.Adjective.Rimpsyche_Playfulness.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Playfulness.Low>serious</PawnDiaryRimpsyche.Adjective.Rimpsyche_Playfulness.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Openness.High>open-minded</PawnDiaryRimpsyche.Adjective.Rimpsyche_Openness.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Openness.Low>traditional</PawnDiaryRimpsyche.Adjective.Rimpsyche_Openness.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Inquisitiveness.High>inquisitive</PawnDiaryRimpsyche.Adjective.Rimpsyche_Inquisitiveness.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Inquisitiveness.Low>indifferent</PawnDiaryRimpsyche.Adjective.Rimpsyche_Inquisitiveness.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Imagination.High>imaginative</PawnDiaryRimpsyche.Adjective.Rimpsyche_Imagination.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Imagination.Low>grounded</PawnDiaryRimpsyche.Adjective.Rimpsyche_Imagination.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Reflectiveness.High>contemplative</PawnDiaryRimpsyche.Adjective.Rimpsyche_Reflectiveness.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Reflectiveness.Low>reactive</PawnDiaryRimpsyche.Adjective.Rimpsyche_Reflectiveness.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Experimentation.High>experimental</PawnDiaryRimpsyche.Adjective.Rimpsyche_Experimentation.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Experimentation.Low>conventional</PawnDiaryRimpsyche.Adjective.Rimpsyche_Experimentation.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Confidence.High>confident</PawnDiaryRimpsyche.Adjective.Rimpsyche_Confidence.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Confidence.Low>insecure</PawnDiaryRimpsyche.Adjective.Rimpsyche_Confidence.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Bravery.High>courageous</PawnDiaryRimpsyche.Adjective.Rimpsyche_Bravery.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Bravery.Low>fearful</PawnDiaryRimpsyche.Adjective.Rimpsyche_Bravery.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Diligence.High>diligent</PawnDiaryRimpsyche.Adjective.Rimpsyche_Diligence.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Diligence.Low>lazy</PawnDiaryRimpsyche.Adjective.Rimpsyche_Diligence.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Passion.High>passionate</PawnDiaryRimpsyche.Adjective.Rimpsyche_Passion.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Passion.Low>apathetic</PawnDiaryRimpsyche.Adjective.Rimpsyche_Passion.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Ambition.High>ambitious</PawnDiaryRimpsyche.Adjective.Rimpsyche_Ambition.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Ambition.Low>content</PawnDiaryRimpsyche.Adjective.Rimpsyche_Ambition.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Tenacity.High>tenacious</PawnDiaryRimpsyche.Adjective.Rimpsyche_Tenacity.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Tenacity.Low>fragile</PawnDiaryRimpsyche.Adjective.Rimpsyche_Tenacity.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Expectation.High>demanding</PawnDiaryRimpsyche.Adjective.Rimpsyche_Expectation.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Expectation.Low>spartan</PawnDiaryRimpsyche.Adjective.Rimpsyche_Expectation.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Competitiveness.High>competitive</PawnDiaryRimpsyche.Adjective.Rimpsyche_Competitiveness.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Competitiveness.Low>cooperative</PawnDiaryRimpsyche.Adjective.Rimpsyche_Competitiveness.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Tension.High>high-strung</PawnDiaryRimpsyche.Adjective.Rimpsyche_Tension.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Tension.Low>laid-back</PawnDiaryRimpsyche.Adjective.Rimpsyche_Tension.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Emotionality.High>emotional</PawnDiaryRimpsyche.Adjective.Rimpsyche_Emotionality.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Emotionality.Low>phlegmatic</PawnDiaryRimpsyche.Adjective.Rimpsyche_Emotionality.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Stability.High>stable</PawnDiaryRimpsyche.Adjective.Rimpsyche_Stability.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Stability.Low>unstable</PawnDiaryRimpsyche.Adjective.Rimpsyche_Stability.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Spontaneity.High>impulsive</PawnDiaryRimpsyche.Adjective.Rimpsyche_Spontaneity.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Spontaneity.Low>consistent</PawnDiaryRimpsyche.Adjective.Rimpsyche_Spontaneity.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Optimism.High>optimistic</PawnDiaryRimpsyche.Adjective.Rimpsyche_Optimism.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Optimism.Low>pessimistic</PawnDiaryRimpsyche.Adjective.Rimpsyche_Optimism.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Morality.High>principled</PawnDiaryRimpsyche.Adjective.Rimpsyche_Morality.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Morality.Low>amoral</PawnDiaryRimpsyche.Adjective.Rimpsyche_Morality.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Compassion.High>compassionate</PawnDiaryRimpsyche.Adjective.Rimpsyche_Compassion.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Compassion.Low>coldhearted</PawnDiaryRimpsyche.Adjective.Rimpsyche_Compassion.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Trust.High>trusting</PawnDiaryRimpsyche.Adjective.Rimpsyche_Trust.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Trust.Low>skeptical</PawnDiaryRimpsyche.Adjective.Rimpsyche_Trust.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Loyalty.High>loyal</PawnDiaryRimpsyche.Adjective.Rimpsyche_Loyalty.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Loyalty.Low>disloyal</PawnDiaryRimpsyche.Adjective.Rimpsyche_Loyalty.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Authenticity.High>authentic</PawnDiaryRimpsyche.Adjective.Rimpsyche_Authenticity.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Authenticity.Low>superficial</PawnDiaryRimpsyche.Adjective.Rimpsyche_Authenticity.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_SelfInterest.High>egocentric</PawnDiaryRimpsyche.Adjective.Rimpsyche_SelfInterest.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_SelfInterest.Low>altruistic</PawnDiaryRimpsyche.Adjective.Rimpsyche_SelfInterest.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Propriety.High>modest</PawnDiaryRimpsyche.Adjective.Rimpsyche_Propriety.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Propriety.Low>uninhibited</PawnDiaryRimpsyche.Adjective.Rimpsyche_Propriety.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Aggressiveness.High>aggressive</PawnDiaryRimpsyche.Adjective.Rimpsyche_Aggressiveness.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Aggressiveness.Low>gentle</PawnDiaryRimpsyche.Adjective.Rimpsyche_Aggressiveness.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Organization.High>organized</PawnDiaryRimpsyche.Adjective.Rimpsyche_Organization.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Organization.Low>haphazard</PawnDiaryRimpsyche.Adjective.Rimpsyche_Organization.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Discipline.High>disciplined</PawnDiaryRimpsyche.Adjective.Rimpsyche_Discipline.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Discipline.Low>undisciplined</PawnDiaryRimpsyche.Adjective.Rimpsyche_Discipline.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Focus.High>focused</PawnDiaryRimpsyche.Adjective.Rimpsyche_Focus.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Focus.Low>eclectic</PawnDiaryRimpsyche.Adjective.Rimpsyche_Focus.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Deliberation.High>deliberate</PawnDiaryRimpsyche.Adjective.Rimpsyche_Deliberation.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Deliberation.Low>hasty</PawnDiaryRimpsyche.Adjective.Rimpsyche_Deliberation.Low>
+
+</LanguageData>

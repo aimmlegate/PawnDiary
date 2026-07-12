@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Названия наблюдаемых состояний Vanilla Events Expanded, видимые в настройках Pawn Diary. -->
+<LanguageData>
+
+  <VeeDroughtActive.label>засуха VEE</VeeDroughtActive.label>
+  <VeeLongNightActive.label>долгая ночь VEE</VeeLongNightActive.label>
+  <VeeScorchActive.label>пекло VEE</VeeScorchActive.label>
+  <VeeWhiteoutActive.label>белая мгла VEE</VeeWhiteoutActive.label>
+  <VeePsychicBloomActive.label>псионическое цветение VEE</VeePsychicBloomActive.label>
+  <VeePsychicHumActive.label>псионическое давление VEE</VeePsychicHumActive.label>
+
+</LanguageData>

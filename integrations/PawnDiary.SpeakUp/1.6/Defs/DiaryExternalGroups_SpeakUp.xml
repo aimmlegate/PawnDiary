@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Tier 2's one stable External event claim. The eventKey speakupbridge_conversation is persisted
+     in save data and must never be renamed. It describes one completed SpeakUp Talk, while the Tier 1
+     groups continue to treat individual lines as ambient texture. -->
+<Defs>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>speakupbridgeConversation</defName>
+    <label>SpeakUp conversation</label>
+    <order>1022</order>
+    <domain>External</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <enableWhenPackageIdsLoaded>
+      <li>JPT.speakup</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>one sustained back-and-forth between two people; use the sampled lines as evidence for what they circled around and what the exchange left behind, without inventing missing dialogue</instruction>
+    <instructions>
+      <li>whole conversation - compress the exchange into the emotional movement between its first and last sampled lines</li>
+      <li>whole conversation - let repetition, hesitation, humor, or friction matter when the evidence shows it</li>
+      <li>whole conversation - do not quote or attribute any words that are absent from the supplied samples</li>
+    </instructions>
+    <tone>conversational and reflective, aware of both people</tone>
+    <tones>
+      <li>close and attentive, following how the exchange shifted</li>
+      <li>plainspoken, letting the supplied lines carry the subject</li>
+    </tones>
+    <matchDefNames>
+      <li>speakupbridge_conversation</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <speakupbridgeConversation.label>разговор SpeakUp</speakupbridgeConversation.label>
+  <speakupbridgeConversation.instruction>один продолжительный обмен между двумя людьми; используй фрагменты реплик как свидетельство того, вокруг чего они ходили и что осталось после разговора, не выдумывая пропущенный диалог</speakupbridgeConversation.instruction>
+  <speakupbridgeConversation.instructions.0>целый разговор: сожми обмен до эмоционального движения между первой и последней переданной репликой</speakupbridgeConversation.instructions.0>
+  <speakupbridgeConversation.instructions.1>целый разговор: пусть повторение, колебание, юмор или трение имеют значение, когда это показывает свидетельство</speakupbridgeConversation.instructions.1>
+  <speakupbridgeConversation.instructions.2>целый разговор: не цитируй и не приписывай слова, которых нет в переданных фрагментах</speakupbridgeConversation.instructions.2>
+  <speakupbridgeConversation.tone>разговорно и задумчиво, с вниманием к обоим людям</speakupbridgeConversation.tone>
+  <speakupbridgeConversation.tones.0>близко и внимательно, следуя за изменением обмена</speakupbridgeConversation.tones.0>
+  <speakupbridgeConversation.tones.1>прямо, позволяя переданным репликам нести тему</speakupbridgeConversation.tones.1>
+</LanguageData>

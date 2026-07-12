@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Русский перевод групп совместимости Alpha Memes. Индексы instructions.N / tones.N
+     соответствуют порядку элементов в 1.6/Defs/Compat/DiaryCompat_AlphaMemes.xml. -->
+<LanguageData>
+
+  <alphamemes_funeral.label>Необычные похороны</alphamemes_funeral.label>
+  <alphamemes_funeral.instruction>похороны в необычной форме; пиши личное прощание поселенца сквозь торжественность, странность или мрачную нежность обряда</alphamemes_funeral.instruction>
+  <alphamemes_funeral.instructions.0>необычные похороны: в центре остаётся умерший, а небо, огонь, запуск, сохранение или преображение лишь придают горю избранную форму</alphamemes_funeral.instructions.0>
+  <alphamemes_funeral.instructions.1>необычные похороны: пиши, показался ли обряд этому поселенцу правильным, нелепым, милосердным или невыносимым с отведённого ему места</alphamemes_funeral.instructions.1>
+  <alphamemes_funeral.instructions.2>необычные похороны: удерживай скорбь рядом с телесной деталью ритуала; мрачный юмор уместен лишь тогда, когда он действительно есть в переданном обряде</alphamemes_funeral.instructions.2>
+  <alphamemes_funeral.tone>торжественно и странно, скорбь проходит через избранный обряд</alphamemes_funeral.tone>
+  <alphamemes_funeral.tones.0>мрачно, но нежно, церемония делает потерю осязаемой</alphamemes_funeral.tones.0>
+  <alphamemes_funeral.tones.1>церемониально и скорбно, с местом для одной нелепой человеческой детали</alphamemes_funeral.tones.1>
+  <alphamemes_funeral.tones.2>тихо и благоговейно, как бы непривычно ни выглядело прощание</alphamemes_funeral.tones.2>
+
+  <alphamemes_rituals.label>Ритуалы Alpha Memes</alphamemes_rituals.label>
+  <alphamemes_rituals.instruction>необычный общий ритуал; пиши зрелище, разрядку или коллективное безумие с места, которое поселенец действительно занимал в обряде, не объясняя игровую механику идеологии</alphamemes_rituals.instruction>
+  <alphamemes_rituals.instructions.0>необычный ритуал: оставайся в роли и ощущениях поселенца, пока поселение превращает веру в зрелище, состязание, посвящение или разрушение</alphamemes_rituals.instructions.0>
+  <alphamemes_rituals.instructions.1>необычный ритуал: пиши разрядку после него — гордость, неловкость, облегчение или заряженную тишину, когда все наконец остановились</alphamemes_rituals.instructions.1>
+  <alphamemes_rituals.instructions.2>необычный ритуал: название подсказывает, будет ли он радостным, нелепым, пылким или пугающим; не делай каждую церемонию мрачной</alphamemes_rituals.instructions.2>
+  <alphamemes_rituals.tone>церемониально, буйно и с живым общим чувством</alphamemes_rituals.tone>
+  <alphamemes_rituals.tones.0>пылко и телесно, вера разыгрывается перед всеми</alphamemes_rituals.tones.0>
+  <alphamemes_rituals.tones.1>странно, но сообща, зрелище несёт настоящий эмоциональный вес</alphamemes_rituals.tones.1>
+  <alphamemes_rituals.tones.2>с разрядкой и тревогой, поселение ненадолго движется как одно тело</alphamemes_rituals.tones.2>
+
+  <alphamemes_thoughts.label>Отголоски ритуалов</alphamemes_thoughts.label>
+  <alphamemes_thoughts.instruction>последствие необычного обряда; пиши гордость, тревогу, облегчение или похмелье общего пыла как чувство, которое ещё не улеглось</alphamemes_thoughts.instruction>
+  <alphamemes_thoughts.instructions.0>отголосок ритуала: назови чувство, оставшееся после зрелища, а не игровую механику мысли</alphamemes_thoughts.instructions.0>
+  <alphamemes_thoughts.instructions.1>отголосок ритуала: одно честное послевкусие — удовлетворение, отвращение, смущение, трепет или изнурённое облегчение</alphamemes_thoughts.instructions.1>
+  <alphamemes_thoughts.tone>с заряженным послевкусием общего ритуала</alphamemes_thoughts.tone>
+  <alphamemes_thoughts.tones.0>про себя и неспокойно, общий пыл становится личным</alphamemes_thoughts.tones.0>
+  <alphamemes_thoughts.tones.1>изнурённо, но ярко, церемония всё ещё держится в ощущениях</alphamemes_thoughts.tones.1>
+
+  <alphamemes_baptism.label>Речи при крещении</alphamemes_baptism.label>
+  <alphamemes_baptism.instruction>публичное посвящение или наречение; пиши уязвимость того, кто стоит перед всеми, или ответственность того, кто произносит слова над другим</alphamemes_baptism.instruction>
+  <alphamemes_baptism.instructions.0>речь при крещении: пиши помещение, обращённые лица и то, чего это публичное начало требует от поселенца</alphamemes_baptism.instructions.0>
+  <alphamemes_baptism.instructions.1>речь при крещении: в центре посвящение и принадлежность; не добавляй слов, которых нет в переданной записи общения</alphamemes_baptism.instructions.1>
+  <alphamemes_baptism.tone>формально и уязвимо, новая принадлежность названа перед всеми</alphamemes_baptism.tone>
+  <alphamemes_baptism.tones.0>торжественно и под взглядами, все лица обращены к обряду</alphamemes_baptism.tones.0>
+  <alphamemes_baptism.tones.1>с надеждой и уязвимостью, личность называют вслух</alphamemes_baptism.tones.1>
+
+  <alphamemes_hediffs.label>Ритуальный пыл</alphamemes_hediffs.label>
+  <alphamemes_hediffs.instruction>ритуальная разрядка или праведный пыл остаются в теле; вплети облегчение, уверенность или опасную убеждённость в итог дня</alphamemes_hediffs.instruction>
+  <alphamemes_hediffs.instructions.0>ритуальный пыл: пиши телесное облегчение или обострившуюся уверенность после обряда, не называя эффекты и показатели</alphamemes_hediffs.instructions.0>
+  <alphamemes_hediffs.instructions.1>ритуальный пыл: заметь, кажется ли облегчение чистым, заимствованным или уже близким к новой одержимости</alphamemes_hediffs.instructions.1>
+  <alphamemes_hediffs.tone>с облегчением и пылом, острота ещё не успела остыть</alphamemes_hediffs.tone>
+  <alphamemes_hediffs.tones.0>с разрядкой и усталостью, давление наконец нашло выход</alphamemes_hediffs.tones.0>
+  <alphamemes_hediffs.tones.1>праведно и заряженно, уверенность почти становится фанатизмом</alphamemes_hediffs.tones.1>
+
+</LanguageData>

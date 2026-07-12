@@ -65,7 +65,7 @@ namespace PawnDiary
             for (int i = 0; i < defs.Count; i++)
             {
                 DiaryEventWindowDef def = defs[i];
-                if (def == null || !def.enabled)
+                if (def == null || !def.enabled || def.MissingRequiredPackage())
                 {
                     continue;
                 }
@@ -372,7 +372,7 @@ namespace PawnDiary
                 }
 
                 DiaryEventWindowDef def = EventWindowDefFor(active);
-                if (def == null || !def.enabled)
+                if (def == null || !def.enabled || def.MissingRequiredPackage())
                 {
                     activeEventWindows.RemoveAt(i);
                     continue;
@@ -517,7 +517,7 @@ namespace PawnDiary
                 }
 
                 DiaryEventWindowDef def = EventWindowDefFor(active);
-                if (def == null || !def.enabled || !def.promptEnabled)
+                if (def == null || !def.enabled || def.MissingRequiredPackage() || !def.promptEnabled)
                 {
                     continue;
                 }
@@ -625,6 +625,33 @@ namespace PawnDiary
                 return pawns;
             }
 
+            // IncidentWorker.TryExecute supplies a map but no pawn. SubjectPawn therefore cannot
+            // represent a colony-wide instant without going silent, while Map would create one page
+            // per colonist. MapWitness is the XML-controlled middle ground: exactly one eligible
+            // colonist owns the page, chosen by stable load ID so list ordering cannot change the
+            // witness after save/load or when another mod reorders map pawn collections.
+            if (def != null && def.recordScope == EventWindowRecordScope.MapWitness)
+            {
+                Pawn witness = EventWindowMapWitness(map);
+                if (witness == null && map == null)
+                {
+                    // A mapless signal has no natural target. Search loaded maps only in that rare
+                    // fallback case; never redirect an incident from a known empty map to another map.
+                    List<Map> loadedMaps = Find.Maps;
+                    for (int i = 0; i < loadedMaps.Count && witness == null; i++)
+                    {
+                        witness = EventWindowMapWitness(loadedMaps[i]);
+                    }
+                }
+
+                if (witness != null)
+                {
+                    pawns.Add(witness);
+                }
+
+                return pawns;
+            }
+
             if (map != null)
             {
                 AddEventWindowPawnsFromMap(map, pawns, seenPawnIds);
@@ -676,6 +703,40 @@ namespace PawnDiary
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Returns one deterministic diary owner for a map-level event, or null when the map has no
+        /// eligible colonist. Selection is deliberately not random: the same map state always picks
+        /// the same witness, which makes deduplication and save/load behavior easy to reason about.
+        /// </summary>
+        private static Pawn EventWindowMapWitness(Map map)
+        {
+            if (map == null || map.mapPawns == null)
+            {
+                return null;
+            }
+
+            Pawn selected = null;
+            string selectedId = null;
+            List<Pawn> colonists = map.mapPawns.FreeColonists;
+            for (int i = 0; i < colonists.Count; i++)
+            {
+                Pawn pawn = colonists[i];
+                if (!IsDiaryEligible(pawn))
+                {
+                    continue;
+                }
+
+                string pawnId = pawn.GetUniqueLoadID();
+                if (selected == null || string.CompareOrdinal(pawnId, selectedId) < 0)
+                {
+                    selected = pawn;
+                    selectedId = pawnId;
+                }
+            }
+
+            return selected;
         }
 
         private static Pawn EventWindowSubjectPawnFromMap(Map map, string pawnId)
@@ -944,7 +1005,7 @@ namespace PawnDiary
             for (int i = 0; i < defs.Count; i++)
             {
                 DiaryEventWindowDef def = defs[i];
-                if (def == null || !def.enabled)
+                if (def == null || !def.enabled || def.MissingRequiredPackage())
                 {
                     continue;
                 }
@@ -1050,10 +1111,18 @@ namespace PawnDiary
                     continue;
                 }
 
+                DiaryEventWindowDef def = EventWindowDefFor(active);
+                if (def == null || !def.enabled || def.MissingRequiredPackage())
+                {
+                    // Compatibility windows must not survive removing their target mod from a save.
+                    // Dropping the stale state is safe: the Def stores only prompt context, not game state.
+                    activeEventWindows.RemoveAt(i);
+                    continue;
+                }
+
                 if (string.IsNullOrWhiteSpace(active.windowKey))
                 {
-                    DiaryEventWindowDef def = EventWindowDefFor(active);
-                    active.windowKey = def == null ? active.windowDefName : def.EffectiveWindowKey();
+                    active.windowKey = def.EffectiveWindowKey();
                 }
 
                 active.startSubjectPawnId = active.startSubjectPawnId ?? string.Empty;

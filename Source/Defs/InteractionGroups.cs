@@ -102,6 +102,11 @@ namespace PawnDiary
         public int minEventsToWrite = 1;
         // AmbientDayNote only: keep at most this many evidence lines in the raw prompt text.
         public int maxSampleLines = 5;
+        // Ordinarily a batch is used only when both interaction pawns own diaries. AmbientDayNote
+        // compatibility groups may opt in when exactly one pawn is eligible (for example a colonist
+        // talking to a Hospitality guest): that batcher writes only the eligible pawn's solo note.
+        // PairEvent does not support this flag. Default false preserves every shipped group's routing.
+        public bool allowSingleEligiblePawn = false;
     }
 
     // Optional "promotion" policy embedded in a DiaryInteractionGroupDef. A batched (low-value)
@@ -550,10 +555,13 @@ namespace PawnDiary
             return ClassifyIn(GroupDomain.MoodEvent, conditionDef?.defName);
         }
 
-        // First Thought-domain group that matches the ThoughtDef, else the Thought catch-all.
+        // First Thought-domain group that matches the live ThoughtDef, else the Thought catch-all.
+        // Keep the Def object here (rather than reducing it to defName) so compatibility groups can
+        // use matchPackageIds. Saved-event recovery still uses ClassifyDefName below because a save
+        // intentionally stores the stable name, not a live Def reference.
         public static DiaryInteractionGroupDef ClassifyThought(ThoughtDef thoughtDef)
         {
-            return ClassifyIn(GroupDomain.Thought, thoughtDef?.defName);
+            return ClassifyIn(GroupDomain.Thought, thoughtDef);
         }
 
         // First Inspiration-domain group that matches the InspirationDef, else the Inspiration catch-all.

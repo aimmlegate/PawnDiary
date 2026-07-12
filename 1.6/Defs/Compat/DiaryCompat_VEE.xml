@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Compatibility groups for Vanilla Events Expanded (VanillaExpanded.VEE).
+
+  New to Pawn Diary XML? A group gives matching game defs a diary label and writing voice. Lower
+  order values classify first, so these exact VEE matchers sit immediately before the relevant core
+  fallbacks. Every group is package-gated: without VEE it records nothing, emits no missing-def
+  warning, and is omitted from the capturable-group settings list. The matchers are plain defName
+  strings rather than Def references, so the file is also safe when VEE's NoOdyssey load folder
+  changes which defs are present.
+
+  Source verification: official Vanilla-Expanded/VanillaEventsExpanded master, v2.01,
+  commit 112f0324238b352dad8ca54aa0d2a391d10ec99a (2026-07-11).
+
+  Important corrections made during that verification:
+    * RaidEnemyPurple derives from IncidentWorker_RaidEnemy, and InfestationPurple's worker type
+      contains "Infestation", so both pass Pawn Diary's raid filter.
+    * VEE_VisitorGroupRaid derives from IncidentWorker_NeutralGroup. Its incident signal happens
+      while the visitors are still friendly, before their hidden traitor hediff changes faction, so
+      it cannot truthfully route through the current pure-XML Raid path and is deliberately omitted.
+    * VEE_Aurora and VEE_SuperbloomPsychicDrone are situational ThoughtDefs, not Thought_Memory
+      records. Pawn Diary's Thought-domain hook receives gained memories only, so a group for these
+      names would be settings-visible but unreachable; their parent conditions are covered by the
+      observed-condition tints instead. MightJoin and Traitor are hidden HediffDefs, not thoughts;
+      visible-only hediff capture cannot expose them, so the hidden traitor-wanderer arc remains
+      deliberately uncaptured rather than leaking secret game state.
+-->
+<Defs>
+
+  <!-- Purple raids: lower than core raidFriendly (705), raidDropPod (706), infestation (707), and
+       the generic raid catch-all (710). Exact names keep the theme narrow. Raid entries are never
+       batched, so there is intentionally no <batch> block. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>vee_raids</defName>
+    <label>VEE purple raids</label>
+    <order>704</order>
+    <domain>Raid</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <combat>true</combat>
+    <colorCue>danger</colorCue>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VEE</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a raid made wrong by impossible scale or timing; write the colony bracing for a familiar threat that no longer feels familiar, without inventing the battle's outcome</instruction>
+    <instructions>
+      <li>a purple raid — make the scale feel wrong through what the pawn can count, hear, or see while taking position; do not invent casualties or victory</li>
+      <li>a purple raid — write the old defense routine straining against an attack whose timing or numbers do not fit</li>
+      <li>a purple raid — keep the moment at warning and first contact unless supplied facts already show more</li>
+    </instructions>
+    <tone>with alarm at a familiar threat grown unnaturally large</tone>
+    <tones>
+      <li>tense and disbelieving, counting danger that should not be this large</li>
+      <li>urgent and tactical, routine defenses suddenly feeling too small</li>
+    </tones>
+    <matchDefNames>
+      <li>RaidEnemyPurple</li>
+      <li>InfestationPurple</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- These six are the visible, suitable VEE HediffDefs in v2.01. They are colony-wide ambient
+       effects, so DayReflection folds them into the end-of-day candidate pool instead of producing
+       one immediate page for every affected colonist. badOnly=false is intentional because psychic
+       relaxation is positive. Aurora/superbloom situational thoughts are represented by the live
+       condition tints rather than a dead Thought-domain group. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>vee_hediffs</defName>
+    <label>VEE ambient conditions</label>
+    <order>655</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VEE</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a VEE condition shared across the colony; fold its bodily or psychic pressure into the day's reflection without treating it as a sudden private diagnosis</instruction>
+    <instructions>
+      <li>an ambient VEE condition — show how the body or mind carried it through one ordinary task today</li>
+      <li>an ambient VEE condition — keep it part of the day's atmosphere, not a separate medical revelation unless the supplied facts make it one</li>
+      <li>an ambient VEE condition — match relief or distress to the named condition instead of assuming every effect is harmful</li>
+    </instructions>
+    <tone>with a shared psychic or bodily pressure hanging over the day</tone>
+    <tones>
+      <li>body-aware and atmospheric, the whole colony living under the same condition</li>
+      <li>quietly altered, relief or strain woven into routine</li>
+    </tones>
+    <hediff>
+      <mode>DayReflection</mode>
+      <visibleOnly>true</visibleOnly>
+      <badOnly>false</badOnly>
+      <recordOnAdd>true</recordOnAdd>
+      <dedupTicks>60000</dedupTicks>
+      <dayReflectionWeight>0.6</dayReflectionWeight>
+    </hediff>
+    <matchDefNames>
+      <li>VEE_SunSickness</li>
+      <li>VEE_LongNight</li>
+      <li>VEE_PsychicHumHediff</li>
+      <li>VEE_PsychicOverdriveHediff</li>
+      <li>VEE_PsychicRelaxationHediff</li>
+      <li>VEE_BloomPsychicSensitivity</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

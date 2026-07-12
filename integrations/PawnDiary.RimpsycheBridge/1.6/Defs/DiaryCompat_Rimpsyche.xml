@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Tier-1 string-matcher compatibility for Rimpsyche - Personality Core (Maux36.Rimpsyche).
+
+  Both groups are enableWhenPackageIdsLoaded-gated, so this file is completely inert when Rimpsyche
+  is absent. Matchers are plain strings: no C# type/Def reference can make the adapter require a
+  particular Rimpsyche content version.
+
+  Order slots were verified free across every shipped core/compat group on 2026-07-12:
+    * Interaction 11 sits ahead of 1-2-3 Personalities 12, VSIE 13/14, RimTalk 17, SpeakUp 18,
+      and core romance 20. The Rimpsyche_ prefix therefore wins before broader groups.
+    * Thought 479 sits ahead of 1-2-3 Personalities 480, VSIE 481, and core thought groups 490+.
+
+  captureRenderedGameText remains true after source/assembly inspection. Rimpsyche's conversation
+  PlayLog entries format a stored topic label and do not schedule another interaction from grammar;
+  the release smoketest still stress-triggers 20+ conversations to catch version-specific reentrancy.
+-->
+<Defs>
+
+  <!-- Ordinary Rimpsyche social log traffic becomes one ambient day note per pawn/day. A light
+       promotion escape hatch lets mood/opinion pressure surface a charged moment immediately; Tier C
+       separately has the exact signed alignment and only submits conversations above its XML threshold. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>rimpsyche_conversations</defName>
+    <label>Rimpsyche conversations</label>
+    <order>11</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>Maux36.Rimpsyche</li>
+    </enableWhenPackageIdsLoaded>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>RimpsycheAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>6</minEventsToWrite>
+      <maxSampleLines>3</maxSampleLines>
+    </batch>
+    <promotion>
+      <baseChance>0.005</baseChance>
+      <maxChance>0.08</maxChance>
+      <opinionStrongBonus>0.025</opinionStrongBonus>
+      <opinionStrongThreshold>40</opinionStrongThreshold>
+      <opinionAsymmetryBonus>0.025</opinionAsymmetryBonus>
+      <opinionAsymmetryThreshold>40</opinionAsymmetryThreshold>
+      <needLowBonus>0.025</needLowBonus>
+      <needLowThreshold>0.25</needLowThreshold>
+      <moodExtremeBonus>0.025</moodExtremeBonus>
+      <moodLowThreshold>0.25</moodLowThreshold>
+    </promotion>
+    <instruction>an exchange that went somewhere - center the ease, friction, or topic that stuck, never reconstruct a transcript</instruction>
+    <instructions>
+      <li>Rimpsyche conversation - write what shifted between the two people: easier company, a snag, or a subject neither quite left behind</li>
+      <li>Rimpsyche conversation - use the supplied topic or outcome as evidence, but invent no quotation and no new confession</li>
+      <li>Rimpsyche conversation - keep ordinary talk as day texture unless the pawn's mood or relationship makes this one land harder</li>
+    </instructions>
+    <tone>attentive to where a conversation left the two people</tone>
+    <tones>
+      <li>socially observant, following ease or friction rather than exact words</li>
+      <li>quietly reflective, with the topic's afterweight still present</li>
+    </tones>
+    <matchPrefixes>
+      <li>Rimpsyche_</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Rimpsyche's Smalltalk / ConversationOpinion / ConvoIgnored thoughts. Thought groups only theme
+       events; Pawn Diary's global mood-offset policy remains the flood guard, so no ignored <batch>
+       block is placed here. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>rimpsyche_thoughts</defName>
+    <label>conversation afterfeel</label>
+    <order>479</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Maux36.Rimpsyche</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>the afterfeel of a conversation - an opinion shifting, common ground, or the sting of being ignored</instruction>
+    <instructions>
+      <li>conversation afterfeel - write the one feeling still present after the exchange, not the conversation itself</li>
+      <li>conversation afterfeel - show whether the other person now feels nearer, farther away, or simply harder to read</li>
+      <li>conversation afterfeel - keep it to the supplied social consequence; add no new words or motives</li>
+    </instructions>
+    <tone>with the residue of a social exchange</tone>
+    <tones>
+      <li>inward and lingering, an opinion still settling</li>
+      <li>briefly stung or warmed by how the other person responded</li>
+    </tones>
+    <matchPackageIds>
+      <li>Maux36.Rimpsyche</li>
+    </matchPackageIds>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

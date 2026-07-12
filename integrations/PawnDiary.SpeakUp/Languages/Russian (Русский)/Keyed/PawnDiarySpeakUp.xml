@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <PawnDiarySpeakUp.Settings.Category>Дневник пешки: SpeakUp</PawnDiarySpeakUp.Settings.Category>
+  <PawnDiarySpeakUp.Settings.SpeakUpMissing>SpeakUp не активен. Этот адаптер загружен бездействующим.</PawnDiarySpeakUp.Settings.SpeakUpMissing>
+  <PawnDiarySpeakUp.Settings.ConversationsSection>Запись целых разговоров</PawnDiarySpeakUp.Settings.ConversationsSection>
+  <PawnDiarySpeakUp.Settings.CaptureConversations>Записывать завершённые разговоры SpeakUp</PawnDiarySpeakUp.Settings.CaptureConversations>
+  <PawnDiarySpeakUp.Settings.CaptureConversationsDesc>Собирает цепочку доставленных ответов SpeakUp в одно парное событие дневника. Отдельные реплики всё ещё могут попадать в фоновые социальные заметки.</PawnDiarySpeakUp.Settings.CaptureConversationsDesc>
+  <PawnDiarySpeakUp.Settings.MinimumReplies>Минимум доставленных ответов: {0}</PawnDiarySpeakUp.Settings.MinimumReplies>
+  <PawnDiarySpeakUp.Settings.MinimumRepliesDesc>Более короткие обмены остаются только фоновыми. Обычно SpeakUp планирует до пяти ответов на разговор.</PawnDiarySpeakUp.Settings.MinimumRepliesDesc>
+  <PawnDiarySpeakUp.Event.ConversationLabel>разговор SpeakUp</PawnDiarySpeakUp.Event.ConversationLabel>
+  <PawnDiarySpeakUp.Event.ConversationSummaryWithLines>{0} и {1} продолжали один разговор. Число доставленных ответов: {2}. Фрагменты реплик: {3}</PawnDiarySpeakUp.Event.ConversationSummaryWithLines>
+  <PawnDiarySpeakUp.Event.ConversationSummaryWithoutLines>{0} и {1} продолжали один разговор. Число доставленных ответов: {2}.</PawnDiarySpeakUp.Event.ConversationSummaryWithoutLines>
+</LanguageData>

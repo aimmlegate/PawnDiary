@@ -9,12 +9,15 @@ namespace PawnDiary
 {
     /// <summary>
     /// Who receives the phase diary entry created by an event window. Map keeps the original
-    /// colony-wide behavior; SubjectPawn is for signals such as letters that name one pawn.
+    /// colony-wide fan-out; SubjectPawn is for signals such as letters that name one pawn; and
+    /// MapWitness chooses one stable diary-eligible colonist for map-level incidents that do not
+    /// identify a subject. New to C#/RimWorld? Enum values are the names XML writes directly.
     /// </summary>
     public enum EventWindowRecordScope
     {
         Map,
-        SubjectPawn
+        SubjectPawn,
+        MapWitness
     }
 
     /// <summary>
@@ -52,6 +55,10 @@ namespace PawnDiary
     public class DiaryEventWindowDef : Def
     {
         public bool enabled = true;
+        // Compatibility windows can name the package(s) that make their source signals meaningful.
+        // An empty list means the ordinary always-available behavior. Plain package strings keep this
+        // safe when the target mod (or a paid DLC) is absent; no external Def/type is resolved.
+        public List<string> enableWhenPackageIdsLoaded;
         public string windowKey;
         public List<DiaryEventWindowTriggerDef> startSignals = new List<DiaryEventWindowTriggerDef>();
         public List<DiaryEventWindowTriggerDef> endSignals = new List<DiaryEventWindowTriggerDef>();
@@ -119,6 +126,18 @@ namespace PawnDiary
         public string EffectiveWindowKey()
         {
             return string.IsNullOrWhiteSpace(windowKey) ? defName : windowKey;
+        }
+
+        /// <summary>
+        /// True when this compatibility window requires a package that is not in the active mod list.
+        /// Callers use this at every start/persistence/prompt boundary so an old saved active window is
+        /// also discarded cleanly after its target mod is removed.
+        /// </summary>
+        public bool MissingRequiredPackage()
+        {
+            return enableWhenPackageIdsLoaded != null
+                && enableWhenPackageIdsLoaded.Count > 0
+                && !InteractionGroups.AnyPackageLoaded(enableWhenPackageIdsLoaded);
         }
 
         public int EffectiveDedupTicks()

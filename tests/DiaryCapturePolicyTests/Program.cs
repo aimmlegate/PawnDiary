@@ -52,6 +52,7 @@ namespace DiaryCapturePolicyTests
             TestRitualDecide();
             TestRitualQualityLabel();
             TestRitualBuildGameContextFormat();
+            TestRitualInstructionCombination();
             TestPsychicRitualBuildGameContextFormat();
             TestAbilityDecide();
             TestAbilityCooldownWeightedChance();
@@ -778,9 +779,12 @@ namespace DiaryCapturePolicyTests
                 InteractionEventData.Decide(Interaction(routeToAmbient: true), Ctx()));
             AssertEqual("interaction ambient wins over batch flag", CaptureDecision.RouteAmbient,
                 InteractionEventData.Decide(Interaction(routeToBatch: true, routeToAmbient: true), Ctx()));
-            AssertEqual("interaction route flag ignored for one eligible pawn", CaptureDecision.GenerateSolo,
+            AssertEqual("interaction single eligible without opt-in route stays solo", CaptureDecision.GenerateSolo,
                 InteractionEventData.Decide(
-                    Interaction(initiatorEligible: true, recipientEligible: false, routeToBatch: true), Ctx()));
+                    Interaction(initiatorEligible: true, recipientEligible: false), Ctx()));
+            AssertEqual("interaction single eligible can route ambient when XML adapter opts in", CaptureDecision.RouteAmbient,
+                InteractionEventData.Decide(
+                    Interaction(initiatorEligible: false, recipientEligible: true, routeToAmbient: true), Ctx()));
         }
 
         private static void TestInteractionBuildGameContextFormat()
@@ -1031,6 +1035,18 @@ namespace DiaryCapturePolicyTests
                     null,
                     "",
                     ""));
+        }
+
+        private static void TestRitualInstructionCombination()
+        {
+            AssertEqual("ritual instruction keeps theme and role", "dark rite\norganizer perspective",
+                RitualEventData.CombineInstructions(" dark rite ", " organizer perspective "));
+            AssertEqual("ritual instruction theme-only fallback", "dark rite",
+                RitualEventData.CombineInstructions("dark rite", " "));
+            AssertEqual("ritual instruction role-only fallback", "organizer perspective",
+                RitualEventData.CombineInstructions(null, "organizer perspective"));
+            AssertEqual("ritual instruction blank", string.Empty,
+                RitualEventData.CombineInstructions(null, null));
         }
 
         private static void TestPsychicRitualBuildGameContextFormat()

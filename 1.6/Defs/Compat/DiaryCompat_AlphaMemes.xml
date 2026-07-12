@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Compatibility groups for Alpha Memes (Sarg.AlphaMemes), verified against the upstream 1.6
+  XML on 2026-07-12. Every group is package-gated, so these plain-string matchers are inert in
+  a no-Alpha-Memes game and never create a DLC dependency.
+
+  RitualSignal classifies "PreceptDefName;BehaviorWorkerClass" when a behavior is available.
+  The enumerated funeral stems therefore use matchPrefixes rather than matchDefNames: each full
+  precept name still gets first claim while accepting the runtime's semicolon suffix. The broader
+  AM_ ritual group comes second and safely catches new Alpha Memes ceremonies added upstream.
+
+  Considered and deliberately skipped: ability defs (combat-frequency noise; core Ability groups
+  remain the fallback), meme defs (static ideology configuration), toxic/kamikaze/dryad hediffs
+  (mechanical rather than reflective), and gauranlen/dryad content. Optional Alpha Memes funeral
+  precepts shipped for Royalty, VFE Pirates, VIE Memes, and VGE are included as exact stems; they
+  simply never exist when their owning optional content is absent.
+-->
+<Defs>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>alphamemes_funeral</defName>
+    <label>Alpha Memes funerals</label>
+    <order>766</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>quiet</colorCue>
+    <enableWhenPackageIdsLoaded>
+      <li>Sarg.AlphaMemes</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a funeral shaped by an unusual ideology - write the pawn's own goodbye through the ceremony's solemnity, strangeness, or macabre tenderness</instruction>
+    <instructions>
+      <li>an unusual funeral - keep the dead person at the center while sky, flame, launch, preservation, or transformation gives grief its chosen shape</li>
+      <li>an unusual funeral - write whether the ceremony felt right, absurd, merciful, or unbearable to this pawn from their assigned place in it</li>
+      <li>an unusual funeral - hold sorrow beside the ritual's physical detail; dark humor is welcome only when the supplied rite genuinely carries it</li>
+    </instructions>
+    <tone>solemn and strange, grief moving through a chosen rite</tone>
+    <tones>
+      <li>macabre but tender, the ceremony making loss tangible</li>
+      <li>ceremonial and grief-heavy, with room for one absurd human detail</li>
+      <li>quietly reverent, however unfamiliar the farewell looks</li>
+    </tones>
+    <matchPrefixes>
+      <li>AM_AnimaBurial</li>
+      <li>AM_BlastOffFuneral</li>
+      <li>AM_CremateFuneral</li>
+      <li>AM_CremateFuneralNoCorpse</li>
+      <li>AM_DreadnoughtCryptoFuneral</li>
+      <li>AM_DreadnoughtFuneral</li>
+      <li>AM_FleshCraftingFuneral</li>
+      <li>AM_FuneralNoCorpse</li>
+      <li>AM_InsectoidBurial</li>
+      <li>AM_Mummification</li>
+      <li>AM_OcularFuneral</li>
+      <li>AM_PastedFuneral</li>
+      <li>AM_PyramidBurial</li>
+      <li>AM_RumBurial</li>
+      <li>AM_SkyBurial</li>
+      <li>GR_ExtractorFuneral</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>alphamemes_rituals</defName>
+    <label>Alpha Memes rituals</label>
+    <order>767</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Sarg.AlphaMemes</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>an unusual communal rite - write spectacle, catharsis, or collective madness from the pawn's actual role, without explaining the ideology as a mechanic</instruction>
+    <instructions>
+      <li>an unusual rite - stay inside the pawn's role and senses while the colony turns belief into spectacle, contest, initiation, or destruction</li>
+      <li>an unusual rite - write the release afterward: pride, embarrassment, relief, or the charged silence left when everyone stops</li>
+      <li>an unusual rite - let the supplied title decide whether this is joyous, absurd, fervent, or frightening; do not force every ceremony dark</li>
+    </instructions>
+    <tone>ceremonial, unruly, and alive with collective feeling</tone>
+    <tones>
+      <li>fervent and physical, belief acted out in public</li>
+      <li>strange but communal, spectacle carrying real emotional weight</li>
+      <li>cathartic and unsettled, the colony briefly moving as one body</li>
+    </tones>
+    <matchPrefixes>
+      <li>AM_</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Thought groups theme eligible memories only. The global mood-offset policy remains the
+       flood guard, so this group intentionally has no batch policy. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>alphamemes_thoughts</defName>
+    <label>Alpha Memes aftereffects</label>
+    <order>486</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Sarg.AlphaMemes</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>the aftereffect of an unusual rite - write pride, unease, relief, or the hangover of collective fervor as a feeling still settling</instruction>
+    <instructions>
+      <li>ritual aftereffect - name the feeling that stayed when the spectacle ended, not the thought mechanic</li>
+      <li>ritual aftereffect - keep it to one honest residue: satisfaction, revulsion, embarrassment, awe, or exhausted relief</li>
+    </instructions>
+    <tone>with the charged aftertaste of collective ritual</tone>
+    <tones>
+      <li>inward and unsettled, public fervor turning private</li>
+      <li>spent but vivid, the ceremony still clinging to the senses</li>
+    </tones>
+    <matchPrefixes>
+      <li>AM_</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>alphamemes_baptism</defName>
+    <label>Baptism speeches</label>
+    <order>19</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>Sarg.AlphaMemes</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a public initiation or naming speech - write the exposure of standing before everyone, or the responsibility of speaking the words over someone else</instruction>
+    <instructions>
+      <li>a baptism speech - write the room, the watching faces, and what this public beginning asks of the pawn</li>
+      <li>a baptism speech - center initiation and belonging; quote nothing that the rendered interaction did not supply</li>
+    </instructions>
+    <tone>formal and exposed, a new belonging named in public</tone>
+    <tones>
+      <li>solemn and watchful, every face turned toward the rite</li>
+      <li>hopeful but vulnerable, identity being spoken aloud</li>
+    </tones>
+    <matchDefNames>
+      <li>AM_Speech_Baptism</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>alphamemes_hediffs</defName>
+    <label>Ritual fervor</label>
+    <order>656</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Sarg.AlphaMemes</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>ritual catharsis or righteous fervor lingering in the body - fold the relief, confidence, or dangerous certainty into the day's reflection</instruction>
+    <instructions>
+      <li>ritual fervor - write the bodily release or sharpened certainty left after the rite, without naming a hediff or stat</li>
+      <li>ritual fervor - notice whether relief feels clean, borrowed, or close to becoming another kind of compulsion</li>
+    </instructions>
+    <tone>relieved and fervent, with an edge that has not fully cooled</tone>
+    <tones>
+      <li>cathartic and spent, pressure finally finding a way out</li>
+      <li>righteous and charged, confidence close to becoming zeal</li>
+    </tones>
+    <hediff>
+      <mode>DayReflection</mode>
+      <visibleOnly>true</visibleOnly>
+      <badOnly>false</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>false</recordOnSeverityIncrease>
+      <dedupTicks>60000</dedupTicks>
+      <dayReflectionWeight>0.6</dayReflectionWeight>
+    </hediff>
+    <matchDefNames>
+      <li>AM_CatharsisHediff</li>
+      <li>AM_IconoclastHediff</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

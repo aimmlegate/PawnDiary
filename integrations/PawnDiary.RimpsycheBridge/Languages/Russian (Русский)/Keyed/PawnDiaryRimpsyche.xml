@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Русская локализация строк, которые выдаёт C#-сборка моста Rimpsyche. Регистр соответствует ядру:
+  «поселенец», а не «пешка»; правила взгляда — 1-2 поведенческие фразы «Этот поселенец…» без
+  названий узлов и механик. Технические ключи psyche=/interests= остаются английскими в C# как
+  машинные метки схемы и сюда не вынесены.
+-->
+<LanguageData>
+
+  <!-- Окно настроек -->
+  <PawnDiaryRimpsyche.Settings.Category>Pawn Diary: Rimpsyche</PawnDiaryRimpsyche.Settings.Category>
+  <PawnDiaryRimpsyche.Settings.Missing>Rimpsyche нет в списке активных модов, поэтому мост бездействует. Включите Rimpsyche - Personality Core, чтобы им пользоваться.</PawnDiaryRimpsyche.Settings.Missing>
+  <PawnDiaryRimpsyche.Settings.Section>Связь с Rimpsyche</PawnDiaryRimpsyche.Settings.Section>
+  <PawnDiaryRimpsyche.Settings.PsychotypeOverride>Учитывать психику во взгляде дневника</PawnDiaryRimpsyche.Settings.PsychotypeOverride>
+  <PawnDiaryRimpsyche.Settings.PsychotypeOverrideDesc>Составлять взгляд дневника из двух самых выраженных и разных сторон характера поселенца. Если выключить, мост снимет все принадлежащие ему переопределения взгляда.</PawnDiaryRimpsyche.Settings.PsychotypeOverrideDesc>
+  <PawnDiaryRimpsyche.Settings.ChargedConversations>Записывать значимые разговоры</PawnDiaryRimpsyche.Settings.ChargedConversations>
+  <PawnDiaryRimpsyche.Settings.ChargedConversationsDesc>Записывать только разговоры Rimpsyche, в которых согласие или разлад превысили порог из XML. Для каждой пары действует сохраняемая пауза; обычные беседы остаются фоном дня.</PawnDiaryRimpsyche.Settings.ChargedConversationsDesc>
+
+  <!-- Фактическое описание события; {0} — локализованная тема из Rimpsyche. -->
+  <PawnDiaryRimpsyche.Event.ConversationLabel>Значимый разговор</PawnDiaryRimpsyche.Event.ConversationLabel>
+  <PawnDiaryRimpsyche.Event.UnknownTopic>о чём-то важном</PawnDiaryRimpsyche.Event.UnknownTopic>
+  <PawnDiaryRimpsyche.Event.ConversationSummary.Positive>Тема разговора — {0}; беседа сблизила их.</PawnDiaryRimpsyche.Event.ConversationSummary.Positive>
+  <PawnDiaryRimpsyche.Event.ConversationSummary.Negative>Тема разговора — {0}; после беседы между ними осталось трение.</PawnDiaryRimpsyche.Event.ConversationSummary.Negative>
+
+  <!-- Шесть семейств × два направления: поведение без названий узлов и механик. -->
+  <PawnDiaryRimpsyche.Outlook.Social.Positive>Этот поселенец судит о дне по людям вокруг: первым замечает лёгкость общения и повод сблизиться, а не одиночество.</PawnDiaryRimpsyche.Outlook.Social.Positive>
+  <PawnDiaryRimpsyche.Outlook.Social.Negative>Этот поселенец держит дистанцию и осторожно выбирает общество; уединение и возможность отступить во многом определяют, хорош ли был день.</PawnDiaryRimpsyche.Outlook.Social.Negative>
+  <PawnDiaryRimpsyche.Outlook.Mind.Positive>Этот поселенец тянется к вопросам, возможностям и скрытому смыслу; новизна делает день живым.</PawnDiaryRimpsyche.Outlook.Mind.Positive>
+  <PawnDiaryRimpsyche.Outlook.Mind.Negative>Этот поселенец доверяет знакомому, осязаемому и уже проверенному; хороший день остаётся понятным и прочно стоит на земле.</PawnDiaryRimpsyche.Outlook.Mind.Negative>
+  <PawnDiaryRimpsyche.Outlook.Drive.Positive>Этот поселенец мерит день движением и продвижением, а испытание ценит прежде всего за возможность встретить его лицом к лицу.</PawnDiaryRimpsyche.Outlook.Drive.Positive>
+  <PawnDiaryRimpsyche.Outlook.Drive.Negative>Этот поселенец не любит, когда его торопят к чужим целям, и ценит возможность осесть, перевести дух или оставить хорошее как есть.</PawnDiaryRimpsyche.Outlook.Drive.Negative>
+  <PawnDiaryRimpsyche.Outlook.Emotion.Positive>Этот поселенец судит о важности дня по его внутренней погоде; напряжение и внезапные чувства оставляют долгий след.</PawnDiaryRimpsyche.Outlook.Emotion.Positive>
+  <PawnDiaryRimpsyche.Outlook.Emotion.Negative>Этот поселенец быстро возвращается к ровному состоянию и не позволяет мимолётным чувствам решать, что значил прожитый день.</PawnDiaryRimpsyche.Outlook.Emotion.Negative>
+  <PawnDiaryRimpsyche.Outlook.Moral.Positive>Этот поселенец взвешивает события по тому, кому помогли, кто остался верен и поступили ли люди достойно в решающий момент.</PawnDiaryRimpsyche.Outlook.Moral.Positive>
+  <PawnDiaryRimpsyche.Outlook.Moral.Negative>Этот поселенец сперва считает последствия для себя и не спешит доверять, сочувствовать или считать себя обязанным без доказательств.</PawnDiaryRimpsyche.Outlook.Moral.Negative>
+  <PawnDiaryRimpsyche.Outlook.Order.Positive>Этот поселенец спокойнее, когда обязанности ясны, всё лежит на месте, а день заканчивается как следует завершёнными делами.</PawnDiaryRimpsyche.Outlook.Order.Positive>
+  <PawnDiaryRimpsyche.Outlook.Order.Negative>Этот поселенец действует по чутью и обстоятельствам, предпочитая свободу импровизации планам, распорядку и аккуратным итогам.</PawnDiaryRimpsyche.Outlook.Order.Negative>
+
+  <!-- 34 узла × два знака: только словесные категории, без чисел. -->
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Talkativeness.High>разговорчивый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Talkativeness.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Talkativeness.Low>молчаливый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Talkativeness.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Sociability.High>дружелюбный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Sociability.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Sociability.Low>замкнутый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Sociability.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Tact.High>дипломатичный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Tact.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Tact.Low>резкий</PawnDiaryRimpsyche.Adjective.Rimpsyche_Tact.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Playfulness.High>игривый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Playfulness.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Playfulness.Low>серьёзный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Playfulness.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Openness.High>непредубеждённый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Openness.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Openness.Low>традиционный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Openness.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Inquisitiveness.High>любознательный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Inquisitiveness.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Inquisitiveness.Low>равнодушный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Inquisitiveness.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Imagination.High>с богатым воображением</PawnDiaryRimpsyche.Adjective.Rimpsyche_Imagination.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Imagination.Low>приземлённый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Imagination.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Reflectiveness.High>созерцательный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Reflectiveness.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Reflectiveness.Low>реактивный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Reflectiveness.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Experimentation.High>склонный к экспериментам</PawnDiaryRimpsyche.Adjective.Rimpsyche_Experimentation.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Experimentation.Low>приверженный привычному</PawnDiaryRimpsyche.Adjective.Rimpsyche_Experimentation.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Confidence.High>уверенный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Confidence.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Confidence.Low>неуверенный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Confidence.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Bravery.High>смелый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Bravery.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Bravery.Low>боязливый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Bravery.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Diligence.High>усердный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Diligence.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Diligence.Low>ленивый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Diligence.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Passion.High>увлечённый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Passion.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Passion.Low>безучастный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Passion.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Ambition.High>честолюбивый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Ambition.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Ambition.Low>довольный имеющимся</PawnDiaryRimpsyche.Adjective.Rimpsyche_Ambition.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Tenacity.High>стойкий</PawnDiaryRimpsyche.Adjective.Rimpsyche_Tenacity.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Tenacity.Low>хрупкий</PawnDiaryRimpsyche.Adjective.Rimpsyche_Tenacity.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Expectation.High>требовательный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Expectation.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Expectation.Low>непритязательный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Expectation.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Competitiveness.High>соперничающий</PawnDiaryRimpsyche.Adjective.Rimpsyche_Competitiveness.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Competitiveness.Low>склонный к сотрудничеству</PawnDiaryRimpsyche.Adjective.Rimpsyche_Competitiveness.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Tension.High>напряжённый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Tension.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Tension.Low>расслабленный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Tension.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Emotionality.High>эмоциональный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Emotionality.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Emotionality.Low>невозмутимый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Emotionality.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Stability.High>устойчивый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Stability.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Stability.Low>неустойчивый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Stability.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Spontaneity.High>импульсивный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Spontaneity.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Spontaneity.Low>последовательный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Spontaneity.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Optimism.High>оптимистичный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Optimism.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Optimism.Low>пессимистичный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Optimism.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Morality.High>принципиальный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Morality.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Morality.Low>аморальный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Morality.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Compassion.High>сострадательный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Compassion.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Compassion.Low>бессердечный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Compassion.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Trust.High>доверчивый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Trust.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Trust.Low>недоверчивый</PawnDiaryRimpsyche.Adjective.Rimpsyche_Trust.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Loyalty.High>преданный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Loyalty.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Loyalty.Low>неверный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Loyalty.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Authenticity.High>искренний</PawnDiaryRimpsyche.Adjective.Rimpsyche_Authenticity.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Authenticity.Low>поверхностный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Authenticity.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_SelfInterest.High>эгоцентричный</PawnDiaryRimpsyche.Adjective.Rimpsyche_SelfInterest.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_SelfInterest.Low>альтруистичный</PawnDiaryRimpsyche.Adjective.Rimpsyche_SelfInterest.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Propriety.High>скромный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Propriety.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Propriety.Low>раскованный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Propriety.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Aggressiveness.High>агрессивный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Aggressiveness.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Aggressiveness.Low>мягкий</PawnDiaryRimpsyche.Adjective.Rimpsyche_Aggressiveness.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Organization.High>организованный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Organization.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Organization.Low>хаотичный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Organization.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Discipline.High>дисциплинированный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Discipline.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Discipline.Low>недисциплинированный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Discipline.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Focus.High>сосредоточенный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Focus.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Focus.Low>разносторонний</PawnDiaryRimpsyche.Adjective.Rimpsyche_Focus.Low>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Deliberation.High>обдуманный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Deliberation.High>
+  <PawnDiaryRimpsyche.Adjective.Rimpsyche_Deliberation.Low>поспешный</PawnDiaryRimpsyche.Adjective.Rimpsyche_Deliberation.Low>
+
+</LanguageData>

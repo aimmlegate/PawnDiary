@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DefInjected-перевод внешней группы rimpsyche_conversation. Индексы соответствуют
+  1.6/Defs/DiaryExternalGroups_Rimpsyche.xml; технический Def настройки перевода не требует.
+-->
+<LanguageData>
+
+  <rimpsyche_charged_conversation.label>Значимый разговор</rimpsyche_charged_conversation.label>
+  <rimpsyche_charged_conversation.instruction>разговор, который оказался важен; пиши, что всколыхнула тема и где эти двое оказались по отношению друг к другу, но не пересказывай беседу</rimpsyche_charged_conversation.instruction>
+  <rimpsyche_charged_conversation.instructions.0>значимый разговор: держись данной темы и того, сблизила ли она пару или оставила между ними трение</rimpsyche_charged_conversation.instructions.0>
+  <rimpsyche_charged_conversation.instructions.1>значимый разговор: пиши эмоциональный итог после встречи, не придумывая ни реплик, ни скрытого мотива</rimpsyche_charged_conversation.instructions.1>
+  <rimpsyche_charged_conversation.instructions.2>значимый разговор: пусть собственный взгляд каждого поселенца решит, что значили для него это согласие или столкновение</rimpsyche_charged_conversation.instructions.2>
+  <rimpsyche_charged_conversation.tone>с остаточным напряжением важного разговора</rimpsyche_charged_conversation.tone>
+  <rimpsyche_charged_conversation.tones.0>близко и внимательно, следя за расстоянием между двумя людьми</rimpsyche_charged_conversation.tones.0>
+  <rimpsyche_charged_conversation.tones.1>задумчиво, но неспокойно, пока тема ещё жива после последних слов</rimpsyche_charged_conversation.tones.1>
+
+</LanguageData>

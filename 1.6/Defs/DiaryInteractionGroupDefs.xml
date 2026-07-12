@@ -32,8 +32,10 @@
                      enabled, mode (PairEvent or AmbientDayNote), windowTicks, maxEvents,
                      scope (Pair or Def), syntheticDefName, labelKey, briefKey, headerKey,
                      fallbackKey, instructionKey, includeInteractionLabel, minEventsToWrite,
-                     maxSampleLines. Tale batches currently ignore mode and always write delayed
-                     solo entries per pawn.
+                     maxSampleLines, allowSingleEligiblePawn. The last field defaults false and is
+                     supported only by AmbientDayNote; set it when a compatibility group should batch
+                     the one diary-eligible side of an interaction with a guest/prisoner/outsider. Tale batches currently ignore mode
+                     and always write delayed solo entries per pawn.
     hediff         - optional Hediff-domain policy:
                      enabled, mode (DayReflection or Immediate), visibleOnly, badOnly,
                      excludeInjuries, minSeverity, chronicAlways, sickThoughtAlways,
@@ -79,57 +81,6 @@
     catchAll       - true = matches everything in its domain (leave matchers empty)
 -->
 <Defs>
-
-  <PawnDiary.DiaryInteractionGroupDef>
-    <defName>speakup_chitchat</defName>
-    <label>SpeakUp chatter</label>
-    <order>18</order>
-    <domain>Interaction</domain>
-    <defaultEnabled>true</defaultEnabled>
-    <important>false</important>
-    <!-- SpeakUp schedules follow-up dialogue from social-log grammar rendering. Pawn Diary renders
-         text only when its optional reply-suppression guard is active; otherwise tagged grammar
-         still falls back safely. -->
-    <captureRenderedGameText>true</captureRenderedGameText>
-    <batch>
-      <mode>AmbientDayNote</mode>
-      <windowTicks>60000</windowTicks>
-      <maxEvents>999</maxEvents>
-      <syntheticDefName>SpeakUpAmbientDay</syntheticDefName>
-      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
-      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
-      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
-      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
-      <minEventsToWrite>8</minEventsToWrite>
-      <maxSampleLines>3</maxSampleLines>
-    </batch>
-    <promotion>
-      <baseChance>0.005</baseChance>
-      <maxChance>0.08</maxChance>
-      <opinionStrongBonus>0.025</opinionStrongBonus>
-      <opinionStrongThreshold>40</opinionStrongThreshold>
-      <opinionAsymmetryBonus>0.025</opinionAsymmetryBonus>
-      <opinionAsymmetryThreshold>40</opinionAsymmetryThreshold>
-      <needLowBonus>0.025</needLowBonus>
-      <needLowThreshold>0.25</needLowThreshold>
-      <moodExtremeBonus>0.025</moodExtremeBonus>
-      <moodLowThreshold>0.25</moodLowThreshold>
-    </promotion>
-    <instruction>ordinary SpeakUp conversation - treat it as chitchat unless the pair's mood, need, or relationship tension makes the small moment land harder</instruction>
-    <instructions>
-      <li>SpeakUp chatter - use the supplied line if present; otherwise write low-stakes back-and-forth without inventing a quote</li>
-      <li>SpeakUp chatter - focus on the feeling under the small talk: ease, awkwardness, pressure, or distance</li>
-      <li>SpeakUp chatter - let the ordinary rhythm matter only if the pawn's state makes it matter</li>
-    </instructions>
-    <tone>with light, everyday social texture</tone>
-    <tones>
-      <li>loose and conversational, like ordinary talk passing through the room</li>
-      <li>plain and observant, letting tiny social pressure carry the weight</li>
-    </tones>
-    <matchPackageIds>
-      <li>JPT.speakup</li>
-    </matchPackageIds>
-  </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>romance</defName>

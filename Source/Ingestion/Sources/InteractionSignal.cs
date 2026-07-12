@@ -56,12 +56,19 @@ namespace PawnDiary.Ingestion
 
             bool routeToBatch = false;
             bool routeToAmbient = false;
-            if (initiatorEligible && recipientEligible)
+            batchGroup = DiaryGameComponent.BatchGroupFor(interactionDef);
+            bool bothEligible = initiatorEligible && recipientEligible;
+            bool oneEligibleAllowed = batchGroup?.batch != null
+                && batchGroup.batch.allowSingleEligiblePawn
+                && batchGroup.batch.mode == InteractionBatchMode.AmbientDayNote
+                && initiatorEligible != recipientEligible;
+            if ((bothEligible || oneEligibleAllowed) && batchGroup != null)
             {
                 // XML marks low-value groups as delayed batches. The promotion roll is intentionally
                 // impure, so the chosen route is pre-computed here before the catalog decides.
-                batchGroup = DiaryGameComponent.BatchGroupFor(interactionDef);
-                if (batchGroup != null && !DiaryGameComponent.ShouldPromoteInteraction(batchGroup, initiator, recipient))
+                // A group must explicitly opt into one-eligible-pawn batching. That lets a colonist's
+                // talks with a guest become one ambient solo note without changing any existing group.
+                if (!DiaryGameComponent.ShouldPromoteInteraction(batchGroup, initiator, recipient))
                 {
                     routeToAmbient = batchGroup.batch != null
                         && batchGroup.batch.mode == InteractionBatchMode.AmbientDayNote;

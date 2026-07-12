@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Lasting-condition prompt tints for Vanilla Events Expanded (VanillaExpanded.VEE).
+
+  These defs do not create diary pages. Every 1,500 ticks Pawn Diary checks active conditions on
+  player home maps; an exact defName match adds a small writing cue to entries made while that state
+  lasts. The live GameCondition is the source of truth, so loading a save mid-event rediscovers it and
+  clearing the condition removes the cue after the normal 2,500-tick debounce.
+
+  DiaryObservedConditionDef has no package-gate field. Safety instead comes from exact plain-string
+  matchers: without VEE none of these names can be active, so the defs remain inert and create no
+  missing-def reference or warning. This is also safe when VEE's NoOdyssey folder changes available
+  content. Source names were rechecked against official VEE v2.01 commit
+  112f0324238b352dad8ca54aa0d2a391d10ec99a (2026-07-11).
+
+  SpaceBattle is intentionally absent: it is short and covered by DiaryEventWindows_VEE.xml. VEE
+  hediffs are also absent here because their parent conditions already supply the map-wide tint;
+  observing both would double-weight the same event.
+-->
+<Defs>
+
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>VeeDroughtActive</defName>
+    <label>VEE drought</label>
+    <conditionKey>VeeDroughtActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames>
+      <li>VEE_Drought</li>
+    </matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>4</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.VeeDroughtActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.VeeDroughtActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.VeeDroughtActive.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.VeeDroughtActive.Cue.Dust</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>VeeLongNightActive</defName>
+    <label>VEE long night</label>
+    <conditionKey>VeeLongNightActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames>
+      <li>VEE_LongNight</li>
+    </matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>5</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.VeeLongNightActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.VeeLongNightActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.VeeLongNightActive.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.VeeLongNightActive.Cue.NoDawn</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>VeeScorchActive</defName>
+    <label>VEE scorch</label>
+    <conditionKey>VeeScorchActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames>
+      <li>VEE_Scorch</li>
+    </matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>4</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Cue.NightWork</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>VeeWhiteoutActive</defName>
+    <label>VEE whiteout</label>
+    <conditionKey>VeeWhiteoutActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames>
+      <li>VEE_Whiteout</li>
+    </matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>5</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.VeeWhiteoutActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.VeeWhiteoutActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.VeeWhiteoutActive.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.VeeWhiteoutActive.Cue.Buried</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>VeePsychicBloomActive</defName>
+    <label>VEE psychic bloom</label>
+    <conditionKey>VeePsychicBloomActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames>
+      <li>VEE_PsychicBloom</li>
+    </matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>3</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.VeePsychicBloomActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.VeePsychicBloomActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.VeePsychicBloomActive.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.VeePsychicBloomActive.Cue.Flowering</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <!-- These four VEE conditions share one psychic-pressure voice. PsychicRain is deliberately the
+       unprefixed GameConditionDef name; the package-independent exact matcher is still safe. -->
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>VeePsychicHumActive</defName>
+    <label>VEE psychic pressure</label>
+    <conditionKey>VeePsychicHumActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames>
+      <li>VEE_PsychicHum</li>
+      <li>VEE_PsychicOverdrive</li>
+      <li>VEE_PsychicStimulation</li>
+      <li>PsychicRain</li>
+    </matchDefNames>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>3</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.VeePsychicHumActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.VeePsychicHumActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.VeePsychicHumActive.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.VeePsychicHumActive.Cue.Pressure</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
+</Defs>

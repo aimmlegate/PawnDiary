@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Compatibility groups for Vanilla Ideology Expanded - Memes and Structures
+  (VanillaExpanded.VMemesE), verified against the upstream 1.6 XML on 2026-07-12. Package gates
+  make every group inert without the target mod; all target identifiers remain plain strings.
+
+  RitualSignal classifies "PreceptDefName;BehaviorWorkerClass". The four dark-rite precepts use
+  their complete current precept-name stems in matchPrefixes so they accept that runtime suffix;
+  the following VME_ catch-all then claims every other VIE ceremony. Considered and deliberately
+  skipped: VME_JunkChunkDrop (junk delivery), meme defs (static configuration), fleshcrafted-part
+  hediffs (the core gained-part groups already classify them), and VME_MedicalEmergencyHediff
+  (mechanical bookkeeping).
+-->
+<Defs>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>viememes_darkrites</defName>
+    <label>VIE dark rites</label>
+    <order>764</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>extremeDark</colorCue>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VMemesE</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a severe communal rite - write awe, dread, and complicity from the pawn's assigned place, using only the ceremony and outcome supplied</instruction>
+    <instructions>
+      <li>a dark rite - stay close to what the pawn saw, smelled, heard, or helped do; let complicity carry more weight than explanation</li>
+      <li>a dark rite - write the crowd's shared purpose against the pawn's private fear, conviction, revulsion, or numbness</li>
+      <li>a dark rite - keep death, plague, fire, or forced conversion consequential and human; never turn suffering into spectacle for its own sake</li>
+    </instructions>
+    <tone>with ritual dread, public conviction, and private consequence</tone>
+    <tones>
+      <li>awed and complicit, the ceremony larger than any one conscience</li>
+      <li>dark and bodily, public certainty pressing against private fear</li>
+    </tones>
+    <matchPrefixes>
+      <li>VME_CeremonialSuicidePrecept</li>
+      <li>VME_PlagueFestivalPrecept</li>
+      <li>VME_ViolentConversionPrecept</li>
+      <li>VME_WickerManBurningPrecept</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>viememes_rituals</defName>
+    <label>VIE festivals and rites</label>
+    <order>765</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VMemesE</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a communal rite of celebration, politics, devotion, or release - write the pawn's role and what the colony felt like in the middle of it</instruction>
+    <instructions>
+      <li>a communal rite - let the supplied title choose the register: warm festival, solemn hymn, political challenge, fair, conversion, or emancipation</li>
+      <li>a communal rite - write the pawn's place among the crowd and one concrete detail that made the colony feel briefly different</li>
+      <li>a communal rite - center celebration, persuasion, or release without inventing speeches, lovers, bargains, or outcomes beyond the supplied facts</li>
+    </instructions>
+    <tone>communal and vivid, ceremony turning belief into shared action</tone>
+    <tones>
+      <li>warm and public, people briefly gathered around one purpose</li>
+      <li>festive but observant, joy and politics sharing the same space</li>
+    </tones>
+    <matchPrefixes>
+      <li>VME_</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Thought groups theme eligible memories only; global mood thresholds remain the flood guard. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>viememes_thoughts</defName>
+    <label>VIE ritual aftereffects</label>
+    <order>487</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VMemesE</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>the after-image of a rite or festival - write glory, awkwardness, shame, dread, or relief settling into one honest private feeling</instruction>
+    <instructions>
+      <li>ritual after-image - keep the public ceremony in the background and the feeling it left in the foreground</li>
+      <li>ritual after-image - write one residue that stayed: pride, embarrassment, freedom, fear, tenderness, or regret</li>
+    </instructions>
+    <tone>reflective, with the ceremony's emotional residue still present</tone>
+    <tones>
+      <li>quiet and inward, the crowd gone but the feeling remaining</li>
+      <li>spent and honest, public ritual becoming private memory</li>
+    </tones>
+    <matchPrefixes>
+      <li>VME_</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>viememes_interrogation</defName>
+    <label>Interrogations</label>
+    <order>22</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VMemesE</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>pressure applied across a table - write what the pawn did to another person or held out against, with power, guilt, fear, or cold procedure but no invented confession</instruction>
+    <instructions>
+      <li>an interrogation - center who controlled the room, what pressure felt like, and what the supplied result changed</li>
+      <li>an interrogation - write the moral distance or closeness between interrogator and prisoner; quote nothing not present in the rendered log</li>
+      <li>an interrogation - keep intimidation, refusal, and success distinct while inventing neither a crime nor the information sought</li>
+    </instructions>
+    <tone>controlled and coercive, every silence carrying pressure</tone>
+    <tones>
+      <li>cold and procedural, power made ordinary</li>
+      <li>tense and exposed, resistance measured in pauses</li>
+    </tones>
+    <matchDefNames>
+      <li>VFEA_InterrogatePrisoner</li>
+      <li>VFEA_InterrogationSuccess</li>
+      <li>VFEA_InterrogationRefused</li>
+      <li>VFEA_Intimidate</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

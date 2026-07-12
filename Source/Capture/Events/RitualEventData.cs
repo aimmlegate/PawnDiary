@@ -116,6 +116,23 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
+        /// Combines the XML-owned ritual theme with the pawn's localized role guidance. Keeping the
+        /// join here makes the reachability rule testable without RimWorld: a compatibility group may
+        /// add flavor, but it must never erase the organizer/target/participant perspective contract.
+        /// </summary>
+        public static string CombineInstructions(string groupInstruction, string roleInstruction)
+        {
+            string group = string.IsNullOrWhiteSpace(groupInstruction) ? string.Empty : groupInstruction.Trim();
+            string role = string.IsNullOrWhiteSpace(roleInstruction) ? string.Empty : roleInstruction.Trim();
+            if (group.Length == 0)
+            {
+                return role;
+            }
+
+            return role.Length == 0 ? group : group + "\n" + role;
+        }
+
+        /// <summary>
         /// Converts RimWorld's 0..1-ish ritual strength/progress values into plain prompt words.
         /// The labels are stable schema values, not UI prose.
         /// </summary>

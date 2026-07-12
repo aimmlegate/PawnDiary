@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <speakupbridge_deeptalk.label>глубокие разговоры SpeakUp</speakupbridge_deeptalk.label>
+  <speakupbridge_deeptalk.instruction>разговор, ушедший глубже поверхности; опиши, к чему тянулись собеседники и что открыл обмен, используя только переданные реплики и контекст</speakupbridge_deeptalk.instruction>
+  <speakupbridge_deeptalk.instructions.0>глубокий разговор: оставь смысл между собеседниками — почему эта тема была важна сегодня и что изменилось после произнесённого вслух</speakupbridge_deeptalk.instructions.0>
+  <speakupbridge_deeptalk.instructions.1>глубокий разговор: используй переданную реплику как свидетельство, но не как разрешение выдумать остальной разговор</speakupbridge_deeptalk.instructions.1>
+  <speakupbridge_deeptalk.instructions.2>глубокий разговор: сон или психическое видение — личное свидетельство, а не доказательство нового события сверх указанного контекста</speakupbridge_deeptalk.instructions.2>
+  <speakupbridge_deeptalk.tone>вдумчиво, близко и немного беззащитно</speakupbridge_deeptalk.tone>
+  <speakupbridge_deeptalk.tones.0>тихо и ищуще, с тяжестью под обычными словами</speakupbridge_deeptalk.tones.0>
+  <speakupbridge_deeptalk.tones.1>близко и задумчиво, двое проверяют, что можно сказать</speakupbridge_deeptalk.tones.1>
+
+  <speakupbridge_jokes.label>шутки SpeakUp</speakupbridge_jokes.label>
+  <speakupbridge_jokes.instruction>дневная череда шуток; запомни, кто пытался смешить, кто смеялся и кто стонал, не выдумывая остроту</speakupbridge_jokes.instruction>
+  <speakupbridge_jokes.instructions.0>шутки: используй переданные реплики, чтобы показать ритм пары, а не сочинить шутку получше</speakupbridge_jokes.instructions.0>
+  <speakupbridge_jokes.instructions.1>шутки: заметь, принёс ли юмор облегчение, привязанность, смущение или раздражение</speakupbridge_jokes.instructions.1>
+  <speakupbridge_jokes.instructions.2>шутки: держи лёгкий тон, если только настроение или отношения пешки не придают реакции больший вес</speakupbridge_jokes.instructions.2>
+  <speakupbridge_jokes.tone>игриво, свободно и наблюдательно к людям</speakupbridge_jokes.tone>
+  <speakupbridge_jokes.tones.0>с сухим весельем, включая стоны</speakupbridge_jokes.tones.0>
+  <speakupbridge_jokes.tones.1>тепло и быстро, смех разбивает работу</speakupbridge_jokes.tones.1>
+
+  <speakupbridge_prisoner.label>разговоры с пленниками SpeakUp</speakupbridge_prisoner.label>
+  <speakupbridge_prisoner.instruction>разговор через решётку; опиши доверие, настороженность, отказ или странную близость охраны пленника с точки зрения подходящего поселенца, если пленник не может вести дневник</speakupbridge_prisoner.instruction>
+  <speakupbridge_prisoner.instructions.0>разговор с пленником: сохраняй неравенство свободы и контроля, не выдумывая жестокость или доверие</speakupbridge_prisoner.instructions.0>
+  <speakupbridge_prisoner.instructions.1>разговор с пленником: сделай принятие или отказ эмоциональным поворотом, а не механическим отчётом о вербовке</speakupbridge_prisoner.instructions.1>
+  <speakupbridge_prisoner.instructions.2>разговор с пленником: повторяющиеся беседы о навыках могут стать привычными, но не делай вид, будто решётка исчезла</speakupbridge_prisoner.instructions.2>
+  <speakupbridge_prisoner.tone>настороженно и близко, с преградой между собеседниками</speakupbridge_prisoner.tone>
+  <speakupbridge_prisoner.tones.0>сдержанно, доверие приходит по крупицам</speakupbridge_prisoner.tones.0>
+  <speakupbridge_prisoner.tones.1>неловко и наблюдательно, знакомство внутри заключения</speakupbridge_prisoner.tones.1>
+
+  <speakupbridge_reactions.label>реакции на мысли SpeakUp</speakupbridge_reactions.label>
+  <speakupbridge_reactions.instruction>мимолётные реакции на уже переживаемое людьми; используй их как социальную фактуру дня, а не как отдельные драматические события</speakupbridge_reactions.instruction>
+  <speakupbridge_reactions.instructions.0>реакция на мысль: выбери только переданные реакции, раскрывающие закономерность в дне пешки</speakupbridge_reactions.instructions.0>
+  <speakupbridge_reactions.instructions.1>реакция на мысль: покажи, как чувства просочились в обычную речь, не выдумывая их причину</speakupbridge_reactions.instructions.1>
+  <speakupbridge_reactions.instructions.2>реакция на мысль: складывай частые замечания мелко; фактура важнее стенограммы</speakupbridge_reactions.instructions.2>
+  <speakupbridge_reactions.tone>кратко, наблюдательно и вплетённо в день</speakupbridge_reactions.tone>
+  <speakupbridge_reactions.tones.0>обрывочно и честно, чувства вырываются мимоходом</speakupbridge_reactions.tones.0>
+  <speakupbridge_reactions.tones.1>сдержанно и накопительно, мелкие реакции складываются в узор</speakupbridge_reactions.tones.1>
+
+  <speakupbridge_chatter.label>болтовня SpeakUp</speakupbridge_chatter.label>
+  <speakupbridge_chatter.instruction>обычный разговор SpeakUp; считай его болтовнёй, если настроение, нужда или напряжение пары не делают момент важнее</speakupbridge_chatter.instruction>
+  <speakupbridge_chatter.instructions.0>болтовня SpeakUp: используй переданную реплику, если она есть; иначе напиши мелкий обмен словами без выдуманной цитаты</speakupbridge_chatter.instructions.0>
+  <speakupbridge_chatter.instructions.1>болтовня SpeakUp: покажи чувство под пустяком, будь то лёгкость, неловкость, давление или отстранённость</speakupbridge_chatter.instructions.1>
+  <speakupbridge_chatter.instructions.2>болтовня SpeakUp: обычный ритм важен только настолько, насколько его делает важным состояние поселенца</speakupbridge_chatter.instructions.2>
+  <speakupbridge_chatter.tone>с лёгкой, повседневной социальной фактурой</speakupbridge_chatter.tone>
+  <speakupbridge_chatter.tones.0>свободно и разговорно, как обычная речь, проходящая через комнату</speakupbridge_chatter.tones.0>
+  <speakupbridge_chatter.tones.1>просто и наблюдательно, давая крошечному социальному давлению нести вес</speakupbridge_chatter.tones.1>
+</LanguageData>

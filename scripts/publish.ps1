@@ -98,6 +98,30 @@
 .PARAMETER ExampleAdapterLinkName
   Folder name to create under -ModsDir for the example adapter junction when both -InstallToMods
   and -PublishExampleAdapter are enabled.
+
+.PARAMETER PublishSpeakUpAdapter
+  Build and package the reflection-only SpeakUp adapter alongside the main Workshop payloads.
+  Enabled by default; pass -PublishSpeakUpAdapter:$false to skip it.
+
+.PARAMETER SpeakUpAdapterOutDir
+  Output folder for the SpeakUp adapter payload. Defaults to
+  <repo>/dist/<SpeakUp adapter packageId>.
+
+.PARAMETER SpeakUpAdapterPackageId
+  Override the SpeakUp adapter packageId. Defaults to the packageId in
+  integrations/PawnDiary.SpeakUp/About/About.xml.
+
+.PARAMETER SpeakUpAdapterPublishedFileId
+  Workshop item id for the SpeakUp adapter payload. When set, it is written as that payload's
+  About/PublishedFileId.txt. Leave blank before the first Workshop upload.
+
+.PARAMETER SpeakUpAdapterPublishedFileIdPath
+  Optional source file for the SpeakUp adapter Workshop id. Defaults to
+  About/PublishedFileId-SpeakUp.txt and is copied as About/PublishedFileId.txt when present.
+
+.PARAMETER SpeakUpAdapterLinkName
+  Folder name to create under -ModsDir for the SpeakUp adapter junction when both -InstallToMods
+  and -PublishSpeakUpAdapter are enabled.
 #>
 [CmdletBinding()]
 param(
@@ -123,6 +147,12 @@ param(
     [string]$ExampleAdapterPublishedFileId,
     [string]$ExampleAdapterPublishedFileIdPath = "About\PublishedFileId-ExampleAdapter.txt",
     [string]$ExampleAdapterLinkName,
+    [switch]$PublishSpeakUpAdapter = $true,
+    [string]$SpeakUpAdapterOutDir,
+    [string]$SpeakUpAdapterPackageId,
+    [string]$SpeakUpAdapterPublishedFileId,
+    [string]$SpeakUpAdapterPublishedFileIdPath = "About\PublishedFileId-SpeakUp.txt",
+    [string]$SpeakUpAdapterLinkName,
     [switch]$SkipBranch,
     [switch]$Force
 )
@@ -556,6 +586,83 @@ function New-ExampleAdapterPayload {
     }
 }
 
+function New-SpeakUpAdapterPayload {
+    param(
+        [string]$AdapterSourceRoot,
+        [string]$DestinationRoot,
+        [string]$AdapterPackageId,
+        [string]$Version,
+        [string]$CorePackageId,
+        [string]$CoreDisplayName,
+        [string]$CorePublishedFileId,
+        [string]$BuiltDll,
+        [string]$BuiltPdb,
+        [string]$PublishedFileId,
+        [string]$PublishedFileIdPath
+    )
+
+    if (Test-Path -LiteralPath $DestinationRoot) { Remove-Item -LiteralPath $DestinationRoot -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $DestinationRoot | Out-Null
+
+    # Keep the adapter independently inspectable like the example payload, but never copy its checked-in
+    # build output: the fresh DLL/PDB from this publish run is installed below.
+    Copy-PathFromRoot $AdapterSourceRoot "About" -Required -DestinationRoot $DestinationRoot | Out-Null
+    Copy-PathFromRoot $AdapterSourceRoot "1.6\Defs" -Required -DestinationRoot $DestinationRoot | Out-Null
+    Copy-PathFromRoot $AdapterSourceRoot "1.6\Patches" -DestinationRoot $DestinationRoot | Out-Null
+    Copy-PathFromRoot $AdapterSourceRoot "Languages" -DestinationRoot $DestinationRoot | Out-Null
+    Copy-PathFromRoot $AdapterSourceRoot "Source" -DestinationRoot $DestinationRoot | Out-Null
+    Remove-BuildIntermediates (Join-Path $DestinationRoot "Source")
+
+    Copy-Payload "INTEGRATIONS.md" -Required -DestinationRoot $DestinationRoot | Out-Null
+    Copy-Payload "EXTERNAL_API.md" -Required -DestinationRoot $DestinationRoot | Out-Null
+    foreach ($doc in @("LICENSE", "LICENSE.txt", "LICENSE.md")) {
+        Copy-Payload $doc -DestinationRoot $DestinationRoot | Out-Null
+    }
+
+    $aboutDestination = Join-Path $DestinationRoot "About\About.xml"
+    $aboutText = [System.IO.File]::ReadAllText($aboutDestination)
+    $aboutText = Set-AboutValue $aboutText "packageId" $AdapterPackageId
+    $aboutText = Set-OrAddAboutValue $aboutText "modVersion" $Version "packageId"
+    # Pawn Diary is the first dependency/loadAfter row; the existing SpeakUp row is deliberately
+    # preserved so Workshop and RimWorld still express the target-mod requirement.
+    $aboutText = Set-FirstNestedAboutValue $aboutText "modDependencies" "packageId" $CorePackageId
+    $aboutText = Set-FirstNestedAboutValue $aboutText "modDependencies" "displayName" $CoreDisplayName
+    if (-not [string]::IsNullOrWhiteSpace($CorePublishedFileId)) {
+        $coreSteamUrl = "steam://url/CommunityFilePage/$($CorePublishedFileId.Trim())"
+        $aboutText = Set-OrAddFirstNestedAboutValue $aboutText "modDependencies" "steamWorkshopUrl" $coreSteamUrl "displayName"
+    }
+    $aboutText = Set-FirstNestedAboutValue $aboutText "loadAfter" "li" $CorePackageId
+    [System.IO.File]::WriteAllText($aboutDestination, $aboutText, (New-Object System.Text.UTF8Encoding($false)))
+
+    $asmDir = Join-Path $DestinationRoot "1.6\Assemblies"
+    New-Item -ItemType Directory -Force -Path $asmDir | Out-Null
+    $payloadDll = Join-Path $asmDir "PawnDiarySpeakUp.dll"
+    Copy-Item -LiteralPath $BuiltDll -Destination $payloadDll -Force
+    if ($BuiltPdb -and (Test-Path -LiteralPath $BuiltPdb)) {
+        Copy-Item -LiteralPath $BuiltPdb -Destination (Join-Path $asmDir "PawnDiarySpeakUp.pdb") -Force
+    }
+
+    $publishedFileDestination = Join-Path $DestinationRoot "About\PublishedFileId.txt"
+    if (-not [string]::IsNullOrWhiteSpace($PublishedFileId)) {
+        [System.IO.File]::WriteAllText($publishedFileDestination, $PublishedFileId.Trim(), (New-Object System.Text.UTF8Encoding($false)))
+        Write-Host "  SpeakUp id: $($PublishedFileId.Trim())"
+    } elseif (-not [string]::IsNullOrWhiteSpace($PublishedFileIdPath)) {
+        $sourcePublishedFileId = Join-Path $repoRoot $PublishedFileIdPath
+        if (Test-Path -LiteralPath $sourcePublishedFileId) {
+            Copy-Item -LiteralPath $sourcePublishedFileId -Destination $publishedFileDestination -Force
+            Write-Host "  SpeakUp id: copied from $PublishedFileIdPath"
+        } else {
+            Write-Host "  SpeakUp id: none (new Workshop item on first upload)"
+        }
+    }
+
+    return @{
+        AboutPath = $aboutDestination
+        DllPath = $payloadDll
+        SourcePath = (Join-Path $DestinationRoot "Source")
+    }
+}
+
 function Resolve-ModsFolder {
     param([string]$Candidate)
     if ([string]::IsNullOrWhiteSpace($Candidate)) {
@@ -715,6 +822,55 @@ if ($buildExampleAdapter) {
     }
 }
 
+$buildSpeakUpAdapter = [bool]$PublishSpeakUpAdapter
+$speakUpAdapterRoot = Join-Path $repoRoot "integrations\PawnDiary.SpeakUp"
+$speakUpAdapterBuildOut = $null
+$speakUpAdapterPayload = $null
+if ($buildSpeakUpAdapter) {
+    $speakUpAdapterAboutPath = Join-Path $speakUpAdapterRoot "About\About.xml"
+    if (-not (Test-Path -LiteralPath $speakUpAdapterAboutPath)) {
+        throw "SpeakUp adapter source mod is missing About/About.xml: $speakUpAdapterRoot"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($SpeakUpAdapterPackageId)) {
+        $speakUpAdapterAboutText = [System.IO.File]::ReadAllText($speakUpAdapterAboutPath)
+        $SpeakUpAdapterPackageId = Get-AboutValue $speakUpAdapterAboutText "packageId"
+    } else {
+        $SpeakUpAdapterPackageId = $SpeakUpAdapterPackageId.Trim()
+    }
+    if ([string]::IsNullOrWhiteSpace($SpeakUpAdapterPackageId)) {
+        $SpeakUpAdapterPackageId = "$publishedPackageId.adapter.speakup"
+    }
+
+    $speakUpAdapterPayloadFolderName = Get-SafeFolderName $SpeakUpAdapterPackageId "pawn-diary-speakup"
+    if (-not $SpeakUpAdapterOutDir) {
+        $SpeakUpAdapterOutDir = Join-Path $repoRoot "dist\$speakUpAdapterPayloadFolderName"
+    }
+    if (-not $SpeakUpAdapterLinkName) { $SpeakUpAdapterLinkName = $speakUpAdapterPayloadFolderName }
+
+    $speakUpPayloadFullPath = [System.IO.Path]::GetFullPath($SpeakUpAdapterOutDir)
+    $speakUpSourceFullPath = [System.IO.Path]::GetFullPath($speakUpAdapterRoot)
+    if ($speakUpSourceFullPath.TrimEnd('\', '/') -eq $speakUpPayloadFullPath.TrimEnd('\', '/')) {
+        throw "SpeakUp adapter payload must not overwrite its integrations source folder."
+    }
+    $mainPayloadFullPath = [System.IO.Path]::GetFullPath($OutDir)
+    if ($mainPayloadFullPath.TrimEnd('\', '/') -eq $speakUpPayloadFullPath.TrimEnd('\', '/')) {
+        throw "SpeakUp adapter payload must not use the same OutDir as the main payload."
+    }
+    if ($buildRussianLocalization) {
+        $russianPayloadFullPath = [System.IO.Path]::GetFullPath($RussianLocalizationOutDir)
+        if ($russianPayloadFullPath.TrimEnd('\', '/') -eq $speakUpPayloadFullPath.TrimEnd('\', '/')) {
+            throw "SpeakUp adapter payload must not use the same OutDir as the Russian localization payload."
+        }
+    }
+    if ($buildExampleAdapter) {
+        $examplePayloadFullPath = [System.IO.Path]::GetFullPath($ExampleAdapterOutDir)
+        if ($examplePayloadFullPath.TrimEnd('\', '/') -eq $speakUpPayloadFullPath.TrimEnd('\', '/')) {
+            throw "SpeakUp and example adapter payloads must use different output folders."
+        }
+    }
+}
+
 $resolvedModsDir = Resolve-ModsFolder $ModsDir
 if (-not $resolvedModsDir) {
     $fallbackMods = Split-Path $repoRoot -Parent
@@ -739,6 +895,12 @@ if ($buildExampleAdapter) {
 } else {
     Write-Host "  example    : skipped"
 }
+if ($buildSpeakUpAdapter) {
+    Write-Host "  SpeakUp id  : $SpeakUpAdapterPackageId"
+    Write-Host "  SpeakUp out : $SpeakUpAdapterOutDir"
+} else {
+    Write-Host "  SpeakUp    : skipped"
+}
 if ($SkipBranch -or $Force) {
     Write-Host "  branch mode: disabled (flags accepted for compatibility)"
 }
@@ -752,6 +914,9 @@ if ($InstallToMods) {
     }
     if ($buildExampleAdapter) {
         Write-Host "  install ex  : $resolvedModsDir\$ExampleAdapterLinkName"
+    }
+    if ($buildSpeakUpAdapter) {
+        Write-Host "  install su  : $resolvedModsDir\$SpeakUpAdapterLinkName"
     }
 }
 
@@ -794,6 +959,30 @@ if ($buildExampleAdapter) {
         throw "Build reported success but PawnDiaryExampleAdapter.dll was not produced in $exampleAdapterBuildOut."
     }
     $builtExampleAdapterPdb = Join-Path $exampleAdapterBuildOut "PawnDiaryExampleAdapter.pdb"
+}
+
+if ($buildSpeakUpAdapter) {
+    Write-Step "Build SpeakUp adapter DLL ($Configuration)"
+    $speakUpAdapterBuildOut = Join-Path ([System.IO.Path]::GetTempPath()) "pawndiary-speakup-adapter-build-$buildVersionSlug"
+    if (Test-Path -LiteralPath $speakUpAdapterBuildOut) { Remove-Item -LiteralPath $speakUpAdapterBuildOut -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $speakUpAdapterBuildOut | Out-Null
+
+    # This adapter is reflection-only: it deliberately needs no SpeakUp.dll path at release time.
+    Invoke-Native $msbuild @(
+        (Join-Path $repoRoot "integrations\PawnDiary.SpeakUp\Source\PawnDiarySpeakUp.csproj"),
+        "/t:Rebuild",
+        "/p:Configuration=$Configuration",
+        "/p:OutputPath=$speakUpAdapterBuildOut",
+        "/p:PawnDiaryReference=$builtDll",
+        "/nologo",
+        "/v:minimal"
+    )
+
+    $builtSpeakUpAdapterDll = Join-Path $speakUpAdapterBuildOut "PawnDiarySpeakUp.dll"
+    if (-not (Test-Path -LiteralPath $builtSpeakUpAdapterDll)) {
+        throw "Build reported success but PawnDiarySpeakUp.dll was not produced in $speakUpAdapterBuildOut."
+    }
+    $builtSpeakUpAdapterPdb = Join-Path $speakUpAdapterBuildOut "PawnDiarySpeakUp.pdb"
 }
 
 Write-Step "Prepare dist payload"
@@ -920,9 +1109,28 @@ if ($buildExampleAdapter) {
         -PublishedFileIdPath $ExampleAdapterPublishedFileIdPath
 }
 
+if ($buildSpeakUpAdapter) {
+    Write-Step "Prepare SpeakUp adapter payload"
+    $speakUpAdapterPayload = New-SpeakUpAdapterPayload `
+        -AdapterSourceRoot $speakUpAdapterRoot `
+        -DestinationRoot $SpeakUpAdapterOutDir `
+        -AdapterPackageId $SpeakUpAdapterPackageId `
+        -Version $publishedVersion `
+        -CorePackageId $publishedPackageId `
+        -CoreDisplayName $publishedModName `
+        -CorePublishedFileId $mainPublishedFileId `
+        -BuiltDll $builtSpeakUpAdapterDll `
+        -BuiltPdb $builtSpeakUpAdapterPdb `
+        -PublishedFileId $SpeakUpAdapterPublishedFileId `
+        -PublishedFileIdPath $SpeakUpAdapterPublishedFileIdPath
+}
+
 Remove-Item -LiteralPath $buildOut -Recurse -Force -ErrorAction SilentlyContinue
 if ($exampleAdapterBuildOut) {
     Remove-Item -LiteralPath $exampleAdapterBuildOut -Recurse -Force -ErrorAction SilentlyContinue
+}
+if ($speakUpAdapterBuildOut) {
+    Remove-Item -LiteralPath $speakUpAdapterBuildOut -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 $payloadFiles = Get-ChildItem -Recurse -File $OutDir
@@ -952,6 +1160,16 @@ if ($buildExampleAdapter) {
     Write-Host "  Source folder: $($exampleAdapterPayload.SourcePath)"
     Write-Host ("  shipped {0} files, {1:N2} MB" -f $exampleAdapterPayloadFiles.Count, ($exampleAdapterPayloadBytes / 1MB))
 }
+if ($buildSpeakUpAdapter) {
+    $speakUpAdapterPayloadFiles = Get-ChildItem -Recurse -File $SpeakUpAdapterOutDir
+    $speakUpAdapterPayloadBytes = ($speakUpAdapterPayloadFiles | Measure-Object -Property Length -Sum).Sum
+    Write-Host "SpeakUp adapter payload prepared:" -ForegroundColor Green
+    Write-Host "  $SpeakUpAdapterOutDir"
+    Write-Host "  Payload DLL: $($speakUpAdapterPayload.DllPath)"
+    Write-Host "  Prepared About.xml: $($speakUpAdapterPayload.AboutPath)"
+    Write-Host "  Source folder: $($speakUpAdapterPayload.SourcePath)"
+    Write-Host ("  shipped {0} files, {1:N2} MB" -f $speakUpAdapterPayloadFiles.Count, ($speakUpAdapterPayloadBytes / 1MB))
+}
 
 if ($InstallToMods) {
     Install-ModJunction -DestinationRoot $resolvedModsDir -FolderName $LinkName -TargetFolder $OutDir -AllowReplace:$Force
@@ -960,5 +1178,8 @@ if ($InstallToMods) {
     }
     if ($buildExampleAdapter) {
         Install-ModJunction -DestinationRoot $resolvedModsDir -FolderName $ExampleAdapterLinkName -TargetFolder $ExampleAdapterOutDir -AllowReplace:$Force
+    }
+    if ($buildSpeakUpAdapter) {
+        Install-ModJunction -DestinationRoot $resolvedModsDir -FolderName $SpeakUpAdapterLinkName -TargetFolder $SpeakUpAdapterOutDir -AllowReplace:$Force
     }
 }

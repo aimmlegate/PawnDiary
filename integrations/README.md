@@ -12,8 +12,9 @@ copied next to the core mod. Use the deploy script:
 powershell -ExecutionPolicy Bypass -File scripts\deploy-integrations.ps1
 ```
 
-It copies every adapter folder to the RimWorld `Mods/` root (siblings of this repo) and refuses to
-overwrite a folder that is not a Pawn Diary adapter.
+It creates a junction for every adapter folder in the RimWorld `Mods/` root (siblings of this repo)
+and refuses to overwrite a folder that is not a Pawn Diary adapter. Edits and rebuilt DLLs therefore
+take effect through the live junction without another copy step.
 
 Build an adapter the same way as the core mod:
 
@@ -22,6 +23,8 @@ MSBuild integrations\PawnDiary.ExampleAdapter\Source\PawnDiaryExampleAdapter.csp
 MSBuild integrations\PawnDiary.RimTalkBridge\Source\PawnDiaryRimTalkBridge.csproj /t:Build /p:Configuration=Debug
 MSBuild integrations\PawnDiary.PersonalitiesBridge\Source\PawnDiaryPersonalities123.csproj /t:Build /p:Configuration=Debug
 MSBuild integrations\PawnDiary.Vsie\Source\PawnDiaryVsie.csproj /t:Build /p:Configuration=Debug
+MSBuild integrations\PawnDiary.SpeakUp\Source\PawnDiarySpeakUp.csproj /t:Build /p:Configuration=Debug
+MSBuild integrations\PawnDiary.RimpsycheBridge\Source\PawnDiaryRimpsyche.csproj /t:Build /p:Configuration=Debug
 ```
 
 (`PawnDiary.Vsie/` is mostly XML; its only assembly is the small gathering hook — `PawnDiaryVsie.dll`.)
@@ -99,6 +102,29 @@ dotnet run --project tests/RimTalkBridgeLogicTests/RimTalkBridgeLogicTests.cspro
 
 The pre-commit verify hook builds only the core mod; adapters (and their pure tests) are built, run,
 and deployed manually.
+
+`PawnDiary.SpeakUp/` (`aimmlegate.pawndiary.adapter.speakup`) is a reflection-only adapter for
+SpeakUp (`JPT.speakup`). Five XML families separate deep talk, jokes, prisoner talk, thought reactions,
+and ordinary chatter. Its default-on assembly observes completed transient Talk chains without a
+SpeakUp.dll compile reference and submits `speakupbridge_conversation` after the configured 1–5 reply
+threshold (default 3). If the reflected surface drifts, only whole-conversation capture disables; XML
+classification remains. Core `speakup_chitchat` is the fallback when this adapter is absent and keeps
+its frozen setting/save tokens. The release script builds and packages this adapter by default.
+
+```
+dotnet run --project tests/SpeakUpBridgeLogicTests/SpeakUpBridgeLogicTests.csproj
+```
+
+`PawnDiary.RimpsycheBridge/` (`aimmlegate.pawndiary.adapter.rimpsyche`) targets Rimpsyche - Personality
+Core (`Maux36.Rimpsyche`, Workshop `3535112473`). It provides three independent tiers: a compact cached
+psyche context line, a change-detected source-owned psychotype outlook, and signature-checked capture of
+high-alignment conversations with a saved per-pair cooldown. The project has a typed compile reference
+to installed `RimPsyche.dll`; target reads are isolated behind the package guard, and XML groups are
+gated. Thresholds and caps live in the adapter's tuning Def.
+
+```
+dotnet run --project tests/RimpsycheBridgeLogicTests/RimpsycheBridgeLogicTests.csproj
+```
 
 `PawnDiary.Vsie/` and `PawnDiary.PersonalitiesBridge/` are personality/social compatibility adapters,
 each a separate mod for one target so a player installs only what matches their mod list:

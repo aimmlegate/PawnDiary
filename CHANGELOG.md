@@ -8,34 +8,50 @@ pre-release version ladder for project history.
 
 ## 2026-07-12
 
+- **Six source-verified, no-hard-dependency compatibility packs.** Alpha Memes gets funeral/ritual,
+  thought, baptism, and visible-hediff voices; VIE Memes gets severe/general rites, afterthoughts,
+  and interrogation; Way Better Romance gets its 3 real interactions and 14 memories; Vanilla Traits
+  Expanded gets recordable memories, 3 actual mental states, and 20 XML-patched psychotype affinities;
+  Hospitality gets colonist-owned guest work/scrounging plus one-witness arrival/join-request pages;
+  and Vanilla Events Expanded gets purple raids, visible ambient hediffs, 6 lasting-condition tints,
+  and 4 one-witness incident families. All groups/windows are package- or exact-string-gated and carry
+  native-register Russian text. Upstream audit corrections deliberately omit guest-held Hospitality
+  thoughts, VEE's neutral visitor incident, hidden traitor state, and situational-not-memory thoughts.
+- **Reusable compatibility routing fixes.** `MapWitness` gives map-level incidents one deterministic
+  diary owner and event windows now support target-package gates across start, restored state, prompt,
+  timeout, and recording paths. Interaction batches can explicitly allow one eligible colonist for
+  guest/prisoner pairings without changing existing groups. Live Thought classification now preserves
+  the source Def for package matching, while saved recovery remains name-based. Ritual pages combine
+  the matched XML theme with localized pawn-role guidance, making mod-specific ritual instructions
+  reachable. Pure capture-policy coverage and the committed core DLL were updated.
+- **Pawn Diary: SpeakUp adapter.** Five gated XML families replace the core fallback only while the
+  adapter is loaded, and a default-on reflection-only observer can submit one sampled whole-conversation
+  event after a configurable 1–5 reply threshold. SpeakUp alone keeps the frozen
+  `speakup_chitchat`/`SpeakUpAmbientDay` behavior and saved toggle; force-loading the adapter without
+  SpeakUp is inert. EN/RU text, 21 pure assertions, a rebuilt adapter DLL, and default-on
+  `scripts/publish.ps1` payload/build/install wiring are included.
+- **Pawn Diary: Rimpsyche adapter.** Gated conversation/thought groups, a cached localized `psyche=`
+  context line, a default-on six-family source-owned psychotype outlook, and signature-checked charged
+  conversation capture now bridge Rimpsyche v1.0.41 without changing the public API. The XML `0.55`
+  threshold and saved 60,000-tick pair cooldown are tunable/persistent; toggle/new-game sweeps release
+  owned overrides. EN/RU text, 121 pure assertions, installed 34-node/hook verification, and the rebuilt
+  adapter DLL are included.
 - **Fixed the RimTalk bridge settings window appearing empty.** Its scrollable Verse listing could
   overflow into invisible side-by-side columns, then repeatedly shrink its measured canvas until only
   the section heading remained. The settings now stay in one vertical column and the scroll canvas
   never becomes shorter than its viewport; the bridge DLL was rebuilt.
-- **Adversarial RimTalk funnel follow-up closes save, lifecycle, evidence, migration, and Unicode
-  gaps.** The two-assessment daily count and retry gap now survive save/load while queues/requests stay
-  transient; failed/skipped/prompt-only diary outcomes remove pending recent-event seeds; bounded
-  assessment transcripts reserve slots for late charged/user/keyword evidence; and pre-0.3 zero-cap
-  settings migrate from their old “unlimited” meaning before zero adopts its new “recording off” role.
-  Existing one-shot completion handles remain pollable for slot cleanup after the core integration
-  master switch is disabled, while the bridge discards those results. The frozen English JSON wire
-  schema is now a code-owned prefix that translations and editable editorial policy cannot erase, and
-  reaction-editor total limits use Unicode text elements consistently with validation. Added focused
-  pure coverage for cadence restore, late evidence selection, immutable schema composition, and non-BMP
-  editor caps; EN/RU policy/help text and the committed core/bridge DLLs were updated.
-- **RimTalk bridge 0.3.1 adds a persistent one-game-day pawn cooldown and editable selection
-  policy.** Every successfully submitted pairwise chat event now charges both POV pawns for 60,000
-  ticks; conversations involving either pawn are discarded before scoring/assessment and rechecked at
-  submission, while a rejected Pawn Diary request refunds the reservation. The pawn-id/tick map is
-  value-scribed by the bridge GameComponent and restored after static reset, so reload cannot bypass the
-  limit; the legacy per-pawn daily setting is now constrained to 0/1. The settings window exposes the
-  localized reaction words/phrases in a comma-separated text area with pure Unicode-aware validation,
-  de-duplication, count/length bounds, and safe last-valid-value saving. Retained defaults preserve
-  their scoring categories and additions share one bounded category. Semantic assessment remains
-  optional and its off state uses the existing stricter local-only path with zero assessment requests;
-  its localized system prompt is now fully editable with a reset-to-Def default. New Scribe keys are
-  additive, XML owns the cooldown/editor caps, EN/RU UI text is complete, 173 pure assertions pass,
-  bridge XML parses, and the committed bridge DLL was rebuilt.
+- **RimTalk funnel hardening.** Assessment limits and the retry gap now survive save/load, while
+  queues and requests remain transient. Failed or skipped outcomes clean up pending event context;
+  late charged/user/keyword evidence is retained; pre-0.3 zero-cap settings migrate safely; and
+  in-flight completions can still be polled for cleanup when integration is disabled. The JSON schema
+  prefix is protected from overrides and translations, and reaction-editor limits count Unicode text
+  elements consistently. Pure tests, EN/RU text, and both committed DLLs were updated.
+- **RimTalk bridge 0.3.1.** Accepted conversations put both POV pawns on a persistent 60,000-tick
+  cooldown, with race-safe reservation and refund on rejected diary submissions. The legacy per-pawn
+  setting is now 0/1, and the settings window supports localized, Unicode-aware reaction-term editing
+  plus an editable semantic-assessment prompt. XML owns the limits and defaults; semantic mode remains
+  optional and its off state uses the stricter local-only path. EN/RU text, tests, XML, and the bridge
+  DLL were updated.
 
 ## 2026-07-11
 

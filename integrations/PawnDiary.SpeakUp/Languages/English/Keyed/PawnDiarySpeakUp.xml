@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <PawnDiarySpeakUp.Settings.Category>Pawn Diary: SpeakUp</PawnDiarySpeakUp.Settings.Category>
+  <PawnDiarySpeakUp.Settings.SpeakUpMissing>SpeakUp is not active. This adapter is loaded inert.</PawnDiarySpeakUp.Settings.SpeakUpMissing>
+  <PawnDiarySpeakUp.Settings.ConversationsSection>Whole-conversation capture</PawnDiarySpeakUp.Settings.ConversationsSection>
+  <PawnDiarySpeakUp.Settings.CaptureConversations>Record completed SpeakUp conversations</PawnDiarySpeakUp.Settings.CaptureConversations>
+  <PawnDiarySpeakUp.Settings.CaptureConversationsDesc>Gather a delivered SpeakUp reply chain into one pairwise diary event. Individual lines can still contribute to ambient social notes.</PawnDiarySpeakUp.Settings.CaptureConversationsDesc>
+  <PawnDiarySpeakUp.Settings.MinimumReplies>Minimum delivered replies: {0}</PawnDiarySpeakUp.Settings.MinimumReplies>
+  <PawnDiarySpeakUp.Settings.MinimumRepliesDesc>Shorter exchanges remain ambient only. SpeakUp normally schedules up to five replies per conversation.</PawnDiarySpeakUp.Settings.MinimumRepliesDesc>
+  <PawnDiarySpeakUp.Event.ConversationLabel>SpeakUp conversation</PawnDiarySpeakUp.Event.ConversationLabel>
+  <PawnDiarySpeakUp.Event.ConversationSummaryWithLines>{0} and {1} carried on one conversation. Delivered reply count: {2}. Sampled lines: {3}</PawnDiarySpeakUp.Event.ConversationSummaryWithLines>
+  <PawnDiarySpeakUp.Event.ConversationSummaryWithoutLines>{0} and {1} carried on one conversation. Delivered reply count: {2}.</PawnDiarySpeakUp.Event.ConversationSummaryWithoutLines>
+</LanguageData>

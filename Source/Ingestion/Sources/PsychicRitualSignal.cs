@@ -37,6 +37,7 @@ namespace PawnDiary.Ingestion
         internal string DefName { get; }
         internal string Label { get; }
         internal string Quality { get; }
+        internal string GroupInstruction { get; }
 
         public PsychicRitualFanoutSignal(PsychicRitual psychicRitual, bool success)
         {
@@ -58,6 +59,12 @@ namespace PawnDiary.Ingestion
             {
                 return;
             }
+
+            // Keep the XML ritual theme reachable without consuming the simulation RNG. The per-pawn
+            // child appends its localized invoker/target/participant/spectator guidance at emit time.
+            int instructionTick = Find.TickManager == null ? 0 : Find.TickManager.TicksGame;
+            int instructionSeed = PromptVariants.HashSeed(defName + "|" + instructionTick);
+            GroupInstruction = PromptVariants.Pick(group.instructions, group.instruction, instructionSeed);
 
             assignments = PsychicRitualAssignmentsField?.GetValue(psychicRitual) as PsychicRitualRoleAssignments;
             if (assignments == null)
@@ -254,7 +261,9 @@ namespace PawnDiary.Ingestion
             string text = "PawnDiary.Event.PsychicRitualFinished"
                 .Translate(pawn.LabelShortCap, source.Label, PsychicRitualFanoutSignal.PsychicRitualPerspectiveLabel(perspective))
                 .Resolve();
-            string instruction = PsychicRitualFanoutSignal.PsychicRitualInstructionFor(perspective);
+            string instruction = RitualEventData.CombineInstructions(
+                source.GroupInstruction,
+                PsychicRitualFanoutSignal.PsychicRitualInstructionFor(perspective));
 
             DiaryEvent ritualEvent = sink.AddSoloEvent(pawn, otherPawn, source.DefName, source.Label, text, instruction, context);
             if (ritualEvent == null)

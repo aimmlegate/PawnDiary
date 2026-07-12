@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Compatibility for Vanilla Traits Expanded (VanillaExpanded.VanillaTraitsExpanded), verified
+  against the upstream 1.6 XML/source on 2026-07-12. Both groups are package-gated and use exact
+  names, so they are inert without VTE and cannot claim similarly named content from another mod.
+
+  The Thought allowlist contains only memories that VTE sends through MemoryThoughtHandler and that
+  can therefore reach Pawn Diary's Thought signal. Situational worker thoughts such as
+  VTE_MyRivalsAreAlive, VTE_HaventExitedColonyForLongTime, VTE_AnimalsInColony,
+  VTE_EnvironmentDark, and VTE_NoDedicatedLaboratory are deliberately absent: listing them would
+  expose dead settings rows because they never pass the memory hook. Social-opinion-only twins are
+  also skipped; this group themes mood memories, while ordinary social history stays in the game log.
+-->
+<Defs>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>vte_thoughts</defName>
+    <label>Trait-shaped memories</label>
+    <order>489</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VanillaTraitsExpanded</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>an event made personal by the pawn's particular wiring - write why this craft, machine, blood, animal, journey, meal, or failure landed differently for them</instruction>
+    <instructions>
+      <li>a trait-shaped memory - keep the event concrete and let the pawn's habits or aversions change its meaning without naming a trait mechanic</li>
+      <li>a trait-shaped memory - write the private standard being met or violated: perfection, hunger for travel, disgust, attachment, or fixation</li>
+      <li>a trait-shaped memory - scale the response to the supplied mood effect; a small nuzzle or wet coat is not a life crisis</li>
+    </instructions>
+    <tone>personal and character-revealing, an ordinary event catching on a particular nerve</tone>
+    <tones>
+      <li>specific and inward, personality turning fact into feeling</li>
+      <li>observant and self-revealing, the reaction mattering more than the mechanic</li>
+    </tones>
+    <matchDefNames>
+      <li>VTE_BondedAnimalBanishedHater</li>
+      <li>VTE_BondedAnimalDiedHater</li>
+      <li>VTE_BondedAnimalLostHater</li>
+      <li>VTE_CouldNotFinishItem</li>
+      <li>VTE_CreatedLowQualityItem</li>
+      <li>VTE_HarvestedOrgans</li>
+      <li>VTE_MechanoidIsKilled</li>
+      <li>VTE_NuzzledHater</li>
+      <li>VTE_ObservedManyBlood</li>
+      <li>VTE_SoakingWetChildOfTheSea</li>
+      <li>VTE_SoldMyBondedAnimalMoodHater</li>
+      <li>VTE_WatchedTelevisor</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>vte_mentalbreaks</defName>
+    <label>Trait-driven mental breaks</label>
+    <order>198</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>mentalBreak</colorCue>
+    <enableWhenPackageIdsLoaded>
+      <li>VanillaExpanded.VanillaTraitsExpanded</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>losing the thread in a painfully personal way - write the compulsion to steal, destroy machines, or freeze in panic from inside it, with judgment withheld</instruction>
+    <instructions>
+      <li>a trait-driven break - write the body moving before permission: hands reaching, anger seeking machinery, or every muscle locking at once</li>
+      <li>a trait-driven break - keep the compulsion immediate and human; shame may come afterward, but moral judgment does not belong in the voice</li>
+      <li>a trait-driven break - use the supplied state to distinguish furtive momentum, destructive fury, and helpless stillness</li>
+    </instructions>
+    <tone>compulsive and exposed, control narrowing to one unbearable impulse</tone>
+    <tones>
+      <li>urgent and inward, action outrunning thought</li>
+      <li>shaken and aftermath-heavy, control returning unevenly</li>
+    </tones>
+    <matchDefNames>
+      <li>VTE_Kleptomaniac</li>
+      <li>VTE_TechnophobeTantrum</li>
+      <li>VTE_PanicFreezing</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

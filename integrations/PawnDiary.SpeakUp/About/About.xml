@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Pawn Diary: SpeakUp</name>
+  <author>aimmlegate</author>
+  <packageId>aimmlegate.pawndiary.adapter.speakup</packageId>
+  <modVersion IgnoreIfNoMatchingField="True">0.1.0</modVersion>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <!-- Pawn Diary owns the Def type and integration API used here. SpeakUp is a hard dependency for
+       normal installation because this adapter exists only to classify its interactions and observe
+       its transient Talk objects. The code still guards every reflection target and the XML stays
+       package-gated, so a force-loaded adapter fails inert instead of crashing when SpeakUp is absent. -->
+  <modDependencies>
+    <li>
+      <packageId>aimmlegate.pawndiary.development</packageId>
+      <displayName>Pawn Diary</displayName>
+    </li>
+    <li>
+      <packageId>JPT.speakup</packageId>
+      <displayName>SpeakUp</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2502518544</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>aimmlegate.pawndiary.development</li>
+    <li>JPT.speakup</li>
+  </loadAfter>
+  <description>Adds dedicated SpeakUp support to Pawn Diary.
+
+Five XML groups separate deep talks, jokes, prisoner conversations, thought reactions, and everyday chatter, while preserving SpeakUp's rendered dialogue as diary evidence. A reflection-bound optional layer also gathers reply chains into one pairwise conversation event when at least the configured number of replies was delivered.
+
+The conversation layer defaults on and can be disabled or given a different minimum reply count in this adapter's settings. If SpeakUp changes its internal Talk API, only that layer disables itself; the XML groups continue to work. Requires Pawn Diary and SpeakUp.</description>
+</ModMetaData>

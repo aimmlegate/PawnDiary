@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Tier-C External-domain claim plus adapter-local XML tuning.
+
+  `rimpsyche_conversation` is a frozen saved eventKey submitted by ConversationCapture.cs. Ordinary
+  SubmitEvent rejects unclaimed keys, so this group is part of the API contract, not optional styling.
+  The package gate keeps it inert/not listed when Rimpsyche is absent.
+-->
+<Defs>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>rimpsyche_charged_conversation</defName>
+    <label>charged conversation</label>
+    <order>1030</order>
+    <domain>External</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Maux36.Rimpsyche</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a conversation that mattered - write what the topic stirred and where the two people ended up relative to each other, never a transcript</instruction>
+    <instructions>
+      <li>charged conversation - center the supplied topic and whether it drew the pair together or left friction between them</li>
+      <li>charged conversation - write the emotional landing after the exchange, using no invented quotation or hidden motive</li>
+      <li>charged conversation - let each pawn's own outlook decide what this agreement or clash meant to them</li>
+    </instructions>
+    <tone>with the lingering charge of a consequential exchange</tone>
+    <tones>
+      <li>close and attentive, following the distance between the two people</li>
+      <li>reflective but unsettled, the topic still alive after the words ended</li>
+    </tones>
+    <matchDefNames>
+      <li>rimpsyche_conversation</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Tunable prompt/capture policy. C# values are fallback-only; adjust these without recompiling. -->
+  <PawnDiaryRimpsyche.RimpsycheBridgeTuningDef>
+    <defName>PawnDiaryRimpsycheBridge_Tuning</defName>
+    <summaryMagnitudeFloor>0.35</summaryMagnitudeFloor>
+    <summaryMaxDescriptors>3</summaryMaxDescriptors>
+    <summaryMaxInterests>2</summaryMaxInterests>
+    <conversationAlignmentThreshold>0.55</conversationAlignmentThreshold>
+    <!-- One accepted explicit entry per pawn pair per in-game day; the core rolling API budget and
+         dedup window remain secondary backstops. -->
+    <conversationPairCooldownTicks>60000</conversationPairCooldownTicks>
+  </PawnDiaryRimpsyche.RimpsycheBridgeTuningDef>
+
+</Defs>
