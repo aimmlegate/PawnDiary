@@ -27,12 +27,21 @@
     <li>aimmlegate.pawndiary.development</li>
     <li>Maux36.Rimpsyche</li>
   </loadAfter>
-  <description>Connects Rimpsyche's personality model and conversations to Pawn Diary.
+  <description>Brings Rimpsyche's personality model into Pawn Diary.
 
-Three layers work independently:
-- Rimpsyche conversations and their social afterfeel are routed into dedicated diary themes. Ordinary conversation becomes an ambient day note, while an unusually charged exchange can stand alone.
-- Each modeled colonist contributes a compact, localized psyche line to diary prompts: only the strongest plain-language traits, plus up to two interests. Raw personality numbers never enter the prompt.
-- Two default-on settings can let Rimpsyche shape a source-owned diary outlook and record charged conversation outcomes. Turning the outlook setting off releases every override owned by this bridge; it never writes back into Rimpsyche.
+- Rimpsyche conversations reach the diary: ordinary talk folds into the day's social notes, while an unusually charged exchange can become an entry of its own.
+- Each colonist's psyche colors their writing: the strongest traits and a couple of interests, in plain words — raw personality numbers never enter the prompt.
+- On by default, Rimpsyche can also shape a pawn's diary outlook and record how charged conversations ended. Turn the outlook off and the bridge cleanly releases everything it set.
 
-Requires Pawn Diary and Rimpsyche - Personality Core. The bridge is inert if Rimpsyche is not active.</description>
+Nothing is ever written back into Rimpsyche. Requires Pawn Diary and Rimpsyche - Personality Core; inert while Rimpsyche is absent.
+
+———
+
+Приводит модель характера Rimpsyche в Pawn Diary.
+
+- Разговоры Rimpsyche попадают в дневник: обычная беседа вплетается в заметки дня, а необычно острый разговор может стать отдельной записью.
+- Психика поселенца окрашивает его слог: самые выраженные черты и пара увлечений, простыми словами — «сырые» числа характера в запрос не попадают.
+- По умолчанию Rimpsyche также задаёт поселенцу взгляд дневника и записывает исход острых разговоров. Выключите взгляд — и мост аккуратно снимет всё, что успел установить.
+
+Обратно в Rimpsyche ничего не записывается. Требуются Pawn Diary и Rimpsyche - Personality Core; без Rimpsyche мост бездействует.</description>
 </ModMetaData>

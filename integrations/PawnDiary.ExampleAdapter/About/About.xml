@@ -19,5 +19,25 @@
   <loadAfter>
     <li>aimmlegate.pawndiary.development</li>
   </loadAfter>
-  <description>Developer tool and canonical integration example for the Pawn Diary API. Adds an in-game API Explorer window (Dev mode → Debug Actions → Pawn Diary Example Adapter → Open API explorer…) that exercises every public PawnDiaryApi method from a three-pane UI: a method tree, a request form, and a running result log with copy/clear. Also ships four quick dev actions (submit example event, preview prompt, dump context bundle) and demonstrates the two process-global hooks an integration registers (entry-status listener + pawn-context provider). Not intended for normal play — copy this folder to start a real adapter (see INTEGRATIONS.md in the Pawn Diary repo).</description>
+  <description>A developer tool, not a gameplay mod: the canonical working example of the Pawn Diary integration API.
+
+- API Explorer window (Dev mode → Debug actions → Pawn Diary Example Adapter): pick any public API method, fill in a small form, run it, and watch the live result log.
+- Quick debug actions: submit an example event, preview a prompt, dump a context bundle.
+- Working code for the two hooks a real integration registers: the entry-status listener and the pawn-context provider.
+
+Writing your own integration? Copy this folder and read INTEGRATIONS.md in the Pawn Diary repo.
+
+Requires Pawn Diary.
+
+———
+
+Инструмент разработчика, а не игровой мод: живой образец работы с API Pawn Diary.
+
+- Окно API Explorer (режим разработчика → Debug actions → Pawn Diary Example Adapter): выберите любой публичный метод API, заполните форму, выполните вызов и смотрите журнал результатов.
+- Быстрые отладочные действия: отправить пример события, предпросмотреть запрос, выгрузить контекст.
+- Рабочий пример двух хуков настоящей интеграции: слушателя статуса записей и поставщика контекста поселенца.
+
+Пишете свою интеграцию? Скопируйте эту папку и загляните в INTEGRATIONS.md в репозитории Pawn Diary.
+
+Требуется Pawn Diary.</description>
 </ModMetaData>

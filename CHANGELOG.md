@@ -8,6 +8,13 @@ pre-release version ladder for project history.
 
 ## 2026-07-12
 
+- **Rewritten About descriptions for all six integration mods.** Every `integrations/*/About/About.xml`
+  description was regenerated as a short, player-facing text (what the adapter does, what it needs,
+  what happens when the target mod is absent), dropping internal deploy/tuning details, and each now
+  carries a matching native-Russian half after an EN/RU divider, using the established localization
+  terms (мост, психотип, взгляд, поселенец; group names like «Наболевшее» / «глубокие разговоры»).
+  Package ids, dependencies, and the dev comments in each About.xml are unchanged; publish scripts
+  pass the new descriptions through as-is.
 - **Adversarial review follow-up for the new integrations.** The SpeakUp prisoner group now lists the
   21 exact `Prisoner*` conversation defNames instead of a bare `Prisoner` prefix, so it no longer
   steals Anomaly DLC's `PrisonerStudyAnomaly` from the core anomaly group; unlisted future SpeakUp

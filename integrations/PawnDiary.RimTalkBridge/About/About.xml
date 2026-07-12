@@ -21,14 +21,21 @@
     <li>aimmlegate.pawndiary.development</li>
     <li>cj.rimtalk</li>
   </loadAfter>
-  <description>Bridges Pawn Diary and RimTalk so a colonist's chat and their diary share one inner life.
+  <description>Connects Pawn Diary and RimTalk so a colonist's chat and diary share one inner life. Pick the level in this mod's settings:
 
-Pick an integration level in the mod settings:
-- Off — nothing flows between the two mods.
-- Shared context (default) — pawns "remember" their diary in conversation: recent diary memories are injected into RimTalk's chat prompts, and each pawn's RimTalk persona is shown to the diary as context. When two colonists talk, the past diary moments they share become "previous interactions" in the conversation. You can also opt in to a short, curated line about the colony's current situation (a raid, harsh weather, an eerie presence, an open quest). Nothing is written from chat.
-- Shared context + conversations — finished reply chains pass through a bounded editorial funnel. Cheap local scoring nominates only strong candidates; a small batched assessment classifies each as ignore, related to a recent diary event, or standalone. Only accepted conversations use normal Pawn Diary generation, producing exactly one linked pairwise event with two POV pages. RimTalk PlayLog lines do not also enter ambient notes while the bridge is installed.
+- Off — the two mods ignore each other.
+- Shared context (default) — pawns "remember" their diary in conversation: recent diary moments feed RimTalk's prompts, each pawn's RimTalk persona is visible to the diary, and two colonists who talk bring up the past they share. Optional: a short line about the colony's current situation. Nothing is written from chat.
+- Shared context + conversations — the few chats actually worth remembering become real diary events: one shared moment, two points of view. Free local scoring plus a small daily assessment budget choose them, and each pawn can get at most one chat event per game day.
 
-Local scoring is free. By default the bounded queue holds at most 12 candidates, assessment batches contain at most 6, and no more than 2 assessment requests are started per in-game day; normal diary generation is spent only on accepted conversations. Every accepted event starts a saved 60,000-tick cooldown for both pawns, limiting each participant to one chat event per full game day even across reloads. Semantic assessment can be disabled for a stricter, less accurate zero-extra-request mode. Advanced options also include the assessment lane, validated comma-separated reaction words/phrases, an editable semantic prompt, shared-memory and colony-situation context, a persona-led diary voice (experimental), and colony/pair throttles. The old RimTalk-engine writing option is temporarily retired and its saved value is ignored.
+Requires Pawn Diary and RimTalk.
 
-Requires Pawn Diary and RimTalk. Installs the core "RimTalk conversations" compatibility group in Pawn Diary automatically. Deployed as a separate RimWorld mod via scripts/deploy-integrations.ps1.</description>
+———
+
+Соединяет Pawn Diary и RimTalk: чат и дневник поселенца живут одной внутренней жизнью. Уровень выбирается в настройках мода:
+
+- Выключено — моды друг друга не замечают.
+- Общий контекст (по умолчанию) — в разговоре поселенцы «помнят» свой дневник: свежие записи попадают в запросы RimTalk, персона RimTalk видна дневнику, а два собеседника вспоминают общее прошлое. По желанию добавляется короткая строка о положении дел в поселении. Из чата в дневник ничего не пишется.
+- Общий контекст + разговоры — редкие, действительно памятные разговоры становятся настоящими событиями дневника: один общий момент, два взгляда. Их отбирают бесплатная локальная оценка и небольшой дневной бюджет проверок; каждому поселенцу — не больше одного такого события в игровой день.
+
+Требуются Pawn Diary и RimTalk.</description>
 </ModMetaData>

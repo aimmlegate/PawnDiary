@@ -26,9 +26,19 @@
     <li>aimmlegate.pawndiary.development</li>
     <li>JPT.speakup</li>
   </loadAfter>
-  <description>Adds dedicated SpeakUp support to Pawn Diary.
+  <description>Gives SpeakUp's conversations a proper place in Pawn Diary.
 
-Five XML groups separate deep talks, jokes, prisoner conversations, thought reactions, and everyday chatter, while preserving SpeakUp's rendered dialogue as diary evidence. A reflection-bound optional layer also gathers reply chains into one pairwise conversation event when at least the configured number of replies was delivered.
+- Deep talks, jokes, prisoner conversations, thought reactions and everyday chatter each get their own diary voice — and the diary keeps the lines pawns actually said as raw material.
+- A longer exchange (three replies or more, adjustable) can become one shared conversation event for both colonists. On by default; toggle it in this mod's settings.
 
-The conversation layer defaults on and can be disabled or given a different minimum reply count in this adapter's settings. If SpeakUp changes its internal Talk API, only that layer disables itself; the XML groups continue to work. Requires Pawn Diary and SpeakUp.</description>
+If a SpeakUp update changes its internals, only the whole-conversation layer switches itself off — everything else keeps working. Requires Pawn Diary and SpeakUp.
+
+———
+
+Даёт разговорам SpeakUp достойное место в Pawn Diary.
+
+- Глубокие разговоры, шутки, беседы с пленниками, реакции на мысли и повседневная болтовня получают в дневнике собственный голос, а реплики поселенцев сохраняются как материал для записи.
+- Длинный обмен репликами (от трёх ответов, настраивается) может стать одним общим событием разговора для обоих собеседников. Включено по умолчанию; отключается в настройках мода.
+
+Если обновление SpeakUp поменяет его внутреннее устройство, отключится только слой целых разговоров — остальное продолжит работать. Требуются Pawn Diary и SpeakUp.</description>
 </ModMetaData>

@@ -30,11 +30,23 @@
     <li>hahkethomemah.simplepersonalities</li>
     <li>hahkethomemah.simplepersonalities.module2</li>
   </loadAfter>
-  <description>Bridges Pawn Diary and 1-2-3 Personalities so a colonist's Enneagram personality shapes their diary.
+  <description>Lets a colonist's 1-2-3 Personalities character shape their Pawn Diary.
 
-Two layers:
-- Personality-aware entries (XML, always on): Module 2's compatibility interactions (Harmonious / Diversive / Turmoil) and its personality mood thoughts are recorded in their own voice — the felt fit or friction between two people — instead of the generic "other" bucket. Module 2 is optional; these sit inert without it.
-- Personality as diary psychotype (this mod's assembly): one setting picks how a colonist's Enneagram shapes their EDITABLE Pawn Diary psychotype — off; map to the closest built-in psychotype; fill their custom outlook from built-in text; or (experimental) have your language model rewrite their personality into a compact outlook, on a chosen API lane with an editable prompt. What it writes is the normal, player-editable psychotype — tweak or clear it per pawn — and it refreshes when the personality changes. 1-2-3 Personalities supplies WHO the pawn is; Pawn Diary keeps HOW they write, and nothing is ever written back into 1-2-3 Personalities.
+- Personality on the page: Module 2's compatibility moments and personality moods are written in their own voice — how it feels to click with someone, or grate on them. Module 2 is optional; without it this part simply sleeps.
+- Personality as diary voice: one setting turns each colonist's Enneagram into their diary psychotype — pick the closest built-in one, fill their editable outlook with ready-made text, or let your language model write it (experimental). You can still edit or clear the result on any pawn, and it follows personality changes.
 
-Requires Pawn Diary and 1-2-3 Personalities M1. Module 2 recommended for the full effect. Deployed as a separate RimWorld mod via scripts/deploy-integrations.ps1.</description>
+1-2-3 Personalities decides who the pawn is; Pawn Diary decides how they write. Nothing is ever written back into 1-2-3 Personalities.
+
+Requires Pawn Diary and 1-2-3 Personalities M1; Module 2 recommended.
+
+———
+
+Характер из 1-2-3 Personalities начинает влиять на дневник поселенца в Pawn Diary.
+
+- Характер на странице: моменты совместимости и настроения характера из Module 2 записываются своим голосом — легко ли человеку рядом с собеседником или тот его раздражает. Module 2 не обязателен; без него эта часть просто спит.
+- Характер как голос дневника: одна настройка превращает эннеаграмму поселенца в его психотип — подобрать ближайший встроенный, заполнить редактируемый взгляд готовым текстом или доверить это вашей языковой модели (экспериментально). Результат можно править и стирать у любого поселенца, а при смене характера он обновляется сам.
+
+1-2-3 Personalities решает, кто этот поселенец; Pawn Diary — как он пишет. Обратно в 1-2-3 Personalities ничего не записывается.
+
+Требуются Pawn Diary и 1-2-3 Personalities M1; Module 2 желателен.</description>
 </ModMetaData>

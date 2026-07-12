@@ -22,15 +22,25 @@
     <li>aimmlegate.pawndiary.development</li>
     <li>VanillaExpanded.VanillaSocialInteractionsExpanded</li>
   </loadAfter>
-  <description>Teaches Pawn Diary about the new social moments from Vanilla Social Interactions Expanded (VSIE).
+  <description>Teaches Pawn Diary the social life added by Vanilla Social Interactions Expanded, so it reaches the diary in its own voice instead of the generic "other conversation" bucket.
 
-With both mods active, VSIE's extra social life shows up in the diary in its own voice instead of being lumped into the generic "other conversation" bucket:
-- Venting — one colonist unburdening to another; usually folded into the day's ambient social note, but a charged moment can surface as its own confiding entry.
-- Teaching &amp; learning — skill lessons between colonists, gathered into an ambient day-note.
-- Discord — a colonist's angry insult at another; recorded with its sting alongside the vanilla "insults and fights" it belongs with (and the social fight it can spark), not as friendly chatter.
-- Becoming best friends (VSIE_BestFriend) — recorded as a real relationship milestone, like the vanilla romance milestones.
-- VSIE's extra mood thoughts — themed so they read as social afterthoughts rather than generic mood notes.
-- Group gatherings — a birthday party or a funeral becomes its own diary entry (from the organizer's point of view), so the colony moment is remembered, not just each colonist's private feeling about it. Birthdays and funerals each have their own on/off toggle in this mod's settings. VSIE's other gatherings (movie night, skygazing, dates, and so on) are left to the mood-thought capture above.
+- Venting and teaching are woven into the day's social notes; a truly charged confession can stand alone.
+- An angry insult keeps its sting, recorded next to vanilla insults and fights.
+- Becoming best friends is a real relationship milestone.
+- A birthday party or a funeral becomes its own diary entry, so the colony remembers the moment itself (each has its own toggle in this mod's settings).
+- VSIE's extra moods read as afterthoughts of real encounters, not stray notes.
 
-Mostly XML, plus a tiny assembly for the gathering hook. Nothing is written unless VSIE is installed. Requires Pawn Diary. Deployed as a separate RimWorld mod via scripts/deploy-integrations.ps1. (VSIE's venting, teaching, best-friend, and mood-thought entries stay toggleable in Pawn Diary's own Events tab.)</description>
+Requires Pawn Diary. Fully inert until VSIE is active — safe to keep installed either way.
+
+———
+
+Учит Pawn Diary социальной жизни из Vanilla Social Interactions Expanded: она попадает в дневник своим голосом, а не общей строкой «просто поговорили».
+
+- Наболевшее и наставничество вплетаются в социальные заметки дня; по-настоящему сильная исповедь может стать отдельной записью.
+- Злая насмешка сохраняет своё жало и встаёт рядом с обычными оскорблениями и драками.
+- Новая лучшая дружба — настоящая веха отношений.
+- День рождения или похороны становятся отдельной записью: поселение помнит само событие (у каждого — свой переключатель в настройках мода).
+- Дополнительные настроения VSIE читаются как отголоски живых встреч, а не случайные заметки.
+
+Требуется Pawn Diary. Пока VSIE не активен, мод полностью бездействует — держать его установленным безопасно в любом случае.</description>
 </ModMetaData>
