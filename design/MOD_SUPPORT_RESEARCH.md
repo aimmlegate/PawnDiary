@@ -41,6 +41,11 @@ is the recommended replacement for that slot.
 
 ### Tier 1 — do these first (high value, existing surfaces, verified maintained)
 
+> Implementation plans exist for every Tier-1 candidate: [`RIMPSYCHE_BRIDGE_PLAN.md`](RIMPSYCHE_BRIDGE_PLAN.md),
+> [`VEE_COMPAT_PLAN.md`](VEE_COMPAT_PLAN.md), [`HOSPITALITY_COMPAT_PLAN.md`](HOSPITALITY_COMPAT_PLAN.md),
+> [`ALPHA_MEMES_COMPAT_PLAN.md`](ALPHA_MEMES_COMPAT_PLAN.md), [`VIE_MEMES_COMPAT_PLAN.md`](VIE_MEMES_COMPAT_PLAN.md),
+> [`WBR_COMPAT_PLAN.md`](WBR_COMPAT_PLAN.md), [`VTE_COMPAT_PLAN.md`](VTE_COMPAT_PLAN.md).
+
 1. **Rimpsyche – Personality Core** — the flagship. 1.6-native Psychology successor with a
    *documented* modder API and a 34-node numeric personality model: the richest psychotype
    override source found anywhere, plus a context line and a one-liner XML matcher pack. Fills
