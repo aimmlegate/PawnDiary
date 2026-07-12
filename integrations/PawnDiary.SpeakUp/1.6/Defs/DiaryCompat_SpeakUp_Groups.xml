@@ -31,6 +31,10 @@
       <windowTicks>60000</windowTicks>
       <maxEvents>999</maxEvents>
       <syntheticDefName>SpeakUpBridgeDeepTalkAmbientDay</syntheticDefName>
+      <!-- SpeakUp conversations can pair a colonist with a prisoner or Hospitality guest (one diary-
+           eligible side). Batch that side like a colonist-to-colonist talk instead of emitting a solo
+           page; a two-colonist talk still batches because both are eligible. -->
+      <allowSingleEligiblePawn>true</allowSingleEligiblePawn>
       <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
       <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
       <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
@@ -89,6 +93,7 @@
       <windowTicks>60000</windowTicks>
       <maxEvents>999</maxEvents>
       <syntheticDefName>SpeakUpBridgeJokesAmbientDay</syntheticDefName>
+      <allowSingleEligiblePawn>true</allowSingleEligiblePawn>
       <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
       <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
       <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
@@ -131,6 +136,10 @@
       <windowTicks>60000</windowTicks>
       <maxEvents>999</maxEvents>
       <syntheticDefName>SpeakUpBridgePrisonerAmbientDay</syntheticDefName>
+      <!-- Required here: a prisoner is never diary-eligible, so a colonist-to-prisoner talk is always
+           one-sided. Without this flag the batch above is dead configuration and every line becomes a
+           separate solo page instead of one ambient day note. -->
+      <allowSingleEligiblePawn>true</allowSingleEligiblePawn>
       <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
       <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
       <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
@@ -149,9 +158,34 @@
       <li>guarded, with rapport arriving by inches</li>
       <li>uneasy and observant, familiarity under confinement</li>
     </tones>
-    <matchPrefixes>
-      <li>Prisoner</li>
-    </matchPrefixes>
+    <!-- Exact SpeakUp prisoner-conversation defNames (JPT.speakup 1.6, verified 2026-07-12). A bare
+         "Prisoner" prefix also swallowed Anomaly DLC's PrisonerStudyAnomaly, which the core "anomaly"
+         group (order 70) claims by exact name; a lower-order prefix here would steal it and mis-theme
+         entity study as a prisoner chat. New SpeakUp prisoner defs fall through to speakupbridge_chatter
+         (package catch-all) until listed here, so no SpeakUp content is ever dropped. -->
+    <matchDefNames>
+      <li>PrisonerAccepts</li>
+      <li>PrisonerAnimalsSkills</li>
+      <li>PrisonerArtisticSkills</li>
+      <li>PrisonerBestSkill</li>
+      <li>PrisonerCV</li>
+      <li>PrisonerClothes</li>
+      <li>PrisonerConstructionSkills</li>
+      <li>PrisonerCookingSkills</li>
+      <li>PrisonerCraftingSkills</li>
+      <li>PrisonerEndchat</li>
+      <li>PrisonerFightingSkills</li>
+      <li>PrisonerIntellectualSkills</li>
+      <li>PrisonerMedicalSkills</li>
+      <li>PrisonerMiningSkills</li>
+      <li>PrisonerNeed</li>
+      <li>PrisonerPassion</li>
+      <li>PrisonerPlantsSkills</li>
+      <li>PrisonerPsychic</li>
+      <li>PrisonerRapport</li>
+      <li>PrisonerRefuses</li>
+      <li>PrisonerSocialSkills</li>
+    </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
@@ -170,6 +204,7 @@
       <windowTicks>60000</windowTicks>
       <maxEvents>999</maxEvents>
       <syntheticDefName>SpeakUpBridgeReactionsAmbientDay</syntheticDefName>
+      <allowSingleEligiblePawn>true</allowSingleEligiblePawn>
       <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
       <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
       <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
@@ -212,6 +247,7 @@
       <windowTicks>60000</windowTicks>
       <maxEvents>999</maxEvents>
       <syntheticDefName>SpeakUpBridgeAmbientDay</syntheticDefName>
+      <allowSingleEligiblePawn>true</allowSingleEligiblePawn>
       <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
       <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
       <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>

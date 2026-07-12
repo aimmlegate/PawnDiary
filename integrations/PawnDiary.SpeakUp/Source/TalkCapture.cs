@@ -38,6 +38,7 @@ namespace PawnDiarySpeakUp
         private static FieldInfo statementTalkField;
         private static FieldInfo statementEmitterField;
         private static FieldInfo statementReceiverField;
+        private static FieldInfo statementIterationField;
         private static FieldInfo talkLatestReplyCountField;
         private static FieldInfo talkExpireTickField;
         private static PropertyInfo talkRemainingRepliesProperty;
@@ -93,13 +94,18 @@ namespace PawnDiarySpeakUp
                 statementTalkField = AccessTools.Field(statementType, "Talk");
                 statementEmitterField = AccessTools.Field(statementType, "Emitter");
                 statementReceiverField = AccessTools.Field(statementType, "Reciever");
+                // Iteration is the statement's immutable 1-based reply index. It lets us recognize the
+                // conversation's very first reply (whose receiver is the original initiator/subject) and
+                // refuse to attach to a Talk we only started observing partway through.
+                statementIterationField = AccessTools.Field(statementType, "Iteration");
                 talkLatestReplyCountField = AccessTools.Field(talkType, "latestReplyCount");
                 talkExpireTickField = AccessTools.Field(talkType, "expireTick");
                 talkRemainingRepliesProperty = AccessTools.Property(talkType, "remainingReplies");
 
                 if (fireStatement == null || cleanUp == null || textRenderer == null
                     || statementTalkField == null || statementEmitterField == null
-                    || statementReceiverField == null || talkLatestReplyCountField == null
+                    || statementReceiverField == null || statementIterationField == null
+                    || talkLatestReplyCountField == null
                     || talkExpireTickField == null || talkRemainingRepliesProperty == null)
                 {
                     WarnTier2Disabled("a required SpeakUp method, field, or property changed");
@@ -256,8 +262,18 @@ namespace PawnDiarySpeakUp
             TalkAccumulator accumulator;
             if (!accumulations.TryGetValue(talk, out accumulator))
             {
-                // Talk's first scheduled reply swaps roles: its receiver is the original interaction
-                // initiator and therefore the requested subject; its emitter is the original recipient.
+                // Only attach to a Talk from its first reply. SpeakUp alternates emitter/receiver per
+                // reply (and only on topic changes, so parity cannot be reconstructed later), and it
+                // does not persist in-flight Talks. If we first see this Talk past its opening reply —
+                // capture was toggled on mid-conversation, or state was reset — the subject/partner roles
+                // and the sampled lines would both be partial, so drop it and wait for the next talk.
+                if (ReadInt(statementIterationField, statement) > 1)
+                {
+                    return;
+                }
+
+                // The opening reply swaps roles: its receiver is the original interaction initiator and
+                // therefore the requested subject; its emitter is the original recipient.
                 int now = CurrentTick();
                 accumulator = new TalkAccumulator(talk, receiver, emitter, now);
                 accumulations.Add(talk, accumulator);

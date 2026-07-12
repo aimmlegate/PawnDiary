@@ -675,10 +675,16 @@ player installs only the ones matching their mod list:
 - **`PawnDiary.SpeakUp` (`Pawn Diary: SpeakUp`)** — five target-gated Tier-1 Interaction groups classify
   deep talks, jokes, prisoner talks, thought reactions, and catch-all chatter. They preserve rendered
   dialogue; core's SpeakUp `Ensue` suppression guard prevents rendering from scheduling another reply.
-  A default-on reflection-only Tier 2 observes the verified `DialogManager`/`Talk` surface without a
-  SpeakUp.dll build reference, samples already-rendered emitter-POV lines, and submits one
-  `speakupbridge_conversation` External pair event at the configurable threshold (default 3, range 1–5).
-  In-flight Talk state clears on load/toggle-off; pawn departure or death drops it. Tier-1 ambient
+  The prisoner group matches SpeakUp's exact `Prisoner*` conversation defNames (not a bare `Prisoner`
+  prefix, which would swallow Anomaly DLC's `PrisonerStudyAnomaly` from the core anomaly group), and all
+  five ambient groups set `allowSingleEligiblePawn` so a colonist↔prisoner/guest talk batches into one
+  day note instead of emitting solo pages. A default-on reflection-only Tier 2 observes the verified
+  `DialogManager`/`Talk` surface without a SpeakUp.dll build reference, samples already-rendered
+  emitter-POV lines, and submits one `speakupbridge_conversation` External pair event at the configurable
+  threshold (default 3, range 1–5). It attaches to a `Talk` only from its opening reply (checked via
+  `Statement.Iteration`), so a conversation already in flight when capture is enabled is skipped rather
+  than recorded with inverted roles or partial samples. In-flight Talk state clears on load/toggle-off;
+  pawn departure or death drops it. Tier-1 ambient
   fragments deliberately coexist with the whole-conversation event pending the diary-level duplication
   smoketest. The old `speakup_chitchat`/`SpeakUpAmbientDay` fallback and saved setting token moved
   unchanged into `Defs/Compat`: SpeakUp alone keeps that behavior, loading the adapter disables only the

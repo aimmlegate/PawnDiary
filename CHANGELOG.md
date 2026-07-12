@@ -8,6 +8,18 @@ pre-release version ladder for project history.
 
 ## 2026-07-12
 
+- **Adversarial review follow-up for the new integrations.** The SpeakUp prisoner group now lists the
+  21 exact `Prisoner*` conversation defNames instead of a bare `Prisoner` prefix, so it no longer
+  steals Anomaly DLC's `PrisonerStudyAnomaly` from the core anomaly group; unlisted future SpeakUp
+  prisoner defs fall through to the package catch-all. All five SpeakUp ambient groups opt into
+  `allowSingleEligiblePawn`, so a colonist's talk with a prisoner or guest batches into one day note
+  instead of dead-configuring the batch and emitting solo pages. The Tier-2 observer refuses to attach
+  to a `Talk` first seen past its opening reply (via SpeakUp's `Statement.Iteration`), preventing
+  inverted subject/partner roles and partial line sampling when capture is toggled on mid-conversation.
+  The Rimpsyche mod constructor now wraps `new Harmony(...)` in the same try/catch the SpeakUp adapter
+  uses, so a Harmony static-init failure can never abort play-data load. `EVENT_PROMPT_MAP.md` corrects
+  the Tier-C alignment gate to strictly `> 0.55`. Both adapter DLLs were rebuilt; all pure suites pass
+  (SpeakUp 21, Rimpsyche 121, core 605).
 - **Six source-verified, no-hard-dependency compatibility packs.** Alpha Memes gets funeral/ritual,
   thought, baptism, and visible-hediff voices; VIE Memes gets severe/general rites, afterthoughts,
   and interrogation; Way Better Romance gets its 3 real interactions and 14 memories; Vanilla Traits

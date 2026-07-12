@@ -90,7 +90,21 @@ namespace PawnDiaryRimpsyche
 
             // The hook is installed even if its setting is currently off so the checkbox can be enabled
             // without restarting. The Postfix's very first operation is the settings-bool early return.
-            ConversationCapture.TryInstall(new Harmony(HarmonyId));
+            // TryInstall guards its own body, but constructing the Harmony instance is outside it, so the
+            // mod constructor is the final safety boundary: a conversation observer must never take down
+            // RimWorld's play-data load if Harmony's static init throws (e.g. a version clash).
+            try
+            {
+                ConversationCapture.TryInstall(new Harmony(HarmonyId));
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    LogPrefix + " failed to install the Rimpsyche conversation hook; Tier C is disabled: "
+                    + exception,
+                    "PawnDiaryRimpsyche.InteractionHook.ConstructFailed".GetHashCode());
+            }
+
             Log.Message(LogPrefix + " initialized.");
         }
 
