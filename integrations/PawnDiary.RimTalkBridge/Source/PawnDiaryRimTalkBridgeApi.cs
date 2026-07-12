@@ -39,6 +39,10 @@ namespace PawnDiaryRimTalkBridge
         /// pawn variable name, usable as <c>{{pawn1.diary}}</c> by template editors).</summary>
         public const string DiarySectionName = "diary";
 
+        /// <summary>Opt-in RimTalk pawn variable containing Pawn Diary's own outlook and writing style,
+        /// usable as <c>{{pawn1.diary_persona}}</c>. It is registered but never auto-injected.</summary>
+        public const string DiaryPersonaVariableName = "diary_persona";
+
         /// <summary>RimTalk environment variable + injected-section name for the colony-situation
         /// block, usable as <c>{{colony_events}}</c> (Feature 1). Frozen token — matches the section
         /// name so both registrations share one identifier.</summary>

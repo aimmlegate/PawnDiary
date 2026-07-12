@@ -558,18 +558,27 @@ planning, throttling, and context
 formatting) lives under `Source/Pure/` and is unit-tested by
 `tests/RimTalkBridgeLogicTests/` without loading the game.
 
-Advanced, off-by-default options: **Tier B** persona-led diary voice, now a **psychotype (outlook)**
-override (`PersonaSync` applies `SetPsychotypeOverride` from the persona's first sentence — RimTalk
-supplies who the pawn is, Pawn Diary keeps how they write — reapplies on persona-hash change, and clears
-via `ResetPsychotypeOverride` when toggled off; every reset also sweeps the stale writing-style override
-older bridge versions placed, so existing saves migrate cleanly); semantic/local-only assessment and
-lane selection; editable reaction terms and semantic prompt; and per-pawn/colony/pair throttle knobs
+Persona synchronization now has one explicit authority direction: **Pawn Diary → RimTalk** publishes
+the pawn's effective diary outlook plus writing style through RimTalk's supported `PersonaService.SetPersonality`,
+while **Pawn Diary ← RimTalk** imports RimTalk's persona as a source-owned **psychotype (outlook)**
+override (`PersonaSync` applies `SetPsychotypeOverride`). An optional LLM transform uses Pawn Diary's
+first active API lane to reshape the source for the receiving mod and falls back to direct sync on
+admission failure, no configured lane, or generation failure. The older `personaLedDiaryVoice` key
+remains serialized for settings compatibility but no longer controls behavior. Import mode reapplies
+on persona-hash change and clears via `ResetPsychotypeOverride` when the direction changes; every reset
+also sweeps the stale writing-style override older bridge versions placed, so existing saves migrate
+cleanly. Other advanced controls cover semantic/local-only assessment and lane selection, editable
+reaction terms and semantic prompt, and per-pawn/colony/pair throttle knobs
 (`ThrottlePolicy`; daily/colony counters are transient, but the one-day pawn cooldown is saved; a zero
 per-pawn daily cap disables conversation recording). The old `useRimTalkEngine` Scribe key remains readable but
 its toggle is hidden and its value is ignored: accepted conversations always use normal pairwise
 `SubmitPromptEntry`. The legacy `minRepliesForImportant` key is likewise still read but no longer shown
 or used. Frozen save/registry tokens (source id, `rimtalkbridge_conversation` event key, three listener
 ids) live in `BridgeIds`. The full design rationale is in `design/RIMTALK_BRIDGE_PLAN.md`.
+
+Template authors can explicitly place `{{pawn1.diary_persona}}` (and the corresponding `pawn2` form).
+It returns Pawn Diary's combined outlook and writing-style rules from a main-thread-built cache. The
+variable is registered for opt-in use only: the bridge never auto-injects it or creates a prompt entry.
 
 Two further Level-1 outbound context variables extend the bridge (both follow the same
 main-thread-refresh / background-read cache split, `design/RIMTALK_BRIDGE_CONTEXT_EXTENSION_PLAN.md`):

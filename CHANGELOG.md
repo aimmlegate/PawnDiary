@@ -1,5 +1,11 @@
 # Changelog
 
+- **2026-07-13 — Directional RimTalk persona synchronization.** The RimTalk bridge now lets players
+  choose Pawn Diary → RimTalk (publish diary outlook/style) or Pawn Diary ← RimTalk (import the chat
+  persona as diary outlook), with an optional bounded LLM rewrite through the first active Pawn Diary
+  lane and direct-sync fallback. Added the opt-in `{{pawn1.diary_persona}}` template variable without
+  automatic prompt insertion, pure payload-format tests, and retained the legacy toggle key.
+
 Milestone history of Pawn Diary, newest first. Grouped by milestone, not by commit; routine
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
 Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The public integration

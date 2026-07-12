@@ -1,15 +1,7 @@
-// Persona sync — the "who is this pawn" half of the bridge. Two tiers, both code-only:
-//
-//   • Tier A (ships at level 1): mutual awareness. Pawn Diary sees a compact "chat_persona=<first
-//     sentence of the RimTalk persona>" line via a registered context provider. Nothing is mutated.
-//   • Tier B (advanced, default OFF, experimental): persona-led diary voice. The pawn's RimTalk
-//     character description is turned into a Pawn Diary PSYCHOTYPE (outlook) OVERRIDE — RimTalk supplies
-//     WHO the pawn is; Pawn Diary keeps HOW they write. Reapplied when the persona text changes and
-//     cleared when the toggle turns off. (Earlier versions placed a writing-STYLE override here; every
-//     bridge reset now also sweeps that stale style override so old saves migrate cleanly.)
-//
-// Recorded design rule: pawns share identity/memory but keep SEPARATE voices. We only ever READ
-// RimTalk's persona; we never write into it (that would mutate another mod's save).
+// Persona sync — the "who is this pawn" half of the bridge. The player chooses one authority:
+// import RimTalk into Pawn Diary, or publish Pawn Diary's outlook/style into RimTalk. An optional
+// one-shot LLM rewrite is available in either direction. Template authors can also opt into the
+// cached {{pawnN.diary_persona}} variable; it is deliberately never auto-injected.
 //
 // RimTalk-type isolation: the methods that call RimTalk.Data.PersonaService are [NoInlining] and are
 // only reached after the mod's RimTalkActive guard (see RIMTALK_BRIDGE_PLAN Step 0).
@@ -19,14 +11,14 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using PawnDiary.Integration;
 using RimTalk.Data;
+using RimTalk.API;
 using RimWorld;
 using Verse;
 
 namespace PawnDiaryRimTalkBridge
 {
     /// <summary>
-    /// Reads RimTalk personas and exposes them to Pawn Diary as context (Tier A) or as an optional
-    /// writing-voice override (Tier B). Never writes back into RimTalk.
+    /// Synchronizes personas in the selected direction and publishes the opt-in cached template variable.
     /// </summary>
     internal static class PersonaSync
     {
@@ -46,14 +38,25 @@ namespace PawnDiaryRimTalkBridge
         // Whether Tier B was active on the previous pass, so we can detect the moment it turns off and
         // clear every override we placed.
         private static bool tierBWasActive;
+        private static readonly Dictionary<string, int> AppliedRimTalkHash = new Dictionary<string, int>();
+        private static readonly Dictionary<string, TransformJob> InFlight = new Dictionary<string, TransformJob>();
+        private static readonly object DiaryPersonaGate = new object();
+        private static readonly Dictionary<string, string> DiaryPersonaCache = new Dictionary<string, string>();
 
         /// <summary>
         /// Registers the Tier A "chat_persona=" context provider. Process-global and idempotent; call
         /// once from the mod constructor, only when RimTalk is active.
         /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void RegisterContextProvider()
         {
             PawnDiaryApi.RegisterPawnContextProvider(BridgeIds.PersonaProviderId, ProvidePersonaLine);
+            ContextHookRegistry.RegisterPawnVariable(
+                BridgeIds.DiaryPersonaVariableName,
+                BridgeIds.ModId,
+                ProvideDiaryPersonaVariable,
+                "PawnDiaryRimTalkBridge.Prompt.DiaryPersonaVariableDesc".Translate(),
+                100);
         }
 
         /// <summary>
@@ -61,11 +64,27 @@ namespace PawnDiaryRimTalkBridge
         /// persona-led voice override while the toggle is on, and clears all overrides the moment it
         /// turns off. No-op work when nothing changed.
         /// </summary>
-        public static void RunTierBPass()
+        public static void RunPass()
         {
+            PawnDiaryRimTalkBridgeSettings settings = PawnDiaryRimTalkBridgeMod.Settings;
+            if (PawnDiaryRimTalkBridgeMod.LevelAtLeast(1) && settings != null
+                && settings.personaSyncDirection == PersonaSyncDirection.PawnDiaryToRimTalk)
+            {
+                if (tierBWasActive)
+                {
+                    ResetAllOverrides();
+                }
+                tierBWasActive = false;
+                foreach (Pawn pawn in PawnsFinder.AllMaps_FreeColonistsSpawned)
+                {
+                    ExportFor(pawn, settings.transformPersonaWithLlm);
+                }
+                return;
+            }
+
             bool active = PawnDiaryRimTalkBridgeMod.LevelAtLeast(1)
-                && PawnDiaryRimTalkBridgeMod.Settings != null
-                && PawnDiaryRimTalkBridgeMod.Settings.personaLedDiaryVoice
+                && settings != null
+                && settings.personaSyncDirection == PersonaSyncDirection.RimTalkToPawnDiary
                 && PawnDiaryApi.IsExternalApiEnabled;
 
             if (!active)
@@ -85,7 +104,8 @@ namespace PawnDiaryRimTalkBridge
 
             foreach (Pawn pawn in PawnsFinder.AllMaps_FreeColonistsSpawned)
             {
-                ApplyTierBFor(pawn);
+                RefreshDiaryPersonaCacheFor(pawn);
+                ImportFor(pawn, settings.transformPersonaWithLlm);
             }
         }
 
@@ -104,6 +124,12 @@ namespace PawnDiaryRimTalkBridge
             }
 
             AppliedPersonaHash.Clear();
+            AppliedRimTalkHash.Clear();
+            InFlight.Clear();
+            lock (DiaryPersonaGate)
+            {
+                DiaryPersonaCache.Clear();
+            }
         }
 
         /// <summary>
@@ -122,6 +148,12 @@ namespace PawnDiaryRimTalkBridge
             }
 
             AppliedPersonaHash.Clear();
+            AppliedRimTalkHash.Clear();
+            InFlight.Clear();
+            lock (DiaryPersonaGate)
+            {
+                DiaryPersonaCache.Clear();
+            }
             tierBWasActive = false;
         }
 
@@ -161,7 +193,7 @@ namespace PawnDiaryRimTalkBridge
 
         /// <summary>Applies or refreshes one pawn's Tier B override. Main thread. Names RimTalk types.</summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ApplyTierBFor(Pawn pawn)
+        private static void ImportFor(Pawn pawn, bool transform)
         {
             if (pawn == null)
             {
@@ -185,7 +217,9 @@ namespace PawnDiaryRimTalkBridge
 
             // GetHashCode is stable within a process, which is all we need for in-session change
             // detection (we never persist it), so it is fine for this comparison.
-            int hash = persona.GetHashCode();
+            // Include transform mode so flipping the checkbox re-synchronizes even when source text
+            // itself did not change.
+            int hash = unchecked(persona.GetHashCode() * 397 + (transform ? 1 : 0));
             int previous;
             if (AppliedPersonaHash.TryGetValue(id, out previous) && previous == hash)
             {
@@ -200,11 +234,121 @@ namespace PawnDiaryRimTalkBridge
 
             // Tier B repointed: the persona feeds Pawn Diary's PSYCHOTYPE (outlook) override, not the
             // writing style. RimTalk supplies who the pawn is; Pawn Diary keeps how they write.
+            if (transform && StartOrPollTransform(pawn, persona, false, hash))
+            {
+                return;
+            }
             string rule = "PawnDiaryRimTalkBridge.Persona.LensRule".Translate(firstSentence);
             if (PawnDiaryApi.SetPsychotypeOverride(pawn, BridgeIds.ModId, rule))
             {
                 AppliedPersonaHash[id] = hash;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ExportFor(Pawn pawn, bool transform)
+        {
+            if (pawn == null || !PawnDiaryApi.IsDiaryEligible(pawn)) return;
+            string source = RefreshDiaryPersonaCacheFor(pawn);
+            if (string.IsNullOrWhiteSpace(source)) return;
+            int hash = unchecked(source.GetHashCode() * 397 + (transform ? 1 : 0));
+            string id = pawn.GetUniqueLoadID();
+            if (AppliedRimTalkHash.TryGetValue(id, out int oldHash) && oldHash == hash) return;
+            if (transform && StartOrPollTransform(pawn, source, true, hash)) return;
+            SafeSetPersonality(pawn, source);
+            AppliedRimTalkHash[id] = hash;
+        }
+
+        // Main-thread cache refresh. RimTalk may evaluate Scriban variables on a worker thread, where
+        // PawnDiaryApi reads are rejected, so the template provider below only reads this snapshot.
+        private static string RefreshDiaryPersonaCacheFor(Pawn pawn)
+        {
+            if (pawn == null || !PawnDiaryApi.IsDiaryEligible(pawn))
+            {
+                return string.Empty;
+            }
+
+            DiaryPsychotypeSnapshot outlook = PawnDiaryApi.GetPsychotype(pawn);
+            DiaryWritingStyleSnapshot style = PawnDiaryApi.GetWritingStyle(pawn);
+            string text = Pure.PersonaTransferText.Combine(outlook?.rule, style?.rule);
+            lock (DiaryPersonaGate)
+            {
+                DiaryPersonaCache[pawn.GetUniqueLoadID()] = text;
+            }
+            return text;
+        }
+
+        /// <summary>Opt-in {{pawnN.diary_persona}} provider. Never auto-injected into a prompt.</summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string ProvideDiaryPersonaVariable(Pawn pawn)
+        {
+            if (pawn == null || !PawnDiaryRimTalkBridgeMod.LevelAtLeast(1)
+                || !PawnDiaryApi.IsExternalApiEnabled)
+            {
+                return string.Empty;
+            }
+
+            lock (DiaryPersonaGate)
+            {
+                return DiaryPersonaCache.TryGetValue(pawn.GetUniqueLoadID(), out string text)
+                    ? text ?? string.Empty
+                    : string.Empty;
+            }
+        }
+
+        private static bool StartOrPollTransform(Pawn pawn, string source, bool export, int sourceHash)
+        {
+            string id = pawn.GetUniqueLoadID();
+            if (InFlight.TryGetValue(id, out TransformJob job))
+            {
+                if (job.export != export || job.sourceHash != sourceHash)
+                {
+                    InFlight.Remove(id);
+                    return StartOrPollTransform(pawn, source, export, sourceHash);
+                }
+                LlmCompletionResult result = PawnDiaryApi.GetLlmCompletionResult(job.handle);
+                if (result.status == LlmCompletionStatus.Pending) return true;
+                InFlight.Remove(id);
+                if (result.status != LlmCompletionStatus.Succeeded || string.IsNullOrWhiteSpace(result.text)) return false;
+                if (job.export)
+                {
+                    SafeSetPersonality(pawn, result.text);
+                    AppliedRimTalkHash[id] = job.sourceHash;
+                }
+                else if (PawnDiaryApi.SetPsychotypeOverride(pawn, BridgeIds.ModId, result.text))
+                {
+                    AppliedPersonaHash[id] = job.sourceHash;
+                }
+                return true;
+            }
+            string promptKey = export
+                ? "PawnDiaryRimTalkBridge.Persona.ExportTransformPrompt"
+                : "PawnDiaryRimTalkBridge.Persona.ImportTransformPrompt";
+            int handle = PawnDiaryApi.RequestLlmCompletion(new ExternalLlmCompletionRequest
+            {
+                sourceId = BridgeIds.ModId,
+                laneIndex = -1,
+                systemPrompt = promptKey.Translate(),
+                userText = source,
+                maxTokens = 300
+            });
+            if (handle <= 0) return false;
+            InFlight[id] = new TransformJob { handle = handle, export = export, sourceHash = sourceHash };
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void SafeSetPersonality(Pawn pawn, string persona)
+        {
+            try { PersonaService.SetPersonality(pawn, persona); }
+            catch { }
+        }
+
+        private sealed class TransformJob
+        {
+            public int handle;
+            public bool export;
+            public int sourceHash;
         }
 
         /// <summary>
@@ -215,7 +359,8 @@ namespace PawnDiaryRimTalkBridge
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string ProvidePersonaLine(Pawn pawn)
         {
-            if (pawn == null || !PawnDiaryRimTalkBridgeMod.LevelAtLeast(1))
+            if (pawn == null || !PawnDiaryRimTalkBridgeMod.LevelAtLeast(1)
+                || PawnDiaryRimTalkBridgeMod.Settings.personaSyncDirection != PersonaSyncDirection.RimTalkToPawnDiary)
             {
                 return null;
             }

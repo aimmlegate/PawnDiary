@@ -17,6 +17,11 @@ namespace RimTalkBridgeLogicTests
 
         private static int Main()
         {
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaTransferText.Combine("outlook", "style") == "outlook\nstyle",
+                "persona transfer combines outlook and style");
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaTransferText.Combine(" ", " style ") == "style",
+                "persona transfer ignores blank fields and trims text");
+
             // ContextFormat
             TestBuildDiarySection_BasicNoStyle();
             TestBuildDiarySection_WithStyle();

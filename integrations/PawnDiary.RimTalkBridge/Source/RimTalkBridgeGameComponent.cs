@@ -153,7 +153,7 @@ namespace PawnDiaryRimTalkBridge
             RefreshColonyContext(now);              // Feature 1: colony-situation block per map
             SharedMemoryInjector.ProcessQueue(now); // Feature 3: build pairs the provider requested
             SharedMemoryInjector.SyncAutoInject();  // Feature 3: reconcile the optional prompt entry
-            PersonaSync.RunTierBPass();
+            PersonaSync.RunPass();
             ConversationTracker.ProcessDueConversations(now);
             ConversationAssessmentCoordinator.PollAndApply(now);
             ConversationAssessmentCoordinator.TryStartNewBatch(now);

@@ -19,6 +19,16 @@ using Verse;
 
 namespace PawnDiaryRimTalkBridge
 {
+    /// <summary>Which mod owns the pawn persona when shared context is enabled.</summary>
+    public enum PersonaSyncDirection
+    {
+        /// <summary>Pawn Diary's outlook and writing style are exported to RimTalk.</summary>
+        PawnDiaryToRimTalk,
+
+        /// <summary>RimTalk's persona is imported as Pawn Diary's outlook.</summary>
+        RimTalkToPawnDiary
+    }
+
     /// <summary>
     /// Adapter mod entry point. RimWorld creates this once when the mod list is loaded, before any
     /// game exists, which makes the constructor the right place for process-global registrations.
@@ -299,12 +309,21 @@ namespace PawnDiaryRimTalkBridge
                 "PawnDiaryRimTalkBridge.Settings.InjectColonyContextDesc".Translate());
             Settings.injectColonyContext = colonyContext;
 
-            bool personaLed = Settings.personaLedDiaryVoice;
-            listing.CheckboxLabeled(
-                "PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoice".Translate(),
-                ref personaLed,
-                "PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoiceDesc".Translate());
-            Settings.personaLedDiaryVoice = personaLed;
+            listing.Label("PawnDiaryRimTalkBridge.Settings.PersonaDirection".Translate());
+            if (listing.RadioButton("PawnDiaryRimTalkBridge.Settings.PersonaToRimTalk".Translate(),
+                Settings.personaSyncDirection == PersonaSyncDirection.PawnDiaryToRimTalk, 8f))
+            {
+                Settings.personaSyncDirection = PersonaSyncDirection.PawnDiaryToRimTalk;
+            }
+            if (listing.RadioButton("PawnDiaryRimTalkBridge.Settings.PersonaFromRimTalk".Translate(),
+                Settings.personaSyncDirection == PersonaSyncDirection.RimTalkToPawnDiary, 8f))
+            {
+                Settings.personaSyncDirection = PersonaSyncDirection.RimTalkToPawnDiary;
+            }
+            bool transformPersona = Settings.transformPersonaWithLlm;
+            listing.CheckboxLabeled("PawnDiaryRimTalkBridge.Settings.TransformPersona".Translate(),
+                ref transformPersona, "PawnDiaryRimTalkBridge.Settings.TransformPersonaDesc".Translate());
+            Settings.transformPersonaWithLlm = transformPersona;
 
             // Level-2 selection mode. Semantic mode uses the core one-shot completion API; local-only
             // mode spends no extra assessment request and applies the stricter XML threshold.
@@ -621,6 +640,12 @@ namespace PawnDiaryRimTalkBridge
         /// <summary>Tier B (experimental, off): derive the diary voice from the RimTalk persona.</summary>
         public bool personaLedDiaryVoice;
 
+        /// <summary>Authoritative direction for persona synchronization.</summary>
+        public PersonaSyncDirection personaSyncDirection = PersonaSyncDirection.RimTalkToPawnDiary;
+
+        /// <summary>Rewrite the source persona through Pawn Diary's first active LLM lane.</summary>
+        public bool transformPersonaWithLlm;
+
         /// <summary>Legacy engine-writing key. Still read for migration, intentionally never acted on.</summary>
         public bool useRimTalkEngine;
 
@@ -682,6 +707,8 @@ namespace PawnDiaryRimTalkBridge
             Scribe_Values.Look(ref integrationLevel, "integrationLevel", 1);
             Scribe_Values.Look(ref includeDiaryVoiceLine, "includeDiaryVoiceLine", true);
             Scribe_Values.Look(ref personaLedDiaryVoice, "personaLedDiaryVoice", false);
+            Scribe_Values.Look(ref personaSyncDirection, "personaSyncDirection", PersonaSyncDirection.RimTalkToPawnDiary);
+            Scribe_Values.Look(ref transformPersonaWithLlm, "transformPersonaWithLlm", false);
             // Frozen legacy key: retained only so old settings continue to deserialize cleanly.
             Scribe_Values.Look(ref useRimTalkEngine, "useRimTalkEngine", false);
             Scribe_Values.Look(ref useSemanticConversationAssessment, "useSemanticConversationAssessment", true);
@@ -724,6 +751,11 @@ namespace PawnDiaryRimTalkBridge
             // Defensive clamps: hand-edited or corrupted config XML must not wedge the bridge into
             // impossible states (negative caps, level 99, a zero quiet window that flushes every tick).
             integrationLevel = Clamp(integrationLevel, 0, 2);
+            if (personaSyncDirection < PersonaSyncDirection.PawnDiaryToRimTalk
+                || personaSyncDirection > PersonaSyncDirection.RimTalkToPawnDiary)
+            {
+                personaSyncDirection = PersonaSyncDirection.RimTalkToPawnDiary;
+            }
             contextEntryCount = Clamp(contextEntryCount, 0, 10);
             colonyEventCount = Clamp(colonyEventCount, 0, 6);
             sharedMemoryCount = Clamp(sharedMemoryCount, 0, 4);
