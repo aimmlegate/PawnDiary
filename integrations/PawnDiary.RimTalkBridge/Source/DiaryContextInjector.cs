@@ -61,7 +61,8 @@ namespace PawnDiaryRimTalkBridge
                 SectionFor,
                 HookPriority);
 
-            // Also expose it as a Scriban variable so template editors can place {{pawn1.diary}} by hand.
+            // Also expose it as a Scriban pawn member so templates can place {{ pawn.diary }} or,
+            // for a two-pawn dialogue, {{ recipient.diary }} after checking that recipient is not null.
             ContextHookRegistry.RegisterPawnVariable(
                 BridgeIds.DiarySectionName,
                 BridgeIds.ModId,

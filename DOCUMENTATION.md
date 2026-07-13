@@ -464,7 +464,7 @@ The canvas is also floored to the visible viewport height before drawing.
 - **Off (0)** — no data crosses in either direction and no chat-originated entry is possible.
 - **Shared context (1, default)** — outbound, `DiaryContextInjector` registers a diary-memories
   section into RimTalk's prompt builder (`ContextHookRegistry.InjectPawnSection` on
-  `ContextCategories.Pawn.Thoughts`, plus a `{{pawn1.diary}}` Scriban variable) and inbound,
+  `ContextCategories.Pawn.Thoughts`, plus a `{{ pawn.diary }}` Scriban variable) and inbound,
   `PersonaSync` registers a `chat_persona=` pawn-context provider so Pawn Diary summaries see the
   RimTalk persona. Both directions are additive context only; no diary entry originates from chat.
 - **Shared context + conversations (2)** — `ConversationTracker` (fed by the
@@ -559,15 +559,26 @@ formatting) lives under `Source/Pure/` and is unit-tested by
 `tests/RimTalkBridgeLogicTests/` without loading the game.
 
 Persona synchronization now has one explicit authority direction: **Pawn Diary → RimTalk** publishes
-the pawn's effective diary outlook plus writing style through RimTalk's supported `PersonaService.SetPersonality`,
+the pawn's effective psychotype (and never its writing-style rule) through RimTalk's supported
+`PersonaService.SetPersonality`,
 while **Pawn Diary ← RimTalk** imports RimTalk's persona as a source-owned **psychotype (outlook)**
 override (`PersonaSync` applies `SetPsychotypeOverride`). An optional LLM transform uses Pawn Diary's
 first active API lane to reshape the source for the receiving mod and falls back to direct sync on
-admission failure, no configured lane, or generation failure. The older `personaLedDiaryVoice` key
+admission failure, no configured lane, or generation failure. Both transform prompts demand a dense,
+speech/writing-relevant 200–300-character result, and a Unicode-safe local cap guarantees no stored
+result exceeds 300 characters. Writing-style prose is never sent to RimTalk or the LLM. Instead, the
+bridge recognizes exactly five active hediff
+styles (`mind-crumbled`, `silent-focus`, `pain-needle`, `blank-bliss`, `bright-fog`) and the five child
+catalog styles. Each recognized non-silent style selects a narrowly authored transform instruction;
+ordinary adult styles select none, and custom/external prose is never inspected. `silent-focus` adds no prose and forces RimTalk talk
+initiation to `0`; the 250-tick pass maintains that value and restores the player's saved previous
+weight when the condition or Pawn Diary authority ends. The older `personaLedDiaryVoice` key
 remains serialized for settings compatibility but no longer controls behavior. Import mode reapplies
 on persona-hash change and clears via `ResetPsychotypeOverride` when the direction changes; every reset
 also sweeps the stale writing-style override older bridge versions placed, so existing saves migrate
-cleanly. Other advanced controls cover semantic/local-only assessment and lane selection, editable
+cleanly. The controlling editor shows an ownership notice; when LLM transform is enabled it also shows
+a Regenerate action (RimTalk's persona editor for export, Pawn Diary's psychotype editor for import).
+Other advanced controls cover semantic/local-only assessment and lane selection, editable
 reaction terms and semantic prompt, and per-pawn/colony/pair throttle knobs
 (`ThrottlePolicy`; daily/colony counters are transient, but the one-day pawn cooldown is saved; a zero
 per-pawn daily cap disables conversation recording). The old `useRimTalkEngine` Scribe key remains readable but
@@ -576,9 +587,13 @@ its toggle is hidden and its value is ignored: accepted conversations always use
 or used. Frozen save/registry tokens (source id, `rimtalkbridge_conversation` event key, three listener
 ids) live in `BridgeIds`. The full design rationale is in `design/RIMTALK_BRIDGE_PLAN.md`.
 
-Template authors can explicitly place `{{pawn1.diary_persona}}` (and the corresponding `pawn2` form).
-It returns Pawn Diary's combined outlook and writing-style rules from a main-thread-built cache. The
-variable is registered for opt-in use only: the bridge never auto-injects it or creates a prompt entry.
+Template authors can explicitly place `{{ pawn.diary_persona }}`. In two-pawn prompts,
+`{{ recipient.diary_persona }}` addresses the other pawn and must be guarded with `{{ if recipient }}`
+because RimTalk sets `recipient` to null for monologues. The variable returns Pawn Diary's psychotype
+only from a main-thread-built cache; writing styles are never included. It is registered for opt-in use only:
+the bridge never auto-injects it or creates a prompt entry.
+All RimTalk registrations that need localized descriptions run from a `StaticConstructorOnStartup`
+registrar after language loading; the earlier mod-constructor timing has no active language yet.
 
 Two further Level-1 outbound context variables extend the bridge (both follow the same
 main-thread-refresh / background-read cache split, `design/RIMTALK_BRIDGE_CONTEXT_EXTENSION_PLAN.md`):

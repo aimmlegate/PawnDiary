@@ -36,11 +36,11 @@ namespace PawnDiaryRimTalkBridge
         public const string AssessmentStatusListenerId = ModId + ".assessmentstatus";
 
         /// <summary>RimTalk injected-section name for the diary-memories block (also the Scriban
-        /// pawn variable name, usable as <c>{{pawn1.diary}}</c> by template editors).</summary>
+        /// pawn variable name, usable as <c>{{ pawn.diary }}</c> by template editors).</summary>
         public const string DiarySectionName = "diary";
 
-        /// <summary>Opt-in RimTalk pawn variable containing Pawn Diary's own outlook and writing style,
-        /// usable as <c>{{pawn1.diary_persona}}</c>. It is registered but never auto-injected.</summary>
+        /// <summary>Opt-in RimTalk pawn variable containing Pawn Diary's psychotype only,
+        /// usable as <c>{{ pawn.diary_persona }}</c>. It is registered but never auto-injected.</summary>
         public const string DiaryPersonaVariableName = "diary_persona";
 
         /// <summary>RimTalk environment variable + injected-section name for the colony-situation

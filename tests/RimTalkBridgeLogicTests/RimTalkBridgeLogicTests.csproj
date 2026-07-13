@@ -24,5 +24,6 @@
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ConversationSubmissionPlan.cs" Link="ConversationSubmissionPlan.cs" />
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ThrottlePolicy.cs" Link="ThrottlePolicy.cs" />
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\PersonaTransferText.cs" Link="PersonaTransferText.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\PersonaPromptPolicy.cs" Link="PersonaPromptPolicy.cs" />
   </ItemGroup>
 </Project>

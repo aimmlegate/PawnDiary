@@ -1,10 +1,19 @@
 # Changelog
 
+- **2026-07-13 — Fixed RimTalk bridge startup translation errors.** Localized RimTalk variable and
+  injected-section registration now runs after language loading instead of from the background mod
+  constructor, eliminating the `No active language` errors for diary, persona, colony, and shared context.
+  Corrected template guidance to RimTalk's real `pawn`/`recipient` roots; numbered `pawn1`/`pawn2`
+  variables do not exist, and `recipient` must be null-guarded for monologues.
+
 - **2026-07-13 — Directional RimTalk persona synchronization.** The RimTalk bridge now lets players
-  choose Pawn Diary → RimTalk (publish diary outlook/style) or Pawn Diary ← RimTalk (import the chat
-  persona as diary outlook), with an optional bounded LLM rewrite through the first active Pawn Diary
-  lane and direct-sync fallback. Added the opt-in `{{pawn1.diary_persona}}` template variable without
-  automatic prompt insertion, pure payload-format tests, and retained the legacy toggle key.
+  choose Pawn Diary → RimTalk (publish psychotype only) or Pawn Diary ← RimTalk (import the chat
+  persona as diary outlook), with a strict optional 200–300-character LLM rewrite, periodic updates,
+  ownership notices, and regenerate buttons in the controlling editor. Writing-style prose never
+  crosses the bridge: only the five listed hediff styles and five child styles select bounded prompt
+  modifiers; `silent-focus` instead maintains RimTalk chattiness at zero and restores the saved prior
+  value afterward. Added opt-in `{{ pawn.diary_persona }}` / `{{ recipient.diary_persona }}` variables
+  without automatic prompt insertion, pure policy/length tests, and retained the legacy toggle key.
 
 Milestone history of Pawn Diary, newest first. Grouped by milestone, not by commit; routine
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.

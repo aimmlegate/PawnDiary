@@ -17,10 +17,66 @@ namespace RimTalkBridgeLogicTests
 
         private static int Main()
         {
-            Assert(PawnDiaryRimTalkBridge.Pure.PersonaTransferText.Combine("outlook", "style") == "outlook\nstyle",
-                "persona transfer combines outlook and style");
-            Assert(PawnDiaryRimTalkBridge.Pure.PersonaTransferText.Combine(" ", " style ") == "style",
-                "persona transfer ignores blank fields and trims text");
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaTransferText.FromPsychotype(" outlook ") == "outlook",
+                "persona transfer contains psychotype only");
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaTransferText.FromPsychotype(" ") == string.Empty,
+                "persona transfer accepts a blank psychotype without a style fallback");
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaTransferText.Clean("  one\n two  ") == "one two",
+                "persona transfer collapses whitespace");
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaTransferText.Clean("\"short persona\"") == "short persona",
+                "persona transfer removes surrounding quotes");
+            string longPersona = new string('x', 280) + " " + new string('y', 40);
+            string cappedPersona = PawnDiaryRimTalkBridge.Pure.PersonaTransferText.Clean(longPersona);
+            Assert(UnicodeText.TextElementCount(cappedPersona) <= 300,
+                "persona transfer enforces the 300-character cap");
+            Assert(!cappedPersona.EndsWith("y", StringComparison.Ordinal),
+                "persona transfer prefers a whole-word cap");
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaPromptPolicy.Resolve(
+                    "DiaryPersona_Default", new[] { "TraumaSavant" })
+                    == PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.SilentFocus,
+                "silent-focus maps only from an effective hediff style");
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaPromptPolicy.ForcesZeroChattiness(
+                    PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.SilentFocus),
+                "silent-focus forces zero RimTalk chattiness");
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaPromptPolicy.TransformModifier(
+                    PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.SilentFocus)
+                    == PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.None,
+                "silent-focus does not regenerate or alter persona prose");
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaPromptPolicy.Resolve(
+                    "DiaryPersona_TraumaSavantSilent", new string[0])
+                    == PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.None,
+                "a selected ordinary style cannot impersonate a condition override");
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaPromptPolicy.Resolve(
+                    "DiaryPersona_ChildQuestion", new string[0])
+                    == PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.ChildQuestion,
+                "each child style selects its own prompt modifier");
+            string[] specialDefs =
+            {
+                "CrumbledMind", "TraumaSavant", "Mindscrew", "BlissLobotomy", "Joywire"
+            };
+            string[] childDefs =
+            {
+                "DiaryPersona_ChildPlainOrder", "DiaryPersona_ChildBigFeeling",
+                "DiaryPersona_ChildLiteralWatch", "DiaryPersona_ChildQuestion", "DiaryPersona_ChildBrave"
+            };
+            for (int i = 0; i < specialDefs.Length; i++)
+            {
+                Assert(PawnDiaryRimTalkBridge.Pure.PersonaPromptPolicy.Resolve(
+                        "DiaryPersona_Default", new[] { specialDefs[i] })
+                        != PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.None,
+                    "every allowlisted condition style maps to a modifier: " + specialDefs[i]);
+            }
+            for (int i = 0; i < childDefs.Length; i++)
+            {
+                Assert(PawnDiaryRimTalkBridge.Pure.PersonaPromptPolicy.Resolve(
+                        childDefs[i], new string[0])
+                        != PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.None,
+                    "every child style has its own modifier: " + childDefs[i]);
+            }
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaPromptPolicy.Resolve(
+                    "DiaryPersona_ChildQuestion", new[] { "CrumbledMind", "TraumaSavant" })
+                    == PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.SilentFocus,
+                "condition modifiers keep Pawn Diary's authored hediff precedence over child styles");
 
             // ContextFormat
             TestBuildDiarySection_BasicNoStyle();

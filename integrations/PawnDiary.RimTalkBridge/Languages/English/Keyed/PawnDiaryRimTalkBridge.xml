@@ -23,7 +23,7 @@
   <PawnDiaryRimTalkBridge.Settings.PersonaToRimTalk>Pawn Diary → RimTalk (provide Pawn Diary's persona)</PawnDiaryRimTalkBridge.Settings.PersonaToRimTalk>
   <PawnDiaryRimTalkBridge.Settings.PersonaFromRimTalk>Pawn Diary ← RimTalk (import RimTalk's persona)</PawnDiaryRimTalkBridge.Settings.PersonaFromRimTalk>
   <PawnDiaryRimTalkBridge.Settings.TransformPersona>Rewrite synchronized personas with an LLM</PawnDiaryRimTalkBridge.Settings.TransformPersona>
-  <PawnDiaryRimTalkBridge.Settings.TransformPersonaDesc>Optionally turns the source persona into a compact description suited to the receiving mod, using Pawn Diary's first active API lane. Falls back to direct synchronization if no lane is available or the request fails.</PawnDiaryRimTalkBridge.Settings.TransformPersonaDesc>
+  <PawnDiaryRimTalkBridge.Settings.TransformPersonaDesc>Uses Pawn Diary's first active API lane to produce a strict 200–300-character, speech-relevant description for the receiving mod. Falls back to direct synchronization if no lane is available or the request fails.</PawnDiaryRimTalkBridge.Settings.TransformPersonaDesc>
   <PawnDiaryRimTalkBridge.Settings.SemanticAssessment>Use semantic conversation assessment</PawnDiaryRimTalkBridge.Settings.SemanticAssessment>
   <PawnDiaryRimTalkBridge.Settings.SemanticAssessmentDesc>Assesses the strongest locally scored candidates in small bounded batches through a Pawn Diary API lane. Turn this off to use the same cooldowns and bounded queue with stricter local-only assessment and zero extra requests.</PawnDiaryRimTalkBridge.Settings.SemanticAssessmentDesc>
   <PawnDiaryRimTalkBridge.Settings.AssessmentLane>Assessment API lane</PawnDiaryRimTalkBridge.Settings.AssessmentLane>
@@ -70,7 +70,7 @@
   <PawnDiaryRimTalkBridge.Prompt.MemoryLine>- {0} ({1}): {2}</PawnDiaryRimTalkBridge.Prompt.MemoryLine>
   <PawnDiaryRimTalkBridge.Prompt.DiaryVoiceLine>diary voice: {0}</PawnDiaryRimTalkBridge.Prompt.DiaryVoiceLine>
   <PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>Recent Pawn Diary memories for this pawn, plus an optional line describing their diary-writing voice.</PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>
-  <PawnDiaryRimTalkBridge.Prompt.DiaryPersonaVariableDesc>Pawn Diary's outlook and writing-style rules for this pawn. Available for explicit template use; never inserted automatically.</PawnDiaryRimTalkBridge.Prompt.DiaryPersonaVariableDesc>
+  <PawnDiaryRimTalkBridge.Prompt.DiaryPersonaVariableDesc>Pawn Diary's psychotype for this pawn. Available for explicit template use; never inserted automatically.</PawnDiaryRimTalkBridge.Prompt.DiaryPersonaVariableDesc>
 
   <!-- Feature 1: colony-situation block ({{colony_events}}). Prose the chat LLM reads as the pawn's
        surroundings — present-tense and atmospheric, never naming the mod. {0} in Colony.Quest is the
@@ -94,8 +94,20 @@
        cleanly until the one-time migration sweep clears them. -->
   <PawnDiaryRimTalkBridge.Persona.VoiceRule>voice shaped by their character: {0}</PawnDiaryRimTalkBridge.Persona.VoiceRule>
   <PawnDiaryRimTalkBridge.Persona.LensRule>This pawn reads events through who they are: {0}</PawnDiaryRimTalkBridge.Persona.LensRule>
-  <PawnDiaryRimTalkBridge.Persona.ExportTransformPrompt>Rewrite the supplied diary outlook and writing-style rules as one compact third-person character persona for roleplayed conversation. Preserve the character; omit mod names, labels, instructions, and explanation. Return only one short paragraph.</PawnDiaryRimTalkBridge.Persona.ExportTransformPrompt>
-  <PawnDiaryRimTalkBridge.Persona.ImportTransformPrompt>Rewrite the supplied conversation persona as a compact third-person outlook rule for a personal diary. Focus on what this pawn notices, values, fears, and makes of events. Omit mod names, labels, instructions, and explanation. Return only one or two sentences.</PawnDiaryRimTalkBridge.Persona.ImportTransformPrompt>
+  <PawnDiaryRimTalkBridge.Persona.ExportTransformPrompt>Convert the supplied psychotype into a dense third-person conversation persona of 200–300 characters including spaces; never exceed 300. Keep only durable traits that directly affect speech or writing: cadence, vocabulary, emotional expression, social posture, and conversational habits. Preserve contradictions when useful. Do not add biography, appearance, skills, gameplay facts, diagnoses, condition names, style labels, mod names, instructions, headings, quotation marks, or explanation. Return persona text only, in one or two sentences.</PawnDiaryRimTalkBridge.Persona.ExportTransformPrompt>
+  <PawnDiaryRimTalkBridge.Persona.ImportTransformPrompt>Convert the supplied conversation persona into a dense third-person psychotype of 200–300 characters including spaces; never exceed 300. Keep only durable traits that directly affect what the pawn notices, values, fears, and how those traits shape speech or writing. Preserve contradictions when useful. Do not add biography, appearance, skills, gameplay facts, diagnoses, condition names, style labels, mod names, instructions, headings, quotation marks, or explanation. Return psychotype text only, in one or two sentences.</PawnDiaryRimTalkBridge.Persona.ImportTransformPrompt>
+  <PawnDiaryRimTalkBridge.Persona.Modifier.MindCrumbled>Encode severely disconnected thought through very simple vocabulary, broken associations, and incomplete conversational follow-through, without naming or explaining the condition.</PawnDiaryRimTalkBridge.Persona.Modifier.MindCrumbled>
+  <PawnDiaryRimTalkBridge.Persona.Modifier.PainNeedle>Encode persistent sharp pain as clipped phrasing, narrowed attention, and terse persistence, without inventing or naming its cause.</PawnDiaryRimTalkBridge.Persona.Modifier.PainNeedle>
+  <PawnDiaryRimTalkBridge.Persona.Modifier.BlankBliss>Encode deep emotional blunting as simple pleasant language, weak concern for consequences, and little conversational urgency, without naming the condition.</PawnDiaryRimTalkBridge.Persona.Modifier.BlankBliss>
+  <PawnDiaryRimTalkBridge.Persona.Modifier.BrightFog>Encode warm but foggy attention as positive language, distractibility, and imprecise conversational follow-through, without naming the condition.</PawnDiaryRimTalkBridge.Persona.Modifier.BrightFog>
+  <PawnDiaryRimTalkBridge.Persona.Modifier.ChildPlainOrder>Write for a young child whose speech follows events in simple chronological clauses, often linked as one thing and then the next; keep vocabulary age-appropriate.</PawnDiaryRimTalkBridge.Persona.Modifier.ChildPlainOrder>
+  <PawnDiaryRimTalkBridge.Persona.Modifier.ChildBigFeeling>Write for a young child who states feelings plainly and makes huge best-ever, worst-ever, or unfair verdicts; keep vocabulary age-appropriate.</PawnDiaryRimTalkBridge.Persona.Modifier.ChildBigFeeling>
+  <PawnDiaryRimTalkBridge.Persona.Modifier.ChildLiteralWatch>Write for a young child who speaks in short, literal sensory observations and rarely explains implications; keep vocabulary age-appropriate.</PawnDiaryRimTalkBridge.Persona.Modifier.ChildLiteralWatch>
+  <PawnDiaryRimTalkBridge.Persona.Modifier.ChildQuestion>Write for a young child whose concrete observations turn into earnest unanswered questions; keep vocabulary age-appropriate.</PawnDiaryRimTalkBridge.Persona.Modifier.ChildQuestion>
+  <PawnDiaryRimTalkBridge.Persona.Modifier.ChildBrave>Write for a young child who insists on bravery while small concrete details betray fear; keep vocabulary age-appropriate.</PawnDiaryRimTalkBridge.Persona.Modifier.ChildBrave>
+  <PawnDiaryRimTalkBridge.Persona.RimTalkControlledNotice>Pawn Diary controls this persona and refreshes it periodically; silent-focus also controls chattiness. Manual RimTalk edits may be replaced.</PawnDiaryRimTalkBridge.Persona.RimTalkControlledNotice>
+  <PawnDiaryRimTalkBridge.Persona.Regenerate>Regenerate</PawnDiaryRimTalkBridge.Persona.Regenerate>
+  <PawnDiaryRimTalkBridge.Persona.Generating>Generating…</PawnDiaryRimTalkBridge.Persona.Generating>
 
   <!-- Important-conversation diary entries (level 2). -->
   <PawnDiaryRimTalkBridge.Event.ConversationLabel>notable conversation</PawnDiaryRimTalkBridge.Event.ConversationLabel>

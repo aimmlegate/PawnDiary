@@ -144,7 +144,8 @@ agent: follow steps in order, don't improvise beyond marked decision points.
 
 - RimTalk public API (`RimTalk.API`): `ContextHookRegistry` and façade `RimTalkPromptAPI`.
   - `RegisterPawnVariable(variableName, modId, Func<Pawn,string>, description, priority)` —
-    variable is only rendered **when a Scriban template references it** (`{{pawn1.<name>}}`).
+    variable is only rendered **when a Scriban template references it** (`{{ pawn.<name> }}` or the
+    null-guarded `{{ recipient.<name> }}` in two-pawn dialogue).
   - `RegisterPawnHook(ContextCategory, HookOperation{Append,Prepend,Override}, modId,
     Func<Pawn,string,string>, priority)` — applied by RimTalk's `ContextBuilder` for rendered
     categories (verified in source for Location/Terrain/Beauty/Cleanliness/Surroundings).
@@ -419,7 +420,7 @@ public static class ContextFormat
      - `ContextHookRegistry.InjectPawnSection("pawn_diary_memories", ModId,
        ContextCategories.Pawn.Thoughts, InjectPosition.After, SectionFor, 100)` ⚠️ U1
      - `ContextHookRegistry.RegisterPawnVariable("diary", ModId, SectionFor,
-       "<Keyed description>", 100)` (for template-editing players, `{{pawn1.diary}}`).
+       "<Keyed description>", 100)` (for template-editing players, `{{ pawn.diary }}`).
      ⚠️ Before coding, confirm the exact parameter order against
      `https://raw.githubusercontent.com/jlibrary/RimTalk/main/Source/API/ContextHookRegistry.cs`
      (verified meaning: sectionName/variableName, modId, anchor/provider, position, provider,

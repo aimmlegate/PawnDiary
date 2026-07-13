@@ -22,7 +22,7 @@ namespace PawnDiaryRimTalkBridge
     /// <summary>Which mod owns the pawn persona when shared context is enabled.</summary>
     public enum PersonaSyncDirection
     {
-        /// <summary>Pawn Diary's outlook and writing style are exported to RimTalk.</summary>
+        /// <summary>Pawn Diary's psychotype is exported to RimTalk.</summary>
         PawnDiaryToRimTalk,
 
         /// <summary>RimTalk's persona is imported as Pawn Diary's outlook.</summary>
@@ -102,47 +102,9 @@ namespace PawnDiaryRimTalkBridge
                 Log.Error(LogPrefix + " failed to install Harmony patches; RimTalk conversation capture is disabled: " + e);
             }
 
-            // Register the bridge's process-global hooks. The mod constructor runs once per process,
-            // so it owns registration; the per-game GameComponent owns periodic work and cache resets.
-            // Each registration is isolated like PatchAll above: a future PawnDiary or RimTalk rename
-            // must degrade to "that one hook disabled" rather than taking down the whole mod ctor
-            // (and with it the settings UI this mod also owns).
-            try
-            {
-                DiaryContextInjector.RegisterAll();     // RimTalk prompt section/variable + diary status listener
-            }
-            catch (Exception e)
-            {
-                Log.Error(LogPrefix + " failed to register the diary-context hooks; Level 1 outbound is disabled: " + e);
-            }
-
-            try
-            {
-                PersonaSync.RegisterContextProvider();  // Tier A "chat_persona=" line into Pawn Diary summaries
-            }
-            catch (Exception e)
-            {
-                Log.Error(LogPrefix + " failed to register the persona context provider; Tier A is disabled: " + e);
-            }
-
-            try
-            {
-                ColonyContextInjector.RegisterAll();     // Feature 1: {{colony_events}} env variable + section
-            }
-            catch (Exception e)
-            {
-                Log.Error(LogPrefix + " failed to register the colony-context hooks; {{colony_events}} is disabled: " + e);
-            }
-
-            try
-            {
-                SharedMemoryInjector.RegisterAll();       // Feature 3: {{diary_shared}} context variable + listener
-            }
-            catch (Exception e)
-            {
-                Log.Error(LogPrefix + " failed to register the shared-memory hooks; {{diary_shared}} is disabled: " + e);
-            }
-
+            // Registrations whose RimTalk metadata calls .Translate() are intentionally deferred to
+            // RimTalkBridgeTranslatedRegistration below. Mod constructors run before RimWorld has an
+            // active language, so translating here logs "No active language" and stores broken labels.
             try
             {
                 RecentDiaryEventCache.Register();          // Level 2: native/other-adapter assessment context
@@ -612,6 +574,47 @@ namespace PawnDiaryRimTalkBridge
                     return "PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorInvalid".Translate(value);
                 default:
                     return "PawnDiaryRimTalkBridge.Settings.ReactionTermsErrorEmpty".Translate();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Registers translated RimTalk variables and injected sections after RimWorld has loaded languages.
+    /// <see cref="StaticConstructorOnStartupAttribute"/> constructors run after Def and translation loading,
+    /// unlike <see cref="Mod"/> constructors. Each hook stays isolated so one optional API mismatch cannot
+    /// disable the other bridge features.
+    /// </summary>
+    [StaticConstructorOnStartup]
+    internal static class RimTalkBridgeTranslatedRegistration
+    {
+        static RimTalkBridgeTranslatedRegistration()
+        {
+            if (!PawnDiaryRimTalkBridgeMod.RimTalkActive)
+            {
+                return;
+            }
+
+            TryRegister(DiaryContextInjector.RegisterAll,
+                "diary-context hooks; Level 1 outbound is disabled");
+            TryRegister(PersonaSync.RegisterContextProvider,
+                "persona context providers; persona synchronization context is disabled");
+            TryRegister(PersonaSync.RegisterExternalGenerator,
+                "persona regeneration callback; Pawn Diary's editor regenerate button is disabled");
+            TryRegister(ColonyContextInjector.RegisterAll,
+                "colony-context hooks; {{colony_events}} is disabled");
+            TryRegister(SharedMemoryInjector.RegisterAll,
+                "shared-memory hooks; {{diary_shared}} is disabled");
+        }
+
+        private static void TryRegister(Action register, string failure)
+        {
+            try
+            {
+                register();
+            }
+            catch (Exception e)
+            {
+                Log.Error(PawnDiaryRimTalkBridgeMod.LogPrefix + " failed to register " + failure + ": " + e);
             }
         }
     }

@@ -45,6 +45,13 @@ namespace PawnDiaryRimTalkBridge
         private List<string> conversationCooldownPawnKeys;
         private List<int> conversationCooldownTickValues;
 
+        // Pawn Diary may temporarily force RimTalk's talk-initiation weight to zero for the
+        // silent-focus hediff style. Preserve the player's previous value in the save so ending the
+        // condition after a reload restores exactly what the player configured.
+        private Dictionary<string, float> originalTalkWeightsByPawn = new Dictionary<string, float>();
+        private List<string> originalTalkWeightPawnKeys;
+        private List<float> originalTalkWeightValues;
+
         // Assessment requests spend tokens even when every candidate is later ignored. Persist the
         // day/gap counters so reloading cannot reopen the XML maxBatchesPerDay allowance. The queue and
         // active request remain transient; only these primitive cadence facts survive.
@@ -112,6 +119,13 @@ namespace PawnDiaryRimTalkBridge
                 LookMode.Value,
                 ref conversationCooldownPawnKeys,
                 ref conversationCooldownTickValues);
+            Scribe_Collections.Look(
+                ref originalTalkWeightsByPawn,
+                "rimTalkPersonaOriginalTalkWeightsByPawn",
+                LookMode.Value,
+                LookMode.Value,
+                ref originalTalkWeightPawnKeys,
+                ref originalTalkWeightValues);
 
             Scribe_Values.Look(ref assessmentGateHaveDay, "rimTalkAssessmentGateHaveDay", false);
             Scribe_Values.Look(ref assessmentGateDayIndex, "rimTalkAssessmentGateDayIndex", 0);
@@ -125,6 +139,34 @@ namespace PawnDiaryRimTalkBridge
             if (Scribe.mode == LoadSaveMode.PostLoadInit && conversationCooldownTicksByPawn == null)
             {
                 conversationCooldownTicksByPawn = new Dictionary<string, int>();
+            }
+            if (Scribe.mode == LoadSaveMode.PostLoadInit && originalTalkWeightsByPawn == null)
+            {
+                originalTalkWeightsByPawn = new Dictionary<string, float>();
+            }
+        }
+
+        /// <summary>Returns the saved pre-silent-focus weight for a pawn, when one is owned.</summary>
+        internal bool TryGetOriginalTalkWeight(string pawnId, out float weight)
+        {
+            return originalTalkWeightsByPawn.TryGetValue(pawnId ?? string.Empty, out weight);
+        }
+
+        /// <summary>Captures a weight once; repeated periodic passes never replace the original.</summary>
+        internal void RememberOriginalTalkWeight(string pawnId, float weight)
+        {
+            if (!string.IsNullOrWhiteSpace(pawnId) && !originalTalkWeightsByPawn.ContainsKey(pawnId))
+            {
+                originalTalkWeightsByPawn[pawnId] = weight;
+            }
+        }
+
+        /// <summary>Releases a captured value after PersonaSync has restored it.</summary>
+        internal void ForgetOriginalTalkWeight(string pawnId)
+        {
+            if (!string.IsNullOrWhiteSpace(pawnId))
+            {
+                originalTalkWeightsByPawn.Remove(pawnId);
             }
         }
 
