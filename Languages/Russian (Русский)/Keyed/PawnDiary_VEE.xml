@@ -14,7 +14,7 @@
 
   <PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Priority>пусть беспощадный зной подчиняет распорядок поселения выживанию</PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Priority>
   <PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Condition>затяжное пекло над поселением</PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Condition>
-  <PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Description>дневной свет несёт беспощадный жар; обычную работу по возможности откладывают до темноты, а каждое дело снаружи требует больше сил</PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Description>днём стоит беспощадный жар; обычную работу по возможности откладывают до темноты, а каждое дело снаружи требует больше сил</PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Description>
   <PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Cue.NightWork>беспощадный зной, работа перенесена на ночь</PawnDiary.Prompt.ObservedCondition.VeeScorchActive.Cue.NightWork>
 
   <PawnDiary.Prompt.ObservedCondition.VeeWhiteoutActive.Priority>пусть белая мгла сжимает мир до стен, снега и общих натянутых нервов</PawnDiary.Prompt.ObservedCondition.VeeWhiteoutActive.Priority>

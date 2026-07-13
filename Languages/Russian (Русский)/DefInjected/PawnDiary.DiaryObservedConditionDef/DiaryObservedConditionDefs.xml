@@ -10,12 +10,12 @@
 
   <SolarFlareActive.label>солнечная вспышка</SolarFlareActive.label>
 
-  <AnomalyGrayFleshEvidence.label>улики заражения-подражания</AnomalyGrayFleshEvidence.label>
+  <AnomalyGrayFleshEvidence.label>улики заражения подражателем</AnomalyGrayFleshEvidence.label>
   <AnomalyGrayFleshEvidence.instruction>напиши это как паранойю и страх перед неизвестным существом, которое может заражать людей и подражать им; опирайся только на подозрения поселенца, делай обычные лица и голоса ненадёжными и никогда не объясняй скрытые игровые механики и не раскрывай носителя</AnomalyGrayFleshEvidence.instruction>
 
   <MetalhorrorEmergence.label>проявление металлической жути</MetalhorrorEmergence.label>
 
-  <MetalhorrorInfection.label>скрытое заражение-подражание</MetalhorrorInfection.label>
+  <MetalhorrorInfection.label>скрытое заражение подражателем</MetalhorrorInfection.label>
 
 
   <!-- Расширение охвата событий (см. EVENT_COVERAGE_PLAN.md) -->

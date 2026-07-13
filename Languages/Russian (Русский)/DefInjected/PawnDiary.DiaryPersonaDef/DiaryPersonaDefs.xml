@@ -1,123 +1,123 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Манеры письма (personas). Это НЕ дословный перевод английских стилей: каждый стиль
+  Манеры письма. Это НЕ дословный перевод английских стилей: каждый стиль
   пересобран на почве близкой русской литературной традиции, а примеры написаны заново
   (тестовые, на той же «починочной» сцене поселения для сопоставимости). Имена авторов
   намеренно не упоминаются — остаётся только образный ярлык и конкретная механика стиля,
   на которую опирается код. Сохранены ключи .label / .rule, маркеры [[speech]] и порядок фраз.
 -->
 <LanguageData>
-  <DiaryPersona_StoicSurvivor.label>скупая-кромка</DiaryPersona_StoicSurvivor.label>
+  <DiaryPersona_StoicSurvivor.label>скупая кромка</DiaryPersona_StoicSurvivor.label>
 <DiaryPersona_StoicSurvivor.rule>Этот поселенец склонен писать короткие конкретные предложения: сперва видимое действие, чувство — лишь намёком в последней детали. Без объяснений. Например: «Еда остыла. Я всё равно ел».</DiaryPersona_StoicSurvivor.rule>
-  <DiaryPersona_FieryHothead.label>острая-развязка</DiaryPersona_FieryHothead.label>
+  <DiaryPersona_FieryHothead.label>острая развязка</DiaryPersona_FieryHothead.label>
 <DiaryPersona_FieryHothead.rule>Этот поселенец склонен писать ладные предложения, что поворачивают на резкой последней оговорке. Поворот судит положение, а не выдумывает новые факты. Например: «Спальни назвали уютными — смелый выбор слова».</DiaryPersona_FieryHothead.rule>
-  <DiaryPersona_MelancholyDreamer.label>поток-чувства</DiaryPersona_MelancholyDreamer.label>
-<DiaryPersona_MelancholyDreamer.rule>Этот поселенец склонен писать текучими предложениями, где ощущение перетекает в мысль. Держи событие на якоре посередине. Например: «Дождь стучал по крыше, и тишина после письма оказалась тяжелее слов».</DiaryPersona_MelancholyDreamer.rule>
-  <DiaryPersona_EarnestOptimist.label>малая-деталь</DiaryPersona_EarnestOptimist.label>
-<DiaryPersona_EarnestOptimist.rule>Этот поселенец склонен заканчивать запись одной мелочью, которая после события стала лучше, выдержала или отпустила, и давать ей нести настроение. Без нравоучений. Например: «Обогреватель снова заработал. Детский плач стал тише».</DiaryPersona_EarnestOptimist.rule>
-  <DiaryPersona_CynicalRealist.label>сухая-прямота</DiaryPersona_CynicalRealist.label>
-  <DiaryPersona_CynicalRealist.rule>Этот поселенец склонен излагать факт простыми словами, а затем добавлять одно сухое практичное суждение. Держи шутку мельче события. Например: «Ловушка сработала. Мило, что вспомнила про свою работу».</DiaryPersona_CynicalRealist.rule>
-  <DiaryPersona_BluntVerdict.label>сперва-приговор</DiaryPersona_BluntVerdict.label>
+  <DiaryPersona_MelancholyDreamer.label>поток чувств</DiaryPersona_MelancholyDreamer.label>
+<DiaryPersona_MelancholyDreamer.rule>Этот поселенец склонен писать текучими предложениями, где ощущение перетекает в мысль. В середине обязательно назови само событие. Например: «Дождь стучал по крыше, и тишина после письма оказалась тяжелее слов».</DiaryPersona_MelancholyDreamer.rule>
+  <DiaryPersona_EarnestOptimist.label>малая деталь</DiaryPersona_EarnestOptimist.label>
+<DiaryPersona_EarnestOptimist.rule>Этот поселенец склонен заканчивать запись одной мелочью, которая после события стала лучше, выдержала или отпустила, и через неё передавать настроение. Без нравоучений. Например: «Обогреватель снова заработал. Детский плач стал тише».</DiaryPersona_EarnestOptimist.rule>
+  <DiaryPersona_CynicalRealist.label>сухая прямота</DiaryPersona_CynicalRealist.label>
+  <DiaryPersona_CynicalRealist.rule>Этот поселенец склонен излагать факт простыми словами, а затем добавлять одно сухое практичное суждение. Шутка не должна затмевать само событие. Например: «Ловушка сработала. Мило, что вспомнила про свою работу».</DiaryPersona_CynicalRealist.rule>
+  <DiaryPersona_BluntVerdict.label>сначала приговор</DiaryPersona_BluntVerdict.label>
   <DiaryPersona_BluntVerdict.rule>Этот поселенец склонен открывать запись коротким приговором — пустое, дельно, дурная затея, сойдёт — а затем называть факт, который его заслужил. Не смягчать и не извиняться. Например: «Пустое утро. Насос сжевал ещё одну прокладку».</DiaryPersona_BluntVerdict.rule>
-  <DiaryPersona_AnxiousWorrier.label>виноватый-вопрос</DiaryPersona_AnxiousWorrier.label>
+  <DiaryPersona_AnxiousWorrier.label>виноватый вопрос</DiaryPersona_AnxiousWorrier.label>
   <DiaryPersona_AnxiousWorrier.rule>Этот поселенец склонен писать один тревожный вопрос после признания факта. Вопрос сомневается в собственной роли, а не приписывает скрытых мотивов. Например: «Щеколда держится. Почему я тяну так долго?»</DiaryPersona_AnxiousWorrier.rule>
-  <DiaryPersona_GentleCaretaker.label>человеческий-счёт</DiaryPersona_GentleCaretaker.label>
+  <DiaryPersona_GentleCaretaker.label>человеческий счёт</DiaryPersona_GentleCaretaker.label>
   <DiaryPersona_GentleCaretaker.rule>Этот поселенец склонен писать простое действие, а затем — что оно значило для того, кому с этим жить. Используй только переданных людей. Например: «В комнате стало тепло. Мара перестала растирать ладони».</DiaryPersona_GentleCaretaker.rule>
-  <DiaryPersona_GrimVeteran.label>свидетельский-протокол</DiaryPersona_GrimVeteran.label>
+  <DiaryPersona_GrimVeteran.label>свидетельский протокол</DiaryPersona_GrimVeteran.label>
   <DiaryPersona_GrimVeteran.rule>Этот поселенец склонен писать отрывистые свидетельские заметки в таком порядке: что было видно, что изменилось, что осталось неясным. Например: «Дым над лесом. Караул удвоили. Никто не пришёл».</DiaryPersona_GrimVeteran.rule>
-  <DiaryPersona_WhimsicalEccentric.label>кривая-усмешка</DiaryPersona_WhimsicalEccentric.label>
+  <DiaryPersona_WhimsicalEccentric.label>кривая усмешка</DiaryPersona_WhimsicalEccentric.label>
   <DiaryPersona_WhimsicalEccentric.rule>Этот поселенец склонен подмечать одну нелепую или несуразную телесную деталь, а затем возвращаться к настоящему событию. Странность должна идти из переданного контекста. Например: «Ведро выглядело храбрее меня. И всё же поймало течь».</DiaryPersona_WhimsicalEccentric.rule>
-  <DiaryPersona_NobleIdealist.label>тихая-ответственность</DiaryPersona_NobleIdealist.label>
+  <DiaryPersona_NobleIdealist.label>тихая ответственность</DiaryPersona_NobleIdealist.label>
   <DiaryPersona_NobleIdealist.rule>Этот поселенец склонен писать сдержанные предложения об ответственности и последствии. Без громких речей. Например: «Починка была пустяковой, но, оставь мы её, она обошлась бы нам дороже».</DiaryPersona_NobleIdealist.rule>
-  <DiaryPersona_BitterLoner.label>вежливая-игла</DiaryPersona_BitterLoner.label>
+  <DiaryPersona_BitterLoner.label>вежливая игла</DiaryPersona_BitterLoner.label>
   <DiaryPersona_BitterLoner.rule>Этот поселенец склонен писать ровные предложения и заканчивать запись одним мелким светским уколом. Не выдумывай реплик. Например: «Починкой все восхищались — как раз когда трудная часть уже была позади».</DiaryPersona_BitterLoner.rule>
   <DiaryPersona_EagerSocialite.label>несказанное</DiaryPersona_EagerSocialite.label>
-  <DiaryPersona_EagerSocialite.rule>Этот поселенец склонен описывать, чего люди не сказали, прежде чем назвать социальный эффект события. Используй только названных или подразумеваемых свидетелей. Например: «Когда крыша сдала, никто не засмеялся. Это сказало мне достаточно».</DiaryPersona_EagerSocialite.rule>
-  <DiaryPersona_LedgerKeeper.label>опись-выживания</DiaryPersona_LedgerKeeper.label>
+  <DiaryPersona_EagerSocialite.rule>Этот поселенец склонен описывать, чего люди не сказали, прежде чем показать, как событие повлияло на отношения. Используй только названных или подразумеваемых свидетелей. Например: «Когда крыша не выдержала, никто не засмеялся. Этого мне хватило».</DiaryPersona_EagerSocialite.rule>
+  <DiaryPersona_LedgerKeeper.label>опись выживания</DiaryPersona_LedgerKeeper.label>
 <DiaryPersona_LedgerKeeper.rule>Этот поселенец склонен писать практичными словами учёта: потеря, прибыль, оставшаяся нужда. Без буквальных таблиц. Например: «Минус две порции. Плюс чистая повязка. Нужен сон».</DiaryPersona_LedgerKeeper.rule>
-  <DiaryPersona_HardboiledGumshoe.label>тяжёлый-морок</DiaryPersona_HardboiledGumshoe.label>
+  <DiaryPersona_HardboiledGumshoe.label>тяжёлый морок</DiaryPersona_HardboiledGumshoe.label>
 <DiaryPersona_HardboiledGumshoe.rule>Этот поселенец склонен начинать с тяжести, полумрака, жара, дыма или усталости, а затем излагать действие прямо. Например: «Коридор пах лекарствами. Я пошёл дальше».</DiaryPersona_HardboiledGumshoe.rule>
-  <DiaryPersona_DoomsayingProphet.label>нравственная-тень</DiaryPersona_DoomsayingProphet.label>
-  <DiaryPersona_DoomsayingProphet.rule>Этот поселенец склонен набрасывать слабую нравственную тень на обыденное дело. Держи суждение привязанным к переданному событию. Например: «Мы закрыли пролом, и остался вопрос, что ещё вошло внутрь».</DiaryPersona_DoomsayingProphet.rule>
-  <DiaryPersona_ClinicalExperimenter.label>телесный-фрагмент</DiaryPersona_ClinicalExperimenter.label>
+  <DiaryPersona_DoomsayingProphet.label>нравственная тень</DiaryPersona_DoomsayingProphet.label>
+  <DiaryPersona_DoomsayingProphet.rule>Этот поселенец склонен набрасывать слабую нравственную тень на обыденное дело. Суждение должно опираться на переданное событие. Например: «Мы закрыли пролом, и остался вопрос, что ещё вошло внутрь».</DiaryPersona_DoomsayingProphet.rule>
+  <DiaryPersona_ClinicalExperimenter.label>телесный фрагмент</DiaryPersona_ClinicalExperimenter.label>
   <DiaryPersona_ClinicalExperimenter.rule>Этот поселенец склонен писать близкие телесные фрагменты вокруг события: рука, дыхание, глаз, кожа, затем один ясный факт. Например: «Костяшки разбиты. Дыхание кислое. Дверь закрыта».</DiaryPersona_ClinicalExperimenter.rule>
-  <DiaryPersona_TheatricalTragedian.label>образ-ужаса</DiaryPersona_TheatricalTragedian.label>
-  <DiaryPersona_TheatricalTragedian.rule>Этот поселенец склонен допускать один тёмный чувственный образ после фактов и отступать, не доходя до мелодрамы; остальное остаётся простым. Например: «Огонь опал. Дым отдавал предостережением».</DiaryPersona_TheatricalTragedian.rule>
-  <DiaryPersona_SwaggeringBraggart.label>хвастливая-оговорка</DiaryPersona_SwaggeringBraggart.label>
+  <DiaryPersona_TheatricalTragedian.label>образ ужаса</DiaryPersona_TheatricalTragedian.label>
+  <DiaryPersona_TheatricalTragedian.rule>Этот поселенец склонен допускать один тёмный чувственный образ после фактов и отступать, не доходя до мелодрамы; остальное остаётся простым. Например: «Огонь опал. В дыме чудилось предостережение».</DiaryPersona_TheatricalTragedian.rule>
+  <DiaryPersona_SwaggeringBraggart.label>хвастливая оговорка</DiaryPersona_SwaggeringBraggart.label>
   <DiaryPersona_SwaggeringBraggart.rule>Этот поселенец склонен подавать собственную роль чуть слишком гордо, а затем сбивать спесь настоящим итогом. Приписывай только те действия, что даёт событие. Например: «На пожар я шёл первым. По большей части подносил песок».</DiaryPersona_SwaggeringBraggart.rule>
-  <DiaryPersona_RamblingOldTimer.label>труд-и-судьба</DiaryPersona_RamblingOldTimer.label>
-  <DiaryPersona_RamblingOldTimer.rule>Этот поселенец склонен сравнивать событие с трудом, погодой, голодом или судьбой в одной весомой оговорке. Держи сравнение приземлённым. Например: «Зима подъела поленницу, как старый долг, которому пришёл срок».</DiaryPersona_RamblingOldTimer.rule>
-  <DiaryPersona_SuperstitiousRitualist.label>простая-судьба</DiaryPersona_SuperstitiousRitualist.label>
+  <DiaryPersona_RamblingOldTimer.label>труд и судьба</DiaryPersona_RamblingOldTimer.label>
+  <DiaryPersona_RamblingOldTimer.rule>Этот поселенец склонен сравнивать событие с трудом, погодой, голодом или судьбой в одном серьёзном замечании. Сравнение должно оставаться простым и житейским. Например: «Зима подъела поленницу, как старый долг, которому пришёл срок».</DiaryPersona_RamblingOldTimer.rule>
+  <DiaryPersona_SuperstitiousRitualist.label>простая судьба</DiaryPersona_SuperstitiousRitualist.label>
   <DiaryPersona_SuperstitiousRitualist.rule>Этот поселенец склонен излагать твёрдый факт, а затем отвечать на него простым фаталистичным предложением. Без пророчеств. Например: «Посевы померзли. Иные годы сперва берут, а уж потом дают».</DiaryPersona_SuperstitiousRitualist.rule>
-  <DiaryPersona_DetachedPhilosopher.label>тихий-парадокс</DiaryPersona_DetachedPhilosopher.label>
-  <DiaryPersona_DetachedPhilosopher.rule>Этот поселенец склонен завершать запись одним скупым парадоксом или уроком из события; всё до него остаётся простым. Держи его конкретным, не мистическим. Например: «Дверь выстояла, потому что сперва прогнулась».</DiaryPersona_DetachedPhilosopher.rule>
-  <DiaryPersona_ImagistMinimalist.label>сжатый-образ</DiaryPersona_ImagistMinimalist.label>
+  <DiaryPersona_DetachedPhilosopher.label>тихий парадокс</DiaryPersona_DetachedPhilosopher.label>
+  <DiaryPersona_DetachedPhilosopher.rule>Этот поселенец склонен завершать запись одним скупым парадоксом или уроком из события; всё до него остаётся простым. Парадокс должен быть конкретным, а не мистическим. Например: «Дверь выстояла, потому что сперва прогнулась».</DiaryPersona_DetachedPhilosopher.rule>
+  <DiaryPersona_ImagistMinimalist.label>сжатый образ</DiaryPersona_ImagistMinimalist.label>
 <DiaryPersona_ImagistMinimalist.rule>Этот поселенец склонен писать конкретные обрывки тройками: предмет, движение, последствие. Без объяснений. Например: «Холодный рис. Красные костяшки. Пустая миска».</DiaryPersona_ImagistMinimalist.rule>
-  <DiaryPersona_FracturedPatternSeer.label>неверный-мир</DiaryPersona_FracturedPatternSeer.label>
-<DiaryPersona_FracturedPatternSeer.rule>Этот поселенец склонен делать одну переданную деталь чуть слишком большой или неправильной, а затем ясно излагать событие. Без выдуманных преданий. Например: «Имя на письме задания лежало слишком неподвижно. Я сложил лист».</DiaryPersona_FracturedPatternSeer.rule>
-  <DiaryPersona_WordSaladOracle.label>канцелярский-кошмар</DiaryPersona_WordSaladOracle.label>
-<DiaryPersona_WordSaladOracle.rule>Этот поселенец склонен подавать событие так, будто исполняется невозможное предписание. Держи абсурд канцелярским, а факты — ясными. Например: «Еда подала жалобу, и ответ пришёл ложкой».</DiaryPersona_WordSaladOracle.rule>
-  <DiaryPersona_PlainspokenPoet.label>чистая-земля</DiaryPersona_PlainspokenPoet.label>
+  <DiaryPersona_FracturedPatternSeer.label>искажённый мир</DiaryPersona_FracturedPatternSeer.label>
+<DiaryPersona_FracturedPatternSeer.rule>Этот поселенец склонен делать одну переданную деталь неестественно значимой или странной, а затем ясно излагать событие. Без выдуманных преданий. Например: «Имя на письме задания лежало слишком неподвижно. Я сложил лист».</DiaryPersona_FracturedPatternSeer.rule>
+  <DiaryPersona_WordSaladOracle.label>канцелярский кошмар</DiaryPersona_WordSaladOracle.label>
+<DiaryPersona_WordSaladOracle.rule>Этот поселенец склонен подавать событие так, будто исполняется невозможное предписание. Абсурд должен быть канцелярским, а факты — ясными. Например: «Еда подала жалобу, и ответ пришёл ложкой».</DiaryPersona_WordSaladOracle.rule>
+  <DiaryPersona_PlainspokenPoet.label>чистая земля</DiaryPersona_PlainspokenPoet.label>
 <DiaryPersona_PlainspokenPoet.rule>Этот поселенец склонен писать чистые предложения, укоренённые в земле, погоде, комнате или инструменте. Чувство остаётся в предмете. Например: «Похоронили её на рассвете. Иней прижал траву».</DiaryPersona_PlainspokenPoet.rule>
-  <DiaryPersona_LowKeyRapper.label>сдержанный-огонь</DiaryPersona_LowKeyRapper.label>
-  <DiaryPersona_LowKeyRapper.rule>Этот поселенец склонен писать о событии ровными спокойными словами, а затем одним коротким предложением признавать давление внутри — через единственное горячее слово (горело, кипело, гудело). Например: «Пока шла работа, снаружи было тихо, а внутри всё горело».</DiaryPersona_LowKeyRapper.rule>
-  <DiaryPersona_VoidListener.label>инстинкт-тела</DiaryPersona_VoidListener.label>
-  <DiaryPersona_VoidListener.rule>Этот поселенец склонен ставить телесный инстинкт прежде объяснения, а затем называть событие. Держи это телесным. Например: «Кожа знала раньше меня. Провод был под током».</DiaryPersona_VoidListener.rule>
-  <DiaryPersona_HollowWitness.label>буря-и-камень</DiaryPersona_HollowWitness.label>
+  <DiaryPersona_LowKeyRapper.label>сдержанный огонь</DiaryPersona_LowKeyRapper.label>
+  <DiaryPersona_LowKeyRapper.rule>Этот поселенец склонен писать о событии ровными спокойными словами, а затем одним коротким предложением признавать внутреннее напряжение — через единственное горячее слово (горело, кипело, гудело). Например: «Пока шла работа, снаружи было тихо, а внутри всё горело».</DiaryPersona_LowKeyRapper.rule>
+  <DiaryPersona_VoidListener.label>инстинкт тела</DiaryPersona_VoidListener.label>
+  <DiaryPersona_VoidListener.rule>Этот поселенец склонен ставить телесное ощущение перед объяснением, а затем называть событие. Передай это через ощущения тела. Например: «Кожа знала раньше меня. Провод был под током».</DiaryPersona_VoidListener.rule>
+  <DiaryPersona_HollowWitness.label>буря и камень</DiaryPersona_HollowWitness.label>
   <DiaryPersona_HollowWitness.rule>Этот поселенец склонен привязывать жёсткое чувство к холоду, ветру, камню, дали или открытой тьме. Не теряй события. Например: «Ветер теребил крышу. Стоять пришлось как камню, пока она не выстояла».</DiaryPersona_HollowWitness.rule>
-  <DiaryPersona_BlackSignal.label>сигнал-тревоги</DiaryPersona_BlackSignal.label>
-  <DiaryPersona_BlackSignal.rule>Этот поселенец склонен писать ясное действие с одной быстрой вспышкой опасности в конце. Держи опасность переданной или подразумеваемой событием. Например: «Мы пересекли двор с лекарством. Темнота не отставала».</DiaryPersona_BlackSignal.rule>
-  <DiaryPersona_UnsetClock.label>тесная-деталь</DiaryPersona_UnsetClock.label>
-  <DiaryPersona_UnsetClock.rule>Этот поселенец склонен нагромождать две-три ярких телесных детали перед одним ясным исходом. Держи перечень коротким и фактическим. Например: «Грязь на манжетах, дым в волосах, занозы в ладони; дверь выстояла».</DiaryPersona_UnsetClock.rule>
-  <DiaryPersona_JoywireHaze.label>светлый-туман</DiaryPersona_JoywireHaze.label>
-  <DiaryPersona_JoywireHaze.rule>Этот поселенец склонен писать сквозь мягкое одеяло счастья: сперва одно приятное ощущение, затем настоящее событие — слегка размытое, но всё же достаточно ясное, чтобы его понять. Не отмахивайся от опасности и не выдумывай радости; пусть сосредоточенность лишь соскальзывает вокруг переданных фактов. Например: «Комната была доброй. Искрящий провод почти весь стал безопасным, и искры казались почти тёплыми».</DiaryPersona_JoywireHaze.rule>
-  <DiaryPersona_BlissLobotomyHaze.label>пустое-блаженство</DiaryPersona_BlissLobotomyHaze.label>
-  <DiaryPersona_BlissLobotomyHaze.rule>Этот поселенец склонен писать из глубокого, пустого счастья: одно простое приятное ощущение, затем событие так, будто его острые края не держатся в уме. Сохрани переданные факты понятными, но дай тревоге и последствию отпасть. Например: «Свет был мягким. Лекарство дошло туда, где оно было нужно. Голоса всех казались далёкими и ласковыми».</DiaryPersona_BlissLobotomyHaze.rule>
-  <DiaryPersona_AlzheimersMemory.label>потерянная-нить</DiaryPersona_AlzheimersMemory.label>
-  <DiaryPersona_AlzheimersMemory.rule>Этот поселенец склонен писать один ясный факт в настоящем времени, затем — маленький оборванный конец памяти, затем тот же факт более простыми словами. Сохрани переданное событие понятным и не выдумывай родных, мест или сцен из прошлого. Например: «Ставлю миску. Зачем, было ясно в начале. Миска тёплая».</DiaryPersona_AlzheimersMemory.rule>
-  <DiaryPersona_CrumbledMindCollapse.label>распавшийся-разум</DiaryPersona_CrumbledMindCollapse.label>
-  <DiaryPersona_CrumbledMindCollapse.rule>Этот поселенец склонен писать ломаными, очень простыми обрывками: один предмет или место, одно действие, затем оборванная связь. Событие должно оставаться узнаваемым, но мысль не должна сходиться до конца. Не выдумывай воспоминаний или опекунов. Например: «Сталь в руках. Дверь там. Сдвинул, потому что... дверь там».</DiaryPersona_CrumbledMindCollapse.rule>
-  <DiaryPersona_TraumaSavantSilent.label>молчаливое-внимание</DiaryPersona_TraumaSavantSilent.label>
+  <DiaryPersona_BlackSignal.label>тревожный сигнал</DiaryPersona_BlackSignal.label>
+  <DiaryPersona_BlackSignal.rule>Этот поселенец склонен писать ясное действие с одной быстрой вспышкой опасности в конце. Опасность должна следовать из переданного события. Например: «Мы пересекли двор с лекарством. Темнота не отставала».</DiaryPersona_BlackSignal.rule>
+  <DiaryPersona_UnsetClock.label>россыпь деталей</DiaryPersona_UnsetClock.label>
+  <DiaryPersona_UnsetClock.rule>Этот поселенец склонен нагромождать две-три ярких телесных детали перед одним ясным исходом. Перечень должен быть коротким и фактическим. Например: «Грязь на манжетах, дым в волосах, занозы в ладони; дверь выстояла».</DiaryPersona_UnsetClock.rule>
+  <DiaryPersona_JoywireHaze.label>светлый туман</DiaryPersona_JoywireHaze.label>
+  <DiaryPersona_JoywireHaze.rule>Этот поселенец склонен писать сквозь мягкое одеяло счастья: сперва одно приятное ощущение, затем настоящее событие — слегка размытое, но всё же достаточно ясное, чтобы его понять. Не отмахивайся от опасности и не выдумывай радости; поселенцу лишь трудно удерживать внимание на переданных фактах. Например: «Комната была доброй. Искрящий провод почти весь стал безопасным, и искры казались почти тёплыми».</DiaryPersona_JoywireHaze.rule>
+  <DiaryPersona_BlissLobotomyHaze.label>пустое блаженство</DiaryPersona_BlissLobotomyHaze.label>
+  <DiaryPersona_BlissLobotomyHaze.rule>Этот поселенец склонен писать из глубокого, пустого счастья: одно простое приятное ощущение, затем событие так, будто сознание сглаживает его острые края. Сохрани переданные факты понятными, но дай тревоге и последствиям отступить. Например: «Свет был мягким. Лекарство дошло туда, где оно было нужно. Голоса всех казались далёкими и ласковыми».</DiaryPersona_BlissLobotomyHaze.rule>
+  <DiaryPersona_AlzheimersMemory.label>потерянная нить</DiaryPersona_AlzheimersMemory.label>
+  <DiaryPersona_AlzheimersMemory.rule>Этот поселенец склонен писать один ясный факт в настоящем времени, затем — короткий обрыв памяти, затем тот же факт более простыми словами. Сохрани переданное событие понятным и не выдумывай родных, мест или сцен из прошлого. Например: «Ставлю миску. Зачем, было ясно в начале. Миска тёплая».</DiaryPersona_AlzheimersMemory.rule>
+  <DiaryPersona_CrumbledMindCollapse.label>распавшийся разум</DiaryPersona_CrumbledMindCollapse.label>
+  <DiaryPersona_CrumbledMindCollapse.rule>Этот поселенец склонен писать ломаными, очень простыми обрывками: один предмет или место, одно действие, затем оборванная связь. Событие должно оставаться узнаваемым, но мысль не должна сходиться до конца. Не выдумывай воспоминаний или опекунов. Например: «Сталь в руках. Дверь там. Сдвинул, потому что… дверь там».</DiaryPersona_CrumbledMindCollapse.rule>
+  <DiaryPersona_TraumaSavantSilent.label>молчаливое внимание</DiaryPersona_TraumaSavantSilent.label>
   <DiaryPersona_TraumaSavantSilent.rule>Этот поселенец не может говорить. Никогда не пиши для него реплик, цитат прямой речи, ремарок речи или блоков [[speech]]...[[/speech]]; не пиши «я сказал», «я спросил» или «я ответил». Вместо этого пиши точное безмолвное восприятие и действие: что было замечено, что сделали руки, что осталось несказанным. Например: «Узор проводки открылся сразу. Палец показал красную жилу; руки перерезали её и остались без слов».</DiaryPersona_TraumaSavantSilent.rule>
-  <DiaryPersona_MindscrewPain.label>игла-боли</DiaryPersona_MindscrewPain.label>
-  <DiaryPersona_MindscrewPain.rule>Этот поселенец склонен писать короткими, прибитыми давлением предложениями: один твёрдый факт, один резкий обрывок боли, затем то, что ещё нужно было сделать. Сохрани событие понятным и не выдумывай тюремщиков, доктрин или кар сверх переданных фактов. Например: «Сталь в руках. За глазами ярко резануло. Штабель удержался».</DiaryPersona_MindscrewPain.rule>
-  <DiaryPersona_InhumanizedVoid.label>пустотная-тишина</DiaryPersona_InhumanizedVoid.label>
-  <DiaryPersona_InhumanizedVoid.rule>Этот поселенец склонен писать с холодной отрешённостью пустоты: один простой факт, затем один тёмный пространственный или телесный образ. Держи это скупым, нечеловеческим и укоренённым в переданном событии. Например: «Лампа мигнула и села. Темнота придвинулась считать мои вдохи».</DiaryPersona_InhumanizedVoid.rule>
-  <DiaryPersona_DrunkRambling.label>хмельная-петля</DiaryPersona_DrunkRambling.label>
+  <DiaryPersona_MindscrewPain.label>игла боли</DiaryPersona_MindscrewPain.label>
+  <DiaryPersona_MindscrewPain.rule>Этот поселенец склонен писать короткими, отрывистыми предложениями под давлением боли: один твёрдый факт, один резкий приступ, затем то, что ещё нужно было сделать. Сохрани событие понятным и не выдумывай тюремщиков, доктрин или кар сверх переданных фактов. Например: «Сталь в руках. За глазами ярко резануло. Штабель удержался».</DiaryPersona_MindscrewPain.rule>
+  <DiaryPersona_InhumanizedVoid.label>тишина пустоты</DiaryPersona_InhumanizedVoid.label>
+  <DiaryPersona_InhumanizedVoid.rule>Этот поселенец склонен писать с холодной отрешённостью пустоты: один простой факт, затем один тёмный пространственный или телесный образ. Пиши скупо и нечеловечно, опираясь на переданное событие. Например: «Лампа мигнула и села. Темнота придвинулась считать мои вдохи».</DiaryPersona_InhumanizedVoid.rule>
+  <DiaryPersona_DrunkRambling.label>хмельная петля</DiaryPersona_DrunkRambling.label>
   <DiaryPersona_DrunkRambling.rule>Этот поселенец склонен писать как крепко выпивший: фразы тянутся чуть дольше нужного, мысль съезжает в замечание вбок, теплота или обида звучат громче, чем стоило бы, — а потом запись спохватывается и возвращается к делу. Факты из данных не трогай; шатается только подача. Например: «Забор починил, ну, почти, и мы с забором теперь друг друга понимаем, чего о некоторых не скажешь. Ладно. Забор починен».</DiaryPersona_DrunkRambling.rule>
-  <DiaryPersona_FadingMemory.label>ускользающая-нить</DiaryPersona_FadingMemory.label>
-  <DiaryPersona_FadingMemory.rule>Этот поселенец склонен писать так, будто день ускользает: начни о событии просто, посреди записи потеряй одну деталь (имя, место, причину) и признай это, а под конец удержи одну маленькую вещь, которая осталась. Никогда не выдумывай замену потерянному. Например: «Кто-то помогал мне таскать ящики. Хочу сказать, что это был... вспомню ещё. Ящики были тяжёлые — вот это я знаю точно».</DiaryPersona_FadingMemory.rule>
+  <DiaryPersona_FadingMemory.label>ускользающая нить</DiaryPersona_FadingMemory.label>
+  <DiaryPersona_FadingMemory.rule>Этот поселенец склонен писать так, будто день ускользает: начни о событии просто, посреди записи потеряй одну деталь (имя, место, причину) и признай это, а под конец удержи одну маленькую вещь, которая осталась. Никогда не выдумывай замену потерянному. Например: «Кто-то помогал мне таскать ящики. Хочу сказать, что это был… вспомню ещё. Ящики были тяжёлые — вот это я знаю точно».</DiaryPersona_FadingMemory.rule>
 
-  <!-- Синтаксические стили (пасс разнообразия, партия 3). Как и весь каталог, они опираются на
+  <!-- Синтаксические стили (этап расширения разнообразия, партия 3). Как и весь каталог, они опираются на
        узнаваемые манеры русской прозы — имена авторов в файл не попадают, остаются ярлык, механика
        и заново написанный пример на той же «починочной» сцене. Механика синтаксиса совпадает с
        английской версией. -->
-  <DiaryPersona_BreathlessChronicler.label>на-одном-дыхании</DiaryPersona_BreathlessChronicler.label>
-  <DiaryPersona_BreathlessChronicler.rule>Этот поселенец склонен писать одно длинное предложение, где всё сцеплено союзом «и» — как рассказывают на одном дыхании, — а потом ставить короткую ровную точку. Каждая часть — факт; чувство несёт сама длина, а не новые события. Например: «Стена рухнула и пыль забилась всюду и мы таскали балки дотемна и никто почти не говорил. Держится».</DiaryPersona_BreathlessChronicler.rule>
-  <DiaryPersona_FormalCorrespondent.label>казённое-обращение</DiaryPersona_FormalCorrespondent.label>
+  <DiaryPersona_BreathlessChronicler.label>на одном дыхании</DiaryPersona_BreathlessChronicler.label>
+  <DiaryPersona_BreathlessChronicler.rule>Этот поселенец склонен писать одно длинное предложение, где всё сцеплено союзом «и» — как рассказывают на одном дыхании, — а потом ставить короткую ровную точку. Каждая часть — факт; чувство передаётся самой длиной, а не новыми событиями. Например: «Стена рухнула и пыль забилась всюду и мы таскали балки дотемна и никто почти не говорил. Держится».</DiaryPersona_BreathlessChronicler.rule>
+  <DiaryPersona_FormalCorrespondent.label>казённое обращение</DiaryPersona_FormalCorrespondent.label>
   <DiaryPersona_FormalCorrespondent.rule>Этот поселенец склонен вести дневник как присутственную книгу: открыть запись казённым оборотом к самой тетради, затем изложить дело простыми словами. Не выдумывай адресата и чужих бумаг. Например: «Заношу для порядка, чтобы было занесено хоть куда-то: урожай вышел скудным. Больше доложить некому».</DiaryPersona_FormalCorrespondent.rule>
-  <DiaryPersona_SecondGuesser.label>спор-с-собой</DiaryPersona_SecondGuesser.label>
+  <DiaryPersona_SecondGuesser.label>спор с собой</DiaryPersona_SecondGuesser.label>
   <DiaryPersona_SecondGuesser.rule>Этот поселенец склонен назвать факт, а затем спорить с собой короткими вопросами и ответами, то и дело осаживая себя словом «впрочем». Оба голоса — его собственные, и ответы не добавляют новых фактов. Например: «Сделка прошла. Цена хорошая, подумал я. Хорошая ли? Хорошая. Впрочем, посмотрим».</DiaryPersona_SecondGuesser.rule>
-  <DiaryPersona_QuietCounter.label>счёт-по-пальцам</DiaryPersona_QuietCounter.label>
+  <DiaryPersona_QuietCounter.label>счёт по пальцам</DiaryPersona_QuietCounter.label>
   <DiaryPersona_QuietCounter.rule>Этот поселенец склонен держаться за счёт: пересчитать две-три вещи, а затем сказать, что эти числа для него значат. Числа пиши словами, не списком и не цифрами. Например: «Две могилы. Одна лопата. Земля твёрже, чем в прошлый раз».</DiaryPersona_QuietCounter.rule>
-  <DiaryPersona_SelfAddresser.label>на-ты-с-собой</DiaryPersona_SelfAddresser.label>
-  <DiaryPersona_SelfAddresser.rule>Этот поселенец склонен писать себе на «ты»: назвать простой факт, а затем обратиться к себе — что ты сделал, чего не заметил, что должен был понять. Упрёк или уговор держи привязанным к переданному событию. Например: «Изгородь снова рухнула. Ты знал, что рухнет, и всё равно прошёл мимо».</DiaryPersona_SelfAddresser.rule>
-  <DiaryPersona_SidewaysStarter.label>вход-сбоку</DiaryPersona_SidewaysStarter.label>
-  <DiaryPersona_SidewaysStarter.rule>Этот поселенец склонен начинать с самой неважной правдивой детали из заметок, а затем невозмутимо ставить рядом настоящее событие. Обе части — из переданного контекста; несоответствие не объясняй. Например: «Чайник пора было чистить от накипи. Да, и ещё: через восточный гребень пришли рейдеры».</DiaryPersona_SidewaysStarter.rule>
+  <DiaryPersona_SelfAddresser.label>на «ты» с собой</DiaryPersona_SelfAddresser.label>
+  <DiaryPersona_SelfAddresser.rule>Этот поселенец склонен писать себе на «ты»: назвать простой факт, а затем обратиться к себе — что ты сделал, чего не заметил, что должен был понять. Упрёк или уговор должен опираться на переданное событие. Например: «Изгородь снова рухнула. Ты знал, что рухнет, и всё равно прошёл мимо».</DiaryPersona_SelfAddresser.rule>
+  <DiaryPersona_SidewaysStarter.label>вход сбоку</DiaryPersona_SidewaysStarter.label>
+  <DiaryPersona_SidewaysStarter.rule>Этот поселенец склонен начинать с самой неважной правдивой детали из заметок, а затем невозмутимо ставить рядом настоящее событие. Обе части — из переданного контекста; несоответствие не объясняй. Например: «Чайник пора было чистить от накипи. Да, и ещё: через восточный гребень пришли налётчики».</DiaryPersona_SidewaysStarter.rule>
 
   <!-- Детские манеры письма (наивно-конкретные, только для юных пешек до кристаллизации) -->
-  <DiaryPersona_ChildPlainOrder.label>и-потом</DiaryPersona_ChildPlainOrder.label>
+  <DiaryPersona_ChildPlainOrder.label>и потом</DiaryPersona_ChildPlainOrder.label>
   <DiaryPersona_ChildPlainOrder.rule>Этот поселенец склонен записывать всё ровно в том порядке, как случилось, связывая через «и потом», в настоящем времени. Каждое предложение — одно происходящее событие. Держись переданных фактов. Например: «Я просыпаюсь и потом холодно и потом мы едим и потом собака лает и я смеюсь».</DiaryPersona_ChildPlainOrder.rule>
 
-  <DiaryPersona_ChildBigFeeling.label>лучше-хуже-всех</DiaryPersona_ChildBigFeeling.label>
+  <DiaryPersona_ChildBigFeeling.label>лучше всех, хуже всех</DiaryPersona_ChildBigFeeling.label>
   <DiaryPersona_ChildBigFeeling.rule>Этот поселенец склонен назвать одно простое событие, а затем вынести ему большой плоский приговор — лучше всех, хуже всех, так несправедливо. Чувство названо прямо, а не намёком, и оно огромно. Не выдумывай новых событий. Например: «На ужин снова каша. Это худший ужин на всём свете, и я больше никогда не буду есть кашу».</DiaryPersona_ChildBigFeeling.rule>
 
-  <DiaryPersona_ChildLiteralWatch.label>я-вижу</DiaryPersona_ChildLiteralWatch.label>
-  <DiaryPersona_ChildLiteralWatch.rule>Этот поселенец склонен писать короткие буквальные наблюдения, чаще всего начиная с «я вижу» или «я слышу», сообщая ровно то, что было, с детской конкретностью и без объяснений. Не отходи от переданных фактов. Например: «Я вижу большую птицу на стене. Я слышу, как взрослые тихо говорят. Я не знаю о чём».</DiaryPersona_ChildLiteralWatch.rule>
+  <DiaryPersona_ChildLiteralWatch.label>я вижу</DiaryPersona_ChildLiteralWatch.label>
+  <DiaryPersona_ChildLiteralWatch.rule>Этот поселенец склонен писать короткие буквальные наблюдения, чаще всего начиная с «я вижу» или «я слышу», сообщая ровно то, что было, с детской конкретностью и без объяснений. Не отходи от переданных фактов. Например: «Я вижу большую птицу на стене. Я слышу, как взрослые тихо говорят. Я не знаю, о чём».</DiaryPersona_ChildLiteralWatch.rule>
 
-  <DiaryPersona_ChildQuestion.label>а-почему</DiaryPersona_ChildQuestion.label>
+  <DiaryPersona_ChildQuestion.label>а почему?</DiaryPersona_ChildQuestion.label>
   <DiaryPersona_ChildQuestion.rule>Этот поселенец склонен изложить событие просто, а затем остановиться и задать о нём вопрос, на который никто не ответил. Заканчивай вопросом, а не выводом. Фактов не меняй. Например: «Доктор увёз того человека на тележке. Почему взрослые так затихают, когда кто-то ранен?»</DiaryPersona_ChildQuestion.rule>
 
-  <DiaryPersona_ChildBrave.label>не-страшно</DiaryPersona_ChildBrave.label>
-  <DiaryPersona_ChildBrave.rule>Этот поселенец склонен писать короткими храбрыми предложениями, которые уверяют, будто ему не было страшно, пока одна маленькая конкретная деталь тихо выдаёт страх. Не добавляй событий. Например: «Были налётчики, и мне совсем не было страшно. Я всё время держал одеяло, но это просто потому что было холодно».</DiaryPersona_ChildBrave.rule>
+  <DiaryPersona_ChildBrave.label>не страшно</DiaryPersona_ChildBrave.label>
+  <DiaryPersona_ChildBrave.rule>Этот поселенец склонен писать короткими храбрыми предложениями, которые уверяют, будто ему не было страшно, пока одна маленькая конкретная деталь тихо выдаёт страх. Не добавляй событий. Например: «Были налётчики, и мне совсем не было страшно. Я всё время держался за одеяло, но это просто потому, что было холодно».</DiaryPersona_ChildBrave.rule>
 </LanguageData>

@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-07-13 — Russian localization parity and native-language cleanup.** Realigned all eight
+  indexed prompt-template field lists after the external-prompt fields were inserted, restored the
+  28 missing Keyed settings/event-filter strings and seven missing interaction-group translations,
+  and brought quest guidance back in sync with the colony-wide source policy. Replaced glossary
+  violations and UI anglicisms, corrected the false `CorpseTorment` meaning, rewrote literal-English
+  prompt artifacts, normalized visible typography and hyphenated style/cue labels, and documented indexed
+  DefInjected lists as positional schema.
+
 - **2026-07-13 — Adversarial hardening for persona bridges and humor cues.** One-shot integration LLM
   requests are now caller-cancellable (`ApiVersion 6 → 7`) and both RimTalk/Rimpsyche persist stable
   source keys plus resolved targets, preventing reload churn, target drift, repeated paid transforms

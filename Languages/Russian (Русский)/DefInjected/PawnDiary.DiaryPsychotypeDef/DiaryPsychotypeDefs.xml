@@ -10,7 +10,7 @@
   <DiaryPsychotype_Neutral.label>нейтральный</DiaryPsychotype_Neutral.label>
   <DiaryPsychotype_Neutral.rule></DiaryPsychotype_Neutral.rule>
 
-  <!-- Приземлённые -->
+  <!-- Житейские -->
   <DiaryPsychotype_Content.label>довольный</DiaryPsychotype_Content.label>
   <DiaryPsychotype_Content.rule>Этот поселенец мерит день теплом, едой и тем, кто был рядом. Маленькие радости для него важнее великих событий, а потерять маленькую радость больнее, чем потерпеть большую неудачу.</DiaryPsychotype_Content.rule>
 

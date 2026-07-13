@@ -1,43 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
-  <DiaryHumorCue_UnderstatementCoda.label>тихое-ничего</DiaryHumorCue_UnderstatementCoda.label>
+  <DiaryHumorCue_UnderstatementCoda.label>тихое преуменьшение</DiaryHumorCue_UnderstatementCoda.label>
   <DiaryHumorCue_UnderstatementCoda.rule>Заверши запись коротким бытовым преуменьшением, где серьёзное звучит как обычная неприятность. Без готовой пословицы, шутки и подмигивания.</DiaryHumorCue_UnderstatementCoda.rule>
-  <DiaryHumorCue_AbsurdDetail.label>нелепая-мелочь</DiaryHumorCue_AbsurdDetail.label>
-  <DiaryHumorCue_AbsurdDetail.rule>Вставь одну правдивую нелепую мелочь из быта колонии: предмет, позу, пятно, запах или звук. Назови её сухо и не поясняй, почему это смешно.</DiaryHumorCue_AbsurdDetail.rule>
-  <DiaryHumorCue_PettyComplaint.label>бытовое-ворчание</DiaryHumorCue_PettyComplaint.label>
+  <DiaryHumorCue_AbsurdDetail.label>нелепая мелочь</DiaryHumorCue_AbsurdDetail.label>
+  <DiaryHumorCue_AbsurdDetail.rule>Вставь одну правдивую нелепую мелочь из быта поселения: предмет, позу, пятно, запах или звук. Назови её сухо и не поясняй, почему это смешно.</DiaryHumorCue_AbsurdDetail.rule>
+  <DiaryHumorCue_PettyComplaint.label>бытовое ворчание</DiaryHumorCue_PettyComplaint.label>
   <DiaryHumorCue_PettyComplaint.rule>Подай событие через тихое бытовое ворчание о вещи, грязи, сквозняке, еде или погоде. Главное событие не искажай и не превращай в анекдот.</DiaryHumorCue_PettyComplaint.rule>
-  <DiaryHumorCue_MisplacedPriority.label>важная-мелочь</DiaryHumorCue_MisplacedPriority.label>
+  <DiaryHumorCue_MisplacedPriority.label>неуместный приоритет</DiaryHumorCue_MisplacedPriority.label>
   <DiaryHumorCue_MisplacedPriority.rule>Выдвинь на первый план мелкую неудобную деталь, будто именно она испортила день. Несоразмерность должна читаться сама, без объяснений.</DiaryHumorCue_MisplacedPriority.rule>
-  <DiaryHumorCue_DeadpanInventory.label>сухая-опись</DiaryHumorCue_DeadpanInventory.label>
+  <DiaryHumorCue_DeadpanInventory.label>сухая опись</DiaryHumorCue_DeadpanInventory.label>
   <DiaryHumorCue_DeadpanInventory.rule>Перечисли случившееся как короткую хозяйственную опись: что прибавилось, что пропало, что теперь надо чинить. Без эмоциональных слов.</DiaryHumorCue_DeadpanInventory.rule>
-  <DiaryHumorCue_PoliteRegret.label>чрезмерная-вежливость</DiaryHumorCue_PoliteRegret.label>
+  <DiaryHumorCue_PoliteRegret.label>чрезмерная вежливость</DiaryHumorCue_PoliteRegret.label>
   <DiaryHumorCue_PoliteRegret.rule>Закончи нарочито вежливым сожалением о пустяке, как в записке соседям или объяснительной. Тон сдержанный, без издёвки.</DiaryHumorCue_PoliteRegret.rule>
-  <DiaryHumorCue_SidewaysObservation.label>побочная-деталь</DiaryHumorCue_SidewaysObservation.label>
+  <DiaryHumorCue_SidewaysObservation.label>побочная деталь</DiaryHumorCue_SidewaysObservation.label>
   <DiaryHumorCue_SidewaysObservation.rule>Добавь одно боковое наблюдение о соседней бытовой детали и остановись. Оно должно стоять рядом с событием странно, но правдоподобно.</DiaryHumorCue_SidewaysObservation.rule>
-  <DiaryHumorCue_ConditionalCopOut.label>авось-пройдёт</DiaryHumorCue_ConditionalCopOut.label>
+  <DiaryHumorCue_ConditionalCopOut.label>авось пройдёт</DiaryHumorCue_ConditionalCopOut.label>
   <DiaryHumorCue_ConditionalCopOut.rule>Закончи спокойной условной фразой в духе «авось обойдётся», но своими словами: исход будто ещё может обойтись без худшего. Не раздувай тревогу.</DiaryHumorCue_ConditionalCopOut.rule>
-  <DiaryHumorCue_RenamedThing.label>высокое-название</DiaryHumorCue_RenamedThing.label>
+  <DiaryHumorCue_RenamedThing.label>возвышенное название</DiaryHumorCue_RenamedThing.label>
   <DiaryHumorCue_RenamedThing.rule>Один раз назови обычную вещь слишком торжественно или канцелярски, будто это важный объект хозяйства. Не объясняй переименование.</DiaryHumorCue_RenamedThing.rule>
-  <DiaryHumorCue_ShrugCloser.label>ну-и-ладно</DiaryHumorCue_ShrugCloser.label>
+  <DiaryHumorCue_ShrugCloser.label>ну и ладно</DiaryHumorCue_ShrugCloser.label>
   <DiaryHumorCue_ShrugCloser.rule>Закончи одной короткой фразой равнодушного принятия: будто рассказчик устал удивляться и просто записал факт. Без грубости и кривляния.</DiaryHumorCue_ShrugCloser.rule>
-  <DiaryHumorCue_RoutineTerrible.label>ужас-по-расписанию</DiaryHumorCue_RoutineTerrible.label>
+  <DiaryHumorCue_RoutineTerrible.label>ужас по расписанию</DiaryHumorCue_RoutineTerrible.label>
   <DiaryHumorCue_RoutineTerrible.rule>Самую страшную часть назови как очередной пункт дневных работ или смены. Без героизма, жалости и громких слов.</DiaryHumorCue_RoutineTerrible.rule>
-  <DiaryHumorCue_HouseholdMaintenance.label>хозяйственный-ужас</DiaryHumorCue_HouseholdMaintenance.label>
+  <DiaryHumorCue_HouseholdMaintenance.label>хозяйственный ужас</DiaryHumorCue_HouseholdMaintenance.label>
   <DiaryHumorCue_HouseholdMaintenance.rule>Заверши тихой бытовой строкой, будто после ужаса осталось обычное хозяйственное дело: убрать, отмыть, починить, перенести или закрыть дверь.</DiaryHumorCue_HouseholdMaintenance.rule>
-  <DiaryHumorCue_UnacknowledgedDark.label>тьма-мимоходом</DiaryHumorCue_UnacknowledgedDark.label>
+  <DiaryHumorCue_UnacknowledgedDark.label>тьма мимоходом</DiaryHumorCue_UnacknowledgedDark.label>
   <DiaryHumorCue_UnacknowledgedDark.rule>Оставь одну мрачную деталь почти незамеченной, как будто рассказчик привык к такому порядку вещей. Не реагируй на неё отдельно.</DiaryHumorCue_UnacknowledgedDark.rule>
-  <DiaryHumorCue_DryTallyOfLoss.label>канцелярский-ущерб</DiaryHumorCue_DryTallyOfLoss.label>
+  <DiaryHumorCue_DryTallyOfLoss.label>канцелярский ущерб</DiaryHumorCue_DryTallyOfLoss.label>
   <DiaryHumorCue_DryTallyOfLoss.rule>Подсчитай потери канцелярским тоном: люди, вещи, время, настроение, чистота. Пусть звучит как строка в ведомости, не как скорбь.</DiaryHumorCue_DryTallyOfLoss.rule>
-  <DiaryHumorCue_GrimUnderstatement.label>скромная-катастрофа</DiaryHumorCue_GrimUnderstatement.label>
+  <DiaryHumorCue_GrimUnderstatement.label>скромная катастрофа</DiaryHumorCue_GrimUnderstatement.label>
   <DiaryHumorCue_GrimUnderstatement.rule>Сожми бедствие до спокойной фразы, будто это неприятность среднего размера. Тон искренний и усталый, не язвительный.</DiaryHumorCue_GrimUnderstatement.rule>
-  <DiaryHumorCue_MatterOfFactMortality.label>смертность-буднично</DiaryHumorCue_MatterOfFactMortality.label>
+  <DiaryHumorCue_MatterOfFactMortality.label>будничная смертность</DiaryHumorCue_MatterOfFactMortality.label>
   <DiaryHumorCue_MatterOfFactMortality.rule>Упомяни смерть или увечье сухо, рядом с погодой, работой или уборкой, и сразу продолжи. Никакой сентиментальности и никакого веселья.</DiaryHumorCue_MatterOfFactMortality.rule>
-  <DiaryHumorCue_QueuedForLater.label>записать-на-потом</DiaryHumorCue_QueuedForLater.label>
+  <DiaryHumorCue_QueuedForLater.label>отложить на потом</DiaryHumorCue_QueuedForLater.label>
   <DiaryHumorCue_QueuedForLater.rule>Отнесись к тяжёлому событию как к делу, которое придётся разобрать позже, когда будет свет, время или свободные руки.</DiaryHumorCue_QueuedForLater.rule>
-  <DiaryHumorCue_ProfessionalDetachment.label>служебный-тон</DiaryHumorCue_ProfessionalDetachment.label>
+  <DiaryHumorCue_ProfessionalDetachment.label>служебный тон</DiaryHumorCue_ProfessionalDetachment.label>
   <DiaryHumorCue_ProfessionalDetachment.rule>Опиши последствия как короткое служебное донесение: факт, ущерб, дальнейшие действия. Не добавляй жалоб и морали.</DiaryHumorCue_ProfessionalDetachment.rule>
-  <DiaryHumorCue_GrimPracticality.label>дело-прежде-всего</DiaryHumorCue_GrimPracticality.label>
+  <DiaryHumorCue_GrimPracticality.label>дело прежде всего</DiaryHumorCue_GrimPracticality.label>
   <DiaryHumorCue_GrimPracticality.rule>Сразу перейди к ближайшей практической задаче, будто переживать некогда: надо тушить, чинить, лечить, тащить, мыть или считать.</DiaryHumorCue_GrimPracticality.rule>
-  <DiaryHumorCue_EvenMeasure.label>баланс-сошёлся</DiaryHumorCue_EvenMeasure.label>
+  <DiaryHumorCue_EvenMeasure.label>баланс сошёлся</DiaryHumorCue_EvenMeasure.label>
   <DiaryHumorCue_EvenMeasure.rule>Сопоставь серьёзную потерю с ничтожной выгодой через «зато» — сухо, будто баланс почти сошёлся. Не называй это шуткой и не подмигивай.</DiaryHumorCue_EvenMeasure.rule>
 </LanguageData>

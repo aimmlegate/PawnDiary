@@ -2,7 +2,7 @@
 <LanguageData>
   <DiaryEventPrompt_Interaction.label>социальное событие</DiaryEventPrompt_Interaction.label>
   <DiaryEventPrompt_Interaction.prompt>Опиши прямой обмен между поселенцами с точки зрения автора записи.</DiaryEventPrompt_Interaction.prompt>
-  <DiaryEventPrompt_Interaction.enhancement>Пусть сцена ощущается живой: взгляд, пауза, вздрагивание, жар или молчание. Держись переданного текста; не добавляй предысторию и реплики, которых нет в фактах.</DiaryEventPrompt_Interaction.enhancement>
+  <DiaryEventPrompt_Interaction.enhancement>Оживи сцену взглядом, паузой, вздрагиванием, жаром или молчанием. Держись переданного текста; не добавляй предысторию и реплики, которых нет в фактах.</DiaryEventPrompt_Interaction.enhancement>
   <DiaryEventPrompt_MentalState.label>нервный срыв</DiaryEventPrompt_MentalState.label>
   <DiaryEventPrompt_MentalState.prompt>Опиши психическое состояние как давление на мысль, порыв и действие.</DiaryEventPrompt_MentalState.prompt>
   <DiaryEventPrompt_MentalState.enhancement>Дай срыву ход: мысль, порыв, тело, действие. Оставайся в рамках названного состояния и наблюдаемого поведения; не ставь диагнозы сверх фактов.</DiaryEventPrompt_MentalState.enhancement>
@@ -14,31 +14,31 @@
   <DiaryEventPrompt_MoodEvent.enhancement>Покажи, как условие давит на чувства и нервы. Не объясняй игровые механики; масштаб события должен оставаться понятным.</DiaryEventPrompt_MoodEvent.enhancement>
   <DiaryEventPrompt_Thought.label>мысль</DiaryEventPrompt_Thought.label>
   <DiaryEventPrompt_Thought.prompt>Опиши временную мысль как внутреннее давление, облегчение или раздражение.</DiaryEventPrompt_Thought.prompt>
-  <DiaryEventPrompt_Thought.enhancement>Пусть мысль кусает, греет, зудит или застревает в голове. Это внутренний контекст, а не новое внешнее событие, если факты не говорят обратного.</DiaryEventPrompt_Thought.enhancement>
-  <DiaryEventPrompt_Inspiration.label>вдохновение</DiaryEventPrompt_Inspiration.label>
-  <DiaryEventPrompt_Inspiration.prompt>Опиши вдохновение как внезапную ясность в голове поселенца.</DiaryEventPrompt_Inspiration.prompt>
+  <DiaryEventPrompt_Thought.enhancement>Пусть мысль кусает, греет, зудит или застревает в голове. Это внутренний контекст, а не новое внешнее событие, если из фактов не следует обратное.</DiaryEventPrompt_Thought.enhancement>
+  <DiaryEventPrompt_Inspiration.label>воодушевление</DiaryEventPrompt_Inspiration.label>
+  <DiaryEventPrompt_Inspiration.prompt>Опиши воодушевление как внезапную ясность в голове поселенца.</DiaryEventPrompt_Inspiration.prompt>
   <DiaryEventPrompt_Inspiration.enhancement>Пусть ясность толкает к делу: замысел, порыв или уверенность. Сосредоточься на том, что поселенец хочет сделать дальше; успех не выдумывай.</DiaryEventPrompt_Inspiration.enhancement>
   <DiaryEventPrompt_Romance.label>романтика</DiaryEventPrompt_Romance.label>
   <DiaryEventPrompt_Romance.prompt>Опиши веху отношений как личную перемену между двумя людьми.</DiaryEventPrompt_Romance.prompt>
-  <DiaryEventPrompt_Romance.enhancement>Связь должна ощущаться рискованной и личной: надежда, смущение, боль, облегчение или страх. Не достраивай разговор или сцену наедине.</DiaryEventPrompt_Romance.enhancement>
+  <DiaryEventPrompt_Romance.enhancement>Покажи риск и личную значимость перемены через надежду, смущение, боль, облегчение или страх. Не достраивай разговор или сцену наедине.</DiaryEventPrompt_Romance.enhancement>
   <DiaryEventPrompt_Work.label>работа</DiaryEventPrompt_Work.label>
   <DiaryEventPrompt_Work.prompt>Опиши выбранный момент работы в поселении как конкретный труд поселенца.</DiaryEventPrompt_Work.prompt>
-  <DiaryEventPrompt_Work.enhancement>Дай осязаемую деталь труда: вес, жар, грязь, ритм, инструмент, ошибка или удовлетворение. Увлечение, надрыв и тягость бери только из переданных полей.</DiaryEventPrompt_Work.enhancement>
+  <DiaryEventPrompt_Work.enhancement>Добавь одну осязаемую деталь труда: вес, жар, грязь, ритм, инструмент, ошибку или удовлетворение. Увлечённость, напряжение и тягость бери только из переданных полей.</DiaryEventPrompt_Work.enhancement>
   <DiaryEventPrompt_Hediff.label>состояние здоровья</DiaryEventPrompt_Hediff.label>
   <DiaryEventPrompt_Hediff.prompt>Опиши событие здоровья через тело и настроение поселенца.</DiaryEventPrompt_Hediff.prompt>
-  <DiaryEventPrompt_Hediff.enhancement>Тело должно мешать думать: боль, слабость, дыхание, жар, голод, равновесие или страх. Не выдумывай лечение, диагноз и выздоровление.</DiaryEventPrompt_Hediff.enhancement>
-  <DiaryEventPrompt_Raid.label>рейд</DiaryEventPrompt_Raid.label>
-  <DiaryEventPrompt_Raid.prompt>Опиши рейд, удар из транспортных капсул или появление насекомых через прямое чувство опасности.</DiaryEventPrompt_Raid.prompt>
-  <DiaryEventPrompt_Raid.enhancement>Используй поля рейда, особенно способ прибытия и стратегию. Обычный рейд: тревога, подготовка, первый взгляд, предчувствие боя. Транспортные капсулы и насекомые: внезапная опасность уже внутри или под поселением. Детали приземлённые; исход боя не выдумывай.</DiaryEventPrompt_Raid.enhancement>
+  <DiaryEventPrompt_Hediff.enhancement>Покажи, как состояние тела вмешивается в мысли: боль, слабость, дыхание, жар, голод, потеря равновесия или страх. Не выдумывай лечение, диагноз и выздоровление.</DiaryEventPrompt_Hediff.enhancement>
+  <DiaryEventPrompt_Raid.label>налёт</DiaryEventPrompt_Raid.label>
+  <DiaryEventPrompt_Raid.prompt>Опиши налёт, десант из транспортных капсул или нашествие насекомых через непосредственное ощущение опасности.</DiaryEventPrompt_Raid.prompt>
+  <DiaryEventPrompt_Raid.enhancement>Используй сведения о налёте, особенно способ прибытия и тактику. Для обычного налёта передай тревогу, подготовку, первый взгляд на врага и предчувствие боя. При десанте или нашествии опасность уже внутри поселения или под ним. Держись конкретных деталей и не выдумывай исход боя.</DiaryEventPrompt_Raid.enhancement>
   <DiaryEventPrompt_Quest.label>задание</DiaryEventPrompt_Quest.label>
   <DiaryEventPrompt_Quest.prompt>Опиши этап задания как обещание, развязку или потерю.</DiaryEventPrompt_Quest.prompt>
-  <DiaryEventPrompt_Quest.enhancement>Сделай задание личным: риск, долг, надежда, сомнение, цена, облегчение или сожаление. Используй этап и факты задания; не копируй название задания в запись и не выдумывай награды, вину или последствия.</DiaryEventPrompt_Quest.enhancement>
+  <DiaryEventPrompt_Quest.enhancement>Сделай задание личным, но не приписывай всю работу одному поселенцу. Используй этап и переданные факты; завершение или провал считай общим усилием, облегчением, сожалением или потерей поселения, если из фактов явно не следует обратное. Не копируй название задания в запись и не выдумывай награды, вину или последствия.</DiaryEventPrompt_Quest.enhancement>
   <DiaryEventPrompt_Ritual.label>ритуал</DiaryEventPrompt_Ritual.label>
-  <DiaryEventPrompt_Ritual.prompt>Опиши завершённый ритуал идеологии с места, которое занимал в нём поселенец.</DiaryEventPrompt_Ritual.prompt>
-  <DiaryEventPrompt_Ritual.enhancement>Используй роль, название ритуала, поведение, качество и состояние поселенца. Качество может задавать уверенность, последствия и вес, но не называй его ярлык напрямую. Пиши ощущение завершения из этой роли; эффектов сверх исхода не выдумывай.</DiaryEventPrompt_Ritual.enhancement>
+  <DiaryEventPrompt_Ritual.prompt>Опиши завершённый ритуал идеологии с точки зрения поселенца и его роли в нём.</DiaryEventPrompt_Ritual.prompt>
+  <DiaryEventPrompt_Ritual.enhancement>Используй роль, название ритуала, поведение, качество и состояние поселенца. Качество может влиять на уверенность, последствия и значимость события, но не называй и не объясняй его оценку напрямую. Передай завершение с точки зрения этой роли; не выдумывай эффектов сверх указанного исхода.</DiaryEventPrompt_Ritual.enhancement>
   <DiaryEventPrompt_Ability.label>способность</DiaryEventPrompt_Ability.label>
   <DiaryEventPrompt_Ability.prompt>Опиши успешное применение способности как момент сосредоточенности, риска или усилия.</DiaryEventPrompt_Ability.prompt>
-  <DiaryEventPrompt_Ability.enhancement>Используй название способности, категорию, цель и перезарядку. Короткая перезарядка значит быстрый малый момент, долгая — редкий и весомый выбор. Дополнительных эффектов не выдумывай.</DiaryEventPrompt_Ability.enhancement>
+  <DiaryEventPrompt_Ability.enhancement>Используй название способности, категорию, цель и перезарядку. Короткая перезарядка означает быстрое, будничное применение, долгая — редкий и значимый выбор. Дополнительных эффектов не выдумывай.</DiaryEventPrompt_Ability.enhancement>
   <DiaryEventPrompt_DayReflection.label>итог дня</DiaryEventPrompt_DayReflection.label>
   <DiaryEventPrompt_DayReflection.prompt>Напиши вечернее размышление о дне целиком.</DiaryEventPrompt_DayReflection.prompt>
   <DiaryEventPrompt_DayReflection.enhancement>Выбери моменты, которые к вечеру всё ещё саднят, греют или давят. Не перечисляй каждое событие.</DiaryEventPrompt_DayReflection.enhancement>
@@ -50,10 +50,10 @@
   <DiaryEventPrompt_Progression.enhancement>До и после бери только из переданных полей. Не объясняй игровые системы, не добавляй тренировку, новые силы, титулы, телесные изменения или достижения, которых нет в фактах.</DiaryEventPrompt_Progression.enhancement>
   <DiaryEventPrompt_ArcReflection.label>годовое размышление</DiaryEventPrompt_ArcReflection.label>
   <DiaryEventPrompt_ArcReflection.prompt>Напиши редкую личную запись о том, каким становится поселенец через выбранные воспоминания.</DiaryEventPrompt_ArcReflection.prompt>
-  <DiaryEventPrompt_ArcReflection.enhancement>Воспоминания — якоря, а не чеклист. Свяжи несколько из них в чувство перемены, сожаления, гордости, страха или решимости; не пытайся упомянуть каждое.</DiaryEventPrompt_ArcReflection.enhancement>
+  <DiaryEventPrompt_ArcReflection.enhancement>Воспоминания — опорные точки, а не список обязательных пунктов. Свяжи несколько из них в ощущение перемены, сожаления, гордости, страха или решимости; не пытайся упомянуть каждое.</DiaryEventPrompt_ArcReflection.enhancement>
   <DiaryEventPrompt_Arrival.label>появление</DiaryEventPrompt_Arrival.label>
   <DiaryEventPrompt_Arrival.prompt>Напиши фактическую заметку о том, как поселенец оказался в поселении.</DiaryEventPrompt_Arrival.prompt>
-  <DiaryEventPrompt_Arrival.enhancement>Пусть появление ощущается как порог: пыль, потрясение, тишина, облегчение, подозрение или первый вид убежища. Используй только факты сценария и прихода.</DiaryEventPrompt_Arrival.enhancement>
+  <DiaryEventPrompt_Arrival.enhancement>Покажи прибытие как переход к новой жизни: пыль, потрясение, тишина, облегчение, подозрение или первый вид убежища. Используй только факты сценария и прибытия.</DiaryEventPrompt_Arrival.enhancement>
   <DiaryEventPrompt_Death.label>смерть</DiaryEventPrompt_Death.label>
   <DiaryEventPrompt_Death.prompt>Напиши фактическую заметку об обстоятельствах смерти поселенца.</DiaryEventPrompt_Death.prompt>
   <DiaryEventPrompt_Death.enhancement>Смерть опиши резко и точно, с одной конкретной деталью причины или места. Используй только факты о причине, части тела, оружии, состоянии и обстановке. Кратко.</DiaryEventPrompt_Death.enhancement>

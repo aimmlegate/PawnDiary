@@ -1883,8 +1883,12 @@ When editing XML Def text:
 - Keep English DefInjected stubs in sync.
 - Use fully qualified custom-Def folders, such as
   `Languages/English/DefInjected/PawnDiary.DiaryInteractionGroupDef/`.
-- Keep indexed variant pools aligned; avoid blank list entries that shift keys such as
-  `<group.instructions.0>`.
+- Treat indexed DefInjected entries as positional schema. Inserting, removing, or reordering an XML
+  `<li>` requires updating every affected language index, including keys such as
+  `<Template.fields.N.label>`, `<group.instructions.N>`, and `<group.tones.N>`. Verify every source
+  list length and index after the edit; appending a translation under the old numbering does not
+  realign it.
+- Avoid blank list entries that silently shift indexed translation keys.
 - Add or update the matching Russian key/file at the same time.
 
 The in-game Prompt policy editor keeps key-backed fields as blank literal override boxes until the

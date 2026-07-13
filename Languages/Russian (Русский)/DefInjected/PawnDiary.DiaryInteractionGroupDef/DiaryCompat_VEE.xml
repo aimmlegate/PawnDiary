@@ -3,10 +3,10 @@
 <LanguageData>
 
   <vee_raids.label>Фиолетовые налёты VEE</vee_raids.label>
-  <vee_raids.instruction>налёт, в котором масштаб или момент кажутся неестественными; пиши, как поселение готовится к знакомой угрозе, которая больше не кажется знакомой, и не выдумывай исход боя</vee_raids.instruction>
-  <vee_raids.instructions.0>фиолетовый налёт — покажи неправильный масштаб через то, что поселенец успевает сосчитать, услышать или увидеть на позиции; не выдумывай потери или победу</vee_raids.instructions.0>
-  <vee_raids.instructions.1>фиолетовый налёт — пиши, как привычная оборона трещит под атакой, чьи сроки или численность не укладываются в норму</vee_raids.instructions.1>
-  <vee_raids.instructions.2>фиолетовый налёт — оставайся у предупреждения и первого столкновения, если предоставленные факты не показывают большего</vee_raids.instructions.2>
+  <vee_raids.instruction>налёт неестественного масштаба или в неожиданное время; пиши, как поселение готовится к привычной угрозе, которая внезапно перестала быть привычной, и не выдумывай исход боя</vee_raids.instruction>
+  <vee_raids.instructions.0>фиолетовый налёт — покажи неестественный масштаб через то, что поселенец успевает сосчитать, услышать или увидеть на позиции; не выдумывай потери или победу</vee_raids.instructions.0>
+  <vee_raids.instructions.1>фиолетовый налёт — пиши, как привычная оборона трещит под атакой, которая пришла не вовремя или оказалась слишком многочисленной</vee_raids.instructions.1>
+  <vee_raids.instructions.2>фиолетовый налёт — ограничься предупреждением и первым столкновением, если переданные факты не показывают большего</vee_raids.instructions.2>
   <vee_raids.tone>с тревогой перед знакомой угрозой, разросшейся до неестественных размеров</vee_raids.tone>
   <vee_raids.tones.0>напряжённо и недоверчиво: опасности не должно быть так много</vee_raids.tones.0>
   <vee_raids.tones.1>резко и тактически: привычная оборона внезапно кажется слишком малой</vee_raids.tones.1>
@@ -37,7 +37,7 @@
   <eventWindowVeeMeteoriteShower.tones.1>ярко, жестоко и настороженно к каждому удару</eventWindowVeeMeteoriteShower.tones.1>
 
   <eventWindowVeeSpaceBattle.label>Орбитальная катастрофа</eventWindowVeeSpaceBattle.label>
-  <eventWindowVeeSpaceBattle.instruction>битва или крушение над головой одновременно не имеют и имеют прямое отношение к поселению; пиши то, что падает в их жизнь, а не выдуманную историю войны</eventWindowVeeSpaceBattle.instruction>
+  <eventWindowVeeSpaceBattle.instruction>битва или крушение происходят далеко над головой, но их обломки падают прямо в жизнь поселения; пиши о том, что видно снизу, а не о выдуманной истории войны</eventWindowVeeSpaceBattle.instruction>
   <eventWindowVeeSpaceBattle.instructions.0>орбитальная катастрофа — оставь далёкую войну непостижимой, а падающие обломки непосредственными</eventWindowVeeSpaceBattle.instructions.0>
   <eventWindowVeeSpaceBattle.instructions.1>орбитальная катастрофа — покажи масштаб наверху и малость поселения под ним, используя только предоставленные факты</eventWindowVeeSpaceBattle.instructions.1>
   <eventWindowVeeSpaceBattle.tone>с ошеломлением от далёкой войны и близким практическим страхом</eventWindowVeeSpaceBattle.tone>

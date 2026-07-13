@@ -19,8 +19,8 @@
   <PawnDiary.Tab.DiaryHeader>Дневник {0}</PawnDiary.Tab.DiaryHeader>
   <PawnDiary.Tab.NoEntries>Страниц пока нет.</PawnDiary.Tab.NoEntries>
   <PawnDiary.Tab.NoGeneratedEntries>Готовых страниц пока нет.</PawnDiary.Tab.NoGeneratedEntries>
-  <PawnDiary.Tab.LoadingHistory>Загрузка дневника...</PawnDiary.Tab.LoadingHistory>
-  <PawnDiary.Tab.LoadingHistoryProgress>Загрузка дневника... {0}/{1}</PawnDiary.Tab.LoadingHistoryProgress>
+  <PawnDiary.Tab.LoadingHistory>Загрузка дневника…</PawnDiary.Tab.LoadingHistory>
+  <PawnDiary.Tab.LoadingHistoryProgress>Загрузка дневника… {0}/{1}</PawnDiary.Tab.LoadingHistoryProgress>
   <PawnDiary.Tab.GenerateForPawn>Вести дневник этого поселенца</PawnDiary.Tab.GenerateForPawn>
   <PawnDiary.Tab.GenerateForPawnTip>Если выключено, события всё равно запоминаются здесь, но новые страницы для этого поселенца не отправляются на написание.</PawnDiary.Tab.GenerateForPawnTip>
   <PawnDiary.Tab.ShowPersonaSettings>Настройка стиля</PawnDiary.Tab.ShowPersonaSettings>
@@ -28,7 +28,7 @@
   <PawnDiary.Tab.ShowLlmDebugInfo>Отладка модели</PawnDiary.Tab.ShowLlmDebugInfo>
   <PawnDiary.Tab.ShowLlmDebugInfoTip>Показать черновые, ожидающие и ошибочные записи: адрес API, модель, статус, ошибку и подробности запроса.</PawnDiary.Tab.ShowLlmDebugInfoTip>
   <PawnDiary.Tab.ShowGeneratingEntries>Страницы в работе</PawnDiary.Tab.ShowGeneratingEntries>
-  <PawnDiary.Tab.ShowGeneratingEntriesTip>Показать страницы, которые ещё пишутся или зависли на «пишется...». Это проще, чем полная отладка модели.</PawnDiary.Tab.ShowGeneratingEntriesTip>
+  <PawnDiary.Tab.ShowGeneratingEntriesTip>Показать страницы, которые ещё пишутся или зависли на «пишется…». Это проще, чем полная отладка модели.</PawnDiary.Tab.ShowGeneratingEntriesTip>
   <PawnDiary.Tab.FillMockEntries>Добавить {0} тестовых страниц</PawnDiary.Tab.FillMockEntries>
   <PawnDiary.Tab.FillMockEntriesTip>Только для разработки: добавляет {0} готовых тестовых страниц за {1} игровых лет, около {2} в год, чтобы проверить длинную историю, выбор года и сворачивание страниц без обращения к модели.</PawnDiary.Tab.FillMockEntriesTip>
   <PawnDiary.Tab.MockEntriesAdded>Добавлено {0} тестовых страниц для {1}.</PawnDiary.Tab.MockEntriesAdded>
@@ -62,8 +62,8 @@
   <PawnDiary.Dev.PromptSuite.Death.Text>Тест описания смерти: запись о гибели {0}.</PawnDiary.Dev.PromptSuite.Death.Text>
   <PawnDiary.Dev.PromptSuite.Hediff.Label>Болезнь</PawnDiary.Dev.PromptSuite.Hediff.Label>
   <PawnDiary.Dev.PromptSuite.Hediff.Text>У {0} начался грипп.</PawnDiary.Dev.PromptSuite.Hediff.Text>
-  <PawnDiary.Dev.PromptSuite.Inspiration.Label>Вдохновение</PawnDiary.Dev.PromptSuite.Inspiration.Label>
-  <PawnDiary.Dev.PromptSuite.Inspiration.Text>У {0}: вспышка вдохновения.</PawnDiary.Dev.PromptSuite.Inspiration.Text>
+  <PawnDiary.Dev.PromptSuite.Inspiration.Label>Воодушевление</PawnDiary.Dev.PromptSuite.Inspiration.Label>
+  <PawnDiary.Dev.PromptSuite.Inspiration.Text>У {0}: вспышка воодушевления.</PawnDiary.Dev.PromptSuite.Inspiration.Text>
   <PawnDiary.Dev.PromptSuite.Work.Label>Исследование</PawnDiary.Dev.PromptSuite.Work.Label>
   <PawnDiary.Dev.PromptSuite.Work.Text>{0}: работа за столом для исследований.</PawnDiary.Dev.PromptSuite.Work.Text>
   <PawnDiary.Dev.PromptSuite.Thought.Label>Еда без стола</PawnDiary.Dev.PromptSuite.Thought.Label>
@@ -74,8 +74,8 @@
   <PawnDiary.Dev.PromptSuite.MoodEvent.Text>На поселение опустилась палящая жара.</PawnDiary.Dev.PromptSuite.MoodEvent.Text>
   <PawnDiary.Dev.PromptSuite.Tale.Label>Завершено исследование</PawnDiary.Dev.PromptSuite.Tale.Label>
   <PawnDiary.Dev.PromptSuite.Tale.Text>{0}: долгий исследовательский проект завершён.</PawnDiary.Dev.PromptSuite.Tale.Text>
-  <PawnDiary.Dev.PromptSuite.Raid.Label>Рейд</PawnDiary.Dev.PromptSuite.Raid.Label>
-  <PawnDiary.Dev.PromptSuite.Raid.Text>Тревога для {0}: к поселению приближались рейдеры.</PawnDiary.Dev.PromptSuite.Raid.Text>
+  <PawnDiary.Dev.PromptSuite.Raid.Label>Налёт</PawnDiary.Dev.PromptSuite.Raid.Label>
+  <PawnDiary.Dev.PromptSuite.Raid.Text>Тревога для {0}: к поселению приближались налётчики.</PawnDiary.Dev.PromptSuite.Raid.Text>
   <PawnDiary.Dev.PromptSuite.Quest.Label>Задание принято</PawnDiary.Dev.PromptSuite.Quest.Label>
   <PawnDiary.Dev.PromptSuite.Quest.Text>Новость для {0}: поселение приняло тестовое задание.</PawnDiary.Dev.PromptSuite.Quest.Text>
   <PawnDiary.Dev.PromptSuite.Ritual.Label>Ритуал завершён</PawnDiary.Dev.PromptSuite.Ritual.Label>
@@ -85,7 +85,7 @@
   <PawnDiary.Dev.PromptSuite.DayReflection.Label>Конец дня</PawnDiary.Dev.PromptSuite.DayReflection.Label>
   <PawnDiary.Dev.PromptSuite.DayReflection.Text>День принёс сосредоточенное исследование, жгучее оскорбление и подступающую жару.</PawnDiary.Dev.PromptSuite.DayReflection.Text>
   <PawnDiary.Dev.PromptSuite.QuadrumReflection.Label>Размышление о квадруме</PawnDiary.Dev.PromptSuite.QuadrumReflection.Label>
-  <PawnDiary.Dev.PromptSuite.QuadrumReflection.Text>1-е апримая: рейд оставил след у {0}. 6-е апримая: лихорадка не отпускала. 11-е апримая: поселение завершило трудный проект. 15-е апримая: любимый навык {0} дошёл до важной вехи.</PawnDiary.Dev.PromptSuite.QuadrumReflection.Text>
+  <PawnDiary.Dev.PromptSuite.QuadrumReflection.Text>1-е апримая: налёт оставил след у {0}. 6-е апримая: лихорадка не отпускала. 11-е апримая: поселение завершило трудный проект. 15-е апримая: любимый навык {0} дошёл до важной вехи.</PawnDiary.Dev.PromptSuite.QuadrumReflection.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Label>Веха любимого навыка</PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Text>Строительство у {0} поднялось до 12; этот навык давно был больше простого труда.</PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionPsylink.Label>Уровень пси-связи вырос</PawnDiary.Dev.PromptSuite.ProgressionPsylink.Label>
@@ -97,9 +97,9 @@
   <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>Получена новая черта</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>В характере {0} произошёл надлом: теперь это нервный человек.</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>
   <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>Обязательный годовой итог</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>
-  <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>Воспоминания {0} за 5504 год:&#10;- 4-е апримая: рейд, после которого мастерская выгорела.&#10;- 8-е апримая: строительство поднялось до 12.&#10;- 2-е джугуста: третий уровень пси-связи.&#10;- 9-е децембария: превращение в сангофага.</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>
+  <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>Воспоминания {0} за 5504 год:&#10;- 4-е апримая: налёт, после которого мастерская выгорела.&#10;- 8-е апримая: строительство поднялось до 12.&#10;- 2-е джугуста: третий уровень пси-связи.&#10;- 9-е децембария: превращение в сангофага.</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>
   <PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Label>Итог после важного события</PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Label>
-  <PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Text>Воспоминания {0} за 5504 год:&#10;- 3-е апримая: брак при свете факелов.&#10;- 10-е апримая: потеря друга во время рейда.&#10;- 4-е джугуста: шестой уровень пси-связи.&#10;- 7-е децембария: новый королевский титул.</PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Text>
+  <PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Text>Воспоминания {0} за 5504 год:&#10;- 3-е апримая: брак при свете факелов.&#10;- 10-е апримая: потеря друга во время налёта.&#10;- 4-е джугуста: шестой уровень пси-связи.&#10;- 7-е децембария: новый королевский титул.</PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Text>
   <PawnDiary.Dev.PromptSuite.ArcReflectionCooldownBlocked.Label>Диагностика задержки годового итога</PawnDiary.Dev.PromptSuite.ArcReflectionCooldownBlocked.Label>
   <PawnDiary.Dev.PromptSuite.ArcReflectionCooldownBlocked.Text>Воспоминания {0} за 5504 год:&#10;- 1-е апримая: ранний годовой итог уже был написан.&#10;- 6-е апримая: ещё одно важное событие случилось слишком скоро.&#10;- 8-е апримая: расписание обычно не дало бы написать второй итог.</PawnDiary.Dev.PromptSuite.ArcReflectionCooldownBlocked.Text>
   <PawnDiary.Dev.EventPanel.Title>Тесты событий Pawn Diary</PawnDiary.Dev.EventPanel.Title>
@@ -108,9 +108,9 @@
   <PawnDiary.Dev.NoActiveEventWindows>Нет активных окон событий для закрытия.</PawnDiary.Dev.NoActiveEventWindows>
   <PawnDiary.Dev.EventWindowForceClosed>Принудительно закрыто «{0}».</PawnDiary.Dev.EventWindowForceClosed>
   <PawnDiary.Dev.ForceCloseEventWindow.Tooltip>defName: {0}\nзапуск: {1}</PawnDiary.Dev.ForceCloseEventWindow.Tooltip>
-  <PawnDiary.Dev.ExternalTestSummary>{0} замечает странное — тестовый сигнал пришёл через API интеграций.</PawnDiary.Dev.ExternalTestSummary>
+  <PawnDiary.Dev.ExternalTestSummary>{0} замечает странное — тестовый сигнал пришёл через API для интеграций.</PawnDiary.Dev.ExternalTestSummary>
   <PawnDiary.Dev.ExternalTestSubmitted>Тестовое внешнее событие отправлено для {0}.</PawnDiary.Dev.ExternalTestSubmitted>
-  <PawnDiary.Dev.ExternalTestRejected>Тестовое внешнее событие не принято — проверьте лог разработчика.</PawnDiary.Dev.ExternalTestRejected>
+  <PawnDiary.Dev.ExternalTestRejected>Тестовое внешнее событие не принято — проверьте журнал разработчика.</PawnDiary.Dev.ExternalTestRejected>
   <PawnDiary.Dev.EventPanel.Pawn>Поселенец</PawnDiary.Dev.EventPanel.Pawn>
   <PawnDiary.Dev.EventPanel.Partner>Партнёр</PawnDiary.Dev.EventPanel.Partner>
   <PawnDiary.Dev.EventPanel.NoPartner>Для парных событий нужен второй подходящий поселенец.</PawnDiary.Dev.EventPanel.NoPartner>
@@ -133,7 +133,7 @@
   <PawnDiary.Dev.EventPanel.TriggerFailed>Не удалось запустить: {0}.</PawnDiary.Dev.EventPanel.TriggerFailed>
   <PawnDiary.Dev.EventPanel.ScannerRan>Запущена проверка: {0}.</PawnDiary.Dev.EventPanel.ScannerRan>
   <PawnDiary.Dev.EventPanel.TriggerThought>Мысль: еда без стола</PawnDiary.Dev.EventPanel.TriggerThought>
-  <PawnDiary.Dev.EventPanel.TriggerInspiration>Вдохновение: вербовка</PawnDiary.Dev.EventPanel.TriggerInspiration>
+  <PawnDiary.Dev.EventPanel.TriggerInspiration>Воодушевление: вербовка</PawnDiary.Dev.EventPanel.TriggerInspiration>
   <PawnDiary.Dev.EventPanel.TriggerMentalState>Психика: слепая ярость</PawnDiary.Dev.EventPanel.TriggerMentalState>
   <PawnDiary.Dev.EventPanel.TriggerSocialFight>Психика: потасовка</PawnDiary.Dev.EventPanel.TriggerSocialFight>
   <PawnDiary.Dev.EventPanel.TriggerTale>История: рвота</PawnDiary.Dev.EventPanel.TriggerTale>
@@ -143,7 +143,7 @@
   <PawnDiary.Dev.EventPanel.TriggerRomance>Отношения: возлюбленные</PawnDiary.Dev.EventPanel.TriggerRomance>
   <PawnDiary.Dev.EventPanel.TriggerArrival>Прибытие: создать новобранца</PawnDiary.Dev.EventPanel.TriggerArrival>
   <PawnDiary.Dev.EventPanel.TriggerDeath>Смерть: убить тестового поселенца</PawnDiary.Dev.EventPanel.TriggerDeath>
-  <PawnDiary.Dev.EventPanel.TriggerRaid>Инцидент: вражеский рейд</PawnDiary.Dev.EventPanel.TriggerRaid>
+  <PawnDiary.Dev.EventPanel.TriggerRaid>Инцидент: вражеский налёт</PawnDiary.Dev.EventPanel.TriggerRaid>
   <PawnDiary.Dev.EventPanel.TriggerQuest>Задание: принять и завершить пример</PawnDiary.Dev.EventPanel.TriggerQuest>
   <PawnDiary.Dev.EventPanel.TriggerAbility>Способность: первая доступная</PawnDiary.Dev.EventPanel.TriggerAbility>
   <PawnDiary.Dev.EventPanel.TriggerWorkScan>Работа: проверить текущую задачу</PawnDiary.Dev.EventPanel.TriggerWorkScan>
@@ -191,16 +191,18 @@
   <PawnDiary.Tab.ArchivedGenerationFallback>Событие: {0}</PawnDiary.Tab.ArchivedGenerationFallback>
   <PawnDiary.Tab.ArchivedGenerationFallbackUnknown>что-то произошло, но запрос не был сохранён</PawnDiary.Tab.ArchivedGenerationFallbackUnknown>
   <PawnDiary.Tab.ArchivedGenerationFailedFooter>не удалось написать</PawnDiary.Tab.ArchivedGenerationFailedFooter>
+  <PawnDiary.Tab.ExternalSourceFooter>внешний источник: {0}</PawnDiary.Tab.ExternalSourceFooter>
+  <PawnDiary.Tab.ExternalSourceWithFooterNote>внешний источник: {0} | {1}</PawnDiary.Tab.ExternalSourceWithFooterNote>
   <PawnDiary.Persona.DefaultLabel>по умолчанию</PawnDiary.Persona.DefaultLabel>
 
   <!-- Статус записи в её заголовке -->
   <PawnDiary.Status.Writing>пишется</PawnDiary.Status.Writing>
-  <PawnDiary.Status.WritingEllipsis>пишется...</PawnDiary.Status.WritingEllipsis>
+  <PawnDiary.Status.WritingEllipsis>пишется…</PawnDiary.Status.WritingEllipsis>
   <PawnDiary.Status.GenerationFailed>ошибка написания</PawnDiary.Status.GenerationFailed>
   <PawnDiary.Status.Skipped>пропущено</PawnDiary.Status.Skipped>
   <PawnDiary.Status.PromptOnly>запрос сохранён</PawnDiary.Status.PromptOnly>
-  <!-- Поля отладочного блока LLM (видны на вкладке дневника при включённой отладке). -->
-  <PawnDiary.Debug.Header>Отладка LLM</PawnDiary.Debug.Header>
+  <!-- Поля отладочного блока модели (видны на вкладке дневника при включённой отладке). -->
+  <PawnDiary.Debug.Header>Отладка модели</PawnDiary.Debug.Header>
   <PawnDiary.Debug.Event>Событие</PawnDiary.Debug.Event>
   <PawnDiary.Debug.Pov>Ракурс</PawnDiary.Debug.Pov>
   <PawnDiary.Debug.Endpoint>Адрес</PawnDiary.Debug.Endpoint>
@@ -216,7 +218,7 @@
   <PawnDiary.Settings.Category>Pawn Diary</PawnDiary.Settings.Category>
   <PawnDiary.Settings.Connection>Подключение к модели</PawnDiary.Settings.Connection>
   <PawnDiary.Settings.GenerationHeader>Написание дневника</PawnDiary.Settings.GenerationHeader>
-  <PawnDiary.Settings.ApisHeader>Подключения: включённые строки работают параллельно, по одной модели в каждой</PawnDiary.Settings.ApisHeader>
+  <PawnDiary.Settings.ApisHeader>Подключения работают параллельно, каждое со своей моделью</PawnDiary.Settings.ApisHeader>
   <PawnDiary.Settings.ShowModelSettings>Показать модели</PawnDiary.Settings.ShowModelSettings>
   <PawnDiary.Settings.HideModelSettings>Скрыть модели</PawnDiary.Settings.HideModelSettings>
   <PawnDiary.Settings.ApisSummary>Включено {0} из {1} подключений к моделям</PawnDiary.Settings.ApisSummary>
@@ -257,8 +259,8 @@
   <PawnDiary.Settings.ReasoningEffort.XHigh>Очень высокая</PawnDiary.Settings.ReasoningEffort.XHigh>
   <PawnDiary.Settings.ReasoningSupportedTip>Эта модель поддерживает рассуждение. Доступные уровни: {0}.</PawnDiary.Settings.ReasoningSupportedTip>
   <PawnDiary.Settings.ReasoningSupportedGenericTip>Эта модель поддерживает рассуждение.</PawnDiary.Settings.ReasoningSupportedGenericTip>
-  <PawnDiary.Settings.ReasoningUnsupportedTip>Эта модель не поддерживает рассуждение. Выбранный уровень не отправляется в запросе, поэтому модель перестаёт его отклонять.</PawnDiary.Settings.ReasoningUnsupportedTip>
-  <PawnDiary.Settings.ReasoningTag>Тег</PawnDiary.Settings.ReasoningTag>
+  <PawnDiary.Settings.ReasoningUnsupportedTip>Эта модель не поддерживает рассуждение. Параметр не отправляется, чтобы модель не отклоняла запрос.</PawnDiary.Settings.ReasoningUnsupportedTip>
+  <PawnDiary.Settings.ReasoningTag>Метка</PawnDiary.Settings.ReasoningTag>
   <PawnDiary.Settings.ReasoningTag.Auto>Авто</PawnDiary.Settings.ReasoningTag.Auto>
   <PawnDiary.Settings.ReasoningTag.Think>think</PawnDiary.Settings.ReasoningTag.Think>
   <PawnDiary.Settings.ReasoningTag.Thinking>thinking</PawnDiary.Settings.ReasoningTag.Thinking>
@@ -267,16 +269,16 @@
   <PawnDiary.Settings.ReasoningTag.Thought>thought</PawnDiary.Settings.ReasoningTag.Thought>
   <PawnDiary.Settings.ReasoningTag.Reflection>reflection</PawnDiary.Settings.ReasoningTag.Reflection>
   <PawnDiary.Settings.ReasoningTag.Scratchpad>scratchpad</PawnDiary.Settings.ReasoningTag.Scratchpad>
-  <PawnDiary.Settings.ReasoningTagTip>Управляет удалением приватных рассуждений модели из текста дневника. Авто использует встроенное распознавание и подходит почти для всех моделей. Выбирайте тег, в который модель оборачивает свои рассуждения (например, reflection или scratchpad), только если рассуждения видны в записях дневника.</PawnDiary.Settings.ReasoningTagTip>
+  <PawnDiary.Settings.ReasoningTagTip>Управляет удалением скрытых рассуждений модели из текста дневника. Автоматический режим использует встроенное распознавание и подходит почти для всех моделей. Выбирайте метку, в которую модель заключает рассуждения (например, reflection или scratchpad), только если они появляются в дневнике.</PawnDiary.Settings.ReasoningTagTip>
   <PawnDiary.Settings.ToggleOn>Вкл</PawnDiary.Settings.ToggleOn>
   <PawnDiary.Settings.ToggleOff>Выкл</PawnDiary.Settings.ToggleOff>
   <PawnDiary.Settings.FetchModels>Обновить</PawnDiary.Settings.FetchModels>
-  <PawnDiary.Settings.FetchingModels>Загрузка...</PawnDiary.Settings.FetchingModels>
+  <PawnDiary.Settings.FetchingModels>Загрузка…</PawnDiary.Settings.FetchingModels>
   <PawnDiary.Settings.NoModelsReturned>API не вернул моделей.</PawnDiary.Settings.NoModelsReturned>
   <PawnDiary.Settings.ModelsFound>Найдено моделей: {0}.</PawnDiary.Settings.ModelsFound>
   <PawnDiary.Settings.FetchFailed>Не удалось загрузить: {0}</PawnDiary.Settings.FetchFailed>
   <PawnDiary.Settings.TestConnection>Тест API</PawnDiary.Settings.TestConnection>
-  <PawnDiary.Settings.TestingConnection>Проверка...</PawnDiary.Settings.TestingConnection>
+  <PawnDiary.Settings.TestingConnection>Проверка…</PawnDiary.Settings.TestingConnection>
   <PawnDiary.Settings.ConnectionTestSucceeded>Подключение работает: {0}</PawnDiary.Settings.ConnectionTestSucceeded>
   <PawnDiary.Settings.ConnectionTestFailed>Подключение не удалось: {0}</PawnDiary.Settings.ConnectionTestFailed>
   <PawnDiary.Settings.ConnectionTestMissingEndpoint>Укажите адрес API.</PawnDiary.Settings.ConnectionTestMissingEndpoint>
@@ -287,27 +289,27 @@
   <PawnDiary.Settings.GenerateTitles>Короткие заголовки страниц</PawnDiary.Settings.GenerateTitles>
   <PawnDiary.Settings.GenerateTitlesTip>Если включено, после каждой страницы модель отдельным запросом пишет короткий заголовок. Это добавляет задержку и расход токенов. Если выключено, в заголовке остаётся дата.</PawnDiary.Settings.GenerateTitlesTip>
   <PawnDiary.Settings.EnableAtmosphericFormatting>Редкое атмосферное оформление</PawnDiary.Settings.EnableAtmosphericFormatting>
-  <PawnDiary.Settings.EnableAtmosphericFormattingTip>Если включено, крайние страницы могут получать необычные отступы, скачущие слова или искажённую странную речь. Затрагивает срывы, аномалии, тёмные записи, смерть и сильное нарушение состояния. Запросы и сохранённый текст не меняются.</PawnDiary.Settings.EnableAtmosphericFormattingTip>
+  <PawnDiary.Settings.EnableAtmosphericFormattingTip>Если включено, особенно напряжённые страницы могут получать необычные отступы, скачущие слова или искажённую странную речь. Это касается нервных срывов, аномалий, мрачных записей, смерти и тяжёлых состояний. Запросы и сохранённый текст не меняются.</PawnDiary.Settings.EnableAtmosphericFormattingTip>
   <PawnDiary.Settings.EnablePromptEnchantments>Игровой контекст в запросах</PawnDiary.Settings.EnablePromptEnchantments>
   <PawnDiary.Settings.EnablePromptEnchantmentsTip>Если включено, запрос от первого лица может получить одну важную подсказку о текущем состоянии поселенца или поселения. XML задаёт, какие подсказки возможны и как часто они выбираются.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
   <PawnDiary.Settings.EnablePsychotypes>Психотипы поселенцев</PawnDiary.Settings.EnablePsychotypes>
-  <PawnDiary.Settings.EnablePsychotypesTip>Если включено, каждый поселенец получает психотип — склад характера и взгляд на мир: что он замечает, ценит и чего боится. Психотип разыгрывается по увлечениям в навыках и вплетается в запросы от первого лица рядом с манерой письма. Если выключено, взгляд в запросы не попадает, а ещё не разыгранные психотипы ждут включения; уже существующие поселенцы психотип сохраняют. Изменить его можно во вкладке «Дневник», в редакторе манеры письма.</PawnDiary.Settings.EnablePsychotypesTip>
+  <PawnDiary.Settings.EnablePsychotypesTip>Если включено, каждый поселенец получает психотип — склад характера и взгляд на мир: что он замечает, ценит и чего боится. Психотип выбирается случайно с учётом увлечений в навыках и добавляется в запросы от первого лица рядом с манерой письма. Если настройка выключена, взгляд в запросы не попадает, а психотипы новых поселенцев ждут включения; уже назначенные сохраняются. Выбрать психотип заново можно во вкладке «Дневник», в редакторе манеры письма.</PawnDiary.Settings.EnablePsychotypesTip>
   <PawnDiary.Settings.AllowExternalIntegrations>Разрешить интеграции сторонних модов</PawnDiary.Settings.AllowExternalIntegrations>
-  <PawnDiary.Settings.AllowExternalIntegrationsTip>Если включено, другие моды могут через публичный API интеграции отправлять события в дневник, читать открытые сводки дневника и добавлять краткие строки контекста поселенца.</PawnDiary.Settings.AllowExternalIntegrationsTip>
+  <PawnDiary.Settings.AllowExternalIntegrationsTip>Если включено, другие моды могут через публичный API для интеграций отправлять события в дневник, читать открытые сводки и добавлять краткие строки контекста поселенца.</PawnDiary.Settings.AllowExternalIntegrationsTip>
   <PawnDiary.Settings.EnableExternalKeySharing>Передавать ключи API другим модам</PawnDiary.Settings.EnableExternalKeySharing>
-  <PawnDiary.Settings.EnableExternalKeySharingTip>Если включено, другие моды через API интеграции смогут полностью прочитать ваши ключи LLM API, чтобы вспомогательный мод мог пользоваться тем же провайдером. Включайте, только если доверяете модам в своём списке загрузки: запросить ключи может любой загруженный мод. Когда выключено, моды видят лишь то, что ключ задан, но не его значение.</PawnDiary.Settings.EnableExternalKeySharingTip>
+  <PawnDiary.Settings.EnableExternalKeySharingTip>Если включено, другие моды через API для интеграций смогут полностью прочитать ваши ключи API моделей и пользоваться тем же сервисом. Включайте это, только если доверяете всем модам в списке загрузки: запросить ключи может любой загруженный мод. Когда настройка выключена, моды видят лишь то, что ключ задан, но не его значение.</PawnDiary.Settings.EnableExternalKeySharingTip>
   <PawnDiary.Settings.EnableErrorReporting>Отправлять анонимные отчёты об ошибках</PawnDiary.Settings.EnableErrorReporting>
-  <PawnDiary.Settings.EnableErrorReportingTip>Если включено, ошибки этого мода отправляются автору, чтобы помочь находить и исправлять баги. Перед отправкой из каждого отчёта удаляются личные данные: имена пользователя в путях к файлам, ключи API, а также названия вашего поселения и поселенцев; длина текста ограничивается. В отчёт входят очищенный текст ошибки со стеком вызовов, версия этого мода, версия RimWorld, активные DLC, ваша операционная система и анонимный случайный идентификатор установки — но никогда ключи API или текст дневника. Поскольку текст ошибки берётся из исключений, в редких случаях в сообщении может остаться игровое значение, которое мы не предусмотрели. Отключите, чтобы ничего не отправлялось.</PawnDiary.Settings.EnableErrorReportingTip>
+  <PawnDiary.Settings.EnableErrorReportingTip>Если включено, ошибки этого мода отправляются автору, чтобы помочь находить и исправлять их. Перед отправкой из каждого отчёта удаляются личные данные: имена пользователя в путях к файлам, ключи API, а также названия вашего поселения и поселенцев; длина текста ограничивается. В отчёт входят очищенный текст ошибки со стеком вызовов, версия этого мода, версия RimWorld, активные DLC, ваша операционная система и анонимный случайный идентификатор установки — но никогда ключи API или текст дневника. Поскольку текст ошибки берётся из исключений, в редких случаях в сообщении может остаться игровое значение, которое мы не предусмотрели. Отключите настройку, чтобы ничего не отправлялось.</PawnDiary.Settings.EnableErrorReportingTip>
   <PawnDiary.ErrorReporting.NoticeTitle>Pawn Diary — отчёты об ошибках</PawnDiary.ErrorReporting.NoticeTitle>
-  <PawnDiary.ErrorReporting.NoticeText>Pawn Diary по умолчанию отправляет автору анонимные, очищенные отчёты о собственных ошибках — это помогает находить и исправлять баги. В отчётах никогда нет ваших ключей API или текста дневника, а имена пользователя в путях к файлам и названия вашего поселения и поселенцев удаляются перед отправкой. Это можно изменить в любой момент в настройках мода.</PawnDiary.ErrorReporting.NoticeText>
+  <PawnDiary.ErrorReporting.NoticeText>Pawn Diary по умолчанию отправляет автору анонимные, очищенные отчёты о собственных ошибках — это помогает находить и исправлять их. В отчётах никогда нет ваших ключей API или текста дневника, а имена пользователя в путях к файлам и названия вашего поселения и поселенцев удаляются перед отправкой. Это можно изменить в любой момент в настройках мода.</PawnDiary.ErrorReporting.NoticeText>
   <PawnDiary.ErrorReporting.NoticeKeepOn>Оставить включённым</PawnDiary.ErrorReporting.NoticeKeepOn>
   <PawnDiary.ErrorReporting.NoticeTurnOff>Отключить</PawnDiary.ErrorReporting.NoticeTurnOff>
   <PawnDiary.Settings.ShowExperimentalAdvancedOverrides>Показать экспериментальные XML-переопределения</PawnDiary.Settings.ShowExperimentalAdvancedOverrides>
-  <PawnDiary.Settings.ShowExperimentalAdvancedOverridesTip>Открывает сырые страницы переопределений XML Def для тонкой настройки и политики запросов. Переопределения экспериментальны и меняют поведение до сброса.</PawnDiary.Settings.ShowExperimentalAdvancedOverridesTip>
+  <PawnDiary.Settings.ShowExperimentalAdvancedOverridesTip>Открывает страницы экспериментальных переопределений XML-описаний для тонкой настройки и правил запросов. Изменения действуют до сброса.</PawnDiary.Settings.ShowExperimentalAdvancedOverridesTip>
   <PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>Добавлять речь в журнал общения</PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>
-  <PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>Если включено, готовая запись первой стороны с корректным блоком речи добавляет строку в журнал общения. Моды, следящие за журналом, смогут реагировать после ответа модели.</PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>
+  <PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>Если включено, готовая запись инициатора с правильно размеченной прямой речью добавляет строку в журнал общения. Моды, следящие за журналом, смогут реагировать после ответа модели.</PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>
   <PawnDiary.Settings.PromptTestMode>Проверка запросов: не отправлять модели</PawnDiary.Settings.PromptTestMode>
-  <PawnDiary.Settings.PromptTestModeTip>Только для разработки: игровые события собирают и сохраняют системный и пользовательский запрос, но дневник и заголовок не отправляются модели. Карточки с запросом видны во вкладке дневника в режиме разработки.</PawnDiary.Settings.PromptTestModeTip>
+  <PawnDiary.Settings.PromptTestModeTip>Только для разработки: игровые события собирают и сохраняют системный и пользовательский запрос, но запросы на запись и заголовок не отправляются модели. Карточки с запросом видны во вкладке дневника в режиме разработки.</PawnDiary.Settings.PromptTestModeTip>
   <PawnDiary.Settings.ExportAllDiaries>Экспортировать все страницы</PawnDiary.Settings.ExportAllDiaries>
   <PawnDiary.Settings.ExportAllDiariesTip>Только для разработки: сохранить все страницы дневников и связанные события в UTF-8 файл в папке данных сохранений RimWorld. Путь к файлу копируется в буфер обмена.</PawnDiary.Settings.ExportAllDiariesTip>
   <PawnDiary.Settings.ExportAllDiariesDone>Страницы дневника экспортированы: {0}. Путь скопирован в буфер обмена.</PawnDiary.Settings.ExportAllDiariesDone>
@@ -316,13 +318,30 @@
   <PawnDiary.Settings.Temperature>Температура модели: {0}</PawnDiary.Settings.Temperature>
   <PawnDiary.Settings.TemperatureHelp>Случайность модели для дневника и заголовков. Ниже — ровнее и буквальнее; выше — разнообразнее и атмосфернее, но риск отхода от фактов больше.</PawnDiary.Settings.TemperatureHelp>
   <PawnDiary.Settings.TimeoutSeconds>Ожидание ответа: {0} с</PawnDiary.Settings.TimeoutSeconds>
-  <PawnDiary.Settings.TimeoutSecondsHelp>Сколько секунд ждать ответ от API перед переходом к запасному подключению или ошибке. Медленным локальным моделям может быть мало 30 секунд.</PawnDiary.Settings.TimeoutSecondsHelp>
+  <PawnDiary.Settings.TimeoutSecondsHelp>Сколько секунд ждать ответа API, прежде чем перейти к запасному подключению или пометить запрос как неудачный. Медленным локальным моделям может не хватить стандартных 30 секунд.</PawnDiary.Settings.TimeoutSecondsHelp>
   <PawnDiary.Settings.MaxTokens>Предел ответа: {0} токенов</PawnDiary.Settings.MaxTokens>
   <PawnDiary.Settings.MaxTokensHelp>Максимальная длина ответа до очистки текста. Большее значение даёт более длинные страницы, но они пишутся медленнее и чаще теряют лаконичность.</PawnDiary.Settings.MaxTokensHelp>
-  <PawnDiary.Settings.GenerationChanceWeight>Вес случайной генерации: {0}x</PawnDiary.Settings.GenerationChanceWeight>
-  <PawnDiary.Settings.GenerationChanceWeightHelp>Множитель шанса для необязательных случайных страниц дневника: выборки работы, продвижения общения и использования способностей. 1x — значения XML; 0x — отключает такие страницы.</PawnDiary.Settings.GenerationChanceWeightHelp>
-  <PawnDiary.Settings.MaxActiveDiaryEvents>Активных страниц на поселенца ({0}-{1})</PawnDiary.Settings.MaxActiveDiaryEvents>
-  <PawnDiary.Settings.MaxArchivedDiaryEvents>Архивных страниц на поселенца ({0}-{1})</PawnDiary.Settings.MaxArchivedDiaryEvents>
+  <PawnDiary.Settings.ContextDetail>Подробность контекста</PawnDiary.Settings.ContextDetail>
+  <PawnDiary.Settings.ContextDetailTip>Определяет, сколько собранного контекста отправляется в каждом запросе. Полный режим сохраняет прежний состав запроса; сбалансированный и краткий оставляют обязательные факты и выбирают самые полезные дополнительные поля.</PawnDiary.Settings.ContextDetailTip>
+  <PawnDiary.Settings.ContextDetailLaneTip>Задаёт подробность контекста для этого подключения. «Как в общих настройках» использует значение выше; сокращённый вариант полезен для очень небольших моделей.</PawnDiary.Settings.ContextDetailLaneTip>
+  <PawnDiary.Settings.ContextDetail.Inherit>Как в общих настройках</PawnDiary.Settings.ContextDetail.Inherit>
+  <PawnDiary.Settings.ContextDetail.Full>Полный</PawnDiary.Settings.ContextDetail.Full>
+  <PawnDiary.Settings.ContextDetail.Balanced>Сбалансированный</PawnDiary.Settings.ContextDetail.Balanced>
+  <PawnDiary.Settings.ContextDetail.Compact>Краткий</PawnDiary.Settings.ContextDetail.Compact>
+  <PawnDiary.Settings.ContextDetailSectionTitle>Подробность контекста запроса</PawnDiary.Settings.ContextDetailSectionTitle>
+  <PawnDiary.Settings.ContextDetailSectionHelp>Это лишь пример: реальные события используют фактически собранные данные. Нажмите строку, чтобы выбрать, сколько необязательного контекста отправлять или отсекать.</PawnDiary.Settings.ContextDetailSectionHelp>
+  <PawnDiary.Settings.ContextDetail.RowTip>Нажмите строку, чтобы выбрать этот уровень подробности.</PawnDiary.Settings.ContextDetail.RowTip>
+  <PawnDiary.Settings.ContextDetail.AddedLabel>Отправляется</PawnDiary.Settings.ContextDetail.AddedLabel>
+  <PawnDiary.Settings.ContextDetail.CutLabel>Исключается первым</PawnDiary.Settings.ContextDetail.CutLabel>
+  <PawnDiary.Settings.ContextDetail.Full.Added>Все доступные данные: сведения о событии, поселенце и окружении, связь с прошлыми записями, предыдущая запись, оружие и тип события.</PawnDiary.Settings.ContextDetail.Full.Added>
+  <PawnDiary.Settings.ContextDetail.Balanced.Added>Обязательные факты и самые важные подсказки: опасность, тяжёлое состояние здоровья или настроения, прямые инструкции и особые указания по событию.</PawnDiary.Settings.ContextDetail.Balanced.Added>
+  <PawnDiary.Settings.ContextDetail.Balanced.Cut>Маловажные отсылки к прошлым записям, сведения об обычной обстановке и тоне, второстепенные числа и повторы.</PawnDiary.Settings.ContextDetail.Balanced.Cut>
+  <PawnDiary.Settings.ContextDetail.Compact.Added>Обязательные факты и одна наиболее полезная деталь: например опасность, травма, обязанность или важные отношения.</PawnDiary.Settings.ContextDetail.Compact.Added>
+  <PawnDiary.Settings.ContextDetail.Compact.Cut>Большинство отсылок к прошлым записям и сведений об окружении, повседневные данные о поселенце и малозначимые подробности.</PawnDiary.Settings.ContextDetail.Compact.Cut>
+  <PawnDiary.Settings.GenerationChanceWeight>Множитель случайных записей: {0}×</PawnDiary.Settings.GenerationChanceWeight>
+  <PawnDiary.Settings.GenerationChanceWeightHelp>Множитель вероятности необязательных страниц: случайных записей о работе, развитии отношений и применении способностей. 1× использует значения XML; 0× отключает такие страницы.</PawnDiary.Settings.GenerationChanceWeightHelp>
+  <PawnDiary.Settings.MaxActiveDiaryEvents>Активных страниц на поселенца ({0}–{1})</PawnDiary.Settings.MaxActiveDiaryEvents>
+  <PawnDiary.Settings.MaxArchivedDiaryEvents>Архивных страниц на поселенца ({0}–{1})</PawnDiary.Settings.MaxArchivedDiaryEvents>
   <PawnDiary.Settings.MaxConcurrent>Одновременных запросов на подключение: {0}</PawnDiary.Settings.MaxConcurrent>
   <PawnDiary.Settings.MaxConcurrentHelp>Сколько запросов одновременно выполняет каждое подключение; остальные ждут в его очереди. Разные подключения работают параллельно. Для локальной модели оставьте 1; повышайте только если сервер умеет обрабатывать несколько запросов сразу.</PawnDiary.Settings.MaxConcurrentHelp>
   <PawnDiary.Settings.ResetConnection>Сбросить подключения</PawnDiary.Settings.ResetConnection>
@@ -407,38 +426,47 @@
   <PawnDiary.Settings.Tab.Tuning>Дополнительно</PawnDiary.Settings.Tab.Tuning>
   <PawnDiary.Settings.Tab.Prompts>Запросы</PawnDiary.Settings.Tab.Prompts>
   <PawnDiary.Settings.Tab.Styles>Стили</PawnDiary.Settings.Tab.Styles>
+  <PawnDiary.Settings.Tab.Events>События</PawnDiary.Settings.Tab.Events>
   <PawnDiary.Settings.Adv.Summary>Изменено значений: {0}.</PawnDiary.Settings.Adv.Summary>
   <PawnDiary.Settings.Adv.Filter>Поиск</PawnDiary.Settings.Adv.Filter>
   <PawnDiary.Settings.Adv.FilterMode.All>Все</PawnDiary.Settings.Adv.FilterMode.All>
   <PawnDiary.Settings.Adv.FilterMode.Changed>Изменено</PawnDiary.Settings.Adv.FilterMode.Changed>
-  <PawnDiary.Settings.Adv.FilterMode.Raw>Сырой текст</PawnDiary.Settings.Adv.FilterMode.Raw>
+  <PawnDiary.Settings.Adv.FilterMode.Raw>Текст</PawnDiary.Settings.Adv.FilterMode.Raw>
   <PawnDiary.Settings.Adv.ResetChangedInTab>Сбросить изменённое в этой вкладке</PawnDiary.Settings.Adv.ResetChangedInTab>
-  <PawnDiary.Settings.Adv.ResetChangedInTabTip>Вернуть XML-значения всех изменённых переопределений только в этой области Advanced.</PawnDiary.Settings.Adv.ResetChangedInTabTip>
+  <PawnDiary.Settings.Adv.ResetChangedInTabTip>Вернуть значения XML для всех изменённых полей только в этом разделе «Дополнительно».</PawnDiary.Settings.Adv.ResetChangedInTabTip>
   <PawnDiary.Settings.Adv.CopyChangedSummary>Копировать сводку</PawnDiary.Settings.Adv.CopyChangedSummary>
-  <PawnDiary.Settings.Adv.CopyChangedSummaryTip>Скопировать текстовую сводку изменённых настроек в этой области Advanced. Это не формат импорта/экспорта.</PawnDiary.Settings.Adv.CopyChangedSummaryTip>
+  <PawnDiary.Settings.Adv.CopyChangedSummaryTip>Скопировать текстовую сводку изменённых настроек в этом разделе «Дополнительно». Это не формат импорта или экспорта.</PawnDiary.Settings.Adv.CopyChangedSummaryTip>
   <PawnDiary.Settings.Adv.CopyChangedSummaryDone>Скопировано изменённых настроек: {0}.</PawnDiary.Settings.Adv.CopyChangedSummaryDone>
   <PawnDiary.Settings.Adv.Category.Tuning>тонкая настройка</PawnDiary.Settings.Adv.Category.Tuning>
   <PawnDiary.Settings.Adv.Category.Prompts>политика запросов</PawnDiary.Settings.Adv.Category.Prompts>
-  <PawnDiary.Settings.Adv.ChangedSummaryTitle>Pawn Diary: изменённые XML-переопределения - {0}</PawnDiary.Settings.Adv.ChangedSummaryTitle>
+  <PawnDiary.Settings.Adv.ChangedSummaryTitle>Pawn Diary: изменённые XML-переопределения — {0}</PawnDiary.Settings.Adv.ChangedSummaryTitle>
   <PawnDiary.Settings.Adv.ChangedSummaryCount>Изменено значений: {0}</PawnDiary.Settings.Adv.ChangedSummaryCount>
-  <PawnDiary.Settings.Adv.ChangedSummaryLine>- {0} ({1}) = {2} [XML/default: {3}]</PawnDiary.Settings.Adv.ChangedSummaryLine>
-  <PawnDiary.Settings.Adv.ChangedSummaryNone>Pawn Diary: изменённые XML-переопределения - {0}: нет</PawnDiary.Settings.Adv.ChangedSummaryNone>
+  <PawnDiary.Settings.Adv.ChangedSummaryLine>• {0} ({1}) = {2} [XML: {3}]</PawnDiary.Settings.Adv.ChangedSummaryLine>
+  <PawnDiary.Settings.Adv.ChangedSummaryNone>Pawn Diary: изменённые XML-переопределения — {0}: нет</PawnDiary.Settings.Adv.ChangedSummaryNone>
   <PawnDiary.Settings.Adv.ResetAll>Сбросить всё</PawnDiary.Settings.Adv.ResetAll>
   <PawnDiary.Settings.Adv.ResetShort>Сброс</PawnDiary.Settings.Adv.ResetShort>
   <PawnDiary.Settings.Adv.ResetGroup>Сбросить группу</PawnDiary.Settings.Adv.ResetGroup>
   <PawnDiary.Settings.Adv.ResetFieldTip>Вернуть XML-значение этого поля.</PawnDiary.Settings.Adv.ResetFieldTip>
   <PawnDiary.Settings.Adv.FilterResults>Найдено полей: {0}</PawnDiary.Settings.Adv.FilterResults>
-  <PawnDiary.Settings.Adv.ExperimentalWarning>Экспериментально: Advanced-переопределения пишут в живые XML Defs. Лучше оставлять XML/default, если не тестируете.</PawnDiary.Settings.Adv.ExperimentalWarning>
+  <PawnDiary.Settings.Adv.ExperimentalWarning>Экспериментально: переопределения из раздела «Дополнительно» меняют загруженные XML-описания. Для обычной игры используйте значения XML.</PawnDiary.Settings.Adv.ExperimentalWarning>
   <PawnDiary.Settings.Adv.LockedTitle>Дополнительные XML-переопределения</PawnDiary.Settings.Adv.LockedTitle>
-  <PawnDiary.Settings.Adv.LockedHelp>Здесь находятся экспериментальные XML Def-переопределения для низкоуровневой настройки и политики запросов. Включайте их только для проверки сырых настроек; для обычной игры оставляйте выключенными.</PawnDiary.Settings.Adv.LockedHelp>
-  <PawnDiary.Settings.Adv.OverrideInherited>Используется XML/default; переопределения нет.</PawnDiary.Settings.Adv.OverrideInherited>
-  <PawnDiary.Settings.Adv.EffectivePreview>Итог: {0} - {1}</PawnDiary.Settings.Adv.EffectivePreview>
-  <PawnDiary.Settings.Adv.Source.Override>переопределение</PawnDiary.Settings.Adv.Source.Override>
-  <PawnDiary.Settings.Adv.Source.XmlDefault>XML/default</PawnDiary.Settings.Adv.Source.XmlDefault>
+  <PawnDiary.Settings.Adv.LockedHelp>Здесь находятся экспериментальные переопределения XML-описаний для тонкой настройки и правил запросов. Включайте их только для проверки исходных параметров; для обычной игры оставляйте выключенными.</PawnDiary.Settings.Adv.LockedHelp>
+  <PawnDiary.Settings.EventFilters.Title>Фильтры автоматической записи</PawnDiary.Settings.EventFilters.Title>
+  <PawnDiary.Settings.EventFilters.Summary>Автоматическая запись отключена для {0} из {1} типов событий.</PawnDiary.Settings.EventFilters.Summary>
+  <PawnDiary.Settings.EventFilters.Help>Отключите тип события, чтобы Pawn Diary не записывал его автоматически. Внешние моды по-прежнему могут добавлять свои записи через API.</PawnDiary.Settings.EventFilters.Help>
+  <PawnDiary.Settings.EventFilters.EnableAll>Включить все</PawnDiary.Settings.EventFilters.EnableAll>
+  <PawnDiary.Settings.EventFilters.EnableAllTip>Включить все типы событий, показанные в этом списке.</PawnDiary.Settings.EventFilters.EnableAllTip>
+  <PawnDiary.Settings.EventFilters.Changed>изменено</PawnDiary.Settings.EventFilters.Changed>
+  <PawnDiary.Settings.EventFilters.RowTip>Группа автоматической записи: {0}. События из отключённых групп не записываются автоматически, но фильтр не блокирует внешние запросы API. Строка «Размышление» управляет итогами дня, квадрума и жизненного пути.</PawnDiary.Settings.EventFilters.RowTip>
+  <PawnDiary.Settings.EventFilters.None>Нет доступных групп для автоматической записи.</PawnDiary.Settings.EventFilters.None>
+  <PawnDiary.Settings.Adv.OverrideInherited>Используется значение XML; своего значения нет.</PawnDiary.Settings.Adv.OverrideInherited>
+  <PawnDiary.Settings.Adv.EffectivePreview>Итог: {0} — {1}</PawnDiary.Settings.Adv.EffectivePreview>
+  <PawnDiary.Settings.Adv.Source.Override>своё значение</PawnDiary.Settings.Adv.Source.Override>
+  <PawnDiary.Settings.Adv.Source.XmlDefault>XML</PawnDiary.Settings.Adv.Source.XmlDefault>
   <PawnDiary.Settings.Adv.Source.SharedPrompt>общий запрос</PawnDiary.Settings.Adv.Source.SharedPrompt>
   <PawnDiary.Settings.Adv.Source.Empty>&lt;пусто&gt;</PawnDiary.Settings.Adv.Source.Empty>
   <PawnDiary.Settings.Adv.EditOverride>Изменить</PawnDiary.Settings.Adv.EditOverride>
-  <PawnDiary.Settings.Adv.EditOverrideTip>Открыть сырое текстовое поле для этого необязательного переопределения.</PawnDiary.Settings.Adv.EditOverrideTip>
+  <PawnDiary.Settings.Adv.EditOverrideTip>Открыть текстовое поле для собственного значения.</PawnDiary.Settings.Adv.EditOverrideTip>
   <PawnDiary.Settings.Adv.Syntax.Valid>Синтаксис верен, строк: {0}.</PawnDiary.Settings.Adv.Syntax.Valid>
   <PawnDiary.Settings.Adv.Syntax.Empty>Строк нет.</PawnDiary.Settings.Adv.Syntax.Empty>
   <PawnDiary.Settings.Adv.Syntax.Null>Используется &lt;null&gt;; строки не переопределяют XML.</PawnDiary.Settings.Adv.Syntax.Null>
@@ -459,7 +487,7 @@
   <PawnDiary.Settings.Adv.Syntax.ErrBadBool>enabled должно быть true или false</PawnDiary.Settings.Adv.Syntax.ErrBadBool>
   <PawnDiary.Settings.Adv.Syntax.ErrSeverityTier>ожидается level|chance|frequency|weight|severity</PawnDiary.Settings.Adv.Syntax.ErrSeverityTier>
   <PawnDiary.Settings.Adv.Syntax.ErrBadInt>{0} должно быть целым числом</PawnDiary.Settings.Adv.Syntax.ErrBadInt>
-  <PawnDiary.Settings.Adv.Group.Dedup>Антидубли</PawnDiary.Settings.Adv.Group.Dedup>
+  <PawnDiary.Settings.Adv.Group.Dedup>Защита от повторов</PawnDiary.Settings.Adv.Group.Dedup>
   <PawnDiary.Settings.Adv.Group.Ability>Способности</PawnDiary.Settings.Adv.Group.Ability>
   <PawnDiary.Settings.Adv.Group.RitualQuality>Качество ритуалов</PawnDiary.Settings.Adv.Group.RitualQuality>
   <PawnDiary.Settings.Adv.Group.Surroundings>Окружение</PawnDiary.Settings.Adv.Group.Surroundings>
@@ -472,7 +500,7 @@
   <PawnDiary.Settings.Adv.Group.BodyParts>События частей тела</PawnDiary.Settings.Adv.Group.BodyParts>
   <PawnDiary.Settings.Adv.Group.DayReflection>Итог дня</PawnDiary.Settings.Adv.Group.DayReflection>
   <PawnDiary.Settings.Adv.Group.Quadrum>Итог квадрума</PawnDiary.Settings.Adv.Group.Quadrum>
-  <PawnDiary.Settings.Adv.Group.Arc>Годовая арка</PawnDiary.Settings.Adv.Group.Arc>
+  <PawnDiary.Settings.Adv.Group.Arc>Годовое размышление</PawnDiary.Settings.Adv.Group.Arc>
   <PawnDiary.Settings.Adv.Group.Misc>Разное</PawnDiary.Settings.Adv.Group.Misc>
   <PawnDiary.Settings.Adv.Group.SignalThought>Сигнал: мысль</PawnDiary.Settings.Adv.Group.SignalThought>
   <PawnDiary.Settings.Adv.Group.SignalAmbient>Сигнал: фоновые мысли</PawnDiary.Settings.Adv.Group.SignalAmbient>
@@ -492,7 +520,7 @@
   <PawnDiary.Settings.Adv.Group.TmplSoloBatched>Шаблон: одиночная серия</PawnDiary.Settings.Adv.Group.TmplSoloBatched>
   <PawnDiary.Settings.Adv.Group.TmplDayReflection>Шаблон: итог дня</PawnDiary.Settings.Adv.Group.TmplDayReflection>
   <PawnDiary.Settings.Adv.Group.TmplQuadrumReflection>Шаблон: итог квадрума</PawnDiary.Settings.Adv.Group.TmplQuadrumReflection>
-  <PawnDiary.Settings.Adv.Group.TmplArcReflection>Шаблон: годовая арка</PawnDiary.Settings.Adv.Group.TmplArcReflection>
+  <PawnDiary.Settings.Adv.Group.TmplArcReflection>Шаблон: годовое размышление</PawnDiary.Settings.Adv.Group.TmplArcReflection>
   <PawnDiary.Settings.Adv.Group.TmplDeath>Шаблон: смерть</PawnDiary.Settings.Adv.Group.TmplDeath>
   <PawnDiary.Settings.Adv.Group.TmplArrival>Шаблон: прибытие</PawnDiary.Settings.Adv.Group.TmplArrival>
   <PawnDiary.Settings.Adv.Group.TmplTitle>Шаблон: заголовок</PawnDiary.Settings.Adv.Group.TmplTitle>
@@ -510,7 +538,7 @@
   <PawnDiary.Settings.Adv.Field.cueTexts>Строки-намёки</PawnDiary.Settings.Adv.Field.cueTexts>
   <PawnDiary.Settings.Adv.Field.startText>Текст начала</PawnDiary.Settings.Adv.Field.startText>
   <PawnDiary.Settings.Adv.Field.endText>Текст конца</PawnDiary.Settings.Adv.Field.endText>
-  <PawnDiary.Settings.Adv.Field.timeoutText>Текст тайм-аута</PawnDiary.Settings.Adv.Field.timeoutText>
+  <PawnDiary.Settings.Adv.Field.timeoutText>Текст при истечении ожидания</PawnDiary.Settings.Adv.Field.timeoutText>
   <PawnDiary.Settings.Adv.Field.promptEnabled>Влияет на запрос</PawnDiary.Settings.Adv.Field.promptEnabled>
   <PawnDiary.Settings.Adv.Field.promptWeight>Вес в запросе</PawnDiary.Settings.Adv.Field.promptWeight>
   <PawnDiary.Settings.Adv.Field.normalPromptWeightMultiplier>Множитель обычного контекста</PawnDiary.Settings.Adv.Field.normalPromptWeightMultiplier>
@@ -546,7 +574,7 @@
   <PawnDiary.Settings.Adv.Field.bodyPartCrudeEfficiencyBelow>Грубая часть ниже эффективности</PawnDiary.Settings.Adv.Field.bodyPartCrudeEfficiencyBelow>
   <PawnDiary.Settings.Adv.Field.bodyPartProstheticEfficiencyMax>Макс. эффективность протеза</PawnDiary.Settings.Adv.Field.bodyPartProstheticEfficiencyMax>
   <PawnDiary.Settings.Adv.Field.bodyPartBionicEfficiencyMax>Макс. эффективность бионики</PawnDiary.Settings.Adv.Field.bodyPartBionicEfficiencyMax>
-  <PawnDiary.Settings.Adv.Field.genericEventTypeDedupTicks>Тики общего дедупа событий</PawnDiary.Settings.Adv.Field.genericEventTypeDedupTicks>
+  <PawnDiary.Settings.Adv.Field.genericEventTypeDedupTicks>Тики общей защиты событий от повторов</PawnDiary.Settings.Adv.Field.genericEventTypeDedupTicks>
   <PawnDiary.Settings.Adv.Help.text>Текст для строки контекста. {0} — отслеживаемое значение.</PawnDiary.Settings.Adv.Help.text>
   <PawnDiary.Settings.Adv.Help.conditionLabel>Название состояния для модели. Пусто — взять XML-ключ или текущее игровое название.</PawnDiary.Settings.Adv.Help.conditionLabel>
   <PawnDiary.Settings.Adv.Help.intensityText>Слово силы/тяжести для модели. Пусто — выбрать по XML или текущей тяжести.</PawnDiary.Settings.Adv.Help.intensityText>
@@ -555,7 +583,7 @@
   <PawnDiary.Settings.Adv.Help.cueTexts>Один намёк на строку. Пусто — XML-ключи; &lt;null&gt; — убрать настроенные намёки.</PawnDiary.Settings.Adv.Help.cueTexts>
   <PawnDiary.Settings.Adv.Help.startText>Текст события для начала. {0}=поселенец, {1}=сигнал или состояние.</PawnDiary.Settings.Adv.Help.startText>
   <PawnDiary.Settings.Adv.Help.endText>Текст события для конца. {0}=поселенец, {1}=сигнал или состояние.</PawnDiary.Settings.Adv.Help.endText>
-  <PawnDiary.Settings.Adv.Help.timeoutText>Текст события при тайм-ауте. {0}=поселенец, {1}=сигнал или окно.</PawnDiary.Settings.Adv.Help.timeoutText>
+  <PawnDiary.Settings.Adv.Help.timeoutText>Текст события при истечении времени ожидания. {0}=поселенец, {1}=сигнал или окно.</PawnDiary.Settings.Adv.Help.timeoutText>
   <PawnDiary.Settings.Adv.Help.promptEnabled>Разрешает этой записи добавлять активный контекст в запросы от первого лица.</PawnDiary.Settings.Adv.Help.promptEnabled>
   <PawnDiary.Settings.Adv.Help.promptWeight>Относительный шанс победить среди нескольких активных подсказок контекста.</PawnDiary.Settings.Adv.Help.promptWeight>
   <PawnDiary.Settings.Adv.Help.normalPromptWeightMultiplier>Множитель для обычного контекста здоровья/настроения рядом с этой активной подсказкой. 0 подавляет, 1 не меняет.</PawnDiary.Settings.Adv.Help.normalPromptWeightMultiplier>
@@ -580,7 +608,7 @@
   <PawnDiary.Settings.Adv.Help.hediff.progressedText>Текст дневника для ухудшившегося срочного состояния здоровья. {0}=поселенец, {1}=состояние.</PawnDiary.Settings.Adv.Help.hediff.progressedText>
   <PawnDiary.Settings.Adv.TipCurrent>Сейчас: {0}</PawnDiary.Settings.Adv.TipCurrent>
   <PawnDiary.Settings.Adv.TipDefault>XML: {0}</PawnDiary.Settings.Adv.TipDefault>
-  <PawnDiary.Settings.Adv.TipRange>Диапазон: {0} - {1}</PawnDiary.Settings.Adv.TipRange>
+  <PawnDiary.Settings.Adv.TipRange>Диапазон: {0}–{1}</PawnDiary.Settings.Adv.TipRange>
   <PawnDiary.Settings.Adv.TipCustomized>Изменено вручную</PawnDiary.Settings.Adv.TipCustomized>
   <PawnDiary.Settings.Adv.TipXmlDefault>Используется XML-значение</PawnDiary.Settings.Adv.TipXmlDefault>
   <PawnDiary.Settings.Adv.GroupHelp.Dedup>Пауза перед повторной записью того же источника. 60 тиков — около 1 секунды; 2500 — около игрового часа.</PawnDiary.Settings.Adv.GroupHelp.Dedup>
@@ -599,16 +627,16 @@
   <PawnDiary.Settings.Adv.GroupHelp.DayReflection>Главный переключатель итогов дня, лимит моментов, веса и условия.</PawnDiary.Settings.Adv.GroupHelp.DayReflection>
   <PawnDiary.Settings.Adv.GroupHelp.Quadrum>Редкое длинное размышление в конце квадрума, распределённое между поселенцами.</PawnDiary.Settings.Adv.GroupHelp.Quadrum>
   <PawnDiary.Settings.Adv.GroupHelp.Arc>Редкие годовые размышления по прошлым страницам дневника.</PawnDiary.Settings.Adv.GroupHelp.Arc>
-  <PawnDiary.Settings.Adv.GroupHelp.Misc>Разные лимиты отображения, UI и возраста.</PawnDiary.Settings.Adv.GroupHelp.Misc>
+  <PawnDiary.Settings.Adv.GroupHelp.Misc>Разные ограничения отображения, интерфейса и возраста.</PawnDiary.Settings.Adv.GroupHelp.Misc>
   <PawnDiary.Settings.Adv.GroupHelp.SignalThought>Политика записи временных мыслей. -1 берёт значение из общих XML-настроек.</PawnDiary.Settings.Adv.GroupHelp.SignalThought>
   <PawnDiary.Settings.Adv.GroupHelp.SignalAmbient>Политика сбора малозначимых фоновых мыслей в дневную заметку.</PawnDiary.Settings.Adv.GroupHelp.SignalAmbient>
   <PawnDiary.Settings.Adv.GroupHelp.SignalProgression>Правила проверки текущих нужд: еда, отдых, улица, химия.</PawnDiary.Settings.Adv.GroupHelp.SignalProgression>
   <PawnDiary.Settings.Adv.GroupHelp.SignalWork>Политика записи работы.</PawnDiary.Settings.Adv.GroupHelp.SignalWork>
   <PawnDiary.Settings.Adv.GroupHelp.SignalPawn>Правила медленной проверки развития поселенцев.</PawnDiary.Settings.Adv.GroupHelp.SignalPawn>
-  <PawnDiary.Settings.Adv.GroupHelp.CtxConditions>Как активные условия карты становятся контекстом запроса и UI.</PawnDiary.Settings.Adv.GroupHelp.CtxConditions>
+  <PawnDiary.Settings.Adv.GroupHelp.CtxConditions>Как активные условия карты становятся контекстом запроса и отображаются в интерфейсе.</PawnDiary.Settings.Adv.GroupHelp.CtxConditions>
   <PawnDiary.Settings.Adv.GroupHelp.CtxThreat>Как последнее письмо об угрозе становится контекстом запроса.</PawnDiary.Settings.Adv.GroupHelp.CtxThreat>
   <PawnDiary.Settings.Adv.GroupHelp.PromptDefaults>Финальные инструкции пользователя и стиль по умолчанию. Общие системные инструкции — на странице «Общие и события».</PawnDiary.Settings.Adv.GroupHelp.PromptDefaults>
-  <PawnDiary.Settings.Adv.GroupHelp.TmplPairDefault>Шаблон обычного события с двумя поселенцами. Пустой текст наследует общие значения.</PawnDiary.Settings.Adv.GroupHelp.TmplPairDefault>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplPairDefault>Шаблон обычного события с двумя поселенцами. При пустом тексте используются общие значения.</PawnDiary.Settings.Adv.GroupHelp.TmplPairDefault>
   <PawnDiary.Settings.Adv.GroupHelp.TmplPairImportant>Шаблон важного момента с двумя поселенцами.</PawnDiary.Settings.Adv.GroupHelp.TmplPairImportant>
   <PawnDiary.Settings.Adv.GroupHelp.TmplPairCombat>Шаблон боя с двумя поселенцами.</PawnDiary.Settings.Adv.GroupHelp.TmplPairCombat>
   <PawnDiary.Settings.Adv.GroupHelp.TmplPairBatched>Шаблон нескольких моментов пары в одной записи.</PawnDiary.Settings.Adv.GroupHelp.TmplPairBatched>
@@ -618,29 +646,29 @@
   <PawnDiary.Settings.Adv.GroupHelp.TmplSoloBatched>Шаблон нескольких одиночных моментов в одной записи.</PawnDiary.Settings.Adv.GroupHelp.TmplSoloBatched>
   <PawnDiary.Settings.Adv.GroupHelp.TmplDayReflection>Шаблон вечернего итога дня.</PawnDiary.Settings.Adv.GroupHelp.TmplDayReflection>
   <PawnDiary.Settings.Adv.GroupHelp.TmplQuadrumReflection>Шаблон итога квадрума.</PawnDiary.Settings.Adv.GroupHelp.TmplQuadrumReflection>
-  <PawnDiary.Settings.Adv.GroupHelp.TmplArcReflection>Шаблон годовой арки.</PawnDiary.Settings.Adv.GroupHelp.TmplArcReflection>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplArcReflection>Шаблон годового размышления.</PawnDiary.Settings.Adv.GroupHelp.TmplArcReflection>
   <PawnDiary.Settings.Adv.GroupHelp.TmplDeath>Шаблон нейтрального описания смерти.</PawnDiary.Settings.Adv.GroupHelp.TmplDeath>
   <PawnDiary.Settings.Adv.GroupHelp.TmplArrival>Шаблон нейтрального описания прибытия.</PawnDiary.Settings.Adv.GroupHelp.TmplArrival>
   <PawnDiary.Settings.Adv.GroupHelp.TmplTitle>Шаблон короткого заголовка страницы.</PawnDiary.Settings.Adv.GroupHelp.TmplTitle>
   <PawnDiary.Dev.EventPanel.TriggerDefButtonTip>Левый клик — вызвать событие с текущим вариантом. Правый клик — выбрать другой вариант.</PawnDiary.Dev.EventPanel.TriggerDefButtonTip>
-  <PawnDiary.Settings.Adv.Help.socialFightDedupTicks>В этом окне зеркальная запись потасовки для второго участника схлопывается.</PawnDiary.Settings.Adv.Help.socialFightDedupTicks>
-  <PawnDiary.Settings.Adv.Help.mentalBreakDedupTicks>Тот же поселенец и тот же срыв записываются один раз за это окно.</PawnDiary.Settings.Adv.Help.mentalBreakDedupTicks>
-  <PawnDiary.Settings.Adv.Help.taleDedupTicks>То же событие истории и поселенец записываются один раз за это окно.</PawnDiary.Settings.Adv.Help.taleDedupTicks>
-  <PawnDiary.Settings.Adv.Help.moodEventDedupTicks>То же событие настроения записывается один раз на поселение за это окно.</PawnDiary.Settings.Adv.Help.moodEventDedupTicks>
-  <PawnDiary.Settings.Adv.Help.romanceDedupTicks>То же изменение отношений пары записывается один раз за это окно.</PawnDiary.Settings.Adv.Help.romanceDedupTicks>
-  <PawnDiary.Settings.Adv.Help.raidDedupTicks>Тот же ключ рейда записывается один раз за это окно.</PawnDiary.Settings.Adv.Help.raidDedupTicks>
-  <PawnDiary.Settings.Adv.Help.raidGenerationDelayTicks>Обычный рейд ждёт столько тиков перед запросом к модели, чтобы текст мог поймать приближение. Рейды из капсул и насекомые не ждут.</PawnDiary.Settings.Adv.Help.raidGenerationDelayTicks>
-  <PawnDiary.Settings.Adv.Help.questDedupTicks>Тот же сигнал задания записывается один раз за это окно.</PawnDiary.Settings.Adv.Help.questDedupTicks>
-  <PawnDiary.Settings.Adv.Help.ritualDedupTicks>Тот же итог ритуала записывается один раз за это окно.</PawnDiary.Settings.Adv.Help.ritualDedupTicks>
-  <PawnDiary.Settings.Adv.Help.abilityDedupTicks>То же применение способности записывается один раз за это окно.</PawnDiary.Settings.Adv.Help.abilityDedupTicks>
-  <PawnDiary.Settings.Adv.Help.genericEventTypeDedupTicks>Короткое защитное окно для источников без точного дедупа и для общих описаний смерти из разных источников.</PawnDiary.Settings.Adv.Help.genericEventTypeDedupTicks>
+  <PawnDiary.Settings.Adv.Help.socialFightDedupTicks>В течение этого интервала зеркальная запись потасовки для второго участника отбрасывается.</PawnDiary.Settings.Adv.Help.socialFightDedupTicks>
+  <PawnDiary.Settings.Adv.Help.mentalBreakDedupTicks>Тот же поселенец и тот же срыв записываются только один раз в течение этого интервала.</PawnDiary.Settings.Adv.Help.mentalBreakDedupTicks>
+  <PawnDiary.Settings.Adv.Help.taleDedupTicks>То же памятное событие для того же поселенца записывается только один раз в течение этого интервала.</PawnDiary.Settings.Adv.Help.taleDedupTicks>
+  <PawnDiary.Settings.Adv.Help.moodEventDedupTicks>То же событие настроения записывается для поселения только один раз в течение этого интервала.</PawnDiary.Settings.Adv.Help.moodEventDedupTicks>
+  <PawnDiary.Settings.Adv.Help.romanceDedupTicks>То же изменение отношений пары записывается только один раз в течение этого интервала.</PawnDiary.Settings.Adv.Help.romanceDedupTicks>
+  <PawnDiary.Settings.Adv.Help.raidDedupTicks>То же событие налёта записывается только один раз в течение этого интервала.</PawnDiary.Settings.Adv.Help.raidDedupTicks>
+  <PawnDiary.Settings.Adv.Help.raidGenerationDelayTicks>Перед запросом к модели обычный налёт ждёт столько тиков, чтобы запись могла передать приближение врага. Десант из капсул и нашествие насекомых не ждут.</PawnDiary.Settings.Adv.Help.raidGenerationDelayTicks>
+  <PawnDiary.Settings.Adv.Help.questDedupTicks>Тот же сигнал задания записывается только один раз в течение этого интервала.</PawnDiary.Settings.Adv.Help.questDedupTicks>
+  <PawnDiary.Settings.Adv.Help.ritualDedupTicks>Тот же итог ритуала записывается только один раз в течение этого интервала.</PawnDiary.Settings.Adv.Help.ritualDedupTicks>
+  <PawnDiary.Settings.Adv.Help.abilityDedupTicks>То же применение способности записывается только один раз в течение этого интервала.</PawnDiary.Settings.Adv.Help.abilityDedupTicks>
+  <PawnDiary.Settings.Adv.Help.genericEventTypeDedupTicks>Короткий период защиты от повторов для источников без собственного точного ключа и для общих описаний смерти из разных источников.</PawnDiary.Settings.Adv.Help.genericEventTypeDedupTicks>
   <PawnDiary.Settings.Adv.Help.abilityUseMinChance>Шанс записи способности без перезарядки или с короткой перезарядкой.</PawnDiary.Settings.Adv.Help.abilityUseMinChance>
   <PawnDiary.Settings.Adv.Help.abilityUseMaxChance>Шанс, к которому стремится способность с долгой перезарядкой.</PawnDiary.Settings.Adv.Help.abilityUseMaxChance>
   <PawnDiary.Settings.Adv.Help.abilityUseReferenceCooldownTicks>Перезарядка, где кривая шанса примерно посередине между минимумом и максимумом.</PawnDiary.Settings.Adv.Help.abilityUseReferenceCooldownTicks>
   <PawnDiary.Settings.Adv.Help.nearbyRadius>Клетки вокруг поселенца, где ищутся заметные вещи.</PawnDiary.Settings.Adv.Help.nearbyRadius>
   <PawnDiary.Settings.Adv.Help.maxNearbyThings>Сколько ближайших кандидатов учитывать перед взвешенным выбором.</PawnDiary.Settings.Adv.Help.maxNearbyThings>
-  <PawnDiary.Settings.Adv.Help.coldBelowC>При этой температуре или ниже писать «холодно» (C).</PawnDiary.Settings.Adv.Help.coldBelowC>
-  <PawnDiary.Settings.Adv.Help.hotAboveC>При этой температуре или выше писать «жарко» (C).</PawnDiary.Settings.Adv.Help.hotAboveC>
+  <PawnDiary.Settings.Adv.Help.coldBelowC>При этой температуре или ниже писать «холодно» (°C).</PawnDiary.Settings.Adv.Help.coldBelowC>
+  <PawnDiary.Settings.Adv.Help.hotAboveC>При этой температуре или выше писать «жарко» (°C).</PawnDiary.Settings.Adv.Help.hotAboveC>
   <PawnDiary.Settings.Adv.Help.weatherChanceVeryBad>Запасной шанс упоминания очень плохой погоды, если её нет в XML.</PawnDiary.Settings.Adv.Help.weatherChanceVeryBad>
   <PawnDiary.Settings.Adv.Help.weatherChanceBad>Запасной шанс упоминания плохой погоды.</PawnDiary.Settings.Adv.Help.weatherChanceBad>
   <PawnDiary.Settings.Adv.Help.weatherChanceNeutral>Запасной шанс упоминания нейтральной погоды.</PawnDiary.Settings.Adv.Help.weatherChanceNeutral>
@@ -677,7 +705,7 @@
   <PawnDiary.Settings.Adv.Help.opinionFriendly>Отношение от этого значения считается дружелюбным.</PawnDiary.Settings.Adv.Help.opinionFriendly>
   <PawnDiary.Settings.Adv.Help.opinionNeutralAbove>Отношение выше этого считается нейтральным; иначе хуже.</PawnDiary.Settings.Adv.Help.opinionNeutralAbove>
   <PawnDiary.Settings.Adv.Help.opinionStrainedAbove>Отношение выше этого считается натянутым; иначе враждебным.</PawnDiary.Settings.Adv.Help.opinionStrainedAbove>
-  <PawnDiary.Settings.Adv.Help.hediffProgressionScanIntervalTicks>Как часто сканируется переход состояния здоровья на новую ступень тяжести.</PawnDiary.Settings.Adv.Help.hediffProgressionScanIntervalTicks>
+  <PawnDiary.Settings.Adv.Help.hediffProgressionScanIntervalTicks>Как часто проверяется переход состояния здоровья на новую ступень тяжести.</PawnDiary.Settings.Adv.Help.hediffProgressionScanIntervalTicks>
   <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideAnomalous>HediffDef defName, которые всегда считаются аномальными частями; по одному на строку.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideAnomalous>
   <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideCrude>HediffDef defName, которые всегда считаются грубыми частями; по одному на строку.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideCrude>
   <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideProsthetic>HediffDef defName, которые всегда считаются протезами; по одному на строку.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideProsthetic>
@@ -690,7 +718,7 @@
   <PawnDiary.Settings.Adv.Help.bodyPartInhumanizedHediffDefNames>HediffDef defName состояний, при которых обычный телесный ужас становится отстранённым.</PawnDiary.Settings.Adv.Help.bodyPartInhumanizedHediffDefNames>
   <PawnDiary.Settings.Adv.Help.bodyPartCrudeEfficiencyBelow>Если нет более сильного сигнала, установленные части ниже этой эффективности считаются грубыми.</PawnDiary.Settings.Adv.Help.bodyPartCrudeEfficiencyBelow>
   <PawnDiary.Settings.Adv.Help.bodyPartProstheticEfficiencyMax>Если нет более сильного сигнала, установленные части до этой эффективности считаются протезами.</PawnDiary.Settings.Adv.Help.bodyPartProstheticEfficiencyMax>
-  <PawnDiary.Settings.Adv.Help.bodyPartBionicEfficiencyMax>Установленные части до этой эффективности считаются бионикой; выше - архотеком.</PawnDiary.Settings.Adv.Help.bodyPartBionicEfficiencyMax>
+  <PawnDiary.Settings.Adv.Help.bodyPartBionicEfficiencyMax>Установленные части до этой эффективности считаются бионикой, а выше — архотеком.</PawnDiary.Settings.Adv.Help.bodyPartBionicEfficiencyMax>
   <PawnDiary.Settings.Adv.Help.daySummaryEnabled>Главный переключатель вечерних итогов; выкл. = старые фоновые заметки по источникам.</PawnDiary.Settings.Adv.Help.daySummaryEnabled>
   <PawnDiary.Settings.Adv.Help.daySummaryMaxHighlights>Сколько моментов максимум вплести в один итог дня.</PawnDiary.Settings.Adv.Help.daySummaryMaxHighlights>
   <PawnDiary.Settings.Adv.Help.daySummaryOpinionDeltaThreshold>Сдвиг отношения с начала дня, который становится социальным сигналом.</PawnDiary.Settings.Adv.Help.daySummaryOpinionDeltaThreshold>
@@ -700,57 +728,57 @@
   <PawnDiary.Settings.Adv.Help.daySummaryWeightOpinionShift>Относительный вес сдвига отношений; масштабируется силой сдвига.</PawnDiary.Settings.Adv.Help.daySummaryWeightOpinionShift>
   <PawnDiary.Settings.Adv.Help.daySummaryWeightFiller>Относительный вес фоновой болтовни.</PawnDiary.Settings.Adv.Help.daySummaryWeightFiller>
   <PawnDiary.Settings.Adv.Help.quadrumReflectionEnabled>Главный переключатель редких итогов квадрума.</PawnDiary.Settings.Adv.Help.quadrumReflectionEnabled>
-  <PawnDiary.Settings.Adv.Help.quadrumReflectionTimingWindowDays>Последние дни квадрума, когда можно писать длинные итоги; поселенцы распределяются.</PawnDiary.Settings.Adv.Help.quadrumReflectionTimingWindowDays>
+  <PawnDiary.Settings.Adv.Help.quadrumReflectionTimingWindowDays>Последние дни квадрума, когда можно писать длинные итоги; даты распределяются между поселенцами.</PawnDiary.Settings.Adv.Help.quadrumReflectionTimingWindowDays>
   <PawnDiary.Settings.Adv.Help.quadrumReflectionMinImportantEntries>Минимум важных записей для итога квадрума.</PawnDiary.Settings.Adv.Help.quadrumReflectionMinImportantEntries>
-  <PawnDiary.Settings.Adv.Help.quadrumReflectionMaxPromptEvents>Лимит событий-доказательств в запросе итога квадрума.</PawnDiary.Settings.Adv.Help.quadrumReflectionMaxPromptEvents>
+  <PawnDiary.Settings.Adv.Help.quadrumReflectionMaxPromptEvents>Максимум событий, передаваемых в запрос итога квадрума.</PawnDiary.Settings.Adv.Help.quadrumReflectionMaxPromptEvents>
   <PawnDiary.Settings.Adv.Help.quadrumReflectionMaxTokens>Лимит ответа для запроса итога квадрума.</PawnDiary.Settings.Adv.Help.quadrumReflectionMaxTokens>
   <PawnDiary.Settings.Adv.Help.arcReflectionEnabled>Главный переключатель редких годовых арок.</PawnDiary.Settings.Adv.Help.arcReflectionEnabled>
-  <PawnDiary.Settings.Adv.Help.arcReflectionAllowSecondMajorEntry>Разрешить дополнительные арки после первой годовой арки, если был важный повод, выдержана пауза и не достигнут годовой предел.</PawnDiary.Settings.Adv.Help.arcReflectionAllowSecondMajorEntry>
-  <PawnDiary.Settings.Adv.Help.arcReflectionMaxEntriesPerYear>Верхний предел годовых арок на одного поселенца за год (1-10). Дополнительным аркам всё равно нужен важный повод.</PawnDiary.Settings.Adv.Help.arcReflectionMaxEntriesPerYear>
-  <PawnDiary.Settings.Adv.Help.arcReflectionSecondEntryMinGapDays>Минимальный разрыв в днях между двумя арками одного года.</PawnDiary.Settings.Adv.Help.arcReflectionSecondEntryMinGapDays>
-  <PawnDiary.Settings.Adv.Help.arcReflectionMajorSeverityThreshold>Тяжесть 0..100, с которой триггер развития считается важным.</PawnDiary.Settings.Adv.Help.arcReflectionMajorSeverityThreshold>
+  <PawnDiary.Settings.Adv.Help.arcReflectionAllowSecondMajorEntry>Разрешить дополнительные годовые размышления после первого, если был важный повод, выдержана пауза и не достигнут годовой предел.</PawnDiary.Settings.Adv.Help.arcReflectionAllowSecondMajorEntry>
+  <PawnDiary.Settings.Adv.Help.arcReflectionMaxEntriesPerYear>Верхний предел годовых размышлений на одного поселенца за год (1–10). Для дополнительной записи всё равно нужен важный повод.</PawnDiary.Settings.Adv.Help.arcReflectionMaxEntriesPerYear>
+  <PawnDiary.Settings.Adv.Help.arcReflectionSecondEntryMinGapDays>Минимальный интервал в днях между двумя размышлениями одного года.</PawnDiary.Settings.Adv.Help.arcReflectionSecondEntryMinGapDays>
+  <PawnDiary.Settings.Adv.Help.arcReflectionMajorSeverityThreshold>Минимальная значимость события развития (0–100), чтобы считать его важным.</PawnDiary.Settings.Adv.Help.arcReflectionMajorSeverityThreshold>
   <PawnDiary.Settings.Adv.Help.arcReflectionForceAfterYearDay>Писать обязательный годовой итог в этот день года или позже, если его ещё не было.</PawnDiary.Settings.Adv.Help.arcReflectionForceAfterYearDay>
   <PawnDiary.Settings.Adv.Help.arcReflectionMemoryShortfallRetryTicks>Пауза перед повторной попыткой, если для обязательного годового итога мало воспоминаний.</PawnDiary.Settings.Adv.Help.arcReflectionMemoryShortfallRetryTicks>
   <PawnDiary.Settings.Adv.Help.arcReflectionMinMemoriesPreferred>Желательный минимум воспоминаний перед записью; при нехватке мод ждёт.</PawnDiary.Settings.Adv.Help.arcReflectionMinMemoriesPreferred>
   <PawnDiary.Settings.Adv.Help.arcReflectionMinMemoriesForced>Жёсткий минимум воспоминаний для обязательного годового итога.</PawnDiary.Settings.Adv.Help.arcReflectionMinMemoriesForced>
-  <PawnDiary.Settings.Adv.Help.arcReflectionMaxMemories>Сколько воспоминаний максимум взять для одной арки.</PawnDiary.Settings.Adv.Help.arcReflectionMaxMemories>
-  <PawnDiary.Settings.Adv.Help.arcReflectionRecentlyUsedMemoryCap>Сколько недавно использованных воспоминаний помнить, чтобы не повторяться.</PawnDiary.Settings.Adv.Help.arcReflectionRecentlyUsedMemoryCap>
+  <PawnDiary.Settings.Adv.Help.arcReflectionMaxMemories>Сколько воспоминаний максимум взять для одного годового размышления.</PawnDiary.Settings.Adv.Help.arcReflectionMaxMemories>
+  <PawnDiary.Settings.Adv.Help.arcReflectionRecentlyUsedMemoryCap>Количество недавно использованных воспоминаний, исключаемых из повтора.</PawnDiary.Settings.Adv.Help.arcReflectionRecentlyUsedMemoryCap>
   <PawnDiary.Settings.Adv.Help.arcReflectionMemorySnippetMaxChars>Максимальная длина одного фрагмента воспоминания в запросе.</PawnDiary.Settings.Adv.Help.arcReflectionMemorySnippetMaxChars>
   <PawnDiary.Settings.Adv.Help.arcReflectionMaxTokens>Лимит ответа для годовых арок.</PawnDiary.Settings.Adv.Help.arcReflectionMaxTokens>
   <PawnDiary.Settings.Adv.Help.diaryLineMaxChars>Обрезать строку «последняя запись» до этого числа символов.</PawnDiary.Settings.Adv.Help.diaryLineMaxChars>
   <PawnDiary.Settings.Adv.Help.previousEntryEndingSentenceCount>Сколько последних предложений прошлой страницы отправлять в следующий запрос от первого лица.</PawnDiary.Settings.Adv.Help.previousEntryEndingSentenceCount>
   <PawnDiary.Settings.Adv.Help.previousEntryEndingMaxChars>Максимальная длина концовки прошлой страницы в следующем запросе.</PawnDiary.Settings.Adv.Help.previousEntryEndingMaxChars>
-  <PawnDiary.Settings.Adv.Help.activeScanEventWindow>Сколько новых событий поселения держать горячими для фоновых сканов и непрерывности запроса.</PawnDiary.Settings.Adv.Help.activeScanEventWindow>
+  <PawnDiary.Settings.Adv.Help.activeScanEventWindow>Сколько последних событий поселения учитывать в фоновых проверках и для связи с прошлыми записями.</PawnDiary.Settings.Adv.Help.activeScanEventWindow>
   <PawnDiary.Settings.Adv.Help.archivedFallbackTitleWords>Сколько слов в запасном заголовке-датировке для архивных записей без генерации.</PawnDiary.Settings.Adv.Help.archivedFallbackTitleWords>
   <PawnDiary.Settings.Adv.Help.archivedFallbackTextMaxChars>Максимальная длина запасного текста из фактов запроса для архивных записей.</PawnDiary.Settings.Adv.Help.archivedFallbackTextMaxChars>
-  <PawnDiary.Settings.Adv.Help.uiHistoryScanMaxEventsPerFrame>Сколько событий максимум индексировать в UI дневника за кадр.</PawnDiary.Settings.Adv.Help.uiHistoryScanMaxEventsPerFrame>
-  <PawnDiary.Settings.Adv.Help.uiHistoryScanFrameBudgetSeconds>Бюджет времени кадра для поэтапной индексации истории в UI дневника.</PawnDiary.Settings.Adv.Help.uiHistoryScanFrameBudgetSeconds>
+  <PawnDiary.Settings.Adv.Help.uiHistoryScanMaxEventsPerFrame>Сколько событий максимум индексировать в интерфейсе дневника за кадр.</PawnDiary.Settings.Adv.Help.uiHistoryScanMaxEventsPerFrame>
+  <PawnDiary.Settings.Adv.Help.uiHistoryScanFrameBudgetSeconds>Допустимое время кадра для поэтапной индексации истории в интерфейсе дневника.</PawnDiary.Settings.Adv.Help.uiHistoryScanFrameBudgetSeconds>
   <PawnDiary.Settings.Adv.Help.minimumFirstPersonAgeYears>Минимальный биологический возраст для личного дневника от первого лица.</PawnDiary.Settings.Adv.Help.minimumFirstPersonAgeYears>
   <PawnDiary.Settings.Adv.Help.humorChance>Базовая вероятность, что подходящая запись получит структурный юмористический намёк.</PawnDiary.Settings.Adv.Help.humorChance>
   <PawnDiary.Settings.Adv.Help.humorElevatedChanceMultiplier>Прямой множитель к humorChance для автора с позитивным нравом или страстью к социальному навыку. Не суммируется при совпадении нескольких условий.</PawnDiary.Settings.Adv.Help.humorElevatedChanceMultiplier>
   <PawnDiary.Settings.Adv.Help.humorReducedChanceMultiplier>Прямой множитель (меньше 1) к humorChance для автора с угрюмым, тревожным или бесчувственным нравом. Не суммируется при совпадении нескольких условий.</PawnDiary.Settings.Adv.Help.humorReducedChanceMultiplier>
   <PawnDiary.Settings.Adv.Help.enabled>Главный переключатель этого источника.</PawnDiary.Settings.Adv.Help.enabled>
-  <PawnDiary.Settings.Adv.Help.dedupTicks>Тот же сигнал этого источника записывается один раз за это окно. -1 — наследовать общие XML-настройки.</PawnDiary.Settings.Adv.Help.dedupTicks>
-  <PawnDiary.Settings.Adv.Help.minMoodOffset>Минимальный |эффект настроения| для обычной мысли. -1 — наследовать.</PawnDiary.Settings.Adv.Help.minMoodOffset>
-  <PawnDiary.Settings.Adv.Help.eatingMinMoodOffset>Минимальный |эффект настроения| для мысли о еде. -1 — наследовать.</PawnDiary.Settings.Adv.Help.eatingMinMoodOffset>
-  <PawnDiary.Settings.Adv.Help.ambientWindowTicks>Фоновые мысли собираются до конца этого тихого окна.</PawnDiary.Settings.Adv.Help.ambientWindowTicks>
+  <PawnDiary.Settings.Adv.Help.dedupTicks>Тот же сигнал этого источника записывается один раз в течение этого интервала. -1 — использовать общие настройки XML.</PawnDiary.Settings.Adv.Help.dedupTicks>
+  <PawnDiary.Settings.Adv.Help.minMoodOffset>Минимальное влияние на настроение по модулю для обычной мысли. -1 — использовать общее значение.</PawnDiary.Settings.Adv.Help.minMoodOffset>
+  <PawnDiary.Settings.Adv.Help.eatingMinMoodOffset>Минимальное влияние на настроение по модулю для мысли о еде. -1 — использовать общее значение.</PawnDiary.Settings.Adv.Help.eatingMinMoodOffset>
+  <PawnDiary.Settings.Adv.Help.ambientWindowTicks>Фоновые мысли собираются до конца этого периода затишья.</PawnDiary.Settings.Adv.Help.ambientWindowTicks>
   <PawnDiary.Settings.Adv.Help.ambientMinEventsToWrite>Не писать фоновую заметку, если накоплено меньше этого числа.</PawnDiary.Settings.Adv.Help.ambientMinEventsToWrite>
-  <PawnDiary.Settings.Adv.Help.ambientMaxSampleLines>Сколько строк фоновых доказательств максимум оставить.</PawnDiary.Settings.Adv.Help.ambientMaxSampleLines>
-  <PawnDiary.Settings.Adv.Help.scanIntervalTicks>Как часто запускается эта проверка. -1 — наследовать.</PawnDiary.Settings.Adv.Help.scanIntervalTicks>
-  <PawnDiary.Settings.Adv.Help.baseChance>Базовая вероятность за проверку, что поселенец на работе напишет запись. -1 — наследовать.</PawnDiary.Settings.Adv.Help.baseChance>
+  <PawnDiary.Settings.Adv.Help.ambientMaxSampleLines>Сколько примеров фоновых событий максимум оставить.</PawnDiary.Settings.Adv.Help.ambientMaxSampleLines>
+  <PawnDiary.Settings.Adv.Help.scanIntervalTicks>Как часто запускается эта проверка. -1 — использовать общее значение.</PawnDiary.Settings.Adv.Help.scanIntervalTicks>
+  <PawnDiary.Settings.Adv.Help.baseChance>Базовая вероятность за проверку, что поселенец на работе напишет запись. -1 — использовать общее значение.</PawnDiary.Settings.Adv.Help.baseChance>
   <PawnDiary.Settings.Adv.Help.sameTypeCooldownTicks>Подавлять тот же тип работы столько тиков после одной записи.</PawnDiary.Settings.Adv.Help.sameTypeCooldownTicks>
-  <PawnDiary.Settings.Adv.Help.recentDifferentTypeMultiplier>Множитель для другого типа работы внутри паузы.</PawnDiary.Settings.Adv.Help.recentDifferentTypeMultiplier>
+  <PawnDiary.Settings.Adv.Help.recentDifferentTypeMultiplier>Множитель для другого типа работы в течение периода ожидания.</PawnDiary.Settings.Adv.Help.recentDifferentTypeMultiplier>
   <PawnDiary.Settings.Adv.Help.passionChanceMultiplier>Множитель, если у поселенца есть страсть к работе.</PawnDiary.Settings.Adv.Help.passionChanceMultiplier>
   <PawnDiary.Settings.Adv.Help.negativeChanceMultiplier>Множитель для неприятной или раздражающей работы.</PawnDiary.Settings.Adv.Help.negativeChanceMultiplier>
   <PawnDiary.Settings.Adv.Help.darkStudyChanceMultiplier>Множитель для изучения тьмы.</PawnDiary.Settings.Adv.Help.darkStudyChanceMultiplier>
-  <PawnDiary.Settings.Adv.Help.lowSkillThreshold>Лучший подходящий навык ниже этого уровня звучит неуверенно.</PawnDiary.Settings.Adv.Help.lowSkillThreshold>
+  <PawnDiary.Settings.Adv.Help.lowSkillThreshold>При уровне лучшего подходящего навыка ниже этого порога тон записи становится неуверенным.</PawnDiary.Settings.Adv.Help.lowSkillThreshold>
   <PawnDiary.Settings.Adv.Help.maxItems>Сколько элементов этот контекст максимум добавляет в запрос.</PawnDiary.Settings.Adv.Help.maxItems>
-  <PawnDiary.Settings.Adv.Help.displayOnUiOnly>Показывать этот контекст только в UI дневника, не добавляя в запросы.</PawnDiary.Settings.Adv.Help.displayOnUiOnly>
-  <PawnDiary.Settings.Adv.Help.scanBack>Сколько недавних писем или записей просматривать назад.</PawnDiary.Settings.Adv.Help.scanBack>
+  <PawnDiary.Settings.Adv.Help.displayOnUiOnly>Показывать этот контекст только в интерфейсе дневника, не добавляя в запросы.</PawnDiary.Settings.Adv.Help.displayOnUiOnly>
+  <PawnDiary.Settings.Adv.Help.scanBack>Сколько последних писем или записей просматривать.</PawnDiary.Settings.Adv.Help.scanBack>
   <PawnDiary.Settings.Adv.Help.timeoutTicks>Через сколько тиков отслеживаемый сигнал считается устаревшим.</PawnDiary.Settings.Adv.Help.timeoutTicks>
   <PawnDiary.Settings.Adv.Help.requireHomeMap>Отслеживать этот сигнал только на домашней карте игрока.</PawnDiary.Settings.Adv.Help.requireHomeMap>
   <PawnDiary.Settings.Adv.Help.requireDanger>Отслеживать этот сигнал только при активной угрозе.</PawnDiary.Settings.Adv.Help.requireDanger>
-  <PawnDiary.Settings.Adv.Help.systemPrompt>Текст системной инструкции шаблона. Пусто — наследовать общую инструкцию со страницы «Общие и события».</PawnDiary.Settings.Adv.Help.systemPrompt>
+  <PawnDiary.Settings.Adv.Help.systemPrompt>Текст системной инструкции шаблона. При пустом поле используется общая инструкция со страницы «Общие и события».</PawnDiary.Settings.Adv.Help.systemPrompt>
   <PawnDiary.Settings.Adv.Help.finalInstruction>Текст финальной инструкции сообщения пользователя. Пусто — использовать общую инструкцию.</PawnDiary.Settings.Adv.Help.finalInstruction>
   <PawnDiary.Settings.Adv.Help.recipientFinalInstruction>Текст инструкции для ответа адресата в парных шаблонах. Пусто — использовать общую инструкцию адресата.</PawnDiary.Settings.Adv.Help.recipientFinalInstruction>
 
@@ -758,12 +786,12 @@
   <PawnDiary.Event.Interaction>{0}: {1} с {2}.</PawnDiary.Event.Interaction>
   <PawnDiary.Event.SocialFight>Потасовка между {0} и {1}.</PawnDiary.Event.SocialFight>
   <PawnDiary.Event.MentalBreak>Нервный срыв у {0}: {1}</PawnDiary.Event.MentalBreak>
-  <PawnDiary.Event.Inspiration>Вдохновение у {0}: {1}</PawnDiary.Event.Inspiration>
+  <PawnDiary.Event.Inspiration>Воодушевление у {0}: {1}</PawnDiary.Event.Inspiration>
   <PawnDiary.Event.Romance>{0} и {2} теперь {1}.</PawnDiary.Event.Romance>
   <PawnDiary.Event.External>С {0} что-то произошло: {1}.</PawnDiary.Event.External>
-  <!-- Одна строка на все инциденты Raid-домена (враждебный рейд, десант, нашествие, дружеский
-       отряд), поэтому она нейтральна к исходу и стороне: «рейд задел» звучал как уже пережитый
-       бой, а подсказка рейда просит предвкушение. Подробности несут инструкция группы и контекст. -->
+  <!-- Одна строка на все инциденты Raid-домена (враждебный налёт, десант, нашествие, дружеский
+       отряд), поэтому она нейтральна к исходу и стороне: «налёт задел» звучал как уже пережитый
+       бой, а подсказка налёта просит предвкушение. Подробности несут инструкция группы и контекст. -->
   <PawnDiary.Event.Raid>Тревога подняла на ноги всё поселение, и {0} вместе со всеми.</PawnDiary.Event.Raid>
   <PawnDiary.Event.QuestAccepted>Поселение приняло задание: {1}. {2}</PawnDiary.Event.QuestAccepted>
   <PawnDiary.Event.QuestCompleted>Поселение выполнило задание: {1}. {2}</PawnDiary.Event.QuestCompleted>
@@ -801,7 +829,7 @@
   <PawnDiary.Event.AmbientStrangeChatLabel>Тревожные разговоры</PawnDiary.Event.AmbientStrangeChatLabel>
   <PawnDiary.Event.AmbientStrangeChatHeader>Странные разговоры оставили тревогу:</PawnDiary.Event.AmbientStrangeChatHeader>
   <PawnDiary.Event.AmbientStrangeChatFallback>{0}: тревожный осадок странных разговоров на весь день.</PawnDiary.Event.AmbientStrangeChatFallback>
-  <PawnDiary.Event.AmbientStrangeChatInstruction>напиши один естественный абзац о тревоге после этих странных разговоров; беседы ниже считай фоном, не отдельными отчётами; неправильность не объясняй</PawnDiary.Event.AmbientStrangeChatInstruction>
+  <PawnDiary.Event.AmbientStrangeChatInstruction>напиши один естественный абзац о тревоге после этих странных разговоров; беседы ниже считай фоном, не отдельными отчётами; источник тревоги не объясняй</PawnDiary.Event.AmbientStrangeChatInstruction>
   <PawnDiary.Event.AmbientAnimalLabel>Уход за животными</PawnDiary.Event.AmbientAnimalLabel>
   <PawnDiary.Event.AmbientAnimalHeader>Моменты ухода за животными:</PawnDiary.Event.AmbientAnimalHeader>
   <PawnDiary.Event.AmbientAnimalFallback>{0}: часть дня среди животных поселения.</PawnDiary.Event.AmbientAnimalFallback>
@@ -821,7 +849,7 @@
   <PawnDiary.Event.DayReflectionLabel>Оглядываясь на день</PawnDiary.Event.DayReflectionLabel>
   <PawnDiary.Event.DayReflectionHeader>Вот что осталось у {0} от дня:</PawnDiary.Event.DayReflectionHeader>
   <PawnDiary.Event.DayReflectionFallback>День у {0} закончился тихо и без заметных событий.</PawnDiary.Event.DayReflectionFallback>
-  <PawnDiary.Event.DayReflectionInstruction>напиши один короткий вдумчивый абзац как вечернее размышление {0}; связывай только моменты ниже, которые всё ещё держались бы в голове, и пиши манерой этого поселенца; размышляй о том, как день ощущался, а не пересказывай каждое событие; без списка и чисел</PawnDiary.Event.DayReflectionInstruction>
+  <PawnDiary.Event.DayReflectionInstruction>напиши от лица {0} один короткий вдумчивый абзац об уходящем дне; свяжи только моменты ниже, которые всё ещё не выходили бы из головы, и сохрани манеру этого поселенца; передай общее ощущение от дня, а не пересказывай каждое событие; без списка и чисел</PawnDiary.Event.DayReflectionInstruction>
   <PawnDiary.Event.DayReflectionFillerLine>обычный фон разговоров и мимолётных настроений</PawnDiary.Event.DayReflectionFillerLine>
   <PawnDiary.Event.DayReflectionOpinionWarmed>отношение к {0} заметно потеплело</PawnDiary.Event.DayReflectionOpinionWarmed>
   <PawnDiary.Event.DayReflectionOpinionCooled>отношение к {0} заметно охладело</PawnDiary.Event.DayReflectionOpinionCooled>
@@ -832,25 +860,25 @@
   <PawnDiary.Event.AnomalyHediffAppeared>Аномальное состояние у {0}: {1}.</PawnDiary.Event.AnomalyHediffAppeared>
   <PawnDiary.Event.AnomalyHediffProgressed>У {0} усилилось аномальное состояние: {1}.</PawnDiary.Event.AnomalyHediffProgressed>
   <PawnDiary.Event.BodyPartGained>У {0} появилась новая часть тела: {1}.</PawnDiary.Event.BodyPartGained>
-  <PawnDiary.Event.BodyPartGainedAnomalous>У {0} тело приняло что-то неправильное: {1}.</PawnDiary.Event.BodyPartGainedAnomalous>
+  <PawnDiary.Event.BodyPartGainedAnomalous>У {0} тело приняло нечто неестественное: {1}.</PawnDiary.Event.BodyPartGainedAnomalous>
   <PawnDiary.Event.BodyPartLost>У {0} больше нет части тела: {1}.</PawnDiary.Event.BodyPartLost>
-  <PawnDiary.Prompt.BodyPart.Attitude.Craves>Считай это желанной переменой: аугментация ощущается как развитие, а не увечье; всё равно держи телесный вес новой части.</PawnDiary.Prompt.BodyPart.Attitude.Craves>
-  <PawnDiary.Prompt.BodyPart.Attitude.Approves>Считай перемену приемлемой или значимой для поселенца, но она всё равно ощущается весом, кожей и новым движением.</PawnDiary.Prompt.BodyPart.Attitude.Approves>
-  <PawnDiary.Prompt.BodyPart.Attitude.Uneasy>Считай это тревожным принятием: полезно, странно, заметно при каждой посадке, движении или боли.</PawnDiary.Prompt.BodyPart.Attitude.Uneasy>
+  <PawnDiary.Prompt.BodyPart.Attitude.Craves>Считай это желанной переменой: аугментация ощущается как развитие, а не увечье; всё равно не забывай о телесных ощущениях от новой части.</PawnDiary.Prompt.BodyPart.Attitude.Craves>
+  <PawnDiary.Prompt.BodyPart.Attitude.Approves>Считай перемену приемлемой или значимой для поселенца, но вес, прикосновение к коже и непривычное движение всё равно постоянно напоминают о ней.</PawnDiary.Prompt.BodyPart.Attitude.Approves>
+  <PawnDiary.Prompt.BodyPart.Attitude.Uneasy>Считай это тревожным принятием: полезно, странно и заметно по тому, как новая часть сидит, движется или болит.</PawnDiary.Prompt.BodyPart.Attitude.Uneasy>
   <PawnDiary.Prompt.BodyPart.Attitude.Despises>Считай перемену осквернением тела, а не улучшением.</PawnDiary.Prompt.BodyPart.Attitude.Despises>
   <PawnDiary.Prompt.BodyPart.Attitude.Detached>Пиши отстранённость от обычного телесного ужаса: перемена скорее учётный факт, чем рана, но телесная деталь всё ещё может быть странной.</PawnDiary.Prompt.BodyPart.Attitude.Detached>
   <PawnDiary.Prompt.BodyPart.Attitude.FascinatedUneasy>Живая перемена едва терпима: любопытство тянется к теплу и движению, тревога сильнее радости.</PawnDiary.Prompt.BodyPart.Attitude.FascinatedUneasy>
   <PawnDiary.Prompt.BodyPart.Attitude.Horrified>Живая перемена ужасает и слишком близка; тело кажется обитаемым или уже не вполне своим.</PawnDiary.Prompt.BodyPart.Attitude.Horrified>
-  <PawnDiary.Prompt.BodyPart.Attitude.Opportunity>В утрате смешаны горе и мысль, что теперь наконец возможна замена лучше плоти.</PawnDiary.Prompt.BodyPart.Attitude.Opportunity>
-  <PawnDiary.Prompt.BodyPart.Attitude.Grieving>Утрата - это настоящее горе, отсутствие, боль, фантомная привычка и ежедневное привыкание.</PawnDiary.Prompt.BodyPart.Attitude.Grieving>
-  <PawnDiary.Prompt.BodyPart.Attitude.Violated>Утрата разрушительна и угрожает ощущению цельности тела; отсутствующее место должно казаться открытым.</PawnDiary.Prompt.BodyPart.Attitude.Violated>
+  <PawnDiary.Prompt.BodyPart.Attitude.Opportunity>В утрате смешаны горе и мысль, что теперь наконец можно заменить утраченное чем-то лучше живой плоти.</PawnDiary.Prompt.BodyPart.Attitude.Opportunity>
+  <PawnDiary.Prompt.BodyPart.Attitude.Grieving>Утрата — это настоящее горе: отсутствие, боль, фантомная привычка и ежедневные усилия, чтобы приспособиться.</PawnDiary.Prompt.BodyPart.Attitude.Grieving>
+  <PawnDiary.Prompt.BodyPart.Attitude.Violated>Утрата разрушительна и угрожает ощущению цельности тела; передай оголённость места утраты.</PawnDiary.Prompt.BodyPart.Attitude.Violated>
   <PawnDiary.Prompt.BodyPart.Tier.Crude>Часть грубая: неуклюжая, тяжёлая, унизительная, но лучше пустоты.</PawnDiary.Prompt.BodyPart.Tier.Crude>
-  <PawnDiary.Prompt.BodyPart.Tier.Prosthetic>Это практический протез: ремни, гнездо, вес, функция и обычное пользование.</PawnDiary.Prompt.BodyPart.Tier.Prosthetic>
-  <PawnDiary.Prompt.BodyPart.Tier.Bionic>Это бионика: сильнее плоти, точная, слишком гладкая и чуть чужая внутри тела.</PawnDiary.Prompt.BodyPart.Tier.Bionic>
+  <PawnDiary.Prompt.BodyPart.Tier.Prosthetic>Это практический протез: ремни, крепление, вес, назначение и повседневное использование.</PawnDiary.Prompt.BodyPart.Tier.Prosthetic>
+  <PawnDiary.Prompt.BodyPart.Tier.Bionic>Это бионика: сильнее живой плоти, точная, слишком гладкая и всё ещё немного чужая для тела.</PawnDiary.Prompt.BodyPart.Tier.Bionic>
   <PawnDiary.Prompt.BodyPart.Tier.Archotech>Это архотек: чудесный, изящный, жутковатый и не до конца постижимый.</PawnDiary.Prompt.BodyPart.Tier.Archotech>
-  <PawnDiary.Prompt.BodyPart.Tier.Anomalous>Это аномальная плоть: тёплая, отзывчивая, неправильная, может пульсировать или двигаться как по собственной воле; не объясняй её.</PawnDiary.Prompt.BodyPart.Tier.Anomalous>
-  <PawnDiary.Prompt.BodyPart.Cause.Surgery>Утрата произошла через операцию; сохраняй ощущение контролируемого разреза, веса повязки или необходимости, если она подразумевается.</PawnDiary.Prompt.BodyPart.Cause.Surgery>
-  <PawnDiary.Prompt.BodyPart.Cause.Violence>Утрата произошла через насилие или несчастный случай; сохраняй внезапность, шок и первое телесное отсутствие.</PawnDiary.Prompt.BodyPart.Cause.Violence>
+  <PawnDiary.Prompt.BodyPart.Tier.Anomalous>Это аномальная плоть: тёплая, отзывчивая, неестественная, может пульсировать или двигаться как по собственной воле; не объясняй её.</PawnDiary.Prompt.BodyPart.Tier.Anomalous>
+  <PawnDiary.Prompt.BodyPart.Cause.Surgery>Часть тела была утрачена в ходе операции; сохраняй ощущение контролируемого разреза, веса повязки или необходимости, если она подразумевается.</PawnDiary.Prompt.BodyPart.Cause.Surgery>
+  <PawnDiary.Prompt.BodyPart.Cause.Violence>Часть тела была утрачена из-за ранения или несчастного случая; сохраняй внезапность, шок и первое ощущение отсутствия.</PawnDiary.Prompt.BodyPart.Cause.Violence>
   <PawnDiary.Event.PregnancyAppeared>Беременность у {0}.</PawnDiary.Event.PregnancyAppeared>
   <PawnDiary.Event.PregnancyProgressed>Беременность {0}: новый срок.</PawnDiary.Event.PregnancyProgressed>
   <PawnDiary.Event.LaborAppeared>У {0} начались роды: {1}.</PawnDiary.Event.LaborAppeared>
@@ -866,32 +894,32 @@
   <PawnDiary.Event.Arrival.Backstory.SkillBonuses>бонусы навыков</PawnDiary.Event.Arrival.Backstory.SkillBonuses>
   <PawnDiary.Event.Arrival.Backstory.DisabledWork>недоступные работы</PawnDiary.Event.Arrival.Backstory.DisabledWork>
   <PawnDiary.Event.Arrival.Backstory.DisabledTasks>недоступные задачи</PawnDiary.Event.Arrival.Backstory.DisabledTasks>
-  <PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>недоступные теги работы</PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>
-  <PawnDiary.Event.Arrival.Backstory.RequiredWorkTags>обязательные теги работы</PawnDiary.Event.Arrival.Backstory.RequiredWorkTags>
+  <PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>недоступные категории работ</PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>
+  <PawnDiary.Event.Arrival.Backstory.RequiredWorkTags>обязательные категории работ</PawnDiary.Event.Arrival.Backstory.RequiredWorkTags>
   <PawnDiary.Event.Arrival.Backstory.ForcedTraits>обязательные черты</PawnDiary.Event.Arrival.Backstory.ForcedTraits>
   <PawnDiary.Event.Arrival.Backstory.DisallowedTraits>запрещённые черты</PawnDiary.Event.Arrival.Backstory.DisallowedTraits>
-  <PawnDiary.Event.RitualFinished>Ритуал {1} завершён для {0} как {2}; роль в ритуале: {3}.</PawnDiary.Event.RitualFinished>
+  <PawnDiary.Event.RitualFinished>У {0}: ритуал «{1}» завершился с результатом «{2}»; роль: {3}.</PawnDiary.Event.RitualFinished>
   <PawnDiary.Ritual.Role.Author>устроитель</PawnDiary.Ritual.Role.Author>
   <PawnDiary.Ritual.Role.Target>цель</PawnDiary.Ritual.Role.Target>
   <PawnDiary.Ritual.Role.Participant>участник</PawnDiary.Ritual.Role.Participant>
   <PawnDiary.Ritual.Role.Spectator>зритель</PawnDiary.Ritual.Role.Spectator>
   <PawnDiary.PsychicRitual.Role.Invoker>заклинатель</PawnDiary.PsychicRitual.Role.Invoker>
   <PawnDiary.Event.RitualInstruction.Author>пиши с позиции устроителя ритуала после завершения; чувствуй ответственность, публичное давление и цену или доказательство этой церемонии</PawnDiary.Event.RitualInstruction.Author>
-  <PawnDiary.Event.RitualInstruction.Target>пиши с позиции цели ритуала после завершения; в центре то, каково быть выделенным, увиденным, изменённым, осуждённым, почтённым или использованным</PawnDiary.Event.RitualInstruction.Target>
-  <PawnDiary.Event.RitualInstruction.Participant>пиши с позиции участника ритуала после завершения; роль и название ритуала должны давить конкретно, а не быть украшением</PawnDiary.Event.RitualInstruction.Participant>
-  <PawnDiary.Event.RitualInstruction.Spectator>пиши с позиции зрителя завершённого ритуала; сосредоточься на наблюдении, осуждении, причастности, сомнении, трепете, неловкости или облегчении на краю церемонии</PawnDiary.Event.RitualInstruction.Spectator>
-  <PawnDiary.Event.PsychicRitualFinished>Псионический ритуал {1} завершён для {0} как {2}.</PawnDiary.Event.PsychicRitualFinished>
+  <PawnDiary.Event.RitualInstruction.Target>пиши с позиции цели ритуала после завершения; сосредоточься на том, каково быть выделенным, увиденным, изменённым, осуждённым, почтённым или использованным</PawnDiary.Event.RitualInstruction.Target>
+  <PawnDiary.Event.RitualInstruction.Participant>пиши с позиции участника после завершения ритуала; роль и название должны влиять на личное восприятие, а не служить украшением</PawnDiary.Event.RitualInstruction.Participant>
+  <PawnDiary.Event.RitualInstruction.Spectator>пиши с позиции стороннего наблюдателя завершённого ритуала; сосредоточься на осуждении, причастности, сомнении, трепете, неловкости или облегчении</PawnDiary.Event.RitualInstruction.Spectator>
+  <PawnDiary.Event.PsychicRitualFinished>У {0}: псионический ритуал «{1}» завершился с результатом «{2}».</PawnDiary.Event.PsychicRitualFinished>
   <PawnDiary.Event.AbilityUsed>Применение способности {1}: {0}.</PawnDiary.Event.AbilityUsed>
   <PawnDiary.Event.AbilityUsedOn>Применение способности {1}: {0}; цель: {2}.</PawnDiary.Event.AbilityUsedOn>
   <PawnDiary.Event.PsychicRitualInstruction.Invoker>пиши с позиции заклинателя после псионического ритуала; атмосфера тревожная, пугающая, тёмная или непостижимая; добавь ровно один короткий отдельный блок [[speech]]...[[/speech]] с выдуманными, ломаными или полупонятыми ритуальными словами заклинателя, без повествования внутри блока</PawnDiary.Event.PsychicRitualInstruction.Invoker>
   <PawnDiary.Event.PsychicRitualInstruction.Target>пиши с позиции цели псионического ритуала после завершения; событие пугает, оскверняет или мрачно цепенит, но оккультный механизм не объясняй</PawnDiary.Event.PsychicRitualInstruction.Target>
   <PawnDiary.Event.PsychicRitualInstruction.Participant>пиши с позиции причастного к псионическому ритуалу после завершения; атмосфера тревожная, пугающая и не до конца понятная</PawnDiary.Event.PsychicRitualInstruction.Participant>
-  <PawnDiary.Event.PsychicRitualInstruction.Spectator>пиши с позиции наблюдателя завершённого псионического ритуала; в центре ужас, неправильность, страх, тишина, странный звук или облегчение на краю события</PawnDiary.Event.PsychicRitualInstruction.Spectator>
+  <PawnDiary.Event.PsychicRitualInstruction.Spectator>пиши с позиции стороннего наблюдателя завершённого псионического ритуала; сосредоточься на ужасе, неестественности, страхе, тишине, странном звуке или облегчении</PawnDiary.Event.PsychicRitualInstruction.Spectator>
 
   <!-- Итоги дня, квадрума и редкие годовые размышления о пути поселенца -->
   <PawnDiary.Event.QuadrumReflectionLabel>Оглядываясь на квадрум</PawnDiary.Event.QuadrumReflectionLabel>
   <PawnDiary.Event.QuadrumReflectionHeader>За {1} эти моменты сильнее всего изменили {0}:</PawnDiary.Event.QuadrumReflectionHeader>
-  <PawnDiary.Event.QuadrumReflectionDateRange>{0} - {1}</PawnDiary.Event.QuadrumReflectionDateRange>
+  <PawnDiary.Event.QuadrumReflectionDateRange>{0}–{1}</PawnDiary.Event.QuadrumReflectionDateRange>
   <PawnDiary.Event.QuadrumReflectionEvidenceLine>{0}: {1}</PawnDiary.Event.QuadrumReflectionEvidenceLine>
   <PawnDiary.Event.QuadrumReflectionInstruction>напиши более длинную запись от лица {0} с оглядкой на {1}; даты вплетай естественно из переданных моментов; связывай события в смысл этого отрезка жизни, а не перечисляй их; используй только переданные факты и манеру письма поселенца</PawnDiary.Event.QuadrumReflectionInstruction>
   <PawnDiary.Event.ProgressionPassionMajor>главная страсть</PawnDiary.Event.ProgressionPassionMajor>
@@ -901,9 +929,9 @@
   <PawnDiary.Event.ProgressionPsylinkLabel>Пси-связь, уровень {0}</PawnDiary.Event.ProgressionPsylinkLabel>
   <PawnDiary.Event.ProgressionPsylinkText>Уровень пси-связи у {0}: {1}.</PawnDiary.Event.ProgressionPsylinkText>
   <PawnDiary.Event.ProgressionXenotypeLabel>Ксенотип: {0}</PawnDiary.Event.ProgressionXenotypeLabel>
-  <PawnDiary.Event.ProgressionXenotypeText>Ксенотип {0} изменился: {1} -> {2}.</PawnDiary.Event.ProgressionXenotypeText>
+  <PawnDiary.Event.ProgressionXenotypeText>Ксенотип {0} изменился: {1} → {2}.</PawnDiary.Event.ProgressionXenotypeText>
   <PawnDiary.Event.ProgressionRoyalTitleLabel>Королевский титул: {0}</PawnDiary.Event.ProgressionRoyalTitleLabel>
-  <PawnDiary.Event.ProgressionRoyalTitleText>Королевский титул {0} изменился: {1} -> {2}.</PawnDiary.Event.ProgressionRoyalTitleText>
+  <PawnDiary.Event.ProgressionRoyalTitleText>Королевский титул {0} изменился: {1} → {2}.</PawnDiary.Event.ProgressionRoyalTitleText>
   <PawnDiary.Event.ProgressionTraitLabel>Новая черта: {0}</PawnDiary.Event.ProgressionTraitLabel>
   <PawnDiary.Event.ProgressionTraitText>В характере {0} закрепилась новая черта: {1}.</PawnDiary.Event.ProgressionTraitText>
   <PawnDiary.Event.ArcReflectionLabel>Размышление о {0} годе</PawnDiary.Event.ArcReflectionLabel>
@@ -939,18 +967,18 @@
   <PawnDiary.Dev.PreviewTitleWriting>Пишется</PawnDiary.Dev.PreviewTitleWriting>
   <PawnDiary.Dev.PreviewTitlePending>Ожидание заголовка</PawnDiary.Dev.PreviewTitlePending>
   <PawnDiary.Dev.PreviewBodyPlain>Это смоделированная страница дневника для {0}. Она включает **жирную память**, *тревожный акцент* и «слова в кавычках» внутри обычной прозы.&#10;&#10;Второй абзац намеренно длиннее, чтобы можно было проверить перенос, отступы и низ страницы, не дожидаясь ответа модели.</PawnDiary.Dev.PreviewBodyPlain>
-  <PawnDiary.Dev.PreviewBodyMarkdown># Строка вроде заголовка&#10;- Маркер списка должен стать компактным буллетом.&#10;&gt; Маркер цитаты должен исчезнуть, а слова остаться.&#10;Эта строка проверяет **жирный**, *курсив* и «строчные сказанные слова» в обычном рендерере тела.</PawnDiary.Dev.PreviewBodyMarkdown>
+  <PawnDiary.Dev.PreviewBodyMarkdown># Строка вроде заголовка&#10;- Маркер списка должен стать компактной точкой.&#10;&gt; Маркер цитаты должен исчезнуть, а слова остаться.&#10;Эта строка проверяет **полужирный текст**, *курсив* и «слова в кавычках» в обычном отображении страницы.</PawnDiary.Dev.PreviewBodyMarkdown>
   <PawnDiary.Dev.PreviewBodySpeech>Короткая обычная строка от {0} перед словами вслух.&#10;[[speech]]Эта строка должна стать цветным блоком речи.[[/speech]]&#10;После речи обычное повествование должно вернуться к стилю тела дневника.</PawnDiary.Dev.PreviewBodySpeech>
   <PawnDiary.Dev.PreviewBodyStaggered>У {0} страница после лишней выпивки едва держится ровно.&#10;[[speech]]Я могу написать это ровно. Комната всё кренится, буквы всё соскальзывают, и мне кажется, что никто не заметит.[[/speech]]&#10;Только сказанный блок должен подхватить настроенное оформление со скачущим размером слов.</PawnDiary.Dev.PreviewBodyStaggered>
-  <PawnDiary.Dev.PreviewBodyCombat>Боевой предпросмотр для {0}: более длинная, жёсткая форма записи. Страница должна держать боевой акцент, а обычный текст — спокойно обходить сильные глаголы, рубленые фразы и **важные** детали урона.&#10;&#10;Второй боевой абзац проверяет нижний отступ после плотного рассказа о дыме, крови, приказах и больной тишине после боя.</PawnDiary.Dev.PreviewBodyCombat>
+  <PawnDiary.Dev.PreviewBodyCombat>Боевой предпросмотр для {0}: более длинная, жёсткая форма записи. Страница должна сохранять боевое оформление, а обычный текст — свободно переносить сильные глаголы, рубленые фразы и **важные** подробности урона.&#10;&#10;Второй боевой абзац проверяет нижний отступ после плотного рассказа о дыме, крови, приказах и тяжёлой тишине после боя.</PawnDiary.Dev.PreviewBodyCombat>
   <PawnDiary.Dev.PreviewBodySocialFight>Предпросмотр потасовки для {0}: страница должна быть злой, но без полного боевого цвета. Короткие строки остаются читаемыми, карточка даёт оранжевый сигнал конфликта и достаточно места после текста.</PawnDiary.Dev.PreviewBodySocialFight>
-  <PawnDiary.Dev.PreviewBodyMental>Предпросмотр нервного срыва для {0}: раздробленная раскладка. Одна мысль стоит неподвижно. Другая срывается вбок. Комната всё равно отвечает. Руки дрожат. Поле всё движется.&#10;&#10;Второй абзац проверяет, что раздробленные отступы всё ещё уважают разрывы пустых строк, пока короткие ломаные предложения рассыпаются по странице.</PawnDiary.Dev.PreviewBodyMental>
+  <PawnDiary.Dev.PreviewBodyMental>Предпросмотр нервного срыва для {0}: раздробленная раскладка. Одна мысль стоит неподвижно. Другая срывается вбок. Комната всё равно отвечает. Руки дрожат. Поле страницы всё время смещается.&#10;&#10;Второй абзац проверяет, что неровные отступы сохраняют пустые строки, пока короткие ломаные предложения рассыпаются по странице.</PawnDiary.Dev.PreviewBodyMental>
   <PawnDiary.Dev.PreviewBodyDark>Предпросмотр крайней тьмы для {0}: тревожная раскладка и тёмно-красный акцент, но текст остаётся читаемым.&#10;[[speech]]Что-то шевельнулось там, где не было света.[[/speech]]&#10;Сказанная строка должна приглушать отдельные слова, а не искажать глифы как странная речь.</PawnDiary.Dev.PreviewBodyDark>
   <PawnDiary.Dev.PreviewBodyStrange>Момент {0} записан так бережно, как только возможно, но строки не хотят держаться на месте.&#10;[[speech]]Стены ответили прежде, чем я заговорил.[[/speech]]&#10;Странный предпросмотр сохраняет тревожную раскладку и цветовой сигнал, который задаёт Zalgo-искажение прямой речи.</PawnDiary.Dev.PreviewBodyStrange>
-  <PawnDiary.Dev.PreviewBodyDeath>Страница предпросмотра смерти {0} должна осесть в центрированную мемориальную раскладку. Слова — не настоящий некролог; они здесь лишь чтобы проверить бледный акцент, отступы и тихие переносы строк.&#10;&#10;Остаётся отмеренная тишина, бережно удержанное имя и достаточно текста, чтобы доказать, что мемориальная карточка может дышать без обрезки.</PawnDiary.Dev.PreviewBodyDeath>
+  <PawnDiary.Dev.PreviewBodyDeath>Страница предпросмотра смерти {0} должна отображаться в центрированном памятном оформлении. Слова — не настоящий некролог; они нужны лишь для проверки бледного акцента, отступов и спокойных переносов строк.&#10;&#10;Здесь достаточно текста, чтобы проверить, что памятная карточка сохраняет свободное пространство и ничего не обрезает.</PawnDiary.Dev.PreviewBodyDeath>
   <PawnDiary.Dev.PreviewBodyLinked>Основная сторона парной карточки дневника для {0}. Связанный предпросмотр сверху или снизу должен верно резервировать высоту, оставаться внутри своей рамки и не давать основному тексту обрезаться.&#10;&#10;Эта страница также проверяет, что связанная карточка и текст тела используют разные цвета и отступы.</PawnDiary.Dev.PreviewBodyLinked>
-  <PawnDiary.Dev.PreviewBodyWriting>Заглушка письма в процессе для {0}. Этот текст хранится как исходный предпросмотр, но карточка должна показывать анимированные точки письма вместо готовой прозы, пока статус ожидается.</PawnDiary.Dev.PreviewBodyWriting>
-  <PawnDiary.Dev.PreviewBodyTitle>Ожидание заголовка для {0}. Тело готово, но заголовок должен сохранять дату видимой и анимировать маленькие точки там, где появится сгенерированный заголовок.</PawnDiary.Dev.PreviewBodyTitle>
+  <PawnDiary.Dev.PreviewBodyWriting>Заглушка создаваемой записи для {0}. Этот текст хранится как исходный предпросмотр, но карточка должна показывать анимированные точки вместо готовой прозы, пока запись имеет статус ожидания.</PawnDiary.Dev.PreviewBodyWriting>
+  <PawnDiary.Dev.PreviewBodyTitle>Ожидание заголовка для {0}. Текст страницы готов, но дата должна оставаться на экране, а на месте будущего заголовка — двигаться маленькие точки.</PawnDiary.Dev.PreviewBodyTitle>
 
   <!-- Текст события настроения (записи дневника из GameCondition) -->
   <PawnDiary.Event.MoodEvent>Событие у {0}: {1}.</PawnDiary.Event.MoodEvent>
@@ -974,7 +1002,7 @@
   <PawnDiary.Event.EventWindow.Generic.start>{0}: замечено {1}.</PawnDiary.Event.EventWindow.Generic.start>
   <PawnDiary.Event.EventWindow.Generic.end>{0}: завершение {1}.</PawnDiary.Event.EventWindow.Generic.end>
   <PawnDiary.Event.EventWindow.Generic.timeout>{0}: ожидание ответа о {1} так и осталось без ответа.</PawnDiary.Event.EventWindow.Generic.timeout>
-  <PawnDiary.Event.EventWindow.Generic.Instruction>напиши это как продолжающееся событие о {0}; используй только переданные факты и сохраняй неуверенность поселенца</PawnDiary.Event.EventWindow.Generic.Instruction>
+  <PawnDiary.Event.EventWindow.Generic.Instruction>напиши о продолжающемся событии «{0}»; используй только переданные факты и ясно передай неуверенность поселенца</PawnDiary.Event.EventWindow.Generic.Instruction>
   <PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>{0}: обнаружение монолита пустоты: {1}.</PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>
   <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0}: взаимодействие с монолитом пустоты завершено: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
   <PawnDiary.Event.EventWindow.Birthday.Start>{0}: биологический возраст {1}.</PawnDiary.Event.EventWindow.Birthday.Start>
@@ -985,8 +1013,8 @@
   <!-- Текст наблюдаемых условий (План 12: длящиеся состояния, считанные из живого состояния игры).
        {0} — поселенец, {1} — наблюдаемое условие/улика. Страницы пишутся только при включении в дефе. -->
   <PawnDiary.Event.ObservedCondition.Generic.start>{0}: замечено {1}.</PawnDiary.Event.ObservedCondition.Generic.start>
-  <PawnDiary.Event.ObservedCondition.Generic.end>{0} увидел, как {1} проходит.</PawnDiary.Event.ObservedCondition.Generic.end>
-  <PawnDiary.Event.ObservedCondition.Generic.Instruction>напиши это как продолжающееся наблюдаемое условие о {0}; используй только переданные наблюдаемые факты и сохраняй неуверенность поселенца</PawnDiary.Event.ObservedCondition.Generic.Instruction>
+  <PawnDiary.Event.ObservedCondition.Generic.end>{0}: состояние «{1}» закончилось.</PawnDiary.Event.ObservedCondition.Generic.end>
+  <PawnDiary.Event.ObservedCondition.Generic.Instruction>напиши о продолжающемся наблюдаемом состоянии «{0}»; используй только переданные наблюдаемые факты и ясно передай неуверенность поселенца</PawnDiary.Event.ObservedCondition.Generic.Instruction>
   <PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start>{0}: найдена улика, что в поселении нечто может заражать людей и подражать им.</PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start>
 
   <!-- Заметки об ошибках (записаны в основном потоке; показаны в отладочном блоке записи) -->
@@ -998,13 +1026,13 @@
   <!-- ===== Контекст запроса: описательные слова, что читает модель (КЛЮЧИ полей остаются английскими) ===== -->
   <!-- Блок манеры письма, добавляемый к системному запросу от первого лица при отправке. {0} —
        ярлык манеры плюс правило (например, «three-line-note: Этот поселенец склонен писать...»). -->
-  <PawnDiary.Prompt.PersonaVoice>Манера письма этого поселенца: {0} Сперва сохрани факты события, потом уже держи форму фраз, зачин, пунктуацию и отбор деталей из правила. Не разыгрывай персонажа, не вешай на поселенца словечек сверх правила и не выдумывай диалогов.</PawnDiary.Prompt.PersonaVoice>
+  <PawnDiary.Prompt.PersonaVoice>Манера письма этого поселенца: {0} Сперва сохрани факты события, а затем следуй правилу: используй указанное построение фраз, зачин, пунктуацию и отбор деталей. Не разыгрывай персонажа, не вешай на поселенца словечек сверх правила и не выдумывай диалогов.</PawnDiary.Prompt.PersonaVoice>
   <!-- Блок психотипа (взгляда), ставится ПЕРЕД блоком манеры письма. {0} — только правило психотипа
        (без ярлыка: взгляд никогда не называют). -->
   <PawnDiary.Prompt.PsychotypeLens>Как этот поселенец обычно смотрит на вещи: {0} Пусть это определяет, что он замечает, о чём тревожится и как судит, — но не то, что случилось. Опирайся только на переданные факты; характер поселенца не называй и не оценивай прямо — пусть он проступает сквозь саму запись.</PawnDiary.Prompt.PsychotypeLens>
   <!-- Подсказка юмора на запись (скрытая, всегда включённая). {0} — одна структурная вольность формы
-       предложения, выбранная по флёру ставок. Добавляется после блока манеры письма только для подходящих записей. -->
-  <PawnDiary.Prompt.HumorVoice>Для этой записи даётся необязательная поблажка: {0} Используй её, только если она ложится на переданные факты. Уложись в одно предложение и не ломай манеру выше. Не шути в лоб, не вставляй анекдот и комический диалог.</PawnDiary.Prompt.HumorVoice>
+       предложения, выбранная с учётом серьёзности события. Добавляется после блока манеры письма только для подходящих записей. -->
+  <PawnDiary.Prompt.HumorVoice>Для этой записи даётся необязательная поблажка: {0} Используй её, только если она сочетается с переданными фактами. Уложись в одно предложение и не ломай манеру выше. Не шути в лоб, не вставляй анекдот и комический диалог.</PawnDiary.Prompt.HumorVoice>
   <PawnDiary.Prompt.SocialEvent>социальное событие</PawnDiary.Prompt.SocialEvent>
   <PawnDiary.Prompt.Colony>поселение</PawnDiary.Prompt.Colony>
   <PawnDiary.Prompt.Health.HighPriority>высокий приоритет</PawnDiary.Prompt.Health.HighPriority>
@@ -1040,15 +1068,15 @@
   <PawnDiary.Prompt.Health.Condition.PsychiteTeaHigh>кайф от психинового чая</PawnDiary.Prompt.Health.Condition.PsychiteTeaHigh>
   <PawnDiary.Prompt.Health.Condition.YayoHigh>кайф от порошка психина</PawnDiary.Prompt.Health.Condition.YayoHigh>
   <PawnDiary.Prompt.Health.Condition.SmokeleafHigh>кайф от дымолиста</PawnDiary.Prompt.Health.Condition.SmokeleafHigh>
-  <PawnDiary.Prompt.Health.Description.AlcoholHigh>алкоголь поднимает настроение, но развязывает рассудок, замедляет тело и мутит восприятие</PawnDiary.Prompt.Health.Description.AlcoholHigh>
+  <PawnDiary.Prompt.Health.Description.AlcoholHigh>алкоголь поднимает настроение, но ослабляет самоконтроль, замедляет движения и мутит восприятие</PawnDiary.Prompt.Health.Description.AlcoholHigh>
   <PawnDiary.Prompt.Health.Description.Hangover>после алкоголя остаётся раскалывающаяся голова и тупое сознание</PawnDiary.Prompt.Health.Description.Hangover>
   <PawnDiary.Prompt.Health.Description.AmbrosiaHigh>амброзия даёт мягкое тепло, спокойное настроение и немного лёгкой энергии</PawnDiary.Prompt.Health.Description.AmbrosiaHigh>
-  <PawnDiary.Prompt.Health.Description.GoJuiceHigh>Go-сок несёт ровный боевой подъём, глушит боль и гонит тело быстрее</PawnDiary.Prompt.Health.Description.GoJuiceHigh>
-  <PawnDiary.Prompt.Health.Description.LuciferiumHigh>механиты люциферия обостряют тело и оставляют невысказанный долг до следующей дозы</PawnDiary.Prompt.Health.Description.LuciferiumHigh>
+  <PawnDiary.Prompt.Health.Description.GoJuiceHigh>Go-сок даёт мощный боевой подъём, глушит боль и ускоряет движения</PawnDiary.Prompt.Health.Description.GoJuiceHigh>
+  <PawnDiary.Prompt.Health.Description.LuciferiumHigh>механиты люциферия обостряют реакции всего тела и оставляют невысказанный долг до следующей дозы</PawnDiary.Prompt.Health.Description.LuciferiumHigh>
   <PawnDiary.Prompt.Health.Description.FlakeHigh>хлопья психина дают яркую, мощную эйфорию и физическое истощение</PawnDiary.Prompt.Health.Description.FlakeHigh>
   <PawnDiary.Prompt.Health.Description.PsychiteTeaHigh>психиновый чай мягче поднимает настроение, унимает боль и добавляет энергии</PawnDiary.Prompt.Health.Description.PsychiteTeaHigh>
-  <PawnDiary.Prompt.Health.Description.YayoHigh>порошок психина бьёт резкой эйфорией, беспокойной уверенностью и быстрым телом</PawnDiary.Prompt.Health.Description.YayoHigh>
-  <PawnDiary.Prompt.Health.Description.SmokeleafHigh>дымолист укутывает мысли ватным покоем и замедляет восприятие с телом</PawnDiary.Prompt.Health.Description.SmokeleafHigh>
+  <PawnDiary.Prompt.Health.Description.YayoHigh>порошок психина вызывает резкую эйфорию, беспокойную уверенность и ускоряет движения</PawnDiary.Prompt.Health.Description.YayoHigh>
+  <PawnDiary.Prompt.Health.Description.SmokeleafHigh>дымолист укутывает мысли ватным покоем и замедляет восприятие и движения</PawnDiary.Prompt.Health.Description.SmokeleafHigh>
   <PawnDiary.Prompt.Health.Cue.LoosenedJudgment>ослабленная рассудительность</PawnDiary.Prompt.Health.Cue.LoosenedJudgment>
   <PawnDiary.Prompt.Health.Cue.ReducedCapacities>снижены способности</PawnDiary.Prompt.Health.Cue.ReducedCapacities>
   <PawnDiary.Prompt.Health.Cue.PoundingAftereffects>раскалывающая отдача</PawnDiary.Prompt.Health.Cue.PoundingAftereffects>
@@ -1071,17 +1099,17 @@
   <PawnDiary.Prompt.Health.Condition.CubeRage>кубический гнев</PawnDiary.Prompt.Health.Condition.CubeRage>
   <PawnDiary.Prompt.Health.Condition.CorpseTorment>месть мертвеца</PawnDiary.Prompt.Health.Condition.CorpseTorment>
   <PawnDiary.Prompt.Health.Condition.Inhumanized>обесчеловечивание</PawnDiary.Prompt.Health.Condition.Inhumanized>
-  <PawnDiary.Prompt.Health.Description.RevenantHypnosis>психическая хватка ревенанта тянет внимание в транс и пустую покорность</PawnDiary.Prompt.Health.Description.RevenantHypnosis>
+  <PawnDiary.Prompt.Health.Description.RevenantHypnosis>психическая хватка ревенанта погружает сознание в транс и безвольную покорность</PawnDiary.Prompt.Health.Description.RevenantHypnosis>
   <PawnDiary.Prompt.Health.Description.CubeInterest>куб снова и снова возвращается в мысли, пока всё остальное кажется второстепенным</PawnDiary.Prompt.Health.Description.CubeInterest>
   <PawnDiary.Prompt.Health.Description.CubeWithdrawal>разлука с кубом становится ноющей нуждой и вытесняет остальное</PawnDiary.Prompt.Health.Description.CubeWithdrawal>
   <PawnDiary.Prompt.Health.Description.CubeRage>интерес к кубу перешёл в жестокий, узкий гнев</PawnDiary.Prompt.Health.Description.CubeRage>
-  <PawnDiary.Prompt.Health.Description.CorpseTorment>месть мертвеца держит пси-связь с мёртвым двойником и выбивает сознание</PawnDiary.Prompt.Health.Description.CorpseTorment>
+  <PawnDiary.Prompt.Health.Description.CorpseTorment>мучительные мысли о смерти давят на сознание и не утихают, как обычная скорбь</PawnDiary.Prompt.Health.Description.CorpseTorment>
   <PawnDiary.Prompt.Health.Description.Inhumanized>человеческое тепло и привязанность отдалились; мысли поселенца холодные, тронутые пустотой и отрешённые от людей, без новой выдуманной мифологии</PawnDiary.Prompt.Health.Description.Inhumanized>
   <PawnDiary.Prompt.Health.Cue.TrancePressure>давление транса</PawnDiary.Prompt.Health.Cue.TrancePressure>
   <PawnDiary.Prompt.Health.Cue.ThoughtsPulledAway>мысли утягивает прочь</PawnDiary.Prompt.Health.Cue.ThoughtsPulledAway>
   <PawnDiary.Prompt.Health.Cue.CompulsiveFocus>навязчивая сосредоточенность</PawnDiary.Prompt.Health.Cue.CompulsiveFocus>
   <PawnDiary.Prompt.Health.Cue.ObjectFixation>фиксация на предмете</PawnDiary.Prompt.Health.Cue.ObjectFixation>
-  <PawnDiary.Prompt.Health.Cue.CompulsiveAbsence>навязчивое отсутствие</PawnDiary.Prompt.Health.Cue.CompulsiveAbsence>
+  <PawnDiary.Prompt.Health.Cue.CompulsiveAbsence>навязчивое чувство нехватки</PawnDiary.Prompt.Health.Cue.CompulsiveAbsence>
   <PawnDiary.Prompt.Health.Cue.RestlessNeed>беспокойная нужда</PawnDiary.Prompt.Health.Cue.RestlessNeed>
   <PawnDiary.Prompt.Health.Cue.CompulsionTurnsViolent>одержимость срывается в насилие</PawnDiary.Prompt.Health.Cue.CompulsionTurnsViolent>
   <PawnDiary.Prompt.Health.Cue.ThoughtsNarrowToAnger>мысли сужаются до злости</PawnDiary.Prompt.Health.Cue.ThoughtsNarrowToAnger>
@@ -1098,7 +1126,7 @@
   <PawnDiary.Prompt.EventWindow.Priority>активный контекст события</PawnDiary.Prompt.EventWindow.Priority>
   <PawnDiary.Prompt.EventWindow.ConditionFallback>активное событие: {0}</PawnDiary.Prompt.EventWindow.ConditionFallback>
   <PawnDiary.Prompt.EventWindow.Detail>деталь события: {0}</PawnDiary.Prompt.EventWindow.Detail>
-  <PawnDiary.Event.EventWindow.AncientDanger.Start>У древней стены внезапное предчувствие у {0}: {1}.</PawnDiary.Event.EventWindow.AncientDanger.Start>
+  <PawnDiary.Event.EventWindow.AncientDanger.Start>У {0}: внезапное дурное предчувствие возле древней стены — {1}.</PawnDiary.Event.EventWindow.AncientDanger.Start>
 
   <!-- Смещение промпта наблюдаемыми условиями (План 12). Общие запасные ключи повторяют ключи окон
        событий; ключи на деф дают каждому длящемуся состоянию свой приоритет/условие/описание/подсказки. -->
@@ -1119,16 +1147,16 @@
   <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Condition>солнечная вспышка вырубила энергию</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Description>солнечная вспышка отключила электричество; всё электронное мертво, пока она не пройдёт, и поселение откатывается к самому простому</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Description>
   <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Cue.NoPower>нет энергии</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Cue.NoPower>
-  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>перекрой обычный контекст паранойей из-за неизвестной твари-подражателя</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>пусть даже в обычных событиях чувствуется паранойя из-за неизвестной твари-подражателя</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>
   <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition>нечто может заражать людей и выдавать себя за них</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition>
-  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>поселенец боится, что неизвестная тварь может скрываться внутри кого-то, копируя знакомые лица и голоса; обычные моменты должны ощущаться напряжённо, подозрительно и небезопасно, без названий скрытых механик и без раскрытия заражённого</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>поселенец боится, что неизвестная тварь может скрываться внутри кого-то, копируя знакомые лица и голоса; показывай обычные моменты напряжёнными, подозрительными и небезопасными, не называя скрытых механизмов и не раскрывая заражённого</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>
   <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh>знакомые лица вызывают подозрение</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh>
   <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease>паранойя и страх</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease>
-  <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Priority>перекрой обычный контекст раскрытой угрозой металлоужаса</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Priority>пусть раскрытая угроза металлоужаса затмит обычные события</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Priority>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>металлоужас раскрылся</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>скрытая тварь наконец показала себя, и опасность теперь открыта и непосредственна; пиши только то, что поселенец видит у раскрытой угрозы</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Cue.Threat>открытая угроза</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Cue.Threat>
-  <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Priority>окрась обычный контекст тихим предчувствием, что колонии ещё не безопасно</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Priority>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Priority>пусть даже в обычных событиях чувствуется тихое предчувствие, что в поселении всё ещё небезопасно</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Priority>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Condition>ощущение, что угроза, возможно, ещё не закончилась</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Condition>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Description>видимая угроза исчезла, но что-то всё ещё кажется незавершённым; пиши обычную жизнь с тихой фоновой тревогой и недоверием, не называя скрытую механику, кого именно это может касаться, или диагноз</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Description>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Dread>тихая тревога</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Dread>
@@ -1145,51 +1173,51 @@
   <PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Description>на край навалился изнуряющий зной; охладители не справляются, работа вязнет, люди срываются по мелочам, а тень стала тем, за что борются</PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Description>
   <PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Cue.Heat>давящий зной</PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Cue.Heat>
   <PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Cue.Tempers>терпение на исходе</PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Cue.Tempers>
-  <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Priority>держи потускневшее небо тихим фоновым грузом</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Priority>пусть потускневшее небо остаётся тяжёлым фоном дня</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Priority>
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Condition>пепел застит солнце</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Description>пепел высоко в небе надолго притушил солнце; дни стоят серые и холодные, всё растёт медленно, и сам свет будто выдают по норме</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Description>
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Cue.DimSky>серый свет по норме</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Cue.DimSky>
-  <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Priority>перекрой обычный контекст неправильностью кровавого дождя</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Priority>пусть даже обычные события кажутся зловещими из-за кровавого дождя</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Priority>
   <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Condition>красный дождь, которого не должно быть</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Condition>
-  <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Description>идёт красный дождь, и он меняет тех, кого промочил: злость поднимается слишком легко и в людях, и в зверях; пиши неправильность самой погоды и страх перед тем, что она делает с характерами, не объясняя её</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Description>идёт красный дождь, и он меняет тех, кого промочил: злость поднимается слишком легко и в людях, и в зверях; пиши о неестественности самой погоды и страхе перед тем, что она делает с характерами, ничего не объясняя</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Description>
   <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Cue.RedRain>дождь не того цвета</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Cue.RedRain>
   <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Cue.Fury>злость под самой кожей</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Cue.Fury>
-  <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Priority>перекрой обычный контекст пеленой, поднимающей мёртвых</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Priority>пусть даже обычные события омрачает пелена, поднимающая мёртвых</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Priority>
   <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Condition>серая пелена, под которой мёртвые не лежат</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Description>над поселением висит серая мгла, и непогребённые под ней встают; пиши настороженность возле могил и тел и страх увидеть знакомого мертвеца на ногах, не объясняя, как это устроено</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Description>
   <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Cue.Dead>мёртвые не лежат</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Cue.Dead>
   <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Cue.Graves>взгляд то и дело на могилы</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Cue.Graves>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Priority>перекрой обычный контекст тьмой, которая не ночь</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Priority>пусть даже обычные события проходят во тьме, не похожей на ночь</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Priority>
   <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Condition>тьма, которую не пробивает день</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Description>неестественная тьма проглотила небо, и что-то в ней ненавидит тех, кто без света; пиши жизнь, сжавшуюся до кругов лампового света, страх шагнуть за их край и чувство, что из черноты смотрят</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Description>
   <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Cue.Light>держаться за свет</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Cue.Light>
   <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Cue.Outside>тьма не пуста</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Cue.Outside>
-  <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Priority>перекрой обычный контекст разверзшейся ямой</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Priority>пусть даже в обычных событиях ощущается близость разверзшегося провала</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Priority>
   <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Condition>провал, открывшийся в земле</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Condition>
   <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Description>в земле разорвалась дыра, и она уходит глубже, чем должна; из неё выбираются твари, и все живут, держа одно ухо в сторону ямы; никогда не объясняй, что там на дне</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Description>
   <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Cue.Below>что-то внизу</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Cue.Below>
   <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Cue.Watch>одно ухо всегда к яме</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Cue.Watch>
-  <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Priority>перекрой обычный контекст растущей плотью</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Priority>пусть растущая плоть вторгается даже в обычные события</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Priority>
   <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Condition>сердце живой плоти ползёт к поселению</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Condition>
   <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Description>по карте расползается живая плоть, и где-то внутри неё бьётся сердце; пиши звук, запах, отнятую землю и знание, что её надо резать, пока она не дошла до стен</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Description>
   <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Cue.Growth>земля, которую съедают</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Cue.Growth>
   <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Cue.Sound>чужое сердцебиение</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Cue.Sound>
-  <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Priority>держи молчаливый обелиск на краю мыслей</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Priority>пусть молчаливый обелиск не выходит из мыслей</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Priority>
   <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Condition>безмолвный обелиск на карте</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Condition>
   <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Description>там стоит монолит и ничего не делает — и от этого только хуже; пиши, как взгляд сам возвращается к нему и мысли гнутся вокруг него, не объясняя, чего он хочет</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Description>
   <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Cue.Stillness>слишком неподвижный, слишком терпеливый</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Cue.Stillness>
   <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Cue.Pull>мысли тянутся к нему</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Cue.Pull>
-  <PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Priority>пусть деревья, кормящиеся плотью, добавляют тихую неправильность</PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Priority>пусть деревья, кормящиеся плотью, вызывают глухую тревогу</PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Priority>
   <PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Condition>деревья, что кормятся мёртвым</PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Condition>
-  <PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Description>рядом укоренились корявые деревья с плотью под корой, и они съедают всё, что оставят поблизости; тихая, терпеливая неправильность на краю обычных дней</PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Description>рядом укоренились корявые деревья с плотью под корой, и они съедают всё, что оставят поблизости; их тихое, терпеливое присутствие тревожит даже в обычные дни</PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Description>
   <PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Cue.Fed>деревья накормлены</PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Cue.Fed>
-  <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Priority>перекрой обычный контекст сдержанной угрозой сферы</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Priority>
-  <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>парящая сфера сдержанной боли</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Priority>пусть даже обычные события проходят под затаённой угрозой сферы</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>парящая сфера, таящая в себе боль</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>
   <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Description>тёмная гранёная сфера висит над картой, как задержанный вдох; все понимают, что тихой она не останется; пиши ожидание и то, как её обходят стороной, не объясняя, что это</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Description>
   <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Cue.Ticking>задержанный вдох, отсчёт</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Cue.Ticking>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>пусть обычный контекст будет заражён присутствием тела с лицом этого поселенца</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>пусть даже обычные события отравляет присутствие трупа с лицом этого поселенца</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>
   <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>труп с лицом этого поселенца</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>рядом мёртвая вещь с лицом этого поселенца: те же черты без правильной жизни внутри; она не остаётся безопасно трупом и словно знает лишнее; пиши близкий ужас, тошноту, отрицание и страх быть скопированным или заменённым, ничего не объясняя</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>рядом лежит нечто мёртвое с лицом этого поселенца: те же черты, но без настоящей жизни внутри; оно не желает оставаться обычным трупом и словно знает лишнее; пиши близкий ужас, тошноту, отрицание и страх быть скопированным или заменённым, ничего не объясняя</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>
   <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>труп оказался ближе, чем допускает память</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>
   <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>собственное мёртвое лицо будто узнало поселенца</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>
   <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Priority>пусть прошедший трумбо добавит дню немного благоговения</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Priority>
@@ -1198,26 +1226,26 @@
   <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Cue.Awe>легенда у самого забора</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Cue.Awe>
   <PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Priority>пусть пожиратели деревьев добавят нелепую, но настоящую тревогу</PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Priority>
   <PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Condition>альфабобры объедают лес</PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Condition>
-  <PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Description>стая альфабобров прогрызает лес; выглядит смешно, а стоит настоящей древесины; лёгкий юмор уместен, пока тревога за лес остаётся правдой</PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Description>стая альфабобров прогрызает лес; выглядит смешно, но ущерб лесу вполне настоящий; лёгкий юмор уместен, пока тревога за лес остаётся правдой</PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Description>
   <PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Cue.Trees>лес редеет на глазах</PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Cue.Trees>
-  <PawnDiary.Prompt.ObservedCondition.CropBlightActive.Priority>пусть гниль держит мысль о зиме на заднем плане</PawnDiary.Prompt.ObservedCondition.CropBlightActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.CropBlightActive.Priority>пусть гниль не даёт забыть о зиме</PawnDiary.Prompt.ObservedCondition.CropBlightActive.Priority>
   <PawnDiary.Prompt.ObservedCondition.CropBlightActive.Condition>гниль ползёт по полям</PawnDiary.Prompt.ObservedCondition.CropBlightActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.CropBlightActive.Description>по посевам идёт гниль, и каждое погибшее растение — это обед, которого у поселения не будет; тихий страх за еду и зиму и мрачная арифметика: что вырезать, чтобы спасти остальное</PawnDiary.Prompt.ObservedCondition.CropBlightActive.Description>
   <PawnDiary.Prompt.ObservedCondition.CropBlightActive.Cue.Winter>считать обеды до зимы</PawnDiary.Prompt.ObservedCondition.CropBlightActive.Cue.Winter>
   <PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Priority>пусть роща амброзии искушает с краю дня</PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Priority>
   <PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Condition>дикая амброзия растёт неподалёку</PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Condition>
-  <PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Description>рядом взошла роща амброзии: сладкие, приятные, слегка затягивающие плоды, о которых все старательно не думают; маленькое искушение с усмешкой, а не беда</PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Description>
+  <PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Description>рядом взошла роща амброзии: сладкие, приятные плоды, к которым легко пристраститься и о которых все старательно не думают; маленькое искушение с усмешкой, а не беда</PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Description>
   <PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Cue.Temptation>старательно не думать о плодах</PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Cue.Temptation>
 
   <!-- Расширение охвата событий: окна событий — тоновые подсказки и стартовые записи -->
   <PawnDiary.Event.ObservedCondition.PitGatePresence.Start>{0}: в земле поселения разверзся провал.</PawnDiary.Event.ObservedCondition.PitGatePresence.Start>
   <PawnDiary.Event.ObservedCondition.FleshmassHeartPresence.Start>{0}: сердце плоти прорвалось из-под земли и начало расползаться.</PawnDiary.Event.ObservedCondition.FleshmassHeartPresence.Start>
   <PawnDiary.Event.EventWindow.MechClusterLanded.Start>{0}: на горизонте собрались спящие боевые машины: {1}.</PawnDiary.Event.EventWindow.MechClusterLanded.Start>
-  <PawnDiary.Prompt.EventWindow.MechClusterLanded.Priority>держи спящий механоидный кластер холодной фоновой угрозой</PawnDiary.Prompt.EventWindow.MechClusterLanded.Priority>
+  <PawnDiary.Prompt.EventWindow.MechClusterLanded.Priority>пусть спящий кластер механоидов остаётся холодной угрозой на заднем плане</PawnDiary.Prompt.EventWindow.MechClusterLanded.Priority>
   <PawnDiary.Prompt.EventWindow.MechClusterLanded.Condition>спящий кластер механоидов на горизонте</PawnDiary.Prompt.EventWindow.MechClusterLanded.Condition>
-  <PawnDiary.Prompt.EventWindow.MechClusterLanded.Description>в пределах видимости стоят собранные боевые машины — терпеливые и неподвижные; теперь каждый план гнётся вокруг того, когда и как они проснутся; пиши ожидание, а не выдуманный бой</PawnDiary.Prompt.EventWindow.MechClusterLanded.Description>
+  <PawnDiary.Prompt.EventWindow.MechClusterLanded.Description>в пределах видимости стоят собранные боевые машины — терпеливые и неподвижные; теперь все планы зависят от того, когда и как они проснутся; пиши ожидание, а не выдуманный бой</PawnDiary.Prompt.EventWindow.MechClusterLanded.Description>
   <PawnDiary.Prompt.EventWindow.MechClusterLanded.Cue.Dormant>машины ждут пробуждения</PawnDiary.Prompt.EventWindow.MechClusterLanded.Cue.Dormant>
-  <PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Priority>пусть утреннее замыкание оставит на дне запах горелой проводки</PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Priority>
+  <PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Priority>пусть утреннее замыкание оставит после себя запах горелой проводки</PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Priority>
   <PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Condition>замыкание сегодня утром</PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Condition>
   <PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Description>где-то в базе проводка сегодня рванула с грохотом; запах горелого, потерянный заряд и новое маленькое недоверие к кабелям</PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Description>
   <PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Cue.Burnt>запах горелой проводки</PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Cue.Burnt>
@@ -1321,15 +1349,15 @@
   <PawnDiary.Psychotype.EffectiveRule>Итоговый взгляд</PawnDiary.Psychotype.EffectiveRule>
   <PawnDiary.Psychotype.LoadBaseRule>Вставить базовый</PawnDiary.Psychotype.LoadBaseRule>
   <PawnDiary.Psychotype.PickerHeader>Психотип</PawnDiary.Psychotype.PickerHeader>
-  <PawnDiary.Psychotype.Reroll>Перебросить</PawnDiary.Psychotype.Reroll>
-  <PawnDiary.Psychotype.RerollTip>Разыграть поселенцу новый психотип по его увлечениям в навыках. Результат закрепляется, и игра больше не меняет его сама.</PawnDiary.Psychotype.RerollTip>
+  <PawnDiary.Psychotype.Reroll>Выбрать заново</PawnDiary.Psychotype.Reroll>
+  <PawnDiary.Psychotype.RerollTip>Случайно выбрать поселенцу новый психотип с учётом увлечений в навыках. Результат закрепляется, и игра больше не меняет его сама.</PawnDiary.Psychotype.RerollTip>
   <PawnDiary.Psychotype.RegenerateExternal>Сгенерировать заново</PawnDiary.Psychotype.RegenerateExternal>
-  <PawnDiary.Psychotype.RegenerateExternalTip>Попросить внешнее дополнение (например, мост характеров) заново собрать взгляд этого поселенца на мир. Когда оно закончит, правило ниже обновится.</PawnDiary.Psychotype.RegenerateExternalTip>
+  <PawnDiary.Psychotype.RegenerateExternalTip>Попросить внешнее дополнение (например, мост характеров) заново составить взгляд этого поселенца на мир. После завершения правило ниже обновится.</PawnDiary.Psychotype.RegenerateExternalTip>
   <PawnDiary.Psychotype.RegeneratingExternal>Генерация…</PawnDiary.Psychotype.RegeneratingExternal>
   <PawnDiary.Psychotype.Pinned>Закреплён</PawnDiary.Psychotype.Pinned>
   <PawnDiary.Psychotype.PinnedTip>Этот психотип выбран вручную, поэтому игра не станет менять его сама (например, когда поселенец повзрослеет).</PawnDiary.Psychotype.PinnedTip>
   <PawnDiary.Psychotype.Unpin>Открепить</PawnDiary.Psychotype.Unpin>
-  <PawnDiary.Psychotype.UnpinTip>Снова разрешить игре перебросить психотип при следующем взрослении.</PawnDiary.Psychotype.UnpinTip>
+  <PawnDiary.Psychotype.UnpinTip>Снова разрешить игре выбрать психотип при следующем взрослении.</PawnDiary.Psychotype.UnpinTip>
   <PawnDiary.Psychotype.OverrideExternal>Психотип временно задаёт интеграция ({0}).</PawnDiary.Psychotype.OverrideExternal>
   <PawnDiary.Psychotype.CustomInactiveDueToOverride>Свой психотип сохранён, но не действует, пока активно переопределение.</PawnDiary.Psychotype.CustomInactiveDueToOverride>
   <PawnDiary.Psychotype.CustomActive>Свой взгляд</PawnDiary.Psychotype.CustomActive>
