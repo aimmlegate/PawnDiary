@@ -423,7 +423,21 @@ namespace PawnDiary
         /// sentences instead of a 32-token connection ping. Runs on a background thread; throws on
         /// transport/permanent errors so the caller can wrap and report them.
         /// </summary>
-        public static async Task<string> SendSingleCompletion(ApiEndpointConfig endpoint, string systemPrompt, string userText, int maxTokens, int timeoutSeconds, float temperature)
+        public static Task<string> SendSingleCompletion(ApiEndpointConfig endpoint, string systemPrompt,
+            string userText, int maxTokens, int timeoutSeconds, float temperature)
+        {
+            return SendSingleCompletion(endpoint, systemPrompt, userText, maxTokens, timeoutSeconds,
+                temperature, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Runs one adapter completion with a caller-owned cancellation token in addition to the normal
+        /// game-session and timeout cancellation. This lets an adapter abandon obsolete work without
+        /// leaving an HTTP request or a completion-table slot alive until timeout.
+        /// </summary>
+        public static async Task<string> SendSingleCompletion(ApiEndpointConfig endpoint, string systemPrompt,
+            string userText, int maxTokens, int timeoutSeconds, float temperature,
+            CancellationToken callerCancellation)
         {
             if (endpoint == null)
             {
@@ -470,7 +484,8 @@ namespace PawnDiary
             // configured a single-request local model.
             SemaphoreSlim gate = GetOrCreateGate(request);
             CancellationToken sessionToken = sessionCancellation.Token;
-            using (CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(sessionToken))
+            using (CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                sessionToken, callerCancellation))
             {
                 cancellation.CancelAfter(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds)));
                 await gate.WaitAsync(cancellation.Token);

@@ -11,6 +11,18 @@
   <PawnDiaryRimpsyche.Settings.Category>Pawn Diary: Rimpsyche</PawnDiaryRimpsyche.Settings.Category>
   <PawnDiaryRimpsyche.Settings.Missing>Rimpsyche нет в списке активных модов, поэтому мост бездействует. Включите Rimpsyche - Personality Core, чтобы им пользоваться.</PawnDiaryRimpsyche.Settings.Missing>
   <PawnDiaryRimpsyche.Settings.Section>Связь с Rimpsyche</PawnDiaryRimpsyche.Settings.Section>
+  <PawnDiaryRimpsyche.Settings.Mode.Off>Выкл.</PawnDiaryRimpsyche.Settings.Mode.Off>
+  <PawnDiaryRimpsyche.Settings.Mode.OffDesc>Не связывать характер Rimpsyche со взглядом на мир в Pawn Diary.</PawnDiaryRimpsyche.Settings.Mode.OffDesc>
+  <PawnDiaryRimpsyche.Settings.Mode.Mapping>Сопоставлять со встроенным психотипом</PawnDiaryRimpsyche.Settings.Mode.Mapping>
+  <PawnDiaryRimpsyche.Settings.Mode.MappingDesc>Выбирать ближайший встроенный психотип Pawn Diary по самой выраженной стороне характера Rimpsyche.</PawnDiaryRimpsyche.Settings.Mode.MappingDesc>
+  <PawnDiaryRimpsyche.Settings.Mode.Direct>Прямой текст из Rimpsyche</PawnDiaryRimpsyche.Settings.Mode.Direct>
+  <PawnDiaryRimpsyche.Settings.Mode.DirectDesc>Применять обратимое правило взгляда, принадлежащее мосту и однозначно составленное из самых выраженных семейств Rimpsyche.</PawnDiaryRimpsyche.Settings.Mode.DirectDesc>
+  <PawnDiaryRimpsyche.Settings.Mode.Llm>С помощью языковой модели</PawnDiaryRimpsyche.Settings.Mode.Llm>
+  <PawnDiaryRimpsyche.Settings.Mode.LlmDesc>Переписывать сводку характера Rimpsyche в обратимое правило взгляда, принадлежащее мосту. При ошибке используется прямой текст.</PawnDiaryRimpsyche.Settings.Mode.LlmDesc>
+  <PawnDiaryRimpsyche.Settings.TransformLane>Линия API для преобразования</PawnDiaryRimpsyche.Settings.TransformLane>
+  <PawnDiaryRimpsyche.Settings.TransformLaneAuto>Автоматически — первая активная линия</PawnDiaryRimpsyche.Settings.TransformLaneAuto>
+  <PawnDiaryRimpsyche.Settings.TransformPromptHint>Подсказка преобразования (оставьте пустой, чтобы всегда использовать текущий локализованный стандарт)</PawnDiaryRimpsyche.Settings.TransformPromptHint>
+  <PawnDiaryRimpsyche.Settings.TransformPromptDefault>Перепиши переданные данные о характере Rimpsyche в одно-два кратких поведенческих предложения о взгляде автора дневника. Начни со слов «Этот поселенец». Опиши, что он замечает, ценит, чего боится и по чему судит о событиях. Не упоминай Rimpsyche, баллы характера, узлы, игровые механики и само преобразование.</PawnDiaryRimpsyche.Settings.TransformPromptDefault>
   <PawnDiaryRimpsyche.Settings.PsychotypeOverride>Учитывать психику во взгляде дневника</PawnDiaryRimpsyche.Settings.PsychotypeOverride>
   <PawnDiaryRimpsyche.Settings.PsychotypeOverrideDesc>Составлять взгляд дневника из двух самых выраженных и разных сторон характера поселенца. Если выключить, мост снимет все принадлежащие ему переопределения взгляда.</PawnDiaryRimpsyche.Settings.PsychotypeOverrideDesc>
   <PawnDiaryRimpsyche.Settings.ChargedConversations>Записывать значимые разговоры</PawnDiaryRimpsyche.Settings.ChargedConversations>

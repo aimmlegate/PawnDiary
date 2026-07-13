@@ -208,8 +208,11 @@ namespace PawnDiaryRimpsyche
                 {
                     Find.WindowStack.Add(new FloatMenu(LaneOptions(setup)));
                 }
+                listing.Label("PawnDiaryRimpsyche.Settings.TransformPromptHint".Translate());
                 Rect promptRect = listing.GetRect(100f);
-                string shown = string.IsNullOrEmpty(Settings.transformPrompt) ? Settings.ResolveTransformPrompt() : Settings.transformPrompt;
+                // Keep an inherited prompt blank in the editor. Showing the resolved localized default
+                // as editable text made an innocent click save that language's current wording forever.
+                string shown = Settings.transformPrompt ?? string.Empty;
                 string edited = Widgets.TextArea(promptRect, shown);
                 if (edited != shown) Settings.transformPrompt = edited;
             }

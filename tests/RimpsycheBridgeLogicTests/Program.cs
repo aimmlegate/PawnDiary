@@ -173,6 +173,9 @@ namespace RimpsycheBridgeLogicTests
             Check("hash is input-order independent and skips unknown nodes",
                 hash == PsycheLensMapping.StableVectorHash(reordered));
             Check("hash is fixed-width lowercase hex", hash.Length == 16 && hash == hash.ToLowerInvariant());
+            Check("saved prompt hash is stable and ordinal",
+                PsycheLensMapping.StableTextHash("prompt") == PsycheLensMapping.StableTextHash("prompt")
+                && PsycheLensMapping.StableTextHash("prompt") != PsycheLensMapping.StableTextHash("Prompt"));
             // Golden value makes implementation drift visible across machines/processes/runtime versions.
             Check("fixture hash is stable across runs", hash == "cfd7df58c63c22d1");
             Console.WriteLine("  INFO  fixture vector hash = " + hash);

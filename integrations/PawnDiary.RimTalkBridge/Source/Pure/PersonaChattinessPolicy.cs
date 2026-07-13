@@ -18,26 +18,33 @@ namespace PawnDiaryRimTalkBridge.Pure
     /// <summary>Selects and deterministically varies a RimTalk talk-initiation weight.</summary>
     internal static class PersonaChattinessPolicy
     {
+        private const float SafeDefaultBaseline = 0.5f;
+        private const float SafeVariationFraction = 0.15f;
+
         /// <summary>Returns a stable clamped baseline × relative pawn variation.</summary>
         public static float Resolve(string pawnStableId, string psychotypeDefName,
             IList<PersonaChattinessProfile> profiles, float defaultBaseline, float variationFraction)
         {
-            float baseline = Clamp01(defaultBaseline);
+            float baseline = IsFinite01(defaultBaseline) ? defaultBaseline : SafeDefaultBaseline;
+            string wantedPsychotype = (psychotypeDefName ?? string.Empty).Trim();
             if (profiles != null)
             {
                 for (int i = 0; i < profiles.Count; i++)
                 {
                     PersonaChattinessProfile profile = profiles[i];
-                    if (profile != null && string.Equals(profile.psychotypeDefName,
-                            psychotypeDefName, StringComparison.OrdinalIgnoreCase))
+                    string profileName = profile == null
+                        ? string.Empty
+                        : (profile.psychotypeDefName ?? string.Empty).Trim();
+                    if (profile != null && string.Equals(profileName,
+                            wantedPsychotype, StringComparison.OrdinalIgnoreCase))
                     {
-                        baseline = Clamp01(profile.baseline);
+                        if (IsFinite01(profile.baseline)) baseline = profile.baseline;
                         break;
                     }
                 }
             }
 
-            float spread = Clamp01(variationFraction);
+            float spread = IsFinite01(variationFraction) ? variationFraction : SafeVariationFraction;
             if (spread <= 0f || baseline <= 0f)
             {
                 return baseline;
@@ -48,7 +55,7 @@ namespace PawnDiaryRimTalkBridge.Pure
             uint hash = 2166136261u;
             HashText(ref hash, pawnStableId);
             HashChar(ref hash, '|');
-            HashText(ref hash, psychotypeDefName);
+            HashText(ref hash, wantedPsychotype);
             float unit = (hash & 0x00FFFFFFu) / 16777215f;
             float relativeOffset = (unit * 2f - 1f) * spread;
             return Clamp01(baseline * (1f + relativeOffset));
@@ -76,6 +83,11 @@ namespace PawnDiaryRimTalkBridge.Pure
         {
             if (value < 0f) return 0f;
             return value > 1f ? 1f : value;
+        }
+
+        private static bool IsFinite01(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value) && value >= 0f && value <= 1f;
         }
     }
 }

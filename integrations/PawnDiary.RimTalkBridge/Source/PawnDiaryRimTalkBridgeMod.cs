@@ -4,8 +4,8 @@
 //
 // The bridge is organized in "integration levels" (see design/RIMTALK_BRIDGE_PLAN.md):
 //   0 = Off             — nothing flows in either direction.
-//   1 = Shared context  — diary memories are injected into RimTalk prompts and the RimTalk
-//                         persona is injected into Pawn Diary pawn summaries (default).
+//   1 = Shared context  — diary memories are injected into RimTalk prompts; optional persona
+//                         synchronization is independently off by default.
 //   2 = + Conversations — selected conversations pass through the bounded editorial funnel.
 //
 // New to C#/RimWorld? See AGENTS.md in the Pawn Diary repo.
@@ -23,10 +23,13 @@ namespace PawnDiaryRimTalkBridge
     public enum PersonaSyncDirection
     {
         /// <summary>Pawn Diary's psychotype is exported to RimTalk.</summary>
-        PawnDiaryToRimTalk,
+        PawnDiaryToRimTalk = 0,
 
         /// <summary>RimTalk's persona is imported as Pawn Diary's outlook.</summary>
-        RimTalkToPawnDiary
+        RimTalkToPawnDiary = 1,
+
+        /// <summary>Neither mod overwrites the other's persona/outlook.</summary>
+        Off = 2
     }
 
     /// <summary>
@@ -93,14 +96,19 @@ namespace PawnDiaryRimTalkBridge
             // and a null target makes PatchAll throw — which would take down the whole mod ctor and,
             // with it, the settings this mod also owns. Isolate it so a changed RimTalk degrades to
             // "conversation capture disabled" (TargetMethod already warns) instead of a hard error.
+            Harmony harmony = new Harmony(HarmonyId);
             try
             {
-                new Harmony(HarmonyId).PatchAll();
+                harmony.PatchAll();
             }
             catch (Exception e)
             {
                 Log.Error(LogPrefix + " failed to install Harmony patches; RimTalk conversation capture is disabled: " + e);
             }
+
+            // The editor UI is an optional convenience and uses a fragile external type. Register it
+            // separately so a RimTalk UI rename cannot abort or disable conversation capture patches.
+            RimTalkPersonaEditorOwnershipPatch.TryRegister(harmony);
 
             // Registrations whose RimTalk metadata calls .Translate() are intentionally deferred to
             // RimTalkBridgeTranslatedRegistration below. Mod constructors run before RimWorld has an
@@ -272,6 +280,11 @@ namespace PawnDiaryRimTalkBridge
             Settings.injectColonyContext = colonyContext;
 
             listing.Label("PawnDiaryRimTalkBridge.Settings.PersonaDirection".Translate());
+            if (listing.RadioButton("PawnDiaryRimTalkBridge.Settings.PersonaOff".Translate(),
+                Settings.personaSyncDirection == PersonaSyncDirection.Off, 8f))
+            {
+                Settings.personaSyncDirection = PersonaSyncDirection.Off;
+            }
             if (listing.RadioButton("PawnDiaryRimTalkBridge.Settings.PersonaToRimTalk".Translate(),
                 Settings.personaSyncDirection == PersonaSyncDirection.PawnDiaryToRimTalk, 8f))
             {
@@ -627,7 +640,7 @@ namespace PawnDiaryRimTalkBridge
     {
         // v1 changed a legacy zero cap from "unlimited" to "conversation recording off". Keep an
         // explicit schema key so old zeroes can be migrated once without changing the new UI meaning.
-        private const int CurrentSettingsSchemaVersion = 1;
+        private const int CurrentSettingsSchemaVersion = 2;
         private int settingsSchemaVersion;
 
         /// <summary>0 = Off, 1 = Shared context, 2 = + Conversations. Int (not enum) for save stability.</summary>
@@ -640,11 +653,11 @@ namespace PawnDiaryRimTalkBridge
         /// <summary>Include the pawn's diary writing-voice line in the RimTalk prompt section.</summary>
         public bool includeDiaryVoiceLine = true;
 
-        /// <summary>Tier B (experimental, off): derive the diary voice from the RimTalk persona.</summary>
+        /// <summary>Legacy pre-direction opt-in; read only to migrate old users into import mode.</summary>
         public bool personaLedDiaryVoice;
 
         /// <summary>Authoritative direction for persona synchronization.</summary>
-        public PersonaSyncDirection personaSyncDirection = PersonaSyncDirection.RimTalkToPawnDiary;
+        public PersonaSyncDirection personaSyncDirection = PersonaSyncDirection.Off;
 
         /// <summary>Rewrite the source persona through Pawn Diary's first active LLM lane.</summary>
         public bool transformPersonaWithLlm;
@@ -710,7 +723,7 @@ namespace PawnDiaryRimTalkBridge
             Scribe_Values.Look(ref integrationLevel, "integrationLevel", 1);
             Scribe_Values.Look(ref includeDiaryVoiceLine, "includeDiaryVoiceLine", true);
             Scribe_Values.Look(ref personaLedDiaryVoice, "personaLedDiaryVoice", false);
-            Scribe_Values.Look(ref personaSyncDirection, "personaSyncDirection", PersonaSyncDirection.RimTalkToPawnDiary);
+            Scribe_Values.Look(ref personaSyncDirection, "personaSyncDirection", PersonaSyncDirection.Off);
             Scribe_Values.Look(ref transformPersonaWithLlm, "transformPersonaWithLlm", false);
             // Frozen legacy key: retained only so old settings continue to deserialize cleanly.
             Scribe_Values.Look(ref useRimTalkEngine, "useRimTalkEngine", false);
@@ -732,8 +745,7 @@ namespace PawnDiaryRimTalkBridge
             Scribe_Values.Look(ref transcriptLineCap, "transcriptLineCap", 4);
             Scribe_Values.Look(ref settingsSchemaVersion, "settingsSchemaVersion", 0);
 
-            if (Scribe.mode == LoadSaveMode.LoadingVars
-                && settingsSchemaVersion < CurrentSettingsSchemaVersion)
+            if (Scribe.mode == LoadSaveMode.LoadingVars && settingsSchemaVersion < 1)
             {
                 // In bridge v0.2, zero disabled an individual cap rather than recording. Preserve the
                 // closest meanings under v0.3: the rolling one-entry pawn gate remains enabled, while
@@ -748,16 +760,36 @@ namespace PawnDiaryRimTalkBridge
                     colonyDailyCap = 999;
                 }
 
+                settingsSchemaVersion = 1;
+            }
+
+            if (Scribe.mode == LoadSaveMode.LoadingVars
+                && settingsSchemaVersion < CurrentSettingsSchemaVersion)
+            {
+                // Import was briefly the serialized default, so v1 files cannot distinguish an explicit
+                // import click from an untouched default. The older opt-in checkbox is the only durable
+                // evidence of consent: preserve export (which was never a default), preserve old opt-in
+                // as import, and otherwise choose the conservative non-writing Off state.
+                if (personaLedDiaryVoice)
+                {
+                    personaSyncDirection = PersonaSyncDirection.RimTalkToPawnDiary;
+                }
+                else if (personaSyncDirection == PersonaSyncDirection.RimTalkToPawnDiary)
+                {
+                    personaSyncDirection = PersonaSyncDirection.Off;
+                }
+
                 settingsSchemaVersion = CurrentSettingsSchemaVersion;
             }
 
             // Defensive clamps: hand-edited or corrupted config XML must not wedge the bridge into
             // impossible states (negative caps, level 99, a zero quiet window that flushes every tick).
             integrationLevel = Clamp(integrationLevel, 0, 2);
-            if (personaSyncDirection < PersonaSyncDirection.PawnDiaryToRimTalk
-                || personaSyncDirection > PersonaSyncDirection.RimTalkToPawnDiary)
+            if (personaSyncDirection != PersonaSyncDirection.PawnDiaryToRimTalk
+                && personaSyncDirection != PersonaSyncDirection.RimTalkToPawnDiary
+                && personaSyncDirection != PersonaSyncDirection.Off)
             {
-                personaSyncDirection = PersonaSyncDirection.RimTalkToPawnDiary;
+                personaSyncDirection = PersonaSyncDirection.Off;
             }
             contextEntryCount = Clamp(contextEntryCount, 0, 10);
             colonyEventCount = Clamp(colonyEventCount, 0, 6);

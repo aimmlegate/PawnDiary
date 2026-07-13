@@ -1,5 +1,17 @@
 # Changelog
 
+- **2026-07-13 — Adversarial hardening for persona bridges and humor cues.** One-shot integration LLM
+  requests are now caller-cancellable (`ApiVersion 6 → 7`) and both RimTalk/Rimpsyche persist stable
+  source keys plus resolved targets, preventing reload churn, target drift, repeated paid transforms
+  after a rejected local write, and orphaned 64-slot handles. RimTalk persona sync now defaults to Off,
+  migrates old opt-in/opt-out saves without silently enabling imports, dynamically registers its optional
+  editor patch, restores both the original persona and talk weight, retries failed reflection setters,
+  and rejects invalid chattiness floats. Rimpsyche modes now use reversible source-owned overrides
+  without overwriting player base/custom outlooks, release ownership even after the master switch turns
+  off, and keep an inherited localized transform prompt blank in the editor. Filled all 32 previously
+  missing Russian bridge keys. Humor trait policy moved to XML/Advanced tuning and a pure-tested private
+  deterministic RNG scope, so cue selection no longer advances RimWorld's shared `Rand` state.
+
 - **2026-07-13 — Psychotype-driven RimTalk chattiness.** While Pawn Diary controls RimTalk's persona,
   it now also applies an XML-authored talk-initiation baseline for the selected psychotype with stable
   per-pawn relative ±15% variation. The 250-tick sync maintains the inferred value, `silent-focus`
@@ -13,8 +25,8 @@
   or unfeeling temperament (Pessimist, Depressive, Nervous, Neurotic, Very neurotic, Psychopath, or
   Anomaly's Disturbing trait) lowers it (`humorReducedChanceMultiplier`, default `0.5`). The two
   directions are mutually exclusive: within a direction several qualifiers still count once, and a
-  writer who qualifies for both offsets back to the base rate. Still hidden and always-on: no
-  settings field or UI.
+  writer who qualifies for both offsets back to the base rate. Cue insertion stays hidden and
+  always-on; its rates and trait-key lists are editable through Advanced tuning.
 
 - **2026-07-13 — Fixed RimTalk bridge startup translation errors.** Localized RimTalk variable and
   injected-section registration now runs after language loading instead of from the background mod
@@ -41,11 +53,11 @@
 ## 2026-07-12
 
 - **Rimpsyche persona sync now matches the 1-2-3 workflow.** The old on/off outlook toggle is now Off
-  plus three active modes: map the dominant psyche family to a built-in psychotype, seed editable direct
-  text, or create an editable LLM-assisted outlook on a selectable lane with deterministic direct-text
-  fallback. The existing 250-tick rounded-vector detection automatically reseeds after Rimpsyche persona
-  changes, LLM mode exposes Regenerate in the pawn voice editor, old settings migrate safely, and the
-  pure mapping/input policy is covered by the Rimpsyche bridge harness.
+  plus three active modes: map the dominant psyche family to a built-in psychotype, apply a reversible
+  source-owned direct-text outlook, or create a source-owned LLM-assisted outlook on a selectable lane
+  with deterministic direct-text fallback. The 250-tick rounded-vector detection refreshes after
+  Rimpsyche persona changes, LLM mode exposes Regenerate in the pawn voice editor, old settings migrate
+  safely, and the pure mapping/input policy is covered by the Rimpsyche bridge harness.
 
 Milestone history of Pawn Diary, newest first. Grouped by milestone, not by commit; routine
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.

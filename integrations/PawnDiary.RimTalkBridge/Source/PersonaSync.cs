@@ -33,15 +33,11 @@ namespace PawnDiaryRimTalkBridge
         // diary prompt reads, not prose. The VALUE after it is game/persona text and is not translated.
         private const string PersonaSchemaKey = "chat_persona=";
 
-        // Tier B bookkeeping: pawnId -> hash of the persona text we last turned into an override. Lets
-        // us skip pawns whose persona has not changed. In-memory only (not saved): after a reload the
-        // first pass simply re-applies, which is harmless because SetPsychotypeOverride is idempotent.
-        private static readonly Dictionary<string, int> AppliedPersonaHash = new Dictionary<string, int>();
-
-        // Whether Tier B was active on the previous pass, so we can detect the moment it turns off and
-        // clear every override we placed.
-        private static bool tierBWasActive;
-        private static readonly Dictionary<string, int> AppliedRimTalkHash = new Dictionary<string, int>();
+        // Direction state is transient; the component owns persistent source keys, transformed output,
+        // and reversible RimTalk backups. A first-tick flag keeps API calls out of FinalizeInit.
+        private static bool importWasActive;
+        private static bool exportWasActive;
+        private static bool newGameResetPending;
         private static readonly Dictionary<string, TransformJob> InFlight = new Dictionary<string, TransformJob>();
         private static readonly object DiaryPersonaGate = new object();
         private static readonly Dictionary<string, string> DiaryPersonaCache = new Dictionary<string, string>();
@@ -78,21 +74,51 @@ namespace PawnDiaryRimTalkBridge
         }
 
         /// <summary>
-        /// Tier B pass. MAIN THREAD ONLY (calls PawnDiaryApi and .Translate()). Applies/updates the
-        /// persona-led voice override while the toggle is on, and clears all overrides the moment it
-        /// turns off. No-op work when nothing changed.
+        /// Tier B pass. MAIN THREAD ONLY (calls PawnDiaryApi and .Translate()). Maintains the selected
+        /// source-owned direction and releases that authority when the direction or master switch turns off.
         /// </summary>
         public static void RunPass()
         {
             PawnDiaryRimTalkBridgeSettings settings = PawnDiaryRimTalkBridgeMod.Settings;
-            if (PawnDiaryRimTalkBridgeMod.LevelAtLeast(1) && settings != null
-                && settings.personaSyncDirection == PersonaSyncDirection.PawnDiaryToRimTalk)
+            RimTalkBridgeGameComponent component = Current.Game?.GetComponent<RimTalkBridgeGameComponent>();
+            if (component == null || !PawnDiaryApi.IsReady)
             {
-                if (tierBWasActive)
+                return;
+            }
+
+            if (newGameResetPending)
+            {
+                // One-time migration: older bridge builds wrote writing-style and later psychotype
+                // overrides without the component's ownership dictionaries. Clear those untracked rows;
+                // a current saved import target is retained and reapplied below without another LLM call.
+                foreach (Pawn pawn in TouchedPawns())
                 {
-                    ResetAllOverrides();
+                    PawnDiaryApi.ResetWritingStyleOverride(pawn, BridgeIds.ModId);
+                    if (!component.HasImportTarget(pawn.GetUniqueLoadID()))
+                    {
+                        PawnDiaryApi.ResetPsychotypeOverride(pawn, BridgeIds.ModId);
+                    }
                 }
-                tierBWasActive = false;
+
+                newGameResetPending = false;
+            }
+
+            bool exportActive = PawnDiaryRimTalkBridgeMod.LevelAtLeast(1) && settings != null
+                && settings.personaSyncDirection == PersonaSyncDirection.PawnDiaryToRimTalk
+                && PawnDiaryApi.IsExternalApiEnabled;
+            bool importActive = PawnDiaryRimTalkBridgeMod.LevelAtLeast(1) && settings != null
+                && settings.personaSyncDirection == PersonaSyncDirection.RimTalkToPawnDiary
+                && PawnDiaryApi.IsExternalApiEnabled;
+
+            if (exportActive)
+            {
+                if (importWasActive || component.HasImportTargets)
+                {
+                    ReleaseAllImportOverrides(component);
+                }
+
+                importWasActive = false;
+                exportWasActive = true;
                 foreach (Pawn pawn in PawnsFinder.AllMaps_FreeColonistsSpawned)
                 {
                     ExportFor(pawn, settings.transformPersonaWithLlm);
@@ -100,35 +126,35 @@ namespace PawnDiaryRimTalkBridge
                 return;
             }
 
-            // Pawn Diary no longer owns RimTalk: promptly release any talk weights that silent-focus
-            // temporarily forced, even when the opposite sync direction is still active.
-            RestoreAllChattiness();
-
-            bool active = PawnDiaryRimTalkBridgeMod.LevelAtLeast(1)
-                && settings != null
-                && settings.personaSyncDirection == PersonaSyncDirection.RimTalkToPawnDiary
-                && PawnDiaryApi.IsExternalApiEnabled;
-
-            if (!active)
+            if (importActive)
             {
-                // Turned off (or level/master switch dropped): remove every override we placed. Core
-                // refuses to clear another source's override, so resetting untouched pawns is a safe no-op.
-                if (tierBWasActive)
+                if (exportWasActive || component.HasExportOwnership)
                 {
-                    ResetAllOverrides();
+                    RestoreAllExportState(component);
                 }
 
-                tierBWasActive = false;
+                exportWasActive = false;
+                importWasActive = true;
+                foreach (Pawn pawn in PawnsFinder.AllMaps_FreeColonistsSpawned)
+                {
+                    RefreshDiaryPersonaCacheFor(pawn);
+                    ImportFor(pawn, settings.transformPersonaWithLlm);
+                }
                 return;
             }
 
-            tierBWasActive = true;
-
-            foreach (Pawn pawn in PawnsFinder.AllMaps_FreeColonistsSpawned)
+            // Level/direction/master switch off: release every source-owned field and every reversible
+            // RimTalk field. Cleanup API calls deliberately remain legal while the master switch is off.
+            if (importWasActive || component.HasImportTargets)
             {
-                RefreshDiaryPersonaCacheFor(pawn);
-                ImportFor(pawn, settings.transformPersonaWithLlm);
+                ReleaseAllImportOverrides(component);
             }
+            if (exportWasActive || component.HasExportOwnership)
+            {
+                RestoreAllExportState(component);
+            }
+            importWasActive = false;
+            exportWasActive = false;
         }
 
         /// <summary>
@@ -140,15 +166,13 @@ namespace PawnDiaryRimTalkBridge
         /// </summary>
         public static void ResetAllOverrides()
         {
-            RestoreAllChattiness();
-            foreach (Pawn pawn in TouchedPawns())
+            RimTalkBridgeGameComponent component = Current.Game?.GetComponent<RimTalkBridgeGameComponent>();
+            if (component != null)
             {
-                ResetBridgeOverrides(pawn);
+                ReleaseAllImportOverrides(component);
+                RestoreAllExportState(component);
             }
-
-            AppliedPersonaHash.Clear();
-            AppliedRimTalkHash.Clear();
-            InFlight.Clear();
+            CancelAllTransforms();
             lock (DiaryPersonaGate)
             {
                 DiaryPersonaCache.Clear();
@@ -160,33 +184,125 @@ namespace PawnDiaryRimTalkBridge
         /// PawnDiary's per-pawn saved state; clearing them here (against the broad pawn set) prevents a
         /// stale bridge voice from surviving a colony switch when Tier B was on at save time.
         /// </summary>
-        public static void ResetForNewGame()
+        public static void PrepareForNewGame()
         {
-            // Clear overrides BEFORE wiping the bookkeeping: TouchedPawns() reads AppliedPersonaHash to
-            // resolve pawns we tracked. Order matters here. This also performs the one-time migration
-            // sweep of stale writing-style overrides an older bridge version placed under Tier B.
-            foreach (Pawn pawn in TouchedPawns())
-            {
-                ResetBridgeOverrides(pawn);
-            }
-
-            AppliedPersonaHash.Clear();
-            AppliedRimTalkHash.Clear();
+            // Core resets the whole completion session when a new Game is constructed, so these old
+            // handles are already cancelled. Do not call the main-thread API from FinalizeInit.
             InFlight.Clear();
             lock (DiaryPersonaGate)
             {
                 DiaryPersonaCache.Clear();
             }
-            tierBWasActive = false;
+            importWasActive = false;
+            exportWasActive = false;
+            newGameResetPending = true;
         }
 
         // Clears BOTH bridge-owned overrides for a pawn: the current psychotype override and any stale
         // writing-style override an older bridge version placed under Tier B. Pawn Diary refuses to clear
         // another source's override, so both calls are safe no-ops on pawns the bridge never touched.
-        private static void ResetBridgeOverrides(Pawn pawn)
+        private static bool ResetBridgeOverrides(Pawn pawn)
         {
-            PawnDiaryApi.ResetPsychotypeOverride(pawn, BridgeIds.ModId);
+            bool released = PawnDiaryApi.ResetPsychotypeOverride(pawn, BridgeIds.ModId);
             PawnDiaryApi.ResetWritingStyleOverride(pawn, BridgeIds.ModId);
+            return released;
+        }
+
+        private static void ReleaseImportFor(Pawn pawn, string pawnId,
+            RimTalkBridgeGameComponent component)
+        {
+            CancelTransformFor(pawnId);
+            if (ResetBridgeOverrides(pawn)) component.ForgetImportTarget(pawnId);
+        }
+
+        private static void ReleaseAllImportOverrides(RimTalkBridgeGameComponent component)
+        {
+            CancelAllTransforms();
+            bool allReleased = true;
+            foreach (Pawn pawn in TouchedPawns())
+            {
+                string id = pawn.GetUniqueLoadID();
+                if (!component.HasImportTarget(id)) continue;
+                if (ResetBridgeOverrides(pawn)) component.ForgetImportTarget(id);
+                else allReleased = false;
+            }
+
+            if (allReleased) component.ClearImportTargets();
+        }
+
+        private static bool EnsureExportPersona(Pawn pawn, string target,
+            RimTalkBridgeGameComponent component)
+        {
+            if (pawn == null || component == null) return false;
+            string id = pawn.GetUniqueLoadID();
+            string current;
+            if (!TryGetPersonality(pawn, out current)) return false;
+
+            string original;
+            if (!component.TryGetOriginalPersona(id, out original))
+            {
+                component.RememberOriginalPersona(id, current);
+            }
+
+            string cleanedTarget = Pure.PersonaTransferText.Clean(target);
+            return string.Equals(current ?? string.Empty, cleanedTarget, StringComparison.Ordinal)
+                || TrySetPersonality(pawn, cleanedTarget);
+        }
+
+        private static bool RestoreExportFor(Pawn pawn, RimTalkBridgeGameComponent component)
+        {
+            if (pawn == null || component == null) return false;
+            string id = pawn.GetUniqueLoadID();
+            bool personaRestored = RestorePersona(pawn, component);
+            bool chattinessRestored = RestoreChattiness(pawn, component);
+            if (personaRestored && chattinessRestored) component.ForgetExportTarget(id);
+            return personaRestored && chattinessRestored;
+        }
+
+        private static void RestoreAllExportState(RimTalkBridgeGameComponent component)
+        {
+            CancelAllTransforms();
+            bool allRestored = true;
+            foreach (Pawn pawn in TouchedPawns())
+            {
+                if (!RestoreExportFor(pawn, component)) allRestored = false;
+            }
+
+            if (allRestored)
+            {
+                component.ClearExportTargets();
+                component.ClearOriginalPersonaBackups();
+                component.ClearOriginalTalkWeightBackups();
+            }
+        }
+
+        private static bool RestorePersona(Pawn pawn, RimTalkBridgeGameComponent component)
+        {
+            string id = pawn.GetUniqueLoadID();
+            string original;
+            if (!component.TryGetOriginalPersona(id, out original)) return true;
+            if (!TrySetPersonality(pawn, original)) return false;
+            component.ForgetOriginalPersona(id);
+            return true;
+        }
+
+        private static void CancelTransformFor(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId)) return;
+            TransformJob job;
+            if (!InFlight.TryGetValue(pawnId, out job)) return;
+            PawnDiaryApi.CancelLlmCompletion(job.handle);
+            InFlight.Remove(pawnId);
+        }
+
+        private static void CancelAllTransforms()
+        {
+            List<TransformJob> jobs = new List<TransformJob>(InFlight.Values);
+            InFlight.Clear();
+            for (int i = 0; i < jobs.Count; i++)
+            {
+                PawnDiaryApi.CancelLlmCompletion(jobs[i].handle);
+            }
         }
 
         // Every pawn the bridge may have given a Tier B override: spawned free colonists, caravans and
@@ -224,28 +340,29 @@ namespace PawnDiaryRimTalkBridge
             }
 
             string id = pawn.GetUniqueLoadID();
-            string persona = SafeGetPersonality(pawn);
+            RimTalkBridgeGameComponent component = Current.Game?.GetComponent<RimTalkBridgeGameComponent>();
+            if (component == null) return;
 
-            if (string.IsNullOrWhiteSpace(persona))
+            if (!PawnDiaryApi.IsDiaryEligible(pawn))
             {
-                // Persona cleared: drop any override we had placed for this pawn.
-                if (AppliedPersonaHash.ContainsKey(id))
-                {
-                    ResetBridgeOverrides(pawn);
-                    AppliedPersonaHash.Remove(id);
-                }
-
+                ReleaseImportFor(pawn, id, component);
                 return;
             }
 
-            // GetHashCode is stable within a process, which is all we need for in-session change
-            // detection (we never persist it), so it is fine for this comparison.
-            // Include transform mode so flipping the checkbox re-synchronizes even when source text
-            // itself did not change.
-            int hash = unchecked(persona.GetHashCode() * 397 + (transform ? 1 : 0));
-            int previous;
-            if (AppliedPersonaHash.TryGetValue(id, out previous) && previous == hash)
+            string persona;
+            if (!TryGetPersonality(pawn, out persona)) return;
+
+            if (string.IsNullOrWhiteSpace(persona))
             {
+                ReleaseImportFor(pawn, id, component);
+                return;
+            }
+
+            string sourceKey = Pure.PersonaSyncKey.ForImport(persona, transform);
+            string storedTarget;
+            if (component.TryGetImportTarget(id, sourceKey, out storedTarget))
+            {
+                PawnDiaryApi.SetPsychotypeOverride(pawn, BridgeIds.ModId, storedTarget);
                 return;
             }
 
@@ -258,34 +375,51 @@ namespace PawnDiaryRimTalkBridge
             // Tier B repointed: the persona feeds Pawn Diary's PSYCHOTYPE (outlook) override, not the
             // writing style. RimTalk supplies who the pawn is; Pawn Diary keeps how they write.
             if (transform && StartOrPollTransform(
-                    pawn, persona, false, hash, Pure.PersonaPromptModifier.None))
+                    pawn, persona, false, sourceKey, Pure.PersonaPromptModifier.None, component))
             {
                 return;
             }
-            string rule = "PawnDiaryRimTalkBridge.Persona.LensRule".Translate(firstSentence);
-            if (PawnDiaryApi.SetPsychotypeOverride(pawn, BridgeIds.ModId, rule))
-            {
-                AppliedPersonaHash[id] = hash;
-            }
+            string rule = "PawnDiaryRimTalkBridge.Persona.LensRule".Translate(firstSentence).Resolve();
+            component.RememberImportTarget(id, sourceKey, rule);
+            PawnDiaryApi.SetPsychotypeOverride(pawn, BridgeIds.ModId, rule);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ExportFor(Pawn pawn, bool transform)
         {
-            if (pawn == null || !PawnDiaryApi.IsDiaryEligible(pawn)) return;
+            if (pawn == null) return;
+            RimTalkBridgeGameComponent component = Current.Game?.GetComponent<RimTalkBridgeGameComponent>();
+            if (component == null) return;
+            string id = pawn.GetUniqueLoadID();
+            if (!PawnDiaryApi.IsDiaryEligible(pawn))
+            {
+                RestoreExportFor(pawn, component);
+                return;
+            }
+
             Pure.PersonaPromptModifier modifier;
             string psychotypeDefName;
             string source = RefreshDiaryPersonaCacheFor(pawn, out modifier, out psychotypeDefName);
             ApplyChattinessPolicy(pawn, modifier, psychotypeDefName);
-            if (string.IsNullOrWhiteSpace(source)) return;
             Pure.PersonaPromptModifier transformModifier = Pure.PersonaPromptPolicy.TransformModifier(modifier);
-            int hash = unchecked((source.GetHashCode() * 397 + (transform ? 1 : 0)) * 397
-                + (int)transformModifier);
-            string id = pawn.GetUniqueLoadID();
-            if (AppliedRimTalkHash.TryGetValue(id, out int oldHash) && oldHash == hash) return;
-            if (transform && StartOrPollTransform(pawn, source, true, hash, transformModifier)) return;
-            SafeSetPersonality(pawn, source);
-            AppliedRimTalkHash[id] = hash;
+            string sourceKey = Pure.PersonaSyncKey.ForExport(source, transform, transformModifier);
+            string storedTarget;
+            if (component.TryGetExportTarget(id, sourceKey, out storedTarget))
+            {
+                EnsureExportPersona(pawn, storedTarget, component);
+                return;
+            }
+
+            // Neutral/disabled psychotype has an empty source. It deliberately clears RimTalk's current
+            // persona while Pawn Diary owns the field, then the original is restored when authority ends.
+            if (transform && !string.IsNullOrWhiteSpace(source)
+                && StartOrPollTransform(pawn, source, true, sourceKey, transformModifier, component))
+            {
+                return;
+            }
+
+            component.RememberExportTarget(id, sourceKey, source);
+            EnsureExportPersona(pawn, source, component);
         }
 
         // Main-thread cache refresh. RimTalk may evaluate Scriban variables on a worker thread, where
@@ -357,16 +491,17 @@ namespace PawnDiaryRimTalkBridge
             }
         }
 
-        private static bool StartOrPollTransform(Pawn pawn, string source, bool export, int sourceHash,
-            Pure.PersonaPromptModifier modifier)
+        private static bool StartOrPollTransform(Pawn pawn, string source, bool export, string sourceKey,
+            Pure.PersonaPromptModifier modifier, RimTalkBridgeGameComponent component)
         {
             string id = pawn.GetUniqueLoadID();
             if (InFlight.TryGetValue(id, out TransformJob job))
             {
-                if (job.export != export || job.sourceHash != sourceHash)
+                if (job.export != export || !string.Equals(job.sourceKey, sourceKey, StringComparison.Ordinal))
                 {
+                    PawnDiaryApi.CancelLlmCompletion(job.handle);
                     InFlight.Remove(id);
-                    return StartOrPollTransform(pawn, source, export, sourceHash, modifier);
+                    return StartOrPollTransform(pawn, source, export, sourceKey, modifier, component);
                 }
                 LlmCompletionResult result = PawnDiaryApi.GetLlmCompletionResult(job.handle);
                 if (result.status == LlmCompletionStatus.Pending) return true;
@@ -379,12 +514,13 @@ namespace PawnDiaryRimTalkBridge
                 }
                 if (job.export)
                 {
-                    SafeSetPersonality(pawn, cleaned);
-                    AppliedRimTalkHash[id] = job.sourceHash;
+                    component.RememberExportTarget(id, job.sourceKey, cleaned);
+                    EnsureExportPersona(pawn, cleaned, component);
                 }
-                else if (PawnDiaryApi.SetPsychotypeOverride(pawn, BridgeIds.ModId, cleaned))
+                else
                 {
-                    AppliedPersonaHash[id] = job.sourceHash;
+                    component.RememberImportTarget(id, job.sourceKey, cleaned);
+                    PawnDiaryApi.SetPsychotypeOverride(pawn, BridgeIds.ModId, cleaned);
                 }
                 return true;
             }
@@ -406,15 +542,19 @@ namespace PawnDiaryRimTalkBridge
                 maxTokens = 300
             });
             if (handle <= 0) return false;
-            InFlight[id] = new TransformJob { handle = handle, export = export, sourceHash = sourceHash };
+            InFlight[id] = new TransformJob { handle = handle, export = export, sourceKey = sourceKey };
             return true;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void SafeSetPersonality(Pawn pawn, string persona)
+        private static bool TrySetPersonality(Pawn pawn, string persona)
         {
-            try { PersonaService.SetPersonality(pawn, Pure.PersonaTransferText.Clean(persona)); }
-            catch { }
+            try
+            {
+                PersonaService.SetPersonality(pawn, Pure.PersonaTransferText.Clean(persona));
+                return true;
+            }
+            catch { return false; }
         }
 
         private static string ModifierInstruction(Pure.PersonaPromptModifier modifier)
@@ -476,8 +616,9 @@ namespace PawnDiaryRimTalkBridge
         {
             if (!CanRegenerateImport(pawn)) return;
             string id = pawn.GetUniqueLoadID();
-            AppliedPersonaHash.Remove(id);
-            InFlight.Remove(id);
+            RimTalkBridgeGameComponent component = Current.Game?.GetComponent<RimTalkBridgeGameComponent>();
+            component?.ForgetImportTarget(id);
+            CancelTransformFor(id);
             ImportFor(pawn, true);
         }
 
@@ -485,8 +626,9 @@ namespace PawnDiaryRimTalkBridge
         {
             if (!CanRegenerateExport(pawn)) return;
             string id = pawn.GetUniqueLoadID();
-            AppliedRimTalkHash.Remove(id);
-            InFlight.Remove(id);
+            RimTalkBridgeGameComponent component = Current.Game?.GetComponent<RimTalkBridgeGameComponent>();
+            component?.ForgetExportTarget(id);
+            CancelTransformFor(id);
             ExportFor(pawn, true);
         }
 
@@ -501,7 +643,8 @@ namespace PawnDiaryRimTalkBridge
             float original;
             if (!component.TryGetOriginalTalkWeight(id, out original))
             {
-                component.RememberOriginalTalkWeight(id, SafeGetTalkInitiationWeight(pawn));
+                if (!TryGetTalkInitiationWeight(pawn, out original)) return;
+                component.RememberOriginalTalkWeight(id, original);
             }
 
             float target = Pure.PersonaPromptPolicy.ForcesZeroChattiness(modifier)
@@ -509,48 +652,58 @@ namespace PawnDiaryRimTalkBridge
                 : PersonaChattinessPolicyDef.Current.ChattinessFor(id, psychotypeDefName);
             // Repeat on every periodic pass so the authority choice remains true even if RimTalk's
             // editor is used while Pawn Diary controls the persona. silent-focus always wins at zero.
-            SafeSetTalkInitiationWeight(pawn, target);
+            TrySetTalkInitiationWeight(pawn, target);
         }
 
-        private static void RestoreAllChattiness()
+        private static bool RestoreChattiness(Pawn pawn, RimTalkBridgeGameComponent component)
         {
-            RimTalkBridgeGameComponent component = Current.Game?.GetComponent<RimTalkBridgeGameComponent>();
-            if (component == null) return;
-            foreach (Pawn pawn in TouchedPawns())
+            if (pawn == null || component == null) return false;
+            string id = pawn.GetUniqueLoadID();
+            float original;
+            if (!component.TryGetOriginalTalkWeight(id, out original)) return true;
+            if (float.IsNaN(original) || float.IsInfinity(original))
             {
-                RestoreChattiness(pawn, component);
+                // A hand-edited/corrupt save cannot provide a meaningful value to restore. Drop only
+                // that invalid backup instead of passing NaN/Infinity into RimTalk every sync pass.
+                component.ForgetOriginalTalkWeight(id);
+                return true;
+            }
+            if (!TrySetTalkInitiationWeight(pawn, original)) return false;
+            component.ForgetOriginalTalkWeight(id);
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool TryGetTalkInitiationWeight(Pawn pawn, out float weight)
+        {
+            try
+            {
+                weight = PersonaService.GetTalkInitiationWeight(pawn);
+                return !float.IsNaN(weight) && !float.IsInfinity(weight);
+            }
+            catch
+            {
+                weight = 0f;
+                return false;
             }
         }
 
-        private static void RestoreChattiness(Pawn pawn, RimTalkBridgeGameComponent component)
-        {
-            if (pawn == null || component == null) return;
-            string id = pawn.GetUniqueLoadID();
-            float original;
-            if (!component.TryGetOriginalTalkWeight(id, out original)) return;
-            SafeSetTalkInitiationWeight(pawn, original);
-            component.ForgetOriginalTalkWeight(id);
-        }
-
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static float SafeGetTalkInitiationWeight(Pawn pawn)
+        private static bool TrySetTalkInitiationWeight(Pawn pawn, float weight)
         {
-            try { return PersonaService.GetTalkInitiationWeight(pawn); }
-            catch { return 1f; }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void SafeSetTalkInitiationWeight(Pawn pawn, float weight)
-        {
-            try { PersonaService.SetTalkInitiationWeight(pawn, weight); }
-            catch { }
+            try
+            {
+                PersonaService.SetTalkInitiationWeight(pawn, weight);
+                return true;
+            }
+            catch { return false; }
         }
 
         private sealed class TransformJob
         {
             public int handle;
             public bool export;
-            public int sourceHash;
+            public string sourceKey;
         }
 
         /// <summary>
@@ -561,14 +714,15 @@ namespace PawnDiaryRimTalkBridge
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string ProvidePersonaLine(Pawn pawn)
         {
-            if (pawn == null || !PawnDiaryRimTalkBridgeMod.LevelAtLeast(1)
-                || PawnDiaryRimTalkBridgeMod.Settings.personaSyncDirection != PersonaSyncDirection.RimTalkToPawnDiary)
+            PawnDiaryRimTalkBridgeSettings settings = PawnDiaryRimTalkBridgeMod.Settings;
+            if (pawn == null || !PawnDiaryRimTalkBridgeMod.LevelAtLeast(1) || settings == null
+                || settings.personaSyncDirection != PersonaSyncDirection.RimTalkToPawnDiary)
             {
                 return null;
             }
 
-            string persona = SafeGetPersonality(pawn);
-            if (string.IsNullOrWhiteSpace(persona))
+            string persona;
+            if (!TryGetPersonality(pawn, out persona) || string.IsNullOrWhiteSpace(persona))
             {
                 return null;
             }
@@ -584,15 +738,17 @@ namespace PawnDiaryRimTalkBridge
 
         /// <summary>Reads the RimTalk persona defensively; RimTalk data reads can throw on odd pawns.</summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static string SafeGetPersonality(Pawn pawn)
+        internal static bool TryGetPersonality(Pawn pawn, out string personality)
         {
             try
             {
-                return PersonaService.GetPersonality(pawn);
+                personality = PersonaService.GetPersonality(pawn) ?? string.Empty;
+                return true;
             }
             catch
             {
-                return null;
+                personality = string.Empty;
+                return false;
             }
         }
     }

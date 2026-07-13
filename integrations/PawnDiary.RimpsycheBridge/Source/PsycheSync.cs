@@ -31,17 +31,12 @@ namespace PawnDiaryRimpsyche
         private static readonly Dictionary<string, CachedContextLine> ContextLineByPawn =
             new Dictionary<string, CachedContextLine>();
 
-        // Tier-B bookkeeping: pawn load id -> rounded vector hash most recently accepted by
-        // SetPsychotypeOverride. In-memory only; a reload safely reapplies after the reset sweep.
-        private static readonly Dictionary<string, string> AppliedVectorHash =
-            new Dictionary<string, string>();
-
         // Tier-3 jobs are polled on the same coarse main-thread pass. The core owns background IO.
         private static readonly Dictionary<string, InFlightJob> InFlight =
             new Dictionary<string, InFlightJob>();
 
         private static bool tierBWasActive;
-        private static bool newGameResetPending;
+        private static bool newGameCleanupPending;
 
         /// <summary>
         /// Registers the process-global Tier-A context provider. Registration is safe before a game
@@ -58,22 +53,22 @@ namespace PawnDiaryRimpsyche
         }
 
         /// <summary>
-        /// Clears process-static caches for a newly loaded game and schedules the source-owned override
-        /// sweep for the first real main-thread tick. GameComponent.FinalizeInit can be off-thread in
-        /// RimWorld 1.6, so it must not call PawnDiaryApi directly.
+        /// Clears process-static caches for a newly loaded game. GameComponent.FinalizeInit can be
+        /// off-thread in RimWorld 1.6, so this method deliberately makes no PawnDiaryApi calls.
         /// </summary>
         public static void PrepareForNewGame()
         {
             ContextLineByPawn.Clear();
-            AppliedVectorHash.Clear();
+            // Core cancels the whole one-shot completion session for a newly constructed Game.
+            // Clearing these adapter handles is therefore safe and requires no main-thread API call.
             InFlight.Clear();
             tierBWasActive = false;
-            newGameResetPending = true;
+            newGameCleanupPending = true;
         }
 
         /// <summary>
-        /// Main-thread Tier-B pass. Applies only on rounded-vector change, resets all bridge-owned
-        /// overrides when the setting/master switch turns off, and performs the deferred new-game sweep.
+        /// Main-thread Tier-B pass. Reapplies persisted bridge targets without another LLM request and
+        /// releases all bridge-owned overrides when the setting or master switch turns off.
         /// </summary>
         public static void RunTierBPass()
         {
@@ -82,20 +77,22 @@ namespace PawnDiaryRimpsyche
                 return;
             }
 
-            // Reset first, then apply the current game's values in the same pass. If Pawn Diary is not
-            // ready yet, retain the pending flag and retry rather than falsely declaring the sweep done.
-            if (newGameResetPending)
-            {
-                if (!PawnDiaryApi.IsReady || !PawnDiaryApi.IsExternalApiEnabled)
-                {
-                    return;
-                }
-
-                ResetAllOverridesInternal();
-                newGameResetPending = false;
-            }
-
             PawnDiaryRimpsycheSettings settings = PawnDiaryRimpsycheMod.Settings;
+            RimpsycheGameComponent component = Current.Game?.GetComponent<RimpsycheGameComponent>();
+            if (component == null || !PawnDiaryApi.IsReady) return;
+            if (newGameCleanupPending)
+            {
+                // Older builds could own an override without a persisted target row. Clear only those
+                // untracked legacy values on the first main-thread pass; current targets remain intact.
+                foreach (Pawn pawn in TouchedPawns())
+                {
+                    if (!component.HasPersonaTarget(pawn.GetUniqueLoadID()))
+                    {
+                        PawnDiaryApi.ResetPsychotypeOverride(pawn, BridgeIds.ModId);
+                    }
+                }
+                newGameCleanupPending = false;
+            }
             bool active = PawnDiaryRimpsycheMod.RimpsycheActive
                 && settings != null
                 && settings.personaMode != RimpsychePersonaMode.Off
@@ -104,16 +101,11 @@ namespace PawnDiaryRimpsyche
 
             if (!active)
             {
-                // A master-toggle drop can make reset calls temporarily ineligible. Keep the prior-state
-                // marker until the API is usable so we do not strand a bridge-owned saved override.
-                if (tierBWasActive || AppliedVectorHash.Count > 0)
+                // Cleanup APIs remain available while the master switch is off, so the bridge can
+                // immediately release state that it already owns without enabling any new behavior.
+                if (tierBWasActive || component.HasPersonaTargets)
                 {
-                    if (!PawnDiaryApi.IsReady || !PawnDiaryApi.IsExternalApiEnabled)
-                    {
-                        return;
-                    }
-
-                    ResetAllOverridesInternal();
+                    ResetAllOverridesInternal(component);
                 }
 
                 tierBWasActive = false;
@@ -143,8 +135,9 @@ namespace PawnDiaryRimpsyche
             }
 
             string id = pawn.GetUniqueLoadID();
-            AppliedVectorHash.Remove(id);
-            InFlight.Remove(id);
+            RimpsycheGameComponent component = Current.Game?.GetComponent<RimpsycheGameComponent>();
+            component?.ForgetPersonaTarget(id);
+            CancelInFlight(id);
             ApplyTierBFor(pawn);
         }
 
@@ -202,31 +195,27 @@ namespace PawnDiaryRimpsyche
         // Pawn/pure/API types; the target-mod types remain isolated inside ReadNodeVector.
         private static void ApplyTierBFor(Pawn pawn)
         {
-            if (pawn == null || !PawnDiaryApi.IsDiaryEligible(pawn))
+            if (pawn == null) return;
+            string pawnId = pawn.GetUniqueLoadID();
+            RimpsycheGameComponent component = Current.Game?.GetComponent<RimpsycheGameComponent>();
+            if (component == null) return;
+            if (!PawnDiaryApi.IsDiaryEligible(pawn))
             {
+                ReleasePawnOverride(pawn, pawnId, component);
                 return;
             }
 
-            string pawnId = pawn.GetUniqueLoadID();
             PawnDiaryRimpsycheSettings settings = PawnDiaryRimpsycheMod.Settings;
-            InFlightJob pending;
-            if (InFlight.TryGetValue(pawnId, out pending))
+            if (settings == null)
             {
-                // A settings change can happen while HTTP work is running. Discard the stale handle so
-                // its result cannot land after the player selected Off, Mapping, or Direct text.
-                if (settings != null && settings.personaMode == RimpsychePersonaMode.LlmTransform
-                    && string.Equals(pending.SettingsKey, LlmSettingsKey(settings), StringComparison.Ordinal))
-                {
-                    ResolvePendingTransform(pawn, pawnId, pending);
-                    return;
-                }
-                InFlight.Remove(pawnId);
+                ReleasePawnOverride(pawn, pawnId, component);
+                return;
             }
 
             NodeVectorSnapshot snapshot = ReadNodeVector(pawn);
             if (snapshot == null || snapshot.Nodes.Count == 0)
             {
-                ReleasePawnOverride(pawn, pawnId);
+                ReleasePawnOverride(pawn, pawnId, component);
                 return;
             }
 
@@ -235,10 +224,26 @@ namespace PawnDiaryRimpsyche
             {
                 key += ":" + LlmSettingsKey(settings);
             }
-            string previousHash;
-            if (AppliedVectorHash.TryGetValue(pawnId, out previousHash)
-                && string.Equals(previousHash, key, StringComparison.Ordinal))
+
+            InFlightJob pending;
+            if (InFlight.TryGetValue(pawnId, out pending))
             {
+                // Both settings and the rounded Rimpsyche vector belong to the request identity. Cancel
+                // immediately if either changed so an old paid result can never overwrite a newer psyche.
+                if (settings.personaMode == RimpsychePersonaMode.LlmTransform
+                    && string.Equals(pending.Key, key, StringComparison.Ordinal)
+                    && string.Equals(pending.SettingsKey, LlmSettingsKey(settings), StringComparison.Ordinal))
+                {
+                    ResolvePendingTransform(pawn, pawnId, pending);
+                    return;
+                }
+                CancelInFlight(pawnId);
+            }
+
+            string storedTarget;
+            if (component.TryGetPersonaTarget(pawnId, key, out storedTarget))
+            {
+                PawnDiaryApi.SetPsychotypeOverride(pawn, BridgeIds.ModId, storedTarget);
                 return;
             }
 
@@ -246,34 +251,30 @@ namespace PawnDiaryRimpsyche
             string rule = PsycheLensMapping.ComposeRule(plan, ResolveKeyedOrBlank);
             if (string.IsNullOrWhiteSpace(rule))
             {
-                ReleasePawnOverride(pawn, pawnId);
+                ReleasePawnOverride(pawn, pawnId, component);
                 return;
             }
 
+            string targetRule = rule;
             if (settings.personaMode == RimpsychePersonaMode.InternalPsychotype)
             {
                 string defName = PsycheLensMapping.InternalPsychotypeForPlan(plan);
-                if (!string.IsNullOrEmpty(defName) && PawnDiaryApi.SetPsychotype(pawn, defName, true))
-                {
-                    AppliedVectorHash[pawnId] = key;
-                }
+                string mappedRule = PawnDiaryApi.GetPsychotypeRule(defName);
+                if (!string.IsNullOrWhiteSpace(mappedRule)) targetRule = mappedRule;
+            }
+            else if (settings.personaMode == RimpsychePersonaMode.LlmTransform)
+            {
+                StartOrFallbackTransform(pawn, pawnId, key, snapshot, rule, settings, component);
                 return;
             }
 
-            if (settings.personaMode == RimpsychePersonaMode.LlmTransform)
-            {
-                StartOrFallbackTransform(pawn, pawnId, key, snapshot, rule, settings);
-                return;
-            }
-
-            if (PawnDiaryApi.SetPsychotypeCustomRule(pawn, rule))
-            {
-                AppliedVectorHash[pawnId] = key;
-            }
+            component.RememberPersonaTarget(pawnId, key, targetRule);
+            PawnDiaryApi.SetPsychotypeOverride(pawn, BridgeIds.ModId, targetRule);
         }
 
         private static void StartOrFallbackTransform(Pawn pawn, string pawnId, string key,
-            NodeVectorSnapshot snapshot, string fallbackRule, PawnDiaryRimpsycheSettings settings)
+            NodeVectorSnapshot snapshot, string fallbackRule, PawnDiaryRimpsycheSettings settings,
+            RimpsycheGameComponent component)
         {
             RimpsycheBridgeTuningDef tuning = RimpsycheBridgeTuningDef.Current;
             string summary = PsycheSummaryFormat.Format(snapshot.Nodes,
@@ -300,9 +301,10 @@ namespace PawnDiaryRimpsyche
                     FallbackRule = fallbackRule
                 };
             }
-            else if (PawnDiaryApi.SetPsychotypeCustomRule(pawn, fallbackRule))
+            else
             {
-                AppliedVectorHash[pawnId] = key;
+                component.RememberPersonaTarget(pawnId, key, fallbackRule);
+                PawnDiaryApi.SetPsychotypeOverride(pawn, BridgeIds.ModId, fallbackRule);
             }
         }
 
@@ -317,27 +319,31 @@ namespace PawnDiaryRimpsyche
             string rule = result.status == LlmCompletionStatus.Succeeded && !string.IsNullOrWhiteSpace(result.text)
                 ? result.text
                 : job.FallbackRule;
-            if (PawnDiaryApi.SetPsychotypeCustomRule(pawn, rule))
-            {
-                AppliedVectorHash[pawnId] = job.Key;
-                InFlight.Remove(pawnId);
-            }
+            InFlight.Remove(pawnId);
+            RimpsycheGameComponent component = Current.Game?.GetComponent<RimpsycheGameComponent>();
+            if (component == null) return;
+            component.RememberPersonaTarget(pawnId, job.Key, rule);
+            PawnDiaryApi.SetPsychotypeOverride(pawn, BridgeIds.ModId, rule);
         }
 
         private static string LlmSettingsKey(PawnDiaryRimpsycheSettings settings)
         {
-            return settings.transformLaneIndex + ":" + settings.ResolveTransformPrompt().GetHashCode();
+            return settings.transformLaneIndex + ":"
+                + PsycheLensMapping.StableTextHash(settings.ResolveTransformPrompt());
         }
 
-        private static void ReleasePawnOverride(Pawn pawn, string pawnId)
+        private static void ReleasePawnOverride(Pawn pawn, string pawnId, RimpsycheGameComponent component)
         {
-            if (!AppliedVectorHash.ContainsKey(pawnId))
+            CancelInFlight(pawnId);
+            if (component == null || !component.HasPersonaTarget(pawnId))
             {
                 return;
             }
 
-            PawnDiaryApi.ResetPsychotypeOverride(pawn, BridgeIds.ModId);
-            AppliedVectorHash.Remove(pawnId);
+            if (PawnDiaryApi.ResetPsychotypeOverride(pawn, BridgeIds.ModId))
+            {
+                component.ForgetPersonaTarget(pawnId);
+            }
         }
 
         // Every pawn the bridge may have touched: spawned/free colonists, caravans/travelling pods,
@@ -366,15 +372,40 @@ namespace PawnDiaryRimpsyche
             }
         }
 
-        private static void ResetAllOverridesInternal()
+        private static void ResetAllOverridesInternal(RimpsycheGameComponent component)
         {
+            CancelAllInFlight();
+            bool allReleased = true;
             foreach (Pawn pawn in TouchedPawns())
             {
-                PawnDiaryApi.ResetPsychotypeOverride(pawn, BridgeIds.ModId);
+                string id = pawn.GetUniqueLoadID();
+                if (!component.HasPersonaTarget(id)) continue;
+                if (PawnDiaryApi.ResetPsychotypeOverride(pawn, BridgeIds.ModId))
+                {
+                    component.ForgetPersonaTarget(id);
+                }
+                else allReleased = false;
             }
 
-            AppliedVectorHash.Clear();
+            if (allReleased) component.ClearPersonaTargets();
+        }
+
+        private static void CancelInFlight(string pawnId)
+        {
+            InFlightJob job;
+            if (string.IsNullOrWhiteSpace(pawnId) || !InFlight.TryGetValue(pawnId, out job)) return;
+            PawnDiaryApi.CancelLlmCompletion(job.Handle);
+            InFlight.Remove(pawnId);
+        }
+
+        private static void CancelAllInFlight()
+        {
+            List<InFlightJob> jobs = new List<InFlightJob>(InFlight.Values);
             InFlight.Clear();
+            for (int i = 0; i < jobs.Count; i++)
+            {
+                PawnDiaryApi.CancelLlmCompletion(jobs[i].Handle);
+            }
         }
 
         /// <summary>

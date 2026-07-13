@@ -359,6 +359,14 @@ namespace PawnDiaryRimpsyche.Pure
             return hash.ToString("x16");
         }
 
+        /// <summary>Deterministic FNV-1a key for persisted prompt/settings text.</summary>
+        public static string StableTextHash(string value)
+        {
+            ulong hash = 14695981039346656037UL;
+            unchecked { AddStringToHash(ref hash, value ?? string.Empty); }
+            return hash.ToString("x16");
+        }
+
         /// <summary>
         /// Converts a node value into signed hundredths with midpoint-away-from-zero rounding and a
         /// defensive -1..1 clamp. Exposed so the summary selector uses exactly the hash's hysteresis.

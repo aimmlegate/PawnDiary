@@ -44,11 +44,13 @@ namespace PawnDiaryRimTalkBridge
         public override IEnumerable<string> ConfigErrors()
         {
             foreach (string error in base.ConfigErrors()) yield return error;
-            if (defaultBaseline < 0f || defaultBaseline > 1f)
+            if (float.IsNaN(defaultBaseline) || float.IsInfinity(defaultBaseline)
+                || defaultBaseline < 0f || defaultBaseline > 1f)
             {
                 yield return "defaultBaseline must be in [0,1].";
             }
-            if (variationFraction < 0f || variationFraction > 1f)
+            if (float.IsNaN(variationFraction) || float.IsInfinity(variationFraction)
+                || variationFraction < 0f || variationFraction > 1f)
             {
                 yield return "variationFraction must be in [0,1].";
             }
@@ -67,7 +69,8 @@ namespace PawnDiaryRimTalkBridge
                 {
                     yield return "duplicate chattiness profile: " + profile.psychotypeDefName;
                 }
-                if (profile.baseline < 0f || profile.baseline > 1f)
+                if (float.IsNaN(profile.baseline) || float.IsInfinity(profile.baseline)
+                    || profile.baseline < 0f || profile.baseline > 1f)
                 {
                     yield return profile.psychotypeDefName + " baseline must be in [0,1].";
                 }

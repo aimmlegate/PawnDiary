@@ -17,6 +17,17 @@ namespace RimTalkBridgeLogicTests
 
         private static int Main()
         {
+            string importKey = PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.ForImport("persona", true);
+            Assert(importKey == PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.ForImport("persona", true)
+                    && importKey.Length == 16,
+                "persona sync key is stable and fixed-width");
+            Assert(importKey != PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.ForImport("persona", false),
+                "persona sync key includes transform mode");
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.ForExport("persona", true,
+                    PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.ChildQuestion)
+                    != PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.ForExport("persona", true,
+                        PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.None),
+                "persona sync key includes export modifier");
             Assert(PawnDiaryRimTalkBridge.Pure.PersonaTransferText.FromPsychotype(" outlook ") == "outlook",
                 "persona transfer contains psychotype only");
             Assert(PawnDiaryRimTalkBridge.Pure.PersonaTransferText.FromPsychotype(" ") == string.Empty,
@@ -104,6 +115,16 @@ namespace RimTalkBridgeLogicTests
             Assert(Math.Abs(PawnDiaryRimTalkBridge.Pure.PersonaChattinessPolicy.Resolve(
                     "Thing_Human123", "DiaryPsychotype_Theatrical", chattinessProfiles, 0.5f, 0f) - 0.8f) < 0.000001f,
                 "zero variation returns the exact XML baseline");
+            chattinessProfiles[0].psychotypeDefName = "  DiaryPsychotype_Theatrical  ";
+            Assert(Math.Abs(PawnDiaryRimTalkBridge.Pure.PersonaChattinessPolicy.Resolve(
+                    "Thing_Human123", "DiaryPsychotype_Theatrical", chattinessProfiles, 0.5f, 0f) - 0.8f) < 0.000001f,
+                "chattiness matching trims XML profile names");
+            chattinessProfiles[0].baseline = float.NaN;
+            float safeNaN = PawnDiaryRimTalkBridge.Pure.PersonaChattinessPolicy.Resolve(
+                "Thing_Human123", "DiaryPsychotype_Theatrical", chattinessProfiles, float.NaN, float.NaN);
+            Assert(!float.IsNaN(safeNaN) && !float.IsInfinity(safeNaN)
+                    && safeNaN >= 0.425f && safeNaN <= 0.575f,
+                "NaN chattiness tuning falls back to finite safe defaults");
 
             // ContextFormat
             TestBuildDiarySection_BasicNoStyle();

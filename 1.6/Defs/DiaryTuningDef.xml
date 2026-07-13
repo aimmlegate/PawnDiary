@@ -442,9 +442,9 @@
       <li>PrisonBreak</li>
     </arcReflectionHighStakesDefNameTokens>
 
-    <!-- Humor cues (hidden, always-on). Base probability an eligible first-person entry gets one
-         structural humor cue appended to its prompt. No settings UI; this is the single knob. Flavor
-         (Light vs Gallows) is chosen separately by event stakes. See DiaryHumorCueDefs.xml for cues. -->
+    <!-- Humor cues (always-on). Base probability an eligible first-person entry gets one structural
+         humor cue appended to its prompt. These XML values are also available in Advanced tuning;
+         there is no separate player-facing humor toggle. See DiaryHumorCueDefs.xml for cue text. -->
     <humorChance>0.20</humorChance>
     <!-- Flat multiplier on humorChance for a writer with an upbeat temperament (Optimist, Sanguine,
          or Anomaly's Joyous trait) or a Social skill passion (minor or burning). Not cumulative:
@@ -455,6 +455,20 @@
          trait). Below 1 to make humor rarer. Mutually exclusive with the elevated multiplier: a writer
          who qualifies for both offsets back to the base rate. -->
     <humorReducedChanceMultiplier>0.5</humorReducedChanceMultiplier>
+    <humorElevatedTraitKeys>
+      <li>NaturalMood:2</li> <!-- sanguine -->
+      <li>NaturalMood:1</li> <!-- optimist -->
+      <li>Joyous</li>        <!-- Anomaly; inert without DLC -->
+    </humorElevatedTraitKeys>
+    <humorReducedTraitKeys>
+      <li>NaturalMood:-1</li> <!-- pessimist -->
+      <li>NaturalMood:-2</li> <!-- depressive -->
+      <li>Nerves:-1</li>      <!-- nervous -->
+      <li>Neurotic:1</li>     <!-- neurotic -->
+      <li>Neurotic:2</li>     <!-- very neurotic -->
+      <li>Psychopath</li>
+      <li>Disturbing</li>     <!-- Anomaly; inert without DLC -->
+    </humorReducedTraitKeys>
   </PawnDiary.DiaryTuningDef>
 
 </Defs>

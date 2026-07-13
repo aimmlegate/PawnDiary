@@ -35,6 +35,7 @@
     <Compile Include="..\..\Source\Pipeline\ContextProviderRegistry.cs" Link="ContextProviderRegistry.cs" />
     <Compile Include="..\..\Source\Pipeline\PromptEnchantmentPlanner.cs" Link="PromptEnchantmentPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\HediffPersonaOverridePolicy.cs" Link="HediffPersonaOverridePolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\HumorChancePolicy.cs" Link="HumorChancePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\EventWindowPolicy.cs" Link="EventWindowPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ProgressionMilestonePolicy.cs" Link="ProgressionMilestonePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ArcReflectionSchedulePolicy.cs" Link="ArcReflectionSchedulePolicy.cs" />

@@ -38,7 +38,7 @@ namespace PawnDiary.Integration
         /// members never change behavior incompatibly. Adapters that need a newer member can check
         /// this at load time and degrade gracefully on older Pawn Diary builds.
         /// </summary>
-        public const int ApiVersion = 6;
+        public const int ApiVersion = 7;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time
@@ -859,7 +859,8 @@ namespace PawnDiary.Integration
                     return false;
                 }
 
-                if (!ExternalIntegrationsAllowed || !IsReady || pawn == null)
+                // Cleanup must remain possible after the player turns the master integration switch off.
+                if (!IsReady || pawn == null)
                 {
                     return false;
                 }
@@ -994,7 +995,8 @@ namespace PawnDiary.Integration
                     return false;
                 }
 
-                if (!ExternalIntegrationsAllowed || !IsReady || pawn == null)
+                // Cleanup must remain possible after the player turns the master integration switch off.
+                if (!IsReady || pawn == null)
                 {
                     return false;
                 }
@@ -1667,6 +1669,67 @@ namespace PawnDiary.Integration
                     "[Pawn Diary] Integration API: GetLlmCompletionResult failed: " + e,
                     "PawnDiary.Api.GetLlmCompletionResult.Exception".GetHashCode());
                 return new LlmCompletionResult { status = LlmCompletionStatus.Unknown };
+            }
+        }
+
+        /// <summary>
+        /// Returns the localized rule for one built-in psychotype Def identity, or an empty string when
+        /// unavailable. Adapters use this to publish a mapped built-in outlook through the source-owned
+        /// override layer without mutating the player's editable base selection.
+        /// </summary>
+        public static string GetPsychotypeRule(string psychotypeDefName)
+        {
+            try
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: GetPsychotypeRule was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.GetPsychotypeRule.OffThread".GetHashCode());
+                    return string.Empty;
+                }
+
+                if (!ExternalIntegrationsAllowed || !IsReady || string.IsNullOrWhiteSpace(psychotypeDefName))
+                {
+                    return string.Empty;
+                }
+
+                return DiaryPsychotypes.RuleFor(psychotypeDefName) ?? string.Empty;
+            }
+            catch (Exception e)
+            {
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: GetPsychotypeRule failed: " + e,
+                    "PawnDiary.Api.GetPsychotypeRule.Exception".GetHashCode());
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Cancels an obsolete one-shot completion and releases its bounded core slot immediately.
+        /// Unlike starting work, cleanup remains available after the master integration switch is turned
+        /// off. Returns false for an invalid, already-consumed, or unknown handle; never throws.
+        /// </summary>
+        public static bool CancelLlmCompletion(int handle)
+        {
+            try
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: CancelLlmCompletion was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.CancelLlmCompletion.OffThread".GetHashCode());
+                    return false;
+                }
+
+                return handle > 0 && ExternalLlmCompletionService.Cancel(handle);
+            }
+            catch (Exception e)
+            {
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: CancelLlmCompletion failed: " + e,
+                    "PawnDiary.Api.CancelLlmCompletion.Exception".GetHashCode());
+                return false;
             }
         }
 

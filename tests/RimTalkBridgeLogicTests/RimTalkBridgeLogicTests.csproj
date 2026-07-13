@@ -26,5 +26,6 @@
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\PersonaTransferText.cs" Link="PersonaTransferText.cs" />
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\PersonaPromptPolicy.cs" Link="PersonaPromptPolicy.cs" />
     <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\PersonaChattinessPolicy.cs" Link="PersonaChattinessPolicy.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\PersonaSyncKey.cs" Link="PersonaSyncKey.cs" />
   </ItemGroup>
 </Project>

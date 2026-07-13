@@ -36,11 +36,11 @@ namespace PawnDiaryRimTalkBridge
         // Last tick the pass ran. Compared by elapsed time (now - last), never TicksGame % N, so a dev
         // time-skip or save/load cannot desync the cadence (SKILL.md "Persistence & ticking").
         private int lastPassTick;
+        private bool firstPassPending = true;
 
-        // Rolling anti-spam timestamps are the only accepted-conversation state that survives a save.
-        // The queue and in-flight handle remain transient by design; separate primitive fields below
-        // preserve only assessment request cadence. Value/value Scribing keeps this plain pawn-id ->
-        // tick map independent of live Pawn references.
+        // Rolling anti-spam timestamps survive a save. Conversation queues/handles remain transient;
+        // persona ownership and resolved-target dictionaries below persist separately. Value/value
+        // Scribing keeps this plain pawn-id -> tick map independent of live Pawn references.
         private Dictionary<string, int> conversationCooldownTicksByPawn = new Dictionary<string, int>();
         private List<string> conversationCooldownPawnKeys;
         private List<int> conversationCooldownTickValues;
@@ -51,6 +51,28 @@ namespace PawnDiaryRimTalkBridge
         private Dictionary<string, float> originalTalkWeightsByPawn = new Dictionary<string, float>();
         private List<string> originalTalkWeightPawnKeys;
         private List<float> originalTalkWeightValues;
+
+        // Persona ownership mirrors the talk-weight backup. The export bridge must be reversible: when
+        // authority ends, restore exactly the RimTalk persona that existed before Pawn Diary's first write.
+        private Dictionary<string, string> originalPersonasByPawn = new Dictionary<string, string>();
+        private List<string> originalPersonaPawnKeys;
+        private List<string> originalPersonaValues;
+
+        // Persist the source key AND resolved target text for both directions. The target text is crucial
+        // for transformed personas: a reload or a temporarily rejected override can retry the local write
+        // without buying another LLM request.
+        private Dictionary<string, string> importSourceKeysByPawn = new Dictionary<string, string>();
+        private Dictionary<string, string> importTargetTextByPawn = new Dictionary<string, string>();
+        private Dictionary<string, string> exportSourceKeysByPawn = new Dictionary<string, string>();
+        private Dictionary<string, string> exportTargetTextByPawn = new Dictionary<string, string>();
+        private List<string> importSourcePawnKeys;
+        private List<string> importSourceValues;
+        private List<string> importTargetPawnKeys;
+        private List<string> importTargetValues;
+        private List<string> exportSourcePawnKeys;
+        private List<string> exportSourceValues;
+        private List<string> exportTargetPawnKeys;
+        private List<string> exportTargetValues;
 
         // Assessment requests spend tokens even when every candidate is later ignored. Persist the
         // day/gap counters so reloading cannot reopen the XML maxBatchesPerDay allowance. The queue and
@@ -76,7 +98,10 @@ namespace PawnDiaryRimTalkBridge
             DiaryContextInjector.ResetForNewGame();
             ColonyContextInjector.ResetForNewGame();
             SharedMemoryInjector.ResetForNewGame();
-            PersonaSync.ResetForNewGame();
+            // FinalizeInit may run off the main thread in RimWorld 1.6. Only clear plain static data
+            // here; PersonaSync performs API-backed cleanup from the first real game tick.
+            PersonaSync.PrepareForNewGame();
+            RimTalkPersonaEditorOwnershipPatch.ResetForNewGame();
             RecentDiaryEventCache.ResetForNewGame();
             ConversationTracker.ResetForNewGame();
             ConversationTracker.RestorePawnCooldowns(conversationCooldownTicksByPawn);
@@ -92,6 +117,7 @@ namespace PawnDiaryRimTalkBridge
             // The next GameComponentTick fires the first pass immediately (now - 0 >= interval for any
             // loaded game's TicksGame), which is fine — the caches were just cleared above.
             lastPassTick = 0;
+            firstPassPending = true;
         }
 
         /// <summary>Saves the rolling per-pawn chat-event cooldown so reload cannot bypass it.</summary>
@@ -126,6 +152,16 @@ namespace PawnDiaryRimTalkBridge
                 LookMode.Value,
                 ref originalTalkWeightPawnKeys,
                 ref originalTalkWeightValues);
+            Scribe_Collections.Look(ref originalPersonasByPawn, "rimTalkPersonaOriginalTextByPawn",
+                LookMode.Value, LookMode.Value, ref originalPersonaPawnKeys, ref originalPersonaValues);
+            Scribe_Collections.Look(ref importSourceKeysByPawn, "rimTalkPersonaImportSourceKeysByPawn",
+                LookMode.Value, LookMode.Value, ref importSourcePawnKeys, ref importSourceValues);
+            Scribe_Collections.Look(ref importTargetTextByPawn, "rimTalkPersonaImportTargetTextByPawn",
+                LookMode.Value, LookMode.Value, ref importTargetPawnKeys, ref importTargetValues);
+            Scribe_Collections.Look(ref exportSourceKeysByPawn, "rimTalkPersonaExportSourceKeysByPawn",
+                LookMode.Value, LookMode.Value, ref exportSourcePawnKeys, ref exportSourceValues);
+            Scribe_Collections.Look(ref exportTargetTextByPawn, "rimTalkPersonaExportTargetTextByPawn",
+                LookMode.Value, LookMode.Value, ref exportTargetPawnKeys, ref exportTargetValues);
 
             Scribe_Values.Look(ref assessmentGateHaveDay, "rimTalkAssessmentGateHaveDay", false);
             Scribe_Values.Look(ref assessmentGateDayIndex, "rimTalkAssessmentGateDayIndex", 0);
@@ -143,6 +179,14 @@ namespace PawnDiaryRimTalkBridge
             if (Scribe.mode == LoadSaveMode.PostLoadInit && originalTalkWeightsByPawn == null)
             {
                 originalTalkWeightsByPawn = new Dictionary<string, float>();
+            }
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                originalPersonasByPawn = originalPersonasByPawn ?? new Dictionary<string, string>();
+                importSourceKeysByPawn = importSourceKeysByPawn ?? new Dictionary<string, string>();
+                importTargetTextByPawn = importTargetTextByPawn ?? new Dictionary<string, string>();
+                exportSourceKeysByPawn = exportSourceKeysByPawn ?? new Dictionary<string, string>();
+                exportTargetTextByPawn = exportTargetTextByPawn ?? new Dictionary<string, string>();
             }
         }
 
@@ -170,6 +214,108 @@ namespace PawnDiaryRimTalkBridge
             }
         }
 
+        internal bool TryGetOriginalPersona(string pawnId, out string persona)
+        {
+            return originalPersonasByPawn.TryGetValue(pawnId ?? string.Empty, out persona);
+        }
+
+        internal void RememberOriginalPersona(string pawnId, string persona)
+        {
+            if (!string.IsNullOrWhiteSpace(pawnId) && !originalPersonasByPawn.ContainsKey(pawnId))
+            {
+                originalPersonasByPawn[pawnId] = persona ?? string.Empty;
+            }
+        }
+
+        internal void ForgetOriginalPersona(string pawnId)
+        {
+            if (!string.IsNullOrWhiteSpace(pawnId)) originalPersonasByPawn.Remove(pawnId);
+        }
+
+        internal bool TryGetImportTarget(string pawnId, string sourceKey, out string target)
+        {
+            target = string.Empty;
+            string savedKey;
+            return importSourceKeysByPawn.TryGetValue(pawnId ?? string.Empty, out savedKey)
+                && string.Equals(savedKey, sourceKey ?? string.Empty, System.StringComparison.Ordinal)
+                && importTargetTextByPawn.TryGetValue(pawnId ?? string.Empty, out target);
+        }
+
+        internal void RememberImportTarget(string pawnId, string sourceKey, string target)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId)) return;
+            importSourceKeysByPawn[pawnId] = sourceKey ?? string.Empty;
+            importTargetTextByPawn[pawnId] = target ?? string.Empty;
+        }
+
+        internal void ForgetImportTarget(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId)) return;
+            importSourceKeysByPawn.Remove(pawnId);
+            importTargetTextByPawn.Remove(pawnId);
+        }
+
+        internal bool TryGetExportTarget(string pawnId, string sourceKey, out string target)
+        {
+            target = string.Empty;
+            string savedKey;
+            return exportSourceKeysByPawn.TryGetValue(pawnId ?? string.Empty, out savedKey)
+                && string.Equals(savedKey, sourceKey ?? string.Empty, System.StringComparison.Ordinal)
+                && exportTargetTextByPawn.TryGetValue(pawnId ?? string.Empty, out target);
+        }
+
+        internal void RememberExportTarget(string pawnId, string sourceKey, string target)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId)) return;
+            exportSourceKeysByPawn[pawnId] = sourceKey ?? string.Empty;
+            exportTargetTextByPawn[pawnId] = target ?? string.Empty;
+        }
+
+        internal void ForgetExportTarget(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId)) return;
+            exportSourceKeysByPawn.Remove(pawnId);
+            exportTargetTextByPawn.Remove(pawnId);
+        }
+
+        internal void ClearImportTargets()
+        {
+            importSourceKeysByPawn.Clear();
+            importTargetTextByPawn.Clear();
+        }
+
+        internal void ClearExportTargets()
+        {
+            exportSourceKeysByPawn.Clear();
+            exportTargetTextByPawn.Clear();
+        }
+
+        internal void ClearOriginalPersonaBackups()
+        {
+            originalPersonasByPawn.Clear();
+        }
+
+        internal void ClearOriginalTalkWeightBackups()
+        {
+            originalTalkWeightsByPawn.Clear();
+        }
+
+        internal bool HasImportTargets { get { return importSourceKeysByPawn.Count > 0; } }
+
+        internal bool HasImportTarget(string pawnId)
+        {
+            return !string.IsNullOrWhiteSpace(pawnId) && importSourceKeysByPawn.ContainsKey(pawnId);
+        }
+
+        internal bool HasExportOwnership
+        {
+            get
+            {
+                return exportSourceKeysByPawn.Count > 0 || originalPersonasByPawn.Count > 0
+                    || originalTalkWeightsByPawn.Count > 0;
+            }
+        }
+
         /// <summary>Throttled periodic work. Does nothing when RimTalk is absent or between intervals.</summary>
         public override void GameComponentTick()
         {
@@ -179,11 +325,13 @@ namespace PawnDiaryRimTalkBridge
             }
 
             int now = Find.TickManager != null ? Find.TickManager.TicksGame : 0;
-            if (now - lastPassTick < PassIntervalTicks)
+            long elapsed = (long)now - lastPassTick;
+            if (!firstPassPending && elapsed >= 0 && elapsed < PassIntervalTicks)
             {
                 return;
             }
 
+            firstPassPending = false;
             lastPassTick = now;
             RunPass(now);
         }

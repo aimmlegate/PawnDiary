@@ -12,6 +12,7 @@
 // New to C#/RimWorld? See AGENTS.md.
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace PawnDiary.Integration
 {
@@ -78,6 +79,8 @@ namespace PawnDiary.Integration
 
         private static readonly object gate = new object();
         private static readonly Dictionary<int, LlmCompletionResult> results = new Dictionary<int, LlmCompletionResult>();
+        private static readonly Dictionary<int, CancellationTokenSource> cancellations =
+            new Dictionary<int, CancellationTokenSource>();
         private static int nextHandle;
 
         /// <summary>
@@ -112,18 +115,22 @@ namespace PawnDiary.Integration
             float temperature = settings.temperature;
 
             int handle;
+            CancellationTokenSource cancellation = new CancellationTokenSource();
             lock (gate)
             {
                 if (results.Count >= MaxTrackedRequests)
                 {
+                    cancellation.Dispose();
                     return 0;
                 }
 
                 handle = AllocateHandle();
                 results[handle] = new LlmCompletionResult { status = LlmCompletionStatus.Pending };
+                cancellations[handle] = cancellation;
             }
 
-            RunAsync(handle, laneSnapshot, systemPrompt, userText, maxTokens, timeoutSeconds, temperature);
+            RunAsync(handle, laneSnapshot, systemPrompt, userText, maxTokens, timeoutSeconds, temperature,
+                cancellation.Token);
             return handle;
         }
 
@@ -133,10 +140,37 @@ namespace PawnDiary.Integration
         /// </summary>
         public static void ResetSession()
         {
+            List<CancellationTokenSource> toCancel;
             lock (gate)
             {
                 results.Clear();
+                toCancel = new List<CancellationTokenSource>(cancellations.Values);
+                cancellations.Clear();
             }
+
+            CancelAll(toCancel);
+        }
+
+        /// <summary>
+        /// Cancels and forgets one obsolete handle. Returns false when the handle was already terminally
+        /// consumed or unknown. Cancellation is allowed even after the master integration switch turns off.
+        /// </summary>
+        public static bool Cancel(int handle)
+        {
+            CancellationTokenSource cancellation;
+            lock (gate)
+            {
+                bool removed = results.Remove(handle);
+                if (!cancellations.TryGetValue(handle, out cancellation))
+                {
+                    return removed;
+                }
+
+                cancellations.Remove(handle);
+            }
+
+            CancelAndDispose(cancellation);
+            return true;
         }
 
         /// <summary>Returns the defensively clamped output-token estimate used for budget admission.</summary>
@@ -178,11 +212,14 @@ namespace PawnDiary.Integration
         // Fire-and-forget background call. async void is deliberate (top-level task, like
         // ApiConnectionController.RefreshCapability): the try/catch guarantees no unobserved exception,
         // and the outcome is written into the slot for the poller to pick up.
-        private static async void RunAsync(int handle, ApiEndpointConfig endpoint, string systemPrompt, string userText, int maxTokens, int timeoutSeconds, float temperature)
+        private static async void RunAsync(int handle, ApiEndpointConfig endpoint, string systemPrompt,
+            string userText, int maxTokens, int timeoutSeconds, float temperature,
+            CancellationToken cancellationToken)
         {
             try
             {
-                string text = await LlmClient.SendSingleCompletion(endpoint, systemPrompt, userText, maxTokens, timeoutSeconds, temperature);
+                string text = await LlmClient.SendSingleCompletion(endpoint, systemPrompt, userText,
+                    maxTokens, timeoutSeconds, temperature, cancellationToken);
                 Complete(handle, LlmCompletionStatus.Succeeded, text, string.Empty);
             }
             catch (Exception e)
@@ -196,6 +233,7 @@ namespace PawnDiary.Integration
 
         private static void Complete(int handle, LlmCompletionStatus status, string text, string error)
         {
+            CancellationTokenSource cancellation = null;
             lock (gate)
             {
                 LlmCompletionResult slot;
@@ -205,9 +243,32 @@ namespace PawnDiary.Integration
                     slot.text = text ?? string.Empty;
                     slot.error = error ?? string.Empty;
                 }
+                if (cancellations.TryGetValue(handle, out cancellation))
+                {
+                    cancellations.Remove(handle);
+                }
                 // A game-session reset can remove the slot while cancellation is still unwinding.
                 // In that case the old result is deliberately dropped.
             }
+
+            cancellation?.Dispose();
+        }
+
+        private static void CancelAll(List<CancellationTokenSource> sources)
+        {
+            if (sources == null) return;
+            for (int i = 0; i < sources.Count; i++)
+            {
+                CancelAndDispose(sources[i]);
+            }
+        }
+
+        private static void CancelAndDispose(CancellationTokenSource cancellation)
+        {
+            if (cancellation == null) return;
+            try { cancellation.Cancel(); }
+            catch (ObjectDisposedException) { }
+            finally { cancellation.Dispose(); }
         }
 
         // Caller holds the lock.

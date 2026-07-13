@@ -31,6 +31,7 @@ namespace DiaryPipelineTests
             TestPromptEnchantmentPlanner();
             TestPromptEnchantmentCandidateSnapshot();
             TestPromptEnchantmentDecayPolicy();
+            TestHumorChancePolicy();
             TestHediffPersonaOverridePolicy();
             TestDiaryEntryTitleFilter();
             TestDiaryEntryStatsAccumulator();
@@ -1225,6 +1226,30 @@ namespace DiaryPipelineTests
             AssertEqual("snapshot list entry 0 source", "HediffA", snapshots[0].sourceHediffDefName);
             AssertEqual("snapshot list entry 1 source", "HediffB", snapshots[1].sourceHediffDefName);
             AssertNear("snapshot list entry 2 weight", 0.5f, snapshots[2].weight);
+        }
+
+        private static void TestHumorChancePolicy()
+        {
+            AssertNear("humor neutral temperament uses base rate", 1f,
+                HumorChancePolicy.Multiplier(false, false, false, 2f, 0.5f));
+            AssertNear("humor upbeat trait elevates once", 2f,
+                HumorChancePolicy.Multiplier(true, false, false, 2f, 0.5f));
+            AssertNear("humor social passion elevates once", 2f,
+                HumorChancePolicy.Multiplier(false, true, false, 2f, 0.5f));
+            AssertNear("humor elevated qualifiers do not stack", 2f,
+                HumorChancePolicy.Multiplier(true, true, false, 2f, 0.5f));
+            AssertNear("humor dour trait reduces once", 0.5f,
+                HumorChancePolicy.Multiplier(false, false, true, 2f, 0.5f));
+            AssertNear("humor opposing traits cancel to base", 1f,
+                HumorChancePolicy.Multiplier(true, false, true, 2f, 0.5f));
+            AssertNear("humor social passion and dour trait cancel to base", 1f,
+                HumorChancePolicy.Multiplier(false, true, true, 2f, 0.5f));
+            AssertEqual("humor seed is deterministic",
+                HumorChancePolicy.StableSeed("event", "pawn"),
+                HumorChancePolicy.StableSeed("event", "pawn"));
+            AssertTrue("humor seed separates POV writers",
+                HumorChancePolicy.StableSeed("event", "pawn-a")
+                    != HumorChancePolicy.StableSeed("event", "pawn-b"));
         }
 
         private static void TestPromptEnchantmentDecayPolicy()

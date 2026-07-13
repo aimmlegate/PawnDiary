@@ -240,8 +240,9 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            Pawn pawn = FindLivePawnByLoadId(PawnIdForRole(diaryEvent, povRole), livePawnsById);
-            return HumorCues.CueFor(diaryEvent, pawn);
+            string pawnId = PawnIdForRole(diaryEvent, povRole);
+            Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
+            return HumorCues.CueFor(diaryEvent, pawn, pawnId);
         }
 
         private static Dictionary<string, Pawn> SnapshotLivePawnsByLoadId()

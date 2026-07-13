@@ -11,7 +11,7 @@
   <PawnDiaryRimTalkBridge.Settings.LevelOff>Off</PawnDiaryRimTalkBridge.Settings.LevelOff>
   <PawnDiaryRimTalkBridge.Settings.LevelOffDesc>No data flows between Pawn Diary and RimTalk in either direction.</PawnDiaryRimTalkBridge.Settings.LevelOffDesc>
   <PawnDiaryRimTalkBridge.Settings.LevelSharedContext>Shared context</PawnDiaryRimTalkBridge.Settings.LevelSharedContext>
-  <PawnDiaryRimTalkBridge.Settings.LevelSharedContextDesc>Pawns remember their diary in conversation: recent diary memories flow into RimTalk prompts, and each pawn's RimTalk persona is visible to the diary as context. No entries are created from chat.</PawnDiaryRimTalkBridge.Settings.LevelSharedContextDesc>
+  <PawnDiaryRimTalkBridge.Settings.LevelSharedContextDesc>Pawns remember their diary in conversation: recent diary memories flow into RimTalk prompts. Optional persona synchronization can publish Pawn Diary's outlook or import RimTalk's persona; it defaults to off. No entries are created from chat.</PawnDiaryRimTalkBridge.Settings.LevelSharedContextDesc>
   <PawnDiaryRimTalkBridge.Settings.LevelConversations>Shared context + conversations</PawnDiaryRimTalkBridge.Settings.LevelConversations>
   <PawnDiaryRimTalkBridge.Settings.LevelConversationsDesc>Everything above, plus a bounded editorial funnel for finished conversations. Only explicit durable interpersonal content creates one linked diary event for both participants; chatter, announcements, exposition, and event echoes create nothing.</PawnDiaryRimTalkBridge.Settings.LevelConversationsDesc>
   <PawnDiaryRimTalkBridge.Settings.AdvancedSection>Advanced</PawnDiaryRimTalkBridge.Settings.AdvancedSection>
@@ -20,6 +20,7 @@
   <PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoice>Persona-led diary voice (experimental)</PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoice>
   <PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoiceDesc>Shapes each pawn's diary writing voice from their RimTalk character description. Experimental: a character description is a cruder voice rule than the curated diary styles. Turning this off restores the normal styles.</PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoiceDesc>
   <PawnDiaryRimTalkBridge.Settings.PersonaDirection>Persona synchronization</PawnDiaryRimTalkBridge.Settings.PersonaDirection>
+  <PawnDiaryRimTalkBridge.Settings.PersonaOff>Off (keep personas independent)</PawnDiaryRimTalkBridge.Settings.PersonaOff>
   <PawnDiaryRimTalkBridge.Settings.PersonaToRimTalk>Pawn Diary → RimTalk (provide Pawn Diary's persona)</PawnDiaryRimTalkBridge.Settings.PersonaToRimTalk>
   <PawnDiaryRimTalkBridge.Settings.PersonaFromRimTalk>Pawn Diary ← RimTalk (import RimTalk's persona)</PawnDiaryRimTalkBridge.Settings.PersonaFromRimTalk>
   <PawnDiaryRimTalkBridge.Settings.TransformPersona>Rewrite synchronized personas with an LLM</PawnDiaryRimTalkBridge.Settings.TransformPersona>

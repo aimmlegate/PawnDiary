@@ -14,15 +14,16 @@
   <PawnDiaryRimpsyche.Settings.Missing>Rimpsyche is not active, so this bridge is idle. Enable Rimpsyche - Personality Core to use it.</PawnDiaryRimpsyche.Settings.Missing>
   <PawnDiaryRimpsyche.Settings.Section>Rimpsyche integration</PawnDiaryRimpsyche.Settings.Section>
   <PawnDiaryRimpsyche.Settings.Mode.Off>Off</PawnDiaryRimpsyche.Settings.Mode.Off>
-  <PawnDiaryRimpsyche.Settings.Mode.OffDesc>Do not synchronize Rimpsyche personality into the pawn's editable diary outlook.</PawnDiaryRimpsyche.Settings.Mode.OffDesc>
+  <PawnDiaryRimpsyche.Settings.Mode.OffDesc>Keep Rimpsyche personality independent from Pawn Diary's outlook.</PawnDiaryRimpsyche.Settings.Mode.OffDesc>
   <PawnDiaryRimpsyche.Settings.Mode.Mapping>Map to a built-in psychotype</PawnDiaryRimpsyche.Settings.Mode.Mapping>
   <PawnDiaryRimpsyche.Settings.Mode.MappingDesc>Choose the closest built-in Pawn Diary psychotype from the pawn's dominant Rimpsyche family.</PawnDiaryRimpsyche.Settings.Mode.MappingDesc>
   <PawnDiaryRimpsyche.Settings.Mode.Direct>Direct text from Rimpsyche</PawnDiaryRimpsyche.Settings.Mode.Direct>
-  <PawnDiaryRimpsyche.Settings.Mode.DirectDesc>Seed the editable custom outlook with deterministic text derived from the pawn's strongest Rimpsyche families.</PawnDiaryRimpsyche.Settings.Mode.DirectDesc>
+  <PawnDiaryRimpsyche.Settings.Mode.DirectDesc>Apply a reversible bridge-owned outlook derived deterministically from the pawn's strongest Rimpsyche families.</PawnDiaryRimpsyche.Settings.Mode.DirectDesc>
   <PawnDiaryRimpsyche.Settings.Mode.Llm>LLM-assisted</PawnDiaryRimpsyche.Settings.Mode.Llm>
-  <PawnDiaryRimpsyche.Settings.Mode.LlmDesc>Rewrite Rimpsyche's personality summary as an editable diary outlook. Falls back to direct text.</PawnDiaryRimpsyche.Settings.Mode.LlmDesc>
+  <PawnDiaryRimpsyche.Settings.Mode.LlmDesc>Rewrite Rimpsyche's personality summary as a reversible bridge-owned outlook. Falls back to direct text.</PawnDiaryRimpsyche.Settings.Mode.LlmDesc>
   <PawnDiaryRimpsyche.Settings.TransformLane>LLM lane</PawnDiaryRimpsyche.Settings.TransformLane>
   <PawnDiaryRimpsyche.Settings.TransformLaneAuto>Automatic (first active)</PawnDiaryRimpsyche.Settings.TransformLaneAuto>
+  <PawnDiaryRimpsyche.Settings.TransformPromptHint>Transformation prompt (leave blank to follow the current localized default)</PawnDiaryRimpsyche.Settings.TransformPromptHint>
   <PawnDiaryRimpsyche.Settings.TransformPromptDefault>Rewrite the supplied Rimpsyche personality data into one or two concise behavioral sentences for a diary-writing outlook. Begin with "This pawn". Describe what they notice, value, fear, or use to judge events. Do not mention Rimpsyche, personality scores, nodes, game mechanics, or the transformation.</PawnDiaryRimpsyche.Settings.TransformPromptDefault>
   <PawnDiaryRimpsyche.Settings.PsychotypeOverride>Let psyche shape diary outlook</PawnDiaryRimpsyche.Settings.PsychotypeOverride>
   <PawnDiaryRimpsyche.Settings.PsychotypeOverrideDesc>Use the pawn's two strongest, distinct personality families as a source-owned diary outlook. Turning this off releases every outlook override owned by this bridge.</PawnDiaryRimpsyche.Settings.PsychotypeOverrideDesc>

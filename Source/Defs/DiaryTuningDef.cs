@@ -496,11 +496,9 @@ namespace PawnDiary
             "PrisonBreak",
         };
 
-        // ---- Humor cues (hidden, always-on) ----
+        // ---- Humor cues (always-on; XML-authored and visible in the Advanced tuning editor) ----
         // Base probability (0..1) that an eligible first-person entry gets one structural humor
-        // cue appended to its prompt. There is no settings field or UI for this; the single knob
-        // lives here so it can be retuned in XML. Flavor (Light vs Gallows) is chosen separately by
-        // event stakes, so this only controls how often any humor appears at all.
+        // cue appended to its prompt. Flavor (Light vs Gallows) is chosen separately by event stakes.
         public float humorChance = 0.20f;
         // Flat multiplier on humorChance for a writer with an upbeat temperament (Optimist, Sanguine,
         // or Anomaly's Joyous trait) or a Social skill passion (minor or burning). Not cumulative:
@@ -512,6 +510,24 @@ namespace PawnDiary
         // Disturbing trait). Below 1 to make humor rarer. Non-cumulative and mutually exclusive with
         // the elevated multiplier: a writer who qualifies for both offsets back to the base rate.
         public float humorReducedChanceMultiplier = 0.5f;
+        // Trait policy uses "defName" or "defName:degree" strings. DLC-only names are inert when their
+        // content pack is absent, so these remain base-game safe without Def references.
+        public List<string> humorElevatedTraitKeys = new List<string>
+        {
+            "NaturalMood:2",
+            "NaturalMood:1",
+            "Joyous",
+        };
+        public List<string> humorReducedTraitKeys = new List<string>
+        {
+            "NaturalMood:-1",
+            "NaturalMood:-2",
+            "Nerves:-1",
+            "Neurotic:1",
+            "Neurotic:2",
+            "Psychopath",
+            "Disturbing",
+        };
     }
 
     // Accessor for the single DiaryTuningDef. Caches the lookup and falls back to a default
@@ -550,7 +566,7 @@ namespace PawnDiary
             get
             {
                 float value = Current.humorChance;
-                if (value < 0f || value > 1f || float.IsNaN(value))
+                if (value < 0f || value > 1f || float.IsNaN(value) || float.IsInfinity(value))
                 {
                     return DefaultHumorChance;
                 }
@@ -559,8 +575,8 @@ namespace PawnDiary
             }
         }
 
-        // Fallbacks used only if the XML def is missing entirely or the authored value is negative/NaN;
-        // mirror the HumorChance guard above.
+        // Fallbacks used only if the XML def is missing entirely or the authored value is non-finite/
+        // negative; mirror the HumorChance guard above.
         private const float DefaultHumorElevatedChanceMultiplier = 2f;
         private const float DefaultHumorReducedChanceMultiplier = 0.5f;
 
@@ -568,14 +584,14 @@ namespace PawnDiary
         /// XML-tuned flat multiplier applied to <see cref="HumorChance"/> for a writer who qualifies
         /// for the elevated humor chance (see <c>HumorCues.HumorChanceMultiplierFor</c>). Reads
         /// <see cref="DiaryTuningDef.humorElevatedChanceMultiplier"/>, with a hardcoded fallback when
-        /// the tuning def is absent or the authored value is negative/NaN.
+        /// the tuning def is absent or the authored value is negative/non-finite.
         /// </summary>
         public static float HumorElevatedChanceMultiplier
         {
             get
             {
                 float value = Current.humorElevatedChanceMultiplier;
-                if (value < 0f || float.IsNaN(value))
+                if (value < 0f || float.IsNaN(value) || float.IsInfinity(value))
                 {
                     return DefaultHumorElevatedChanceMultiplier;
                 }
@@ -584,18 +600,28 @@ namespace PawnDiary
             }
         }
 
+        public static IList<string> HumorElevatedTraitKeys
+        {
+            get { return Current.humorElevatedTraitKeys ?? Fallback.humorElevatedTraitKeys; }
+        }
+
+        public static IList<string> HumorReducedTraitKeys
+        {
+            get { return Current.humorReducedTraitKeys ?? Fallback.humorReducedTraitKeys; }
+        }
+
         /// <summary>
         /// XML-tuned flat multiplier applied to <see cref="HumorChance"/> for a writer with a dour/
         /// anxious/unfeeling temperament (see <c>HumorCues.HumorChanceMultiplierFor</c>). Reads
         /// <see cref="DiaryTuningDef.humorReducedChanceMultiplier"/>, with a hardcoded fallback when
-        /// the tuning def is absent or the authored value is negative/NaN.
+        /// the tuning def is absent or the authored value is negative/non-finite.
         /// </summary>
         public static float HumorReducedChanceMultiplier
         {
             get
             {
                 float value = Current.humorReducedChanceMultiplier;
-                if (value < 0f || float.IsNaN(value))
+                if (value < 0f || value > 1f || float.IsNaN(value) || float.IsInfinity(value))
                 {
                     return DefaultHumorReducedChanceMultiplier;
                 }

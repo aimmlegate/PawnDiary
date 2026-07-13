@@ -29,6 +29,16 @@ namespace PawnDiaryRimpsyche
         private List<string> conversationCooldownPairKeys;
         private List<int> conversationCooldownTickValues;
 
+        // Tier-B synchronization state is saved with the game. Persist both the deterministic source key
+        // and resolved target rule so a transformed result can be retried locally after reload/arbitration
+        // without purchasing another LLM request.
+        private Dictionary<string, string> personaSourceKeysByPawn = new Dictionary<string, string>();
+        private Dictionary<string, string> personaTargetRulesByPawn = new Dictionary<string, string>();
+        private List<string> personaSourcePawnKeys;
+        private List<string> personaSourceValues;
+        private List<string> personaTargetPawnKeys;
+        private List<string> personaTargetValues;
+
         /// <summary>Required framework constructor; RimWorld supplies the current Game.</summary>
         public RimpsycheGameComponent(Game game)
         {
@@ -50,10 +60,19 @@ namespace PawnDiaryRimpsyche
                 LookMode.Value,
                 ref conversationCooldownPairKeys,
                 ref conversationCooldownTickValues);
+            Scribe_Collections.Look(ref personaSourceKeysByPawn, "rimpsychePersonaSourceKeysByPawn",
+                LookMode.Value, LookMode.Value, ref personaSourcePawnKeys, ref personaSourceValues);
+            Scribe_Collections.Look(ref personaTargetRulesByPawn, "rimpsychePersonaTargetRulesByPawn",
+                LookMode.Value, LookMode.Value, ref personaTargetPawnKeys, ref personaTargetValues);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit && conversationCooldownTicksByPair == null)
             {
                 conversationCooldownTicksByPair = new Dictionary<string, int>();
+            }
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                personaSourceKeysByPawn = personaSourceKeysByPawn ?? new Dictionary<string, string>();
+                personaTargetRulesByPawn = personaTargetRulesByPawn ?? new Dictionary<string, string>();
             }
         }
 
@@ -85,6 +104,42 @@ namespace PawnDiaryRimpsyche
             firstPassPending = false;
             lastPassTick = now;
             PsycheSync.RunTierBPass();
+        }
+
+        internal bool TryGetPersonaTarget(string pawnId, string sourceKey, out string target)
+        {
+            target = string.Empty;
+            string savedKey;
+            return personaSourceKeysByPawn.TryGetValue(pawnId ?? string.Empty, out savedKey)
+                && string.Equals(savedKey, sourceKey ?? string.Empty, System.StringComparison.Ordinal)
+                && personaTargetRulesByPawn.TryGetValue(pawnId ?? string.Empty, out target);
+        }
+
+        internal void RememberPersonaTarget(string pawnId, string sourceKey, string target)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId)) return;
+            personaSourceKeysByPawn[pawnId] = sourceKey ?? string.Empty;
+            personaTargetRulesByPawn[pawnId] = target ?? string.Empty;
+        }
+
+        internal bool HasPersonaTarget(string pawnId)
+        {
+            return !string.IsNullOrWhiteSpace(pawnId) && personaSourceKeysByPawn.ContainsKey(pawnId);
+        }
+
+        internal bool HasPersonaTargets { get { return personaSourceKeysByPawn.Count > 0; } }
+
+        internal void ForgetPersonaTarget(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId)) return;
+            personaSourceKeysByPawn.Remove(pawnId);
+            personaTargetRulesByPawn.Remove(pawnId);
+        }
+
+        internal void ClearPersonaTargets()
+        {
+            personaSourceKeysByPawn.Clear();
+            personaTargetRulesByPawn.Clear();
         }
     }
 }

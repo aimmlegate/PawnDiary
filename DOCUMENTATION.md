@@ -261,7 +261,8 @@ facade exposes `PawnDiaryApi.IsExternalApiEnabled` so adapters can distinguish "
 not ready yet" (`IsReady=false`) from "the player has disabled external API behavior"
 (`IsExternalApiEnabled=false`). When disabled, submissions and reads return their safe empty values
 and registered providers/listeners are not invoked; registration itself remains accepted so a later
-re-enable works without restarting.
+re-enable works without restarting. Owner-guarded reset and one-shot cancellation calls remain
+available while disabled so an adapter can release state and work it already owns.
 
 Beyond diary events, the v2 API exposes the LLM connection itself (`ApiVersion` bumped `1 → 2`).
 `GetApiSetup()` returns a `DiaryApiSetupSnapshot` — routing mode, global request knobs, and one
@@ -326,6 +327,13 @@ API v6 (`ApiVersion` `5 → 6`) additively exposes `DiaryPsychotypeSnapshot.save
 player-editable custom outlook before external-override resolution. `rule` remains the effective prompt
 rule. This lets an adapter migrate away from its own old locked override without mistaking that override
 for, or overwriting, player-authored custom text.
+
+API v7 (`ApiVersion` `6 → 7`) adds `CancelLlmCompletion(handle)` so adapters can cancel obsolete
+one-shot HTTP work and immediately release its bounded handle slot, plus `GetPsychotypeRule(defName)`
+so a mapped built-in psychotype can be published through the reversible source-owned override layer
+without changing the player's base selection. Cancellation and owner-guarded `Reset*Override` cleanup
+remain callable after the master integration switch is turned off; starting work and reading gameplay
+data remain disabled.
 
 For ordinary `SubmitEvent` calls, policy stays in XML: the request's `eventKey` string plays the
 defName role, and an External-domain `DiaryInteractionGroupDef` must claim it (required-match, like
@@ -464,9 +472,9 @@ The canvas is also floored to the visible viewport height before drawing.
 - **Off (0)** — no data crosses in either direction and no chat-originated entry is possible.
 - **Shared context (1, default)** — outbound, `DiaryContextInjector` registers a diary-memories
   section into RimTalk's prompt builder (`ContextHookRegistry.InjectPawnSection` on
-  `ContextCategories.Pawn.Thoughts`, plus a `{{ pawn.diary }}` Scriban variable) and inbound,
-  `PersonaSync` registers a `chat_persona=` pawn-context provider so Pawn Diary summaries see the
-  RimTalk persona. Both directions are additive context only; no diary entry originates from chat.
+  `ContextCategories.Pawn.Thoughts`, plus a `{{ pawn.diary }}` Scriban variable). Optional persona
+  synchronization is independently Off by default; import mode registers a `chat_persona=` pawn-context
+  provider, while export mode publishes Pawn Diary's outlook. No diary entry originates from chat.
 - **Shared context + conversations (2)** — `ConversationTracker` (fed by the
   `RimTalkCreateInteractionPatch` Harmony postfix on `TalkService.CreateInteraction`) groups displayed
   chat by reply chain and quiet window, then passes each finished conversation through the bounded
@@ -558,7 +566,8 @@ planning, throttling, and context
 formatting) lives under `Source/Pure/` and is unit-tested by
 `tests/RimTalkBridgeLogicTests/` without loading the game.
 
-Persona synchronization now has one explicit authority direction: **Pawn Diary → RimTalk** publishes
+Persona synchronization defaults to **Off**, preserving independent personas, and otherwise has one
+explicit authority direction: **Pawn Diary → RimTalk** publishes
 the pawn's effective psychotype (and never its writing-style rule) through RimTalk's supported
 `PersonaService.SetPersonality`,
 while **Pawn Diary ← RimTalk** imports RimTalk's persona as a source-owned **psychotype (outlook)**
@@ -573,13 +582,18 @@ catalog styles. Each recognized non-silent style selects a narrowly authored tra
 ordinary adult styles select none, and custom/external prose is never inspected. While Pawn Diary owns
 RimTalk's persona, the same 250-tick pass also maintains talk initiation from the selected psychotype's
 XML-authored baseline (`RimTalkPersonaChattinessDefs.xml`) with a stable pawn+psychotype relative ±15%
-variation. `silent-focus` adds no prose and replaces that inferred value with absolute `0`. The bridge
-saves the player's prior RimTalk value before its first write and restores it only when Pawn Diary
-authority ends, including across reloads. The older `personaLedDiaryVoice` key
-remains serialized for settings compatibility but no longer controls behavior. Import mode reapplies
-on persona-hash change and clears via `ResetPsychotypeOverride` when the direction changes; every reset
-also sweeps the stale writing-style override older bridge versions placed, so existing saves migrate
-cleanly. The controlling editor shows an ownership notice; when LLM transform is enabled it also shows
+variation. Invalid XML/profile floats fall back to finite defaults, and profile names are trimmed.
+`silent-focus` adds no prose and replaces that inferred value with absolute `0`. Before its first
+export write, the bridge saves both the player's prior RimTalk persona and talk-initiation value; it
+restores both only when Pawn Diary authority ends, including across reloads. Import and export source
+keys plus resolved target text are also scribed, so a reload retries a rejected local write without
+paying for the same LLM transform again. Obsolete/mismatched transform handles are explicitly cancelled
+instead of consuming one of the core's 64 slots until timeout. The older `personaLedDiaryVoice` key
+remains serialized only for migration: old opt-in saves become import mode, while old opt-out saves
+remain Off. Import mode reapplies on stable source-key change and clears via `ResetPsychotypeOverride`
+when authority ends; every reset also sweeps the stale writing-style override older bridge versions
+placed. The controlling editor patch is registered dynamically so RimTalk UI drift can disable only
+that notice/button instead of breaking the whole bridge; when LLM transform is enabled it shows
 a Regenerate action (RimTalk's persona editor for export, Pawn Diary's psychotype editor for import).
 Other advanced controls cover semantic/local-only assessment and lane selection, editable
 reaction terms and semantic prompt, and per-pawn/colony/pair throttle knobs
@@ -721,17 +735,19 @@ player installs only the ones matching their mod list:
   (ambient min 6/sample 3) and package-owned memories their own voice. Tier A contributes a cached
   `psyche=` context line: up to three localized descriptors above the XML magnitude floor and two
   interests, never raw floats. Default-on Tier B maps the two dominant nodes from distinct behavioral
-  families into an editable psychotype on a 250-tick change-detected pass. Persona sync is a single-choice
-  mode: Off, map the dominant family/sign to a built-in psychotype, seed deterministic localized direct
+  families into a reversible source-owned psychotype override on a 250-tick change-detected pass. Persona sync is a single-choice
+  mode: Off, map the dominant family/sign to a built-in psychotype, apply deterministic localized direct
   text, or ask a selectable Pawn Diary LLM lane to rewrite the psyche/interests summary (falling back to
-  direct text). The rounded 34-node vector plus mode/prompt settings form the handled key, so a Rimpsyche
-  personality change automatically reseeds while an unchanged pawn preserves player edits. Existing
-  `usePsychotypeOverride` settings migrate to Direct text/Off, and old source-owned overrides are swept on
-  load. Default-on Tier C signature-checks Rimpsyche v1.0.41's
+  direct text). The rounded 34-node vector plus mode/prompt settings form a stable saved source key;
+  resolved targets survive reloads and rejected local writes are retried without repeating a paid LLM
+  request. Switching mode/off or disabling integrations releases only the bridge-owned override, leaving
+  the player's base/custom outlook untouched. Obsolete completion handles are cancelled immediately.
+  Existing `usePsychotypeOverride` settings migrate to Direct text/Off. Default-on Tier C
+  signature-checks Rimpsyche v1.0.41's
   `InteractionHook`, records only conversations over the XML absolute-alignment threshold (`0.55`)
   under frozen key `rimpsyche_conversation`, and persists a per-pair 60,000-tick cooldown. The
-  six-family mapping, compact formatter, stable hash, threshold, and cooldown are pure-tested. Typed
-  RimPsyche reads stay behind the active-package guard; core code and the public API are unchanged.
+  six-family mapping, compact formatter, stable hashes, threshold, and cooldown are pure-tested. Typed
+  RimPsyche reads stay behind the active-package guard.
 - **`PawnDiary.Vsie` (`Pawn Diary: Vanilla Social Interactions Expanded`)** — mostly XML, **plus** a
   tiny assembly (`PawnDiaryVsie.dll`) for the gathering hook. Four gated `DiaryInteractionGroupDef`s
   for VSIE (`VanillaExpanded.VanillaSocialInteractionsExpanded`): `vsie_vent` (Interaction, ambient
@@ -1318,7 +1334,9 @@ while a dour/anxious/unfeeling temperament (Pessimist, Depressive, Nervous, Neur
 Psychopath, or Anomaly's Disturbing trait) applies `humorReducedChanceMultiplier` (default `0.5`).
 The two directions are mutually exclusive rather than stacked: within a direction several qualifiers
 still count once, and a writer who qualifies for both (say a Sanguine psychopath) offsets back to the
-base rate.
+base rate. Both trait-key lists and all three chance values are XML-authored and exposed through
+Advanced tuning. Each event+POV roll uses a stable private seed inside `Rand.PushState`/`PopState`, so
+humor never advances RimWorld's shared RNG and the pure multiplier/seed policy is regression-tested.
 When an active hediff forces a temporary writing-style override, all hediffs matched by any active
 persona-override rule are suppressed from the prompt-enchantment pool so the same condition does not
 arrive once as style and again as "important context." When an external writing-style override is

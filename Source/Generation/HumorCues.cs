@@ -16,7 +16,8 @@
 // Depressive, Nervous, Neurotic, Very neurotic, Psychopath, or Anomaly's Disturbing) pulls it DOWN.
 // This is deliberately NOT cumulative: within a direction several qualifiers still count once, and a
 // writer who somehow qualifies for both directions (say a Sanguine psychopath) offsets back to the
-// plain base rate. There is no settings field for this, matching the rest of the humor-cue feature.
+// plain base rate. Rates and trait-key lists are XML-authored and available in Advanced tuning; the
+// cue itself stays hidden and always enabled rather than becoming an ordinary gameplay toggle.
 using System;
 using System.Collections.Generic;
 using RimWorld;
@@ -32,81 +33,69 @@ namespace PawnDiary
     /// </summary>
     internal static class HumorCues
     {
-        // Trait keys that shift the humor chance. Spectrum-trait degrees are keyed "defName:degree"
-        // (NaturalMood's sanguine/optimist/pessimist/depressive are degrees 2/1/-1/-2); single-degree
-        // traits (Joyous, Psychopath, Disturbing) are keyed by bare defName. This mirrors the key
-        // convention in PersonaAffinity; HasAnyTraitKey tests both forms of each of the pawn's traits.
-        private static readonly HashSet<string> UpbeatTraitKeys = new HashSet<string>(StringComparer.Ordinal)
-        {
-            "NaturalMood:2", // sanguine
-            "NaturalMood:1", // optimist
-            "Joyous",        // Anomaly DLC
-        };
-
-        private static readonly HashSet<string> DourTraitKeys = new HashSet<string>(StringComparer.Ordinal)
-        {
-            "NaturalMood:-1", // pessimist
-            "NaturalMood:-2", // depressive
-            "Nerves:-1",      // nervous
-            "Neurotic:1",     // neurotic
-            "Neurotic:2",     // very neurotic
-            "Psychopath",     // unfeeling (singular)
-            "Disturbing",     // Anomaly DLC (singular)
-        };
-
         /// <summary>
         /// Returns the chosen cue's rule text for this event, or <c>string.Empty</c> when no cue is
         /// selected. At most one cue per entry. <paramref name="writerPawn"/> is the live pawn writing
         /// this POV (null is fine — the offline/unresolvable case simply skips the temperament check
         /// and uses the plain base rate).
         /// </summary>
-        public static string CueFor(DiaryEvent diaryEvent, Pawn writerPawn)
+        public static string CueFor(DiaryEvent diaryEvent, Pawn writerPawn, string writerStableId)
         {
             if (diaryEvent == null)
             {
                 return string.Empty;
             }
 
-            // Base rate is XML-tuned (DiaryTuningDef.humorChance); DiaryTuning.HumorChance owns the
-            // safe 0..1 clamp and fallback when the def is absent/invalid. The writer's temperament
-            // then applies one non-cumulative multiplier on top -- see HumorChanceMultiplierFor.
-            float chance = DiaryTuning.HumorChance * HumorChanceMultiplierFor(writerPawn);
-            if (!Rand.Chance(Mathf.Clamp01(chance)))
+            // Isolate this cosmetic prompt choice from Verse's process-global gameplay RNG. The stable
+            // event+POV seed also means Regenerate produces the same humor decision and cue.
+            Rand.PushState(HumorChancePolicy.StableSeed(diaryEvent.eventId, writerStableId));
+            try
             {
-                return string.Empty;
-            }
-
-            bool isGallows = IsHighStakes(diaryEvent);
-
-            List<DiaryHumorCueDef> candidates = null;
-            float totalWeight = 0f;
-            IReadOnlyList<DiaryHumorCueDef> all = DiaryHumorCues.All;
-            for (int i = 0; i < all.Count; i++)
-            {
-                DiaryHumorCueDef def = all[i];
-                if (def == null
-                    || DiaryHumorCues.IsGallows(def) != isGallows
-                    || string.IsNullOrWhiteSpace(def.rule)
-                    || def.weight <= 0f)
+                // Base rate is XML-tuned (DiaryTuningDef.humorChance); DiaryTuning.HumorChance owns the
+                // safe 0..1 clamp and fallback when the def is absent/invalid. The writer's temperament
+                // then applies one non-cumulative multiplier on top -- see HumorChanceMultiplierFor.
+                float chance = DiaryTuning.HumorChance * HumorChanceMultiplierFor(writerPawn);
+                if (!Rand.Chance(Mathf.Clamp01(chance)))
                 {
-                    continue;
+                    return string.Empty;
                 }
 
-                if (candidates == null)
+                bool isGallows = IsHighStakes(diaryEvent);
+
+                List<DiaryHumorCueDef> candidates = null;
+                float totalWeight = 0f;
+                IReadOnlyList<DiaryHumorCueDef> all = DiaryHumorCues.All;
+                for (int i = 0; i < all.Count; i++)
                 {
-                    candidates = new List<DiaryHumorCueDef>();
+                    DiaryHumorCueDef def = all[i];
+                    if (def == null
+                        || DiaryHumorCues.IsGallows(def) != isGallows
+                        || string.IsNullOrWhiteSpace(def.rule)
+                        || def.weight <= 0f)
+                    {
+                        continue;
+                    }
+
+                    if (candidates == null)
+                    {
+                        candidates = new List<DiaryHumorCueDef>();
+                    }
+
+                    candidates.Add(def);
+                    totalWeight += def.weight;
                 }
 
-                candidates.Add(def);
-                totalWeight += def.weight;
-            }
+                if (candidates == null || candidates.Count == 0 || totalWeight <= 0f)
+                {
+                    return string.Empty;
+                }
 
-            if (candidates == null || candidates.Count == 0 || totalWeight <= 0f)
+                return PickWeighted(candidates, totalWeight).rule;
+            }
+            finally
             {
-                return string.Empty;
+                Rand.PopState();
             }
-
-            return PickWeighted(candidates, totalWeight).rule;
         }
 
         /// <summary>
@@ -123,18 +112,12 @@ namespace PawnDiary
                 return 1f;
             }
 
-            bool up = HasAnyTraitKey(pawn, UpbeatTraitKeys) || HasSocialPassion(pawn);
-            bool down = HasAnyTraitKey(pawn, DourTraitKeys);
-
-            // Neither, or both (which offset) -> no adjustment.
-            if (up == down)
-            {
-                return 1f;
-            }
-
-            return up
-                ? DiaryTuning.HumorElevatedChanceMultiplier
-                : DiaryTuning.HumorReducedChanceMultiplier;
+            bool upbeatTrait = HasAnyTraitKey(pawn, DiaryTuning.HumorElevatedTraitKeys);
+            bool socialPassion = HasSocialPassion(pawn);
+            bool dourTrait = HasAnyTraitKey(pawn, DiaryTuning.HumorReducedTraitKeys);
+            return HumorChancePolicy.Multiplier(upbeatTrait, socialPassion, dourTrait,
+                DiaryTuning.HumorElevatedChanceMultiplier,
+                DiaryTuning.HumorReducedChanceMultiplier);
         }
 
         private static bool HasSocialPassion(Pawn pawn)
@@ -144,11 +127,11 @@ namespace PawnDiary
         }
 
         // Iterates the pawn's traits once, testing both the bare defName and the "defName:degree"
-        // form of each against the key set (see the convention on UpbeatTraitKeys/DourTraitKeys).
-        private static bool HasAnyTraitKey(Pawn pawn, HashSet<string> keys)
+        // form of each against the XML-authored key list.
+        private static bool HasAnyTraitKey(Pawn pawn, IList<string> keys)
         {
             List<Trait> traits = pawn.story?.traits?.allTraits;
-            if (traits == null)
+            if (traits == null || keys == null)
             {
                 return false;
             }
@@ -162,9 +145,15 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (keys.Contains(defName) || keys.Contains(defName + ":" + trait.Degree))
+                string degreeKey = defName + ":" + trait.Degree;
+                for (int keyIndex = 0; keyIndex < keys.Count; keyIndex++)
                 {
-                    return true;
+                    string key = (keys[keyIndex] ?? string.Empty).Trim();
+                    if (string.Equals(key, defName, StringComparison.Ordinal)
+                        || string.Equals(key, degreeKey, StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
                 }
             }
 
