@@ -89,11 +89,16 @@ assessment records nothing. Each successfully submitted conversation starts a sa
 cooldown for both participants, so neither can receive another chat event for one full game day even
 across save/load; rejected submissions refund it. Settings also expose a validated comma-separated
 reaction-term editor used by both selection modes and a full semantic-prompt editor. Blank overrides
-track the localized XML/DefInjected defaults. Advanced toggles also cover Tier-B persona-led psychotype
-context and colony/pair throttles. The former RimTalk-engine writing toggle is retired: its frozen Scribe
+track the localized XML/DefInjected defaults. Advanced toggles also cover two-way persona/psychotype
+synchronization and colony/pair throttles. Both optional LLM directions keep the source's concrete
+character meaning recognizable; only unsupported surface mechanics are discarded, and direction-specific
+prompt revisions refresh older cached transforms once. The former RimTalk-engine writing toggle is retired: its frozen Scribe
 key still reads, but accepted entries always use Pawn Diary's pairwise prompt path. The project stays
 net48/x64 because RimTalk-typed hook code references the workshop assembly
 (`$(RimTalkAssembly)` MSBuild property).
+When LLM persona rewriting is enabled, settings disclose the exact direction-specific payload:
+effective Pawn Diary psychotype rule for export or the complete RimTalk persona for import, plus the
+narrow local system-prompt modifier policy and an explicit list of fields that are not added.
 
 The bridge's pure decision logic (conversation assembly, Unicode matching/overlap, editable-term/prompt
 validation, local scoring,
@@ -124,7 +129,13 @@ Core (`Maux36.Rimpsyche`, Workshop `3535112473`). It provides three independent 
 psyche context line, a change-detected source-owned psychotype outlook, and signature-checked capture of
 high-alignment conversations with a saved per-pair cooldown. The project has a typed compile reference
 to installed `RimPsyche.dll`; target reads are isolated behind the package guard, and XML groups are
-gated. Thresholds and caps live in the adapter's tuning Def.
+gated. Its deterministic base outlook is authored from dominant Rimpsyche nodes, not read from Pawn
+Diary. The default LLM transform keeps that personality-derived outlook authoritative and uses
+descriptors/interests only as supported secondary emphasis. The source-owned result replaces the
+effective Diary psychotype rather than extending it; the effective-prompt hash refreshes an old
+default-produced target when that policy changes. LLM mode shows the exact `psyche=` / `interests=` /
+`base outlook:` request schema and current descriptor/interest caps in its scrollable settings page.
+Thresholds and caps live in the adapter's tuning Def.
 
 ```
 dotnet run --project tests/RimpsycheBridgeLogicTests/RimpsycheBridgeLogicTests.csproj
@@ -155,7 +166,13 @@ dotnet run --project tests/VsieBridgeLogicTests/VsieBridgeLogicTests.csproj
   API, **no Harmony**) turns each colonist's Enneagram root into their **editable** Pawn Diary
   psychotype via one single-choice mode: off, map to the closest built-in psychotype, override from the
   built-in outlook text, or an experimental LLM transform on a selectable lane with an editable prompt
-  (falling back to the built-in text). Change-detected and saved so player edits survive reloads. Its
+  (falling back to the built-in text). That outlook is authored from the 1-2-3 Enneagram root, not read
+  from the pawn's current Diary psychotype. The default prompt keeps it authoritative and lets
+  style/main-trait data alter only supported emphasis; the resulting custom rule replaces the effective
+  base rule rather than extending it. Effective-prompt change detection refreshes old default-produced
+  text without replacing a player-customized prompt. LLM mode shows the exact nonblank
+  `personality style:` / `main trait:` / `base outlook:` / raw target-owned `details:` request schema
+  in its scrollable settings page. Change-detected and saved so player edits survive reloads. Its
   pure mapping is unit-tested:
 
 ```

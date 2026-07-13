@@ -592,10 +592,16 @@ the pawn's effective psychotype (and never its writing-style rule) through RimTa
 while **Pawn Diary ← RimTalk** imports RimTalk's persona as a source-owned **psychotype (outlook)**
 override (`PersonaSync` applies `SetPsychotypeOverride`). An optional LLM transform uses Pawn Diary's
 first active API lane to reshape the source for the receiving mod and falls back to direct sync on
-admission failure, no configured lane, or generation failure. Both transform prompts demand a dense,
-speech/writing-relevant 200–300-character result, and a Unicode-safe local cap guarantees no stored
-result exceeds 300 characters. Writing-style prose is never sent to RimTalk or the LLM. Instead, the
-bridge recognizes exactly five active hediff
+admission failure, no configured lane, or generation failure. The Pawn Diary → RimTalk prompt keeps
+the psychotype as the primary content: every source tendency must remain recognizable, wording and
+length should stay close to the source, and concrete outlooks must not collapse into generic speech or
+personality traits. It no longer forces short source text up to a 200-character minimum. The reverse
+prompt now follows the same source-faithful rule for persona → diary conversion: every supported
+durable character tendency and contradiction stays recognizable, while only surface speech mechanics
+with no outlook meaning may be omitted instead of being turned into invented motives. It also stays
+near the source length rather than forcing a 200-character minimum. A Unicode-safe local cap guarantees
+no stored result exceeds 300 characters in either direction. Writing-style prose is never sent to
+RimTalk or the LLM. Instead, the bridge recognizes exactly five active hediff
 styles (`mind-crumbled`, `silent-focus`, `pain-needle`, `blank-bliss`, `bright-fog`) and the five child
 catalog styles. Each recognized non-silent style selects a narrowly authored transform instruction;
 ordinary adult styles select none, and custom/external prose is never inspected. While Pawn Diary owns
@@ -606,7 +612,10 @@ variation. Invalid XML/profile floats fall back to finite defaults, and profile 
 export write, the bridge saves both the player's prior RimTalk persona and talk-initiation value; it
 restores both only when Pawn Diary authority ends, including across reloads. Import and export source
 keys plus resolved target text are also scribed, so a reload retries a rejected local write without
-paying for the same LLM transform again. Obsolete/mismatched transform handles are explicitly cancelled
+paying for the same LLM transform again. Each transformed direction includes its own stable prompt
+revision, so source-faithfulness corrections invalidate that direction's previously cached vague text
+exactly once without disturbing direct-sync or the other direction's cache. Obsolete/mismatched
+transform handles are explicitly cancelled
 instead of consuming one of the core's 64 slots until timeout. The older `personaLedDiaryVoice` key
 remains serialized only for migration: old opt-in saves become import mode, while old opt-out saves
 remain Off. Import mode reapplies on stable source-key change and clears via `ResetPsychotypeOverride`
@@ -614,6 +623,12 @@ when authority ends; every reset also sweeps the stale writing-style override ol
 placed. The controlling editor patch is registered dynamically so RimTalk UI drift can disable only
 that notice/button instead of breaking the whole bridge; when LLM transform is enabled it shows
 a Regenerate action (RimTalk's persona editor for export, Pawn Diary's psychotype editor for import).
+The settings page also shows the exact direction-specific request contract whenever the LLM checkbox
+is enabled: export uses only the effective Pawn Diary psychotype rule as `userText` (with at most one
+locally selected localized child/recognized-health modifier appended to the system prompt), while
+import uses the complete current RimTalk persona string. Neither direction adds a general pawn summary,
+diary entries, memories, or writing-style prose. This is a schema disclosure rather than a live-pawn
+preview because RimWorld can open Mod Settings without a loaded game.
 Other advanced controls cover semantic/local-only assessment and lane selection, editable
 reaction terms and semantic prompt, and per-pawn/colony/pair throttle knobs
 (`ThrottlePolicy`; daily/colony counters are transient, but the one-day pawn cooldown is saved; a zero
@@ -768,16 +783,28 @@ players who use the target mod without its adapter; loading the adapter disables
   families into a reversible source-owned psychotype override on a 250-tick change-detected pass. Persona sync is a single-choice
   mode: Off, map the dominant family/sign to a built-in psychotype, apply deterministic localized direct
   text, or ask a selectable Pawn Diary LLM lane to rewrite the psyche/interests summary (falling back to
-  direct text). The rounded 34-node vector plus mode/prompt settings form a stable saved source key;
-  resolved targets survive reloads and rejected local writes are retried without repeating a paid LLM
-  request. Switching mode/off or disabling integrations releases only the bridge-owned override, leaving
+  direct text). That deterministic `base outlook:` is authored entirely from the pawn's dominant
+  Rimpsyche nodes; it is **not** the pawn's current Pawn Diary psychotype. The default transform prompt
+  treats this external-personality-derived outlook as authoritative: every selected tendency/contrast
+  must survive, while psyche descriptors and interests may only sharpen supported emphasis and may
+  never replace the base with a generic personality summary. The result is installed through
+  `SetPsychotypeOverride`, whose source-owned override wins over both the saved custom rule and base
+  psychotype; it replaces the effective Diary personality rather than extending or concatenating it. The rounded
+  34-node vector plus mode/effective-prompt settings form a stable saved source key, so changing this
+  localized default regenerates an old default-produced target once while a player-customized prompt
+  keeps its own identity. Resolved targets survive reloads and rejected local writes are retried without
+  repeating a paid LLM request. Switching mode/off or disabling integrations releases only the
+  bridge-owned override, leaving
   the player's base/custom outlook untouched. Obsolete completion handles are cancelled immediately.
   Existing `usePsychotypeOverride` settings migrate to Direct text/Off. Default-on Tier C
   signature-checks Rimpsyche v1.0.41's
   `InteractionHook`, records only conversations over the XML absolute-alignment threshold (`0.55`)
   under frozen key `rimpsyche_conversation`, and persists a per-pair 60,000-tick cooldown. The
   six-family mapping, compact formatter, stable hashes, threshold, and cooldown are pure-tested. Typed
-  RimPsyche reads stay behind the active-package guard.
+  RimPsyche reads stay behind the active-package guard. While LLM mode is selected, its scrollable
+  settings page shows the exact `userText` schema and live XML caps: localized `psyche=` descriptors,
+  optional localized `interests=`, and the localized deterministic `base outlook:`. It also states that
+  raw node/interest scores and ordinary Pawn Diary/pawn-summary data are not sent.
 - **`PawnDiary.Vsie` (`Pawn Diary: Vanilla Social Interactions Expanded`)** — mostly XML, **plus** a
   tiny assembly (`PawnDiaryVsie.dll`) for the gathering hook. Four gated `DiaryInteractionGroupDef`s
   for VSIE (`VanillaExpanded.VanillaSocialInteractionsExpanded`): `vsie_vent` (Interaction, ambient
@@ -811,20 +838,30 @@ players who use the target mod without its adapter; loading the adapter disables
   `DiaryPsychotype_*`, pinned), *override from personality* (`SetPsychotypeCustomRule` from the pure
   `EnneagramLensMapping` outlook text), or *experimental LLM transform* (`RequestLlmCompletion` on a
   selectable lane with an editable prompt, seeding the custom rule from the model's rewrite and falling
-  back to the override text on any miss; the transform input carries the localized base outlook as the
-  text to rewrite, so a small model reshapes known-good text rather than inventing from a type number).
+  back to the override text on any miss; the transform input carries a localized base outlook authored
+  from the pawn's 1-2-3 Enneagram root — never from their current Pawn Diary psychotype — as the
+  authoritative text to rewrite, so a small model must retain every tendency/contradiction and may use
+  the personality style/main trait only as secondary emphasis rather than inventing from a type number).
+  Both deterministic and LLM modes write that result through `SetPsychotypeCustomRule`; psychotype
+  resolution selects the custom rule instead of the base rule, so the 1-2-3 outlook is a complete
+  replacement, not an extension or concatenation of the previous Diary personality.
   Change-detected by `<mode>:<root>` and **saved** with the game
   (a reload never re-seeds over the player's edits); re-seeds on a mode or root change, and re-seeds the
   whole colony on **any effective** bridge or selected Pawn Diary lane change. The component saves a
   deterministic, secret-free configuration fingerprint, so changes are detected across process restarts
-  and no raw prompt/endpoint credential is written to the game save. In the LLM tier the bridge also registers an
+  and no raw prompt/endpoint credential is written to the game save. Because that fingerprint includes
+  the resolved prompt, the improved localized default re-seeds an old default-produced result once;
+  player-authored prompt text remains authoritative and unchanged. In the LLM tier the bridge also registers an
   external psychotype generator (`RegisterExternalPsychotypeGenerator`), so the per-pawn voice editor gets
   a Regenerate button + loading status wired to the component's `RerollTransform` / `IsTransformInFlight`. The pure mapper
   (root → outlook rule, root → built-in psychotype, transform-input assembly) is unit-tested by
   `tests/Personalities123BridgeLogicTests/`. Read-only toward 1-2-3 Personalities; a one-time first-tick
   sweep releases locked overrides earlier versions placed (even when 1-2-3 is inactive) and preserves
   any player custom rule underneath. SP_Module1-typed reads are `[NoInlining]` behind the cached `SimplePersonalitiesActive`
-  (`hahkethomemah.simplepersonalities`) guard.
+  (`hahkethomemah.simplepersonalities`) guard. LLM mode exposes its exact nonblank `userText` schema in
+  the now-scrollable settings page: `personality style:`, `main trait:`, localized `base outlook:`, and
+  the raw target-owned `details:` serialization returned by 1-2-3's `ExtractPersonality`. The disclosure
+  explicitly lists that entries, memories, the existing Diary psychotype, and writing-style prose are not added.
 
 Thought-domain caveat (applies to all `*_thoughts` compatibility groups above): a Thought-domain
 group only assigns instruction/tone; whether a thought is recorded, and whether it folds into the

@@ -88,6 +88,11 @@ namespace PawnDiaryRimpsyche
         /// <summary>Saved settings; null only before RimWorld constructs this Mod.</summary>
         internal static PawnDiaryRimpsycheSettings Settings;
 
+        // UI-only scroll state. The LLM disclosure adds localized variable-height text, so a scroll view
+        // keeps every control reachable at small resolutions and large UI scales.
+        private Vector2 settingsScrollPosition = Vector2.zero;
+        private float settingsViewHeight;
+
         /// <summary>
         /// Cached active-mod guard. ModsConfig walks the load list, which cannot change mid-process;
         /// every path that can reach RimPsyche.dll-typed method bodies checks this first.
@@ -179,11 +184,18 @@ namespace PawnDiaryRimpsyche
             return "PawnDiaryRimpsyche.Settings.Category".Translate();
         }
 
-        /// <summary>Draws the two adapter-owned default-on toggles and their localized descriptions.</summary>
+        /// <summary>
+        /// Draws the adapter modes, LLM lane/prompt/payload disclosure, and conversation toggle in a
+        /// scroll view so localized content stays reachable.
+        /// </summary>
         public override void DoSettingsWindowContents(Rect inRect)
         {
-            Listing_Standard listing = new Listing_Standard();
-            listing.Begin(inRect);
+            float viewHeight = Mathf.Max(inRect.height, settingsViewHeight);
+            Rect viewRect = new Rect(0f, 0f, inRect.width - 24f, viewHeight);
+            Widgets.BeginScrollView(inRect, ref settingsScrollPosition, viewRect, true);
+
+            Listing_Standard listing = new Listing_Standard { maxOneColumn = true };
+            listing.Begin(viewRect);
 
             if (!RimpsycheActive)
             {
@@ -215,13 +227,34 @@ namespace PawnDiaryRimpsyche
                 string shown = Settings.transformPrompt ?? string.Empty;
                 string edited = Widgets.TextArea(promptRect, shown);
                 if (edited != shown) Settings.transformPrompt = edited;
+                DrawTransformDataDisclosure(listing);
             }
             listing.CheckboxLabeled(
                 "PawnDiaryRimpsyche.Settings.ChargedConversations".Translate(),
                 ref Settings.recordChargedConversations,
                 "PawnDiaryRimpsyche.Settings.ChargedConversationsDesc".Translate());
 
+            settingsViewHeight = listing.CurHeight + 12f;
             listing.End();
+            Widgets.EndScrollView();
+        }
+
+        // Shows the exact userText schema used by PsycheSync. This deliberately describes fields rather
+        // than a live pawn because RimWorld can open Mod Settings from the main menu with no game loaded.
+        private static void DrawTransformDataDisclosure(Listing_Standard listing)
+        {
+            RimpsycheBridgeTuningDef tuning = RimpsycheBridgeTuningDef.Current;
+            int descriptorCap = Math.Max(0, tuning.summaryMaxDescriptors);
+            int interestCap = Math.Max(0, tuning.summaryMaxInterests);
+
+            listing.Gap(6f);
+            listing.Label("PawnDiaryRimpsyche.Settings.DataSent.Title".Translate());
+            GameFont previousFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            listing.Label("PawnDiaryRimpsyche.Settings.DataSent.Body".Translate(
+                descriptorCap, interestCap));
+            Text.Font = previousFont;
+            listing.Gap(4f);
         }
 
         private static void DrawMode(Listing_Standard listing, RimpsychePersonaMode mode, string suffix)

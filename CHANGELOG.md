@@ -1,5 +1,31 @@
 # Changelog
 
+- **2026-07-13 — Transparent LLM persona payloads in every personality bridge.** Audited the actual
+  `ExternalLlmCompletionRequest.userText` paths and added conditional English/Russian settings disclosures
+  whenever an LLM persona/psychotype transform is enabled. RimTalk now distinguishes full RimTalk-persona
+  import from psychotype-rule-only export and documents its narrow local modifier; Rimpsyche shows its
+  `psyche=`/`interests=`/`base outlook:` schema with live caps; 1-2-3 shows its nonblank style, trait,
+  outlook, and raw target-owned `details:` fields. Each disclosure also lists important data that is not
+  added. Made the Rimpsyche and 1-2-3 settings pages scrollable so localized disclosures stay reachable.
+
+- **2026-07-13 — Audited persona → diary LLM transforms across all bridge mods.** RimTalk import now
+  preserves every supported durable persona tendency and contradiction, omitting only surface speech
+  mechanics that carry no outlook meaning; its independent import-prompt cache revision refreshes old
+  vague results once. Rimpsyche now treats its deterministic, Rimpsyche-derived `base outlook:` as
+  authoritative and its psyche/interests as secondary evidence. 1-2-3 Personalities likewise preserves
+  every Enneagram-derived built-in outlook tendency while allowing style/main-trait data to adjust only
+  supported emphasis. Both prompts now state explicitly that this external-personality result fully
+  replaces the pawn's previous Pawn Diary psychotype rather than blending with or extending it. Updated
+  English and Russian prompts/settings copy and documented how each bridge's existing effective-prompt
+  identity refreshes default-generated results without changing player-customized prompts.
+
+- **2026-07-13 — Source-faithful Pawn Diary → RimTalk persona transforms.** Reworked the export LLM
+  prompt so every psychotype tendency remains recognizable, wording and length stay close to the
+  source, and concrete outlooks are not replaced with vague speech/personality traits. Removed the
+  forced 200-character minimum, updated the English and Russian settings/prompt copy, and versioned
+  transformed-export cache keys so already-saved vague results regenerate automatically. Added pure
+  regression assertions for prompt-version invalidation without disturbing direct synchronization.
+
 - **2026-07-13 — Release 0.5.0 prepared.** Bumped the source-of-truth mod version, rebuilt the core
   and all six integration submods in Release mode, generated the split Russian localization payload,
   preserved Workshop item `3753779334` for Russian localization and `3758735054` for the Example

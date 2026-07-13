@@ -8,17 +8,34 @@ namespace PawnDiaryRimTalkBridge.Pure
     /// <summary>Builds deterministic source keys for direct and transformed persona synchronization.</summary>
     internal static class PersonaSyncKey
     {
-        /// <summary>Stable key for RimTalk -> Pawn Diary import input and transform mode.</summary>
+        // Transformed text is cached in the save. Bump only the direction whose prompt meaning changed
+        // so old generated prose is replaced once without disturbing direct sync or the other direction.
+        private const string ImportTransformPromptVersion = "2";
+        private const string ExportTransformPromptVersion = "2";
+
+        /// <summary>Stable key for RimTalk -> Pawn Diary input, transform mode, and prompt revision.</summary>
         public static string ForImport(string source, bool transform)
         {
-            return Hash((source ?? string.Empty) + "\nimport-transform=" + (transform ? "1" : "0"));
+            string keyMaterial = (source ?? string.Empty) + "\nimport-transform=" + (transform ? "1" : "0");
+            if (transform)
+            {
+                keyMaterial += "\nimport-prompt-version=" + ImportTransformPromptVersion;
+            }
+
+            return Hash(keyMaterial);
         }
 
-        /// <summary>Stable key for Pawn Diary -> RimTalk input, transform mode, and bounded modifier.</summary>
+        /// <summary>Stable key for Pawn Diary -> RimTalk input, transform mode, prompt revision, and modifier.</summary>
         public static string ForExport(string source, bool transform, PersonaPromptModifier modifier)
         {
-            return Hash((source ?? string.Empty) + "\nexport-transform=" + (transform ? "1" : "0")
-                + "\nmodifier=" + ((int)modifier).ToString(CultureInfo.InvariantCulture));
+            string keyMaterial = (source ?? string.Empty) + "\nexport-transform=" + (transform ? "1" : "0")
+                + "\nmodifier=" + ((int)modifier).ToString(CultureInfo.InvariantCulture);
+            if (transform)
+            {
+                keyMaterial += "\nexport-prompt-version=" + ExportTransformPromptVersion;
+            }
+
+            return Hash(keyMaterial);
         }
 
         /// <summary>64-bit FNV-1a over UTF-16 code units, formatted as fixed lowercase hexadecimal.</summary>

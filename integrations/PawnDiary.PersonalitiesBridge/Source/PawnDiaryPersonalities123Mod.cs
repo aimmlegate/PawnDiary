@@ -47,6 +47,11 @@ namespace PawnDiaryPersonalities123
         /// <summary>Saved bridge settings. Null only before the mod constructor has run.</summary>
         internal static PawnDiaryPersonalities123Settings Settings;
 
+        // UI-only scroll state. LLM input disclosure is localized and can wrap to several lines, so the
+        // settings must remain reachable on small screens and at larger RimWorld UI scales.
+        private Vector2 settingsScrollPosition = Vector2.zero;
+        private float settingsViewHeight;
+
         /// <summary>
         /// True when 1-2-3 Personalities M1 (hahkethomemah.simplepersonalities) is in the active mod
         /// list. Cached once at startup: the mod list cannot change while the game is running, and
@@ -145,11 +150,18 @@ namespace PawnDiaryPersonalities123
             return (int)settings.mode + "|" + settings.transformLaneIndex + "|" + settings.ResolveTransformPrompt();
         }
 
-        /// <summary>Draws the mode selector plus, when the LLM tier is chosen, its lane + prompt block.</summary>
+        /// <summary>
+        /// Draws the mode selector plus the LLM lane, prompt, and request-data disclosure when selected;
+        /// the scroll view keeps the localized content reachable at every supported UI scale.
+        /// </summary>
         public override void DoSettingsWindowContents(Rect inRect)
         {
-            Listing_Standard listing = new Listing_Standard();
-            listing.Begin(inRect);
+            float viewHeight = Mathf.Max(inRect.height, settingsViewHeight);
+            Rect viewRect = new Rect(0f, 0f, inRect.width - 24f, viewHeight);
+            Widgets.BeginScrollView(inRect, ref settingsScrollPosition, viewRect, true);
+
+            Listing_Standard listing = new Listing_Standard { maxOneColumn = true };
+            listing.Begin(viewRect);
 
             if (!SimplePersonalitiesActive)
             {
@@ -171,7 +183,9 @@ namespace PawnDiaryPersonalities123
                 DrawTransformSection(listing);
             }
 
+            settingsViewHeight = listing.CurHeight + 12f;
             listing.End();
+            Widgets.EndScrollView();
         }
 
         private void DrawModeOption(Listing_Standard listing, Personalities123Mode mode, string labelKey, string descKey)
@@ -234,6 +248,11 @@ namespace PawnDiaryPersonalities123
             {
                 Settings.transformPrompt = edited;
             }
+
+            listing.Gap(6f);
+            listing.Label("PawnDiaryPersonalities123.Settings.DataSent.Title".Translate());
+            DrawMutedDescription(listing,
+                "PawnDiaryPersonalities123.Settings.DataSent.Body".Translate());
         }
 
         private string CurrentLaneLabel(DiaryApiSetupSnapshot setup)

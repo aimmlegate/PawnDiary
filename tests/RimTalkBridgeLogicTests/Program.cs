@@ -18,11 +18,25 @@ namespace RimTalkBridgeLogicTests
         private static int Main()
         {
             string importKey = PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.ForImport("persona", true);
-            Assert(importKey == PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.ForImport("persona", true)
-                    && importKey.Length == 16,
-                "persona sync key is stable and fixed-width");
+            Assert(importKey == PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.Hash(
+                    "persona\nimport-transform=1\nimport-prompt-version=2") && importKey.Length == 16,
+                "transformed import key includes the current prompt revision and stays fixed-width");
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.ForImport("persona", false)
+                    == PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.Hash(
+                        "persona\nimport-transform=0"),
+                "direct import key is independent of the LLM prompt revision");
             Assert(importKey != PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.ForImport("persona", false),
                 "persona sync key includes transform mode");
+            string exportTransformKey = PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.ForExport("persona", true,
+                PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.None);
+            Assert(exportTransformKey == PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.Hash(
+                    "persona\nexport-transform=1\nmodifier=0\nexport-prompt-version=2"),
+                "transformed export key includes the current prompt revision");
+            Assert(PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.ForExport("persona", false,
+                    PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.None)
+                    == PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.Hash(
+                        "persona\nexport-transform=0\nmodifier=0"),
+                "direct export key is independent of the LLM prompt revision");
             Assert(PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.ForExport("persona", true,
                     PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.ChildQuestion)
                     != PawnDiaryRimTalkBridge.Pure.PersonaSyncKey.ForExport("persona", true,

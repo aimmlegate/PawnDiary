@@ -298,6 +298,11 @@ namespace PawnDiaryRimTalkBridge
             listing.CheckboxLabeled("PawnDiaryRimTalkBridge.Settings.TransformPersona".Translate(),
                 ref transformPersona, "PawnDiaryRimTalkBridge.Settings.TransformPersonaDesc".Translate());
             Settings.transformPersonaWithLlm = transformPersona;
+            if (Settings.transformPersonaWithLlm
+                && Settings.personaSyncDirection != PersonaSyncDirection.Off)
+            {
+                DrawPersonaTransformDataDisclosure(listing);
+            }
 
             // Level-2 selection mode. Semantic mode uses the core one-shot completion API; local-only
             // mode spends no extra assessment request and applies the stricter XML threshold.
@@ -387,6 +392,24 @@ namespace PawnDiaryRimTalkBridge
             settingsViewHeight = listing.CurHeight + 12f;
             listing.End();
             Widgets.EndScrollView();
+        }
+
+        // Shows the exact source payload shape beside the active LLM persona option. Settings can be
+        // opened without a loaded game, so this is a schema/privacy disclosure rather than one pawn's
+        // live values. The two directions really do send different userText strings (see PersonaSync).
+        private static void DrawPersonaTransformDataDisclosure(Listing_Standard listing)
+        {
+            string bodyKey = Settings.personaSyncDirection == PersonaSyncDirection.PawnDiaryToRimTalk
+                ? "PawnDiaryRimTalkBridge.Settings.DataSent.Export"
+                : "PawnDiaryRimTalkBridge.Settings.DataSent.Import";
+
+            listing.Gap(4f);
+            listing.Label("PawnDiaryRimTalkBridge.Settings.DataSent.Title".Translate());
+            GameFont previousFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            listing.Label(bodyKey.Translate());
+            Text.Font = previousFont;
+            listing.Gap(4f);
         }
 
         /// <summary>
