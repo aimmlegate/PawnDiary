@@ -428,9 +428,10 @@ enchantments, and recent memory in one DTO.
 The buildable example adapter keeps all direct public API calls in
 `integrations/PawnDiary.ExampleAdapter/Source/PawnDiaryExampleApi.cs`. That file acts as the
 copyable integration layer: it wraps status checks, submissions, reads, prompt previews, context
-providers, status listeners, and style overrides, with XML doc comments spelling out required args
-and safe return values. The explorer window and quick debug actions call through that facade so
-adapter authors can ignore the UI harness when copying the sample.
+providers, status listeners, style/psychotype reads and writes, the external psychotype-generator
+hook, and one-shot LLM completion request/poll/cancel calls, with XML doc comments spelling out
+required args and safe return values. The explorer window and quick debug actions call through that
+facade so adapter authors can ignore the UI harness when copying the sample.
 
 `SubmitEventWithHandle` returns stable `DiaryEntryHandle` values when the pipeline creates an entry,
 and `RegisterEntryStatusListener` lets adapters receive compact lifecycle snapshots after a POV's
@@ -991,15 +992,22 @@ a page has a companion Interaction-domain display group (`eventWindow*`, `observ
 tab instead of the catch-all.
 
 **In-game API Explorer.** `integrations/PawnDiary.ExampleAdapter/` ships a Dev-mode window that
-drives every public `PawnDiaryApi` method from a three-pane UI (method tree | request form | running
-result log). It exists so adapter authors and the maintainer can probe the contract interactively
-without writing throwaway code. Open it via Dev mode → Debug Actions → *Pawn Diary Example Adapter*
+drives every public `PawnDiaryApi` family from a three-pane UI (method tree | request form | running
+result log), grouping related overloads into one form. It includes the psychotype snapshot/rule,
+editable base/custom layers, source-owned override pair, external generator registration, and the
+paid one-shot completion request/poll/cancel lifecycle. It exists so adapter authors and the
+maintainer can probe the contract interactively without writing throwaway code. Open it via Dev
+mode → Debug Actions → *Pawn Diary Example Adapter*
 → *Open API explorer…*. The method tree supports filtering/collapse, the request form exposes
 width-aware single-line fields plus multiline editors for prose/context values and a shared-state
 reset button, method rows show plain-language endpoint descriptions under each API signature,
 method titles and field labels show short help popovers on hover, and the result log keeps short
-histories compact so the selected detail stays visible. All request fields start with quiet-moment
-sample values for quick submit/preview testing. Opening the explorer closes the Debug Actions
+histories compact so the selected detail stays visible. All request fields start with concrete
+sample values for quick submit/preview testing. Ordinary, wrapped-prompt, and direct-entry builders
+default to `exampleadapter_quiet_moment`, `exampleadapter_prompt_idea`, and
+`exampleadapter_direct_note` respectively, so every shipped External group/settings row has a live
+submission path. The completion request form warns that invoking it can spend provider tokens.
+Opening the explorer closes the Debug Actions
 launcher, and the window has a thin drag strip so it behaves as a movable, resizeable debug overlay:
 clicking outside it keeps it open while normal game UI/camera input still passes through. A concise operator guide lives at
 `integrations/PawnDiary.ExampleAdapter/API_EXPLORER.md`. The same mod also registers the two process-global hooks

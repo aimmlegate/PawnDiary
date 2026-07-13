@@ -8,6 +8,9 @@
   <!-- Original daily-event strings (still used by the "Submit example event" dev action). -->
   <PawnDiaryExampleAdapter.QuietMomentSummary>{0} found a rare quiet moment with nothing urgent to do.</PawnDiaryExampleAdapter.QuietMomentSummary>
   <PawnDiaryExampleAdapter.QuietMomentLabel>quiet moment</PawnDiaryExampleAdapter.QuietMomentLabel>
+  <PawnDiaryExampleAdapter.Default.PsychotypeRule>Notice small comforts and judge setbacks by whether the colony still feels livable.</PawnDiaryExampleAdapter.Default.PsychotypeRule>
+  <PawnDiaryExampleAdapter.Default.LlmSystemPrompt>Return one concise sentence. Do not invent facts beyond the supplied text.</PawnDiaryExampleAdapter.Default.LlmSystemPrompt>
+  <PawnDiaryExampleAdapter.Default.LlmUserText>A colonist repaired the freezer before the stored food spoiled.</PawnDiaryExampleAdapter.Default.LlmUserText>
 
   <!-- ── API Explorer window chrome ─────────────────────────────────────────────────────── -->
   <PawnDiaryExampleAdapter.Window.DragHint>drag here to move the API explorer</PawnDiaryExampleAdapter.Window.DragHint>
@@ -37,6 +40,19 @@ Header pawn pickers supply subject and partner. Form values persist while you sw
 
   <PawnDiaryExampleAdapter.SetEnabledToggle>enabled</PawnDiaryExampleAdapter.SetEnabledToggle>
   <PawnDiaryExampleAdapter.IncludeImportantToggle>include important-event context</PawnDiaryExampleAdapter.IncludeImportantToggle>
+  <PawnDiaryExampleAdapter.Category.Psychotype>Psychotype</PawnDiaryExampleAdapter.Category.Psychotype>
+  <PawnDiaryExampleAdapter.Category.LlmCompletion>LLM Completion</PawnDiaryExampleAdapter.Category.LlmCompletion>
+
+  <PawnDiaryExampleAdapter.Summary.GetPsychotype>Reads the selected pawn's effective outlook and saved custom rule.</PawnDiaryExampleAdapter.Summary.GetPsychotype>
+  <PawnDiaryExampleAdapter.Summary.GetPsychotypeRule>Reads the localized built-in rule for one psychotype defName.</PawnDiaryExampleAdapter.Summary.GetPsychotypeRule>
+  <PawnDiaryExampleAdapter.Summary.SetPsychotypeOverride>Saves a source-owned outlook above the pawn's editable base and custom layers.</PawnDiaryExampleAdapter.Summary.SetPsychotypeOverride>
+  <PawnDiaryExampleAdapter.Summary.ResetPsychotypeOverride>Removes this adapter's source-owned psychotype override.</PawnDiaryExampleAdapter.Summary.ResetPsychotypeOverride>
+  <PawnDiaryExampleAdapter.Summary.SetPsychotype>Changes the pawn's editable base psychotype and optionally pins it.</PawnDiaryExampleAdapter.Summary.SetPsychotype>
+  <PawnDiaryExampleAdapter.Summary.SetPsychotypeCustomRule>Seeds the player-owned custom outlook rule that remains editable in Psychotype Studio.</PawnDiaryExampleAdapter.Summary.SetPsychotypeCustomRule>
+  <PawnDiaryExampleAdapter.Summary.RegisterPsychotypeGenerator>Registers a demo Regenerate callback in Pawn Diary's Psychotype Studio.</PawnDiaryExampleAdapter.Summary.RegisterPsychotypeGenerator>
+  <PawnDiaryExampleAdapter.Summary.RequestLlmCompletion>Starts a paid one-shot completion on a configured API lane and remembers its handle.</PawnDiaryExampleAdapter.Summary.RequestLlmCompletion>
+  <PawnDiaryExampleAdapter.Summary.GetLlmCompletionResult>Polls the remembered completion handle; the first terminal read consumes it.</PawnDiaryExampleAdapter.Summary.GetLlmCompletionResult>
+  <PawnDiaryExampleAdapter.Summary.CancelLlmCompletion>Cancels obsolete one-shot completion work and releases its core slot.</PawnDiaryExampleAdapter.Summary.CancelLlmCompletion>
 
   <!-- ── Form field labels (English on purpose: schema labels matching the DTO fields) ──── -->
   <PawnDiaryExampleAdapter.Field.EventKey>eventKey</PawnDiaryExampleAdapter.Field.EventKey>
@@ -81,6 +97,17 @@ Header pawn pickers supply subject and partner. Form values persist while you sw
   <PawnDiaryExampleAdapter.Field.StyleSourceId>sourceId</PawnDiaryExampleAdapter.Field.StyleSourceId>
   <PawnDiaryExampleAdapter.Field.StyleRule>rule</PawnDiaryExampleAdapter.Field.StyleRule>
 
+  <PawnDiaryExampleAdapter.Field.PsychotypeSourceId>sourceId</PawnDiaryExampleAdapter.Field.PsychotypeSourceId>
+  <PawnDiaryExampleAdapter.Field.PsychotypeDefName>psychotypeDefName</PawnDiaryExampleAdapter.Field.PsychotypeDefName>
+  <PawnDiaryExampleAdapter.Field.PsychotypeRule>rule</PawnDiaryExampleAdapter.Field.PsychotypeRule>
+  <PawnDiaryExampleAdapter.Field.PsychotypePin>pin</PawnDiaryExampleAdapter.Field.PsychotypePin>
+
+  <PawnDiaryExampleAdapter.Field.LlmLaneIndex>laneIndex (-1 = first active)</PawnDiaryExampleAdapter.Field.LlmLaneIndex>
+  <PawnDiaryExampleAdapter.Field.LlmSystemPrompt>systemPrompt</PawnDiaryExampleAdapter.Field.LlmSystemPrompt>
+  <PawnDiaryExampleAdapter.Field.LlmUserText>userText</PawnDiaryExampleAdapter.Field.LlmUserText>
+  <PawnDiaryExampleAdapter.Field.LlmMaxTokens>maxTokens</PawnDiaryExampleAdapter.Field.LlmMaxTokens>
+  <PawnDiaryExampleAdapter.Field.LlmHandle>completion handle</PawnDiaryExampleAdapter.Field.LlmHandle>
+
   <!-- ── API Explorer popover help ───────────────────────────────────────────────────────── -->
   <PawnDiaryExampleAdapter.Help.EventKey>Stable adapter event key. It should match an External-domain group defName or another key your adapter documents.</PawnDiaryExampleAdapter.Help.EventKey>
   <PawnDiaryExampleAdapter.Help.Summary>Short factual event summary. Pawn Diary uses this as source context, not as final diary prose.</PawnDiaryExampleAdapter.Help.Summary>
@@ -121,7 +148,19 @@ Header pawn pickers supply subject and partner. Form values persist while you sw
   <PawnDiaryExampleAdapter.Help.SetEnabled>Sets the selected pawn's per-pawn diary generation toggle.</PawnDiaryExampleAdapter.Help.SetEnabled>
   <PawnDiaryExampleAdapter.Help.StyleSourceId>Owner id for this style override. Only the same source id can clear its own override.</PawnDiaryExampleAdapter.Help.StyleSourceId>
   <PawnDiaryExampleAdapter.Help.StyleRule>Free-form style rule layered above the pawn's base writing style.</PawnDiaryExampleAdapter.Help.StyleRule>
+  <PawnDiaryExampleAdapter.Help.PsychotypeSourceId>Owner id for this psychotype override or generator. Only the same source id can clear its own override.</PawnDiaryExampleAdapter.Help.PsychotypeSourceId>
+  <PawnDiaryExampleAdapter.Help.PsychotypeDefName>Built-in psychotype Def identity. The sample uses DiaryPsychotype_Content; an unknown value resolves to Neutral when written.</PawnDiaryExampleAdapter.Help.PsychotypeDefName>
+  <PawnDiaryExampleAdapter.Help.PsychotypeRule>Free-form outlook rule used by the override, custom-rule, and demo-generator examples.</PawnDiaryExampleAdapter.Help.PsychotypeRule>
+  <PawnDiaryExampleAdapter.Help.PsychotypePin>When enabled, the selected base psychotype will not be replaced by Pawn Diary's automatic roll.</PawnDiaryExampleAdapter.Help.PsychotypePin>
+  <PawnDiaryExampleAdapter.Help.LlmLaneIndex>Configured API lane index. Use -1 to let Pawn Diary choose the first active lane.</PawnDiaryExampleAdapter.Help.LlmLaneIndex>
+  <PawnDiaryExampleAdapter.Help.LlmSystemPrompt>Instruction for the one-shot completion. This request is separate from diary-entry generation.</PawnDiaryExampleAdapter.Help.LlmSystemPrompt>
+  <PawnDiaryExampleAdapter.Help.LlmUserText>Input text for the one-shot completion. It is cleaned and capped by the public API.</PawnDiaryExampleAdapter.Help.LlmUserText>
+  <PawnDiaryExampleAdapter.Help.LlmMaxTokens>Requested output cap. Pawn Diary clamps it to the integration completion limit.</PawnDiaryExampleAdapter.Help.LlmMaxTokens>
+  <PawnDiaryExampleAdapter.Help.LlmHandle>The latest requested handle is filled automatically. You may also paste another positive handle.</PawnDiaryExampleAdapter.Help.LlmHandle>
+  <PawnDiaryExampleAdapter.Help.LlmCompletionTokenWarning>This method sends a real provider request and can spend the player's tokens. Poll or cancel the returned handle afterward.</PawnDiaryExampleAdapter.Help.LlmCompletionTokenWarning>
   <PawnDiaryExampleAdapter.Help.Hooks>Shows the example adapter's live entry-status listener events and pawn-context provider invocation count.</PawnDiaryExampleAdapter.Help.Hooks>
+
+  <PawnDiaryExampleAdapter.LlmCompletion.TokenWarning>This invokes a configured provider and may spend tokens.</PawnDiaryExampleAdapter.LlmCompletion.TokenWarning>
 
   <!-- ── Read Entry tab hints ───────────────────────────────────────────────────────────── -->
   <PawnDiaryExampleAdapter.ReadEntry.HandleHint>Pick a remembered handle (from a submit), or type eventId+povRole below.</PawnDiaryExampleAdapter.ReadEntry.HandleHint>

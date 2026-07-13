@@ -37,8 +37,10 @@ namespace PawnDiaryExampleAdapter
         public string povRole = "initiator";
         public string maxCount = "5";
 
-        // ExternalEventRequest (shared by Submit / Preview / PromptEntry)
+        // ExternalEventRequest (shared factual fields; each submission family owns its event key)
         public string eventKey = PawnDiaryExampleApi.ExampleEventKey;
+        public string promptEntryEventKey = PawnDiaryExampleApi.PromptIdeaEventKey;
+        public string directEntryEventKey = PawnDiaryExampleApi.DirectNoteEventKey;
         public string summaryText = "A quiet off-duty moment gave the pawn time to think before returning to colony work.";
         public string eventLabel = "quiet moment";
         public string extraContext = "origin=api_explorer\nmood_hint=calm\nweather=soft rain";
@@ -62,6 +64,19 @@ namespace PawnDiaryExampleAdapter
         // Style override
         public string styleSourceId = PawnDiaryExampleApi.SourceId;
         public string styleRule = "write in terse, clipped sentences";
+
+        // Psychotype reads, editable layers, and external-generator demo
+        public string psychotypeSourceId = PawnDiaryExampleApi.SourceId;
+        public string psychotypeDefName = "DiaryPsychotype_Content";
+        public string psychotypeRule = "PawnDiaryExampleAdapter.Default.PsychotypeRule".Translate().Resolve();
+        public bool psychotypePin = true;
+
+        // One-shot LLM completion request + the most recently returned poll handle
+        public string llmLaneIndex = "-1";
+        public string llmSystemPrompt = "PawnDiaryExampleAdapter.Default.LlmSystemPrompt".Translate().Resolve();
+        public string llmUserText = "PawnDiaryExampleAdapter.Default.LlmUserText".Translate().Resolve();
+        public string llmMaxTokens = "120";
+        public string llmHandle = "0";
 
         // Read entry by id
         public string manualEventId = "paste_event_id_from_log";
@@ -136,7 +151,7 @@ namespace PawnDiaryExampleAdapter
             return new ExternalPromptEntryRequest
             {
                 sourceId = baseReq.sourceId,
-                eventKey = baseReq.eventKey,
+                eventKey = promptEntryEventKey,
                 subject = baseReq.subject,
                 partner = baseReq.partner,
                 summaryText = baseReq.summaryText,
@@ -157,7 +172,7 @@ namespace PawnDiaryExampleAdapter
             return new ExternalDirectEntryRequest
             {
                 sourceId = sourceId,
-                eventKey = eventKey,
+                eventKey = directEntryEventKey,
                 subject = subject,
                 partner = (partner != null && partner != subject) ? partner : null,
                 text = directText,
@@ -173,6 +188,28 @@ namespace PawnDiaryExampleAdapter
                 generateTitleIfMissing = directGenerateTitle
             };
         }
+
+        /// <summary>Builds the explorer's one-shot completion request from its string-backed fields.</summary>
+        public ExternalLlmCompletionRequest BuildLlmCompletionRequest()
+        {
+            int laneIndex;
+            if (!int.TryParse(llmLaneIndex, out laneIndex))
+            {
+                laneIndex = -1;
+            }
+
+            return new ExternalLlmCompletionRequest
+            {
+                sourceId = PawnDiaryExampleApi.SourceId,
+                laneIndex = laneIndex,
+                systemPrompt = llmSystemPrompt,
+                userText = llmUserText,
+                maxTokens = ExplorerParsing.ParsePositiveInt(llmMaxTokens, 120)
+            };
+        }
+
+        /// <summary>Returns the positive completion handle currently typed in the shared form.</summary>
+        public int LlmHandle => ExplorerParsing.ParsePositiveInt(llmHandle, 0);
 
         public DiaryEntryTitleQuery BuildQuery()
         {
@@ -300,6 +337,50 @@ namespace PawnDiaryExampleAdapter
                     AddApiLaneResult res = PawnDiaryExampleApi.AddApiLane(req);
                     string oneLine = "reason=" + res.reason + " index=" + res.index + " active=" + res.active;
                     ExplorerState.AppendLog("AddApiLane", oneLine, SnapshotFormatter.Format(res));
+                }));
+
+            // ── ONE-SHOT LLM COMPLETION ────────────────────────────────────────────────────────
+            string completionCategory = "PawnDiaryExampleAdapter.Category.LlmCompletion".Translate();
+            list.Add(Leaf(completionCategory, "RequestLlmCompletion(req)",
+                "PawnDiaryExampleAdapter.Summary.RequestLlmCompletion".Translate(),
+                DrawLlmCompletionRequestForm,
+                f =>
+                {
+                    ExternalLlmCompletionRequest req = f.BuildLlmCompletionRequest();
+                    int handle = PawnDiaryExampleApi.RequestLlmCompletion(req);
+                    f.llmHandle = handle.ToString();
+                    string oneLine = "handle=" + handle;
+                    string detail = oneLine
+                        + "\nlaneIndex=" + req.laneIndex
+                        + "\nmaxTokens=" + req.maxTokens
+                        + "\nsystemPrompt=" + req.systemPrompt
+                        + "\nuserText=" + req.userText;
+                    ExplorerState.AppendLog("RequestLlmCompletion", oneLine, detail);
+                }));
+
+            list.Add(Leaf(completionCategory, "GetLlmCompletionResult(handle)",
+                "PawnDiaryExampleAdapter.Summary.GetLlmCompletionResult".Translate(),
+                DrawLlmCompletionHandleForm,
+                f =>
+                {
+                    int handle = f.LlmHandle;
+                    LlmCompletionResult result = PawnDiaryExampleApi.GetLlmCompletionResult(handle);
+                    string oneLine = "handle=" + handle + " status=" + result.status;
+                    string detail = oneLine
+                        + "\ntext=" + (result.text ?? string.Empty)
+                        + "\nerror=" + (result.error ?? string.Empty);
+                    ExplorerState.AppendLog("GetLlmCompletionResult", oneLine, detail);
+                }));
+
+            list.Add(Leaf(completionCategory, "CancelLlmCompletion(handle)",
+                "PawnDiaryExampleAdapter.Summary.CancelLlmCompletion".Translate(),
+                DrawLlmCompletionHandleForm,
+                f =>
+                {
+                    int handle = f.LlmHandle;
+                    bool cancelled = PawnDiaryExampleApi.CancelLlmCompletion(handle);
+                    string oneLine = "handle=" + handle + " cancelled=" + cancelled;
+                    ExplorerState.AppendLog("CancelLlmCompletion", oneLine, oneLine);
                 }));
 
             // ── EVENTS (automatic-capture filters) ─────────────────────────────────────────────
@@ -613,6 +694,114 @@ namespace PawnDiaryExampleAdapter
                     ExplorerState.AppendLog("ResetWritingStyleOverride", oneLine, oneLine);
                 }));
 
+            // ── PSYCHOTYPE ──────────────────────────────────────────────────────────────────────
+            string psychotypeCategory = "PawnDiaryExampleAdapter.Category.Psychotype".Translate();
+            list.Add(Leaf(psychotypeCategory, "GetPsychotype(pawn)",
+                "PawnDiaryExampleAdapter.Summary.GetPsychotype".Translate(),
+                (f, r) => { },
+                f =>
+                {
+                    Pawn s = ExplorerState.ResolveSubjectPawn();
+                    if (s == null) { ExplorerState.AppendLog("GetPsychotype", "no pawn", "(no eligible pawn)"); return; }
+                    DiaryPsychotypeSnapshot snap = PawnDiaryExampleApi.GetPsychotype(s);
+                    string oneLine = snap == null ? "null" : "psychotype=" + snap.psychotypeDefName;
+                    string detail = snap == null
+                        ? "(null psychotype snapshot)"
+                        : "DiaryPsychotypeSnapshot"
+                            + "\n  psychotypeDefName = " + (snap.psychotypeDefName ?? string.Empty)
+                            + "\n  label              = " + (snap.label ?? string.Empty)
+                            + "\n  rule               = " + (snap.rule ?? string.Empty)
+                            + "\n  savedCustomRule    = " + (snap.savedCustomRule ?? string.Empty);
+                    ExplorerState.AppendLog("GetPsychotype", oneLine, detail);
+                }));
+
+            list.Add(Leaf(psychotypeCategory, "GetPsychotypeRule(defName)",
+                "PawnDiaryExampleAdapter.Summary.GetPsychotypeRule".Translate(),
+                DrawPsychotypeDefForm,
+                f =>
+                {
+                    string rule = PawnDiaryExampleApi.GetPsychotypeRule(f.psychotypeDefName);
+                    string oneLine = "defName=" + f.psychotypeDefName + " ruleLen=" + rule.Length;
+                    ExplorerState.AppendLog("GetPsychotypeRule", oneLine, oneLine + "\nrule=" + rule);
+                }));
+
+            list.Add(Leaf(psychotypeCategory, "SetPsychotypeOverride(pawn, sourceId, rule)",
+                "PawnDiaryExampleAdapter.Summary.SetPsychotypeOverride".Translate(),
+                DrawPsychotypeOverrideForm,
+                f =>
+                {
+                    Pawn s = ExplorerState.ResolveSubjectPawn();
+                    if (s == null) { ExplorerState.AppendLog("SetPsychotypeOverride", "no pawn", "(no eligible pawn)"); return; }
+                    bool ok = PawnDiaryExampleApi.SetPsychotypeOverride(s, f.psychotypeSourceId, f.psychotypeRule);
+                    string oneLine = "ok=" + ok;
+                    ExplorerState.AppendLog("SetPsychotypeOverride", oneLine,
+                        oneLine + "\nsourceId=" + f.psychotypeSourceId + "\nrule=" + f.psychotypeRule);
+                }));
+
+            list.Add(Leaf(psychotypeCategory, "ResetPsychotypeOverride(pawn, sourceId)",
+                "PawnDiaryExampleAdapter.Summary.ResetPsychotypeOverride".Translate(),
+                DrawPsychotypeOverrideForm,
+                f =>
+                {
+                    Pawn s = ExplorerState.ResolveSubjectPawn();
+                    if (s == null) { ExplorerState.AppendLog("ResetPsychotypeOverride", "no pawn", "(no eligible pawn)"); return; }
+                    bool ok = PawnDiaryExampleApi.ResetPsychotypeOverride(s, f.psychotypeSourceId);
+                    string oneLine = "ok=" + ok;
+                    ExplorerState.AppendLog("ResetPsychotypeOverride", oneLine, oneLine);
+                }));
+
+            list.Add(Leaf(psychotypeCategory, "SetPsychotype(pawn, defName, pin)",
+                "PawnDiaryExampleAdapter.Summary.SetPsychotype".Translate(),
+                DrawPsychotypeDefForm,
+                f =>
+                {
+                    Pawn s = ExplorerState.ResolveSubjectPawn();
+                    if (s == null) { ExplorerState.AppendLog("SetPsychotype", "no pawn", "(no eligible pawn)"); return; }
+                    bool ok = PawnDiaryExampleApi.SetPsychotype(s, f.psychotypeDefName, f.psychotypePin);
+                    string oneLine = "ok=" + ok + " pin=" + f.psychotypePin;
+                    ExplorerState.AppendLog("SetPsychotype", oneLine,
+                        oneLine + "\ndefName=" + f.psychotypeDefName);
+                }));
+
+            list.Add(Leaf(psychotypeCategory, "SetPsychotypeCustomRule(pawn, rule)",
+                "PawnDiaryExampleAdapter.Summary.SetPsychotypeCustomRule".Translate(),
+                DrawPsychotypeRuleForm,
+                f =>
+                {
+                    Pawn s = ExplorerState.ResolveSubjectPawn();
+                    if (s == null) { ExplorerState.AppendLog("SetPsychotypeCustomRule", "no pawn", "(no eligible pawn)"); return; }
+                    bool ok = PawnDiaryExampleApi.SetPsychotypeCustomRule(s, f.psychotypeRule);
+                    string oneLine = "ok=" + ok;
+                    ExplorerState.AppendLog("SetPsychotypeCustomRule", oneLine,
+                        oneLine + "\nrule=" + f.psychotypeRule);
+                }));
+
+            list.Add(Leaf(psychotypeCategory, "RegisterExternalPsychotypeGenerator(generator)",
+                "PawnDiaryExampleAdapter.Summary.RegisterPsychotypeGenerator".Translate(),
+                DrawPsychotypeOverrideForm,
+                f =>
+                {
+                    string sourceId = f.psychotypeSourceId;
+                    string generatedRule = f.psychotypeRule;
+                    PawnDiaryExampleApi.RegisterExternalPsychotypeGenerator(new ExternalPsychotypeGenerator
+                    {
+                        sourceId = sourceId,
+                        canReroll = pawn => pawn != null && PawnDiaryExampleApi.IsDiaryEligible(pawn),
+                        isBusy = pawn => false,
+                        reroll = pawn =>
+                        {
+                            bool saved = PawnDiaryExampleApi.SetPsychotypeOverride(pawn, sourceId, generatedRule);
+                            string pawnLabel = ExplorerPawns.LabelOrEmpty(pawn);
+                            string oneLine = "pawn=" + pawnLabel + " saved=" + saved;
+                            ExplorerState.AppendLog("ExternalPsychotypeGenerator.reroll", oneLine,
+                                oneLine + "\nsourceId=" + sourceId + "\nrule=" + generatedRule);
+                        }
+                    });
+                    ExplorerState.AppendLog("RegisterExternalPsychotypeGenerator", "registered sourceId=" + sourceId,
+                        "registered sourceId=" + sourceId
+                        + "\nOpen the selected pawn's Psychotype Studio and use Regenerate to invoke the demo callback.");
+                }));
+
             // ── HOOKS ───────────────────────────────────────────────────────────────────────────
             list.Add(Leaf("Hooks", "Activity log",
                 "Shows recent status-listener events and context-provider calls from this example adapter.",
@@ -810,6 +999,68 @@ namespace PawnDiaryExampleAdapter
                 "PawnDiaryExampleAdapter.Help.StyleSourceId");
             list.TextAreaEntryLabeled("PawnDiaryExampleAdapter.Field.StyleRule", ref f.styleRule, 72f,
                 "PawnDiaryExampleAdapter.Help.StyleRule");
+            list.End();
+        }
+
+        private static void DrawPsychotypeDefForm(FormState f, Rect r)
+        {
+            Listing_Standard list = new Listing_Standard();
+            list.ColumnWidth = r.width;
+            list.Begin(r);
+            list.TextFieldEntryLabeled("PawnDiaryExampleAdapter.Field.PsychotypeDefName", ref f.psychotypeDefName,
+                "PawnDiaryExampleAdapter.Help.PsychotypeDefName");
+            DrawCheckboxEntry(list, "PawnDiaryExampleAdapter.Field.PsychotypePin", ref f.psychotypePin,
+                "PawnDiaryExampleAdapter.Help.PsychotypePin");
+            list.End();
+        }
+
+        private static void DrawPsychotypeOverrideForm(FormState f, Rect r)
+        {
+            Listing_Standard list = new Listing_Standard();
+            list.ColumnWidth = r.width;
+            list.Begin(r);
+            list.TextFieldEntryLabeled("PawnDiaryExampleAdapter.Field.PsychotypeSourceId", ref f.psychotypeSourceId,
+                "PawnDiaryExampleAdapter.Help.PsychotypeSourceId");
+            list.TextAreaEntryLabeled("PawnDiaryExampleAdapter.Field.PsychotypeRule", ref f.psychotypeRule, 88f,
+                "PawnDiaryExampleAdapter.Help.PsychotypeRule");
+            list.End();
+        }
+
+        private static void DrawPsychotypeRuleForm(FormState f, Rect r)
+        {
+            Listing_Standard list = new Listing_Standard();
+            list.ColumnWidth = r.width;
+            list.Begin(r);
+            list.TextAreaEntryLabeled("PawnDiaryExampleAdapter.Field.PsychotypeRule", ref f.psychotypeRule, 96f,
+                "PawnDiaryExampleAdapter.Help.PsychotypeRule");
+            list.End();
+        }
+
+        private static void DrawLlmCompletionRequestForm(FormState f, Rect r)
+        {
+            Listing_Standard list = new Listing_Standard();
+            list.ColumnWidth = r.width;
+            list.Begin(r);
+            list.HelpLabel("PawnDiaryExampleAdapter.LlmCompletion.TokenWarning",
+                "PawnDiaryExampleAdapter.Help.LlmCompletionTokenWarning");
+            list.TextFieldEntryLabeled("PawnDiaryExampleAdapter.Field.LlmLaneIndex", ref f.llmLaneIndex,
+                "PawnDiaryExampleAdapter.Help.LlmLaneIndex");
+            list.TextAreaEntryLabeled("PawnDiaryExampleAdapter.Field.LlmSystemPrompt", ref f.llmSystemPrompt, 80f,
+                "PawnDiaryExampleAdapter.Help.LlmSystemPrompt");
+            list.TextAreaEntryLabeled("PawnDiaryExampleAdapter.Field.LlmUserText", ref f.llmUserText, 96f,
+                "PawnDiaryExampleAdapter.Help.LlmUserText");
+            list.TextFieldEntryLabeled("PawnDiaryExampleAdapter.Field.LlmMaxTokens", ref f.llmMaxTokens,
+                "PawnDiaryExampleAdapter.Help.LlmMaxTokens");
+            list.End();
+        }
+
+        private static void DrawLlmCompletionHandleForm(FormState f, Rect r)
+        {
+            Listing_Standard list = new Listing_Standard();
+            list.ColumnWidth = r.width;
+            list.Begin(r);
+            list.TextFieldEntryLabeled("PawnDiaryExampleAdapter.Field.LlmHandle", ref f.llmHandle,
+                "PawnDiaryExampleAdapter.Help.LlmHandle");
             list.End();
         }
 

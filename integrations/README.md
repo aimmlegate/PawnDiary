@@ -30,9 +30,11 @@ MSBuild integrations\PawnDiary.RimpsycheBridge\Source\PawnDiaryRimpsyche.csproj 
 (`PawnDiary.Vsie/` is mostly XML; its only assembly is the small gathering hook — `PawnDiaryVsie.dll`.)
 
 `PawnDiary.ExampleAdapter/` is both the **canonical integration example** and an **in-game API
-Explorer**: a developer tool that lets you exercise every public `PawnDiaryApi` method from a
-three-pane window (method tree | form | running result log) plus four `[DebugAction]` quick
-actions. Open it in Dev mode → Debug Actions → **Pawn Diary Example Adapter** → **Open API
+Explorer**: a developer tool that lets you exercise every public `PawnDiaryApi` family from a
+three-pane window (method tree | form | running result log), grouping related overloads into one
+form, plus four `[DebugAction]` quick actions. The tree includes the psychotype
+read/write/generator surface and the paid one-shot LLM completion request/poll/cancel lifecycle.
+Open it in Dev mode → Debug Actions → **Pawn Diary Example Adapter** → **Open API
 explorer…**. The method tree has a search box (filters by method/summary/category), per-category
 collapse, visible plain-language descriptions under each endpoint signature, and hover tooltips
 showing each method's full label and summary; the form pane names the subject/partner a call will
@@ -44,8 +46,10 @@ resizeable overlay while outside clicks pass through to normal game UI/camera co
 Its readiness badge and Readiness methods show both `IsReady` and the player-controlled
 `IsExternalApiEnabled` master switch, and non-readiness invokes are skipped while the master switch is
 off.
-All request fields start with quiet-moment sample values for quick submit/preview testing. A concise
-walkthrough lives in `PawnDiary.ExampleAdapter/API_EXPLORER.md`. The write forms expose the public
+All request fields start with concrete sample values for quick submit/preview testing. The ordinary,
+prompt-entry, and direct-entry forms default to their own XML-claimed event keys, so all three
+shipped External settings rows are exercised. A concise walkthrough lives in
+`PawnDiary.ExampleAdapter/API_EXPLORER.md`. The write forms expose the public
 v1 `forceRecord` flag and default it on so repeated smoke-test clicks are not hidden by dedup or
 budget guardrails. The daily-event timer that used to live here is gone. All direct API calls now
 live in `PawnDiary.ExampleAdapter/Source/PawnDiaryExampleApi.cs`, with XML doc comments explaining

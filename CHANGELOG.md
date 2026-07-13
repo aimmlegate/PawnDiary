@@ -1,5 +1,11 @@
 # Changelog
 
+- **2026-07-13 — Completed Example Adapter API coverage.** Added explorer forms and copyable facade
+  wrappers for the full psychotype surface and the one-shot LLM completion request/poll/cancel
+  lifecycle. Prompt-entry and direct-entry builders now default to their own XML-claimed event keys,
+  making the previously dead `exampleadapter_prompt_idea` and `exampleadapter_direct_note` settings
+  rows reachable. Localized the new developer-facing fields, help, warnings, and sample prompt text.
+
 - **2026-07-13 — Integration capture and release sanity fixes.** Core now supplies Russian-localized,
   adapter-disabled Rimpsyche conversation and afterfeel fallbacks, so Rimpsyche-only installs keep the
   same themed ambient/Thought capture instead of dropping into generic groups. `publish.ps1` can build

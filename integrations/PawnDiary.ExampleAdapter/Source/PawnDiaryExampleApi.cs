@@ -29,6 +29,12 @@ namespace PawnDiaryExampleAdapter
         /// <summary>Stable event key claimed by this adapter's External group XML.</summary>
         public const string ExampleEventKey = "exampleadapter_quiet_moment";
 
+        /// <summary>Stable event key for the wrapped prompt-entry example.</summary>
+        public const string PromptIdeaEventKey = "exampleadapter_prompt_idea";
+
+        /// <summary>Stable event key for the caller-authored direct-entry example.</summary>
+        public const string DirectNoteEventKey = "exampleadapter_direct_note";
+
         /// <summary>Stable hook id for the example pawn-context provider registration.</summary>
         private const string ProviderId = SourceId + ".trait_context";
 
@@ -495,6 +501,81 @@ namespace PawnDiaryExampleAdapter
             return PawnDiaryApi.ResetWritingStyleOverride(pawn, sourceId);
         }
 
+        /// <summary>
+        /// Reads the pawn's effective psychotype (outlook), including its player-owned custom layer.
+        /// </summary>
+        /// <param name="pawn">Pawn whose psychotype should be read. Required.</param>
+        /// <returns>Psychotype snapshot, or null when disabled, invalid, or not ready.</returns>
+        public static DiaryPsychotypeSnapshot GetPsychotype(Pawn pawn)
+        {
+            return PawnDiaryApi.GetPsychotype(pawn);
+        }
+
+        /// <summary>
+        /// Reads the localized rule for one built-in psychotype Def identity.
+        /// </summary>
+        /// <param name="psychotypeDefName">Built-in psychotype defName, such as DiaryPsychotype_Content.</param>
+        /// <returns>The localized prompt rule, or an empty string when unavailable.</returns>
+        public static string GetPsychotypeRule(string psychotypeDefName)
+        {
+            return PawnDiaryApi.GetPsychotypeRule(psychotypeDefName);
+        }
+
+        /// <summary>
+        /// Saves a source-owned psychotype override above the pawn's editable base/custom outlook.
+        /// </summary>
+        /// <param name="pawn">Pawn whose outlook should be overridden. Required.</param>
+        /// <param name="sourceId">Adapter source id that owns the override. Required.</param>
+        /// <param name="rule">Free-form outlook rule. Required and cleaned by Pawn Diary.</param>
+        /// <returns>True when the override was saved; false when disabled, invalid, or rejected.</returns>
+        public static bool SetPsychotypeOverride(Pawn pawn, string sourceId, string rule)
+        {
+            return PawnDiaryApi.SetPsychotypeOverride(pawn, sourceId, rule);
+        }
+
+        /// <summary>
+        /// Clears a source-owned psychotype override for a pawn.
+        /// </summary>
+        /// <param name="pawn">Pawn whose override should be cleared. Required.</param>
+        /// <param name="sourceId">Adapter source id that owns the override. Required.</param>
+        /// <returns>True when cleared or already absent for this source; false when another source owns it.</returns>
+        public static bool ResetPsychotypeOverride(Pawn pawn, string sourceId)
+        {
+            return PawnDiaryApi.ResetPsychotypeOverride(pawn, sourceId);
+        }
+
+        /// <summary>
+        /// Sets the pawn's player-visible base psychotype and optionally pins it against automatic rolls.
+        /// </summary>
+        /// <param name="pawn">Pawn whose base psychotype should be changed. Required.</param>
+        /// <param name="psychotypeDefName">Built-in psychotype defName; unknown values resolve to Neutral.</param>
+        /// <param name="pin">True to pin the choice against automatic rerolls.</param>
+        /// <returns>True when the base psychotype was saved; false when disabled, invalid, or not ready.</returns>
+        public static bool SetPsychotype(Pawn pawn, string psychotypeDefName, bool pin)
+        {
+            return PawnDiaryApi.SetPsychotype(pawn, psychotypeDefName, pin);
+        }
+
+        /// <summary>
+        /// Seeds the pawn's player-owned custom psychotype rule, which the player may later edit or clear.
+        /// </summary>
+        /// <param name="pawn">Pawn whose custom outlook should be changed. Required.</param>
+        /// <param name="rule">Free-form custom outlook rule. Required and cleaned by Pawn Diary.</param>
+        /// <returns>True when the custom rule was saved; false when blank, disabled, invalid, or not ready.</returns>
+        public static bool SetPsychotypeCustomRule(Pawn pawn, string rule)
+        {
+            return PawnDiaryApi.SetPsychotypeCustomRule(pawn, rule);
+        }
+
+        /// <summary>
+        /// Registers or replaces an external psychotype generator that Pawn Diary's voice editor can invoke.
+        /// </summary>
+        /// <param name="generator">Generator callbacks. sourceId and reroll are required.</param>
+        public static void RegisterExternalPsychotypeGenerator(ExternalPsychotypeGenerator generator)
+        {
+            PawnDiaryApi.RegisterExternalPsychotypeGenerator(generator);
+        }
+
         /// <summary>Endpoint used by the demo API lane the explorer can add: a local, keyless
         /// OpenAI-compatible server (e.g. Ollama), so the lane is harmless even if it is never used.</summary>
         public const string DemoLaneUrl = "http://localhost:11434/v1";
@@ -540,6 +621,36 @@ namespace PawnDiaryExampleAdapter
         public static AddApiLaneResult AddApiLane(ExternalApiLaneRequest request)
         {
             return PawnDiaryApi.AddApiLane(request);
+        }
+
+        /// <summary>
+        /// Starts a paid one-shot LLM completion on one of the player's configured API lanes.
+        /// </summary>
+        /// <param name="request">Completion request with sourceId, instruction, input text, and optional lane/token cap.</param>
+        /// <returns>A positive poll handle when admitted; 0 when rejected.</returns>
+        public static int RequestLlmCompletion(ExternalLlmCompletionRequest request)
+        {
+            return PawnDiaryApi.RequestLlmCompletion(request);
+        }
+
+        /// <summary>
+        /// Polls a one-shot completion handle. A terminal result is consumed after its first read.
+        /// </summary>
+        /// <param name="handle">Positive handle returned by <see cref="RequestLlmCompletion"/>.</param>
+        /// <returns>A non-null result whose status is Pending, Succeeded, Failed, or Unknown.</returns>
+        public static LlmCompletionResult GetLlmCompletionResult(int handle)
+        {
+            return PawnDiaryApi.GetLlmCompletionResult(handle);
+        }
+
+        /// <summary>
+        /// Cancels obsolete one-shot completion work and releases its bounded core slot.
+        /// </summary>
+        /// <param name="handle">Positive handle returned by <see cref="RequestLlmCompletion"/>.</param>
+        /// <returns>True when live work was cancelled; false for an invalid, consumed, or unknown handle.</returns>
+        public static bool CancelLlmCompletion(int handle)
+        {
+            return PawnDiaryApi.CancelLlmCompletion(handle);
         }
 
         /// <summary>
