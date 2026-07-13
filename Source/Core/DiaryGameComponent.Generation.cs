@@ -336,7 +336,7 @@ namespace PawnDiary
             string personaRule = PersonaRuleFor(diaryEvent, povRole, livePawnsById);
             string psychotypeRule = PsychotypeRuleFor(diaryEvent, povRole, livePawnsById);
             string promptEnchantment = PromptEnchantmentRuleFor(diaryEvent, povRole, livePawnsById);
-            string humorCue = HumorCueFor(diaryEvent);
+            string humorCue = HumorCueFor(diaryEvent, povRole, livePawnsById);
             QueuePrompt(
                 diaryEvent,
                 povRole,
@@ -463,7 +463,7 @@ namespace PawnDiary
                 string personaRule = PersonaRuleFor(diaryEvent, DiaryEvent.InitiatorRole);
                 string psychotypeRule = PsychotypeRuleFor(diaryEvent, DiaryEvent.InitiatorRole);
                 string promptEnchantment = PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.InitiatorRole, livePawnsById);
-                string humorCue = HumorCueFor(diaryEvent);
+                string humorCue = HumorCueFor(diaryEvent, DiaryEvent.InitiatorRole, livePawnsById);
                 QueuePrompt(
                     diaryEvent,
                     DiaryEvent.InitiatorRole,
@@ -515,7 +515,7 @@ namespace PawnDiary
                 string personaRule = PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole);
                 string psychotypeRule = PsychotypeRuleFor(diaryEvent, DiaryEvent.RecipientRole);
                 string promptEnchantment = PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole, livePawnsById);
-                string humorCue = HumorCueFor(diaryEvent);
+                string humorCue = HumorCueFor(diaryEvent, DiaryEvent.RecipientRole, livePawnsById);
                 QueuePrompt(
                     diaryEvent,
                     DiaryEvent.RecipientRole,

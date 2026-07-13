@@ -1,7 +1,7 @@
 // Player-facing dialog for editing one pawn's VOICE from the Diary tab: the writing style (sentence
 // mechanics) and the psychotype (outlook/temperament). Both layers are edited here in one window, each
-// with a base picker, a read-only base preview, an editable pawn-specific custom rule, and an
-// explanation panel when a temporary override (hediff or external API) shadows the player's choice. A
+// with a base picker, a read-only base preview, an editable pawn-specific custom rule, and a prominent
+// status panel that always identifies which layer currently wins. A
 // manual pick / custom edit / re-roll pins the layer so it is not auto-re-rolled when the pawn grows up.
 //
 // RimWorld IMGUI draws this window repeatedly, so editable buffers live as fields and are only flushed
@@ -48,7 +48,6 @@ namespace PawnDiary
         private Vector2 contentScroll;
         private Vector2 basePromptScroll;
         private Vector2 customScroll;
-        private Vector2 effectiveScroll;
         private Vector2 psychotypeBaseScroll;
         private Vector2 psychotypeCustomScroll;
 
@@ -158,6 +157,11 @@ namespace PawnDiary
             DrawBaseStylePicker(new Rect(x, y, width, LineHeight), resolution);
             y += LineHeight + FieldGap;
 
+            // Put precedence before the editable fields: players can immediately see whether the base,
+            // their pawn-specific text, a health condition, or another mod currently controls the voice.
+            y += DrawMessagePanel(new Rect(x, y, width, 0f), WritingStyleStatusMessage(resolution),
+                WritingStyleStatusColor(resolution)) + FieldGap;
+
             y += DrawLabeledScrollText(
                 new Rect(x, y, width, PromptAreaHeight),
                 "PawnDiary.WritingStyle.BasePrompt".Translate(),
@@ -176,19 +180,6 @@ namespace PawnDiary
                 editable: true,
                 editedText: text => customRuleBuffer = ClampInput(text, PlayerWritingStyleText.MaxRuleChars)) + FieldGap;
 
-            y += DrawLabeledScrollText(
-                new Rect(x, y, width, PromptAreaHeight),
-                "PawnDiary.WritingStyle.EffectivePrompt".Translate(),
-                EffectiveStylePromptForDisplay(resolution),
-                ref effectiveScroll,
-                PromptAreaHeight) + FieldGap;
-
-            string overrideMessage = WritingStyleOverrideMessage(resolution);
-            if (overrideMessage != null)
-            {
-                y += DrawMessagePanel(new Rect(x, y, width, 0f), overrideMessage,
-                    new Color(0.12f, 0.10f, 0.04f, 0.55f)) + FieldGap;
-            }
         }
 
         private void DrawBaseStylePicker(Rect rect, WritingStyleResolution resolution)
@@ -431,10 +422,9 @@ namespace PawnDiary
 
             // Style section.
             h += LineHeight + FieldGap;
+            h += MessagePanelHeight(WritingStyleStatusMessage(styleResolution), width);
             h += (LabelHeight + 2f + PromptAreaHeight) + FieldGap;
             h += (LabelHeight + 2f + PromptAreaHeight) + FieldGap;
-            h += (LabelHeight + 2f + PromptAreaHeight) + FieldGap;
-            h += MessagePanelHeight(WritingStyleOverrideMessage(styleResolution), width);
 
             // Psychotype section.
             h += SectionGap + FieldGap; // gap + separator line
@@ -465,37 +455,59 @@ namespace PawnDiary
                 ExplanationMaxHeight) + FieldGap;
         }
 
-        private static string WritingStyleOverrideMessage(WritingStyleResolution resolution)
+        private string WritingStyleStatusMessage(WritingStyleResolution resolution)
         {
-            if (resolution == null
-                || (resolution.source != WritingStyleRuleSource.ExternalApiOverride
-                    && resolution.source != WritingStyleRuleSource.HediffOverride))
+            if (resolution == null)
             {
-                return null;
+                return "PawnDiary.WritingStyle.CurrentBase".Translate(
+                    LabelFor(DiaryPersonas.Resolve(pendingBaseStyleDefName)));
             }
 
-            string explanation;
             if (resolution.source == WritingStyleRuleSource.ExternalApiOverride)
             {
                 string source = string.IsNullOrWhiteSpace(resolution.externalSourceId)
                     ? "PawnDiary.WritingStyle.ExternalSourceLabel".Translate().ToString()
                     : resolution.externalSourceId;
-                explanation = "PawnDiary.WritingStyle.OverrideExternal".Translate(source);
+                string message = "PawnDiary.WritingStyle.CurrentExternal".Translate(source);
+                if (!string.IsNullOrWhiteSpace(customRuleBuffer))
+                {
+                    message += "\n" + "PawnDiary.WritingStyle.SavedCustomWaiting".Translate();
+                }
+
+                return message;
             }
-            else
+
+            if (resolution.source == WritingStyleRuleSource.HediffOverride)
             {
                 string label = string.IsNullOrWhiteSpace(resolution.hediffStyleLabel)
                     ? (resolution.hediffStyleDefName ?? string.Empty)
                     : resolution.hediffStyleLabel;
-                explanation = "PawnDiary.WritingStyle.OverrideHediff".Translate(label);
+                string message = "PawnDiary.WritingStyle.CurrentHediff".Translate(label);
+                if (!string.IsNullOrWhiteSpace(customRuleBuffer))
+                {
+                    message += "\n" + "PawnDiary.WritingStyle.SavedCustomWaiting".Translate();
+                }
+
+                return message;
             }
 
-            if (WritingStyleResolutionPolicy.CustomSuppressedByOverride(resolution))
+            if (!string.IsNullOrWhiteSpace(PlayerWritingStyleText.CleanRule(customRuleBuffer)))
             {
-                explanation += "\n" + "PawnDiary.WritingStyle.CustomInactiveDueToOverride".Translate();
+                return "PawnDiary.WritingStyle.CurrentCustom".Translate();
             }
 
-            return explanation;
+            return "PawnDiary.WritingStyle.CurrentBase".Translate(
+                LabelFor(DiaryPersonas.Resolve(pendingBaseStyleDefName)));
+        }
+
+        private static Color WritingStyleStatusColor(WritingStyleResolution resolution)
+        {
+            bool overridden = resolution != null
+                && (resolution.source == WritingStyleRuleSource.ExternalApiOverride
+                    || resolution.source == WritingStyleRuleSource.HediffOverride);
+            return overridden
+                ? new Color(0.22f, 0.14f, 0.03f, 0.8f)
+                : new Color(0.05f, 0.18f, 0.10f, 0.7f);
         }
 
         // The psychotype hint panel: a disabled-layer note, and/or an active external-override explanation.
@@ -693,26 +705,5 @@ namespace PawnDiary
             return DiaryPersonas.RuleFor(defName);
         }
 
-        private string EffectiveStylePromptForDisplay(WritingStyleResolution resolution)
-        {
-            if (resolution == null)
-            {
-                return string.Empty;
-            }
-
-            if (resolution.source == WritingStyleRuleSource.ExternalApiOverride
-                || resolution.source == WritingStyleRuleSource.HediffOverride)
-            {
-                return resolution.rule;
-            }
-
-            string editedCustom = PlayerWritingStyleText.CleanRule(customRuleBuffer);
-            if (!string.IsNullOrWhiteSpace(editedCustom))
-            {
-                return editedCustom;
-            }
-
-            return BaseStylePromptFor(pendingBaseStyleDefName);
-        }
     }
 }

@@ -1351,7 +1351,9 @@ namespace PawnDiary
                 .Int("uiHistoryScanMaxEventsPerFrame", 1, 1000)
                 .Float("uiHistoryScanFrameBudgetSeconds", 0f, 0.01f, true)
                 .Int("minimumFirstPersonAgeYears", 0, 100)
-                .Float("humorChance", 0f, 1f, true);
+                .Float("humorChance", 0f, 1f, true)
+                .Float("humorElevatedChanceMultiplier", 0f, 5f, true)
+                .Float("humorReducedChanceMultiplier", 0f, 1f, true);
 
             // ---- Signal policies (DiarySignalPolicyDef). The accessor returns a fallback def when a
             // signal def is absent, so editing never crashes; values use -1 as the "inherit tuning"

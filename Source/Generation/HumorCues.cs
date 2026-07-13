@@ -9,8 +9,17 @@
 // dry inventory, a clerical tally) that yields a subtly droll or deadpan entry without ever naming
 // comedy. Flavor matches stakes: Light (dry/absurdist) for mundane events, Gallows (dark/deadpan)
 // for high-stakes events. At most one cue per entry, and only on ~humorChance of eligible entries.
+//
+// Hidden temperament bias: who the writer is nudges how often humor fires. An upbeat temperament
+// (Optimist/Sanguine — both degrees of NaturalMood — or Anomaly's Joyous) or a passion (minor or
+// burning) in Social pulls the chance UP; a dour, anxious, or unfeeling temperament (Pessimist,
+// Depressive, Nervous, Neurotic, Very neurotic, Psychopath, or Anomaly's Disturbing) pulls it DOWN.
+// This is deliberately NOT cumulative: within a direction several qualifiers still count once, and a
+// writer who somehow qualifies for both directions (say a Sanguine psychopath) offsets back to the
+// plain base rate. There is no settings field for this, matching the rest of the humor-cue feature.
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -23,11 +32,35 @@ namespace PawnDiary
     /// </summary>
     internal static class HumorCues
     {
+        // Trait keys that shift the humor chance. Spectrum-trait degrees are keyed "defName:degree"
+        // (NaturalMood's sanguine/optimist/pessimist/depressive are degrees 2/1/-1/-2); single-degree
+        // traits (Joyous, Psychopath, Disturbing) are keyed by bare defName. This mirrors the key
+        // convention in PersonaAffinity; HasAnyTraitKey tests both forms of each of the pawn's traits.
+        private static readonly HashSet<string> UpbeatTraitKeys = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "NaturalMood:2", // sanguine
+            "NaturalMood:1", // optimist
+            "Joyous",        // Anomaly DLC
+        };
+
+        private static readonly HashSet<string> DourTraitKeys = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "NaturalMood:-1", // pessimist
+            "NaturalMood:-2", // depressive
+            "Nerves:-1",      // nervous
+            "Neurotic:1",     // neurotic
+            "Neurotic:2",     // very neurotic
+            "Psychopath",     // unfeeling (singular)
+            "Disturbing",     // Anomaly DLC (singular)
+        };
+
         /// <summary>
         /// Returns the chosen cue's rule text for this event, or <c>string.Empty</c> when no cue is
-        /// selected. At most one cue per entry.
+        /// selected. At most one cue per entry. <paramref name="writerPawn"/> is the live pawn writing
+        /// this POV (null is fine — the offline/unresolvable case simply skips the temperament check
+        /// and uses the plain base rate).
         /// </summary>
-        public static string CueFor(DiaryEvent diaryEvent)
+        public static string CueFor(DiaryEvent diaryEvent, Pawn writerPawn)
         {
             if (diaryEvent == null)
             {
@@ -35,9 +68,10 @@ namespace PawnDiary
             }
 
             // Base rate is XML-tuned (DiaryTuningDef.humorChance); DiaryTuning.HumorChance owns the
-            // safe 0..1 clamp and fallback when the def is absent/invalid.
-            float chance = DiaryTuning.HumorChance;
-            if (!Rand.Chance(chance))
+            // safe 0..1 clamp and fallback when the def is absent/invalid. The writer's temperament
+            // then applies one non-cumulative multiplier on top -- see HumorChanceMultiplierFor.
+            float chance = DiaryTuning.HumorChance * HumorChanceMultiplierFor(writerPawn);
+            if (!Rand.Chance(Mathf.Clamp01(chance)))
             {
                 return string.Empty;
             }
@@ -73,6 +107,68 @@ namespace PawnDiary
             }
 
             return PickWeighted(candidates, totalWeight).rule;
+        }
+
+        /// <summary>
+        /// Resolves the single, non-cumulative multiplier the writer's temperament applies to the
+        /// base humor chance. An upbeat temperament (Optimist/Sanguine/Joyous) or a Social passion
+        /// pulls it UP; a dour/anxious/unfeeling temperament pulls it DOWN. The two directions are
+        /// mutually exclusive rather than stacked: within a direction several matches still count
+        /// once, and a writer who qualifies for both (say a Sanguine psychopath) offsets back to 1.
+        /// </summary>
+        private static float HumorChanceMultiplierFor(Pawn pawn)
+        {
+            if (pawn == null)
+            {
+                return 1f;
+            }
+
+            bool up = HasAnyTraitKey(pawn, UpbeatTraitKeys) || HasSocialPassion(pawn);
+            bool down = HasAnyTraitKey(pawn, DourTraitKeys);
+
+            // Neither, or both (which offset) -> no adjustment.
+            if (up == down)
+            {
+                return 1f;
+            }
+
+            return up
+                ? DiaryTuning.HumorElevatedChanceMultiplier
+                : DiaryTuning.HumorReducedChanceMultiplier;
+        }
+
+        private static bool HasSocialPassion(Pawn pawn)
+        {
+            SkillRecord social = pawn.skills?.GetSkill(SkillDefOf.Social);
+            return social != null && social.passion != Passion.None;
+        }
+
+        // Iterates the pawn's traits once, testing both the bare defName and the "defName:degree"
+        // form of each against the key set (see the convention on UpbeatTraitKeys/DourTraitKeys).
+        private static bool HasAnyTraitKey(Pawn pawn, HashSet<string> keys)
+        {
+            List<Trait> traits = pawn.story?.traits?.allTraits;
+            if (traits == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < traits.Count; i++)
+            {
+                Trait trait = traits[i];
+                string defName = trait?.def?.defName;
+                if (defName == null)
+                {
+                    continue;
+                }
+
+                if (keys.Contains(defName) || keys.Contains(defName + ":" + trait.Degree))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

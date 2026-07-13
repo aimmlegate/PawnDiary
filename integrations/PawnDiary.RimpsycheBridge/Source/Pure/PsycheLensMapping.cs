@@ -274,6 +274,26 @@ namespace PawnDiaryRimpsyche.Pure
             return primary.Length == 0 ? secondary : primary + " " + secondary;
         }
 
+        /// <summary>Maps the dominant Rimpsyche family/sign to the closest built-in Pawn Diary psychotype.</summary>
+        public static string InternalPsychotypeForPlan(PsycheLensPlan plan)
+        {
+            if (plan == null)
+            {
+                return null;
+            }
+
+            switch (plan.PrimaryFamily)
+            {
+                case PsycheFamily.Social: return plan.PrimaryPositive ? "DiaryPsychotype_Theatrical" : "DiaryPsychotype_Detached";
+                case PsycheFamily.Mind: return plan.PrimaryPositive ? "DiaryPsychotype_WideEyed" : "DiaryPsychotype_Pragmatic";
+                case PsycheFamily.Drive: return plan.PrimaryPositive ? "DiaryPsychotype_Ambitious" : "DiaryPsychotype_Content";
+                case PsycheFamily.Emotion: return plan.PrimaryPositive ? "DiaryPsychotype_Volatile" : "DiaryPsychotype_Wry";
+                case PsycheFamily.Moral: return plan.PrimaryPositive ? "DiaryPsychotype_Dutiful" : "DiaryPsychotype_Ruthless";
+                case PsycheFamily.Order: return plan.PrimaryPositive ? "DiaryPsychotype_Perfectionist" : "DiaryPsychotype_WildThing";
+                default: return null;
+            }
+        }
+
         /// <summary>Stable Keyed key for one family/sign cell.</summary>
         public static string RuleKeyFor(PsycheFamily family, bool positive)
         {

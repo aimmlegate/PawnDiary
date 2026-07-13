@@ -11,6 +11,7 @@
 //
 // New to C#/RimWorld? See AGENTS.md and docs/lore/build.md (Mod constructors run during long-event load).
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
 using PawnDiary.Integration;
@@ -19,11 +20,26 @@ using Verse;
 
 namespace PawnDiaryRimpsyche
 {
+    /// <summary>How Rimpsyche drives the pawn's editable Pawn Diary psychotype.</summary>
+    public enum RimpsychePersonaMode
+    {
+        Off,
+        InternalPsychotype,
+        DirectText,
+        LlmTransform
+    }
+
     /// <summary>Saved player choices for the two optional Rimpsyche bridge tiers.</summary>
     public class PawnDiaryRimpsycheSettings : ModSettings
     {
         /// <summary>Tier B: let Rimpsyche own the pawn's external diary-outlook slot.</summary>
-        public bool usePsychotypeOverride = true;
+        public RimpsychePersonaMode personaMode = RimpsychePersonaMode.DirectText;
+
+        /// <summary>LLM lane index, or -1 for the first active lane.</summary>
+        public int transformLaneIndex = -1;
+
+        /// <summary>Editable LLM rewrite instruction; blank uses the localized default.</summary>
+        public string transformPrompt = string.Empty;
 
         /// <summary>Tier C: submit high-|alignment| conversations as first-class diary events.</summary>
         public bool recordChargedConversations = true;
@@ -31,8 +47,35 @@ namespace PawnDiaryRimpsyche
         /// <summary>Saves frozen setting keys to RimWorld's per-mod config XML.</summary>
         public override void ExposeData()
         {
-            Scribe_Values.Look(ref usePsychotypeOverride, "usePsychotypeOverride", true);
+            if (Scribe.mode == LoadSaveMode.LoadingVars)
+            {
+                RimpsychePersonaMode loaded = (RimpsychePersonaMode)(-1);
+                Scribe_Values.Look(ref loaded, "personaMode", (RimpsychePersonaMode)(-1));
+                if ((int)loaded < 0 || (int)loaded > (int)RimpsychePersonaMode.LlmTransform)
+                {
+                    bool oldEnabled = true;
+                    Scribe_Values.Look(ref oldEnabled, "usePsychotypeOverride", true);
+                    personaMode = oldEnabled ? RimpsychePersonaMode.DirectText : RimpsychePersonaMode.Off;
+                }
+                else
+                {
+                    personaMode = loaded;
+                }
+            }
+            else
+            {
+                Scribe_Values.Look(ref personaMode, "personaMode", RimpsychePersonaMode.DirectText);
+            }
+            Scribe_Values.Look(ref transformLaneIndex, "transformLaneIndex", -1);
+            Scribe_Values.Look(ref transformPrompt, "transformPrompt", string.Empty);
             Scribe_Values.Look(ref recordChargedConversations, "recordChargedConversations", true);
+        }
+
+        public string ResolveTransformPrompt()
+        {
+            return string.IsNullOrWhiteSpace(transformPrompt)
+                ? "PawnDiaryRimpsyche.Settings.TransformPromptDefault".Translate().Resolve()
+                : transformPrompt;
         }
     }
 
@@ -72,6 +115,7 @@ namespace PawnDiaryRimpsyche
                 try
                 {
                     PsycheSync.RegisterContextProvider();
+                    RegisterPsychotypeGenerator();
                 }
                 catch (Exception exception)
                 {
@@ -108,6 +152,17 @@ namespace PawnDiaryRimpsyche
             Log.Message(LogPrefix + " initialized.");
         }
 
+        private static void RegisterPsychotypeGenerator()
+        {
+            PawnDiaryApi.RegisterExternalPsychotypeGenerator(new ExternalPsychotypeGenerator
+            {
+                sourceId = BridgeIds.ModId,
+                canReroll = pawn => RimpsycheActive && Settings != null && Settings.personaMode == RimpsychePersonaMode.LlmTransform,
+                isBusy = PsycheSync.IsTransformInFlight,
+                reroll = PsycheSync.RerollTransform
+            });
+        }
+
         /// <summary>
         /// Runtime feature gate for additive Pawn Diary API members. Kept behind a method so the C#
         /// compiler does not fold today's const ApiVersion and erase the older-version fallback branch.
@@ -140,16 +195,65 @@ namespace PawnDiaryRimpsyche
             }
 
             listing.Label("PawnDiaryRimpsyche.Settings.Section".Translate());
-            listing.CheckboxLabeled(
-                "PawnDiaryRimpsyche.Settings.PsychotypeOverride".Translate(),
-                ref Settings.usePsychotypeOverride,
-                "PawnDiaryRimpsyche.Settings.PsychotypeOverrideDesc".Translate());
+            DrawMode(listing, RimpsychePersonaMode.Off, "Off");
+            DrawMode(listing, RimpsychePersonaMode.InternalPsychotype, "Mapping");
+            DrawMode(listing, RimpsychePersonaMode.DirectText, "Direct");
+            DrawMode(listing, RimpsychePersonaMode.LlmTransform, "Llm");
+            if (Settings.personaMode == RimpsychePersonaMode.LlmTransform)
+            {
+                DiaryApiSetupSnapshot setup = PawnDiaryApi.GetApiSetup();
+                Rect laneRect = listing.GetRect(28f);
+                Widgets.Label(new Rect(laneRect.x, laneRect.y, 150f, laneRect.height), "PawnDiaryRimpsyche.Settings.TransformLane".Translate());
+                if (Widgets.ButtonText(new Rect(laneRect.x + 158f, laneRect.y, laneRect.width - 158f, laneRect.height), LaneLabel(setup)))
+                {
+                    Find.WindowStack.Add(new FloatMenu(LaneOptions(setup)));
+                }
+                Rect promptRect = listing.GetRect(100f);
+                string shown = string.IsNullOrEmpty(Settings.transformPrompt) ? Settings.ResolveTransformPrompt() : Settings.transformPrompt;
+                string edited = Widgets.TextArea(promptRect, shown);
+                if (edited != shown) Settings.transformPrompt = edited;
+            }
             listing.CheckboxLabeled(
                 "PawnDiaryRimpsyche.Settings.ChargedConversations".Translate(),
                 ref Settings.recordChargedConversations,
                 "PawnDiaryRimpsyche.Settings.ChargedConversationsDesc".Translate());
 
             listing.End();
+        }
+
+        private static void DrawMode(Listing_Standard listing, RimpsychePersonaMode mode, string suffix)
+        {
+            if (listing.RadioButton(("PawnDiaryRimpsyche.Settings.Mode." + suffix).Translate(), Settings.personaMode == mode, 8f))
+            {
+                Settings.personaMode = mode;
+            }
+            listing.Label(("PawnDiaryRimpsyche.Settings.Mode." + suffix + "Desc").Translate());
+        }
+
+        private static string LaneLabel(DiaryApiSetupSnapshot setup)
+        {
+            if (Settings.transformLaneIndex >= 0 && setup?.lanes != null)
+            {
+                foreach (DiaryApiLaneSnapshot lane in setup.lanes)
+                    if (lane.index == Settings.transformLaneIndex) return string.IsNullOrWhiteSpace(lane.model) ? lane.url : lane.model;
+            }
+            return "PawnDiaryRimpsyche.Settings.TransformLaneAuto".Translate();
+        }
+
+        private static List<FloatMenuOption> LaneOptions(DiaryApiSetupSnapshot setup)
+        {
+            List<FloatMenuOption> options = new List<FloatMenuOption>
+            {
+                new FloatMenuOption("PawnDiaryRimpsyche.Settings.TransformLaneAuto".Translate(), () => Settings.transformLaneIndex = -1)
+            };
+            if (setup?.lanes != null)
+                foreach (DiaryApiLaneSnapshot lane in setup.lanes)
+                {
+                    int index = lane.index;
+                    string label = string.IsNullOrWhiteSpace(lane.model) ? lane.url : lane.model;
+                    options.Add(new FloatMenuOption(label, () => Settings.transformLaneIndex = index));
+                }
+            return options;
         }
     }
 }

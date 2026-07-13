@@ -117,6 +117,28 @@ namespace PawnDiaryRimpsyche.Pure
             return line.ToString();
         }
 
+        /// <summary>Builds the compact, schema-labelled input used by the optional LLM rewrite.</summary>
+        public static string BuildTransformInput(string psycheSummary, string baseOutlook)
+        {
+            string summary = Clean(psycheSummary);
+            string outlook = Clean(baseOutlook);
+            if (summary.Length == 0 && outlook.Length == 0)
+            {
+                return null;
+            }
+
+            List<string> lines = new List<string>();
+            if (summary.Length > 0)
+            {
+                lines.Add(summary);
+            }
+            if (outlook.Length > 0)
+            {
+                lines.Add("base outlook: " + outlook);
+            }
+            return string.Join("\n", lines.ToArray());
+        }
+
         private static Dictionary<string, float> BuildValueLookup(IEnumerable<PsycheNodeValue> values)
         {
             Dictionary<string, float> lookup = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);

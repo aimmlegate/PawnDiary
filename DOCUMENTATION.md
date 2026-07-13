@@ -721,8 +721,13 @@ player installs only the ones matching their mod list:
   (ambient min 6/sample 3) and package-owned memories their own voice. Tier A contributes a cached
   `psyche=` context line: up to three localized descriptors above the XML magnitude floor and two
   interests, never raw floats. Default-on Tier B maps the two dominant nodes from distinct behavioral
-  families into a source-owned psychotype outlook on a 250-tick change-detected pass and releases owned
-  overrides on toggle/new-game. Default-on Tier C signature-checks Rimpsyche v1.0.41's
+  families into an editable psychotype on a 250-tick change-detected pass. Persona sync is a single-choice
+  mode: Off, map the dominant family/sign to a built-in psychotype, seed deterministic localized direct
+  text, or ask a selectable Pawn Diary LLM lane to rewrite the psyche/interests summary (falling back to
+  direct text). The rounded 34-node vector plus mode/prompt settings form the handled key, so a Rimpsyche
+  personality change automatically reseeds while an unchanged pawn preserves player edits. Existing
+  `usePsychotypeOverride` settings migrate to Direct text/Off, and old source-owned overrides are swept on
+  load. Default-on Tier C signature-checks Rimpsyche v1.0.41's
   `InteractionHook`, records only conversations over the XML absolute-alignment threshold (`0.55`)
   under frozen key `rimpsyche_conversation`, and persists a per-pair 60,000-tick cooldown. The
   six-family mapping, compact formatter, stable hash, threshold, and cooldown are pure-tested. Typed
@@ -1188,9 +1193,12 @@ runtime snapshot built in `HediffPersonaOverrides.ResolveWritingStyle`, is:
 
 Generation only consumes the final `rule` string; the Diary tab opens the Writing Style dialog
 (`Dialog_PawnWritingStyle`) from a compact header icon, so the editor affordance does not reserve a
-separate row above the diary pages. The dialog uses the full `WritingStyleResolution` metadata to
-show the effective prompt and explain why a saved custom prompt is temporarily inactive when an
-override shadows it.
+separate row above the diary pages. At the top of the writing-style section, the dialog uses the full
+`WritingStyleResolution` metadata to show one prominent **Currently used** status: base style, the
+pawn's custom prompt, a health-condition override, or an external-mod override (including its source
+id). An override status also says that any saved custom prompt is waiting until the override ends.
+This replaces the old read-only effective-prompt preview, which mostly duplicated either the base or
+custom text already visible directly above it.
 The integration API's `PawnDiaryApi.GetWritingStyle` continues to return the base saved style only
 (custom prompt and temporary overrides are not exposed there).
 
@@ -1303,7 +1311,14 @@ and observed conditions feed the same planner, so active threats can bias otherw
 pages until they close. `normalPromptWeightMultiplier` can dampen ordinary health/mood context.
 Eligible first-person prompts can also receive one hidden humor cue; `DiaryTuningDef.humorChance`
 defaults to `0.20` (roughly one in five eligible entries), while cue flavor is selected by event
-stakes.
+stakes. The writer's temperament then applies one flat, non-cumulative multiplier on top of the base
+rate: an upbeat temperament (the Optimist/Sanguine degrees of NaturalMood, or Anomaly's Joyous trait)
+or a Social skill passion (minor or burning) applies `humorElevatedChanceMultiplier` (default `2`),
+while a dour/anxious/unfeeling temperament (Pessimist, Depressive, Nervous, Neurotic, Very neurotic,
+Psychopath, or Anomaly's Disturbing trait) applies `humorReducedChanceMultiplier` (default `0.5`).
+The two directions are mutually exclusive rather than stacked: within a direction several qualifiers
+still count once, and a writer who qualifies for both (say a Sanguine psychopath) offsets back to the
+base rate.
 When an active hediff forces a temporary writing-style override, all hediffs matched by any active
 persona-override rule are suppressed from the prompt-enchantment pool so the same condition does not
 arrive once as style and again as "important context." When an external writing-style override is

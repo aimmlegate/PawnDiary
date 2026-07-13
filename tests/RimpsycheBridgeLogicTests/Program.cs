@@ -21,11 +21,13 @@ namespace RimpsycheBridgeLogicTests
             TestDominantPair_AlignedPolarity();
             TestDominantPair_StableUnderTinyJitter();
             TestStableHash_OrderUnknownAndFixture();
+            TestInternalPsychotypeMapping_AllFamiliesAndSigns();
 
             TestSummary_FloorTopThreeAndNoRawFloats();
             TestSummary_ExactFloorExcludedAndRounded();
             TestSummary_EmptyInputReturnsEmpty();
             TestSummary_InterestsCappedDeduplicatedAndCleaned();
+            TestTransformInput_CombinesAndHandlesBlank();
 
             TestConversation_AlignmentThreshold();
             TestConversation_Cooldown();
@@ -176,6 +178,31 @@ namespace RimpsycheBridgeLogicTests
             Console.WriteLine("  INFO  fixture vector hash = " + hash);
         }
 
+        private static void TestInternalPsychotypeMapping_AllFamiliesAndSigns()
+        {
+            foreach (PsycheFamily family in Enum.GetValues(typeof(PsycheFamily)))
+            {
+                foreach (bool positive in new[] { false, true })
+                {
+                    PsycheLensPlan plan = PsycheLensMapping.SelectDominantPair(new[]
+                    {
+                        NodeForFamily(family, positive)
+                    });
+                    string mapped = PsycheLensMapping.InternalPsychotypeForPlan(plan);
+                    Check(family + "/" + positive + " maps to built-in psychotype",
+                        !string.IsNullOrWhiteSpace(mapped) && mapped.StartsWith("DiaryPsychotype_", StringComparison.Ordinal));
+                }
+            }
+        }
+
+        private static PsycheNodeValue NodeForFamily(PsycheFamily family, bool positive)
+        {
+            foreach (PsycheNodeDefinition definition in PsycheLensMapping.Definitions)
+                if (definition.Family == family)
+                    return new PsycheNodeValue(definition.DefName, positive == (definition.LensPolarity > 0) ? 0.9f : -0.9f);
+            return default(PsycheNodeValue);
+        }
+
         // ---- PsycheSummaryFormat ----
 
         private static void TestSummary_FloorTopThreeAndNoRawFloats()
@@ -262,6 +289,15 @@ namespace RimpsycheBridgeLogicTests
                     0,
                     key => key.EndsWith(".Low", StringComparison.Ordinal) ? "резкий" : string.Empty)
                 == "psyche=резкий");
+        }
+
+        private static void TestTransformInput_CombinesAndHandlesBlank()
+        {
+            Check("transform input combines summary and outlook",
+                PsycheSummaryFormat.BuildTransformInput("psyche=focused", "This pawn values order.")
+                == "psyche=focused\nbase outlook: This pawn values order.");
+            Check("blank transform input returns null",
+                PsycheSummaryFormat.BuildTransformInput(" ", null) == null);
         }
 
         // ---- ConversationCapturePolicy ----

@@ -6,6 +6,16 @@
   remains an absolute zero override, and ending Pawn Diary authority restores the player's saved
   pre-sync RimTalk value (including across reloads).
 
+- **2026-07-13 — Temperament-biased hidden humor chance.** The hidden humor-cue system now shifts
+  `humorChance` by the writer's temperament with one flat, non-cumulative multiplier. An upbeat
+  temperament (Optimist, Sanguine, or Anomaly's Joyous trait) or a Social skill passion (minor or
+  burning) raises it (`DiaryTuningDef.humorElevatedChanceMultiplier`, default `2`); a dour, anxious,
+  or unfeeling temperament (Pessimist, Depressive, Nervous, Neurotic, Very neurotic, Psychopath, or
+  Anomaly's Disturbing trait) lowers it (`humorReducedChanceMultiplier`, default `0.5`). The two
+  directions are mutually exclusive: within a direction several qualifiers still count once, and a
+  writer who qualifies for both offsets back to the base rate. Still hidden and always-on: no
+  settings field or UI.
+
 - **2026-07-13 — Fixed RimTalk bridge startup translation errors.** Localized RimTalk variable and
   injected-section registration now runs after language loading instead of from the background mod
   constructor, eliminating the `No active language` errors for diary, persona, colony, and shared context.
@@ -20,6 +30,22 @@
   modifiers; `silent-focus` instead maintains RimTalk chattiness at zero and restores the saved prior
   value afterward. Added opt-in `{{ pawn.diary_persona }}` / `{{ recipient.diary_persona }}` variables
   without automatic prompt insertion, pure policy/length tests, and retained the legacy toggle key.
+
+## 2026-07-13
+
+- **Clearer per-pawn writing-style status.** The voice editor now leads with a prominent, live
+  “Currently used” panel that distinguishes the base style, the pawn's custom prompt, a temporary
+  health-condition override, and an external-mod override by source. It explicitly says when saved
+  custom text is waiting behind an override, and removes the redundant effective-prompt preview.
+
+## 2026-07-12
+
+- **Rimpsyche persona sync now matches the 1-2-3 workflow.** The old on/off outlook toggle is now Off
+  plus three active modes: map the dominant psyche family to a built-in psychotype, seed editable direct
+  text, or create an editable LLM-assisted outlook on a selectable lane with deterministic direct-text
+  fallback. The existing 250-tick rounded-vector detection automatically reseeds after Rimpsyche persona
+  changes, LLM mode exposes Regenerate in the pawn voice editor, old settings migrate safely, and the
+  pure mapping/input policy is covered by the Rimpsyche bridge harness.
 
 Milestone history of Pawn Diary, newest first. Grouped by milestone, not by commit; routine
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.

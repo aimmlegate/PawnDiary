@@ -36,6 +36,10 @@ namespace PawnDiaryRimpsyche
         private static readonly Dictionary<string, string> AppliedVectorHash =
             new Dictionary<string, string>();
 
+        // Tier-3 jobs are polled on the same coarse main-thread pass. The core owns background IO.
+        private static readonly Dictionary<string, InFlightJob> InFlight =
+            new Dictionary<string, InFlightJob>();
+
         private static bool tierBWasActive;
         private static bool newGameResetPending;
 
@@ -62,6 +66,7 @@ namespace PawnDiaryRimpsyche
         {
             ContextLineByPawn.Clear();
             AppliedVectorHash.Clear();
+            InFlight.Clear();
             tierBWasActive = false;
             newGameResetPending = true;
         }
@@ -93,7 +98,7 @@ namespace PawnDiaryRimpsyche
             PawnDiaryRimpsycheSettings settings = PawnDiaryRimpsycheMod.Settings;
             bool active = PawnDiaryRimpsycheMod.RimpsycheActive
                 && settings != null
-                && settings.usePsychotypeOverride
+                && settings.personaMode != RimpsychePersonaMode.Off
                 && PawnDiaryApi.IsReady
                 && PawnDiaryApi.IsExternalApiEnabled;
 
@@ -120,6 +125,27 @@ namespace PawnDiaryRimpsyche
             {
                 ApplyTierBFor(pawn);
             }
+        }
+
+        /// <summary>Reports whether the voice editor should show its generation spinner.</summary>
+        public static bool IsTransformInFlight(Pawn pawn)
+        {
+            return pawn != null && InFlight.ContainsKey(pawn.GetUniqueLoadID());
+        }
+
+        /// <summary>Forces a fresh LLM transform for the selected pawn.</summary>
+        public static void RerollTransform(Pawn pawn)
+        {
+            if (pawn == null || PawnDiaryRimpsycheMod.Settings == null
+                || PawnDiaryRimpsycheMod.Settings.personaMode != RimpsychePersonaMode.LlmTransform)
+            {
+                return;
+            }
+
+            string id = pawn.GetUniqueLoadID();
+            AppliedVectorHash.Remove(id);
+            InFlight.Remove(id);
+            ApplyTierBFor(pawn);
         }
 
         // Tier A provider. Registered only while Rimpsyche is active, but retain every guard because
@@ -182,6 +208,21 @@ namespace PawnDiaryRimpsyche
             }
 
             string pawnId = pawn.GetUniqueLoadID();
+            PawnDiaryRimpsycheSettings settings = PawnDiaryRimpsycheMod.Settings;
+            InFlightJob pending;
+            if (InFlight.TryGetValue(pawnId, out pending))
+            {
+                // A settings change can happen while HTTP work is running. Discard the stale handle so
+                // its result cannot land after the player selected Off, Mapping, or Direct text.
+                if (settings != null && settings.personaMode == RimpsychePersonaMode.LlmTransform
+                    && string.Equals(pending.SettingsKey, LlmSettingsKey(settings), StringComparison.Ordinal))
+                {
+                    ResolvePendingTransform(pawn, pawnId, pending);
+                    return;
+                }
+                InFlight.Remove(pawnId);
+            }
+
             NodeVectorSnapshot snapshot = ReadNodeVector(pawn);
             if (snapshot == null || snapshot.Nodes.Count == 0)
             {
@@ -189,9 +230,14 @@ namespace PawnDiaryRimpsyche
                 return;
             }
 
+            string key = ((int)settings.personaMode) + ":" + snapshot.VectorHash;
+            if (settings.personaMode == RimpsychePersonaMode.LlmTransform)
+            {
+                key += ":" + LlmSettingsKey(settings);
+            }
             string previousHash;
             if (AppliedVectorHash.TryGetValue(pawnId, out previousHash)
-                && string.Equals(previousHash, snapshot.VectorHash, StringComparison.Ordinal))
+                && string.Equals(previousHash, key, StringComparison.Ordinal))
             {
                 return;
             }
@@ -204,10 +250,83 @@ namespace PawnDiaryRimpsyche
                 return;
             }
 
-            if (PawnDiaryApi.SetPsychotypeOverride(pawn, BridgeIds.ModId, rule))
+            if (settings.personaMode == RimpsychePersonaMode.InternalPsychotype)
             {
-                AppliedVectorHash[pawnId] = snapshot.VectorHash;
+                string defName = PsycheLensMapping.InternalPsychotypeForPlan(plan);
+                if (!string.IsNullOrEmpty(defName) && PawnDiaryApi.SetPsychotype(pawn, defName, true))
+                {
+                    AppliedVectorHash[pawnId] = key;
+                }
+                return;
             }
+
+            if (settings.personaMode == RimpsychePersonaMode.LlmTransform)
+            {
+                StartOrFallbackTransform(pawn, pawnId, key, snapshot, rule, settings);
+                return;
+            }
+
+            if (PawnDiaryApi.SetPsychotypeCustomRule(pawn, rule))
+            {
+                AppliedVectorHash[pawnId] = key;
+            }
+        }
+
+        private static void StartOrFallbackTransform(Pawn pawn, string pawnId, string key,
+            NodeVectorSnapshot snapshot, string fallbackRule, PawnDiaryRimpsycheSettings settings)
+        {
+            RimpsycheBridgeTuningDef tuning = RimpsycheBridgeTuningDef.Current;
+            string summary = PsycheSummaryFormat.Format(snapshot.Nodes,
+                ReadRankedInterestLabels(pawn, Math.Max(0, tuning.summaryMaxInterests)),
+                tuning.summaryMagnitudeFloor, Math.Max(0, tuning.summaryMaxDescriptors),
+                Math.Max(0, tuning.summaryMaxInterests), ResolveKeyedOrBlank);
+            string input = PsycheSummaryFormat.BuildTransformInput(summary, fallbackRule);
+            int handle = string.IsNullOrWhiteSpace(input) ? 0 : PawnDiaryApi.RequestLlmCompletion(
+                new ExternalLlmCompletionRequest
+                {
+                    sourceId = BridgeIds.ModId,
+                    laneIndex = settings.transformLaneIndex,
+                    systemPrompt = settings.ResolveTransformPrompt(),
+                    userText = input,
+                    maxTokens = Math.Max(1, tuning.transformMaxTokens)
+                });
+            if (handle > 0)
+            {
+                InFlight[pawnId] = new InFlightJob
+                {
+                    Handle = handle,
+                    Key = key,
+                    SettingsKey = LlmSettingsKey(settings),
+                    FallbackRule = fallbackRule
+                };
+            }
+            else if (PawnDiaryApi.SetPsychotypeCustomRule(pawn, fallbackRule))
+            {
+                AppliedVectorHash[pawnId] = key;
+            }
+        }
+
+        private static void ResolvePendingTransform(Pawn pawn, string pawnId, InFlightJob job)
+        {
+            LlmCompletionResult result = PawnDiaryApi.GetLlmCompletionResult(job.Handle);
+            if (result.status == LlmCompletionStatus.Pending)
+            {
+                return;
+            }
+
+            string rule = result.status == LlmCompletionStatus.Succeeded && !string.IsNullOrWhiteSpace(result.text)
+                ? result.text
+                : job.FallbackRule;
+            if (PawnDiaryApi.SetPsychotypeCustomRule(pawn, rule))
+            {
+                AppliedVectorHash[pawnId] = job.Key;
+                InFlight.Remove(pawnId);
+            }
+        }
+
+        private static string LlmSettingsKey(PawnDiaryRimpsycheSettings settings)
+        {
+            return settings.transformLaneIndex + ":" + settings.ResolveTransformPrompt().GetHashCode();
         }
 
         private static void ReleasePawnOverride(Pawn pawn, string pawnId)
@@ -255,6 +374,7 @@ namespace PawnDiaryRimpsyche
             }
 
             AppliedVectorHash.Clear();
+            InFlight.Clear();
         }
 
         /// <summary>
@@ -405,6 +525,14 @@ namespace PawnDiaryRimpsyche
             public string Label;
             public float Score;
             public int SourceOrder;
+        }
+
+        private sealed class InFlightJob
+        {
+            public int Handle;
+            public string Key;
+            public string SettingsKey;
+            public string FallbackRule;
         }
     }
 }

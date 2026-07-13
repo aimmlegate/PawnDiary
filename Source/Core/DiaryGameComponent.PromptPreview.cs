@@ -116,7 +116,7 @@ namespace PawnDiary
                 string personaRule = PersonaRuleFor(previewEvent, povRole, null, ensureVoiceStage: false);
                 string psychotypeRule = PsychotypeRuleFor(previewEvent, povRole, null, ensureVoiceStage: false);
                 string promptEnchantment = PromptEnchantmentRuleFor(previewEvent, povRole);
-                string humorCue = HumorCueFor(previewEvent);
+                string humorCue = HumorCueFor(previewEvent, povRole);
                 Func<PromptContextDetailLevel, DiaryPromptPlan> planFactory = level =>
                     DiaryPromptBuilder.BuildSequentialInteractionPromptPlan(
                         previewEvent,

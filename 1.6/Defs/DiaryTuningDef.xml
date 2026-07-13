@@ -446,6 +446,15 @@
          structural humor cue appended to its prompt. No settings UI; this is the single knob. Flavor
          (Light vs Gallows) is chosen separately by event stakes. See DiaryHumorCueDefs.xml for cues. -->
     <humorChance>0.20</humorChance>
+    <!-- Flat multiplier on humorChance for a writer with an upbeat temperament (Optimist, Sanguine,
+         or Anomaly's Joyous trait) or a Social skill passion (minor or burning). Not cumulative:
+         matching several qualifiers still applies this multiplier once, never stacked. -->
+    <humorElevatedChanceMultiplier>2</humorElevatedChanceMultiplier>
+    <!-- Flat multiplier on humorChance for a writer with a dour/anxious/unfeeling temperament
+         (Pessimist, Depressive, Nervous, Neurotic, Very neurotic, Psychopath, or Anomaly's Disturbing
+         trait). Below 1 to make humor rarer. Mutually exclusive with the elevated multiplier: a writer
+         who qualifies for both offsets back to the base rate. -->
+    <humorReducedChanceMultiplier>0.5</humorReducedChanceMultiplier>
   </PawnDiary.DiaryTuningDef>
 
 </Defs>

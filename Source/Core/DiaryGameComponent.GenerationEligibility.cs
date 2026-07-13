@@ -229,17 +229,19 @@ namespace PawnDiary
         /// Resolves the optional per-entry humor cue for an event. Reuses the same
         /// <see cref="DiaryPromptBuilder.ShouldResolvePromptEnchantment"/> gate as prompt
         /// enchantments, so humor only applies to first-person templates that also allow persona and
-        /// enchantment text — neutral death/arrival/title prompts stay humor-free. The cue needs only
-        /// the event (no live pawn), so it works even when the pawn is offline.
+        /// enchantment text — neutral death/arrival/title prompts stay humor-free. The live POV pawn
+        /// (when resolvable) feeds the hidden elevated-chance check in <see cref="HumorCues"/>; an
+        /// offline/unresolvable pawn simply falls back to the plain base rate.
         /// </summary>
-        private string HumorCueFor(DiaryEvent diaryEvent)
+        private string HumorCueFor(DiaryEvent diaryEvent, string povRole, Dictionary<string, Pawn> livePawnsById = null)
         {
             if (!DiaryPromptBuilder.ShouldResolvePromptEnchantment(diaryEvent))
             {
                 return string.Empty;
             }
 
-            return HumorCues.CueFor(diaryEvent);
+            Pawn pawn = FindLivePawnByLoadId(PawnIdForRole(diaryEvent, povRole), livePawnsById);
+            return HumorCues.CueFor(diaryEvent, pawn);
         }
 
         private static Dictionary<string, Pawn> SnapshotLivePawnsByLoadId()

@@ -19,6 +19,9 @@ namespace PawnDiaryRimpsyche
         public float conversationAlignmentThreshold = 0.55f;
         public int conversationPairCooldownTicks = 60000;
 
+        /// <summary>Maximum completion tokens for one persona rewrite request.</summary>
+        public int transformMaxTokens = 220;
+
         private static RimpsycheBridgeTuningDef fallback;
 
         /// <summary>

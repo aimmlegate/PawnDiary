@@ -727,6 +727,8 @@
   <PawnDiary.Settings.Adv.Help.uiHistoryScanFrameBudgetSeconds>Бюджет времени кадра для поэтапной индексации истории в UI дневника.</PawnDiary.Settings.Adv.Help.uiHistoryScanFrameBudgetSeconds>
   <PawnDiary.Settings.Adv.Help.minimumFirstPersonAgeYears>Минимальный биологический возраст для личного дневника от первого лица.</PawnDiary.Settings.Adv.Help.minimumFirstPersonAgeYears>
   <PawnDiary.Settings.Adv.Help.humorChance>Базовая вероятность, что подходящая запись получит структурный юмористический намёк.</PawnDiary.Settings.Adv.Help.humorChance>
+  <PawnDiary.Settings.Adv.Help.humorElevatedChanceMultiplier>Прямой множитель к humorChance для автора с позитивным нравом или страстью к социальному навыку. Не суммируется при совпадении нескольких условий.</PawnDiary.Settings.Adv.Help.humorElevatedChanceMultiplier>
+  <PawnDiary.Settings.Adv.Help.humorReducedChanceMultiplier>Прямой множитель (меньше 1) к humorChance для автора с угрюмым, тревожным или бесчувственным нравом. Не суммируется при совпадении нескольких условий.</PawnDiary.Settings.Adv.Help.humorReducedChanceMultiplier>
   <PawnDiary.Settings.Adv.Help.enabled>Главный переключатель этого источника.</PawnDiary.Settings.Adv.Help.enabled>
   <PawnDiary.Settings.Adv.Help.dedupTicks>Тот же сигнал этого источника записывается один раз за это окно. -1 — наследовать общие XML-настройки.</PawnDiary.Settings.Adv.Help.dedupTicks>
   <PawnDiary.Settings.Adv.Help.minMoodOffset>Минимальный |эффект настроения| для обычной мысли. -1 — наследовать.</PawnDiary.Settings.Adv.Help.minMoodOffset>
@@ -1288,6 +1290,11 @@
   <PawnDiary.WritingStyle.BasePrompt>Базовое правило</PawnDiary.WritingStyle.BasePrompt>
   <PawnDiary.WritingStyle.CustomPrompt>Своё правило (необязательно)</PawnDiary.WritingStyle.CustomPrompt>
   <PawnDiary.WritingStyle.EffectivePrompt>Итоговое правило</PawnDiary.WritingStyle.EffectivePrompt>
+  <PawnDiary.WritingStyle.CurrentBase>Сейчас используется базовый стиль — {0}</PawnDiary.WritingStyle.CurrentBase>
+  <PawnDiary.WritingStyle.CurrentCustom>Сейчас используется ваше особое правило для этого поселенца</PawnDiary.WritingStyle.CurrentCustom>
+  <PawnDiary.WritingStyle.CurrentExternal>Сейчас используется переопределение внешнего мода — {0}</PawnDiary.WritingStyle.CurrentExternal>
+  <PawnDiary.WritingStyle.CurrentHediff>Сейчас используется временное переопределение из-за состояния здоровья — {0}</PawnDiary.WritingStyle.CurrentHediff>
+  <PawnDiary.WritingStyle.SavedCustomWaiting>Ваше особое правило сохранено ниже, но начнёт действовать только после окончания этого переопределения.</PawnDiary.WritingStyle.SavedCustomWaiting>
   <PawnDiary.WritingStyle.SaveForPawn>Сохранить</PawnDiary.WritingStyle.SaveForPawn>
   <PawnDiary.WritingStyle.ResetToBase>Сбросить</PawnDiary.WritingStyle.ResetToBase>
   <PawnDiary.WritingStyle.LoadBasePrompt>Вставить базовое</PawnDiary.WritingStyle.LoadBasePrompt>

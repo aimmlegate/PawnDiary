@@ -40,6 +40,7 @@
     <summaryMagnitudeFloor>0.35</summaryMagnitudeFloor>
     <summaryMaxDescriptors>3</summaryMaxDescriptors>
     <summaryMaxInterests>2</summaryMaxInterests>
+    <transformMaxTokens>220</transformMaxTokens>
     <conversationAlignmentThreshold>0.55</conversationAlignmentThreshold>
     <!-- One accepted explicit entry per pawn pair per in-game day; the core rolling API budget and
          dedup window remain secondary backstops. -->

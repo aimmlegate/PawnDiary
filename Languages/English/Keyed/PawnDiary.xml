@@ -771,6 +771,8 @@
   <PawnDiary.Settings.Adv.Help.uiHistoryScanFrameBudgetSeconds>Wall-clock budget per frame for sliced Diary UI history indexing.</PawnDiary.Settings.Adv.Help.uiHistoryScanFrameBudgetSeconds>
   <PawnDiary.Settings.Adv.Help.minimumFirstPersonAgeYears>Minimum biological age for first-person diary ownership.</PawnDiary.Settings.Adv.Help.minimumFirstPersonAgeYears>
   <PawnDiary.Settings.Adv.Help.humorChance>Base probability an eligible entry gets one structural humor cue.</PawnDiary.Settings.Adv.Help.humorChance>
+  <PawnDiary.Settings.Adv.Help.humorElevatedChanceMultiplier>Flat, non-cumulative multiplier on humorChance for a writer with an upbeat temperament or a Social passion.</PawnDiary.Settings.Adv.Help.humorElevatedChanceMultiplier>
+  <PawnDiary.Settings.Adv.Help.humorReducedChanceMultiplier>Flat, non-cumulative multiplier (below 1) on humorChance for a writer with a dour, anxious, or unfeeling temperament.</PawnDiary.Settings.Adv.Help.humorReducedChanceMultiplier>
   <PawnDiary.Settings.Adv.Help.enabled>Master toggle for this source.</PawnDiary.Settings.Adv.Help.enabled>
   <PawnDiary.Settings.Adv.Help.dedupTicks>Same signal for this source is recorded once per this window. Use -1 to inherit the DiaryTuning default.</PawnDiary.Settings.Adv.Help.dedupTicks>
   <PawnDiary.Settings.Adv.Help.minMoodOffset>Minimum |mood offset| for a general thought to record here. Use -1 to inherit.</PawnDiary.Settings.Adv.Help.minMoodOffset>
@@ -1336,6 +1338,11 @@
   <PawnDiary.WritingStyle.BasePrompt>Base prompt</PawnDiary.WritingStyle.BasePrompt>
   <PawnDiary.WritingStyle.CustomPrompt>Custom prompt for this pawn (optional)</PawnDiary.WritingStyle.CustomPrompt>
   <PawnDiary.WritingStyle.EffectivePrompt>Effective prompt (what the writer sees)</PawnDiary.WritingStyle.EffectivePrompt>
+  <PawnDiary.WritingStyle.CurrentBase>Currently used: base style — {0}</PawnDiary.WritingStyle.CurrentBase>
+  <PawnDiary.WritingStyle.CurrentCustom>Currently used: your custom prompt for this pawn</PawnDiary.WritingStyle.CurrentCustom>
+  <PawnDiary.WritingStyle.CurrentExternal>Currently used: external mod override — {0}</PawnDiary.WritingStyle.CurrentExternal>
+  <PawnDiary.WritingStyle.CurrentHediff>Currently used: temporary health-condition override — {0}</PawnDiary.WritingStyle.CurrentHediff>
+  <PawnDiary.WritingStyle.SavedCustomWaiting>Your custom prompt is saved below, but will take effect only after this override ends.</PawnDiary.WritingStyle.SavedCustomWaiting>
   <PawnDiary.WritingStyle.SaveForPawn>Save for pawn</PawnDiary.WritingStyle.SaveForPawn>
   <PawnDiary.WritingStyle.ResetToBase>Reset to base</PawnDiary.WritingStyle.ResetToBase>
   <PawnDiary.WritingStyle.LoadBasePrompt>Load base prompt</PawnDiary.WritingStyle.LoadBasePrompt>
