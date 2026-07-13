@@ -20,6 +20,7 @@
     <Deterministic>true</Deterministic>
     <RimWorldManaged Condition="'$(RimWorldManaged)'=='' and '$(RIMWORLD_MANAGED)'!=''">$(RIMWORLD_MANAGED)</RimWorldManaged>
     <RimWorldManaged Condition="'$(RimWorldManaged)'==''">D:\SteamLibrary\steamapps\common\RimWorld\RimWorldWin64_Data\Managed</RimWorldManaged>
+    <PawnDiaryReference Condition="'$(PawnDiaryReference)'==''">..\..\..\1.6\Assemblies\PawnDiary.dll</PawnDiaryReference>
     <SimplePersonalitiesAssembly Condition="'$(SimplePersonalitiesAssembly)'==''">D:\SteamLibrary\steamapps\workshop\content\294100\2527258500\1.6\Assemblies\SP_Module1.dll</SimplePersonalitiesAssembly>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -60,7 +61,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="PawnDiary">
-      <HintPath>..\..\..\1.6\Assemblies\PawnDiary.dll</HintPath>
+      <HintPath>$(PawnDiaryReference)</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="SP_Module1">

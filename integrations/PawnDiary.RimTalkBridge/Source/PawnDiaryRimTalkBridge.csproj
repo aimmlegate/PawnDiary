@@ -18,6 +18,7 @@
     <Deterministic>true</Deterministic>
     <RimWorldManaged Condition="'$(RimWorldManaged)'=='' and '$(RIMWORLD_MANAGED)'!=''">$(RIMWORLD_MANAGED)</RimWorldManaged>
     <RimWorldManaged Condition="'$(RimWorldManaged)'==''">D:\SteamLibrary\steamapps\common\RimWorld\RimWorldWin64_Data\Managed</RimWorldManaged>
+    <PawnDiaryReference Condition="'$(PawnDiaryReference)'==''">..\..\..\1.6\Assemblies\PawnDiary.dll</PawnDiaryReference>
     <RimTalkAssembly Condition="'$(RimTalkAssembly)'==''">D:\SteamLibrary\steamapps\workshop\content\294100\3551203752\1.6\Assemblies\RimTalk.dll</RimTalkAssembly>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -41,8 +42,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <!-- DataContractJsonSerializer attributes for the engine-mode JSON payload (matches how RimTalk
-         itself deserializes). Framework assembly; RimWorld's Mono ships it in Managed at runtime. -->
+    <!-- DataContractJsonSerializer parses the optional semantic assessment response. Framework
+         assembly; RimWorld's Mono ships it in Managed at runtime. -->
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Xml" />
     <Reference Include="Assembly-CSharp">
@@ -66,7 +67,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="PawnDiary">
-      <HintPath>..\..\..\1.6\Assemblies\PawnDiary.dll</HintPath>
+      <HintPath>$(PawnDiaryReference)</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="RimTalk">

@@ -1,5 +1,15 @@
 # Changelog
 
+- **2026-07-13 — Integration capture and release sanity fixes.** Core now supplies Russian-localized,
+  adapter-disabled Rimpsyche conversation and afterfeel fallbacks, so Rimpsyche-only installs keep the
+  same themed ambient/Thought capture instead of dropping into generic groups. `publish.ps1` can build
+  and stage all six integrations (`-PublishAllAdapters` or four focused typed-adapter switches), rebuilds
+  each typed bridge against the fresh release core, strips development sources, and rewrites both core
+  dependency and load-order ids in every payload. Typed adapter projects now accept the release core
+  reference. Removed the unreachable RimTalk direct-engine client and two orphan Rimpsyche setting
+  labels while retaining their saved migration keys. RimTalk v1.0.14 inspection reconfirmed that every
+  live displayed-talk route reaches the existing `TalkService.CreateInteraction` hook.
+
 - **2026-07-13 — Russian localization parity and native-language cleanup.** Realigned all eight
   indexed prompt-template field lists after the external-prompt fields were inserted, restored the
   28 missing Keyed settings/event-filter strings and seven missing interaction-group translations,

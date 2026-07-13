@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Перевод резервных групп ядра. Отдельный адаптер отключает эти Def и загружает свои группы
+     с тем же поведением плюс точный контекст разговора. Индексы li совпадают с Def-файлом ядра. -->
+<LanguageData>
+
+  <rimpsyche_chatter.label>Разговоры Rimpsyche</rimpsyche_chatter.label>
+  <rimpsyche_chatter.instruction>разговор, который куда-то привёл; пиши о лёгкости, трении или застрявшей в памяти теме, но никогда не восстанавливай беседу слово в слово</rimpsyche_chatter.instruction>
+  <rimpsyche_chatter.instructions.0>разговор Rimpsyche: пиши, что изменилось между этими людьми — стало ли рядом легче, возникла ли зацепка или осталась тема, которую ни один не отпустил</rimpsyche_chatter.instructions.0>
+  <rimpsyche_chatter.instructions.1>разговор Rimpsyche: используй данную тему или итог как факт, но не придумывай ни реплик, ни нового признания</rimpsyche_chatter.instructions.1>
+  <rimpsyche_chatter.instructions.2>разговор Rimpsyche: обычную беседу оставь фоном дня, если настроение поселенца или история пары не придали ей большего веса</rimpsyche_chatter.instructions.2>
+  <rimpsyche_chatter.tone>внимательно к тому, где разговор оставил этих двоих</rimpsyche_chatter.tone>
+  <rimpsyche_chatter.tones.0>наблюдательно к общению, следя за лёгкостью или трением, а не за точными словами</rimpsyche_chatter.tones.0>
+  <rimpsyche_chatter.tones.1>тихо и задумчиво, пока вес темы ещё не ушёл</rimpsyche_chatter.tones.1>
+
+  <rimpsyche_afterfeel.label>Послевкусие разговора</rimpsyche_afterfeel.label>
+  <rimpsyche_afterfeel.instruction>послевкусие разговора — изменившееся мнение, найденное согласие или боль от того, что тебя не заметили</rimpsyche_afterfeel.instruction>
+  <rimpsyche_afterfeel.instructions.0>послевкусие разговора: пиши одно чувство, которое осталось после встречи, а не саму беседу</rimpsyche_afterfeel.instructions.0>
+  <rimpsyche_afterfeel.instructions.1>послевкусие разговора: покажи, стал ли другой человек ближе, дальше или просто труднее для понимания</rimpsyche_afterfeel.instructions.1>
+  <rimpsyche_afterfeel.instructions.2>послевкусие разговора: держись данного последствия для отношений; не добавляй новых слов и мотивов</rimpsyche_afterfeel.instructions.2>
+  <rimpsyche_afterfeel.tone>с остатком пережитого общения</rimpsyche_afterfeel.tone>
+  <rimpsyche_afterfeel.tones.0>тихо и про себя, пока мнение ещё укладывается</rimpsyche_afterfeel.tones.0>
+  <rimpsyche_afterfeel.tones.1>с короткой болью или теплом от того, как ответил другой человек</rimpsyche_afterfeel.tones.1>
+
+</LanguageData>

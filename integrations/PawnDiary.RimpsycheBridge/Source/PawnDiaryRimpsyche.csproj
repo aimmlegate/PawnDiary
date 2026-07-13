@@ -21,6 +21,7 @@
     <NoWarn>MSB3274;MSB3275</NoWarn>
     <RimWorldManaged Condition="'$(RimWorldManaged)'=='' and '$(RIMWORLD_MANAGED)'!=''">$(RIMWORLD_MANAGED)</RimWorldManaged>
     <RimWorldManaged Condition="'$(RimWorldManaged)'==''">D:\SteamLibrary\steamapps\common\RimWorld\RimWorldWin64_Data\Managed</RimWorldManaged>
+    <PawnDiaryReference Condition="'$(PawnDiaryReference)'==''">..\..\..\1.6\Assemblies\PawnDiary.dll</PawnDiaryReference>
     <RimpsycheAssembly Condition="'$(RimpsycheAssembly)'==''">D:\SteamLibrary\steamapps\workshop\content\294100\3535112473\1.6\Assemblies\RimPsyche.dll</RimpsycheAssembly>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -65,7 +66,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="PawnDiary">
-      <HintPath>..\..\..\1.6\Assemblies\PawnDiary.dll</HintPath>
+      <HintPath>$(PawnDiaryReference)</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="RimPsyche">

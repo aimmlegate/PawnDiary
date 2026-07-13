@@ -23,8 +23,6 @@
   <PawnDiaryRimpsyche.Settings.TransformLaneAuto>Автоматически — первая активная линия</PawnDiaryRimpsyche.Settings.TransformLaneAuto>
   <PawnDiaryRimpsyche.Settings.TransformPromptHint>Подсказка преобразования (оставьте пустой, чтобы всегда использовать текущий локализованный стандарт)</PawnDiaryRimpsyche.Settings.TransformPromptHint>
   <PawnDiaryRimpsyche.Settings.TransformPromptDefault>Перепиши переданные данные о характере Rimpsyche в одно-два кратких поведенческих предложения о взгляде автора дневника. Начни со слов «Этот поселенец». Опиши, что он замечает, ценит, чего боится и по чему судит о событиях. Не упоминай Rimpsyche, баллы характера, узлы, игровые механики и само преобразование.</PawnDiaryRimpsyche.Settings.TransformPromptDefault>
-  <PawnDiaryRimpsyche.Settings.PsychotypeOverride>Учитывать психику во взгляде дневника</PawnDiaryRimpsyche.Settings.PsychotypeOverride>
-  <PawnDiaryRimpsyche.Settings.PsychotypeOverrideDesc>Составлять взгляд дневника из двух самых выраженных и разных сторон характера поселенца. Если выключить, мост снимет все принадлежащие ему переопределения взгляда.</PawnDiaryRimpsyche.Settings.PsychotypeOverrideDesc>
   <PawnDiaryRimpsyche.Settings.ChargedConversations>Записывать значимые разговоры</PawnDiaryRimpsyche.Settings.ChargedConversations>
   <PawnDiaryRimpsyche.Settings.ChargedConversationsDesc>Записывать только разговоры Rimpsyche, в которых согласие или разлад превысили порог из XML. Для каждой пары действует сохраняемая пауза; обычные беседы остаются фоном дня.</PawnDiaryRimpsyche.Settings.ChargedConversationsDesc>
 

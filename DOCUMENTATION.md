@@ -58,7 +58,7 @@ Workshop payload omits source code and other development-only folders.
 | `tests/` | Standalone pure-helper test projects. |
 | `prompt-lab/` | Prompt fixture and variant validation harness. |
 | `integrations/` | Separate adapter mods for other mods: example/API explorer, RimTalk, SpeakUp, Rimpsyche, VSIE, and 1-2-3 Personalities. Not loaded in-game until deployed. |
-| `scripts/publish.ps1` | Local Workshop payload prep; also builds/packages the example and reflection-only SpeakUp adapters by default. |
+| `scripts/publish.ps1` | Local Workshop payload prep; builds/packages example + SpeakUp by default and all six adapters with `-PublishAllAdapters`. |
 | `scripts/deploy-integrations.ps1` | Creates sibling-mod junctions for every adapter under `integrations/` in the RimWorld `Mods/` root. |
 
 ## 3. Runtime Flow
@@ -481,6 +481,11 @@ The canvas is also floored to the visible viewport height before drawing.
   editorial funnel below. Per-line PlayLog capture is disabled while the bridge package is installed,
   so only an accepted whole conversation can create an entry.
 
+The hook boundary was rechecked against installed RimTalk **v1.0.14**: every live `DisplayTalk` route
+converges on `TalkService.CreateInteraction`; that build has no separate greeting, urgent, or group-line
+emission boundary for the bridge to patch. This is an upstream-version maintenance surface, so target
+resolution still fails soft with a warning if RimTalk changes the signature.
+
 The Level-2 funnel is:
 
 ```text
@@ -600,7 +605,8 @@ reaction terms and semantic prompt, and per-pawn/colony/pair throttle knobs
 (`ThrottlePolicy`; daily/colony counters are transient, but the one-day pawn cooldown is saved; a zero
 per-pawn daily cap disables conversation recording). The old `useRimTalkEngine` Scribe key remains readable but
 its toggle is hidden and its value is ignored: accepted conversations always use normal pairwise
-`SubmitPromptEntry`. The legacy `minRepliesForImportant` key is likewise still read but no longer shown
+`SubmitPromptEntry`; the now-unreachable direct engine client source has been removed. The legacy
+`minRepliesForImportant` key is likewise still read but no longer shown
 or used. Frozen save/registry tokens (source id, `rimtalkbridge_conversation` event key, three listener
 ids) live in `BridgeIds`. The full design rationale is in `design/RIMTALK_BRIDGE_PLAN.md`.
 
@@ -650,7 +656,7 @@ main-thread-refresh / background-read cache split, `design/RIMTALK_BRIDGE_CONTEX
   feature is turned off — prompt entries persist in the user's active RimTalk preset, so that cleanup
   is mandatory.
 
-Verified against the installed `cj.rimtalk` **v1.0.13** DLL (plan ⚠️ V1): `RegisterContextVariable`,
+Verified against the installed `cj.rimtalk` **v1.0.14** DLL (plan ⚠️ V1): `RegisterContextVariable`,
 `RegisterEnvironmentVariable`, `InjectEnvironmentSection`, `RegisterEnvironmentHook`, the
 `PromptContext` fields (`AllPawns`/`Pawns`, `IsMonologue`, `IsPreview`), and the prompt-entry API all
 exist, so no degrade path was needed. **⚠️ U1 (open, verify in-game):** whether RimTalk renders an
@@ -671,6 +677,13 @@ installed**. Its `disableWhenPackageIdsLoaded` contains
 levels. Therefore: RimTalk alone keeps the ambient fallback; bridge Level 0 is fully off; Level 1 is
 context-only; and Level 2 can record only an assessed whole conversation. With RimTalk absent, the row
 does not appear in event settings and has no runtime effect.
+
+`1.6/Defs/Compat/DiaryCompat_Rimpsyche.xml` provides the same bridge-optional parity for Rimpsyche.
+When `Maux36.Rimpsyche` is active without `aimmlegate.pawndiary.adapter.rimpsyche`,
+`rimpsyche_chatter` batches `Rimpsyche_` PlayLog conversations into the stable
+`RimpsycheAmbientDay` note (min 6/sample 3), and `rimpsyche_afterfeel` themes package-owned ThoughtDefs.
+Both groups are disabled when the typed adapter loads; its lower-order groups and signed-alignment hook
+then become the sole Rimpsyche path. Without Rimpsyche, both fallback groups are inert and hidden.
 
 The remaining core compatibility packs are pure XML and Russian-localized. All target content is
 matched by plain strings and package gates, so none creates a target-mod or DLC assembly dependency:
@@ -710,8 +723,9 @@ classifies the live `ThoughtDef`, so package-wide Thought groups can inspect `mo
 recovery remains defName-only by design.
 
 Four further personality/social integrations ship as **standalone adapter mods** under `integrations/`
-(deployed by `scripts/deploy-integrations.ps1`), not as compat groups inside the core mod — so a
-player installs only the ones matching their mod list:
+(junction-deployed for development by `scripts/deploy-integrations.ps1`), so a player installs only the
+ones matching their mod list. SpeakUp and Rimpsyche additionally keep smaller core fallback groups for
+players who use the target mod without its adapter; loading the adapter disables its fallback:
 
 - **`PawnDiary.SpeakUp` (`Pawn Diary: SpeakUp`)** — five target-gated Tier-1 Interaction groups classify
   deep talks, jokes, prisoner talks, thought reactions, and catch-all chatter. They preserve rendered
@@ -731,7 +745,8 @@ player installs only the ones matching their mod list:
   unchanged into `Defs/Compat`: SpeakUp alone keeps that behavior, loading the adapter disables only the
   fallback, and force-loading the adapter without SpeakUp is inert. Core `teaching`'s existing SpeakUp
   disable gate remains unchanged until its original collision rationale is reproduced.
-- **`PawnDiary.RimpsycheBridge` (`Pawn Diary: Rimpsyche`)** — XML assigns Rimpsyche conversation rows
+- **`PawnDiary.RimpsycheBridge` (`Pawn Diary: Rimpsyche`)** — loading the adapter disables core's
+  `rimpsyche_chatter`/`rimpsyche_afterfeel` fallback, then its XML assigns Rimpsyche conversation rows
   (ambient min 6/sample 3) and package-owned memories their own voice. Tier A contributes a cached
   `psyche=` context line: up to three localized descriptors above the XML magnitude floor and two
   interests, never raw floats. Default-on Tier B maps the two dominant nodes from distinct behavioral
@@ -1977,10 +1992,15 @@ scripts\publish.ps1
 ```
 
 The publish script builds the example/API-explorer and SpeakUp adapter payloads by default; pass
-`-PublishExampleAdapter:$false` or `-PublishSpeakUpAdapter:$false` to skip either. Other typed adapters
-remain independently built/deployed through their project and `scripts/deploy-integrations.ps1`.
+`-PublishExampleAdapter:$false` or `-PublishSpeakUpAdapter:$false` to skip either. The four adapters
+that compile against typed integration contracts are opt-in because RimTalk, Rimpsyche, and 1-2-3
+Personalities need their target Workshop assembly installed on the release machine (VSIE does not).
+Use `-PublishAllAdapters` for the complete six-adapter release, or one of
+`-PublishRimTalkAdapter`, `-PublishRimpsycheAdapter`, `-PublishPersonalitiesAdapter`, and
+`-PublishVsieAdapter` to enable one typed adapter (the default-on example/SpeakUp payloads can still
+be disabled separately).
 
-The source `About/About.xml` carries the mod's `<modVersion>` (`0.2.0` for the current release). The publish
+The source `About/About.xml` carries the mod's `<modVersion>` (`0.4.1` for the current release). The publish
 script stamps that value into the generated main and Russian localization `About.xml` files; pass
 `-Version <value>` to override the release payload version without editing source metadata.
 
@@ -2014,6 +2034,17 @@ copy the integration pattern directly. Pass `-PublishExampleAdapter:$false` to s
 payload, `-ExampleAdapterPackageId` or `-ExampleAdapterOutDir` to override its identity or location,
 and `-ExampleAdapterPublishedFileId` or `About/PublishedFileId-ExampleAdapter.txt` when updating an
 existing example-adapter Workshop item.
+
+Each opt-in typed adapter is rebuilt against the same throwaway core DLL as the main payload and staged
+as a clean runtime mod (About, Defs/Patches, Languages, its own fresh DLL/PDB, integration docs, and
+license; no `Source/` or checked-in assembly copy). Release prep rewrites the development core packageId
+in both `modDependencies` and `loadAfter`, preserves target-mod dependency rows, stamps the release
+version, and adds the core Workshop URL when available. Adapter Workshop ids can be stored in
+`About/PublishedFileId-RimTalk.txt`, `About/PublishedFileId-Rimpsyche.txt`,
+`About/PublishedFileId-Personalities123.txt`, and `About/PublishedFileId-Vsie.txt`; each is copied to
+the matching payload's `About/PublishedFileId.txt`. The source adapter About files intentionally retain
+`aimmlegate.pawndiary.development` for a checkout deployed by `scripts/deploy-integrations.ps1`; the
+publish payloads must never retain it.
 
 ## 13. When Changing The Mod
 

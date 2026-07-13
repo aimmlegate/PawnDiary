@@ -25,8 +25,6 @@
   <PawnDiaryRimpsyche.Settings.TransformLaneAuto>Automatic (first active)</PawnDiaryRimpsyche.Settings.TransformLaneAuto>
   <PawnDiaryRimpsyche.Settings.TransformPromptHint>Transformation prompt (leave blank to follow the current localized default)</PawnDiaryRimpsyche.Settings.TransformPromptHint>
   <PawnDiaryRimpsyche.Settings.TransformPromptDefault>Rewrite the supplied Rimpsyche personality data into one or two concise behavioral sentences for a diary-writing outlook. Begin with "This pawn". Describe what they notice, value, fear, or use to judge events. Do not mention Rimpsyche, personality scores, nodes, game mechanics, or the transformation.</PawnDiaryRimpsyche.Settings.TransformPromptDefault>
-  <PawnDiaryRimpsyche.Settings.PsychotypeOverride>Let psyche shape diary outlook</PawnDiaryRimpsyche.Settings.PsychotypeOverride>
-  <PawnDiaryRimpsyche.Settings.PsychotypeOverrideDesc>Use the pawn's two strongest, distinct personality families as a source-owned diary outlook. Turning this off releases every outlook override owned by this bridge.</PawnDiaryRimpsyche.Settings.PsychotypeOverrideDesc>
   <PawnDiaryRimpsyche.Settings.ChargedConversations>Record charged conversations</PawnDiaryRimpsyche.Settings.ChargedConversations>
   <PawnDiaryRimpsyche.Settings.ChargedConversationsDesc>Record only Rimpsyche conversations whose signed alignment clears the XML threshold. Each pawn pair has a saved cooldown; ordinary conversations remain ambient social texture.</PawnDiaryRimpsyche.Settings.ChargedConversationsDesc>
 

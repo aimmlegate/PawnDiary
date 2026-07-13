@@ -122,6 +122,26 @@
 .PARAMETER SpeakUpAdapterLinkName
   Folder name to create under -ModsDir for the SpeakUp adapter junction when both -InstallToMods
   and -PublishSpeakUpAdapter are enabled.
+
+.PARAMETER PublishAllAdapters
+  Also build and package the RimTalk, Rimpsyche, 1-2-3 Personalities, and VSIE adapters. The
+  example and SpeakUp adapters keep their existing default-on behavior, so this produces all six.
+
+.PARAMETER PublishRimTalkAdapter
+  Build and package the typed RimTalk bridge. Its target mod assembly must be installed at the
+  path configured by PawnDiaryRimTalkBridge.csproj.
+
+.PARAMETER PublishRimpsycheAdapter
+  Build and package the typed Rimpsyche adapter. Its target mod assembly must be installed at the
+  path configured by PawnDiaryRimpsyche.csproj.
+
+.PARAMETER PublishPersonalitiesAdapter
+  Build and package the typed 1-2-3 Personalities adapter. Its Module 1 assembly must be installed
+  at the path configured by PawnDiaryPersonalities123.csproj.
+
+.PARAMETER PublishVsieAdapter
+  Build and package the VSIE adapter. It patches base-game symbols and needs no VSIE assembly at
+  build time.
 #>
 [CmdletBinding()]
 param(
@@ -153,6 +173,11 @@ param(
     [string]$SpeakUpAdapterPublishedFileId,
     [string]$SpeakUpAdapterPublishedFileIdPath = "About\PublishedFileId-SpeakUp.txt",
     [string]$SpeakUpAdapterLinkName,
+    [switch]$PublishAllAdapters,
+    [switch]$PublishRimTalkAdapter,
+    [switch]$PublishRimpsycheAdapter,
+    [switch]$PublishPersonalitiesAdapter,
+    [switch]$PublishVsieAdapter,
     [switch]$SkipBranch,
     [switch]$Force
 )
@@ -246,26 +271,33 @@ function Set-OrAddFirstNestedAboutValue {
         [string]$Text,
         [string]$ContainerElement,
         [string]$Element,
-        [string]$Value,
-        [string]$InsertAfterElement
+        [string]$Value
     )
 
-    $existingRegex = [regex]::new("(?s)(<$ContainerElement(?:\s[^>]*)?>.*?<$Element(?:\s[^>]*)?>\s*)(.*?)(\s*</$Element>)")
-    if ($existingRegex.IsMatch($Text)) {
-        return Set-FirstNestedAboutValue $Text $ContainerElement $Element $Value
-    }
+    # Work inside the first <li> only. Looking for $Element across the whole container can find the
+    # target mod's second dependency and accidentally replace its Workshop URL when the core row has
+    # no URL of its own.
+    $firstItemRegex = [regex]::new("(?s)(<$ContainerElement(?:\s[^>]*)?>\s*)(<li(?:\s[^>]*)?>.*?</li>)")
+    $firstItemMatch = $firstItemRegex.Match($Text)
+    if (-not $firstItemMatch.Success) { return $Text }
 
+    $firstItem = $firstItemMatch.Groups[2].Value
     $escapedValue = [System.Security.SecurityElement]::Escape($Value)
-    $line = "      <$Element>$escapedValue</$Element>"
-    if (-not [string]::IsNullOrWhiteSpace($InsertAfterElement)) {
-        $itemEndRegex = [regex]::new("(?s)(<$ContainerElement(?:\s[^>]*)?>.*?<li(?:\s[^>]*)?>.*?)(\s*</li>)")
-        if ($itemEndRegex.IsMatch($Text)) {
-            return $itemEndRegex.Replace($Text, ('${1}' + [Environment]::NewLine + $line + '${2}'), 1)
-        }
+    $replacementValue = $escapedValue -replace '\$', '$$'
+    $existingRegex = [regex]::new("(?s)(<$Element(?:\s[^>]*)?>\s*)(.*?)(\s*</$Element>)")
+    if ($existingRegex.IsMatch($firstItem)) {
+        $firstItem = $existingRegex.Replace($firstItem, ('${1}' + $replacementValue + '${3}'), 1)
+    } else {
+        # Dependency fields conventionally appear packageId, displayName, URL. Appending immediately
+        # before the first item closes preserves that order without touching later dependency rows.
+        $line = "      <$Element>$escapedValue</$Element>"
+        $itemEndRegex = [regex]::new("(?s)(\s*</li>)")
+        $firstItem = $itemEndRegex.Replace($firstItem, ([Environment]::NewLine + $line + '${1}'), 1)
     }
 
-    $containerEndRegex = [regex]::new("(?s)(<$ContainerElement(?:\s[^>]*)?>.*?)(\s*</$ContainerElement>)")
-    return $containerEndRegex.Replace($Text, ('${1}' + $line + [Environment]::NewLine + '${2}'), 1)
+    $itemStart = $firstItemMatch.Groups[2].Index
+    $itemLength = $firstItemMatch.Groups[2].Length
+    return $Text.Substring(0, $itemStart) + $firstItem + $Text.Substring($itemStart + $itemLength)
 }
 
 function Escape-XmlText {
@@ -552,7 +584,7 @@ function New-ExampleAdapterPayload {
     $aboutText = Set-FirstNestedAboutValue $aboutText "modDependencies" "displayName" $CoreDisplayName
     if (-not [string]::IsNullOrWhiteSpace($CorePublishedFileId)) {
         $coreSteamUrl = "steam://url/CommunityFilePage/$($CorePublishedFileId.Trim())"
-        $aboutText = Set-OrAddFirstNestedAboutValue $aboutText "modDependencies" "steamWorkshopUrl" $coreSteamUrl "displayName"
+        $aboutText = Set-OrAddFirstNestedAboutValue $aboutText "modDependencies" "steamWorkshopUrl" $coreSteamUrl
     }
     $aboutText = Set-FirstNestedAboutValue $aboutText "loadAfter" "li" $CorePackageId
     [System.IO.File]::WriteAllText($aboutDestination, $aboutText, (New-Object System.Text.UTF8Encoding($false)))
@@ -629,7 +661,7 @@ function New-SpeakUpAdapterPayload {
     $aboutText = Set-FirstNestedAboutValue $aboutText "modDependencies" "displayName" $CoreDisplayName
     if (-not [string]::IsNullOrWhiteSpace($CorePublishedFileId)) {
         $coreSteamUrl = "steam://url/CommunityFilePage/$($CorePublishedFileId.Trim())"
-        $aboutText = Set-OrAddFirstNestedAboutValue $aboutText "modDependencies" "steamWorkshopUrl" $coreSteamUrl "displayName"
+        $aboutText = Set-OrAddFirstNestedAboutValue $aboutText "modDependencies" "steamWorkshopUrl" $coreSteamUrl
     }
     $aboutText = Set-FirstNestedAboutValue $aboutText "loadAfter" "li" $CorePackageId
     [System.IO.File]::WriteAllText($aboutDestination, $aboutText, (New-Object System.Text.UTF8Encoding($false)))
@@ -660,6 +692,95 @@ function New-SpeakUpAdapterPayload {
         AboutPath = $aboutDestination
         DllPath = $payloadDll
         SourcePath = (Join-Path $DestinationRoot "Source")
+    }
+}
+
+# Builds the clean runtime payload shared by the typed adapters. Unlike the example adapter (and the
+# older SpeakUp package), these Workshop items do not ship their development Source tree. The source
+# About.xml deliberately points at the development core while working from this checkout; release
+# prep replaces that exact package id in both modDependencies and loadAfter before anything is staged.
+function New-RuntimeAdapterPayload {
+    param(
+        [string]$Label,
+        [string]$AdapterSourceRoot,
+        [string]$DestinationRoot,
+        [string]$AdapterPackageId,
+        [string]$Version,
+        [string]$DevelopmentCorePackageId,
+        [string]$CorePackageId,
+        [string]$CoreDisplayName,
+        [string]$CorePublishedFileId,
+        [string]$AssemblyName,
+        [string]$BuiltDll,
+        [string]$BuiltPdb,
+        [string]$PublishedFileIdPath
+    )
+
+    if (Test-Path -LiteralPath $DestinationRoot) { Remove-Item -LiteralPath $DestinationRoot -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $DestinationRoot | Out-Null
+
+    Copy-PathFromRoot $AdapterSourceRoot "About" -Required -DestinationRoot $DestinationRoot | Out-Null
+    Copy-PathFromRoot $AdapterSourceRoot "1.6\Defs" -Required -DestinationRoot $DestinationRoot | Out-Null
+    Copy-PathFromRoot $AdapterSourceRoot "1.6\Patches" -DestinationRoot $DestinationRoot | Out-Null
+    Copy-PathFromRoot $AdapterSourceRoot "Languages" -DestinationRoot $DestinationRoot | Out-Null
+
+    Copy-Payload "INTEGRATIONS.md" -Required -DestinationRoot $DestinationRoot | Out-Null
+    Copy-Payload "EXTERNAL_API.md" -Required -DestinationRoot $DestinationRoot | Out-Null
+    foreach ($doc in @("LICENSE", "LICENSE.txt", "LICENSE.md")) {
+        Copy-Payload $doc -DestinationRoot $DestinationRoot | Out-Null
+    }
+
+    $aboutDestination = Join-Path $DestinationRoot "About\About.xml"
+    $aboutText = [System.IO.File]::ReadAllText($aboutDestination)
+    $aboutText = Set-AboutValue $aboutText "packageId" $AdapterPackageId
+    $aboutText = Set-OrAddAboutValue $aboutText "modVersion" $Version "packageId"
+    if (-not [string]::IsNullOrWhiteSpace($DevelopmentCorePackageId)) {
+        $aboutText = $aboutText.Replace($DevelopmentCorePackageId, $CorePackageId)
+    }
+    # Pawn Diary is the first dependency in every typed adapter. Other target-mod dependency rows
+    # stay untouched; Rimpsyche's leading Harmony loadAfter row is why the exact-id replacement above
+    # is used instead of blindly rewriting the first loadAfter entry.
+    $aboutText = Set-FirstNestedAboutValue $aboutText "modDependencies" "packageId" $CorePackageId
+    $aboutText = Set-FirstNestedAboutValue $aboutText "modDependencies" "displayName" $CoreDisplayName
+    if (-not [string]::IsNullOrWhiteSpace($CorePublishedFileId)) {
+        $coreSteamUrl = "steam://url/CommunityFilePage/$($CorePublishedFileId.Trim())"
+        $aboutText = Set-OrAddFirstNestedAboutValue $aboutText "modDependencies" "steamWorkshopUrl" $coreSteamUrl
+    }
+    if (-not [string]::IsNullOrWhiteSpace($DevelopmentCorePackageId) -and $aboutText.Contains($DevelopmentCorePackageId)) {
+        throw "$Label release About.xml still contains the development core package id."
+    }
+    [xml]$aboutCheck = $aboutText
+    $dependencyItems = @($aboutCheck.ModMetaData.modDependencies.li)
+    if ($dependencyItems.Count -eq 0 -or $dependencyItems[0].packageId -ne $CorePackageId) {
+        throw "$Label release About.xml does not declare the published core as its first dependency."
+    }
+    if (@($aboutCheck.ModMetaData.loadAfter.li) -notcontains $CorePackageId) {
+        throw "$Label release About.xml does not load after the published core package id."
+    }
+    [System.IO.File]::WriteAllText($aboutDestination, $aboutText, (New-Object System.Text.UTF8Encoding($false)))
+
+    $asmDir = Join-Path $DestinationRoot "1.6\Assemblies"
+    New-Item -ItemType Directory -Force -Path $asmDir | Out-Null
+    $payloadDll = Join-Path $asmDir "$AssemblyName.dll"
+    Copy-Item -LiteralPath $BuiltDll -Destination $payloadDll -Force
+    if ($BuiltPdb -and (Test-Path -LiteralPath $BuiltPdb)) {
+        Copy-Item -LiteralPath $BuiltPdb -Destination (Join-Path $asmDir "$AssemblyName.pdb") -Force
+    }
+
+    $publishedFileDestination = Join-Path $DestinationRoot "About\PublishedFileId.txt"
+    if (-not [string]::IsNullOrWhiteSpace($PublishedFileIdPath)) {
+        $sourcePublishedFileId = Join-Path $repoRoot $PublishedFileIdPath
+        if (Test-Path -LiteralPath $sourcePublishedFileId) {
+            Copy-Item -LiteralPath $sourcePublishedFileId -Destination $publishedFileDestination -Force
+            Write-Host "  $Label id: copied from $PublishedFileIdPath"
+        } elseif (-not (Test-Path -LiteralPath $publishedFileDestination)) {
+            Write-Host "  $Label id: none (new Workshop item on first upload)"
+        }
+    }
+
+    return @{
+        AboutPath = $aboutDestination
+        DllPath = $payloadDll
     }
 }
 
@@ -871,6 +992,107 @@ if ($buildSpeakUpAdapter) {
     }
 }
 
+# The four typed adapters are opt-in because three compile against assemblies owned by optional
+# Workshop mods. -PublishAllAdapters is the release-machine convenience switch; the individual
+# switches remain useful when only one integration is being updated.
+$runtimeAdapterDefinitions = @(
+    [pscustomobject]@{
+        Enabled = ([bool]$PublishAllAdapters -or [bool]$PublishRimTalkAdapter)
+        Key = "rimtalk"
+        Label = "RimTalk"
+        SourceFolder = "PawnDiary.RimTalkBridge"
+        ProjectFile = "Source\PawnDiaryRimTalkBridge.csproj"
+        AssemblyName = "PawnDiaryRimTalkBridge"
+        PublishedFileIdPath = "About\PublishedFileId-RimTalk.txt"
+        FallbackFolderName = "pawn-diary-rimtalk"
+    },
+    [pscustomobject]@{
+        Enabled = ([bool]$PublishAllAdapters -or [bool]$PublishRimpsycheAdapter)
+        Key = "rimpsyche"
+        Label = "Rimpsyche"
+        SourceFolder = "PawnDiary.RimpsycheBridge"
+        ProjectFile = "Source\PawnDiaryRimpsyche.csproj"
+        AssemblyName = "PawnDiaryRimpsyche"
+        PublishedFileIdPath = "About\PublishedFileId-Rimpsyche.txt"
+        FallbackFolderName = "pawn-diary-rimpsyche"
+    },
+    [pscustomobject]@{
+        Enabled = ([bool]$PublishAllAdapters -or [bool]$PublishPersonalitiesAdapter)
+        Key = "personalities123"
+        Label = "1-2-3 Personalities"
+        SourceFolder = "PawnDiary.PersonalitiesBridge"
+        ProjectFile = "Source\PawnDiaryPersonalities123.csproj"
+        AssemblyName = "PawnDiaryPersonalities123"
+        PublishedFileIdPath = "About\PublishedFileId-Personalities123.txt"
+        FallbackFolderName = "pawn-diary-personalities123"
+    },
+    [pscustomobject]@{
+        Enabled = ([bool]$PublishAllAdapters -or [bool]$PublishVsieAdapter)
+        Key = "vsie"
+        Label = "VSIE"
+        SourceFolder = "PawnDiary.Vsie"
+        ProjectFile = "Source\PawnDiaryVsie.csproj"
+        AssemblyName = "PawnDiaryVsie"
+        PublishedFileIdPath = "About\PublishedFileId-Vsie.txt"
+        FallbackFolderName = "pawn-diary-vsie"
+    }
+)
+
+$occupiedPayloadPaths = @([System.IO.Path]::GetFullPath($OutDir).TrimEnd('\', '/'))
+if ($buildRussianLocalization) {
+    $occupiedPayloadPaths += [System.IO.Path]::GetFullPath($RussianLocalizationOutDir).TrimEnd('\', '/')
+}
+if ($buildExampleAdapter) {
+    $occupiedPayloadPaths += [System.IO.Path]::GetFullPath($ExampleAdapterOutDir).TrimEnd('\', '/')
+}
+if ($buildSpeakUpAdapter) {
+    $occupiedPayloadPaths += [System.IO.Path]::GetFullPath($SpeakUpAdapterOutDir).TrimEnd('\', '/')
+}
+
+$runtimeAdapters = @()
+foreach ($definition in $runtimeAdapterDefinitions) {
+    if (-not $definition.Enabled) { continue }
+
+    $adapterRoot = Join-Path $repoRoot "integrations\$($definition.SourceFolder)"
+    $adapterAboutPath = Join-Path $adapterRoot "About\About.xml"
+    if (-not (Test-Path -LiteralPath $adapterAboutPath)) {
+        throw "$($definition.Label) adapter source mod is missing About/About.xml: $adapterRoot"
+    }
+    $adapterAboutText = [System.IO.File]::ReadAllText($adapterAboutPath)
+    $adapterPackageId = Remove-DevelopmentPostfix (Get-AboutValue $adapterAboutText "packageId")
+    if ([string]::IsNullOrWhiteSpace($adapterPackageId)) {
+        throw "$($definition.Label) adapter About.xml does not contain a packageId."
+    }
+
+    $payloadFolderName = Get-SafeFolderName $adapterPackageId $definition.FallbackFolderName
+    $adapterOutDir = Join-Path $repoRoot "dist\$payloadFolderName"
+    $adapterPayloadFullPath = [System.IO.Path]::GetFullPath($adapterOutDir).TrimEnd('\', '/')
+    $adapterSourceFullPath = [System.IO.Path]::GetFullPath($adapterRoot).TrimEnd('\', '/')
+    if ($adapterSourceFullPath -eq $adapterPayloadFullPath) {
+        throw "$($definition.Label) adapter payload must not overwrite its integrations source folder."
+    }
+    if ($occupiedPayloadPaths -contains $adapterPayloadFullPath) {
+        throw "$($definition.Label) adapter payload collides with another payload output: $adapterOutDir"
+    }
+    $occupiedPayloadPaths += $adapterPayloadFullPath
+
+    $runtimeAdapters += [pscustomobject]@{
+        Key = $definition.Key
+        Label = $definition.Label
+        Root = $adapterRoot
+        ProjectPath = (Join-Path $adapterRoot $definition.ProjectFile)
+        AssemblyName = $definition.AssemblyName
+        PackageId = $adapterPackageId
+        OutDir = $adapterOutDir
+        LinkName = $payloadFolderName
+        PublishedFileIdPath = $definition.PublishedFileIdPath
+        BuildOut = $null
+        BuiltDll = $null
+        BuiltPdb = $null
+        Payload = $null
+    }
+}
+
 $resolvedModsDir = Resolve-ModsFolder $ModsDir
 if (-not $resolvedModsDir) {
     $fallbackMods = Split-Path $repoRoot -Parent
@@ -901,6 +1123,10 @@ if ($buildSpeakUpAdapter) {
 } else {
     Write-Host "  SpeakUp    : skipped"
 }
+foreach ($adapter in $runtimeAdapters) {
+    Write-Host "  $($adapter.Label) id  : $($adapter.PackageId)"
+    Write-Host "  $($adapter.Label) out : $($adapter.OutDir)"
+}
 if ($SkipBranch -or $Force) {
     Write-Host "  branch mode: disabled (flags accepted for compatibility)"
 }
@@ -917,6 +1143,9 @@ if ($InstallToMods) {
     }
     if ($buildSpeakUpAdapter) {
         Write-Host "  install su  : $resolvedModsDir\$SpeakUpAdapterLinkName"
+    }
+    foreach ($adapter in $runtimeAdapters) {
+        Write-Host "  install $($adapter.Key): $resolvedModsDir\$($adapter.LinkName)"
     }
 }
 
@@ -983,6 +1212,29 @@ if ($buildSpeakUpAdapter) {
         throw "Build reported success but PawnDiarySpeakUp.dll was not produced in $speakUpAdapterBuildOut."
     }
     $builtSpeakUpAdapterPdb = Join-Path $speakUpAdapterBuildOut "PawnDiarySpeakUp.pdb"
+}
+
+foreach ($adapter in $runtimeAdapters) {
+    Write-Step "Build $($adapter.Label) adapter DLL ($Configuration)"
+    $adapter.BuildOut = Join-Path ([System.IO.Path]::GetTempPath()) "pawndiary-$($adapter.Key)-adapter-build-$buildVersionSlug"
+    if (Test-Path -LiteralPath $adapter.BuildOut) { Remove-Item -LiteralPath $adapter.BuildOut -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $adapter.BuildOut | Out-Null
+
+    Invoke-Native $msbuild @(
+        $adapter.ProjectPath,
+        "/t:Rebuild",
+        "/p:Configuration=$Configuration",
+        "/p:OutputPath=$($adapter.BuildOut)",
+        "/p:PawnDiaryReference=$builtDll",
+        "/nologo",
+        "/v:minimal"
+    )
+
+    $adapter.BuiltDll = Join-Path $adapter.BuildOut "$($adapter.AssemblyName).dll"
+    if (-not (Test-Path -LiteralPath $adapter.BuiltDll)) {
+        throw "Build reported success but $($adapter.AssemblyName).dll was not produced in $($adapter.BuildOut)."
+    }
+    $adapter.BuiltPdb = Join-Path $adapter.BuildOut "$($adapter.AssemblyName).pdb"
 }
 
 Write-Step "Prepare dist payload"
@@ -1125,12 +1377,35 @@ if ($buildSpeakUpAdapter) {
         -PublishedFileIdPath $SpeakUpAdapterPublishedFileIdPath
 }
 
+foreach ($adapter in $runtimeAdapters) {
+    Write-Step "Prepare $($adapter.Label) adapter payload"
+    $adapter.Payload = New-RuntimeAdapterPayload `
+        -Label $adapter.Label `
+        -AdapterSourceRoot $adapter.Root `
+        -DestinationRoot $adapter.OutDir `
+        -AdapterPackageId $adapter.PackageId `
+        -Version $publishedVersion `
+        -DevelopmentCorePackageId $devPackageId `
+        -CorePackageId $publishedPackageId `
+        -CoreDisplayName $publishedModName `
+        -CorePublishedFileId $mainPublishedFileId `
+        -AssemblyName $adapter.AssemblyName `
+        -BuiltDll $adapter.BuiltDll `
+        -BuiltPdb $adapter.BuiltPdb `
+        -PublishedFileIdPath $adapter.PublishedFileIdPath
+}
+
 Remove-Item -LiteralPath $buildOut -Recurse -Force -ErrorAction SilentlyContinue
 if ($exampleAdapterBuildOut) {
     Remove-Item -LiteralPath $exampleAdapterBuildOut -Recurse -Force -ErrorAction SilentlyContinue
 }
 if ($speakUpAdapterBuildOut) {
     Remove-Item -LiteralPath $speakUpAdapterBuildOut -Recurse -Force -ErrorAction SilentlyContinue
+}
+foreach ($adapter in $runtimeAdapters) {
+    if ($adapter.BuildOut) {
+        Remove-Item -LiteralPath $adapter.BuildOut -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 
 $payloadFiles = Get-ChildItem -Recurse -File $OutDir
@@ -1170,6 +1445,15 @@ if ($buildSpeakUpAdapter) {
     Write-Host "  Source folder: $($speakUpAdapterPayload.SourcePath)"
     Write-Host ("  shipped {0} files, {1:N2} MB" -f $speakUpAdapterPayloadFiles.Count, ($speakUpAdapterPayloadBytes / 1MB))
 }
+foreach ($adapter in $runtimeAdapters) {
+    $adapterPayloadFiles = Get-ChildItem -Recurse -File $adapter.OutDir
+    $adapterPayloadBytes = ($adapterPayloadFiles | Measure-Object -Property Length -Sum).Sum
+    Write-Host "$($adapter.Label) adapter payload prepared:" -ForegroundColor Green
+    Write-Host "  $($adapter.OutDir)"
+    Write-Host "  Payload DLL: $($adapter.Payload.DllPath)"
+    Write-Host "  Prepared About.xml: $($adapter.Payload.AboutPath)"
+    Write-Host ("  shipped {0} files, {1:N2} MB" -f $adapterPayloadFiles.Count, ($adapterPayloadBytes / 1MB))
+}
 
 if ($InstallToMods) {
     Install-ModJunction -DestinationRoot $resolvedModsDir -FolderName $LinkName -TargetFolder $OutDir -AllowReplace:$Force
@@ -1181,5 +1465,8 @@ if ($InstallToMods) {
     }
     if ($buildSpeakUpAdapter) {
         Install-ModJunction -DestinationRoot $resolvedModsDir -FolderName $SpeakUpAdapterLinkName -TargetFolder $SpeakUpAdapterOutDir -AllowReplace:$Force
+    }
+    foreach ($adapter in $runtimeAdapters) {
+        Install-ModJunction -DestinationRoot $resolvedModsDir -FolderName $adapter.LinkName -TargetFolder $adapter.OutDir -AllowReplace:$Force
     }
 }

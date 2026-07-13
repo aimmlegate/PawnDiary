@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Fallback-only compatibility groups for Rimpsyche - Personality Core (Maux36.Rimpsyche).
+     These groups give players themed ambient conversation and thought capture when they use the
+     core mod without the separate typed adapter. When that adapter is loaded, its lower-order
+     groups replace these fallbacks and its Harmony bridge can add signed conversation context.
+     Interaction order 12 is after the adapter's 11 (and shares a slot only with an unrelated matcher);
+     Thought order 482 follows typed adapter slots 479-481 but remains before core thoughts at 490+. -->
+<Defs>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>rimpsyche_chatter</defName>
+    <label>Rimpsyche conversations</label>
+    <order>12</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>Maux36.Rimpsyche</li>
+    </enableWhenPackageIdsLoaded>
+    <disableWhenPackageIdsLoaded>
+      <li>aimmlegate.pawndiary.adapter.rimpsyche</li>
+    </disableWhenPackageIdsLoaded>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>RimpsycheAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>6</minEventsToWrite>
+      <maxSampleLines>3</maxSampleLines>
+    </batch>
+    <promotion>
+      <baseChance>0.005</baseChance>
+      <maxChance>0.08</maxChance>
+      <opinionStrongBonus>0.025</opinionStrongBonus>
+      <opinionStrongThreshold>40</opinionStrongThreshold>
+      <opinionAsymmetryBonus>0.025</opinionAsymmetryBonus>
+      <opinionAsymmetryThreshold>40</opinionAsymmetryThreshold>
+      <needLowBonus>0.025</needLowBonus>
+      <needLowThreshold>0.25</needLowThreshold>
+      <moodExtremeBonus>0.025</moodExtremeBonus>
+      <moodLowThreshold>0.25</moodLowThreshold>
+    </promotion>
+    <instruction>an exchange that went somewhere - center the ease, friction, or topic that stuck, never reconstruct a transcript</instruction>
+    <instructions>
+      <li>Rimpsyche conversation - write what shifted between the two people: easier company, a snag, or a subject neither quite left behind</li>
+      <li>Rimpsyche conversation - use the supplied topic or outcome as evidence, but invent no quotation and no new confession</li>
+      <li>Rimpsyche conversation - keep ordinary talk as day texture unless the pawn's mood or relationship makes this one land harder</li>
+    </instructions>
+    <tone>attentive to where a conversation left the two people</tone>
+    <tones>
+      <li>socially observant, following ease or friction rather than exact words</li>
+      <li>quietly reflective, with the topic's afterweight still present</li>
+    </tones>
+    <matchPrefixes>
+      <li>Rimpsyche_</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>rimpsyche_afterfeel</defName>
+    <label>conversation afterfeel</label>
+    <order>482</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Maux36.Rimpsyche</li>
+    </enableWhenPackageIdsLoaded>
+    <disableWhenPackageIdsLoaded>
+      <li>aimmlegate.pawndiary.adapter.rimpsyche</li>
+    </disableWhenPackageIdsLoaded>
+    <instruction>the afterfeel of a conversation - an opinion shifting, common ground, or the sting of being ignored</instruction>
+    <instructions>
+      <li>conversation afterfeel - write the one feeling still present after the exchange, not the conversation itself</li>
+      <li>conversation afterfeel - show whether the other person now feels nearer, farther away, or simply harder to read</li>
+      <li>conversation afterfeel - keep it to the supplied social consequence; add no new words or motives</li>
+    </instructions>
+    <tone>with the residue of a social exchange</tone>
+    <tones>
+      <li>inward and lingering, an opinion still settling</li>
+      <li>briefly stung or warmed by how the other person responded</li>
+    </tones>
+    <matchPackageIds>
+      <li>Maux36.Rimpsyche</li>
+    </matchPackageIds>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>
