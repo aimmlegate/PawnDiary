@@ -1,5 +1,11 @@
 # Changelog
 
+- **2026-07-13 — Psychotype-driven RimTalk chattiness.** While Pawn Diary controls RimTalk's persona,
+  it now also applies an XML-authored talk-initiation baseline for the selected psychotype with stable
+  per-pawn relative ±15% variation. The 250-tick sync maintains the inferred value, `silent-focus`
+  remains an absolute zero override, and ending Pawn Diary authority restores the player's saved
+  pre-sync RimTalk value (including across reloads).
+
 - **2026-07-13 — Fixed RimTalk bridge startup translation errors.** Localized RimTalk variable and
   injected-section registration now runs after language loading instead of from the background mod
   constructor, eliminating the `No active language` errors for diary, persona, colony, and shared context.

@@ -274,8 +274,9 @@ namespace PawnDiaryRimTalkBridge
         {
             if (pawn == null || !PawnDiaryApi.IsDiaryEligible(pawn)) return;
             Pure.PersonaPromptModifier modifier;
-            string source = RefreshDiaryPersonaCacheFor(pawn, out modifier);
-            ApplyChattinessPolicy(pawn, modifier);
+            string psychotypeDefName;
+            string source = RefreshDiaryPersonaCacheFor(pawn, out modifier, out psychotypeDefName);
+            ApplyChattinessPolicy(pawn, modifier, psychotypeDefName);
             if (string.IsNullOrWhiteSpace(source)) return;
             Pure.PersonaPromptModifier transformModifier = Pure.PersonaPromptPolicy.TransformModifier(modifier);
             int hash = unchecked((source.GetHashCode() * 397 + (transform ? 1 : 0)) * 397
@@ -297,12 +298,15 @@ namespace PawnDiaryRimTalkBridge
             }
 
             Pure.PersonaPromptModifier ignored;
-            return RefreshDiaryPersonaCacheFor(pawn, out ignored);
+            string ignoredPsychotype;
+            return RefreshDiaryPersonaCacheFor(pawn, out ignored, out ignoredPsychotype);
         }
 
-        private static string RefreshDiaryPersonaCacheFor(Pawn pawn, out Pure.PersonaPromptModifier modifier)
+        private static string RefreshDiaryPersonaCacheFor(Pawn pawn, out Pure.PersonaPromptModifier modifier,
+            out string psychotypeDefName)
         {
             modifier = Pure.PersonaPromptModifier.None;
+            psychotypeDefName = string.Empty;
             if (pawn == null || !PawnDiaryApi.IsDiaryEligible(pawn))
             {
                 return string.Empty;
@@ -311,6 +315,7 @@ namespace PawnDiaryRimTalkBridge
             DiaryPsychotypeSnapshot outlook = PawnDiaryApi.GetPsychotype(pawn);
             DiaryWritingStyleSnapshot style = PawnDiaryApi.GetWritingStyle(pawn);
             modifier = Pure.PersonaPromptPolicy.Resolve(style?.styleDefName, ActiveHediffDefNames(pawn));
+            psychotypeDefName = outlook?.psychotypeDefName ?? string.Empty;
             string text = Pure.PersonaTransferText.FromPsychotype(outlook?.rule);
             lock (DiaryPersonaGate)
             {
@@ -485,27 +490,26 @@ namespace PawnDiaryRimTalkBridge
             ExportFor(pawn, true);
         }
 
-        private static void ApplyChattinessPolicy(Pawn pawn, Pure.PersonaPromptModifier modifier)
+        private static void ApplyChattinessPolicy(Pawn pawn, Pure.PersonaPromptModifier modifier,
+            string psychotypeDefName)
         {
             if (pawn == null) return;
             RimTalkBridgeGameComponent component = Current.Game?.GetComponent<RimTalkBridgeGameComponent>();
             if (component == null) return;
 
             string id = pawn.GetUniqueLoadID();
-            if (Pure.PersonaPromptPolicy.ForcesZeroChattiness(modifier))
+            float original;
+            if (!component.TryGetOriginalTalkWeight(id, out original))
             {
-                float original;
-                if (!component.TryGetOriginalTalkWeight(id, out original))
-                {
-                    component.RememberOriginalTalkWeight(id, SafeGetTalkInitiationWeight(pawn));
-                }
-                // Repeat on every periodic pass so the authority choice remains true even if the
-                // RimTalk editor is used while silent-focus is active.
-                SafeSetTalkInitiationWeight(pawn, 0f);
-                return;
+                component.RememberOriginalTalkWeight(id, SafeGetTalkInitiationWeight(pawn));
             }
 
-            RestoreChattiness(pawn, component);
+            float target = Pure.PersonaPromptPolicy.ForcesZeroChattiness(modifier)
+                ? 0f
+                : PersonaChattinessPolicyDef.Current.ChattinessFor(id, psychotypeDefName);
+            // Repeat on every periodic pass so the authority choice remains true even if RimTalk's
+            // editor is used while Pawn Diary controls the persona. silent-focus always wins at zero.
+            SafeSetTalkInitiationWeight(pawn, target);
         }
 
         private static void RestoreAllChattiness()

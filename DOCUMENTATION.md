@@ -570,9 +570,12 @@ result exceeds 300 characters. Writing-style prose is never sent to RimTalk or t
 bridge recognizes exactly five active hediff
 styles (`mind-crumbled`, `silent-focus`, `pain-needle`, `blank-bliss`, `bright-fog`) and the five child
 catalog styles. Each recognized non-silent style selects a narrowly authored transform instruction;
-ordinary adult styles select none, and custom/external prose is never inspected. `silent-focus` adds no prose and forces RimTalk talk
-initiation to `0`; the 250-tick pass maintains that value and restores the player's saved previous
-weight when the condition or Pawn Diary authority ends. The older `personaLedDiaryVoice` key
+ordinary adult styles select none, and custom/external prose is never inspected. While Pawn Diary owns
+RimTalk's persona, the same 250-tick pass also maintains talk initiation from the selected psychotype's
+XML-authored baseline (`RimTalkPersonaChattinessDefs.xml`) with a stable pawn+psychotype relative ±15%
+variation. `silent-focus` adds no prose and replaces that inferred value with absolute `0`. The bridge
+saves the player's prior RimTalk value before its first write and restores it only when Pawn Diary
+authority ends, including across reloads. The older `personaLedDiaryVoice` key
 remains serialized for settings compatibility but no longer controls behavior. Import mode reapplies
 on persona-hash change and clears via `ResetPsychotypeOverride` when the direction changes; every reset
 also sweeps the stale writing-style override older bridge versions placed, so existing saves migrate

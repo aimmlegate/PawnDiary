@@ -78,6 +78,33 @@ namespace RimTalkBridgeLogicTests
                     == PawnDiaryRimTalkBridge.Pure.PersonaPromptModifier.SilentFocus,
                 "condition modifiers keep Pawn Diary's authored hediff precedence over child styles");
 
+            List<PawnDiaryRimTalkBridge.Pure.PersonaChattinessProfile> chattinessProfiles =
+                new List<PawnDiaryRimTalkBridge.Pure.PersonaChattinessProfile>
+                {
+                    new PawnDiaryRimTalkBridge.Pure.PersonaChattinessProfile
+                    {
+                        psychotypeDefName = "DiaryPsychotype_Theatrical",
+                        baseline = 0.8f
+                    }
+                };
+            float chatty = PawnDiaryRimTalkBridge.Pure.PersonaChattinessPolicy.Resolve(
+                "Thing_Human123", "DiaryPsychotype_Theatrical", chattinessProfiles, 0.5f, 0.15f);
+            Assert(chatty >= 0.68f && chatty <= 0.92f,
+                "psychotype chattiness stays within relative plus/minus 15 percent");
+            Assert(Math.Abs(chatty - PawnDiaryRimTalkBridge.Pure.PersonaChattinessPolicy.Resolve(
+                    "Thing_Human123", "diarypsychotype_theatrical", chattinessProfiles, 0.5f, 0.15f)) < 0.000001f,
+                "psychotype chattiness is stable and case-insensitive");
+            Assert(Math.Abs(chatty - PawnDiaryRimTalkBridge.Pure.PersonaChattinessPolicy.Resolve(
+                    "Thing_Human124", "DiaryPsychotype_Theatrical", chattinessProfiles, 0.5f, 0.15f)) > 0.000001f,
+                "different pawns receive different stable variation");
+            float fallbackChat = PawnDiaryRimTalkBridge.Pure.PersonaChattinessPolicy.Resolve(
+                "Thing_Human123", "UnknownPsychotype", chattinessProfiles, 0.5f, 0.15f);
+            Assert(fallbackChat >= 0.425f && fallbackChat <= 0.575f,
+                "unknown psychotypes use the neutral fallback with variation");
+            Assert(Math.Abs(PawnDiaryRimTalkBridge.Pure.PersonaChattinessPolicy.Resolve(
+                    "Thing_Human123", "DiaryPsychotype_Theatrical", chattinessProfiles, 0.5f, 0f) - 0.8f) < 0.000001f,
+                "zero variation returns the exact XML baseline");
+
             // ContextFormat
             TestBuildDiarySection_BasicNoStyle();
             TestBuildDiarySection_WithStyle();

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pawn Diary -> RimTalk talk-initiation weights. Baselines describe how readily each psychotype
+     starts conversation; runtime adds a stable relative ±15% per pawn and clamps to RimTalk's 0..1. -->
+<Defs>
+  <PawnDiaryRimTalkBridge.PersonaChattinessPolicyDef>
+    <defName>RimTalk_PersonaChattiness</defName>
+    <defaultBaseline>0.50</defaultBaseline>
+    <variationFraction>0.15</variationFraction>
+    <profiles>
+      <li><psychotypeDefName>DiaryPsychotype_Neutral</psychotypeDefName><baseline>0.50</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Content</psychotypeDefName><baseline>0.60</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Ambitious</psychotypeDefName><baseline>0.66</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Dutiful</psychotypeDefName><baseline>0.52</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Nostalgic</psychotypeDefName><baseline>0.46</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Pragmatic</psychotypeDefName><baseline>0.48</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Wry</psychotypeDefName><baseline>0.58</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Paranoid</psychotypeDefName><baseline>0.36</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Detached</psychotypeDefName><baseline>0.22</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Superstitious</psychotypeDefName><baseline>0.50</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Ruthless</psychotypeDefName><baseline>0.42</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Volatile</psychotypeDefName><baseline>0.78</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Theatrical</psychotypeDefName><baseline>0.90</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Narcissistic</psychotypeDefName><baseline>0.82</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Hollow</psychotypeDefName><baseline>0.25</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Ravenous</psychotypeDefName><baseline>0.40</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Bloodthirsty</psychotypeDefName><baseline>0.62</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Resentful</psychotypeDefName><baseline>0.38</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Avoidant</psychotypeDefName><baseline>0.24</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Dependent</psychotypeDefName><baseline>0.68</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_Perfectionist</psychotypeDefName><baseline>0.44</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_WideEyed</psychotypeDefName><baseline>0.86</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_BraveFront</psychotypeDefName><baseline>0.64</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_ShyWatcher</psychotypeDefName><baseline>0.26</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_WildThing</psychotypeDefName><baseline>0.92</baseline></li>
+      <li><psychotypeDefName>DiaryPsychotype_LittleAdult</psychotypeDefName><baseline>0.58</baseline></li>
+    </profiles>
+  </PawnDiaryRimTalkBridge.PersonaChattinessPolicyDef>
+</Defs>

@@ -105,7 +105,7 @@
   <PawnDiaryRimTalkBridge.Persona.Modifier.ChildLiteralWatch>Write for a young child who speaks in short, literal sensory observations and rarely explains implications; keep vocabulary age-appropriate.</PawnDiaryRimTalkBridge.Persona.Modifier.ChildLiteralWatch>
   <PawnDiaryRimTalkBridge.Persona.Modifier.ChildQuestion>Write for a young child whose concrete observations turn into earnest unanswered questions; keep vocabulary age-appropriate.</PawnDiaryRimTalkBridge.Persona.Modifier.ChildQuestion>
   <PawnDiaryRimTalkBridge.Persona.Modifier.ChildBrave>Write for a young child who insists on bravery while small concrete details betray fear; keep vocabulary age-appropriate.</PawnDiaryRimTalkBridge.Persona.Modifier.ChildBrave>
-  <PawnDiaryRimTalkBridge.Persona.RimTalkControlledNotice>Pawn Diary controls this persona and refreshes it periodically; silent-focus also controls chattiness. Manual RimTalk edits may be replaced.</PawnDiaryRimTalkBridge.Persona.RimTalkControlledNotice>
+  <PawnDiaryRimTalkBridge.Persona.RimTalkControlledNotice>Pawn Diary controls this persona and infers chattiness from its psychotype; silent-focus forces zero. Manual RimTalk edits may be replaced.</PawnDiaryRimTalkBridge.Persona.RimTalkControlledNotice>
   <PawnDiaryRimTalkBridge.Persona.Regenerate>Regenerate</PawnDiaryRimTalkBridge.Persona.Regenerate>
   <PawnDiaryRimTalkBridge.Persona.Generating>Generating…</PawnDiaryRimTalkBridge.Persona.Generating>
 
