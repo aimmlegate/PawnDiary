@@ -870,7 +870,7 @@ it onto the bus.
 | Arrivals | Starting-colonist scan and `Pawn.SetFaction` | Neutral first page. |
 | Deaths | `Pawn.Kill` plus XML death TaleDefs | Neutral final page. |
 | Mood events | `GameConditionManager.RegisterCondition` | One entry per eligible colonist on affected maps. |
-| Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. Memories vanilla rejects (accept-gates fire before `thought.pawn` is assigned) are ignored — never gained, so never recorded. |
+| Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. Memories vanilla rejects (accept-gates fire before `thought.pawn` is assigned) are ignored — never gained, so never recorded. If a malformed/modded `ThoughtDef` throws while resolving its localized label, capture continues with the stable `defName` as a technical fallback. |
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
 | Pawn progression | Periodic scan | Passion-only skill milestones, psylink level gains, xenotype changes, royal-title changes, and newly gained personality traits. Trait gains feed the trait's own character-card description (no stat/mechanic lines) into the prompt so any trait — vanilla or modded — is voiced as a felt personality shift without a hardcoded per-trait table. The first scan baselines existing saves to avoid retroactive spam (a pawn's starting traits never record); major psylink/xenotype changes can request a rare arc reflection after the normal page records. |
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |
@@ -889,7 +889,9 @@ it onto the bus.
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,
 per-tick work, save/load bookkeeping, startup registration, and vanilla UI overlays isolate failures
-with one-time logging and preserve vanilla behavior.
+with one-time logging and preserve vanilla behavior. Live `OpinionOf` reads used by day summaries,
+interaction promotion, and pairwise prompt continuity share one fail-soft guard: a throwing social-
+thought walk contributes no baseline or neutral opinion instead of aborting the whole component tick.
 
 ## 5. XML Policy
 

@@ -251,11 +251,12 @@ namespace PawnDiary
         /// thoughts, and that walk can throw: an <see cref="ArgumentOutOfRangeException"/> from
         /// <c>ThoughtHandler.OpinionOffsetOfGroup</c> when a pawn's memory list is momentarily
         /// inconsistent, or an NRE from a stale relation thought / another mod's OpinionOf patch. Since
-        /// callers here loop every colonist pair, one fragile pawn must cost only its own read, not
-        /// abort the whole GameComponent tick or day-start snapshot. Returns false (and leaves
-        /// <paramref name="opinion"/> at 0) when the opinion cannot be read.
+        /// callers loop colonist pairs or build pairwise prompt continuity, one fragile pawn must cost
+        /// only its own read, not abort the whole GameComponent tick, day-start snapshot, or interaction
+        /// batch. Returns false (and leaves <paramref name="opinion"/> at 0) when the opinion cannot be
+        /// read. Internal so the separate impure context builder uses the same guard as this component.
         /// </summary>
-        private static bool TryReadOpinion(Pawn from, Pawn to, out int opinion)
+        internal static bool TryReadOpinion(Pawn from, Pawn to, out int opinion)
         {
             opinion = 0;
             if (from == null || to == null || from.relations == null)

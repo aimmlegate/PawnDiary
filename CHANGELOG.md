@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-07-13 — Hardened thought labels and pairwise continuity snapshots** (telemetry refs
+  `88B0AB8A`, `D74961A6`). Thought capture now catches failures inside `ThoughtDef.LabelCap` and uses
+  the stable `defName` as a last-resort label instead of dropping the event. Pairwise prompt continuity
+  now routes `OpinionOf` through the same fail-soft `TryReadOpinion` guard already used by day summaries
+  and interaction promotion, so a transiently inconsistent social-thought list contributes neutral
+  opinion rather than aborting the interaction-batch `GameComponentTick`. Both paths warn at most once
+  per exception type.
+
 - **2026-07-13 — RimTalk capture-health fallback.** Added API v8's thread-safe capture-capability
   registry and the XML `disableWhenCaptureCapabilitiesReady` availability gate. The RimTalk bridge
   now installs its displayed-chat postfix independently and reports readiness only after Harmony

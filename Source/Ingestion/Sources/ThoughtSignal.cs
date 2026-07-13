@@ -7,6 +7,7 @@
 //
 // The pure decision and game-context format still live in Source/Capture/Events/ThoughtEventData.cs
 // and are unit-tested there without RimWorld. New to C#/RimWorld? See AGENTS.md.
+using System;
 using PawnDiary.Capture;
 using RimWorld;
 using Verse;
@@ -95,7 +96,7 @@ namespace PawnDiary.Ingestion
         {
             // Impure build: label, instruction. These need the live ThoughtDef (LabelCap, settings
             // instruction) so they cannot live in the pure payload layer.
-            string label = DiaryLineCleaner.CleanLine(thought.def.LabelCap.Resolve());
+            string label = ResolveThoughtLabel(thought.def);
             string instruction = InteractionGroups.InstructionForThought(thought.def);
 
             if (decision == CaptureDecision.RouteAmbient)
@@ -114,6 +115,34 @@ namespace PawnDiary.Ingestion
             DiaryEvent thoughtEvent = sink.AddSoloEvent(pawn, null, payload.DefName, label, text, instruction, gameContext);
             thoughtEvent.moodImpact = payload.MoodImpact;
             sink.QueueSolo(thoughtEvent, DiaryEvent.InitiatorRole);
+        }
+
+        // ThoughtDef.LabelCap normally resolves through the Def's localized label/stages, but a
+        // malformed or transient modded ThoughtDef can throw inside RimWorld's Label getter even
+        // though the ThoughtDef itself is non-null. Keep the capture and use the stable defName as a
+        // last-resort technical label; one broken Def should not escape to DiaryPatchSafety and drop
+        // the whole thought event. The warning is keyed by exception type so a hot thought hook cannot
+        // flood Player.log when several memories share the same malformed shape.
+        private static string ResolveThoughtLabel(ThoughtDef thoughtDef)
+        {
+            string fallback = DiaryLineCleaner.CleanLine(thoughtDef?.defName);
+            if (thoughtDef == null)
+            {
+                return fallback;
+            }
+
+            try
+            {
+                string label = DiaryLineCleaner.CleanLine(thoughtDef.LabelCap.Resolve());
+                return string.IsNullOrWhiteSpace(label) ? fallback : label;
+            }
+            catch (Exception e)
+            {
+                Log.WarningOnce(
+                    "[Pawn Diary] Could not read a thought label; using its defName so capture can continue: " + e,
+                    ("PawnDiary.ThoughtLabelFallback." + e.GetType().Name).GetHashCode());
+                return fallback;
+            }
         }
 
         /// <summary>

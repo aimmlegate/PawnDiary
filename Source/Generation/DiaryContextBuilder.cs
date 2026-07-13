@@ -74,7 +74,11 @@ namespace PawnDiary
                 }
             }
 
-            int opinion = povPawn.relations?.OpinionOf(otherPawn) ?? 0;
+            // OpinionOf walks live social-thought lists and can throw while another game/mod path is
+            // changing them. Reuse the component's fail-soft reader so one bad continuity snapshot
+            // contributes neutral opinion instead of aborting the entire interaction-batch tick.
+            int opinion;
+            DiaryGameComponent.TryReadOpinion(povPawn, otherPawn, out opinion);
             parts.Add("PawnDiary.Ctx.Opinion".Translate(DiaryBuckets.FormatOpinion(opinion)));
 
             string reasons = BuildSocialThoughtsSummary(povPawn, otherPawn);
