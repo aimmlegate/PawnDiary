@@ -19,11 +19,11 @@ lets *your* mod do the same thing: push a moment into a pawn's diary, read diary
 your own pawn context into Pawn Diary's prompts. Your adapter stays a normal mod — Pawn Diary owns
 the LLM call, prompt framing, safety text, parsing, persistence, and the Diary tab.
 
-Current contract version: `PawnDiaryApi.ApiVersion == 6`. Future additive members will bump this
+Current contract version: `PawnDiaryApi.ApiVersion == 8`. Future additive members will bump this
 further; feature-detect before using version-gated members:
 
 ```csharp
-if (PawnDiaryApi.ApiVersion >= 6) { /* use v6's DiaryPsychotypeSnapshot.savedCustomRule */ }
+if (PawnDiaryApi.ApiVersion >= 8) { /* report live capture-hook readiness to an XML fallback */ }
 ```
 
 ---
@@ -90,6 +90,7 @@ That's it. Open the pawn's Diary tab and trigger your hook.
 | Read or set the pawn's writing style / generation toggle | `GetWritingStyle`, `SetWritingStyleOverride`, `IsDiaryGenerationEnabled`… |
 | Read or set the pawn's psychotype (outlook) | `GetPsychotype`, `SetPsychotype` *(v4)*, `SetPsychotypeCustomRule` *(v4)*, `SetPsychotypeOverride`, `ResetPsychotypeOverride` |
 | Contribute one `key=value` context line to every pawn summary | `RegisterPawnContextProvider` |
+| Suppress an XML fallback only while your richer capture hook is healthy | `SetCaptureCapabilityReady` *(v8)* |
 | Get style + summary + enchantments + recent memory in one call | `GetContextBundle` |
 | Read the player's current LLM API setup (routing + lanes, incl. keys) | `GetApiSetup` *(v2)* |
 | Add a new active LLM API lane (endpoint + model + auth) | `AddApiLane` *(v2)* |
@@ -104,9 +105,11 @@ Full signatures and field semantics: [`INTEGRATIONS.md`](INTEGRATIONS.md) § API
 
 ## Hard rules (these will bite you if ignored)
 
-- **Main thread only.** Every call reads DefDatabase/settings and translates text. From a worker
-  thread, queue the request in your mod and drain it from `GameComponentUpdate` or `OnGUI`. Off-thread
-  calls return the safe empty value (false / null / empty list) and log a diagnostic.
+- **Main thread by default.** Gameplay/state calls read DefDatabase/settings and translate text. From
+  a worker thread, queue the request in your mod and drain it from `GameComponentUpdate` or `OnGUI`.
+  Off-thread calls return the safe empty value (false / null / empty list) and log a diagnostic. The v8
+  capture-capability setter/probe are the deliberate exception: their locked pure registry is safe
+  during background Mod construction and requires no loaded game.
 - **`SubmitEvent` never throws** into the caller. It returns `false` (or `recorded=false`, or an
   empty list) on any failure — no game loaded, master toggle off, off-thread, invalid request,
   unclaimed key, exhausted budget, or pipeline drop. One log line per cause, attributed to your

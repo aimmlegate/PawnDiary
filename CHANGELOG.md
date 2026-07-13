@@ -1,5 +1,12 @@
 # Changelog
 
+- **2026-07-13 — RimTalk capture-health fallback.** Added API v8's thread-safe capture-capability
+  registry and the XML `disableWhenCaptureCapabilitiesReady` availability gate. The RimTalk bridge
+  now installs its displayed-chat postfix independently and reports readiness only after Harmony
+  succeeds; if a future RimTalk rename breaks that Level-2 hook, core ambient RimTalk XML stays active
+  instead of losing all chat capture. A separate live policy claim preserves intentional Off and
+  Shared-context behavior, so the fallback does not create duplicates or bypass the selected level.
+
 - **2026-07-13 — Completed Example Adapter API coverage.** Added explorer forms and copyable facade
   wrappers for the full psychotype surface and the one-shot LLM completion request/poll/cancel
   lifecycle. Prompt-entry and direct-entry builders now default to their own XML-claimed event keys,

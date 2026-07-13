@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Fallback-only compatibility group for RimTalk (cj.rimtalk). Without the separate bridge,
-     RimTalkInteraction PlayLog lines feed one ambient day-note per pawn instead of individual events.
-     When the bridge package is loaded this group is disabled at every bridge level, so Level 0 is
-     truly off, Level 1 is context-only, and Level 2 has one assessed whole-conversation path. -->
+<!-- Fallback-only compatibility group for RimTalk (cj.rimtalk). RimTalkInteraction PlayLog lines feed
+     one ambient day-note per pawn unless the separate bridge reports a healthy rich-capture hook.
+     A second live capability keeps intentional bridge Levels 0/1 quiet. If RimTalk renames the Level-2
+     hook, neither capability is ready and this ambient path automatically prevents total capture loss. -->
 <Defs>
 
   <PawnDiary.DiaryInteractionGroupDef>
@@ -16,9 +16,10 @@
     <enableWhenPackageIdsLoaded>
       <li>cj.rimtalk</li>
     </enableWhenPackageIdsLoaded>
-    <disableWhenPackageIdsLoaded>
-      <li>aimmlegate.pawndiary.rimtalkbridge</li>
-    </disableWhenPackageIdsLoaded>
+    <disableWhenCaptureCapabilitiesReady>
+      <li>aimmlegate.pawndiary.rimtalkbridge.displayed-conversation</li>
+      <li>aimmlegate.pawndiary.rimtalkbridge.conversation-capture-not-requested</li>
+    </disableWhenCaptureCapabilitiesReady>
     <batch>
       <mode>AmbientDayNote</mode>
       <windowTicks>60000</windowTicks>

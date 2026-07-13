@@ -335,12 +335,20 @@ without changing the player's base selection. Cancellation and owner-guarded `Re
 remain callable after the master integration switch is turned off; starting work and reading gameplay
 data remain disabled.
 
+API v8 (`ApiVersion` `7 → 8`) adds thread-safe capture-capability health reporting:
+`SetCaptureCapabilityReady(id, ready)` and `IsCaptureCapabilityReady(id)`. A compatibility group's
+`disableWhenCaptureCapabilitiesReady` list suppresses its lower-fidelity XML path only while one of
+those richer capture paths is actually ready. These two calls are the deliberate exception to the
+API's main-thread rule: their locked pure registry is safe from a background Mod constructor and does
+not require a game or the master integration switch.
+
 For ordinary `SubmitEvent` calls, policy stays in XML: the request's `eventKey` string plays the
 defName role, and an External-domain `DiaryInteractionGroupDef` must claim it (required-match, like
 Romance — an unclaimed key records nothing and logs one warning naming the submitting mod). The
-classifier applies the same package gates as every other domain: an External group that is inert
-(`disableWhenPackageIdsLoaded` active, or `enableWhenPackageIdsLoaded` unsatisfied) is treated as
-absent, so its key is rejected with the same "no group claims eventKey" warning. Adapter mods ship
+classifier applies the same runtime gates as every other domain: an External group that is inert
+(`disableWhenPackageIdsLoaded` active, `enableWhenPackageIdsLoaded` unsatisfied, or a listed capture
+capability ready) is treated as absent, so its key is rejected with the same "no group claims
+eventKey" warning. Adapter mods ship
 their own External groups plus optional narrower `DiaryEventPromptDef` rows; the core ships only the
 `externalDevTest` group so the Debug Actions entry "Submit test external event..." can exercise the
 whole path with no adapter installed. The full public contract — versioning, threading, eventKey
@@ -350,10 +358,11 @@ adapter supplies `promptInstruction`, Pawn Diary stores it as protected `externa
 context, and the normal first-person prompt wrapper still owns persona/style, safety text, live
 context, response parsing, budget, lifecycle, and persistence. Their External group is optional; if
 one claims the submitted key, its label, styling, and prompt metadata still apply.
-Every `PawnDiaryApi` entry point is main-thread only. Off-main-thread calls return the documented
-safe value, use a thread-safe diagnostic path, and do not ask RimWorld to marshal work. Adapters that
-collect data on worker threads must own their queue and drain it from a main-thread callback such as
-their own `GameComponentUpdate` or `OnGUI` hook.
+Every gameplay/state `PawnDiaryApi` entry point is main-thread only. Off-main-thread calls return the
+documented safe value, use a thread-safe diagnostic path, and do not ask RimWorld to marshal work.
+Adapters that collect data on worker threads must own their queue and drain it from a main-thread
+callback such as their own `GameComponentUpdate` or `OnGUI` hook. API v8's two pure, locked
+capture-capability calls are the only thread-safe registration/read exception.
 
 The public adapter contract is only the `PawnDiary.Integration` namespace: `PawnDiaryApi` plus its
 request/result/snapshot DTOs. Runtime helpers in capture, ingestion, generation, pipeline, UI, and
@@ -479,13 +488,17 @@ The canvas is also floored to the visible viewport height before drawing.
 - **Shared context + conversations (2)** — `ConversationTracker` (fed by the
   `RimTalkCreateInteractionPatch` Harmony postfix on `TalkService.CreateInteraction`) groups displayed
   chat by reply chain and quiet window, then passes each finished conversation through the bounded
-  editorial funnel below. Per-line PlayLog capture is disabled while the bridge package is installed,
-  so only an accepted whole conversation can create an entry.
+  editorial funnel below. Per-line PlayLog capture is disabled while that rich hook reports ready, so
+  only an accepted whole conversation can create an entry without a duplicate ambient path.
 
 The hook boundary was rechecked against installed RimTalk **v1.0.14**: every live `DisplayTalk` route
 converges on `TalkService.CreateInteraction`; that build has no separate greeting, urgent, or group-line
-emission boundary for the bridge to patch. This is an upstream-version maintenance surface, so target
-resolution still fails soft with a warning if RimTalk changes the signature.
+emission boundary for the bridge to patch. This is an upstream-version maintenance surface. The bridge
+registers that postfix independently and publishes
+`aimmlegate.pawndiary.rimtalkbridge.displayed-conversation` only after Harmony succeeds. If target
+resolution fails, bridge Level 2 releases the capability gate and core `rimtalk_chatter` ambient XML
+automatically resumes; Levels 0/1 publish a separate intentional no-capture claim so their semantics
+remain unchanged and a healthy bridge never duplicates the fallback.
 
 The Level-2 funnel is:
 
@@ -672,12 +685,13 @@ while one of the listed target mods is in the mod list, so it sits fully inert o
 `1.6/Defs/Compat/DiaryCompat_RimTalk.xml` adds `rimtalk_chatter`, an Interaction-domain compat
 group gated on RimTalk's packageId (`cj.rimtalk`). It claims `RimTalkInteraction` PlayLog rows before
 the broad `other` fallback can see them, captures the rendered chat text, and routes ordinary chatter
-through the same `AmbientDayNote` batching/promotion policy as SpeakUp **only when the bridge is not
-installed**. Its `disableWhenPackageIdsLoaded` contains
-`aimmlegate.pawndiary.rimtalkbridge`, removing the old parallel ambient/promotion path at all bridge
-levels. Therefore: RimTalk alone keeps the ambient fallback; bridge Level 0 is fully off; Level 1 is
-context-only; and Level 2 can record only an assessed whole conversation. With RimTalk absent, the row
-does not appear in event settings and has no runtime effect.
+through the same `AmbientDayNote` batching/promotion policy as SpeakUp whenever no richer capture path
+claims readiness. Its `disableWhenCaptureCapabilitiesReady` list contains the bridge's healthy
+displayed-conversation id plus its intentional Levels-0/1 no-capture id. Therefore: RimTalk alone keeps
+the ambient fallback; bridge Level 0 is fully off; Level 1 is context-only; healthy Level 2 records
+only assessed whole conversations; and broken/renamed Level-2 hooks degrade to ambient XML instead of
+silently losing chat. With RimTalk absent, the row does not appear in event settings and has no runtime
+effect.
 
 `1.6/Defs/Compat/DiaryCompat_Rimpsyche.xml` provides the same bridge-optional parity for Rimpsyche.
 When `Maux36.Rimpsyche` is active without `aimmlegate.pawndiary.adapter.rimpsyche`,
@@ -906,9 +920,11 @@ Interaction groups match by domain, exact `defName`, optional package id, and or
 Prefer exact names, `matchPrefixes`, `matchSuffixes`, and `matchSegments`; use legacy
 substring-style `matchTokens` only when broad matching is truly intended. Lower `order` wins, so put
 specific groups before broad groups. The pure matcher lives in `Source/Capture/GroupNameMatcher.cs`.
-Two package gates control availability: `disableWhenPackageIdsLoaded` silences a group while a
+Three runtime gates control availability: `disableWhenPackageIdsLoaded` silences a group while a
 replacement mod is loaded, and `enableWhenPackageIdsLoaded` keeps a compatibility group inert unless
-one of its target mods is present. Both gates are enforced uniformly: `IsGroupEnabled`,
+one of its target mods is present. `disableWhenCaptureCapabilitiesReady` silences a lower-fidelity
+group only while any listed adapter capability reports ready, so hook drift can release the fallback
+without relying on package presence. All gates are enforced uniformly: `IsGroupEnabled`,
 `EventFilterGroupsForSettings`, and the External-domain classifier (`ClassifyExternal` consumers in
 `PawnDiaryApi` and `ExternalEventSignal`) all treat a gated group as inert, so a compatibility group
 sits harmless across automatic capture, the settings UI, and the integration API. External-domain

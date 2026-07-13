@@ -7,8 +7,9 @@
 //   • Never throw into a caller: an adapter bug or a Pawn in a weird state must not break the
 //     game loop, so every entry point is wrapped and failures are logged once, attributed to the
 //     submitting mod's sourceId.
-//   • Main-thread only: the pipeline reads DefDatabase/settings/tick state and .Translate() is not
-//     thread-safe, so off-thread calls are rejected with a log instead of racing.
+//   • Main-thread by default: the pipeline reads DefDatabase/settings/tick state and .Translate() is
+//     not thread-safe, so gameplay calls reject worker threads. Capture-capability health reporting is
+//     the narrow exception: its locked, pure registry is safe during background Mod construction.
 //   • Reflection-friendly: static methods with simple parameter types, so a mod that wants a soft
 //     (no compile-time reference) integration can call via AccessTools without gymnastics.
 //
@@ -29,7 +30,8 @@ namespace PawnDiary.Integration
     /// external events, pawn-context providers for prompt-summary context, LLM API setup reads
     /// plus add-lane writes, automatic-capture event-filter reads plus per-group toggles, editable
     /// base/custom psychotype setters, one-shot LLM completions on a chosen lane, and an external
-    /// psychotype-generator hook that gives the voice editor a Regenerate button + loading status.
+    /// psychotype-generator hook that gives the voice editor a Regenerate button + loading status,
+    /// and thread-safe integration capture-capability health reporting for XML fallbacks.
     /// </summary>
     public static class PawnDiaryApi
     {
@@ -38,7 +40,7 @@ namespace PawnDiary.Integration
         /// members never change behavior incompatibly. Adapters that need a newer member can check
         /// this at load time and degrade gracefully on older Pawn Diary builds.
         /// </summary>
-        public const int ApiVersion = 7;
+        public const int ApiVersion = 8;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time
@@ -58,6 +60,70 @@ namespace PawnDiary.Integration
         public static bool IsExternalApiEnabled
         {
             get { return ExternalIntegrationsAllowed; }
+        }
+
+        /// <summary>
+        /// Reports whether an adapter's stable capture capability is currently ready. XML compatibility
+        /// groups can list the id in <c>disableWhenCaptureCapabilitiesReady</c>, suppressing a generic
+        /// fallback only while the richer hook (or an intentional no-capture policy claim) is active.
+        /// This locked registry call is safe during background Mod construction and does not require a
+        /// loaded game or the master integration switch. Returns false only for a blank id or a full
+        /// defensive registry when setting ready=true.
+        /// </summary>
+        public static bool SetCaptureCapabilityReady(string id, bool ready)
+        {
+            try
+            {
+                string capabilityId = string.IsNullOrWhiteSpace(id) ? "unknown-capability" : id.Trim();
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: SetCaptureCapabilityReady was called with a missing id.",
+                        "PawnDiary.Api.CaptureCapability.Invalid".GetHashCode());
+                    return false;
+                }
+
+                if (!CaptureCapabilities.SetReady(capabilityId, ready))
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: capture capability '" + capabilityId
+                        + "' could not be marked ready; the registry may be full.",
+                        ("PawnDiary.Api.CaptureCapability.Rejected." + capabilityId).GetHashCode());
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                string capabilityForLog = string.IsNullOrWhiteSpace(id) ? "unknown-capability" : id.Trim();
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: capture capability '" + capabilityForLog
+                    + "' could not be updated: " + e,
+                    ("PawnDiary.Api.CaptureCapability.Exception." + capabilityForLog).GetHashCode());
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns the current readiness of a stable capture-capability id. Thread-safe and available
+        /// without a loaded game; blank ids and failures return false.
+        /// </summary>
+        public static bool IsCaptureCapabilityReady(string id)
+        {
+            try
+            {
+                return CaptureCapabilities.IsReady(id);
+            }
+            catch (Exception e)
+            {
+                string capabilityForLog = string.IsNullOrWhiteSpace(id) ? "unknown-capability" : id.Trim();
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: capture capability '" + capabilityForLog
+                    + "' could not be read: " + e,
+                    ("PawnDiary.Api.CaptureCapability.ReadException." + capabilityForLog).GetHashCode());
+                return false;
+            }
         }
 
         /// <summary>
@@ -1911,14 +1977,12 @@ namespace PawnDiary.Integration
             // shipping the C# call without the External-domain group XML, and a silent drop would make
             // that miserable to debug. ClassifyExternal returns the first matching group but does NOT
             // apply package gates, so a compatibility group that is inert without its target mod
-            // (enableWhenPackageIdsLoaded / disableWhenPackageIdsLoaded) must be treated as absent here
-            // too — otherwise its key would be accepted and dispatched while the group's prompt policy
-            // is supposed to be dormant. Mirrors how IsGroupEnabled / EventFilterGroupsForSettings
-            // already treat such groups.
+            // (package or live capture-capability gates) must be treated as absent here too — otherwise
+            // its key would be accepted and dispatched while the group's prompt policy is supposed to
+            // be dormant. Mirrors how IsGroupEnabled / EventFilterGroupsForSettings treat such groups.
             DiaryInteractionGroupDef claimingGroup = InteractionGroups.ClassifyExternal(eventKey);
             if (claimingGroup == null
-                || claimingGroup.DisabledByLoadedPackage()
-                || claimingGroup.MissingRequiredPackage())
+                || claimingGroup.UnavailableForCurrentRuntime())
             {
                 Log.WarningOnce(
                     "[Pawn Diary] Integration API: no External-domain DiaryInteractionGroupDef "

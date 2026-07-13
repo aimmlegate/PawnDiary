@@ -22,6 +22,16 @@ namespace PawnDiaryRimTalkBridge
         /// <c>matchDefNames</c> entry in the bridge's External-domain group XML.</summary>
         public const string ConversationEventKey = "rimtalkbridge_conversation";
 
+        /// <summary>Capability reported ready only after the exact displayed-chat Harmony hook is
+        /// installed. The core ambient XML fallback suppresses itself while this id is ready.</summary>
+        public const string DisplayedConversationCaptureCapability =
+            ModId + ".displayed-conversation";
+
+        /// <summary>Intentional fallback-suppression capability for bridge Levels 0/1, where chat
+        /// capture is disabled by player policy even if RimTalk's displayed-chat hook has drifted.</summary>
+        public const string ConversationCaptureNotRequestedCapability =
+            ModId + ".conversation-capture-not-requested";
+
         /// <summary>Registry id for the Tier A "chat_persona=" pawn-context provider.</summary>
         public const string PersonaProviderId = ModId + ".persona";
 

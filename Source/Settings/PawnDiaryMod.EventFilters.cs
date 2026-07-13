@@ -158,18 +158,18 @@ namespace PawnDiary
 
         /// <summary>
         /// True when a group belongs to the automatic-capture "Events" filter list. All non-External,
-        /// non-package-gated groups qualify — including <c>defaultEnabled=false</c> rows like
+        /// runtime-available groups qualify — including <c>defaultEnabled=false</c> rows like
         /// questAccepted, so a player (or an adapter) can opt INTO a group the XML ships disabled.
         /// External-domain groups are deliberately excluded: their capture is governed by the master
         /// integration switch and adapter XML, not by this filter list. Package-gated groups are
-        /// excluded because they are inert by design without their target mod.
+        /// excluded because they are inert by design without their target mod or while a richer
+        /// capture capability owns their event stream.
         /// </summary>
         internal static bool IsSettingsEventFilterGroup(DiaryInteractionGroupDef group)
         {
             return group != null
                 && group.domain != GroupDomain.External
-                && !group.DisabledByLoadedPackage()
-                && !group.MissingRequiredPackage();
+                && !group.UnavailableForCurrentRuntime();
         }
 
         private static int CompareEventFilterGroups(DiaryInteractionGroupDef left, DiaryInteractionGroupDef right)

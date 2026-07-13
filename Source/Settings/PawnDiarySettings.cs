@@ -800,7 +800,7 @@ namespace PawnDiary
         {
             EnsureGroupDictionaries();
             DiaryInteractionGroupDef group = InteractionGroups.ByKey(groupKey);
-            if (group == null || group.DisabledByLoadedPackage() || group.MissingRequiredPackage())
+            if (group == null || group.UnavailableForCurrentRuntime())
             {
                 return false;
             }

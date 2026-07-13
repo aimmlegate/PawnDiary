@@ -91,20 +91,15 @@ namespace PawnDiaryRimTalkBridge
                 return;
             }
 
-            // PatchAll reflects over this assembly's [HarmonyPatch] classes and resolves each target.
-            // Our listener's TargetMethod returns null when RimTalk has renamed the method it hooks,
-            // and a null target makes PatchAll throw — which would take down the whole mod ctor and,
-            // with it, the settings this mod also owns. Isolate it so a changed RimTalk degrades to
-            // "conversation capture disabled" (TargetMethod already warns) instead of a hard error.
+            // Install the fragile displayed-chat boundary independently and publish its actual health
+            // to core. The ambient RimTalk XML fallback suppresses itself only while this exact hook is
+            // ready, so an upstream rename degrades to ambient capture instead of total capture loss.
             Harmony harmony = new Harmony(HarmonyId);
-            try
-            {
-                harmony.PatchAll();
-            }
-            catch (Exception e)
-            {
-                Log.Error(LogPrefix + " failed to install Harmony patches; RimTalk conversation capture is disabled: " + e);
-            }
+            bool displayedConversationCaptureReady = RimTalkCreateInteractionPatch.TryRegister(harmony);
+            PawnDiaryApi.SetCaptureCapabilityReady(
+                BridgeIds.DisplayedConversationCaptureCapability,
+                displayedConversationCaptureReady);
+            RefreshConversationFallbackGate();
 
             // The editor UI is an optional convenience and uses a fragile external type. Register it
             // separately so a RimTalk UI rename cannot abort or disable conversation capture patches.
@@ -172,6 +167,10 @@ namespace PawnDiaryRimTalkBridge
             }
 
             base.WriteSettings();
+
+            // If the rich hook has drifted, Levels 0/1 still mean intentionally no chat capture;
+            // switching to Level 2 releases that policy claim so core ambient XML can take over.
+            RefreshConversationFallbackGate();
 
             // A settings change can alter the shape of already-cached shared-memory blocks (the count or
             // the toggles); the pair cache is keyed only by pair, so mark it stale to force a rebuild
@@ -388,6 +387,18 @@ namespace PawnDiaryRimTalkBridge
             settingsViewHeight = listing.CurHeight + 12f;
             listing.End();
             Widgets.EndScrollView();
+        }
+
+        /// <summary>
+        /// Keeps the core ambient fallback suppressed when the player intentionally selected Off or
+        /// Shared context. At Level 2 only the independently reported hook-health capability suppresses
+        /// it, so a missing upstream method automatically enables degraded ambient capture.
+        /// </summary>
+        internal static void RefreshConversationFallbackGate()
+        {
+            PawnDiaryApi.SetCaptureCapabilityReady(
+                BridgeIds.ConversationCaptureNotRequestedCapability,
+                !LevelAtLeast(2));
         }
 
         private string CurrentAssessmentLaneLabel(DiaryApiSetupSnapshot setup)

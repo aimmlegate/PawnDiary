@@ -45,6 +45,7 @@ namespace DiaryPipelineTests
             TestExternalEntryAttribution();
             TestExternalApiBudgetPolicy();
             TestListenerRegistry();
+            TestCaptureCapabilityRegistry();
             TestDiaryListText();
             TestContextProviderRegistry();
             TestEventWindowPolicy();
@@ -1149,6 +1150,33 @@ namespace DiaryPipelineTests
             AssertEqual("listener registry reports one failure", "c:InvalidOperationException",
                 string.Join(",", failures.ToArray()));
             AssertEqual("listener registry skips disabled listener later", 1, registry.Notify("five", null));
+        }
+
+        private static void TestCaptureCapabilityRegistry()
+        {
+            CaptureCapabilityRegistry registry = new CaptureCapabilityRegistry(2);
+
+            AssertTrue("capture capability registry rejects blank id", !registry.SetReady(" ", true));
+            AssertTrue("capture capability registry starts unavailable", !registry.IsReady("adapter.rich"));
+            AssertTrue("capture capability registry accepts ready id", registry.SetReady(" adapter.rich ", true));
+            AssertTrue("capture capability registry trims and compares case-insensitively",
+                registry.IsReady("ADAPTER.RICH"));
+            AssertTrue("capture capability registry accepts duplicate ready report",
+                registry.SetReady("adapter.rich", true));
+            AssertTrue("capture capability registry accepts second id", registry.SetReady("adapter.off", true));
+            AssertTrue("capture capability registry enforces defensive cap",
+                !registry.SetReady("adapter.third", true));
+            AssertTrue("capture capability registry detects any ready XML id",
+                registry.AnyReady(new[] { "unknown", "ADAPTER.OFF" }));
+            AssertTrue("capture capability registry handles null XML list", !registry.AnyReady(null));
+            AssertTrue("capture capability registry clears case-insensitively",
+                registry.SetReady("Adapter.Rich", false));
+            AssertTrue("capture capability registry reports cleared id unavailable",
+                !registry.IsReady("adapter.rich"));
+            AssertTrue("capture capability registry reuses capacity after clear",
+                registry.SetReady("adapter.third", true));
+            AssertTrue("capture capability registry clearing absent id is idempotent",
+                registry.SetReady("adapter.missing", false));
         }
 
         // DiaryPromptEnchantmentCandidateSnapshot.From is the internal mapping point between the

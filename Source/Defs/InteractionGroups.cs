@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using PawnDiary.Capture;
+using PawnDiary.Integration;
 using RimWorld;
 using Verse;
 
@@ -231,6 +232,12 @@ namespace PawnDiary
         // compatibility where another mod supplies a richer replacement for a built-in low-value
         // group, while keeping the original group active in ordinary mod lists.
         public List<string> disableWhenPackageIdsLoaded;
+
+        // Stable integration capture-capability ids that suppress this group while any listed richer
+        // path reports itself ready. Unlike package gating, this follows actual hook health: if an
+        // upstream method rename prevents an adapter from installing its hook, the XML fallback stays
+        // active. Empty/absent means no capability-based suppression.
+        public List<string> disableWhenCaptureCapabilitiesReady;
 
         // The inverse gate: when this list is non-empty, the group is active ONLY while at least
         // one listed mod is loaded. This lets compatibility groups for other mods ship inside the
@@ -468,6 +475,26 @@ namespace PawnDiary
             return enableWhenPackageIdsLoaded != null
                 && enableWhenPackageIdsLoaded.Count > 0
                 && !InteractionGroups.AnyPackageLoaded(enableWhenPackageIdsLoaded);
+        }
+
+        /// <summary>
+        /// True when a richer integration capture path (or an explicit intentional-suppression claim)
+        /// currently owns this group's event stream. Capabilities are runtime health, not mod-presence.
+        /// </summary>
+        public bool DisabledByReadyCaptureCapability()
+        {
+            return CaptureCapabilities.AnyReady(disableWhenCaptureCapabilitiesReady);
+        }
+
+        /// <summary>
+        /// Central availability check used at settings, capture, and public-API boundaries. Keep new
+        /// runtime gates here so one consumer cannot accidentally classify a dormant compatibility row.
+        /// </summary>
+        public bool UnavailableForCurrentRuntime()
+        {
+            return DisabledByLoadedPackage()
+                || MissingRequiredPackage()
+                || DisabledByReadyCaptureCapability();
         }
 
         // Returns which Tale pawn slot contains the death victim, or empty for non-death tales.
