@@ -1,5 +1,10 @@
 # Changelog
 
+- **2026-07-13 — Release 0.5.0 prepared.** Bumped the source-of-truth mod version, rebuilt the core
+  and all six integration submods in Release mode, generated the split Russian localization payload,
+  preserved Workshop item `3753779334` for Russian localization and `3758735054` for the Example
+  Adapter, and refreshed all eight RimWorld Mods-folder junctions.
+
 - **2026-07-13 — Hardened thought labels and pairwise continuity snapshots** (telemetry refs
   `88B0AB8A`, `D74961A6`). Thought capture now catches failures inside `ThoughtDef.LabelCap` and uses
   the stable `defName` as a last-resort label instead of dropping the event. Pairwise prompt continuity
@@ -7,6 +12,11 @@
   and interaction promotion, so a transiently inconsistent social-thought list contributes neutral
   opinion rather than aborting the interaction-batch `GameComponentTick`. Both paths warn at most once
   per exception type.
+
+- **2026-07-13 — Short, English-only integration Workshop descriptions.** Rewrote all six integration
+  submods' `About.xml` descriptions as concise, natural player-facing copy and removed their duplicated
+  Russian halves and EN/RU dividers. Dependencies, package ids, and full in-game Russian `Languages/`
+  localizations are unchanged.
 
 - **2026-07-13 — RimTalk capture-health fallback.** Added API v8's thread-safe capture-capability
   registry and the XML `disableWhenCaptureCapabilitiesReady` availability gate. The RimTalk bridge

@@ -27,21 +27,9 @@
     <li>aimmlegate.pawndiary.development</li>
     <li>Maux36.Rimpsyche</li>
   </loadAfter>
-  <description>Brings Rimpsyche's personality model into Pawn Diary.
+  <description>Your colonists already have personalities in Rimpsyche. This lets those personalities reach the page.
 
-- Rimpsyche conversations reach the diary: ordinary talk folds into the day's social notes, while an unusually charged exchange can become an entry of its own.
-- Each colonist's psyche colors their writing: the strongest traits and a couple of interests, in plain words — raw personality numbers never enter the prompt.
-- On by default, Rimpsyche can also shape a pawn's diary outlook and record how charged conversations ended. Turn the outlook off and the bridge cleanly releases everything it set.
+Everyday talk can fold into daily social notes, stronger exchanges can become their own memories, and a pawn's strongest traits and interests can color their diary outlook without exposing raw stats. Nothing is written back to Rimpsyche.
 
-Nothing is ever written back into Rimpsyche. Requires Pawn Diary and Rimpsyche - Personality Core; inert while Rimpsyche is absent.
-
-———
-
-Приводит модель характера Rimpsyche в Pawn Diary.
-
-- Разговоры Rimpsyche попадают в дневник: обычная беседа вплетается в заметки дня, а необычно острый разговор может стать отдельной записью.
-- Психика поселенца окрашивает его слог: самые выраженные черты и пара увлечений, простыми словами — «сырые» числа характера в запрос не попадают.
-- По умолчанию Rimpsyche также задаёт поселенцу взгляд дневника и записывает исход острых разговоров. Выключите взгляд — и мост аккуратно снимет всё, что успел установить.
-
-Обратно в Rimpsyche ничего не записывается. Требуются Pawn Diary и Rimpsyche - Personality Core; без Rimpsyche мост бездействует.</description>
+Requires Pawn Diary and Rimpsyche - Personality Core.</description>
 </ModMetaData>

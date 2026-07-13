@@ -21,21 +21,9 @@
     <li>aimmlegate.pawndiary.development</li>
     <li>cj.rimtalk</li>
   </loadAfter>
-  <description>Connects Pawn Diary and RimTalk so a colonist's chat and diary share one inner life. Pick the level in this mod's settings:
+  <description>Let conversations and diaries feel like parts of the same life.
 
-- Off — the two mods ignore each other.
-- Shared context (default) — pawns "remember" their diary in conversation: recent diary moments feed RimTalk's prompts, and two colonists who talk bring up the past they share. Optional persona synchronization (off by default) can publish Pawn Diary's outlook or import RimTalk's persona; a short colony-situation line is also optional. Nothing is written from chat.
-- Shared context + conversations — the few chats actually worth remembering become real diary events: one shared moment, two points of view. Free local scoring plus a small daily assessment budget choose them, and each pawn can get at most one chat event per game day.
+At the default level, colonists carry recent diary memories into RimTalk conversations. Turn on conversation capture and the few chats worth remembering can become one shared diary event with two points of view. Persona sync and colony context stay optional.
 
-Requires Pawn Diary and RimTalk.
-
-———
-
-Соединяет Pawn Diary и RimTalk: чат и дневник поселенца живут одной внутренней жизнью. Уровень выбирается в настройках мода:
-
-- Выключено — моды друг друга не замечают.
-- Общий контекст (по умолчанию) — в разговоре поселенцы «помнят» свой дневник: свежие записи попадают в запросы RimTalk, а два собеседника вспоминают общее прошлое. Необязательная синхронизация персон (по умолчанию выключена) может передавать взгляд Pawn Diary или принимать персону RimTalk; строка о положении дел в поселении тоже добавляется по желанию. Из чата в дневник ничего не пишется.
-- Общий контекст + разговоры — редкие, действительно памятные разговоры становятся настоящими событиями дневника: один общий момент, два взгляда. Их отбирают бесплатная локальная оценка и небольшой дневной бюджет проверок; каждому поселенцу — не больше одного такого события в игровой день.
-
-Требуются Pawn Diary и RimTalk.</description>
+Requires Pawn Diary and RimTalk.</description>
 </ModMetaData>

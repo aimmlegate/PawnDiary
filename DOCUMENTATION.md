@@ -2026,7 +2026,7 @@ Use `-PublishAllAdapters` for the complete six-adapter release, or one of
 `-PublishVsieAdapter` to enable one typed adapter (the default-on example/SpeakUp payloads can still
 be disabled separately).
 
-The source `About/About.xml` carries the mod's `<modVersion>` (`0.4.1` for the current release). The publish
+The source `About/About.xml` carries the mod's `<modVersion>` (`0.5.0` for the current release). The publish
 script stamps that value into the generated main and Russian localization `About.xml` files; pass
 `-Version <value>` to override the release payload version without editing source metadata.
 
@@ -2071,6 +2071,10 @@ version, and adds the core Workshop URL when available. Adapter Workshop ids can
 the matching payload's `About/PublishedFileId.txt`. The source adapter About files intentionally retain
 `aimmlegate.pawndiary.development` for a checkout deployed by `scripts/deploy-integrations.ps1`; the
 publish payloads must never retain it.
+
+All six integration source `About.xml` descriptions use short, natural English Workshop copy; Russian
+in-game localization remains in each submod's `Languages/Russian (Русский)/` tree rather than being
+duplicated inside the metadata description.
 
 ## 13. When Changing The Mod
 
