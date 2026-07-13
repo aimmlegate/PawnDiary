@@ -7,17 +7,17 @@
   <supportedVersions>
     <li>1.6</li>
   </supportedVersions>
-  <!-- An adapter hard-depends on the Pawn Diary core: it compiles against PawnDiary.dll and its
-       group XML is meaningless without it. Local development builds use the development packageId;
-       scripts/publish.ps1 rewrites published example payloads to the release packageId. -->
+  <!-- An adapter hard-depends on the published Pawn Diary core: it compiles against PawnDiary.dll
+       and its group XML is meaningless without that mod loaded first. -->
   <modDependencies>
     <li>
-      <packageId>aimmlegate.pawndiary.development</packageId>
+      <packageId>aimmlegate.pawndiary</packageId>
       <displayName>Pawn Diary</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/3752041535</steamWorkshopUrl>
     </li>
   </modDependencies>
   <loadAfter>
-    <li>aimmlegate.pawndiary.development</li>
+    <li>aimmlegate.pawndiary</li>
   </loadAfter>
   <description>Building a Pawn Diary integration? This is the working example and API playground I wish every mod API shipped with.
 

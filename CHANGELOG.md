@@ -1,5 +1,10 @@
 # Changelog
 
+- **2026-07-14 — Integration requirements completed.** Pointed every integration manifest's dependency
+  and load-order metadata at the published `aimmlegate.pawndiary` package and verified its Pawn Diary
+  Workshop URL. Added RimTalk's missing dependency URL and made Vanilla Social Interactions Expanded
+  an explicit dependency of its integration instead of only a load-order hint.
+
 - **2026-07-13 — Transparent LLM persona payloads in every personality bridge.** Audited the actual
   `ExternalLlmCompletionRequest.userText` paths and added conditional English/Russian settings disclosures
   whenever an LLM persona/psychotype transform is enabled. RimTalk now distinguishes full RimTalk-persona

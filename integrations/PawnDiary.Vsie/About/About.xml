@@ -7,24 +7,28 @@
   <supportedVersions>
     <li>1.6</li>
   </supportedVersions>
-  <!-- Pawn Diary is a hard dependency: this mod ships only DiaryInteractionGroupDefs, whose C#
-       type lives in Pawn Diary's assembly, so those Defs cannot parse without it loaded first.
-       Vanilla Social Interactions Expanded is deliberately NOT a hard dependency: every group is
-       gated by enableWhenPackageIdsLoaded, so the whole mod sits fully inert (never records, never
-       warns) when VSIE is absent, and lights up automatically when it is present. -->
+  <!-- Both mods are hard dependencies: Pawn Diary owns the DiaryInteractionGroupDef type, and this
+       integration exists only to classify Vanilla Social Interactions Expanded content. The XML
+       package gates remain as defensive guards if a player force-loads the integration anyway. -->
   <modDependencies>
     <li>
-      <packageId>aimmlegate.pawndiary.development</packageId>
+      <packageId>aimmlegate.pawndiary</packageId>
       <displayName>Pawn Diary</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/3752041535</steamWorkshopUrl>
+    </li>
+    <li>
+      <packageId>VanillaExpanded.VanillaSocialInteractionsExpanded</packageId>
+      <displayName>Vanilla Social Interactions Expanded</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2439736083</steamWorkshopUrl>
     </li>
   </modDependencies>
   <loadAfter>
-    <li>aimmlegate.pawndiary.development</li>
+    <li>aimmlegate.pawndiary</li>
     <li>VanillaExpanded.VanillaSocialInteractionsExpanded</li>
   </loadAfter>
   <description>Let the social stories from Vanilla Social Interactions Expanded make it into the diary.
 
 Venting, teaching, insults, best-friend milestones, birthdays, funerals, and extra social moods each get a fitting place instead of falling into a generic conversation bucket.
 
-Requires Pawn Diary. Safe to leave installed; it stays idle until VSIE is active.</description>
+Requires Pawn Diary and Vanilla Social Interactions Expanded.</description>
 </ModMetaData>

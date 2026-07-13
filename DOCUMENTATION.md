@@ -2102,12 +2102,14 @@ Each opt-in typed adapter is rebuilt against the same throwaway core DLL as the 
 as a clean runtime mod (About, Defs/Patches, Languages, its own fresh DLL/PDB, integration docs, and
 license; no `Source/` or checked-in assembly copy). Release prep rewrites the development core packageId
 in both `modDependencies` and `loadAfter`, preserves target-mod dependency rows, stamps the release
-version, and adds the core Workshop URL when available. Adapter Workshop ids can be stored in
+version, and refreshes the core Workshop URL. Every integration source manifest directly declares the
+published core package id (`aimmlegate.pawndiary`) and Workshop URL; each target-specific adapter also
+declares its target mod as a dependency with a Workshop URL (optional secondary modules remain
+`loadAfter` hints only). Adapter Workshop ids can be stored in
 `About/PublishedFileId-RimTalk.txt`, `About/PublishedFileId-Rimpsyche.txt`,
 `About/PublishedFileId-Personalities123.txt`, and `About/PublishedFileId-Vsie.txt`; each is copied to
-the matching payload's `About/PublishedFileId.txt`. The source adapter About files intentionally retain
-`aimmlegate.pawndiary.development` for a checkout deployed by `scripts/deploy-integrations.ps1`; the
-publish payloads must never retain it.
+the matching payload's `About/PublishedFileId.txt`. Release prep validates that staged integration
+payloads retain the published core id and never contain `aimmlegate.pawndiary.development`.
 
 All six integration source `About.xml` descriptions use short, natural English Workshop copy; Russian
 in-game localization remains in each submod's `Languages/Russian (Русский)/` tree rather than being

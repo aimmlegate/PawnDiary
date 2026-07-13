@@ -13,8 +13,9 @@
        package-gated, so a force-loaded adapter fails inert instead of crashing when SpeakUp is absent. -->
   <modDependencies>
     <li>
-      <packageId>aimmlegate.pawndiary.development</packageId>
+      <packageId>aimmlegate.pawndiary</packageId>
       <displayName>Pawn Diary</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/3752041535</steamWorkshopUrl>
     </li>
     <li>
       <packageId>JPT.speakup</packageId>
@@ -23,7 +24,7 @@
     </li>
   </modDependencies>
   <loadAfter>
-    <li>aimmlegate.pawndiary.development</li>
+    <li>aimmlegate.pawndiary</li>
     <li>JPT.speakup</li>
   </loadAfter>
   <description>Give SpeakUp conversations somewhere to live after the speech bubble disappears.

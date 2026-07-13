@@ -13,8 +13,9 @@
        Harmony is supplied transitively by Rimpsyche's own hard dependency and is never bundled. -->
   <modDependencies>
     <li>
-      <packageId>aimmlegate.pawndiary.development</packageId>
+      <packageId>aimmlegate.pawndiary</packageId>
       <displayName>Pawn Diary</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/3752041535</steamWorkshopUrl>
     </li>
     <li>
       <packageId>Maux36.Rimpsyche</packageId>
@@ -24,7 +25,7 @@
   </modDependencies>
   <loadAfter>
     <li>brrainz.harmony</li>
-    <li>aimmlegate.pawndiary.development</li>
+    <li>aimmlegate.pawndiary</li>
     <li>Maux36.Rimpsyche</li>
   </loadAfter>
   <description>Your colonists already have personalities in Rimpsyche. This lets those personalities reach the page.

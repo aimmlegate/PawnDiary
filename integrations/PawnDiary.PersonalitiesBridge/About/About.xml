@@ -16,8 +16,9 @@
        package-id in XML, so the module-2 groups sit inert until it is installed. -->
   <modDependencies>
     <li>
-      <packageId>aimmlegate.pawndiary.development</packageId>
+      <packageId>aimmlegate.pawndiary</packageId>
       <displayName>Pawn Diary</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/3752041535</steamWorkshopUrl>
     </li>
     <li>
       <packageId>hahkethomemah.simplepersonalities</packageId>
@@ -26,7 +27,7 @@
     </li>
   </modDependencies>
   <loadAfter>
-    <li>aimmlegate.pawndiary.development</li>
+    <li>aimmlegate.pawndiary</li>
     <li>hahkethomemah.simplepersonalities</li>
     <li>hahkethomemah.simplepersonalities.module2</li>
   </loadAfter>

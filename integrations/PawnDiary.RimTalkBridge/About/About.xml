@@ -9,16 +9,18 @@
   </supportedVersions>
   <modDependencies>
     <li>
-      <packageId>aimmlegate.pawndiary.development</packageId>
+      <packageId>aimmlegate.pawndiary</packageId>
       <displayName>Pawn Diary</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/3752041535</steamWorkshopUrl>
     </li>
     <li>
       <packageId>cj.rimtalk</packageId>
       <displayName>RimTalk</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/3551203752</steamWorkshopUrl>
     </li>
   </modDependencies>
   <loadAfter>
-    <li>aimmlegate.pawndiary.development</li>
+    <li>aimmlegate.pawndiary</li>
     <li>cj.rimtalk</li>
   </loadAfter>
   <description>Let conversations and diaries feel like parts of the same life.
