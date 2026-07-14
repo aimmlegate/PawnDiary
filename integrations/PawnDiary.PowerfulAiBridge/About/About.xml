@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Pawn Diary: Powerful AI Integration</name>
+  <author>aimmlegate</author>
+  <packageId>aimmlegate.pawndiary.adapter.powerfulai</packageId>
+  <modVersion IgnoreIfNoMatchingField="True">0.1.0</modVersion>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>aimmlegate.pawndiary</packageId>
+      <displayName>Pawn Diary</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/3752041535</steamWorkshopUrl>
+    </li>
+    <li>
+      <packageId>codex.dynamicrolesstoryteller</packageId>
+      <displayName>Powerful AI Integration</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/3744421283</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>aimmlegate.pawndiary</li>
+    <li>codex.dynamicrolesstoryteller</li>
+  </loadAfter>
+  <description>Let Powerful AI Integration personas shape how colonists write in Pawn Diary.
+
+Choose direct persona copying or an optional LLM-assisted diary outlook. The bridge changes only Pawn Diary and never writes back to Powerful AI Integration.</description>
+</ModMetaData>

@@ -124,8 +124,8 @@
   and -PublishSpeakUpAdapter are enabled.
 
 .PARAMETER PublishAllAdapters
-  Also build and package the RimTalk, Rimpsyche, 1-2-3 Personalities, and VSIE adapters. The
-  example and SpeakUp adapters keep their existing default-on behavior, so this produces all six.
+  Also build and package the RimTalk, Rimpsyche, 1-2-3 Personalities, VSIE, and Powerful AI
+  Integration adapters. The example and SpeakUp adapters keep their existing default-on behavior.
 
 .PARAMETER PublishRimTalkAdapter
   Build and package the typed RimTalk bridge. Its target mod assembly must be installed at the
@@ -142,6 +142,10 @@
 .PARAMETER PublishVsieAdapter
   Build and package the VSIE adapter. It patches base-game symbols and needs no VSIE assembly at
   build time.
+
+.PARAMETER PublishPowerfulAiAdapter
+  Build and package the reflection-only Powerful AI Integration persona bridge. Its complete Source
+  folder is included in the Workshop payload.
 #>
 [CmdletBinding()]
 param(
@@ -178,6 +182,7 @@ param(
     [switch]$PublishRimpsycheAdapter,
     [switch]$PublishPersonalitiesAdapter,
     [switch]$PublishVsieAdapter,
+    [switch]$PublishPowerfulAiAdapter,
     [switch]$SkipBranch,
     [switch]$Force
 )
@@ -695,10 +700,9 @@ function New-SpeakUpAdapterPayload {
     }
 }
 
-# Builds the clean runtime payload shared by the typed adapters. Unlike the example adapter (and the
-# older SpeakUp package), these Workshop items do not ship their development Source tree. The source
-# About.xml deliberately points at the development core while working from this checkout; release
-# prep replaces that exact package id in both modDependencies and loadAfter before anything is staged.
+# Builds the clean runtime payload shared by opt-in adapters. Source is normally omitted; adapters
+# such as the Powerful AI bridge can explicitly include it. Release prep replaces the development
+# core package id in both modDependencies and loadAfter before anything is staged.
 function New-RuntimeAdapterPayload {
     param(
         [string]$Label,
@@ -713,7 +717,8 @@ function New-RuntimeAdapterPayload {
         [string]$AssemblyName,
         [string]$BuiltDll,
         [string]$BuiltPdb,
-        [string]$PublishedFileIdPath
+        [string]$PublishedFileIdPath,
+        [bool]$IncludeSource = $false
     )
 
     if (Test-Path -LiteralPath $DestinationRoot) { Remove-Item -LiteralPath $DestinationRoot -Recurse -Force }
@@ -723,6 +728,10 @@ function New-RuntimeAdapterPayload {
     Copy-PathFromRoot $AdapterSourceRoot "1.6\Defs" -Required -DestinationRoot $DestinationRoot | Out-Null
     Copy-PathFromRoot $AdapterSourceRoot "1.6\Patches" -DestinationRoot $DestinationRoot | Out-Null
     Copy-PathFromRoot $AdapterSourceRoot "Languages" -DestinationRoot $DestinationRoot | Out-Null
+    if ($IncludeSource) {
+        Copy-PathFromRoot $AdapterSourceRoot "Source" -Required -DestinationRoot $DestinationRoot | Out-Null
+        Remove-BuildIntermediates (Join-Path $DestinationRoot "Source")
+    }
 
     Copy-Payload "INTEGRATIONS.md" -Required -DestinationRoot $DestinationRoot | Out-Null
     Copy-Payload "EXTERNAL_API.md" -Required -DestinationRoot $DestinationRoot | Out-Null
@@ -781,6 +790,7 @@ function New-RuntimeAdapterPayload {
     return @{
         AboutPath = $aboutDestination
         DllPath = $payloadDll
+        SourcePath = if ($IncludeSource) { Join-Path $DestinationRoot "Source" } else { $null }
     }
 }
 
@@ -992,9 +1002,8 @@ if ($buildSpeakUpAdapter) {
     }
 }
 
-# The four typed adapters are opt-in because three compile against assemblies owned by optional
-# Workshop mods. -PublishAllAdapters is the release-machine convenience switch; the individual
-# switches remain useful when only one integration is being updated.
+# The runtime adapters are opt-in. -PublishAllAdapters is the release-machine convenience switch;
+# individual switches remain useful when only one integration is being updated.
 $runtimeAdapterDefinitions = @(
     [pscustomobject]@{
         Enabled = ([bool]$PublishAllAdapters -or [bool]$PublishRimTalkAdapter)
@@ -1005,6 +1014,7 @@ $runtimeAdapterDefinitions = @(
         AssemblyName = "PawnDiaryRimTalkBridge"
         PublishedFileIdPath = "About\PublishedFileId-RimTalk.txt"
         FallbackFolderName = "pawn-diary-rimtalk"
+        IncludeSource = $false
     },
     [pscustomobject]@{
         Enabled = ([bool]$PublishAllAdapters -or [bool]$PublishRimpsycheAdapter)
@@ -1015,6 +1025,7 @@ $runtimeAdapterDefinitions = @(
         AssemblyName = "PawnDiaryRimpsyche"
         PublishedFileIdPath = "About\PublishedFileId-Rimpsyche.txt"
         FallbackFolderName = "pawn-diary-rimpsyche"
+        IncludeSource = $false
     },
     [pscustomobject]@{
         Enabled = ([bool]$PublishAllAdapters -or [bool]$PublishPersonalitiesAdapter)
@@ -1025,6 +1036,7 @@ $runtimeAdapterDefinitions = @(
         AssemblyName = "PawnDiaryPersonalities123"
         PublishedFileIdPath = "About\PublishedFileId-Personalities123.txt"
         FallbackFolderName = "pawn-diary-personalities123"
+        IncludeSource = $false
     },
     [pscustomobject]@{
         Enabled = ([bool]$PublishAllAdapters -or [bool]$PublishVsieAdapter)
@@ -1035,6 +1047,18 @@ $runtimeAdapterDefinitions = @(
         AssemblyName = "PawnDiaryVsie"
         PublishedFileIdPath = "About\PublishedFileId-Vsie.txt"
         FallbackFolderName = "pawn-diary-vsie"
+        IncludeSource = $false
+    },
+    [pscustomobject]@{
+        Enabled = ([bool]$PublishAllAdapters -or [bool]$PublishPowerfulAiAdapter)
+        Key = "powerfulai"
+        Label = "Powerful AI Integration"
+        SourceFolder = "PawnDiary.PowerfulAiBridge"
+        ProjectFile = "Source\PawnDiaryPowerfulAiBridge.csproj"
+        AssemblyName = "PawnDiaryPowerfulAiBridge"
+        PublishedFileIdPath = "About\PublishedFileId-PowerfulAi.txt"
+        FallbackFolderName = "pawn-diary-powerful-ai"
+        IncludeSource = $true
     }
 )
 
@@ -1086,6 +1110,7 @@ foreach ($definition in $runtimeAdapterDefinitions) {
         OutDir = $adapterOutDir
         LinkName = $payloadFolderName
         PublishedFileIdPath = $definition.PublishedFileIdPath
+        IncludeSource = [bool]$definition.IncludeSource
         BuildOut = $null
         BuiltDll = $null
         BuiltPdb = $null
@@ -1392,7 +1417,8 @@ foreach ($adapter in $runtimeAdapters) {
         -AssemblyName $adapter.AssemblyName `
         -BuiltDll $adapter.BuiltDll `
         -BuiltPdb $adapter.BuiltPdb `
-        -PublishedFileIdPath $adapter.PublishedFileIdPath
+        -PublishedFileIdPath $adapter.PublishedFileIdPath `
+        -IncludeSource $adapter.IncludeSource
 }
 
 Remove-Item -LiteralPath $buildOut -Recurse -Force -ErrorAction SilentlyContinue
@@ -1452,6 +1478,9 @@ foreach ($adapter in $runtimeAdapters) {
     Write-Host "  $($adapter.OutDir)"
     Write-Host "  Payload DLL: $($adapter.Payload.DllPath)"
     Write-Host "  Prepared About.xml: $($adapter.Payload.AboutPath)"
+    if ($adapter.Payload.SourcePath) {
+        Write-Host "  Source folder: $($adapter.Payload.SourcePath)"
+    }
     Write-Host ("  shipped {0} files, {1:N2} MB" -f $adapterPayloadFiles.Count, ($adapterPayloadBytes / 1MB))
 }
 

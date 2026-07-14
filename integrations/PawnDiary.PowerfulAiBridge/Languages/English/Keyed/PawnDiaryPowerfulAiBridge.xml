@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+  <PawnDiaryPowerfulAiBridge.Settings.Category>Pawn Diary: Powerful AI Integration</PawnDiaryPowerfulAiBridge.Settings.Category>
+  <PawnDiaryPowerfulAiBridge.Settings.Missing>Powerful AI Integration is not active, so this bridge is idle.</PawnDiaryPowerfulAiBridge.Settings.Missing>
+  <PawnDiaryPowerfulAiBridge.Settings.Mode>How Powerful AI personas shape Pawn Diary psychotypes:</PawnDiaryPowerfulAiBridge.Settings.Mode>
+  <PawnDiaryPowerfulAiBridge.Settings.Mode.Disabled>Disabled</PawnDiaryPowerfulAiBridge.Settings.Mode.Disabled>
+  <PawnDiaryPowerfulAiBridge.Settings.Mode.DisabledDesc>Do not synchronize personas. Any psychotype override previously owned by this bridge is removed.</PawnDiaryPowerfulAiBridge.Settings.Mode.DisabledDesc>
+  <PawnDiaryPowerfulAiBridge.Settings.Mode.Direct>Direct</PawnDiaryPowerfulAiBridge.Settings.Mode.Direct>
+  <PawnDiaryPowerfulAiBridge.Settings.Mode.DirectDesc>Copy the complete semantic persona text into a reversible bridge-owned Pawn Diary psychotype. No LLM request is used.</PawnDiaryPowerfulAiBridge.Settings.Mode.DirectDesc>
+  <PawnDiaryPowerfulAiBridge.Settings.Mode.Llm>LLM-assisted</PawnDiaryPowerfulAiBridge.Settings.Mode.Llm>
+  <PawnDiaryPowerfulAiBridge.Settings.Mode.LlmDesc>Ask a configured Pawn Diary model to turn the same persona into a concise diary outlook. Falls back to the direct text if the request is unavailable or fails.</PawnDiaryPowerfulAiBridge.Settings.Mode.LlmDesc>
+  <PawnDiaryPowerfulAiBridge.Settings.Lane>LLM lane</PawnDiaryPowerfulAiBridge.Settings.Lane>
+  <PawnDiaryPowerfulAiBridge.Settings.Lane.Auto>Automatic (first active)</PawnDiaryPowerfulAiBridge.Settings.Lane.Auto>
+  <PawnDiaryPowerfulAiBridge.Settings.Lane.Number>lane {0}</PawnDiaryPowerfulAiBridge.Settings.Lane.Number>
+  <PawnDiaryPowerfulAiBridge.Settings.Lane.Inactive>{0} (inactive)</PawnDiaryPowerfulAiBridge.Settings.Lane.Inactive>
+  <PawnDiaryPowerfulAiBridge.Settings.NoLane>No active Pawn Diary LLM lane is configured. LLM-assisted mode will use direct text until one is available.</PawnDiaryPowerfulAiBridge.Settings.NoLane>
+  <PawnDiaryPowerfulAiBridge.Settings.DataSent>The request contains only PAI's nonblank persona, speech-habit, story-role, character-prompt, and persona-preset text. It does not include pawn names, dialogue history, memories, diary entries, or API credentials.</PawnDiaryPowerfulAiBridge.Settings.DataSent>
+</LanguageData>

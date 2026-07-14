@@ -1,5 +1,14 @@
 # Changelog
 
+- **2026-07-14 — Powerful AI Integration persona bridge.** Added the separate reflection-only
+  `Pawn Diary: Powerful AI Integration` adapter, which reads the full enabled, pawn-bound PAI persona
+  surface and synchronizes it one way into a reversible Pawn Diary psychotype override. Its basic mode
+  setting offers Disabled, Direct, and LLM-assisted transfer with lane selection, exact data disclosure,
+  stable change detection, direct fallback, cancellation, and bridge-owned cleanup. Added XML-owned
+  transform policy, English localization, pure formatting/fingerprint tests, short Workshop metadata,
+  and an opt-in `-PublishPowerfulAiAdapter` release path; that payload deliberately ships the complete
+  bridge source and is also included by `-PublishAllAdapters`.
+
 - **2026-07-14 — Integration requirements completed.** Pointed every integration manifest's dependency
   and load-order metadata at the published `aimmlegate.pawndiary` package and verified its Pawn Diary
   Workshop URL. Added RimTalk's missing dependency URL and made Vanilla Social Interactions Expanded

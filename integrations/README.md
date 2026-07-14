@@ -25,6 +25,7 @@ MSBuild integrations\PawnDiary.PersonalitiesBridge\Source\PawnDiaryPersonalities
 MSBuild integrations\PawnDiary.Vsie\Source\PawnDiaryVsie.csproj /t:Build /p:Configuration=Debug
 MSBuild integrations\PawnDiary.SpeakUp\Source\PawnDiarySpeakUp.csproj /t:Build /p:Configuration=Debug
 MSBuild integrations\PawnDiary.RimpsycheBridge\Source\PawnDiaryRimpsyche.csproj /t:Build /p:Configuration=Debug
+MSBuild integrations\PawnDiary.PowerfulAiBridge\Source\PawnDiaryPowerfulAiBridge.csproj /t:Build /p:Configuration=Debug
 ```
 
 (`PawnDiary.Vsie/` is mostly XML; its only assembly is the small gathering hook — `PawnDiaryVsie.dll`.)
@@ -140,6 +141,23 @@ Thresholds and caps live in the adapter's tuning Def.
 ```
 dotnet run --project tests/RimpsycheBridgeLogicTests/RimpsycheBridgeLogicTests.csproj
 ```
+
+`PawnDiary.PowerfulAiBridge/` (`aimmlegate.pawndiary.adapter.powerfulai`) is a thin, one-way persona
+adapter for Powerful AI Integration (`codex.dynamicrolesstoryteller`). It uses reflection to read the
+enabled PAI character bound to a pawn, so it does not compile against the target DLL and is safely idle
+if that public field surface is absent. It copies all five nonblank persona fields into a reversible
+Pawn Diary psychotype override and never sends diary data back to PAI. Its single mode setting offers
+Disabled, Direct (default), and LLM-assisted; the latter uses a selectable Pawn Diary API lane and
+falls back to Direct. The settings page discloses the exact structured persona payload. Pure formatting
+and change-detection helpers are covered here:
+
+```
+dotnet run --project tests/PowerfulAiBridgeLogicTests/PowerfulAiBridgeLogicTests.csproj
+```
+
+Unlike the other runtime adapters, its publish payload intentionally includes the complete `Source/`
+tree. Build and stage only this bridge with `scripts\publish.ps1 -PublishPowerfulAiAdapter` or include
+it with `-PublishAllAdapters`.
 
 `PawnDiary.Vsie/` and `PawnDiary.PersonalitiesBridge/` are personality/social compatibility adapters,
 each a separate mod for one target so a player installs only what matches their mod list:

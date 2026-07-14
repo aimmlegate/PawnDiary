@@ -1,6 +1,6 @@
 # Pawn Diary - Maintainer Guide
 
-Last updated: 2026-07-12
+Last updated: 2026-07-14
 
 Related files:
 
@@ -57,8 +57,8 @@ Workshop payload omits source code and other development-only folders.
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper test projects. |
 | `prompt-lab/` | Prompt fixture and variant validation harness. |
-| `integrations/` | Separate adapter mods for other mods: example/API explorer, RimTalk, SpeakUp, Rimpsyche, VSIE, and 1-2-3 Personalities. Not loaded in-game until deployed. |
-| `scripts/publish.ps1` | Local Workshop payload prep; builds/packages example + SpeakUp by default and all six adapters with `-PublishAllAdapters`. |
+| `integrations/` | Separate adapter mods for other mods: example/API explorer, RimTalk, SpeakUp, Rimpsyche, VSIE, 1-2-3 Personalities, and Powerful AI Integration. Not loaded in-game until deployed. |
+| `scripts/publish.ps1` | Local Workshop payload prep; builds/packages example + SpeakUp by default and all seven adapters with `-PublishAllAdapters`. |
 | `scripts/deploy-integrations.ps1` | Creates sibling-mod junctions for every adapter under `integrations/` in the RimWorld `Mods/` root. |
 
 ## 3. Runtime Flow
@@ -752,7 +752,7 @@ map but no subject pawn: the eligible colonist with the smallest stable load ID 
 classifies the live `ThoughtDef`, so package-wide Thought groups can inspect `modContentPack`; saved-event
 recovery remains defName-only by design.
 
-Four further personality/social integrations ship as **standalone adapter mods** under `integrations/`
+Five further personality/social integrations ship as **standalone adapter mods** under `integrations/`
 (junction-deployed for development by `scripts/deploy-integrations.ps1`), so a player installs only the
 ones matching their mod list. SpeakUp and Rimpsyche additionally keep smaller core fallback groups for
 players who use the target mod without its adapter; loading the adapter disables its fallback:
@@ -805,6 +805,23 @@ players who use the target mod without its adapter; loading the adapter disables
   settings page shows the exact `userText` schema and live XML caps: localized `psyche=` descriptors,
   optional localized `interests=`, and the localized deterministic `base outlook:`. It also states that
   raw node/interest scores and ordinary Pawn Diary/pawn-summary data are not sent.
+- **`PawnDiary.PowerfulAiBridge` (`Pawn Diary: Powerful AI Integration`)** — a deliberately thin,
+  one-way persona bridge. It reads the enabled PAI character bound to each pawn through reflection, so
+  the adapter has no compile-time dependency on `DynamicRoleStoryteller.dll`, and copies the complete
+  nonblank semantic persona surface (`dialoguePrompt`, `dialogueSpeechHabits`, `storyRole`, `prompt`,
+  and `dialoguePersonaPreset`) into a reversible, source-owned Pawn Diary psychotype override. It never
+  reads or writes conversations, memories, credentials, or any PAI setting. The one settings choice is
+  **Disabled**, **Direct** (default), or **LLM-assisted**. Direct preserves the source fields in a capped
+  structured rule. LLM-assisted sends that same complete structured block through one selectable Pawn
+  Diary API lane and falls back to Direct when no lane is available, admission is temporarily rejected,
+  or generation fails. Stable saved fingerprints avoid repeat token spend; source/persona, mode, lane,
+  or localized transform-prompt changes trigger a refresh. Disable, persona removal, target-mod removal,
+  and Pawn Diary's master integration switch release only this adapter's override. Like the Rimpsyche
+  bridge, it registers the public external psychotype generator so the Pawn Diary editor can regenerate
+  an LLM-assisted result. Formatting/fingerprinting are pure-tested by
+  `tests/PowerfulAiBridgeLogicTests/`. Its Workshop payload intentionally includes the complete bridge
+  `Source/` tree; `scripts/publish.ps1 -PublishPowerfulAiAdapter` builds and stages it independently,
+  while `-PublishAllAdapters` includes it in a full release.
 - **`PawnDiary.Vsie` (`Pawn Diary: Vanilla Social Interactions Expanded`)** — mostly XML, **plus** a
   tiny assembly (`PawnDiaryVsie.dll`) for the gathering hook. Four gated `DiaryInteractionGroupDef`s
   for VSIE (`VanillaExpanded.VanillaSocialInteractionsExpanded`): `vsie_vent` (Interaction, ambient
@@ -2012,14 +2029,17 @@ dotnet run --project tests/DiarySaveNormalizationTests/DiarySaveNormalizationTes
 dotnet run --project tests/DiaryObservedConditionTests/DiaryObservedConditionTests.csproj
 dotnet run --project tests/SpeakUpBridgeLogicTests/SpeakUpBridgeLogicTests.csproj
 dotnet run --project tests/RimpsycheBridgeLogicTests/RimpsycheBridgeLogicTests.csproj
+dotnet run --project tests/PowerfulAiBridgeLogicTests/PowerfulAiBridgeLogicTests.csproj
 ```
 
 Adapter assemblies are built from their own projects; notably SpeakUp stays reflection-only, while
-Rimpsyche needs the installed `RimPsyche.dll` compile reference:
+the Powerful AI bridge is also reflection-only and Rimpsyche needs the installed `RimPsyche.dll`
+compile reference:
 
 ```powershell
 MSBuild integrations/PawnDiary.SpeakUp/Source/PawnDiarySpeakUp.csproj /t:Build /p:Configuration=Debug
 MSBuild integrations/PawnDiary.RimpsycheBridge/Source/PawnDiaryRimpsyche.csproj /t:Build /p:Configuration=Debug
+MSBuild integrations/PawnDiary.PowerfulAiBridge/Source/PawnDiaryPowerfulAiBridge.csproj /t:Build /p:Configuration=Debug
 ```
 
 Prompt lab:
@@ -2058,10 +2078,11 @@ The publish script builds the example/API-explorer and SpeakUp adapter payloads 
 `-PublishExampleAdapter:$false` or `-PublishSpeakUpAdapter:$false` to skip either. The four adapters
 that compile against typed integration contracts are opt-in because RimTalk, Rimpsyche, and 1-2-3
 Personalities need their target Workshop assembly installed on the release machine (VSIE does not).
-Use `-PublishAllAdapters` for the complete six-adapter release, or one of
+The reflection-only Powerful AI bridge is opt-in as well. Use `-PublishAllAdapters` for the complete
+seven-adapter release, or one of
 `-PublishRimTalkAdapter`, `-PublishRimpsycheAdapter`, `-PublishPersonalitiesAdapter`, and
-`-PublishVsieAdapter` to enable one typed adapter (the default-on example/SpeakUp payloads can still
-be disabled separately).
+`-PublishVsieAdapter` to enable one typed adapter, or `-PublishPowerfulAiAdapter` for that bridge (the
+default-on example/SpeakUp payloads can still be disabled separately).
 
 The source `About/About.xml` carries the mod's `<modVersion>` (`0.5.0` for the current release). The publish
 script stamps that value into the generated main and Russian localization `About.xml` files; pass
@@ -2098,9 +2119,10 @@ payload, `-ExampleAdapterPackageId` or `-ExampleAdapterOutDir` to override its i
 and `-ExampleAdapterPublishedFileId` or `About/PublishedFileId-ExampleAdapter.txt` when updating an
 existing example-adapter Workshop item.
 
-Each opt-in typed adapter is rebuilt against the same throwaway core DLL as the main payload and staged
+Each opt-in runtime adapter is rebuilt against the same throwaway core DLL as the main payload and staged
 as a clean runtime mod (About, Defs/Patches, Languages, its own fresh DLL/PDB, integration docs, and
-license; no `Source/` or checked-in assembly copy). Release prep rewrites the development core packageId
+license; no checked-in assembly copy). Runtime payloads omit `Source/` except the Powerful AI bridge,
+which deliberately publishes its complete bridge source. Release prep rewrites the development core packageId
 in both `modDependencies` and `loadAfter`, preserves target-mod dependency rows, stamps the release
 version, and refreshes the core Workshop URL. Every integration source manifest directly declares the
 published core package id (`aimmlegate.pawndiary`) and Workshop URL; each target-specific adapter also
@@ -2108,10 +2130,11 @@ declares its target mod as a dependency with a Workshop URL (optional secondary 
 `loadAfter` hints only). Adapter Workshop ids can be stored in
 `About/PublishedFileId-RimTalk.txt`, `About/PublishedFileId-Rimpsyche.txt`,
 `About/PublishedFileId-Personalities123.txt`, and `About/PublishedFileId-Vsie.txt`; each is copied to
-the matching payload's `About/PublishedFileId.txt`. Release prep validates that staged integration
+the matching payload's `About/PublishedFileId.txt`; the Powerful AI bridge uses
+`About/PublishedFileId-PowerfulAi.txt`. Release prep validates that staged integration
 payloads retain the published core id and never contain `aimmlegate.pawndiary.development`.
 
-All six integration source `About.xml` descriptions use short, natural English Workshop copy; Russian
+All seven integration source `About.xml` descriptions use short, natural English Workshop copy; Russian
 in-game localization remains in each submod's `Languages/Russian (Русский)/` tree rather than being
 duplicated inside the metadata description.
 

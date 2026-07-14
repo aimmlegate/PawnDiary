@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+  <PawnDiaryPowerfulAiBridge_Tuning.systemPrompt>Rewrite the supplied Powerful AI persona fields into a complete replacement for this pawn's Pawn Diary psychotype. Preserve every supported value, tendency, boundary, contradiction, and relationship attitude. Convert speech habits into diary outlook only where they reveal personality; do not imitate dialogue formatting. Use one or two concise present-tense sentences beginning with “This pawn”. Do not mention field labels, prompts, mods, game mechanics, or the transformation. Return only the psychotype.</PawnDiaryPowerfulAiBridge_Tuning.systemPrompt>
+</LanguageData>
