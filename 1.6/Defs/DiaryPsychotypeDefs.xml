@@ -14,9 +14,11 @@
   <family> is the adult roll bucket (grounded / inward / intense / anxious); it steers the two-stage
   roll and is ignored for child defs. <skillAffinities> is model-facing stage-2 nudge data: a skill
   passion in that skill steers the roll toward this psychotype (points scale by passion, minor 1 /
-  burning 2). <requiredTrait> (optional) gates a def to pawns holding that trait. Combo signatures and
-  family weighting live in Source/Pipeline/PsychotypeRollPolicy.cs; the trait weight table (which
-  traits pull toward which psychotypes) lives in DiaryPsychotypeTraitPolicyDefs.xml.
+  burning 2). <requiredTrait> (optional) gates a def to pawns holding that trait. The numeric tuning
+  for the roll (family bases, bonuses, wildcard chance, jitter, duplicate penalty) lives in
+  DiaryPsychotypeRollPolicyDefs.xml; the trait weight table (which traits pull toward which
+  psychotypes) lives in DiaryPsychotypeTraitPolicyDefs.xml. The combo-signature count thresholds stay
+  in Source/Pipeline/PsychotypeRollPolicy.cs (see design/PSYCHOTYPE_PLAN.md "Out of scope").
 
   DiaryPsychotype_Neutral has an empty rule on purpose: it contributes no prompt text. Pre-existing
   saves with generated entries adopt it so established voices do not shift, and it is the resolution

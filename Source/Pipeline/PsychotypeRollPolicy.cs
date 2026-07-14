@@ -15,7 +15,7 @@
 //                             signatures + trait member bonuses + child-continuity nudge + duplicate
 //                             penalty), then jitter. Trait-gated candidates (requiredTraitKey) are
 //                             only eligible for pawns holding the trait — on every branch.
-// A wildcard branch (WildcardChance) skips all profile logic and rolls flat over stage-appropriate
+// A wildcard branch (XML-owned wildcardChance) skips all profile logic and rolls flat over stage-appropriate
 // candidates. Children (stageBand == Child) always roll flat over the child catalog.
 //
 // New to C#/RimWorld? See AGENTS.md. Everything here is plain C# and unit-tested in DiaryPipelineTests.
@@ -49,10 +49,50 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// All numeric tuning for one psychotype roll, snapshotted from the XML policy Def by the impure
+    /// adapter. These are the odds/weights/thresholds named in AGENTS.md rule #3: they live in XML so a
+    /// player can retune the catalog without a recompile, and they flow in here as plain floats so the
+    /// pure algorithm never depends on Verse. Each field defaults to the shipped value, so a roll that
+    /// supplies a fresh <c>PsychotypeRollWeights()</c> (including every unit test) behaves exactly like
+    /// the old compile-time constants. See design/PSYCHOTYPE_PLAN.md "Tuning knobs" for the intent.
+    /// </summary>
+    internal sealed class PsychotypeRollWeights
+    {
+        // Family bases: grounded is the broad default, the three skewed families start rarer.
+        public float familyBaseGrounded = 6f;
+        public float familyBaseSkewed = 2f;
+        // Inward leans for a pawn with no passions at all (nothing pulls them outward) and for creepjoiners.
+        public float zeroPassionInwardBonus = 4f;
+        public float creepjoinerInwardBonus = 4f;
+        // Grounded picks up a small "settled" nudge when the pawn has passions but none burning.
+        public float groundedNoBurningBonus = 1f;
+        // Intense leans when several passions burn at once; anxious leans when one domain dominates.
+        public int burningIntenseThreshold = 3;
+        public float burningIntenseBonus = 2f;
+        public float focusThreshold = 2f / 3f;
+        public int focusMinTotalPoints = 3;
+        public float focusAnxiousBonus = 2f;
+        // Stage-2 member weighting.
+        public float memberBaseWeight = 1f;
+        public float comboBonus = 2f;
+        public float continuityBonus = 1f;
+        // Wildcard branch: skip all profile logic this often and roll flat over the stage candidates.
+        public float wildcardChance = 0.12f;
+        public float wildcardGroundedBase = 2f;
+        public float wildcardSkewedBase = 1f;
+        // Per-candidate jitter multiplier range and the soft duplicate penalty applied per existing holder.
+        public float jitterMin = 0.8f;
+        public float jitterMax = 1.3f;
+        public float duplicatePenalty = 0.25f;
+    }
+
+    /// <summary>
     /// Everything the pure roll needs, snapshotted from live pawn/colony state by the impure adapter.
     /// </summary>
     internal sealed class PsychotypeRollInput
     {
+        // XML-owned odds/weights/thresholds for this roll; defaults reproduce the original constants.
+        public PsychotypeRollWeights weights = new PsychotypeRollWeights();
         public List<PsychotypeSkillPassion> passions = new List<PsychotypeSkillPassion>();
         // Anomaly creepjoiners lean inward (they read as detached/uncanny). Null-safe DLC flag.
         public bool isCreepJoiner;
@@ -107,34 +147,12 @@ namespace PawnDiary
         public const string FamilyIntense = "intense";
         public const string FamilyAnxious = "anxious";
 
-        // ---- Tuning constants (all one place; mirror design/PSYCHOTYPE_PLAN.md "Tuning knobs") ----
-        // Family bases: grounded is the broad default, the three skewed families start rarer.
-        public const float FamilyBaseGrounded = 6f;
-        public const float FamilyBaseSkewed = 2f;
-        // Inward leans for a pawn with no passions at all (nothing pulls them outward) and for creepjoiners.
-        public const float ZeroPassionInwardBonus = 4f;
-        public const float CreepjoinerInwardBonus = 4f;
-        // Grounded picks up a small "settled" nudge when the pawn has passions but none burning.
-        public const float GroundedNoBurningBonus = 1f;
-        // Intense leans when several passions burn at once; anxious leans when one domain dominates.
-        public const int BurningIntenseThreshold = 3;
-        public const float BurningIntenseBonus = 2f;
-        public const float FocusThreshold = 2f / 3f;
-        public const int FocusMinTotalPoints = 3;
-        public const float FocusAnxiousBonus = 2f;
-        // Stage-2 member weighting.
-        public const float MemberBaseWeight = 1f;
-        public const float ComboBonus = 2f;
-        public const float ContinuityBonus = 1f;
-        // Wildcard branch: skip all profile logic this often and roll flat over the stage candidates.
-        public const float WildcardChance = 0.12f;
-        public const float WildcardGroundedBase = 2f;
-        public const float WildcardSkewedBase = 1f;
-        // Per-candidate jitter multiplier range and the soft duplicate penalty applied per existing holder.
-        public const float JitterMin = 0.8f;
-        public const float JitterMax = 1.3f;
-        public const float DuplicatePenalty = 0.25f;
-        public const float WeightFloor = 0.0001f;
+        // ---- Defensive floor (not a tunable; rule #3 carve-out) ----
+        // WeightFloor is a tiny epsilon that keeps every candidate pick above zero so a vetoed/duplicate-
+        // weighted member can never divide the cumulative total by 0 in WeightedPick. It is a defensive
+        // cap, not game-balance policy, so it stays here as a compile-time constant. Every other odds/
+        // weight/threshold for the roll is XML-owned and arrives via PsychotypeRollInput.weights.
+        private const float WeightFloor = 0.0001f;
 
         // ---- Skill vocabulary ----
         public const string SkillShooting = "Shooting";
@@ -165,7 +183,7 @@ namespace PawnDiary
             FamilyGrounded, FamilyInward, FamilyIntense, FamilyAnxious
         };
 
-        // Child psychotype -> adult members that keep a thread of continuity (each gets ContinuityBonus).
+        // Child psychotype -> adult members that keep a thread of continuity (each gets continuityBonus).
         private static readonly Dictionary<string, string[]> ChildContinuity = new Dictionary<string, string[]>
         {
             { "DiaryPsychotype_WideEyed", new[] { DefSuperstitious, DefContent } },
@@ -221,6 +239,7 @@ namespace PawnDiary
                 return FlatRoll(input, StageCandidates(candidates, StageChild), rand01, childRoll: true);
             }
 
+
             List<PsychotypeCandidate> adults = StageCandidates(candidates, StageAdult);
             if (adults.Count == 0)
             {
@@ -238,15 +257,15 @@ namespace PawnDiary
                 for (int i = 0; i < gated.Count; i++)
                 {
                     takeover[gated[i].defName] = Math.Max(
-                        MemberBaseWeight * DuplicateMultiplier(gated[i].defName, input), WeightFloor);
+                        Weights(input).memberBaseWeight * DuplicateMultiplier(gated[i].defName, input), WeightFloor);
                 }
 
-                return JitteredPick(takeover, rand01);
+                return JitteredPick(takeover, input, rand01);
             }
 
             // Wildcard: ignore the whole profile and roll flat over the adult catalog (grounded/skewed
             // base + duplicate penalty + jitter only). Draw the gate first so the rand stream is stable.
-            if (rand01() < WildcardChance)
+            if (rand01() < Weights(input).wildcardChance)
             {
                 return FlatRoll(input, adults, rand01, childRoll: false);
             }
@@ -266,7 +285,7 @@ namespace PawnDiary
                 return FlatRoll(input, adults, rand01, childRoll: false);
             }
 
-            return JitteredPick(memberWeights, rand01);
+            return JitteredPick(memberWeights, input, rand01);
         }
 
         /// <summary>
@@ -350,34 +369,35 @@ namespace PawnDiary
         {
             PsychotypeProfile safeProfile = profile ?? new PsychotypeProfile();
             bool creepjoiner = input != null && input.isCreepJoiner;
+            PsychotypeRollWeights w = Weights(input);
 
-            float grounded = FamilyBaseGrounded + safeProfile.nurture;
+            float grounded = w.familyBaseGrounded + safeProfile.nurture;
             if (safeProfile.passionCount > 0 && safeProfile.burningCount == 0)
             {
-                grounded += GroundedNoBurningBonus;
+                grounded += w.groundedNoBurningBonus;
             }
 
-            float inward = FamilyBaseSkewed + safeProfile.mind;
+            float inward = w.familyBaseSkewed + safeProfile.mind;
             if (safeProfile.passionCount == 0)
             {
-                inward += ZeroPassionInwardBonus;
+                inward += w.zeroPassionInwardBonus;
             }
 
             if (creepjoiner)
             {
-                inward += CreepjoinerInwardBonus;
+                inward += w.creepjoinerInwardBonus;
             }
 
-            float intense = FamilyBaseSkewed + safeProfile.violence + safeProfile.people;
-            if (safeProfile.burningCount >= BurningIntenseThreshold)
+            float intense = w.familyBaseSkewed + safeProfile.violence + safeProfile.people;
+            if (safeProfile.burningCount >= w.burningIntenseThreshold)
             {
-                intense += BurningIntenseBonus;
+                intense += w.burningIntenseBonus;
             }
 
-            float anxious = FamilyBaseSkewed + safeProfile.making;
-            if (safeProfile.focus >= FocusThreshold && safeProfile.total >= FocusMinTotalPoints)
+            float anxious = w.familyBaseSkewed + safeProfile.making;
+            if (safeProfile.focus >= w.focusThreshold && safeProfile.total >= w.focusMinTotalPoints)
             {
-                anxious += FocusAnxiousBonus;
+                anxious += w.focusAnxiousBonus;
             }
 
             // Trait pull (PsychotypeTraitAffinities): additive on top of the passion signals, so a
@@ -426,10 +446,10 @@ namespace PawnDiary
                     continue;
                 }
 
-                float weight = MemberBaseWeight + SkillNudge(candidate, input);
+                float weight = Weights(input).memberBaseWeight + SkillNudge(candidate, input);
                 if (comboTargets.Contains(candidate.defName))
                 {
-                    weight += ComboBonus;
+                    weight += Weights(input).comboBonus;
                 }
 
                 weight += PsychotypeTraitAffinities.MemberBonus(
@@ -461,23 +481,25 @@ namespace PawnDiary
                 }
 
                 float baseWeight = childRoll
-                    ? MemberBaseWeight
+                    ? Weights(input).memberBaseWeight
                     : (string.Equals(candidate.family, FamilyGrounded, StringComparison.OrdinalIgnoreCase)
-                        ? WildcardGroundedBase
-                        : WildcardSkewedBase);
+                        ? Weights(input).wildcardGroundedBase
+                        : Weights(input).wildcardSkewedBase);
                 weights[candidate.defName] = Math.Max(baseWeight * DuplicateMultiplier(candidate.defName, input), WeightFloor);
             }
 
-            return weights.Count == 0 ? string.Empty : JitteredPick(weights, rand01);
+            return weights.Count == 0 ? string.Empty : JitteredPick(weights, input, rand01);
         }
 
         // Applies one jitter multiplier per candidate, then a standard weighted pick over the results.
-        private static string JitteredPick(Dictionary<string, float> weights, Func<float> rand01)
+        private static string JitteredPick(Dictionary<string, float> weights, PsychotypeRollInput input,
+            Func<float> rand01)
         {
+            PsychotypeRollWeights w = Weights(input);
             Dictionary<string, float> jittered = new Dictionary<string, float>(weights.Count);
             foreach (KeyValuePair<string, float> pair in weights)
             {
-                float jitter = JitterMin + rand01() * (JitterMax - JitterMin);
+                float jitter = w.jitterMin + rand01() * (w.jitterMax - w.jitterMin);
                 jittered[pair.Key] = Math.Max(pair.Value * jitter, WeightFloor);
             }
 
@@ -621,7 +643,7 @@ namespace PawnDiary
             }
 
             // Exactly one passion and it is burning -> Perfectionist and Ambitious (+1 each, so both
-            // reach the combo target set; the +ComboBonus below applies to whichever family is rolled).
+            // reach the combo target set; the +comboBonus below applies to whichever family is rolled).
             // Read straight off the profile (one passion, and that passion burns) rather than tracking a
             // loose "last passion level" local that only happened to be correct when passionCount == 1.
             if (prof.passionCount == 1 && prof.burningCount == 1)
@@ -652,7 +674,7 @@ namespace PawnDiary
             {
                 if (string.Equals(mapped[i], defName, StringComparison.Ordinal))
                 {
-                    return ContinuityBonus;
+                    return Weights(input).continuityBonus;
                 }
             }
 
@@ -667,8 +689,17 @@ namespace PawnDiary
                 return 1f;
             }
 
-            return (float)Math.Pow(DuplicatePenalty, used);
+            return (float)Math.Pow(Weights(input).duplicatePenalty, used);
         }
+
+        // Resolves the weights for a roll, defending against a null input (e.g. direct unit-test call to
+        // FamilyWeights/MemberWeights). A fresh PsychotypeRollWeights reproduces the shipped defaults.
+        private static PsychotypeRollWeights Weights(PsychotypeRollInput input)
+        {
+            return input?.weights ?? DefaultWeights;
+        }
+
+        private static readonly PsychotypeRollWeights DefaultWeights = new PsychotypeRollWeights();
 
         private static bool IsVetoed(string defName, PsychotypeRollInput input)
         {

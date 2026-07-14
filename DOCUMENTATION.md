@@ -960,6 +960,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPromptTemplateDefs.xml` / `DiaryPromptDef.xml` | prompt field shapes and shared system/final instructions |
 | `DiaryPersonaDefs.xml` / `DiaryHediffPersonaOverrideDefs.xml` | writing styles (incl. child styles) and temporary hediff-driven style overrides |
 | `DiaryPsychotypeDefs.xml` | pawn psychotypes (outlook layer): Neutral + 17 adult + 3 trait-gated + 5 child types, families, skill affinities, trait gates |
+| `DiaryPsychotypeRollPolicyDefs.xml` | numeric tuning for the psychotype roll: family bases, bonuses, wildcard chance, jitter range, duplicate penalty |
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
 | `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |
@@ -1341,7 +1342,11 @@ from the pawn's **skill passions** (minor = 1 pt, burning = 2): stage 0 folds th
 domains; stage 1 weights the four families; stage 2 weights the members inside the rolled family
 (per-skill nudges on the def, combo signatures, a child→adult continuity nudge, a band-aware duplicate
 penalty), with deliberate extra randomness (a 12% wildcard branch that ignores the profile, plus a
-per-candidate jitter). A Psychopath never rolls Dependent and a Kind pawn never rolls Ruthless.
+per-candidate jitter). Every numeric weight, bonus, threshold, and odds value in that roll is
+XML-owned in `DiaryPsychotypeRollPolicyDefs.xml` (projected into the pure `PsychotypeRollWeights`
+DTO by `DiaryPsychotypeRollPolicyDef.cs`); only the combo-signature count thresholds stay in code (see
+`design/PSYCHOTYPE_PLAN.md` "Out of scope"). A Psychopath never rolls Dependent and a Kind pawn never
+rolls Ruthless.
 
 **Traits feed the roll** through `DiaryPsychotypeTraitPolicyDefs.xml`, projected into the pure
 `PsychotypeTraitAffinities` algorithm, additively on top of the

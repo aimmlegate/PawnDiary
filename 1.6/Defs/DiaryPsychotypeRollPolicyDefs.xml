@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Numeric tuning for the psychotype roll. These are the odds/weights/thresholds the two-stage adult
+  roll (and the wildcard/child branches) use; retune them here and restart the game — no recompile.
+  They flow into the pure PsychotypeRollPolicy via PsychotypeRollWeights, projected by
+  Source/Defs/DiaryPsychotypeRollPolicyDef.cs. Every field defaults to the value below, so deleting a
+  line (or this whole Def) safely restores the shipped behavior.
+
+  These were previously compile-time constants in Source/Pipeline/PsychotypeRollPolicy.cs. They mirror
+  design/PSYCHOTYPE_PLAN.md "Tuning knobs". The combo-signature count thresholds stay in the policy
+  code (see the plan's "Out of scope") because they are structural matching rules, not free weights.
+
+  Sibling policy: DiaryPsychotypeTraitPolicyDefs.xml owns the trait half of the same roll.
+-->
+<Defs>
+  <PawnDiary.DiaryPsychotypeRollPolicyDef>
+    <defName>Diary_PsychotypeRollPolicy</defName>
+
+    <!-- Family bases: grounded is the broad default, the three skewed families start rarer. -->
+    <familyBaseGrounded>6</familyBaseGrounded>
+    <familyBaseSkewed>2</familyBaseSkewed>
+
+    <!-- Inward leans: a pawn with no passions, and Anomaly creepjoiners. -->
+    <zeroPassionInwardBonus>4</zeroPassionInwardBonus>
+    <creepjoinerInwardBonus>4</creepjoinerInwardBonus>
+
+    <!-- Grounded "settled" nudge when the pawn has passions but none burning. -->
+    <groundedNoBurningBonus>1</groundedNoBurningBonus>
+
+    <!-- Intense leans when several passions burn at once; anxious leans when one domain dominates. -->
+    <burningIntenseThreshold>3</burningIntenseThreshold>
+    <burningIntenseBonus>2</burningIntenseBonus>
+    <focusThreshold>0.6666667</focusThreshold>
+    <focusMinTotalPoints>3</focusMinTotalPoints>
+    <focusAnxiousBonus>2</focusAnxiousBonus>
+
+    <!-- Stage-2 (member within family) weighting. -->
+    <memberBaseWeight>1</memberBaseWeight>
+    <comboBonus>2</comboBonus>
+    <continuityBonus>1</continuityBonus>
+
+    <!-- Wildcard branch: with this probability, skip all profile logic and roll flat over the catalog. -->
+    <wildcardChance>0.12</wildcardChance>
+    <wildcardGroundedBase>2</wildcardGroundedBase>
+    <wildcardSkewedBase>1</wildcardSkewedBase>
+
+    <!-- Per-candidate jitter multiplier range, and the soft duplicate penalty per existing holder. -->
+    <jitterMin>0.8</jitterMin>
+    <jitterMax>1.3</jitterMax>
+    <duplicatePenalty>0.25</duplicatePenalty>
+  </PawnDiary.DiaryPsychotypeRollPolicyDef>
+</Defs>
