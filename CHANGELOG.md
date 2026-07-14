@@ -1,5 +1,18 @@
 # Changelog
 
+- **2026-07-14 — Psychotype roll tuning moved to XML.** The ~19 numeric weights, bonuses, thresholds,
+  and odds (family bases, zero-passion/creepjoiner/burning/focus leans, wildcard chance, jitter range,
+  duplicate penalty, etc.) that drove the two-stage psychotype roll were compile-time constants in
+  `Source/Pipeline/PsychotypeRollPolicy.cs`, contrary to AGENTS.md rule #3. They now live in the new
+  `1.6/Defs/DiaryPsychotypeRollPolicyDefs.xml` and flow into the pure algorithm through a new
+  `PsychotypeRollWeights` DTO + `DiaryPsychotypeRollPolicyDef.cs` XML boundary — mirroring the sibling
+  `DiaryPsychotypeTraitPolicyDef` shape exactly. Behavior is unchanged: the shipped XML reproduces the
+  old constants, the DTO defaults match them, and the `DiaryPipelineTests` psychotype suite (1006
+  assertions) passes unmodified. `WeightFloor` stays a code constant (a defensive floor, not a
+  tunable) and the combo-signature count thresholds stay in the policy (structural matching rules
+  deferred per `design/PSYCHOTYPE_PLAN.md` "Out of scope"). Updated `DiaryPsychotypeDefs.xml` and
+  `DOCUMENTATION.md` to point at the new owner.
+
 - **2026-07-14 — Powerful AI Integration persona bridge.** Added the separate reflection-only
   `Pawn Diary: Powerful AI Integration` adapter, which reads the full enabled, pawn-bound PAI persona
   surface and synchronizes it one way into a reversible Pawn Diary psychotype override. Its basic mode

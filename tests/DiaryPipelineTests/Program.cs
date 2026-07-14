@@ -4576,12 +4576,15 @@ namespace DiaryPipelineTests
             Random seed = new Random(2026);
             int wildcardCount = 0;
             bool sampleFirst = false;
+            // The roll's wildcard threshold now lives on the input's weights (XML-owned); the test input
+            // below uses default weights, so read the same default here to count wildcard draws by hand.
+            float wildcardChance = new PsychotypeRollWeights().wildcardChance;
             Func<float> rand = () =>
             {
                 double d = seed.NextDouble();
                 if (sampleFirst)
                 {
-                    if (d < PsychotypeRollPolicy.WildcardChance) wildcardCount++;
+                    if (d < wildcardChance) wildcardCount++;
                     sampleFirst = false;
                 }
 

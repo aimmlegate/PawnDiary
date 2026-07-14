@@ -59,6 +59,8 @@ namespace PawnDiary
                 childPsychotypeDefName = childPsychotypeDefName ?? string.Empty,
                 usedCounts = usedCounts != null ? new Dictionary<string, int>(usedCounts) : new Dictionary<string, int>(),
                 passions = PassionsFor(pawn),
+                // XML-owned odds/weights/thresholds snapshotted once per roll (DiaryPsychotypeRollPolicyDef).
+                weights = DiaryPsychotypeRollPolicy.Snapshot(),
                 traitPolicy = traitPolicy
             };
 
