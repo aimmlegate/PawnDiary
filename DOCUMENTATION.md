@@ -159,6 +159,12 @@ Generation starts only after an event exists in the saved hot store.
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
 
+Live surroundings are optional prompt flavor and are collected fail-soft. In particular,
+`Room.GetRoomRoleLabel()` can lazily recalculate the room's stats/role; if RimWorld or another room
+patch throws during that recalculation, Pawn Diary omits only the room-role label and continues
+recording the event and collecting the remaining context. The frequently sampled fallback is silent
+so one unstable room cannot flood the log.
+
 `LlmClient` owns the background HTTP work for OpenAI-compatible API lanes. It handles retries,
 failover, cooldowns, timeouts, and session cancellation. Finished results return to the main thread,
 where the matching `DiaryEvent` is updated with text, status, model metadata, titles, and unread
@@ -2059,10 +2065,43 @@ groups, and prompt-template key/field integrity; these checks are read-only and 
 menu. The companion `PawnDiaryEventReactionTests` suite requires a loaded game. It invokes the real
 vanilla `PlayLog.Add`, `Pawn_RelationsTracker.AddDirectRelation`, and
 `MentalStateHandler.TryStartMentalState` entry points, then verifies the `DiaryEvent` produced by Pawn
-Diary's Harmony → ingestion-signal → persisted-event path. The suite generates two isolated adult
-colonists per test, disables their diary generation before making them eligible (so no LLM request is
-possible), and removes their event rows, diary indexes, Social-log rows, relation/mental state,
-transient dedup keys, and pawn objects in `[AfterEach]` cleanup.
+Diary's Harmony → ingestion-signal → persisted-event path (EVT-01/EVT-07/EVT-08 in the coverage
+matrix).
+
+Both loaded-game suites share the `PawnDiaryRimTestScope` harness (`TEST_COVERAGE_PLAN.md §2.1`),
+which owns all of the fragile setup/teardown so a test body only fires a trigger and asserts an
+outcome. Each scope generates isolated adult colonists whose diary generation is disabled before they
+become eligible (so no LLM request is possible), snapshots the settings and RNG state it touches, and
+in `[AfterEach]` restores every mutation — events, diary indexes, `diariesById`, Social-log rows,
+relation/mental state, transient dedup/command keys, and the pawns themselves. Two properties make it
+trustworthy: teardown runs every cleanup step through a failure accumulator (so a broken assertion
+never skips cleanup), and a final no-leak audit fails the test if any state referencing a test pawn
+survived. The suite README (`tests/PawnDiary.RimTest/README.md`) documents the harness helpers and how
+to run the suites in-game.
+
+Twenty event-flow suites (`PawnDiary*FlowTests.cs`) now sit on this harness, one per event source in
+`TEST_COVERAGE_PLAN.md §3` — EVT-01 through EVT-23. Sources whose real trigger needs a loaded map, the
+storyteller, or a periodic scanner (raid/mood/quest/reflection/window/observed-condition) are exercised
+by submitting the exact per-unit production signal the scanner emits, which keeps the tests mapless and
+deterministic; the suite README lists the two suites (death, raid) that still need a disposable colony
+because their vanilla trigger has un-restorable side effects.
+
+Alongside the event flows, `PawnDiary*FixtureTests.cs` cover the prompt/policy layers on the same
+harness: template/domain resolution and the Pair/Solo/reflection/neutral template matrices, the
+context-detail presets, prompt enchantments, the writing-style and psychotype precedence chains, humor
+cues (all captured through the real render pipeline via prompt-test mode), a Scribe save/load round trip
+of the diary models and repository index rebuilds, the public `PawnDiaryApi` surface, the non-visual
+diary-tab view-model contracts, and base-game DLC-safety. `scripts/verify-coverage.ps1` is the one-command
+audit that builds everything, runs the pure suites, and prints the EVT requirement matrix. The
+transport/async-runtime layer (`§6.3`) is intentionally deferred — see the suite README — because
+`LlmClient` is static and session-global and cannot be driven safely from an in-game test without a
+reviewed request-executor seam or a loopback endpoint.
+
+The API-surface fixture deliberately sends blank ids/null callbacks to four public guards. Those
+guards use production `ErrorOnce` diagnostics to alert real integration authors, so running that
+negative-test fixture emits one expected message each for `SetWritingStyleOverride`,
+`SetPsychotypeOverride`, `RegisterEntryStatusListener`, and `RegisterPawnContextProvider`; they do not
+mean a shipped adapter registered incorrectly.
 
 `TEST_COVERAGE_PLAN.md` is the implementation roadmap for expanding this initial suite. It maps every
 documented event source, prompt template/policy layer, asynchronous runtime branch, persistence path,

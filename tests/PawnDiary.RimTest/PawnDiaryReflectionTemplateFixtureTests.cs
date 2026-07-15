@@ -1,0 +1,370 @@
+// Prompt-capture fixture for Pawn Diary's §4.2 reflection templates: SoloDayReflection,
+// SoloQuadrumReflection, and SoloArcReflection (TEST_COVERAGE_PLAN.md §4.2).
+//
+// With Prompt Test Mode enabled (harness EnablePromptCapture) a fired reflection on a generating
+// colonist runs the real resolver: it picks the reflection template, renders the system + user prompt,
+// stamps it on the event, and STOPS before any network call. Every reflection is a SOLO event queued on
+// the initiator role, so it captures synchronously the instant it is submitted.
+//
+// The reflections are normally produced by the sleep-path summary flush
+// (DiaryGameComponent.FlushDaySummaryForPawn / TryFlushQuadrumReflectionForPawn /
+// TryFlushArcReflectionForPawn). Reproducing that scan needs the storyteller clock, a bedded-down
+// colonist, and the pawn's whole event graph, so — following the EVT-19/EVT-20 pattern in
+// PawnDiaryDayReflectionFlowTests / PawnDiaryArcReflectionFlowTests — these tests build the exact
+// reflection signal each flush would Dispatch and submit it directly through DiaryEvents.Submit,
+// controlling the game context so each template's marker fields render deterministically. Day/quadrum
+// share the DayReflectionSignal + DayReflectionEventData carrier (the template is chosen from the
+// gameContext's day_reflection / quadrum_reflection markers, not the DefName); arc uses ArcReflectionSignal.
+//
+// Which template resolves and the per-template token cap are asserted through the pure
+// DiaryPipelineAdapters.BuildPromptRequest + DiaryPromptPlanner.TemplateKeyFor path (the same policy the
+// live QueuePrompt consumes), because the cap is a request parameter and never appears in the prompt
+// string itself. The rendered marker fields and direct-speech omission are asserted on the captured
+// combined prompt string.
+//
+// Determinism: RNG is isolated by the harness; every asserted gameContext value is passed in literally.
+// The two reflection master switches (daySummaryEnabled gates the day/quadrum signal, arcReflectionEnabled
+// gates the arc signal) live on the shared DiaryTuning def, which the harness does NOT auto-restore, so
+// they are snapshotted and restored in failure-safe cleanup.
+//
+// Coverage area (TEST_COVERAGE_PLAN.md §4.2): reflection prompt templates.
+using System;
+using System.Collections.Generic;
+using PawnDiary.Capture;
+using PawnDiary.Ingestion;
+using RimTestRedux;
+using RimWorld;
+using Verse;
+
+namespace PawnDiary.RimTests
+{
+    /// <summary>
+    /// Proves the three §4.2 reflection templates each resolve through the live prompt-capture pipeline:
+    /// SoloDayReflection/SoloQuadrumReflection/SoloArcReflection render their marker fields, omit the
+    /// direct-speech instruction, drive the intended token cap (quadrum 350, arc 420, day none), and that
+    /// only the day template renders an 'important context' field. Requires a loaded game because the
+    /// capture pipeline (like every capture path) is inert at the main menu.
+    /// </summary>
+    [TestSuite]
+    public static class PawnDiaryReflectionTemplateFixtureTests
+    {
+        private const int ArcYear = 5500;
+
+        // A distinctive quadrum date-range string so the rendered "quadrum dates:" line is unambiguous.
+        private const string QuadrumDates = "Aprimay 1 - Aprimay 5";
+
+        private static PawnDiaryRimTestScope scope;
+        private static Pawn pawn;
+
+        // Snapshot of the two reflection master switches this suite forces on (restored in cleanup).
+        private static DiaryTuningDef tuning;
+        private static bool savedDaySummaryEnabled;
+        private static bool savedArcReflectionEnabled;
+
+        /// <summary>
+        /// Opens a scope with the Reflection group enabled (defName <c>reflection</c>, which claims
+        /// DayReflection / QuadrumReflection / PawnArcReflection via matchDefNames), turns on prompt
+        /// capture at the Full preset BEFORE creating the generating colonist (so even the founding-arrival
+        /// hook is captured prompt-only and can never send a request), and forces the day-summary and
+        /// arc-reflection signal switches on so the emission gates are not random.
+        /// </summary>
+        [BeforeEach]
+        public static void SetUp()
+        {
+            scope = PawnDiaryRimTestScope.Begin("reflection");
+            scope.EnablePromptCapture(PromptContextDetailLevel.Full);
+            pawn = scope.CreateGeneratingAdultColonist();
+
+            tuning = DiaryTuning.Current;
+            savedDaySummaryEnabled = tuning.daySummaryEnabled;
+            savedArcReflectionEnabled = tuning.arcReflectionEnabled;
+            // DayReflectionSignal.BuildContext gates on daySummaryEnabled for both the day and quadrum
+            // carriers; ArcReflectionSignal.BuildContext gates on arcReflectionEnabled.
+            tuning.daySummaryEnabled = true;
+            tuning.arcReflectionEnabled = true;
+            scope.RegisterCleanup(RestoreReflectionTuning);
+        }
+
+        /// <summary>
+        /// Restores DevMode/promptTestMode/contextDetailLevel (via the harness) and the two forced tuning
+        /// switches (via the registered cleanup), then audits for leaks — even when a test threw partway.
+        /// </summary>
+        [AfterEach]
+        public static void TearDown()
+        {
+            try
+            {
+                scope?.TearDown();
+            }
+            finally
+            {
+                scope = null;
+                pawn = null;
+                tuning = null;
+            }
+        }
+
+        /// <summary>
+        /// §4.2 SoloDayReflection. A submitted day reflection resolves the day-reflection template and
+        /// renders its controlled body with no direct-speech instruction. The day template drives no
+        /// per-template token cap (0 => the player's normal setting) and, unlike quadrum/arc, DOES define
+        /// an 'important context' field.
+        /// </summary>
+        [Test]
+        public static void DayReflectionResolvesTemplateOmitsDirectSpeechAndDrivesNoTokenCap()
+        {
+            const string povText = "Turning the day over before sleep.";
+            const string instruction = "Reflect on the day just past.";
+            string gameContext = DayReflectionEventData.BuildGameContext(
+                day: 42, highlightCount: 2, candidateCount: 4, fillerMomentCount: 0, signalTags: "hediff:TestFlu");
+            DayReflectionEventData data = new DayReflectionEventData
+            {
+                PawnId = pawn.GetUniqueLoadID(),
+                Tick = Find.TickManager.TicksGame,
+                DefName = DayReflectionEventData.DefNameToken,
+                Day = 42,
+                CandidateCount = 4,
+                ImportantCandidateCount = 4,
+                HighlightCount = 2,
+                FillerMomentCount = 0,
+                SignalTags = "hediff:TestFlu",
+                AlreadyWritten = false,
+            };
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(new DayReflectionSignal(
+                    data, pawn, "Day reflection", povText, instruction, gameContext)),
+                DayReflectionEventData.DefNameToken,
+                pawn,
+                null);
+
+            scope.RequireSoloRef(diaryEvent, pawn);
+            string prompt = scope.CapturedPrompt(diaryEvent, DiaryEvent.InitiatorRole);
+
+            // Reflection marker: the live resolver selects the day-reflection template and renders the
+            // controlled reflection instruction line through it.
+            RequireTemplate(diaryEvent, DiaryPromptTemplates.SoloDayReflection);
+            RequireContains(prompt, "instruction: " + instruction, "day reflection instruction line");
+
+            // Direct-speech instruction is omitted for every reflection template.
+            RequireDirectSpeechOmitted(prompt);
+
+            // The day template drives no per-template cap (0), unlike the quadrum/arc templates.
+            RequireTokenCap(diaryEvent, DiaryPromptTemplates.SoloDayReflection, 0);
+
+            // Contrast: the day template DOES define an 'important context' (PromptEnchantment) field.
+            PawnDiaryRimTestScope.Require(
+                TemplateHasPromptEnchantmentField(DiaryPromptTemplates.SoloDayReflection),
+                "SoloDayReflection should define an 'important context' (PromptEnchantment) field.");
+        }
+
+        /// <summary>
+        /// §4.2 SoloQuadrumReflection. A submitted quadrum reflection resolves the quadrum template and
+        /// renders its marker fields (quadrum dates + important entry count), omits direct speech, drives
+        /// the 350-token cap, and does NOT render an 'important context' field.
+        /// </summary>
+        [Test]
+        public static void QuadrumReflectionRendersMarkerFieldsDrives350CapAndOmitsImportantContext()
+        {
+            const string povText = "The season, read back to back.";
+            const string instruction = "Look back across the whole quadrum.";
+            string gameContext = DayReflectionEventData.BuildQuadrumGameContext(
+                day: 42, quadrum: 1, quadrumStartDay: 15, quadrumEndDay: 29, quadrumDates: QuadrumDates,
+                dueDay: 28, highlightCount: 2, candidateCount: 4, signalTags: "event:Raid");
+            DayReflectionEventData data = new DayReflectionEventData
+            {
+                PawnId = pawn.GetUniqueLoadID(),
+                Tick = Find.TickManager.TicksGame,
+                DefName = DayReflectionEventData.QuadrumDefNameToken,
+                Day = 42,
+                CandidateCount = 4,
+                ImportantCandidateCount = 4,
+                HighlightCount = 2,
+                FillerMomentCount = 0,
+                SignalTags = "event:Raid",
+                AlreadyWritten = false,
+            };
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(new DayReflectionSignal(
+                    data, pawn, "Quadrum reflection", povText, instruction, gameContext)),
+                DayReflectionEventData.QuadrumDefNameToken,
+                pawn,
+                null);
+
+            scope.RequireSoloRef(diaryEvent, pawn);
+            string prompt = scope.CapturedPrompt(diaryEvent, DiaryEvent.InitiatorRole);
+
+            // The template resolves to the quadrum shape, and its marker context fields render.
+            RequireTemplate(diaryEvent, DiaryPromptTemplates.SoloQuadrumReflection);
+            RequireContains(prompt, "quadrum dates: " + QuadrumDates, "quadrum dates marker field");
+            RequireContains(prompt, "important entry count: 4", "quadrum important-entry-count marker field");
+
+            RequireDirectSpeechOmitted(prompt);
+
+            // The quadrum template drives the 350-token cap.
+            RequireTokenCap(diaryEvent, DiaryPromptTemplates.SoloQuadrumReflection, 350);
+
+            // Intentional absence: the quadrum template has no 'important context' (PromptEnchantment)
+            // field, so that line never renders and the field list never contains it.
+            RequireImportantContextFieldAbsent(prompt, DiaryPromptTemplates.SoloQuadrumReflection);
+        }
+
+        /// <summary>
+        /// §4.2 SoloArcReflection. A submitted arc reflection resolves the arc template and renders its
+        /// marker fields (arc year + selected/candidate memory counts), omits direct speech, drives the
+        /// 420-token cap, and does NOT render an 'important context' field.
+        /// </summary>
+        [Test]
+        public static void ArcReflectionRendersMarkerFieldsDrives420CapAndOmitsImportantContext()
+        {
+            const string povText = "Raised a granary wall. Held the line against a raider.";
+            const string instruction = "Look back over the year.";
+            string gameContext = ArcReflectionEventData.BuildGameContext(
+                ArcYear, forced: false, selectedMemories: 2, candidateMemories: 2, entriesThisYear: 0);
+            ArcReflectionEventData data = new ArcReflectionEventData
+            {
+                PawnId = pawn.GetUniqueLoadID(),
+                Tick = Find.TickManager.TicksGame,
+                DefName = ArcReflectionEventData.DefNameToken,
+                ArcYear = ArcYear,
+                CandidateMemoryCount = 2,
+                SelectedMemoryCount = 2,
+                EntriesThisYear = 0,
+                Forced = false,
+                AlreadyWritten = false,
+            };
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(new ArcReflectionSignal(
+                    data, pawn, "the year in review", povText, instruction, gameContext)),
+                ArcReflectionEventData.DefNameToken,
+                pawn,
+                null);
+
+            scope.RequireSoloRef(diaryEvent, pawn);
+            string prompt = scope.CapturedPrompt(diaryEvent, DiaryEvent.InitiatorRole);
+
+            // The template resolves to the arc shape, and its marker context fields render.
+            RequireTemplate(diaryEvent, DiaryPromptTemplates.SoloArcReflection);
+            RequireContains(prompt, "arc year: " + ArcYear, "arc-year marker field");
+            RequireContains(prompt, "selected memory count: 2", "arc selected-memory-count marker field");
+            RequireContains(prompt, "candidate memory count: 2", "arc candidate-memory-count marker field");
+
+            RequireDirectSpeechOmitted(prompt);
+
+            // The arc template drives the 420-token cap.
+            RequireTokenCap(diaryEvent, DiaryPromptTemplates.SoloArcReflection, 420);
+
+            // Intentional absence: the arc template has no 'important context' (PromptEnchantment) field.
+            RequireImportantContextFieldAbsent(prompt, DiaryPromptTemplates.SoloArcReflection);
+        }
+
+        // ----- template/policy assertions (pure pipeline path) ------------------------------------
+
+        // Builds the same prompt request the live QueuePrompt resolves for this event's initiator POV.
+        // maxTokens is passed as 0 so the resolved template's own cap is the one that surfaces.
+        private static DiaryPromptRequest RequestFor(DiaryEvent diaryEvent)
+        {
+            return DiaryPipelineAdapters.BuildPromptRequest(
+                diaryEvent,
+                DiaryEvent.InitiatorRole,
+                personaRule: null,
+                psychotypeRule: null,
+                promptEnchantment: null,
+                humorCue: null,
+                priorInitiatorEntry: null,
+                entryText: null,
+                titleRequest: false,
+                maxTokens: 0);
+        }
+
+        // Asserts the live template selector routes this event to the expected reflection template shape.
+        private static void RequireTemplate(DiaryEvent diaryEvent, string expectedTemplateKey)
+        {
+            string templateKey = DiaryPromptPlanner.TemplateKeyFor(RequestFor(diaryEvent));
+            PawnDiaryRimTestScope.Require(
+                string.Equals(templateKey, expectedTemplateKey, StringComparison.OrdinalIgnoreCase),
+                "Expected the event to resolve the '" + expectedTemplateKey + "' template, but got '" + templateKey + "'.");
+        }
+
+        // Asserts the resolved template policy drives the expected per-template response cap (0 => the
+        // player's normal maxTokens; a positive value is the template's own cap).
+        private static void RequireTokenCap(DiaryEvent diaryEvent, string templateKey, int expectedCap)
+        {
+            DiaryTemplatePolicy template = RequestFor(diaryEvent).policy.Template(templateKey);
+            PawnDiaryRimTestScope.Require(
+                template.maxTokens == expectedCap,
+                "Expected the '" + templateKey + "' template to drive a " + expectedCap
+                + "-token cap, but its policy carried " + template.maxTokens + ".");
+        }
+
+        // Returns true when the template's rendered field list contains an enabled PromptEnchantment
+        // (the 'important context') field.
+        private static bool TemplateHasPromptEnchantmentField(string templateKey)
+        {
+            List<DiaryPromptFieldDef> fields = DiaryPromptTemplates.FieldsFor(templateKey);
+            if (fields == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < fields.Count; i++)
+            {
+                DiaryPromptFieldDef field = fields[i];
+                if (field != null
+                    && field.enabled
+                    && string.Equals(field.source, "PromptEnchantment", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // ----- captured-prompt string assertions --------------------------------------------------
+
+        private static void RequireContains(string prompt, string expected, string what)
+        {
+            PawnDiaryRimTestScope.Require(
+                prompt != null && prompt.IndexOf(expected, StringComparison.Ordinal) >= 0,
+                "The captured reflection prompt did not contain the expected " + what + " ('" + expected + "').");
+        }
+
+        // Only the default (non-reflection) system prompt teaches the "[[speech]]" direct-speech token,
+        // and every reflection template sets appendDirectSpeechInstruction=false, so a reflection prompt
+        // must never carry that marker.
+        private static void RequireDirectSpeechOmitted(string prompt)
+        {
+            PawnDiaryRimTestScope.Require(
+                prompt != null && prompt.IndexOf("[[speech]]", StringComparison.OrdinalIgnoreCase) < 0,
+                "A reflection prompt unexpectedly carried the direct-speech instruction marker '[[speech]]'.");
+        }
+
+        // Asserts the intentional current absence of the 'important context' field for quadrum/arc: the
+        // rendered label is nowhere in the captured prompt AND the template's field list omits it.
+        private static void RequireImportantContextFieldAbsent(string prompt, string templateKey)
+        {
+            PawnDiaryRimTestScope.Require(
+                prompt != null && prompt.IndexOf("important context", StringComparison.OrdinalIgnoreCase) < 0,
+                "The " + templateKey + " prompt unexpectedly rendered an 'important context' field.");
+            PawnDiaryRimTestScope.Require(
+                !TemplateHasPromptEnchantmentField(templateKey),
+                "The " + templateKey + " template unexpectedly defines an 'important context' (PromptEnchantment) field.");
+        }
+
+        // ----- cleanup ----------------------------------------------------------------------------
+
+        private static void RestoreReflectionTuning()
+        {
+            if (tuning == null)
+            {
+                return;
+            }
+
+            tuning.daySummaryEnabled = savedDaySummaryEnabled;
+            tuning.arcReflectionEnabled = savedArcReflectionEnabled;
+        }
+    }
+}

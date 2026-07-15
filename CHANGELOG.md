@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-07-15 — Made surroundings snapshots tolerate broken room-role recalculation.** Room-role
+  labels are optional prompt flavor, but RimWorld's label getter can lazily recalculate room stats and
+  throw when a room/performance mod leaves the live room graph transiently inconsistent. Pawn Diary
+  now omits only that label and continues recording the event and collecting the remaining context,
+  preventing `PlayLogAddPatch` and `GameComponentTick` from being skipped. Documented that the four
+  missing-id/callback integration messages emitted by the API-surface RimTest fixture are intentional
+  negative-test diagnostics, not failing shipped adapters. Rebuilt the committed DLL.
+
 - **2026-07-15 — Added the authoritative DLC master implementation order.** Added one strict Wave
   0–13 execution schedule above the Narrative Continuity and five source-specific plans. It resolves
   roadmap priority conflicts, assigns every subordinate phase to a release wave, freezes dependency
@@ -15,6 +23,69 @@
   and Odyssey plans with required shared emissions, provider boundaries, dependency gates, and
   cross-DLC acceptance cases. Planning/documentation only; no runtime behavior changed. The committed
   DLL was rebuilt solely for repository freshness.
+
+- **2026-07-15 — RimTest save/load + API/UI/DLC + coverage audit (plan Phases 6–8), Phase 5 scoped.**
+  Save/load (`§6.4`): two RimTest fixtures round-trip the diary model objects (`DiaryEvent` in every
+  status, `ArchivedDiaryEntry`, `PawnDiaryRecord`) and the repository/archive lookup indexes through a
+  real Scribe temp-file save+load, asserting Scribe-key preservation, PostLoadInit non-null
+  normalization, pending→not_generated collapse, and index rebuilds (the index is never serialized).
+  API/UI/DLC (`§7`): three fixtures cover the public `PawnDiaryApi` surface (null/blank/ineligible/valid
+  + master-toggle gating for every call), the non-visual diary-tab view-model contracts (year bucketing,
+  hot-vs-archive dedup, visibility filters, unread/pending status, POV/entry-role selection, death-page
+  lookup), and DLC-safety (base-game `DlcContext` accessors return empty and never `GetNamed`, match
+  strings stay inert, DLC-gated collectors no-op without the DLC; each DLC branch reports a result rather
+  than silently skipping). Verification (`§8`): `scripts/verify-coverage.ps1` builds the core mod, runs
+  every pure test project, builds the optional RimTest assembly when RimTest Redux is present, validates
+  all XML, and prints the EVT-01…EVT-23 requirement matrix — exiting non-zero on any uncovered row (kept
+  separate from `.githooks/verify.ps1`, which must not depend on the optional Workshop DLL). Transport
+  (`§6.3`, Phase 5) is intentionally deferred: its socket-free boundary is already covered by the
+  prompt-capture fixtures, the Harmony wiring is proven transitively by the 20 event suites, and the
+  remaining `LlmClient` internals cannot be exercised safely from an in-game test (static session-global
+  state; no injectable executor) — a bounded loopback endpoint or a narrow request-executor seam is
+  needed and belongs in its own reviewed PR (documented in the suite README). Full in-game suite now:
+  37 suites / 162 tests across EVT-01…EVT-23 plus prompt/voice/save-load/API/UI/DLC; core unchanged.
+
+- **2026-07-15 — RimTest prompt/voice coverage (plan Phases 3–4).** Added a Prompt Test Mode capture
+  path to the `PawnDiaryRimTestScope` harness — `EnablePromptCapture(level)` +
+  `CreateGeneratingAdultColonist()` + `CapturedPrompt(event, role)` — which flips `Prefs.DevMode` +
+  `promptTestMode` (snapshotted/restored in teardown) so a fired event runs the real resolve-template →
+  render-prompt pipeline, stamps the assembled system+user prompt on the event, and stops before any
+  `LlmClient` enqueue: exactly what the runtime would send, with zero network calls. The
+  generating-colonist factory is gated on capture being enabled, so a test can never send a real
+  request. On this seam: 10 prompt/voice fixtures (43 tests). Phase 3 (`§4`) — policy/domain + candidate-
+  key precedence, the Pair/Solo/reflection/neutral template matrices, and the Full/Compact context-detail
+  presets. Phase 4 (`§5`) — exhaustive loaded prompt-enchantment Def validation + a forced first-person
+  cue + neutral-template suppression; the writing-style precedence chain (external > hediff > custom >
+  base) and psychotype chain (external > custom > base) with the psychotype-before-style ordering; and
+  humor cue presence/absence under forced 0/1 effective chance. All resolution/rendering is exercised
+  through the live pipeline with deterministic (non-RNG-luck) forcing; no production code changed.
+
+- **2026-07-15 — RimTest event coverage (plan Phases 1–2).** Added 20 in-game RimTest suites on the
+  `PawnDiaryRimTestScope` harness covering every event source in `TEST_COVERAGE_PLAN.md §3`, EVT-02
+  through EVT-23 (interaction batch/ambient, thought immediate + progression, inspiration, ability,
+  tale, death, hediff, work, raid fan-out, mood condition, pawn progression, quest, ritual, arrival,
+  day/quadrum + arc reflection, external API, event windows, observed conditions) — 77 new test
+  methods. Each suite drives the real production trigger, or (for map/scanner/fan-out sources) the exact
+  per-unit production signal the scanner submits, keeping tests mapless and deterministic; chance-gated
+  routes force the XML effective chance to 0/1 rather than retrying. The harness's failure-safe cleanup
+  and no-leak audit were extended to the pawn-scoped accumulator stores (`pendingInteractionBatches`,
+  `pendingAmbientInteractionNotes`, `writtenAmbientInteractionNotes`, `activeThoughtProgressions`,
+  `pendingDayHediffs`, `writtenDayReflections`); suites that touch non-pawn-scoped stores (raid/quest
+  colony keys, event-window and observed-condition rows) clean them per-suite and are documented in the
+  suite README. Two suites need a disposable colony because their real trigger has un-restorable vanilla
+  side effects (EVT-10 death gives other colonists mood memories; EVT-13 raid fan-out targets the live
+  map) — flagged in the README. No production code changed; `PawnDiary.RimTest.dll` builds clean.
+
+- **2026-07-15 — RimTest harness (coverage plan Phase 0).** Extracted the reaction suite's setup and
+  teardown into a shared `PawnDiary.RimTest` harness, `PawnDiaryRimTestScope`, per
+  `TEST_COVERAGE_PLAN.md §2.1/§8`. One scope now owns isolated non-generating colonists, the settings
+  and RNG state a test touches, and failure-safe teardown of events, diary indexes, `diariesById`,
+  Social-log rows, relation/mental state, transient dedup/command keys, and the pawns — plus a no-leak
+  audit that fails the test if any test-owned state survives cleanup (the plan's "zero marked state"
+  gate). `PawnDiaryEventReactionTests` was rewritten onto the harness so each test only fires a trigger
+  and asserts an outcome (`FireAndRequireEvent`/`RequirePairRefs`/`RequireSoloRef`), and its three
+  cases are tagged EVT-01/EVT-07/EVT-08. Added `tests/PawnDiary.RimTest/README.md` as the suite's
+  operator guide. No production code or runtime behavior changed; this is a test-assembly refactor.
 
 - **2026-07-15 — Planned comprehensive automated coverage.** Added `TEST_COVERAGE_PLAN.md`, a staged
   requirement-to-test roadmap covering every documented event source, prompt policy/template,

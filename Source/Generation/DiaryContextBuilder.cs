@@ -353,7 +353,7 @@ namespace PawnDiary
 
             if (room != null)
             {
-                string roomRole = ExternalText(room.GetRoomRoleLabel());
+                string roomRole = TryReadRoomRoleLabel(room);
                 if (!string.IsNullOrWhiteSpace(roomRole))
                 {
                     parts.Add(roomRole);
@@ -427,6 +427,28 @@ namespace PawnDiary
             }
 
             return string.Join(", ", parts.ToArray());
+        }
+
+        // GetRoomRoleLabel looks like a simple label getter, but RimWorld can lazily recalculate every
+        // room stat and the room role inside it. A transiently inconsistent room graph (especially while
+        // performance/room-role mods are also patching that recalculation) can therefore throw. The role
+        // is optional prompt flavor, so omit only that fragment instead of aborting the diary event or the
+        // component tick. Do not log here: the same broken room can be sampled by many events in one tick.
+        private static string TryReadRoomRoleLabel(Room room)
+        {
+            if (room == null)
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return ExternalText(room.GetRoomRoleLabel());
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
         }
 
         // Returns visible, map-wide conditions that are active right now. These are prompt context,
