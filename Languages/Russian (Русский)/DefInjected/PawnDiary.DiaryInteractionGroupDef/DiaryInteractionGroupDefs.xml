@@ -256,11 +256,41 @@
   <ritualGravship.tone>с техническим давлением и сосредоточенностью дня запуска</ritualGravship.tone>
   <ritualGravship.tones.0>технично и процедурно, с упором на системы, тягу, полёт и касание земли</ritualGravship.tones.0>
   <ritualGravship.tones.1>напряжённо и по-экипажному, с предстартовыми проверками, жёсткой вибрацией и последствиями посадки</ritualGravship.tones.1>
+  <ritualAnomalyInvitation.label>Призывающие псионические ритуалы</ritualAnomalyInvitation.label>
+  <ritualAnomalyInvitation.instruction>завершён псионический ритуал, призывающий нечто к поселению; держись переданной точки зрения, намеренного призыва и неизвестности, не утверждай, что именно явилось и что случилось потом</ritualAnomalyInvitation.instruction>
+  <ritualAnomalyInvitation.tone>с намеренным призывом и тревогой неизвестности</ritualAnomalyInvitation.tone>
+  <ritualAnomalyInvitation.tones.0>настороженно и в ожидании ответа, не решая заранее, кто или что ответило</ritualAnomalyInvitation.tones.0>
+  <ritualAnomalyInvitation.tones.1>сосредоточенно на самом ритуале и решении позвать, а не на неподтверждённом результате</ritualAnomalyInvitation.tones.1>
+  <ritualAnomalyFleshAndWeather.label>Ритуалы плоти и враждебной погоды</ritualAnomalyFleshAndWeather.label>
+  <ritualAnomalyFleshAndWeather.instruction>завершён псионический ритуал, призванный сделать окружающий мир плотским или враждебным; покажи переданную роль и намеренное обострение, но не утверждай, что угроза явилась, навредила кому-либо или осталась</ritualAnomalyFleshAndWeather.instruction>
+  <ritualAnomalyFleshAndWeather.tone>с намеренным обострением и телесным ужасом среды</ritualAnomalyFleshAndWeather.tone>
+  <ritualAnomalyFleshAndWeather.tones.0>нутряно и тревожно, с упором на решение сделать мир опаснее</ritualAnomalyFleshAndWeather.tones.0>
+  <ritualAnomalyFleshAndWeather.tones.1>под тяжестью ожидаемой враждебной погоды или плоти, без выдуманного исхода</ritualAnomalyFleshAndWeather.tones.1>
+  <ritualAnomalyPredation.label>Хищные псионические ритуалы</ritualAnomalyPredation.label>
+  <ritualAnomalyPredation.instruction>завершён псионический ритуал, призванный отнять у цели навык, годы или псионические силы; действие, положение жертвы и ощущения определяй только по переданной точке зрения и фактам о другом поселенце, не выдумывай точную потерю и дальнейшее состояние</ritualAnomalyPredation.instruction>
+  <ritualAnomalyPredation.tone>с близким хищничеством и сдержанным псионическим вредом</ritualAnomalyPredation.tone>
+  <ritualAnomalyPredation.tones.0>близко и хищно, различая того, кто действовал, и того, кто терпел</ritualAnomalyPredation.tones.0>
+  <ritualAnomalyPredation.tones.1>нравственно напряжённо и телесно странно, не выходя за известные этой точке зрения факты</ritualAnomalyPredation.tones.1>
+  <ritualAnomalyMind.label>Ритуалы изменения разума</ritualAnomalyMind.label>
+  <ritualAnomalyMind.instruction>завершён псионический ритуал, призванный изменить память, чувства или поведение; сохраняй переданную точку зрения заклинателя, цели, участника или зрителя и не приписывай одной роли внутренние последствия другой</ritualAnomalyMind.instruction>
+  <ritualAnomalyMind.tone>с вторжением в разум и неизвестностью внутренних последствий</ritualAnomalyMind.tone>
+  <ritualAnomalyMind.tones.0>навязчиво и дезориентирующе, внимательно различая, чей разум описывают факты</ritualAnomalyMind.tones.0>
+  <ritualAnomalyMind.tones.1>псионически близко, но сдержанно в догадках, не выдумывая недоступные воспоминания и чувства</ritualAnomalyMind.tones.1>
+  <ritualAnomalyAbduction.label>Ритуалы скип-похищения</ritualAnomalyAbduction.label>
+  <ritualAnomalyAbduction.instruction>завершён псионический ритуал, призванный протянуть человека сквозь расстояние; сосредоточься на переданной роли, дальнем воздействии и опасности, называй похищенного и исход только при наличии явных фактов о цели</ritualAnomalyAbduction.instruction>
+  <ritualAnomalyAbduction.tone>с дальним воздействием, внезапной опасностью и неполным знанием</ritualAnomalyAbduction.tone>
+  <ritualAnomalyAbduction.tones.0>напряжённо сквозь невозможное расстояние, оставляя личность и исход неизвестными без явных фактов</ritualAnomalyAbduction.tones.0>
+  <ritualAnomalyAbduction.tones.1>с упором на попытку дотянуться и вырвать, а не на выдуманное прибытие или последствия</ritualAnomalyAbduction.tones.1>
+  <ritualAnomalyDeathRefusal.label>Ритуал отказа смерти</ritualAnomalyDeathRefusal.label>
+  <ritualAnomalyDeathRefusal.instruction>псионический ритуал наделил цель отказом смерти; опиши решение установить неестественную связь со смертью с переданной точки зрения, но не утверждай, что цель уже умерла или вернулась</ritualAnomalyDeathRefusal.instruction>
+  <ritualAnomalyDeathRefusal.tone>с мрачным намерением и незавершённой сделкой со смертью</ritualAnomalyDeathRefusal.tone>
+  <ritualAnomalyDeathRefusal.tones.0>торжественно и неестественно, как подготовку, а не воскрешение</ritualAnomalyDeathRefusal.tones.0>
+  <ritualAnomalyDeathRefusal.tones.1>с тихим вызовом смерти, не утверждая будущую смерть или возвращение</ritualAnomalyDeathRefusal.tones.1>
   <ritualAnomalyPsychic.label>Псионические ритуалы</ritualAnomalyPsychic.label>
-  <ritualAnomalyPsychic.instruction>завершён псионический ритуал Anomaly; передай тёмную атмосферу, страх, ощущение неестественного, давление пустоты и телесные последствия, не пытаясь всё объяснить</ritualAnomalyPsychic.instruction>
-  <ritualAnomalyPsychic.tone>с оккультным ужасом и непостижимым давлением на тело</ritualAnomalyPsychic.tone>
-  <ritualAnomalyPsychic.tones.0>тревожно и темно, со страхом, ощущением неестественного, давлением пустоты и телесным ужасом</ritualAnomalyPsychic.tones.0>
-  <ritualAnomalyPsychic.tones.1>обрывочно и наполовину непостижимо, будто язык отказывает вокруг ритуала</ritualAnomalyPsychic.tones.1>
+  <ritualAnomalyPsychic.instruction>завершён неизвестный или добавленный модом псионический ритуал Anomaly; используй переданную точку зрения и видимые факты, оставляй дальнейший эффект неизвестным и не выдумывай механики или последствия</ritualAnomalyPsychic.instruction>
+  <ritualAnomalyPsychic.tone>с оккультной неизвестностью и сдержанным псионическим ужасом</ritualAnomalyPsychic.tone>
+  <ritualAnomalyPsychic.tones.0>тревожно и настороженно, с опорой только на переданные роль и факты</ritualAnomalyPsychic.tones.0>
+  <ritualAnomalyPsychic.tones.1>обрывочно и неуверенно, без объяснения или предсказания последствий неизвестного ритуала</ritualAnomalyPsychic.tones.1>
   <ritualFinished.label>Ритуалы</ritualFinished.label>
   <ritualFinished.instruction>завершён ритуал; пиши о церемонии как о социальном, духовном или политическом событии с точки зрения поселенца и его роли</ritualFinished.instruction>
   <ritualFinished.tone>торжественно, с ощущением личных последствий</ritualFinished.tone>

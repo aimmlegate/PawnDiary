@@ -52,6 +52,9 @@
     <label>void monolith discovery</label>
     <windowKey>VoidMonolithDiscovery</windowKey>
     <enabled>true</enabled>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
     <timeoutTicks>-1</timeoutTicks>
     <dedupTicks>2500</dedupTicks>
     <restartOnStart>false</restartOnStart>
@@ -81,9 +84,12 @@
 
   <PawnDiary.DiaryEventWindowDef>
     <defName>VoidMonolithActivation</defName>
-    <label>void monolith activation</label>
+    <label>void monolith stirring</label>
     <windowKey>VoidMonolithActivation</windowKey>
     <enabled>true</enabled>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
     <timeoutTicks>-1</timeoutTicks>
     <dedupTicks>2500</dedupTicks>
     <restartOnStart>false</restartOnStart>
@@ -93,7 +99,7 @@
     <recordEndEvent>false</recordEndEvent>
     <recordEndWithoutActive>false</recordEndWithoutActive>
     <recordTimeoutEvent>false</recordTimeoutEvent>
-    <instruction>write the pawn's completed interaction with the void monolith as extreme dark anomaly dread; focus on the psychic pressure, the structure changing, and the sense that something beyond the colony has noticed</instruction>
+    <instruction>write the pawn's deliberate first stirring of the void monolith as a threshold crossed; focus on the activator's visible and psychic experience, and do not invent what the monolith will cause next</instruction>
     <colorCue>extremeDark</colorCue>
     <startTextKey>PawnDiary.Event.EventWindow.VoidMonolithActivation.Start</startTextKey>
 
@@ -101,8 +107,120 @@
       <li>
         <source>VoidMonolith</source>
         <signal>activated</signal>
+        <matchDefNames>
+          <li>Stirring</li>
+        </matchDefNames>
       </li>
     </startSignals>
+
+    <!-- One primary monolith campaign exists in current vanilla saves, so epoch 0 is a stable
+         per-save arc identity. A later source-owned reset/restart feature may introduce higher epochs
+         without rewriting these already-saved references. -->
+    <narrativeEvidence>
+      <facet>journey_chapter</facet>
+      <phase>stirring</phase>
+      <arcKey>anomaly-monolith|0</arcKey>
+      <salience>major</salience>
+      <beliefTopics>
+        <li>monolith</li>
+        <li>void</li>
+        <li>escalation</li>
+      </beliefTopics>
+    </narrativeEvidence>
+
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>VoidMonolithWaking</defName>
+    <label>void monolith waking</label>
+    <windowKey>VoidMonolithWaking</windowKey>
+    <enabled>true</enabled>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>SubjectPawn</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>write the pawn's deliberate waking of the void monolith as a second escalation; focus on the activator's visible and psychic experience, and do not invent hidden knowledge or later consequences</instruction>
+    <colorCue>extremeDark</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.VoidMonolithWaking.Start</startTextKey>
+
+    <startSignals>
+      <li>
+        <source>VoidMonolith</source>
+        <signal>activated</signal>
+        <matchDefNames>
+          <li>Waking</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+
+    <narrativeEvidence>
+      <facet>journey_chapter</facet>
+      <phase>waking</phase>
+      <arcKey>anomaly-monolith|0</arcKey>
+      <salience>major</salience>
+      <beliefTopics>
+        <li>monolith</li>
+        <li>void</li>
+        <li>escalation</li>
+      </beliefTopics>
+    </narrativeEvidence>
+
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>VoidMonolithVoidAwakened</defName>
+    <label>void awakened</label>
+    <windowKey>VoidMonolithVoidAwakened</windowKey>
+    <enabled>true</enabled>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>SubjectPawn</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>write the pawn's deliberate awakening of the active void chapter as a final escalation of the monolith; stay with the activator's visible and psychic experience, without claiming either terminal choice or outcome</instruction>
+    <colorCue>extremeDark</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.VoidMonolithVoidAwakened.Start</startTextKey>
+
+    <startSignals>
+      <li>
+        <source>VoidMonolith</source>
+        <signal>activated</signal>
+        <matchDefNames>
+          <li>VoidAwakened</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+
+    <narrativeEvidence>
+      <facet>journey_chapter</facet>
+      <phase>void_awakened</phase>
+      <arcKey>anomaly-monolith|0</arcKey>
+      <salience>major</salience>
+      <beliefTopics>
+        <li>monolith</li>
+        <li>void</li>
+        <li>escalation</li>
+      </beliefTopics>
+    </narrativeEvidence>
 
     <promptEnabled>false</promptEnabled>
     <promptWeight>0</promptWeight>

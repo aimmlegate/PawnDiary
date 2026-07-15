@@ -1,18 +1,16 @@
 # Pawn Diary — Anomaly Support Implementation Plan
 
-Status: scope-review draft, 2026-07-15. The RimWorld 1.6 feasibility spike is complete for exact
-psychic-ritual routing, monolith activation chapters, study-note milestones, containment escapes,
-visible creepjoiner outcomes, ghoul infusion, and both terminal void choices. This document changes
-no production behavior.
+Status: A0 implemented as Master Wave 2, 2026-07-15; A1–A3 remain implementation-ready plans. The
+RimWorld 1.6 feasibility spike is complete for study-note milestones, containment escapes, visible
+creepjoiner outcomes, ghoul infusion, and both terminal void choices. Production now includes the A0
+exact psychic-ritual routing and monolith activation chapters described below.
 
 Scheduling authority: implement Anomaly phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Anomaly.
 
-Anomaly is the next **planning artifact**, because it is the only current RimWorld DLC without a
-standalone implementation plan in this workspace. That does not silently replace the delivery
-priorities in `design/DLC_ATMOSPHERE_RESEARCH.md`: the small ritual-guidance slice can ship
-independently, while the deeper Anomaly arc should still be scheduled deliberately beside the
-higher-priority Biotech growth/family and Odyssey journey work.
+Anomaly was the final standalone DLC planning artifact. Its small A0 semantic-precision release has
+now shipped independently; the deeper A1–A3 arc remains scheduled after the higher-priority Biotech
+growth/family and Odyssey journey waves in the master plan.
 
 The plan turns Anomaly's already broad atmospheric coverage into a coherent human story:
 curiosity becomes knowledge, knowledge enables a choice, containment can fail, apparently human
@@ -20,9 +18,10 @@ arrivals may reveal themselves, bodily identity can be surrendered, and the void
 receives an explicit answer. It reuses Pawn Diary's current ritual, event-window, Tale, event
 catalog, XML policy, generation, and persistence paths instead of building a parallel DLC system.
 
-Cross-DLC enrichment follows `DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md`. The XML-only A0
-ritual split may ship independently, but A1–A3 source pages must use the shared evidence/reference
-contract once it exists. The shared layer never weakens Anomaly's spoiler firewall.
+Cross-DLC enrichment follows `DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md`. A0's ritual split is
+XML-only; its exact monolith windows reuse the existing hook and attach only visible N1 chapter
+evidence. A1–A3 source pages must use the same shared evidence/reference contract. The shared layer
+never weakens Anomaly's spoiler firewall.
 
 Implementation must follow `AGENTS.md` and `skills/pawndiary-engineering/SKILL.md`: collect live
 RimWorld state only in DLC-gated impure adapters, copy it into plain facts, keep decisions pure and
@@ -1401,6 +1400,10 @@ Each numbered phase is a separate smallest-safe change. Do not implement all rel
 
 ### Phase A0.0 — Reconfirm baseline and freeze XML keys
 
+> **Implementation status (2026-07-15): complete.** Local installed Defs reconfirmed all 16 ritual
+> keys plus `Stirring`, `Waking`, `VoidAwakened`, and automatic `Gleaming`; tests freeze the six
+> group names, orders `770–775`, two new window names, exact classifier keys, and package gates.
+
 - Re-run CodeGraph on ritual classification and event-window ownership.
 - Re-check the installed psychic ritual and monolith level defNames.
 - Freeze six group defNames, two new window defNames, classifier keys, orders, and package gate.
@@ -1408,11 +1411,17 @@ Each numbered phase is a separate smallest-safe change. Do not implement all rel
 
 **Exit gate:** reviewed key table and failing tests that express the intended classification.
 
-The XML-only A0.0–A0.2 work does not depend on Narrative Continuity. Narrative Continuity N0–N1 must
-land before A1.1 creates the general Anomaly catalog route/persistence; A1.0 may freeze its pure
-contracts in parallel using the canonical shared tokens.
+A0.0–A0.1 remain XML-only and do not depend on Narrative Continuity. A0.2 reuses the N1 write seam
+only to freeze exact, visible monolith chapter evidence on its existing pages; it still adds no live
+Anomaly provider. Narrative Continuity N0–N1 must land before A1.1 creates the general Anomaly
+catalog route/persistence; A1.0 may freeze its pure contracts in parallel using the canonical shared
+tokens.
 
 ### Phase A0.1 — Exact ritual guidance
+
+> **Implementation status (2026-07-15): complete.** Six exact families and English/Russian
+> DefInjected text shipped; the package-gated order-`776` token fallback remains for unknown/modded
+> psychic rituals, with page count and role fan-out unchanged.
 
 - Add six XML groups and DefInjected translations.
 - Preserve the generic fallback at order 776.
@@ -1422,6 +1431,11 @@ contracts in parallel using the canonical shared tokens.
 **Exit gate:** page count and role fan-out unchanged; all 16 defs exact; unknown ritual fallback.
 
 ### Phase A0.2 — Monolith chapter split
+
+> **Implementation status (2026-07-15): complete.** `VoidMonolithActivation` now owns only
+> `Stirring`; exact `VoidMonolithWaking` and `VoidMonolithVoidAwakened` windows own the next two
+> player-driven levels. Each saves visible `journey_chapter` evidence/reference on
+> `anomaly-monolith|0`; `Gleaming` stays silent and there is still no live Anomaly provider.
 
 - Restrict existing activation window to Stirring.
 - Add exact Waking and Void Awakened windows and Keyed fallback text.

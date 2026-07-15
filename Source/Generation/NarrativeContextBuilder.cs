@@ -1,7 +1,8 @@
-// Event-time adapter for Narrative Continuity. Future DLC sources supply already-authorized, plain
-// evidence and their own guarded factual candidates; this builder snapshots XML policy on the main
-// thread and calls the pure selector. N1 deliberately ships no real DLC provider or hook: the only
-// candidate lane is the synthetic/core fixture used by tests and the future N2 source seam.
+// Event-time adapter for Narrative Continuity. Source-owned events supply already-authorized, plain
+// evidence and future guarded providers supply factual candidates; this builder snapshots XML policy
+// on the main thread and calls the pure selector. Master Wave 2's exact monolith windows are the first
+// real evidence emitter, but there is still no live DLC provider: candidates remain synthetic fixtures
+// until the later N2/N3 provider waves.
 //
 // New to C#/RimWorld? See AGENTS.md ("DLC-safety" and "architecture barriers").
 using System;
@@ -22,8 +23,8 @@ namespace PawnDiary
         public string povPawnId = string.Empty;
         public string povRole = string.Empty;
         public List<NarrativeEvidence> evidence = new List<NarrativeEvidence>();
-        // N1 has no live provider registry. Tests provide core fixture candidates through this plain list;
-        // N2 will replace that narrow seam with source-owned guarded provider adapters.
+        // There is still no live provider registry. Tests provide core fixture candidates through this
+        // plain list; N2/N3 will replace that narrow seam with guarded provider adapters.
         public List<NarrativeLensCandidate> coreCandidates = new List<NarrativeLensCandidate>();
         public List<string> recentSelectedCandidateKeys = new List<string>();
         public PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full;

@@ -162,12 +162,15 @@ Generation starts only after an event exists in the saved hot store.
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
 
-**Narrative Continuity (Master Wave 1 / N1)** now supplies the shared persistence and optional prompt
-seam for future DLC integrations. Each first-person event POV can save bounded, explicitly known
-evidence, prose-free references, selected-candidate keys, and frozen `narrativeContext`; old saves
-normalize all four to empty. `NarrativeContextBuilder` snapshots `DiaryNarrativeContinuityDef` on the
-main thread and invokes the pure selector. Its only N1 candidate lane is a synthetic/core test fixture:
-there is no real DLC provider, Harmony hook, live DLC read, or new source-owned page behavior yet.
+**Narrative Continuity (Master Waves 1–2 / N1 + Anomaly A0.2)** supplies the shared persistence and
+optional prompt seam for DLC integrations. Each first-person event POV can save bounded, explicitly
+known evidence, prose-free references, selected-candidate keys, and frozen `narrativeContext`; old
+saves normalize all four to empty. `NarrativeContextBuilder` snapshots
+`DiaryNarrativeContinuityDef` on the main thread and invokes the pure selector. Exact Stirring,
+Waking, and Void Awakened monolith windows are the first real source-owned evidence emitters: each
+saves a `journey_chapter` phase and `anomaly-monolith|0` reference only after its canonical page is
+authorized. There is still no live DLC lens provider or new hook, so these rows add no prompt field
+by themselves; provider candidates remain synthetic fixtures until later N2/N3 waves.
 
 `DiaryPipelineAdapters` copy the frozen context into the plain payload, and first-person template
 fields render it only when non-empty, prefixed by DefInjected policy wording. All neutral chronicle and
@@ -947,7 +950,7 @@ it onto the bus.
 | DayReflection | Sleep/rest flush | `DayReflectionSignal` (aggregation flush) | solo day/quadrum reflection |
 | ArcReflection | Sleep/rest flush + major psylink/xenotype progression trigger | `ArcReflectionSignal` (memory aggregation flush) | solo yearly arc reflection |
 | Quest | `Quest.Accept`/`End` + state scan | `QuestFanoutSignal` | fan-out |
-| Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out; XML group guidance plus role/perspective instruction |
+| Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out; XML group guidance plus role/perspective instruction. Anomaly's 16 installed psychic rituals route exactly into invitation, flesh/weather, predation, mind, abduction, or death-refusal guidance before the generic modded fallback. |
 | Death | `Pawn.Kill` + death TaleDefs | `DeathFallbackSignal` (+ Tale death routes) | neutral description |
 | Arrival | Starting scan + `Pawn.SetFaction` | `ArrivalSignal` | neutral description |
 | External | `PawnDiaryApi.SubmitEvent` / `SubmitPromptEntry` (other mods) | `ExternalEventSignal` | solo / pair |
@@ -969,13 +972,30 @@ it onto the bus.
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns and the shared random-generation setting. |
 | Raids and infestations | `IncidentWorker.TryExecute` | Fan-out to eligible colonists; ordinary raids can delay generation. |
 | Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Accepted quests are bookkeeping/event-window signals only. Completed and failed quest outcomes create shared-effort entries; prompt labels reject placeholder names and humanize code-like quest defNames. |
-| Event windows | `IncidentWorker.TryExecute`, `Quest` lifecycle, `Thing.SpawnSetup`, `SignalAction_Letter`, `CompProximityLetter`, `Building_VoidMonolith.Activate`, `Pawn_AgeTracker.BirthdayBiological`, `Pawn_HealthTracker.AddHediff`, `PrisonBreakUtility.StartPrisonBreak` | XML starts/ends narrative windows or one-shot events, writes phase entries, and can bias prompts while active. |
+| Event windows | `IncidentWorker.TryExecute`, `Quest` lifecycle, `Thing.SpawnSetup`, `SignalAction_Letter`, `CompProximityLetter`, `Building_VoidMonolith.Activate`, `Pawn_AgeTracker.BirthdayBiological`, `Pawn_HealthTracker.AddHediff`, `PrisonBreakUtility.StartPrisonBreak` | XML starts/ends narrative windows or one-shot events, writes phase entries, and can bias prompts while active. A Def may also attach an optional plain `narrativeEvidence` template after a page exists; exact monolith levels use this without authorizing extra pages. |
 | Observed conditions | Periodic live-state scan (map danger, active game conditions, evidence things, pawn hediffs) | Lasting states read from live state, not a guessed duration: bias prompts while present, optionally record start/end pages, and end after a debounce when live state stops showing them (Plan 12; see §5.1). |
 | Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
 | Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry, scaled by the shared random-generation setting. |
 | Day reflections | Sleep/rest trigger | One reflective page per pawn/day when important signals exist. Near the end of a quadrum, a pawn with enough important entries may write one longer quadrum reflection instead; that skips the ordinary daily reflection for that night. |
 | Arc reflections | Sleep/rest trigger and major psylink/xenotype progression trigger | Rare yearly life-arc page per pawn, with optional extra major-event pages after the configured gap up to `arcReflectionMaxEntriesPerYear` (default 2). The sleep/rest annual check is gated by `arcReflectionEnabled`, not by day summaries. It samples existing hot/archive diary pages from the current year, de-duplicates by event ID, excludes prior reflections/death descriptions/recently used memories, and never stores a separate history fact database. |
 | External mod events | `PawnDiaryApi.SubmitEvent` / `SubmitPromptEntry` called by adapter mods (§3.7, `INTEGRATIONS.md`) | Solo or pairwise page from another mod. Ordinary `SubmitEvent` requires External-domain group XML to claim the submitted `eventKey`; wrapped prompt entries can be group-less because their protected `promptInstruction` supplies the entry instruction. |
+
+**Anomaly semantic precision (Master Wave 2 / A0.0–A0.2).** Psychic-ritual live capture and recovery
+construct the stable classifier key `PsychicRitual;<PsychicRitualDef.defName>`. Orders `770–775` are six
+package-gated exact families covering all 16 installed RimWorld 1.6 defs; the order-`776`
+`ritualAnomalyPsychic` token row remains the future/modded fallback. The exact rows and fallback are
+hidden from settings when `Ludeon.RimWorld.Anomaly` is absent. They change only prompt guidance—not
+page count, role fan-out, success criteria, or captured facts—and every instruction defers agency and
+victimhood to `psychic_ritual_perspective`/target facts rather than asserting an unverified result.
+
+`Building_VoidMonolith.Activate(Pawn)` still supplies one completed `VoidMonolith;activated` signal
+with the reached level defName and exact activator. XML now maps only `Stirring` to the stable existing
+`VoidMonolithActivation` window, `Waking` to `VoidMonolithWaking`, and `VoidAwakened` to
+`VoidMonolithVoidAwakened`; discovery remains its own prologue and automatic `Gleaming` matches no
+window. All three activation pages are one-shot `SubjectPawn` rows with distinct localized fallback
+text. Their optional `narrativeEvidence` blocks save visible `journey_chapter` phases
+`stirring`/`waking`/`void_awakened`, major salience, and the primary per-save arc key
+`anomaly-monolith|0`. No hidden entity, host, downside, terminal choice, or terminal outcome is saved.
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,

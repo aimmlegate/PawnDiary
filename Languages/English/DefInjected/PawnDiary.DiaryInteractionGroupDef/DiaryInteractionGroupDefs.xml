@@ -187,11 +187,41 @@
   <ritualGravship.tone>with technical pressure and launch-day focus</ritualGravship.tone>
   <ritualGravship.tones.0>technical and procedural, centered on systems, thrust, flight, and touchdown</ritualGravship.tones.0>
   <ritualGravship.tones.1>tense and crew-minded, with launch checks, hard vibration, and landing consequence</ritualGravship.tones.1>
+  <ritualAnomalyInvitation.label>Anomaly invitations</ritualAnomalyInvitation.label>
+  <ritualAnomalyInvitation.instruction>a psychic ritual meant to call something toward the colony completed—center the pawn&apos;s captured perspective, deliberate invitation, and uncertainty; do not claim what arrived or what happened afterward</ritualAnomalyInvitation.instruction>
+  <ritualAnomalyInvitation.tone>with deliberate invitation and uncertain dread</ritualAnomalyInvitation.tone>
+  <ritualAnomalyInvitation.tones.0>expectant and uneasy, listening for an answer without deciding what answered</ritualAnomalyInvitation.tones.0>
+  <ritualAnomalyInvitation.tones.1>ritual-focused and watchful, dwelling on the choice to call rather than an unverified result</ritualAnomalyInvitation.tones.1>
+  <ritualAnomalyFleshAndWeather.label>Flesh and hostile weather rituals</ritualAnomalyFleshAndWeather.label>
+  <ritualAnomalyFleshAndWeather.instruction>a psychic ritual meant to make the environment bodily or hostile completed—write the pawn&apos;s supplied role and the deliberate escalation, but do not claim that a threat arrived, harmed anyone, or persisted</ritualAnomalyFleshAndWeather.instruction>
+  <ritualAnomalyFleshAndWeather.tone>with deliberate escalation and bodily environmental dread</ritualAnomalyFleshAndWeather.tone>
+  <ritualAnomalyFleshAndWeather.tones.0>visceral and apprehensive, focused on choosing to make the world less safe</ritualAnomalyFleshAndWeather.tones.0>
+  <ritualAnomalyFleshAndWeather.tones.1>heavy with hostile weather or fleshly expectation, without inventing the aftermath</ritualAnomalyFleshAndWeather.tones.1>
+  <ritualAnomalyPredation.label>Predatory psychic rituals</ritualAnomalyPredation.label>
+  <ritualAnomalyPredation.instruction>a psychic ritual meant to take skill, years, or psychic capacity from a target completed—attribute agency, victimhood, and sensation only through the supplied perspective and other-pawn facts; do not invent the exact loss or later condition</ritualAnomalyPredation.instruction>
+  <ritualAnomalyPredation.tone>with intimate predation and controlled psychic harm</ritualAnomalyPredation.tone>
+  <ritualAnomalyPredation.tones.0>close and predatory, attentive to who acted and who endured without swapping their experiences</ritualAnomalyPredation.tones.0>
+  <ritualAnomalyPredation.tones.1>morally tense and bodily strange, stopping at the facts the captured perspective can know</ritualAnomalyPredation.tones.1>
+  <ritualAnomalyMind.label>Mind-altering psychic rituals</ritualAnomalyMind.label>
+  <ritualAnomalyMind.instruction>a psychic ritual meant to alter memory, feeling, or behavior completed—keep each pawn inside the supplied invoker, target, participant, or spectator perspective; do not give one role another pawn&apos;s inner effects</ritualAnomalyMind.instruction>
+  <ritualAnomalyMind.tone>with invasive mental pressure and uncertain interior consequence</ritualAnomalyMind.tone>
+  <ritualAnomalyMind.tones.0>invasive and disorienting, careful about whose mind the supplied facts describe</ritualAnomalyMind.tones.0>
+  <ritualAnomalyMind.tones.1>psychically close but epistemically restrained, never inventing inaccessible memories or feelings</ritualAnomalyMind.tones.1>
+  <ritualAnomalyAbduction.label>Skip abduction rituals</ritualAnomalyAbduction.label>
+  <ritualAnomalyAbduction.instruction>a psychic ritual meant to pull a person through distance completed—focus on the pawn&apos;s supplied role, reach, and danger; name an abductee or outcome only when the captured target facts explicitly supply it</ritualAnomalyAbduction.instruction>
+  <ritualAnomalyAbduction.tone>with distant reach, sudden danger, and incomplete knowledge</ritualAnomalyAbduction.tone>
+  <ritualAnomalyAbduction.tones.0>tense across impossible distance, with identity and outcome left uncertain unless supplied</ritualAnomalyAbduction.tones.0>
+  <ritualAnomalyAbduction.tones.1>focused on the act of reaching and pulling, not an invented arrival or aftermath</ritualAnomalyAbduction.tones.1>
+  <ritualAnomalyDeathRefusal.label>Death-refusal ritual</ritualAnomalyDeathRefusal.label>
+  <ritualAnomalyDeathRefusal.instruction>a psychic ritual imbued a target with death refusal—write the choice to establish an unnatural relationship with death from the supplied perspective; do not claim that the target has died or returned</ritualAnomalyDeathRefusal.instruction>
+  <ritualAnomalyDeathRefusal.tone>with grave intent and an unfinished bargain with death</ritualAnomalyDeathRefusal.tone>
+  <ritualAnomalyDeathRefusal.tones.0>solemn and unnatural, treating the ritual as preparation rather than resurrection</ritualAnomalyDeathRefusal.tones.0>
+  <ritualAnomalyDeathRefusal.tones.1>quietly defiant toward death, while leaving any future death or return unclaimed</ritualAnomalyDeathRefusal.tones.1>
   <ritualAnomalyPsychic.label>Psychic rituals</ritualAnomalyPsychic.label>
-  <ritualAnomalyPsychic.instruction>an Anomaly psychic ritual completed - write the aftermath as dark atmosphere, fear, wrongness, void pressure, body sensation, and consequences that should not be fully explained</ritualAnomalyPsychic.instruction>
-  <ritualAnomalyPsychic.tone>with occult dread and incomprehensible pressure against the body</ritualAnomalyPsychic.tone>
-  <ritualAnomalyPsychic.tones.0>unsettling and dark, with fear, wrongness, void pressure, and sensory dread</ritualAnomalyPsychic.tones.0>
-  <ritualAnomalyPsychic.tones.1>fragmentary and half-incomprehensible, as if language is failing around the ritual</ritualAnomalyPsychic.tones.1>
+  <ritualAnomalyPsychic.instruction>an unknown or modded Anomaly psychic ritual completed—use the supplied perspective and visible facts, keep any downstream effect uncertain, and do not invent mechanics or consequences</ritualAnomalyPsychic.instruction>
+  <ritualAnomalyPsychic.tone>with occult uncertainty and restrained psychic dread</ritualAnomalyPsychic.tone>
+  <ritualAnomalyPsychic.tones.0>unsettling and watchful, grounded in the role and facts that were actually supplied</ritualAnomalyPsychic.tones.0>
+  <ritualAnomalyPsychic.tones.1>fragmentary and uncertain, refusing to explain or predict an unknown ritual&apos;s consequence</ritualAnomalyPsychic.tones.1>
   <ritualFinished.label>Rituals</ritualFinished.label>
   <ritualFinished.instruction>a ritual completed—write the ceremony as a social, spiritual, or political moment from the pawn&apos;s assigned place in it</ritualFinished.instruction>
   <ritualFinished.tone>with ceremonial weight and personal consequence</ritualFinished.tone>

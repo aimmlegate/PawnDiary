@@ -7,8 +7,14 @@
   <VoidMonolithDiscovery.label>void monolith discovery</VoidMonolithDiscovery.label>
   <VoidMonolithDiscovery.instruction>write the pawn's first discovery of the void monolith as extreme dark anomaly dread; make the structure feel inhuman and psychic, but keep the moment grounded in what the pawn can see and feel</VoidMonolithDiscovery.instruction>
 
-  <VoidMonolithActivation.label>void monolith activation</VoidMonolithActivation.label>
-  <VoidMonolithActivation.instruction>write the pawn's completed interaction with the void monolith as extreme dark anomaly dread; focus on the psychic pressure, the structure changing, and the sense that something beyond the colony has noticed</VoidMonolithActivation.instruction>
+  <VoidMonolithActivation.label>void monolith stirring</VoidMonolithActivation.label>
+  <VoidMonolithActivation.instruction>write the pawn&apos;s deliberate first stirring of the void monolith as a threshold crossed; focus on the activator&apos;s visible and psychic experience, and do not invent what the monolith will cause next</VoidMonolithActivation.instruction>
+
+  <VoidMonolithWaking.label>void monolith waking</VoidMonolithWaking.label>
+  <VoidMonolithWaking.instruction>write the pawn&apos;s deliberate waking of the void monolith as a second escalation; focus on the activator&apos;s visible and psychic experience, and do not invent hidden knowledge or later consequences</VoidMonolithWaking.instruction>
+
+  <VoidMonolithVoidAwakened.label>void awakened</VoidMonolithVoidAwakened.label>
+  <VoidMonolithVoidAwakened.instruction>write the pawn&apos;s deliberate awakening of the active void chapter as a final escalation of the monolith; stay with the activator&apos;s visible and psychic experience, without claiming either terminal choice or outcome</VoidMonolithVoidAwakened.instruction>
 
   <Birthday.label>birthday</Birthday.label>
   <Birthday.instruction>write the pawn's birthday as an uneasy RimWorld milestone, not a celebration; focus on age, fragility, and what another year can cost on the rim</Birthday.instruction>

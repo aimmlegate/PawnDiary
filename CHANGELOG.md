@@ -1,5 +1,17 @@
 # Changelog
 
+- **2026-07-15 — Completed DLC integration: Master Wave 2 / Anomaly A0.0–A0.2.** Reconfirmed the
+  installed RimWorld 1.6 catalog and split all 16 Anomaly psychic rituals into six exact,
+  package-gated semantic families (invitation, flesh/weather, predation, mind, abduction, and death
+  refusal), retaining the truth-bounded generic fallback for future/modded rituals. Split the
+  existing monolith activation route into mutually exclusive Stirring, Waking, and Void Awakened
+  one-shot chapters while leaving discovery separate and automatic Gleaming silent. Exact monolith
+  pages now attach visible N1 `journey_chapter` evidence/references on `anomaly-monolith|0` through an
+  optional XML event-window template; no provider, new Harmony hook, hidden state, or extra page
+  source was added. Added exhaustive shipped-XML classification/localization tests, a package-aware
+  RimTest page/evidence fixture, English and Russian text, prompt/coverage documentation, and rebuilt
+  the committed core/RimTest DLLs.
+
 - **2026-07-15 — Completed DLC integration: Master Wave 1 / Narrative Continuity N1.** Added
   additive per-first-person-POV Scribe state for knowledge-gated evidence, compact references,
   selected candidate keys, and frozen narrative context; old saves normalize to empty state. Archive

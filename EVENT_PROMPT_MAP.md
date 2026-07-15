@@ -140,6 +140,9 @@ Important boundaries in the diagram:
 - `DiaryEvents.Submit` is the bus for catalog sources. Event-window and observed-condition page
   recording bypass the bus after their own generic policy has matched; they still create normal
   `DiaryEvent` records and use the same generation path.
+- An exact event-window Def may attach XML-owned `narrativeEvidence` only after its canonical page is
+  created. The current three monolith activation chapters use this for prose-free N1 references; it
+  does not authorize another page or select prompt context without a later provider.
 - Event-window pages save `event_window=` context. Observed-condition pages save
   `observed_condition=` context. Those markers are not separate prompt domains today, so generated
   pages from those systems use the saved defName plus the normal Interaction fallback unless a more
@@ -338,6 +341,20 @@ Ritual fan-out keeps both layers of guidance: the matched XML group's instructio
 specific rite, then the localized participant-role instruction establishes what this pawn did. This
 is why Alpha/VIE ritual groups affect prompt content instead of only the settings label.
 
+Anomaly psychic rituals classify by the full saved key
+`PsychicRitual;<PsychicRitualDef.defName>`. Exact package-gated families precede the generic
+order-`776` fallback and leave page count and role fan-out unchanged:
+
+| Group / order | Exact installed keys | Prompt boundary |
+|---|---|---|
+| `ritualAnomalyInvitation` / `770` | `VoidProvocation`, `SummonAnimals`, `SummonShamblers` | Deliberate invitation and uncertainty; no claimed arrival. |
+| `ritualAnomalyFleshAndWeather` / `771` | `SummonPitGate`, `SummonFleshbeasts`, `SummonFleshbeastsPlayer`, `BloodRain` | Deliberate hostile environment; no claimed harm or persistence. |
+| `ritualAnomalyPredation` / `772` | `Philophagy`, `Chronophagy`, `Psychophagy` | Taking from a target, with agency/victimhood limited to supplied perspective facts. |
+| `ritualAnomalyMind` / `773` | `Brainwipe`, `PleasurePulse`, `NeurosisPulse` | Mental alteration without giving one role another pawn's inner effects. |
+| `ritualAnomalyAbduction` / `774` | `SkipAbduction`, `SkipAbductionPlayer` | Reach and danger; identity/outcome only when target facts supply them. |
+| `ritualAnomalyDeathRefusal` / `775` | `ImbueDeathRefusal` | Establishing death refusal; never claims death or resurrection already occurred. |
+| `ritualAnomalyPsychic` / `776` | token fallback for unknown/modded `PsychicRitual;...` keys | Visible supplied facts only; downstream effect remains uncertain. |
+
 Mod-compatibility groups that materially change routing/shape (all target-gated; Thought rows still
 use the global mood-memory policy):
 
@@ -532,10 +549,13 @@ Current event-window prompt candidates: three windows keep a decaying prompt bia
 prompts (weight `12`, normal multiplier `0.7`) for up to three days. `ShortCircuitAftermath`
 (incident `ShortCircuit`, weight `3`, six hours) and `SelfTameJoined` (incident `SelfTame`, weight
 `3`, half a day) record no pages at all — they only enter the weighted candidate pool so the moment
-sometimes flavors a page. The six original event windows (`VoidMonolithDiscovery`,
-`VoidMonolithActivation`, `Birthday`, `HeartAttack`, `PrisonBreak`, `AncientDanger`) still set
-`keepActive=false`, `promptEnabled=false`, and `promptWeight=0`; they record one-shot pages but do
-not bias later prompts while active.
+sometimes flavors a page. Eight one-shot windows (`VoidMonolithDiscovery`, the exact
+`VoidMonolithActivation`/`VoidMonolithWaking`/`VoidMonolithVoidAwakened` chapters, `Birthday`,
+`HeartAttack`, `PrisonBreak`, `AncientDanger`) set `keepActive=false`, `promptEnabled=false`, and
+`promptWeight=0`; they record pages but do not bias later prompts. The three activation chapters
+match only reached levels `Stirring`, `Waking`, and `VoidAwakened`, respectively; automatic
+`Gleaming` matches none. Each saves a visible N1 `journey_chapter` reference on
+`anomaly-monolith|0`, but no narrative prompt text is selected until a future provider exists.
 
 Six compatibility windows use the same one-shot/no-prompt shape plus the package-gated
 `MapWitness` scope: VEE earthquake, meteorite shower, space battle/shuttle crash, and purple

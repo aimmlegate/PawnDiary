@@ -1004,7 +1004,9 @@
   <PawnDiary.Event.EventWindow.Generic.timeout>{0}: ожидание ответа о {1} так и осталось без ответа.</PawnDiary.Event.EventWindow.Generic.timeout>
   <PawnDiary.Event.EventWindow.Generic.Instruction>напиши о продолжающемся событии «{0}»; используй только переданные факты и ясно передай неуверенность поселенца</PawnDiary.Event.EventWindow.Generic.Instruction>
   <PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>{0}: обнаружение монолита пустоты: {1}.</PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>
-  <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0}: взаимодействие с монолитом пустоты завершено: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
+  <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0}: первая настройка монолита пустоты: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
+  <PawnDiary.Event.EventWindow.VoidMonolithWaking.Start>{0}: дальнейшее пробуждение монолита пустоты: {1}.</PawnDiary.Event.EventWindow.VoidMonolithWaking.Start>
+  <PawnDiary.Event.EventWindow.VoidMonolithVoidAwakened.Start>{0}: пробуждение пустоты через монолит: {1}.</PawnDiary.Event.EventWindow.VoidMonolithVoidAwakened.Start>
   <PawnDiary.Event.EventWindow.Birthday.Start>{0}: биологический возраст {1}.</PawnDiary.Event.EventWindow.Birthday.Start>
   <PawnDiary.Event.EventWindow.HeartAttack.Start>{0}: сердечный приступ: {1}.</PawnDiary.Event.EventWindow.HeartAttack.Start>
   <PawnDiary.Event.EventWindow.PrisonBreak.Start>{0}: тревога о побеге: {1}.</PawnDiary.Event.EventWindow.PrisonBreak.Start>

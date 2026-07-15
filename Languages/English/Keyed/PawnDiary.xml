@@ -1006,7 +1006,9 @@
   <PawnDiary.Event.EventWindow.Generic.timeout>{0} kept waiting for an answer about {1}, but none came.</PawnDiary.Event.EventWindow.Generic.timeout>
   <PawnDiary.Event.EventWindow.Generic.Instruction>write this as an ongoing event window about {0}; use only supplied facts and keep the pawn's uncertainty clear</PawnDiary.Event.EventWindow.Generic.Instruction>
   <PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>{0} discovered the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>
-  <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0} completed an interaction with the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
+  <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0} deliberately stirred the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
+  <PawnDiary.Event.EventWindow.VoidMonolithWaking.Start>{0} deliberately woke the void monolith further: {1}.</PawnDiary.Event.EventWindow.VoidMonolithWaking.Start>
+  <PawnDiary.Event.EventWindow.VoidMonolithVoidAwakened.Start>{0} awakened the void through the monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithVoidAwakened.Start>
   <PawnDiary.Event.EventWindow.Birthday.Start>{0} reached biological age {1}.</PawnDiary.Event.EventWindow.Birthday.Start>
   <PawnDiary.Event.EventWindow.HeartAttack.Start>{0} suffered a heart attack: {1}.</PawnDiary.Event.EventWindow.HeartAttack.Start>
   <PawnDiary.Event.EventWindow.PrisonBreak.Start>{0} heard the prison break alarm: {1}.</PawnDiary.Event.EventWindow.PrisonBreak.Start>

@@ -1,7 +1,8 @@
 // Event-window defs: XML-controlled narrative windows that start on one generic game signal,
 // stay active for prompt context, then end on another signal or a timeout. These are deliberately
 // source-agnostic so compatibility packs can watch incidents, quest lifecycle changes, spawned
-// things, or future signal sources without new C# per event.
+// things, or future signal sources without new C# per event. A one-shot window may also declare a
+// plain Narrative Continuity evidence template when its matched signal proves an exact visible chapter.
 using System.Collections.Generic;
 using Verse;
 
@@ -47,6 +48,24 @@ namespace PawnDiary
                 matchTokens = matchTokens ?? new List<string>()
             };
         }
+    }
+
+    /// <summary>
+    /// Optional XML-owned Narrative Continuity metadata for a page that an event window already
+    /// authorized. It never creates a page or reads live game state; the window's exact trigger remains
+    /// the sole source of truth. New to C#/RimWorld? See AGENTS.md ("architecture barriers").
+    /// </summary>
+    public class DiaryEventWindowNarrativeEvidenceDef
+    {
+        // Stable schema tokens copied into the plain NarrativeEvidence DTO. Prompt prose does not belong
+        // here; it remains on the event-window Def and in DefInjected localization.
+        public string facet;
+        public string phase;
+        public string subjectKind;
+        public string subjectId;
+        public string arcKey;
+        public string salience = NarrativeSalienceTokens.Minor;
+        public List<string> beliefTopics = new List<string>();
     }
 
     /// <summary>
@@ -101,6 +120,10 @@ namespace PawnDiary
         public string timeoutText;
         public string instruction;
         public string colorCue;
+
+        // Optional source-owned evidence copied only onto a page this exact window has already emitted.
+        // Empty means the legacy behavior: no Narrative Continuity evidence or reference is attached.
+        public DiaryEventWindowNarrativeEvidenceDef narrativeEvidence;
 
         public bool promptEnabled = true;
         public float promptWeight = 1f;
@@ -208,6 +231,35 @@ namespace PawnDiary
             {
                 yield return "stillPresentThingDefNames/stillPresentFactionDefNames require keepActive=true; "
                     + "a one-shot window never persists, so the probe could never fire.";
+            }
+
+            if (narrativeEvidence != null)
+            {
+                if (!NarrativeFacetTokens.IsKnown(narrativeEvidence.facet))
+                {
+                    yield return "narrativeEvidence.facet must be one of the frozen Narrative Continuity facet tokens.";
+                }
+
+                if (string.IsNullOrWhiteSpace(narrativeEvidence.phase))
+                {
+                    yield return "narrativeEvidence.phase must name the exact visible source phase.";
+                }
+
+                if (!NarrativeSubjectKindTokens.IsKnownOrEmpty(narrativeEvidence.subjectKind))
+                {
+                    yield return "narrativeEvidence.subjectKind must be empty or a frozen Narrative Continuity subject token.";
+                }
+
+                if (string.IsNullOrWhiteSpace(narrativeEvidence.subjectId)
+                    && string.IsNullOrWhiteSpace(narrativeEvidence.arcKey))
+                {
+                    yield return "narrativeEvidence requires a stable subjectId or arcKey for later exact lookup.";
+                }
+
+                if (!NarrativeSalienceTokens.IsKnown(narrativeEvidence.salience))
+                {
+                    yield return "narrativeEvidence.salience must be one of the frozen Narrative Continuity salience tokens.";
+                }
             }
         }
 

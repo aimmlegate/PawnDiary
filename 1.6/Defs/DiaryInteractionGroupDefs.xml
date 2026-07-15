@@ -672,6 +672,9 @@
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
     <instruction>an ominous colony-wide anomaly event that should feel rare, strange, and consequential without inventing hidden mechanics</instruction>
     <tone>with restrained dread and long consequence</tone>
     <tones>
@@ -682,6 +685,8 @@
     <matchDefNames>
       <li>VoidMonolithDiscovery</li>
       <li>VoidMonolithActivation</li>
+      <li>VoidMonolithWaking</li>
+      <li>VoidMonolithVoidAwakened</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -2469,7 +2474,7 @@
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualRoyal</defName>
     <label>Royal rituals</label>
-    <order>770</order>
+    <order>760</order>
     <domain>Ritual</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
@@ -2491,7 +2496,7 @@
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualChildbirth</defName>
     <label>Childbirth ritual</label>
-    <order>772</order>
+    <order>762</order>
     <domain>Ritual</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
@@ -2510,7 +2515,7 @@
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualGravship</defName>
     <label>Gravship launch</label>
-    <order>774</order>
+    <order>764</order>
     <domain>Ritual</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
@@ -2526,6 +2531,151 @@
     </matchTokens>
   </PawnDiary.DiaryInteractionGroupDef>
 
+  <!-- Anomaly A0 exact psychic-ritual families. The saved classifier key is
+       PsychicRitual;<PsychicRitualDef.defName>; exact rows must stay ahead of the order-776 fallback.
+       Package gates hide these settings and keep classification inert when Anomaly is not active. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualAnomalyInvitation</defName>
+    <label>Anomaly invitations</label>
+    <order>770</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a psychic ritual meant to call something toward the colony completed—center the pawn's captured perspective, deliberate invitation, and uncertainty; do not claim what arrived or what happened afterward</instruction>
+    <tone>with deliberate invitation and uncertain dread</tone>
+    <tones>
+      <li>expectant and uneasy, listening for an answer without deciding what answered</li>
+      <li>ritual-focused and watchful, dwelling on the choice to call rather than an unverified result</li>
+    </tones>
+    <colorCue>extremeDark</colorCue>
+    <matchDefNames>
+      <li>PsychicRitual;VoidProvocation</li>
+      <li>PsychicRitual;SummonAnimals</li>
+      <li>PsychicRitual;SummonShamblers</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualAnomalyFleshAndWeather</defName>
+    <label>Flesh and hostile weather rituals</label>
+    <order>771</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a psychic ritual meant to make the environment bodily or hostile completed—write the pawn's supplied role and the deliberate escalation, but do not claim that a threat arrived, harmed anyone, or persisted</instruction>
+    <tone>with deliberate escalation and bodily environmental dread</tone>
+    <tones>
+      <li>visceral and apprehensive, focused on choosing to make the world less safe</li>
+      <li>heavy with hostile weather or fleshly expectation, without inventing the aftermath</li>
+    </tones>
+    <colorCue>extremeDark</colorCue>
+    <matchDefNames>
+      <li>PsychicRitual;SummonPitGate</li>
+      <li>PsychicRitual;SummonFleshbeasts</li>
+      <li>PsychicRitual;SummonFleshbeastsPlayer</li>
+      <li>PsychicRitual;BloodRain</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualAnomalyPredation</defName>
+    <label>Predatory psychic rituals</label>
+    <order>772</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a psychic ritual meant to take skill, years, or psychic capacity from a target completed—attribute agency, victimhood, and sensation only through the supplied perspective and other-pawn facts; do not invent the exact loss or later condition</instruction>
+    <tone>with intimate predation and controlled psychic harm</tone>
+    <tones>
+      <li>close and predatory, attentive to who acted and who endured without swapping their experiences</li>
+      <li>morally tense and bodily strange, stopping at the facts the captured perspective can know</li>
+    </tones>
+    <colorCue>extremeDark</colorCue>
+    <matchDefNames>
+      <li>PsychicRitual;Philophagy</li>
+      <li>PsychicRitual;Chronophagy</li>
+      <li>PsychicRitual;Psychophagy</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualAnomalyMind</defName>
+    <label>Mind-altering psychic rituals</label>
+    <order>773</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a psychic ritual meant to alter memory, feeling, or behavior completed—keep each pawn inside the supplied invoker, target, participant, or spectator perspective; do not give one role another pawn's inner effects</instruction>
+    <tone>with invasive mental pressure and uncertain interior consequence</tone>
+    <tones>
+      <li>invasive and disorienting, careful about whose mind the supplied facts describe</li>
+      <li>psychically close but epistemically restrained, never inventing inaccessible memories or feelings</li>
+    </tones>
+    <colorCue>extremeDark</colorCue>
+    <matchDefNames>
+      <li>PsychicRitual;Brainwipe</li>
+      <li>PsychicRitual;PleasurePulse</li>
+      <li>PsychicRitual;NeurosisPulse</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualAnomalyAbduction</defName>
+    <label>Skip abduction rituals</label>
+    <order>774</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a psychic ritual meant to pull a person through distance completed—focus on the pawn's supplied role, reach, and danger; name an abductee or outcome only when the captured target facts explicitly supply it</instruction>
+    <tone>with distant reach, sudden danger, and incomplete knowledge</tone>
+    <tones>
+      <li>tense across impossible distance, with identity and outcome left uncertain unless supplied</li>
+      <li>focused on the act of reaching and pulling, not an invented arrival or aftermath</li>
+    </tones>
+    <colorCue>extremeDark</colorCue>
+    <matchDefNames>
+      <li>PsychicRitual;SkipAbduction</li>
+      <li>PsychicRitual;SkipAbductionPlayer</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualAnomalyDeathRefusal</defName>
+    <label>Death-refusal ritual</label>
+    <order>775</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a psychic ritual imbued a target with death refusal—write the choice to establish an unnatural relationship with death from the supplied perspective; do not claim that the target has died or returned</instruction>
+    <tone>with grave intent and an unfinished bargain with death</tone>
+    <tones>
+      <li>solemn and unnatural, treating the ritual as preparation rather than resurrection</li>
+      <li>quietly defiant toward death, while leaving any future death or return unclaimed</li>
+    </tones>
+    <colorCue>extremeDark</colorCue>
+    <matchDefNames>
+      <li>PsychicRitual;ImbueDeathRefusal</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualAnomalyPsychic</defName>
     <label>Psychic rituals</label>
@@ -2533,11 +2683,14 @@
     <domain>Ritual</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
-    <instruction>an Anomaly psychic ritual completed - write the aftermath as dark atmosphere, fear, wrongness, void pressure, body sensation, and consequences that should not be fully explained</instruction>
-    <tone>with occult dread and incomprehensible pressure against the body</tone>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>an unknown or modded Anomaly psychic ritual completed—use the supplied perspective and visible facts, keep any downstream effect uncertain, and do not invent mechanics or consequences</instruction>
+    <tone>with occult uncertainty and restrained psychic dread</tone>
     <tones>
-      <li>unsettling and dark, with fear, wrongness, void pressure, and sensory dread</li>
-      <li>fragmentary and half-incomprehensible, as if language is failing around the ritual</li>
+      <li>unsettling and watchful, grounded in the role and facts that were actually supplied</li>
+      <li>fragmentary and uncertain, refusing to explain or predict an unknown ritual's consequence</li>
     </tones>
     <colorCue>extremeDark</colorCue>
     <matchTokens>

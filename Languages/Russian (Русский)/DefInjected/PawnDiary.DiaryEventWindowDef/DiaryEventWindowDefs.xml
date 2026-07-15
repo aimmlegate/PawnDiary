@@ -7,8 +7,14 @@
   <VoidMonolithDiscovery.label>обнаружение монолита пустоты</VoidMonolithDiscovery.label>
   <VoidMonolithDiscovery.instruction>опиши первое обнаружение монолита пустоты как тёмный аномальный ужас; постройка кажется нечеловеческой и психической, но держись того, что поселенец видит и чувствует</VoidMonolithDiscovery.instruction>
 
-  <VoidMonolithActivation.label>активация монолита пустоты</VoidMonolithActivation.label>
-  <VoidMonolithActivation.instruction>опиши завершённое взаимодействие с монолитом пустоты как тёмный аномальный ужас; сосредоточься на психическом давлении, изменении постройки и чувстве, что снаружи поселения что-то заметило</VoidMonolithActivation.instruction>
+  <VoidMonolithActivation.label>настройка монолита пустоты</VoidMonolithActivation.label>
+  <VoidMonolithActivation.instruction>опиши первую намеренную настройку монолита пустоты как переход черты; держись видимого и псионического опыта активатора и не выдумывай, к чему монолит приведёт дальше</VoidMonolithActivation.instruction>
+
+  <VoidMonolithWaking.label>пробуждение монолита пустоты</VoidMonolithWaking.label>
+  <VoidMonolithWaking.instruction>опиши намеренное пробуждение монолита пустоты как второе обострение; держись видимого и псионического опыта активатора и не выдумывай скрытые знания или дальнейшие последствия</VoidMonolithWaking.instruction>
+
+  <VoidMonolithVoidAwakened.label>пробуждение пустоты</VoidMonolithVoidAwakened.label>
+  <VoidMonolithVoidAwakened.instruction>опиши намеренный переход монолита к активному пробуждению пустоты как последнее обострение; держись видимого и псионического опыта активатора, не утверждая ни окончательный выбор, ни его исход</VoidMonolithVoidAwakened.instruction>
 
   <Birthday.label>день рождения</Birthday.label>
   <Birthday.instruction>опиши день рождения поселенца как тревожную веху RimWorld, не как праздник; возраст, хрупкость и цена ещё одного года важнее поздравлений</Birthday.instruction>

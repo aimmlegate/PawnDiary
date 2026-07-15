@@ -118,7 +118,7 @@ Complete Narrative Continuity **Phase N0**:
 
 > **Implementation status (2026-07-15): complete.** Narrative N1 now provides only shared save,
 > archive-index, and optional prompt infrastructure; it does not add a real DLC provider, hook, or
-> source-owned page. The next permitted implementation slice is Wave 2 / Anomaly A0.0.
+> source-owned page. Wave 2 now consumes that seam only for exact source-owned monolith evidence.
 
 ### Implement
 
@@ -145,6 +145,13 @@ Ship/review the shared infrastructure alone. Do not hide foundational save/promp
 the first DLC feature diff.
 
 ## 7. Wave 2 — Anomaly semantic precision
+
+> **Implementation status (2026-07-15): complete.** A0.0 reconfirmed all 16 installed psychic
+> ritual keys and the four relevant monolith levels against local RimWorld 1.6 data; A0.1 added six
+> exact package-gated ritual families plus the retained generic fallback; A0.2 split Stirring,
+> Waking, and Void Awakened into mutually exclusive windows and attached visible source-owned N1
+> chapter references. No provider, new Harmony hook, hidden Anomaly state, or extra page source was
+> added. The next permitted implementation slice is Wave 3 / Biotech Phase 0.
 
 ### Implement in this exact order
 

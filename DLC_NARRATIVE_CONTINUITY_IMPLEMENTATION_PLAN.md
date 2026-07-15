@@ -515,8 +515,9 @@ budget, reference equality, and reflection priority; XML parses; no RimWorld ref
 
 > **Implementation status (2026-07-15): complete as Master Wave 1.** The shared hot/archive save
 > seam, optional first-person prompt field, synthetic/core fixture builder, and focused pure/RimTest
-> coverage landed without a real DLC provider or source-specific behavior. N2 remains the first wave
-> permitted to attach a guarded real provider/emission.
+> coverage landed without a real DLC provider or source-specific behavior. Master Wave 2 / Anomaly
+> A0.2 now uses the N1 seam for exact source-owned monolith chapter evidence only; N2 remains the
+> first wave permitted to attach guarded live provider candidates.
 
 1. Add event/POV state, Scribe normalization, pipeline payload field, and archive copying/indexes.
 2. Add the optional narrative-context prompt field and Full/Balanced/Compact budget behavior.
