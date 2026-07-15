@@ -162,16 +162,22 @@ Generation starts only after an event exists in the saved hot store.
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
 
-**Narrative Continuity (Master Waves 1–3 / N1 + source emissions)** supplies the shared persistence and
+**Narrative Continuity (Master Waves 1–3 / N1 + N2-B)** supplies the shared persistence and
 optional prompt seam for DLC integrations. Each first-person event POV can save bounded, explicitly
 known evidence, prose-free references, selected-candidate keys, and frozen `narrativeContext`; old
 saves normalize all four to empty. `NarrativeContextBuilder` snapshots
-`DiaryNarrativeContinuityDef` on the main thread and invokes the pure selector. Exact Stirring,
+`DiaryNarrativeContinuityDef` on the main thread, collects the fixed provider list, and invokes the
+pure selector. Exact Stirring,
 Waking, and Void Awakened monolith windows were the first real source-owned evidence emitters: each
 saves a `journey_chapter` phase and `anomaly-monolith|0` reference only after its canonical page is
-authorized. Canonical Biotech growth pages now also save an `identity_transition` phase for the
-child and the stable saved family arc when available. There is still no live DLC lens provider, so these rows add no
-prompt field by themselves; provider candidates remain synthetic fixtures until later N2/N3 waves.
+authorized. Canonical Biotech growth pages save an `identity_transition` phase for the child and the
+stable saved family arc when available, then pass a guarded plain snapshot through the fixed provider
+list. The Biotech provider may add exact family continuity (`since_birth`, directly observed childhood,
+or a current exact parent baseline) and the child's visible current non-Baseliner xenotype. It never
+enumerates genes, predicts a future xenotype, infers parental emotion, or creates another POV/page.
+Royalty, Ideology, Anomaly, and Odyssey provider slots intentionally return empty until their scheduled
+source waves. Provider absence, no Biotech, unconnected POVs, child-only arcs, or malformed translated
+format strings preserve the ordinary prompt with no narrative-context field.
 
 `DiaryPipelineAdapters` copy the frozen context into the plain payload, and first-person template
 fields render it only when non-empty, prefixed by DefInjected policy wording. All neutral chronicle and
@@ -179,7 +185,7 @@ title templates omit the field. The selector's Full/Balanced/Compact budgets cho
 lenses before text is saved; prompt assembly never truncates a selected fact. Archive compaction copies
 only references and selection keys, and `DiaryArchiveRepository` rebuilds bounded pawn-scoped exact-arc
 and exact-subject indexes after load or retention. Source-specific pages remain their own sole capture
-owners, so existing base/DLC behavior is unchanged until a later N2 provider slice uses this seam.
+owners; N2-B only enriches the already-authorized growth page and cannot create another event.
 
 N0 froze exactly four evidence facets—`identity_transition`, `bond_lifecycle`,
 `journey_chapter`, and `ambient_pressure`—rather than creating generic DLC events. They cover the
@@ -1006,7 +1012,7 @@ it onto the bus.
 | Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. Memories vanilla rejects (accept-gates fire before `thought.pawn` is assigned) are ignored — never gained, so never recorded. If a malformed/modded `ThoughtDef` throws while resolving its localized label, capture continues with the stable `defName` as a technical fallback. |
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
 | Pawn progression | Periodic scan | Passion-only skill milestones, psylink level gains, xenotype changes, royal-title changes, and newly gained personality traits. Trait gains feed the trait's own character-card description (no stat/mechanic lines) into the prompt so any trait — vanilla or modded — is voiced as a felt personality shift without a hardcoded per-trait table. The first scan baselines existing saves to avoid retroactive spam (a pawn's starting traits never record); major psylink/xenotype changes can request a rare arc reflection after the normal page records. |
-| Biotech growth moments | `Pawn_AgeTracker.BirthdayBiological`, `ChoiceLetter_GrowthMoment.ConfigureGrowthLetter` / `MakeChoices` | Age-7/10/13 before/after ownership. A committed verified mutation becomes one child-solo, supporter-solo, or child/supporter page; postponed letters survive save/load; auto-resolved growth completes immediately; stable child-ID/age checks across hot and archived events prevent replay regardless of which diary owns the page. Unsupported/failed/disabled ownership releases the existing Birthday route and consumes trait/skill baselines. Entire path is inert without Biotech. |
+| Biotech growth moments | `Pawn_AgeTracker.BirthdayBiological`, `ChoiceLetter_GrowthMoment.ConfigureGrowthLetter` / `MakeChoices` | Age-7/10/13 before/after ownership. A committed verified mutation becomes one child-solo, supporter-solo, or child/supporter page; postponed letters survive save/load; auto-resolved growth completes immediately; stable child-ID/age checks across hot and archived events prevent replay regardless of which diary owns the page. N2-B can enrich that same page with exact saved family continuity and a visible current non-Baseliner identity, selected through the shared bounded provider policy. Unsupported/failed/disabled ownership releases the existing Birthday route and consumes trait/skill baselines. Entire path is inert without Biotech. |
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |
 | Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions, artificial/anomalous body-part gains, and living-pawn natural body-part losses. |
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns and the shared random-generation setting. |
@@ -1062,7 +1068,8 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeDefs.xml` | pawn psychotypes (outlook layer): Neutral + 17 adult + 3 trait-gated + 5 child types, families, skill affinities, trait gates |
 | `DiaryPsychotypeRollPolicyDefs.xml` | numeric tuning for the psychotype roll: family bases, bonuses, wildcard chance, jitter range, duplicate penalty |
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
-| `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; N1 snapshots it at the main-thread persistence/prompt boundary with no real DLC provider yet |
+| `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; the main-thread builder snapshots it before fixed-order pure provider selection |
+| `DiaryBiotechPolicyDefs.xml` | Biotech growth/family thresholds, exact string classifiers, qualitative growth/upbringing prose, and N2-B DefInjected family/current-identity candidate formats |
 | `DiaryBiotechPolicyDefs.xml` | B1 growth-tier opportunity bands, localized passion/upbringing prose, pending/fallback timing, exact pregnancy/labor/activity/memory matchers, supporter thresholds/caps, naming timing, family retention, and the two-writer birth cap; Phases 1–2 use growth/family fields live while birth fields remain reserved |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
 | `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |

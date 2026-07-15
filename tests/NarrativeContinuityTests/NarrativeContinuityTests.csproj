@@ -13,6 +13,7 @@
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContextSelector.cs" Link="NarrativeContextSelector.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativePersistencePolicy.cs" Link="NarrativePersistencePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContextPrompt.cs" Link="NarrativeContextPrompt.cs" />
+    <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeProviders.cs" Link="NarrativeProviders.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\ReflectionCoordinator.cs" Link="ReflectionCoordinator.cs" />
   </ItemGroup>
 </Project>

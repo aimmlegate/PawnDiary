@@ -365,7 +365,9 @@ submit only an actual age-7/10/13 before/after mutation. Saved family arcs and e
 evidence now select child solo, supporter solo, or child/supporter pair deterministically. Context carries
 the stable family key, qualitative opportunity/upbringing, verified trait/interest, nickname,
 responsibility, supporter, and writer-role facts while excluding raw tiers, choice/work lists, counts,
-and ticks. The source attaches an N1 `identity_transition` phase; no live lens provider exists yet.
+and ticks. The source attaches an N1 `identity_transition` phase. N2-B may add an exact saved-family
+continuity lens and the child's visible current non-Baseliner xenotype through the bounded shared
+selector; it never lists genes, predicts identity, infers feelings, or creates another page/POV.
 
 Mod-compatibility groups that materially change routing/shape (all target-gated; Thought rows still
 use the global mood-memory policy):

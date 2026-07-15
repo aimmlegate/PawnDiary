@@ -322,6 +322,10 @@ namespace PawnDiary.Capture
         public int maximumBirthWriters = 2;
         public string newInterestDescription = string.Empty;
         public string deepenedInterestDescription = string.Empty;
+        public string familySinceBirthNarrativeFormat = string.Empty;
+        public string familyObservedNarrativeFormat = string.Empty;
+        public string familyBaselineNarrativeFormat = string.Empty;
+        public string identityNarrativeFormat = string.Empty;
         public List<string> familyActivityExactDefNames = new List<string>();
         public List<string> familyActivityPrefixes = new List<string>();
         public List<string> familyPregnancyHediffDefNames = new List<string>();

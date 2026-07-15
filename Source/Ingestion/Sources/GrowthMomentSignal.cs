@@ -15,17 +15,20 @@ namespace PawnDiary.Ingestion
         private readonly Pawn child;
         private readonly Pawn supporter;
         private readonly GrowthMomentMutation mutation;
+        private readonly BiotechFamilyArcState familyArc;
 
         public GrowthMomentSignal(
             GrowthMomentEventData payload,
             Pawn child,
             Pawn supporter,
-            GrowthMomentMutation mutation)
+            GrowthMomentMutation mutation,
+            BiotechFamilyArcState familyArc)
         {
             this.payload = payload;
             this.child = child;
             this.supporter = supporter;
             this.mutation = mutation;
+            this.familyArc = familyArc;
         }
 
         public override DiaryEventData Payload => payload;
@@ -112,8 +115,8 @@ namespace PawnDiary.Ingestion
                     supporterText,
                     instruction,
                     gameContext);
-                ApplyNarrativeEvidence(diaryEvent, child, DiaryEvent.InitiatorRole, child, mutation);
-                ApplyNarrativeEvidence(diaryEvent, supporter, DiaryEvent.RecipientRole, child, mutation);
+                ApplyNarrativeEvidence(diaryEvent, child, DiaryEvent.InitiatorRole, child, mutation, familyArc, policy);
+                ApplyNarrativeEvidence(diaryEvent, supporter, DiaryEvent.RecipientRole, child, mutation, familyArc, policy);
             }
             else if (shape == GrowthWriterShape.SupporterSolo)
             {
@@ -125,7 +128,7 @@ namespace PawnDiary.Ingestion
                     supporterText,
                     instruction,
                     gameContext);
-                ApplyNarrativeEvidence(diaryEvent, supporter, DiaryEvent.InitiatorRole, child, mutation);
+                ApplyNarrativeEvidence(diaryEvent, supporter, DiaryEvent.InitiatorRole, child, mutation, familyArc, policy);
             }
             else
             {
@@ -137,7 +140,7 @@ namespace PawnDiary.Ingestion
                     childText,
                     instruction,
                     gameContext);
-                ApplyNarrativeEvidence(diaryEvent, child, DiaryEvent.InitiatorRole, child, mutation);
+                ApplyNarrativeEvidence(diaryEvent, child, DiaryEvent.InitiatorRole, child, mutation, familyArc, policy);
             }
 
             try
@@ -248,7 +251,9 @@ namespace PawnDiary.Ingestion
             Pawn povPawn,
             string povRole,
             Pawn child,
-            GrowthMomentMutation mutation)
+            GrowthMomentMutation mutation,
+            BiotechFamilyArcState familyArc,
+            BiotechPolicySnapshot policy)
         {
             if (diaryEvent == null || povPawn == null || child == null || mutation == null)
             {
@@ -264,6 +269,13 @@ namespace PawnDiary.Ingestion
                         eventTick = diaryEvent.tick,
                         povPawnId = povPawn.GetUniqueLoadID(),
                         povRole = povRole,
+                        biotech = BuildBiotechNarrativeSnapshot(
+                            povPawn,
+                            child,
+                            mutation,
+                            familyArc,
+                            policy,
+                            diaryEvent.tick),
                         evidence = new List<NarrativeEvidence>
                         {
                             new NarrativeEvidence
@@ -292,6 +304,105 @@ namespace PawnDiary.Ingestion
                     "[Pawn Diary] Biotech growth Narrative Continuity evidence failed; the growth page remains: "
                     + exception,
                     "PawnDiary.BiotechGrowth.NarrativeEvidence".GetHashCode());
+            }
+        }
+
+        /// <summary>
+        /// Copies only visible/current Biotech facts into the pure provider contract. The family arc is
+        /// already source-owned saved evidence; the xenotype accessor is double-gated in DlcContext.
+        /// </summary>
+        private static BiotechNarrativeSnapshot BuildBiotechNarrativeSnapshot(
+            Pawn povPawn,
+            Pawn child,
+            GrowthMomentMutation mutation,
+            BiotechFamilyArcState familyArc,
+            BiotechPolicySnapshot policy,
+            int sourceTick)
+        {
+            if (!ModsConfig.BiotechActive || povPawn == null || child == null || mutation == null)
+            {
+                return null;
+            }
+
+            bool hasObservedUpbringing = false;
+            List<FamilySupportObservationState> observations = familyArc?.supporters;
+            if (observations != null)
+            {
+                for (int i = 0; i < observations.Count; i++)
+                {
+                    FamilySupportObservationState row = observations[i];
+                    if (row != null && row.lessonCount + row.babyPlayCount + row.careCount > 0)
+                    {
+                        hasObservedUpbringing = true;
+                        break;
+                    }
+                }
+            }
+
+            hasObservedUpbringing = hasObservedUpbringing
+                || (familyArc?.recordedGrowthAges?.Count ?? 0) > 0;
+            bool hasExactFamilyConnection = familyArc != null
+                && (!string.IsNullOrWhiteSpace(familyArc.birtherId)
+                    || !string.IsNullOrWhiteSpace(familyArc.geneticMotherId)
+                    || !string.IsNullOrWhiteSpace(familyArc.fatherId));
+            string continuity = BiotechNarrativeProvider.FamilyContinuity(
+                familyArc != null && familyArc.birthTick > 0 && !familyArc.baselineOnly,
+                hasObservedUpbringing,
+                hasExactFamilyConnection);
+            string childName = DiaryLineCleaner.CleanLine(child.LabelShortCap);
+            string familyFormat = FamilyNarrativeFormat(policy, continuity);
+            string familyText = FormatNarrative(familyFormat, childName);
+
+            string xenotypeDefName = DlcContext.XenotypeDefName(child);
+            string xenotypeLabel = DlcContext.Xenotype(child);
+            string identityText = string.IsNullOrWhiteSpace(xenotypeDefName)
+                || string.IsNullOrWhiteSpace(xenotypeLabel)
+                ? string.Empty
+                : FormatNarrative(policy?.identityNarrativeFormat, childName, xenotypeLabel);
+
+            return new BiotechNarrativeSnapshot
+            {
+                providerAvailable = true,
+                povPawnId = povPawn.GetUniqueLoadID(),
+                childId = mutation.childId,
+                familyArcId = continuity.Length == 0 ? string.Empty : mutation.familyArcId,
+                familyContinuity = continuity,
+                familyText = familyText,
+                xenotypeDefName = xenotypeDefName,
+                identityText = identityText,
+                sourceTick = sourceTick,
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = povPawn == child
+                    || string.Equals(
+                        povPawn.GetUniqueLoadID(),
+                        mutation.supporter?.adultId,
+                        StringComparison.Ordinal)
+            };
+        }
+
+        private static string FamilyNarrativeFormat(BiotechPolicySnapshot policy, string continuity)
+        {
+            if (policy == null) return string.Empty;
+            if (continuity == BiotechNarrativeContinuityTokens.SinceBirth)
+                return policy.familySinceBirthNarrativeFormat;
+            if (continuity == BiotechNarrativeContinuityTokens.ObservedChildhood)
+                return policy.familyObservedNarrativeFormat;
+            if (continuity == BiotechNarrativeContinuityTokens.BaselineFamily)
+                return policy.familyBaselineNarrativeFormat;
+            return string.Empty;
+        }
+
+        private static string FormatNarrative(string format, params object[] values)
+        {
+            if (string.IsNullOrWhiteSpace(format)) return string.Empty;
+            try
+            {
+                return DiaryLineCleaner.CleanLine(string.Format(format, values));
+            }
+            catch (FormatException)
+            {
+                // A malformed custom translation disables only this optional lens.
+                return string.Empty;
             }
         }
     }

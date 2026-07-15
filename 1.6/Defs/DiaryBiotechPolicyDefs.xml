@@ -36,6 +36,10 @@
     </opportunityBands>
     <newInterestDescription>a new interest</newInterestDescription>
     <deepenedInterestDescription>a deepened interest</deepenedInterestDescription>
+    <familySinceBirthNarrativeFormat>{0}&apos;s exact family continuity has been tracked since birth.</familySinceBirthNarrativeFormat>
+    <familyObservedNarrativeFormat>This growth continues the directly observed childhood story around {0}.</familyObservedNarrativeFormat>
+    <familyBaselineNarrativeFormat>This growth belongs to {0}&apos;s exact known family continuity.</familyBaselineNarrativeFormat>
+    <identityNarrativeFormat>{0}&apos;s current visible xenotype is {1}; treat it as present identity, never as a prediction about genes.</identityNarrativeFormat>
 
     <familyActivityExactDefNames>
       <li>BabyPlay</li>

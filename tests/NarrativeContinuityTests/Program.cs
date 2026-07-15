@@ -19,6 +19,7 @@ namespace NarrativeContinuityTests
             TestDetailCapsAndCompleteFactBudget();
             TestReferenceEqualityAndDeduplication();
             TestPersistenceCapsAndPromptFormatting();
+            TestBiotechProviderApplicabilityAndTruthGates();
             TestReflectionPriorityAndDeferredConsumption();
             Console.WriteLine("NarrativeContinuityTests passed " + assertions + " assertions.");
             return 0;
@@ -68,6 +69,76 @@ namespace NarrativeContinuityTests
             AssertEqual("unknown evidence knowledge fails closed", 0, unknownEvidence.selectedCandidates.Count);
             AssertTrue("unknown evidence reports no usable evidence",
                 unknownEvidence.selectionReasons.Contains(NarrativeDiagnosticTokens.NoEvidence));
+        }
+
+        private static void TestBiotechProviderApplicabilityAndTruthGates()
+        {
+            AssertEqual("known birth is strongest family continuity",
+                BiotechNarrativeContinuityTokens.SinceBirth,
+                BiotechNarrativeProvider.FamilyContinuity(true, true, true));
+            AssertEqual("observed childhood does not require a claimed parent",
+                BiotechNarrativeContinuityTokens.ObservedChildhood,
+                BiotechNarrativeProvider.FamilyContinuity(false, true, false));
+            AssertEqual("exact current parent relation supplies baseline continuity",
+                BiotechNarrativeContinuityTokens.BaselineFamily,
+                BiotechNarrativeProvider.FamilyContinuity(false, false, true));
+            AssertEqual("child-only arc invents no family continuity", string.Empty,
+                BiotechNarrativeProvider.FamilyContinuity(false, false, false));
+
+            NarrativeEvidence evidence = Evidence();
+            evidence.arcKey = "biotech-family|child-1";
+            BiotechNarrativeSnapshot snapshot = new BiotechNarrativeSnapshot
+            {
+                providerAvailable = true,
+                childId = "pawn-1",
+                familyArcId = evidence.arcKey,
+                familyContinuity = BiotechNarrativeContinuityTokens.ObservedChildhood,
+                familyText = "A directly observed childhood continues through this growth.",
+                xenotypeDefName = "Yttakin",
+                identityText = "The current visible xenotype is Yttakin.",
+                sourceTick = 1000,
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true
+            };
+
+            List<NarrativeLensCandidate> candidates = BiotechNarrativeProvider.Build(
+                new List<NarrativeEvidence> { evidence }, snapshot);
+            AssertEqual("matching Biotech evidence yields bounded family plus identity candidates", 2,
+                candidates.Count);
+            AssertEqual("family candidate uses exact saved arc", evidence.arcKey, candidates[0].arcKey);
+            AssertEqual("identity candidate uses exact child subject", "pawn-1", candidates[1].subjectId);
+            AssertTrue("provider never emits gene-list text",
+                candidates[0].text.IndexOf("gene", StringComparison.OrdinalIgnoreCase) < 0
+                && candidates[1].text.IndexOf("gene", StringComparison.OrdinalIgnoreCase) < 0);
+
+            snapshot.providerAvailable = false;
+            AssertEqual("inactive Biotech provider is silent", 0,
+                BiotechNarrativeProvider.Build(new List<NarrativeEvidence> { evidence }, snapshot).Count);
+            snapshot.providerAvailable = true;
+            snapshot.hasVerifiedPovConnection = false;
+            AssertEqual("unconnected POV is silent", 0,
+                BiotechNarrativeProvider.Build(new List<NarrativeEvidence> { evidence }, snapshot).Count);
+            snapshot.hasVerifiedPovConnection = true;
+            AssertEqual("unrelated evidence is silent", 0,
+                BiotechNarrativeProvider.Build(new List<NarrativeEvidence>
+                {
+                    new NarrativeEvidence
+                    {
+                        facet = NarrativeFacetTokens.JourneyChapter,
+                        subjectKind = NarrativeSubjectKindTokens.Ship,
+                        subjectId = "ship-2",
+                        pawnCanKnow = true
+                    }
+                }, snapshot).Count);
+
+            List<NarrativeLensCandidate> fixedOrder = NarrativeProviderOrchestrator.Collect(
+                new List<NarrativeEvidence> { evidence },
+                new List<NarrativeLensCandidate> { Candidate("core-first", NarrativeCategoryTokens.Home,
+                    NarrativeFacetTokens.IdentityTransition) },
+                snapshot);
+            AssertEqual("fixed provider list preserves core-first deterministic order", "core-first",
+                fixedOrder[0].candidateKey);
+            AssertEqual("empty future provider stubs add no candidates", 3, fixedOrder.Count);
         }
 
         private static void TestScorePrecedenceAndTerminalRelevance()

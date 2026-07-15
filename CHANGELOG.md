@@ -1,5 +1,16 @@
 # Changelog
 
+- **2026-07-16 — Continued DLC integration: Narrative N2-B Biotech provider.** Added the first real
+  guarded Narrative Continuity provider behind a fixed deterministic provider list; Royalty,
+  Ideology, Anomaly, and Odyssey remain explicit empty stubs until their scheduled waves. Canonical
+  Biotech growth pages can now select exact saved family continuity (known birth, directly observed
+  childhood, or an exact current parent baseline) and the child's visible current non-Baseliner
+  xenotype as optional frozen prompt lenses. The provider rejects inactive Biotech, child-only arcs,
+  unrelated evidence, and unconnected POVs; it never lists genes, predicts xenotypes, infers feelings,
+  creates fan-out, or adds a save field/hook. Candidate formats are XML/DefInjected-owned in English
+  and Russian, malformed formats fail empty, pure provider coverage reaches 74 assertions, and the
+  runtime/RimTest DLLs were rebuilt. Biotech Phase 3 canonical birth/naming is now the next Wave 3 slice.
+
 - **2026-07-16 — Hardened optional-DLC capture after adversarial review.** Corrected the Biotech
   family observer to RimWorld 1.6's exact `HediffWithParents.SetParents(Pawn, Pawn, GeneSet)`
   signature, added a local Biotech gate to family-arc maintenance, and tied unresolved

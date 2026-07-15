@@ -36,6 +36,12 @@ namespace PawnDiary
         // contract, while these DefInjected descriptions are what the LLM actually sees.
         public string newInterestDescription;
         public string deepenedInterestDescription;
+        // N2-B provider prose is DefInjected. {0} is the child's visible short name; the identity
+        // format additionally uses {1} for the visible current xenotype label.
+        public string familySinceBirthNarrativeFormat;
+        public string familyObservedNarrativeFormat;
+        public string familyBaselineNarrativeFormat;
+        public string identityNarrativeFormat;
         public List<string> familyActivityExactDefNames = new List<string>();
         public List<string> familyActivityPrefixes = new List<string>();
         public List<string> familyPregnancyHediffDefNames = new List<string>();
@@ -66,6 +72,14 @@ namespace PawnDiary
                 yield return "newInterestDescription must contain DefInjected prompt prose.";
             if (string.IsNullOrWhiteSpace(deepenedInterestDescription))
                 yield return "deepenedInterestDescription must contain DefInjected prompt prose.";
+            if (string.IsNullOrWhiteSpace(familySinceBirthNarrativeFormat))
+                yield return "familySinceBirthNarrativeFormat must contain DefInjected prompt prose.";
+            if (string.IsNullOrWhiteSpace(familyObservedNarrativeFormat))
+                yield return "familyObservedNarrativeFormat must contain DefInjected prompt prose.";
+            if (string.IsNullOrWhiteSpace(familyBaselineNarrativeFormat))
+                yield return "familyBaselineNarrativeFormat must contain DefInjected prompt prose.";
+            if (string.IsNullOrWhiteSpace(identityNarrativeFormat))
+                yield return "identityNarrativeFormat must contain DefInjected prompt prose.";
             if (familyActivityPairDedupTicks < 0) yield return "familyActivityPairDedupTicks cannot be negative.";
             if (supporterMinimumEvidence <= 0) yield return "supporterMinimumEvidence must be positive.";
             if (maximumSupporterRows <= 0) yield return "maximumSupporterRows must be positive.";
@@ -184,6 +198,10 @@ namespace PawnDiary
                 : source.maximumBirthWriters;
             result.newInterestDescription = source.newInterestDescription ?? string.Empty;
             result.deepenedInterestDescription = source.deepenedInterestDescription ?? string.Empty;
+            result.familySinceBirthNarrativeFormat = source.familySinceBirthNarrativeFormat ?? string.Empty;
+            result.familyObservedNarrativeFormat = source.familyObservedNarrativeFormat ?? string.Empty;
+            result.familyBaselineNarrativeFormat = source.familyBaselineNarrativeFormat ?? string.Empty;
+            result.identityNarrativeFormat = source.identityNarrativeFormat ?? string.Empty;
             CopyOpportunityBands(source.opportunityBands, result);
             CopyObservationBands(source.observationBands, result);
             CopyStrings(source.familyActivityExactDefNames, result.familyActivityExactDefNames);

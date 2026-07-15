@@ -531,11 +531,12 @@ invisible; selected context is event-time frozen; no real DLC behavior changes y
 
 ### Phase N2 — First real providers and source emissions
 
-> **Emission progress (2026-07-15):** Biotech Phases 1–2 now satisfy the source-emission half for
+> **N2-B progress (2026-07-16): complete.** Biotech Phases 1–2 satisfy the source-emission half for
 > canonical growth pages by attaching exact `identity_transition` evidence with the child subject and
-> age phase plus a stable saved family arc when available. It intentionally supplies no candidate/provider
-> text yet. N2-B is now the next scheduled slice because saved family identity can support a truthful
-> provider without reconstructing relationships from prose.
+> age phase plus a stable saved family arc when available. The fixed provider list now adds guarded
+> Biotech exact-arc family continuity and exact-subject visible current non-Baseliner identity candidates;
+> other source slots remain empty stubs. Candidate prose is DefInjected, unconnected/no-DLC/child-only
+> paths stay empty, and no provider creates fan-out. N2-O remains scheduled with Odyssey O1.
 
 Implement alongside the first flagship DLC slice, recommended Biotech B1 and Odyssey O1:
 

@@ -1,10 +1,11 @@
 # Pawn Diary — Biotech Support Implementation Plan
 
-> **Status:** Phases 0–2 implemented in Master Wave 3, 2026-07-15. Canonical age-7/10/13 growth
+> **Status:** Phases 0–2 plus Narrative N2-B implemented in Master Wave 3, 2026-07-16. Canonical age-7/10/13 growth
 > observation, postponed-choice persistence, auto resolution, ordinary Birthday fallback, progression
 > consumption, saved family arcs, exact lesson/play evidence, truthful child/supporter writer shapes,
-> and source-owned N1 identity evidence are live and no-DLC-safe. Narrative N2-B is the next permitted
-> slice; canonical birth/naming remains Phase 3 after that provider checkpoint.
+> and source-owned N1 identity evidence are live and no-DLC-safe. N2-B adds bounded exact family/current
+> visible identity lenses through the shared fixed provider list. Canonical birth/naming is now the next
+> permitted slice (Phase 3).
 >
 > **Scheduling authority:** implement Biotech phases only in the waves assigned by
 > `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Biotech.

@@ -174,12 +174,13 @@ This is the low-cost prompt-quality release. Do not continue into A1 study/conta
 
 ## 8. Wave 3 — Biotech family flagship
 
-> **Implementation status (2026-07-15): in progress.** Biotech Phases 0–2 are complete. Stable B1
+> **Implementation status (2026-07-16): in progress.** Biotech Phases 0–2 and Narrative N2-B are complete. Stable B1
 > contracts/policy/settings now feed live, atomic birthday/growth-letter ownership with saved postponed
 > rows, auto/choice diffs, mature ordinary fallback, progression consumption, saved family continuity,
 > exact lesson/play observations, truthful child/supporter pages, and source-owned N1 identity evidence.
-> Canonical birth remains unchanged. The next permitted slice is Narrative N2-B / the Biotech
-> family/identity provider and required evidence enrichment.
+> N2-B now supplies fixed-order provider orchestration, empty future-provider stubs, and guarded exact
+> family/current visible identity candidates on canonical growth pages. Canonical birth remains
+> unchanged. The next permitted slice is Biotech Phase 3 / canonical birth and naming ownership.
 
 ### Implement in this exact order
 

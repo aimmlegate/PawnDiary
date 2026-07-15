@@ -143,6 +143,12 @@ growth/family snapshot accessors.
 Vanilla age-7/10/13 letter postponement/click-through remains a manual loaded-game acceptance matrix;
 family birth fixtures remain absent until Phase 3 activates that owner.
 
+Narrative N2-B extends `NarrativeContinuityTests` with assembly-free checks for family-continuity
+classification, exact arc/subject candidate construction, fixed provider ordering, inactive-DLC and
+unconnected-POV silence, unrelated-evidence rejection, and empty future-provider stubs. The normal
+growth flow/RimTest path remains the adapter-level check that only the existing canonical page receives
+the frozen context; no new hook, page owner, or save field is introduced.
+
 For `DiaryEventPromptKeys` and runtime Def resolution, test:
 
 - precedence: exact source defName → matched group → classifier key → fallback domain;

@@ -1,8 +1,7 @@
 // Event-time adapter for Narrative Continuity. Source-owned events supply already-authorized, plain
-// evidence and future guarded providers supply factual candidates; this builder snapshots XML policy
-// on the main thread and calls the pure selector. Master Wave 2's exact monolith windows are the first
-// real evidence emitter, but there is still no live DLC provider: candidates remain synthetic fixtures
-// until the later N2/N3 provider waves.
+// evidence and guarded providers supply factual candidates; this builder snapshots XML policy on the
+// main thread, queries the fixed pure provider list, and calls the pure selector. N2-B adds the first
+// real provider through a detached Biotech snapshot; other provider rows remain deliberate empty stubs.
 //
 // New to C#/RimWorld? See AGENTS.md ("DLC-safety" and "architecture barriers").
 using System;
@@ -23,9 +22,9 @@ namespace PawnDiary
         public string povPawnId = string.Empty;
         public string povRole = string.Empty;
         public List<NarrativeEvidence> evidence = new List<NarrativeEvidence>();
-        // There is still no live provider registry. Tests provide core fixture candidates through this
-        // plain list; N2/N3 will replace that narrow seam with guarded provider adapters.
+        // Core fixture candidates remain a narrow test seam beside the fixed provider list.
         public List<NarrativeLensCandidate> coreCandidates = new List<NarrativeLensCandidate>();
+        public BiotechNarrativeSnapshot biotech;
         public List<string> recentSelectedCandidateKeys = new List<string>();
         public PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full;
         public int deterministicSeed = 1;
@@ -87,10 +86,14 @@ namespace PawnDiary
 
             try
             {
+                List<NarrativeLensCandidate> candidates = NarrativeProviderOrchestrator.Collect(
+                    result.evidence,
+                    request.coreCandidates,
+                    request.biotech);
                 result.selection = NarrativeContextSelector.Select(new NarrativeContextRequest
                 {
                     evidence = result.evidence,
-                    candidates = request.coreCandidates ?? new List<NarrativeLensCandidate>(),
+                    candidates = candidates,
                     policy = policy,
                     currentTick = request.eventTick,
                     deterministicSeed = request.deterministicSeed,

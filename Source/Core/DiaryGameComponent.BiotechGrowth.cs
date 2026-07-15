@@ -432,7 +432,8 @@ namespace PawnDiary
                     payload,
                     pawn,
                     supporterPawn,
-                    mutation));
+                    mutation,
+                    familyArc));
                 // Settings can suppress the page, but the canonical birthday still consumes the
                 // current upbringing interval so the same lesson history is not narrated at age 10/13.
                 MarkBiotechGrowthFamilySummarized(familyArc, birthdayAge);
