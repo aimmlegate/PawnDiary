@@ -1,5 +1,21 @@
 # Changelog
 
+- **2026-07-15 — Added the authoritative DLC master implementation order.** Added one strict Wave
+  0–13 execution schedule above the Narrative Continuity and five source-specific plans. It resolves
+  roadmap priority conflicts, assigns every subordinate phase to a release wave, freezes dependency
+  and non-reordering rules, defines per-wave acceptance/release gates, defers reflection until all
+  producers share one coordinator, and makes final combination hardening the last step. Linked every
+  subordinate plan and the atmosphere roadmap back to the scheduling authority. Planning only; no
+  runtime behavior changed. The committed DLL was rebuilt solely for repository freshness.
+
+- **2026-07-15 — Planned the shared cross-DLC Narrative Continuity Layer.** Added the canonical
+  implementation plan for per-POV narrative evidence, guarded DLC lens providers, deterministic
+  XML-tuned selection, persistent arc/subject references, bounded prompt context, and one reflection
+  coordinator. Updated the overall atmosphere roadmap and the Royalty, Ideology, Biotech, Anomaly,
+  and Odyssey plans with required shared emissions, provider boundaries, dependency gates, and
+  cross-DLC acceptance cases. Planning/documentation only; no runtime behavior changed. The committed
+  DLL was rebuilt solely for repository freshness.
+
 - **2026-07-15 — Planned comprehensive automated coverage.** Added `TEST_COVERAGE_PLAN.md`, a staged
   requirement-to-test roadmap covering every documented event source, prompt policy/template,
   enchantment and voice layer, humor/forced-model route, asynchronous LLM lifecycle, save/load path,

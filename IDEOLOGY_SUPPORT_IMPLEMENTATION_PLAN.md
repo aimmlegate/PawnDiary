@@ -2,6 +2,9 @@
 
 Status: design approved for later implementation; no production behavior is changed by this file.
 
+Scheduling authority: implement Ideology phases only in the waves assigned by
+`DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Ideology.
+
 This plan turns Ideology from a one-line pawn-summary fact into event-aware diary material. Its core
 feature is a required `EventRelativeStanceResolver`: every enriched entry asks which of this pawn's
 live beliefs actually bears on this event before any doctrine reaches the prompt. The plan also covers
@@ -9,6 +12,11 @@ the new belief-reflection diary type, richer conversion/crisis/ritual/speech ent
 RimWorld's own precept and meme text, certainty-sensitive voice, ideological structures, and named
 gods. It is intentionally implementation-level: a coding agent should be able to take one phase at a
 time without redesigning the feature.
+
+Cross-DLC delivery follows `DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md`. Ideology owns
+belief capture and stance resolution, but the shared layer owns general lens budgeting, arc
+references, and reflection arbitration. Ideology must not become a prerequisite for continuity
+between the other DLCs.
 
 The implementation must follow `AGENTS.md` and `skills/pawndiary-engineering/SKILL.md`: keep live
 RimWorld reads behind an impure adapter, keep policy pure and tested, put tuning and prompt policy in
@@ -322,8 +330,8 @@ their existing behavior. A lightweight pure evidence classifier may derive obvio
 
 ### 5.3 Cross-DLC narrative facet seam
 
-Adopt the wider DLC research's four narrative primitives as **stable evidence facets**, not new event
-types or base classes:
+Consume the canonical Narrative Continuity Layer's four primitives as **stable evidence facets**, not
+new event types or base classes. Do not redeclare their token constants in the Belief subsystem:
 
 | Facet token | Meaning | Normal event shape |
 |---|---|---|
@@ -338,8 +346,8 @@ questions it raises*. Examples include `body_modification`, `organ_use`, `weapon
 `slavery`, `charity`, `violence`, and `darkness`. These are stable XML-facing schema tokens, not
 localized text and not promises that the pawn has a corresponding precept.
 
-`EventRelativeStanceResolver` is the required foundation proposed by the DLC research, not a later
-extension point or an alias for random doctrine selection. It first uses runtime structure already
+`EventRelativeStanceResolver` is Ideology's provider for the shared layer, not a later extension point
+or an alias for random doctrine selection. It first uses runtime structure already
 loaded by RimWorld: direct `Thought.sourcePrecept`, exact thought/history correlations projected from
 the pawn's live precepts, issue identity, and meme relationships. Only when those have no answer does
 it compare bounded guarded event text with issue, correlated-thought/history, precept, and meme text.
@@ -351,8 +359,10 @@ Do not let these facets decide capture on their own:
 
 - The existing source-specific `XxxEventData.Decide` remains responsible for whether a page exists,
   its shape, deduplication, batching, and fan-out.
-- The belief resolver decorates a page already authorized by that source. It may also make that saved
-  page eligible for a later bounded belief reflection.
+- The belief resolver decorates a page already authorized by that source. For ordinary event
+  enrichment, its high-confidence formatted result becomes one `interpretation` candidate and
+  consumes the shared selector's single interpretation slot. It may also make that saved page
+  eligible for a later bounded belief reflection.
 - `ambient_pressure` normally feeds the existing observed-condition/prompt-context machinery, not a
   new immediate page.
 - A future DLC source may emit more than one facet, such as a child's growth moment being both
@@ -361,6 +371,12 @@ Do not let these facets decide capture on their own:
   Anomaly infections/downside identities stay unknown until the game visibly reveals them.
 - Source adapters set `pawnCanKnow=true` only after constructing the POV from visible/recorded facts.
   The nullable/unknown default intentionally fails closed for new integrations.
+
+Standalone belief-reflection pages still use the full `BeliefStanceResolution` as their primary
+source content and do not compete with themselves through the cross-DLC selector. Their scheduling
+must enter the shared `ReflectionCoordinator` once Narrative Continuity N4 lands. Until N4, Phase 4
+may not add another independent permanent priority chain; it must either land with N4 or remain
+deferred.
 
 The existing `BodyModContext.IdeologyStance` is a narrow prototype of this resolver. After parity
 tests exist, remove its approve/despise ID lists. Supply the artificial-part event's nearby
@@ -1048,8 +1064,9 @@ update docs/changelog, build, inspect diff, and stop if unrelated user changes o
    thought/history/issue tiers, lexical fallback, live-doctrine intersection, issue/redundancy collapse,
    normally-one/maximum-two selection, and quiet-only fallback.
 5. Add formatter/reflection policy shells and `tests/BeliefContextTests`, file-linking only pure source.
-6. Define the four stable narrative-facet tokens, required §7.5 evidence vocabulary, salience,
-   deterministic seed inputs, and forward-compatible unknown-token behavior.
+6. Reuse Narrative Continuity N0's facet, salience, knowledge, category, and deterministic seed
+   contracts; define only belief-specific evidence vocabulary and forward-compatible unknown-topic
+   behavior.
 7. Lock structural precedence, lexical ambiguity rejection, second-slot threshold,
    impact/repetition behavior, certainty boundaries, caps, empty behavior, and first-scan baseline in
    tests. The default correction-override list must be empty. No live event route changes yet.
@@ -1057,6 +1074,10 @@ update docs/changelog, build, inspect diff, and stop if unrelated user changes o
 Exit gate: arbitrary synthetic mod IDs resolve through structural/text facts, ambiguous/common-token
 fixtures return empty, and organ/cannibalism/unrelated-belief scenarios pass; no RimWorld types leak
 into the pure project; XML loads; docs describe the inactive policy contract.
+
+Phase 0 may be implemented beside Narrative Continuity N0. Narrative Continuity N1 must exist before
+Phase 1 persists ordinary event enrichment, and Narrative Continuity N4 must be included in or precede
+Phase 4's permanent rest-scheduler change.
 
 ### Phase 1 — Guarded snapshots and saved prompt source
 

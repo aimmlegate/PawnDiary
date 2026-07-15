@@ -5,6 +5,14 @@
 > **Scope:** Royalty, Ideology, Biotech, Anomaly, and Odyssey in RimWorld 1.6. The goal is not
 > exhaustive Def coverage. It is to identify expansion systems that can make a pawn's diary more
 > personal, continuous, and atmospheric without filling it with mechanical notifications.
+>
+> **Implementation handoff:** the shared architecture proposed by this research is frozen in
+> [`DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md`](../DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md).
+> The standalone DLC plans own their game hooks and pages; the continuity plan owns their common
+> evidence, selection, persistence, prompt, and reflection contract.
+> The strict implementation and release order is
+> [`DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`](../DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md); its
+> wave order supersedes the research priority table below.
 
 ## Executive conclusion
 
@@ -64,7 +72,7 @@ Odyssey travel.
 
 Anomaly's ambient physical-horror coverage is already particularly strong in
 [`DiaryObservedConditionDefs.xml`](../1.6/Defs/DiaryObservedConditionDefs.xml). The earlier
-[`EVENT_COVERAGE_PLAN.md`](EVENT_COVERAGE_PLAN.md) was a useful event-by-event first pass, but many
+`EVENT_COVERAGE_PLAN.md` was a useful event-by-event first pass, but many
 of its proposals have now shipped. It should not be treated as the current gap list.
 
 ## Atmosphere selection model
@@ -540,7 +548,9 @@ deserves participant perspectives and an arc reflection afterward.
 ## Cross-DLC narrative primitives
 
 The implementation should avoid five disconnected feature pipelines. Four small reusable story
-primitives cover most high-value opportunities:
+primitives cover most high-value opportunities. These are stable **evidence facets**, not generic
+capture types, base event classes, or page owners. Their concrete contract and implementation order
+live in `../DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md`.
 
 ### `IdentityTransition`
 
@@ -593,9 +603,10 @@ Examples:
 
 These facts should usually tint ordinary prompts rather than generate pages.
 
-The game-facing adapter should collect these into plain DTOs. Pure selectors should then decide
-salience, perspective, merge behavior, and prompt facts. XML Defs should own thresholds, weights,
-tones, cooldowns, and exact Def-name policy.
+The source-specific game-facing adapter attaches these meanings to an event it already owns. The
+shared layer then collects relevant plain lens candidates, selects zero to two, persists lightweight
+arc/subject references, and coordinates rare reflection. XML Defs own thresholds, weights, topic
+affinities, category conflicts, repetition, cooldowns, and prompt budgets.
 
 ## Cross-DLC combinations
 
@@ -612,10 +623,27 @@ Examples:
 For any event, choose at most one or two DLC facts that materially change its interpretation. Event
 relevance should beat DLC novelty.
 
+### Required integration shape
+
+Do not implement the examples above as pairwise Royalty×Biotech or Anomaly×Odyssey code. Each DLC
+participates through the same one-way contract:
+
+1. The canonical event source supplies per-POV, knowledge-gated narrative evidence.
+2. Guarded DLC providers independently propose plain factual lenses only when their cheap
+   applicability gate matches that evidence.
+3. One pure selector ranks exact arc, subject, topic, facet, and ambient matches and keeps zero to two.
+4. The selected text is frozen at event time; lightweight arc/subject references survive archive
+   compaction.
+5. One reflection coordinator arbitrates major arc, cross-arc, belief, quadrum, and daily reflection.
+
+Ideology's event-relative stance resolver is one interpretation provider inside this shape. It is not
+the prerequisite or owner of continuity between the other DLCs.
+
 ## Prioritized roadmap
 
 | Priority | Feature | Atmosphere payoff | Expected implementation shape |
 |---|---|---|---|
+| 0 | Narrative Continuity Layer N0–N1 | enables every later integration without page volume | shared plain contracts, XML policy, per-POV persistence, archive references, bounded prompt seam |
 | 1 | Biotech growth moments and family continuity | exceptional | one completed-choice hook, DTO, pure merge/dedup policy, prompt context |
 | 2 | Odyssey journey and landing chapters | exceptional | guarded landing hook, journey snapshot, novelty/cooldown policy |
 | 3 | Anomaly ritual-specific guidance | high for low cost | XML-only exact groups before the generic ritual fallback |
@@ -628,6 +656,14 @@ relevance should beat DLC novelty.
 | 10 | Ideology stance and conversion plan | very high | proceed through the separate Ideology implementation plan |
 
 ### Suggested delivery phases
+
+#### Foundation — shared continuity before flagship arcs
+
+- Implement Narrative Continuity N0 (pure contracts/policy) and N1 (persistence/prompt seam).
+- Freeze facet, phase, subject, arc-key, category, and knowledge tokens.
+- Keep every provider empty until its source-specific plan supplies verified event-time facts.
+- Land the first real providers with Biotech B1 and Odyssey O1 rather than inventing synthetic DLC
+  behavior in the foundation diff.
 
 #### Phase A — prompt quality with little or no new page volume
 
@@ -656,7 +692,8 @@ relevance should beat DLC novelty.
 - Royal Ascent.
 - Archonexus departure.
 - Void embrace/disruption.
-- Cross-DLC event-relative fact selection.
+- Linked cross-arc reflection and tuned topic/category affinities after event-relative selection has
+  already shipped through Narrative Continuity N2–N3.
 
 ## Implementation guardrails
 

@@ -3,16 +3,20 @@
 Status: scope-review draft; the RimWorld 1.6 feasibility spike is complete, and this file changes no
 production behavior.
 
+Scheduling authority: implement Royalty phases only in the waves assigned by
+`DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Royalty.
+
 This plan turns Royalty from a few isolated title, psylink, ritual, thought, and raid facts into a
 coherent set of personal story arcs. Its flagship is the relationship between a pawn and a persona
 weapon. Later slices add truthful royal succession, a deliberately small set of dramatic permits,
 and the Royal Ascent as a colony chapter. The plan deliberately builds on Pawn Diary's current event
 routes rather than creating a parallel DLC pipeline.
 
-The plan incorporates the decisions in `design/DLC_ATMOSPHERE_RESEARCH.md` and preserves the
-cross-DLC seam designed in `IDEOLOGY_SUPPORT_IMPLEMENTATION_PLAN.md`: narrative facets are evidence
-attached to source-specific events, not new generic capture types. Royalty support must also work
-without Ideology support being implemented.
+The plan incorporates the decisions in `design/DLC_ATMOSPHERE_RESEARCH.md` and the canonical shared
+contract in `DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md`: narrative facets are evidence
+attached to source-specific events, not new generic capture types. Royalty is a source and guarded
+context provider for that layer, and must still work without Ideology or any other DLC plan being
+implemented.
 
 Implementation must follow `AGENTS.md` and `skills/pawndiary-engineering/SKILL.md`: live RimWorld
 reads stay behind guarded impure adapters, policy stays pure and tested, tuning and prompt policy
@@ -614,9 +618,10 @@ Representative saved context keys are:
 Context builders must omit unknown optional claims rather than writing misleading `false`, `none`, or
 empty prose fields. Required parser/sentinel fields follow existing event conventions.
 
-### 7.6 Optional cross-DLC narrative facets
+### 7.6 Required shared narrative evidence
 
-Royalty may submit plain, stable facets and topic tags:
+After Narrative Continuity Phase N1 exists, every Royalty page introduced by this plan must submit
+plain, per-POV evidence in the same slice that creates the canonical event:
 
 | Royalty moment | Facet | Suggested belief topics |
 |---|---|---|
@@ -629,6 +634,19 @@ Royalty may submit plain, stable facets and topic tags:
 
 Unknown topics are ignored. These facets never create a page and never make Royalty depend on the
 Ideology implementation.
+
+Use stable continuity identities:
+
+- persona lifecycle: `royalty-persona|<weaponThingId>|<bondEpoch>` with the weapon as subject;
+- title transition/succession: pawn subject plus exact transition phase; faction/title remain
+  source-owned event facts, not part of a localized arc key;
+- Royal Ascent: one quest/window arc key shared by start, active pressure, and terminal chapter;
+- permit: no invented arc key unless an exact active Ascent or persona relationship already applies.
+
+The Royalty provider may propose a matching persona bond, exact current title/duty, or active court
+pressure. It must pass exact arc/subject/topic applicability to the shared selector and must not put a
+generic title into unrelated daily entries. Ordinary event enrichment is selected by the shared
+`NarrativeContextSelector`; Royalty code must not append its own second cross-DLC prompt block.
 
 ## 8. Persona weapon lifecycle policy
 
@@ -1282,7 +1300,8 @@ same vanilla class.
 
 ### Phase 0 — Freeze pure contracts and XML policy
 
-1. Add plain Royalty snapshot/state contracts.
+1. Confirm Narrative Continuity N0 token/arc-key contracts and add plain Royalty snapshot/state
+   contracts that map to them without referencing live shared providers.
 2. Add `DiaryRoyaltyPolicyDef` and safe fallback loading.
 3. Implement the R1 pure lifecycle, trait, milestone, title, and mutation-ownership decisions.
 4. Add `RoyaltyContextTests` covering all policy without Verse/RimWorld references.
@@ -1290,6 +1309,9 @@ same vanilla class.
 
 Exit gate: pure tests pass; XML parses; the contracts can express every matrix row without live game
 objects.
+
+Narrative Continuity N0–N1 must land before Phase 2 creates persona pages. Phase 1 may baseline
+Royalty state in parallel, but it must not invent a temporary Royalty-only continuity save schema.
 
 ### Phase 1 — Guarded collection and silent baselining
 
@@ -1372,7 +1394,8 @@ Exit gate: R2 is releasable.
 4. Add start-only event window and stable witness selection.
 5. Add active prompt shading and the exact terminal group/policy.
 6. Verify no accepted/terminal/window-end or all-colonist duplicates.
-7. Add optional narrative facets/topics if the Ideology seam exists.
+7. Attach the required journey/pressure evidence and shared arc references; verify the Royalty
+   provider stays empty when no exact Ascent/authority context applies.
 
 Exit gate: R3 is releasable.
 
