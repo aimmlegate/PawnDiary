@@ -688,12 +688,22 @@ namespace PawnDiary.RimTests
 
         private static void AssertStr(string expected, string actual, string field)
         {
-            if (!string.Equals(expected ?? string.Empty, actual ?? string.Empty, StringComparison.Ordinal))
+            // Scribe persists strings as XML text, and XML end-of-line normalization rewrites embedded
+            // \r\n <-> \n across a save/load. A diary prompt's newline STYLE is not semantically meaningful
+            // and can never round-trip byte-for-byte through XML, so compare line-ending-normalized — the
+            // CONTENT must still match exactly, only the newline representation is normalized.
+            if (!string.Equals(NormalizeNewlines(expected), NormalizeNewlines(actual), StringComparison.Ordinal))
             {
                 throw new AssertionException(
                     field + " did not survive the Scribe round-trip. expected='"
                     + (expected ?? "<null>") + "' actual='" + (actual ?? "<null>") + "'.");
             }
+        }
+
+        // Collapses \r\n and lone \r to \n so an assertion ignores only the XML-normalized newline STYLE.
+        private static string NormalizeNewlines(string value)
+        {
+            return (value ?? string.Empty).Replace("\r\n", "\n").Replace("\r", "\n");
         }
 
         private static void AssertInt(int expected, int actual, string field)

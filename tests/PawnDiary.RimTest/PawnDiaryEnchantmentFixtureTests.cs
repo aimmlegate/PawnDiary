@@ -93,6 +93,12 @@ namespace PawnDiary.RimTests
             scope = PawnDiaryRimTestScope.Begin(InspirationGroupKey, ArrivalSignal.ArrivalGroupKey);
             scope.EnablePromptCapture(PromptContextDetailLevel.Full);
             pawn = scope.CreateGeneratingAdultColonist();
+
+            // The hediff enchantment collector reads the writer's LIVE health, so the pawn must be
+            // resolvable by generation's live-pawn lookup or no hediff candidate reaches the prompt; and
+            // guarantee the forced inspiration the live-capture test fires can start.
+            scope.RegisterAsLiveWorldPawn(pawn);
+            PawnDiaryRimTestScope.MakeCreativityInspirationEligible(pawn);
         }
 
         /// <summary>

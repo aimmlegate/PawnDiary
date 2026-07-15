@@ -100,6 +100,12 @@ namespace PawnDiary.RimTests
             });
 
             pawn = scope.CreateGeneratingAdultColonist();
+
+            // Guarantee the forced Inspired_Creativity this suite fires can start (a random colonist often
+            // fails its skill gate, and forceStartAnyway does not bypass it). The psychotype and
+            // writing-style layers this suite asserts resolve from the saved record, not live pawn state,
+            // so no WorldPawns registration is needed here.
+            PawnDiaryRimTestScope.MakeCreativityInspirationEligible(pawn);
         }
 
         /// <summary>

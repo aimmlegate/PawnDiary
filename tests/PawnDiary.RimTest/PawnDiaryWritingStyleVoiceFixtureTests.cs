@@ -79,6 +79,12 @@ namespace PawnDiary.RimTests
             scope.EnablePromptCapture(PromptContextDetailLevel.Full);
             pawn = scope.CreateGeneratingAdultColonist();
 
+            // The hediff writing-style override layer reads LIVE pawn health, so the pawn must be
+            // resolvable by generation's live-pawn lookup or that layer silently drops out of the captured
+            // prompt; and guarantee the forced inspiration this suite fires can actually start.
+            scope.RegisterAsLiveWorldPawn(pawn);
+            PawnDiaryRimTestScope.MakeCreativityInspirationEligible(pawn);
+
             // Snapshot the rolled base picker/pin BEFORE mutating, so cleanup can restore them exactly.
             WritingStyleResolution seeded = scope.Component.ResolveWritingStyleFor(pawn);
             originalBaseStyleDefName = seeded.baseStyleDefName;

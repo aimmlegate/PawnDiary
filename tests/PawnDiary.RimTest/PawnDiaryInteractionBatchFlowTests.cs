@@ -67,6 +67,17 @@ namespace PawnDiary.RimTests
             // to the ambient batch instead of a random escape to its own pairwise page.
             DisablePromotionRoll(RequireGroup("smalltalk"));
 
+            // Each test adds its rows in a single RimTest frame with no game tick between them. The
+            // dispatcher's generic same-type dedup (a 60-tick safety window against fluke duplicate
+            // signals for the same pawn/type/shape) would otherwise collapse the identical same-frame rows
+            // into one, so the batch never reaches its flush threshold. Disable that window for the test
+            // (restored in teardown); real gameplay spaces interactions across thousands of ticks, so the
+            // window never interferes with genuine batch accumulation.
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            int originalDedupTicks = tuning.genericEventTypeDedupTicks;
+            tuning.genericEventTypeDedupTicks = 0;
+            scope.RegisterCleanup(() => tuning.genericEventTypeDedupTicks = originalDedupTicks);
+
             // The shared harness restores events/diaries/log rows but not the private in-memory batch
             // stores; clear any entry that references a test pawn while the pawns are still alive.
             DiaryGameComponent component = scope.Component;

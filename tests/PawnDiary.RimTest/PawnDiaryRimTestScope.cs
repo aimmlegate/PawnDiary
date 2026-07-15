@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using RimTestRedux;
 using RimWorld;
+using RimWorld.Planet;
 using Verse;
 
 namespace PawnDiary.RimTests
@@ -224,7 +225,123 @@ namespace PawnDiary.RimTests
 
             testPawns.Add(pawn);
             testPawnIds.Add(pawn.GetUniqueLoadID());
+
+            // The SetFaction above runs through the live game, so PawnSetFactionPatch.Postfix fires and
+            // records a neutral "how I joined" arrival page for this pawn during setup. That is correct in
+            // real play, but it is not state a test asked for: it pre-satisfies the arrival dedup (so a
+            // test's own ArrivalSignal is dropped as a duplicate) and shows up as an extra ungenerated page
+            // in any per-pawn count. Scrub it so every freshly created test pawn starts from a blank diary.
+            ScrubSetupArrivalForPawn(pawn);
             return pawn;
+        }
+
+        /// <summary>
+        /// Registers a test pawn with <see cref="WorldPawns"/> so generation's live-pawn lookup
+        /// (<c>DiaryGameComponent.FindLivePawnByLoadId</c>, which scans maps + world pawns) can resolve
+        /// it. The harness's pawns are generated but never spawned, so without this the generation
+        /// pipeline sees a null pawn and silently drops every live-pawn-derived prompt layer (the hediff
+        /// writing-style override, the humor temperament multiplier, the hediff prompt enchantment). Only
+        /// prompt-capture suites that assert on those layers need it. Idempotent; the pawn is removed from
+        /// the world in teardown (<see cref="DestroyTestPawns"/>) before it is destroyed.
+        /// </summary>
+        public void RegisterAsLiveWorldPawn(Pawn pawn)
+        {
+            if (pawn == null || pawn.Destroyed || Find.WorldPawns == null || Find.WorldPawns.Contains(pawn))
+            {
+                return;
+            }
+
+            // KeepForever stops WorldPawns from garbage-collecting a free-floating colonist mid-test.
+            Find.WorldPawns.PassToWorld(pawn, PawnDiscardDecideMode.KeepForever);
+        }
+
+        /// <summary>
+        /// Guarantees a pawn can be handed a forced vanilla <c>Inspired_Creativity</c> inspiration, the
+        /// trigger the voice/humor/enchantment prompt-capture suites use. That def gates on
+        /// <c>requiredAnySkill</c> (Construction/Artistic/Crafting &gt;= 3), a non-disabled qualifying work
+        /// type, Manipulation, and minAge 13 — and <c>TryStartInspiration(forceStartAnyway: true)</c> does
+        /// NOT bypass them. A randomly generated colonist often fails the skill gate, so forcing the
+        /// inspiration without this is flaky. Raising the first non-disabled qualifying skill above the
+        /// threshold satisfies both the skill and (via that skill's work type) the work-type gate for any
+        /// adult with at least one of those skills enabled.
+        /// </summary>
+        public static void MakeCreativityInspirationEligible(Pawn pawn)
+        {
+            if (pawn?.skills == null)
+            {
+                throw new AssertionException("Cannot make a pawn without a skill set inspiration-eligible.");
+            }
+
+            SkillDef[] qualifying = { SkillDefOf.Artistic, SkillDefOf.Construction, SkillDefOf.Crafting };
+            for (int i = 0; i < qualifying.Length; i++)
+            {
+                SkillRecord skill = pawn.skills.GetSkill(qualifying[i]);
+                if (skill != null && !skill.TotallyDisabled)
+                {
+                    if (skill.Level < 4)
+                    {
+                        skill.Level = 4;
+                    }
+
+                    return;
+                }
+            }
+
+            throw new AssertionException(
+                "The generated test pawn had Construction, Artistic and Crafting all disabled, so it cannot "
+                + "receive Inspired_Creativity; regenerate or choose a different capture trigger.");
+        }
+
+        /// <summary>
+        /// Removes the neutral arrival page the Pawn.SetFaction hook recorded for a just-created test pawn:
+        /// the hot event, its archived copy, the pawn's diary-index ref, and the transient dedup mark. The
+        /// pawn's diary record itself is kept — only the incidental arrival goes — so the pawn is a blank
+        /// slate a test can drive from scratch.
+        /// </summary>
+        private void ScrubSetupArrivalForPawn(Pawn pawn)
+        {
+            if (Component == null || pawn == null)
+            {
+                return;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            if (string.IsNullOrEmpty(pawnId))
+            {
+                return;
+            }
+
+            HashSet<string> arrivalEventIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            DiaryEventRepository repository = EventRepository();
+            IReadOnlyList<DiaryEvent> allEvents = repository.AllEvents;
+            for (int i = 0; i < allEvents.Count; i++)
+            {
+                DiaryEvent diaryEvent = allEvents[i];
+                if (diaryEvent != null && diaryEvent.IsArrivalDescriptionFor(pawnId))
+                {
+                    arrivalEventIds.Add(diaryEvent.eventId);
+                }
+            }
+
+            if (arrivalEventIds.Count > 0)
+            {
+                repository.RemoveEvents(arrivalEventIds);
+                (ArchiveField?.GetValue(Component) as DiaryArchiveRepository)?.RemoveForEventIds(arrivalEventIds);
+
+                Dictionary<string, PawnDiaryRecord> diariesById =
+                    DiariesByIdField?.GetValue(Component) as Dictionary<string, PawnDiaryRecord>;
+                PawnDiaryRecord record = null;
+                diariesById?.TryGetValue(pawnId, out record);
+                record?.eventIds?.RemoveAll(id => arrivalEventIds.Contains(id));
+                DiaryStateVersion.Bump();
+            }
+
+            // The arrival hook also stamped a transient event-type dedup key embedding this pawn id; clear
+            // any such recentEvents key so a test's own (same-frame) arrival submit is not swallowed as a
+            // recent duplicate.
+            RemoveDictionaryKeysContaining(
+                RecentEventsField?.GetValue(Component) as IDictionary,
+                new HashSet<string>(new[] { pawnId }, StringComparer.Ordinal));
         }
 
         /// <summary>
@@ -660,10 +777,19 @@ namespace PawnDiary.RimTests
             for (int i = 0; i < testPawns.Count; i++)
             {
                 Pawn pawn = testPawns[i];
-                if (pawn != null && !pawn.Destroyed)
+                if (pawn == null || pawn.Destroyed)
                 {
-                    pawn.Destroy(DestroyMode.Vanish);
+                    continue;
                 }
+
+                // A prompt-capture suite may have registered this pawn with WorldPawns
+                // (see RegisterAsLiveWorldPawn); remove it first so no test colonist leaks into the world.
+                if (Find.WorldPawns != null && Find.WorldPawns.Contains(pawn))
+                {
+                    Find.WorldPawns.RemovePawn(pawn);
+                }
+
+                pawn.Destroy(DestroyMode.Vanish);
             }
         }
 

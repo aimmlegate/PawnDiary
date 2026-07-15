@@ -74,6 +74,12 @@ namespace PawnDiary.RimTests
             scope = PawnDiaryRimTestScope.Begin(InspirationGroupKey, ArrivalSignal.ArrivalGroupKey);
             scope.EnablePromptCapture(PromptContextDetailLevel.Full);
             pawn = scope.CreateGeneratingAdultColonist();
+
+            // The temperament multiplier reads the writer's LIVE traits, so the pawn must be resolvable by
+            // generation's live-pawn lookup (otherwise the multiplier defaults to 1 and the elevated/reduced
+            // cases can't move it); and guarantee the forced inspiration this suite fires can start.
+            scope.RegisterAsLiveWorldPawn(pawn);
+            PawnDiaryRimTestScope.MakeCreativityInspirationEligible(pawn);
             SnapshotHumorTuning();
         }
 
