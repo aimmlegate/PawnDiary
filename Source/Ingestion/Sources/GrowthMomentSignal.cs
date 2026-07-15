@@ -269,6 +269,10 @@ namespace PawnDiary.Ingestion
                         eventTick = diaryEvent.tick,
                         povPawnId = povPawn.GetUniqueLoadID(),
                         povRole = povRole,
+                        // Provider selection is frozen before endpoint routing. Use the player's global
+                        // preset here so Compact/Balanced lens caps apply before the factual unit is saved.
+                        contextDetailLevel = PawnDiarySettings.NormalizeContextDetailLevel(
+                            PawnDiaryMod.Settings?.contextDetailLevel ?? PromptContextDetailLevel.Full),
                         biotech = BuildBiotechNarrativeSnapshot(
                             povPawn,
                             child,
@@ -324,31 +328,10 @@ namespace PawnDiary.Ingestion
                 return null;
             }
 
-            bool hasObservedUpbringing = false;
-            List<FamilySupportObservationState> observations = familyArc?.supporters;
-            if (observations != null)
-            {
-                for (int i = 0; i < observations.Count; i++)
-                {
-                    FamilySupportObservationState row = observations[i];
-                    if (row != null && row.lessonCount + row.babyPlayCount + row.careCount > 0)
-                    {
-                        hasObservedUpbringing = true;
-                        break;
-                    }
-                }
-            }
-
-            hasObservedUpbringing = hasObservedUpbringing
-                || (familyArc?.recordedGrowthAges?.Count ?? 0) > 0;
-            bool hasExactFamilyConnection = familyArc != null
-                && (!string.IsNullOrWhiteSpace(familyArc.birtherId)
-                    || !string.IsNullOrWhiteSpace(familyArc.geneticMotherId)
-                    || !string.IsNullOrWhiteSpace(familyArc.fatherId));
             string continuity = BiotechNarrativeProvider.FamilyContinuity(
                 familyArc != null && familyArc.birthTick > 0 && !familyArc.baselineOnly,
-                hasObservedUpbringing,
-                hasExactFamilyConnection);
+                FamilyArcPolicy.HasObservedUpbringing(familyArc),
+                FamilyArcPolicy.HasExactFamilyConnection(familyArc));
             string childName = DiaryLineCleaner.CleanLine(child.LabelShortCap);
             string familyFormat = FamilyNarrativeFormat(policy, continuity);
             string familyText = FormatNarrative(familyFormat, childName);

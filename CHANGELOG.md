@@ -1,5 +1,12 @@
 # Changelog
 
+- **2026-07-16 — Fixed Narrative N2-B adversarial findings.** Family continuity now treats exact
+  zero-count `Parent`/`ParentBirth` baseline rows as valid family connections, while prior recorded
+  growth ages alone no longer invent directly observed upbringing for child-only arcs. Live growth
+  snapshots now apply the player's global Full/Balanced/Compact context-detail preset before freezing
+  selected lenses. Added pure family-state regressions, consolidated the duplicate Biotech policy
+  documentation row, and rebuilt the runtime DLL.
+
 - **2026-07-16 — Continued DLC integration: Narrative N2-B Biotech provider.** Added the first real
   guarded Narrative Continuity provider behind a fixed deterministic provider list; Royalty,
   Ideology, Anomaly, and Odyssey remain explicit empty stubs until their scheduled waves. Canonical

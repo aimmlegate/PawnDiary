@@ -147,7 +147,10 @@ Narrative N2-B extends `NarrativeContinuityTests` with assembly-free checks for 
 classification, exact arc/subject candidate construction, fixed provider ordering, inactive-DLC and
 unconnected-POV silence, unrelated-evidence rejection, and empty future-provider stubs. The normal
 growth flow/RimTest path remains the adapter-level check that only the existing canonical page receives
-the frozen context; no new hook, page owner, or save field is introduced.
+the frozen context; no new hook, page owner, or save field is introduced. `DiaryBiotechPolicyTests`
+also pins the family-state projection: zero-count exact parent rows supply baseline continuity, exact
+activity supplies observed upbringing, and a prior recorded growth age on a child-only arc supplies
+neither.
 
 For `DiaryEventPromptKeys` and runtime Def resolution, test:
 

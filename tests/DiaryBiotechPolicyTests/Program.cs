@@ -353,6 +353,24 @@ namespace DiaryBiotechPolicyTests
                 }, 12);
             AssertEqual("child baseline key", "biotech-family|Child", childArc.familyArcId);
             AssertEqual("exact parent rows kept", 2, childArc.supporters.Count);
+            AssertTrue("zero-count current parent rows provide exact baseline continuity",
+                FamilyArcPolicy.HasExactFamilyConnection(childArc));
+            AssertTrue("zero-count current parent rows do not invent observed upbringing",
+                !FamilyArcPolicy.HasObservedUpbringing(childArc));
+
+            BiotechFamilyArcState childOnlyArc = FamilyArcPolicy.EnsureChildArc(
+                new List<BiotechFamilyArcState>(),
+                new FamilyChildSnapshot
+                {
+                    childId = "ChildOnly",
+                    childName = "Finn",
+                    observedTick = 300
+                }, 12);
+            FamilyArcPolicy.MarkGrowthSummarized(childOnlyArc, 7, 500);
+            AssertTrue("prior growth alone does not invent observed upbringing",
+                !FamilyArcPolicy.HasObservedUpbringing(childOnlyArc));
+            AssertTrue("child-only arc has no exact family baseline",
+                !FamilyArcPolicy.HasExactFamilyConnection(childOnlyArc));
 
             FamilyArcPolicy.ObserveActivity(arcs, new FamilyActivityObservation
             {
@@ -365,6 +383,8 @@ namespace DiaryBiotechPolicyTests
             }, 12);
             FamilySupportObservationState teacher = childArc.supporters.Single(row => row.adultId == "Teacher");
             AssertEqual("lesson count recorded", 1, teacher.lessonCount);
+            AssertTrue("exact lesson supplies observed upbringing continuity",
+                FamilyArcPolicy.HasObservedUpbringing(childArc));
             AssertEqual("lesson is initially unsummarized", 1,
                 FamilyArcPolicy.UnsummarizedEvidence(teacher));
             FamilyArcPolicy.MarkGrowthSummarized(childArc, 7, 500);

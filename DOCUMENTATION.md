@@ -175,14 +175,18 @@ stable saved family arc when available, then pass a guarded plain snapshot throu
 list. The Biotech provider may add exact family continuity (`since_birth`, directly observed childhood,
 or a current exact parent baseline) and the child's visible current non-Baseliner xenotype. It never
 enumerates genes, predicts a future xenotype, infers parental emotion, or creates another POV/page.
+Only exact lesson/play/care counters qualify as observed upbringing; a prior recorded growth age alone
+does not turn a child-only arc into family evidence. Exact `Parent`/`ParentBirth` baseline rows qualify
+even when they have no activity count.
 Royalty, Ideology, Anomaly, and Odyssey provider slots intentionally return empty until their scheduled
 source waves. Provider absence, no Biotech, unconnected POVs, child-only arcs, or malformed translated
 format strings preserve the ordinary prompt with no narrative-context field.
 
 `DiaryPipelineAdapters` copy the frozen context into the plain payload, and first-person template
 fields render it only when non-empty, prefixed by DefInjected policy wording. All neutral chronicle and
-title templates omit the field. The selector's Full/Balanced/Compact budgets choose complete factual
-lenses before text is saved; prompt assembly never truncates a selected fact. Archive compaction copies
+title templates omit the field. The event-time selector uses the player's global context-detail preset,
+so Full/Balanced/Compact budgets choose complete factual lenses before text is saved; prompt assembly
+never truncates a selected fact. Archive compaction copies
 only references and selection keys, and `DiaryArchiveRepository` rebuilds bounded pawn-scoped exact-arc
 and exact-subject indexes after load or retention. Source-specific pages remain their own sole capture
 owners; N2-B only enriches the already-authorized growth page and cannot create another event.
@@ -1069,8 +1073,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeRollPolicyDefs.xml` | numeric tuning for the psychotype roll: family bases, bonuses, wildcard chance, jitter range, duplicate penalty |
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; the main-thread builder snapshots it before fixed-order pure provider selection |
-| `DiaryBiotechPolicyDefs.xml` | Biotech growth/family thresholds, exact string classifiers, qualitative growth/upbringing prose, and N2-B DefInjected family/current-identity candidate formats |
-| `DiaryBiotechPolicyDefs.xml` | B1 growth-tier opportunity bands, localized passion/upbringing prose, pending/fallback timing, exact pregnancy/labor/activity/memory matchers, supporter thresholds/caps, naming timing, family retention, and the two-writer birth cap; Phases 1–2 use growth/family fields live while birth fields remain reserved |
+| `DiaryBiotechPolicyDefs.xml` | B1 growth/family thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback timing, exact pregnancy/labor/activity/memory matchers, supporter thresholds/caps, naming timing, family retention, and the two-writer birth cap; Phases 1–2 and N2-B use growth/family/provider fields live while birth fields remain reserved |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
 | `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |
 | `DiaryUiStyleDef.xml` / `DiaryTextDecorationDefs.xml` | UI dimensions/colors and display-only rich-text decoration |

@@ -312,6 +312,64 @@ namespace PawnDiary.Capture
                 Math.Max(0, observedTick));
         }
 
+        /// <summary>
+        /// Returns true only when the saved arc contains an exact lesson, baby-play, or care
+        /// observation. Recorded growth ages are ownership milestones, not upbringing evidence, so a
+        /// child-only arc cannot become an observed-family story merely by reaching age ten or thirteen.
+        /// </summary>
+        public static bool HasObservedUpbringing(BiotechFamilyArcState arc)
+        {
+            if (arc?.supporters == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < arc.supporters.Count; i++)
+            {
+                if (TotalEvidence(arc.supporters[i]) > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true when an arc has an exact saved parent connection. Pregnancy participant IDs
+        /// cover observed pregnancy/labor arcs; zero-count Parent/ParentBirth supporter rows cover the
+        /// ordinary living-child baseline captured directly from current pawn relations.
+        /// </summary>
+        public static bool HasExactFamilyConnection(BiotechFamilyArcState arc)
+        {
+            if (arc == null)
+            {
+                return false;
+            }
+
+            if (ValidId(arc.birtherId) || ValidId(arc.geneticMotherId) || ValidId(arc.fatherId))
+            {
+                return true;
+            }
+
+            if (arc.supporters == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < arc.supporters.Count; i++)
+            {
+                string role = arc.supporters[i]?.relationToken;
+                if (role == BiotechFamilyRoleTokens.Parent
+                    || role == BiotechFamilyRoleTokens.BirthParent)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>Returns the unsummarized exact observation count without overflow.</summary>
         public static int UnsummarizedEvidence(FamilySupportObservationState supporter)
         {
