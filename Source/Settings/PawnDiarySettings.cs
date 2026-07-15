@@ -5,6 +5,7 @@
 // XML Def prompt-policy and tuning fields.
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -810,6 +811,48 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Effective canonical-growth setting. Before the player touches the new Biotech row, an
+        /// explicit legacy Birthday override is inherited so an upgrade does not reverse prior intent.
+        /// The guarded Phase 1 growth source calls this at event creation; observation/baselines advance
+        /// independently so disabling the row releases the mature Birthday fallback instead.
+        /// </summary>
+        public bool IsBiotechGrowthMomentEnabled()
+        {
+            EnsureGroupDictionaries();
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey("progressionGrowthMoment");
+            if (group == null || group.UnavailableForCurrentRuntime())
+            {
+                return false;
+            }
+
+            return BiotechSettingsInheritance.GrowthEnabled(
+                GroupEnabledOverride("progressionGrowthMoment"),
+                GroupEnabledOverride("eventWindowBirthday"),
+                group.defaultEnabled);
+        }
+
+        /// <summary>
+        /// Effective canonical-birth setting. A new explicit override wins; otherwise only explicit
+        /// mature Tale/ritual choices are inherited. No birth hook calls this until Biotech Phase 3.
+        /// </summary>
+        public bool IsBiotechFamilyBirthEnabled(bool ritualBirth)
+        {
+            EnsureGroupDictionaries();
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey("biotechFamilyBirth");
+            if (group == null || group.UnavailableForCurrentRuntime())
+            {
+                return false;
+            }
+
+            return BiotechSettingsInheritance.FamilyBirthEnabled(
+                GroupEnabledOverride("biotechFamilyBirth"),
+                GroupEnabledOverride("talelife"),
+                GroupEnabledOverride("ritualChildbirth"),
+                ritualBirth,
+                group.defaultEnabled);
+        }
+
+        /// <summary>
         /// Stores a player override for one automatic-capture group. Matching the XML default removes
         /// the override so future XML edits can still become the inherited value.
         /// </summary>
@@ -991,6 +1034,19 @@ namespace PawnDiary
             {
                 groupEnabled = new Dictionary<string, bool>();
             }
+        }
+
+        /// <summary>Returns an explicit saved group override, preserving missing as null for migration policy.</summary>
+        private bool? GroupEnabledOverride(string groupKey)
+        {
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey(groupKey);
+            if (group == null)
+            {
+                return null;
+            }
+
+            bool value;
+            return groupEnabled.TryGetValue(group.defName, out value) ? (bool?)value : null;
         }
 
         /// <summary>

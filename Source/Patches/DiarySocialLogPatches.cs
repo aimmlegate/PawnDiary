@@ -45,6 +45,13 @@ namespace PawnDiary
                 Pawn initiator = InitiatorField?.GetValue(s) as Pawn;
                 Pawn recipient = RecipientField?.GetValue(s) as Pawn;
                 DiaryGameComponent component = DiaryGameComponent.Instance;
+                // Family evidence is observation state, not a diary page. Record it before the
+                // ordinary interaction settings/eligibility gate so disabling teaching pages does
+                // not erase a child's exact upbringing history.
+                component?.ObserveBiotechFamilyInteraction(
+                    initiator,
+                    recipient,
+                    interactionDef?.defName);
                 if (component == null || !component.ShouldCaptureInteractionFromPlayLog(initiator, recipient, interactionDef))
                 {
                     return;

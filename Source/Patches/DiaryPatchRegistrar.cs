@@ -21,6 +21,8 @@ namespace PawnDiary
             ProximityLetterEventWindowPatch.TryRegister(harmony);
             VoidMonolithActivationEventWindowPatch.TryRegister(harmony);
             PrisonBreakEventWindowPatch.TryRegister(harmony);
+            BiotechFamilyHediffPatch.TryRegister(harmony);
+            BiotechGrowthLetterPatch.TryRegister(harmony);
             SpeakUpReplySchedulingGuardPatch.TryRegister(harmony);
             DiaryLogReportPatch.TryRegister(harmony);
         }

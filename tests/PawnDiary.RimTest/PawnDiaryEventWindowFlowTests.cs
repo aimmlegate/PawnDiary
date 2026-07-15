@@ -237,6 +237,74 @@ namespace PawnDiary.RimTests
                 "A restartOnStart=false keepActive window must not open a second active window on a repeated start.");
         }
 
+        /// <summary>
+        /// EVT-22 / Master Wave 2. Each exact player-driven monolith level owns one one-shot window.
+        /// With Anomaly active the page also freezes one source-owned journey-chapter reference while
+        /// keeping prompt context empty (there is deliberately no live Anomaly provider in this wave).
+        /// Without Anomaly the same plain-string signals cleanly no-op behind the package gate.
+        /// </summary>
+        [Test]
+        public static void ExactMonolithChaptersEmitOnceWithSourceEvidence()
+        {
+            string[] windowDefNames =
+            {
+                "VoidMonolithActivation",
+                "VoidMonolithWaking",
+                "VoidMonolithVoidAwakened"
+            };
+            string[] levelDefNames = { "Stirring", "Waking", "VoidAwakened" };
+            string[] phases = { "stirring", "waking", "void_awakened" };
+
+            DiaryEventWindowDef firstWindow = RequireWindowDef(windowDefNames[0]);
+            bool anomalyAvailable = !firstWindow.MissingRequiredPackage();
+            for (int i = 0; i < windowDefNames.Length; i++)
+            {
+                RequireWindowDef(windowDefNames[i]);
+                string levelDefName = levelDefNames[i];
+                if (!anomalyAvailable)
+                {
+                    scope.RequireNoNewEvent(() => scope.Component.RecordEventWindowSignal(
+                        "VoidMonolith", levelDefName, "activated", levelDefName, null, firstPawn));
+                    continue;
+                }
+
+                DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                    () => scope.Component.RecordEventWindowSignal(
+                        "VoidMonolith", levelDefName, "activated", levelDefName, null, firstPawn),
+                    windowDefNames[i],
+                    firstPawn,
+                    null);
+
+                List<NarrativeEvidence> evidence =
+                    diaryEvent.NarrativeEvidenceForRole(DiaryEvent.InitiatorRole);
+                PawnDiaryRimTestScope.Require(
+                    evidence.Count == 1,
+                    windowDefNames[i] + " should save exactly one source-owned evidence row.");
+                PawnDiaryRimTestScope.Require(
+                    evidence[0].facet == NarrativeFacetTokens.JourneyChapter
+                    && evidence[0].phase == phases[i]
+                    && evidence[0].arcKey == "anomaly-monolith|0"
+                    && evidence[0].pawnCanKnow == true,
+                    windowDefNames[i] + " saved incorrect or knowledge-unsafe narrative evidence.");
+
+                List<NarrativeReference> references =
+                    diaryEvent.NarrativeReferencesForRole(DiaryEvent.InitiatorRole);
+                PawnDiaryRimTestScope.Require(
+                    references.Count == 1
+                    && references[0].facet == NarrativeFacetTokens.JourneyChapter
+                    && references[0].phase == phases[i]
+                    && references[0].arcKey == "anomaly-monolith|0",
+                    windowDefNames[i] + " did not freeze the exact monolith chapter reference.");
+                PawnDiaryRimTestScope.Require(
+                    string.IsNullOrWhiteSpace(diaryEvent.NarrativeContextForRole(DiaryEvent.InitiatorRole)),
+                    "Wave 2 source evidence must not invent prompt context without a live Anomaly provider.");
+            }
+
+            // Gleaming is an automatic transition with no actor. The exact XML windows must leave it silent.
+            scope.RequireNoNewEvent(() => scope.Component.RecordEventWindowSignal(
+                "VoidMonolith", "Gleaming", "activated", "Gleaming", null, firstPawn));
+        }
+
         // ----- test helpers -----------------------------------------------------------------------
 
         /// <summary>

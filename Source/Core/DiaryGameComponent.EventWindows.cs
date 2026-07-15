@@ -2,7 +2,8 @@
 // Signals come from broad hooks (incidents, quests, health changes, spawned things, letters,
 // proximity letters, and special story objects). XML decides which signals matter, what diary
 // entries they create, how long the window lasts, and how strongly it biases prompt enchantments
-// while active.
+// while active. An exact one-shot window can additionally attach XML-declared, prose-free Narrative
+// Continuity evidence after the canonical page exists; that optional metadata never authorizes a page.
 using System;
 using System.Collections.Generic;
 using RimWorld;
@@ -32,6 +33,8 @@ namespace PawnDiary
         private const string EventWindowPhaseStart = "start";
         private const string EventWindowPhaseEnd = "end";
         private const string EventWindowPhaseTimeout = "timeout";
+        // Structured schema token, intentionally English under the localization carve-out.
+        private const string NarrativeSourceDomainEventWindow = "event_window";
 
         /// <summary>
         /// Generic signal entry point used by Harmony patches and existing recorders.
@@ -605,7 +608,72 @@ namespace PawnDiary
                     diaryEvent.colorCue = def.colorCue;
                 }
 
+                ApplyEventWindowNarrativeEvidence(diaryEvent, def, facts, pawn);
+
                 QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
+            }
+        }
+
+        /// <summary>
+        /// Copies optional XML-owned continuity evidence onto an event-window page that was already
+        /// authorized. A malformed template or continuity failure cannot cancel the canonical page.
+        /// </summary>
+        private static void ApplyEventWindowNarrativeEvidence(
+            DiaryEvent diaryEvent,
+            DiaryEventWindowDef def,
+            EventWindowSignalFacts facts,
+            Pawn pawn)
+        {
+            DiaryEventWindowNarrativeEvidenceDef template = def?.narrativeEvidence;
+            if (diaryEvent == null || template == null || pawn == null)
+            {
+                return;
+            }
+
+            try
+            {
+                // The writer has already been selected from this exact, visible signal. That makes
+                // pawnCanKnow=true source-owned truth rather than a provider inference. The builder
+                // normalizes/caps the plain DTO and produces a compact reference even though Wave 2
+                // intentionally has no live Anomaly lens provider yet.
+                NarrativeContextBuildResult result = NarrativeContextBuilder.Build(
+                    new NarrativeContextBuildRequest
+                    {
+                        eventId = diaryEvent.eventId,
+                        eventTick = diaryEvent.tick,
+                        povPawnId = pawn.GetUniqueLoadID(),
+                        povRole = DiaryEvent.InitiatorRole,
+                        evidence = new List<NarrativeEvidence>
+                        {
+                            new NarrativeEvidence
+                            {
+                                facet = template.facet,
+                                phase = template.phase,
+                                subjectKind = template.subjectKind,
+                                subjectId = template.subjectId,
+                                arcKey = template.arcKey,
+                                beliefTopics = template.beliefTopics == null
+                                    ? new List<string>()
+                                    : new List<string>(template.beliefTopics),
+                                salience = template.salience,
+                                pawnCanKnow = true,
+                                sourceDomain = NarrativeSourceDomainEventWindow,
+                                sourceDefName = facts?.defName ?? def.defName
+                            }
+                        }
+                    });
+
+                if (result.evidence.Count > 0)
+                {
+                    diaryEvent.ApplyNarrativeContext(DiaryEvent.InitiatorRole, result);
+                }
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Event-window Narrative Continuity evidence failed; the canonical page remains: "
+                    + exception,
+                    "PawnDiary.EventWindow.NarrativeEvidence".GetHashCode());
             }
         }
 

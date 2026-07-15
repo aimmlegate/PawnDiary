@@ -20,6 +20,10 @@ namespace PawnDiary
         /// </summary>
         private void ScanPawnProgressionsForDiaryEvents()
         {
+            // Pending growth ownership must age out even when the ordinary Progression page source is
+            // disabled. Settings control page creation; they never freeze saved observation state.
+            MaintainPendingBiotechGrowthMoments();
+            MaintainBiotechFamilyArcs();
             if (PawnDiaryMod.Settings == null || !DiarySignalPolicies.Enabled(DiarySignalPolicies.Progression))
             {
                 return;

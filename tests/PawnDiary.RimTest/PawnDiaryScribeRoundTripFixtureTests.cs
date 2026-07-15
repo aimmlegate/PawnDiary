@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using PawnDiary.Capture;
 using RimTestRedux;
 using Verse;
 
@@ -515,6 +516,123 @@ namespace PawnDiary.RimTests
         // ---- PawnDiaryRecord round-trip ------------------------------------------------------------
 
         /// <summary>
+        /// A postponed Biotech growth letter keeps its detached before-state without saving a live
+        /// ChoiceLetter/Pawn reference, including selected trait/skill facts needed after reload.
+        /// </summary>
+        [Test]
+        public static void PendingBiotechGrowthMomentRoundTrips()
+        {
+            PendingBiotechGrowthMoment original = new PendingBiotechGrowthMoment
+            {
+                pawnId = "Thing_Human_Growth",
+                birthdayAge = 10,
+                birthdayTick = 12345,
+                configuredTick = 12346,
+                growthTier = 6,
+                newResponsibilities = true,
+                correlationId = "growth|Thing_Human_Growth|10",
+                familyArcId = "biotech-family|Thing_Human_Growth",
+                birthdaySnapshot = new GrowthPawnSnapshot
+                {
+                    pawnId = "Thing_Human_Growth",
+                    displayName = "Ira",
+                    biologicalAge = 10,
+                    growthTier = 6,
+                    shortName = "Ira",
+                    capturedTick = 12345,
+                    traits = new List<GrowthTraitFact>
+                    {
+                        new GrowthTraitFact { traitKey = "Kind|0", label = "kind", description = "kind-hearted" }
+                    },
+                    skills = new List<GrowthSkillFact>
+                    {
+                        new GrowthSkillFact
+                        {
+                            skillDefName = "Plants",
+                            label = "plants",
+                            passion = BiotechPassionTokens.Minor,
+                            level = 8
+                        }
+                    }
+                }
+            };
+
+            PendingBiotechGrowthMoment loaded = ScribeRoundTrip(original);
+            AssertStr(original.pawnId, loaded.pawnId, "pending growth pawnId");
+            AssertInt(10, loaded.birthdayAge, "pending growth birthdayAge");
+            AssertInt(12345, loaded.birthdayTick, "pending growth birthdayTick");
+            AssertInt(6, loaded.growthTier, "pending growth tier");
+            Require(loaded.newResponsibilities, "pending growth responsibility flag should survive.");
+            AssertStr(original.correlationId, loaded.correlationId, "pending growth correlationId");
+            AssertStr(original.familyArcId, loaded.familyArcId, "pending growth familyArcId");
+            Require(loaded.birthdaySnapshot != null, "pending growth snapshot should survive.");
+            AssertStr("Ira", loaded.birthdaySnapshot.shortName, "pending growth shortName");
+            Require(loaded.birthdaySnapshot.traits.Count == 1, "pending growth trait facts should survive.");
+            Require(loaded.birthdaySnapshot.skills.Count == 1, "pending growth skill facts should survive.");
+            AssertStr(BiotechPassionTokens.Minor, loaded.birthdaySnapshot.skills[0].passion,
+                "pending growth passion token");
+        }
+
+        /// <summary>
+        /// A family arc keeps stable participant/Hediff IDs, bounded supporter counters, summarized
+        /// deltas, growth ages, and compaction state without retaining live Pawn references.
+        /// </summary>
+        [Test]
+        public static void BiotechFamilyArcRoundTrips()
+        {
+            BiotechFamilyArcState original = new BiotechFamilyArcState
+            {
+                familyArcId = "biotech-family|Thing_Child",
+                pregnancyHediffId = "Hediff_11",
+                laborHediffId = "Hediff_12",
+                childId = "Thing_Child",
+                birtherId = "Thing_Birther",
+                geneticMotherId = "Thing_Mother",
+                fatherId = "Thing_Father",
+                currentChildName = "Jun",
+                openedTick = 100,
+                lastObservedTick = 900,
+                baselineOnly = true,
+                detailsCompacted = false,
+                lastSummarizedObservationTick = 800,
+                recordedGrowthAges = new List<int> { 7, 10 },
+                supporters = new List<FamilySupportObservationState>
+                {
+                    new FamilySupportObservationState
+                    {
+                        adultId = "Thing_Parent",
+                        lastDisplayName = "Kai",
+                        relationToken = BiotechFamilyRoleTokens.Parent,
+                        lessonCount = 5,
+                        babyPlayCount = 2,
+                        summarizedLessonCount = 4,
+                        summarizedBabyPlayCount = 2,
+                        firstObservedTick = 200,
+                        lastObservedTick = 900
+                    }
+                }
+            };
+
+            BiotechFamilyArcState loaded = ScribeRoundTrip(original);
+            AssertStr(original.familyArcId, loaded.familyArcId, "family arc ID");
+            AssertStr(original.pregnancyHediffId, loaded.pregnancyHediffId, "family pregnancy Hediff ID");
+            AssertStr(original.laborHediffId, loaded.laborHediffId, "family labor Hediff ID");
+            AssertStr(original.childId, loaded.childId, "family child ID");
+            AssertStr(original.birtherId, loaded.birtherId, "family birther ID");
+            AssertStr(original.currentChildName, loaded.currentChildName, "family child name");
+            Require(loaded.recordedGrowthAges != null && loaded.recordedGrowthAges.Count == 2,
+                "family growth ages should survive.");
+            Require(loaded.supporters != null && loaded.supporters.Count == 1,
+                "family supporter rows should survive.");
+            FamilySupportObservationState supporter = loaded.supporters[0];
+            AssertStr(BiotechFamilyRoleTokens.Parent, supporter.relationToken, "family supporter role");
+            AssertInt(5, supporter.lessonCount, "family supporter lessons");
+            AssertInt(4, supporter.summarizedLessonCount, "family summarized lessons");
+            AssertInt(2, supporter.summarizedBabyPlayCount, "family summarized play");
+            AssertInt(900, supporter.lastObservedTick, "family supporter last observation tick");
+        }
+
+        /// <summary>
         /// A pawn's diary index keeps its event id list, per-pawn generation flags, and nested
         /// progression/arc-schedule state; null list/nested-state fields normalize to non-null on load.
         /// </summary>
@@ -529,6 +647,8 @@ namespace PawnDiary.RimTests
             };
             progression.SetSkillMilestone("Shooting", 10);
             progression.SetSkillMilestone("Melee", 4);
+            progression.EnsureBiotechState().ConsumeGrowthAge(7);
+            progression.EnsureBiotechState().ConsumeGrowthAge(10);
 
             PawnArcScheduleState arc = new PawnArcScheduleState
             {
@@ -579,6 +699,10 @@ namespace PawnDiary.RimTests
                 loaded.progressionState.knownTraitKeys != null
                     && loaded.progressionState.knownTraitKeys.Count == 2,
                 "record progression knownTraitKeys should survive load.");
+            Require(
+                loaded.progressionState.EnsureBiotechState().HasConsumedGrowthAge(7)
+                    && loaded.progressionState.EnsureBiotechState().HasConsumedGrowthAge(10),
+                "record nested Biotech consumed growth ages should survive load.");
 
             Require(loaded.arcSchedule != null, "record arcSchedule should be non-null after load.");
             AssertInt(1234, loaded.arcSchedule.lastArcEntryTick, "record arc lastArcEntryTick");

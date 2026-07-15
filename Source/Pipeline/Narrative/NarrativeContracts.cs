@@ -1,4 +1,4 @@
-// Shared, pure contracts for the future DLC Narrative Continuity Layer. Source-specific DLC adapters
+// Shared, pure contracts for the DLC Narrative Continuity Layer. Source-specific DLC adapters
 // will eventually project visible event facts into these DTOs; this file deliberately knows nothing
 // about RimWorld, Verse, settings, Defs, saves, or prompt transport.
 //

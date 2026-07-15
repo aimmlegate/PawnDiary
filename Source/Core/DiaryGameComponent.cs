@@ -207,6 +207,8 @@ namespace PawnDiary
             DiaryErrorReporter.ResetSession();
             DeathContextCache.Clear();
             ArrivalContextCache.Clear();
+            ResetBiotechGrowthTransientState();
+            ResetBiotechFamilyTransientState();
             // TicksGame can repeat across different games, so drop the per-tick free-colonist snapshot
             // here (every Game construction) rather than risk reusing the previous game's list.
             ResetFreeColonistSnapshot();
@@ -247,6 +249,8 @@ namespace PawnDiary
             generatedSpeechPlayLogTexts.Clear();
             commandStatusByPawnId.Clear();
             archive.Clear();
+            ResetBiotechGrowthForNewGame();
+            ResetBiotechFamilyForNewGame();
             // Do NOT BeginSession here: the constructor already started this Game's session, and the
             // starting-colonist thoughts (GiveAllStartingPlayerPawnsThought) were queued in it during
             // InitNewGame. Restarting the session now would cancel those in-flight requests and leave
@@ -288,6 +292,9 @@ namespace PawnDiary
             nextObservedConditionPollTick.Clear();
             knownAcceptedQuestIds.Clear();
             orphanCandidatesLastScan.Clear();
+            ResetBiotechGrowthTransientState();
+            ResetBiotechFamilyTransientState();
+            BootstrapBiotechFamilyArcsForLoadedSave();
             // Do NOT BeginSession here: the constructor already started this Game's session and
             // cancelled any requests left over from a previous Game. Loaded events have had their
             // "pending" status normalized back to "not generated" (DiaryGenerationStatus, via
@@ -352,6 +359,8 @@ namespace PawnDiary
             Scribe_Collections.Look(ref observedConditionCooldownUntilTick,
                 "observedConditionCooldownUntilTick", LookMode.Value, LookMode.Value,
                 ref observedConditionCooldownKeys, ref observedConditionCooldownValues);
+            ExposeBiotechGrowthData();
+            ExposeBiotechFamilyData();
 
             // Before writing generated-speech PlayLog state, drop rows RimWorld's PlayLog has already
             // pruned so stale LogIDs cannot accumulate or block future injection.

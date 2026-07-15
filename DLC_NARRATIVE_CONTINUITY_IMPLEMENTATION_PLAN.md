@@ -166,7 +166,8 @@ Rules:
 - `phase`, `subjectKind`, facet, topics, and salience are stable English schema tokens.
 - `subjectLabel` is localized/sanitized on the main thread.
 - `arcKey` contains stable IDs, never localized labels. Representative shapes:
-  `royalty-persona|<weaponId>|<bondEpoch>`, `biotech-family|<familyArcId>`,
+  `royalty-persona|<weaponId>|<bondEpoch>`,
+  `biotech-family|<birtherId>|<pregnancyHediffId>` (or `biotech-family|<childId>`),
   `anomaly-monolith|<campaignEpoch>`, `odyssey-journey|<journeyId>`.
 - Empty subject/arc fields are allowed when the event still carries useful facet/topic evidence.
 - Hidden or speculative facts are omitted rather than marked with a suggestive sentinel.
@@ -515,8 +516,9 @@ budget, reference equality, and reflection priority; XML parses; no RimWorld ref
 
 > **Implementation status (2026-07-15): complete as Master Wave 1.** The shared hot/archive save
 > seam, optional first-person prompt field, synthetic/core fixture builder, and focused pure/RimTest
-> coverage landed without a real DLC provider or source-specific behavior. N2 remains the first wave
-> permitted to attach a guarded real provider/emission.
+> coverage landed without a real DLC provider or source-specific behavior. Master Wave 2 / Anomaly
+> A0.2 now uses the N1 seam for exact source-owned monolith chapter evidence only; N2 remains the
+> first wave permitted to attach guarded live provider candidates.
 
 1. Add event/POV state, Scribe normalization, pipeline payload field, and archive copying/indexes.
 2. Add the optional narrative-context prompt field and Full/Balanced/Compact budget behavior.
@@ -528,6 +530,12 @@ Exit gate: old and new saves load; archive compaction preserves bounded referenc
 invisible; selected context is event-time frozen; no real DLC behavior changes yet.
 
 ### Phase N2 — First real providers and source emissions
+
+> **Emission progress (2026-07-15):** Biotech Phases 1–2 now satisfy the source-emission half for
+> canonical growth pages by attaching exact `identity_transition` evidence with the child subject and
+> age phase plus a stable saved family arc when available. It intentionally supplies no candidate/provider
+> text yet. N2-B is now the next scheduled slice because saved family identity can support a truthful
+> provider without reconstructing relationships from prose.
 
 Implement alongside the first flagship DLC slice, recommended Biotech B1 and Odyssey O1:
 

@@ -246,6 +246,7 @@ namespace PawnDiary
                 data.DefName, data.Label, data.SourceToken, data.GroupKey, data.ModeToken,
                 data.SeverityF2, data.StageString, data.CleanedStageLabel, data.CleanedBodyPartLabel,
                 data.PartKindToken, data.PartTierToken, data.AttitudeToken, data.CauseToken);
+            gameContext = AppendBiotechFamilyContext(hediff, gameContext);
 
             DiaryEvent diaryEvent = AddSoloEvent(pawn, null, data.DefName, data.Label, text, instruction, gameContext);
             QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);

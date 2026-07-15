@@ -1006,7 +1006,9 @@
   <PawnDiary.Event.EventWindow.Generic.timeout>{0} kept waiting for an answer about {1}, but none came.</PawnDiary.Event.EventWindow.Generic.timeout>
   <PawnDiary.Event.EventWindow.Generic.Instruction>write this as an ongoing event window about {0}; use only supplied facts and keep the pawn's uncertainty clear</PawnDiary.Event.EventWindow.Generic.Instruction>
   <PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>{0} discovered the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>
-  <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0} completed an interaction with the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
+  <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0} deliberately stirred the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
+  <PawnDiary.Event.EventWindow.VoidMonolithWaking.Start>{0} deliberately woke the void monolith further: {1}.</PawnDiary.Event.EventWindow.VoidMonolithWaking.Start>
+  <PawnDiary.Event.EventWindow.VoidMonolithVoidAwakened.Start>{0} awakened the void through the monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithVoidAwakened.Start>
   <PawnDiary.Event.EventWindow.Birthday.Start>{0} reached biological age {1}.</PawnDiary.Event.EventWindow.Birthday.Start>
   <PawnDiary.Event.EventWindow.HeartAttack.Start>{0} suffered a heart attack: {1}.</PawnDiary.Event.EventWindow.HeartAttack.Start>
   <PawnDiary.Event.EventWindow.PrisonBreak.Start>{0} heard the prison break alarm: {1}.</PawnDiary.Event.EventWindow.PrisonBreak.Start>
@@ -1389,4 +1391,17 @@
   <PawnDiary.Psychotype.Disabled>Psychotypes are turned off in mod settings, so this outlook is not applied to prompts.</PawnDiary.Psychotype.Disabled>
   <PawnDiary.Tab.Psychotype>Psychotype: {0}</PawnDiary.Tab.Psychotype>
 
+  <!-- Biotech B1 growth is live in Phase 1; family-birth/supporter strings remain reserved. -->
+  <PawnDiary.Event.Biotech.Growth.Label>Growth moment</PawnDiary.Event.Biotech.Growth.Label>
+  <PawnDiary.Event.Biotech.Growth.Fallback>{0} reached a growth moment at age {1}: {2}.</PawnDiary.Event.Biotech.Growth.Fallback>
+  <PawnDiary.Event.Biotech.Growth.Summary.Trait>a new trait: {0}</PawnDiary.Event.Biotech.Growth.Summary.Trait>
+  <PawnDiary.Event.Biotech.Growth.Summary.Identity>a change in identity</PawnDiary.Event.Biotech.Growth.Summary.Identity>
+  <PawnDiary.Event.Biotech.Growth.Summary.NewInterest>a new interest in {0}</PawnDiary.Event.Biotech.Growth.Summary.NewInterest>
+  <PawnDiary.Event.Biotech.Growth.Summary.DeepenedInterest>a deepened interest in {0}</PawnDiary.Event.Biotech.Growth.Summary.DeepenedInterest>
+  <PawnDiary.Event.Biotech.Growth.Summary.Name>a new name: {0}</PawnDiary.Event.Biotech.Growth.Summary.Name>
+  <PawnDiary.Event.Biotech.Growth.Summary.Responsibilities>new responsibilities opened</PawnDiary.Event.Biotech.Growth.Summary.Responsibilities>
+  <PawnDiary.Event.Biotech.Growth.Summary.Generic>their interests and sense of self changed</PawnDiary.Event.Biotech.Growth.Summary.Generic>
+  <PawnDiary.Event.Biotech.Growth.SupporterFallback>{0} reflected on {1}'s growth moment: {2}.</PawnDiary.Event.Biotech.Growth.SupporterFallback>
+  <PawnDiary.Event.Biotech.Birth.Fallback>{0} remembered the birth of {1}: {2}.</PawnDiary.Event.Biotech.Birth.Fallback>
+  <PawnDiary.Event.Biotech.Birth.PairFallback>{0} and {1} remembered the birth of {2}: {3}.</PawnDiary.Event.Biotech.Birth.PairFallback>
 </LanguageData>

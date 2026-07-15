@@ -1,7 +1,10 @@
 # Pawn Diary — Biotech Support Implementation Plan
 
-> **Status:** implementation-ready plan, 2026-07-15. No runtime behavior is implemented by this
-> document.
+> **Status:** Phases 0–2 implemented in Master Wave 3, 2026-07-15. Canonical age-7/10/13 growth
+> observation, postponed-choice persistence, auto resolution, ordinary Birthday fallback, progression
+> consumption, saved family arcs, exact lesson/play evidence, truthful child/supporter writer shapes,
+> and source-owned N1 identity evidence are live and no-DLC-safe. Narrative N2-B is the next permitted
+> slice; canonical birth/naming remains Phase 3 after that provider checkpoint.
 >
 > **Scheduling authority:** implement Biotech phases only in the waves assigned by
 > `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Biotech.
@@ -599,7 +602,9 @@ implementation merged.
 
 Use stable identities rather than labels:
 
-- family continuity: the saved `familyArcId` becomes `biotech-family|<familyArcId>`;
+- family continuity: `familyArcId` is already the complete key
+  `biotech-family|<birtherId>|<pregnancyHediffId>` or `biotech-family|<childId>` and is copied
+  unchanged into Narrative Continuity (never double-prefixed);
 - psychic bond: canonical sorted pawn IDs plus a bond epoch;
 - mechanitor: `biotech-mechanitor|<mechanitorPawnId>|<arcEpoch>` and exact mech subject IDs for loss;
 - identity transition: pawn subject plus exact source phase; do not encode localized xenotype names;
@@ -1577,6 +1582,13 @@ DLL whenever a phase changes runtime behavior.
 
 ### Phase 0 — Freeze B1 contracts and settings semantics
 
+> **Implementation status (2026-07-15): complete.** Added assembly-free growth/family DTOs and pure
+> diff, banding, supporter, writer, settings, and context policies; froze the two event types and
+> synthetic Def names, complete `biotech-family|...` arc grammar, additive Scribe/context keys, B1
+> policy Def, English/Russian localization, and exact package-gated groups. Both catalog types are
+> registered but inert: no signal, save row, Harmony hook, or page behavior is active. The next
+> permitted slice is Phase 1.
+
 1. Confirm Narrative Continuity N0 token/arc-key contracts, then add plain growth/family DTOs and pure
    policies that map to them.
 2. Add `DiaryBiotechPolicyDef` B1 fields/defaults.
@@ -1591,6 +1603,15 @@ Narrative Continuity N0–N1 must land before Phase 1 creates/persists new B1 ev
 in parallel, but it must not create a temporary Biotech-only cross-DLC prompt or reference schema.
 
 ### Phase 1 — Growth observation and ordinary fallback
+
+> **Implementation status (2026-07-15): complete.** The existing birthday patch now owns exact
+> before/after capture; `ConfigureGrowthLetter`/`MakeChoices` register atomically and fail open;
+> detached pending rows survive Scribe round trips and normalize malformed/duplicate/future state;
+> auto and committed paths emit at most one child-solo composite or release Birthday; every trait and
+> newly passionate skill baseline plus the 7/10/13 consumed marker advances independently of page
+> settings. The growth page attaches N1 identity evidence without introducing an N2 provider. Pure,
+> Scribe, no-DLC, and loaded-component flow fixtures cover the exit matrix; the vanilla letter/UI
+> click-through remains part of the manual in-game acceptance run.
 
 1. Extend birthday prefix/postfix snapshotting.
 2. Add `ConfigureGrowthLetter`/`MakeChoices` hooks and transient correlation.

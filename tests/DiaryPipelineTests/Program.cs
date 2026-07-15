@@ -50,6 +50,7 @@ namespace DiaryPipelineTests
             TestDiaryListText();
             TestContextProviderRegistry();
             TestEventWindowPolicy();
+            TestAnomalySemanticPrecisionXmlPolicy();
             TestProgressionMilestonePolicy();
             TestPsylinkProgressionLevelPolicy();
             TestArcReflectionSchedulePolicy();
@@ -2599,6 +2600,227 @@ namespace DiaryPipelineTests
             }
         }
 
+        // Master Wave 2 / Anomaly A0.0-A0.2: prove the shipped XML owns every exact psychic-ritual
+        // classifier key and every player-driven monolith chapter. This stays in the pure harness: the
+        // test parses our XML as data and exercises the same first-match/exact-trigger semantics without
+        // loading RimWorld, Anomaly, Verse, or any paid-DLC assembly.
+        private static void TestAnomalySemanticPrecisionXmlPolicy()
+        {
+            const string anomalyPackageId = "Ludeon.RimWorld.Anomaly";
+            string[] groupDefNames =
+            {
+                "ritualAnomalyInvitation",
+                "ritualAnomalyFleshAndWeather",
+                "ritualAnomalyPredation",
+                "ritualAnomalyMind",
+                "ritualAnomalyAbduction",
+                "ritualAnomalyDeathRefusal"
+            };
+            string[][] classifierKeys =
+            {
+                new[]
+                {
+                    "PsychicRitual;VoidProvocation",
+                    "PsychicRitual;SummonAnimals",
+                    "PsychicRitual;SummonShamblers"
+                },
+                new[]
+                {
+                    "PsychicRitual;SummonPitGate",
+                    "PsychicRitual;SummonFleshbeasts",
+                    "PsychicRitual;SummonFleshbeastsPlayer",
+                    "PsychicRitual;BloodRain"
+                },
+                new[]
+                {
+                    "PsychicRitual;Philophagy",
+                    "PsychicRitual;Chronophagy",
+                    "PsychicRitual;Psychophagy"
+                },
+                new[]
+                {
+                    "PsychicRitual;Brainwipe",
+                    "PsychicRitual;PleasurePulse",
+                    "PsychicRitual;NeurosisPulse"
+                },
+                new[]
+                {
+                    "PsychicRitual;SkipAbduction",
+                    "PsychicRitual;SkipAbductionPlayer"
+                },
+                new[] { "PsychicRitual;ImbueDeathRefusal" }
+            };
+
+            XDocument groups = XDocument.Load(RepoPath("1.6", "Defs", "DiaryInteractionGroupDefs.xml"));
+            XDocument englishGroups = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryInteractionGroupDef",
+                "DiaryInteractionGroupDefs.xml"));
+            XDocument russianGroups = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryInteractionGroupDef",
+                "DiaryInteractionGroupDefs.xml"));
+
+            HashSet<int> ritualOrders = new HashSet<int>();
+            foreach (XElement def in groups.Descendants("PawnDiary.DiaryInteractionGroupDef"))
+            {
+                if (!string.Equals(ChildValue(def, "domain"), "Ritual", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                int order;
+                AssertTrue("ritual group has numeric order: " + ChildValue(def, "defName"),
+                    int.TryParse(ChildValue(def, "order"), out order));
+                AssertTrue("ritual group order is unique: " + order, ritualOrders.Add(order));
+            }
+
+            for (int familyIndex = 0; familyIndex < groupDefNames.Length; familyIndex++)
+            {
+                string groupDefName = groupDefNames[familyIndex];
+                XElement group = FindDef(groups, "PawnDiary.DiaryInteractionGroupDef", groupDefName);
+                AssertTrue("Anomaly ritual family exists: " + groupDefName, group != null);
+                if (group == null)
+                {
+                    continue;
+                }
+
+                AssertEqual("Anomaly ritual family domain: " + groupDefName, "Ritual", ChildValue(group, "domain"));
+                AssertEqual("Anomaly ritual family order: " + groupDefName,
+                    (770 + familyIndex).ToString(), ChildValue(group, "order"));
+                AssertTrue("Anomaly ritual family is package-gated: " + groupDefName,
+                    HasListValue(group, "enableWhenPackageIdsLoaded", anomalyPackageId));
+                AssertTrue("Anomaly ritual family uses exact keys only: " + groupDefName,
+                    HasListValue(group, "matchDefNames", null)
+                    && !HasListValue(group, "matchTokens", null));
+
+                for (int keyIndex = 0; keyIndex < classifierKeys[familyIndex].Length; keyIndex++)
+                {
+                    string classifierKey = classifierKeys[familyIndex][keyIndex];
+                    AssertTrue("Anomaly family contains exact classifier key: " + classifierKey,
+                        HasListValue(group, "matchDefNames", classifierKey));
+                    AssertEqual("Anomaly classifier resolves exactly once: " + classifierKey,
+                        groupDefName, ResolveInteractionGroup(groups, "Ritual", classifierKey, true));
+                }
+
+                string lowerCaseKey = classifierKeys[familyIndex][0].ToLowerInvariant();
+                AssertEqual("Anomaly exact classifier is case-insensitive: " + lowerCaseKey,
+                    groupDefName, ResolveInteractionGroup(groups, "Ritual", lowerCaseKey, true));
+                AssertTrue("Anomaly family is unavailable without its package: " + groupDefName,
+                    !InteractionGroupAvailable(group, false));
+
+                string[] localizedFields = { ".label", ".instruction", ".tone", ".tones.0", ".tones.1" };
+                for (int fieldIndex = 0; fieldIndex < localizedFields.Length; fieldIndex++)
+                {
+                    string key = groupDefName + localizedFields[fieldIndex];
+                    AssertTrue("English Anomaly ritual DefInjected value exists: " + key,
+                        !string.IsNullOrWhiteSpace(KeyedValue(englishGroups, key)));
+                    AssertTrue("Russian Anomaly ritual DefInjected value exists: " + key,
+                        !string.IsNullOrWhiteSpace(KeyedValue(russianGroups, key)));
+                }
+            }
+
+            XElement fallback = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "ritualAnomalyPsychic");
+            AssertTrue("generic Anomaly psychic fallback remains", fallback != null);
+            if (fallback != null)
+            {
+                AssertEqual("generic Anomaly psychic fallback order", "776", ChildValue(fallback, "order"));
+                AssertTrue("generic Anomaly psychic fallback keeps token matching",
+                    HasListValue(fallback, "matchTokens", "PsychicRitual"));
+                AssertTrue("generic Anomaly psychic fallback is package-gated",
+                    HasListValue(fallback, "enableWhenPackageIdsLoaded", anomalyPackageId));
+            }
+
+            AssertEqual("unknown psychic ritual reaches generic fallback",
+                "ritualAnomalyPsychic",
+                ResolveInteractionGroup(groups, "Ritual", "PsychicRitual;SomethingUnknown", true));
+            AssertEqual("Ideology ritual stays outside Anomaly families",
+                "ritualRoyal",
+                ResolveInteractionGroup(
+                    groups,
+                    "Ritual",
+                    "Ritual_Speech;RitualBehaviorWorker_ThroneSpeech",
+                    true));
+
+            XDocument windows = XDocument.Load(RepoPath("1.6", "Defs", "DiaryEventWindowDefs.xml"));
+            XDocument englishWindows = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryEventWindowDef",
+                "DiaryEventWindowDefs.xml"));
+            XDocument russianWindows = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryEventWindowDef",
+                "DiaryEventWindowDefs.xml"));
+            XDocument englishKeyed = XDocument.Load(RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
+            XDocument russianKeyed = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
+
+            string[] activationWindowDefNames =
+            {
+                "VoidMonolithActivation",
+                "VoidMonolithWaking",
+                "VoidMonolithVoidAwakened"
+            };
+            string[] monolithLevels = { "Stirring", "Waking", "VoidAwakened" };
+            string[] narrativePhases = { "stirring", "waking", "void_awakened" };
+            for (int windowIndex = 0; windowIndex < activationWindowDefNames.Length; windowIndex++)
+            {
+                string windowDefName = activationWindowDefNames[windowIndex];
+                XElement window = FindDef(windows, "PawnDiary.DiaryEventWindowDef", windowDefName);
+                AssertTrue("exact monolith chapter window exists: " + windowDefName, window != null);
+                if (window == null)
+                {
+                    continue;
+                }
+
+                AssertTrue("monolith chapter window is package-gated: " + windowDefName,
+                    HasListValue(window, "enableWhenPackageIdsLoaded", anomalyPackageId));
+                AssertEqual("one exact trigger owns monolith level: " + monolithLevels[windowIndex],
+                    1, CountMatchingEventWindowStarts(
+                        windows, "VoidMonolith", "activated", monolithLevels[windowIndex]));
+
+                XElement evidence = window.Element("narrativeEvidence");
+                AssertTrue("monolith chapter emits Narrative Continuity evidence: " + windowDefName,
+                    evidence != null);
+                AssertEqual("monolith chapter evidence facet: " + windowDefName,
+                    "journey_chapter", ChildValue(evidence, "facet"));
+                AssertEqual("monolith chapter evidence phase: " + windowDefName,
+                    narrativePhases[windowIndex], ChildValue(evidence, "phase"));
+                AssertEqual("monolith chapter evidence arc: " + windowDefName,
+                    "anomaly-monolith|0", ChildValue(evidence, "arcKey"));
+                AssertEqual("monolith chapter evidence salience: " + windowDefName,
+                    "major", ChildValue(evidence, "salience"));
+
+                string[] localizedFields = { ".label", ".instruction" };
+                for (int fieldIndex = 0; fieldIndex < localizedFields.Length; fieldIndex++)
+                {
+                    string key = windowDefName + localizedFields[fieldIndex];
+                    AssertTrue("English monolith-window DefInjected value exists: " + key,
+                        !string.IsNullOrWhiteSpace(KeyedValue(englishWindows, key)));
+                    AssertTrue("Russian monolith-window DefInjected value exists: " + key,
+                        !string.IsNullOrWhiteSpace(KeyedValue(russianWindows, key)));
+                }
+
+                string startTextKey = ChildValue(window, "startTextKey");
+                AssertTrue("English monolith-window fallback exists: " + startTextKey,
+                    !string.IsNullOrWhiteSpace(KeyedValue(englishKeyed, startTextKey)));
+                AssertTrue("Russian monolith-window fallback exists: " + startTextKey,
+                    !string.IsNullOrWhiteSpace(KeyedValue(russianKeyed, startTextKey)));
+            }
+
+            AssertEqual("automatic Gleaming level creates no activation page",
+                0, CountMatchingEventWindowStarts(windows, "VoidMonolith", "activated", "Gleaming"));
+
+            XElement monolithGroup = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "eventWindowVoidMonolith");
+            AssertTrue("void-monolith settings group is hidden without Anomaly",
+                HasListValue(monolithGroup, "enableWhenPackageIdsLoaded", anomalyPackageId));
+            AssertTrue("void-monolith interaction group includes discovery",
+                HasListValue(monolithGroup, "matchDefNames", "VoidMonolithDiscovery"));
+            for (int i = 0; i < activationWindowDefNames.Length; i++)
+            {
+                AssertTrue("void-monolith interaction group includes chapter: " + activationWindowDefNames[i],
+                    HasListValue(monolithGroup, "matchDefNames", activationWindowDefNames[i]));
+            }
+        }
+
         private static void TestProgressionMilestonePolicy()
         {
             List<int> milestones = new List<int> { 20, 8, 12, 12, -1, 16 };
@@ -3992,6 +4214,181 @@ namespace DiaryPipelineTests
             }
 
             return null;
+        }
+
+        private static string ResolveInteractionGroup(
+            XDocument document,
+            string domain,
+            string classifierKey,
+            bool anomalyPackageLoaded)
+        {
+            List<XElement> candidates = new List<XElement>();
+            foreach (XElement def in document.Descendants("PawnDiary.DiaryInteractionGroupDef"))
+            {
+                if (string.Equals(ChildValue(def, "domain"), domain, StringComparison.OrdinalIgnoreCase))
+                {
+                    candidates.Add(def);
+                }
+            }
+
+            candidates.Sort((left, right) => InteractionGroupOrder(left).CompareTo(InteractionGroupOrder(right)));
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                XElement candidate = candidates[i];
+                if (InteractionGroupAvailable(candidate, anomalyPackageLoaded)
+                    && InteractionGroupMatches(candidate, classifierKey))
+                {
+                    return ChildValue(candidate, "defName");
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static int InteractionGroupOrder(XElement def)
+        {
+            int order;
+            return int.TryParse(ChildValue(def, "order"), out order) ? order : int.MaxValue;
+        }
+
+        private static bool InteractionGroupAvailable(XElement def, bool anomalyPackageLoaded)
+        {
+            XElement packages = def?.Element("enableWhenPackageIdsLoaded");
+            if (packages == null || !HasListValue(def, "enableWhenPackageIdsLoaded", null))
+            {
+                return true;
+            }
+
+            foreach (XElement item in packages.Elements("li"))
+            {
+                string packageId = (item.Value ?? string.Empty).Trim();
+                if (string.Equals(packageId, "Ludeon.RimWorld.Anomaly", StringComparison.OrdinalIgnoreCase))
+                {
+                    return anomalyPackageLoaded;
+                }
+            }
+
+            // This focused fixture models the Anomaly gate only. Other package-gated groups are not
+            // candidates for the psychic-ritual keys under test and remain available in this tiny model.
+            return true;
+        }
+
+        private static bool InteractionGroupMatches(XElement def, string classifierKey)
+        {
+            if (string.Equals(ChildValue(def, "catchAll"), "true", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            XElement exact = def?.Element("matchDefNames");
+            if (exact != null)
+            {
+                foreach (XElement item in exact.Elements("li"))
+                {
+                    if (string.Equals((item.Value ?? string.Empty).Trim(), classifierKey,
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            XElement tokens = def?.Element("matchTokens");
+            if (tokens != null && !string.IsNullOrWhiteSpace(classifierKey))
+            {
+                foreach (XElement item in tokens.Elements("li"))
+                {
+                    string token = (item.Value ?? string.Empty).Trim();
+                    if (!string.IsNullOrWhiteSpace(token)
+                        && classifierKey.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static int CountMatchingEventWindowStarts(
+            XDocument document,
+            string source,
+            string signal,
+            string defName)
+        {
+            int matches = 0;
+            foreach (XElement def in document.Descendants("PawnDiary.DiaryEventWindowDef"))
+            {
+                XElement startSignals = def.Element("startSignals");
+                if (startSignals == null)
+                {
+                    continue;
+                }
+
+                bool defMatched = false;
+                foreach (XElement trigger in startSignals.Elements("li"))
+                {
+                    if (EventWindowTriggerMatches(trigger, source, signal, defName))
+                    {
+                        defMatched = true;
+                        break;
+                    }
+                }
+
+                if (defMatched)
+                {
+                    matches++;
+                }
+            }
+
+            return matches;
+        }
+
+        private static bool EventWindowTriggerMatches(
+            XElement trigger,
+            string source,
+            string signal,
+            string defName)
+        {
+            string expectedSource = ChildValue(trigger, "source");
+            string expectedSignal = ChildValue(trigger, "signal");
+            if ((!string.IsNullOrWhiteSpace(expectedSource)
+                    && !string.Equals(expectedSource, source, StringComparison.OrdinalIgnoreCase))
+                || (!string.IsNullOrWhiteSpace(expectedSignal)
+                    && !string.Equals(expectedSignal, signal, StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
+            bool hasExact = HasListValue(trigger, "matchDefNames", null);
+            bool hasTokens = HasListValue(trigger, "matchTokens", null);
+            if (!hasExact && !hasTokens)
+            {
+                return !string.IsNullOrWhiteSpace(expectedSource) || !string.IsNullOrWhiteSpace(expectedSignal);
+            }
+
+            if (hasExact && HasListValue(trigger, "matchDefNames", defName))
+            {
+                return true;
+            }
+
+            XElement tokens = trigger.Element("matchTokens");
+            if (tokens != null)
+            {
+                string searchable = (source ?? string.Empty) + ";" + (signal ?? string.Empty) + ";"
+                    + (defName ?? string.Empty);
+                foreach (XElement item in tokens.Elements("li"))
+                {
+                    string token = (item.Value ?? string.Empty).Trim();
+                    if (!string.IsNullOrWhiteSpace(token)
+                        && searchable.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private static bool HasHediffDefName(XElement def, string hediffDefName)

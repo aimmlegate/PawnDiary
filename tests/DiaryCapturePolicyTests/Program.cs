@@ -82,6 +82,7 @@ namespace DiaryCapturePolicyTests
             TestQuadrumReflectionBuildGameContextFormat();
             TestArcReflectionDecide();
             TestArcReflectionBuildGameContextFormat();
+            TestBiotechCatalogDecisions();
             TestCatalogDispatch();
             TestCatalogContract();
             TestMigrationSentinel();
@@ -1542,6 +1543,61 @@ namespace DiaryCapturePolicyTests
                 ArcReflectionEventData.BuildGameContext(5504, true, 6, 18, 0));
         }
 
+        // ── Biotech Phase 0: inert catalog contracts ──
+
+        private static void TestBiotechCatalogDecisions()
+        {
+            GrowthMomentEventData growth = new GrowthMomentEventData
+            {
+                ChildId = "Child_1",
+                Age = 10,
+                ChildEligible = true,
+                HasVerifiedMutation = true
+            };
+            AssertEqual("growth child solo", CaptureDecision.GenerateSolo,
+                GrowthMomentEventData.Decide(growth, Ctx()));
+            growth.SupporterId = "Adult_1";
+            growth.SupporterEligible = true;
+            AssertEqual("growth child/supporter pair", CaptureDecision.GeneratePair,
+                GrowthMomentEventData.Decide(growth, Ctx()));
+            growth.ChildEligible = false;
+            AssertEqual("growth supporter solo", CaptureDecision.GenerateSolo,
+                GrowthMomentEventData.Decide(growth, Ctx()));
+            growth.HasVerifiedMutation = false;
+            AssertEqual("growth unverified mutation drops", CaptureDecision.Drop,
+                GrowthMomentEventData.Decide(growth, Ctx()));
+            growth.HasVerifiedMutation = true;
+            growth.Age = 8;
+            AssertEqual("growth noncanonical age drops", CaptureDecision.Drop,
+                GrowthMomentEventData.Decide(growth, Ctx()));
+            growth.Age = 10;
+            AssertEqual("growth stable dedup", "growth|Child_1|10", growth.DedupKey());
+
+            FamilyBirthEventData birth = new FamilyBirthEventData
+            {
+                FamilyArcId = "biotech-family|Child_1",
+                FirstWriterId = "Adult_1",
+                FirstWriterEligible = true,
+                HasValidSnapshot = true
+            };
+            AssertEqual("birth one adult solo", CaptureDecision.GenerateSolo,
+                FamilyBirthEventData.Decide(birth, Ctx()));
+            birth.SecondWriterId = "Adult_2";
+            birth.SecondWriterEligible = true;
+            AssertEqual("birth two adults pair", CaptureDecision.GeneratePair,
+                FamilyBirthEventData.Decide(birth, Ctx()));
+            birth.FirstWriterEligible = false;
+            AssertEqual("birth second adult solo", CaptureDecision.GenerateSolo,
+                FamilyBirthEventData.Decide(birth, Ctx()));
+            birth.SecondWriterEligible = false;
+            AssertEqual("birth without adult drops", CaptureDecision.Drop,
+                FamilyBirthEventData.Decide(birth, Ctx()));
+            birth.HasValidSnapshot = false;
+            AssertEqual("birth invalid snapshot drops", CaptureDecision.Drop,
+                FamilyBirthEventData.Decide(birth, Ctx()));
+            AssertEqual("birth stable dedup", "birth|biotech-family|Child_1", birth.DedupKey());
+        }
+
         // ── Catalog dispatch ──
 
         private static void TestCatalogDispatch()
@@ -1661,6 +1717,28 @@ namespace DiaryCapturePolicyTests
             AssertEqual("catalog dispatches ArcReflection decision",
                 CaptureDecision.GenerateSolo,
                 arcReflectionSpec.Decide(ArcReflection(), Ctx()));
+
+            DiaryEventSpec growthSpec = DiaryEventCatalog.Get(DiaryEventType.GrowthMoment);
+            AssertTrue("catalog has GrowthMoment spec", growthSpec is GrowthMomentEventSpec);
+            AssertEqual("catalog dispatches GrowthMoment decision", CaptureDecision.GenerateSolo,
+                growthSpec.Decide(new GrowthMomentEventData
+                {
+                    ChildId = "Child_1",
+                    Age = 7,
+                    ChildEligible = true,
+                    HasVerifiedMutation = true
+                }, Ctx()));
+
+            DiaryEventSpec birthSpec = DiaryEventCatalog.Get(DiaryEventType.FamilyBirth);
+            AssertTrue("catalog has FamilyBirth spec", birthSpec is FamilyBirthEventSpec);
+            AssertEqual("catalog dispatches FamilyBirth decision", CaptureDecision.GenerateSolo,
+                birthSpec.Decide(new FamilyBirthEventData
+                {
+                    FamilyArcId = "biotech-family|Child_1",
+                    FirstWriterId = "Adult_1",
+                    FirstWriterEligible = true,
+                    HasValidSnapshot = true
+                }, Ctx()));
 
             // Unregistered spec returns null — callers must treat as Drop.
             // (We can't construct a DiaryEventType that isn't registered because all values are

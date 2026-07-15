@@ -33,6 +33,7 @@ flowchart TD
         T["MemoryThoughtHandler.TryGainMemory<br/>ThoughtSignal<br/>solo or ambient thought"]
         TP["Periodic thought-stage scan<br/>ThoughtProgressionSignal<br/>solo"]
         PR["Periodic pawn progression scan<br/>ProgressionSignal<br/>solo"]
+        BG["Biotech birthday + growth letter lifecycle<br/>GrowthMomentSignal<br/>verified age-7/10/13 child solo"]
         IN["InspirationHandler.TryStartInspiration<br/>InspirationSignal<br/>solo"]
         AB["Ability.Activate overloads<br/>AbilitySignal<br/>cooldown-sampled solo"]
         RO["Pawn_RelationsTracker.AddDirectRelation<br/>RomanceSignal<br/>pair"]
@@ -61,6 +62,7 @@ flowchart TD
     T --> Submit
     TP --> Submit
     PR --> Submit
+    BG --> Submit
     IN --> Submit
     AB --> Submit
     RO --> Submit
@@ -140,6 +142,9 @@ Important boundaries in the diagram:
 - `DiaryEvents.Submit` is the bus for catalog sources. Event-window and observed-condition page
   recording bypass the bus after their own generic policy has matched; they still create normal
   `DiaryEvent` records and use the same generation path.
+- An exact event-window Def may attach XML-owned `narrativeEvidence` only after its canonical page is
+  created. The current three monolith activation chapters use this for prose-free N1 references; it
+  does not authorize another page or select prompt context without a later provider.
 - Event-window pages save `event_window=` context. Observed-condition pages save
   `observed_condition=` context. Those markers are not separate prompt domains today, so generated
   pages from those systems use the saved defName plus the normal Interaction fallback unless a more
@@ -319,6 +324,7 @@ flowchart LR
     end
 
     subgraph ProgressionGroups["Progression groups"]
+        P0["progressionGrowthMoment<br/>Biotech-gated important SoloImportant<br/>verified composite only"]
         P1["progressionSkillPassion<br/>important SoloImportant<br/>passion skill milestones only"]
         P2["progressionPsylink<br/>important SoloImportant"]
         P3["progressionXenotype<br/>important SoloImportant"]
@@ -337,6 +343,29 @@ high-stakes humor classification.
 Ritual fan-out keeps both layers of guidance: the matched XML group's instruction establishes the
 specific rite, then the localized participant-role instruction establishes what this pawn did. This
 is why Alpha/VIE ritual groups affect prompt content instead of only the settings label.
+
+Anomaly psychic rituals classify by the full saved key
+`PsychicRitual;<PsychicRitualDef.defName>`. Exact package-gated families precede the generic
+order-`776` fallback and leave page count and role fan-out unchanged:
+
+| Group / order | Exact installed keys | Prompt boundary |
+|---|---|---|
+| `ritualAnomalyInvitation` / `770` | `VoidProvocation`, `SummonAnimals`, `SummonShamblers` | Deliberate invitation and uncertainty; no claimed arrival. |
+| `ritualAnomalyFleshAndWeather` / `771` | `SummonPitGate`, `SummonFleshbeasts`, `SummonFleshbeastsPlayer`, `BloodRain` | Deliberate hostile environment; no claimed harm or persistence. |
+| `ritualAnomalyPredation` / `772` | `Philophagy`, `Chronophagy`, `Psychophagy` | Taking from a target, with agency/victimhood limited to supplied perspective facts. |
+| `ritualAnomalyMind` / `773` | `Brainwipe`, `PleasurePulse`, `NeurosisPulse` | Mental alteration without giving one role another pawn's inner effects. |
+| `ritualAnomalyAbduction` / `774` | `SkipAbduction`, `SkipAbductionPlayer` | Reach and danger; identity/outcome only when target facts supply them. |
+| `ritualAnomalyDeathRefusal` / `775` | `ImbueDeathRefusal` | Establishing death refusal; never claims death or resurrection already occurred. |
+| `ritualAnomalyPsychic` / `776` | token fallback for unknown/modded `PsychicRitual;...` keys | Visible supplied facts only; downstream effect remains uncertain. |
+
+Biotech Phases 1–2 activate the exact `progressionGrowthMoment` / order `800` route for
+`BiotechGrowthMoment`; the Tale-domain `biotechFamilyBirth` / order `315` contract remains inactive
+until Phase 3. Birthday prefix/postfix capture plus the dynamically registered growth-letter hooks
+submit only an actual age-7/10/13 before/after mutation. Saved family arcs and exact parent/lesson/play
+evidence now select child solo, supporter solo, or child/supporter pair deterministically. Context carries
+the stable family key, qualitative opportunity/upbringing, verified trait/interest, nickname,
+responsibility, supporter, and writer-role facts while excluding raw tiers, choice/work lists, counts,
+and ticks. The source attaches an N1 `identity_transition` phase; no live lens provider exists yet.
 
 Mod-compatibility groups that materially change routing/shape (all target-gated; Thought rows still
 use the global mood-memory policy):
@@ -382,6 +411,7 @@ Source recording weights:
 | Small talk promotion | Same as strange chat: `base 0.04`, cap `0.6`, bonuses `+0.25/+0.2/+0.2/+0.2`, then shared generation chance. |
 | Work sampling | Scan every `2500` ticks. Chance starts at `0.08`; passion multiplier `1.4`; negative chore/low skill multiplier `1.2`; dark study multiplier `1.5`; recent different work multiplier `0.5`; same work cooldown `180000` ticks; then shared generation chance and clamp. Social/violent work types are ignored. |
 | Pawn progression | Scan every `2500` ticks. Passion skills emit only when reaching configured milestones `8/12/16/20`; first scan baselines. Psylink hediff defNames are XML string matchers; xenotype and royal-title reads go through DLC-safe `DlcContext`. Only psylink level gains and configured major xenotype defNames can currently request a major arc follow-up: default threshold `90`, psylink severity `level / 6 * 100`, and `Sanguophage` as the default major xenotype defName. |
+| Biotech growth ownership | Ages `7/10/13` only. A real configured letter saves detached ownership until choice or `180000`-tick expiry; a provably mismatched pawn age may release after the `60000`-tick grace. Auto-resolved growth diffs immediately. Canonical disable/failure releases Birthday once, while trait/skill baselines and the consumed age advance regardless of page settings. |
 | Ability sampling | `min 0.03`, `max 0.75`, reference cooldown `60000` ticks. `CooldownWeightedChance = min + (max - min) * cooldown / (cooldown + reference)`, then shared generation chance and clamp. Dedup `300` ticks. |
 | Ordinary raid generation delay | `2500` ticks. Drop-pod raids and infestations bypass the delay. |
 | Day reflection highlights | Max `3`. Important event weight is `1` for combat and `0.7` for other important events. Hediff day signal default `0.8`. Opinion shift weight is `0.6 * min(2, abs(delta)/15)`. Filler weight is `0.15`, only when at least two filler moments exist. Weighted selection is without replacement with floor `0.0001`; if selected highlights contain no important signal, the strongest important candidate replaces the lightest selected highlight. |
@@ -532,10 +562,14 @@ Current event-window prompt candidates: three windows keep a decaying prompt bia
 prompts (weight `12`, normal multiplier `0.7`) for up to three days. `ShortCircuitAftermath`
 (incident `ShortCircuit`, weight `3`, six hours) and `SelfTameJoined` (incident `SelfTame`, weight
 `3`, half a day) record no pages at all — they only enter the weighted candidate pool so the moment
-sometimes flavors a page. The six original event windows (`VoidMonolithDiscovery`,
-`VoidMonolithActivation`, `Birthday`, `HeartAttack`, `PrisonBreak`, `AncientDanger`) still set
-`keepActive=false`, `promptEnabled=false`, and `promptWeight=0`; they record one-shot pages but do
-not bias later prompts while active.
+sometimes flavors a page. Eight one-shot windows (`VoidMonolithDiscovery`, the exact
+`VoidMonolithActivation`/`VoidMonolithWaking`/`VoidMonolithVoidAwakened` chapters, `Birthday`,
+`HeartAttack`, `PrisonBreak`, `AncientDanger`) set `keepActive=false`, `promptEnabled=false`, and
+`promptWeight=0`; they record pages but do not bias later prompts. The three activation chapters
+match only reached levels `Stirring`, `Waking`, and `VoidAwakened`, respectively; automatic
+`Gleaming` matches none. Ordinary Birthday is delayed when a real pending Biotech growth choice owns
+the same age, then is replaced by the verified composite or released at fallback. Each monolith chapter saves a visible N1 `journey_chapter` reference on
+`anomaly-monolith|0`, but no narrative prompt text is selected until a future provider exists.
 
 Six compatibility windows use the same one-shot/no-prompt shape plus the package-gated
 `MapWitness` scope: VEE earthquake, meteorite shower, space battle/shuttle crash, and purple
@@ -561,7 +595,7 @@ flowchart TD
     Fields --> Common["Common first-person fields:<br/>event, pov, raw evidence, instruction,<br/>event prompt, event enhancement,<br/>important context, setting, tone, last opening line"]
     Fields --> PairFields["Pair extras:<br/>role, with, relationship,<br/>hidden initiator diary for PairImportant and PairCombat"]
     Fields --> CombatFields["Combat extras:<br/>you, weapon"]
-    Fields --> SourceFacts["Context facts:<br/>quest, ritual, ability, raid,<br/>progression skill/psylink/xenotype/title,<br/>royal title, ideoligion role"]
+    Fields --> SourceFacts["Context facts:<br/>quest, ritual, ability, raid,<br/>progression skill/psylink/xenotype/title/growth,<br/>royal title, ideoligion role"]
     Fields --> Boundary["Neutral arrival/death:<br/>event prompt, enhancement, neutral facts,<br/>pawn summary, setting; no persona/enchantment"]
     Fields --> Reflection["Reflections:<br/>day selected highlights and pawn summary<br/>quadrum date range and important count<br/>arc selected year memories and cadence fields"]
     Fields --> Title["Title:<br/>entry text only"]

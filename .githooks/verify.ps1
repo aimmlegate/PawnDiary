@@ -84,6 +84,7 @@ $xmlFiles | ForEach-Object {
 Write-Step "Pure helper tests"
 Invoke-Native "dotnet" @("run", "--project", "tests\LlmResponseParserTests\LlmResponseParserTests.csproj")
 Invoke-Native "dotnet" @("run", "--project", "tests\DiaryPipelineTests\DiaryPipelineTests.csproj")
+Invoke-Native "dotnet" @("run", "--project", "tests\DiaryBiotechPolicyTests\DiaryBiotechPolicyTests.csproj")
 Invoke-Native "dotnet" @("run", "--project", "tests\DiaryTextDecorationTests\DiaryTextDecorationTests.csproj")
 Invoke-Native "dotnet" @("run", "--project", "tests\DiaryCapturePolicyTests\DiaryCapturePolicyTests.csproj")
 Invoke-Native "dotnet" @("run", "--project", "tests\PromptVariantsTests\PromptVariantsTests.csproj")

@@ -97,12 +97,12 @@ teardown.
 | EVT-14 | Mood event | Register a controlled `GameCondition` | Affected-map fan-out, mood classification, unaffected-map exclusion, disabled group. |
 | EVT-15 | Pawn progression | Mutate skill passion milestone, trait, and optional DLC state then scan | First-scan baseline, only upward/new milestones, exact context, major-change arc request. |
 | EVT-16 | Quest | Accept/end controlled quest and run recovery scan | Accepted bookkeeping/no page, completed/failed fan-out, placeholder-label sanitation, duplicate scan drop. |
-| EVT-17 | Ritual | Complete controlled Ideology/psychic ritual when DLC active | Participant role/perspective fan-out and context; clean no-op when DLC absent. |
+| EVT-17 | Ritual | Complete controlled Ideology/psychic ritual when DLC active | Participant role/perspective fan-out and context; all 16 installed Anomaly classifier keys resolve to six exact package-gated families, unknown psychic rituals reach the generic fallback, and the no-DLC path is clean. |
 | EVT-18 | Arrival | `SetFaction` plus founding-arrival bootstrap | Neutral page, scenario/backstory facts, exactly-first ordering, one bad pawn cannot wedge bootstrap. |
 | EVT-19 | Day/quadrum reflection | Seed day signals and invoke sleep/rest flush | Highlight selection, once-per-day guard, quadrum substitution, evidence consumption, token limits. |
 | EVT-20 | Arc reflection | Seed hot/archive memories and invoke scheduled/major-event path | Year/gap limits, memory filtering/dedup, forced retry backoff, recent-memory tracking. |
 | EVT-21 | External API | `SubmitEvent`, `SubmitPromptEntry`, and direct-entry API | Solo/pair, group gate, protected instruction, attribution, budget rejection, listener notification. |
-| EVT-22 | Event windows | Controlled incident/thing/letter/birthday/hediff/prison-break signals | Start/end/one-shot page, scope, dedup, timeout, prompt-bias state, no-DLC string matching. |
+| EVT-22 | Event windows | Controlled incident/thing/letter/birthday/hediff/prison-break/monolith signals | Start/end/one-shot page, scope, dedup, timeout, prompt-bias state, no-DLC string matching; exact Stirring/Waking/Void Awakened ownership, Gleaming silence, and source-owned monolith evidence/reference with no provider-created prompt context. |
 | EVT-23 | Observed conditions | Seed each observer kind and invoke scan | Start/end debounce, state refresh, scope identity, optional page, prompt-only state, restart cooldown. |
 
 For chance-driven routes, pure tests cover distributions and formulas. In-game tests inject a known
@@ -115,6 +115,33 @@ seed or temporarily set XML-backed effective chance to `0`/`1`; they never retry
 Add table-driven pure tests covering every marker/domain in `DiaryEventDomainClassifier` and every
 classifier-key specialization: quest signals, ritual/psychic ritual, ability category, body-part
 hediffs, reflections, arrival, and death.
+
+Master Wave 2 adds shipped-XML contract coverage in `DiaryPipelineTests`: every installed Anomaly
+psychic-ritual key resolves exactly once under case-insensitive `matchDefNames`, all exact groups and
+the fallback require the official package, Ritual orders are unique, DefInjected fields are complete
+in English and Russian, unknown/modded keys keep the fallback, and an Ideology ritual cannot enter an
+Anomaly family. The same test parses event-window triggers to prove one reached monolith level maps to
+one window, `Gleaming` maps to none, localized fallbacks exist, and the three exact windows declare
+bounded source evidence. The EVT-22 RimTest fixture exercises the live package-gated page/evidence
+path when Anomaly is active and the no-op branch otherwise.
+
+Master Wave 3 / Biotech Phases 0–2 use `DiaryBiotechPolicyTests`, an assembly-free suite that freezes
+the complete family arc grammar, additive save/context keys, actual before/after growth diffing,
+NoTrait and ambiguous auto-trait handling, passion verification, opportunity boundaries,
+deterministic supporter tiers/ties, child/supporter writer shapes, capped birth writer ordering,
+legacy settings inheritance, bounded context formatting, XML policy coverage, exact classifier
+groups/package gates, pending-row normalization/expiry/grace, pregnancy/labor correlation,
+lesson/play/memory classification, unsummarized evidence, duplicate repair, compaction/retention,
+and English/Russian DefInjected/Keyed
+text. `DiaryCapturePolicyTests` also requires both catalog types/Specs and their
+solo/pair/drop/dedup decisions. `PawnDiaryBiotechGrowthFlowTests` covers the live growth
+component boundary: canonical page creation with family context and N1 identity evidence, durable-event/consumed-age
+dedup repair, trait/skill baseline consumption, Birthday fallback when canonical growth is disabled,
+and zero pages with both groups disabled. The Scribe fixture round-trips a detached pending growth row,
+deep family arc/supporter state, and nested consumed ages, while the DLC-safety fixture drives the guarded
+growth/family snapshot accessors.
+Vanilla age-7/10/13 letter postponement/click-through remains a manual loaded-game acceptance matrix;
+family birth fixtures remain absent until Phase 3 activates that owner.
 
 For `DiaryEventPromptKeys` and runtime Def resolution, test:
 

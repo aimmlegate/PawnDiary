@@ -62,6 +62,7 @@ harness:
 | `PawnDiaryRaidFlowTests` | 13 | Raid per-colonist fan-out + colony dedup + bypass classes. |
 | `PawnDiaryMoodConditionFlowTests` | 14 | GameCondition mood fan-out + classification + group gate. |
 | `PawnDiaryPawnProgressionFlowTests` | 15 | Skill/trait milestone baseline + upward-only + arc request. |
+| `PawnDiaryBiotechGrowthFlowTests` | B1 | Family-keyed canonical growth/N1 evidence + baseline consumption + Birthday/disabled fallback. |
 | `PawnDiaryQuestFlowTests` | 16 | Quest accept/complete/fail fan-out + label sanitation + dedup. |
 | `PawnDiaryRitualFlowTests` | 17 | Ritual participant fan-out (DLC-gated, clean no-op without Ideology). |
 | `PawnDiaryArrivalFlowTests` | 18 | Neutral arrival page + first-ordering + bootstrap resilience. |

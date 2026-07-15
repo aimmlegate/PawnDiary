@@ -81,6 +81,9 @@ namespace PawnDiary.Capture
             Register(new RitualEventSpec());
             Register(new AbilityEventSpec());
             Register(new ExternalEventSpec());
+            // Biotech growth is live in Phase 1; family birth remains an inert contract until Phase 3.
+            Register(new GrowthMomentEventSpec());
+            Register(new FamilyBirthEventSpec());
         }
     }
 }

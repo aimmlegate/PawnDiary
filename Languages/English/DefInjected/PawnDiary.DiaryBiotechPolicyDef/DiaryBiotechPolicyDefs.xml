@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <Diary_BiotechPolicy.label>Biotech growth and family policy</Diary_BiotechPolicy.label>
+  <Diary_BiotechPolicy.opportunityBands.0.description>the child faced a narrow set of opportunities, without assigning blame for why</Diary_BiotechPolicy.opportunityBands.0.description>
+  <Diary_BiotechPolicy.opportunityBands.1.description>the child had a mixed but meaningful range of paths to choose from</Diary_BiotechPolicy.opportunityBands.1.description>
+  <Diary_BiotechPolicy.opportunityBands.2.description>the child reached this moment with a broad range of possible paths</Diary_BiotechPolicy.opportunityBands.2.description>
+  <Diary_BiotechPolicy.opportunityBands.3.description>the child reached this moment with an exceptional breadth of possible paths</Diary_BiotechPolicy.opportunityBands.3.description>
+  <Diary_BiotechPolicy.newInterestDescription>a new interest</Diary_BiotechPolicy.newInterestDescription>
+  <Diary_BiotechPolicy.deepenedInterestDescription>a deepened interest</Diary_BiotechPolicy.deepenedInterestDescription>
+  <Diary_BiotechPolicy.observationBands.0.description>there are a few exact memories of this adult teaching or playing with the child</Diary_BiotechPolicy.observationBands.0.description>
+  <Diary_BiotechPolicy.observationBands.1.description>this adult has been a steady, directly observed presence in the child&apos;s learning</Diary_BiotechPolicy.observationBands.1.description>
+  <Diary_BiotechPolicy.observationBands.2.description>many directly observed lessons or play moments connect this adult to the child&apos;s upbringing</Diary_BiotechPolicy.observationBands.2.description>
+</LanguageData>
