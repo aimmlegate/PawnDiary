@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Shared, DLC-neutral policy for the planned Narrative Continuity Layer (Master Wave 0 / Narrative N0).
+  It contains only stable schema tokens and tunable numbers: no DLC Def references, prompt facts, or
+  page-producing event types. The N0 code does not call this policy from live gameplay yet.
+
+  NarrativeContextSelector receives a copied plain snapshot, so editing this Def later changes policy
+  without letting Verse/Defs leak into the pure selection or reflection tests. Candidate prose remains
+  source/provider-owned and is localized/sanitized at event time; it never belongs in these rows.
+-->
+<Defs>
+  <PawnDiary.DiaryNarrativeContinuityDef>
+    <defName>Diary_NarrativeContinuity</defName>
+    <label>narrative continuity policy</label>
+
+    <!-- Defensive caps: sources can emit at most three evidence rows per POV; selector work is bounded. -->
+    <enabled>true</enabled>
+    <maxEvidencePerPov>3</maxEvidencePerPov>
+    <maxCandidates>12</maxCandidates>
+    <maxSelectedCandidates>2</maxSelectedCandidates>
+    <maxRecentSelectedCandidateKeys>12</maxRecentSelectedCandidateKeys>
+
+    <!-- Candidate recency and repetition: exact-arc continuation remains eligible despite recent use. -->
+    <maximumCandidateAgeTicks>180000</maximumCandidateAgeTicks>
+    <ageDecayWindowTicks>60000</ageDecayWindowTicks>
+    <ageDecayFloor>0.35</ageDecayFloor>
+    <repetitionPenalty>45</repetitionPenalty>
+    <exactArcRepetitionPenalty>0</exactArcRepetitionPenalty>
+
+    <!-- Prompt text is schema/prose for the later N1 renderer; DefInjected supplies localizable values. -->
+    <promptFieldLabel>narrative context</promptFieldLabel>
+    <promptFieldInstruction>Use these factual notes only when they make the supplied event more specific; do not recap them as a separate scene or invent any missing connection.</promptFieldInstruction>
+
+    <!-- Full permits two complete lenses; Balanced permits two only when both are short exact-arc facts. -->
+    <detailBudgets>
+      <li><detailLevel>full</detailLevel><maxLenses>2</maxLenses><characterBudget>320</characterBudget><allowExactArcPair>true</allowExactArcPair><exactArcPairMaxCharacters>120</exactArcPairMaxCharacters></li>
+      <li><detailLevel>balanced</detailLevel><maxLenses>1</maxLenses><characterBudget>180</characterBudget><allowExactArcPair>true</allowExactArcPair><exactArcPairMaxCharacters>72</exactArcPairMaxCharacters></li>
+      <li><detailLevel>compact</detailLevel><maxLenses>1</maxLenses><characterBudget>110</characterBudget><allowExactArcPair>false</allowExactArcPair><exactArcPairMaxCharacters>56</exactArcPairMaxCharacters></li>
+    </detailBudgets>
+
+    <!-- Relevance outranks novelty: exact arc, exact subject, topic, facet, then verified ambient pressure. -->
+    <relationshipScores>
+      <li><token>exact_arc</token><score>100</score></li>
+      <li><token>exact_subject</token><score>80</score></li>
+      <li><token>direct_topic</token><score>60</score></li>
+      <li><token>direct_facet</token><score>40</score></li>
+      <li><token>ambient</token><score>20</score></li>
+      <li><token>none</token><score>0</score></li>
+    </relationshipScores>
+    <facetScores>
+      <li><token>identity_transition</token><score>15</score></li>
+      <li><token>bond_lifecycle</token><score>15</score></li>
+      <li><token>journey_chapter</token><score>14</score></li>
+      <li><token>ambient_pressure</token><score>10</score></li>
+    </facetScores>
+    <categoryScores>
+      <li><token>identity</token><score>12</score></li>
+      <li><token>bond</token><score>12</score></li>
+      <li><token>interpretation</token><score>10</score></li>
+      <li><token>chapter</token><score>12</score></li>
+      <li><token>pressure</token><score>8</score></li>
+      <li><token>home</token><score>8</score></li>
+    </categoryScores>
+    <salienceScores>
+      <li><token>minor</token><score>2</score></li>
+      <li><token>meaningful</token><score>8</score></li>
+      <li><token>major</token><score>15</score></li>
+      <li><token>terminal</token><score>20</score></li>
+    </salienceScores>
+
+    <!-- No provider correction is justified before a real source slice proves that generic policy is insufficient. -->
+    <providerScores />
+    <!-- Source plans add reviewed token-to-token affinities with their own provider phases; direct topic match works now. -->
+    <affinityRules />
+    <!-- Missing pairs are allowed when categories differ; these rows explicitly document useful combinations. -->
+    <categoryCoexistence>
+      <li><firstCategory>identity</firstCategory><secondCategory>pressure</secondCategory><allowed>true</allowed></li>
+      <li><firstCategory>bond</firstCategory><secondCategory>pressure</secondCategory><allowed>true</allowed></li>
+      <li><firstCategory>chapter</firstCategory><secondCategory>home</secondCategory><allowed>true</allowed></li>
+    </categoryCoexistence>
+
+    <!-- N4 will consume these pure scheduling values through ReflectionCoordinator; N0 dispatches nothing. -->
+    <reflectionGlobalCooldownTicks>60000</reflectionGlobalCooldownTicks>
+    <reflectionMinimumLinkedMemories>2</reflectionMinimumLinkedMemories>
+    <reflectionMemoryCap>8</reflectionMemoryCap>
+    <reflectionMaximumSpanTicks>3600000</reflectionMaximumSpanTicks>
+    <reflectionPriorities>
+      <li><kind>major_arc</kind><priority>500</priority><cooldownTicks>120000</cooldownTicks></li>
+      <li><kind>cross_arc</kind><priority>400</priority><cooldownTicks>120000</cooldownTicks></li>
+      <li><kind>belief</kind><priority>300</priority><cooldownTicks>120000</cooldownTicks></li>
+      <li><kind>quadrum</kind><priority>200</priority><cooldownTicks>60000</cooldownTicks></li>
+      <li><kind>day</kind><priority>100</priority><cooldownTicks>60000</cooldownTicks></li>
+    </reflectionPriorities>
+  </PawnDiary.DiaryNarrativeContinuityDef>
+</Defs>

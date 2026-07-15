@@ -53,7 +53,7 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, DLC-safe live reads. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, and the DLC-neutral Narrative Continuity contracts/selector/reflection policy. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
@@ -158,6 +158,22 @@ Generation starts only after an event exists in the saved hot store.
 `DiaryPipelineAdapters` copy current settings, XML Def policy, localization, and live pawn facts
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
+
+**Narrative Continuity (Master Wave 0 / N0)** currently defines only the shared, pure foundation for
+future DLC integrations: event-time evidence, prose-free references, bounded lens candidates, the
+deterministic selector, and reflection arbitration. `DiaryNarrativeContinuityDef` is copied into a
+plain policy snapshot before pure code runs. This phase has no live DLC provider, Harmony hook, save
+field, archive field, or prompt field, so a current diary entry remains byte-for-byte unchanged. N1
+will add the persistence/prompt seam; source-specific pages remain their own sole capture owners.
+
+N0 freezes exactly four evidence facets—`identity_transition`, `bond_lifecycle`,
+`journey_chapter`, and `ambient_pressure`—rather than creating generic DLC events. They cover the
+planned Royalty persona/title/ascent moments, Ideology conversion/stance interpretation, Biotech
+growth/family/mechanitor moments, Anomaly visible transformation/monolith/containment pressure, and
+Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned grammar such as
+`biotech-family|&lt;familyArcId&gt;` or `odyssey-journey|&lt;journeyId&gt;`; they contain stable IDs only
+(never localized labels) and reference equality is ordinal/case-sensitive. The reserved save-key
+names exist in pure code for N1 review only—they are not serialized in N0.
 
 Live surroundings are optional prompt flavor and are collected fail-soft. In particular,
 `Room.GetRoomRoleLabel()` can lazily recalculate the room's stats/role; if RimWorld or another room
@@ -971,6 +987,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeDefs.xml` | pawn psychotypes (outlook layer): Neutral + 17 adult + 3 trait-gated + 5 child types, families, skill affinities, trait gates |
 | `DiaryPsychotypeRollPolicyDefs.xml` | numeric tuning for the psychotype roll: family bases, bonuses, wildcard chance, jitter range, duplicate penalty |
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
+| `DiaryNarrativeContinuityDefs.xml` | future DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, and reflection priority; N0 does not yet invoke it from a live event |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
 | `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |
 | `DiaryUiStyleDef.xml` / `DiaryTextDecorationDefs.xml` | UI dimensions/colors and display-only rich-text decoration |
@@ -2041,6 +2058,7 @@ dotnet run --project tests/DiaryCapturePolicyTests/DiaryCapturePolicyTests.cspro
 dotnet run --project tests/PromptVariantsTests/PromptVariantsTests.csproj
 dotnet run --project tests/DiarySaveNormalizationTests/DiarySaveNormalizationTests.csproj
 dotnet run --project tests/DiaryObservedConditionTests/DiaryObservedConditionTests.csproj
+dotnet run --project tests/NarrativeContinuityTests/NarrativeContinuityTests.csproj
 dotnet run --project tests/SpeakUpBridgeLogicTests/SpeakUpBridgeLogicTests.csproj
 dotnet run --project tests/RimpsycheBridgeLogicTests/RimpsycheBridgeLogicTests.csproj
 dotnet run --project tests/PowerfulAiBridgeLogicTests/PowerfulAiBridgeLogicTests.csproj

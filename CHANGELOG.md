@@ -1,5 +1,15 @@
 # Changelog
 
+- **2026-07-15 — Began DLC integration: Master Wave 0 / Narrative Continuity N0.** Added the
+  DLC-neutral, pure Narrative Continuity foundation: frozen evidence/reference/lens/reflection DTOs
+  and tokens; ordinal reference equality; deterministic relevance, category, repetition, age, and
+  complete-fact budget policy; deferred reflection priority and disabled-group debt instructions; and
+  the XML-backed `Diary_NarrativeContinuity` policy snapshot. Added the standalone
+  `NarrativeContinuityTests` suite (49 assertions, no RimWorld/Verse/Unity/DLC assemblies) plus the
+  Def and localization entries. This intentionally adds no live provider, Harmony hook, save/archive
+  field, or prompt field, so current gameplay and generated prompts are unchanged. Documented the
+  frozen N0 seam and rebuilt the committed DLL.
+
 - **2026-07-15 — Made surroundings snapshots tolerate broken room-role recalculation.** Room-role
   labels are optional prompt flavor, but RimWorld's label getter can lazily recalculate room stats and
   throw when a room/performance mod leaves the live room graph transiently inconsistent. Pawn Diary

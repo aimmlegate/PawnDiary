@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <!-- Link only plain source. This project must compile with no RimWorld, Verse, Unity, or DLC assembly. -->
+  <ItemGroup>
+    <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContracts.cs" Link="NarrativeContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeReferencePolicy.cs" Link="NarrativeReferencePolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContextSelector.cs" Link="NarrativeContextSelector.cs" />
+    <Compile Include="..\..\Source\Pipeline\Narrative\ReflectionCoordinator.cs" Link="ReflectionCoordinator.cs" />
+  </ItemGroup>
+</Project>

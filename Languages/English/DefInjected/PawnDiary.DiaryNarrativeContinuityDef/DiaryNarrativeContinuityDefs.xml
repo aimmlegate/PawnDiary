@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <Diary_NarrativeContinuity.label>narrative continuity policy</Diary_NarrativeContinuity.label>
+  <Diary_NarrativeContinuity.promptFieldLabel>narrative context</Diary_NarrativeContinuity.promptFieldLabel>
+  <Diary_NarrativeContinuity.promptFieldInstruction>Use these factual notes only when they make the supplied event more specific; do not recap them as a separate scene or invent any missing connection.</Diary_NarrativeContinuity.promptFieldInstruction>
+</LanguageData>
