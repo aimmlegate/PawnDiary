@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Shared, DLC-neutral policy for the planned Narrative Continuity Layer (Master Wave 0 / Narrative N0).
+  Shared, DLC-neutral policy for the Narrative Continuity Layer (Master Wave 1 / Narrative N1).
   It contains only stable schema tokens and tunable numbers: no DLC Def references, prompt facts, or
-  page-producing event types. The N0 code does not call this policy from live gameplay yet.
+  page-producing event types. N1 reads it only at the main-thread builder/prompt boundary; it still
+  ships no real DLC provider, Harmony hook, or source-specific page behavior.
 
   NarrativeContextSelector receives a copied plain snapshot, so editing this Def later changes policy
   without letting Verse/Defs leak into the pure selection or reflection tests. Candidate prose remains
@@ -27,7 +28,7 @@
     <repetitionPenalty>45</repetitionPenalty>
     <exactArcRepetitionPenalty>0</exactArcRepetitionPenalty>
 
-    <!-- Prompt text is schema/prose for the later N1 renderer; DefInjected supplies localizable values. -->
+    <!-- Optional prompt text is localized through DefInjected; empty selected context omits the field. -->
     <promptFieldLabel>narrative context</promptFieldLabel>
     <promptFieldInstruction>Use these factual notes only when they make the supplied event more specific; do not recap them as a separate scene or invent any missing connection.</promptFieldInstruction>
 
@@ -79,7 +80,7 @@
       <li><firstCategory>chapter</firstCategory><secondCategory>home</secondCategory><allowed>true</allowed></li>
     </categoryCoexistence>
 
-    <!-- N4 will consume these pure scheduling values through ReflectionCoordinator; N0 dispatches nothing. -->
+    <!-- N4 will consume these pure scheduling values through ReflectionCoordinator; N1 dispatches no reflection. -->
     <reflectionGlobalCooldownTicks>60000</reflectionGlobalCooldownTicks>
     <reflectionMinimumLinkedMemories>2</reflectionMinimumLinkedMemories>
     <reflectionMemoryCap>8</reflectionMemoryCap>

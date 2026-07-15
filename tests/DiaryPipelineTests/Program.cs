@@ -16,6 +16,7 @@ namespace DiaryPipelineTests
         {
             TestCombatPromptPlan();
             TestSoloPromptPlan();
+            TestNarrativeContextPromptField();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
             TestOwnedPromptTextIsNotSentenceCapped();
@@ -554,6 +555,37 @@ namespace DiaryPipelineTests
             AssertEqual("solo rule role", DiaryPipelineRoles.Initiator, plan.responseRules.targetRole);
             AssertEqual("solo forced model carried", "story-model", plan.forcedModelName);
             AssertTrue("solo forced model not prompt text", !plan.userPrompt.Contains("story-model"));
+        }
+
+        private static void TestNarrativeContextPromptField()
+        {
+            DiaryEventPayload payload = SoloPayload("e-narrative", "quiet work", "Alice repaired the generator.");
+            payload.initiator.narrativeContext = "The earlier family rift is still unresolved.";
+            DiaryPolicySnapshot policy = Policy(combat: false, important: true);
+            policy.narrativeContextInstruction = "Use only these frozen facts.";
+            policy.Template(DiaryPipelineTemplates.SoloImportant).fields.Add(
+                Field("narrative context", NarrativeContextPrompt.Source));
+
+            DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = payload,
+                policy = policy,
+                povRole = DiaryPipelineRoles.Initiator,
+                maxTokens = 30
+            });
+
+            AssertContains("selected narrative context reaches the prompt", plan.userPrompt,
+                "narrative context: Use only these frozen facts.\nThe earlier family rift is still unresolved.");
+
+            payload.initiator.narrativeContext = string.Empty;
+            DiaryPromptPlan empty = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = payload,
+                policy = policy,
+                povRole = DiaryPipelineRoles.Initiator,
+                maxTokens = 30
+            });
+            AssertTrue("empty narrative context omits its field", !empty.userPrompt.Contains("narrative context:"));
         }
 
         private static void TestPromptContextDetailSelection()

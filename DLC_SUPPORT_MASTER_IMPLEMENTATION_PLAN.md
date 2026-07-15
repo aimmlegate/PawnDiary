@@ -116,6 +116,10 @@ Complete Narrative Continuity **Phase N0**:
 
 ## 6. Wave 1 — land shared persistence and prompt seam
 
+> **Implementation status (2026-07-15): complete.** Narrative N1 now provides only shared save,
+> archive-index, and optional prompt infrastructure; it does not add a real DLC provider, hook, or
+> source-owned page. The next permitted implementation slice is Wave 2 / Anomaly A0.0.
+
 ### Implement
 
 Complete Narrative Continuity **Phase N1**:

@@ -198,6 +198,9 @@ namespace PawnDiary
                 setting = pov?.surroundings,
                 tone = request.policy?.group?.tone,
                 relationship = pov?.continuity,
+                narrativeContext = NarrativeContextPrompt.Compose(
+                    pov?.narrativeContext,
+                    request.policy?.narrativeContextInstruction),
                 lastOpener = pov?.lastOpener,
                 previousEntryEnding = pov?.previousEntryEnding,
                 weapon = pov?.weapon,

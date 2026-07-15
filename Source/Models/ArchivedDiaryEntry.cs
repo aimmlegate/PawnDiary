@@ -53,6 +53,12 @@ namespace PawnDiary
         public bool linkedGenerated;
         public string linkedTitle;
 
+        // N1 intentionally carries only compact pointers into cold storage. Evidence and formatted
+        // prompt context stay with the hot event; archive retains just enough identity to rebuild
+        // bounded arc/subject lookups and avoid immediately reselecting the same candidate key.
+        internal List<NarrativeReferenceState> narrativeReferences = new List<NarrativeReferenceState>();
+        internal List<string> narrativeSelectedCandidateKeys = new List<string>();
+
         private const int UnknownYear = int.MinValue;
 
         /// <summary>Stable archive identity: one displayed page per event/pawn/role.</summary>
@@ -126,7 +132,12 @@ namespace PawnDiary
                 linkedRole = link?.OtherRole ?? string.Empty,
                 linkedPreviewText = link?.TruncatedText ?? string.Empty,
                 linkedGenerated = link != null && link.Generated,
-                linkedTitle = link?.Title ?? string.Empty
+                linkedTitle = link?.Title ?? string.Empty,
+                narrativeReferences = NarrativeStatePersistence.FromReferences(
+                    NarrativePersistencePolicy.NormalizeReferences(
+                        diaryEvent.NarrativeReferencesForRole(view.PovRole))),
+                narrativeSelectedCandidateKeys = NarrativeStatePersistence.NormalizeSelectedCandidateKeys(
+                    diaryEvent.NarrativeSelectedCandidateKeysForRole(view.PovRole))
             };
         }
 
@@ -243,6 +254,9 @@ namespace PawnDiary
             Scribe_Values.Look(ref linkedPreviewText, "linkedPreviewText");
             Scribe_Values.Look(ref linkedGenerated, "linkedGenerated", false);
             Scribe_Values.Look(ref linkedTitle, "linkedTitle");
+            Scribe_Collections.Look(ref narrativeReferences, NarrativeSaveKeys.ArchiveReferences, LookMode.Deep);
+            Scribe_Collections.Look(ref narrativeSelectedCandidateKeys,
+                NarrativeSaveKeys.ArchiveSelectedCandidateKeys, LookMode.Value);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -283,6 +297,9 @@ namespace PawnDiary
             linkedRole = DiarySaveNormalization.NormalizeString(linkedRole);
             linkedPreviewText = DiarySaveNormalization.NormalizeString(linkedPreviewText);
             linkedTitle = DiarySaveNormalization.NormalizeString(linkedTitle);
+            narrativeReferences = NarrativeStatePersistence.NormalizeReferenceStates(narrativeReferences);
+            narrativeSelectedCandidateKeys = NarrativeStatePersistence.NormalizeSelectedCandidateKeys(
+                narrativeSelectedCandidateKeys);
             if (year == UnknownYear && !string.IsNullOrWhiteSpace(date))
             {
                 year = DiarySaveNormalization.ExtractYear(date);

@@ -513,6 +513,11 @@ budget, reference equality, and reflection priority; XML parses; no RimWorld ref
 
 ### Phase N1 — Per-POV persistence and prompt seam
 
+> **Implementation status (2026-07-15): complete as Master Wave 1.** The shared hot/archive save
+> seam, optional first-person prompt field, synthetic/core fixture builder, and focused pure/RimTest
+> coverage landed without a real DLC provider or source-specific behavior. N2 remains the first wave
+> permitted to attach a guarded real provider/emission.
+
 1. Add event/POV state, Scribe normalization, pipeline payload field, and archive copying/indexes.
 2. Add the optional narrative-context prompt field and Full/Balanced/Compact budget behavior.
 3. Implement `NarrativeContextBuilder` with a synthetic/core test provider only.

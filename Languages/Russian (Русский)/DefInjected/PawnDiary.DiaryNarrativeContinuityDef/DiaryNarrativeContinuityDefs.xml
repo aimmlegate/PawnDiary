@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <Diary_NarrativeContinuity.label>политика повествовательной связности</Diary_NarrativeContinuity.label>
+  <Diary_NarrativeContinuity.promptFieldLabel>повествовательный контекст</Diary_NarrativeContinuity.promptFieldLabel>
+  <Diary_NarrativeContinuity.promptFieldInstruction>Используй эти фактические заметки только когда они делают описанное событие конкретнее; не пересказывай их отдельной сценой и не выдумывай недостающие связи.</Diary_NarrativeContinuity.promptFieldInstruction>
+</LanguageData>

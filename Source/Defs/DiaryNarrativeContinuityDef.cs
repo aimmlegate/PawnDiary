@@ -1,6 +1,7 @@
-// XML boundary for the future Narrative Continuity Layer. RimWorld loads this Def at startup, while
+// XML boundary for the Narrative Continuity Layer. RimWorld loads this Def at startup, while
 // NarrativeContextSelector stays pure by receiving a copied NarrativePolicySnapshot instead of this
-// live Verse Def. N0 deliberately defines the seam without invoking it from production events.
+// live Verse Def. N1 reads the prompt wording and selection policy at the main-thread adapter, but
+// still has no real DLC provider, Harmony hook, or source-owned event behavior.
 //
 // New to C#/RimWorld? See AGENTS.md ("XML Defs" and "DLC-safety").
 using System;
@@ -68,7 +69,8 @@ namespace PawnDiary
         public float exactArcRepetitionPenalty;
         // This is a structured prompt-schema label, which remains English by the localization carve-out.
         public string promptFieldLabel = "narrative context";
-        // Prompt prose is localized through DefInjected. Blank is the defensive fallback until N1 renders it.
+        // Prompt prose is localized through DefInjected. Blank remains a safe fallback when a Def is
+        // missing or an old/custom translation has not supplied the optional instruction.
         public string promptFieldInstruction = string.Empty;
         public List<DiaryNarrativeDetailBudgetDef> detailBudgets;
         public List<DiaryNarrativeTokenWeightDef> relationshipScores;

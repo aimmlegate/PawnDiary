@@ -186,6 +186,39 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// N1's compact narrative references build pawn-scoped arc/subject indexes from cold pages.
+        /// Rebuilding and retention must leave the same surviving page set visible and must never let
+        /// another pawn's reference satisfy the current POV's lookup.
+        /// </summary>
+        [Test]
+        public static void NarrativeArchiveIndexesRebuildAndRespectRetention()
+        {
+            DiaryArchiveRepository archive = new DiaryArchiveRepository();
+            ArchivedDiaryEntry first = NewArchive("pd-narrative-A1", "PawnA", DiaryEvent.InitiatorRole, 100);
+            ArchivedDiaryEntry second = NewArchive("pd-narrative-A2", "PawnA", DiaryEvent.InitiatorRole, 200);
+            ArchivedDiaryEntry otherPawn = NewArchive("pd-narrative-B1", "PawnB", DiaryEvent.InitiatorRole, 100);
+            first.narrativeReferences = FixtureNarrativeReferences();
+            second.narrativeReferences = FixtureNarrativeReferences();
+            otherPawn.narrativeReferences = FixtureNarrativeReferences();
+            first.narrativeSelectedCandidateKeys = new List<string> { "core-fixture-identity" };
+            second.narrativeSelectedCandidateKeys = new List<string> { "core-fixture-identity" };
+
+            RequireAdded(archive, first);
+            RequireAdded(archive, second);
+            RequireAdded(archive, otherPawn);
+            AssertNarrativeArchiveLookups(archive, "after AddOrKeep", expectedPawnARows: 2);
+
+            archive.RebuildIndex();
+            AssertNarrativeArchiveLookups(archive, "after RebuildIndex", expectedPawnARows: 2);
+
+            Require(archive.TrimPerPawnLimit(1),
+                "Retention should trim PawnA's oldest cold narrative row when capped to one.");
+            Require(!archive.Contains("pd-narrative-A1", "PawnA", DiaryEvent.InitiatorRole),
+                "Retention should remove the oldest PawnA narrative row.");
+            AssertNarrativeArchiveLookups(archive, "after TrimPerPawnLimit", expectedPawnARows: 1);
+        }
+
+        /// <summary>
         /// <see cref="DiaryArchiveRepository.RemoveForEventIds"/> prunes every row for the given event
         /// ids and rebuilds the indexes so the removed rows stop resolving while the rest still do.
         /// </summary>
@@ -380,6 +413,43 @@ namespace PawnDiary.RimTests
                 interactionLabel = "chat",
                 colorCue = DiaryEvent.QuietColorCue,
             };
+        }
+
+        private static List<NarrativeReferenceState> FixtureNarrativeReferences()
+        {
+            return NarrativeStatePersistence.FromReferences(new List<NarrativeReference>
+            {
+                new NarrativeReference
+                {
+                    facet = NarrativeFacetTokens.IdentityTransition,
+                    phase = "opened",
+                    subjectKind = NarrativeSubjectKindTokens.Pawn,
+                    subjectId = "Thing_Human_Subject",
+                    arcKey = "core|fixture",
+                    sourceEventId = "fixture-source",
+                    sourceTick = 10,
+                }
+            });
+        }
+
+        private static void AssertNarrativeArchiveLookups(
+            DiaryArchiveRepository archive,
+            string phase,
+            int expectedPawnARows)
+        {
+            Require(archive.EntriesForNarrativeArc("PawnA", "core|fixture").Count == expectedPawnARows,
+                "PawnA's narrative arc count should be " + expectedPawnARows + " " + phase + ".");
+            Require(archive.EntriesForNarrativeSubject(
+                    "PawnA", NarrativeSubjectKindTokens.Pawn, "Thing_Human_Subject").Count == expectedPawnARows,
+                "PawnA's narrative subject count should be " + expectedPawnARows + " " + phase + ".");
+            Require(archive.EntriesForNarrativeArc("PawnB", "core|fixture").Count == 1,
+                "PawnB's matching arc must remain isolated from PawnA " + phase + ".");
+            Require(archive.EntriesForNarrativeSubject(
+                    "PawnB", NarrativeSubjectKindTokens.Pawn, "Thing_Human_Subject").Count == 1,
+                "PawnB's matching subject must remain isolated from PawnA " + phase + ".");
+            Require(archive.EntriesForNarrativeArc("PawnA", "missing|arc").Count == 0
+                    && archive.EntriesForNarrativeSubject("PawnA", NarrativeSubjectKindTokens.Pawn, string.Empty).Count == 0,
+                "Blank or unknown narrative identities must return empty lists " + phase + ".");
         }
 
         private static void RequireAdded(DiaryArchiveRepository archive, ArchivedDiaryEntry entry)

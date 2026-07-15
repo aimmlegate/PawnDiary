@@ -103,6 +103,10 @@ namespace PawnDiary
 
         public static DiaryPolicySnapshot PolicyFor(DiaryEventPayload payload)
         {
+            // Narrative-policy prompt wording is localized through DefInjected, so capture it on the
+            // main thread together with the existing template/group policy. The selected factual text
+            // itself stays on DiaryEvent and is never rebuilt from live DLC state here.
+            NarrativePolicySnapshot narrativePolicy = DiaryNarrativeContinuityPolicy.Snapshot();
             string classifierKey = ClassifierKeyForPayload(payload);
             DiaryInteractionGroupDef group = GroupForPayload(payload, classifierKey);
             List<string> eventPromptKeys = DiaryEventPromptKeys.CandidateKeys(
@@ -120,6 +124,8 @@ namespace PawnDiary
                 PawnDiaryMod.Settings?.eventForcedModelOverrides);
             DiaryPolicySnapshot snapshot = new DiaryPolicySnapshot
             {
+                narrativeContextFieldLabel = narrativePolicy.promptFieldLabel,
+                narrativeContextInstruction = narrativePolicy.promptFieldInstruction,
                 group = new DiaryGroupPolicy
                 {
                     defName = group?.defName,
@@ -204,6 +210,7 @@ namespace PawnDiary
                 pawnSummary = recipient ? diaryEvent.recipientPawnSummary : diaryEvent.initiatorPawnSummary,
                 surroundings = diaryEvent.SurroundingsForRole(role),
                 continuity = diaryEvent.ContinuityForRole(role),
+                narrativeContext = diaryEvent.NarrativeContextForRole(role),
                 lastOpener = diaryEvent.LastOpenerForRole(role),
                 previousEntryEnding = diaryEvent.PreviousEntryEndingForRole(role),
                 weapon = recipient ? diaryEvent.recipientWeapon : diaryEvent.initiatorWeapon,
@@ -235,11 +242,14 @@ namespace PawnDiary
                 includePersona = template.includePersona,
                 appendDirectSpeechInstruction = template.appendDirectSpeechInstruction,
                 maxTokens = maxTokens,
-                fields = CopyFields(DiaryPromptTemplates.FieldsFor(templateKey))
+                fields = CopyFields(
+                    DiaryPromptTemplates.FieldsFor(templateKey),
+                    snapshot.narrativeContextFieldLabel)
             });
         }
 
-        private static List<DiaryPromptFieldPolicy> CopyFields(List<DiaryPromptFieldDef> fields)
+        private static List<DiaryPromptFieldPolicy> CopyFields(
+            List<DiaryPromptFieldDef> fields, string narrativeContextFieldLabel)
         {
             List<DiaryPromptFieldPolicy> result = new List<DiaryPromptFieldPolicy>();
             if (fields == null)
@@ -258,7 +268,12 @@ namespace PawnDiary
                 result.Add(new DiaryPromptFieldPolicy
                 {
                     enabled = field.enabled,
-                    label = field.label,
+                    // The normal XML template label is a safe fallback. The continuity Def owns the
+                    // actual prompt-field label so translators/editors have one shared policy surface.
+                    label = string.Equals(field.source, NarrativeContextPrompt.Source, StringComparison.Ordinal)
+                        && !string.IsNullOrWhiteSpace(narrativeContextFieldLabel)
+                        ? narrativeContextFieldLabel
+                        : field.label,
                     source = field.source,
                     contextKey = field.contextKey
                 });

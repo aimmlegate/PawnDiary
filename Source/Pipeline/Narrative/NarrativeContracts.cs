@@ -145,7 +145,7 @@ namespace PawnDiary
         }
     }
 
-    /// <summary>Frozen Scribe-key names reserved by N0. N1 owns adding the actual saved fields.</summary>
+    /// <summary>Frozen additive Scribe-key suffixes used by N1's hot POV and archive save fields.</summary>
     internal static class NarrativeSaveKeys
     {
         public const string Evidence = "narrativeEvidence";
@@ -294,7 +294,8 @@ namespace PawnDiary
 
     /// <summary>
     /// Pure copy of the narrative-continuity Def. It has safe built-in defaults so missing or malformed
-    /// XML produces no provider-side failure; N0 does not invoke it from live gameplay yet.
+    /// XML produces no provider-side failure; N1 invokes it only through its main-thread adapter and
+    /// still has no live DLC provider or source hook.
     /// </summary>
     internal class NarrativePolicySnapshot
     {
@@ -437,7 +438,7 @@ namespace PawnDiary
         public float score;
     }
 
-    /// <summary>Pure selection output copied into a POV only in the later N1 persistence seam.</summary>
+    /// <summary>Pure selection output copied into a bounded per-POV N1 persistence seam.</summary>
     internal class NarrativeContextSelection
     {
         public List<NarrativeLensCandidate> selectedCandidates = new List<NarrativeLensCandidate>();

@@ -252,6 +252,7 @@ Create a disposable save fixture containing:
 - completed solo and pair pages;
 - pending, failed, prompt-only, neutral arrival/death, and titled/untitled pages;
 - hot and compact archived POVs;
+- N1 per-POV Narrative Continuity evidence, references, selected keys, and frozen optional context;
 - active event window and observed condition state;
 - progression and arc schedule state;
 - generated Social-log speech compatibility fields.
@@ -259,7 +260,9 @@ Create a disposable save fixture containing:
 Phase A writes and saves the fixture. Phase B reloads it and verifies Scribe-key preservation,
 non-null normalization, repository/diary/archive index rebuilds, pending-status normalization,
 generation catch-up bounds, no duplicate arrivals/conditions, retention, and successful removal of all
-test markers. Run the same fixture with a copy of the oldest supported save in
+test markers. N1 additionally proves old-save empty defaults, archive arc/subject index rebuilding and
+retention, Full/Balanced/Compact core-fixture selection, and prompt-field omission when no context was
+selected. Run the same fixture with a copy of the oldest supported save in
 `SAVE_COMPATIBILITY_SMOKETEST.md`.
 
 ## 7. Settings, Integration API, UI, And Compatibility

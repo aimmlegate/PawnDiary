@@ -11,6 +11,8 @@
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContracts.cs" Link="NarrativeContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeReferencePolicy.cs" Link="NarrativeReferencePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContextSelector.cs" Link="NarrativeContextSelector.cs" />
+    <Compile Include="..\..\Source\Pipeline\Narrative\NarrativePersistencePolicy.cs" Link="NarrativePersistencePolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContextPrompt.cs" Link="NarrativeContextPrompt.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\ReflectionCoordinator.cs" Link="ReflectionCoordinator.cs" />
   </ItemGroup>
 </Project>

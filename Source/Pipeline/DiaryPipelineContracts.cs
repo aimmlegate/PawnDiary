@@ -53,6 +53,9 @@ namespace PawnDiary
         public string pawnSummary;
         public string surroundings;
         public string continuity;
+        // Optional cross-event facts selected and frozen at the source event time. Empty is the normal
+        // pre-N1/no-provider path and causes the XML prompt field to disappear entirely.
+        public string narrativeContext;
         public string lastOpener;
         public string previousEntryEnding;
         public string weapon;
@@ -187,6 +190,10 @@ namespace PawnDiary
     {
         public DiaryGroupPolicy group = new DiaryGroupPolicy();
         public List<DiaryTemplatePolicy> templates = new List<DiaryTemplatePolicy>();
+        // Copied from DiaryNarrativeContinuityDef on the main thread. The pure planner uses these
+        // strings only to render an already-frozen factual field; it never reads a live Def.
+        public string narrativeContextFieldLabel = "narrative context";
+        public string narrativeContextInstruction = string.Empty;
 
         public DiaryTemplatePolicy Template(string templateKey)
         {

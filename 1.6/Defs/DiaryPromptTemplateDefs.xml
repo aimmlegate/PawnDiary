@@ -51,6 +51,8 @@
       <li><label>relationship</label><source>Relationship</source></li>
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
+      <!-- Additive N1 field: PromptAssembler omits it entirely when no facts were selected. -->
+      <li><label>narrative context</label><source>NarrativeContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -106,6 +108,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>initiator's private entry (you never read it; keep continuity, never mention it)</label><source>HiddenInitiatorEntry</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
+      <li><label>narrative context</label><source>NarrativeContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -158,6 +161,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>weapon</label><source>Weapon</source></li>
       <li><label>initiator's private entry (you never read it; keep continuity, never mention it)</label><source>HiddenInitiatorEntry</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
+      <li><label>narrative context</label><source>NarrativeContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -194,6 +198,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
+      <li><label>narrative context</label><source>NarrativeContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -246,6 +251,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
+      <li><label>narrative context</label><source>NarrativeContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -310,6 +316,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
+      <li><label>narrative context</label><source>NarrativeContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -358,6 +365,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
+      <li><label>narrative context</label><source>NarrativeContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -406,6 +414,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
+      <li><label>narrative context</label><source>NarrativeContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -454,6 +463,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
+      <li><label>narrative context</label><source>NarrativeContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -481,6 +491,7 @@ Do not write a bullet list. Output only diary text. End with normal sentence pun
       <li><label>setting</label><source>Setting</source></li>
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
+      <li><label>narrative context</label><source>NarrativeContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -511,6 +522,7 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
       <li><label>setting</label><source>Setting</source></li>
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
+      <li><label>narrative context</label><source>NarrativeContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

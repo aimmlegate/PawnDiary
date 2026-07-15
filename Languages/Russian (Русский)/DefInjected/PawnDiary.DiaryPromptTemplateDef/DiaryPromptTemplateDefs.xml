@@ -401,4 +401,17 @@
   <DiaryPromptTemplate_SoloDayReflection.fields.35.label>черта</DiaryPromptTemplate_SoloDayReflection.fields.35.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.36.label>описание черты</DiaryPromptTemplate_SoloDayReflection.fields.36.label>
 
+  <!-- Narrative Continuity N1 appends one optional field to each first-person template. -->
+  <DiaryPromptTemplate_PairDefault.fields.27.label>повествовательный контекст</DiaryPromptTemplate_PairDefault.fields.27.label>
+  <DiaryPromptTemplate_PairImportant.fields.28.label>повествовательный контекст</DiaryPromptTemplate_PairImportant.fields.28.label>
+  <DiaryPromptTemplate_PairCombat.fields.30.label>повествовательный контекст</DiaryPromptTemplate_PairCombat.fields.30.label>
+  <DiaryPromptTemplate_PairBatched.fields.26.label>повествовательный контекст</DiaryPromptTemplate_PairBatched.fields.26.label>
+  <DiaryPromptTemplate_SoloDefault.fields.42.label>повествовательный контекст</DiaryPromptTemplate_SoloDefault.fields.42.label>
+  <DiaryPromptTemplate_SoloImportant.fields.43.label>повествовательный контекст</DiaryPromptTemplate_SoloImportant.fields.43.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.38.label>повествовательный контекст</DiaryPromptTemplate_SoloInternalState.fields.38.label>
+  <DiaryPromptTemplate_SoloBatched.fields.38.label>повествовательный контекст</DiaryPromptTemplate_SoloBatched.fields.38.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.37.label>повествовательный контекст</DiaryPromptTemplate_SoloDayReflection.fields.37.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.12.label>повествовательный контекст</DiaryPromptTemplate_SoloQuadrumReflection.fields.12.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.15.label>повествовательный контекст</DiaryPromptTemplate_SoloArcReflection.fields.15.label>
+
 </LanguageData>

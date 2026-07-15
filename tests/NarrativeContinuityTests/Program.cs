@@ -18,6 +18,7 @@ namespace NarrativeContinuityTests
             TestTopicRedundancyKeepsNewFacts();
             TestDetailCapsAndCompleteFactBudget();
             TestReferenceEqualityAndDeduplication();
+            TestPersistenceCapsAndPromptFormatting();
             TestReflectionPriorityAndDeferredConsumption();
             Console.WriteLine("NarrativeContinuityTests passed " + assertions + " assertions.");
             return 0;
@@ -276,6 +277,80 @@ namespace NarrativeContinuityTests
             AssertEqual("reference dedup preserves case-distinct arcs", 2, unique.Count);
         }
 
+        private static void TestPersistenceCapsAndPromptFormatting()
+        {
+            List<NarrativeEvidence> normalized = NarrativePersistencePolicy.NormalizeEvidence(
+                new List<NarrativeEvidence>
+                {
+                    new NarrativeEvidence
+                    {
+                        facet = NarrativeFacetTokens.IdentityTransition,
+                        pawnCanKnow = true,
+                        beliefTopics = new List<string> { "bonding", "bonding", "loss" }
+                    },
+                    new NarrativeEvidence
+                    {
+                        facet = NarrativeFacetTokens.BondLifecycle,
+                        pawnCanKnow = false
+                    },
+                    new NarrativeEvidence
+                    {
+                        facet = NarrativeFacetTokens.JourneyChapter,
+                        pawnCanKnow = true
+                    },
+                    new NarrativeEvidence
+                    {
+                        facet = NarrativeFacetTokens.AmbientPressure,
+                        pawnCanKnow = true
+                    },
+                    new NarrativeEvidence
+                    {
+                        facet = NarrativeFacetTokens.IdentityTransition,
+                        pawnCanKnow = true
+                    }
+                },
+                "event-fallback",
+                55,
+                "pawn-fallback",
+                "initiator",
+                99);
+
+            AssertEqual("persistence hard-caps evidence", NarrativePersistencePolicy.HardEvidenceCap,
+                normalized.Count);
+            AssertEqual("persistence stamps missing event id", "event-fallback", normalized[0].eventId);
+            AssertEqual("persistence stamps missing POV pawn", "pawn-fallback", normalized[0].povPawnId);
+            AssertEqual("persistence strips duplicate topic tokens", 2, normalized[0].beliefTopics.Count);
+            AssertTrue("hidden evidence fails closed before persistence",
+                !ContainsFacet(normalized, NarrativeFacetTokens.BondLifecycle));
+
+            NarrativeReference reference = NarrativeReferencePolicy.FromEvidence(normalized[0]);
+            List<NarrativeReference> references = NarrativePersistencePolicy.NormalizeReferences(
+                new List<NarrativeReference>
+                {
+                    reference,
+                    NarrativeReferencePolicy.FromEvidence(normalized[0]),
+                    new NarrativeReference { arcKey = "other|arc", sourceEventId = "event-2", sourceTick = 2 },
+                    new NarrativeReference { arcKey = "third|arc", sourceEventId = "event-3", sourceTick = 3 },
+                    new NarrativeReference { arcKey = "fourth|arc", sourceEventId = "event-4", sourceTick = 4 }
+                });
+            AssertEqual("persistence deduplicates and caps references", NarrativePersistencePolicy.HardReferenceCap,
+                references.Count);
+
+            List<string> keys = NarrativePersistencePolicy.NormalizeSelectedCandidateKeys(
+                new List<string> { "first", "first", " second ", "third" }, 2);
+            AssertEqual("selection-key policy applies requested bounded cap", 2, keys.Count);
+            AssertEqual("selection-key policy trims whitespace", "second", keys[1]);
+            AssertEqual("subject index needs both identity parts", string.Empty,
+                NarrativePersistencePolicy.SubjectIndexKey(NarrativeSubjectKindTokens.Pawn, string.Empty));
+            AssertEqual("subject index is stable", "pawn|pawn-1",
+                NarrativePersistencePolicy.SubjectIndexKey(NarrativeSubjectKindTokens.Pawn, "pawn-1"));
+
+            AssertEqual("empty narrative context emits no field", string.Empty,
+                NarrativeContextPrompt.Compose(" ", "Use facts."));
+            AssertEqual("narrative context keeps policy instruction and whole fact", "Use facts.\nA complete fact.",
+                NarrativeContextPrompt.Compose("A complete fact.", "Use facts."));
+        }
+
         private static void TestReflectionPriorityAndDeferredConsumption()
         {
             NarrativePolicySnapshot policy = NarrativePolicySnapshot.CreateDefault();
@@ -445,6 +520,24 @@ namespace NarrativeContinuityTests
             for (int i = 0; i < selection.selectedCandidates.Count; i++)
             {
                 if (selection.selectedCandidates[i].candidateKey == candidateKey)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool ContainsFacet(List<NarrativeEvidence> evidence, string facet)
+        {
+            if (evidence == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < evidence.Count; i++)
+            {
+                if (evidence[i] != null && string.Equals(evidence[i].facet, facet, StringComparison.Ordinal))
                 {
                     return true;
                 }

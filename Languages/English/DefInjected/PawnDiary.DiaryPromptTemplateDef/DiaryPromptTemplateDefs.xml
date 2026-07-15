@@ -350,4 +350,17 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_SoloDayReflection.fields.35.label>trait</DiaryPromptTemplate_SoloDayReflection.fields.35.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.36.label>trait description</DiaryPromptTemplate_SoloDayReflection.fields.36.label>
 
+  <!-- Narrative Continuity N1 appends one optional field to each first-person template. -->
+  <DiaryPromptTemplate_PairDefault.fields.27.label>narrative context</DiaryPromptTemplate_PairDefault.fields.27.label>
+  <DiaryPromptTemplate_PairImportant.fields.28.label>narrative context</DiaryPromptTemplate_PairImportant.fields.28.label>
+  <DiaryPromptTemplate_PairCombat.fields.30.label>narrative context</DiaryPromptTemplate_PairCombat.fields.30.label>
+  <DiaryPromptTemplate_PairBatched.fields.26.label>narrative context</DiaryPromptTemplate_PairBatched.fields.26.label>
+  <DiaryPromptTemplate_SoloDefault.fields.42.label>narrative context</DiaryPromptTemplate_SoloDefault.fields.42.label>
+  <DiaryPromptTemplate_SoloImportant.fields.43.label>narrative context</DiaryPromptTemplate_SoloImportant.fields.43.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.38.label>narrative context</DiaryPromptTemplate_SoloInternalState.fields.38.label>
+  <DiaryPromptTemplate_SoloBatched.fields.38.label>narrative context</DiaryPromptTemplate_SoloBatched.fields.38.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.37.label>narrative context</DiaryPromptTemplate_SoloDayReflection.fields.37.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.12.label>narrative context</DiaryPromptTemplate_SoloQuadrumReflection.fields.12.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.15.label>narrative context</DiaryPromptTemplate_SoloArcReflection.fields.15.label>
+
 </LanguageData>

@@ -331,6 +331,106 @@ namespace PawnDiary.RimTests
                 "blank status with no generated text should normalize to not_generated");
         }
 
+        // ---- Narrative Continuity N1 round-trips ---------------------------------------------------
+
+        /// <summary>
+        /// N1's additive POV fields survive a real Scribe round-trip, while a legacy event without the
+        /// new keys normalizes to safe empty collections/context. Compact archive rows retain only the
+        /// prose-free references and selected-key history needed by the cold-history indexes.
+        /// </summary>
+        [Test]
+        public static void NarrativeContinuityRoundTripsAndLegacyRowsStayEmpty()
+        {
+            DiaryEvent original = new DiaryEvent
+            {
+                eventId = "evt_narrative_roundtrip",
+                tick = 456789,
+                date = "8th Aprimay 5502",
+                interactionDefName = "Chat",
+                interactionLabel = "chat",
+                gameContext = "source=rimtest_narrative",
+                colorCue = DiaryEvent.QuietColorCue,
+                solo = true,
+                initiatorPawnId = "Thing_Human_Narrative",
+                initiatorName = "Mira",
+            };
+            NarrativeEvidence evidence = new NarrativeEvidence
+            {
+                facet = NarrativeFacetTokens.IdentityTransition,
+                phase = "opened",
+                subjectKind = NarrativeSubjectKindTokens.Pawn,
+                subjectId = "Thing_Human_Narrative",
+                subjectLabel = "Mira",
+                arcKey = "core|fixture",
+                beliefTopics = new List<string> { "belonging" },
+                salience = NarrativeSalienceTokens.Meaningful,
+                pawnCanKnow = true,
+                sourceDomain = "core",
+                sourceDefName = "RimTestFixture",
+            };
+            NarrativeReference reference = NarrativeReferencePolicy.FromEvidence(evidence);
+            original.ApplyNarrativeContext(DiaryEvent.InitiatorRole, new NarrativeContextBuildResult
+            {
+                evidence = new List<NarrativeEvidence> { evidence },
+                selection = new NarrativeContextSelection
+                {
+                    narrativeContext = "Mira still measures this work against the promise she made herself.",
+                    references = new List<NarrativeReference> { reference },
+                    selectedCandidates = new List<NarrativeLensCandidate>
+                    {
+                        new NarrativeLensCandidate { candidateKey = "core-fixture-identity" }
+                    }
+                }
+            });
+
+            DiaryEvent loaded = ScribeRoundTrip(original);
+            Require(loaded.NarrativeEvidenceForRole(DiaryEvent.InitiatorRole).Count == 1,
+                "Narrative evidence should survive its additive POV save key.");
+            Require(loaded.NarrativeReferencesForRole(DiaryEvent.InitiatorRole).Count == 1,
+                "Narrative references should survive their additive POV save key.");
+            Require(loaded.NarrativeSelectedCandidateKeysForRole(DiaryEvent.InitiatorRole).Count == 1,
+                "Narrative selection keys should survive their additive POV save key.");
+            AssertStr("Mira still measures this work against the promise she made herself.",
+                loaded.NarrativeContextForRole(DiaryEvent.InitiatorRole), "narrative context");
+
+            DiaryEvent legacyLoaded = ScribeRoundTrip(new DiaryEvent
+            {
+                eventId = "evt_narrative_legacy",
+                tick = 456790,
+                date = "8th Aprimay 5502",
+                interactionDefName = "Chat",
+                interactionLabel = "chat",
+                gameContext = "source=rimtest_narrative",
+                colorCue = DiaryEvent.QuietColorCue,
+                solo = true,
+                initiatorPawnId = "Thing_Human_Legacy",
+                initiatorName = "Old Save",
+            });
+            Require(legacyLoaded.NarrativeEvidenceForRole(DiaryEvent.InitiatorRole).Count == 0
+                    && legacyLoaded.NarrativeReferencesForRole(DiaryEvent.InitiatorRole).Count == 0
+                    && legacyLoaded.NarrativeSelectedCandidateKeysForRole(DiaryEvent.InitiatorRole).Count == 0,
+                "A pre-N1 save must load empty Narrative Continuity collections.");
+            AssertStr(string.Empty, legacyLoaded.NarrativeContextForRole(DiaryEvent.InitiatorRole),
+                "legacy narrative context");
+
+            ArchivedDiaryEntry archiveLoaded = ScribeRoundTrip(new ArchivedDiaryEntry
+            {
+                eventId = "evt_narrative_archive",
+                pawnId = "Thing_Human_Narrative",
+                povRole = DiaryEvent.InitiatorRole,
+                tick = 456789,
+                date = "8th Aprimay 5502",
+                status = DiaryEvent.CompleteStatus,
+                narrativeReferences = NarrativeStatePersistence.FromReferences(
+                    new List<NarrativeReference> { reference }),
+                narrativeSelectedCandidateKeys = new List<string> { "core-fixture-identity" },
+            });
+            Require(NarrativeStatePersistence.ToReferences(archiveLoaded.narrativeReferences).Count == 1,
+                "An archive row should retain its compact narrative reference.");
+            Require(archiveLoaded.narrativeSelectedCandidateKeys.Count == 1,
+                "An archive row should retain its compact selected-key history.");
+        }
+
         // ---- ArchivedDiaryEntry round-trip ---------------------------------------------------------
 
         /// <summary>

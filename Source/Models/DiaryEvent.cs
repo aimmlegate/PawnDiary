@@ -96,6 +96,12 @@ namespace PawnDiary
             public string weapon;
             public int staggeredIntensity;
             public string textDecorationFacts;
+            // Additive N1 state. Only first-person pawn slots retain it; the neutral chronicle has no
+            // individual knowledge boundary and therefore never receives narrative continuity facts.
+            internal List<NarrativeEvidenceState> narrativeEvidence;
+            internal List<NarrativeReferenceState> narrativeReferences;
+            internal List<string> narrativeSelectedCandidateKeys;
+            internal string narrativeContext;
         }
 
         // The three POV storage slots. Value-typed, so they live inline here and are mutated in
@@ -302,9 +308,9 @@ namespace PawnDiary
 
             // Per-slot normalization: null/blank pipeline fields are cleaned and statuses upgraded
             // or cleared. Neutral has no pawn-specific fields to normalize.
-            NormalizeLoadedSlot(ref initiatorSlot, hasPawnFields: true);
-            NormalizeLoadedSlot(ref recipientSlot, hasPawnFields: true);
-            NormalizeLoadedSlot(ref neutralSlot, hasPawnFields: false);
+            NormalizeLoadedSlot(ref initiatorSlot, hasPawnFields: true, eventId, tick, InitiatorRole);
+            NormalizeLoadedSlot(ref recipientSlot, hasPawnFields: true, eventId, tick, RecipientRole);
+            NormalizeLoadedSlot(ref neutralSlot, hasPawnFields: false, eventId, tick, NeutralRole);
 
             // Cross-slot defaults that depend on an already-normalized sibling slot. The initiator
             // falls back to "unknown"; the recipient then borrows the initiator's value when blank.
@@ -353,6 +359,27 @@ namespace PawnDiary
             Scribe_Values.Look(ref slot.titleError, prefix + "TitleError");
             Scribe_Values.Look(ref slot.staggeredIntensity, prefix + "StaggeredIntensity", 0);
             Scribe_Values.Look(ref slot.textDecorationFacts, prefix + "TextDecorationFacts");
+            // Narrative Continuity N1 uses additive per-POV keys. Old saves simply leave these null;
+            // NormalizeLoadedSlot turns that absence into empty collections and context.
+            Scribe_Collections.Look(ref slot.narrativeEvidence,
+                NarrativeSlotKey(prefix, NarrativeSaveKeys.Evidence), LookMode.Deep);
+            Scribe_Collections.Look(ref slot.narrativeReferences,
+                NarrativeSlotKey(prefix, NarrativeSaveKeys.References), LookMode.Deep);
+            Scribe_Collections.Look(ref slot.narrativeSelectedCandidateKeys,
+                NarrativeSlotKey(prefix, NarrativeSaveKeys.SelectedCandidateKeys), LookMode.Value);
+            Scribe_Values.Look(ref slot.narrativeContext, NarrativeSlotKey(prefix, NarrativeSaveKeys.Context));
+        }
+
+        // The base save tokens intentionally start lowercase for archive rows (`narrativeReferences`).
+        // Pawn slots follow the historical flat-key convention instead: `initiator` + `Narrative...`.
+        private static string NarrativeSlotKey(string prefix, string baseKey)
+        {
+            if (string.IsNullOrEmpty(baseKey))
+            {
+                return prefix ?? string.Empty;
+            }
+
+            return (prefix ?? string.Empty) + char.ToUpperInvariant(baseKey[0]) + baseKey.Substring(1);
         }
 
         // Neutral chronicle pages carry only the generation-pipeline fields (no pawn id/name/summary/
@@ -378,7 +405,12 @@ namespace PawnDiary
         // initiator/recipient (hasPawnFields); surroundings is left to the caller, because the
         // recipient borrows the initiator's already-normalized surroundings value. The default/clamp
         // math delegates to DiarySaveNormalization; status tokens delegate to DiaryGenerationStatus.
-        private static void NormalizeLoadedSlot(ref PovSlot slot, bool hasPawnFields)
+        private static void NormalizeLoadedSlot(
+            ref PovSlot slot,
+            bool hasPawnFields,
+            string eventId,
+            int eventTick,
+            string povRole)
         {
             slot.text = DiarySaveNormalization.NormalizeString(slot.text);
             slot.generatedText = DiarySaveNormalization.NormalizeString(slot.generatedText);
@@ -408,6 +440,17 @@ namespace PawnDiary
             slot.weapon = DiarySaveNormalization.NormalizeString(slot.weapon);
             slot.staggeredIntensity = DiarySaveNormalization.ClampStaggeredIntensity(slot.staggeredIntensity);
             slot.textDecorationFacts = DiarySaveNormalization.NormalizeString(slot.textDecorationFacts);
+            slot.narrativeEvidence = NarrativeStatePersistence.NormalizeEvidenceStates(
+                slot.narrativeEvidence,
+                eventId,
+                eventTick,
+                slot.pawnId,
+                povRole,
+                NarrativePersistencePolicy.HardEvidenceCap);
+            slot.narrativeReferences = NarrativeStatePersistence.NormalizeReferenceStates(slot.narrativeReferences);
+            slot.narrativeSelectedCandidateKeys = NarrativeStatePersistence.NormalizeSelectedCandidateKeys(
+                slot.narrativeSelectedCandidateKeys);
+            slot.narrativeContext = NarrativeStatePersistence.NormalizeNarrativeContext(slot.narrativeContext);
         }
 
         /// <summary>
@@ -1165,6 +1208,77 @@ namespace PawnDiary
             }
 
             return initiatorSlot.pawnId ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Copies a completed Narrative Continuity build result into one first-person POV. This is the
+        /// only model write boundary for the optional N1 payload, so a future DLC source cannot leave
+        /// partially written evidence, references, keys, and prompt context behind.
+        /// </summary>
+        internal void ApplyNarrativeContext(string povRole, NarrativeContextBuildResult result)
+        {
+            if (result == null || !RoleIsInitiatorOrRecipient(povRole))
+            {
+                return;
+            }
+
+            string normalizedRole = RoleEquals(povRole, RecipientRole) ? RecipientRole : InitiatorRole;
+            DiaryStateVersion.Bump();
+            ref PovSlot slot = ref SlotFor(normalizedRole);
+            slot.narrativeEvidence = NarrativeStatePersistence.NormalizeEvidenceStates(
+                NarrativeStatePersistence.FromEvidence(result.evidence),
+                eventId,
+                tick,
+                slot.pawnId,
+                normalizedRole,
+                NarrativePersistencePolicy.HardEvidenceCap);
+            slot.narrativeReferences = NarrativeStatePersistence.FromReferences(
+                NarrativePersistencePolicy.NormalizeReferences(result.selection == null
+                    ? null
+                    : result.selection.references));
+            slot.narrativeSelectedCandidateKeys = NarrativeStatePersistence.NormalizeSelectedCandidateKeys(
+                NarrativePersistencePolicy.SelectedCandidateKeys(result.selection));
+            slot.narrativeContext = NarrativeStatePersistence.NormalizeNarrativeContext(
+                result.selection == null ? string.Empty : result.selection.narrativeContext);
+        }
+
+        /// <summary>
+        /// Returns the frozen optional narrative facts selected for this first-person prompt. Neutral
+        /// pages deliberately return empty: N1 has no colony-wide knowledge model.
+        /// </summary>
+        public string NarrativeContextForRole(string povRole)
+        {
+            if (!RoleIsInitiatorOrRecipient(povRole))
+            {
+                return string.Empty;
+            }
+
+            return SlotFor(povRole).narrativeContext ?? string.Empty;
+        }
+
+        /// <summary>Returns a defensive copy of this POV's compact continuity references.</summary>
+        internal List<NarrativeReference> NarrativeReferencesForRole(string povRole)
+        {
+            return !RoleIsInitiatorOrRecipient(povRole)
+                ? new List<NarrativeReference>()
+                : NarrativeStatePersistence.ToReferences(SlotFor(povRole).narrativeReferences);
+        }
+
+        /// <summary>Returns a defensive copy of this POV's persisted, bounded selection history.</summary>
+        internal List<string> NarrativeSelectedCandidateKeysForRole(string povRole)
+        {
+            return !RoleIsInitiatorOrRecipient(povRole)
+                ? new List<string>()
+                : NarrativeStatePersistence.NormalizeSelectedCandidateKeys(
+                    SlotFor(povRole).narrativeSelectedCandidateKeys);
+        }
+
+        /// <summary>Returns a defensive copy of the source-authorized evidence saved for this POV.</summary>
+        internal List<NarrativeEvidence> NarrativeEvidenceForRole(string povRole)
+        {
+            return !RoleIsInitiatorOrRecipient(povRole)
+                ? new List<NarrativeEvidence>()
+                : NarrativeStatePersistence.ToEvidence(SlotFor(povRole).narrativeEvidence);
         }
 
         /// <summary>

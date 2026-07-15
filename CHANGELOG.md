@@ -1,5 +1,16 @@
 # Changelog
 
+- **2026-07-15 — Completed DLC integration: Master Wave 1 / Narrative Continuity N1.** Added
+  additive per-first-person-POV Scribe state for knowledge-gated evidence, compact references,
+  selected candidate keys, and frozen narrative context; old saves normalize to empty state. Archive
+  compaction now copies bounded references/key history and rebuilds pawn-scoped arc/subject indexes
+  after load and retention. The prompt payload carries optional context to appended first-person
+  template fields only, with DefInjected wording/localization and complete-fact Full/Balanced/Compact
+  selection budgets. Added `NarrativeContextBuilder` with synthetic/core fixture candidates only—no
+  real DLC provider, Harmony hook, tracker read, or source page behavior changed. Extended pure,
+  pipeline, Scribe, archive-index, and RimTest fixture coverage; updated the narrative documentation,
+  coverage plan, and Russian localization; rebuilt the committed DLL.
+
 - **2026-07-15 — Began DLC integration: Master Wave 0 / Narrative Continuity N0.** Added the
   DLC-neutral, pure Narrative Continuity foundation: frozen evidence/reference/lens/reflection DTOs
   and tokens; ordinal reference equality; deterministic relevance, category, repetition, age, and

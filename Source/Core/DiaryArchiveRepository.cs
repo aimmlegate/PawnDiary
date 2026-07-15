@@ -20,6 +20,12 @@ namespace PawnDiary
         // not always know the pawn id. Keyed by EventAndRoleKey; the value is the newest matching row
         // because rows are appended in archive order and Index overwrites on each insert.
         private readonly Dictionary<string, ArchivedDiaryEntry> entriesByEventAndRole = new Dictionary<string, ArchivedDiaryEntry>(StringComparer.Ordinal);
+        // N1 cold-history lookups are scoped by the archived POV pawn. A shared arc or subject is not
+        // automatically known by every colonist, so no colony-wide narrative lookup exists here.
+        private readonly Dictionary<string, List<ArchivedDiaryEntry>> entriesByNarrativeArc =
+            new Dictionary<string, List<ArchivedDiaryEntry>>(StringComparer.Ordinal);
+        private readonly Dictionary<string, List<ArchivedDiaryEntry>> entriesByNarrativeSubject =
+            new Dictionary<string, List<ArchivedDiaryEntry>>(StringComparer.Ordinal);
 
         public int Count
         {
@@ -37,6 +43,8 @@ namespace PawnDiary
             entriesByPawnId.Clear();
             entriesByArchiveKey.Clear();
             entriesByEventAndRole.Clear();
+            entriesByNarrativeArc.Clear();
+            entriesByNarrativeSubject.Clear();
         }
 
         public IReadOnlyList<ArchivedDiaryEntry> EntriesForPawn(string pawnId)
@@ -53,6 +61,45 @@ namespace PawnDiary
         public int CountForPawn(string pawnId)
         {
             return EntriesForPawn(pawnId).Count;
+        }
+
+        /// <summary>
+        /// Returns archived pages for one POV pawn that reference an exact narrative arc. The list is
+        /// in archive order, oldest first; blank identity parts produce an empty read-only result.
+        /// </summary>
+        public IReadOnlyList<ArchivedDiaryEntry> EntriesForNarrativeArc(string pawnId, string arcKey)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || string.IsNullOrWhiteSpace(arcKey))
+            {
+                return EmptyArchiveEntries.List;
+            }
+
+            List<ArchivedDiaryEntry> entries;
+            return entriesByNarrativeArc.TryGetValue(NarrativeArcIndexKey(pawnId, arcKey), out entries)
+                ? entries
+                : EmptyArchiveEntries.List;
+        }
+
+        /// <summary>
+        /// Returns archived pages for one POV pawn that reference one exact narrative subject. Both
+        /// kind and id are required, so a matching display label cannot join unrelated subjects.
+        /// </summary>
+        public IReadOnlyList<ArchivedDiaryEntry> EntriesForNarrativeSubject(
+            string pawnId,
+            string subjectKind,
+            string subjectId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId)
+                || string.IsNullOrWhiteSpace(NarrativePersistencePolicy.SubjectIndexKey(subjectKind, subjectId)))
+            {
+                return EmptyArchiveEntries.List;
+            }
+
+            List<ArchivedDiaryEntry> entries;
+            return entriesByNarrativeSubject.TryGetValue(
+                NarrativeSubjectIndexKey(pawnId, subjectKind, subjectId), out entries)
+                ? entries
+                : EmptyArchiveEntries.List;
         }
 
         public bool Contains(string eventId, string pawnId, string povRole)
@@ -291,6 +338,8 @@ namespace PawnDiary
             entriesByPawnId.Clear();
             entriesByArchiveKey.Clear();
             entriesByEventAndRole.Clear();
+            entriesByNarrativeArc.Clear();
+            entriesByNarrativeSubject.Clear();
             for (int i = 0; i < archiveEntries.Count; i++)
             {
                 ArchivedDiaryEntry entry = archiveEntries[i];
@@ -357,6 +406,52 @@ namespace PawnDiary
             }
 
             entries.Add(entry);
+
+            List<NarrativeReference> references = NarrativeStatePersistence.ToReferences(entry.narrativeReferences);
+            for (int i = 0; i < references.Count; i++)
+            {
+                NarrativeReference reference = references[i];
+                if (reference == null)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(reference.arcKey))
+                {
+                    AddToNarrativeIndex(entriesByNarrativeArc,
+                        NarrativeArcIndexKey(entry.pawnId, reference.arcKey), entry);
+                }
+
+                if (!string.IsNullOrWhiteSpace(
+                    NarrativePersistencePolicy.SubjectIndexKey(reference.subjectKind, reference.subjectId)))
+                {
+                    AddToNarrativeIndex(entriesByNarrativeSubject,
+                        NarrativeSubjectIndexKey(entry.pawnId, reference.subjectKind, reference.subjectId), entry);
+                }
+            }
+        }
+
+        private static void AddToNarrativeIndex(
+            Dictionary<string, List<ArchivedDiaryEntry>> index,
+            string key,
+            ArchivedDiaryEntry entry)
+        {
+            if (string.IsNullOrWhiteSpace(key) || entry == null)
+            {
+                return;
+            }
+
+            List<ArchivedDiaryEntry> entries;
+            if (!index.TryGetValue(key, out entries))
+            {
+                entries = new List<ArchivedDiaryEntry>();
+                index[key] = entries;
+            }
+
+            if (!entries.Contains(entry))
+            {
+                entries.Add(entry);
+            }
         }
 
         // Stable composite key for the (eventId, povRole) lookup. The unit separator (\x1F) cannot
@@ -365,6 +460,16 @@ namespace PawnDiary
         private static string EventAndRoleKey(string eventId, string povRole)
         {
             return eventId + '\x1F' + (povRole ?? string.Empty).ToLowerInvariant();
+        }
+
+        private static string NarrativeArcIndexKey(string pawnId, string arcKey)
+        {
+            return pawnId.Trim() + '\x1F' + arcKey.Trim();
+        }
+
+        private static string NarrativeSubjectIndexKey(string pawnId, string subjectKind, string subjectId)
+        {
+            return pawnId.Trim() + '\x1F' + NarrativePersistencePolicy.SubjectIndexKey(subjectKind, subjectId);
         }
 
         private static bool IsValid(ArchivedDiaryEntry entry)
