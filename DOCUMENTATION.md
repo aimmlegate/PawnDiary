@@ -38,12 +38,14 @@ until another death occurs.
 ## 2. Repository Map
 
 RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
-`1.6/Assemblies/PawnDiary.dll`. Source and tests are kept in the repo for development, but the
-Workshop payload omits source code and other development-only folders.
+`1.6/Assemblies/PawnDiary.dll`. The development checkout also uses `LoadFolders.xml` to expose the
+separate in-game test assembly only while RimTest Redux is active. Source and tests are kept in the
+repo for development, but the Workshop payload omits source code and other development-only folders.
 
 | Path | Role |
 |---|---|
 | `About/` | Mod metadata, mod version, preview, icon, dependency declaration. |
+| `LoadFolders.xml` | Normal 1.6 load roots plus the RimTest-only development test assembly gate. |
 | `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
 | `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
 | `Source/Capture/` | Pure Event Catalog payloads and decisions. |
@@ -55,7 +57,8 @@ Workshop payload omits source code and other development-only folders.
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
-| `tests/` | Standalone pure-helper test projects. |
+| `tests/` | Standalone pure-helper projects plus the optional in-game `PawnDiary.RimTest` smoke suite. |
+| `TEST_COVERAGE_PLAN.md` | Staged roadmap and requirement matrix for complete pure, in-game, runtime, persistence, UI, and compatibility coverage. |
 | `prompt-lab/` | Prompt fixture and variant validation harness. |
 | `integrations/` | Separate adapter mods for other mods: example/API explorer, RimTalk, SpeakUp, Rimpsyche, VSIE, 1-2-3 Personalities, and Powerful AI Integration. Not loaded in-game until deployed. |
 | `scripts/publish.ps1` | Local Workshop payload prep; builds/packages example + SpeakUp by default and all seven adapters with `-PublishAllAdapters`. |
@@ -2036,6 +2039,35 @@ dotnet run --project tests/SpeakUpBridgeLogicTests/SpeakUpBridgeLogicTests.cspro
 dotnet run --project tests/RimpsycheBridgeLogicTests/RimpsycheBridgeLogicTests.csproj
 dotnet run --project tests/PowerfulAiBridgeLogicTests/PowerfulAiBridgeLogicTests.csproj
 ```
+
+In-game smoke tests use the optional RimTest Redux development mod. Build the core first, then the
+separate test assembly:
+
+```powershell
+MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug
+MSBuild tests\PawnDiary.RimTest\PawnDiary.RimTest.csproj /t:Build /p:Configuration=Debug
+```
+
+The second command writes `tests/PawnDiary.RimTest/Assemblies/PawnDiary.RimTest.dll`.
+`LoadFolders.xml` exposes that folder only when package `ilyvion.rimtestredux` is active, while the
+optional `About.xml` load-order hint puts RimTest Redux first without making it a player dependency.
+The project locates Workshop item `3762405308` relative to `RimWorldManaged`; use
+`/p:RimTestReduxAssemblies=<path>` or the `RIMTEST_REDUX_ASSEMBLIES` environment variable when the
+framework is elsewhere. In game, open **Mod Options → RimTest Redux → Open Test Runner**. The initial
+`PawnDiaryDefSmokeTests` suite checks singleton policy Defs, representative base-game-safe interaction
+groups, and prompt-template key/field integrity; these checks are read-only and can run at the main
+menu. The companion `PawnDiaryEventReactionTests` suite requires a loaded game. It invokes the real
+vanilla `PlayLog.Add`, `Pawn_RelationsTracker.AddDirectRelation`, and
+`MentalStateHandler.TryStartMentalState` entry points, then verifies the `DiaryEvent` produced by Pawn
+Diary's Harmony → ingestion-signal → persisted-event path. The suite generates two isolated adult
+colonists per test, disables their diary generation before making them eligible (so no LLM request is
+possible), and removes their event rows, diary indexes, Social-log rows, relation/mental state,
+transient dedup keys, and pawn objects in `[AfterEach]` cleanup.
+
+`TEST_COVERAGE_PLAN.md` is the implementation roadmap for expanding this initial suite. It maps every
+documented event source, prompt template/policy layer, asynchronous runtime branch, persistence path,
+UI/view-model contract, and DLC/optional-mod configuration to a concrete pure, RimTest, transport, or
+manual test and defines the completion gate for each staged phase.
 
 Adapter assemblies are built from their own projects; notably SpeakUp stays reflection-only, while
 the Powerful AI bridge is also reflection-only and Rimpsyche needs the installed `RimPsyche.dll`

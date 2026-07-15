@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Development-only in-game tests. This produces a separate assembly so PawnDiary.dll never
+     takes a runtime dependency on RimTest Redux. LoadFolders.xml only exposes this output folder
+     when the testing mod is active. -->
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>5075c85d-dc6c-4f45-9f6d-e6d9728cf1f6</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>PawnDiary.RimTests</RootNamespace>
+    <AssemblyName>PawnDiary.RimTest</AssemblyName>
+    <!-- RimWorld itself uses the net472 surface. RimTest Redux currently declares net481, but its
+         test attributes/assertions are IL-compatible with RimWorld's Mono runtime. The reference
+         mismatch switch below is the same compatibility technique used for optional mod DLLs. -->
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <LangVersion>7.3</LangVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>true</ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>
+    <NoWarn>$(NoWarn);MSB3274;MSB3275</NoWarn>
+    <RimWorldManaged Condition="'$(RimWorldManaged)'=='' and '$(RIMWORLD_MANAGED)'!=''">$(RIMWORLD_MANAGED)</RimWorldManaged>
+    <RimWorldManaged Condition="'$(RimWorldManaged)'==''">D:\SteamLibrary\steamapps\common\RimWorld\RimWorldWin64_Data\Managed</RimWorldManaged>
+    <PawnDiaryReference Condition="'$(PawnDiaryReference)'==''">..\..\1.6\Assemblies\PawnDiary.dll</PawnDiaryReference>
+    <RimTestReduxAssemblies Condition="'$(RimTestReduxAssemblies)'=='' and '$(RIMTEST_REDUX_ASSEMBLIES)'!=''">$(RIMTEST_REDUX_ASSEMBLIES)</RimTestReduxAssemblies>
+    <!-- Workshop item 3762405308 is RimTest Redux. The relative path assumes RimWorld and its
+         Workshop content use the same Steam library; override this property when they do not. -->
+    <RimTestReduxAssemblies Condition="'$(RimTestReduxAssemblies)'==''">$(RimWorldManaged)\..\..\..\..\workshop\content\294100\3762405308\1.6\Assemblies</RimTestReduxAssemblies>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>Assemblies\</OutputPath>
+    <PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>Assemblies\</OutputPath>
+    <PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(RimWorldManaged)\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="PawnDiary">
+      <HintPath>$(PawnDiaryReference)</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="RimTestRedux">
+      <HintPath>$(RimTestReduxAssemblies)\RimTestRedux.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="**\*.cs" Exclude="obj\**\*.cs;bin\**\*.cs;Assemblies\**\*.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

@@ -3,11 +3,12 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-// Pure pipeline helpers under Source/Pipeline (external API sanitation, budget policy, listeners,
-// providers) are internal implementation detail — the public integration contract lives in the
-// PawnDiary.Integration namespace. The standalone DiaryPipelineTests project compiles against the
-// real assembly and needs to call those internal pure helpers, so it is explicitly trusted here.
+// Pure pipeline helpers and the saved event-store surface are internal implementation detail — the
+// public integration contract lives in the PawnDiary.Integration namespace. The standalone pipeline
+// tests and the separate in-game RimTest assembly compile against the real assembly and need to call
+// those internals, so only those two named test assemblies are explicitly trusted here.
 [assembly: InternalsVisibleTo("DiaryPipelineTests")]
+[assembly: InternalsVisibleTo("PawnDiary.RimTest")]
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information

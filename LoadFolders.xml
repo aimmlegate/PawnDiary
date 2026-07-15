@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<loadFolders>
+  <v1.6>
+    <li>/</li>
+    <li>1.6</li>
+    <!-- The separate test assembly references RimTest Redux, so RimWorld must not even try to
+         load it in an ordinary player setup where that optional development mod is absent. -->
+    <li IfModActive="ilyvion.rimtestredux">tests/PawnDiary.RimTest</li>
+  </v1.6>
+</loadFolders>

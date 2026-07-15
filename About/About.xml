@@ -22,6 +22,10 @@
   </modDependencies>
   <loadAfter>
     <li>brrainz.harmony</li>
+    <!-- Optional development ordering only. LoadFolders.xml exposes PawnDiary.RimTest.dll when
+         RimTest Redux is active; this hint makes its framework assembly available first without
+         turning the testing tool into a player dependency. -->
+    <li>ilyvion.rimtestredux</li>
   </loadAfter>
   <description>Pawn Diary gives each RimWorld colonist a private journal.
 

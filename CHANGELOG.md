@@ -1,5 +1,24 @@
 # Changelog
 
+- **2026-07-15 — Planned comprehensive automated coverage.** Added `TEST_COVERAGE_PLAN.md`, a staged
+  requirement-to-test roadmap covering every documented event source, prompt policy/template,
+  enchantment and voice layer, humor/forced-model route, asynchronous LLM lifecycle, save/load path,
+  integration/UI contract, and base-only/DLC configuration. The plan defines a shared failure-safe
+  RimTest harness, deterministic loopback provider, two-phase disposable-save fixture, implementation
+  order, and release gates; no runtime behavior changed.
+
+- **2026-07-15 — Added initial RimTest Redux in-game tests.** Added a separate, conditionally loaded
+  `PawnDiary.RimTest.dll` development assembly with three registration/integrity smoke checks and
+  three event-reaction integration tests. The reaction suite now drives real vanilla choke points —
+  `PlayLog.Add`, `Pawn_RelationsTracker.AddDirectRelation`, and
+  `MentalStateHandler.TryStartMentalState` — and verifies the pair/solo `DiaryEvent` persisted by the
+  production Harmony-to-signal path, including the originating Social-log ID. It uses isolated adult
+  test colonists with generation disabled and removes their events, indexes, log rows, relations,
+  mental state, dedup keys, and pawn objects after every test. RimTest Redux remains optional:
+  `LoadFolders.xml` exposes the test assembly only when the framework is active, the main
+  `PawnDiary.dll` has no test-framework reference, and release packaging continues to exclude
+  `tests/`.
+
 - **2026-07-14 — Psychotype roll tuning moved to XML.** The ~19 numeric weights, bonuses, thresholds,
   and odds (family bases, zero-passion/creepjoiner/burning/focus leans, wildcard chance, jitter range,
   duplicate penalty, etc.) that drove the two-stage psychotype roll were compile-time constants in
