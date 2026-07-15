@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <Diary_BiotechPolicy.label>Политика взросления и семьи Biotech</Diary_BiotechPolicy.label>
+  <Diary_BiotechPolicy.opportunityBands.0.description>перед ребёнком был узкий выбор возможностей, без поиска виноватых в этом</Diary_BiotechPolicy.opportunityBands.0.description>
+  <Diary_BiotechPolicy.opportunityBands.1.description>у ребёнка был смешанный, но значимый выбор дальнейших путей</Diary_BiotechPolicy.opportunityBands.1.description>
+  <Diary_BiotechPolicy.opportunityBands.2.description>к этому моменту перед ребёнком открылся широкий выбор возможных путей</Diary_BiotechPolicy.opportunityBands.2.description>
+  <Diary_BiotechPolicy.opportunityBands.3.description>к этому моменту перед ребёнком открылось исключительное разнообразие возможных путей</Diary_BiotechPolicy.opportunityBands.3.description>
+  <Diary_BiotechPolicy.observationBands.0.description>сохранилось несколько точно замеченных эпизодов, когда этот взрослый учил ребёнка или играл с ним</Diary_BiotechPolicy.observationBands.0.description>
+  <Diary_BiotechPolicy.observationBands.1.description>этот взрослый постоянно и явно участвовал в обучении ребёнка</Diary_BiotechPolicy.observationBands.1.description>
+  <Diary_BiotechPolicy.observationBands.2.description>этого взрослого связывает с воспитанием ребёнка множество явно замеченных уроков и игр</Diary_BiotechPolicy.observationBands.2.description>
+</LanguageData>

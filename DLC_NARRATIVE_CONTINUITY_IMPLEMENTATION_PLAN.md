@@ -166,7 +166,8 @@ Rules:
 - `phase`, `subjectKind`, facet, topics, and salience are stable English schema tokens.
 - `subjectLabel` is localized/sanitized on the main thread.
 - `arcKey` contains stable IDs, never localized labels. Representative shapes:
-  `royalty-persona|<weaponId>|<bondEpoch>`, `biotech-family|<familyArcId>`,
+  `royalty-persona|<weaponId>|<bondEpoch>`,
+  `biotech-family|<birtherId>|<pregnancyHediffId>` (or `biotech-family|<childId>`),
   `anomaly-monolith|<campaignEpoch>`, `odyssey-journey|<journeyId>`.
 - Empty subject/arc fields are allowed when the event still carries useful facet/topic evidence.
 - Hidden or speculative facts are omitted rather than marked with a suggestive sentinel.

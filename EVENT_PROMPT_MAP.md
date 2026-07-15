@@ -355,6 +355,14 @@ order-`776` fallback and leave page count and role fan-out unchanged:
 | `ritualAnomalyDeathRefusal` / `775` | `ImbueDeathRefusal` | Establishing death refusal; never claims death or resurrection already occurred. |
 | `ritualAnomalyPsychic` / `776` | token fallback for unknown/modded `PsychicRitual;...` keys | Visible supplied facts only; downstream effect remains uncertain. |
 
+Biotech Phase 0 reserves two exact prompt/settings routes but activates neither one yet:
+`progressionGrowthMoment` / order `800` claims only `BiotechGrowthMoment`, and
+`biotechFamilyBirth` / Tale order `315` claims only `BiotechFamilyBirth`. Their inert catalog payloads
+already choose solo/pair shape from proven writer eligibility, while the pure formatters freeze
+growth/family context keys and keep raw growth tiers, choice counts, work lists, observation counts,
+ticks, and naming deadlines out of prompt context. Phase 1 is the first slice allowed to submit the
+growth type; canonical birth remains inactive until Phase 3.
+
 Mod-compatibility groups that materially change routing/shape (all target-gated; Thought rows still
 use the global mood-memory policy):
 

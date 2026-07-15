@@ -1124,6 +1124,30 @@
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
+  <!-- Biotech B1 canonical birth owner. Phase 0 freezes prompt/settings/classifier policy only;
+       no live source submits BiotechFamilyBirth until the exact ApplyBirthOutcome phase lands. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>biotechFamilyBirth</defName>
+    <label>Family birth</label>
+    <order>315</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Biotech</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a canonical family birth remembered by an exact adult participant; use only the supplied role and outcome facts, allow mixed fear, grief, exhaustion, relief, or uncertainty, and never assume joy or wanted parenthood</instruction>
+    <tone>with intimate consequence and emotionally honest uncertainty</tone>
+    <tones>
+      <li>close to the body and the immediate outcome, without assigning feelings the writer did not supply</li>
+      <li>family-centered but unsentimental, careful about distinct birther, mother, and father roles</li>
+    </tones>
+    <colorCue>eventful</colorCue>
+    <matchDefNames>
+      <li>BiotechFamilyBirth</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>talelife</defName>
     <label>Life milestones</label>
@@ -2773,6 +2797,30 @@
   </PawnDiary.DiaryInteractionGroupDef>
 
   <!-- ===== Progression domain: synthetic pawn-development signals ===== -->
+
+  <!-- Biotech B1 committed growth choice. Phase 0 owns only the inert catalog/group contract;
+       the birthday remains on its existing route until the guarded Phase 1 hooks land. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionGrowthMoment</defName>
+    <label>Growth moment</label>
+    <order>800</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Biotech</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a committed childhood growth choice; center identity, changing interests, names, responsibilities, and the qualitative opportunity supplied, without quoting tiers, counts, work lists, or judging the adults who raised the child</instruction>
+    <tone>with formative self-recognition and an uncertain view of who comes next</tone>
+    <tones>
+      <li>personal and forward-looking, grounded in the trait or interests that actually changed</li>
+      <li>aware of remembered support without turning upbringing into a score or assigning parental emotion</li>
+    </tones>
+    <colorCue>eventful</colorCue>
+    <matchDefNames>
+      <li>BiotechGrowthMoment</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionSkillPassion</defName>

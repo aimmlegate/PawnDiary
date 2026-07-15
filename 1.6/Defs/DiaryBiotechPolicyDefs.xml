@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- B1-only policy. This Def uses our own classes plus plain string matchers, so it is safe to
+       load without Biotech; live adapters remain responsible for ModsConfig.BiotechActive gates. -->
+  <PawnDiary.DiaryBiotechPolicyDef>
+    <defName>Diary_BiotechPolicy</defName>
+    <label>Biotech growth and family policy</label>
+
+    <growthPendingExpiryTicks>180000</growthPendingExpiryTicks>
+    <growthFallbackGraceTicks>60000</growthFallbackGraceTicks>
+    <opportunityBands>
+      <li>
+        <minimumTier>0</minimumTier>
+        <maximumTier>2</maximumTier>
+        <token>narrow</token>
+        <description>the child faced a narrow set of opportunities, without assigning blame for why</description>
+      </li>
+      <li>
+        <minimumTier>3</minimumTier>
+        <maximumTier>5</maximumTier>
+        <token>mixed</token>
+        <description>the child had a mixed but meaningful range of paths to choose from</description>
+      </li>
+      <li>
+        <minimumTier>6</minimumTier>
+        <maximumTier>7</maximumTier>
+        <token>broad</token>
+        <description>the child reached this moment with a broad range of possible paths</description>
+      </li>
+      <li>
+        <minimumTier>8</minimumTier>
+        <maximumTier>8</maximumTier>
+        <token>exceptional</token>
+        <description>the child reached this moment with an exceptional breadth of possible paths</description>
+      </li>
+    </opportunityBands>
+
+    <familyActivityExactDefNames>
+      <li>BabyPlay</li>
+    </familyActivityExactDefNames>
+    <familyActivityPrefixes>
+      <li>Lesson</li>
+      <li>Teaching</li>
+    </familyActivityPrefixes>
+    <familyActivityPairDedupTicks>2500</familyActivityPairDedupTicks>
+
+    <observationBands>
+      <li>
+        <minimumEvidence>1</minimumEvidence>
+        <token>light</token>
+        <description>there are a few exact memories of this adult teaching or playing with the child</description>
+      </li>
+      <li>
+        <minimumEvidence>4</minimumEvidence>
+        <token>steady</token>
+        <description>this adult has been a steady, directly observed presence in the child's learning</description>
+      </li>
+      <li>
+        <minimumEvidence>8</minimumEvidence>
+        <token>deep</token>
+        <description>many directly observed lessons or play moments connect this adult to the child's upbringing</description>
+      </li>
+    </observationBands>
+    <supporterMinimumEvidence>2</supporterMinimumEvidence>
+    <maximumSupporterRows>12</maximumSupporterRows>
+    <familyArcRetentionTicks>3600000</familyArcRetentionTicks>
+    <birthNamingPollTicks>2500</birthNamingPollTicks>
+    <birthNamingGraceTicks>60000</birthNamingGraceTicks>
+    <maximumBirthWriters>2</maximumBirthWriters>
+  </PawnDiary.DiaryBiotechPolicyDef>
+</Defs>

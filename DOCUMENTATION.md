@@ -48,7 +48,7 @@ repo for development, but the Workshop payload omits source code and other devel
 | `LoadFolders.xml` | Normal 1.6 load roots plus the RimTest-only development test assembly gate. |
 | `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
 | `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
-| `Source/Capture/` | Pure Event Catalog payloads and decisions. |
+| `Source/Capture/` | Pure Event Catalog payloads and decisions, including the inert Biotech B1 Phase-0 growth/family contracts and policies. |
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge). |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
@@ -185,10 +185,20 @@ N0 froze exactly four evidence facets—`identity_transition`, `bond_lifecycle`,
 planned Royalty persona/title/ascent moments, Ideology conversion/stance interpretation, Biotech
 growth/family/mechanitor moments, Anomaly visible transformation/monolith/containment pressure, and
 Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned grammar such as
-`biotech-family|&lt;familyArcId&gt;` or `odyssey-journey|&lt;journeyId&gt;`; they contain stable IDs only
+`biotech-family|&lt;birtherId&gt;|&lt;pregnancyHediffId&gt;` (or the child-ID fallback) and
+`odyssey-journey|&lt;journeyId&gt;`; they contain stable IDs only
 (never localized labels) and reference equality is ordinal/case-sensitive. N1 serializes the frozen
 additive save-key suffixes under each POV/archive row; it performs no retroactive inference or
 catch-up on older pages.
+
+**Biotech family/growth groundwork (Master Wave 3 / Phase 0)** is contract-only. Plain snapshot,
+mutation, family-arc, supporter, participant, and writer DTOs live under `Source/Capture/Biotech/`;
+pure policies verify before/after trait and passion changes, map XML growth bands, select one truthful
+supporter, cap birth writers, format bounded event-time context, and preserve explicit legacy group
+settings. `GrowthMoment` and `FamilyBirth` are registered Event Catalog types with stable synthetic
+Def names, but no signal or Harmony hook submits them yet. Existing Birthday, Tale, Thought, ritual,
+pregnancy, labor, and birth behavior therefore remains unchanged until their scheduled phases.
+`familyArcId` is already the complete shared key (`biotech-family|...`) and is never prefixed twice.
 
 Live surroundings are optional prompt flavor and are collected fail-soft. In particular,
 `Room.GetRoomRoleLabel()` can lazily recalculate the room's stats/role; if RimWorld or another room
@@ -1020,6 +1030,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeRollPolicyDefs.xml` | numeric tuning for the psychotype roll: family bases, bonuses, wildcard chance, jitter range, duplicate penalty |
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; N1 snapshots it at the main-thread persistence/prompt boundary with no real DLC provider yet |
+| `DiaryBiotechPolicyDefs.xml` | B1 growth-tier opportunity bands, exact family-observation matchers, supporter thresholds/caps, pending/naming timing, family retention, and the two-writer birth cap; Phase 0 snapshots it only for pure policy and activates no live source |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
 | `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |
 | `DiaryUiStyleDef.xml` / `DiaryTextDecorationDefs.xml` | UI dimensions/colors and display-only rich-text decoration |
@@ -1044,6 +1055,14 @@ without relying on package presence. All gates are enforced uniformly: `IsGroupE
 `PawnDiaryApi` and `ExternalEventSignal`) all treat a gated group as inert, so a compatibility group
 sits harmless across automatic capture, the settings UI, and the integration API. External-domain
 groups classify the integration-API `eventKey` strings other mods submit (see §3.7).
+
+Biotech Phase 0 reserves two exact, package-gated settings rows without activating capture:
+`progressionGrowthMoment` (`Progression`, `BiotechGrowthMoment`, order 800) and
+`biotechFamilyBirth` (`Tale`, `BiotechFamilyBirth`, order 315). Effective growth settings inherit an
+explicit legacy `eventWindowBirthday` override until the new row is toggled. Effective birth settings
+similarly inherit explicit `talelife` and, for ritual births, `ritualChildbirth` intent. A new explicit
+override always wins; missing overrides fall back to the new XML default. The adapters are present in
+`PawnDiarySettings` but unused until the matching live phases.
 
 `DiaryEventWindowDef.enableWhenPackageIdsLoaded` provides the corresponding gate for compatibility
 windows. Start matching, restored active state, prompt candidates, timeout scanning, and direct
@@ -2091,6 +2110,7 @@ dotnet run --project tests/PromptVariantsTests/PromptVariantsTests.csproj
 dotnet run --project tests/DiarySaveNormalizationTests/DiarySaveNormalizationTests.csproj
 dotnet run --project tests/DiaryObservedConditionTests/DiaryObservedConditionTests.csproj
 dotnet run --project tests/NarrativeContinuityTests/NarrativeContinuityTests.csproj
+dotnet run --project tests/DiaryBiotechPolicyTests/DiaryBiotechPolicyTests.csproj
 dotnet run --project tests/SpeakUpBridgeLogicTests/SpeakUpBridgeLogicTests.csproj
 dotnet run --project tests/RimpsycheBridgeLogicTests/RimpsycheBridgeLogicTests.csproj
 dotnet run --project tests/PowerfulAiBridgeLogicTests/PowerfulAiBridgeLogicTests.csproj

@@ -475,4 +475,16 @@
   <observedFleshmassHeart.tone>with revulsion and urgency</observedFleshmassHeart.tone>
   <observedFleshmassHeart.tones.0>sickened and practical, cutting back what keeps growing</observedFleshmassHeart.tones.0>
   <observedFleshmassHeart.tones.1>unnerved and bodily, the sound of it hard to unhear</observedFleshmassHeart.tones.1>
+
+  <progressionGrowthMoment.label>Growth moment</progressionGrowthMoment.label>
+  <progressionGrowthMoment.instruction>a committed childhood growth choice; center identity, changing interests, names, responsibilities, and the qualitative opportunity supplied, without quoting tiers, counts, work lists, or judging the adults who raised the child</progressionGrowthMoment.instruction>
+  <progressionGrowthMoment.tone>with formative self-recognition and an uncertain view of who comes next</progressionGrowthMoment.tone>
+  <progressionGrowthMoment.tones.0>personal and forward-looking, grounded in the trait or interests that actually changed</progressionGrowthMoment.tones.0>
+  <progressionGrowthMoment.tones.1>aware of remembered support without turning upbringing into a score or assigning parental emotion</progressionGrowthMoment.tones.1>
+
+  <biotechFamilyBirth.label>Family birth</biotechFamilyBirth.label>
+  <biotechFamilyBirth.instruction>a canonical family birth remembered by an exact adult participant; use only the supplied role and outcome facts, allow mixed fear, grief, exhaustion, relief, or uncertainty, and never assume joy or wanted parenthood</biotechFamilyBirth.instruction>
+  <biotechFamilyBirth.tone>with intimate consequence and emotionally honest uncertainty</biotechFamilyBirth.tone>
+  <biotechFamilyBirth.tones.0>close to the body and the immediate outcome, without assigning feelings the writer did not supply</biotechFamilyBirth.tones.0>
+  <biotechFamilyBirth.tones.1>family-centered but unsentimental, careful about distinct birther, mother, and father roles</biotechFamilyBirth.tones.1>
 </LanguageData>

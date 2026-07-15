@@ -586,4 +586,16 @@
   <observedFleshmassHeart.tone>с отвращением и срочностью</observedFleshmassHeart.tone>
   <observedFleshmassHeart.tones.0>с тошнотой и по-деловому: вырезая то, что продолжает расти</observedFleshmassHeart.tones.0>
   <observedFleshmassHeart.tones.1>телесно и тревожно: это чужое сердцебиение невозможно перестать слышать</observedFleshmassHeart.tones.1>
+
+  <progressionGrowthMoment.label>Момент взросления</progressionGrowthMoment.label>
+  <progressionGrowthMoment.instruction>принятый выбор в момент взросления ребёнка; сосредоточься на личности, изменившихся интересах, имени, новых обязанностях и качественном описании возможностей, не цитируя уровни, числа или списки работ и не оценивая взрослых, растивших ребёнка</progressionGrowthMoment.instruction>
+  <progressionGrowthMoment.tone>с ощущением формирующейся личности и неуверенным взглядом в будущее</progressionGrowthMoment.tone>
+  <progressionGrowthMoment.tones.0>лично и с взглядом вперёд, опираясь только на черту или интересы, которые действительно изменились</progressionGrowthMoment.tones.0>
+  <progressionGrowthMoment.tones.1>помня о замеченной поддержке, но не превращая воспитание в оценку и не приписывая родителям чувств</progressionGrowthMoment.tones.1>
+
+  <biotechFamilyBirth.label>Рождение в семье</biotechFamilyBirth.label>
+  <biotechFamilyBirth.instruction>рождение в семье глазами точно известного взрослого участника; используй только указанные роль и исход, допускай страх, горе, истощение, облегчение или неопределённость и никогда не предполагай радость или желанное родительство</biotechFamilyBirth.instruction>
+  <biotechFamilyBirth.tone>с близкими последствиями и честной эмоциональной неопределённостью</biotechFamilyBirth.tone>
+  <biotechFamilyBirth.tones.0>телесно и близко к непосредственному исходу, не приписывая автору неуказанных чувств</biotechFamilyBirth.tones.0>
+  <biotechFamilyBirth.tones.1>о семье, но без сентиментальности, бережно различая роли родившего, генетической матери и отца</biotechFamilyBirth.tones.1>
 </LanguageData>

@@ -1371,4 +1371,9 @@
   <PawnDiary.Psychotype.Disabled>Психотипы выключены в настройках — взгляд в запросы не попадает.</PawnDiary.Psychotype.Disabled>
   <PawnDiary.Tab.Psychotype>Психотип: {0}</PawnDiary.Tab.Psychotype>
 
+  <!-- Семейства запасного текста B1 закреплены на фазе 0; живые источники появятся позже. -->
+  <PawnDiary.Event.Biotech.Growth.Fallback>{0}: момент взросления в возрасте {1}: {2}.</PawnDiary.Event.Biotech.Growth.Fallback>
+  <PawnDiary.Event.Biotech.Growth.SupporterFallback>{0} размышляет о взрослении {1}: {2}.</PawnDiary.Event.Biotech.Growth.SupporterFallback>
+  <PawnDiary.Event.Biotech.Birth.Fallback>{0} вспоминает рождение {1}: {2}.</PawnDiary.Event.Biotech.Birth.Fallback>
+  <PawnDiary.Event.Biotech.Birth.PairFallback>{0} и {1} вспоминают рождение {2}: {3}.</PawnDiary.Event.Biotech.Birth.PairFallback>
 </LanguageData>

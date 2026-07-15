@@ -54,6 +54,12 @@ namespace PawnDiary.Capture
         // DiaryInteractionGroupDefs (usually shipped by the adapter) own the prompt policy.
         External,
 
+        // Biotech Phase 0 freezes these concrete catalog identities and pure decisions before live
+        // birthday/birth hooks are registered. GrowthMoment becomes active in Phase 1; FamilyBirth
+        // becomes active only at the canonical ApplyBirthOutcome boundary in Phase 3.
+        GrowthMoment,
+        FamilyBirth,
+
         // ── Planned future sources (placeholders only — NOT implemented yet) ──
         // No known live RecordX source remains to migrate; batch/ambient flushers are route sinks.
         // Net-new sources planned (see repo discussion):

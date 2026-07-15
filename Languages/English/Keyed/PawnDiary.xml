@@ -1391,4 +1391,9 @@
   <PawnDiary.Psychotype.Disabled>Psychotypes are turned off in mod settings, so this outlook is not applied to prompts.</PawnDiary.Psychotype.Disabled>
   <PawnDiary.Tab.Psychotype>Psychotype: {0}</PawnDiary.Tab.Psychotype>
 
+  <!-- Biotech B1 fallback families are frozen in Phase 0; no live source calls them until later phases. -->
+  <PawnDiary.Event.Biotech.Growth.Fallback>{0} reached a growth moment at age {1}: {2}.</PawnDiary.Event.Biotech.Growth.Fallback>
+  <PawnDiary.Event.Biotech.Growth.SupporterFallback>{0} reflected on {1}'s growth moment: {2}.</PawnDiary.Event.Biotech.Growth.SupporterFallback>
+  <PawnDiary.Event.Biotech.Birth.Fallback>{0} remembered the birth of {1}: {2}.</PawnDiary.Event.Biotech.Birth.Fallback>
+  <PawnDiary.Event.Biotech.Birth.PairFallback>{0} and {1} remembered the birth of {2}: {3}.</PawnDiary.Event.Biotech.Birth.PairFallback>
 </LanguageData>

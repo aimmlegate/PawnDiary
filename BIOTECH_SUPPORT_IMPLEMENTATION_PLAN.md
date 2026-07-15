@@ -1,7 +1,8 @@
 # Pawn Diary — Biotech Support Implementation Plan
 
-> **Status:** implementation-ready plan, 2026-07-15. No runtime behavior is implemented by this
-> document.
+> **Status:** Phase 0 implemented as Master Wave 3 groundwork, 2026-07-15. Plain B1 contracts,
+> pure policies, XML policy/groups, stable IDs/keys, and legacy settings inheritance are frozen;
+> Phases 1–8 remain implementation-ready and no live Biotech hook is active yet.
 >
 > **Scheduling authority:** implement Biotech phases only in the waves assigned by
 > `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Biotech.
@@ -599,7 +600,9 @@ implementation merged.
 
 Use stable identities rather than labels:
 
-- family continuity: the saved `familyArcId` becomes `biotech-family|<familyArcId>`;
+- family continuity: `familyArcId` is already the complete key
+  `biotech-family|<birtherId>|<pregnancyHediffId>` or `biotech-family|<childId>` and is copied
+  unchanged into Narrative Continuity (never double-prefixed);
 - psychic bond: canonical sorted pawn IDs plus a bond epoch;
 - mechanitor: `biotech-mechanitor|<mechanitorPawnId>|<arcEpoch>` and exact mech subject IDs for loss;
 - identity transition: pawn subject plus exact source phase; do not encode localized xenotype names;
@@ -1576,6 +1579,13 @@ Each phase is its own reviewable change. Update `DOCUMENTATION.md`, `CHANGELOG.m
 DLL whenever a phase changes runtime behavior.
 
 ### Phase 0 — Freeze B1 contracts and settings semantics
+
+> **Implementation status (2026-07-15): complete.** Added assembly-free growth/family DTOs and pure
+> diff, banding, supporter, writer, settings, and context policies; froze the two event types and
+> synthetic Def names, complete `biotech-family|...` arc grammar, additive Scribe/context keys, B1
+> policy Def, English/Russian localization, and exact package-gated groups. Both catalog types are
+> registered but inert: no signal, save row, Harmony hook, or page behavior is active. The next
+> permitted slice is Phase 1.
 
 1. Confirm Narrative Continuity N0 token/arc-key contracts, then add plain growth/family DTOs and pure
    policies that map to them.

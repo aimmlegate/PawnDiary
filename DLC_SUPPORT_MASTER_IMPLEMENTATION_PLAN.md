@@ -174,6 +174,11 @@ This is the low-cost prompt-quality release. Do not continue into A1 study/conta
 
 ## 8. Wave 3 — Biotech family flagship
 
+> **Implementation status (2026-07-15): in progress.** Biotech Phase 0 is complete: B1 contracts,
+> pure policy, stable event/arc/save/context keys, XML policy/groups, localization, and legacy settings
+> inheritance are frozen with no live hook or page behavior. The next permitted slice is Biotech
+> Phase 1 / growth observation and ordinary birthday fallback.
+
 ### Implement in this exact order
 
 1. **Biotech 0** — freeze growth/family DTOs, policy, event IDs, settings migration, and shared arc keys.

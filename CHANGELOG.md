@@ -1,5 +1,15 @@
 # Changelog
 
+- **2026-07-15 — Began DLC integration: Master Wave 3 / Biotech Phase 0.** Froze the
+  assembly-free B1 growth/family snapshot and mutation contracts; stable synthetic event Def names,
+  complete `biotech-family|...` arc grammar, additive Scribe/context keys, and inert Event Catalog
+  types; pure before/after growth diff, qualitative opportunity banding, deterministic supporter and
+  birth-writer selection, bounded context formatting, and explicit legacy settings inheritance.
+  Added the XML-owned B1 policy, exact package-gated growth/birth groups, English/Russian
+  DefInjected and Keyed text, a 180-assertion standalone Biotech policy/XML suite, catalog contract
+  coverage, documentation, and the rebuilt runtime DLL. No Biotech hook, saved state, provider,
+  signal, or new page behavior is active; Phase 1 remains the first live growth slice.
+
 - **2026-07-15 — Completed DLC integration: Master Wave 2 / Anomaly A0.0–A0.2.** Reconfirmed the
   installed RimWorld 1.6 catalog and split all 16 Anomaly psychic rituals into six exact,
   package-gated semantic families (invitation, flesh/weather, predation, mind, abduction, and death

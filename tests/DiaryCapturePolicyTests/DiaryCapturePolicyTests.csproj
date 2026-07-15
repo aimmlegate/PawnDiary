@@ -4,6 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
+    <!-- Linked DTO field bags are populated by other runtime adapters, so this test assembly
+         legitimately leaves many fields at their defaults. -->
+    <NoWarn>$(NoWarn);0649</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +22,10 @@
     <Compile Include="..\..\Source\Capture\GroupNameMatcher.cs" Link="Capture\GroupNameMatcher.cs" />
     <Compile Include="..\..\Source\Capture\BodyPartEventPolicy.cs" Link="Capture\BodyPartEventPolicy.cs" />
     <Compile Include="..\..\Source\Capture\TraitProgressionPolicy.cs" Link="Capture\TraitProgressionPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Biotech\BiotechContracts.cs" Link="Capture\Biotech\BiotechContracts.cs" />
+    <Compile Include="..\..\Source\Capture\Biotech\GrowthMomentPolicy.cs" Link="Capture\Biotech\GrowthMomentPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Biotech\FamilySupportPolicy.cs" Link="Capture\Biotech\FamilySupportPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Biotech\BirthOwnershipPolicy.cs" Link="Capture\Biotech\BirthOwnershipPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Events\ThoughtEventData.cs" Link="Capture\Events\ThoughtEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\InspirationEventData.cs" Link="Capture\Events\InspirationEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\MoodEventData.cs" Link="Capture\Events\MoodEventData.cs" />
@@ -40,6 +47,8 @@
     <Compile Include="..\..\Source\Capture\Events\RitualEventData.cs" Link="Capture\Events\RitualEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\AbilityEventData.cs" Link="Capture\Events\AbilityEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\ExternalEventData.cs" Link="Capture\Events\ExternalEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\GrowthMomentEventData.cs" Link="Capture\Events\GrowthMomentEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\FamilyBirthEventData.cs" Link="Capture\Events\FamilyBirthEventData.cs" />
     <!-- Pure, System-only game-context field parser — links here so the external game-context
          security tests can assert a smuggled key cannot be resolved back out. -->
     <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" Link="Generation\DiaryContextFields.cs" />
@@ -65,5 +74,7 @@
     <Compile Include="..\..\Source\Capture\Specs\RitualEventSpec.cs" Link="Capture\Specs\RitualEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\AbilityEventSpec.cs" Link="Capture\Specs\AbilityEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\ExternalEventSpec.cs" Link="Capture\Specs\ExternalEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\GrowthMomentEventSpec.cs" Link="Capture\Specs\GrowthMomentEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\FamilyBirthEventSpec.cs" Link="Capture\Specs\FamilyBirthEventSpec.cs" />
   </ItemGroup>
 </Project>

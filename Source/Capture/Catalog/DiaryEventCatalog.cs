@@ -81,6 +81,9 @@ namespace PawnDiary.Capture
             Register(new RitualEventSpec());
             Register(new AbilityEventSpec());
             Register(new ExternalEventSpec());
+            // Biotech Phase 0 registers decision contracts only. No live source submits these yet.
+            Register(new GrowthMomentEventSpec());
+            Register(new FamilyBirthEventSpec());
         }
     }
 }

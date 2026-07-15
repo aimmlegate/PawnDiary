@@ -125,6 +125,15 @@ one window, `Gleaming` maps to none, localized fallbacks exist, and the three ex
 bounded source evidence. The EVT-22 RimTest fixture exercises the live package-gated page/evidence
 path when Anomaly is active and the no-op branch otherwise.
 
+Master Wave 3 / Biotech Phase 0 adds `DiaryBiotechPolicyTests`, an assembly-free suite that freezes
+the complete family arc grammar, additive save/context keys, actual before/after growth diffing,
+NoTrait and ambiguous auto-trait handling, passion verification, opportunity boundaries,
+deterministic supporter tiers/ties, child/supporter writer shapes, capped birth writer ordering,
+legacy settings inheritance, bounded context formatting, XML policy coverage, exact classifier
+groups/package gates, and English/Russian DefInjected/Keyed text. `DiaryCapturePolicyTests` also
+requires both inert catalog types/Specs and their solo/pair/drop/dedup decisions. Live birthday/birth
+fixtures remain deliberately absent until their scheduled phases activate hooks.
+
 For `DiaryEventPromptKeys` and runtime Def resolution, test:
 
 - precedence: exact source defName → matched group → classifier key → fallback domain;
