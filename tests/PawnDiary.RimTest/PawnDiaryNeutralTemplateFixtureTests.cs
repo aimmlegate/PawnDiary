@@ -222,7 +222,22 @@ namespace PawnDiary.RimTests
             // Entry text only: the diary body is present under the Title field label, and none of the
             // carrier's arrival context (facts, colonist field) leaks into the title user prompt.
             RequireContains(plan.userPrompt, entryText, "title entry text");
-            RequireContains(plan.userPrompt, "diary entry to title", "title entry field label");
+
+            // The title field's label doubles as leading context for the smallest models ("to title" stops
+            // them continuing the entry instead of titling it), so it must reach the prompt. Resolve it from
+            // the same field list the planner renders from rather than hard-coding a copy that can rot, and
+            // assert it is the shipped label: a Title template whose XML <fields> failed to load would fall
+            // back to the weaker code-default "entry" label, and this catches that instead of masking it.
+            string titleFieldLabel = TitleEntryFieldLabel();
+            PawnDiaryRimTestScope.Require(
+                string.Equals(titleFieldLabel, "diary entry to title", StringComparison.Ordinal),
+                "The loaded Title template's EntryText field label was '" + (titleFieldLabel ?? "<none>")
+                + "', expected the shipped 'diary entry to title' (its XML <fields> may not be loading).");
+            PawnDiaryRimTestScope.Require(
+                !string.IsNullOrEmpty(titleFieldLabel)
+                    && plan.userPrompt.IndexOf(titleFieldLabel, StringComparison.Ordinal) >= 0,
+                "The title user prompt did not render the entry under its '" + titleFieldLabel
+                + "' field label. Rendered user prompt:\n" + plan.userPrompt);
             PawnDiaryRimTestScope.Require(
                 plan.userPrompt.IndexOf("arrival facts", StringComparison.Ordinal) < 0
                     && plan.userPrompt.IndexOf("source=game_start", StringComparison.Ordinal) < 0,
@@ -264,6 +279,26 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 !template.appendDirectSpeechInstruction,
                 "The '" + templateKey + "' template must set appendDirectSpeechInstruction=false (no direct-speech instruction).");
+        }
+
+        // Reads the Title template's EntryText field label from the same field list the planner renders
+        // from (DiaryPromptTemplates.FieldsFor), so the assertion tracks the shipped def rather than a
+        // hard-coded copy. Returns null if no EntryText field is configured.
+        private static string TitleEntryFieldLabel()
+        {
+            var fields = DiaryPromptTemplates.FieldsFor(DiaryPromptTemplates.Title);
+            if (fields != null)
+            {
+                foreach (DiaryPromptFieldDef field in fields)
+                {
+                    if (field != null && string.Equals(field.source, "EntryText", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return field.label;
+                    }
+                }
+            }
+
+            return null;
         }
 
         private static void RequireContains(string haystack, string needle, string what)

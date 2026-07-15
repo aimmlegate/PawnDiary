@@ -88,9 +88,12 @@ namespace PawnDiary.RimTests
                     bool started = pawn.mindState.inspirationHandler.TryStartInspiration(
                         inspirationDef,
                         InspirationReason,
-                        true);
+                        // The third arg is sendLetter, not a force flag: keep it false so a real
+                        // inspiration letter never lands in the player's game. The diary event is captured
+                        // by the TryStartInspiration postfix regardless of the letter.
+                        false);
                     PawnDiaryRimTestScope.Require(
-                        started, "Vanilla refused to start the forced inspiration.");
+                        started, "Vanilla refused to start the inspiration.");
                 },
                 InspirationDefName,
                 pawn,
@@ -130,9 +133,12 @@ namespace PawnDiary.RimTests
                 bool started = pawn.mindState.inspirationHandler.TryStartInspiration(
                     inspirationDef,
                     InspirationReason,
-                    true);
+                    // The third arg is sendLetter, not a force flag: keep it false so a real inspiration
+                    // letter never lands in the player's game. The diary event is captured by the
+                    // TryStartInspiration postfix regardless of the letter.
+                    false);
                 PawnDiaryRimTestScope.Require(
-                    started, "Vanilla refused to start the forced inspiration.");
+                    started, "Vanilla refused to start the inspiration.");
             });
         }
 

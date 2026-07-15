@@ -95,9 +95,10 @@ namespace PawnDiary.RimTests
             pawn = scope.CreateGeneratingAdultColonist();
 
             // The hediff enchantment collector reads the writer's LIVE health, so the pawn must be
-            // resolvable by generation's live-pawn lookup or no hediff candidate reaches the prompt; and
-            // guarantee the forced inspiration the live-capture test fires can start.
-            scope.RegisterAsLiveWorldPawn(pawn);
+            // resolvable by generation's live-pawn lookup or no hediff candidate reaches the prompt;
+            // spawning it as a colonist makes it both findable and eligible to start the live-capture
+            // test's inspiration.
+            scope.SpawnAsLiveColonist(pawn);
             PawnDiaryRimTestScope.MakeCreativityInspirationEligible(pawn);
         }
 
@@ -341,9 +342,12 @@ namespace PawnDiary.RimTests
                     bool started = pawn.mindState.inspirationHandler.TryStartInspiration(
                         inspirationDef,
                         InspirationReason,
-                        true);
+                        // The third arg is sendLetter, not a force flag: keep it false so a real
+                        // inspiration letter never lands in the player's game. The diary event is captured
+                        // by the TryStartInspiration postfix regardless of the letter.
+                        false);
                     PawnDiaryRimTestScope.Require(
-                        started, "Vanilla refused to start the forced inspiration.");
+                        started, "Vanilla refused to start the inspiration.");
                 },
                 InspirationDefName,
                 pawn,

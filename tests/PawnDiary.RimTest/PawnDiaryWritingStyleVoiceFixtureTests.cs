@@ -10,7 +10,7 @@
 // event stamps the assembled prompt and STOPS before any network call. At each layer it (1) reads the
 // effective WritingStyleResolution through the same seam the UI uses (component.ResolveWritingStyleFor)
 // and asserts BOTH the winning rule text and the source metadata (WritingStyleRuleSource), then (2) fires
-// a real solo event (a forced inspiration, whose SoloInternalState template keeps includePersona=true)
+// a real solo event (an inspiration, whose SoloInternalState template keeps includePersona=true)
 // and asserts the effective rule reaches the captured prompt verbatim. It then REMOVES the winning layer
 // and shows the next layer down becomes effective WITHOUT ever changing the saved base picker.
 //
@@ -81,8 +81,9 @@ namespace PawnDiary.RimTests
 
             // The hediff writing-style override layer reads LIVE pawn health, so the pawn must be
             // resolvable by generation's live-pawn lookup or that layer silently drops out of the captured
-            // prompt; and guarantee the forced inspiration this suite fires can actually start.
-            scope.RegisterAsLiveWorldPawn(pawn);
+            // prompt; spawning it as a colonist makes it both findable and eligible (SetPersona below needs
+            // a live colonist too) and able to start the inspiration this suite fires.
+            scope.SpawnAsLiveColonist(pawn);
             PawnDiaryRimTestScope.MakeCreativityInspirationEligible(pawn);
 
             // Snapshot the rolled base picker/pin BEFORE mutating, so cleanup can restore them exactly.
@@ -386,9 +387,12 @@ namespace PawnDiary.RimTests
                     bool started = pawn.mindState.inspirationHandler.TryStartInspiration(
                         inspirationDef,
                         InspirationReason,
-                        true);
+                        // The third arg is sendLetter, not a force flag: keep it false so a real
+                        // inspiration letter never lands in the player's game. The diary event is captured
+                        // by the TryStartInspiration postfix regardless of the letter.
+                        false);
                     PawnDiaryRimTestScope.Require(
-                        started, "Vanilla refused to start the forced inspiration.");
+                        started, "Vanilla refused to start the inspiration.");
                 },
                 InspirationDefName,
                 pawn,

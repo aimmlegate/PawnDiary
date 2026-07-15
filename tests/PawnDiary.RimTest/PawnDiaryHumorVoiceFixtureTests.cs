@@ -77,8 +77,9 @@ namespace PawnDiary.RimTests
 
             // The temperament multiplier reads the writer's LIVE traits, so the pawn must be resolvable by
             // generation's live-pawn lookup (otherwise the multiplier defaults to 1 and the elevated/reduced
-            // cases can't move it); and guarantee the forced inspiration this suite fires can start.
-            scope.RegisterAsLiveWorldPawn(pawn);
+            // cases can't move it); spawning it as a colonist makes it both findable and eligible to start
+            // the inspiration this suite fires.
+            scope.SpawnAsLiveColonist(pawn);
             PawnDiaryRimTestScope.MakeCreativityInspirationEligible(pawn);
             SnapshotHumorTuning();
         }
@@ -225,9 +226,12 @@ namespace PawnDiary.RimTests
                     bool started = writer.mindState.inspirationHandler.TryStartInspiration(
                         inspirationDef,
                         InspirationReason,
-                        true);
+                        // The third arg is sendLetter, not a force flag: keep it false so a real
+                        // inspiration letter never lands in the player's game. The diary event is captured
+                        // by the TryStartInspiration postfix regardless of the letter.
+                        false);
                     PawnDiaryRimTestScope.Require(
-                        started, "Vanilla refused to start the forced inspiration.");
+                        started, "Vanilla refused to start the inspiration.");
                 },
                 InspirationDefName,
                 writer,

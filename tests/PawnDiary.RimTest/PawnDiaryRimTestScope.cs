@@ -236,34 +236,64 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// Registers a test pawn with <see cref="WorldPawns"/> so generation's live-pawn lookup
-        /// (<c>DiaryGameComponent.FindLivePawnByLoadId</c>, which scans maps + world pawns) can resolve
-        /// it. The harness's pawns are generated but never spawned, so without this the generation
-        /// pipeline sees a null pawn and silently drops every live-pawn-derived prompt layer (the hediff
-        /// writing-style override, the humor temperament multiplier, the hediff prompt enchantment). Only
-        /// prompt-capture suites that assert on those layers need it. Idempotent; the pawn is removed from
-        /// the world in teardown (<see cref="DestroyTestPawns"/>) before it is destroyed.
+        /// Spawns a test pawn on the current map so generation's live-pawn lookup
+        /// (<c>DiaryGameComponent.FindLivePawnByLoadId</c>, which scans map pawns + world pawns) can resolve
+        /// it. The harness's pawns are generated but never spawned, so without this the generation pipeline
+        /// sees a null pawn and silently drops every live-pawn-derived prompt layer (the hediff writing-style
+        /// override, the humor temperament multiplier, the hediff prompt enchantment).
+        ///
+        /// Why spawn instead of <c>WorldPawns.PassToWorld</c>: passing a pawn to the world runs
+        /// <c>PawnComponentsUtility.RemoveComponentsOnDespawned</c>, which strips the spawned-only
+        /// components. A despawned world pawn is no longer a valid live colonist — vanilla
+        /// <c>InspirationHandler.TryStartInspiration</c> refuses it (its <c>InspirationCanOccur</c> gate
+        /// fails) and Pawn Diary's own <see cref="DiaryGameComponent.IsDiaryEligible"/> gate stops treating
+        /// it as eligible, so SetPersona returns false and an ArrivalSignal is dropped. A map pawn is found
+        /// by the same lookup AND stays a real colonist, so inspiration/arrival/persona behave as in play.
+        /// Only prompt-capture suites that assert on live-pawn layers need it.
+        ///
+        /// Requires a loaded map (like the §4.2 death capture). Idempotent; teardown despawns and destroys
+        /// the pawn (<see cref="DestroyTestPawns"/>).
         /// </summary>
-        public void RegisterAsLiveWorldPawn(Pawn pawn)
+        public void SpawnAsLiveColonist(Pawn pawn)
         {
-            if (pawn == null || pawn.Destroyed || Find.WorldPawns == null || Find.WorldPawns.Contains(pawn))
+            if (pawn == null || pawn.Destroyed || pawn.Spawned)
             {
                 return;
             }
 
-            // KeepForever stops WorldPawns from garbage-collecting a free-floating colonist mid-test.
-            Find.WorldPawns.PassToWorld(pawn, PawnDiscardDecideMode.KeepForever);
+            Map map = Find.CurrentMap;
+            if (map == null)
+            {
+                throw new AssertionException(
+                    "This Pawn Diary prompt-capture suite needs a loaded map: its assertions read the "
+                    + "writer's live state, so the test pawn must be spawned as a colonist.");
+            }
+
+            // Any standable, unfogged cell works; the pawn never ticks (it is destroyed in teardown before
+            // the next map update), so pathing/placement quality is irrelevant. RNG is already isolated by
+            // Begin's Rand.PushState, so the cell roll never perturbs the player's stream.
+            IntVec3 cell;
+            if (!CellFinder.TryFindRandomCellNear(map.Center, map, 40,
+                    c => c.Standable(map) && !c.Fogged(map), out cell)
+                && !CellFinder.TryFindRandomCell(map, c => c.Standable(map) && !c.Fogged(map), out cell))
+            {
+                cell = map.Center;
+            }
+
+            GenSpawn.Spawn(pawn, cell, map);
         }
 
         /// <summary>
-        /// Guarantees a pawn can be handed a forced vanilla <c>Inspired_Creativity</c> inspiration, the
-        /// trigger the voice/humor/enchantment prompt-capture suites use. That def gates on
-        /// <c>requiredAnySkill</c> (Construction/Artistic/Crafting &gt;= 3), a non-disabled qualifying work
-        /// type, Manipulation, and minAge 13 — and <c>TryStartInspiration(forceStartAnyway: true)</c> does
-        /// NOT bypass them. A randomly generated colonist often fails the skill gate, so forcing the
-        /// inspiration without this is flaky. Raising the first non-disabled qualifying skill above the
-        /// threshold satisfies both the skill and (via that skill's work type) the work-type gate for any
-        /// adult with at least one of those skills enabled.
+        /// Guarantees a pawn satisfies vanilla <c>Inspired_Creativity</c>'s eligibility, the trigger the
+        /// voice/humor/enchantment prompt-capture suites use. There is no "force" flag: in 1.6
+        /// <c>TryStartInspiration(def, reason, sendLetter)</c>'s third argument is <c>sendLetter</c>, and the
+        /// inspiration only starts when <c>InspirationWorker.InspirationCanOccur</c> genuinely passes. That
+        /// def gates on <c>requiredAnySkill</c> (Construction/Artistic/Crafting &gt;= 3), a non-disabled
+        /// qualifying work type, Manipulation, and minAge 13. A randomly generated colonist often rolls all
+        /// three qualifying skills below 3, so raising the first non-disabled one above the threshold
+        /// satisfies both the skill and (via that skill's work type) the work-type gate for any adult with
+        /// at least one of those skills enabled. The remaining gates (IsColonist, Manipulation) hold for a
+        /// generated adult and for one spawned via <see cref="SpawnAsLiveColonist"/>.
         /// </summary>
         public static void MakeCreativityInspirationEligible(Pawn pawn)
         {
@@ -782,8 +812,10 @@ namespace PawnDiary.RimTests
                     continue;
                 }
 
-                // A prompt-capture suite may have registered this pawn with WorldPawns
-                // (see RegisterAsLiveWorldPawn); remove it first so no test colonist leaks into the world.
+                // A prompt-capture suite may have spawned this pawn (see SpawnAsLiveColonist), or the death
+                // suite may have left it in WorldPawns. Drop any world-pawn entry first so nothing leaks
+                // into the world; Destroy(Vanish) then despawns a spawned pawn cleanly, with no corpse,
+                // notification, or letter.
                 if (Find.WorldPawns != null && Find.WorldPawns.Contains(pawn))
                 {
                     Find.WorldPawns.RemovePawn(pawn);
