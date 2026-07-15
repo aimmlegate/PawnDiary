@@ -358,13 +358,17 @@ namespace PawnDiary.RimTests
         }
 
         // The winning rule is injected verbatim as the {0} argument of "PawnDiary.Prompt.PersonaVoice", so
-        // the exact (trimmed) rule string must be a substring of the assembled prompt.
+        // the exact (trimmed) rule string must be a substring of the assembled prompt. On failure the whole
+        // captured prompt and the effective rule are dumped, so it is visible whether the persona voice
+        // block is absent (empty personaRule) or carries a different rule than generation resolved.
         private static void RequirePromptCarriesRule(string prompt, string effectiveRule)
         {
             PawnDiaryRimTestScope.Require(
                 !string.IsNullOrWhiteSpace(effectiveRule)
                     && prompt.IndexOf(effectiveRule.Trim(), StringComparison.Ordinal) >= 0,
-                "The effective writing-style rule did not reach the captured prompt's persona voice block.");
+                "The effective writing-style rule did not reach the captured prompt's persona voice block.\n"
+                + "Effective rule: [" + (effectiveRule ?? "<null>") + "]\n"
+                + "Captured prompt:\n" + (prompt ?? "<null>"));
         }
 
         private static void RequirePromptContains(string prompt, string needle, string label)

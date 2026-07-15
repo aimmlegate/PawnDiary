@@ -232,7 +232,8 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 string.Equals(titleFieldLabel, "diary entry to title", StringComparison.Ordinal),
                 "The loaded Title template's EntryText field label was '" + (titleFieldLabel ?? "<none>")
-                + "', expected the shipped 'diary entry to title' (its XML <fields> may not be loading).");
+                + "', expected the shipped 'diary entry to title' (its XML <fields> may not be loading). "
+                + TitleTemplateDump());
             PawnDiaryRimTestScope.Require(
                 !string.IsNullOrEmpty(titleFieldLabel)
                     && plan.userPrompt.IndexOf(titleFieldLabel, StringComparison.Ordinal) >= 0,
@@ -299,6 +300,43 @@ namespace PawnDiary.RimTests
             }
 
             return null;
+        }
+
+        // Dumps the loaded Title template's identity plus both its raw def fields and the effective
+        // FieldsFor list, so a failure shows whether ForKey matched the shipped def, whether its XML
+        // <fields> populated, and what the planner actually renders from.
+        private static string TitleTemplateDump()
+        {
+            DiaryPromptTemplateDef def = DiaryPromptTemplates.ForKey(DiaryPromptTemplates.Title);
+            string defPart = def == null
+                ? "<null>"
+                : "defName=" + def.defName + " templateKey=" + def.templateKey
+                    + " rawFields=" + DescribeFields(def.fields);
+            return "[ForKey: " + defPart + "; FieldsFor="
+                + DescribeFields(DiaryPromptTemplates.FieldsFor(DiaryPromptTemplates.Title)) + "]";
+        }
+
+        private static string DescribeFields(System.Collections.Generic.List<DiaryPromptFieldDef> fields)
+        {
+            if (fields == null)
+            {
+                return "<null>";
+            }
+
+            if (fields.Count == 0)
+            {
+                return "<empty>";
+            }
+
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.Append(fields.Count).Append(":");
+            for (int i = 0; i < fields.Count; i++)
+            {
+                DiaryPromptFieldDef f = fields[i];
+                sb.Append(" ").Append(f?.label ?? "?").Append("|").Append(f?.source ?? "?");
+            }
+
+            return sb.ToString();
         }
 
         private static void RequireContains(string haystack, string needle, string what)
