@@ -205,12 +205,13 @@ to at most one mature ordinary Birthday; a destroyed/missing pawn expires silent
 
 The pure diff exposes only verified traits, increased passions, nickname changes, a responsibility
 boolean, and XML-owned qualitative opportunity wording—never the tier number, option/work lists, or
-counts. Phase 2 deep-saves `BiotechFamilyArcState` rows containing stable IDs only. The guarded
-`HediffWithParents.SetParents` observer opens pregnancy/labor arcs from exact parent facts; PlayLog
-`BabyPlay`/`Lesson*` and accepted `GaveLesson`/`WasTaught` memories update per-child/adult counters
-before ordinary interaction/thought page settings are consulted. A transient pair/kind window
-de-duplicates the two evidence sources, and old saves silently baseline living player babies/children
-plus exact `Parent`/`ParentBirth` relations without inventing pregnancy, birth, or past lessons.
+counts. Phase 2 deep-saves `BiotechFamilyArcState` rows containing stable IDs only. The guarded exact
+`HediffWithParents.SetParents(Pawn, Pawn, GeneSet)` observer opens pregnancy/labor arcs from parent
+facts; PlayLog `BabyPlay`/`Lesson*` and accepted `GaveLesson`/`WasTaught` memories update
+per-child/adult counters before ordinary interaction/thought page settings are consulted. A transient
+pair/kind window de-duplicates the two evidence sources, and old saves silently baseline living player
+babies/children plus exact `Parent`/`ParentBirth` relations without inventing pregnancy, birth, or
+past lessons.
 
 At growth completion, deterministic policy ranks eligible direct parents/birth parents before adults
 with enough exact teaching evidence, then engagement band, recency, same-map presence, and stable ID.
@@ -221,9 +222,12 @@ observed upbringing while lifetime evidence remains available for supporter sele
 attaches source-owned N1 identity evidence to every generated POV, consumes current trait keys and
 newly passionate skill milestones, and marks the age consumed even when page settings suppress output.
 Family arcs normalize duplicate/malformed rows, cap supporter rows, retain live minor-child/pending/
-event-referenced state, and compact before removing settled unreferenced history. `FamilyBirth` remains
-inert until Phase 3. `familyArcId` is the complete shared key (`biotech-family|...`) and is never
-prefixed twice.
+event-referenced state, and compact before removing settled unreferenced history. Pregnancy/labor rows
+with no child ID stay live only while their exact tracked hediff remains on the birther; interrupted or
+completed rows then follow the XML retention grace instead of becoming permanent. Growth-page replay
+checks use the stable child ID and canonical age across both hot and archived events, so supporter-solo
+pages stored in the adult's diary still prevent duplicates. `FamilyBirth` remains inert until Phase 3.
+`familyArcId` is the complete shared key (`biotech-family|...`) and is never prefixed twice.
 
 Live surroundings are optional prompt flavor and are collected fail-soft. In particular,
 `Room.GetRoomRoleLabel()` can lazily recalculate the room's stats/role; if RimWorld or another room
@@ -1002,13 +1006,13 @@ it onto the bus.
 | Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. Memories vanilla rejects (accept-gates fire before `thought.pawn` is assigned) are ignored — never gained, so never recorded. If a malformed/modded `ThoughtDef` throws while resolving its localized label, capture continues with the stable `defName` as a technical fallback. |
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
 | Pawn progression | Periodic scan | Passion-only skill milestones, psylink level gains, xenotype changes, royal-title changes, and newly gained personality traits. Trait gains feed the trait's own character-card description (no stat/mechanic lines) into the prompt so any trait — vanilla or modded — is voiced as a felt personality shift without a hardcoded per-trait table. The first scan baselines existing saves to avoid retroactive spam (a pawn's starting traits never record); major psylink/xenotype changes can request a rare arc reflection after the normal page records. |
-| Biotech growth moments | `Pawn_AgeTracker.BirthdayBiological`, `ChoiceLetter_GrowthMoment.ConfigureGrowthLetter` / `MakeChoices` | Age-7/10/13 before/after ownership. A committed verified mutation becomes one child-solo page; postponed letters survive save/load; auto-resolved growth completes immediately; unsupported/failed/disabled ownership releases the existing Birthday route and consumes trait/skill baselines. Entire path is inert without Biotech. |
+| Biotech growth moments | `Pawn_AgeTracker.BirthdayBiological`, `ChoiceLetter_GrowthMoment.ConfigureGrowthLetter` / `MakeChoices` | Age-7/10/13 before/after ownership. A committed verified mutation becomes one child-solo, supporter-solo, or child/supporter page; postponed letters survive save/load; auto-resolved growth completes immediately; stable child-ID/age checks across hot and archived events prevent replay regardless of which diary owns the page. Unsupported/failed/disabled ownership releases the existing Birthday route and consumes trait/skill baselines. Entire path is inert without Biotech. |
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |
 | Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions, artificial/anomalous body-part gains, and living-pawn natural body-part losses. |
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns and the shared random-generation setting. |
 | Raids and infestations | `IncidentWorker.TryExecute` | Fan-out to eligible colonists; ordinary raids can delay generation. |
 | Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Accepted quests are bookkeeping/event-window signals only. Completed and failed quest outcomes create shared-effort entries; prompt labels reject placeholder names and humanize code-like quest defNames. |
-| Event windows | `IncidentWorker.TryExecute`, `Quest` lifecycle, `Thing.SpawnSetup`, `SignalAction_Letter`, `CompProximityLetter`, `Building_VoidMonolith.Activate`, `Pawn_AgeTracker.BirthdayBiological`, `Pawn_HealthTracker.AddHediff`, `PrisonBreakUtility.StartPrisonBreak` | XML starts/ends narrative windows or one-shot events, writes phase entries, and can bias prompts while active. A Def may also attach an optional plain `narrativeEvidence` template after a page exists; exact monolith levels use this without authorizing extra pages. |
+| Event windows | `IncidentWorker.TryExecute`, `Quest` lifecycle, `Thing.SpawnSetup`, `SignalAction_Letter`, `CompProximityLetter`, `Building_VoidMonolith.Activate`, `Pawn_AgeTracker.BirthdayBiological`, `Pawn_HealthTracker.AddHediff`, `PrisonBreakUtility.StartPrisonBreak` | XML starts/ends narrative windows or one-shot events, writes phase entries, and can bias prompts while active. A Def may also attach an optional plain `narrativeEvidence` template after a page exists; exact deliberate monolith levels use this without authorizing extra pages, while timer-driven activation stays silent because vanilla supplies a random colonist rather than a truthful actor. |
 | Observed conditions | Periodic live-state scan (map danger, active game conditions, evidence things, pawn hediffs) | Lasting states read from live state, not a guessed duration: bias prompts while present, optionally record start/end pages, and end after a debounce when live state stops showing them (Plan 12; see §5.1). |
 | Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
 | Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry, scaled by the shared random-generation setting. |
@@ -1024,12 +1028,15 @@ hidden from settings when `Ludeon.RimWorld.Anomaly` is absent. They change only 
 page count, role fan-out, success criteria, or captured facts—and every instruction defers agency and
 victimhood to `psychic_ritual_perspective`/target facts rather than asserting an unverified result.
 
-`Building_VoidMonolith.Activate(Pawn)` still supplies one completed `VoidMonolith;activated` signal
-with the reached level defName and exact activator. XML now maps only `Stirring` to the stable existing
-`VoidMonolithActivation` window, `Waking` to `VoidMonolithWaking`, and `VoidAwakened` to
-`VoidMonolithVoidAwakened`; discovery remains its own prologue and automatic `Gleaming` matches no
-window. All three activation pages are one-shot `SubjectPawn` rows with distinct localized fallback
-text. Their optional `narrativeEvidence` blocks save visible `journey_chapter` phases
+`Building_VoidMonolith.Activate(Pawn)` supplies one completed `VoidMonolith;activated` signal with
+the reached level defName and exact activator only for deliberate activation. The prefix reads the
+private scheduled activation tick before vanilla clears it; when that tick is already due, vanilla's
+random colonist argument is not treated as an actor and the automatic transition stays silent. If the
+field cannot be resolved, the fragile hook warns and disables itself rather than risking false
+attribution. XML maps `Stirring` to the stable existing `VoidMonolithActivation` window, `Waking` to
+`VoidMonolithWaking`, and `VoidAwakened` to `VoidMonolithVoidAwakened`; discovery remains its own
+prologue. All three deliberate activation pages are one-shot `SubjectPawn` rows with distinct
+localized fallback text. Their optional `narrativeEvidence` blocks save visible `journey_chapter` phases
 `stirring`/`waking`/`void_awakened`, major salience, and the primary per-save arc key
 `anomaly-monolith|0`. No hidden entity, host, downside, terminal choice, or terminal outcome is saved.
 

@@ -18,14 +18,14 @@ namespace PawnDiary
     /// </summary>
     internal static class BiotechFamilyHediffPatch
     {
-        /// <summary>Resolves and patches HediffWithParents.SetParents(Pawn, Pawn).</summary>
+        /// <summary>Resolves and patches HediffWithParents.SetParents(Pawn, Pawn, GeneSet).</summary>
         public static void TryRegister(Harmony harmony)
         {
             if (harmony == null) return;
             MethodBase target = AccessTools.Method(
                 typeof(HediffWithParents),
                 "SetParents",
-                new[] { typeof(Pawn), typeof(Pawn) });
+                new[] { typeof(Pawn), typeof(Pawn), typeof(GeneSet) });
             if (target == null)
             {
                 Log.Warning("[Pawn Diary] HediffWithParents.SetParents changed; Biotech family "

@@ -292,7 +292,7 @@ namespace PawnDiary
         /// <summary>Runs bounded family compaction/removal on the existing coarse progression cadence.</summary>
         private void MaintainBiotechFamilyArcs()
         {
-            if (biotechFamilyArcs == null || biotechFamilyArcs.Count == 0)
+            if (!ModsConfig.BiotechActive || biotechFamilyArcs == null || biotechFamilyArcs.Count == 0)
             {
                 return;
             }
@@ -314,6 +314,7 @@ namespace PawnDiary
                         childAliveAndDeveloping = child != null && !child.Dead
                             && (child.DevelopmentalStage == DevelopmentalStage.Baby
                                 || child.DevelopmentalStage == DevelopmentalStage.Child),
+                        familyHediffStillPresent = BiotechFamilyHediffStillPresent(arc),
                         hasPendingReference = PendingGrowthReferencesFamilyArc(arc.familyArcId),
                         hasSavedEventReference = SavedDiaryReferencesFamilyArc(arc.familyArcId)
                     },
@@ -328,6 +329,41 @@ namespace PawnDiary
                     biotechFamilyArcs.RemoveAt(i);
                 }
             }
+        }
+
+        /// <summary>
+        /// Returns whether the exact pregnancy/labor Hediff that opened an unresolved arc is still on
+        /// its birthing pawn. This live Verse scan stays in the component; pure retention receives only
+        /// the resulting boolean.
+        /// </summary>
+        private bool BiotechFamilyHediffStillPresent(BiotechFamilyArcState arc)
+        {
+            if (arc == null || string.IsNullOrWhiteSpace(arc.birtherId)
+                || (string.IsNullOrWhiteSpace(arc.pregnancyHediffId)
+                    && string.IsNullOrWhiteSpace(arc.laborHediffId)))
+            {
+                return false;
+            }
+
+            Pawn birther = FindLivePawnByLoadId(arc.birtherId);
+            List<Hediff> hediffs = birther?.health?.hediffSet?.hediffs;
+            if (hediffs == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < hediffs.Count; i++)
+            {
+                Hediff hediff = hediffs[i];
+                string hediffId = hediff == null ? string.Empty : hediff.GetUniqueLoadID();
+                if (string.Equals(hediffId, arc.pregnancyHediffId, StringComparison.Ordinal)
+                    || string.Equals(hediffId, arc.laborHediffId, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private BiotechFamilyArcState EnsureBiotechFamilyArcForGrowth(

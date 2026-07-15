@@ -20,6 +20,7 @@ namespace DiaryBiotechPolicyTests
             TestGrowthDiffAndTruthBoundaries();
             TestOpportunityBands();
             TestPendingGrowthNormalization();
+            TestGrowthRecordMatching();
             TestFamilyArcObservationAndRetention();
             TestSupporterSelectionAndWriterShapes();
             TestBirthWriterSelection();
@@ -28,6 +29,38 @@ namespace DiaryBiotechPolicyTests
             TestShippedXmlPolicyAndLocalization();
             Console.WriteLine("DiaryBiotechPolicyTests passed " + assertions + " assertions.");
             return 0;
+        }
+
+        private static void TestGrowthRecordMatching()
+        {
+            AssertTrue("supporter-owned growth still matches child identity",
+                GrowthRecordPolicy.Matches(
+                    BiotechEventDefNames.GrowthMoment,
+                    "Child_1",
+                    "10",
+                    "Child_1",
+                    10));
+            AssertTrue("different child cannot satisfy growth backstop",
+                !GrowthRecordPolicy.Matches(
+                    BiotechEventDefNames.GrowthMoment,
+                    "Child_2",
+                    "10",
+                    "Child_1",
+                    10));
+            AssertTrue("different birthday cannot satisfy growth backstop",
+                !GrowthRecordPolicy.Matches(
+                    BiotechEventDefNames.GrowthMoment,
+                    "Child_1",
+                    "7",
+                    "Child_1",
+                    10));
+            AssertTrue("ordinary birthday cannot satisfy canonical growth backstop",
+                !GrowthRecordPolicy.Matches(
+                    "Birthday",
+                    "Child_1",
+                    "10",
+                    "Child_1",
+                    10));
         }
 
         private static void TestStableSchemaAndArcKeys()
@@ -264,6 +297,25 @@ namespace DiaryBiotechPolicyTests
                 }, 12);
             AssertTrue("labor correlates to pregnancy object", object.ReferenceEquals(pregnancy, labor));
             AssertEqual("labor ID appended", "Hediff_2", pregnancy.laborHediffId);
+            AssertEqual("live unresolved pregnancy remains retained", FamilyArcRetentionAction.Keep,
+                FamilyArcPolicy.DecideRetention(
+                    pregnancy,
+                    new FamilyArcRetentionInput { familyHediffStillPresent = true },
+                    5000,
+                    1000));
+            AssertEqual("ended unresolved pregnancy compacts after grace", FamilyArcRetentionAction.Compact,
+                FamilyArcPolicy.DecideRetention(
+                    pregnancy,
+                    new FamilyArcRetentionInput(),
+                    5000,
+                    1000));
+            FamilyArcPolicy.Compact(pregnancy);
+            AssertEqual("ended compacted pregnancy removes on next pass", FamilyArcRetentionAction.Remove,
+                FamilyArcPolicy.DecideRetention(
+                    pregnancy,
+                    new FamilyArcRetentionInput(),
+                    5000,
+                    1000));
             BiotechFamilyArcState laborOnly = FamilyArcPolicy.ObserveFamilyHediff(
                 new List<BiotechFamilyArcState>(),
                 new FamilyHediffSnapshot

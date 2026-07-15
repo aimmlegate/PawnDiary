@@ -441,6 +441,7 @@ namespace PawnDiary.Capture
     internal class FamilyArcRetentionInput
     {
         public bool childAliveAndDeveloping;
+        public bool familyHediffStillPresent;
         public bool hasPendingReference;
         public bool hasSavedEventReference;
     }

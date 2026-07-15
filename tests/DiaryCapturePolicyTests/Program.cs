@@ -83,6 +83,7 @@ namespace DiaryCapturePolicyTests
             TestArcReflectionDecide();
             TestArcReflectionBuildGameContextFormat();
             TestBiotechCatalogDecisions();
+            TestMonolithActivationProvenance();
             TestCatalogDispatch();
             TestCatalogContract();
             TestMigrationSentinel();
@@ -1596,6 +1597,18 @@ namespace DiaryCapturePolicyTests
             AssertEqual("birth invalid snapshot drops", CaptureDecision.Drop,
                 FamilyBirthEventData.Decide(birth, Ctx()));
             AssertEqual("birth stable dedup", "birth|biotech-family|Child_1", birth.DedupKey());
+        }
+
+        private static void TestMonolithActivationProvenance()
+        {
+            AssertTrue("past-due monolith timer is automatic",
+                MonolithActivationProvenancePolicy.IsAutomatic(101, 100));
+            AssertTrue("timer is not automatic until vanilla's strict greater-than tick",
+                !MonolithActivationProvenancePolicy.IsAutomatic(100, 100));
+            AssertTrue("future monolith timer is not automatic yet",
+                !MonolithActivationProvenancePolicy.IsAutomatic(99, 100));
+            AssertTrue("cleared monolith timer is deliberate provenance",
+                !MonolithActivationProvenancePolicy.IsAutomatic(100, -99999));
         }
 
         // ── Catalog dispatch ──

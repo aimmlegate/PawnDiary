@@ -204,6 +204,22 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Guards the exact RimWorld 1.6 family-correlation target. DLC types exist in the shared game
+        /// assembly even on a base-only run, so this signature check is safe without Biotech active.
+        /// </summary>
+        [Test]
+        public static void BiotechFamilySetParentsSignatureMatchesRuntime()
+        {
+            System.Reflection.MethodInfo target = typeof(HediffWithParents).GetMethod(
+                "SetParents",
+                new[] { typeof(Pawn), typeof(Pawn), typeof(GeneSet) });
+            PawnDiaryRimTestScope.Require(
+                target != null,
+                "RimWorld no longer exposes HediffWithParents.SetParents(Pawn, Pawn, GeneSet); "
+                + "the Biotech family hook must be updated before release.");
+        }
+
+        /// <summary>
         /// §7.3(b). The DLC/optional-mod compatibility interaction groups ship inside the core mod and are
         /// gated by <c>enableWhenPackageIdsLoaded</c>. This asserts the inertness invariant every one of
         /// them depends on: whenever a group's required packages are all absent it reports

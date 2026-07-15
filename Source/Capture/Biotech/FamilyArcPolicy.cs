@@ -335,8 +335,6 @@ namespace PawnDiary.Capture
             }
 
             input = input ?? new FamilyArcRetentionInput();
-            bool unresolved = string.IsNullOrWhiteSpace(arc.childId)
-                || (arc.birthTick > 0 && !arc.closed);
             bool unsummarized = false;
             if (arc.supporters != null)
             {
@@ -346,7 +344,11 @@ namespace PawnDiary.Capture
                 }
             }
 
-            if (unresolved || input.childAliveAndDeveloping || input.hasPendingReference
+            // A pregnancy/labor row has no child ID until a later birth owner links it. Keep the row
+            // while its exact live Hediff still exists, then give it the same XML-owned retention grace
+            // as every other detached arc. Treating "unresolved" as permanent made every completed or
+            // interrupted pregnancy immortal when no birth linker was active.
+            if (input.familyHediffStillPresent || input.childAliveAndDeveloping || input.hasPendingReference
                 || input.hasSavedEventReference || unsummarized || retentionTicks <= 0)
             {
                 return FamilyArcRetentionAction.Keep;

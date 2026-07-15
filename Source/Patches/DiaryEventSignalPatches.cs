@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
+using PawnDiary.Capture;
 using PawnDiary.Ingestion;
 using RimWorld;
 using RimWorld.Planet;
@@ -474,11 +475,13 @@ namespace PawnDiary
         private const string LevelDefPropertyName = "LevelDef";
         private const string LevelInspectTextFieldName = "levelInspectText";
         private const string MonolithLabelFieldName = "monolithLabel";
+        private const string AutoActivateTickFieldName = "autoActivateTick";
 
         private static MethodInfo AnomalyGetter;
         private static MethodInfo LevelDefGetter;
         private static FieldInfo LevelInspectTextField;
         private static FieldInfo MonolithLabelField;
+        private static FieldInfo AutoActivateTickField;
 
         /// <summary>
         /// Registers the patch only when RimWorld exposes Building_VoidMonolith.Activate(Pawn).
@@ -504,6 +507,15 @@ namespace PawnDiary
                 return;
             }
 
+            AutoActivateTickField = AccessTools.Field(targetType, AutoActivateTickFieldName);
+            if (AutoActivateTickField == null || AutoActivateTickField.FieldType != typeof(int))
+            {
+                Log.Warning("[Pawn Diary] Could not find Building_VoidMonolith.autoActivateTick; "
+                    + "void monolith activation events are disabled to avoid assigning automatic "
+                    + "activation to a random colonist.");
+                return;
+            }
+
             Type anomalyComponentType = AccessTools.TypeByName(AnomalyComponentTypeName);
             Type monolithLevelDefType = AccessTools.TypeByName(MonolithLevelDefTypeName);
             AnomalyGetter = AccessTools.PropertyGetter(typeof(Find), "Anomaly");
@@ -517,14 +529,48 @@ namespace PawnDiary
                 ? null
                 : AccessTools.Field(monolithLevelDefType, MonolithLabelFieldName);
 
-            harmony.Patch(target, postfix: new HarmonyMethod(typeof(VoidMonolithActivationEventWindowPatch), nameof(Postfix)));
+            harmony.Patch(
+                target,
+                prefix: new HarmonyMethod(typeof(VoidMonolithActivationEventWindowPatch), nameof(Prefix)),
+                postfix: new HarmonyMethod(typeof(VoidMonolithActivationEventWindowPatch), nameof(Postfix)));
+        }
+
+        /// <summary>
+        /// Captures timer provenance before vanilla clears <c>autoActivateTick</c>. On any inspection
+        /// failure the state remains true, failing closed rather than inventing deliberate agency.
+        /// </summary>
+        private static void Prefix(object __instance, ref bool __state)
+        {
+            bool automatic = true;
+            DiaryPatchSafety.Run("VoidMonolithActivationEventWindowPatch.Provenance", () =>
+            {
+                object scheduledValue = __instance == null ? null : AutoActivateTickField.GetValue(__instance);
+                TickManager tickManager = Find.TickManager;
+                if (!(scheduledValue is int) || tickManager == null)
+                {
+                    return;
+                }
+
+                automatic = MonolithActivationProvenancePolicy.IsAutomatic(
+                    tickManager.TicksGame,
+                    (int)scheduledValue);
+            });
+            __state = automatic;
         }
 
         /// <summary>
         /// Forwards the completed activation after vanilla advances the monolith level and sends its letter.
         /// </summary>
-        private static void Postfix(object __instance, Pawn pawn)
+        private static void Postfix(object __instance, Pawn pawn, bool __state)
         {
+            // Vanilla's automatic timer chooses a random free colonist and passes it to Activate solely
+            // to satisfy the method signature. There is no truthful first-person actor for our current
+            // SubjectPawn event shape, so leave that automatic transition silent.
+            if (__state)
+            {
+                return;
+            }
+
             DiaryPatchSafety.Run("VoidMonolithActivationEventWindowPatch", () =>
             {
                 Thing thing = __instance as Thing;

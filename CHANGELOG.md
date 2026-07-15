@@ -1,5 +1,17 @@
 # Changelog
 
+- **2026-07-16 — Hardened optional-DLC capture after adversarial review.** Corrected the Biotech
+  family observer to RimWorld 1.6's exact `HediffWithParents.SetParents(Pawn, Pawn, GeneSet)`
+  signature, added a local Biotech gate to family-arc maintenance, and tied unresolved
+  pregnancy/labor retention to the exact live hediff so interrupted or completed arcs can compact
+  and expire. Canonical growth replay
+  detection now searches hot and archived context by stable child ID plus age, including
+  supporter-solo pages stored in an adult's diary. Anomaly monolith capture now distinguishes the
+  private timer-driven call before vanilla clears its scheduled tick and suppresses that transition,
+  avoiding false attribution to vanilla's random colonist while failing closed if the field changes.
+  Added pure provenance/growth/retention regressions, a RimTest signature fixture, and rebuilt the
+  runtime and RimTest DLLs.
+
 - **2026-07-15 — Continued DLC integration: Master Wave 3 / Biotech Phase 2.** Added deep-scribed,
   stable-ID-only family arcs with exact pregnancy/labor correlation, living-child old-save baselines,
   and bounded deterministic normalization/retention. Exact `BabyPlay`/`Lesson*` PlayLog observations

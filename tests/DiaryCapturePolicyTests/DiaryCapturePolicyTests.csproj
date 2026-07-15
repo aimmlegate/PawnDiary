@@ -18,6 +18,7 @@
     <Compile Include="..\..\Source\Capture\CaptureDecision.cs" Link="Capture\CaptureDecision.cs" />
     <Compile Include="..\..\Source\Capture\RecentEventExpiry.cs" Link="Capture\RecentEventExpiry.cs" />
     <Compile Include="..\..\Source\Capture\GenericEventTypeDedup.cs" Link="Capture\GenericEventTypeDedup.cs" />
+    <Compile Include="..\..\Source\Capture\MonolithActivationProvenancePolicy.cs" Link="Capture\MonolithActivationProvenancePolicy.cs" />
     <Compile Include="..\..\Source\Capture\ThoughtCapturePolicy.cs" Link="Capture\ThoughtCapturePolicy.cs" />
     <Compile Include="..\..\Source\Capture\GroupNameMatcher.cs" Link="Capture\GroupNameMatcher.cs" />
     <Compile Include="..\..\Source\Capture\BodyPartEventPolicy.cs" Link="Capture\BodyPartEventPolicy.cs" />

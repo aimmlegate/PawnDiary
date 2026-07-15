@@ -350,7 +350,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (HasRecordedBiotechGrowth(pawn, pending.birthdayAge))
+                if (HasRecordedBiotechGrowth(pending.pawnId, pending.birthdayAge))
                 {
                     GrowthPawnSnapshot recordedCurrent;
                     DlcContext.TryCaptureGrowthPawn(
@@ -407,7 +407,7 @@ namespace PawnDiary
                 return;
             }
 
-            if (HasRecordedBiotechGrowth(pawn, birthdayAge))
+            if (HasRecordedBiotechGrowth(pawn?.GetUniqueLoadID(), birthdayAge))
             {
                 ConsumeBiotechGrowthProgression(pawn, before, after, birthdayAge);
                 MarkBiotechGrowthFamilySummarized(familyArc, birthdayAge);
@@ -520,38 +520,59 @@ namespace PawnDiary
             return diary?.EnsureProgressionState();
         }
 
-        private bool HasRecordedBiotechGrowth(Pawn pawn, int birthdayAge)
+        private bool HasRecordedBiotechGrowth(string childId, int birthdayAge)
         {
-            PawnDiaryRecord diary = FindDiary(pawn, createIfMissing: false);
-            if (diary?.eventIds == null || diary.eventIds.Count == 0)
+            if (string.IsNullOrWhiteSpace(childId))
             {
                 return false;
             }
 
-            string ageFact = BiotechContextKeys.BirthdayAge + "=" + birthdayAge;
-            for (int i = diary.eventIds.Count - 1; i >= 0; i--)
+            // A supporter-solo page belongs to the adult's diary, not the young child's. Search the
+            // bounded hot store and archive by the stable child/age fields instead of assuming which
+            // pawn owned the page.
+            IReadOnlyList<DiaryEvent> live = events.AllEvents;
+            for (int i = live.Count - 1; i >= 0; i--)
             {
-                DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
-                if (diaryEvent == null
-                    || !string.Equals(
-                        diaryEvent.interactionDefName,
-                        BiotechEventDefNames.GrowthMoment,
-                        StringComparison.Ordinal))
+                DiaryEvent diaryEvent = live[i];
+                if (RecordedBiotechGrowthMatches(
+                    diaryEvent?.interactionDefName,
+                    diaryEvent?.gameContext,
+                    childId,
+                    birthdayAge))
                 {
-                    continue;
+                    return true;
                 }
+            }
 
-                string context = diaryEvent.gameContext ?? string.Empty;
-                if (string.Equals(context, ageFact, StringComparison.Ordinal)
-                    || context.StartsWith(ageFact + ";", StringComparison.Ordinal)
-                    || context.EndsWith("; " + ageFact, StringComparison.Ordinal)
-                    || context.IndexOf("; " + ageFact + ";", StringComparison.Ordinal) >= 0)
+            IReadOnlyList<ArchivedDiaryEntry> archived = archive.AllEntries;
+            for (int i = archived.Count - 1; i >= 0; i--)
+            {
+                ArchivedDiaryEntry entry = archived[i];
+                if (RecordedBiotechGrowthMatches(
+                    entry?.interactionDefName,
+                    entry?.decorationGameContext,
+                    childId,
+                    birthdayAge))
                 {
                     return true;
                 }
             }
 
             return false;
+        }
+
+        private static bool RecordedBiotechGrowthMatches(
+            string interactionDefName,
+            string gameContext,
+            string childId,
+            int birthdayAge)
+        {
+            return GrowthRecordPolicy.Matches(
+                interactionDefName,
+                DiaryContextFields.Value(gameContext, BiotechContextKeys.ChildId),
+                DiaryContextFields.Value(gameContext, BiotechContextKeys.BirthdayAge),
+                childId,
+                birthdayAge);
         }
 
         private static void ConsumePassionSkillMilestones(
