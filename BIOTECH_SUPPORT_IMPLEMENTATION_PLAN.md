@@ -1,8 +1,10 @@
 # Pawn Diary — Biotech Support Implementation Plan
 
-> **Status:** Phase 0 implemented as Master Wave 3 groundwork, 2026-07-15. Plain B1 contracts,
-> pure policies, XML policy/groups, stable IDs/keys, and legacy settings inheritance are frozen;
-> Phases 1–8 remain implementation-ready and no live Biotech hook is active yet.
+> **Status:** Phases 0–2 implemented in Master Wave 3, 2026-07-15. Canonical age-7/10/13 growth
+> observation, postponed-choice persistence, auto resolution, ordinary Birthday fallback, progression
+> consumption, saved family arcs, exact lesson/play evidence, truthful child/supporter writer shapes,
+> and source-owned N1 identity evidence are live and no-DLC-safe. Narrative N2-B is the next permitted
+> slice; canonical birth/naming remains Phase 3 after that provider checkpoint.
 >
 > **Scheduling authority:** implement Biotech phases only in the waves assigned by
 > `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Biotech.
@@ -1601,6 +1603,15 @@ Narrative Continuity N0–N1 must land before Phase 1 creates/persists new B1 ev
 in parallel, but it must not create a temporary Biotech-only cross-DLC prompt or reference schema.
 
 ### Phase 1 — Growth observation and ordinary fallback
+
+> **Implementation status (2026-07-15): complete.** The existing birthday patch now owns exact
+> before/after capture; `ConfigureGrowthLetter`/`MakeChoices` register atomically and fail open;
+> detached pending rows survive Scribe round trips and normalize malformed/duplicate/future state;
+> auto and committed paths emit at most one child-solo composite or release Birthday; every trait and
+> newly passionate skill baseline plus the 7/10/13 consumed marker advances independently of page
+> settings. The growth page attaches N1 identity evidence without introducing an N2 provider. Pure,
+> Scribe, no-DLC, and loaded-component flow fixtures cover the exit matrix; the vanilla letter/UI
+> click-through remains part of the manual in-game acceptance run.
 
 1. Extend birthday prefix/postfix snapshotting.
 2. Add `ConfigureGrowthLetter`/`MakeChoices` hooks and transient correlation.

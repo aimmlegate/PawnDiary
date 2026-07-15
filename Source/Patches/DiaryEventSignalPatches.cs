@@ -240,20 +240,67 @@ namespace PawnDiary
         private static readonly FieldInfo PawnField = AccessTools.Field(typeof(Pawn_AgeTracker), "pawn");
 
         /// <summary>
-        /// Harmony Postfix for Pawn_AgeTracker.BirthdayBiological. The event is target-pawn scoped in XML.
+        /// Captures a before-state only when both Biotech growth-letter hooks registered. The nested
+        /// ConfigureGrowthLetter hook may then claim this birthday; until that happens nothing is suppressed.
         /// </summary>
-        public static void Postfix(Pawn_AgeTracker __instance, int birthdayAge)
+        public static void Prefix(
+            Pawn_AgeTracker __instance,
+            int birthdayAge,
+            ref BiotechGrowthBirthdayState __state)
         {
-            DiaryPatchSafety.Run("BiologicalBirthdayEventWindowPatch", () =>
+            BiotechGrowthBirthdayState state = null;
+            DiaryPatchSafety.Run("BiologicalBirthdayEventWindowPatch.Prefix", () =>
             {
                 Pawn pawn = PawnField?.GetValue(__instance) as Pawn;
-                if (pawn == null || !DiaryGameComponent.GamePlaying)
-                {
-                    return;
-                }
-
-                DiaryGameComponent.Instance?.RecordEventWindowBirthday(pawn, birthdayAge);
+                state = DiaryGameComponent.Instance?.BeginBiotechGrowthBirthday(pawn, birthdayAge);
+                BiotechGrowthCorrelation.BeginBirthday(state);
             });
+            __state = state;
+        }
+
+        /// <summary>
+        /// Harmony Postfix for Pawn_AgeTracker.BirthdayBiological. Canonical growth delays a configured
+        /// letter or emits an exact auto-resolved mutation; every unowned/failing path stays Birthday.
+        /// </summary>
+        public static void Postfix(
+            Pawn_AgeTracker __instance,
+            int birthdayAge,
+            BiotechGrowthBirthdayState __state)
+        {
+            bool growthOwnedBirthday = false;
+            try
+            {
+                DiaryPatchSafety.Run("BiologicalBirthdayEventWindowPatch.Growth", () =>
+                {
+                    growthOwnedBirthday = DiaryGameComponent.Instance
+                        ?.TryFinishBiotechGrowthBirthday(__state) == true;
+                });
+
+                // Keep fallback in a separate safety boundary. Even an unexpected canonical-owner
+                // exception must not prevent the mature Birthday event-window route from running.
+                if (!growthOwnedBirthday)
+                {
+                    DiaryPatchSafety.Run("BiologicalBirthdayEventWindowPatch.Birthday", () =>
+                    {
+                        Pawn pawn = PawnField?.GetValue(__instance) as Pawn;
+                        if (pawn != null && DiaryGameComponent.GamePlaying)
+                        {
+                            DiaryGameComponent.Instance?.RecordEventWindowBirthday(pawn, birthdayAge);
+                        }
+                    });
+                }
+            }
+            finally
+            {
+                BiotechGrowthCorrelation.EndBirthday(__state);
+            }
+        }
+
+        /// <summary>Clears the transient scope even if vanilla BirthdayBiological throws.</summary>
+        public static Exception Finalizer(Exception __exception, BiotechGrowthBirthdayState __state)
+        {
+            BiotechGrowthCorrelation.EndBirthday(__state);
+            return __exception;
         }
     }
 

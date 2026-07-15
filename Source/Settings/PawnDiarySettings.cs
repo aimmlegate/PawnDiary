@@ -813,7 +813,8 @@ namespace PawnDiary
         /// <summary>
         /// Effective canonical-growth setting. Before the player touches the new Biotech row, an
         /// explicit legacy Birthday override is inherited so an upgrade does not reverse prior intent.
-        /// This helper is inert until the guarded Phase 1 growth source calls it.
+        /// The guarded Phase 1 growth source calls this at event creation; observation/baselines advance
+        /// independently so disabling the row releases the mature Birthday fallback instead.
         /// </summary>
         public bool IsBiotechGrowthMomentEnabled()
         {

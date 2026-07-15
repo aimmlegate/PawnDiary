@@ -32,8 +32,16 @@ namespace PawnDiary
         public int growthFallbackGraceTicks = 60000;
         public List<DiaryBiotechOpportunityBandDef> opportunityBands =
             new List<DiaryBiotechOpportunityBandDef>();
+        // Localized prompt prose for passion transitions. Stable passion tokens stay in the pure
+        // contract, while these DefInjected descriptions are what the LLM actually sees.
+        public string newInterestDescription;
+        public string deepenedInterestDescription;
         public List<string> familyActivityExactDefNames = new List<string>();
         public List<string> familyActivityPrefixes = new List<string>();
+        public List<string> familyPregnancyHediffDefNames = new List<string>();
+        public List<string> familyLaborHediffDefNames = new List<string>();
+        public List<string> familyLessonAdultThoughtDefNames = new List<string>();
+        public List<string> familyLessonChildThoughtDefNames = new List<string>();
         public int familyActivityPairDedupTicks = 2500;
         public List<DiaryBiotechObservationBandDef> observationBands =
             new List<DiaryBiotechObservationBandDef>();
@@ -54,6 +62,10 @@ namespace PawnDiary
 
             if (growthPendingExpiryTicks <= 0) yield return "growthPendingExpiryTicks must be positive.";
             if (growthFallbackGraceTicks < 0) yield return "growthFallbackGraceTicks cannot be negative.";
+            if (string.IsNullOrWhiteSpace(newInterestDescription))
+                yield return "newInterestDescription must contain DefInjected prompt prose.";
+            if (string.IsNullOrWhiteSpace(deepenedInterestDescription))
+                yield return "deepenedInterestDescription must contain DefInjected prompt prose.";
             if (familyActivityPairDedupTicks < 0) yield return "familyActivityPairDedupTicks cannot be negative.";
             if (supporterMinimumEvidence <= 0) yield return "supporterMinimumEvidence must be positive.";
             if (maximumSupporterRows <= 0) yield return "maximumSupporterRows must be positive.";
@@ -170,10 +182,16 @@ namespace PawnDiary
             result.maximumBirthWriters = source.maximumBirthWriters < 1 || source.maximumBirthWriters > 2
                 ? result.maximumBirthWriters
                 : source.maximumBirthWriters;
+            result.newInterestDescription = source.newInterestDescription ?? string.Empty;
+            result.deepenedInterestDescription = source.deepenedInterestDescription ?? string.Empty;
             CopyOpportunityBands(source.opportunityBands, result);
             CopyObservationBands(source.observationBands, result);
             CopyStrings(source.familyActivityExactDefNames, result.familyActivityExactDefNames);
             CopyStrings(source.familyActivityPrefixes, result.familyActivityPrefixes);
+            CopyStrings(source.familyPregnancyHediffDefNames, result.familyPregnancyHediffDefNames);
+            CopyStrings(source.familyLaborHediffDefNames, result.familyLaborHediffDefNames);
+            CopyStrings(source.familyLessonAdultThoughtDefNames, result.familyLessonAdultThoughtDefNames);
+            CopyStrings(source.familyLessonChildThoughtDefNames, result.familyLessonChildThoughtDefNames);
             return result;
         }
 

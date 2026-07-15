@@ -1,6 +1,5 @@
-// Inert Phase-0 catalog payload for one verified Biotech growth mutation. No live hook constructs
-// this yet; registering the pure contract now freezes event identity and writer-shape semantics
-// before Phase 1 begins birthday ownership.
+// Catalog payload for one verified Biotech growth mutation. Exact before/after capture supplies the
+// child; Phase-2 family policy may add one truthful supporter so pure capture can choose solo or pair.
 namespace PawnDiary.Capture
 {
     /// <summary>Plain catalog payload for the canonical age-7/10/13 growth event.</summary>

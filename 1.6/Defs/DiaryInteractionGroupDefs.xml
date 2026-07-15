@@ -2798,8 +2798,8 @@
 
   <!-- ===== Progression domain: synthetic pawn-development signals ===== -->
 
-  <!-- Biotech B1 committed growth choice. Phase 0 owns only the inert catalog/group contract;
-       the birthday remains on its existing route until the guarded Phase 1 hooks land. -->
+  <!-- Biotech B1 committed growth choice. Phase 1 owns the exact birthday/letter mutation and
+       releases the mature Birthday route whenever canonical capture cannot truthfully complete. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionGrowthMoment</defName>
     <label>Growth moment</label>
@@ -2814,7 +2814,7 @@
     <tone>with formative self-recognition and an uncertain view of who comes next</tone>
     <tones>
       <li>personal and forward-looking, grounded in the trait or interests that actually changed</li>
-      <li>aware of remembered support without turning upbringing into a score or assigning parental emotion</li>
+      <li>aware that new choices opened without turning opportunity into a score or inventing who caused it</li>
     </tones>
     <colorCue>eventful</colorCue>
     <matchDefNames>

@@ -1391,8 +1391,16 @@
   <PawnDiary.Psychotype.Disabled>Psychotypes are turned off in mod settings, so this outlook is not applied to prompts.</PawnDiary.Psychotype.Disabled>
   <PawnDiary.Tab.Psychotype>Psychotype: {0}</PawnDiary.Tab.Psychotype>
 
-  <!-- Biotech B1 fallback families are frozen in Phase 0; no live source calls them until later phases. -->
+  <!-- Biotech B1 growth is live in Phase 1; family-birth/supporter strings remain reserved. -->
+  <PawnDiary.Event.Biotech.Growth.Label>Growth moment</PawnDiary.Event.Biotech.Growth.Label>
   <PawnDiary.Event.Biotech.Growth.Fallback>{0} reached a growth moment at age {1}: {2}.</PawnDiary.Event.Biotech.Growth.Fallback>
+  <PawnDiary.Event.Biotech.Growth.Summary.Trait>a new trait: {0}</PawnDiary.Event.Biotech.Growth.Summary.Trait>
+  <PawnDiary.Event.Biotech.Growth.Summary.Identity>a change in identity</PawnDiary.Event.Biotech.Growth.Summary.Identity>
+  <PawnDiary.Event.Biotech.Growth.Summary.NewInterest>a new interest in {0}</PawnDiary.Event.Biotech.Growth.Summary.NewInterest>
+  <PawnDiary.Event.Biotech.Growth.Summary.DeepenedInterest>a deepened interest in {0}</PawnDiary.Event.Biotech.Growth.Summary.DeepenedInterest>
+  <PawnDiary.Event.Biotech.Growth.Summary.Name>a new name: {0}</PawnDiary.Event.Biotech.Growth.Summary.Name>
+  <PawnDiary.Event.Biotech.Growth.Summary.Responsibilities>new responsibilities opened</PawnDiary.Event.Biotech.Growth.Summary.Responsibilities>
+  <PawnDiary.Event.Biotech.Growth.Summary.Generic>their interests and sense of self changed</PawnDiary.Event.Biotech.Growth.Summary.Generic>
   <PawnDiary.Event.Biotech.Growth.SupporterFallback>{0} reflected on {1}'s growth moment: {2}.</PawnDiary.Event.Biotech.Growth.SupporterFallback>
   <PawnDiary.Event.Biotech.Birth.Fallback>{0} remembered the birth of {1}: {2}.</PawnDiary.Event.Biotech.Birth.Fallback>
   <PawnDiary.Event.Biotech.Birth.PairFallback>{0} and {1} remembered the birth of {2}: {3}.</PawnDiary.Event.Biotech.Birth.PairFallback>

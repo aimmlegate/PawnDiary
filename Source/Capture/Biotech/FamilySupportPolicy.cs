@@ -124,7 +124,8 @@ namespace PawnDiary.Capture
                 roleToken = role,
                 tier = tier,
                 evidenceCount = evidence,
-                observationBand = ObservationBandFor(evidence, policy)
+                observationBand = ObservationBandFor(
+                    Math.Max(0, candidate.unsummarizedEvidenceCount), policy)
             };
         }
 

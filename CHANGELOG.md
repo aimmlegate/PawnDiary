@@ -1,5 +1,33 @@
 # Changelog
 
+- **2026-07-15 — Continued DLC integration: Master Wave 3 / Biotech Phase 2.** Added deep-scribed,
+  stable-ID-only family arcs with exact pregnancy/labor correlation, living-child old-save baselines,
+  and bounded deterministic normalization/retention. Exact `BabyPlay`/`Lesson*` PlayLog observations
+  and accepted `GaveLesson`/`WasTaught` memories now update per-child/adult upbringing evidence before
+  normal page settings, with cross-source pair/kind de-duplication. Canonical growth now attaches the
+  family key, ranks exact parents/birth parents and demonstrably involved teachers, emits child solo,
+  supporter solo, or child/supporter pair POVs, includes only localized qualitative upbringing bands,
+  and advances summarized counters so later growth ages do not repeat old observations. Pregnancy/labor
+  health context gains the same family key when exact Hediff identity matches. Added family Scribe and
+  no-DLC fixture coverage, pregnancy/labor/activity/memory/retention pure coverage (247 assertions),
+  updated plans/docs, and rebuilt runtime/RimTest DLLs. Narrative N2-B is next; canonical birth/naming
+  remains Phase 3.
+
+- **2026-07-15 — Continued DLC integration: Master Wave 3 / Biotech Phase 1.** Activated canonical
+  age-7/10/13 growth ownership by extending the existing birthday patch and atomically registering
+  the stable `ChoiceLetter_GrowthMoment.ConfigureGrowthLetter`/`MakeChoices` lifecycle hooks. Exact
+  before/after snapshots now cover committed and auto-resolved growth; postponed letters persist as
+  detached, normalized `pendingBiotechGrowthMoments` rows across save/load; missing hooks,
+  correlation, mutation, or settings fail open to the mature Birthday route without scanning the
+  letter UI. Completion emits at most one child-solo `BiotechGrowthMoment` with qualitative
+  XML/DefInjected context and source-owned N1 identity evidence, then consumes all current trait keys,
+  newly passionate skill milestones, and the saved 7/10/13 marker even when pages are disabled.
+  Durable canonical pages repair damaged consumed markers rather than replaying/falling back. Added
+  English/Russian growth fallback text, Scribe round-trip and no-DLC accessor coverage, a three-case
+  loaded-component RimTest fixture, pending normalization/grace tests (218 pure assertions), current
+  architecture/prompt/coverage plans, and the rebuilt runtime DLL. Family arcs/supporter POVs remain
+  Phase 2; canonical birth remains Phase 3.
+
 - **2026-07-15 — Began DLC integration: Master Wave 3 / Biotech Phase 0.** Froze the
   assembly-free B1 growth/family snapshot and mutation contracts; stable synthetic event Def names,
   complete `biotech-family|...` arc grammar, additive Scribe/context keys, and inert Event Catalog

@@ -19,6 +19,8 @@ namespace DiaryBiotechPolicyTests
             TestStableSchemaAndArcKeys();
             TestGrowthDiffAndTruthBoundaries();
             TestOpportunityBands();
+            TestPendingGrowthNormalization();
+            TestFamilyArcObservationAndRetention();
             TestSupporterSelectionAndWriterShapes();
             TestBirthWriterSelection();
             TestSettingsInheritance();
@@ -167,6 +169,199 @@ namespace DiaryBiotechPolicyTests
                 GrowthMomentPolicy.OpportunityBandFor(99, null).token);
             AssertEqual("code fallback contains no hardcoded prompt prose", string.Empty,
                 GrowthMomentPolicy.OpportunityBandFor(99, null).description);
+        }
+
+        private static void TestPendingGrowthNormalization()
+        {
+            PendingBiotechGrowthMoment older = Pending("Child_B", 10, 100, 110);
+            PendingBiotechGrowthMoment newer = Pending("Child_B", 10, 200, 210);
+            newer.correlationId = "corrupt";
+            newer.birthdaySnapshot.traits = new List<GrowthTraitFact>
+            {
+                Trait("Tough", "tough", "steady"),
+                Trait("Tough", "duplicate", "duplicate")
+            };
+            newer.birthdaySnapshot.skills = null;
+            PendingBiotechGrowthMoment future = Pending("Child_A", 7, 9999, 9999);
+            PendingBiotechGrowthMoment invalidAge = Pending("Child_C", 8, 50, 60);
+            PendingBiotechGrowthMoment invalidId = Pending("Child|Injected", 13, 50, 60);
+
+            List<PendingBiotechGrowthMoment> normalized =
+                PendingBiotechGrowthMomentPolicy.Normalize(
+                    new[] { null, older, newer, future, invalidAge, invalidId },
+                    currentTick: 500);
+            AssertEqual("pending normalization keeps two valid pawn/age rows", 2, normalized.Count);
+            AssertEqual("pending normalization stable sort", "Child_A", normalized[0].pawnId);
+            AssertEqual("future birthday tick clamped", 500, normalized[0].birthdayTick);
+            AssertEqual("future configured tick clamped", 500, normalized[0].configuredTick);
+            AssertEqual("duplicate pawn/age keeps newest", 200, normalized[1].birthdayTick);
+            AssertEqual("correlation repaired", "growth|Child_B|10", normalized[1].correlationId);
+            AssertEqual("duplicate trait rows collapsed", 1, normalized[1].birthdaySnapshot.traits.Count);
+            AssertNotNull("null skill list repaired", normalized[1].birthdaySnapshot.skills);
+            AssertEqual("find newest after normalization", newer,
+                PendingBiotechGrowthMomentPolicy.FindNewest(normalized, "Child_B", 10));
+            AssertTrue("missing correlation returns null",
+                PendingBiotechGrowthMomentPolicy.FindNewest(normalized, "Missing", 10) == null);
+            AssertTrue("pending row not expired before XML boundary",
+                !PendingBiotechGrowthMomentPolicy.IsExpired(newer, 1199, 1000));
+            AssertTrue("pending row expires at elapsed boundary",
+                PendingBiotechGrowthMomentPolicy.IsExpired(newer, 1200, 1000));
+            AssertTrue("fallback grace is inclusive",
+                PendingBiotechGrowthMomentPolicy.IsPastFallbackGrace(newer, 410, 200));
+            AssertTrue("fallback waits before grace",
+                !PendingBiotechGrowthMomentPolicy.IsPastFallbackGrace(newer, 409, 200));
+            AssertTrue("negative grace is disabled",
+                !PendingBiotechGrowthMomentPolicy.IsPastFallbackGrace(newer, 9999, -1));
+        }
+
+        private static void TestFamilyArcObservationAndRetention()
+        {
+            BiotechPolicySnapshot policy = BiotechPolicySnapshot.CreateDefault();
+            policy.familyActivityExactDefNames.Add("BabyPlay");
+            policy.familyActivityPrefixes.Add("Lesson");
+            policy.familyPregnancyHediffDefNames.Add("PregnantHuman");
+            policy.familyLaborHediffDefNames.Add("PregnancyLabor");
+            policy.familyLessonAdultThoughtDefNames.Add("GaveLesson");
+            policy.familyLessonChildThoughtDefNames.Add("WasTaught");
+            AssertEqual("BabyPlay exact activity", BiotechFamilyActivityKindTokens.BabyPlay,
+                FamilyArcPolicy.ClassifyInteraction("BabyPlay", policy));
+            AssertEqual("pregnancy Hediff exact activity", BiotechFamilyHediffKindTokens.Pregnancy,
+                FamilyArcPolicy.ClassifyFamilyHediff("PregnantHuman", policy));
+            AssertEqual("labor Hediff exact activity", BiotechFamilyHediffKindTokens.Labor,
+                FamilyArcPolicy.ClassifyFamilyHediff("PregnancyLabor", policy));
+            AssertEqual("Lesson prefix activity", BiotechFamilyActivityKindTokens.Lesson,
+                FamilyArcPolicy.ClassifyInteraction("Lesson_Social", policy));
+            AssertEqual("unrelated interaction ignored", string.Empty,
+                FamilyArcPolicy.ClassifyInteraction("Chitchat", policy));
+            AssertEqual("adult memory orientation", BiotechFamilyMemoryKindTokens.AdultRememberedLesson,
+                FamilyArcPolicy.ClassifyLessonMemory("GaveLesson", policy));
+            AssertEqual("child memory orientation", BiotechFamilyMemoryKindTokens.ChildRememberedLesson,
+                FamilyArcPolicy.ClassifyLessonMemory("WasTaught", policy));
+
+            List<BiotechFamilyArcState> arcs = new List<BiotechFamilyArcState>();
+            BiotechFamilyArcState pregnancy = FamilyArcPolicy.ObserveFamilyHediff(arcs,
+                new FamilyHediffSnapshot
+                {
+                    kindToken = BiotechFamilyHediffKindTokens.Pregnancy,
+                    hediffId = "Hediff_1",
+                    birtherId = "Birther",
+                    birtherName = "Ari",
+                    geneticMotherId = "Mother",
+                    fatherId = "Father",
+                    observedTick = 100
+                }, 12);
+            AssertEqual("pregnancy opens stable arc", "biotech-family|Birther|Hediff_1",
+                pregnancy.familyArcId);
+            BiotechFamilyArcState labor = FamilyArcPolicy.ObserveFamilyHediff(arcs,
+                new FamilyHediffSnapshot
+                {
+                    kindToken = BiotechFamilyHediffKindTokens.Labor,
+                    hediffId = "Hediff_2",
+                    birtherId = "Birther",
+                    geneticMotherId = "Mother",
+                    fatherId = "Father",
+                    observedTick = 200
+                }, 12);
+            AssertTrue("labor correlates to pregnancy object", object.ReferenceEquals(pregnancy, labor));
+            AssertEqual("labor ID appended", "Hediff_2", pregnancy.laborHediffId);
+            BiotechFamilyArcState laborOnly = FamilyArcPolicy.ObserveFamilyHediff(
+                new List<BiotechFamilyArcState>(),
+                new FamilyHediffSnapshot
+                {
+                    kindToken = BiotechFamilyHediffKindTokens.Labor,
+                    hediffId = "LaborOnly",
+                    birtherId = "LoadedBirther",
+                    observedTick = 200
+                }, 12);
+            AssertEqual("labor-first baseline survives normalization", 1,
+                FamilyArcPolicy.Normalize(
+                    new List<BiotechFamilyArcState> { laborOnly }, 300, 12).Count);
+
+            BiotechFamilyArcState childArc = FamilyArcPolicy.EnsureChildArc(arcs,
+                new FamilyChildSnapshot
+                {
+                    childId = "Child",
+                    childName = "Bea",
+                    observedTick = 300,
+                    parents = new List<FamilyParticipantFact>
+                    {
+                        new FamilyParticipantFact
+                        {
+                            pawnId = "Parent",
+                            displayName = "Cam",
+                            roleToken = BiotechFamilyRoleTokens.Parent
+                        },
+                        new FamilyParticipantFact
+                        {
+                            pawnId = "BirthParent",
+                            displayName = "Dee",
+                            roleToken = BiotechFamilyRoleTokens.BirthParent
+                        }
+                    }
+                }, 12);
+            AssertEqual("child baseline key", "biotech-family|Child", childArc.familyArcId);
+            AssertEqual("exact parent rows kept", 2, childArc.supporters.Count);
+
+            FamilyArcPolicy.ObserveActivity(arcs, new FamilyActivityObservation
+            {
+                kindToken = BiotechFamilyActivityKindTokens.Lesson,
+                adultId = "Teacher",
+                adultName = "Eli",
+                childId = "Child",
+                childName = "Bea",
+                observedTick = 400
+            }, 12);
+            FamilySupportObservationState teacher = childArc.supporters.Single(row => row.adultId == "Teacher");
+            AssertEqual("lesson count recorded", 1, teacher.lessonCount);
+            AssertEqual("lesson is initially unsummarized", 1,
+                FamilyArcPolicy.UnsummarizedEvidence(teacher));
+            FamilyArcPolicy.MarkGrowthSummarized(childArc, 7, 500);
+            AssertEqual("summarized lesson no longer repeats", 0,
+                FamilyArcPolicy.UnsummarizedEvidence(teacher));
+            FamilyArcPolicy.ObserveActivity(arcs, new FamilyActivityObservation
+            {
+                kindToken = BiotechFamilyActivityKindTokens.BabyPlay,
+                adultId = "Teacher",
+                adultName = "Eli",
+                childId = "Child",
+                observedTick = 600
+            }, 12);
+            AssertEqual("new play is next-growth evidence", 1,
+                FamilyArcPolicy.UnsummarizedEvidence(teacher));
+            AssertSequence("growth ages are stable and unique", new[] { 7 }, childArc.recordedGrowthAges);
+
+            List<BiotechFamilyArcState> normalized = FamilyArcPolicy.Normalize(
+                new List<BiotechFamilyArcState>
+                {
+                    childArc,
+                    new BiotechFamilyArcState
+                    {
+                        familyArcId = childArc.familyArcId,
+                        childId = "Child",
+                        supporters = new List<FamilySupportObservationState>
+                        {
+                            new FamilySupportObservationState { adultId = "Teacher", lessonCount = 2 }
+                        }
+                    }
+                }, 700, 12);
+            AssertEqual("duplicate family arcs merge", 1, normalized.Count);
+            AssertEqual("duplicate supporter lifetime counts merge", 3,
+                normalized[0].supporters.Single(row => row.adultId == "Teacher").lessonCount);
+
+            BiotechFamilyArcState retained = normalized[0];
+            FamilyArcPolicy.MarkGrowthSummarized(retained, 10, 700);
+            AssertEqual("young living child retains arc", FamilyArcRetentionAction.Keep,
+                FamilyArcPolicy.DecideRetention(retained,
+                    new FamilyArcRetentionInput { childAliveAndDeveloping = true }, 5000, 1000));
+            AssertEqual("elapsed settled arc compacts first", FamilyArcRetentionAction.Compact,
+                FamilyArcPolicy.DecideRetention(retained, new FamilyArcRetentionInput(), 5000, 1000));
+            FamilyArcPolicy.Compact(retained);
+            AssertTrue("compaction marker saved", retained.detailsCompacted);
+            AssertEqual("compacted unreferenced arc removes next pass", FamilyArcRetentionAction.Remove,
+                FamilyArcPolicy.DecideRetention(retained, new FamilyArcRetentionInput(), 5000, 1000));
+            AssertEqual("saved event reference always retains compacted arc", FamilyArcRetentionAction.Keep,
+                FamilyArcPolicy.DecideRetention(retained,
+                    new FamilyArcRetentionInput { hasSavedEventReference = true }, 5000, 1000));
         }
 
         private static void TestSupporterSelectionAndWriterShapes()
@@ -321,14 +516,18 @@ namespace DiaryBiotechPolicyTests
 
             string context = GrowthMomentContextFormatter.Build(
                 mutation, "a mixed range", "steady observed teaching",
-                BiotechFamilyRoleTokens.Child, BiotechFamilyRoleTokens.Teacher);
+                BiotechFamilyRoleTokens.Child, BiotechFamilyRoleTokens.Teacher,
+                "localized new interest", "localized deepened interest");
             AssertContains("growth marker", context, "growth_moment=true");
             AssertContains("growth sanitized child id", context, "child_id=Child,1");
             AssertContains("growth opportunity prose", context, "opportunity_description=a mixed range");
             AssertContains("growth trait", context, "selected_trait=tough");
             AssertContains("growth sanitized trait description", context, "selected_trait_description=line one, line two");
-            AssertContains("new interest wording", context, "interest_change_1=new interest");
-            AssertContains("deepened interest wording", context, "interest_change_2=deepened interest");
+            AssertContains("new interest wording", context, "interest_change_1=localized new interest");
+            AssertContains("deepened interest wording", context, "interest_change_2=localized deepened interest");
+            AssertTrue("hardcoded English interest prose absent",
+                !context.Contains("interest_change_1=new interest")
+                && !context.Contains("interest_change_2=deepened interest"));
             AssertContains("fourth interest retained", context, "new_interest_4=skill 3");
             AssertTrue("fifth interest capped", !context.Contains("new_interest_5="));
             AssertTrue("raw growth tier absent", !context.Contains("growthTier") && !context.Contains("tier=6"));
@@ -374,10 +573,22 @@ namespace DiaryBiotechPolicyTests
             AssertEqual("policy defName", "Diary_BiotechPolicy", Value(def, "defName"));
             AssertEqual("policy max birth writers", "2", Value(def, "maximumBirthWriters"));
             AssertEqual("policy supporter minimum", "2", Value(def, "supporterMinimumEvidence"));
+            AssertTrue("new-interest prompt prose is XML-owned",
+                Value(def, "newInterestDescription").Length > 0);
+            AssertTrue("deepened-interest prompt prose is XML-owned",
+                Value(def, "deepenedInterestDescription").Length > 0);
             AssertTrue("policy exact BabyPlay matcher",
                 Values(def.Element("familyActivityExactDefNames")).Contains("BabyPlay"));
             AssertTrue("policy Lesson prefix",
                 Values(def.Element("familyActivityPrefixes")).Contains("Lesson"));
+            AssertSequence("policy accepted adult lesson memory", new[] { "GaveLesson" },
+                Values(def.Element("familyLessonAdultThoughtDefNames")));
+            AssertSequence("policy accepted child lesson memory", new[] { "WasTaught" },
+                Values(def.Element("familyLessonChildThoughtDefNames")));
+            AssertSequence("policy pregnancy Hediffs", new[] { "PregnantHuman", "Pregnant" },
+                Values(def.Element("familyPregnancyHediffDefNames")));
+            AssertSequence("policy labor Hediffs", new[] { "PregnancyLabor", "PregnancyLaborPushing" },
+                Values(def.Element("familyLaborHediffDefNames")));
 
             List<XElement> opportunity = def.Element("opportunityBands").Elements("li").ToList();
             AssertEqual("four opportunity bands", 4, opportunity.Count);
@@ -448,6 +659,10 @@ namespace DiaryBiotechPolicyTests
             XDocument policy = XDocument.Load(Path.Combine(root, "Languages", language, "DefInjected",
                 "PawnDiary.DiaryBiotechPolicyDef", "DiaryBiotechPolicyDefs.xml"));
             AssertTrue(language + " policy label", Value(policy.Root, "Diary_BiotechPolicy.label").Length > 0);
+            AssertTrue(language + " new-interest description",
+                Value(policy.Root, "Diary_BiotechPolicy.newInterestDescription").Length > 0);
+            AssertTrue(language + " deepened-interest description",
+                Value(policy.Root, "Diary_BiotechPolicy.deepenedInterestDescription").Length > 0);
             for (int i = 0; i < 4; i++)
             {
                 AssertTrue(language + " opportunity description " + i,
@@ -463,6 +678,14 @@ namespace DiaryBiotechPolicyTests
             string[] keyedNames =
             {
                 "PawnDiary.Event.Biotech.Growth.Fallback",
+                "PawnDiary.Event.Biotech.Growth.Label",
+                "PawnDiary.Event.Biotech.Growth.Summary.Trait",
+                "PawnDiary.Event.Biotech.Growth.Summary.Identity",
+                "PawnDiary.Event.Biotech.Growth.Summary.NewInterest",
+                "PawnDiary.Event.Biotech.Growth.Summary.DeepenedInterest",
+                "PawnDiary.Event.Biotech.Growth.Summary.Name",
+                "PawnDiary.Event.Biotech.Growth.Summary.Responsibilities",
+                "PawnDiary.Event.Biotech.Growth.Summary.Generic",
                 "PawnDiary.Event.Biotech.Growth.SupporterFallback",
                 "PawnDiary.Event.Biotech.Birth.Fallback",
                 "PawnDiary.Event.Biotech.Birth.PairFallback"
@@ -494,6 +717,24 @@ namespace DiaryBiotechPolicyTests
             };
         }
 
+        private static PendingBiotechGrowthMoment Pending(
+            string pawnId,
+            int age,
+            int birthdayTick,
+            int configuredTick)
+        {
+            return new PendingBiotechGrowthMoment
+            {
+                pawnId = pawnId,
+                birthdayAge = age,
+                birthdayTick = birthdayTick,
+                configuredTick = configuredTick,
+                growthTier = 4,
+                correlationId = BiotechArcKeys.GrowthCorrelation(pawnId, age),
+                birthdaySnapshot = Snapshot(pawnId, age, 4, pawnId, false, null, null)
+            };
+        }
+
         private static GrowthTraitFact Trait(string key, string label, string description)
         {
             return new GrowthTraitFact { traitKey = key, label = label, description = description };
@@ -518,6 +759,7 @@ namespace DiaryBiotechPolicyTests
                 displayName = id,
                 relationToken = relation,
                 lessonCount = evidence,
+                unsummarizedEvidenceCount = evidence,
                 lastObservedTick = tick,
                 eligible = eligible,
                 sameMap = sameMap

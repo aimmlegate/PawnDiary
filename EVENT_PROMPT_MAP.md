@@ -33,6 +33,7 @@ flowchart TD
         T["MemoryThoughtHandler.TryGainMemory<br/>ThoughtSignal<br/>solo or ambient thought"]
         TP["Periodic thought-stage scan<br/>ThoughtProgressionSignal<br/>solo"]
         PR["Periodic pawn progression scan<br/>ProgressionSignal<br/>solo"]
+        BG["Biotech birthday + growth letter lifecycle<br/>GrowthMomentSignal<br/>verified age-7/10/13 child solo"]
         IN["InspirationHandler.TryStartInspiration<br/>InspirationSignal<br/>solo"]
         AB["Ability.Activate overloads<br/>AbilitySignal<br/>cooldown-sampled solo"]
         RO["Pawn_RelationsTracker.AddDirectRelation<br/>RomanceSignal<br/>pair"]
@@ -61,6 +62,7 @@ flowchart TD
     T --> Submit
     TP --> Submit
     PR --> Submit
+    BG --> Submit
     IN --> Submit
     AB --> Submit
     RO --> Submit
@@ -322,6 +324,7 @@ flowchart LR
     end
 
     subgraph ProgressionGroups["Progression groups"]
+        P0["progressionGrowthMoment<br/>Biotech-gated important SoloImportant<br/>verified composite only"]
         P1["progressionSkillPassion<br/>important SoloImportant<br/>passion skill milestones only"]
         P2["progressionPsylink<br/>important SoloImportant"]
         P3["progressionXenotype<br/>important SoloImportant"]
@@ -355,13 +358,14 @@ order-`776` fallback and leave page count and role fan-out unchanged:
 | `ritualAnomalyDeathRefusal` / `775` | `ImbueDeathRefusal` | Establishing death refusal; never claims death or resurrection already occurred. |
 | `ritualAnomalyPsychic` / `776` | token fallback for unknown/modded `PsychicRitual;...` keys | Visible supplied facts only; downstream effect remains uncertain. |
 
-Biotech Phase 0 reserves two exact prompt/settings routes but activates neither one yet:
-`progressionGrowthMoment` / order `800` claims only `BiotechGrowthMoment`, and
-`biotechFamilyBirth` / Tale order `315` claims only `BiotechFamilyBirth`. Their inert catalog payloads
-already choose solo/pair shape from proven writer eligibility, while the pure formatters freeze
-growth/family context keys and keep raw growth tiers, choice counts, work lists, observation counts,
-ticks, and naming deadlines out of prompt context. Phase 1 is the first slice allowed to submit the
-growth type; canonical birth remains inactive until Phase 3.
+Biotech Phases 1–2 activate the exact `progressionGrowthMoment` / order `800` route for
+`BiotechGrowthMoment`; the Tale-domain `biotechFamilyBirth` / order `315` contract remains inactive
+until Phase 3. Birthday prefix/postfix capture plus the dynamically registered growth-letter hooks
+submit only an actual age-7/10/13 before/after mutation. Saved family arcs and exact parent/lesson/play
+evidence now select child solo, supporter solo, or child/supporter pair deterministically. Context carries
+the stable family key, qualitative opportunity/upbringing, verified trait/interest, nickname,
+responsibility, supporter, and writer-role facts while excluding raw tiers, choice/work lists, counts,
+and ticks. The source attaches an N1 `identity_transition` phase; no live lens provider exists yet.
 
 Mod-compatibility groups that materially change routing/shape (all target-gated; Thought rows still
 use the global mood-memory policy):
@@ -407,6 +411,7 @@ Source recording weights:
 | Small talk promotion | Same as strange chat: `base 0.04`, cap `0.6`, bonuses `+0.25/+0.2/+0.2/+0.2`, then shared generation chance. |
 | Work sampling | Scan every `2500` ticks. Chance starts at `0.08`; passion multiplier `1.4`; negative chore/low skill multiplier `1.2`; dark study multiplier `1.5`; recent different work multiplier `0.5`; same work cooldown `180000` ticks; then shared generation chance and clamp. Social/violent work types are ignored. |
 | Pawn progression | Scan every `2500` ticks. Passion skills emit only when reaching configured milestones `8/12/16/20`; first scan baselines. Psylink hediff defNames are XML string matchers; xenotype and royal-title reads go through DLC-safe `DlcContext`. Only psylink level gains and configured major xenotype defNames can currently request a major arc follow-up: default threshold `90`, psylink severity `level / 6 * 100`, and `Sanguophage` as the default major xenotype defName. |
+| Biotech growth ownership | Ages `7/10/13` only. A real configured letter saves detached ownership until choice or `180000`-tick expiry; a provably mismatched pawn age may release after the `60000`-tick grace. Auto-resolved growth diffs immediately. Canonical disable/failure releases Birthday once, while trait/skill baselines and the consumed age advance regardless of page settings. |
 | Ability sampling | `min 0.03`, `max 0.75`, reference cooldown `60000` ticks. `CooldownWeightedChance = min + (max - min) * cooldown / (cooldown + reference)`, then shared generation chance and clamp. Dedup `300` ticks. |
 | Ordinary raid generation delay | `2500` ticks. Drop-pod raids and infestations bypass the delay. |
 | Day reflection highlights | Max `3`. Important event weight is `1` for combat and `0.7` for other important events. Hediff day signal default `0.8`. Opinion shift weight is `0.6 * min(2, abs(delta)/15)`. Filler weight is `0.15`, only when at least two filler moments exist. Weighted selection is without replacement with floor `0.0001`; if selected highlights contain no important signal, the strongest important candidate replaces the lightest selected highlight. |
@@ -562,7 +567,8 @@ sometimes flavors a page. Eight one-shot windows (`VoidMonolithDiscovery`, the e
 `HeartAttack`, `PrisonBreak`, `AncientDanger`) set `keepActive=false`, `promptEnabled=false`, and
 `promptWeight=0`; they record pages but do not bias later prompts. The three activation chapters
 match only reached levels `Stirring`, `Waking`, and `VoidAwakened`, respectively; automatic
-`Gleaming` matches none. Each saves a visible N1 `journey_chapter` reference on
+`Gleaming` matches none. Ordinary Birthday is delayed when a real pending Biotech growth choice owns
+the same age, then is replaced by the verified composite or released at fallback. Each monolith chapter saves a visible N1 `journey_chapter` reference on
 `anomaly-monolith|0`, but no narrative prompt text is selected until a future provider exists.
 
 Six compatibility windows use the same one-shot/no-prompt shape plus the package-gated
@@ -589,7 +595,7 @@ flowchart TD
     Fields --> Common["Common first-person fields:<br/>event, pov, raw evidence, instruction,<br/>event prompt, event enhancement,<br/>important context, setting, tone, last opening line"]
     Fields --> PairFields["Pair extras:<br/>role, with, relationship,<br/>hidden initiator diary for PairImportant and PairCombat"]
     Fields --> CombatFields["Combat extras:<br/>you, weapon"]
-    Fields --> SourceFacts["Context facts:<br/>quest, ritual, ability, raid,<br/>progression skill/psylink/xenotype/title,<br/>royal title, ideoligion role"]
+    Fields --> SourceFacts["Context facts:<br/>quest, ritual, ability, raid,<br/>progression skill/psylink/xenotype/title/growth,<br/>royal title, ideoligion role"]
     Fields --> Boundary["Neutral arrival/death:<br/>event prompt, enhancement, neutral facts,<br/>pawn summary, setting; no persona/enchantment"]
     Fields --> Reflection["Reflections:<br/>day selected highlights and pawn summary<br/>quadrum date range and important count<br/>arc selected year memories and cadence fields"]
     Fields --> Title["Title:<br/>entry text only"]

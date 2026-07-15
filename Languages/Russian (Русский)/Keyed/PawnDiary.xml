@@ -1371,8 +1371,16 @@
   <PawnDiary.Psychotype.Disabled>Психотипы выключены в настройках — взгляд в запросы не попадает.</PawnDiary.Psychotype.Disabled>
   <PawnDiary.Tab.Psychotype>Психотип: {0}</PawnDiary.Tab.Psychotype>
 
-  <!-- Семейства запасного текста B1 закреплены на фазе 0; живые источники появятся позже. -->
+  <!-- В фазе 1 активирован рост B1; строки семейного рождения и взрослого свидетеля пока зарезервированы. -->
+  <PawnDiary.Event.Biotech.Growth.Label>Момент взросления</PawnDiary.Event.Biotech.Growth.Label>
   <PawnDiary.Event.Biotech.Growth.Fallback>{0}: момент взросления в возрасте {1}: {2}.</PawnDiary.Event.Biotech.Growth.Fallback>
+  <PawnDiary.Event.Biotech.Growth.Summary.Trait>новая черта: {0}</PawnDiary.Event.Biotech.Growth.Summary.Trait>
+  <PawnDiary.Event.Biotech.Growth.Summary.Identity>изменение самоощущения</PawnDiary.Event.Biotech.Growth.Summary.Identity>
+  <PawnDiary.Event.Biotech.Growth.Summary.NewInterest>новый интерес к навыку «{0}»</PawnDiary.Event.Biotech.Growth.Summary.NewInterest>
+  <PawnDiary.Event.Biotech.Growth.Summary.DeepenedInterest>усилившийся интерес к навыку «{0}»</PawnDiary.Event.Biotech.Growth.Summary.DeepenedInterest>
+  <PawnDiary.Event.Biotech.Growth.Summary.Name>новое имя: {0}</PawnDiary.Event.Biotech.Growth.Summary.Name>
+  <PawnDiary.Event.Biotech.Growth.Summary.Responsibilities>открылись новые обязанности</PawnDiary.Event.Biotech.Growth.Summary.Responsibilities>
+  <PawnDiary.Event.Biotech.Growth.Summary.Generic>изменились интересы и ощущение себя</PawnDiary.Event.Biotech.Growth.Summary.Generic>
   <PawnDiary.Event.Biotech.Growth.SupporterFallback>{0} размышляет о взрослении {1}: {2}.</PawnDiary.Event.Biotech.Growth.SupporterFallback>
   <PawnDiary.Event.Biotech.Birth.Fallback>{0} вспоминает рождение {1}: {2}.</PawnDiary.Event.Biotech.Birth.Fallback>
   <PawnDiary.Event.Biotech.Birth.PairFallback>{0} и {1} вспоминают рождение {2}: {3}.</PawnDiary.Event.Biotech.Birth.PairFallback>

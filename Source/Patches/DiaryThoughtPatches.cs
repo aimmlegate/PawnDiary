@@ -64,6 +64,9 @@ namespace PawnDiary
 
             DiaryPatchSafety.Run("ThoughtGainPatch", (pawn: __instance.pawn, memory: __0), s =>
             {
+                // Accepted lesson memories are a second exact evidence source. The component
+                // de-duplicates them against PlayLog observations before the normal thought page gate.
+                DiaryGameComponent.Instance?.ObserveBiotechFamilyMemory(s.pawn, s.memory);
                 DiaryEvents.Submit(new ThoughtSignal(s.pawn, s.memory));
             });
         }

@@ -34,6 +34,7 @@
 // Coverage-matrix area (TEST_COVERAGE_PLAN.md §7.3): DLC + optional-mod base-game safety.
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using RimTestRedux;
 using RimWorld;
 using Verse;
@@ -109,6 +110,15 @@ namespace PawnDiary.RimTests
             string ideoligion;
             string ideologicalRole;
             List<string> preceptDefNames;
+            GrowthPawnSnapshot growthSnapshot;
+            bool growthCaptured;
+            HashSet<string> disabledGrowthWorkTypes;
+            FamilyChildSnapshot familyChildSnapshot;
+            FamilyActivityObservation familyActivity;
+            FamilyHediffSnapshot familyHediff;
+            bool familyChildCaptured;
+            bool familyActivityCaptured;
+            bool familyHediffCaptured;
             try
             {
                 xenotype = DlcContext.Xenotype(pawn);
@@ -122,6 +132,23 @@ namespace PawnDiary.RimTests
                 ideoligion = DlcContext.Ideoligion(pawn);
                 ideologicalRole = DlcContext.IdeologicalRole(pawn);
                 preceptDefNames = DlcContext.IdeologyPreceptDefNames(pawn);
+                growthCaptured = DlcContext.TryCaptureGrowthPawn(
+                    pawn,
+                    birthdayAge: 13,
+                    growthTier: 4,
+                    hasNewResponsibilities: false,
+                    out growthSnapshot);
+                disabledGrowthWorkTypes = DlcContext.GrowthDisabledWorkTypeDefNames(pawn);
+                familyChildCaptured = DlcContext.TryCaptureFamilyChild(pawn, out familyChildSnapshot);
+                familyActivityCaptured = DlcContext.TryCaptureFamilyActivity(
+                    pawn,
+                    pawn,
+                    BiotechFamilyActivityKindTokens.Lesson,
+                    out familyActivity);
+                familyHediffCaptured = DlcContext.TryCaptureFamilyHediff(
+                    null,
+                    BiotechFamilyHediffKindTokens.Pregnancy,
+                    out familyHediff);
             }
             catch (Exception exception)
             {
@@ -134,7 +161,8 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 xenotype != null && xenotypeLabel != null && xenotypeDefName != null
                     && royalTitle != null && royalTitleLabel != null && royalTitleDefName != null
-                    && ideoligion != null && ideologicalRole != null && preceptDefNames != null,
+                    && ideoligion != null && ideologicalRole != null && preceptDefNames != null
+                    && disabledGrowthWorkTypes != null,
                 "A DlcContext accessor returned null; callers append these unconditionally and rely on "
                 + "an empty string / empty list instead.");
 
@@ -142,8 +170,13 @@ namespace PawnDiary.RimTests
             RequireDlcBranch(
                 ModsConfig.BiotechActive,
                 "Biotech",
-                emptyExpected: xenotype.Length == 0 && xenotypeLabel.Length == 0 && xenotypeDefName.Length == 0,
-                emptyMessage: "Without Biotech, every xenotype accessor must be empty.");
+                emptyExpected: xenotype.Length == 0 && xenotypeLabel.Length == 0
+                    && xenotypeDefName.Length == 0 && !growthCaptured && growthSnapshot == null
+                    && disabledGrowthWorkTypes.Count == 0
+                    && !familyChildCaptured && familyChildSnapshot == null
+                    && !familyActivityCaptured && familyActivity == null
+                    && !familyHediffCaptured && familyHediff == null,
+                emptyMessage: "Without Biotech, xenotype and growth-snapshot accessors must be empty.");
 
             // Royalty (royal title). Inactive -> all three empty; active -> non-null (titleless test pawn).
             RequireDlcBranch(

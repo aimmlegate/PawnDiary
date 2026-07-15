@@ -34,6 +34,8 @@
         <description>the child reached this moment with an exceptional breadth of possible paths</description>
       </li>
     </opportunityBands>
+    <newInterestDescription>a new interest</newInterestDescription>
+    <deepenedInterestDescription>a deepened interest</deepenedInterestDescription>
 
     <familyActivityExactDefNames>
       <li>BabyPlay</li>
@@ -42,7 +44,21 @@
       <li>Lesson</li>
       <li>Teaching</li>
     </familyActivityPrefixes>
+    <familyLessonAdultThoughtDefNames>
+      <li>GaveLesson</li>
+    </familyLessonAdultThoughtDefNames>
+    <familyLessonChildThoughtDefNames>
+      <li>WasTaught</li>
+    </familyLessonChildThoughtDefNames>
     <familyActivityPairDedupTicks>2500</familyActivityPairDedupTicks>
+    <familyPregnancyHediffDefNames>
+      <li>PregnantHuman</li>
+      <li>Pregnant</li>
+    </familyPregnancyHediffDefNames>
+    <familyLaborHediffDefNames>
+      <li>PregnancyLabor</li>
+      <li>PregnancyLaborPushing</li>
+    </familyLaborHediffDefNames>
 
     <observationBands>
       <li>

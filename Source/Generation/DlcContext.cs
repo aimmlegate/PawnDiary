@@ -11,7 +11,9 @@
 // returns string.Empty when the DLC (or the trait) is absent. Callers can therefore append the
 // result unconditionally: a no-DLC game simply omits the line. New DLC-gated pawn reads belong
 // here, in the same shape. See AGENTS.md ("DLC-safety").
+using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using RimWorld;
 using Verse;
 
@@ -22,6 +24,389 @@ namespace PawnDiary
     /// </summary>
     internal static class DlcContext
     {
+        /// <summary>
+        /// Biotech: copies the live child facts needed for an age-7/10/13 growth diff. The caller
+        /// supplies the exact birthday age/tier captured by the owning hook; no live object escapes.
+        /// </summary>
+        public static bool TryCaptureGrowthPawn(
+            Pawn pawn,
+            int birthdayAge,
+            int growthTier,
+            bool hasNewResponsibilities,
+            out GrowthPawnSnapshot snapshot)
+        {
+            snapshot = null;
+            if (!ModsConfig.BiotechActive
+                || pawn?.ageTracker == null
+                || pawn.RaceProps == null
+                || !pawn.RaceProps.Humanlike
+                || BiotechGrowthStageTokens.ForAge(birthdayAge).Length == 0)
+            {
+                return false;
+            }
+
+            GrowthPawnSnapshot captured = new GrowthPawnSnapshot
+            {
+                pawnId = pawn.GetUniqueLoadID(),
+                displayName = DiaryLineCleaner.CleanLine(pawn.LabelShortCap),
+                biologicalAge = birthdayAge,
+                growthTier = Math.Max(0, Math.Min(8,
+                    growthTier >= 0 ? growthTier : pawn.ageTracker.GrowthTier)),
+                shortName = DiaryLineCleaner.CleanLine(pawn.LabelShort),
+                hasNewResponsibilities = hasNewResponsibilities,
+                capturedTick = Find.TickManager?.TicksGame ?? 0
+            };
+
+            CaptureGrowthTraits(pawn, captured.traits);
+            CaptureGrowthSkills(pawn, captured.skills);
+            snapshot = captured;
+            return !string.IsNullOrWhiteSpace(captured.pawnId);
+        }
+
+        /// <summary>
+        /// Biotech growth adapter: stable trait key for a committed choice parameter. The NoTrait
+        /// sentinel is deliberately returned as <c>NoTrait</c> so the pure policy can reject it.
+        /// </summary>
+        public static string GrowthTraitKey(Trait trait)
+        {
+            if (trait == null)
+            {
+                return string.Empty;
+            }
+
+            if (ReferenceEquals(trait, ChoiceLetter_GrowthMoment.NoTrait))
+            {
+                return "NoTrait";
+            }
+
+            string defName = trait.def?.defName;
+            return string.Equals(defName, "NoTrait", StringComparison.OrdinalIgnoreCase)
+                ? "NoTrait"
+                : TraitProgressionPolicy.BuildTraitKey(defName, trait.Degree);
+        }
+
+        /// <summary>
+        /// Captures the pawn's currently disabled work-type defNames so the birthday owner can prove
+        /// that at least one responsibility actually opened without sending work lists to the prompt.
+        /// </summary>
+        public static HashSet<string> GrowthDisabledWorkTypeDefNames(Pawn pawn)
+        {
+            HashSet<string> result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!ModsConfig.BiotechActive || pawn == null)
+            {
+                return result;
+            }
+
+            List<WorkTypeDef> disabled = pawn.GetDisabledWorkTypes(permanentOnly: false);
+            if (disabled == null)
+            {
+                return result;
+            }
+
+            for (int i = 0; i < disabled.Count; i++)
+            {
+                string defName = disabled[i]?.defName;
+                if (!string.IsNullOrWhiteSpace(defName))
+                {
+                    result.Add(defName);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Biotech: copies exact pregnancy/labor participants after HediffWithParents.SetParents has
+        /// committed them. The kind token is classified from XML before this adapter is called.
+        /// </summary>
+        public static bool TryCaptureFamilyHediff(
+            HediffWithParents hediff,
+            string kindToken,
+            out FamilyHediffSnapshot snapshot)
+        {
+            snapshot = null;
+            Pawn birther = hediff?.pawn;
+            if (!ModsConfig.BiotechActive
+                || birther?.RaceProps == null
+                || !birther.RaceProps.Humanlike
+                || (kindToken != BiotechFamilyHediffKindTokens.Pregnancy
+                    && kindToken != BiotechFamilyHediffKindTokens.Labor))
+            {
+                return false;
+            }
+
+            string hediffId = hediff.GetUniqueLoadID();
+            string birtherId = birther.GetUniqueLoadID();
+            if (string.IsNullOrWhiteSpace(hediffId) || string.IsNullOrWhiteSpace(birtherId))
+            {
+                return false;
+            }
+
+            Pawn mother = hediff.Mother;
+            Pawn father = hediff.Father;
+            snapshot = new FamilyHediffSnapshot
+            {
+                kindToken = kindToken,
+                hediffId = hediffId,
+                birtherId = birtherId,
+                birtherName = FamilyPawnName(birther),
+                geneticMotherId = FamilyPawnId(mother),
+                geneticMotherName = FamilyPawnName(mother),
+                fatherId = FamilyPawnId(father),
+                fatherName = FamilyPawnName(father),
+                observedTick = Find.TickManager?.TicksGame ?? 0
+            };
+            return true;
+        }
+
+        /// <summary>
+        /// Biotech: copies one living player baby/child and exact Parent/ParentBirth relations. This
+        /// is used both when growth occurs and for the silent one-time baseline of older saves.
+        /// </summary>
+        public static bool TryCaptureFamilyChild(Pawn child, out FamilyChildSnapshot snapshot)
+        {
+            snapshot = null;
+            if (!ModsConfig.BiotechActive
+                || child?.relations == null
+                || child.RaceProps == null
+                || !child.RaceProps.Humanlike
+                || child.Faction != Faction.OfPlayer
+                || child.Dead
+                || (child.DevelopmentalStage != DevelopmentalStage.Baby
+                    && child.DevelopmentalStage != DevelopmentalStage.Child))
+            {
+                return false;
+            }
+
+            string childId = child.GetUniqueLoadID();
+            if (string.IsNullOrWhiteSpace(childId))
+            {
+                return false;
+            }
+
+            FamilyChildSnapshot captured = new FamilyChildSnapshot
+            {
+                childId = childId,
+                childName = FamilyPawnName(child),
+                observedTick = Find.TickManager?.TicksGame ?? 0
+            };
+            List<DirectPawnRelation> relations = child.relations.DirectRelations;
+            if (relations != null)
+            {
+                for (int i = 0; i < relations.Count; i++)
+                {
+                    DirectPawnRelation relation = relations[i];
+                    Pawn adult = relation?.otherPawn;
+                    string role = string.Empty;
+                    if (relation?.def == PawnRelationDefOf.ParentBirth)
+                    {
+                        role = BiotechFamilyRoleTokens.BirthParent;
+                    }
+                    else if (relation?.def == PawnRelationDefOf.Parent)
+                    {
+                        role = BiotechFamilyRoleTokens.Parent;
+                    }
+
+                    string adultId = FamilyPawnId(adult);
+                    if (role.Length > 0 && adultId.Length > 0)
+                    {
+                        captured.parents.Add(new FamilyParticipantFact
+                        {
+                            pawnId = adultId,
+                            displayName = FamilyPawnName(adult),
+                            roleToken = role
+                        });
+                    }
+                }
+            }
+
+            snapshot = captured;
+            return true;
+        }
+
+        /// <summary>
+        /// Biotech: verifies adult/child developmental roles and copies one exact observed activity.
+        /// Proximity and diary eligibility are intentionally not converted into relationship facts.
+        /// </summary>
+        public static bool TryCaptureFamilyActivity(
+            Pawn adult,
+            Pawn child,
+            string kindToken,
+            out FamilyActivityObservation observation)
+        {
+            observation = null;
+            if (!ModsConfig.BiotechActive
+                || adult?.relations == null
+                || child?.relations == null
+                || adult.RaceProps == null
+                || child.RaceProps == null
+                || !adult.RaceProps.Humanlike
+                || !child.RaceProps.Humanlike
+                || adult.DevelopmentalStage != DevelopmentalStage.Adult
+                || (child.DevelopmentalStage != DevelopmentalStage.Baby
+                    && child.DevelopmentalStage != DevelopmentalStage.Child)
+                || child.Faction != Faction.OfPlayer
+                || adult == child
+                || (kindToken != BiotechFamilyActivityKindTokens.BabyPlay
+                    && kindToken != BiotechFamilyActivityKindTokens.Lesson))
+            {
+                return false;
+            }
+
+            string adultId = FamilyPawnId(adult);
+            string childId = FamilyPawnId(child);
+            if (adultId.Length == 0 || childId.Length == 0)
+            {
+                return false;
+            }
+
+            string relationToken = string.Empty;
+            if (PawnRelationDefOf.ParentBirth != null
+                && child.relations.DirectRelationExists(PawnRelationDefOf.ParentBirth, adult))
+            {
+                relationToken = BiotechFamilyRoleTokens.BirthParent;
+            }
+            else if (PawnRelationDefOf.Parent != null
+                && child.relations.DirectRelationExists(PawnRelationDefOf.Parent, adult))
+            {
+                relationToken = BiotechFamilyRoleTokens.Parent;
+            }
+
+            observation = new FamilyActivityObservation
+            {
+                kindToken = kindToken,
+                adultId = adultId,
+                adultName = FamilyPawnName(adult),
+                childId = childId,
+                childName = FamilyPawnName(child),
+                relationToken = relationToken,
+                observedTick = Find.TickManager?.TicksGame ?? 0
+            };
+            return true;
+        }
+
+        private static string FamilyPawnId(Pawn pawn)
+        {
+            return pawn == null ? string.Empty : pawn.GetUniqueLoadID() ?? string.Empty;
+        }
+
+        private static string FamilyPawnName(Pawn pawn)
+        {
+            return pawn == null ? string.Empty : DiaryLineCleaner.CleanLine(pawn.LabelShortCap);
+        }
+
+        private static void CaptureGrowthTraits(Pawn pawn, List<GrowthTraitFact> destination)
+        {
+            List<Trait> traits = pawn?.story?.traits?.allTraits;
+            if (traits == null)
+            {
+                return;
+            }
+
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < traits.Count; i++)
+            {
+                Trait trait = traits[i];
+                string key = GrowthTraitKey(trait);
+                if (string.IsNullOrWhiteSpace(key) || !seen.Add(key))
+                {
+                    continue;
+                }
+
+                destination.Add(new GrowthTraitFact
+                {
+                    traitKey = key,
+                    label = GrowthTraitLabel(pawn, trait),
+                    description = GrowthTraitDescription(pawn, trait)
+                });
+            }
+        }
+
+        private static void CaptureGrowthSkills(Pawn pawn, List<GrowthSkillFact> destination)
+        {
+            if (pawn?.skills == null)
+            {
+                return;
+            }
+
+            List<SkillDef> definitions = DefDatabase<SkillDef>.AllDefsListForReading;
+            for (int i = 0; i < definitions.Count; i++)
+            {
+                SkillDef definition = definitions[i];
+                SkillRecord skill = definition == null ? null : pawn.skills.GetSkill(definition);
+                if (skill == null || string.IsNullOrWhiteSpace(definition.defName))
+                {
+                    continue;
+                }
+
+                destination.Add(new GrowthSkillFact
+                {
+                    skillDefName = definition.defName,
+                    label = DiaryLineCleaner.CleanLine(definition.LabelCap),
+                    passion = GrowthPassionToken(skill.passion),
+                    level = skill.Level
+                });
+            }
+        }
+
+        private static string GrowthPassionToken(Passion passion)
+        {
+            if (passion == Passion.Major) return BiotechPassionTokens.Major;
+            if (passion == Passion.Minor) return BiotechPassionTokens.Minor;
+            return BiotechPassionTokens.None;
+        }
+
+        private static string GrowthTraitLabel(Pawn pawn, Trait trait)
+        {
+            string label = null;
+            try
+            {
+                label = trait?.CurrentData?.GetLabelCapFor(pawn);
+            }
+            catch
+            {
+                // Malformed modded trait data should lose only its localized label.
+            }
+
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                try
+                {
+                    label = trait?.LabelCap;
+                }
+                catch
+                {
+                    // Fall through to the stable defName below.
+                }
+            }
+
+            string cleaned = DiaryLineCleaner.CleanLine(label);
+            return string.IsNullOrWhiteSpace(cleaned) ? (trait?.def?.defName ?? string.Empty) : cleaned;
+        }
+
+        private static string GrowthTraitDescription(Pawn pawn, Trait trait)
+        {
+            string resolved = null;
+            try
+            {
+                string description = trait?.CurrentData?.description;
+                if (!string.IsNullOrWhiteSpace(description))
+                {
+                    resolved = description.Formatted(pawn.Named("PAWN")).AdjustedFor(pawn).Resolve();
+                }
+            }
+            catch
+            {
+                // A label-only fact is still truthful and useful.
+            }
+
+            string cleaned = DiaryLineCleaner.CleanLine(resolved);
+            const int MaximumDescriptionCharacters = 400;
+            return cleaned.Length <= MaximumDescriptionCharacters
+                ? cleaned
+                : cleaned.Substring(0, MaximumDescriptionCharacters).TrimEnd() + "…";
+        }
+
         /// <summary>
         /// Biotech: the pawn's xenotype label (e.g. "Sanguophage", "Hussar"). Empty without
         /// Biotech, and empty for a plain Baseliner human because that default carries no signal.

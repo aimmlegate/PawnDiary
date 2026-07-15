@@ -1,6 +1,7 @@
-// Plain contracts and stable schema tokens for Biotech growth/family work. Phase 0 deliberately
-// contains no Pawn, Hediff, ChoiceLetter, DefDatabase, settings, or save mutation: later guarded
-// adapters will copy live RimWorld state into these DTOs before calling the pure policies.
+// Plain contracts and stable schema tokens for Biotech growth/family work. These types deliberately
+// contain no Pawn, Hediff, ChoiceLetter, DefDatabase, settings, or save mutation: guarded runtime
+// adapters copy live RimWorld state into these DTOs before calling the pure policies. Verse-facing
+// partial declarations add Scribe only in Source/Models, keeping this file standalone-test friendly.
 //
 // New to C#/RimWorld? See AGENTS.md ("architecture barriers" and "DLC-safety").
 using System.Collections.Generic;
@@ -167,6 +168,27 @@ namespace PawnDiary.Capture
         }
     }
 
+    /// <summary>Stable categories copied from guarded live pregnancy/labor Hediffs.</summary>
+    internal static class BiotechFamilyHediffKindTokens
+    {
+        public const string Pregnancy = "pregnancy";
+        public const string Labor = "labor";
+    }
+
+    /// <summary>Stable categories for exact observed child-development activity.</summary>
+    internal static class BiotechFamilyActivityKindTokens
+    {
+        public const string BabyPlay = "baby_play";
+        public const string Lesson = "lesson";
+    }
+
+    /// <summary>Stable orientation tokens for accepted social-memory evidence.</summary>
+    internal static class BiotechFamilyMemoryKindTokens
+    {
+        public const string AdultRememberedLesson = "adult_remembered_lesson";
+        public const string ChildRememberedLesson = "child_remembered_lesson";
+    }
+
     /// <summary>Exact birth outcomes proven at the canonical ApplyBirthOutcome boundary.</summary>
     internal static class BiotechBirthOutcomeTokens
     {
@@ -184,7 +206,7 @@ namespace PawnDiary.Capture
     }
 
     /// <summary>One trait identity copied on the main thread.</summary>
-    internal class GrowthTraitFact
+    internal partial class GrowthTraitFact
     {
         public string traitKey = string.Empty;
         public string label = string.Empty;
@@ -192,7 +214,7 @@ namespace PawnDiary.Capture
     }
 
     /// <summary>One skill/passion row copied before or after a growth choice.</summary>
-    internal class GrowthSkillFact
+    internal partial class GrowthSkillFact
     {
         public string skillDefName = string.Empty;
         public string label = string.Empty;
@@ -201,7 +223,7 @@ namespace PawnDiary.Capture
     }
 
     /// <summary>Plain before/after snapshot for one child at a growth birthday.</summary>
-    internal class GrowthPawnSnapshot
+    internal partial class GrowthPawnSnapshot
     {
         public string pawnId = string.Empty;
         public string displayName = string.Empty;
@@ -212,6 +234,23 @@ namespace PawnDiary.Capture
         public int capturedTick;
         public List<GrowthTraitFact> traits = new List<GrowthTraitFact>();
         public List<GrowthSkillFact> skills = new List<GrowthSkillFact>();
+    }
+
+    /// <summary>
+    /// Saved, live-reference-free ownership of a configured growth letter. RimWorld saves the letter;
+    /// this row saves only the event-time facts needed to finish or safely release its birthday later.
+    /// </summary>
+    internal partial class PendingBiotechGrowthMoment
+    {
+        public string pawnId = string.Empty;
+        public int birthdayAge;
+        public int birthdayTick;
+        public int configuredTick;
+        public int growthTier;
+        public bool newResponsibilities;
+        public string correlationId = string.Empty;
+        public string familyArcId = string.Empty;
+        public GrowthPawnSnapshot birthdaySnapshot;
     }
 
     /// <summary>Committed-choice facts that the before/after diff must independently verify.</summary>
@@ -281,8 +320,14 @@ namespace PawnDiary.Capture
         public int birthNamingPollTicks = 2500;
         public int birthNamingGraceTicks = 60000;
         public int maximumBirthWriters = 2;
+        public string newInterestDescription = string.Empty;
+        public string deepenedInterestDescription = string.Empty;
         public List<string> familyActivityExactDefNames = new List<string>();
         public List<string> familyActivityPrefixes = new List<string>();
+        public List<string> familyPregnancyHediffDefNames = new List<string>();
+        public List<string> familyLaborHediffDefNames = new List<string>();
+        public List<string> familyLessonAdultThoughtDefNames = new List<string>();
+        public List<string> familyLessonChildThoughtDefNames = new List<string>();
         public List<BiotechOpportunityBandRule> opportunityBands = new List<BiotechOpportunityBandRule>();
         public List<BiotechObservationBandRule> observationBands = new List<BiotechObservationBandRule>();
 
@@ -325,6 +370,9 @@ namespace PawnDiary.Capture
         public int lessonCount;
         public int babyPlayCount;
         public int careCount;
+        public int summarizedLessonCount;
+        public int summarizedBabyPlayCount;
+        public int summarizedCareCount;
         public int firstObservedTick;
         public int lastObservedTick;
     }
@@ -338,6 +386,7 @@ namespace PawnDiary.Capture
         public int lessonCount;
         public int babyPlayCount;
         public int careCount;
+        public int unsummarizedEvidenceCount;
         public int lastObservedTick;
         public bool eligible;
         public bool sameMap;
@@ -353,7 +402,58 @@ namespace PawnDiary.Capture
         public int evidenceCount;
     }
 
-    /// <summary>Future deep-scribed family arc contract; Phase 0 freezes fields without persisting them.</summary>
+    /// <summary>Guarded event-time pregnancy or labor fact with no live Pawn/Hediff reference.</summary>
+    internal class FamilyHediffSnapshot
+    {
+        public string kindToken = string.Empty;
+        public string hediffId = string.Empty;
+        public string birtherId = string.Empty;
+        public string birtherName = string.Empty;
+        public string geneticMotherId = string.Empty;
+        public string geneticMotherName = string.Empty;
+        public string fatherId = string.Empty;
+        public string fatherName = string.Empty;
+        public int observedTick;
+    }
+
+    /// <summary>Guarded living-child identity plus exact vanilla parent relation facts.</summary>
+    internal class FamilyChildSnapshot
+    {
+        public string childId = string.Empty;
+        public string childName = string.Empty;
+        public int observedTick;
+        public List<FamilyParticipantFact> parents = new List<FamilyParticipantFact>();
+    }
+
+    /// <summary>One exact lesson or BabyPlay observation, detached from live game objects.</summary>
+    internal class FamilyActivityObservation
+    {
+        public string kindToken = string.Empty;
+        public string adultId = string.Empty;
+        public string adultName = string.Empty;
+        public string childId = string.Empty;
+        public string childName = string.Empty;
+        public string relationToken = string.Empty;
+        public int observedTick;
+    }
+
+    /// <summary>Runtime-only liveness/reference facts used by the pure retention decision.</summary>
+    internal class FamilyArcRetentionInput
+    {
+        public bool childAliveAndDeveloping;
+        public bool hasPendingReference;
+        public bool hasSavedEventReference;
+    }
+
+    /// <summary>Bounded retention action for a saved family arc.</summary>
+    internal enum FamilyArcRetentionAction
+    {
+        Keep,
+        Compact,
+        Remove
+    }
+
+    /// <summary>Deep-scribed family continuity shared by upbringing, growth, and later birth capture.</summary>
     internal partial class BiotechFamilyArcState
     {
         public string familyArcId = string.Empty;
@@ -376,6 +476,7 @@ namespace PawnDiary.Capture
         public bool namingResolved;
         public bool closed;
         public bool baselineOnly;
+        public bool detailsCompacted;
         public List<FamilySupportObservationState> supporters = new List<FamilySupportObservationState>();
         public List<int> recordedGrowthAges = new List<int>();
         public int lastSummarizedObservationTick;

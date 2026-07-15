@@ -12,6 +12,7 @@
     <Compile Include="..\..\Source\Capture\Biotech\BiotechContracts.cs" Link="BiotechContracts.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\GrowthMomentPolicy.cs" Link="GrowthMomentPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\FamilySupportPolicy.cs" Link="FamilySupportPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Biotech\FamilyArcPolicy.cs" Link="FamilyArcPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\BirthOwnershipPolicy.cs" Link="BirthOwnershipPolicy.cs" />
   </ItemGroup>
 </Project>

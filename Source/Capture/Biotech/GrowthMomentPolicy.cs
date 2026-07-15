@@ -283,6 +283,249 @@ namespace PawnDiary.Capture
         }
     }
 
+    /// <summary>
+    /// Pure normalization and lookup for saved postponed growth choices. Runtime code owns pawn and
+    /// letter resolution; this helper owns only stable IDs, ages, ticks, and detached snapshots.
+    /// </summary>
+    internal static class PendingBiotechGrowthMomentPolicy
+    {
+        /// <summary>
+        /// Repairs rows, drops malformed entries, and keeps the newest row for each pawn/age pair.
+        /// Future ticks are clamped to the current game tick so corrupt saves cannot postpone cleanup.
+        /// </summary>
+        public static List<PendingBiotechGrowthMoment> Normalize(
+            IList<PendingBiotechGrowthMoment> source,
+            int currentTick)
+        {
+            int now = Math.Max(0, currentTick);
+            Dictionary<string, PendingBiotechGrowthMoment> newestByKey =
+                new Dictionary<string, PendingBiotechGrowthMoment>(StringComparer.Ordinal);
+            if (source == null)
+            {
+                return new List<PendingBiotechGrowthMoment>();
+            }
+
+            for (int i = 0; i < source.Count; i++)
+            {
+                PendingBiotechGrowthMoment row = NormalizeRow(source[i], now);
+                if (row == null)
+                {
+                    continue;
+                }
+
+                string key = row.pawnId + "|" + row.birthdayAge;
+                PendingBiotechGrowthMoment existing;
+                if (!newestByKey.TryGetValue(key, out existing)
+                    || row.birthdayTick > existing.birthdayTick
+                    || (row.birthdayTick == existing.birthdayTick
+                        && row.configuredTick >= existing.configuredTick))
+                {
+                    newestByKey[key] = row;
+                }
+            }
+
+            List<PendingBiotechGrowthMoment> result =
+                new List<PendingBiotechGrowthMoment>(newestByKey.Values);
+            result.Sort((left, right) =>
+            {
+                int pawn = string.CompareOrdinal(left.pawnId, right.pawnId);
+                return pawn != 0 ? pawn : left.birthdayAge.CompareTo(right.birthdayAge);
+            });
+            return result;
+        }
+
+        /// <summary>Finds the newest unresolved row for one exact pawn and canonical growth age.</summary>
+        public static PendingBiotechGrowthMoment FindNewest(
+            IList<PendingBiotechGrowthMoment> source,
+            string pawnId,
+            int birthdayAge)
+        {
+            string id = (pawnId ?? string.Empty).Trim();
+            if (id.Length == 0 || BiotechGrowthStageTokens.ForAge(birthdayAge).Length == 0 || source == null)
+            {
+                return null;
+            }
+
+            PendingBiotechGrowthMoment newest = null;
+            for (int i = 0; i < source.Count; i++)
+            {
+                PendingBiotechGrowthMoment row = source[i];
+                if (row == null
+                    || row.birthdayAge != birthdayAge
+                    || !string.Equals(row.pawnId, id, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (newest == null
+                    || row.birthdayTick > newest.birthdayTick
+                    || (row.birthdayTick == newest.birthdayTick
+                        && row.configuredTick > newest.configuredTick))
+                {
+                    newest = row;
+                }
+            }
+
+            return newest;
+        }
+
+        /// <summary>True once elapsed ticks meet the XML-owned pending-row expiry.</summary>
+        public static bool IsExpired(PendingBiotechGrowthMoment row, int currentTick, int expiryTicks)
+        {
+            if (row == null || expiryTicks <= 0)
+            {
+                return false;
+            }
+
+            int now = Math.Max(0, currentTick);
+            int started = Math.Max(0, row.birthdayTick);
+            return now >= started && now - started >= expiryTicks;
+        }
+
+        /// <summary>
+        /// True once the XML grace has elapsed. Runtime code combines this with concrete evidence that
+        /// the pawn can no longer match the saved birthday; this helper never guesses about live letters.
+        /// </summary>
+        public static bool IsPastFallbackGrace(
+            PendingBiotechGrowthMoment row,
+            int currentTick,
+            int graceTicks)
+        {
+            if (row == null || graceTicks < 0)
+            {
+                return false;
+            }
+
+            int now = Math.Max(0, currentTick);
+            int started = Math.Max(0, row.configuredTick);
+            return now >= started && now - started >= graceTicks;
+        }
+
+        private static PendingBiotechGrowthMoment NormalizeRow(
+            PendingBiotechGrowthMoment row,
+            int currentTick)
+        {
+            if (row == null)
+            {
+                return null;
+            }
+
+            row.pawnId = (row.pawnId ?? string.Empty).Trim();
+            if (row.pawnId.Length == 0 || row.pawnId.IndexOf('|') >= 0
+                || BiotechGrowthStageTokens.ForAge(row.birthdayAge).Length == 0)
+            {
+                return null;
+            }
+
+            row.birthdayTick = ClampTick(row.birthdayTick, currentTick);
+            row.configuredTick = ClampTick(row.configuredTick, currentTick);
+            if (row.configuredTick < row.birthdayTick)
+            {
+                row.configuredTick = row.birthdayTick;
+            }
+
+            row.growthTier = Math.Max(0, Math.Min(8, row.growthTier));
+            row.correlationId = BiotechArcKeys.GrowthCorrelation(row.pawnId, row.birthdayAge);
+            row.familyArcId = (row.familyArcId ?? string.Empty).Trim();
+            if (row.familyArcId.Length == 0 || row.familyArcId.IndexOf('|') < 0)
+            {
+                row.familyArcId = BiotechArcKeys.FamilyFromChild(row.pawnId);
+            }
+            row.birthdaySnapshot = NormalizeSnapshot(
+                row.birthdaySnapshot,
+                row.pawnId,
+                row.birthdayAge,
+                row.growthTier,
+                row.birthdayTick);
+            return row.birthdaySnapshot == null ? null : row;
+        }
+
+        private static GrowthPawnSnapshot NormalizeSnapshot(
+            GrowthPawnSnapshot snapshot,
+            string pawnId,
+            int birthdayAge,
+            int growthTier,
+            int birthdayTick)
+        {
+            if (snapshot == null)
+            {
+                return null;
+            }
+
+            snapshot.pawnId = pawnId;
+            snapshot.displayName = (snapshot.displayName ?? string.Empty).Trim();
+            snapshot.biologicalAge = birthdayAge;
+            snapshot.growthTier = growthTier;
+            snapshot.shortName = (snapshot.shortName ?? string.Empty).Trim();
+            snapshot.capturedTick = ClampTick(snapshot.capturedTick, birthdayTick);
+            snapshot.traits = NormalizeTraits(snapshot.traits);
+            snapshot.skills = NormalizeSkills(snapshot.skills);
+            return snapshot;
+        }
+
+        private static List<GrowthTraitFact> NormalizeTraits(IList<GrowthTraitFact> source)
+        {
+            List<GrowthTraitFact> result = new List<GrowthTraitFact>();
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (source == null)
+            {
+                return result;
+            }
+
+            for (int i = 0; i < source.Count; i++)
+            {
+                GrowthTraitFact fact = source[i];
+                string key = (fact?.traitKey ?? string.Empty).Trim();
+                if (key.Length == 0 || !seen.Add(key))
+                {
+                    continue;
+                }
+
+                fact.traitKey = key;
+                fact.label = (fact.label ?? string.Empty).Trim();
+                fact.description = (fact.description ?? string.Empty).Trim();
+                result.Add(fact);
+            }
+
+            result.Sort((left, right) => string.CompareOrdinal(left.traitKey, right.traitKey));
+            return result;
+        }
+
+        private static List<GrowthSkillFact> NormalizeSkills(IList<GrowthSkillFact> source)
+        {
+            List<GrowthSkillFact> result = new List<GrowthSkillFact>();
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (source == null)
+            {
+                return result;
+            }
+
+            for (int i = 0; i < source.Count; i++)
+            {
+                GrowthSkillFact fact = source[i];
+                string key = (fact?.skillDefName ?? string.Empty).Trim();
+                if (key.Length == 0 || !seen.Add(key))
+                {
+                    continue;
+                }
+
+                fact.skillDefName = key;
+                fact.label = (fact.label ?? string.Empty).Trim();
+                fact.passion = BiotechPassionTokens.Normalize(fact.passion);
+                fact.level = Math.Max(0, fact.level);
+                result.Add(fact);
+            }
+
+            result.Sort((left, right) => string.CompareOrdinal(left.skillDefName, right.skillDefName));
+            return result;
+        }
+
+        private static int ClampTick(int tick, int maximum)
+        {
+            return Math.Max(0, Math.Min(Math.Max(0, maximum), tick));
+        }
+    }
+
     /// <summary>Pure, fixed-order game-context formatting for a verified growth mutation.</summary>
     internal static class GrowthMomentContextFormatter
     {
@@ -294,7 +537,9 @@ namespace PawnDiary.Capture
             string opportunityDescription,
             string upbringingDescription,
             string initiatorRole,
-            string recipientRole)
+            string recipientRole,
+            string newInterestDescription = "",
+            string deepenedInterestDescription = "")
         {
             if (mutation == null)
             {
@@ -330,8 +575,8 @@ namespace PawnDiary.Capture
                 Append(builder, BiotechContextKeys.NewInterestPrefix + ordinal, passion.label);
                 Append(builder, BiotechContextKeys.InterestChangePrefix + ordinal,
                     BiotechPassionTokens.Rank(passion.beforePassion) == 0
-                        ? "new interest"
-                        : "deepened interest");
+                        ? newInterestDescription
+                        : deepenedInterestDescription);
             }
 
             if (mutation.nicknameChanged)

@@ -3,6 +3,7 @@
 // milestones, yearly arc counts, and recently used memory IDs so prompts do not repeat themselves.
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using Verse;
 
 namespace PawnDiary
@@ -49,6 +50,9 @@ namespace PawnDiary
         // baselines the pawn's existing traits silently instead of spamming a page for each one.
         public bool baselineTraitGainOnNextScan = true;
         public bool baselineProgressionOnNextScan = true;
+        // Additive nested Biotech state. Old/no-DLC saves load a harmless empty row; live DLC reads
+        // remain in DlcContext and never occur from this save model.
+        public BiotechPawnProgressionState biotechProgressionState;
 
         public void ExposeData()
         {
@@ -61,6 +65,7 @@ namespace PawnDiary
             Scribe_Collections.Look(ref knownTraitKeys, "knownTraitKeys", LookMode.Value);
             Scribe_Values.Look(ref baselineTraitGainOnNextScan, "baselineTraitGainOnNextScan", true);
             Scribe_Values.Look(ref baselineProgressionOnNextScan, "baselineProgressionOnNextScan", true);
+            Scribe_Deep.Look(ref biotechProgressionState, BiotechSaveKeys.PawnProgressionState);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -105,6 +110,12 @@ namespace PawnDiary
             {
                 knownTraitKeys = new List<string>();
             }
+
+            if (biotechProgressionState == null)
+            {
+                biotechProgressionState = new BiotechPawnProgressionState();
+            }
+            biotechProgressionState.Normalize();
 
             HashSet<string> seenTraitKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i < knownTraitKeys.Count; i++)
@@ -163,6 +174,18 @@ namespace PawnDiary
                 skillDefName = key,
                 highestMilestone = Math.Max(0, highestMilestone)
             });
+        }
+
+        /// <summary>Returns the normalized nested Biotech bookkeeping row.</summary>
+        public BiotechPawnProgressionState EnsureBiotechState()
+        {
+            if (biotechProgressionState == null)
+            {
+                biotechProgressionState = new BiotechPawnProgressionState();
+            }
+
+            biotechProgressionState.Normalize();
+            return biotechProgressionState;
         }
     }
 

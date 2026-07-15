@@ -151,7 +151,7 @@ the first DLC feature diff.
 > exact package-gated ritual families plus the retained generic fallback; A0.2 split Stirring,
 > Waking, and Void Awakened into mutually exclusive windows and attached visible source-owned N1
 > chapter references. No provider, new Harmony hook, hidden Anomaly state, or extra page source was
-> added. The next permitted implementation slice is Wave 3 / Biotech Phase 0.
+> added. Wave 3 is now active; Biotech Phases 0–1 are complete and Phase 2 is next.
 
 ### Implement in this exact order
 
@@ -174,10 +174,12 @@ This is the low-cost prompt-quality release. Do not continue into A1 study/conta
 
 ## 8. Wave 3 — Biotech family flagship
 
-> **Implementation status (2026-07-15): in progress.** Biotech Phase 0 is complete: B1 contracts,
-> pure policy, stable event/arc/save/context keys, XML policy/groups, localization, and legacy settings
-> inheritance are frozen with no live hook or page behavior. The next permitted slice is Biotech
-> Phase 1 / growth observation and ordinary birthday fallback.
+> **Implementation status (2026-07-15): in progress.** Biotech Phases 0–2 are complete. Stable B1
+> contracts/policy/settings now feed live, atomic birthday/growth-letter ownership with saved postponed
+> rows, auto/choice diffs, mature ordinary fallback, progression consumption, saved family continuity,
+> exact lesson/play observations, truthful child/supporter pages, and source-owned N1 identity evidence.
+> Canonical birth remains unchanged. The next permitted slice is Narrative N2-B / the Biotech
+> family/identity provider and required evidence enrichment.
 
 ### Implement in this exact order
 
