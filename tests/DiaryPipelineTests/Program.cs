@@ -54,6 +54,7 @@ namespace DiaryPipelineTests
             TestEventWindowPolicy();
             TestAnomalySemanticPrecisionXmlPolicy();
             TestOdysseyExistingIntegrationXmlPolicy();
+            TestOdysseyJourneyFoundationXmlContract();
             TestProgressionMilestonePolicy();
             TestPsylinkProgressionLevelPolicy();
             TestArcReflectionSchedulePolicy();
@@ -3121,6 +3122,81 @@ namespace DiaryPipelineTests
                 HasListValue(vacuum, "hediffDefNames", "VacuumBurn"));
         }
 
+        // O1.2 adds a no-DLC-safe policy Def and two mobile-home prompt strings. This fixture locks
+        // their serialized identities because later journey hooks and old saves depend on them.
+        private static void TestOdysseyJourneyFoundationXmlContract()
+        {
+            XDocument policyDocument = XDocument.Load(RepoPath("1.6", "Defs", "DiaryOdysseyPolicyDefs.xml"));
+            XElement policy = FindDef(
+                policyDocument, "PawnDiary.DiaryOdysseyPolicyDef", "Diary_Odyssey");
+            AssertTrue("Odyssey journey policy row exists", policy != null);
+            AssertEqual("Odyssey package identity is frozen",
+                "Ludeon.RimWorld.Odyssey", ChildValue(policy, "packageId"));
+            AssertEqual("Odyssey launch group identity is frozen",
+                "ritualGravship", ChildValue(policy, "launchGroupKey"));
+            AssertEqual("Odyssey landing group identity is frozen",
+                "odysseyGravshipLanding", ChildValue(policy, "landingGroupKey"));
+            AssertEqual("Odyssey launch writer cap", "2", ChildValue(policy, "maximumLaunchWriters"));
+            AssertEqual("Odyssey landing writer cap", "2", ChildValue(policy, "maximumLandingWriters"));
+
+            string[] requiredReasons =
+            {
+                "first_orbit",
+                "new_biome_category",
+                "major_destination",
+                "homecoming",
+                "long_journey",
+                "rough_landing"
+            };
+            HashSet<string> actualReasons = new HashSet<string>(StringComparer.Ordinal);
+            XElement reasonRules = policy?.Element("reasonRules");
+            if (reasonRules != null)
+            {
+                foreach (XElement rule in reasonRules.Elements("li"))
+                {
+                    actualReasons.Add(ChildValue(rule, "reasonToken"));
+                }
+            }
+
+            AssertEqual("Odyssey has exactly six frozen landing reasons", 6, actualReasons.Count);
+            for (int i = 0; i < requiredReasons.Length; i++)
+            {
+                AssertTrue("Odyssey landing reason exists: " + requiredReasons[i],
+                    actualReasons.Contains(requiredReasons[i]));
+            }
+
+            AssertTrue("Odyssey biome categories include orbit",
+                HasStructuredListRow(policy, "biomeCategories", "defName", "Space", "categoryToken", "orbit"));
+            AssertTrue("Odyssey site categories include major mechhive",
+                HasStructuredListRow(policy, "siteCategories", "defName", "OrbitalMechhive",
+                    "categoryToken", "mechhive"));
+            AssertTrue("Odyssey policy contains no DLC XML dependency references",
+                policyDocument.ToString().IndexOf("MayRequire", StringComparison.OrdinalIgnoreCase) < 0);
+
+            XDocument englishKeyed = XDocument.Load(RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
+            XDocument russianKeyed = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
+            string[] mobileHomeKeys = { "PawnDiary.Ctx.GravshipHome", "PawnDiary.Ctx.GravshipHomeAt" };
+            for (int i = 0; i < mobileHomeKeys.Length; i++)
+            {
+                AssertTrue("English Odyssey mobile-home text exists: " + mobileHomeKeys[i],
+                    !string.IsNullOrWhiteSpace(KeyedValue(englishKeyed, mobileHomeKeys[i])));
+                AssertTrue("Russian Odyssey mobile-home text exists: " + mobileHomeKeys[i],
+                    !string.IsNullOrWhiteSpace(KeyedValue(russianKeyed, mobileHomeKeys[i])));
+            }
+
+            XDocument englishDefInjected = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryOdysseyPolicyDef",
+                "DiaryOdysseyPolicyDefs.xml"));
+            XDocument russianDefInjected = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryOdysseyPolicyDef",
+                "DiaryOdysseyPolicyDefs.xml"));
+            AssertTrue("English Odyssey policy label exists",
+                !string.IsNullOrWhiteSpace(KeyedValue(englishDefInjected, "Diary_Odyssey.label")));
+            AssertTrue("Russian Odyssey policy label exists",
+                !string.IsNullOrWhiteSpace(KeyedValue(russianDefInjected, "Diary_Odyssey.label")));
+        }
+
         private static void TestProgressionMilestonePolicy()
         {
             List<int> milestones = new List<int> { 20, 8, 12, 12, -1, 16 };
@@ -4765,6 +4841,32 @@ namespace DiaryPipelineTests
                     {
                         return true;
                     }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasStructuredListRow(
+            XElement def,
+            string listName,
+            string firstField,
+            string firstValue,
+            string secondField,
+            string secondValue)
+        {
+            XElement list = def?.Element(listName);
+            if (list == null)
+            {
+                return false;
+            }
+
+            foreach (XElement row in list.Elements("li"))
+            {
+                if (string.Equals(ChildValue(row, firstField), firstValue, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(ChildValue(row, secondField), secondValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
                 }
             }
 

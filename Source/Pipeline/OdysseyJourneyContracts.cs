@@ -150,9 +150,18 @@ namespace PawnDiary
     internal sealed class OdysseyPolicySnapshot
     {
         public bool enabled = true;
+        public string packageId = "Ludeon.RimWorld.Odyssey";
+        public string launchGroupKey = "ritualGravship";
+        public string landingGroupKey = "odysseyGravshipLanding";
+        public int takeoffCorrelationTicks = 2500;
+        public int landingCorrelationTicks = 2500;
+        public int staleJourneyRetentionTicks = 3600000;
+        public int launchCooldownTicks = 60000;
         public int landingCooldownTicks = 60000;
         public int shortJourneyMaximumTicks = 15000;
         public int longJourneyMinimumTicks = 60000;
+        public int longHeldHomeMinimumTicks = 900000;
+        public int maximumLaunchWriters = 2;
         public int maximumLandingWriters = 2;
         public int maximumVisitedLocations = 128;
         public int maximumVisitedCategories = 64;
@@ -227,6 +236,14 @@ namespace PawnDiary
         public bool majorDestination;
         public bool isPlayerHome;
         public bool visible = true;
+    }
+
+    /// <summary>Detached truth that a specific pawn is presently aboard one player gravship.</summary>
+    internal sealed class OdysseyMobileHomeSnapshot
+    {
+        public string shipStableId = string.Empty;
+        public string shipName = string.Empty;
+        public OdysseyLocationSnapshot location;
     }
 
     /// <summary>One exact pilot/copilot/crew candidate captured for deterministic selection.</summary>

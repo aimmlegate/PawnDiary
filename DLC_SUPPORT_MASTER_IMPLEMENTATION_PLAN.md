@@ -231,11 +231,11 @@ Release family/growth before genes, mechanitors, pollution, or secondary Biotech
 
 ## 9. Wave 4 — Odyssey journey flagship
 
-> **Implementation status (2026-07-17): O1.0-O1.1 complete; pure foundation only.** Installed 1.6
-> signatures, package/gate names, saved keys, event/group names, arc grammar, tokens, ownership, and
-> old-save semantics are frozen. Detached location, novelty, cooldown, history, writer, and context
-> policy now passes 88 assembly-free assertions. No production behavior changed. O1.2 is next, while
-> the five deferred Biotech manual rows remain tracked separately.
+> **Implementation status (2026-07-17): O1.0-O1.2 complete; no lifecycle hooks/pages yet.** Installed
+> signatures and stable contracts are frozen; pure policy passes 88 assembly-free assertions. XML
+> policy, guarded location/mobile-home capture, bounded journey/history Scribe state, silent old-save
+> baselining, and focused RimTests are now present. O1.3 state-only lifecycle hooks are next, while the
+> five deferred Biotech manual rows remain tracked separately.
 
 ### Implement in this exact order
 

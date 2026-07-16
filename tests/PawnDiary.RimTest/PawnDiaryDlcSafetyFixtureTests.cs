@@ -1,7 +1,7 @@
 // DLC + optional-mod safety fixture for Pawn Diary (TEST_COVERAGE_PLAN.md §7.3).
 //
 // The base-game-only run is release-blocking: a player who owns none of the paid DLCs (Royalty,
-// Ideology, Biotech, Anomaly) and runs no optional compatibility mods must never hit a crash or a
+// Ideology, Biotech, Anomaly, Odyssey) and runs no optional compatibility mods must never hit a crash or a
 // spurious diary entry from DLC/mod-only code paths. This suite proves the principal seams that carry
 // that guarantee, and is written to be SAFE and MEANINGFUL on a base install:
 //
@@ -111,7 +111,7 @@ namespace PawnDiary.RimTests
         /// the owning DLC is inactive, returns an empty string / empty list / false without reaching a
         /// DLC-owned tracker or the DefDatabase. When the DLC IS active the accessor still returns a
         /// non-null value (the isolated test pawn simply holds no title/role/custom xenotype), proving the
-        /// real guarded path runs without crashing. Each of the four DLC families reports its branch.
+        /// real guarded path runs without crashing. Each of the five DLC families reports its branch.
         /// </summary>
         [Test]
         public static void DlcContextAccessorsAreGatedAndBaseGameSafe()
@@ -146,6 +146,10 @@ namespace PawnDiary.RimTests
             BirthChildNamingState birthNamingState;
             Pawn namedBirthChild;
             bool birthNamingCaptured;
+            OdysseyLocationSnapshot odysseyLocation;
+            OdysseyMobileHomeSnapshot odysseyMobileHome;
+            bool odysseyLocationCaptured;
+            bool odysseyMobileHomeCaptured;
             try
             {
                 xenotype = DlcContext.Xenotype(pawn);
@@ -195,6 +199,12 @@ namespace PawnDiary.RimTests
                     pawn.GetUniqueLoadID(),
                     out birthNamingState,
                     out namedBirthChild);
+                odysseyLocationCaptured = DlcContext.TryCaptureOdysseyLocation(
+                    pawn,
+                    out odysseyLocation);
+                odysseyMobileHomeCaptured = DlcContext.TryCaptureOdysseyMobileHome(
+                    pawn,
+                    out odysseyMobileHome);
             }
             catch (Exception exception)
             {
@@ -250,6 +260,13 @@ namespace PawnDiary.RimTests
                 "Ideology",
                 emptyExpected: ideoligion.Length == 0 && ideologicalRole.Length == 0 && preceptDefNames.Count == 0,
                 emptyMessage: "Without Ideology, the ideoligion / role / precept accessors must be empty.");
+
+            RequireDlcBranch(
+                ModsConfig.OdysseyActive,
+                "Odyssey",
+                emptyExpected: !odysseyLocationCaptured && odysseyLocation == null
+                    && !odysseyMobileHomeCaptured && odysseyMobileHome == null,
+                emptyMessage: "Without Odyssey, location and mobile-home accessors must return false/null.");
         }
 
         /// <summary>
@@ -276,6 +293,13 @@ namespace PawnDiary.RimTests
                     && string.IsNullOrEmpty(DlcContext.IdeologicalRole(null))
                     && DlcContext.IdeologyPreceptDefNames(null).Count == 0,
                 "Ideology accessors must return empty for a null pawn.");
+            OdysseyLocationSnapshot odysseyLocation;
+            OdysseyMobileHomeSnapshot odysseyMobileHome;
+            PawnDiaryRimTestScope.Require(!DlcContext.TryCaptureOdysseyLocation((Pawn)null, out odysseyLocation)
+                    && odysseyLocation == null
+                    && !DlcContext.TryCaptureOdysseyMobileHome(null, out odysseyMobileHome)
+                    && odysseyMobileHome == null,
+                "Odyssey accessors must return false/null for a null pawn.");
             PawnDiaryRimTestScope.Require(DiaryContextBuilder.BuildPawnSummarySnapshot(null) == null,
                 "The public pawn-summary adapter must preserve its documented null-pawn result.");
         }

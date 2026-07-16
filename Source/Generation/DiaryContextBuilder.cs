@@ -362,6 +362,15 @@ namespace PawnDiary
 
             parts.Add((outdoors ? "PawnDiary.Ctx.Outdoors" : "PawnDiary.Ctx.Indoors").Translate());
 
+            OdysseyMobileHomeSnapshot mobileHome;
+            if (DlcContext.TryCaptureOdysseyMobileHome(pawn, out mobileHome))
+            {
+                string location = mobileHome.location?.visibleLabel ?? string.Empty;
+                parts.Add(string.IsNullOrWhiteSpace(location)
+                    ? "PawnDiary.Ctx.GravshipHome".Translate(mobileHome.shipName)
+                    : "PawnDiary.Ctx.GravshipHomeAt".Translate(mobileHome.shipName, location));
+            }
+
             // Weather and biome only matter when the pawn is exposed to them, and weather is added
             // only when a severity-weighted roll passes (see ShouldMentionWeather): clear skies were
             // dominating diary openings, so mild weather is rarely noted and dramatic weather almost

@@ -25,6 +25,7 @@
 //   DiaryGameComponent.InteractionBatching.cs — XML-configured batching for quick social logs
 //   DiaryGameComponent.TaleBatching.cs   — delayed solo batches for bursty Tale events
 //   DiaryGameComponent.AmbientThoughts.cs — day-note batching for low-impact temporary thoughts
+//   DiaryGameComponent.Odyssey.cs         — guarded Odyssey journey/history save state + baselines
 //   ──
 //   DiaryGameComponent.EventFactory.cs   — AddPairwiseEvent/AddSoloEvent: build + register DiaryEvents
 //   DiaryGameComponent.Generation.cs     — deciding what to (re)queue (scan + per-pawn re-enable)
@@ -251,6 +252,7 @@ namespace PawnDiary
             archive.Clear();
             ResetBiotechGrowthForNewGame();
             ResetBiotechFamilyForNewGame();
+            ResetOdysseyForNewGame();
             // Do NOT BeginSession here: the constructor already started this Game's session, and the
             // starting-colonist thoughts (GiveAllStartingPlayerPawnsThought) were queued in it during
             // InitNewGame. Restarting the session now would cancel those in-flight requests and leave
@@ -296,6 +298,7 @@ namespace PawnDiary
             ResetBiotechFamilyTransientState();
             nextBiotechBirthNamingPollTick = 0;
             BootstrapBiotechFamilyArcsForLoadedSave();
+            BootstrapOdysseyForLoadedSave();
             // Do NOT BeginSession here: the constructor already started this Game's session and
             // cancelled any requests left over from a previous Game. Loaded events have had their
             // "pending" status normalized back to "not generated" (DiaryGenerationStatus, via
@@ -362,6 +365,7 @@ namespace PawnDiary
                 ref observedConditionCooldownKeys, ref observedConditionCooldownValues);
             ExposeBiotechGrowthData();
             ExposeBiotechFamilyData();
+            ExposeOdysseyData();
 
             // Before writing generated-speech PlayLog state, drop rows RimWorld's PlayLog has already
             // pruned so stale LogIDs cannot accumulate or block future injection.

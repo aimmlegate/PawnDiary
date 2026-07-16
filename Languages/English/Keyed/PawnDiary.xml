@@ -1418,4 +1418,8 @@
   <PawnDiary.Event.Biotech.Birth.Outcome.InfantIllness>the baby was born alive with immediate infant illness</PawnDiary.Event.Biotech.Birth.Outcome.InfantIllness>
   <PawnDiary.Event.Biotech.Birth.Outcome.Stillbirth>the child was stillborn</PawnDiary.Event.Biotech.Birth.Outcome.Stillbirth>
   <PawnDiary.Event.Biotech.Birth.BirtherDied>the birther died during childbirth</PawnDiary.Event.Biotech.Birth.BirtherDied>
+
+  <!-- Odyssey O1.2 mobile-home surroundings. -->
+  <PawnDiary.Ctx.GravshipHome>aboard the gravship {0}</PawnDiary.Ctx.GravshipHome>
+  <PawnDiary.Ctx.GravshipHomeAt>aboard the gravship {0} at {1}</PawnDiary.Ctx.GravshipHomeAt>
 </LanguageData>

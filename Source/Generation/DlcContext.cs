@@ -1,5 +1,6 @@
-// DLC-safe pawn-context accessors. This is the ONE place the mod reads pawn data that only
-// exists when the player owns a paid DLC (Biotech genes, Royalty titles, Ideology faith).
+// DLC-safe context accessors. This partial type is the ONE place the mod reads live data that only
+// exists when the player owns a paid DLC (pawn trackers here; Odyssey map/gravship state in the
+// sibling DlcContext.Odyssey.cs file).
 //
 // Why a dedicated helper? RimWorld ships ALL its C# — base game and every DLC — in one assembly,
 // so a DLC type like Pawn_GeneTracker compiles even for a player who doesn't own the DLC. The
@@ -8,9 +9,9 @@
 // them unguarded would NullReference and break a base-game player's game.
 //
 // So every accessor here is double-guarded — ModsConfig.<Dlc>Active AND a null-check — and
-// returns string.Empty when the DLC (or the trait) is absent. Callers can therefore append the
-// result unconditionally: a no-DLC game simply omits the line. New DLC-gated pawn reads belong
-// here, in the same shape. See AGENTS.md ("DLC-safety").
+// returns an empty value when the DLC (or the trait) is absent. Callers can therefore append the
+// result unconditionally: a no-DLC game simply omits the line. New DLC-gated live reads belong in
+// this partial type, in the same shape. See AGENTS.md ("DLC-safety").
 using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
@@ -20,9 +21,9 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Guarded accessors for pawn state owned by optional paid DLCs.
+    /// Guarded accessors for live pawn/map/gravship state owned by optional paid DLCs.
     /// </summary>
-    internal static class DlcContext
+    internal static partial class DlcContext
     {
         /// <summary>
         /// Biotech: copies the live child facts needed for an age-7/10/13 growth diff. The caller

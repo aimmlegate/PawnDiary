@@ -1,10 +1,11 @@
 # Pawn Diary — Odyssey Support Implementation Plan
 
-Status: Phases O1.0-O1.1 completed on 2026-07-17 against RimWorld 1.6.4871. The frozen contracts now
-have an assembly-free pure policy implementation and 88 passing assertions, but no production
-behavior changed. This was started as a user-directed scheduling exception while five Biotech Phase
-4 manual acceptance rows remain open. O1.2 is the next Odyssey implementation slice; later
-life-support and Mechhive hooks still require their own spikes.
+Status: Phases O1.0-O1.2 completed on 2026-07-17 against RimWorld 1.6.4871. Frozen contracts now have
+assembly-free policy, XML projection, guarded live location/mobile-home capture, and additive bounded
+journey/history persistence. O1.2 still adds no lifecycle hook or Odyssey page. This was started as a
+user-directed scheduling exception while five Biotech Phase 4 manual acceptance rows remain open.
+O1.3 is the next Odyssey implementation slice; later life-support and Mechhive hooks still require
+their own spikes.
 
 Scheduling authority: implement Odyssey phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Odyssey.
@@ -1103,6 +1104,13 @@ Biotech B1 where practical.
 Exit: all policy edge cases pass without RimWorld.
 
 ### Phase O1.2 — Guarded context and persistence
+
+> **Implementation status (2026-07-17): complete; state/context only.** Added the XML-owned
+> `Diary_Odyssey` policy and exact biome/site mappings, guarded map/gravship projection behind
+> `ModsConfig.OdysseyActive`, detached active-journey/history Scribe models under the two frozen keys,
+> bounded post-load repair, silent untrusted old-save baselining (including incomplete in-flight
+> recovery), localized exact-pawn mobile-home surroundings, and focused RimTests. No takeoff,
+> `TravelTo`, landing, Harmony, catalog, settings, or page route was added; O1.3 is next.
 
 1. Add `DiaryOdysseyPolicyDef` and XML defaults.
 2. Add `OdysseyJourneyState`/history Scribe models.

@@ -1398,4 +1398,8 @@
   <PawnDiary.Event.Biotech.Birth.Outcome.InfantIllness>ребёнок родился живым с немедленной младенческой болезнью</PawnDiary.Event.Biotech.Birth.Outcome.InfantIllness>
   <PawnDiary.Event.Biotech.Birth.Outcome.Stillbirth>ребёнок родился мёртвым</PawnDiary.Event.Biotech.Birth.Outcome.Stillbirth>
   <PawnDiary.Event.Biotech.Birth.BirtherDied>родивший родитель умер во время родов</PawnDiary.Event.Biotech.Birth.BirtherDied>
+
+  <!-- Контекст мобильного дома Odyssey O1.2. -->
+  <PawnDiary.Ctx.GravshipHome>на борту гравилёта {0}</PawnDiary.Ctx.GravshipHome>
+  <PawnDiary.Ctx.GravshipHomeAt>на борту гравилёта {0} у места {1}</PawnDiary.Ctx.GravshipHomeAt>
 </LanguageData>

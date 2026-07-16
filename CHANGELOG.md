@@ -1,5 +1,15 @@
 # Changelog
 
+- **2026-07-17 — Completed Master Wave 4 / Odyssey O1.2 guarded context and persistence.** Added the
+  XML-owned `Diary_Odyssey` policy with exact string-only biome/site mappings, a DLC-gated live
+  map/gravship adapter, detached versioned active-journey and bounded travel-history Scribe state under
+  `odysseyActiveJourney` / `odysseyTravelHistory`, silent untrusted old-save baselining (including an
+  incomplete row for a ship already travelling), and English/Russian mobile-home surroundings only
+  when vanilla confirms the exact pawn is onboard. Added `PawnDiaryOdysseyJourneyFlowTests` for loaded
+  policy, active/inactive collection, onboard scoping, real-Scribe round trips, missing/corrupt keys,
+  and history caps. O1.2 adds no lifecycle Harmony hook, event type, settings row, or Odyssey page;
+  O1.3 is next.
+
 - **2026-07-17 — Completed Odyssey O1.0-O1.1's inert journey-policy foundation.** Reconfirmed the
   installed RimWorld 1.6.4871 gravship signatures and froze Odyssey package/gate names, save keys,
   arc/dedup grammar, event/group names, schema tokens, page ownership, and silent old-save semantics.

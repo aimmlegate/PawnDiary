@@ -52,8 +52,10 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge). |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
-| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, DLC-safe live reads. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, and the inert Odyssey O1.1 journey/location/history/writer/context policy. |
+| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including the guarded Odyssey location/mobile-home projection. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, and Odyssey journey/location/history/writer/context policy. |
+| `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including `DiaryOdysseyPolicyDef`. |
+| `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey active-journey/history state. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
@@ -2063,6 +2065,8 @@ and gated by the persisted `errorReportingNoticeShown` flag) tells the player it
 | `biotechFamilyArcs` | detached stable-ID family continuity, exact pregnancy/labor/birth facts, bounded supporter observations, and summarized growth ages |
 | `pendingBiotechBirths` | detached exact birth snapshot, frozen adult writer order, and per-writer event-time prompt/display context while newborn naming is unresolved; no live Pawn, Thing, Corpse, or ritual reference; new owners use an XML admission limit of 256 by default, with established ownership preserved up to the hard 2048-row corruption ceiling. Pending rows, arcs, and growth rows are maintained (flush/fallback/prune) even when Biotech is later disabled, so a DLC-removed save shrinks instead of freezing |
 | `familyObservationVersion` | additive family old-save baseline version; prevents invented historical pregnancy/birth/activity catch-up |
+| `odysseyActiveJourney` | nullable detached active gravship journey (stable IDs, event-time labels, locations, qualitative launch state, and bounded writer facts); O1.2 only creates an incomplete row when baselining a save already in flight |
+| `odysseyTravelHistory` | versioned, bounded Odyssey novelty/home/cooldown history; missing old-save keys baseline silently with first/new claims disabled and never create a page |
 
 Hot events and archive rows are separate on purpose. Hot `DiaryEvent` rows keep prompts, retry state,
 raw/generated text, status, LLM metadata, titles, context, source ids, and per-role state. Compact
@@ -2156,10 +2160,13 @@ Never rename a key "for cleanliness" alone.
   DLL's assembly version (currently `2.4.1.0` in this checkout). It ships **only**
   `PawnDiary.dll` — it must never bundle `0Harmony.dll` in `1.6/Assemblies/`.
 - No paid DLC is required. Optional DLC data must no-op cleanly when absent.
-- Odyssey O1.0-O1.1 is currently an inert foundation: schema/save token spellings and installed
-  1.6.4871 signatures are frozen, and pure detached location, landing-reason, history, writer, and
-  bounded-context policy exists under `Source/Pipeline/`. It adds no Def, save field, settings row,
-  Harmony patch, or page source yet. O1.2 owns the first guarded live context and persistence layer.
+- Odyssey O1.0-O1.2 now provides the frozen contracts, XML policy, guarded live location/mobile-home
+  projection, and two additive detached save models. Every live read returns before touching Odyssey
+  state unless `ModsConfig.OdysseyActive`; the policy XML contains only primitive values and plain
+  Def-name strings. Missing old-save keys baseline silently and distrust first/new claims. O1.2 adds
+  localized mobile-home surroundings only for a pawn vanilla confirms is inside the exact gravship
+  field. It still registers no takeoff/landing hook and creates no Odyssey page; O1.3 owns state-only
+  lifecycle hooks.
 - DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks. This
   includes Biotech growth trait/skill/work-disabled snapshots and Ideology precept/role reads used by
   body-mod stance policy; other code consumes plain detached rows, labels, defNames, or booleans.
@@ -2312,6 +2319,13 @@ storyteller, or a periodic scanner (raid/mood/quest/reflection/window/observed-c
 by submitting the exact per-unit production signal the scanner emits, which keeps the tests mapless and
 deterministic; the suite README lists the two suites (death, raid) that still need a disposable colony
 because their vanilla trigger has un-restorable side effects.
+
+`PawnDiaryOdysseyJourneyFlowTests` covers the O1.2 boundary without starting a real gravship journey:
+the loaded XML policy and exact mappings, guarded active/inactive live map projection, vanilla's exact
+pawn-on-gravship predicate, prompt-safe mobile-home surroundings, both frozen component Scribe keys,
+missing-key old-save baselining, corrupt-journey rejection, and bounded newest-first history repair.
+O1.3 extends this suite with actual takeoff/travel/landing state transitions; O1.4 owns page/prompt
+emission tests.
 
 The DLC-focused generic flows now include installed-Royalty positive scanner fixtures for a real
 `PsychicAmplifier` hediff and a disposable real `RoyalTitle`, each asserting exact context and repeat
