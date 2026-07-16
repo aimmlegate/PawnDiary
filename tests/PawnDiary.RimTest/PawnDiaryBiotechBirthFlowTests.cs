@@ -336,6 +336,7 @@ namespace PawnDiary.RimTests
                 return;
             }
 
+            RequireLoadedBirthPromptFields();
             scope.EnablePromptCapture();
             scope.Component.SetDiaryGenerationEnabled(birther, true);
             scope.Component.SetDiaryGenerationEnabled(father, true);
@@ -514,6 +515,43 @@ namespace PawnDiary.RimTests
                 && row.snapshot.familyArcId.StartsWith(
                     "biotech-family|rimtest-birth|",
                     StringComparison.Ordinal));
+        }
+
+        private static void RequireLoadedBirthPromptFields()
+        {
+            List<DiaryPromptFieldDef> fields = DiaryPromptTemplates.FieldsFor(DiaryPromptTemplates.PairImportant);
+            string[] requiredContextKeys =
+            {
+                "child_name",
+                "birth_outcome",
+                "birth_method",
+                "initiator_family_role",
+                "recipient_family_role"
+            };
+
+            for (int keyIndex = 0; keyIndex < requiredContextKeys.Length; keyIndex++)
+            {
+                string requiredKey = requiredContextKeys[keyIndex];
+                bool found = false;
+                for (int fieldIndex = 0; fieldIndex < fields.Count; fieldIndex++)
+                {
+                    DiaryPromptFieldDef field = fields[fieldIndex];
+                    if (field != null
+                        && field.enabled
+                        && string.Equals(field.source, "GameContext", StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(field.contextKey, requiredKey, StringComparison.OrdinalIgnoreCase))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                PawnDiaryRimTestScope.Require(found,
+                    "The loaded PairImportant prompt template is missing required birth context field '"
+                    + requiredKey + "'. This usually means RimWorld loaded a stale or mixed Pawn Diary Def "
+                    + "copy beside the current RimTest DLL; disable duplicate Pawn Diary packages and ensure "
+                    + "ClassLibrary1 is the active copy.");
+            }
         }
 
         private static void RequirePromptContains(string prompt, string fragment, string label)

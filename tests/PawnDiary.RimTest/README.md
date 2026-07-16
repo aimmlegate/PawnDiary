@@ -63,9 +63,9 @@ owners. Both use the shared harness:
 | `PawnDiaryMoodConditionFlowTests` | 14 | GameCondition mood fan-out + classification + group gate. |
 | `PawnDiaryPawnProgressionFlowTests` | 15 | Skill/trait milestone baseline + upward-only + arc request. |
 | `PawnDiaryBiotechGrowthFlowTests` | B1 | Family-keyed canonical growth/N1 evidence, baseline/fallback, real growth-letter hooks, and loaded detail-preset prompts. |
-| `PawnDiaryBiotechBirthFlowTests` | B1 | Canonical two-adult birth, child-never-POV shape, delayed naming flush, replay rejection, and loaded detail-preset prompts. |
+| `PawnDiaryBiotechBirthFlowTests` | B1 | Canonical two-adult birth, child-never-POV shape, delayed naming flush, replay rejection, loaded detail-preset prompts, and a stale/mixed-template preflight. |
 | `PawnDiaryBiotechComponentStateFixtureTests` | B1 | Real-Scribe component keys, old/malformed/oversized rows, hard ceiling, and pre-cap admission recovery. |
-| `PawnDiaryDlcSafetyFixtureTests` | 7.3 | Null/base-only omission, installed-DLC positive pawn state, official package/group/window/settings matrix, fragile hook signatures, and optional-adapter fail-open readiness. |
+| `PawnDiaryDlcSafetyFixtureTests` | 7.3 | Null/base-only omission, installed-DLC positive pawn state (including a temporary real CreepJoiner race), exact specialized/generic-fallback classifier policy, official package/group/window/settings matrix, fragile hook signatures, and optional-adapter fail-open readiness. |
 | `PawnDiaryQuestFlowTests` | 16 | Quest accept/complete/fail fan-out + label sanitation + dedup. |
 | `PawnDiaryRitualFlowTests` | 17 | Ritual participant fan-out (DLC-gated, clean no-op without Ideology). |
 | `PawnDiaryArrivalFlowTests` | 18 | Neutral arrival page + first-ordering + bootstrap resilience. |
@@ -74,6 +74,12 @@ owners. Both use the shared harness:
 | `PawnDiaryExternalApiFlowTests` | 21 | `PawnDiaryApi` submit solo/pair, group gate, budget, listener notify. |
 | `PawnDiaryEventWindowFlowTests` | 22 | Event-window start/end/one-shot/timeout + prompt-bias state. |
 | `PawnDiaryObservedConditionFlowTests` | 23 | Observed-condition start/end debounce + scope identity + restart cooldown. |
+
+Do not run the prompt suites with two copies of Pawn Diary active. RimWorld can load Def XML from one
+copy and `PawnDiary.RimTest.dll` from another, producing a test binary/XML contract that no single
+checkout contains. The Biotech birth prompt suite checks its loaded `PairImportant` fields up front
+and reports this condition explicitly; disable stale Workshop/Modmixer/development copies before
+rerunning.
 
 ## Suite-owned cleanup & known limitations
 

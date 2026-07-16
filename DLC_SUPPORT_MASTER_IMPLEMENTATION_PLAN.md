@@ -182,8 +182,11 @@ This is the low-cost prompt-quality release. Do not continue into A1 study/conta
 > recovery. The shared DLC compatibility fixture now also covers null/base-only final-summary omission,
 > real installed xenotype/title/ideoligion/precept/eligible-role/creepjoiner state, the exact official
 > group/window/settings package matrix, fragile DLC hook signatures, and optional-adapter fail-open
-> readiness; the assembly builds cleanly but still needs its in-game runner pass. The remaining loaded-game
-> acceptance matrix is required, so B2 remains blocked. Stable B1
+> readiness. The first all-DLC runner pass completed 190/193: two failures were incorrect fixture
+> assumptions (specialized CreepJoiner generation and the intentional generic psychic-ritual token
+> fallback), while the birth prompt failure came from two active Pawn Diary copies mixing stale XML
+> with the current DLL. Those fixtures now diagnose the real contracts; a clean single-copy rerun and
+> the remaining loaded-game acceptance matrix are required, so B2 remains blocked. Stable B1
 > contracts/policy/settings now feed live, atomic birthday/growth-letter ownership with saved postponed
 > rows, auto/choice diffs, mature ordinary fallback, progression consumption, saved family continuity,
 > exact lesson/play observations, truthful child/supporter pages, and source-owned N1 identity evidence.

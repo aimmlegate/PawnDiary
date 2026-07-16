@@ -359,13 +359,20 @@ a separate suite result rather than failing or silently pretending to execute DL
 
 `PawnDiaryDlcSafetyFixtureTests` automates the shared compatibility boundary in every configuration:
 null-pawn guards even when DLC flags are active; final prompt/public-summary omission when a DLC is
-absent; positive non-Baseliner, royal-title, player-ideoligion/precept/eligible-role, and generated
-creepjoiner state when installed; exact set equality for all official-DLC interaction groups and event
-windows; `ModsConfig`/package-helper/settings-visibility agreement; fragile Biotech growth/birth,
+absent; positive non-Baseliner, royal-title, player-ideoligion/precept/eligible-role, and temporary
+real loaded CreepJoiner-race state when installed; exact set equality for all official-DLC interaction
+groups and event windows; exact classifier keys for specialized ritual families plus the deliberate
+`PsychicRitual` token fallback; `ModsConfig`/package-helper/settings-visibility agreement; fragile
+Biotech growth/birth,
 Anomaly monolith/corpse, and Ideology/Anomaly ritual signatures; and optional-adapter capability
 ready/not-ready fail-open behavior. A new official package-gated Def must update that exact catalog
 fixture in the same change. True disable/re-enable save transitions still require separate game
 launches and remain in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
+
+Loaded prompt tests also preflight the shipped template contract. A missing required B1 field is
+reported as a stale/mixed-install failure because duplicate Pawn Diary packages can combine Def XML
+from one copy with the current RimTest DLL from another; release runs must have exactly one core copy
+active.
 
 ## 8. Implementation Order
 

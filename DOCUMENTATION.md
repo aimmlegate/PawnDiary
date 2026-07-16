@@ -2161,11 +2161,14 @@ Never rename a key "for cleanliness" alone.
   body-mod stance policy; other code consumes plain detached rows, labels, defNames, or booleans.
 - `PawnDiaryDlcSafetyFixtureTests` exercises this boundary in both directions: absent/null state must
   disappear from the final prompt/public summary, while installed DLC uses disposable real xenotype,
-  title, ideoligion/precept/eligible-role, and creepjoiner pawn state. The same fixture freezes every
+  title, ideoligion/precept/eligible-role, and creepjoiner pawn state. The CreepJoiner positive path
+  temporarily gives its isolated fixture pawn the real loaded Anomaly race because vanilla's
+  specialized CreepJoiner pawn kind cannot be generated through a generic colonist request. The
+  original race is restored in a `finally` block. The same fixture freezes every
   official package-gated interaction group/event window, settings visibility, fragile DLC hook
-  signature, and optional-adapter fail-open readiness contract. The shared RimTest scope can generate
-  a disposable pawn from a caller-supplied loaded `PawnKindDef` for package-owned positive fixtures;
-  production code still never names the DLC Def.
+  signature, and optional-adapter fail-open readiness contract. Specialized Anomaly ritual rows must
+  remain exact-keyed; the later `PsychicRitual` token row is deliberately the future/modded fallback.
+  Production code still never resolves a DLC Def by name.
 - Avoid `DefDatabase<T>.GetNamed("DlcDef")` for optional content; use string matching or
   `GetNamedSilentFail`.
 
@@ -2304,6 +2307,12 @@ storyteller, or a periodic scanner (raid/mood/quest/reflection/window/observed-c
 by submitting the exact per-unit production signal the scanner emits, which keeps the tests mapless and
 deterministic; the suite README lists the two suites (death, raid) that still need a disposable colony
 because their vanilla trigger has un-restorable side effects.
+
+The birth prompt suite preflights the loaded `PairImportant` template for child, outcome, method, and
+adult-role fields before capturing prompts. This distinguishes a product prompt regression from a
+mixed installation: if two Pawn Diary packages are active, RimWorld may load stale Def XML from one
+copy and the current `PawnDiary.RimTest.dll` from another. Release runs must disable duplicate
+Workshop, Modmixer, or development copies and use one active core package.
 
 Alongside the event flows, `PawnDiary*FixtureTests.cs` cover the prompt/policy layers on the same
 harness: template/domain resolution and the Pair/Solo/reflection/neutral template matrices, the

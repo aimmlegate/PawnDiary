@@ -19,8 +19,8 @@
 //       the collector reads the value through the same guarded DlcContext accessor, so without the
 //       DLC the value is empty and the candidate is skipped. Source/Generation/PromptEnchantmentCollector.cs.
 //   (d) Installed DLC paths use real pawn state: non-Baseliner xenotype, royal title, ideoligion/
-//       precepts and, where the colony's requirements permit it, an ideoligion role; a generated
-//       Anomaly creepjoiner exercises the positive boolean adapter.
+//       precepts and, where the colony's requirements permit it, an ideoligion role; a disposable
+//       pawn temporarily carrying Anomaly's loaded creepjoiner race exercises the positive adapter.
 //   (e) The complete official-DLC interaction-group/event-window catalog agrees with ModsConfig and
 //       settings visibility, and fragile DLC Harmony/reflection targets still match RimWorld 1.6.
 //   (f) Optional capture capability readiness suppresses its XML fallback only while ready, restoring
@@ -427,9 +427,10 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// Generates a real package-owned creepjoiner pawn kind when Anomaly is installed. This is the
-        /// positive counterpart to the ordinary-colonist false branch and proves the string-free adapter
-        /// recognizes live DLC state. Without Anomaly the test reports and asserts the normal no-op path.
+        /// Temporarily gives the disposable fixture pawn Anomaly's real loaded creepjoiner race. This is
+        /// the positive counterpart to the ordinary-colonist false branch and proves the string-free
+        /// adapter recognizes live DLC state. The original race is restored even if the assertion fails;
+        /// without Anomaly the test reports and asserts the normal no-op path.
         /// </summary>
         [Test]
         public static void AnomalyCreepjoinerPositivePathIsPackageGated()
@@ -447,9 +448,22 @@ namespace PawnDiary.RimTests
                     && string.Equals(def.race.defName, "CreepJoiner", StringComparison.Ordinal));
             PawnDiaryRimTestScope.Require(creepjoinerKind != null,
                 "Anomaly is active but no loaded pawn kind uses the CreepJoiner race.");
-            Pawn creepjoiner = scope.CreateAdultColonist(creepjoinerKind);
-            PawnDiaryRimTestScope.Require(DlcContext.IsCreepJoiner(creepjoiner),
-                "DlcContext did not recognize a real generated Anomaly creepjoiner.");
+            ThingDef originalRace = pawn.def;
+            try
+            {
+                // Creepjoiners use specialized generation paths that a generic PawnGenerationRequest
+                // cannot satisfy. Swapping only this isolated pawn's race reaches the exact vanilla
+                // IsCreepJoiner predicate without spawning, ticking, or mutating a player's pawn.
+                pawn.def = creepjoinerKind.race;
+                PawnDiaryRimTestScope.Require(pawn.IsCreepJoiner,
+                    "The loaded Anomaly CreepJoiner race no longer satisfies Pawn.IsCreepJoiner.");
+                PawnDiaryRimTestScope.Require(DlcContext.IsCreepJoiner(pawn),
+                    "DlcContext did not recognize a pawn carrying the real loaded Anomaly creepjoiner race.");
+            }
+            finally
+            {
+                pawn.def = originalRace;
+            }
         }
 
         /// <summary>
@@ -658,8 +672,21 @@ namespace PawnDiary.RimTests
                     "Official DLC group '" + expected.Key + "' disagrees with its ModsConfig flag.");
                 PawnDiaryRimTestScope.Require(PawnDiaryMod.IsSettingsEventFilterGroup(group) == active,
                     "Official DLC group '" + expected.Key + "' settings visibility disagrees with availability.");
-                PawnDiaryRimTestScope.Require(group.matchDefNames != null && group.matchDefNames.Count > 0,
-                    "Official DLC group '" + expected.Key + "' has no exact classifier keys.");
+                if (string.Equals(expected.Key, "ritualAnomalyPsychic", StringComparison.Ordinal))
+                {
+                    PawnDiaryRimTestScope.Require(
+                        (group.matchDefNames == null || group.matchDefNames.Count == 0)
+                        && group.matchTokens != null
+                        && group.matchTokens.Count == 1
+                        && string.Equals(group.matchTokens[0], "PsychicRitual", StringComparison.Ordinal),
+                        "The generic Anomaly psychic-ritual fallback must remain narrowly token-keyed by "
+                        + "'PsychicRitual'; exact ritual families belong in the specialized groups above it.");
+                }
+                else
+                {
+                    PawnDiaryRimTestScope.Require(group.matchDefNames != null && group.matchDefNames.Count > 0,
+                        "Official DLC group '" + expected.Key + "' has no exact classifier keys.");
+                }
             }
 
             List<DiaryEventWindowDef> officialWindows =

@@ -1,18 +1,28 @@
 # Changelog
 
+- **2026-07-16 — Corrected first all-DLC RimTest findings.** The first loaded-game B1/DLC run passed
+  190 of 193 tests and exposed two fixture assumptions plus a mixed-install problem, not production
+  regressions. The Anomaly positive fixture now temporarily applies the real loaded CreepJoiner race
+  to its disposable pawn instead of sending that specialized pawn kind through invalid generic pawn
+  generation. The official-DLC catalog now preserves exact keys for the six specialized Anomaly
+  ritual families while explicitly pinning the intentional `PsychicRitual` token fallback. Birth
+  prompt coverage still requires child/outcome/method/role facts at every detail preset, but now first
+  verifies that the loaded `PairImportant` template contains those fields and explains when duplicate
+  Pawn Diary copies have mixed a stale XML Def with the current test DLL. A clean-install in-game
+  rerun remains pending.
+
 - **2026-07-16 — Expanded automated DLC compatibility matrix.** The loaded-game DLC-safety fixture
   now covers the compatibility layer beyond absence-only guards: null pawns remain safe even with DLC
   flags active; absent DLC fields are rejected at the final prompt/public-summary boundary; installed
   Biotech, Royalty, and Ideology exercise disposable real xenotype/title/ideoligion/precept state and
-  an eligible role where the colony permits one; an installed Anomaly run generates a real
-  creepjoiner pawn kind; title/role prompt-enchantment collectors get positive coverage; and the exact
+  an eligible role where the colony permits one; an installed Anomaly run temporarily applies the
+  real loaded creepjoiner race to a disposable pawn; title/role prompt-enchantment collectors get
+  positive coverage; and the exact
   official-DLC interaction-group/event-window catalog is pinned to `ModsConfig`, package helpers, and
   settings visibility. Fragile growth, birth, monolith, unnatural-corpse, Ideology ritual, and psychic
   ritual runtime signatures are now release assertions. A public capture-capability fixture proves an
   optional adapter suppresses XML fallback only while ready and restores fail-open capture when
-  cleared. The shared RimTest harness gained a caller-supplied loaded-pawn-kind factory with identical
-  generation-disable/cleanup guarantees. True DLC disable/re-enable save transitions remain a
-  cross-launch smoketest; the expanded RimTest assembly builds cleanly and awaits an in-game matrix run.
+  cleared. True DLC disable/re-enable save transitions remain a cross-launch smoketest.
 
 - **2026-07-16 — Biotech B1 loaded-game checkpoint coverage.** Five focused RimTests now replace
   large synthetic parts of the manual release matrix: the growth suite invokes vanilla

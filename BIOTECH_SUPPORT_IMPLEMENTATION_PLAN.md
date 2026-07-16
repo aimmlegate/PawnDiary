@@ -4,8 +4,11 @@
 > automated release-hardening slice is implemented: important templates project bounded B1 facts,
 > Full/Balanced/Compact and indexed localization contracts are pinned, localized dev previews exist,
 > pending owner lists have XML-owned ownership-preserving admission limits, no-DLC metadata is asserted, and SpeakUp/RimTalk
-> logic/build smoke checks pass. The loaded-game no-DLC/old-save/growth/birth/adapter matrix remains
-> the Phase 4 exit item; B2 must not begin before it is accepted. Canonical age-7/10/13 growth
+> logic/build smoke checks pass. The first all-DLC runner pass completed 190/193; its birth-prompt
+> failure was traced to duplicate active Pawn Diary copies mixing stale template XML with the current
+> test DLL, and the suite now reports that contract mismatch directly. A clean single-copy rerun plus
+> the loaded-game no-DLC/old-save/growth/birth/adapter matrix remain the Phase 4 exit items; B2 must
+> not begin before they are accepted. Canonical age-7/10/13 growth
 > observation, postponed-choice persistence, auto resolution, ordinary Birthday fallback, progression
 > consumption, saved family arcs, exact lesson/play evidence, truthful child/supporter writer shapes,
 > canonical birth/naming ownership, mature-source arbitration, and source-owned N1 evidence are live and
@@ -1694,7 +1697,9 @@ writer, naming before/after save, disabled canonical group, and thrown-owner tes
 > both adapter logic suites/builds, supporter/transient limits, and XML-owned pending-owner admission limits have
 > been audited. Loaded-game test source now also drives the real vanilla growth-letter configure/choice
 > hooks, delayed live-child naming flush, B1 prompts at all three detail presets, and pre-cap Scribe/admission
-> recovery; its assembly builds cleanly and still needs an in-game runner pass. Run and record the remaining
+> recovery. The first runner pass reached 190/193; its B1 failure was a duplicate-core-copy XML/DLL
+> mix, and the birth suite now preflights that loaded template contract. Rerun with one active Pawn
+> Diary copy, then run and record the remaining
 > `tests/SAVE_COMPATIBILITY_SMOKETEST.md` rows before marking this phase complete.
 
 1. Prompt previews and compact/full mode review.
