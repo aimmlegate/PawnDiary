@@ -143,19 +143,23 @@ text. `DiaryCapturePolicyTests` also requires both catalog types/Specs and their
 solo/pair/drop/dedup decisions. `PawnDiaryBiotechGrowthFlowTests` covers the live growth
 component boundary: canonical page creation with family context and N1 identity evidence, durable-event/consumed-age
 dedup repair, trait/skill baseline consumption, Birthday fallback when canonical growth is disabled,
-and zero pages with both groups disabled. `PawnDiaryBiotechBirthFlowTests` covers final canonical pair
-dispatch, child-subject/never-POV shape, original tick, exact context, per-role bond evidence,
-hot-event replay rejection, frozen event-time prompt/display facts, and chronological insertion before
-a final-death boundary. The Scribe fixture round-trips detached pending growth and birth rows,
-deep family arc/supporter state, and nested consumed ages, while the DLC-safety fixture drives the guarded
-growth/family/birth snapshot accessors and pins exact runtime method signatures.
+zero pages with both groups disabled, and the real vanilla `ConfigureGrowthLetter` → `MakeChoices`
+Harmony boundary for a committed `NoTrait`/passion choice. It also captures loaded Full/Balanced/Compact
+growth prompts and rejects private IDs/tier/correlation fields. `PawnDiaryBiotechBirthFlowTests` covers
+final canonical pair dispatch, child-subject/never-POV shape, original tick, exact context, per-role bond
+evidence, hot-event replay rejection, frozen event-time prompt/display facts, chronological insertion before
+a final-death boundary, a live-child delayed naming flush, and loaded Full/Balanced/Compact birth prompts.
+The Scribe fixtures round-trip detached pending growth and birth rows, deep family arc/supporter state,
+nested consumed ages, component-level missing/corrupt/oversized lists, and pre-cap ownership/admission recovery,
+while the DLC-safety fixture drives the guarded growth/family/birth snapshot accessors and pins exact runtime
+method signatures.
 `DiaryPipelineTests` additionally renders B1 growth and birth through the important pair/solo shapes
 at Full, Balanced, and Compact with an exhausted optional budget, requiring the central qualitative
 facts while rejecting IDs/numeric tiers/ticks/correlation tokens. It parses the shipped templates to
 pin both context-key projections and every English/Russian indexed label; the dev prompt fixture panel
 ships localized synthetic growth/birth cases. The SpeakUp and RimTalk pure suites and bridge builds
 remain the automated adapter smoke.
-Vanilla age-7/10/13 letter postponement/click-through and live healthy/ill/stillborn/vat/surrogacy/
+Vanilla letter UI presentation/postponed save reload and live healthy/ill/stillborn/vat/surrogacy/
 ritual/naming/fail-open birth paths, a base-only run, an oldest-supported save, and loaded-adapter
 observation remain the Phase-4 manual acceptance matrix in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
@@ -352,6 +356,16 @@ Run at least these configurations:
 The base-only run is release-blocking. It verifies all DLC trackers are absent/null, DLC match strings
 stay inert, no unsafe `GetNamed` lookup occurs, and every conditional test reports “not applicable” as
 a separate suite result rather than failing or silently pretending to execute DLC behavior.
+
+`PawnDiaryDlcSafetyFixtureTests` automates the shared compatibility boundary in every configuration:
+null-pawn guards even when DLC flags are active; final prompt/public-summary omission when a DLC is
+absent; positive non-Baseliner, royal-title, player-ideoligion/precept/eligible-role, and generated
+creepjoiner state when installed; exact set equality for all official-DLC interaction groups and event
+windows; `ModsConfig`/package-helper/settings-visibility agreement; fragile Biotech growth/birth,
+Anomaly monolith/corpse, and Ideology/Anomaly ritual signatures; and optional-adapter capability
+ready/not-ready fail-open behavior. A new official package-gated Def must update that exact catalog
+fixture in the same change. True disable/re-enable save transitions still require separate game
+launches and remain in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
 ## 8. Implementation Order
 

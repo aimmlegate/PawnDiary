@@ -1692,7 +1692,10 @@ writer, naming before/after save, disabled canonical group, and thrown-owner tes
 > central facts under an exhausted optional budget. English/Russian indexed labels and localized dev
 > previews are covered. No-Biotech metadata/guards, existing Scribe and old-save normalization paths,
 > both adapter logic suites/builds, supporter/transient limits, and XML-owned pending-owner admission limits have
-> been audited. Run and record `tests/SAVE_COMPATIBILITY_SMOKETEST.md` before marking this phase complete.
+> been audited. Loaded-game test source now also drives the real vanilla growth-letter configure/choice
+> hooks, delayed live-child naming flush, B1 prompts at all three detail presets, and pre-cap Scribe/admission
+> recovery; its assembly builds cleanly and still needs an in-game runner pass. Run and record the remaining
+> `tests/SAVE_COMPATIBILITY_SMOKETEST.md` rows before marking this phase complete.
 
 1. Prompt previews and compact/full mode review.
 2. No-Biotech and old-save smoke tests.

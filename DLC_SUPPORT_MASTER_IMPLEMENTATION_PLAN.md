@@ -177,7 +177,13 @@ This is the low-cost prompt-quality release. Do not continue into A1 study/conta
 > **Implementation status (2026-07-16): in progress.** Biotech Phases 0–3 and Narrative N2-B are complete. Phase 4's
 > automated hardening is also implemented: bounded B1 prompt projection/previews and context-detail
 > tests, no-DLC metadata checks, ownership-preserving pending-state admission limits, and SpeakUp/RimTalk logic/build smoke
-> all pass. The loaded-game acceptance matrix is still required, so B2 remains blocked. Stable B1
+> all pass. New RimTest source additionally covers the real vanilla growth-letter configure/choice boundary,
+> delayed live-child naming flush, loaded B1 prompts at every detail preset, and pre-cap Scribe/admission
+> recovery. The shared DLC compatibility fixture now also covers null/base-only final-summary omission,
+> real installed xenotype/title/ideoligion/precept/eligible-role/creepjoiner state, the exact official
+> group/window/settings package matrix, fragile DLC hook signatures, and optional-adapter fail-open
+> readiness; the assembly builds cleanly but still needs its in-game runner pass. The remaining loaded-game
+> acceptance matrix is required, so B2 remains blocked. Stable B1
 > contracts/policy/settings now feed live, atomic birthday/growth-letter ownership with saved postponed
 > rows, auto/choice diffs, mature ordinary fallback, progression consumption, saved family continuity,
 > exact lesson/play observations, truthful child/supporter pages, and source-owned N1 identity evidence.

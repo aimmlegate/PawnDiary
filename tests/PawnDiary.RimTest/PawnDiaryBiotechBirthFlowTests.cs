@@ -1,8 +1,8 @@
 // In-game orchestration tests for the canonical Biotech birth emitter. Pure tests cover exact birth
 // classification, family-arc attachment, writer selection, naming ownership, and save normalization;
-// this fixture proves the detached result becomes one pair page with shared context/evidence and that
-// the durable family/child owner prevents a second page. All test pawns have generation disabled, so
-// no LLM request can leave the loaded game.
+// this fixture proves the detached result becomes one pair page with shared context/evidence, the saved
+// naming owner flushes once through live pawn lookup, and loaded prompt templates hide private IDs. Test
+// pawns generate only under prompt-test capture, so no LLM request can leave the loaded game.
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -13,7 +13,7 @@ using Verse;
 
 namespace PawnDiary.RimTests
 {
-    /// <summary>Exercises the final canonical birth dispatch against a real loaded component.</summary>
+    /// <summary>Exercises canonical birth dispatch, delayed naming ownership, and prompt capture.</summary>
     [TestSuite]
     public static class PawnDiaryBiotechBirthFlowTests
     {
@@ -27,6 +27,8 @@ namespace PawnDiary.RimTests
         private static Pawn father;
         private static Pawn child;
         private static MethodInfo dispatchBirthMethod;
+        private static MethodInfo maintainPendingBirthsMethod;
+        private static FieldInfo pendingBirthsField;
 
         /// <summary>Creates isolated adult writers plus a test subject and enables the birth group.</summary>
         [BeforeEach]
@@ -39,11 +41,18 @@ namespace PawnDiary.RimTests
             dispatchBirthMethod = typeof(DiaryGameComponent).GetMethod(
                 "DispatchBiotechBirth",
                 PrivateInstance);
-            if (dispatchBirthMethod == null)
+            maintainPendingBirthsMethod = typeof(DiaryGameComponent).GetMethod(
+                "MaintainPendingBiotechBirths",
+                PrivateInstance);
+            pendingBirthsField = typeof(DiaryGameComponent).GetField(
+                "pendingBiotechBirths",
+                PrivateInstance);
+            if (dispatchBirthMethod == null || maintainPendingBirthsMethod == null || pendingBirthsField == null)
             {
                 throw new AssertionException(
-                    "Could not bind production birth member 'DispatchBiotechBirth'.");
+                    "Could not bind the production birth dispatch/pending-ownership members.");
             }
+            scope.RegisterCleanup(RemovePendingFixtureRows);
         }
 
         /// <summary>Restores settings, removes test events/diaries, and destroys every test pawn.</summary>
@@ -61,6 +70,8 @@ namespace PawnDiary.RimTests
                 father = null;
                 child = null;
                 dispatchBirthMethod = null;
+                maintainPendingBirthsMethod = null;
+                pendingBirthsField = null;
             }
         }
 
@@ -250,6 +261,122 @@ namespace PawnDiary.RimTests
             }
         }
 
+        /// <summary>
+        /// A saved unnamed birth wakes through the production naming poll, resolves the live child's final
+        /// visible name, emits once at the original tick with frozen writer context, and removes ownership.
+        /// </summary>
+        [Test]
+        public static void PendingBirthFlushesOnceAfterLiveNamingResolution()
+        {
+            if (!ModsConfig.BiotechActive)
+            {
+                Log.Message("[PawnDiary RimTest Biotech pending birth] not applicable (Biotech inactive).");
+                return;
+            }
+
+            scope.SpawnAsLiveColonist(birther);
+            scope.SpawnAsLiveColonist(father);
+            scope.SpawnAsLiveColonist(child);
+            child.Name = new NameTriple("RimTest", "B1 Named Child", "Diary");
+            child.babyNamingDeadline = -1;
+
+            BirthFixture fixture = Fixture();
+            fixture.snapshot.currentChildName = "Baby";
+            fixture.snapshot.namingResolved = false;
+            fixture.snapshot.namingDeadline = fixture.snapshot.birthTick + 60000;
+            fixture.eventContext = new BirthEventContextSnapshot
+            {
+                birthTick = fixture.snapshot.birthTick,
+                birthDate = "frozen pending birth date",
+                writers = new List<BirthWriterContextSnapshot>
+                {
+                    FrozenWriter(birther, "Ari at birth", "birther snapshot", "birth room",
+                        "birther-child continuity", "birther-father continuity"),
+                    FrozenWriter(father, "Cy at birth", "father snapshot", "birth room",
+                        "father-child continuity", "father-birther continuity")
+                }
+            };
+            PendingBirthRows().Add(new PendingBiotechBirthState
+            {
+                snapshot = fixture.snapshot,
+                writers = fixture.writers,
+                eventContext = fixture.eventContext,
+                createdTick = fixture.snapshot.birthTick
+            });
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                InvokeMaintainPendingBirths,
+                FamilyBirthEventData.DefName,
+                birther,
+                father);
+
+            PawnDiaryRimTestScope.Require(
+                diaryEvent.tick == fixture.snapshot.birthTick,
+                "The naming flush did not retain the original birth tick.");
+            PawnDiaryRimTestScope.Require(
+                diaryEvent.date == "frozen pending birth date",
+                "The naming flush did not retain the event-time birth date.");
+            RequireContext(diaryEvent, "child_name=B1 Named Child");
+            PawnDiaryRimTestScope.Require(
+                !PendingBirthRows().Exists(row => row?.snapshot?.childId == child.GetUniqueLoadID()),
+                "The completed naming flush left its pending birth owner behind.");
+            scope.RequireNoNewEvent(InvokeMaintainPendingBirths);
+        }
+
+        /// <summary>
+        /// Loaded pair-important templates retain the exact child, outcome, method, and adult roles for
+        /// Full/Balanced/Compact prompts without exposing stable IDs or the family correlation key.
+        /// </summary>
+        [Test]
+        public static void BirthPromptsStayTruthfulAcrossAllDetailPresets()
+        {
+            if (!ModsConfig.BiotechActive)
+            {
+                Log.Message("[PawnDiary RimTest Biotech birth prompts] not applicable (Biotech inactive).");
+                return;
+            }
+
+            scope.EnablePromptCapture();
+            scope.Component.SetDiaryGenerationEnabled(birther, true);
+            scope.Component.SetDiaryGenerationEnabled(father, true);
+            PromptContextDetailLevel[] levels =
+            {
+                PromptContextDetailLevel.Full,
+                PromptContextDetailLevel.Balanced,
+                PromptContextDetailLevel.Compact
+            };
+
+            for (int i = 0; i < levels.Length; i++)
+            {
+                if (i > 0)
+                {
+                    child = scope.CreateAdultColonist();
+                }
+
+                child.Name = new NameTriple("RimTest", "B1 Prompt Child " + i, "Diary");
+                PawnDiaryMod.Settings.contextDetailLevel = levels[i];
+                BirthFixture fixture = Fixture();
+                DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                    () => InvokeDispatch(fixture),
+                    FamilyBirthEventData.DefName,
+                    birther,
+                    father);
+                string prompt = scope.CapturedPrompt(diaryEvent, DiaryEvent.InitiatorRole);
+                string suffix = " (" + levels[i] + ")";
+
+                RequirePromptContains(prompt, child.LabelShortCap, "child name" + suffix);
+                RequirePromptContains(prompt, BiotechBirthOutcomeTokens.Healthy, "birth outcome" + suffix);
+                RequirePromptContains(prompt, BiotechBirthMethodTokens.Pregnancy, "birth method" + suffix);
+                RequirePromptContains(prompt, BiotechFamilyRoleTokens.Birther, "writer role" + suffix);
+                RequirePromptContains(prompt, BiotechFamilyRoleTokens.Father, "related writer role" + suffix);
+                RequirePromptOmits(prompt, child.GetUniqueLoadID(), "child Thing ID" + suffix);
+                RequirePromptOmits(prompt, birther.GetUniqueLoadID(), "birther Thing ID" + suffix);
+                RequirePromptOmits(prompt, father.GetUniqueLoadID(), "father Thing ID" + suffix);
+                RequirePromptOmits(prompt, fixture.snapshot.familyArcId, "family arc ID" + suffix);
+                RequirePromptOmits(prompt, fixture.snapshot.correlationId, "correlation token" + suffix);
+            }
+        }
+
         private static BirthFixture Fixture()
         {
             int now = Find.TickManager?.TicksGame ?? 0;
@@ -348,6 +475,64 @@ namespace PawnDiary.RimTests
             {
                 throw exception.InnerException ?? exception;
             }
+        }
+
+        private static void InvokeMaintainPendingBirths()
+        {
+            try
+            {
+                maintainPendingBirthsMethod.Invoke(scope.Component, null);
+            }
+            catch (TargetInvocationException exception)
+            {
+                throw exception.InnerException ?? exception;
+            }
+        }
+
+        private static List<PendingBiotechBirthState> PendingBirthRows()
+        {
+            List<PendingBiotechBirthState> rows = pendingBirthsField?.GetValue(scope.Component)
+                as List<PendingBiotechBirthState>;
+            if (rows == null)
+            {
+                throw new AssertionException("Could not inspect pending Biotech birth ownership.");
+            }
+
+            return rows;
+        }
+
+        private static void RemovePendingFixtureRows()
+        {
+            if (scope?.Component == null || pendingBirthsField == null)
+            {
+                return;
+            }
+
+            List<PendingBiotechBirthState> rows = pendingBirthsField.GetValue(scope.Component)
+                as List<PendingBiotechBirthState>;
+            rows?.RemoveAll(row => row?.snapshot?.familyArcId != null
+                && row.snapshot.familyArcId.StartsWith(
+                    "biotech-family|rimtest-birth|",
+                    StringComparison.Ordinal));
+        }
+
+        private static void RequirePromptContains(string prompt, string fragment, string label)
+        {
+            PawnDiaryRimTestScope.Require(
+                prompt != null && prompt.IndexOf(fragment, StringComparison.OrdinalIgnoreCase) >= 0,
+                "The birth prompt omitted " + label + " ('" + fragment + "').");
+        }
+
+        private static void RequirePromptOmits(string prompt, string fragment, string label)
+        {
+            if (string.IsNullOrEmpty(fragment))
+            {
+                return;
+            }
+
+            PawnDiaryRimTestScope.Require(
+                prompt == null || prompt.IndexOf(fragment, StringComparison.OrdinalIgnoreCase) < 0,
+                "The birth prompt leaked " + label + " ('" + fragment + "').");
         }
 
         private static void RequireContext(DiaryEvent diaryEvent, string fragment)

@@ -62,8 +62,10 @@ owners. Both use the shared harness:
 | `PawnDiaryRaidFlowTests` | 13 | Raid per-colonist fan-out + colony dedup + bypass classes. |
 | `PawnDiaryMoodConditionFlowTests` | 14 | GameCondition mood fan-out + classification + group gate. |
 | `PawnDiaryPawnProgressionFlowTests` | 15 | Skill/trait milestone baseline + upward-only + arc request. |
-| `PawnDiaryBiotechGrowthFlowTests` | B1 | Family-keyed canonical growth/N1 evidence + baseline consumption + Birthday/disabled fallback. |
-| `PawnDiaryBiotechBirthFlowTests` | B1 | Canonical two-adult birth, child-never-POV shape, exact context/evidence, and durable replay rejection. |
+| `PawnDiaryBiotechGrowthFlowTests` | B1 | Family-keyed canonical growth/N1 evidence, baseline/fallback, real growth-letter hooks, and loaded detail-preset prompts. |
+| `PawnDiaryBiotechBirthFlowTests` | B1 | Canonical two-adult birth, child-never-POV shape, delayed naming flush, replay rejection, and loaded detail-preset prompts. |
+| `PawnDiaryBiotechComponentStateFixtureTests` | B1 | Real-Scribe component keys, old/malformed/oversized rows, hard ceiling, and pre-cap admission recovery. |
+| `PawnDiaryDlcSafetyFixtureTests` | 7.3 | Null/base-only omission, installed-DLC positive pawn state, official package/group/window/settings matrix, fragile hook signatures, and optional-adapter fail-open readiness. |
 | `PawnDiaryQuestFlowTests` | 16 | Quest accept/complete/fail fan-out + label sanitation + dedup. |
 | `PawnDiaryRitualFlowTests` | 17 | Ritual participant fan-out (DLC-gated, clean no-op without Ideology). |
 | `PawnDiaryArrivalFlowTests` | 18 | Neutral arrival page + first-ordering + bootstrap resilience. |

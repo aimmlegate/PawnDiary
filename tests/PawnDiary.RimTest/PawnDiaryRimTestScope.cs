@@ -171,7 +171,24 @@ namespace PawnDiary.RimTests
         /// </summary>
         public Pawn CreateAdultColonist()
         {
-            return CreateColonist(generationEnabled: false);
+            return CreateColonist(generationEnabled: false, pawnKind: null);
+        }
+
+        /// <summary>
+        /// Generates an isolated adult colonist from a specific loaded pawn kind. DLC compatibility
+        /// fixtures use this to exercise a real package-owned pawn shape (for example an Anomaly
+        /// creepjoiner) without naming that DLC Def in production code. The pawn receives the same
+        /// generation-disabled diary setup, tracking, setup-arrival scrub, and teardown as the ordinary
+        /// colonist factory.
+        /// </summary>
+        public Pawn CreateAdultColonist(PawnKindDef pawnKind)
+        {
+            if (pawnKind == null)
+            {
+                throw new AssertionException("A specific RimTest pawn kind cannot be null.");
+            }
+
+            return CreateColonist(generationEnabled: false, pawnKind: pawnKind);
         }
 
         /// <summary>
@@ -189,13 +206,13 @@ namespace PawnDiary.RimTests
                     + "captured as prompt-only and can never send a real LLM request.");
             }
 
-            return CreateColonist(generationEnabled: true);
+            return CreateColonist(generationEnabled: true, pawnKind: null);
         }
 
-        private Pawn CreateColonist(bool generationEnabled)
+        private Pawn CreateColonist(bool generationEnabled, PawnKindDef pawnKind)
         {
             PawnGenerationRequest request = new PawnGenerationRequest(
-                PawnKindDefOf.Colonist,
+                pawnKind ?? PawnKindDefOf.Colonist,
                 faction: null,
                 context: PawnGenerationContext.NonPlayer,
                 forceGenerateNewPawn: true,

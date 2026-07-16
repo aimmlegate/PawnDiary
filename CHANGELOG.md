@@ -1,5 +1,33 @@
 # Changelog
 
+- **2026-07-16 — Expanded automated DLC compatibility matrix.** The loaded-game DLC-safety fixture
+  now covers the compatibility layer beyond absence-only guards: null pawns remain safe even with DLC
+  flags active; absent DLC fields are rejected at the final prompt/public-summary boundary; installed
+  Biotech, Royalty, and Ideology exercise disposable real xenotype/title/ideoligion/precept state and
+  an eligible role where the colony permits one; an installed Anomaly run generates a real
+  creepjoiner pawn kind; title/role prompt-enchantment collectors get positive coverage; and the exact
+  official-DLC interaction-group/event-window catalog is pinned to `ModsConfig`, package helpers, and
+  settings visibility. Fragile growth, birth, monolith, unnatural-corpse, Ideology ritual, and psychic
+  ritual runtime signatures are now release assertions. A public capture-capability fixture proves an
+  optional adapter suppresses XML fallback only while ready and restores fail-open capture when
+  cleared. The shared RimTest harness gained a caller-supplied loaded-pawn-kind factory with identical
+  generation-disable/cleanup guarantees. True DLC disable/re-enable save transitions remain a
+  cross-launch smoketest; the expanded RimTest assembly builds cleanly and awaits an in-game matrix run.
+
+- **2026-07-16 — Biotech B1 loaded-game checkpoint coverage.** Five focused RimTests now replace
+  large synthetic parts of the manual release matrix: the growth suite invokes vanilla
+  `ChoiceLetter_GrowthMoment.ConfigureGrowthLetter` and `MakeChoices` through the installed Harmony
+  hooks for a committed `NoTrait`/passion choice; growth and birth both capture the shipped loaded
+  templates at Full, Balanced, and Compact while rejecting private Thing/arc/tier/correlation data;
+  the birth suite flushes a saved unnamed owner through the real live-child naming poll and proves
+  original tick/frozen context/once-only removal; and the component-Scribe suite preserves rows above
+  the XML admission limit, rejects new ownership without eviction, then admits again after the count
+  falls below the limit. The runbook's impossible “resolve one row above a full limit” wording now
+  correctly requires enough resolutions to return below the admission threshold. RimTest and core
+  assemblies build cleanly; the new loaded-game cases still need an in-game runner pass, and genuine
+  mod-list/save transitions, UI, optional-mod gameplay, remaining birth routes, and speed-4 perception
+  remain manual.
+
 - **2026-07-16 — Second-wave adversarial bughunt fixes (Biotech ownership lifecycles).**
   `FindLivePawnByLoadId` and the newborn naming lookup now search caravans and travelling
   transporters (the same universe the loaded-save bootstrap uses) — previously a family that

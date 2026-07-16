@@ -111,6 +111,12 @@ field-level math that runs after Scribe has populated the fields.
 Run this matrix before marking Biotech Phase 4 complete. Keep prompt-test mode on for prompt review so
 no model request leaves the game; turn it off only when deliberately reviewing generated prose.
 
+The Biotech RimTest suites now automate the real vanilla growth-letter configure/`NoTrait` choice
+boundary, delayed live-child naming flush, Full/Balanced/Compact growth and birth prompt projection,
+and pre-cap component-Scribe/admission recovery. Run those suites in-game first; the rows below remain
+the acceptance record for UI presentation, genuine save/mod-list transitions, optional-mod gameplay,
+uncovered birth routes, and perceived performance.
+
 1. **Base game only (no Biotech).** Start and load a colony with Pawn Diary + Harmony only. Confirm
    `progressionGrowthMoment` and `biotechFamilyBirth` are absent from Events settings, the development
    log has no Pawn Diary/DLC/Scribe error, ordinary birthdays still work, and save → reload remains
@@ -156,8 +162,9 @@ no model request leaves the game; turn it off only when deliberately reviewing g
    no per-tick warnings, repeated pages, or visible hitch from B1 state.
 9. **Pre-cap ownership fixture.** Load or instrument a save with more than 256 valid pending growth and
    birth rows but fewer than 2048. Confirm load preserves every established row, saving round-trips them,
-   and a newly triggered growth/birth owner fails open without changing the existing set. Resolve one
-   old row, trigger one new owner, and confirm admission resumes without a duplicate or missing page.
+   and a newly triggered growth/birth owner fails open without changing the existing set. Resolve enough
+   old rows to move the count below the current admission limit, trigger one new owner, and confirm
+   admission resumes without a duplicate or missing page.
 10. **Biotech removed mid-save.** Take a Biotech save that contains at least one open family arc, one
    pending growth row, and one pending birth row (instrument via dev if needed), then disable Biotech
    and load. Expected: no Pawn Diary/Scribe error beyond RimWorld's own missing-content warnings; the

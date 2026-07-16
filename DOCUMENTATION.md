@@ -2159,6 +2159,13 @@ Never rename a key "for cleanliness" alone.
 - DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks. This
   includes Biotech growth trait/skill/work-disabled snapshots and Ideology precept/role reads used by
   body-mod stance policy; other code consumes plain detached rows, labels, defNames, or booleans.
+- `PawnDiaryDlcSafetyFixtureTests` exercises this boundary in both directions: absent/null state must
+  disappear from the final prompt/public summary, while installed DLC uses disposable real xenotype,
+  title, ideoligion/precept/eligible-role, and creepjoiner pawn state. The same fixture freezes every
+  official package-gated interaction group/event window, settings visibility, fragile DLC hook
+  signature, and optional-adapter fail-open readiness contract. The shared RimTest scope can generate
+  a disposable pawn from a caller-supplied loaded `PawnKindDef` for package-owned positive fixtures;
+  production code still never names the DLC Def.
 - Avoid `DefDatabase<T>.GetNamed("DlcDef")` for optional content; use string matching or
   `GetNamedSilentFail`.
 
@@ -2280,15 +2287,18 @@ Twenty EVT event-flow suites (`PawnDiary*FlowTests.cs`) now sit on this harness,
 `TEST_COVERAGE_PLAN.md §3` — EVT-01 through EVT-23 — plus the supplemental
 `PawnDiaryBiotechGrowthFlowTests` and `PawnDiaryBiotechBirthFlowTests` B1 suites. They verify growth
 once-only emission, progression consumption, ordinary fallback, both-groups-disabled observation,
-canonical two-adult birth emission, child-subject/never-POV shape, exact context, source-owned N1
-evidence for both writers, frozen event-time context, chronological birth-before-death ordering, and
-durable birth replay rejection using detached exact snapshots. Phase 4 adds pure Full/Balanced/Compact
+the real vanilla `ConfigureGrowthLetter` → `MakeChoices` Harmony boundary for a `NoTrait`/passion
+choice, canonical two-adult birth emission, child-subject/never-POV shape, exact context, source-owned
+N1 evidence for both writers, frozen event-time context, chronological birth-before-death ordering,
+durable birth replay rejection, and a live-child delayed naming flush using the original event time.
+Both suites capture loaded Full/Balanced/Compact B1 prompts and require the central story facts while
+rejecting Thing IDs, family-arc IDs, numeric tiers, and correlation tokens. Phase 4 also adds pure
 prompt assertions with a deliberately exhausted optional budget, shipped XML/English/Russian indexed
 label checks, invalid/exact-boundary/hard-ceiling pending-list tests, ownership-preserving admission
-checks, an About.xml no-Biotech-dependency assertion, and
-localized growth/birth entries in the prompt fixture panel. SpeakUp and RimTalk logic suites plus both
-bridge builds are the automated adapter smoke; the manual growth-letter, no-DLC/old-save, adapter, and
-live birth/naming matrices still run in game. Sources whose real
+checks, component-Scribe pre-cap preservation/admission recovery, an About.xml no-Biotech-dependency
+assertion, and localized growth/birth entries in the prompt fixture panel. SpeakUp and RimTalk logic
+suites plus both bridge builds are the automated adapter smoke; the manual no-DLC/old-save, UI,
+adapter, performance, and remaining live birth-route matrices still run in game. Sources whose real
 trigger needs a loaded map, the
 storyteller, or a periodic scanner (raid/mood/quest/reflection/window/observed-condition) are exercised
 by submitting the exact per-unit production signal the scanner emits, which keeps the tests mapless and
@@ -2300,7 +2310,11 @@ harness: template/domain resolution and the Pair/Solo/reflection/neutral templat
 context-detail presets, prompt enchantments, the writing-style and psychotype precedence chains, humor
 cues (all captured through the real render pipeline via prompt-test mode), a Scribe save/load round trip
 of the diary models and repository index rebuilds, the public `PawnDiaryApi` surface, the non-visual
-diary-tab view-model contracts, and base-game DLC-safety. `scripts/verify-coverage.ps1` is the one-command
+diary-tab view-model contracts, and the DLC compatibility matrix. That matrix asserts base-only/null
+omission, real installed-DLC pawn state through final summary/enchantment adapters, exact official
+package/group/window/settings availability, fragile DLC hook signatures, and optional capture
+capability fail-open behavior. Cross-launch DLC removal/re-enable save testing remains manual because
+`ModsConfig` cannot be safely rewritten inside one running game. `scripts/verify-coverage.ps1` is the one-command
 audit that builds everything, runs the pure suites, and prints the EVT requirement matrix. The
 transport/async-runtime layer (`§6.3`) is intentionally deferred — see the suite README — because
 `LlmClient` is static and session-global and cannot be driven safely from an in-game test without a

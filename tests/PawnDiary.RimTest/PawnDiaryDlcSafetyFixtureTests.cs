@@ -2,7 +2,7 @@
 //
 // The base-game-only run is release-blocking: a player who owns none of the paid DLCs (Royalty,
 // Ideology, Biotech, Anomaly) and runs no optional compatibility mods must never hit a crash or a
-// spurious diary entry from DLC/mod-only code paths. This suite proves the three seams that carry
+// spurious diary entry from DLC/mod-only code paths. This suite proves the principal seams that carry
 // that guarantee, and is written to be SAFE and MEANINGFUL on a base install:
 //
 //   (a) DlcContext accessors are double-guarded (ModsConfig.<Dlc>Active AND a null tracker check),
@@ -18,41 +18,60 @@
 //       "IdeologyRole") produce NO candidate for a pawn whose DLC status is empty and never crash:
 //       the collector reads the value through the same guarded DlcContext accessor, so without the
 //       DLC the value is empty and the candidate is skipped. Source/Generation/PromptEnchantmentCollector.cs.
+//   (d) Installed DLC paths use real pawn state: non-Baseliner xenotype, royal title, ideoligion/
+//       precepts and, where the colony's requirements permit it, an ideoligion role; a generated
+//       Anomaly creepjoiner exercises the positive boolean adapter.
+//   (e) The complete official-DLC interaction-group/event-window catalog agrees with ModsConfig and
+//       settings visibility, and fragile DLC Harmony/reflection targets still match RimWorld 1.6.
+//   (f) Optional capture capability readiness suppresses its XML fallback only while ready, restoring
+//       fail-open capture immediately when the adapter reports unavailable.
 //
 // Every DLC-conditional case REPORTS a result rather than skipping silently: when the owning DLC is
 // active in the current run the positive behavior is asserted (the real DLC path runs without a
 // crash and the accessor is non-null); when it is inactive the clean empty / no-op result is asserted
 // and announced as "not applicable" via Log.Message so the run record shows the branch was reached.
 //
-// Determinism / safety: this suite creates one generation-DISABLED colonist (no LLM request can ever
-// leave the game) and records NO diary event — it only READS accessors, enumerates loaded Defs, and
-// runs the pure collector against in-memory Defs it never registers. It mutates no settings and no
-// game state, so the harness's own snapshot/restore + no-leak audit is sufficient; nothing extra to
-// clean up. The prompt-enchantment Defs are constructed in memory and passed straight to Collect, so
-// the DefDatabase is never touched by them.
+// Determinism / safety: every pawn is generation-DISABLED (no LLM request can ever leave the game).
+// Positive fixtures mutate only disposable test pawns; an unoccupied Ideology role may be assigned
+// briefly and is registered for guaranteed cleanup. The suite records no requested diary event. The
+// prompt-enchantment and capability-fallback Defs are constructed in memory and never registered, so
+// the DefDatabase stays untouched; process-global capability readiness is cleared in a finally block.
 //
 // Coverage-matrix area (TEST_COVERAGE_PLAN.md §7.3): DLC + optional-mod base-game safety.
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using PawnDiary.Capture;
+using PawnDiary.Integration;
 using RimTestRedux;
 using RimWorld;
 using Verse;
+using Verse.AI.Group;
 
 namespace PawnDiary.RimTests
 {
     /// <summary>
-    /// Proves §7.3 base-game safety: DlcContext accessors are DLC-gated and never throw, the
-    /// DLC/optional-mod compatibility interaction groups sit inert without their package, and the
-    /// DLC-gated prompt-enchantment collectors yield no candidate without the DLC. Requires a loaded
-    /// game (the harness builds an isolated colonist); no per-pawn generation is ever enabled, so no
-    /// LLM request can leave the game. Every DLC branch asserts a concrete result on both the active
-    /// and inactive path.
+    /// Proves §7.3 DLC compatibility: guarded accessors and final summary adapters omit absent DLC,
+    /// real installed-DLC pawn state reaches the expected context/enchantment seams, official package
+    /// gates match settings visibility, fragile hook targets retain their runtime signatures, and
+    /// optional adapters fail open. Requires a loaded game; no per-pawn generation is ever enabled,
+    /// so no LLM request can leave the game.
     /// </summary>
     [TestSuite]
     public static class PawnDiaryDlcSafetyFixtureTests
     {
         private const string LogPrefix = "[PawnDiary RimTest §7.3] ";
+        private const BindingFlags AnyInstance =
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        private const BindingFlags AnyStatic =
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+
+        private const string RoyaltyPackageId = "Ludeon.RimWorld.Royalty";
+        private const string IdeologyPackageId = "Ludeon.RimWorld.Ideology";
+        private const string BiotechPackageId = "Ludeon.RimWorld.Biotech";
+        private const string AnomalyPackageId = "Ludeon.RimWorld.Anomaly";
+        private const string OdysseyPackageId = "Ludeon.RimWorld.Odyssey";
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
@@ -234,6 +253,206 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// The null-pawn contract must hold even in an all-DLC process. This catches accessors that only
+        /// appear safe in a base-only run because their ModsConfig guard short-circuits before a missing
+        /// pawn dereference. Summary builders and optional adapters legitimately ask about a pawn that
+        /// disappeared between event capture and prompt generation, so every result must stay empty.
+        /// </summary>
+        [Test]
+        public static void EveryDlcAccessorRejectsNullPawnEvenWhenItsDlcIsActive()
+        {
+            PawnDiaryRimTestScope.Require(string.IsNullOrEmpty(DlcContext.Xenotype(null))
+                    && string.IsNullOrEmpty(DlcContext.XenotypeLabel(null))
+                    && string.IsNullOrEmpty(DlcContext.XenotypeDefName(null)),
+                "Biotech xenotype accessors must return empty for a null pawn.");
+            PawnDiaryRimTestScope.Require(string.IsNullOrEmpty(DlcContext.RoyalTitle(null))
+                    && string.IsNullOrEmpty(DlcContext.RoyalTitleLabel(null))
+                    && string.IsNullOrEmpty(DlcContext.RoyalTitleDefName(null)),
+                "Royalty title accessors must return empty for a null pawn.");
+            PawnDiaryRimTestScope.Require(!DlcContext.IsCreepJoiner(null)
+                    && !DlcContext.IsHauntedByUnnaturalCorpse(null),
+                "Anomaly accessors must return false for a null pawn.");
+            PawnDiaryRimTestScope.Require(string.IsNullOrEmpty(DlcContext.Ideoligion(null))
+                    && string.IsNullOrEmpty(DlcContext.IdeologicalRole(null))
+                    && DlcContext.IdeologyPreceptDefNames(null).Count == 0,
+                "Ideology accessors must return empty for a null pawn.");
+            PawnDiaryRimTestScope.Require(DiaryContextBuilder.BuildPawnSummarySnapshot(null) == null,
+                "The public pawn-summary adapter must preserve its documented null-pawn result.");
+        }
+
+        /// <summary>
+        /// Drives real installed Biotech, Royalty, and Ideology pawn state through DlcContext, the
+        /// public structured snapshot, the prompt-summary blob, and the title enchantment collector.
+        /// Inactive DLCs prove their fields are omitted at the final adapter boundary instead. The test
+        /// pawn is disposable, so all mutations disappear with the ordinary scope teardown.
+        /// </summary>
+        [Test]
+        public static void InstalledDlcPawnStateFlowsThroughSummaryAndPromptAdapters()
+        {
+            bool biotechStateExpected = false;
+            bool royaltyStateExpected = false;
+            bool ideologyStateExpected = false;
+            if (ModsConfig.BiotechActive)
+            {
+                PawnDiaryRimTestScope.Require(pawn.genes != null,
+                    "A generated human pawn must have a gene tracker when Biotech is active.");
+                XenotypeDef xenotype = DefDatabase<XenotypeDef>.AllDefsListForReading
+                    .FirstOrDefault(def => def != null && def != XenotypeDefOf.Baseliner
+                        && !string.IsNullOrWhiteSpace(def.defName));
+                PawnDiaryRimTestScope.Require(xenotype != null,
+                    "Biotech is active but no non-Baseliner xenotype Def was loaded.");
+                pawn.genes.SetXenotypeDirect(xenotype);
+
+                string expectedLabel = PromptTextSanitizer.LocalizedPromptText(pawn.genes.XenotypeLabelCap);
+                PawnDiaryRimTestScope.Require(DlcContext.XenotypeDefName(pawn) == xenotype.defName
+                        && DlcContext.XenotypeLabel(pawn) == expectedLabel
+                        && DlcContext.Xenotype(pawn) == expectedLabel,
+                    "A real non-Baseliner xenotype did not survive the guarded DlcContext adapter.");
+                biotechStateExpected = true;
+            }
+
+            if (ModsConfig.RoyaltyActive)
+            {
+                PawnDiaryRimTestScope.Require(pawn.royalty != null,
+                    "A Royalty-active game must provide the pawn royalty tracker.");
+                RoyalTitleDef titleDef = DefDatabase<RoyalTitleDef>.AllDefsListForReading
+                    .Where(def => def != null && !string.IsNullOrWhiteSpace(def.defName))
+                    .OrderByDescending(def => def.seniority)
+                    .FirstOrDefault();
+                PawnDiaryRimTestScope.Require(titleDef != null,
+                    "Royalty is active but no RoyalTitleDef was loaded.");
+
+                // Add a title row directly to the disposable pawn instead of invoking SetTitle, which
+                // would grant permits/abilities and send letters unrelated to this read-only adapter test.
+                pawn.royalty.AllTitlesForReading.Add(new RoyalTitle
+                {
+                    def = titleDef,
+                    // A scenario/mod may remove the Empire faction even with Royalty active. The
+                    // guarded reader needs only the title Def; use the player faction as a safe owner.
+                    faction = Faction.OfEmpire ?? scope.PlayerFaction,
+                    pawn = pawn,
+                    receivedTick = Find.TickManager?.TicksGame ?? 0
+                });
+                string currentTitleDef = pawn.royalty.MostSeniorTitle?.def?.defName ?? string.Empty;
+                PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(currentTitleDef)
+                        && DlcContext.RoyalTitleDefName(pawn) == currentTitleDef
+                        && !string.IsNullOrWhiteSpace(DlcContext.RoyalTitle(pawn)),
+                    "A real royal title did not survive the guarded DlcContext adapter.");
+                PawnDiaryRimTestScope.Require(CollectSingleSourceCount("RoyalTitle") == 1,
+                    "A titled pawn must produce exactly one RoyalTitle enchantment candidate.");
+                royaltyStateExpected = true;
+            }
+
+            if (ModsConfig.IdeologyActive)
+            {
+                PawnDiaryRimTestScope.Require(pawn.ideo != null && scope.PlayerFaction.ideos != null,
+                    "An Ideology-active player pawn must expose ideology trackers.");
+                // Classic/no-ideology mode may leave the player faction without a primary Ideo. An
+                // NPC Ideo is equally valid for this adapter fixture; if the loaded scenario has none
+                // at all, retain the truthful empty state instead of making the suite scenario-dependent.
+                Ideo fixtureIdeo = scope.PlayerFaction.ideos.PrimaryIdeo
+                    ?? Find.IdeoManager?.IdeosListForReading?.FirstOrDefault();
+                if (fixtureIdeo == null)
+                {
+                    Log.Message(LogPrefix + "Ideology positive fixture: no Ideo exists in this loaded "
+                        + "scenario; the empty guarded path remains asserted.");
+                }
+                else
+                {
+                    pawn.ideo.SetIdeo(fixtureIdeo);
+
+                    List<string> expectedPrecepts = fixtureIdeo.PreceptsListForReading
+                        .Where(precept => precept?.def != null && !string.IsNullOrWhiteSpace(precept.def.defName))
+                        .Select(precept => precept.def.defName)
+                        .ToList();
+                    PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(DlcContext.Ideoligion(pawn))
+                            && DlcContext.IdeologyPreceptDefNames(pawn).SequenceEqual(expectedPrecepts),
+                        "A real ideoligion/precept set did not survive the guarded DlcContext adapter.");
+                    ideologyStateExpected = true;
+
+                    // A colony's authored role requirements can legitimately reject this randomly
+                    // generated pawn, and every role may already belong to a real colonist. Use only an
+                    // unoccupied role: RimTests must never disturb a player's pawn for positive coverage.
+                    Precept_Role role = fixtureIdeo.RolesListForReading
+                        .FirstOrDefault(candidate => candidate != null
+                            && candidate.ChosenPawnSingle() == null
+                            && candidate.RequirementsMet(pawn));
+                    if (role != null)
+                    {
+                        scope.RegisterCleanup(() =>
+                        {
+                            if (role.IsAssigned(pawn)) role.Unassign(pawn, false);
+                        });
+                        role.Assign(pawn, false);
+                        PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(DlcContext.IdeologicalRole(pawn))
+                                && CollectSingleSourceCount("IdeologyRole") == 1,
+                            "An assigned ideoligion role did not produce its guarded context/enchantment candidate.");
+                    }
+                    else
+                    {
+                        Log.Message(LogPrefix + "Ideology role positive fixture: no unoccupied loaded role "
+                            + "accepted the isolated pawn; faith/precept positive paths still ran.");
+                    }
+                }
+            }
+
+            DiaryPawnSummarySnapshot snapshot = DiaryContextBuilder.BuildPawnSummarySnapshot(pawn);
+            string summary = DiaryContextBuilder.BuildPawnSummary(pawn);
+            PawnDiaryRimTestScope.Require(snapshot != null && !string.IsNullOrWhiteSpace(summary),
+                "The final pawn-summary adapters returned no result for a valid colonist.");
+            RequireSummaryDlcField(
+                ModsConfig.BiotechActive,
+                biotechStateExpected,
+                "Biotech",
+                DlcContext.Xenotype(pawn),
+                snapshot.xenotype,
+                "xenotype=",
+                summary);
+            RequireSummaryDlcField(
+                ModsConfig.RoyaltyActive,
+                royaltyStateExpected,
+                "Royalty",
+                DlcContext.RoyalTitle(pawn),
+                snapshot.royalTitle,
+                "title=",
+                summary);
+            RequireSummaryDlcField(
+                ModsConfig.IdeologyActive,
+                ideologyStateExpected,
+                "Ideology",
+                DlcContext.Ideoligion(pawn),
+                snapshot.faith,
+                "faith=",
+                summary);
+        }
+
+        /// <summary>
+        /// Generates a real package-owned creepjoiner pawn kind when Anomaly is installed. This is the
+        /// positive counterpart to the ordinary-colonist false branch and proves the string-free adapter
+        /// recognizes live DLC state. Without Anomaly the test reports and asserts the normal no-op path.
+        /// </summary>
+        [Test]
+        public static void AnomalyCreepjoinerPositivePathIsPackageGated()
+        {
+            if (!ModsConfig.AnomalyActive)
+            {
+                PawnDiaryRimTestScope.Require(!DlcContext.IsCreepJoiner(pawn),
+                    "A normal base-game pawn must not be classified as a creepjoiner.");
+                Log.Message(LogPrefix + "Anomaly creepjoiner positive fixture: not applicable (Anomaly inactive). ");
+                return;
+            }
+
+            PawnKindDef creepjoinerKind = DefDatabase<PawnKindDef>.AllDefsListForReading
+                .FirstOrDefault(def => def?.race != null
+                    && string.Equals(def.race.defName, "CreepJoiner", StringComparison.Ordinal));
+            PawnDiaryRimTestScope.Require(creepjoinerKind != null,
+                "Anomaly is active but no loaded pawn kind uses the CreepJoiner race.");
+            Pawn creepjoiner = scope.CreateAdultColonist(creepjoinerKind);
+            PawnDiaryRimTestScope.Require(DlcContext.IsCreepJoiner(creepjoiner),
+                "DlcContext did not recognize a real generated Anomaly creepjoiner.");
+        }
+
+        /// <summary>
         /// Guards the exact RimWorld 1.6 family-correlation target. DLC types exist in the shared game
         /// assembly even on a base-only run, so this signature check is safe without Biotech active.
         /// </summary>
@@ -276,6 +495,43 @@ namespace PawnDiary.RimTests
                 miscarry != null && miscarry.ReturnType == typeof(void),
                 "RimWorld no longer exposes Hediff_Pregnant.Miscarry(); exact family-loss enrichment "
                 + "must be updated before release.");
+        }
+
+        /// <summary>
+        /// Pins every fragile DLC hook target and reflection member used by the shipped compatibility
+        /// layer. These types exist in Assembly-CSharp even without owning the DLC, so signature drift can
+        /// be detected in the release-blocking base-only run instead of surfacing as a partial Harmony
+        /// registration in a player's startup log.
+        /// </summary>
+        [Test]
+        public static void FragileDlcHookTargetsMatchTheRimWorldRuntime()
+        {
+            Type growthLetter = typeof(ChoiceLetter_GrowthMoment);
+            RequireMethod(growthLetter, "ConfigureGrowthLetter", typeof(void), new[]
+            {
+                typeof(Pawn), typeof(int), typeof(int), typeof(int), typeof(List<string>), typeof(Name)
+            });
+            RequireMethod(growthLetter, "MakeChoices", typeof(void), new[]
+            {
+                typeof(List<SkillDef>), typeof(Trait)
+            });
+            RequireField(growthLetter, "pawn", typeof(Pawn));
+            RequireField(growthLetter, "growthTier", typeof(int));
+            RequireField(growthLetter, "choiceMade", typeof(bool));
+
+            Type monolith = typeof(Building_VoidMonolith);
+            RequireMethod(monolith, "Activate", typeof(void), new[] { typeof(Pawn) });
+            RequireField(monolith, "autoActivateTick", typeof(int));
+            RequireProperty(typeof(Find), "Anomaly", typeof(GameComponent_Anomaly), AnyStatic);
+            RequireProperty(typeof(GameComponent_Anomaly), "LevelDef", typeof(MonolithLevelDef), AnyInstance);
+            RequireField(typeof(MonolithLevelDef), "levelInspectText", typeof(string));
+            RequireField(typeof(MonolithLevelDef), "monolithLabel", typeof(string));
+            RequireMethod(typeof(GameComponent_Anomaly), "PawnHasUnnaturalCorpse", typeof(bool),
+                new[] { typeof(Pawn) });
+
+            RequireMethod(typeof(LordJob_Ritual), "ApplyOutcome", typeof(void),
+                new[] { typeof(float), typeof(bool), typeof(bool), typeof(bool) });
+            RequireMethod(typeof(LordToil_PsychicRitual), "RitualCompleted", typeof(void), Type.EmptyTypes);
         }
 
         /// <summary>
@@ -345,6 +601,126 @@ namespace PawnDiary.RimTests
 
             Log.Message(LogPrefix + "compat interaction groups: " + inertGated + " inert (package absent), "
                 + activeGated + " active (package present).");
+        }
+
+        /// <summary>
+        /// Freezes the complete official-DLC catalog currently shipped by Pawn Diary: every package-gated
+        /// interaction group and event window must name the right official package, agree with ModsConfig,
+        /// and appear in the settings list exactly when available. Exact set equality makes a newly added
+        /// DLC row update this test deliberately instead of silently escaping the compatibility matrix.
+        /// </summary>
+        [Test]
+        public static void OfficialDlcCatalogMatchesPackageFlagsAndSettingsVisibility()
+        {
+            Dictionary<string, string> expectedGroups = new Dictionary<string, string>
+            {
+                { "eventWindowVoidMonolith", AnomalyPackageId },
+                { "biotechFamilyBirth", BiotechPackageId },
+                { "ritualAnomalyInvitation", AnomalyPackageId },
+                { "ritualAnomalyFleshAndWeather", AnomalyPackageId },
+                { "ritualAnomalyPredation", AnomalyPackageId },
+                { "ritualAnomalyMind", AnomalyPackageId },
+                { "ritualAnomalyAbduction", AnomalyPackageId },
+                { "ritualAnomalyDeathRefusal", AnomalyPackageId },
+                { "ritualAnomalyPsychic", AnomalyPackageId },
+                { "progressionGrowthMoment", BiotechPackageId }
+            };
+            Dictionary<string, string> expectedWindows = new Dictionary<string, string>
+            {
+                { "VoidMonolithDiscovery", AnomalyPackageId },
+                { "VoidMonolithActivation", AnomalyPackageId },
+                { "VoidMonolithWaking", AnomalyPackageId },
+                { "VoidMonolithVoidAwakened", AnomalyPackageId }
+            };
+
+            RequireOfficialPackageFlagAgreement();
+
+            List<DiaryInteractionGroupDef> officialGroups =
+                DefDatabase<DiaryInteractionGroupDef>.AllDefsListForReading
+                    .Where(group => group != null && ContainsOfficialPackage(group.enableWhenPackageIdsLoaded))
+                    .ToList();
+            PawnDiaryRimTestScope.Require(officialGroups.Count == expectedGroups.Count
+                    && new HashSet<string>(officialGroups.Select(group => group.defName),
+                        StringComparer.Ordinal).SetEquals(expectedGroups.Keys),
+                "The loaded official-DLC interaction-group set drifted; update the matrix with every new, "
+                + "removed, or renamed package-gated row.");
+
+            foreach (KeyValuePair<string, string> expected in expectedGroups)
+            {
+                DiaryInteractionGroupDef group = officialGroups.First(row => row.defName == expected.Key);
+                bool active = OfficialDlcActive(expected.Value);
+                PawnDiaryRimTestScope.Require(group.enableWhenPackageIdsLoaded.Count == 1
+                        && string.Equals(group.enableWhenPackageIdsLoaded[0], expected.Value,
+                            StringComparison.OrdinalIgnoreCase),
+                    "Official DLC group '" + expected.Key + "' is gated by the wrong package.");
+                PawnDiaryRimTestScope.Require(group.MissingRequiredPackage() == !active
+                        && group.UnavailableForCurrentRuntime() == !active,
+                    "Official DLC group '" + expected.Key + "' disagrees with its ModsConfig flag.");
+                PawnDiaryRimTestScope.Require(PawnDiaryMod.IsSettingsEventFilterGroup(group) == active,
+                    "Official DLC group '" + expected.Key + "' settings visibility disagrees with availability.");
+                PawnDiaryRimTestScope.Require(group.matchDefNames != null && group.matchDefNames.Count > 0,
+                    "Official DLC group '" + expected.Key + "' has no exact classifier keys.");
+            }
+
+            List<DiaryEventWindowDef> officialWindows =
+                DefDatabase<DiaryEventWindowDef>.AllDefsListForReading
+                    .Where(window => window != null && ContainsOfficialPackage(window.enableWhenPackageIdsLoaded))
+                    .ToList();
+            PawnDiaryRimTestScope.Require(officialWindows.Count == expectedWindows.Count
+                    && new HashSet<string>(officialWindows.Select(window => window.defName),
+                        StringComparer.Ordinal).SetEquals(expectedWindows.Keys),
+                "The loaded official-DLC event-window set drifted; update the matrix with every new, "
+                + "removed, or renamed package-gated row.");
+            foreach (KeyValuePair<string, string> expected in expectedWindows)
+            {
+                DiaryEventWindowDef window = officialWindows.First(row => row.defName == expected.Key);
+                bool active = OfficialDlcActive(expected.Value);
+                PawnDiaryRimTestScope.Require(window.enableWhenPackageIdsLoaded.Count == 1
+                        && string.Equals(window.enableWhenPackageIdsLoaded[0], expected.Value,
+                            StringComparison.OrdinalIgnoreCase)
+                        && window.MissingRequiredPackage() == !active,
+                    "Official DLC window '" + expected.Key + "' disagrees with its package/ModsConfig gate.");
+                PawnDiaryRimTestScope.Require(window.startSignals != null && window.startSignals.Count > 0,
+                    "Official DLC window '" + expected.Key + "' has no start trigger.");
+            }
+        }
+
+        /// <summary>
+        /// Optional adapters suppress generic XML capture only while their hook reports ready. This test
+        /// drives the public registry and the exact group availability boundary, then clears the stable
+        /// fixture id in a finally block so process-global readiness cannot leak into another suite.
+        /// </summary>
+        [Test]
+        public static void OptionalCaptureCapabilitySuppressesFallbackOnlyWhileReady()
+        {
+            const string capabilityId = "pawndiary.rimtest.dlc-compat.ready";
+            DiaryInteractionGroupDef fallback = new DiaryInteractionGroupDef
+            {
+                defName = "rimtestDlcCompatFallback",
+                disableWhenCaptureCapabilitiesReady = new List<string> { capabilityId }
+            };
+
+            try
+            {
+                PawnDiaryApi.SetCaptureCapabilityReady(capabilityId, false);
+                PawnDiaryRimTestScope.Require(!fallback.DisabledByReadyCaptureCapability()
+                        && !fallback.UnavailableForCurrentRuntime(),
+                    "A not-ready optional adapter incorrectly suppressed the XML fallback.");
+                PawnDiaryRimTestScope.Require(PawnDiaryApi.SetCaptureCapabilityReady(capabilityId, true)
+                        && PawnDiaryApi.IsCaptureCapabilityReady(capabilityId),
+                    "The public integration API could not publish a ready capture capability.");
+                PawnDiaryRimTestScope.Require(fallback.DisabledByReadyCaptureCapability()
+                        && fallback.UnavailableForCurrentRuntime(),
+                    "A ready optional adapter did not suppress its XML fallback.");
+            }
+            finally
+            {
+                PawnDiaryApi.SetCaptureCapabilityReady(capabilityId, false);
+            }
+
+            PawnDiaryRimTestScope.Require(!PawnDiaryApi.IsCaptureCapabilityReady(capabilityId)
+                    && !fallback.UnavailableForCurrentRuntime(),
+                "Clearing optional-adapter readiness did not restore fail-open fallback capture.");
         }
 
         /// <summary>
@@ -421,6 +797,117 @@ namespace PawnDiary.RimTests
                     "Collecting a '" + source + "' DLC-gated enchantment candidate threw on a base-game pawn: "
                     + exception);
             }
+        }
+
+        private static void RequireSummaryDlcField(
+            bool dlcActive,
+            bool positiveStateExpected,
+            string dlcName,
+            string accessorValue,
+            string snapshotValue,
+            string summaryPrefix,
+            string summary)
+        {
+            PawnDiaryRimTestScope.Require(snapshotValue == accessorValue,
+                dlcName + " DlcContext and public pawn-summary snapshot values drifted.");
+            if (!dlcActive)
+            {
+                PawnDiaryRimTestScope.Require(string.IsNullOrEmpty(accessorValue)
+                        && summary.IndexOf(summaryPrefix, StringComparison.Ordinal) < 0,
+                    "Without " + dlcName + ", the final prompt-summary blob must omit '" + summaryPrefix + "'.");
+                return;
+            }
+
+            if (positiveStateExpected)
+            {
+                PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(accessorValue)
+                        && summary.IndexOf(summaryPrefix + accessorValue, StringComparison.Ordinal) >= 0,
+                    dlcName + " is active, but its positive pawn state did not reach the prompt-summary blob.");
+            }
+            else
+            {
+                PawnDiaryRimTestScope.Require(string.IsNullOrEmpty(accessorValue)
+                        && summary.IndexOf(summaryPrefix, StringComparison.Ordinal) < 0,
+                    dlcName + " has no fixture state, so its final summary field must remain omitted.");
+            }
+        }
+
+        private static void RequireOfficialPackageFlagAgreement()
+        {
+            string[] packageIds =
+            {
+                RoyaltyPackageId,
+                IdeologyPackageId,
+                BiotechPackageId,
+                AnomalyPackageId,
+                OdysseyPackageId
+            };
+            for (int i = 0; i < packageIds.Length; i++)
+            {
+                bool helperActive = InteractionGroups.AnyPackageLoaded(new List<string> { packageIds[i] });
+                PawnDiaryRimTestScope.Require(helperActive == OfficialDlcActive(packageIds[i]),
+                    "Package lookup for '" + packageIds[i] + "' disagrees with ModsConfig.");
+            }
+        }
+
+        private static bool ContainsOfficialPackage(List<string> packageIds)
+        {
+            if (packageIds == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < packageIds.Count; i++)
+            {
+                string id = packageIds[i];
+                if (string.Equals(id, RoyaltyPackageId, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(id, IdeologyPackageId, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(id, BiotechPackageId, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(id, AnomalyPackageId, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(id, OdysseyPackageId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool OfficialDlcActive(string packageId)
+        {
+            if (string.Equals(packageId, RoyaltyPackageId, StringComparison.OrdinalIgnoreCase))
+                return ModsConfig.RoyaltyActive;
+            if (string.Equals(packageId, IdeologyPackageId, StringComparison.OrdinalIgnoreCase))
+                return ModsConfig.IdeologyActive;
+            if (string.Equals(packageId, BiotechPackageId, StringComparison.OrdinalIgnoreCase))
+                return ModsConfig.BiotechActive;
+            if (string.Equals(packageId, AnomalyPackageId, StringComparison.OrdinalIgnoreCase))
+                return ModsConfig.AnomalyActive;
+            if (string.Equals(packageId, OdysseyPackageId, StringComparison.OrdinalIgnoreCase))
+                return ModsConfig.OdysseyActive;
+            return false;
+        }
+
+        private static void RequireMethod(Type type, string name, Type returnType, Type[] parameterTypes)
+        {
+            MethodInfo method = type.GetMethod(name, AnyInstance | AnyStatic, null, parameterTypes, null);
+            PawnDiaryRimTestScope.Require(method != null && method.ReturnType == returnType,
+                type.FullName + "." + name + " no longer matches the signature expected by Pawn Diary.");
+        }
+
+        private static void RequireField(Type type, string name, Type fieldType)
+        {
+            FieldInfo field = type.GetField(name, AnyInstance | AnyStatic);
+            PawnDiaryRimTestScope.Require(field != null && field.FieldType == fieldType,
+                type.FullName + "." + name + " no longer matches the field expected by Pawn Diary.");
+        }
+
+        private static void RequireProperty(Type type, string name, Type propertyType, BindingFlags flags)
+        {
+            PropertyInfo property = type.GetProperty(name, flags);
+            PawnDiaryRimTestScope.Require(property != null && property.PropertyType == propertyType
+                    && property.GetGetMethod(true) != null,
+                type.FullName + "." + name + " no longer matches the property expected by Pawn Diary.");
         }
 
         /// <summary>

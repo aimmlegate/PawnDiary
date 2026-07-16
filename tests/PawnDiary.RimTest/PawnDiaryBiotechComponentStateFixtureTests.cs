@@ -181,6 +181,84 @@ namespace PawnDiary.RimTests
                 "the oldest pending growth row must be the one evicted by the ceiling.");
         }
 
+        /// <summary>
+        /// Rows established by an older/high-cap version remain owned above today's XML admission limit.
+        /// A new owner is rejected without eviction; after enough old rows resolve to move below the current
+        /// limit, one new row can enter and every other established identity remains intact. This automates
+        /// the pre-cap checkpoint fixture.
+        /// </summary>
+        [Test]
+        public static void PreCapOwnershipSurvivesAndAdmissionResumesAfterRoomReturns()
+        {
+            int admissionLimit = DiaryBiotechPolicy.Snapshot().maximumPendingGrowthRows;
+            int birthAdmissionLimit = DiaryBiotechPolicy.Snapshot().maximumPendingBirthRows;
+            Require(admissionLimit > 0 && admissionLimit < BiotechPendingOwnershipLimits.HardMaximumRows,
+                "growth admission limit must leave room below the corruption ceiling for this fixture.");
+            Require(birthAdmissionLimit > 0 && birthAdmissionLimit < BiotechPendingOwnershipLimits.HardMaximumRows,
+                "birth admission limit must leave room below the corruption ceiling for this fixture.");
+
+            int growthEstablished = admissionLimit + 1;
+            int birthEstablished = birthAdmissionLimit + 1;
+            BiotechComponentStateMirror original = new BiotechComponentStateMirror
+            {
+                pendingBirths = new List<PendingBiotechBirthState>(birthEstablished),
+                pendingGrowthMoments = new List<PendingBiotechGrowthMoment>(growthEstablished)
+            };
+            for (int i = 0; i < birthEstablished; i++)
+            {
+                original.pendingBirths.Add(ValidPendingBirth(
+                    "biotech-family|Thing_PreCapBirth" + i,
+                    "Thing_PreCapBirth" + i,
+                    2000 + i));
+            }
+            for (int i = 0; i < growthEstablished; i++)
+            {
+                original.pendingGrowthMoments.Add(ValidPendingGrowth(
+                    "Thing_PreCapGrowth" + i,
+                    10,
+                    3000 + i));
+            }
+
+            BiotechComponentStateMirror loaded = ScribeRoundTrip(original);
+            AssertInt(birthEstablished, loaded.pendingBirths.Count,
+                "pre-cap pending births preserved after load");
+            AssertInt(growthEstablished, loaded.pendingGrowthMoments.Count,
+                "pre-cap pending growth rows preserved after load");
+            Require(!BiotechPendingOwnershipLimits.CanAdmit(
+                    loaded.pendingBirths.Count, birthAdmissionLimit),
+                "an over-limit birth table incorrectly admitted another owner.");
+            Require(!BiotechPendingOwnershipLimits.CanAdmit(
+                    loaded.pendingGrowthMoments.Count, admissionLimit),
+                "an over-limit growth table incorrectly admitted another owner.");
+
+            // Resolve enough established rows to move below the authored limit. Admission resumes only
+            // once Count < limit; the remaining identities must not be disturbed to make that room.
+            loaded.pendingBirths.RemoveRange(0, loaded.pendingBirths.Count - birthAdmissionLimit + 1);
+            loaded.pendingGrowthMoments.RemoveRange(
+                0,
+                loaded.pendingGrowthMoments.Count - admissionLimit + 1);
+            Require(BiotechPendingOwnershipLimits.CanAdmit(
+                    loaded.pendingBirths.Count, birthAdmissionLimit),
+                "birth admission did not resume below the authored limit.");
+            Require(BiotechPendingOwnershipLimits.CanAdmit(
+                    loaded.pendingGrowthMoments.Count, admissionLimit),
+                "growth admission did not resume below the authored limit.");
+
+            string newestBirthId = "Thing_PreCapBirth" + (birthEstablished - 1);
+            string newestGrowthId = "Thing_PreCapGrowth" + (growthEstablished - 1);
+            loaded.pendingBirths.Add(ValidPendingBirth(
+                "biotech-family|Thing_NewBirth", "Thing_NewBirth", 9000));
+            loaded.pendingGrowthMoments.Add(ValidPendingGrowth("Thing_NewGrowth", 13, 9000));
+            Require(FindBirth(loaded.pendingBirths, newestBirthId) != null,
+                "admitting a new birth owner evicted an established birth row.");
+            Require(FindGrowth(loaded.pendingGrowthMoments, newestGrowthId) != null,
+                "admitting a new growth owner evicted an established growth row.");
+            Require(FindBirth(loaded.pendingBirths, "Thing_NewBirth") != null,
+                "birth admission did not add the new owner after room became available.");
+            Require(FindGrowth(loaded.pendingGrowthMoments, "Thing_NewGrowth") != null,
+                "growth admission did not add the new owner after room became available.");
+        }
+
         // ---- fixture builders ----------------------------------------------------------------------
 
         private static PendingBiotechBirthState ValidPendingBirth(

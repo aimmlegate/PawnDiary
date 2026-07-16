@@ -3,31 +3,37 @@
 // source evidence, consumes progression baselines, and releases the mature Birthday fallback when the
 // canonical row is disabled. The test pawn is generation-disabled, so no LLM request can leave the game.
 //
-// These tests use detached snapshots rather than opening vanilla's growth-choice UI. The exact
-// ConfigureGrowthLetter/MakeChoices signatures and false-to-true transition remain covered by runtime
-// patch registration plus the manual age-7/10/13 acceptance matrix in the Biotech plan.
+// Most tests use detached snapshots rather than opening vanilla's growth-choice UI. One focused case
+// invokes vanilla ConfigureGrowthLetter/MakeChoices directly, so the installed Harmony callbacks and
+// false-to-true choice transition are covered without clicking the UI; visual/postponed-save behavior
+// remains in the manual age-7/10/13 acceptance matrix.
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using PawnDiary.Capture;
+using RimWorld;
 using RimTestRedux;
 using Verse;
 
 namespace PawnDiary.RimTests
 {
     /// <summary>
-    /// Proves canonical emission, family context, once-only consumption, ordinary fallback, and disabled-page
-    /// observation against a real loaded DiaryGameComponent and isolated eligible pawn.
+    /// Proves canonical emission, real letter hooks, loaded prompts, family context, once-only consumption,
+    /// ordinary fallback, and disabled-page observation against a loaded component and isolated pawn.
     /// </summary>
     [TestSuite]
     public static class PawnDiaryBiotechGrowthFlowTests
     {
         private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+        private const BindingFlags AllInstance = PrivateInstance | BindingFlags.Public;
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
         private static MethodInfo completeGrowthMethod;
         private static MethodInfo findDiaryMethod;
+        private static MethodInfo configureGrowthLetterMethod;
+        private static MethodInfo makeGrowthChoicesMethod;
+        private static FieldInfo pendingGrowthField;
 
         /// <summary>Creates a no-generation pawn and enables the shared Progression signal.</summary>
         [BeforeEach]
@@ -39,8 +45,30 @@ namespace PawnDiary.RimTests
                 "CompleteBiotechGrowth",
                 PrivateInstance);
             findDiaryMethod = typeof(DiaryGameComponent).GetMethod("FindDiary", PrivateInstance);
+            configureGrowthLetterMethod = typeof(ChoiceLetter_GrowthMoment).GetMethod(
+                "ConfigureGrowthLetter",
+                AllInstance,
+                null,
+                new[]
+                {
+                    typeof(Pawn), typeof(int), typeof(int), typeof(int), typeof(List<string>), typeof(Name)
+                },
+                null);
+            makeGrowthChoicesMethod = typeof(ChoiceLetter_GrowthMoment).GetMethod(
+                "MakeChoices",
+                AllInstance,
+                null,
+                new[] { typeof(List<SkillDef>), typeof(Trait) },
+                null);
+            pendingGrowthField = typeof(DiaryGameComponent).GetField(
+                "pendingBiotechGrowthMoments",
+                PrivateInstance);
             RequireHandle(completeGrowthMethod, "CompleteBiotechGrowth");
             RequireHandle(findDiaryMethod, "FindDiary");
+            RequireHandle(configureGrowthLetterMethod, "ChoiceLetter_GrowthMoment.ConfigureGrowthLetter");
+            RequireHandle(makeGrowthChoicesMethod, "ChoiceLetter_GrowthMoment.MakeChoices");
+            RequireHandle(pendingGrowthField, "pendingBiotechGrowthMoments");
+            scope.RegisterCleanup(RemovePendingRowsForTestPawn);
 
             DiarySignalPolicyDef signal = DiarySignalPolicies.ForKey(DiarySignalPolicies.Progression);
             bool original = signal.enabled;
@@ -62,6 +90,9 @@ namespace PawnDiary.RimTests
                 pawn = null;
                 completeGrowthMethod = null;
                 findDiaryMethod = null;
+                configureGrowthLetterMethod = null;
+                makeGrowthChoicesMethod = null;
+                pendingGrowthField = null;
             }
         }
 
@@ -188,6 +219,127 @@ namespace PawnDiary.RimTests
                 "Disabled growth observation did not consume the post-choice trait baseline.");
         }
 
+        /// <summary>
+        /// Invokes the real vanilla ConfigureGrowthLetter and MakeChoices methods, allowing the installed
+        /// Harmony callbacks to carry one birthday through configured ownership and a committed NoTrait
+        /// choice. This is the loaded-game boundary that detached completion fixtures cannot exercise.
+        /// </summary>
+        [Test]
+        public static void VanillaGrowthLetterHooksClaimAndCompleteNoTraitChoice()
+        {
+            if (!ModsConfig.BiotechActive)
+            {
+                Log.Message("[PawnDiary RimTest Biotech growth hooks] not applicable (Biotech inactive).");
+                return;
+            }
+
+            PawnDiaryRimTestScope.Require(
+                BiotechGrowthLetterPatch.HooksReady,
+                "The complete RimWorld 1.6 growth-letter hook set was not registered.");
+            SetGroupEnabled("progressionGrowthMoment", true);
+            SetGroupEnabled("eventWindowBirthday", true);
+
+            BiotechGrowthBirthdayState birthday = scope.Component.BeginBiotechGrowthBirthday(pawn, 7);
+            PawnDiaryRimTestScope.Require(
+                birthday != null,
+                "The canonical growth owner refused a valid age-7 birthday fixture.");
+
+            ChoiceLetter_GrowthMoment letter = new ChoiceLetter_GrowthMoment();
+            BiotechGrowthCorrelation.BeginBirthday(birthday);
+            try
+            {
+                Invoke(configureGrowthLetterMethod, letter, new object[]
+                {
+                    pawn,
+                    8,
+                    1,
+                    0,
+                    new List<string>(),
+                    pawn.Name
+                });
+            }
+            finally
+            {
+                BiotechGrowthCorrelation.EndBirthday(birthday);
+            }
+
+            PawnDiaryRimTestScope.Require(
+                birthday.configuredLetterOwnsBirthday,
+                "The configured vanilla growth letter did not claim Birthday ownership.");
+            PawnDiaryRimTestScope.Require(
+                ReferenceEquals(BiotechGrowthLetterPatch.LetterPawn(letter), pawn),
+                "The registered growth-letter pawn field did not resolve the configured pawn.");
+            PawnDiaryRimTestScope.Require(
+                PendingGrowthRows().Exists(row => row != null
+                    && row.pawnId == pawn.GetUniqueLoadID()
+                    && row.birthdayAge == 7),
+                "The configured vanilla growth letter did not create a saved pending owner.");
+
+            SkillDef selectedSkill = FirstPassionGainCandidate(pawn);
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => Invoke(makeGrowthChoicesMethod, letter, new object[]
+                {
+                    new List<SkillDef> { selectedSkill },
+                    null // NoTrait is a valid committed growth choice.
+                }),
+                BiotechEventDefNames.GrowthMoment,
+                pawn,
+                null);
+
+            RequireContext(diaryEvent, "growth_stage=age_7");
+            RequireContext(diaryEvent, "new_interest_1=");
+            PawnDiaryRimTestScope.Require(
+                !PendingGrowthRows().Exists(row => row != null
+                    && row.pawnId == pawn.GetUniqueLoadID()
+                    && row.birthdayAge == 7),
+                "The committed vanilla choice left its pending growth owner behind.");
+        }
+
+        /// <summary>
+        /// Loaded XML templates preserve the central B1 growth facts under every context-detail preset,
+        /// while private save/correlation identifiers never enter the captured model prompt.
+        /// </summary>
+        [Test]
+        public static void GrowthPromptsStayTruthfulAcrossAllDetailPresets()
+        {
+            if (!ModsConfig.BiotechActive)
+            {
+                Log.Message("[PawnDiary RimTest Biotech growth prompts] not applicable (Biotech inactive).");
+                return;
+            }
+
+            scope.EnablePromptCapture();
+            scope.Component.SetDiaryGenerationEnabled(pawn, true);
+            SetGroupEnabled("progressionGrowthMoment", true);
+            PromptContextDetailLevel[] levels =
+            {
+                PromptContextDetailLevel.Full,
+                PromptContextDetailLevel.Balanced,
+                PromptContextDetailLevel.Compact
+            };
+            int[] ages = { 7, 10, 13 };
+
+            for (int i = 0; i < levels.Length; i++)
+            {
+                PawnDiaryMod.Settings.contextDetailLevel = levels[i];
+                GrowthFixture fixture = Fixture(ages[i]);
+                DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                    () => InvokeComplete(fixture),
+                    BiotechEventDefNames.GrowthMoment,
+                    pawn,
+                    null);
+                string prompt = scope.CapturedPrompt(diaryEvent, DiaryEvent.InitiatorRole);
+                string suffix = " (" + levels[i] + ")";
+
+                RequirePromptContains(prompt, "tough", "chosen trait" + suffix);
+                RequirePromptContains(prompt, "shooting", "chosen interest" + suffix);
+                RequirePromptOmits(prompt, pawn.GetUniqueLoadID(), "pawn Thing ID" + suffix);
+                RequirePromptOmits(prompt, "biotech-family|", "family arc ID" + suffix);
+                RequirePromptOmits(prompt, "growth_tier=", "numeric growth tier" + suffix);
+                RequirePromptOmits(prompt, fixture.mutation.correlationId, "correlation token" + suffix);
+            }
+        }
+
         private static GrowthFixture Fixture(int age)
         {
             string pawnId = pawn.GetUniqueLoadID();
@@ -290,6 +442,81 @@ namespace PawnDiary.RimTests
             {
                 throw exception.InnerException ?? exception;
             }
+        }
+
+        private static object Invoke(MethodInfo method, object instance, object[] arguments)
+        {
+            try
+            {
+                return method.Invoke(instance, arguments);
+            }
+            catch (TargetInvocationException exception)
+            {
+                throw exception.InnerException ?? exception;
+            }
+        }
+
+        private static SkillDef FirstPassionGainCandidate(Pawn subject)
+        {
+            if (subject?.skills?.skills != null)
+            {
+                for (int i = 0; i < subject.skills.skills.Count; i++)
+                {
+                    SkillRecord skill = subject.skills.skills[i];
+                    if (skill != null && !skill.TotallyDisabled && skill.passion != Passion.Major)
+                    {
+                        return skill.def;
+                    }
+                }
+            }
+
+            throw new AssertionException(
+                "The generated growth pawn had no enabled skill below major passion.");
+        }
+
+        private static List<PendingBiotechGrowthMoment> PendingGrowthRows()
+        {
+            List<PendingBiotechGrowthMoment> rows = pendingGrowthField?.GetValue(scope.Component)
+                as List<PendingBiotechGrowthMoment>;
+            if (rows == null)
+            {
+                throw new AssertionException("Could not inspect pending Biotech growth ownership.");
+            }
+
+            return rows;
+        }
+
+        private static void RemovePendingRowsForTestPawn()
+        {
+            if (scope?.Component == null || pawn == null || pendingGrowthField == null)
+            {
+                return;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            List<PendingBiotechGrowthMoment> rows = pendingGrowthField.GetValue(scope.Component)
+                as List<PendingBiotechGrowthMoment>;
+            rows?.RemoveAll(row => row != null && row.pawnId == pawnId);
+            BiotechGrowthCorrelation.Clear();
+        }
+
+        private static void RequirePromptContains(string prompt, string fragment, string label)
+        {
+            PawnDiaryRimTestScope.Require(
+                prompt != null && prompt.IndexOf(fragment, StringComparison.OrdinalIgnoreCase) >= 0,
+                "The growth prompt omitted " + label + " ('" + fragment + "').");
+        }
+
+        private static void RequirePromptOmits(string prompt, string fragment, string label)
+        {
+            if (string.IsNullOrEmpty(fragment))
+            {
+                return;
+            }
+
+            PawnDiaryRimTestScope.Require(
+                prompt == null || prompt.IndexOf(fragment, StringComparison.OrdinalIgnoreCase) < 0,
+                "The growth prompt leaked " + label + " ('" + fragment + "').");
         }
 
         private static void SetGroupEnabled(string defName, bool enabled)
