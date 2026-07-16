@@ -12,10 +12,11 @@
 // unspawned test colonist, and invoking it would record real progression pages for the developer's
 // actual colonists (state this suite could never clean up). The genuine EVT-15 contract
 // (baseline / only-upward / exact-context / major-change arc request) lives entirely in the private
-// per-pawn updaters ScanPassionSkillMilestones / ScanTraitGain / ScanXenotypeChange, so this suite
-// drives those directly against the isolated pawn — exactly what the top-level scan does per colonist,
-// minus the live-colony enumeration. They are private today, so the suite reaches them by reflection;
-// see productionSeamNeeded in the integration report for the internal seam that would remove it.
+// per-pawn updaters ScanPassionSkillMilestones / ScanTraitGain / ScanXenotypeChange /
+// ScanPsylinkLevel / ScanRoyalTitleChange, so this suite drives those directly against the isolated
+// pawn — exactly what the top-level scan does per colonist, minus the live-colony enumeration. They
+// are private today, so the suite reaches them by reflection; see productionSeamNeeded in the
+// integration report for the internal seam that would remove it.
 //
 // Determinism: the milestone list (DiaryTuningDef.progressionSkillMilestones) and the major-arc
 // xenotype tuning are XML-backed, so each test snapshots and forces the exact values it needs (a
@@ -46,9 +47,9 @@ namespace PawnDiary.RimTests
     /// <summary>
     /// Proves that the pawn-progression scanner baselines the first observed state without a page,
     /// emits exactly one solo page carrying the exact progression context when a passion skill crosses
-    /// a milestone or a new trait is gained, never re-emits a repeated/non-upward milestone, and marks
-    /// a major change so it requests the rare arc-reflection path. Requires a loaded game (the capture
-    /// pipeline ignores the main menu).
+    /// a milestone, a new trait is gained, or installed Royalty supplies a psylink/title change; never
+    /// re-emits a repeated/non-upward milestone; and marks a major change so it requests the rare
+    /// arc-reflection path. Requires a loaded game (the capture pipeline ignores the main menu).
     /// </summary>
     [TestSuite]
     public static class PawnDiaryPawnProgressionFlowTests
@@ -67,6 +68,8 @@ namespace PawnDiary.RimTests
         private static MethodInfo scanSkillMethod;     // void ScanPassionSkillMilestones(Pawn, PawnProgressionState, bool baseline)
         private static MethodInfo scanTraitMethod;     // void ScanTraitGain(Pawn, PawnProgressionState)
         private static MethodInfo scanXenotypeMethod;  // void ScanXenotypeChange(Pawn, PawnProgressionState, bool baseline)
+        private static MethodInfo scanPsylinkMethod;   // void ScanPsylinkLevel(Pawn, PawnProgressionState, bool baseline)
+        private static MethodInfo scanRoyalTitleMethod; // void ScanRoyalTitleChange(Pawn, PawnProgressionState, bool baseline)
 
         /// <summary>
         /// Opens a scope, enables the progression interaction groups and the Progression signal policy
@@ -261,6 +264,126 @@ namespace PawnDiary.RimTests
             RequireContextContains(diaryEvent, "major_xenotype=true");
         }
 
+        /// <summary>
+        /// EVT-15 / Royalty. A real loaded psylink hediff is read through the production scanner and
+        /// becomes one upward-only progression page. Without Royalty the fixture cleanly reports not
+        /// applicable because the package-owned hediff Def is absent.
+        /// </summary>
+        [Test]
+        public static void RoyaltyPsylinkScannerEmitsOnceFromRealHediff()
+        {
+            if (!ModsConfig.RoyaltyActive)
+            {
+                // A compatibility mod may legitimately supply its own configured psylink-style hediff,
+                // so absence of Royalty alone is not proof that the generic scanner must read zero.
+                return;
+            }
+
+            HediffDef psylinkDef = DefDatabase<HediffDef>.GetNamedSilentFail("PsychicAmplifier");
+            if (psylinkDef == null)
+            {
+                throw new AssertionException("Royalty is active but PsychicAmplifier was not loaded.");
+            }
+
+            Hediff psylink = pawn.health.AddHediff(psylinkDef);
+            scope.RegisterCleanup(() =>
+            {
+                if (psylink != null && pawn?.health?.hediffSet?.hediffs?.Contains(psylink) == true)
+                {
+                    pawn.health.RemoveHediff(psylink);
+                }
+            });
+
+            PawnProgressionState state = new PawnProgressionState();
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => InvokeScanPsylink(state, baseline: false),
+                ProgressionEventData.PsylinkLevelDefName,
+                pawn,
+                null);
+
+            scope.RequireSoloRef(diaryEvent, pawn);
+            RequireContextContains(diaryEvent, "progression=" + ProgressionEventData.PsylinkLevelDefName);
+            RequireContextContains(diaryEvent, "progression_kind=psylink");
+            RequireContextContains(diaryEvent, "previous_psylink_level=0");
+            RequireContextContains(diaryEvent, "psylink_level=" + state.highestPsylinkLevelRecorded);
+            PawnDiaryRimTestScope.Require(state.highestPsylinkLevelRecorded > 0,
+                "The real PsychicAmplifier hediff did not advance the saved psylink level.");
+
+            scope.RequireNoNewEvent(() => InvokeScanPsylink(state, baseline: false));
+        }
+
+        /// <summary>
+        /// EVT-15 / Royalty. A real loaded royal title flows through the guarded DLC accessor and the
+        /// private title-change scanner into one exact progression page; the unchanged title is then
+        /// suppressed on the next scan. The disposable title row is removed during teardown.
+        /// </summary>
+        [Test]
+        public static void RoyaltyTitleScannerEmitsPromotionOnce()
+        {
+            if (!ModsConfig.RoyaltyActive)
+            {
+                PawnDiaryRimTestScope.Require(string.IsNullOrEmpty(DlcContext.RoyalTitleDefName(pawn)),
+                    "Royalty is inactive but the test pawn exposed a royal title.");
+                return;
+            }
+
+            if (pawn.royalty == null)
+            {
+                throw new AssertionException("Royalty is active but the test pawn has no royalty tracker.");
+            }
+
+            RoyalTitleDef titleDef = null;
+            List<RoyalTitleDef> titleDefs = DefDatabase<RoyalTitleDef>.AllDefsListForReading;
+            for (int i = 0; i < titleDefs.Count; i++)
+            {
+                RoyalTitleDef candidate = titleDefs[i];
+                if (candidate != null && !string.IsNullOrWhiteSpace(candidate.defName)
+                    && (titleDef == null || candidate.seniority > titleDef.seniority))
+                {
+                    titleDef = candidate;
+                }
+            }
+
+            if (titleDef == null)
+            {
+                throw new AssertionException("Royalty is active but no RoyalTitleDef was loaded.");
+            }
+
+            RoyalTitle fixtureTitle = new RoyalTitle
+            {
+                def = titleDef,
+                faction = Faction.OfEmpire ?? scope.PlayerFaction,
+                pawn = pawn,
+                receivedTick = Find.TickManager?.TicksGame ?? 0
+            };
+            pawn.royalty.AllTitlesForReading.Add(fixtureTitle);
+            scope.RegisterCleanup(() => pawn?.royalty?.AllTitlesForReading?.Remove(fixtureTitle));
+
+            PawnProgressionState state = new PawnProgressionState
+            {
+                lastObservedRoyalTitleDefName = "PawnDiaryTest_PreviousTitle",
+                lastObservedRoyalTitleLabel = "previous title"
+            };
+            string currentTitleDef = DlcContext.RoyalTitleDefName(pawn);
+            string currentTitleLabel = DlcContext.RoyalTitleLabel(pawn);
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => InvokeScanRoyalTitle(state, baseline: false),
+                ProgressionEventData.RoyalTitleChangedDefName,
+                pawn,
+                null);
+
+            scope.RequireSoloRef(diaryEvent, pawn);
+            RequireContextContains(diaryEvent, "progression=" + ProgressionEventData.RoyalTitleChangedDefName);
+            RequireContextContains(diaryEvent, "progression_kind=royal_title");
+            RequireContextContains(diaryEvent, "previous_title=previous title");
+            RequireContextContains(diaryEvent, "title=" + currentTitleLabel);
+            RequireContextContains(diaryEvent, "title_def=" + currentTitleDef);
+            PawnDiaryRimTestScope.Require(state.lastObservedRoyalTitleDefName == currentTitleDef,
+                "The title scanner did not persist the newly observed royal title.");
+
+            scope.RequireNoNewEvent(() => InvokeScanRoyalTitle(state, baseline: false));
+        }
+
         // ----- production-driver helpers ----------------------------------------------------------
 
         private static void InvokeScanSkill(PawnProgressionState state, bool baseline)
@@ -276,6 +399,16 @@ namespace PawnDiary.RimTests
         private static void InvokeScanXenotype(PawnProgressionState state, bool baseline)
         {
             Invoke(scanXenotypeMethod, new object[] { pawn, state, baseline });
+        }
+
+        private static void InvokeScanPsylink(PawnProgressionState state, bool baseline)
+        {
+            Invoke(scanPsylinkMethod, new object[] { pawn, state, baseline });
+        }
+
+        private static void InvokeScanRoyalTitle(PawnProgressionState state, bool baseline)
+        {
+            Invoke(scanRoyalTitleMethod, new object[] { pawn, state, baseline });
         }
 
         private static void Invoke(MethodInfo method, object[] args)
@@ -416,6 +549,8 @@ namespace PawnDiary.RimTests
             EnableProgressionGroup(ProgressionEventData.SkillMilestoneDefName);
             EnableProgressionGroup(ProgressionEventData.TraitGainedDefName);
             EnableProgressionGroup(ProgressionEventData.XenotypeChangedDefName);
+            EnableProgressionGroup(ProgressionEventData.PsylinkLevelDefName);
+            EnableProgressionGroup(ProgressionEventData.RoyalTitleChangedDefName);
         }
 
         private static void EnableProgressionGroup(string progressionDefName)
@@ -441,10 +576,14 @@ namespace PawnDiary.RimTests
             scanSkillMethod = typeof(DiaryGameComponent).GetMethod("ScanPassionSkillMilestones", PrivateInstance);
             scanTraitMethod = typeof(DiaryGameComponent).GetMethod("ScanTraitGain", PrivateInstance);
             scanXenotypeMethod = typeof(DiaryGameComponent).GetMethod("ScanXenotypeChange", PrivateInstance);
+            scanPsylinkMethod = typeof(DiaryGameComponent).GetMethod("ScanPsylinkLevel", PrivateInstance);
+            scanRoyalTitleMethod = typeof(DiaryGameComponent).GetMethod("ScanRoyalTitleChange", PrivateInstance);
 
             RequireHandle(scanSkillMethod, "ScanPassionSkillMilestones");
             RequireHandle(scanTraitMethod, "ScanTraitGain");
             RequireHandle(scanXenotypeMethod, "ScanXenotypeChange");
+            RequireHandle(scanPsylinkMethod, "ScanPsylinkLevel");
+            RequireHandle(scanRoyalTitleMethod, "ScanRoyalTitleChange");
         }
 
         private static void RequireHandle(object handle, string name)

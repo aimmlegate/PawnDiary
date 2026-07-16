@@ -6,18 +6,14 @@
 // dedup window, and each perspective carries its own localized role label, instruction, and
 // "ritual="/"psychic_ritual=" game-context marker.
 //
-// WHY THIS SUITE ASSERTS THE WIRING RATHER THAN DRIVING A LIVE FAN-OUT:
-// The production fan-out is captured from a live vanilla DLC object (LordJob_Ritual / PsychicRitual)
-// whose organizer/target/assignments are read by reflection in the signal constructor. Those objects
-// cannot be constructed mapless/without the DLC content, and the sanctioned "submit the production
-// signal directly" shortcut is blocked here two ways: (1) both signal constructors early-return
-// (valid=false) unless handed a real ritual object, and (2) the test assembly's .csproj references
-// only System / System.Core / Assembly-CSharp / PawnDiary / RimTestRedux, so System.Runtime.
-// Serialization.FormatterServices (the only mapless way to allocate an initialized-bypassed signal)
-// is not on the reference set and cannot be added without editing the .csproj. See gotchas /
-// productionSeamNeeded in the task report for the internal factory a fuller end-to-end drive needs.
+// Live vanilla ritual objects cannot be safely constructed mapless, so the suite uses the production
+// signals' internal fact-based fixture seams. Those seams bypass only reflection over LordJob_Ritual /
+// PsychicRitual; they still drive the real fan-out order, uniqueness filter, colony dedup, child
+// capture decision, AddSoloEvent persistence, diary references, and prompt-context assembly.
 //
-// What this suite DOES prove in-game, deterministically, with no map and without owning any DLC:
+// The suite proves in-game, deterministically, with no map and without owning any DLC:
+//   * both ritual fan-outs emit one unique page per organizer/invoker, target, participant, and
+//     spectator, and a second dispatch is suppressed by the shared ritual-level dedup window;
 //   * the per-perspective game-context markers the prompt receives are well-formed and field-ordered,
 //     with the ritual quality label drawn from live XML tuning (DiaryTuningDef.ritualQualityBands);
 //   * every organizer/target/participant/spectator (and psychic invoker) role LABEL and INSTRUCTION
@@ -28,6 +24,8 @@
 //
 // Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-17 Ritual (DLC).
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using PawnDiary;
 using PawnDiary.Capture;
 using PawnDiary.Ingestion;
@@ -38,10 +36,9 @@ using Verse;
 namespace PawnDiary.RimTests
 {
     /// <summary>
-    /// Proves the Ideology/psychic ritual fan-out's per-perspective context, localization, and DLC-safe
-    /// context fields are correctly wired in a loaded game. These checks require a loaded game because
-    /// translation resolution and live DiaryTuning XML are only available in-game; they are deliberately
-    /// DLC-content-free (the live event-creation drive is documented as needing a production seam).
+    /// Proves the Ideology/psychic ritual fan-outs' unique per-perspective pages, colony dedup,
+    /// context, localization, and DLC-safe fields in a loaded game. Fact fixtures bypass only unsafe
+    /// construction of live ritual jobs; the production fan-out/child pipeline remains under test.
     /// </summary>
     [TestSuite]
     public static class PawnDiaryRitualFlowTests
@@ -54,6 +51,8 @@ namespace PawnDiary.RimTests
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn firstPawn;
+        private static readonly FieldInfo EventsField = typeof(DiaryGameComponent).GetField(
+            "events", BindingFlags.Instance | BindingFlags.NonPublic);
 
         /// <summary>
         /// Opens a fresh test scope and creates one isolated adult colonist (generation disabled) for the
@@ -216,6 +215,89 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// EVT-17 / Ideology. Drives the production ritual fan-out from copied fixture facts through
+        /// all four perspective pages. Duplicate role membership is deliberately supplied so the
+        /// pawn-ID uniqueness filter and ritual-level second-dispatch dedup are both exercised.
+        /// </summary>
+        [Test]
+        public static void IdeologyRitualFixtureFanoutEmitsUniquePerspectivePagesOnce()
+        {
+            Pawn target = scope.CreateAdultColonist();
+            Pawn participant = scope.CreateAdultColonist();
+            Pawn spectator = scope.CreateAdultColonist();
+            HashSet<string> before = SnapshotEventIds();
+
+            RitualFanoutSignal fanout = RitualFanoutSignal.CreateTestFixture(
+                firstPawn,
+                target,
+                new List<Pawn> { firstPawn, participant },
+                new List<Pawn> { participant, spectator },
+                RitualDefName,
+                RitualTitle,
+                RitualBehavior,
+                0.82f,
+                "fixture ritual theme");
+            PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(fanout.ColonyDedupKey),
+                "The Ideology ritual fixture did not create a colony dedup key.");
+
+            scope.Component.Dispatch(fanout);
+            List<DiaryEvent> emitted = NewEventsSince(before);
+            PawnDiaryRimTestScope.Require(emitted.Count == 4,
+                "The Ideology ritual fixture should emit exactly four unique perspective pages, got "
+                + emitted.Count + ".");
+            RequirePerspectiveEvent(emitted, "ritual_perspective=" + RitualEventData.PerspectiveOrganizer, firstPawn);
+            RequirePerspectiveEvent(emitted, "ritual_perspective=" + RitualEventData.PerspectiveTarget, target);
+            RequirePerspectiveEvent(emitted, "ritual_perspective=" + RitualEventData.PerspectiveParticipant, participant);
+            RequirePerspectiveEvent(emitted, "ritual_perspective=" + RitualEventData.PerspectiveSpectator, spectator);
+
+            int afterFirst = EventRepository().Count;
+            scope.Component.Dispatch(fanout);
+            PawnDiaryRimTestScope.Require(EventRepository().Count == afterFirst,
+                "A repeated Ideology ritual fan-out escaped the colony dedup window.");
+        }
+
+        /// <summary>
+        /// EVT-17 / Anomaly. Drives the production psychic-ritual fan-out through invoker, target,
+        /// participant, and spectator pages without constructing or firing a real colony ritual.
+        /// Duplicate assignment rows must collapse by pawn ID and the repeat dispatch must be inert.
+        /// </summary>
+        [Test]
+        public static void PsychicRitualFixtureFanoutEmitsUniquePerspectivePagesOnce()
+        {
+            Pawn target = scope.CreateAdultColonist();
+            Pawn participant = scope.CreateAdultColonist();
+            Pawn spectator = scope.CreateAdultColonist();
+            HashSet<string> before = SnapshotEventIds();
+
+            PsychicRitualFanoutSignal fanout = PsychicRitualFanoutSignal.CreateTestFixture(
+                firstPawn,
+                target,
+                new List<Pawn> { firstPawn, participant },
+                new List<Pawn> { participant, spectator },
+                "VoidProvocation",
+                "void provocation",
+                0.91f,
+                "fixture psychic ritual theme");
+            PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(fanout.ColonyDedupKey),
+                "The psychic ritual fixture did not create a colony dedup key.");
+
+            scope.Component.Dispatch(fanout);
+            List<DiaryEvent> emitted = NewEventsSince(before);
+            PawnDiaryRimTestScope.Require(emitted.Count == 4,
+                "The psychic ritual fixture should emit exactly four unique perspective pages, got "
+                + emitted.Count + ".");
+            RequirePerspectiveEvent(emitted, "psychic_ritual_perspective=" + RitualEventData.PerspectiveInvoker, firstPawn);
+            RequirePerspectiveEvent(emitted, "psychic_ritual_perspective=" + RitualEventData.PerspectiveTarget, target);
+            RequirePerspectiveEvent(emitted, "psychic_ritual_perspective=" + RitualEventData.PerspectiveParticipant, participant);
+            RequirePerspectiveEvent(emitted, "psychic_ritual_perspective=" + RitualEventData.PerspectiveSpectator, spectator);
+
+            int afterFirst = EventRepository().Count;
+            scope.Component.Dispatch(fanout);
+            PawnDiaryRimTestScope.Require(EventRepository().Count == afterFirst,
+                "A repeated psychic ritual fan-out escaped the colony dedup window.");
+        }
+
+        /// <summary>
         /// EVT-17. The explicit DLC gate. The Ideology ritual context embeds each pawn's royal title
         /// (Royalty) and ideological role (Ideology) via the double-guarded DlcContext accessors. This
         /// asserts the base-game-safety contract those fields depend on: when the owning DLC is absent
@@ -273,6 +355,71 @@ namespace PawnDiary.RimTests
         }
 
         // ----- helpers ---------------------------------------------------------------------------
+
+        private static HashSet<string> SnapshotEventIds()
+        {
+            HashSet<string> ids = new HashSet<string>(StringComparer.Ordinal);
+            IReadOnlyList<DiaryEvent> events = EventRepository().AllEvents;
+            for (int i = 0; i < events.Count; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(events[i]?.eventId))
+                {
+                    ids.Add(events[i].eventId);
+                }
+            }
+
+            return ids;
+        }
+
+        private static List<DiaryEvent> NewEventsSince(HashSet<string> before)
+        {
+            List<DiaryEvent> result = new List<DiaryEvent>();
+            IReadOnlyList<DiaryEvent> events = EventRepository().AllEvents;
+            for (int i = 0; i < events.Count; i++)
+            {
+                DiaryEvent diaryEvent = events[i];
+                if (diaryEvent != null && !before.Contains(diaryEvent.eventId))
+                {
+                    result.Add(diaryEvent);
+                }
+            }
+
+            return result;
+        }
+
+        private static DiaryEventRepository EventRepository()
+        {
+            DiaryEventRepository repository = EventsField?.GetValue(scope.Component) as DiaryEventRepository;
+            if (repository == null)
+            {
+                throw new AssertionException("EVT-17 could not read DiaryGameComponent.events.");
+            }
+
+            return repository;
+        }
+
+        private static void RequirePerspectiveEvent(
+            List<DiaryEvent> events,
+            string contextMarker,
+            Pawn expectedPawn)
+        {
+            DiaryEvent match = null;
+            for (int i = 0; i < events.Count; i++)
+            {
+                DiaryEvent candidate = events[i];
+                if (candidate?.gameContext != null
+                    && candidate.gameContext.IndexOf(contextMarker, StringComparison.Ordinal) >= 0)
+                {
+                    PawnDiaryRimTestScope.Require(match == null,
+                        "More than one ritual page carried perspective marker '" + contextMarker + "'.");
+                    match = candidate;
+                }
+            }
+
+            PawnDiaryRimTestScope.Require(match != null,
+                "No ritual page carried perspective marker '" + contextMarker + "'.");
+            scope.RequireSoloRef(match, expectedPawn);
+        }
 
         private static void RequireContains(string haystack, string needle)
         {

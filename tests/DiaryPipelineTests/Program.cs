@@ -53,6 +53,7 @@ namespace DiaryPipelineTests
             TestContextProviderRegistry();
             TestEventWindowPolicy();
             TestAnomalySemanticPrecisionXmlPolicy();
+            TestOdysseyExistingIntegrationXmlPolicy();
             TestProgressionMilestonePolicy();
             TestPsylinkProgressionLevelPolicy();
             TestArcReflectionSchedulePolicy();
@@ -3053,6 +3054,71 @@ namespace DiaryPipelineTests
                 AssertTrue("void-monolith interaction group includes chapter: " + activationWindowDefNames[i],
                     HasListValue(monolithGroup, "matchDefNames", activationWindowDefNames[i]));
             }
+        }
+
+        // Pins the smaller Odyssey integration that exists before the planned O1 journey state machine:
+        // launch ritual classification, orbital/vacuum Tale routing, hostile-weather routing, persistent
+        // volcanic-ash atmosphere, and vacuum prompt enchantment. Every matcher is a plain string and must
+        // remain available in a no-Odyssey process, where absent game Defs simply never produce a signal.
+        private static void TestOdysseyExistingIntegrationXmlPolicy()
+        {
+            XDocument groups = XDocument.Load(RepoPath("1.6", "Defs", "DiaryInteractionGroupDefs.xml"));
+
+            XElement gravship = FindDef(groups, "PawnDiary.DiaryInteractionGroupDef", "ritualGravship");
+            AssertTrue("Odyssey gravship ritual group exists", gravship != null);
+            AssertEqual("Odyssey gravship ritual domain", "Ritual", ChildValue(gravship, "domain"));
+            AssertTrue("Odyssey gravship ritual matches launch identity",
+                HasListValue(gravship, "matchTokens", "GravshipLaunch"));
+            AssertTrue("Odyssey gravship ritual matches behavior identity",
+                HasListValue(gravship, "matchTokens", "RitualBehaviorWorker_GravshipLaunch"));
+            AssertTrue("Odyssey string-only ritual matcher has no package dependency",
+                !HasListValue(gravship, "enableWhenPackageIdsLoaded", null));
+            AssertEqual("Odyssey launch classifier reaches gravship ritual",
+                "ritualGravship",
+                ResolveInteractionGroup(
+                    groups,
+                    "Ritual",
+                    "Ritual_GravshipLaunch;RitualBehaviorWorker_GravshipLaunch",
+                    false));
+            AssertEqual("Odyssey launch classifier is case-insensitive",
+                "ritualGravship",
+                ResolveInteractionGroup(
+                    groups,
+                    "Ritual",
+                    "ritual_gravshiplaunch;ritualbehaviorworker_gravshiplaunch",
+                    false));
+
+            AssertEqual("Odyssey orbital debris Tale routes to incident",
+                "taleincident", ResolveInteractionGroup(groups, "Tale", "OrbitalDebris", false));
+            AssertEqual("Odyssey vacuum reveal Tale routes to health",
+                "talehealth", ResolveInteractionGroup(groups, "Tale", "VacuumExposureRevealed", false));
+            AssertEqual("Odyssey volcanic ash routes to weather hardship",
+                "moodeventWeatherHardship",
+                ResolveInteractionGroup(groups, "MoodEvent", "VolcanicAsh", false));
+            AssertEqual("Odyssey flooding routes to weather hardship",
+                "moodeventWeatherHardship",
+                ResolveInteractionGroup(groups, "MoodEvent", "Flooding", false));
+
+            XDocument observed = XDocument.Load(RepoPath("1.6", "Defs", "DiaryObservedConditionDefs.xml"));
+            XElement volcanic = FindDef(
+                observed, "PawnDiary.DiaryObservedConditionDef", "VolcanicWinterActive");
+            AssertTrue("Odyssey volcanic ash observed-condition row exists", volcanic != null);
+            AssertEqual("Odyssey volcanic atmosphere uses game-condition observer",
+                "GameCondition", ChildValue(volcanic, "observerType"));
+            AssertTrue("Odyssey volcanic atmosphere matches VolcanicAsh",
+                HasListValue(volcanic, "matchDefNames", "VolcanicAsh"));
+            AssertEqual("Odyssey volcanic atmosphere remains prompt-only",
+                "false", ChildValue(volcanic, "recordStartEvent"));
+
+            XDocument enchantments = XDocument.Load(RepoPath(
+                "1.6", "Defs", "DiaryPromptEnchantmentDefs.xml"));
+            XElement vacuum = FindDef(
+                enchantments, "PawnDiary.DiaryPromptEnchantmentDef", "DiaryEnchant_VacuumExposure");
+            AssertTrue("Odyssey vacuum enchantment row exists", vacuum != null);
+            AssertTrue("Odyssey vacuum enchantment matches VacuumExposure",
+                HasListValue(vacuum, "hediffDefNames", "VacuumExposure"));
+            AssertTrue("Odyssey vacuum enchantment matches VacuumBurn fallback",
+                HasListValue(vacuum, "hediffDefNames", "VacuumBurn"));
         }
 
         private static void TestProgressionMilestonePolicy()

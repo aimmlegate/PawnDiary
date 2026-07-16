@@ -95,9 +95,9 @@ teardown.
 | EVT-12 | Work | Assign controlled job and invoke work scan | Eligible work only, chance/cooldown route, same-work suppression, passion/chore/dark-study facts. |
 | EVT-13 | Raid | Execute a minimal test incident or invoke a controlled `IncidentWorker` | Map-colonist fan-out, ordinary delay, drop-pod/infestation bypass, colony dedup, other-map exclusion. |
 | EVT-14 | Mood event | Register a controlled `GameCondition` | Affected-map fan-out, mood classification, unaffected-map exclusion, disabled group. |
-| EVT-15 | Pawn progression | Mutate skill passion milestone, trait, and optional DLC state then scan | First-scan baseline, only upward/new milestones, exact context, major-change arc request. |
+| EVT-15 | Pawn progression | Mutate skill passion milestone, trait, and optional DLC state then scan | First-scan baseline, only upward/new milestones, exact context, major-change arc request; installed-Royalty real psylink/title positive paths and repeat suppression. |
 | EVT-16 | Quest | Accept/end controlled quest and run recovery scan | Accepted bookkeeping/no page, completed/failed fan-out, placeholder-label sanitation, duplicate scan drop. |
-| EVT-17 | Ritual | Complete controlled Ideology/psychic ritual when DLC active | Participant role/perspective fan-out and context; all 16 installed Anomaly classifier keys resolve to six exact package-gated families, unknown psychic rituals reach the generic fallback, and the no-DLC path is clean. |
+| EVT-17 | Ritual | Submit production Ideology/psychic fan-outs through internal copied-fact fixtures | Organizer/invoker, target, participant, and spectator pages; duplicate-role pawn-ID collapse, colony dedup, per-perspective context/localization, all 16 Anomaly classifier keys and fallback, and clean no-DLC fields. Live DLC constructor signatures are checked separately. |
 | EVT-18 | Arrival | `SetFaction` plus founding-arrival bootstrap | Neutral page, scenario/backstory facts, exactly-first ordering, one bad pawn cannot wedge bootstrap. |
 | EVT-19 | Day/quadrum reflection | Seed day signals and invoke sleep/rest flush | Highlight selection, once-per-day guard, quadrum substitution, evidence consumption, token limits. |
 | EVT-20 | Arc reflection | Seed hot/archive memories and invoke scheduled/major-event path | Year/gap limits, memory filtering/dedup, forced retry backoff, recent-memory tracking. |
@@ -124,6 +124,13 @@ Anomaly family. The same test parses event-window triggers to prove one reached 
 one window, `Gleaming` maps to none, localized fallbacks exist, and the three exact windows declare
 bounded source evidence. The EVT-22 RimTest fixture exercises the live package-gated page/evidence
 path when Anomaly is active and the no-op branch otherwise.
+
+The pre-O1 Odyssey integration has a focused shipped-XML contract in `DiaryPipelineTests`: the
+gravship launch ritual resolves by both launch and behavior tokens without a package dependency,
+`OrbitalDebris` and `VacuumExposureRevealed` retain their Tale routes, `VolcanicAsh`/`Flooding` retain
+their weather route, volcanic ash remains a prompt-only observed condition, and both supported vacuum
+hediff spellings remain eligible prompt enchantments. These are plain-string inertness tests, not a
+claim that the planned journey/landing state machine exists.
 
 Master Wave 3 / Biotech Phases 0–3 plus Phase 4 automated hardening use
 `DiaryBiotechPolicyTests`, an assembly-free suite that freezes

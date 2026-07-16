@@ -37,6 +37,8 @@ namespace PawnDiary.Ingestion
         private readonly string colonyDedupKey;
         private readonly Pawn organizer;
         private readonly Pawn targetPawn;
+        private readonly List<Pawn> fixtureParticipants;
+        private readonly List<Pawn> fixtureSpectators;
 
         internal LordJob_Ritual RitualJob { get; }
         internal RitualRoleAssignments Assignments { get; }
@@ -95,6 +97,67 @@ namespace PawnDiary.Ingestion
             valid = true;
         }
 
+        /// <summary>
+        /// Builds a bounded loaded-game fixture from already-copied ritual facts. RimTest cannot safely
+        /// construct a live <see cref="LordJob_Ritual"/> without starting a real map ritual, so this
+        /// internal seam exercises the production fan-out, child capture, dedup, persistence, and prompt
+        /// context without changing the live Harmony constructor above.
+        /// </summary>
+        internal static RitualFanoutSignal CreateTestFixture(
+            Pawn organizer,
+            Pawn targetPawn,
+            List<Pawn> participants,
+            List<Pawn> spectators,
+            string defName,
+            string title,
+            string behaviorClass,
+            float progress,
+            string groupInstruction)
+        {
+            return new RitualFanoutSignal(
+                organizer,
+                targetPawn,
+                participants,
+                spectators,
+                defName,
+                title,
+                behaviorClass,
+                progress,
+                groupInstruction);
+        }
+
+        private RitualFanoutSignal(
+            Pawn organizer,
+            Pawn targetPawn,
+            List<Pawn> participants,
+            List<Pawn> spectators,
+            string defName,
+            string title,
+            string behaviorClass,
+            float progress,
+            string groupInstruction)
+        {
+            if (!DiaryGameComponent.GamePlaying || string.IsNullOrWhiteSpace(defName))
+            {
+                return;
+            }
+
+            this.organizer = organizer;
+            this.targetPawn = targetPawn;
+            fixtureParticipants = participants == null ? new List<Pawn>() : new List<Pawn>(participants);
+            fixtureSpectators = spectators == null ? new List<Pawn>() : new List<Pawn>(spectators);
+            DefName = defName;
+            Title = string.IsNullOrWhiteSpace(title) ? RitualEventData.FallbackTitle : title;
+            Label = Title;
+            BehaviorClass = behaviorClass ?? string.Empty;
+            Quality = RitualEventData.QualityLabel(progress, DiaryTuning.Current.ritualQualityBands);
+            GroupInstruction = groupInstruction ?? string.Empty;
+            int tick = Find.TickManager == null ? 0 : Find.TickManager.TicksGame;
+            colonyDedupKey = "ritual_fixture|" + defName + "|" + PawnKey(organizer) + "|"
+                + PawnKey(targetPawn) + "|" + tick;
+            valid = true;
+        }
+
         public override string ColonyDedupKey => valid ? colonyDedupKey : string.Empty;
 
         public override int ColonyDedupTicks => DiaryTuning.Current.ritualDedupTicks;
@@ -118,7 +181,7 @@ namespace PawnDiary.Ingestion
                 yield return s;
             }
 
-            List<Pawn> participants = Assignments?.Participants;
+            List<Pawn> participants = Assignments?.Participants ?? fixtureParticipants;
             if (participants != null)
             {
                 for (int i = 0; i < participants.Count; i++)
@@ -130,7 +193,7 @@ namespace PawnDiary.Ingestion
                 }
             }
 
-            List<Pawn> spectators = Assignments?.SpectatorsForReading;
+            List<Pawn> spectators = Assignments?.SpectatorsForReading ?? fixtureSpectators;
             if (spectators != null)
             {
                 for (int i = 0; i < spectators.Count; i++)

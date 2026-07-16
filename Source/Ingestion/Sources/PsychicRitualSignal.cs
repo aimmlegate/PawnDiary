@@ -33,6 +33,8 @@ namespace PawnDiary.Ingestion
         private readonly PsychicRitualRoleAssignments assignments;
         private readonly Pawn invoker;
         private readonly Pawn targetPawn;
+        private readonly List<Pawn> fixtureParticipants;
+        private readonly List<Pawn> fixtureSpectators;
 
         internal string DefName { get; }
         internal string Label { get; }
@@ -84,6 +86,61 @@ namespace PawnDiary.Ingestion
             valid = true;
         }
 
+        /// <summary>
+        /// Builds a bounded loaded-game fixture from copied psychic-ritual facts. This avoids starting
+        /// a real Anomaly ritual in a player's colony while still driving the production fan-out and
+        /// per-pawn child signals end to end. The live DLC constructor above remains the only runtime hook path.
+        /// </summary>
+        internal static PsychicRitualFanoutSignal CreateTestFixture(
+            Pawn invoker,
+            Pawn targetPawn,
+            List<Pawn> participants,
+            List<Pawn> spectators,
+            string defName,
+            string label,
+            float progress,
+            string groupInstruction)
+        {
+            return new PsychicRitualFanoutSignal(
+                invoker,
+                targetPawn,
+                participants,
+                spectators,
+                defName,
+                label,
+                progress,
+                groupInstruction);
+        }
+
+        private PsychicRitualFanoutSignal(
+            Pawn invoker,
+            Pawn targetPawn,
+            List<Pawn> participants,
+            List<Pawn> spectators,
+            string defName,
+            string label,
+            float progress,
+            string groupInstruction)
+        {
+            if (!DiaryGameComponent.GamePlaying || string.IsNullOrWhiteSpace(defName))
+            {
+                return;
+            }
+
+            this.invoker = invoker;
+            this.targetPawn = targetPawn;
+            fixtureParticipants = participants == null ? new List<Pawn>() : new List<Pawn>(participants);
+            fixtureSpectators = spectators == null ? new List<Pawn>() : new List<Pawn>(spectators);
+            DefName = defName;
+            Label = string.IsNullOrWhiteSpace(label) ? defName : label;
+            Quality = RitualEventData.QualityLabel(progress, DiaryTuning.Current.ritualQualityBands);
+            GroupInstruction = groupInstruction ?? string.Empty;
+            int tick = Find.TickManager == null ? 0 : Find.TickManager.TicksGame;
+            colonyDedupKey = "psychic_ritual_fixture|" + defName + "|" + PawnKey(invoker) + "|"
+                + PawnKey(targetPawn) + "|" + tick;
+            valid = true;
+        }
+
         public override string ColonyDedupKey => valid ? colonyDedupKey : string.Empty;
 
         public override int ColonyDedupTicks => DiaryTuning.Current.ritualDedupTicks;
@@ -106,15 +163,21 @@ namespace PawnDiary.Ingestion
                 yield return s;
             }
 
-            foreach (Pawn pawn in assignments.AllAssignedPawns)
+            IEnumerable<Pawn> participants = assignments == null
+                ? fixtureParticipants
+                : assignments.AllAssignedPawns;
+            if (participants != null)
             {
-                foreach (DiarySignal s in PerPawn(pawn, invoker, RitualEventData.PerspectiveParticipant, seen))
+                foreach (Pawn pawn in participants)
                 {
-                    yield return s;
+                    foreach (DiarySignal s in PerPawn(pawn, invoker, RitualEventData.PerspectiveParticipant, seen))
+                    {
+                        yield return s;
+                    }
                 }
             }
 
-            List<Pawn> spectators = assignments.SpectatorsForReading;
+            List<Pawn> spectators = assignments == null ? fixtureSpectators : assignments.SpectatorsForReading;
             if (spectators != null)
             {
                 for (int i = 0; i < spectators.Count; i++)
@@ -173,6 +236,11 @@ namespace PawnDiary.Ingestion
         private static string PsychicRitualClassifierKey(string defName)
         {
             return PsychicRitualClassifierPrefix + ";" + defName;
+        }
+
+        private static string PawnKey(Pawn pawn)
+        {
+            return pawn == null ? "none" : pawn.GetUniqueLoadID();
         }
 
         internal static string PsychicRitualPerspectiveLabel(string perspective)

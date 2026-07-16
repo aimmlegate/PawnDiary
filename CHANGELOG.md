@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-07-17 — Added focused automated coverage for the remaining shipped DLC integrations.**
+  Loaded-game progression fixtures now drive real Royalty psylink and title state through the private
+  scanners, assert exact pages, and reject repeats. Ideology and Anomaly gained internal copied-fact
+  ritual fixture seams plus four-perspective production fan-out, duplicate-role collapse, and colony
+  dedup assertions without starting a real player ritual. The pure pipeline suite now freezes the
+  existing pre-O1 Odyssey gravship/orbital/vacuum/weather/observed-condition/enchantment XML routes.
+  Core runtime behavior is unchanged outside the internal test seams.
+
 - **2026-07-17 — Corrected the multi-preset birth prompt RimTest fixture.** The loaded-game suite's
   final 192/193 run showed that its Full/Balanced/Compact loop assigned three different children one
   birther-owned family arc, so production correctly deduplicated the second birth. The fixture now

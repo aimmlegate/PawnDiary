@@ -2308,6 +2308,17 @@ by submitting the exact per-unit production signal the scanner emits, which keep
 deterministic; the suite README lists the two suites (death, raid) that still need a disposable colony
 because their vanilla trigger has un-restorable side effects.
 
+The DLC-focused generic flows now include installed-Royalty positive scanner fixtures for a real
+`PsychicAmplifier` hediff and a disposable real `RoyalTitle`, each asserting exact context and repeat
+suppression. Ideology and Anomaly ritual tests use internal copied-fact fixture seams because safely
+constructing their live ritual job objects would start a real colony ritual; only that reflective
+object extraction is bypassed. The fixtures still execute production fan-out ordering, pawn-ID
+uniqueness, colony dedup, child capture decisions, persisted solo pages, diary references, and prompt
+context for all four perspectives. `DiaryPipelineTests` separately pins the existing pre-O1 Odyssey
+plain-string routes for gravship launch, orbital debris, vacuum exposure, volcanic ash/flooding,
+prompt-only volcanic atmosphere, and vacuum enchantments. Odyssey journey/landing remains planned,
+not implied by these matcher tests.
+
 Canonical birth context begins with `tale=BiotechFamilyBirth`, then carries the B1 child, outcome,
 method, and adult-role facts. The Tale marker is what makes saved-event/prompt classification recover
 the important `biotechFamilyBirth` group and select PairImportant/SoloImportant; without it, the same
