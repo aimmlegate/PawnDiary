@@ -393,6 +393,43 @@ namespace PawnDiary.Capture
             return newest;
         }
 
+        /// <summary>
+        /// Finds the newest unresolved row for one exact pawn across ALL canonical growth ages. This
+        /// is the fallback for a growth letter answered only after the pawn's next birthday: the live
+        /// age no longer matches the row's birthday age, but the still-open letter is that row's
+        /// rightful consumer, so the choice must attach to it rather than capture nothing.
+        /// </summary>
+        public static PendingBiotechGrowthMoment FindNewestForPawn(
+            IList<PendingBiotechGrowthMoment> source,
+            string pawnId)
+        {
+            string id = (pawnId ?? string.Empty).Trim();
+            if (id.Length == 0 || source == null)
+            {
+                return null;
+            }
+
+            PendingBiotechGrowthMoment newest = null;
+            for (int i = 0; i < source.Count; i++)
+            {
+                PendingBiotechGrowthMoment row = source[i];
+                if (row == null || !string.Equals(row.pawnId, id, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (newest == null
+                    || row.birthdayTick > newest.birthdayTick
+                    || (row.birthdayTick == newest.birthdayTick
+                        && row.configuredTick > newest.configuredTick))
+                {
+                    newest = row;
+                }
+            }
+
+            return newest;
+        }
+
         /// <summary>True once elapsed ticks meet the XML-owned pending-row expiry.</summary>
         public static bool IsExpired(PendingBiotechGrowthMoment row, int currentTick, int expiryTicks)
         {

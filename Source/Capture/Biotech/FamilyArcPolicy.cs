@@ -512,21 +512,17 @@ namespace PawnDiary.Capture
             }
 
             input = input ?? new FamilyArcRetentionInput();
-            bool unsummarized = false;
-            if (arc.supporters != null)
-            {
-                for (int i = 0; i < arc.supporters.Count && !unsummarized; i++)
-                {
-                    unsummarized = UnsummarizedEvidence(arc.supporters[i]) > 0;
-                }
-            }
 
             // A pregnancy/labor row has no child ID until a later birth owner links it. Keep the row
             // while its exact live Hediff still exists, then give it the same XML-owned retention grace
             // as every other detached arc. Treating "unresolved" as permanent made every completed or
-            // interrupted pregnancy immortal when no birth linker was active.
+            // interrupted pregnancy immortal when no birth linker was active. Unsummarized supporter
+            // evidence deliberately does NOT force retention on its own: it is only ever consumed by a
+            // future growth page, so while the child is alive and developing the arc is already kept by
+            // that flag — and once the child is dead or grown the evidence can never be consumed, so
+            // keeping the arc for it made every child who died with recorded lessons immortal.
             if (input.familyHediffStillPresent || input.childAliveAndDeveloping || input.hasPendingReference
-                || input.hasSavedEventReference || unsummarized || retentionTicks <= 0)
+                || input.hasSavedEventReference || retentionTicks <= 0)
             {
                 return FamilyArcRetentionAction.Keep;
             }

@@ -14,6 +14,7 @@ namespace NarrativeContinuityTests
         {
             TestHardGatesFailClosed();
             TestScorePrecedenceAndTerminalRelevance();
+            TestRepetitionPenaltyAndExactArcExemption();
             TestCategoryCapsAndStableTieBreak();
             TestTopicRedundancyKeepsNewFacts();
             TestDetailCapsAndCompleteFactBudget();
@@ -180,6 +181,81 @@ namespace NarrativeContinuityTests
                 selection.selectedCandidates[3].candidateKey);
             AssertEqual("ambient is lowest verified relevance", "ambient-terminal",
                 selection.selectedCandidates[4].candidateKey);
+        }
+
+        /// <summary>
+        /// Pins the live anti-repetition contract: a recently selected key drops its candidate by
+        /// exactly the XML repetition penalty (with defaults, ExactSubject 115 falls below DirectTopic
+        /// 94), exact-arc continuations are exempt via exactArcRepetitionPenalty=0, comparison is
+        /// ordinal (a case-twiddled key does not penalize), and a penalized sole candidate is still
+        /// selected — the penalty reorders, it never empties a selection.
+        /// </summary>
+        private static void TestRepetitionPenaltyAndExactArcExemption()
+        {
+            NarrativePolicySnapshot policy = NarrativePolicySnapshot.CreateDefault();
+            policy.maxSelectedCandidates = 3;
+            Budget(policy, NarrativeDetailLevelTokens.Full).maxLenses = 3;
+            Budget(policy, NarrativeDetailLevelTokens.Full).characterBudget = 1000;
+
+            Func<List<string>, NarrativeContextSelection> select = recentKeys =>
+                NarrativeContextSelector.Select(new NarrativeContextRequest
+                {
+                    policy = policy,
+                    detailLevel = NarrativeDetailLevelTokens.Full,
+                    currentTick = 1000,
+                    evidence = new List<NarrativeEvidence> { Evidence() },
+                    recentSelectedCandidateKeys = recentKeys ?? new List<string>(),
+                    candidates = new List<NarrativeLensCandidate>
+                    {
+                        Candidate("arc-lens", NarrativeCategoryTokens.Identity,
+                            NarrativeFacetTokens.IdentityTransition, arcKey: "family|7"),
+                        Candidate("subject-lens", NarrativeCategoryTokens.Bond,
+                            NarrativeFacetTokens.IdentityTransition,
+                            subjectKind: NarrativeSubjectKindTokens.Pawn, subjectId: "pawn-1"),
+                        Candidate("topic-lens", NarrativeCategoryTokens.Chapter,
+                            NarrativeFacetTokens.JourneyChapter,
+                            topics: new List<string> { "bonding" })
+                    }
+                });
+
+            NarrativeContextSelection baseline = select(null);
+            AssertEqual("baseline keeps subject above topic", "subject-lens",
+                baseline.selectedCandidates[1].candidateKey);
+            AssertEqual("baseline keeps topic last", "topic-lens",
+                baseline.selectedCandidates[2].candidateKey);
+
+            NarrativeContextSelection penalized = select(new List<string> { "subject-lens" });
+            AssertEqual("repeated subject lens drops below the fresh topic lens", "topic-lens",
+                penalized.selectedCandidates[1].candidateKey);
+            AssertEqual("repeated subject lens is reordered, not dropped", "subject-lens",
+                penalized.selectedCandidates[2].candidateKey);
+
+            NarrativeContextSelection exactArcRepeat = select(new List<string> { "arc-lens" });
+            AssertEqual("exact-arc continuation is exempt from the repetition penalty", "arc-lens",
+                exactArcRepeat.selectedCandidates[0].candidateKey);
+            AssertEqual("exempt arc repeat changes nothing else", "subject-lens",
+                exactArcRepeat.selectedCandidates[1].candidateKey);
+
+            NarrativeContextSelection caseTwiddled = select(new List<string> { "SUBJECT-LENS" });
+            AssertEqual("recent-key comparison is ordinal, so a case-twiddled key never penalizes",
+                "subject-lens", caseTwiddled.selectedCandidates[1].candidateKey);
+
+            NarrativeContextSelection sole = NarrativeContextSelector.Select(new NarrativeContextRequest
+            {
+                policy = policy,
+                detailLevel = NarrativeDetailLevelTokens.Full,
+                currentTick = 1000,
+                evidence = new List<NarrativeEvidence> { Evidence() },
+                recentSelectedCandidateKeys = new List<string> { "subject-lens" },
+                candidates = new List<NarrativeLensCandidate>
+                {
+                    Candidate("subject-lens", NarrativeCategoryTokens.Bond,
+                        NarrativeFacetTokens.IdentityTransition,
+                        subjectKind: NarrativeSubjectKindTokens.Pawn, subjectId: "pawn-1")
+                }
+            });
+            AssertEqual("a penalized sole candidate is still selected", 1,
+                sole.selectedCandidates.Count);
         }
 
         private static void TestCategoryCapsAndStableTieBreak()

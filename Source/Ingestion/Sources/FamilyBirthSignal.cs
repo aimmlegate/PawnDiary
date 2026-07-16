@@ -117,6 +117,7 @@ namespace PawnDiary.Ingestion
 
             BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
             ApplyNarrativeEvidence(
+                sink,
                 diaryEvent,
                 writerPawns[0],
                 DiaryEvent.InitiatorRole,
@@ -126,6 +127,7 @@ namespace PawnDiary.Ingestion
             if (pair)
             {
                 ApplyNarrativeEvidence(
+                    sink,
                     diaryEvent,
                     writerPawns[1],
                     DiaryEvent.RecipientRole,
@@ -183,6 +185,7 @@ namespace PawnDiary.Ingestion
         }
 
         private static void ApplyNarrativeEvidence(
+            DiaryGameComponent sink,
             DiaryEvent diaryEvent,
             Pawn povPawn,
             string povRole,
@@ -195,6 +198,7 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
+            string povPawnId = povPawn.GetUniqueLoadID();
             try
             {
                 List<string> topics = new List<string> { "family" };
@@ -208,8 +212,13 @@ namespace PawnDiary.Ingestion
                     {
                         eventId = diaryEvent.eventId,
                         eventTick = value.birthTick,
-                        povPawnId = povPawn.GetUniqueLoadID(),
+                        povPawnId = povPawnId,
                         povRole = povRole,
+                        // Feed the selector this POV's persisted selection history so the XML
+                        // repetition penalty can dampen re-picking the same lens on later pages.
+                        recentSelectedCandidateKeys = sink == null
+                            ? new List<string>()
+                            : sink.RecentNarrativeSelectedCandidateKeys(povPawnId),
                         contextDetailLevel = PawnDiarySettings.NormalizeContextDetailLevel(
                             PawnDiaryMod.Settings?.contextDetailLevel ?? PromptContextDetailLevel.Full),
                         biotech = BuildBiotechSnapshot(povPawn, child, value, policy),

@@ -537,6 +537,12 @@ invisible; selected context is event-time frozen; no real DLC behavior changes y
 > Biotech exact-arc family continuity and exact-subject visible current non-Baseliner identity candidates;
 > other source slots remain empty stubs. Candidate prose is DefInjected, unconnected/no-DLC/child-only
 > paths stay empty, and no provider creates fan-out. N2-O remains scheduled with Odyssey O1.
+>
+> **Review follow-up (2026-07-16): repetition history wired live.** The persisted per-POV selection
+> keys (§8.4) were being saved and archived but never fed back into build requests, leaving the XML
+> `repetitionPenalty` inert. Growth, birth, and event-window sources now pass the POV pawn's recent
+> keys (newest hot pages, then archive rows, capped by `maxRecentSelectedCandidateKeys`) into the
+> selector; exact-arc continuations remain exempt via `exactArcRepetitionPenalty`.
 
 Implement alongside the first flagship DLC slice, recommended Biotech B1 and Odyssey O1:
 

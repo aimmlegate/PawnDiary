@@ -314,6 +314,25 @@ namespace PawnDiary
                 }
             }
 
+            if (child == null)
+            {
+                // A newborn can leave every map inside a caravan/transporter during its naming window;
+                // those pawns are in neither mapPawns nor WorldPawns, and missing them here would make
+                // the pending birth fall into the grace-discard path although the child is fine.
+                IEnumerable<Pawn> travelling = PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive;
+                if (travelling != null)
+                {
+                    foreach (Pawn candidate in travelling)
+                    {
+                        if (candidate != null && candidate.GetUniqueLoadID() == id)
+                        {
+                            child = candidate;
+                            break;
+                        }
+                    }
+                }
+            }
+
             if (child == null && Find.WorldPawns?.AllPawnsAlive != null)
             {
                 foreach (Pawn candidate in Find.WorldPawns.AllPawnsAlive)

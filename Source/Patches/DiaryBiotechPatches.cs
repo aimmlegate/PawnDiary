@@ -412,6 +412,24 @@ namespace PawnDiary
             });
         }
 
+        /// <summary>
+        /// Returns the pawn a live growth-moment letter still targets, or null for any other letter.
+        /// Pending-growth maintenance uses this to keep claimed ownership while the player's choice
+        /// letter is still open (vanilla growth letters never time out); the caller checks liveness so
+        /// a letter lingering for a dead pawn cannot hold its row forever. Degrades to null when the
+        /// field hook failed, so expiry stays fail-open.
+        /// </summary>
+        public static Pawn LetterPawn(Letter letter)
+        {
+            ChoiceLetter_GrowthMoment growthLetter = letter as ChoiceLetter_GrowthMoment;
+            if (growthLetter == null || PawnField == null)
+            {
+                return null;
+            }
+
+            return PawnField.GetValue(growthLetter) as Pawn;
+        }
+
         private static int FieldInt(FieldInfo field, object instance)
         {
             object value = field?.GetValue(instance);

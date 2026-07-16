@@ -85,13 +85,21 @@ namespace PawnDiary
                 birthdaySnapshot = birthday.beforeSnapshot
             };
 
+            // A re-configured letter replaces its OWN existing claim and never counts against
+            // admission — the table does not grow — so the replacement must be decided before the old
+            // row is removed, or a full table would destroy the established claim and then reject its
+            // replacement.
+            bool replacingExistingClaim = PendingBiotechGrowthMomentPolicy.FindNewest(
+                pendingBiotechGrowthMoments,
+                row.pawnId,
+                row.birthdayAge) != null;
             RemovePendingBiotechGrowth(row.pawnId, row.birthdayAge);
             pendingBiotechGrowthMoments = PendingBiotechGrowthMomentPolicy.Normalize(
                 pendingBiotechGrowthMoments,
                 now,
                 BiotechPendingOwnershipLimits.HardMaximumRows);
             int admissionLimit = DiaryBiotechPolicy.Snapshot().maximumPendingGrowthRows;
-            if (BiotechPendingOwnershipLimits.CanAdmit(
+            if (replacingExistingClaim || BiotechPendingOwnershipLimits.CanAdmit(
                 pendingBiotechGrowthMoments.Count,
                 admissionLimit))
             {
@@ -102,9 +110,9 @@ namespace PawnDiary
                     BiotechPendingOwnershipLimits.HardMaximumRows);
             }
 
-            // A full admission limit preserves every older claimed letter and rejects only this new
-            // owner. TryFinish can still capture a same-call auto resolution; otherwise it returns false
-            // so the ordinary Birthday path remains available.
+            // A full admission limit preserves every older claimed letter and rejects only a genuinely
+            // NEW owner. TryFinish can still capture a same-call auto resolution; otherwise it returns
+            // false so the ordinary Birthday path remains available.
             birthday.configuredLetterOwnsBirthday = PendingBiotechGrowthMomentPolicy.FindNewest(
                 pendingBiotechGrowthMoments,
                 row.pawnId,
@@ -198,6 +206,17 @@ namespace PawnDiary
                 pendingBiotechGrowthMoments,
                 pawnId,
                 age);
+            if (pending == null)
+            {
+                // A letter can be answered after the pawn's NEXT birthday. Maintenance keeps the row
+                // alive while its letter is open, but the row is keyed by the ORIGINAL birthday age,
+                // so the live-age lookup above misses it; the whole-pawn fallback attaches the choice
+                // to that original claim instead of capturing nothing.
+                pending = PendingBiotechGrowthMomentPolicy.FindNewestForPawn(
+                    pendingBiotechGrowthMoments,
+                    pawnId);
+            }
+
             if (pending == null)
             {
                 return null;
@@ -339,6 +358,19 @@ namespace PawnDiary
             for (int i = pendingBiotechGrowthMoments.Count - 1; i >= 0; i--)
             {
                 PendingBiotechGrowthMoment pending = pendingBiotechGrowthMoments[i];
+                if (GrowthLetterStillOpenFor(pending.pawnId))
+                {
+                    // Vanilla growth letters never time out, and players routinely postpone them past
+                    // any fixed tick budget — even past the pawn's NEXT birthday. Ownership must
+                    // survive for as long as the choice is still openly offered: both the tick expiry
+                    // and the age-flip release below would otherwise forfeit the canonical growth page
+                    // and emit a mistimed ordinary birthday. BeginBiotechGrowthChoice's whole-pawn
+                    // fallback finds this row again even after the live age moved past its birthday
+                    // age. The letter's disappearance (choice made, pawn dead or lost, letter removed)
+                    // re-arms both checks on the next scan.
+                    continue;
+                }
+
                 bool expired = PendingBiotechGrowthMomentPolicy.IsExpired(
                     pending,
                     now,
@@ -404,6 +436,38 @@ namespace PawnDiary
                     current,
                     pending.birthdayAge);
             }
+        }
+
+        /// <summary>
+        /// True while the player still has a growth-moment choice letter open for this exact, still
+        /// living pawn. The reflection accessor degrades to null when the letter hooks failed, so
+        /// expiry stays fail-open; a letter lingering for a dead pawn does not hold the row; without
+        /// Biotech no such letter can exist and the probe is skipped entirely.
+        /// </summary>
+        private static bool GrowthLetterStillOpenFor(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || !ModsConfig.BiotechActive)
+            {
+                return false;
+            }
+
+            List<Letter> letters = Find.LetterStack?.LettersListForReading;
+            if (letters == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < letters.Count; i++)
+            {
+                Pawn letterPawn = BiotechGrowthLetterPatch.LetterPawn(letters[i]);
+                if (letterPawn != null && !letterPawn.Dead
+                    && letterPawn.GetUniqueLoadID() == pawnId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void CompleteBiotechGrowth(

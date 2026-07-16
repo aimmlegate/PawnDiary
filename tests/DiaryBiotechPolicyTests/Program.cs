@@ -540,6 +540,26 @@ namespace DiaryBiotechPolicyTests
             AssertEqual("saved event reference always retains compacted arc", FamilyArcRetentionAction.Keep,
                 FamilyArcPolicy.DecideRetention(retained,
                     new FamilyArcRetentionInput { hasSavedEventReference = true }, 5000, 1000));
+
+            // Unsummarized supporter evidence is consumable only by a future growth page, so it keeps
+            // an arc only through the childAliveAndDeveloping flag. A child who died (or grew up) with
+            // recorded lessons must NOT be immortal: the arc follows the ordinary retention countdown.
+            BiotechFamilyArcState orphanEvidence = new BiotechFamilyArcState
+            {
+                familyArcId = "biotech-family|Gone",
+                childId = "Gone",
+                lastObservedTick = 100,
+                supporters = new List<FamilySupportObservationState>
+                {
+                    new FamilySupportObservationState { adultId = "Teacher", lessonCount = 3 }
+                }
+            };
+            AssertEqual("live developing child keeps unconsumed lesson evidence", FamilyArcRetentionAction.Keep,
+                FamilyArcPolicy.DecideRetention(orphanEvidence,
+                    new FamilyArcRetentionInput { childAliveAndDeveloping = true }, 5000, 1000));
+            AssertEqual("dead or grown child with unconsumable evidence is not immortal",
+                FamilyArcRetentionAction.Compact,
+                FamilyArcPolicy.DecideRetention(orphanEvidence, new FamilyArcRetentionInput(), 5000, 1000));
         }
 
         private static void TestSupporterSelectionAndWriterShapes()

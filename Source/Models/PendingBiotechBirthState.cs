@@ -147,6 +147,15 @@ namespace PawnDiary.Capture
             Scribe_Deep.Look(ref writers, "writers");
             Scribe_Deep.Look(ref eventContext, "eventContext");
             Scribe_Values.Look(ref createdTick, "createdTick", 0);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                // Self-repair like every sibling type above, so a pre-normalization consumer can never
+                // meet a null writer list or negative tick. A null snapshot stays null on purpose: the
+                // component's PostLoadInit normalization (PendingBiotechBirthPolicy.Normalize) drops the
+                // whole row because a birth without its frozen facts cannot be replayed truthfully.
+                writers = writers ?? new BirthWriterSelection();
+                createdTick = createdTick < 0 ? 0 : createdTick;
+            }
         }
     }
 }

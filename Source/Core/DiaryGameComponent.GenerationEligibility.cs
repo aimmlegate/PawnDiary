@@ -337,6 +337,23 @@ namespace PawnDiary
                 }
             }
 
+            // Caravan and travelling-transporter pawns live in their world object, NOT in mapPawns or
+            // WorldPawns — without this leg a family that caravans during a naming/growth window would
+            // read as nonexistent and its pending ownership would be wrongly discarded. Same universe
+            // the loaded-save bootstrap uses; the map portion repeats the loop above, which is cheap at
+            // the coarse cadences that call this.
+            IEnumerable<Pawn> travelling = PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive;
+            if (travelling != null)
+            {
+                foreach (Pawn pawn in travelling)
+                {
+                    if (pawn != null && !pawn.Dead && pawn.GetUniqueLoadID() == pawnId)
+                    {
+                        return pawn;
+                    }
+                }
+            }
+
             if (Find.WorldPawns?.AllPawnsAlive != null)
             {
                 foreach (Pawn pawn in Find.WorldPawns.AllPawnsAlive)

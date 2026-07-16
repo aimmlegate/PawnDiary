@@ -46,7 +46,9 @@ namespace PawnDiary
             Scribe_Values.Look(ref arcKey, "arcKey");
             Scribe_Values.Look(ref relatedEventId, "relatedEventId");
             Scribe_Collections.Look(ref beliefTopics, "beliefTopics", LookMode.Value);
-            Scribe_Values.Look(ref salience, "salience");
+            // Missing salience (an older save, or a hand-edited row) loads as the mildest tier instead
+            // of null, so the field defends itself even before NormalizeEvidence maps unknown tokens.
+            Scribe_Values.Look(ref salience, "salience", NarrativeSalienceTokens.Minor);
             Scribe_Values.Look(ref pawnCanKnow, "pawnCanKnow", false);
             Scribe_Values.Look(ref sourceDomain, "sourceDomain");
             Scribe_Values.Look(ref sourceDefName, "sourceDefName");

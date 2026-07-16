@@ -1,5 +1,49 @@
 # Changelog
 
+- **2026-07-16 — Second-wave adversarial bughunt fixes (Biotech ownership lifecycles).**
+  `FindLivePawnByLoadId` and the newborn naming lookup now search caravans and travelling
+  transporters (the same universe the loaded-save bootstrap uses) — previously a family that
+  caravanned during the naming window read as nonexistent, silently discarding the promised
+  canonical birth page after one day's grace, hiding caravanning supporters, and mis-reading the
+  child as gone. A live pregnancy arc can no longer be closed `ended_unknown` while the birther is
+  merely unresolvable, and baseline child arcs (which never observed a pregnancy hediff) are no
+  longer mislabeled closed on their first maintenance pass — the silent close now requires that the
+  arc actually observed a pregnancy/labor hediff. A growth letter postponed past the pawn's NEXT
+  birthday no longer forfeits its canonical page: the open-letter hold now also covers the age-flip
+  release, and `BeginBiotechGrowthChoice` falls back to the pawn's newest pending claim when the
+  live age no longer matches (new pure `FindNewestForPawn`); the hold also ignores letters for dead
+  pawns. Re-configuring an already-claimed growth letter at a full admission table now replaces its
+  own row instead of destroying the claim and rejecting the replacement. Family arcs whose child
+  died or grew up with unconsumable lesson evidence follow the ordinary retention countdown instead
+  of living forever. The cached Biotech policy snapshot is language-keyed so a mid-session language
+  switch cannot serve stale localized prose. New pure pins: repetition penalty/exact-arc
+  exemption/ordinal-comparison/sole-candidate selection (`NarrativeContinuityTests` 74→82) and
+  dead-child evidence retention (`DiaryBiotechPolicyTests` 379→381). Both DLLs rebuilt; all pure
+  suites pass.
+
+- **2026-07-16 — Four-axis DLC-work code review fixes (plan / lore / save-compat / correctness).**
+  Save-compat: pending Biotech births, family arcs, and the naming poll are no longer gated on
+  `ModsConfig.BiotechActive` (mirroring the growth side), so a save whose Biotech was later disabled
+  flushes its promised canonical birth pages from the frozen event-time facts (birth-time name after
+  the normal grace) and keeps compacting/pruning arcs instead of freezing them forever;
+  `PendingBiotechBirthState` gained the same PostLoadInit self-repair as its siblings and
+  `NarrativeEvidenceState.salience` now scribes with a `minor` default. Correctness: pending growth
+  ownership no longer tick-expires while the pawn's vanilla growth letter is still open (growth
+  letters never time out — expiring forfeited the canonical page and emitted a mistimed ordinary
+  birthday), and the event-window settings gate no longer NREs when `PawnDiaryMod.Settings` is null.
+  Narrative: the persisted anti-repetition history is now actually consulted — growth, birth, and
+  event-window sources feed the selector the POV pawn's recent selection keys (newest hot pages, then
+  archive), activating the XML `repetitionPenalty` that was previously inert. Performance:
+  `DiaryBiotechPolicy.Snapshot()` is cached (it rebuilt ~12 lists on every social interaction and
+  gained thought), and family-arc retention collects saved arc references in one pass instead of
+  re-parsing every page per arc. Coverage: `NarrativeContinuityTests` is wired into
+  `.githooks/verify.ps1` (it was passing but ungated); new `PawnDiaryBiotechComponentStateFixtureTests`
+  RimTest suite round-trips the component's three Biotech lists under their production save keys
+  (missing-key baseline, corrupt-row drop, and >2048 hard-ceiling truncation against real Scribe); the
+  save-compat runbook gained the new scribed files in its touch list and a row 10 "Biotech removed
+  mid-save" acceptance scenario. Pure suites and both DLL builds pass; RimTest suites need an in-game
+  rerun.
+
 - **2026-07-16 — Fixed the three remaining loaded-game RimTest failures.** (1) Writing-style,
   psychotype, and humor voice blocks now splice their rule into the localized frame verbatim
   (`DiaryPipelineAdapters.InjectVoiceRule`); the previous args-`Translate` path ran vanilla's

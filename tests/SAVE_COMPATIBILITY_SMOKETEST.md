@@ -12,6 +12,11 @@ Run this whenever you touch:
 - `Source/Models/PawnDiaryRecord.cs` (`ExposeData` — writing-style + psychotype + pin/band fields),
 - `Source/Core/DiaryGameComponent.Voice.cs` (`EnsureVoiceStage` crystallization/backfill and the rolls),
 - `Source/Models/ArchivedDiaryEntry.cs` (`ExposeData`, `NormalizeOnLoad`),
+- `Source/Models/NarrativeContinuityState.cs` (per-POV evidence/reference/key rows and their caps),
+- `Source/Models/PendingBiotechBirthState.cs`, `PendingBiotechGrowthMoment.cs`,
+  `BiotechFamilyArcState.cs`, `BiotechPawnProgressionState.cs`, `PawnArcState.cs` (Biotech state),
+- `Source/Core/DiaryGameComponent.BiotechFamily.cs` / `DiaryGameComponent.BiotechGrowth.cs`
+  (`ExposeBiotechFamilyData` / `ExposeBiotechGrowthData`, maintenance, version bootstrap),
 - `Source/Settings/PawnDiarySettings.cs` or anything under `Source/Settings/` that owns `ExposeData`,
 - the Scribe keys written by any of the above, or
 - `Source/Core/DiaryEventRepository.cs` / `DiaryArchiveRepository.cs` load/index paths.
@@ -132,6 +137,11 @@ no model request leaves the game; turn it off only when deliberately reviewing g
    growth-vat, ritual/non-ritual, one/two/no eligible writer, naming before/after save, birther death,
    and a deliberately failed owner. Each successful owner emits once at the original birth tick; the
    child is the subject and never a POV. A failed/disabled owner releases the mature fallback once.
+   Also form a caravan with the whole family (writers + newborn) during the naming window: the
+   pending page must survive, resolve the caravan pawns, and emit normally — never the
+   "lost every exact adult writer" discard. Repeat once with a pregnant colonist leaving on a
+   caravan mid-pregnancy: her arc must stay open (no `ended_unknown`), and the birth on return must
+   link to the same family arc.
 7. **RimTalk and bridge smoke.** Load RimTalk Bridge, generate/read recent growth and birth pages, and
    confirm its context/memory injection accepts them as ordinary Progression/Tale entries without a
    duplicate Pawn Diary page, recursive submission, or exception. Rebuild and run both bridge logic
@@ -148,6 +158,16 @@ no model request leaves the game; turn it off only when deliberately reviewing g
    birth rows but fewer than 2048. Confirm load preserves every established row, saving round-trips them,
    and a newly triggered growth/birth owner fails open without changing the existing set. Resolve one
    old row, trigger one new owner, and confirm admission resumes without a duplicate or missing page.
+10. **Biotech removed mid-save.** Take a Biotech save that contains at least one open family arc, one
+   pending growth row, and one pending birth row (instrument via dev if needed), then disable Biotech
+   and load. Expected: no Pawn Diary/Scribe error beyond RimWorld's own missing-content warnings; the
+   Biotech settings rows disappear; pending growth rows release the ordinary Birthday page (or drop
+   silently for dead pawns) on the normal cadence; pending birth rows still flush their canonical page
+   with the birth-time child name after the naming grace (the naming poll finds nothing without the
+   DLC), or prune with a single warning when every writer is gone; family arcs keep compacting and
+   pruning. Save again, reload, and confirm the state keeps shrinking rather than freezing. Re-enable
+   Biotech and confirm the game loads cleanly and remaining state resumes normal maintenance — nothing
+   double-fires for pages already written while the DLC was off.
 
 Record the RimWorld version, active mod list, save fixture, language, and pass/fail result for each
 row. Automated builds and pure/RimTest source coverage do not replace these live ownership checks.

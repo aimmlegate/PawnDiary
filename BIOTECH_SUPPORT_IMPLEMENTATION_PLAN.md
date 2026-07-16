@@ -12,6 +12,22 @@
 > no-DLC-safe. N2-B adds bounded exact family/current visible identity lenses through the shared fixed
 > provider list.
 >
+> **Review follow-ups (2026-07-16):** pending-birth/arc maintenance now runs without the DLC (a
+> Biotech-removed save flushes frozen birth pages after grace and keeps pruning arcs, matching the
+> growth side); pending growth ownership no longer tick-expires while the pawn's growth letter is
+> still open (vanilla letters never time out); `DiaryBiotechPolicy.Snapshot()` is cached; the
+> save-compat runbook gained row 10 (Biotech removed mid-save) and a component-contract RimTest
+> suite (`PawnDiaryBiotechComponentStateFixtureTests`).
+>
+> **Second-wave bughunt follow-ups (2026-07-16):** pawn/naming resolution now covers caravans and
+> travelling transporters (a family caravanning through the naming window no longer loses its birth
+> page); the silent `ended_unknown` close requires an actually observed pregnancy/labor hediff
+> (baseline child arcs and off-map birthers are no longer mislabeled); the growth-letter hold also
+> covers the age-flip release and the answered letter attaches via a whole-pawn fallback
+> (`FindNewestForPawn`), while ignoring letters for dead pawns; a re-configured letter at a full
+> table replaces its own claim; dead/grown-child arcs with unconsumable lesson evidence follow the
+> ordinary retention countdown; the policy-snapshot cache is language-keyed.
+>
 > **Scheduling authority:** implement Biotech phases only in the waves assigned by
 > `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Biotech.
 >

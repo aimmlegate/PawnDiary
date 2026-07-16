@@ -206,9 +206,29 @@ namespace PawnDiary
     {
         private const string DefName = "Diary_BiotechPolicy";
 
-        /// <summary>Returns a detached policy snapshot, safely falling back when the Def is unavailable.</summary>
+        // Def content is fixed once RimWorld finishes loading, and every consumer treats the snapshot
+        // as read-only policy input (its lists are only mutated during construction), so one shared
+        // copy is safe. Caching matters because Snapshot() sits on frequent capture paths — every
+        // social interaction and gained thought builds one — and each rebuild deep-copies ~12 lists.
+        // Unlike DiaryTuning's cached Def reference (through which DefInjected re-injection flows
+        // automatically), this snapshot copies localized prose BY VALUE, so it is additionally keyed
+        // to the active language: a mid-session language switch rebuilds it instead of serving stale
+        // prose until restart. One reference compare per call.
+        private static BiotechPolicySnapshot cached;
+        private static LoadedLanguage cachedLanguage;
+
+        /// <summary>
+        /// Returns the shared, read-only policy snapshot, built once per XML-load/language with safe
+        /// fallbacks. While the Def is not (yet) loaded, callers get fresh defaults and no cache is
+        /// kept, so a later call can still pick up the XML row.
+        /// </summary>
         public static BiotechPolicySnapshot Snapshot()
         {
+            if (cached != null && cachedLanguage == LanguageDatabase.activeLanguage)
+            {
+                return cached;
+            }
+
             BiotechPolicySnapshot result = BiotechPolicySnapshot.CreateDefault();
             DiaryBiotechPolicyDef source = DefDatabase<DiaryBiotechPolicyDef>.GetNamedSilentFail(DefName);
             if (source == null)
@@ -255,6 +275,8 @@ namespace PawnDiary
             ReplaceStrings(
                 source.miscarriagePartnerThoughtDefNames,
                 result.miscarriagePartnerThoughtDefNames);
+            cached = result;
+            cachedLanguage = LanguageDatabase.activeLanguage;
             return result;
         }
 

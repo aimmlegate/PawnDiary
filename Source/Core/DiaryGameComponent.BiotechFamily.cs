@@ -484,10 +484,15 @@ namespace PawnDiary
             familyObservationVersion = CurrentFamilyObservationVersion;
         }
 
-        /// <summary>Runs bounded family compaction/removal on the existing coarse progression cadence.</summary>
+        /// <summary>
+        /// Runs bounded family compaction/removal on the existing coarse progression cadence. Not
+        /// Biotech-gated: saved arcs must keep compacting and pruning after the DLC is disabled, or a
+        /// loaded Biotech save would retain them forever. Every read below is DLC-safe — pawn/hediff
+        /// resolution is by saved load-id string and the policy snapshot falls back to defaults.
+        /// </summary>
         private void MaintainBiotechFamilyArcs()
         {
-            if (!ModsConfig.BiotechActive || biotechFamilyArcs == null || biotechFamilyArcs.Count == 0)
+            if (biotechFamilyArcs == null || biotechFamilyArcs.Count == 0)
             {
                 return;
             }
@@ -498,12 +503,20 @@ namespace PawnDiary
                 biotechFamilyArcs,
                 now,
                 policy.maximumSupporterRows);
+            HashSet<string> savedArcReferences = CollectSavedFamilyArcReferences();
             for (int i = biotechFamilyArcs.Count - 1; i >= 0; i--)
             {
                 BiotechFamilyArcState arc = biotechFamilyArcs[i];
                 Pawn child = FindLivePawnByLoadId(arc.childId);
                 bool familyHediffStillPresent = BiotechFamilyHediffStillPresent(arc);
-                if (!familyHediffStillPresent && arc.birthTick <= 0 && !arc.closed)
+                // Only an arc that actually OBSERVED a pregnancy/labor hediff can end "unknown" when
+                // that hediff disappears. Baseline child arcs never had one — without this identity
+                // check every living child's arc was mislabeled ended_unknown on its first pass, and
+                // closed arcs are skipped by birth linking, which would sever pregnancy→birth
+                // continuity for a birther who is merely unresolvable for a moment.
+                bool observedPregnancy = !string.IsNullOrWhiteSpace(arc.pregnancyHediffId)
+                    || !string.IsNullOrWhiteSpace(arc.laborHediffId);
+                if (observedPregnancy && !familyHediffStillPresent && arc.birthTick <= 0 && !arc.closed)
                 {
                     // A missing Hediff alone proves only that the observed pregnancy ended. Exact
                     // miscarriage/termination routes set their own token before this silent fallback.
@@ -519,7 +532,8 @@ namespace PawnDiary
                         familyHediffStillPresent = familyHediffStillPresent,
                         hasPendingReference = PendingGrowthReferencesFamilyArc(arc.familyArcId)
                             || PendingBirthReferencesFamilyArc(arc.familyArcId),
-                        hasSavedEventReference = SavedDiaryReferencesFamilyArc(arc.familyArcId)
+                        hasSavedEventReference = !string.IsNullOrWhiteSpace(arc.familyArcId)
+                            && savedArcReferences.Contains(arc.familyArcId)
                     },
                     now,
                     policy.familyArcRetentionTicks);
@@ -641,11 +655,17 @@ namespace PawnDiary
             }
         }
 
-        /// <summary>Polls saved canonical births on their XML-owned naming cadence.</summary>
+        /// <summary>
+        /// Polls saved canonical births on their XML-owned naming cadence. Deliberately not gated on
+        /// Biotech, mirroring MaintainPendingBiotechGrowthMoments: a save can carry pending rows after
+        /// the DLC is disabled, and everything a flush needs is already frozen in the row — the live
+        /// naming poll below self-gates and simply never finds a name, so the row flushes with its
+        /// birth-time name after the same grace, or prunes. Gating here would strand the promised page
+        /// forever and silently lose it once its writers died.
+        /// </summary>
         private void MaintainPendingBiotechBirths()
         {
-            if (!ModsConfig.BiotechActive || pendingBiotechBirths == null
-                || pendingBiotechBirths.Count == 0)
+            if (pendingBiotechBirths == null || pendingBiotechBirths.Count == 0)
             {
                 return;
             }
@@ -736,10 +756,14 @@ namespace PawnDiary
             }
         }
 
-        /// <summary>Runs the naming poll only after the configured elapsed interval.</summary>
+        /// <summary>
+        /// Runs the naming poll only after the configured elapsed interval. Not Biotech-gated so rows
+        /// saved before the DLC was disabled still age, flush, or prune (see
+        /// MaintainPendingBiotechBirths); with no saved rows the poll is a cheap early return.
+        /// </summary>
         private void TickPendingBiotechBirths(int currentTick)
         {
-            if (!ModsConfig.BiotechActive || currentTick < nextBiotechBirthNamingPollTick)
+            if (currentTick < nextBiotechBirthNamingPollTick)
             {
                 return;
             }
@@ -1008,28 +1032,38 @@ namespace PawnDiary
             return HasPendingBiotechBirth(familyArcId);
         }
 
-        private bool SavedDiaryReferencesFamilyArc(string familyArcId)
+        /// <summary>
+        /// Collects every family-arc id referenced by a saved diary page in ONE pass over hot events
+        /// plus the whole archive, so the per-arc retention loop stays O(1) per arc. The previous
+        /// per-arc scan re-parsed every page's gameContext once per arc — a needless late-game
+        /// arcs-times-archive parse burst on the progression cadence.
+        /// </summary>
+        private HashSet<string> CollectSavedFamilyArcReferences()
         {
-            if (string.IsNullOrWhiteSpace(familyArcId)) return false;
+            HashSet<string> referenced = new HashSet<string>(StringComparer.Ordinal);
             IReadOnlyList<DiaryEvent> live = events.AllEvents;
             for (int i = 0; i < live.Count; i++)
             {
-                if (DiaryContextFields.Value(live[i]?.gameContext, BiotechContextKeys.FamilyArcId) == familyArcId)
+                string arcId = DiaryContextFields.Value(
+                    live[i]?.gameContext,
+                    BiotechContextKeys.FamilyArcId);
+                if (!string.IsNullOrEmpty(arcId))
                 {
-                    return true;
+                    referenced.Add(arcId);
                 }
             }
             IReadOnlyList<ArchivedDiaryEntry> archived = archive.AllEntries;
             for (int i = 0; i < archived.Count; i++)
             {
-                if (DiaryContextFields.Value(
+                string arcId = DiaryContextFields.Value(
                     archived[i]?.decorationGameContext,
-                    BiotechContextKeys.FamilyArcId) == familyArcId)
+                    BiotechContextKeys.FamilyArcId);
+                if (!string.IsNullOrEmpty(arcId))
                 {
-                    return true;
+                    referenced.Add(arcId);
                 }
             }
-            return false;
+            return referenced;
         }
 
         private void EnsureBiotechFamilyList()

@@ -585,7 +585,10 @@ namespace PawnDiary
             // disabled, ReleaseBiotechGrowthToOrdinaryBirthday consumes baselines without a page.
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyDefName(
                 GroupDomain.Interaction, def.defName);
-            if (group != null && !PawnDiaryMod.Settings.IsGroupEnabled(group.defName))
+            // Null settings (mod-ctor failure, corrupt settings file) fails open like every other
+            // gate, so a settings problem degrades to extra pages instead of a per-tick NRE here.
+            if (group != null && PawnDiaryMod.Settings != null
+                && !PawnDiaryMod.Settings.IsGroupEnabled(group.defName))
             {
                 return;
             }
@@ -630,8 +633,9 @@ namespace PawnDiary
         /// <summary>
         /// Copies optional XML-owned continuity evidence onto an event-window page that was already
         /// authorized. A malformed template or continuity failure cannot cancel the canonical page.
+        /// Instance method: it reads this component's saved pages for the repetition-history feed.
         /// </summary>
-        private static void ApplyEventWindowNarrativeEvidence(
+        private void ApplyEventWindowNarrativeEvidence(
             DiaryEvent diaryEvent,
             DiaryEventWindowDef def,
             EventWindowSignalFacts facts,
@@ -656,6 +660,12 @@ namespace PawnDiary
                         eventTick = diaryEvent.tick,
                         povPawnId = pawn.GetUniqueLoadID(),
                         povRole = DiaryEvent.InitiatorRole,
+                        // Feed the selector this POV's persisted selection history. Today no provider
+                        // proposes lens candidates for window evidence (all non-Biotech provider slots
+                        // are stubs), so this is future-proofing: the penalty starts working here the
+                        // moment a window-capable provider ships, with no wiring left to remember.
+                        recentSelectedCandidateKeys =
+                            RecentNarrativeSelectedCandidateKeys(pawn.GetUniqueLoadID()),
                         evidence = new List<NarrativeEvidence>
                         {
                             new NarrativeEvidence

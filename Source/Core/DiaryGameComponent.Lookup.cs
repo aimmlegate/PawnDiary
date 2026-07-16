@@ -1094,5 +1094,93 @@ namespace PawnDiary
             diary.EnsureArcSchedule();
         }
 
+        /// <summary>
+        /// Collects the POV pawn's most recently saved Narrative Continuity selection keys — newest
+        /// hot pages first, then newest archive rows — so the pure selector can apply its XML
+        /// repetition penalty instead of immediately reselecting the same lens for that pawn. The
+        /// result stays inside the XML recent-key cap and the builder re-normalizes it, so a request
+        /// can never grow unbounded. Runs only when a narrative-capable source records a page (growth
+        /// moments, births, event windows), and both scans stop as soon as the cap is filled.
+        /// </summary>
+        internal List<string> RecentNarrativeSelectedCandidateKeys(string pawnId)
+        {
+            List<string> keys = new List<string>();
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return keys;
+            }
+
+            int cap = Math.Max(1, DiaryNarrativeContinuityPolicy.Snapshot().maxRecentSelectedCandidateKeys);
+            IReadOnlyList<DiaryEvent> live = events.AllEvents;
+            for (int i = live.Count - 1; i >= 0 && keys.Count < cap; i--)
+            {
+                DiaryEvent diaryEvent = live[i];
+                if (diaryEvent == null)
+                {
+                    continue;
+                }
+
+                AppendRecentNarrativeKeys(keys, cap, diaryEvent, pawnId, DiaryEvent.InitiatorRole);
+                AppendRecentNarrativeKeys(keys, cap, diaryEvent, pawnId, DiaryEvent.RecipientRole);
+            }
+
+            IReadOnlyList<ArchivedDiaryEntry> archived = archive.EntriesForPawn(pawnId);
+            for (int i = archived.Count - 1; i >= 0 && keys.Count < cap; i--)
+            {
+                AppendDistinctNarrativeKeys(keys, cap, archived[i]?.narrativeSelectedCandidateKeys);
+            }
+
+            return keys;
+        }
+
+        /// <summary>Appends one hot event's saved keys when the pawn wrote that POV slot.</summary>
+        private static void AppendRecentNarrativeKeys(
+            List<string> keys,
+            int cap,
+            DiaryEvent diaryEvent,
+            string pawnId,
+            string povRole)
+        {
+            if (keys.Count >= cap || diaryEvent.PawnIdForRole(povRole) != pawnId)
+            {
+                return;
+            }
+
+            AppendDistinctNarrativeKeys(keys, cap, diaryEvent.NarrativeSelectedCandidateKeysForRole(povRole));
+        }
+
+        /// <summary>Appends keys without duplicates until the cap; lists here are at most a dozen rows.</summary>
+        private static void AppendDistinctNarrativeKeys(List<string> keys, int cap, List<string> source)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < source.Count && keys.Count < cap; i++)
+            {
+                string key = source[i];
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                bool exists = false;
+                for (int j = 0; j < keys.Count; j++)
+                {
+                    if (string.Equals(keys[j], key, StringComparison.Ordinal))
+                    {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if (!exists)
+                {
+                    keys.Add(key);
+                }
+            }
+        }
+
     }
 }

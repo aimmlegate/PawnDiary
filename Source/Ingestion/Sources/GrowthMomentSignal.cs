@@ -115,8 +115,8 @@ namespace PawnDiary.Ingestion
                     supporterText,
                     instruction,
                     gameContext);
-                ApplyNarrativeEvidence(diaryEvent, child, DiaryEvent.InitiatorRole, child, mutation, familyArc, policy);
-                ApplyNarrativeEvidence(diaryEvent, supporter, DiaryEvent.RecipientRole, child, mutation, familyArc, policy);
+                ApplyNarrativeEvidence(sink, diaryEvent, child, DiaryEvent.InitiatorRole, child, mutation, familyArc, policy);
+                ApplyNarrativeEvidence(sink, diaryEvent, supporter, DiaryEvent.RecipientRole, child, mutation, familyArc, policy);
             }
             else if (shape == GrowthWriterShape.SupporterSolo)
             {
@@ -128,7 +128,7 @@ namespace PawnDiary.Ingestion
                     supporterText,
                     instruction,
                     gameContext);
-                ApplyNarrativeEvidence(diaryEvent, supporter, DiaryEvent.InitiatorRole, child, mutation, familyArc, policy);
+                ApplyNarrativeEvidence(sink, diaryEvent, supporter, DiaryEvent.InitiatorRole, child, mutation, familyArc, policy);
             }
             else
             {
@@ -140,7 +140,7 @@ namespace PawnDiary.Ingestion
                     childText,
                     instruction,
                     gameContext);
-                ApplyNarrativeEvidence(diaryEvent, child, DiaryEvent.InitiatorRole, child, mutation, familyArc, policy);
+                ApplyNarrativeEvidence(sink, diaryEvent, child, DiaryEvent.InitiatorRole, child, mutation, familyArc, policy);
             }
 
             try
@@ -247,6 +247,7 @@ namespace PawnDiary.Ingestion
         }
 
         private static void ApplyNarrativeEvidence(
+            DiaryGameComponent sink,
             DiaryEvent diaryEvent,
             Pawn povPawn,
             string povRole,
@@ -260,6 +261,7 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
+            string povPawnId = povPawn.GetUniqueLoadID();
             try
             {
                 NarrativeContextBuildResult result = NarrativeContextBuilder.Build(
@@ -267,8 +269,13 @@ namespace PawnDiary.Ingestion
                     {
                         eventId = diaryEvent.eventId,
                         eventTick = diaryEvent.tick,
-                        povPawnId = povPawn.GetUniqueLoadID(),
+                        povPawnId = povPawnId,
                         povRole = povRole,
+                        // Feed the selector this POV's persisted selection history so the XML
+                        // repetition penalty can dampen re-picking the same lens at ages 7/10/13.
+                        recentSelectedCandidateKeys = sink == null
+                            ? new List<string>()
+                            : sink.RecentNarrativeSelectedCandidateKeys(povPawnId),
                         // Provider selection is frozen before endpoint routing. Use the player's global
                         // preset here so Compact/Balanced lens caps apply before the factual unit is saved.
                         contextDetailLevel = PawnDiarySettings.NormalizeContextDetailLevel(
