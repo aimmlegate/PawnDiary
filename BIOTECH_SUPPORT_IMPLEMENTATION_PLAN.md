@@ -4,9 +4,11 @@
 > automated release-hardening slice is implemented: important templates project bounded B1 facts,
 > Full/Balanced/Compact and indexed localization contracts are pinned, localized dev previews exist,
 > pending owner lists have XML-owned ownership-preserving admission limits, no-DLC metadata is asserted, and SpeakUp/RimTalk
-> logic/build smoke checks pass. The first all-DLC runner pass completed 190/193; its birth-prompt
-> failure was traced to duplicate active Pawn Diary copies mixing stale template XML with the current
-> test DLL, and the suite now reports that contract mismatch directly. A clean single-copy rerun plus
+> logic/build smoke checks pass. The second all-DLC runner pass reached 191/193 and isolated the birth
+> failure as missing Tale-domain routing: the event held the correct outcome but recovered through
+> PairDefault, which has no B1 fields. Canonical context now emits `tale=BiotechFamilyBirth`, with pure
+> and loaded-game route assertions. The duplicate active core copy remains a separate environment
+> error. A clean single-copy rerun plus
 > the loaded-game no-DLC/old-save/growth/birth/adapter matrix remain the Phase 4 exit items; B2 must
 > not begin before they are accepted. Canonical age-7/10/13 growth
 > observation, postponed-choice persistence, auto resolution, ordinary Birthday fallback, progression
@@ -1697,8 +1699,9 @@ writer, naming before/after save, disabled canonical group, and thrown-owner tes
 > both adapter logic suites/builds, supporter/transient limits, and XML-owned pending-owner admission limits have
 > been audited. Loaded-game test source now also drives the real vanilla growth-letter configure/choice
 > hooks, delayed live-child naming flush, B1 prompts at all three detail presets, and pre-cap Scribe/admission
-> recovery. The first runner pass reached 190/193; its B1 failure was a duplicate-core-copy XML/DLL
-> mix, and the birth suite now preflights that loaded template contract. Rerun with one active Pawn
+> recovery. The second runner pass reached 191/193 and proved the B1 event needed an explicit
+> `tale=BiotechFamilyBirth` marker to select the important template; that route and the loaded template
+> contract are now both pinned. Rerun with one active Pawn
 > Diary copy, then run and record the remaining
 > `tests/SAVE_COMPATIBILITY_SMOKETEST.md` rows before marking this phase complete.
 

@@ -20,7 +20,7 @@
 //       DLC the value is empty and the candidate is skipped. Source/Generation/PromptEnchantmentCollector.cs.
 //   (d) Installed DLC paths use real pawn state: non-Baseliner xenotype, royal title, ideoligion/
 //       precepts and, where the colony's requirements permit it, an ideoligion role; a disposable
-//       pawn temporarily carrying Anomaly's loaded creepjoiner race exercises the positive adapter.
+//       pawn temporarily carrying a real loaded creepjoiner form/tracker exercises the positive adapter.
 //   (e) The complete official-DLC interaction-group/event-window catalog agrees with ModsConfig and
 //       settings visibility, and fragile DLC Harmony/reflection targets still match RimWorld 1.6.
 //   (f) Optional capture capability readiness suppresses its XML fallback only while ready, restoring
@@ -427,10 +427,11 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// Temporarily gives the disposable fixture pawn Anomaly's real loaded creepjoiner race. This is
-        /// the positive counterpart to the ordinary-colonist false branch and proves the string-free
-        /// adapter recognizes live DLC state. The original race is restored even if the assertion fails;
-        /// without Anomaly the test reports and asserts the normal no-op path.
+        /// Temporarily gives the disposable fixture pawn a vanilla creepjoiner tracker backed by one
+        /// real loaded Anomaly form. This is the positive counterpart to the ordinary-colonist false
+        /// branch and proves the adapter recognizes the exact state used by Pawn.IsCreepJoiner. The
+        /// original tracker is restored even if the assertion fails; without Anomaly the test reports
+        /// and asserts the normal no-op path.
         /// </summary>
         [Test]
         public static void AnomalyCreepjoinerPositivePathIsPackageGated()
@@ -443,26 +444,25 @@ namespace PawnDiary.RimTests
                 return;
             }
 
-            PawnKindDef creepjoinerKind = DefDatabase<PawnKindDef>.AllDefsListForReading
-                .FirstOrDefault(def => def?.race != null
-                    && string.Equals(def.race.defName, "CreepJoiner", StringComparison.Ordinal));
-            PawnDiaryRimTestScope.Require(creepjoinerKind != null,
-                "Anomaly is active but no loaded pawn kind uses the CreepJoiner race.");
-            ThingDef originalRace = pawn.def;
+            CreepJoinerFormKindDef form = DefDatabase<CreepJoinerFormKindDef>.AllDefsListForReading
+                .FirstOrDefault(def => def != null);
+            PawnDiaryRimTestScope.Require(form != null,
+                "Anomaly is active but no CreepJoinerFormKindDef is loaded.");
+            Pawn_CreepJoinerTracker originalTracker = pawn.creepjoiner;
             try
             {
-                // Creepjoiners use specialized generation paths that a generic PawnGenerationRequest
-                // cannot satisfy. Swapping only this isolated pawn's race reaches the exact vanilla
-                // IsCreepJoiner predicate without spawning, ticking, or mutating a player's pawn.
-                pawn.def = creepjoinerKind.race;
+                // Vanilla's IsCreepJoiner predicate checks tracker presence, not race or pawn kind.
+                // Populate the tracker with a real package-owned form, but never tick it or invoke its
+                // downside behavior; this isolated state exists only for the two assertions below.
+                pawn.creepjoiner = new Pawn_CreepJoinerTracker(pawn) { form = form };
                 PawnDiaryRimTestScope.Require(pawn.IsCreepJoiner,
-                    "The loaded Anomaly CreepJoiner race no longer satisfies Pawn.IsCreepJoiner.");
+                    "A vanilla creepjoiner tracker no longer satisfies Pawn.IsCreepJoiner.");
                 PawnDiaryRimTestScope.Require(DlcContext.IsCreepJoiner(pawn),
-                    "DlcContext did not recognize a pawn carrying the real loaded Anomaly creepjoiner race.");
+                    "DlcContext did not recognize a pawn carrying a real loaded Anomaly creepjoiner form.");
             }
             finally
             {
-                pawn.def = originalRace;
+                pawn.creepjoiner = originalTracker;
             }
         }
 

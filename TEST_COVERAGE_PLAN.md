@@ -360,7 +360,7 @@ a separate suite result rather than failing or silently pretending to execute DL
 `PawnDiaryDlcSafetyFixtureTests` automates the shared compatibility boundary in every configuration:
 null-pawn guards even when DLC flags are active; final prompt/public-summary omission when a DLC is
 absent; positive non-Baseliner, royal-title, player-ideoligion/precept/eligible-role, and temporary
-real loaded CreepJoiner-race state when installed; exact set equality for all official-DLC interaction
+vanilla CreepJoiner-tracker state backed by a real loaded form when installed; exact set equality for all official-DLC interaction
 groups and event windows; exact classifier keys for specialized ritual families plus the deliberate
 `PsychicRitual` token fallback; `ModsConfig`/package-helper/settings-visibility agreement; fragile
 Biotech growth/birth,
@@ -373,6 +373,11 @@ Loaded prompt tests also preflight the shipped template contract. A missing requ
 reported as a stale/mixed-install failure because duplicate Pawn Diary packages can combine Def XML
 from one copy with the current RimTest DLL from another; release runs must have exactly one core copy
 active.
+
+Canonical B1 birth coverage pins `tale=BiotechFamilyBirth` in the formatted context and requires the
+persisted page to resolve as important. This guards the domain-classification boundary that selects
+the PairImportant/SoloImportant templates; retaining outcome fields in XML alone is insufficient if
+the saved event is accidentally recovered through the Interaction domain.
 
 ## 8. Implementation Order
 

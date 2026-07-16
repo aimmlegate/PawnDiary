@@ -1112,6 +1112,7 @@ namespace DiaryBiotechPolicyTests
             BirthWriterSelection writers = BirthOwnershipPolicy.SelectWriters(birth,
                 BiotechPolicySnapshot.CreateDefault());
             string birthContext = BirthContextFormatter.Build(birth, writers);
+            AssertContains("birth tale-domain route", birthContext, "tale=BiotechFamilyBirth");
             AssertContains("birth marker", birthContext, "biotech_birth=true");
             AssertContains("birth exact outcome", birthContext, "birth_outcome=healthy");
             AssertContains("birth exact method", birthContext, "birth_method=surrogacy");

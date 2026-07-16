@@ -69,6 +69,10 @@ namespace PawnDiary.Capture
             }
 
             StringBuilder builder = new StringBuilder();
+            // Canonical births are classified by the Tale-domain biotechFamilyBirth group. Without
+            // this marker, saved-event/prompt recovery falls back to the Interaction domain and uses
+            // PairDefault/SoloDefault, which silently drops the B1 birth fields from the prompt.
+            Append(builder, "tale", BiotechEventDefNames.FamilyBirth);
             Append(builder, BiotechContextKeys.FamilyBirth, "true");
             Append(builder, BiotechContextKeys.FamilyArcId, snapshot.familyArcId);
             Append(builder, BiotechContextKeys.ChildId, snapshot.childId);

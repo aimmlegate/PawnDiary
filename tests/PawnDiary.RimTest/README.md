@@ -63,9 +63,9 @@ owners. Both use the shared harness:
 | `PawnDiaryMoodConditionFlowTests` | 14 | GameCondition mood fan-out + classification + group gate. |
 | `PawnDiaryPawnProgressionFlowTests` | 15 | Skill/trait milestone baseline + upward-only + arc request. |
 | `PawnDiaryBiotechGrowthFlowTests` | B1 | Family-keyed canonical growth/N1 evidence, baseline/fallback, real growth-letter hooks, and loaded detail-preset prompts. |
-| `PawnDiaryBiotechBirthFlowTests` | B1 | Canonical two-adult birth, child-never-POV shape, delayed naming flush, replay rejection, loaded detail-preset prompts, and a stale/mixed-template preflight. |
+| `PawnDiaryBiotechBirthFlowTests` | B1 | Canonical two-adult birth, Tale-domain/important-group routing, child-never-POV shape, delayed naming flush, replay rejection, loaded detail-preset prompts, and a loaded-template preflight. |
 | `PawnDiaryBiotechComponentStateFixtureTests` | B1 | Real-Scribe component keys, old/malformed/oversized rows, hard ceiling, and pre-cap admission recovery. |
-| `PawnDiaryDlcSafetyFixtureTests` | 7.3 | Null/base-only omission, installed-DLC positive pawn state (including a temporary real CreepJoiner race), exact specialized/generic-fallback classifier policy, official package/group/window/settings matrix, fragile hook signatures, and optional-adapter fail-open readiness. |
+| `PawnDiaryDlcSafetyFixtureTests` | 7.3 | Null/base-only omission, installed-DLC positive pawn state (including a temporary vanilla CreepJoiner tracker with a real loaded form), exact specialized/generic-fallback classifier policy, official package/group/window/settings matrix, fragile hook signatures, and optional-adapter fail-open readiness. |
 | `PawnDiaryQuestFlowTests` | 16 | Quest accept/complete/fail fan-out + label sanitation + dedup. |
 | `PawnDiaryRitualFlowTests` | 17 | Ritual participant fan-out (DLC-gated, clean no-op without Ideology). |
 | `PawnDiaryArrivalFlowTests` | 18 | Neutral arrival page + first-ordering + bootstrap resilience. |

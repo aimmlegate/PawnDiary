@@ -2162,9 +2162,9 @@ Never rename a key "for cleanliness" alone.
 - `PawnDiaryDlcSafetyFixtureTests` exercises this boundary in both directions: absent/null state must
   disappear from the final prompt/public summary, while installed DLC uses disposable real xenotype,
   title, ideoligion/precept/eligible-role, and creepjoiner pawn state. The CreepJoiner positive path
-  temporarily gives its isolated fixture pawn the real loaded Anomaly race because vanilla's
-  specialized CreepJoiner pawn kind cannot be generated through a generic colonist request. The
-  original race is restored in a `finally` block. The same fixture freezes every
+  temporarily gives its isolated fixture pawn a vanilla `Pawn_CreepJoinerTracker` backed by a real
+  loaded Anomaly form because `Pawn.IsCreepJoiner` tests tracker presence, not race or pawn kind. The
+  original tracker is restored in a `finally` block. The same fixture freezes every
   official package-gated interaction group/event window, settings visibility, fragile DLC hook
   signature, and optional-adapter fail-open readiness contract. Specialized Anomaly ritual rows must
   remain exact-keyed; the later `PsychicRitual` token row is deliberately the future/modded fallback.
@@ -2308,11 +2308,15 @@ by submitting the exact per-unit production signal the scanner emits, which keep
 deterministic; the suite README lists the two suites (death, raid) that still need a disposable colony
 because their vanilla trigger has un-restorable side effects.
 
-The birth prompt suite preflights the loaded `PairImportant` template for child, outcome, method, and
-adult-role fields before capturing prompts. This distinguishes a product prompt regression from a
-mixed installation: if two Pawn Diary packages are active, RimWorld may load stale Def XML from one
-copy and the current `PawnDiary.RimTest.dll` from another. Release runs must disable duplicate
-Workshop, Modmixer, or development copies and use one active core package.
+Canonical birth context begins with `tale=BiotechFamilyBirth`, then carries the B1 child, outcome,
+method, and adult-role facts. The Tale marker is what makes saved-event/prompt classification recover
+the important `biotechFamilyBirth` group and select PairImportant/SoloImportant; without it, the same
+truthful facts exist on the event but ordinary interaction templates omit them. The birth prompt suite
+pins both the domain/importance route and the loaded template fields before capturing prompts.
+
+Release runs must also disable duplicate Workshop, Modmixer, or development copies and use one active
+core package. RimWorld may otherwise report duplicate package IDs or combine stale Def XML with a
+different `PawnDiary.RimTest.dll`; a missing loaded template field reports that mismatch explicitly.
 
 Alongside the event flows, `PawnDiary*FixtureTests.cs` cover the prompt/policy layers on the same
 harness: template/domain resolution and the Pair/Solo/reflection/neutral template matrices, the

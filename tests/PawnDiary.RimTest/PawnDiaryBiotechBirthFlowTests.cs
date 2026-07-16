@@ -96,6 +96,7 @@ namespace PawnDiary.RimTests
                 father);
 
             scope.RequirePairRefs(diaryEvent, birther, father);
+            RequireContext(diaryEvent, "tale=" + FamilyBirthEventData.DefName);
             RequireContext(diaryEvent, "biotech_birth=true");
             RequireContext(diaryEvent, "family_arc_id=" + fixture.snapshot.familyArcId);
             RequireContext(diaryEvent, "child_id=" + fixture.snapshot.childId);
@@ -110,6 +111,8 @@ namespace PawnDiary.RimTests
                 diaryEvent.initiatorPawnId != child.GetUniqueLoadID()
                     && diaryEvent.recipientPawnId != child.GetUniqueLoadID(),
                 "The newborn was incorrectly selected as a diary POV.");
+            PawnDiaryRimTestScope.Require(diaryEvent.IsImportant(),
+                "Canonical birth did not route through the important Tale-domain family-birth group.");
 
             RequireBondEvidence(diaryEvent, DiaryEvent.InitiatorRole, fixture.snapshot);
             RequireBondEvidence(diaryEvent, DiaryEvent.RecipientRole, fixture.snapshot);

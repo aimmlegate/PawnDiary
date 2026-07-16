@@ -182,10 +182,11 @@ This is the low-cost prompt-quality release. Do not continue into A1 study/conta
 > recovery. The shared DLC compatibility fixture now also covers null/base-only final-summary omission,
 > real installed xenotype/title/ideoligion/precept/eligible-role/creepjoiner state, the exact official
 > group/window/settings package matrix, fragile DLC hook signatures, and optional-adapter fail-open
-> readiness. The first all-DLC runner pass completed 190/193: two failures were incorrect fixture
-> assumptions (specialized CreepJoiner generation and the intentional generic psychic-ritual token
-> fallback), while the birth prompt failure came from two active Pawn Diary copies mixing stale XML
-> with the current DLL. Those fixtures now diagnose the real contracts; a clean single-copy rerun and
+> readiness. The first all-DLC runner pass completed 190/193; the second reached 191/193 and isolated
+> the final contracts: vanilla CreepJoiner identity is tracker-backed rather than race-backed, and
+> canonical birth context needs `tale=BiotechFamilyBirth` so prompt recovery selects the important B1
+> template instead of PairDefault. Both now have focused regression assertions. The duplicate core
+> package remains an independent environment error; a clean single-copy rerun and
 > the remaining loaded-game acceptance matrix are required, so B2 remains blocked. Stable B1
 > contracts/policy/settings now feed live, atomic birthday/growth-letter ownership with saved postponed
 > rows, auto/choice diffs, mature ordinary fallback, progression consumption, saved family continuity,

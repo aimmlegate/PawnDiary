@@ -1,22 +1,32 @@
 # Changelog
 
+- **2026-07-16 — Fixed canonical birth prompt routing and exact CreepJoiner fixture state.** The
+  second all-DLC runner reached 191/193 and proved the loaded template fields were current: canonical
+  birth context carried `birth_outcome=healthy` but lacked its Tale-domain marker, so policy recovery
+  misclassified the page as an ordinary interaction and selected `PairDefault`, dropping all B1 prompt
+  fields. `BirthContextFormatter` now emits `tale=BiotechFamilyBirth`, with pure and loaded-game
+  assertions pinning the domain/importance route. The Anomaly fixture now installs a temporary vanilla
+  `Pawn_CreepJoinerTracker` backed by a real loaded form, matching the actual `Pawn.IsCreepJoiner`
+  predicate, and restores the original tracker in `finally`. The duplicate Pawn Diary package reported
+  by RimWorld remains an independent test-environment error and must be removed before the acceptance
+  rerun.
+
 - **2026-07-16 — Corrected first all-DLC RimTest findings.** The first loaded-game B1/DLC run passed
-  190 of 193 tests and exposed two fixture assumptions plus a mixed-install problem, not production
-  regressions. The Anomaly positive fixture now temporarily applies the real loaded CreepJoiner race
-  to its disposable pawn instead of sending that specialized pawn kind through invalid generic pawn
-  generation. The official-DLC catalog now preserves exact keys for the six specialized Anomaly
+  190 of 193 tests and exposed two fixture assumptions plus a birth prompt-routing failure initially
+  confounded by a mixed-install problem. The Anomaly positive fixture stopped sending the specialized
+  pawn kind through invalid generic pawn generation. The official-DLC catalog now preserves exact keys
+  for the six specialized Anomaly
   ritual families while explicitly pinning the intentional `PsychicRitual` token fallback. Birth
   prompt coverage still requires child/outcome/method/role facts at every detail preset, but now first
-  verifies that the loaded `PairImportant` template contains those fields and explains when duplicate
-  Pawn Diary copies have mixed a stale XML Def with the current test DLL. A clean-install in-game
-  rerun remains pending.
+  verifies that the loaded `PairImportant` template contains those fields and explains a missing-field
+  XML/DLL mismatch. The later 191/193 run isolated the remaining domain-routing defect above.
 
 - **2026-07-16 — Expanded automated DLC compatibility matrix.** The loaded-game DLC-safety fixture
   now covers the compatibility layer beyond absence-only guards: null pawns remain safe even with DLC
   flags active; absent DLC fields are rejected at the final prompt/public-summary boundary; installed
   Biotech, Royalty, and Ideology exercise disposable real xenotype/title/ideoligion/precept state and
-  an eligible role where the colony permits one; an installed Anomaly run temporarily applies the
-  real loaded creepjoiner race to a disposable pawn; title/role prompt-enchantment collectors get
+  an eligible role where the colony permits one; an installed Anomaly run temporarily installs a
+  vanilla creepjoiner tracker with a real loaded form on a disposable pawn; title/role prompt-enchantment collectors get
   positive coverage; and the exact
   official-DLC interaction-group/event-window catalog is pinned to `ModsConfig`, package helpers, and
   settings visibility. Fragile growth, birth, monolith, unnatural-corpse, Ideology ritual, and psychic
