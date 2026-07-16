@@ -1,5 +1,22 @@
 # Changelog
 
+- **2026-07-16 — Continued DLC integration: Master Wave 3 / Biotech Phase 3.** Added canonical
+  family-birth ownership at RimWorld 1.6's exact `PregnancyUtility.ApplyBirthOutcome` boundary with a
+  stack-safe prefix/postfix/finalizer correlation scope. Exact child/corpse outcome, pregnancy/
+  surrogacy/growth-vat method, participant roles, birther death, and stable family identity now feed
+  one localized solo or two-adult `BiotechFamilyBirth` page; the child is always the subject, never a
+  POV. Mature `GaveBirth` and `BabyBorn`/`Stillbirth` signals are staged and either claimed or released
+  in original order; an exact ritual-job reservation arbitrates the later childbirth-ritual postfix.
+  Disabled, invalid, writerless, missing-hook, or thrown ownership fails open. Detached
+  `pendingBiotechBirths` rows survive naming/save/load, refresh the current
+  newborn/corpse name, preserve the original birth tick, normalize malformed/duplicate rows, and use
+  hot/archive family+child context for durable replay rejection. Exact miscarriage closes/enriches its
+  matched family arc; unexplained pregnancy disappearance records only silent `ended_unknown` state.
+  Added source-owned bond-lifecycle evidence, English/Russian fallback text, pure policy/XML coverage
+  (307 assertions), Scribe/no-DLC/signature fixtures, a loaded-component birth-flow suite, updated
+  plans/docs, and rebuilt runtime/RimTest DLLs. Biotech Phase 4 compatibility and release hardening is
+  next.
+
 - **2026-07-16 — Fixed Narrative N2-B adversarial findings.** Family continuity now treats exact
   zero-count `Parent`/`ParentBirth` baseline rows as valid family connections, while prior recorded
   growth ages alone no longer invent directly observed upbringing for child-only arcs. Live growth

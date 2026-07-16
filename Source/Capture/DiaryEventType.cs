@@ -54,9 +54,8 @@ namespace PawnDiary.Capture
         // DiaryInteractionGroupDefs (usually shipped by the adapter) own the prompt policy.
         External,
 
-        // Biotech Phase 0 freezes these concrete catalog identities and pure decisions before live
-        // birthday/birth hooks are registered. GrowthMoment becomes active in Phase 1; FamilyBirth
-        // becomes active only at the canonical ApplyBirthOutcome boundary in Phase 3.
+        // Biotech's concrete B1 catalog identities. GrowthMoment is owned by the Phase-1 birthday /
+        // growth-letter boundary; FamilyBirth is owned by Phase 3's canonical ApplyBirthOutcome hook.
         GrowthMoment,
         FamilyBirth,
 

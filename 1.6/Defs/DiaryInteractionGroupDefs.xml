@@ -1124,8 +1124,7 @@
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
-  <!-- Biotech B1 canonical birth owner. Phase 0 freezes prompt/settings/classifier policy only;
-       no live source submits BiotechFamilyBirth until the exact ApplyBirthOutcome phase lands. -->
+  <!-- Biotech B1 canonical birth owner, submitted only after exact ApplyBirthOutcome completion. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>biotechFamilyBirth</defName>
     <label>Family birth</label>

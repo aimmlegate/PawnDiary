@@ -1,11 +1,13 @@
-// Biotech Phase 2 family continuity. This component persists detached arcs, observes exact family
-// activity before ordinary page-generation gates, selects a truthful growth supporter, and performs
-// coarse retention. All live DLC reads remain inside DlcContext; all decisions remain pure policies.
+// Biotech Phases 2–3 family continuity and canonical birth ownership. This component persists detached
+// arcs, observes exact family activity before ordinary page-generation gates, selects truthful growth
+// and birth writers, polls saved newborn naming, and performs coarse retention. All live DLC reads
+// remain inside DlcContext; all decisions remain pure policies.
 //
 // New to C#/RimWorld? See AGENTS.md ("DLC-safety", "IExposable", and "architecture barriers").
 using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
+using PawnDiary.Ingestion;
 using RimWorld;
 using Verse;
 
@@ -17,12 +19,167 @@ namespace PawnDiary
         private const int MaximumTransientFamilyDedupRows = 256;
 
         private List<BiotechFamilyArcState> biotechFamilyArcs = new List<BiotechFamilyArcState>();
+        private List<PendingBiotechBirthState> pendingBiotechBirths =
+            new List<PendingBiotechBirthState>();
         private int familyObservationVersion;
+        private int nextBiotechBirthNamingPollTick;
 
         // PlayLog and accepted social memories can describe the same lesson. This transient cache
         // collapses the pair/kind inside the XML-owned window and is reset at every game/load boundary.
         private static readonly Dictionary<string, int> RecentBiotechFamilyActivities =
             new Dictionary<string, int>(StringComparer.Ordinal);
+
+        /// <summary>Begins exact birth capture before vanilla emits nested Tale/Thought signals.</summary>
+        internal BiotechBirthCallState BeginBiotechBirth(
+            Pawn geneticMother,
+            Thing birtherThing,
+            Pawn father,
+            Pawn doctor,
+            bool ritualBirth,
+            LordJob_Ritual ritualJob)
+        {
+            BirthMutationSnapshot snapshot;
+            bool birtherAliveBefore;
+            if (!ModsConfig.BiotechActive || !GamePlaying
+                || !DlcContext.TryCaptureBirthStart(
+                    geneticMother,
+                    birtherThing,
+                    father,
+                    doctor,
+                    ritualBirth,
+                    out snapshot,
+                    out birtherAliveBefore))
+            {
+                return null;
+            }
+
+            return new BiotechBirthCallState
+            {
+                snapshot = snapshot,
+                birtherAliveBefore = birtherAliveBefore,
+                birther = birtherThing as Pawn,
+                geneticMother = geneticMother,
+                father = father,
+                correlationScope = BiotechBirthCorrelation.BeginBirth(ritualJob)
+            };
+        }
+
+        /// <summary>
+        /// Commits exact birth facts/family state and either emits immediately or saves naming
+        /// ownership. True means the canonical owner safely claimed mature nested signals.
+        /// </summary>
+        internal bool CompleteBiotechBirth(
+            BiotechBirthCallState state,
+            Thing result,
+            Thing birtherThing,
+            int positivityIndex)
+        {
+            Pawn child;
+            if (state?.snapshot == null
+                || !DlcContext.TryCompleteBirthSnapshot(
+                    state.snapshot,
+                    result,
+                    birtherThing,
+                    positivityIndex,
+                    state.birtherAliveBefore,
+                    out child))
+            {
+                return false;
+            }
+
+            EnsureBiotechFamilyList();
+            BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
+            BiotechFamilyArcState arc = FamilyArcPolicy.AttachBirth(
+                biotechFamilyArcs,
+                state.snapshot,
+                policy.maximumSupporterRows,
+                out _);
+            if (arc == null)
+            {
+                return false;
+            }
+
+            state.snapshot.correlationId = "birth|" + state.snapshot.familyArcId;
+            if (HasRecordedBiotechBirth(state.snapshot.familyArcId, state.snapshot.childId)
+                || HasPendingBiotechBirth(state.snapshot.familyArcId))
+            {
+                // The first canonical owner already froze settings/writers. Consume only the repeated
+                // mature rows even if the player changed settings before a modded duplicate call.
+                return true;
+            }
+
+            BirthWriterSelection writers = BirthOwnershipPolicy.SelectWriters(state.snapshot, policy);
+            bool canonicalEnabled = PawnDiaryMod.Settings != null
+                && PawnDiaryMod.Settings.IsBiotechFamilyBirthEnabled(state.snapshot.ritualBirth);
+            if (writers.writers.Count == 0 || !canonicalEnabled)
+            {
+                return false;
+            }
+
+            BirthWriterSelection resolvedWriters;
+            List<Pawn> writerPawns = ResolveImmediateBirthWriters(writers, state, out resolvedWriters);
+            if (writerPawns.Count == 0)
+            {
+                return false;
+            }
+
+            bool writerBecameUnavailable = writerPawns.Count < writers.writers.Count;
+            for (int i = 0; i < writerPawns.Count; i++)
+            {
+                writerBecameUnavailable |= writerPawns[i] == null || writerPawns[i].Dead;
+            }
+
+            if (!state.snapshot.namingResolved && !writerBecameUnavailable)
+            {
+                EnsurePendingBiotechBirthList();
+                pendingBiotechBirths.Add(new PendingBiotechBirthState
+                {
+                    snapshot = state.snapshot,
+                    writers = writers,
+                    createdTick = Find.TickManager?.TicksGame ?? state.snapshot.birthTick
+                });
+                pendingBiotechBirths = PendingBiotechBirthPolicy.Normalize(
+                    pendingBiotechBirths,
+                    Find.TickManager?.TicksGame ?? state.snapshot.birthTick);
+                return HasPendingBiotechBirth(state.snapshot.familyArcId);
+            }
+
+            return DispatchBiotechBirth(
+                state.snapshot,
+                resolvedWriters,
+                writerPawns,
+                child,
+                enabledAtBirth: true);
+        }
+
+        /// <summary>Begins exact miscarriage context before vanilla creates sibling memories.</summary>
+        internal BiotechMiscarriageCallState BeginBiotechMiscarriage(Hediff_Pregnant hediff)
+        {
+            if (!ModsConfig.BiotechActive || !GamePlaying || hediff == null)
+            {
+                return null;
+            }
+
+            EnsureBiotechFamilyList();
+            BiotechFamilyArcState arc = FamilyArcPolicy.FindArcByHediff(
+                biotechFamilyArcs,
+                hediff.GetUniqueLoadID());
+            MiscarriageCorrelationScope scope = BiotechBirthCorrelation.BeginMiscarriage(arc);
+            return arc == null || scope == null
+                ? null
+                : new BiotechMiscarriageCallState { arc = arc, correlationScope = scope };
+        }
+
+        /// <summary>Closes the exact pregnancy arc only after vanilla completed Miscarry.</summary>
+        internal void CompleteBiotechMiscarriage(BiotechMiscarriageCallState state)
+        {
+            if (state?.arc != null)
+            {
+                FamilyArcPolicy.ClosePregnancyLoss(
+                    state.arc,
+                    Find.TickManager?.TicksGame ?? state.arc.lastObservedTick);
+            }
+        }
 
         /// <summary>Observes exact parent-bearing pregnancy/labor state after SetParents commits.</summary>
         internal void ObserveBiotechFamilyHediff(HediffWithParents hediff)
@@ -225,6 +382,10 @@ namespace PawnDiary
                 ref biotechFamilyArcs,
                 BiotechSaveKeys.FamilyArcs,
                 LookMode.Deep);
+            Scribe_Collections.Look(
+                ref pendingBiotechBirths,
+                BiotechSaveKeys.PendingBirths,
+                LookMode.Deep);
             Scribe_Values.Look(
                 ref familyObservationVersion,
                 BiotechSaveKeys.FamilyObservationVersion,
@@ -237,6 +398,9 @@ namespace PawnDiary
                     biotechFamilyArcs,
                     now,
                     policy.maximumSupporterRows);
+                pendingBiotechBirths = PendingBiotechBirthPolicy.Normalize(
+                    pendingBiotechBirths,
+                    now);
                 familyObservationVersion = Math.Max(0,
                     Math.Min(CurrentFamilyObservationVersion, familyObservationVersion));
             }
@@ -246,14 +410,18 @@ namespace PawnDiary
         private void ResetBiotechFamilyForNewGame()
         {
             biotechFamilyArcs = new List<BiotechFamilyArcState>();
+            pendingBiotechBirths = new List<PendingBiotechBirthState>();
             familyObservationVersion = CurrentFamilyObservationVersion;
+            nextBiotechBirthNamingPollTick = 0;
             RecentBiotechFamilyActivities.Clear();
+            BiotechBirthCorrelation.Clear();
         }
 
         /// <summary>Clears transient cross-source activity dedup without touching loaded arcs.</summary>
         private static void ResetBiotechFamilyTransientState()
         {
             RecentBiotechFamilyActivities.Clear();
+            BiotechBirthCorrelation.Clear();
         }
 
         /// <summary>
@@ -307,6 +475,13 @@ namespace PawnDiary
             {
                 BiotechFamilyArcState arc = biotechFamilyArcs[i];
                 Pawn child = FindLivePawnByLoadId(arc.childId);
+                bool familyHediffStillPresent = BiotechFamilyHediffStillPresent(arc);
+                if (!familyHediffStillPresent && arc.birthTick <= 0 && !arc.closed)
+                {
+                    // A missing Hediff alone proves only that the observed pregnancy ended. Exact
+                    // miscarriage/termination routes set their own token before this silent fallback.
+                    FamilyArcPolicy.CloseUnknown(arc, now);
+                }
                 FamilyArcRetentionAction action = FamilyArcPolicy.DecideRetention(
                     arc,
                     new FamilyArcRetentionInput
@@ -314,8 +489,9 @@ namespace PawnDiary
                         childAliveAndDeveloping = child != null && !child.Dead
                             && (child.DevelopmentalStage == DevelopmentalStage.Baby
                                 || child.DevelopmentalStage == DevelopmentalStage.Child),
-                        familyHediffStillPresent = BiotechFamilyHediffStillPresent(arc),
-                        hasPendingReference = PendingGrowthReferencesFamilyArc(arc.familyArcId),
+                        familyHediffStillPresent = familyHediffStillPresent,
+                        hasPendingReference = PendingGrowthReferencesFamilyArc(arc.familyArcId)
+                            || PendingBirthReferencesFamilyArc(arc.familyArcId),
                         hasSavedEventReference = SavedDiaryReferencesFamilyArc(arc.familyArcId)
                     },
                     now,
@@ -438,6 +614,288 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>Polls saved canonical births on their XML-owned naming cadence.</summary>
+        private void MaintainPendingBiotechBirths()
+        {
+            if (!ModsConfig.BiotechActive || pendingBiotechBirths == null
+                || pendingBiotechBirths.Count == 0)
+            {
+                return;
+            }
+
+            int now = Find.TickManager?.TicksGame ?? 0;
+            BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
+            pendingBiotechBirths = PendingBiotechBirthPolicy.Normalize(pendingBiotechBirths, now);
+            for (int i = pendingBiotechBirths.Count - 1; i >= 0; i--)
+            {
+                PendingBiotechBirthState pending = pendingBiotechBirths[i];
+                BirthMutationSnapshot snapshot = pending?.snapshot;
+                if (snapshot == null)
+                {
+                    pendingBiotechBirths.RemoveAt(i);
+                    continue;
+                }
+
+                if (HasRecordedBiotechBirth(snapshot.familyArcId, snapshot.childId))
+                {
+                    pendingBiotechBirths.RemoveAt(i);
+                    continue;
+                }
+
+                BirthChildNamingState naming;
+                Pawn child;
+                DlcContext.TryCaptureBirthChildNaming(snapshot.childId, out naming, out child);
+
+                BirthWriterSelection resolvedWriters;
+                List<Pawn> writerPawns = ResolvePendingBirthWriters(
+                    pending.writers,
+                    out resolvedWriters);
+                if (!PendingBiotechBirthPolicy.ShouldFlush(
+                    pending,
+                    naming,
+                    now,
+                    policy.birthNamingGraceTicks,
+                    writerPawns.Count))
+                {
+                    continue;
+                }
+
+                if (naming != null && naming.found)
+                {
+                    if (!string.IsNullOrWhiteSpace(naming.childName))
+                    {
+                        snapshot.currentChildName = naming.childName;
+                    }
+                    snapshot.namingDeadline = naming.namingDeadline;
+                    snapshot.namingResolved = naming.namingDeadline == -1 || now >= naming.namingDeadline;
+                }
+
+                if (writerPawns.Count == 0)
+                {
+                    int since = Math.Max(snapshot.birthTick, pending.createdTick);
+                    if (now >= since && now - since >= policy.birthNamingGraceTicks)
+                    {
+                        // The mature sources were already owned by the saved pending row, so there is
+                        // nothing truthful left to replay. Drop only after a bounded recovery window.
+                        pendingBiotechBirths.RemoveAt(i);
+                        Log.WarningOnce(
+                            "[Pawn Diary] A pending canonical birth lost every exact adult writer before "
+                            + "naming could flush; the orphaned pending row was discarded.",
+                            "PawnDiary.BiotechBirth.MissingWriter".GetHashCode());
+                    }
+                    continue;
+                }
+
+                if (DispatchBiotechBirth(
+                    snapshot,
+                    resolvedWriters,
+                    writerPawns,
+                    child,
+                    enabledAtBirth: true))
+                {
+                    pendingBiotechBirths.RemoveAt(i);
+                    BiotechFamilyArcState arc = FindBiotechFamilyArc(snapshot.familyArcId);
+                    if (arc != null)
+                    {
+                        arc.currentChildName = snapshot.currentChildName;
+                        arc.namingResolved = snapshot.namingResolved;
+                        arc.lastObservedTick = Math.Max(arc.lastObservedTick, now);
+                    }
+                }
+            }
+        }
+
+        /// <summary>Runs the naming poll only after the configured elapsed interval.</summary>
+        private void TickPendingBiotechBirths(int currentTick)
+        {
+            if (!ModsConfig.BiotechActive || currentTick < nextBiotechBirthNamingPollTick)
+            {
+                return;
+            }
+
+            int interval = Math.Max(1, DiaryBiotechPolicy.Snapshot().birthNamingPollTicks);
+            nextBiotechBirthNamingPollTick = currentTick > int.MaxValue - interval
+                ? int.MaxValue
+                : currentTick + interval;
+            MaintainPendingBiotechBirths();
+        }
+
+        private bool DispatchBiotechBirth(
+            BirthMutationSnapshot snapshot,
+            BirthWriterSelection writers,
+            List<Pawn> writerPawns,
+            Pawn child,
+            bool enabledAtBirth)
+        {
+            if (snapshot == null || writers?.writers == null || writerPawns == null
+                || writers.writers.Count == 0 || writers.writers.Count != writerPawns.Count)
+            {
+                return false;
+            }
+
+            FamilyBirthEventData payload = new FamilyBirthEventData
+            {
+                PawnId = writers.writers[0].pawnId,
+                Tick = snapshot.birthTick,
+                FamilyArcId = snapshot.familyArcId,
+                FirstWriterId = writers.writers[0].pawnId,
+                SecondWriterId = writers.writers.Count > 1 ? writers.writers[1].pawnId : string.Empty,
+                FirstWriterEligible = true,
+                SecondWriterEligible = writers.writers.Count > 1,
+                HasValidSnapshot = true,
+                AlreadyRecorded = HasRecordedBiotechBirth(snapshot.familyArcId, snapshot.childId)
+            };
+            return Dispatch(new FamilyBirthSignal(
+                payload,
+                snapshot,
+                writers,
+                writerPawns,
+                child,
+                enabledAtBirth));
+        }
+
+        private List<Pawn> ResolveImmediateBirthWriters(
+            BirthWriterSelection writers,
+            BiotechBirthCallState state,
+            out BirthWriterSelection resolved)
+        {
+            return ResolveBirthWriters(writers, id =>
+            {
+                if (state?.birther != null && state.birther.GetUniqueLoadID() == id) return state.birther;
+                if (state?.geneticMother != null && state.geneticMother.GetUniqueLoadID() == id)
+                    return state.geneticMother;
+                if (state?.father != null && state.father.GetUniqueLoadID() == id) return state.father;
+                return FindLivePawnByLoadId(id);
+            }, out resolved);
+        }
+
+        private List<Pawn> ResolvePendingBirthWriters(
+            BirthWriterSelection writers,
+            out BirthWriterSelection resolved)
+        {
+            return ResolveBirthWriters(writers, FindLivePawnByLoadId, out resolved);
+        }
+
+        private static List<Pawn> ResolveBirthWriters(
+            BirthWriterSelection writers,
+            Func<string, Pawn> resolver,
+            out BirthWriterSelection resolved)
+        {
+            resolved = new BirthWriterSelection();
+            List<Pawn> pawns = new List<Pawn>();
+            if (writers?.writers == null || resolver == null)
+            {
+                return pawns;
+            }
+
+            for (int i = 0; i < writers.writers.Count && pawns.Count < 2; i++)
+            {
+                BirthWriterFact writer = writers.writers[i];
+                Pawn pawn = string.IsNullOrWhiteSpace(writer?.pawnId)
+                    ? null
+                    : resolver(writer.pawnId);
+                if (pawn == null || !IsDiaryEligible(pawn))
+                {
+                    continue;
+                }
+
+                pawns.Add(pawn);
+                resolved.writers.Add(new BirthWriterFact
+                {
+                    pawnId = writer.pawnId,
+                    displayName = writer.displayName,
+                    roleToken = writer.roleToken
+                });
+            }
+
+            return pawns;
+        }
+
+        private bool HasPendingBiotechBirth(string familyArcId)
+        {
+            if (string.IsNullOrWhiteSpace(familyArcId) || pendingBiotechBirths == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < pendingBiotechBirths.Count; i++)
+            {
+                if (pendingBiotechBirths[i]?.snapshot?.familyArcId == familyArcId)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool HasRecordedBiotechBirth(string familyArcId, string childId)
+        {
+            if (string.IsNullOrWhiteSpace(familyArcId) || string.IsNullOrWhiteSpace(childId))
+            {
+                return false;
+            }
+
+            IReadOnlyList<DiaryEvent> live = events.AllEvents;
+            for (int i = live.Count - 1; i >= 0; i--)
+            {
+                DiaryEvent diaryEvent = live[i];
+                if (RecordedBiotechBirthMatches(
+                    diaryEvent?.interactionDefName,
+                    diaryEvent?.gameContext,
+                    familyArcId,
+                    childId))
+                {
+                    return true;
+                }
+            }
+
+            IReadOnlyList<ArchivedDiaryEntry> archived = archive.AllEntries;
+            for (int i = archived.Count - 1; i >= 0; i--)
+            {
+                ArchivedDiaryEntry entry = archived[i];
+                if (RecordedBiotechBirthMatches(
+                    entry?.interactionDefName,
+                    entry?.decorationGameContext,
+                    familyArcId,
+                    childId))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool RecordedBiotechBirthMatches(
+            string interactionDefName,
+            string gameContext,
+            string familyArcId,
+            string childId)
+        {
+            return BirthRecordPolicy.Matches(
+                interactionDefName,
+                DiaryContextFields.Value(gameContext, BiotechContextKeys.FamilyArcId),
+                DiaryContextFields.Value(gameContext, BiotechContextKeys.ChildId),
+                familyArcId,
+                childId);
+        }
+
+        private BiotechFamilyArcState FindBiotechFamilyArc(string familyArcId)
+        {
+            if (string.IsNullOrWhiteSpace(familyArcId) || biotechFamilyArcs == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < biotechFamilyArcs.Count; i++)
+            {
+                if (biotechFamilyArcs[i]?.familyArcId == familyArcId)
+                {
+                    return biotechFamilyArcs[i];
+                }
+            }
+            return null;
+        }
+
         private bool PendingGrowthReferencesFamilyArc(string familyArcId)
         {
             if (string.IsNullOrWhiteSpace(familyArcId) || pendingBiotechGrowthMoments == null) return false;
@@ -446,6 +904,11 @@ namespace PawnDiary
                 if (pendingBiotechGrowthMoments[i]?.familyArcId == familyArcId) return true;
             }
             return false;
+        }
+
+        private bool PendingBirthReferencesFamilyArc(string familyArcId)
+        {
+            return HasPendingBiotechBirth(familyArcId);
         }
 
         private bool SavedDiaryReferencesFamilyArc(string familyArcId)
@@ -477,6 +940,14 @@ namespace PawnDiary
             if (biotechFamilyArcs == null)
             {
                 biotechFamilyArcs = new List<BiotechFamilyArcState>();
+            }
+        }
+
+        private void EnsurePendingBiotechBirthList()
+        {
+            if (pendingBiotechBirths == null)
+            {
+                pendingBiotechBirths = new List<PendingBiotechBirthState>();
             }
         }
     }

@@ -48,7 +48,7 @@ repo for development, but the Workshop payload omits source code and other devel
 | `LoadFolders.xml` | Normal 1.6 load roots plus the RimTest-only development test assembly gate. |
 | `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
 | `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
-| `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family contracts, growth diff/pending normalization, and future family policies. |
+| `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts, growth and naming-pending normalization, exact arc attachment, and writer policies. |
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge). |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
@@ -202,7 +202,7 @@ Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned gra
 additive save-key suffixes under each POV/archive row; it performs no retroactive inference or
 catch-up on older pages.
 
-**Biotech canonical growth and family continuity (Master Wave 3 / Phases 0–2)** owns age-7/10/13
+**Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3)** owns age-7/10/13
 mutations after they
 actually commit. The existing biological-birthday patch snapshots the child before vanilla work;
 the dynamically registered `ConfigureGrowthLetter`/`MakeChoices` hooks claim a birthday only when
@@ -236,8 +236,28 @@ event-referenced state, and compact before removing settled unreferenced history
 with no child ID stay live only while their exact tracked hediff remains on the birther; interrupted or
 completed rows then follow the XML retention grace instead of becoming permanent. Growth-page replay
 checks use the stable child ID and canonical age across both hot and archived events, so supporter-solo
-pages stored in the adult's diary still prevent duplicates. `FamilyBirth` remains inert until Phase 3.
-`familyArcId` is the complete shared key (`biotech-family|...`) and is never prefixed twice.
+pages stored in the adult's diary still prevent duplicates. `familyArcId` is the complete shared key
+(`biotech-family|...`) and is never prefixed twice.
+
+Phase 3 dynamically patches RimWorld 1.6's exact `PregnancyUtility.ApplyBirthOutcome` signature with
+prefix/postfix/finalizer ownership. A stack-safe main-thread correlation scope stages only the mature
+`GaveBirth` and `BabyBorn`/`Stillbirth` signals while vanilla completes; an exact ritual-job reservation
+arbitrates the later childbirth-ritual postfix. The
+postfix resolves the returned child or corpse, records only exact `healthy`, `infant_illness`, or
+`stillbirth` outcome and `pregnancy`, `surrogacy`, or `growth_vat` method tokens, attaches the existing
+pregnancy/labor arc (or a stable child fallback), and selects at most two unique eligible adults in
+birther, distinct genetic-mother, then father order. The child is always the subject, never a POV.
+
+If vanilla naming is unfinished, detached `pendingBiotechBirths` rows save the exact snapshot and
+adult writer order. A bounded tick poll reloads the current child/corpse name and emits at the original
+birth tick after naming resolves, its deadline passes, or waiting can no longer improve the name.
+Hot and archived context checks by exact family arc plus child prevent replay. Every emitted POV saves
+source-owned `bond_lifecycle` evidence; no gene list or predicted identity is copied. Disabled canonical
+settings, no eligible/resolvable writer, invalid snapshots, hook drift, or a thrown owner release staged
+mature routes in original order. An exact ritual-job reservation suppresses only the matching later
+ritual postfix. `Hediff_Pregnant.Miscarry` closes the matched arc as `loss` and enriches its existing
+thought context; unexplained disappearance closes silently as `ended_unknown`, never as an inferred
+miscarriage. The complete path gates `ModsConfig.BiotechActive` and remains inert without the DLC.
 
 Live surroundings are optional prompt flavor and are collected fail-soft. In particular,
 `Room.GetRoomRoleLabel()` can lazily recalculate the room's stats/role; if RimWorld or another room
@@ -1017,6 +1037,7 @@ it onto the bus.
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
 | Pawn progression | Periodic scan | Passion-only skill milestones, psylink level gains, xenotype changes, royal-title changes, and newly gained personality traits. Trait gains feed the trait's own character-card description (no stat/mechanic lines) into the prompt so any trait — vanilla or modded — is voiced as a felt personality shift without a hardcoded per-trait table. The first scan baselines existing saves to avoid retroactive spam (a pawn's starting traits never record); major psylink/xenotype changes can request a rare arc reflection after the normal page records. |
 | Biotech growth moments | `Pawn_AgeTracker.BirthdayBiological`, `ChoiceLetter_GrowthMoment.ConfigureGrowthLetter` / `MakeChoices` | Age-7/10/13 before/after ownership. A committed verified mutation becomes one child-solo, supporter-solo, or child/supporter page; postponed letters survive save/load; auto-resolved growth completes immediately; stable child-ID/age checks across hot and archived events prevent replay regardless of which diary owns the page. N2-B can enrich that same page with exact saved family continuity and a visible current non-Baseliner identity, selected through the shared bounded provider policy. Unsupported/failed/disabled ownership releases the existing Birthday route and consumes trait/skill baselines. Entire path is inert without Biotech. |
+| Biotech family birth | `PregnancyUtility.ApplyBirthOutcome`, nested Tale/Thought/Ritual correlation, naming poll | One exact healthy/ill/stillborn canonical birth, written by at most two unique eligible adults in role-certainty order. Unresolved naming survives save/load; hot/archive family+child ownership prevents replay; disabled/invalid/thrown ownership releases staged mature routes. Exact miscarriage closes/enriches the existing thought path without inventing an extra event. Entire path is inert without Biotech. |
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |
 | Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions, artificial/anomalous body-part gains, and living-pawn natural body-part losses. |
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns and the shared random-generation setting. |
@@ -1073,7 +1094,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeRollPolicyDefs.xml` | numeric tuning for the psychotype roll: family bases, bonuses, wildcard chance, jitter range, duplicate penalty |
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; the main-thread builder snapshots it before fixed-order pure provider selection |
-| `DiaryBiotechPolicyDefs.xml` | B1 growth/family thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback timing, exact pregnancy/labor/activity/memory matchers, supporter thresholds/caps, naming timing, family retention, and the two-writer birth cap; Phases 1–2 and N2-B use growth/family/provider fields live while birth fields remain reserved |
+| `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory matchers, supporter thresholds/caps, naming timing, family retention, and the two-writer birth cap; Phases 1–3 and N2-B use these fields live |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
 | `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |
 | `DiaryUiStyleDef.xml` / `DiaryTextDecorationDefs.xml` | UI dimensions/colors and display-only rich-text decoration |
@@ -1099,14 +1120,16 @@ without relying on package presence. All gates are enforced uniformly: `IsGroupE
 sits harmless across automatic capture, the settings UI, and the integration API. External-domain
 groups classify the integration-API `eventKey` strings other mods submit (see §3.7).
 
-Biotech has two exact, package-gated settings rows: `progressionGrowthMoment` (`Progression`,
-`BiotechGrowthMoment`, order 800) is live in Phase 1, while `biotechFamilyBirth` (`Tale`,
-`BiotechFamilyBirth`, order 315) remains reserved until Phase 3. Effective growth settings inherit an
+Biotech has two live, exact, package-gated settings rows: `progressionGrowthMoment` (`Progression`,
+`BiotechGrowthMoment`, order 800) owns committed age-7/10/13 changes, while `biotechFamilyBirth`
+(`Tale`, `BiotechFamilyBirth`, order 315) owns exact canonical births. Effective growth settings inherit an
 explicit legacy `eventWindowBirthday` override until the new row is toggled. When canonical growth is
 off but Birthday is on, the ordinary Birthday is delayed until choice completion and released once;
 if both are off, observation/baselines still advance without a page. Effective birth settings similarly
 inherit explicit `talelife` and, for ritual births, `ritualChildbirth` intent. A new explicit override
-always wins; missing overrides fall back to the new XML default.
+always wins; missing overrides fall back to the new XML default. Canonical birth freezes the effective
+choice at event completion: enabled ownership stages/suppresses the mature Tale/Thought/Ritual rows,
+while disabled or writerless ownership releases them through their original settings.
 
 `DiaryEventWindowDef.enableWhenPackageIdsLoaded` provides the corresponding gate for compatibility
 windows. Start matching, restored active state, prompt candidates, timeout scanning, and direct
@@ -1985,6 +2008,9 @@ and gated by the persisted `errorReportingNoticeShown` flag) tells the player it
 | `activeObservedConditions` | currently active live-state observed conditions |
 | `observedConditionCooldownUntilTick` | saved restart cooldowns for ended observed-condition identities |
 | `pendingBiotechGrowthMoments` | detached pawn/age/tick/before-snapshot ownership for postponed Biotech growth letters; no live Pawn or Letter reference |
+| `biotechFamilyArcs` | detached stable-ID family continuity, exact pregnancy/labor/birth facts, bounded supporter observations, and summarized growth ages |
+| `pendingBiotechBirths` | detached exact birth snapshot plus frozen adult writer order while newborn naming is unresolved; no live Pawn, Thing, Corpse, or ritual reference |
+| `familyObservationVersion` | additive family old-save baseline version; prevents invented historical pregnancy/birth/activity catch-up |
 
 Hot events and archive rows are separate on purpose. Hot `DiaryEvent` rows keep prompts, retry state,
 raw/generated text, status, LLM metadata, titles, context, source ids, and per-role state. Compact
@@ -2197,9 +2223,11 @@ to run the suites in-game.
 
 Twenty EVT event-flow suites (`PawnDiary*FlowTests.cs`) now sit on this harness, one per event source in
 `TEST_COVERAGE_PLAN.md §3` — EVT-01 through EVT-23 — plus the supplemental
-`PawnDiaryBiotechGrowthFlowTests` B1 suite. It verifies canonical once-only emission, source-owned N1
-evidence, progression consumption, ordinary fallback, and both-groups-disabled observation using
-detached exact mutations; the manual growth-letter UI matrix still runs in game. Sources whose real
+`PawnDiaryBiotechGrowthFlowTests` and `PawnDiaryBiotechBirthFlowTests` B1 suites. They verify growth
+once-only emission, progression consumption, ordinary fallback, both-groups-disabled observation,
+canonical two-adult birth emission, child-subject/never-POV shape, exact context, source-owned N1
+evidence for both writers, and durable birth replay rejection using detached exact snapshots; the
+manual growth-letter and live birth/naming matrices still run in game. Sources whose real
 trigger needs a loaded map, the
 storyteller, or a periodic scanner (raid/mood/quest/reflection/window/observed-condition) are exercised
 by submitting the exact per-unit production signal the scanner emits, which keeps the tests mapless and

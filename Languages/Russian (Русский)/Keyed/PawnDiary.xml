@@ -1382,6 +1382,12 @@
   <PawnDiary.Event.Biotech.Growth.Summary.Responsibilities>открылись новые обязанности</PawnDiary.Event.Biotech.Growth.Summary.Responsibilities>
   <PawnDiary.Event.Biotech.Growth.Summary.Generic>изменились интересы и ощущение себя</PawnDiary.Event.Biotech.Growth.Summary.Generic>
   <PawnDiary.Event.Biotech.Growth.SupporterFallback>{0} размышляет о взрослении {1}: {2}.</PawnDiary.Event.Biotech.Growth.SupporterFallback>
+  <PawnDiary.Event.Biotech.Birth.Label>Рождение в семье</PawnDiary.Event.Biotech.Birth.Label>
+  <PawnDiary.Event.Biotech.Birth.ChildFallback>ребёнка</PawnDiary.Event.Biotech.Birth.ChildFallback>
   <PawnDiary.Event.Biotech.Birth.Fallback>{0} вспоминает рождение {1}: {2}.</PawnDiary.Event.Biotech.Birth.Fallback>
   <PawnDiary.Event.Biotech.Birth.PairFallback>{0} и {1} вспоминают рождение {2}: {3}.</PawnDiary.Event.Biotech.Birth.PairFallback>
+  <PawnDiary.Event.Biotech.Birth.Outcome.Healthy>ребёнок родился живым, без немедленной младенческой болезни</PawnDiary.Event.Biotech.Birth.Outcome.Healthy>
+  <PawnDiary.Event.Biotech.Birth.Outcome.InfantIllness>ребёнок родился живым с немедленной младенческой болезнью</PawnDiary.Event.Biotech.Birth.Outcome.InfantIllness>
+  <PawnDiary.Event.Biotech.Birth.Outcome.Stillbirth>ребёнок родился мёртвым</PawnDiary.Event.Biotech.Birth.Outcome.Stillbirth>
+  <PawnDiary.Event.Biotech.Birth.BirtherDied>родивший родитель умер во время родов</PawnDiary.Event.Biotech.Birth.BirtherDied>
 </LanguageData>

@@ -38,7 +38,11 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryEvents.Submit(new TaleSignal(__result, def));
+                TaleSignal signal = new TaleSignal(__result, def);
+                if (!BiotechBirthCorrelation.TryStageMatureSignal(def.defName, signal))
+                {
+                    DiaryEvents.Submit(signal);
+                }
             });
         }
     }
@@ -777,6 +781,13 @@ namespace PawnDiary
             DiaryPatchSafety.Run("RitualOutcomePatch", () =>
             {
                 if (__instance == null || cancelled)
+                {
+                    return;
+                }
+
+                if (BiotechBirthCorrelation.ShouldSuppressRitual(
+                    __instance,
+                    Find.TickManager?.TicksGame ?? 0))
                 {
                     return;
                 }

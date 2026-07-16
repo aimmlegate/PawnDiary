@@ -23,6 +23,8 @@ namespace PawnDiary
             PrisonBreakEventWindowPatch.TryRegister(harmony);
             BiotechFamilyHediffPatch.TryRegister(harmony);
             BiotechGrowthLetterPatch.TryRegister(harmony);
+            BiotechBirthOutcomePatch.TryRegister(harmony);
+            BiotechMiscarriagePatch.TryRegister(harmony);
             SpeakUpReplySchedulingGuardPatch.TryRegister(harmony);
             DiaryLogReportPatch.TryRegister(harmony);
         }

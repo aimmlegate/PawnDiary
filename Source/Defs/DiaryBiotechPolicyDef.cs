@@ -56,6 +56,7 @@ namespace PawnDiary
         public int familyArcRetentionTicks = 3600000;
         public int birthNamingPollTicks = 2500;
         public int birthNamingGraceTicks = 60000;
+        public int birthCorrelationExpiryTicks = 2500;
         public int maximumBirthWriters = 2;
 
         /// <summary>Reports malformed XML policy at Def load instead of failing inside a later hook.</summary>
@@ -86,6 +87,7 @@ namespace PawnDiary
             if (familyArcRetentionTicks <= 0) yield return "familyArcRetentionTicks must be positive.";
             if (birthNamingPollTicks <= 0) yield return "birthNamingPollTicks must be positive.";
             if (birthNamingGraceTicks < 0) yield return "birthNamingGraceTicks cannot be negative.";
+            if (birthCorrelationExpiryTicks <= 0) yield return "birthCorrelationExpiryTicks must be positive.";
             if (maximumBirthWriters < 1 || maximumBirthWriters > 2)
             {
                 yield return "maximumBirthWriters must stay between one and the hard two-writer cap.";
@@ -193,6 +195,9 @@ namespace PawnDiary
             result.familyArcRetentionTicks = Positive(source.familyArcRetentionTicks, result.familyArcRetentionTicks);
             result.birthNamingPollTicks = Positive(source.birthNamingPollTicks, result.birthNamingPollTicks);
             result.birthNamingGraceTicks = Math.Max(0, source.birthNamingGraceTicks);
+            result.birthCorrelationExpiryTicks = Positive(
+                source.birthCorrelationExpiryTicks,
+                result.birthCorrelationExpiryTicks);
             result.maximumBirthWriters = source.maximumBirthWriters < 1 || source.maximumBirthWriters > 2
                 ? result.maximumBirthWriters
                 : source.maximumBirthWriters;

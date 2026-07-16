@@ -1,4 +1,4 @@
-// Inert Phase-0 catalog Spec for canonical Biotech growth moments.
+// Catalog Spec for live canonical Biotech growth moments.
 namespace PawnDiary.Capture
 {
     internal class GrowthMomentEventSpec : DiaryEventSpec

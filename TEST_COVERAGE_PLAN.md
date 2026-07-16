@@ -125,23 +125,26 @@ one window, `Gleaming` maps to none, localized fallbacks exist, and the three ex
 bounded source evidence. The EVT-22 RimTest fixture exercises the live package-gated page/evidence
 path when Anomaly is active and the no-op branch otherwise.
 
-Master Wave 3 / Biotech Phases 0–2 use `DiaryBiotechPolicyTests`, an assembly-free suite that freezes
+Master Wave 3 / Biotech Phases 0–3 use `DiaryBiotechPolicyTests`, an assembly-free suite that freezes
 the complete family arc grammar, additive save/context keys, actual before/after growth diffing,
 NoTrait and ambiguous auto-trait handling, passion verification, opportunity boundaries,
 deterministic supporter tiers/ties, child/supporter writer shapes, capped birth writer ordering,
 legacy settings inheritance, bounded context formatting, XML policy coverage, exact classifier
 groups/package gates, pending-row normalization/expiry/grace, pregnancy/labor correlation,
 lesson/play/memory classification, unsummarized evidence, duplicate repair, compaction/retention,
-and English/Russian DefInjected/Keyed
+exact birth-arc attachment/idempotence, naming/writer-availability flush and durable-record policy,
+malformed birth-token repair, and English/Russian DefInjected/Keyed
 text. `DiaryCapturePolicyTests` also requires both catalog types/Specs and their
 solo/pair/drop/dedup decisions. `PawnDiaryBiotechGrowthFlowTests` covers the live growth
 component boundary: canonical page creation with family context and N1 identity evidence, durable-event/consumed-age
 dedup repair, trait/skill baseline consumption, Birthday fallback when canonical growth is disabled,
-and zero pages with both groups disabled. The Scribe fixture round-trips a detached pending growth row,
+and zero pages with both groups disabled. `PawnDiaryBiotechBirthFlowTests` covers final canonical pair
+dispatch, child-subject/never-POV shape, original tick, exact context, per-role bond evidence, and
+hot-event replay rejection. The Scribe fixture round-trips detached pending growth and birth rows,
 deep family arc/supporter state, and nested consumed ages, while the DLC-safety fixture drives the guarded
-growth/family snapshot accessors.
-Vanilla age-7/10/13 letter postponement/click-through remains a manual loaded-game acceptance matrix;
-family birth fixtures remain absent until Phase 3 activates that owner.
+growth/family/birth snapshot accessors and pins exact runtime method signatures.
+Vanilla age-7/10/13 letter postponement/click-through and live healthy/ill/stillborn/vat/surrogacy/
+ritual/naming/fail-open birth paths remain the Phase-4 manual loaded-game acceptance matrix.
 
 Narrative N2-B extends `NarrativeContinuityTests` with assembly-free checks for family-continuity
 classification, exact arc/subject candidate construction, fixed provider ordering, inactive-DLC and

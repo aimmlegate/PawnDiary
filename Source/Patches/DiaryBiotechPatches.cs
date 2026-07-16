@@ -1,17 +1,233 @@
-// Stable Biotech growth-letter lifecycle patches. They register dynamically as one readiness unit:
-// if either ConfigureGrowthLetter or MakeChoices is unavailable, HooksReady remains false and the
-// existing birthday patch never suppresses the mature ordinary Birthday path.
+// Stable Biotech family/birth and growth-letter lifecycle patches. Every fragile target registers
+// dynamically and fails open: a missing canonical birth target leaves Tale/Thought/Ritual routes
+// active, while an incomplete growth hook set leaves the mature ordinary Birthday path active.
 //
 // New to C#/RimWorld? See AGENTS.md ("Harmony patches" and "DLC-safety").
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
+using PawnDiary.Capture;
 using RimWorld;
 using Verse;
 
 namespace PawnDiary
 {
+    /// <summary>
+    /// Owns the exact ApplyBirthOutcome boundary. Registration is all-or-nothing so a changed
+    /// signature leaves mature Tale/Thought/ritual routes untouched.
+    /// </summary>
+    internal static class BiotechBirthOutcomePatch
+    {
+        /// <summary>Resolves the verified RimWorld 1.6 birth signature and installs prefix/postfix/finalizer.</summary>
+        public static void TryRegister(Harmony harmony)
+        {
+            if (harmony == null) return;
+            MethodBase target = AccessTools.DeclaredMethod(
+                typeof(PregnancyUtility),
+                "ApplyBirthOutcome",
+                new[]
+                {
+                    typeof(RitualOutcomePossibility),
+                    typeof(float),
+                    typeof(Precept_Ritual),
+                    typeof(List<GeneDef>),
+                    typeof(Pawn),
+                    typeof(Thing),
+                    typeof(Pawn),
+                    typeof(Pawn),
+                    typeof(LordJob_Ritual),
+                    typeof(RitualRoleAssignments),
+                    typeof(bool)
+                });
+            if (target == null)
+            {
+                Log.Warning("[Pawn Diary] PregnancyUtility.ApplyBirthOutcome changed; canonical "
+                    + "Biotech births are disabled and mature routes remain active.");
+                return;
+            }
+
+            try
+            {
+                harmony.Patch(
+                    target,
+                    prefix: new HarmonyMethod(typeof(BiotechBirthOutcomePatch), nameof(Prefix)),
+                    postfix: new HarmonyMethod(typeof(BiotechBirthOutcomePatch), nameof(Postfix)),
+                    finalizer: new HarmonyMethod(typeof(BiotechBirthOutcomePatch), nameof(Finalizer)));
+            }
+            catch (Exception exception)
+            {
+                Log.Warning("[Pawn Diary] Could not register canonical Biotech birth capture; "
+                    + "mature routes remain active. " + exception);
+            }
+        }
+
+        private static void Prefix(
+            Precept_Ritual ritual,
+            Pawn geneticMother,
+            Thing birtherThing,
+            Pawn father,
+            Pawn doctor,
+            LordJob_Ritual lordJobRitual,
+            ref BiotechBirthCallState __state)
+        {
+            if (!ModsConfig.BiotechActive || birtherThing == null)
+            {
+                return;
+            }
+
+            try
+            {
+                __state = DiaryGameComponent.Instance?.BeginBiotechBirth(
+                    geneticMother,
+                    birtherThing,
+                    father,
+                    doctor,
+                    ritual != null,
+                    lordJobRitual);
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Could not begin canonical Biotech birth capture; mature routes "
+                    + "remain active: " + exception,
+                    "PawnDiary.BiotechBirth.Begin".GetHashCode());
+            }
+        }
+
+        private static void Postfix(
+            Thing __result,
+            RitualOutcomePossibility outcome,
+            Thing birtherThing,
+            BiotechBirthCallState __state)
+        {
+            if (__state == null)
+            {
+                return;
+            }
+
+            try
+            {
+                __state.canonicalClaimed = DiaryGameComponent.Instance?.CompleteBiotechBirth(
+                    __state,
+                    __result,
+                    birtherThing,
+                    outcome?.positivityIndex ?? int.MinValue) == true;
+            }
+            catch (Exception exception)
+            {
+                __state.canonicalClaimed = false;
+                Log.ErrorOnce(
+                    "[Pawn Diary] Canonical Biotech birth completion failed; mature routes will be "
+                    + "released: " + exception,
+                    "PawnDiary.BiotechBirth.Complete".GetHashCode());
+            }
+        }
+
+        private static Exception Finalizer(Exception __exception, BiotechBirthCallState __state)
+        {
+            if (__state?.correlationScope != null)
+            {
+                int expiryTicks = BiotechPolicySnapshot.CreateDefault().birthCorrelationExpiryTicks;
+                try
+                {
+                    expiryTicks = DiaryBiotechPolicy.Snapshot().birthCorrelationExpiryTicks;
+                }
+                catch (Exception exception)
+                {
+                    Log.ErrorOnce(
+                        "[Pawn Diary] Biotech birth correlation policy was unavailable; the safe "
+                        + "fallback expiry will be used: " + exception,
+                        "PawnDiary.BiotechBirth.FinalizerPolicy".GetHashCode());
+                }
+
+                try
+                {
+                    BiotechBirthCorrelation.CloseBirth(
+                        __state.correlationScope,
+                        __exception == null && __state.canonicalClaimed,
+                        Find.TickManager?.TicksGame ?? 0,
+                        expiryTicks);
+                }
+                catch (Exception exception)
+                {
+                    Log.ErrorOnce(
+                        "[Pawn Diary] Biotech birth correlation cleanup failed and was skipped: "
+                        + exception,
+                        "PawnDiary.BiotechBirth.Finalizer".GetHashCode());
+                }
+            }
+
+            return __exception;
+        }
+    }
+
+    /// <summary>Attaches exact miscarriage memories to their family arc without creating a birth page.</summary>
+    internal static class BiotechMiscarriagePatch
+    {
+        /// <summary>Defensively patches the stable public Hediff_Pregnant.Miscarry method.</summary>
+        public static void TryRegister(Harmony harmony)
+        {
+            if (harmony == null) return;
+            MethodBase target = AccessTools.DeclaredMethod(typeof(Hediff_Pregnant), "Miscarry", Type.EmptyTypes);
+            if (target == null)
+            {
+                Log.Warning("[Pawn Diary] Hediff_Pregnant.Miscarry changed; exact Biotech family-loss "
+                    + "enrichment is disabled.");
+                return;
+            }
+
+            try
+            {
+                harmony.Patch(
+                    target,
+                    prefix: new HarmonyMethod(typeof(BiotechMiscarriagePatch), nameof(Prefix)),
+                    postfix: new HarmonyMethod(typeof(BiotechMiscarriagePatch), nameof(Postfix)),
+                    finalizer: new HarmonyMethod(typeof(BiotechMiscarriagePatch), nameof(Finalizer)));
+            }
+            catch (Exception exception)
+            {
+                Log.Warning("[Pawn Diary] Could not register Biotech miscarriage enrichment: " + exception);
+            }
+        }
+
+        private static void Prefix(Hediff_Pregnant __instance, ref BiotechMiscarriageCallState __state)
+        {
+            if (!ModsConfig.BiotechActive || __instance == null) return;
+            try
+            {
+                __state = DiaryGameComponent.Instance?.BeginBiotechMiscarriage(__instance);
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Could not begin exact Biotech miscarriage context: " + exception,
+                    "PawnDiary.BiotechMiscarriage.Begin".GetHashCode());
+            }
+        }
+
+        private static void Postfix(BiotechMiscarriageCallState __state)
+        {
+            if (__state == null) return;
+            try
+            {
+                DiaryGameComponent.Instance?.CompleteBiotechMiscarriage(__state);
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Could not close exact Biotech miscarriage family state: " + exception,
+                    "PawnDiary.BiotechMiscarriage.Complete".GetHashCode());
+            }
+        }
+
+        private static Exception Finalizer(Exception __exception, BiotechMiscarriageCallState __state)
+        {
+            BiotechBirthCorrelation.CloseMiscarriage(__state?.correlationScope);
+            return __exception;
+        }
+    }
+
     /// <summary>
     /// Captures exact pregnancy/labor parent assignment at the shared HediffWithParents boundary.
     /// Registration is defensive so a changed RimWorld signature disables only family correlation.

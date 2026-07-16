@@ -833,7 +833,8 @@ namespace PawnDiary
 
         /// <summary>
         /// Effective canonical-birth setting. A new explicit override wins; otherwise only explicit
-        /// mature Tale/ritual choices are inherited. No birth hook calls this until Biotech Phase 3.
+        /// mature Tale/ritual choices are inherited. The canonical birth owner freezes this choice at
+        /// the exact ApplyBirthOutcome completion boundary.
         /// </summary>
         public bool IsBiotechFamilyBirthEnabled(bool ritualBirth)
         {

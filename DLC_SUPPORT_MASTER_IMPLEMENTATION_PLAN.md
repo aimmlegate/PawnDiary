@@ -151,7 +151,7 @@ the first DLC feature diff.
 > exact package-gated ritual families plus the retained generic fallback; A0.2 split Stirring,
 > Waking, and Void Awakened into mutually exclusive windows and attached visible source-owned N1
 > chapter references. No provider, new Harmony hook, hidden Anomaly state, or extra page source was
-> added. Wave 3 is now active; Biotech Phases 0–1 are complete and Phase 2 is next.
+> added. Wave 3 subsequently advanced through Biotech Phase 3 and Narrative N2-B; Phase 4 hardening is next.
 
 ### Implement in this exact order
 
@@ -174,13 +174,16 @@ This is the low-cost prompt-quality release. Do not continue into A1 study/conta
 
 ## 8. Wave 3 — Biotech family flagship
 
-> **Implementation status (2026-07-16): in progress.** Biotech Phases 0–2 and Narrative N2-B are complete. Stable B1
+> **Implementation status (2026-07-16): in progress.** Biotech Phases 0–3 and Narrative N2-B are complete. Stable B1
 > contracts/policy/settings now feed live, atomic birthday/growth-letter ownership with saved postponed
 > rows, auto/choice diffs, mature ordinary fallback, progression consumption, saved family continuity,
 > exact lesson/play observations, truthful child/supporter pages, and source-owned N1 identity evidence.
 > N2-B now supplies fixed-order provider orchestration, empty future-provider stubs, and guarded exact
-> family/current visible identity candidates on canonical growth pages. Canonical birth remains
-> unchanged. The next permitted slice is Biotech Phase 3 / canonical birth and naming ownership.
+> family/current visible identity candidates on canonical growth pages. The exact birth owner now stages
+> mature Tale/Thought signals around `ApplyBirthOutcome`, reserves the matching later ritual owner, attaches exact outcome/method facts to the
+> family arc, selects at most two adult writers, preserves pending naming across save/load, rejects replay,
+> and fails open to the mature routes. The next permitted slice is Biotech Phase 4 / B1 compatibility and
+> release hardening.
 
 ### Implement in this exact order
 

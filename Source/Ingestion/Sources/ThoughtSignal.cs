@@ -25,6 +25,7 @@ namespace PawnDiary.Ingestion
         private readonly Thought_Memory thought;
         private readonly float moodOffset;
         private readonly ThoughtEventData payload;
+        private readonly string biotechFamilyContext;
 
         public ThoughtSignal(Pawn pawn, Thought_Memory thought)
         {
@@ -63,6 +64,7 @@ namespace PawnDiary.Ingestion
             }
 
             moodOffset = thought.MoodOffset();
+            biotechFamilyContext = BiotechBirthCorrelation.MiscarriageContext(pawn, thought.def.defName);
             payload = new ThoughtEventData
             {
                 PawnId = pawn.GetUniqueLoadID(),
@@ -107,6 +109,12 @@ namespace PawnDiary.Ingestion
 
             string gameContext = ThoughtEventData.BuildGameContext(
                 payload.DefName, label, payload.MoodImpact, moodOffset, thought.def.durationDays);
+            if (!string.IsNullOrWhiteSpace(biotechFamilyContext))
+            {
+                gameContext = string.IsNullOrWhiteSpace(gameContext)
+                    ? biotechFamilyContext
+                    : gameContext.Trim().TrimEnd(';') + "; " + biotechFamilyContext;
+            }
 
             string text = MoodImpact.PickText(payload.MoodImpact,
                 "PawnDiary.Event.ThoughtPositive", "PawnDiary.Event.ThoughtNegative", "PawnDiary.Event.Thought",

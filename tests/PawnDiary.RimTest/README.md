@@ -43,9 +43,9 @@ finds RimTest Redux relative to `RimWorldManaged`; if the framework lives elsewh
 
 ## Suites
 
-`PawnDiaryDefSmokeTests` (read-only, main-menu safe) checks Def registration. Every other suite is a
-loaded-game event-flow suite mapped to a `TEST_COVERAGE_PLAN.md §3` EVT row and built on the shared
-harness:
+`PawnDiaryDefSmokeTests` (read-only, main-menu safe) checks Def registration. Loaded-game event-flow
+suites map to `TEST_COVERAGE_PLAN.md §3` EVT rows; supplemental B1 suites exercise Biotech composite
+owners. Both use the shared harness:
 
 | Suite | EVT | Covers |
 |---|---|---|
@@ -63,6 +63,7 @@ harness:
 | `PawnDiaryMoodConditionFlowTests` | 14 | GameCondition mood fan-out + classification + group gate. |
 | `PawnDiaryPawnProgressionFlowTests` | 15 | Skill/trait milestone baseline + upward-only + arc request. |
 | `PawnDiaryBiotechGrowthFlowTests` | B1 | Family-keyed canonical growth/N1 evidence + baseline consumption + Birthday/disabled fallback. |
+| `PawnDiaryBiotechBirthFlowTests` | B1 | Canonical two-adult birth, child-never-POV shape, exact context/evidence, and durable replay rejection. |
 | `PawnDiaryQuestFlowTests` | 16 | Quest accept/complete/fail fan-out + label sanitation + dedup. |
 | `PawnDiaryRitualFlowTests` | 17 | Ritual participant fan-out (DLC-gated, clean no-op without Ideology). |
 | `PawnDiaryArrivalFlowTests` | 18 | Neutral arrival page + first-ordering + bootstrap resilience. |

@@ -1,4 +1,4 @@
-// Inert Phase-0 catalog payload for one canonical Biotech family birth. Phase 3 will construct it
+// Catalog payload for one canonical Biotech family birth. The live Phase-3 boundary constructs it
 // only after ApplyBirthOutcome proves the child/outcome and the pure writer policy selects adults.
 namespace PawnDiary.Capture
 {

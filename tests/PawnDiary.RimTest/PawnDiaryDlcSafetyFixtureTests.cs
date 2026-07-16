@@ -119,6 +119,14 @@ namespace PawnDiary.RimTests
             bool familyChildCaptured;
             bool familyActivityCaptured;
             bool familyHediffCaptured;
+            BirthMutationSnapshot birthStartSnapshot;
+            bool birtherAliveBefore;
+            bool birthStartCaptured;
+            Pawn completedBirthChild;
+            bool birthCompletionCaptured;
+            BirthChildNamingState birthNamingState;
+            Pawn namedBirthChild;
+            bool birthNamingCaptured;
             try
             {
                 xenotype = DlcContext.Xenotype(pawn);
@@ -149,6 +157,25 @@ namespace PawnDiary.RimTests
                     null,
                     BiotechFamilyHediffKindTokens.Pregnancy,
                     out familyHediff);
+                birthStartCaptured = DlcContext.TryCaptureBirthStart(
+                    pawn,
+                    pawn,
+                    null,
+                    null,
+                    ritualBirth: false,
+                    out birthStartSnapshot,
+                    out birtherAliveBefore);
+                birthCompletionCaptured = DlcContext.TryCompleteBirthSnapshot(
+                    null,
+                    pawn,
+                    pawn,
+                    positivityIndex: 1,
+                    birtherAliveBefore: true,
+                    out completedBirthChild);
+                birthNamingCaptured = DlcContext.TryCaptureBirthChildNaming(
+                    pawn.GetUniqueLoadID(),
+                    out birthNamingState,
+                    out namedBirthChild);
             }
             catch (Exception exception)
             {
@@ -175,8 +202,11 @@ namespace PawnDiary.RimTests
                     && disabledGrowthWorkTypes.Count == 0
                     && !familyChildCaptured && familyChildSnapshot == null
                     && !familyActivityCaptured && familyActivity == null
-                    && !familyHediffCaptured && familyHediff == null,
-                emptyMessage: "Without Biotech, xenotype and growth-snapshot accessors must be empty.");
+                    && !familyHediffCaptured && familyHediff == null
+                    && !birthStartCaptured && birthStartSnapshot == null && !birtherAliveBefore
+                    && !birthCompletionCaptured && completedBirthChild == null
+                    && !birthNamingCaptured && birthNamingState != null && namedBirthChild == null,
+                emptyMessage: "Without Biotech, xenotype, growth, family, and birth accessors must be empty.");
 
             // Royalty (royal title). Inactive -> all three empty; active -> non-null (titleless test pawn).
             RequireDlcBranch(
@@ -208,15 +238,44 @@ namespace PawnDiary.RimTests
         /// assembly even on a base-only run, so this signature check is safe without Biotech active.
         /// </summary>
         [Test]
-        public static void BiotechFamilySetParentsSignatureMatchesRuntime()
+        public static void BiotechFamilyAndBirthSignaturesMatchRuntime()
         {
-            System.Reflection.MethodInfo target = typeof(HediffWithParents).GetMethod(
+            System.Reflection.MethodInfo setParents = typeof(HediffWithParents).GetMethod(
                 "SetParents",
                 new[] { typeof(Pawn), typeof(Pawn), typeof(GeneSet) });
             PawnDiaryRimTestScope.Require(
-                target != null,
+                setParents != null,
                 "RimWorld no longer exposes HediffWithParents.SetParents(Pawn, Pawn, GeneSet); "
                 + "the Biotech family hook must be updated before release.");
+
+            System.Reflection.MethodInfo applyBirth = typeof(PregnancyUtility).GetMethod(
+                "ApplyBirthOutcome",
+                new[]
+                {
+                    typeof(RitualOutcomePossibility),
+                    typeof(float),
+                    typeof(Precept_Ritual),
+                    typeof(List<GeneDef>),
+                    typeof(Pawn),
+                    typeof(Thing),
+                    typeof(Pawn),
+                    typeof(Pawn),
+                    typeof(LordJob_Ritual),
+                    typeof(RitualRoleAssignments),
+                    typeof(bool)
+                });
+            PawnDiaryRimTestScope.Require(
+                applyBirth != null && applyBirth.ReturnType == typeof(Thing),
+                "RimWorld no longer exposes the expected PregnancyUtility.ApplyBirthOutcome signature; "
+                + "the canonical birth owner must fail open until it is updated.");
+
+            System.Reflection.MethodInfo miscarry = typeof(Hediff_Pregnant).GetMethod(
+                "Miscarry",
+                Type.EmptyTypes);
+            PawnDiaryRimTestScope.Require(
+                miscarry != null && miscarry.ReturnType == typeof(void),
+                "RimWorld no longer exposes Hediff_Pregnant.Miscarry(); exact family-loss enrichment "
+                + "must be updated before release.");
         }
 
         /// <summary>

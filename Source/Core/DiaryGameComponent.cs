@@ -294,6 +294,7 @@ namespace PawnDiary
             orphanCandidatesLastScan.Clear();
             ResetBiotechGrowthTransientState();
             ResetBiotechFamilyTransientState();
+            nextBiotechBirthNamingPollTick = 0;
             BootstrapBiotechFamilyArcsForLoadedSave();
             // Do NOT BeginSession here: the constructor already started this Game's session and
             // cancelled any requests left over from a previous Game. Loaded events have had their
@@ -592,6 +593,7 @@ namespace PawnDiary
             FlushReadyInteractionBatches();
             FlushReadyTaleBatches();
             FlushReadyAmbientThoughtNotes();
+            TickPendingBiotechBirths(now);
 
             // Re-baseline each colonist's opinions at the start of every new day, so the reflection
             // can measure how feelings shifted over the day. Cheap: a no-op comparison most ticks.

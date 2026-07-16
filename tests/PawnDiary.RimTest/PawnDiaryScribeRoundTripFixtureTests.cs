@@ -574,6 +574,88 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// A canonical birth waiting on naming keeps exact outcome/participant/writer facts without
+        /// saving any live Pawn, Corpse, letter, ritual, or correlation-scope reference.
+        /// </summary>
+        [Test]
+        public static void PendingBiotechBirthRoundTrips()
+        {
+            PendingBiotechBirthState original = new PendingBiotechBirthState
+            {
+                createdTick = 22000,
+                snapshot = new BirthMutationSnapshot
+                {
+                    familyArcId = "biotech-family|Thing_Birther|Hediff_22",
+                    childId = "Thing_Child",
+                    currentChildName = "Baby 1",
+                    birther = new FamilyParticipantFact
+                    {
+                        pawnId = "Thing_Birther",
+                        displayName = "Ari",
+                        roleToken = BiotechFamilyRoleTokens.Birther,
+                        eligible = true
+                    },
+                    geneticMother = new FamilyParticipantFact
+                    {
+                        pawnId = "Thing_Mother",
+                        displayName = "Bo",
+                        roleToken = BiotechFamilyRoleTokens.GeneticMother,
+                        eligible = true
+                    },
+                    father = new FamilyParticipantFact
+                    {
+                        pawnId = "Thing_Father",
+                        displayName = "Cy",
+                        roleToken = BiotechFamilyRoleTokens.Father,
+                        eligible = true
+                    },
+                    outcomeToken = BiotechBirthOutcomeTokens.Healthy,
+                    methodToken = BiotechBirthMethodTokens.Surrogacy,
+                    ritualBirth = true,
+                    namingDeadline = 82000,
+                    birthTick = 22000,
+                    correlationId = "birth|biotech-family|Thing_Birther|Hediff_22"
+                },
+                writers = new BirthWriterSelection
+                {
+                    writers = new List<BirthWriterFact>
+                    {
+                        new BirthWriterFact
+                        {
+                            pawnId = "Thing_Birther",
+                            displayName = "Ari",
+                            roleToken = BiotechFamilyRoleTokens.Birther
+                        },
+                        new BirthWriterFact
+                        {
+                            pawnId = "Thing_Mother",
+                            displayName = "Bo",
+                            roleToken = BiotechFamilyRoleTokens.GeneticMother
+                        }
+                    }
+                }
+            };
+
+            PendingBiotechBirthState loaded = ScribeRoundTrip(original);
+            Require(loaded.snapshot != null, "pending birth snapshot should survive.");
+            Require(loaded.writers?.writers != null && loaded.writers.writers.Count == 2,
+                "pending birth writers should survive.");
+            AssertStr(original.snapshot.familyArcId, loaded.snapshot.familyArcId,
+                "pending birth family arc");
+            AssertStr(original.snapshot.childId, loaded.snapshot.childId, "pending birth child");
+            AssertStr(BiotechBirthOutcomeTokens.Healthy, loaded.snapshot.outcomeToken,
+                "pending birth outcome");
+            AssertStr(BiotechBirthMethodTokens.Surrogacy, loaded.snapshot.methodToken,
+                "pending birth method");
+            Require(loaded.snapshot.ritualBirth, "pending ritual-birth flag should survive.");
+            AssertInt(82000, loaded.snapshot.namingDeadline, "pending birth naming deadline");
+            AssertStr(BiotechFamilyRoleTokens.Birther, loaded.writers.writers[0].roleToken,
+                "pending first writer role");
+            AssertStr(BiotechFamilyRoleTokens.GeneticMother, loaded.writers.writers[1].roleToken,
+                "pending second writer role");
+        }
+
+        /// <summary>
         /// A family arc keeps stable participant/Hediff IDs, bounded supporter counters, summarized
         /// deltas, growth ages, and compaction state without retaining live Pawn references.
         /// </summary>

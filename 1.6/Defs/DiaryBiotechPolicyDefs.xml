@@ -86,6 +86,7 @@
     <familyArcRetentionTicks>3600000</familyArcRetentionTicks>
     <birthNamingPollTicks>2500</birthNamingPollTicks>
     <birthNamingGraceTicks>60000</birthNamingGraceTicks>
+    <birthCorrelationExpiryTicks>2500</birthCorrelationExpiryTicks>
     <maximumBirthWriters>2</maximumBirthWriters>
   </PawnDiary.DiaryBiotechPolicyDef>
 </Defs>

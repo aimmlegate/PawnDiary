@@ -1,11 +1,11 @@
 # Pawn Diary — Biotech Support Implementation Plan
 
-> **Status:** Phases 0–2 plus Narrative N2-B implemented in Master Wave 3, 2026-07-16. Canonical age-7/10/13 growth
+> **Status:** Phases 0–3 plus Narrative N2-B implemented in Master Wave 3, 2026-07-16. Canonical age-7/10/13 growth
 > observation, postponed-choice persistence, auto resolution, ordinary Birthday fallback, progression
 > consumption, saved family arcs, exact lesson/play evidence, truthful child/supporter writer shapes,
-> and source-owned N1 identity evidence are live and no-DLC-safe. N2-B adds bounded exact family/current
-> visible identity lenses through the shared fixed provider list. Canonical birth/naming is now the next
-> permitted slice (Phase 3).
+> canonical birth/naming ownership, mature-source arbitration, and source-owned N1 evidence are live and
+> no-DLC-safe. N2-B adds bounded exact family/current visible identity lenses through the shared fixed
+> provider list. B1 compatibility and release hardening is now the next permitted slice (Phase 4).
 >
 > **Scheduling authority:** implement Biotech phases only in the waves assigned by
 > `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Biotech.
@@ -1626,6 +1626,12 @@ and missing-correlation tests all produce zero/one correct page.
 
 ### Phase 2 — Family state and growth supporter POV
 
+> **Implementation status (2026-07-15): complete.** Deep-scribed stable-ID family arcs observe exact
+> pregnancy/labor, BabyPlay, lesson, and accepted lesson-memory facts before page settings; old saves
+> baseline only current visible child/parent state. Deterministic supporter selection drives child solo,
+> supporter solo, or pair growth pages, while bounded retention and hot/archive replay checks preserve
+> exact ownership without inventing past upbringing.
+
 1. Add saved family arcs and old-save baseline bootstrap.
 2. Observe pregnancy/labor and append family IDs to existing contexts.
 3. Observe exact `BabyPlay`/`Lesson*` pairs independently of teaching settings.
@@ -1636,6 +1642,16 @@ Exit gate: SpeakUp-loaded/teaching-disabled observation still enriches a later g
 ordinary lesson pages remain governed by existing settings.
 
 ### Phase 3 — Canonical birth and naming
+
+> **Implementation status (2026-07-16): complete.** The exact RimWorld 1.6
+> `PregnancyUtility.ApplyBirthOutcome` boundary now opens a stack-safe correlation scope, stages mature
+> Tale/Thought sources, reserves the exact later ritual owner, resolves exact child/corpse outcome and birth method, attaches the family
+> arc, and selects at most two unique adult writers. Detached pending naming rows normalize and round-trip,
+> poll the current child/corpse name, preserve the original birth tick, and reject hot/archive replay by
+> exact family+child identity. Disabled, invalid, missing-hook, writerless, and thrown ownership fail open;
+> exact miscarriage closes/enriches the matched arc while unexplained hediff disappearance remains silent
+> `ended_unknown`. Pure policy/XML tests, Scribe/no-DLC/signature fixtures, and loaded-component birth flow
+> coverage exercise the automated boundary; the live childbirth/naming acceptance matrix remains Phase 4.
 
 1. Add birth correlation scope and staged secondary signals.
 2. Add `FamilyBirthEventData`/Signal and writer selection.

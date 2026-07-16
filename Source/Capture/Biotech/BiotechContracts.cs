@@ -4,6 +4,7 @@
 // partial declarations add Scribe only in Source/Models, keeping this file standalone-test friendly.
 //
 // New to C#/RimWorld? See AGENTS.md ("architecture barriers" and "DLC-safety").
+using System;
 using System.Collections.Generic;
 
 namespace PawnDiary.Capture
@@ -52,6 +53,7 @@ namespace PawnDiary.Capture
         public const string SupporterRole = "supporter_role";
         public const string InitiatorFamilyRole = "initiator_family_role";
         public const string RecipientFamilyRole = "recipient_family_role";
+        public const string FamilyStage = "family_stage";
         public const string BirthOutcome = "birth_outcome";
         public const string BirthMethod = "birth_method";
         public const string ChildName = "child_name";
@@ -195,6 +197,20 @@ namespace PawnDiary.Capture
         public const string Healthy = "healthy";
         public const string InfantIllness = "infant_illness";
         public const string Stillbirth = "stillbirth";
+
+        /// <summary>Maps the exact returned Thing shape and vanilla outcome index to a stable token.</summary>
+        public static string FromCanonicalResult(bool returnedCorpse, int positivityIndex)
+        {
+            if (returnedCorpse) return Stillbirth;
+            if (positivityIndex == 0) return InfantIllness;
+            return positivityIndex > 0 ? Healthy : string.Empty;
+        }
+
+        /// <summary>Returns true only for an outcome observed at ApplyBirthOutcome.</summary>
+        public static bool IsKnown(string value)
+        {
+            return value == Healthy || value == InfantIllness || value == Stillbirth;
+        }
     }
 
     /// <summary>Exact birth-method tokens; unknown methods remain empty rather than guessed.</summary>
@@ -203,6 +219,34 @@ namespace PawnDiary.Capture
         public const string Pregnancy = "pregnancy";
         public const string Surrogacy = "surrogacy";
         public const string GrowthVat = "growth_vat";
+
+        /// <summary>Maps exact vat and participant identities without reading a live Pawn/Thing.</summary>
+        public static string FromCanonicalParticipants(
+            bool growthVat,
+            string birtherId,
+            string geneticMotherId)
+        {
+            if (growthVat) return GrowthVat;
+            string birther = (birtherId ?? string.Empty).Trim();
+            string mother = (geneticMotherId ?? string.Empty).Trim();
+            return birther.Length > 0 && mother.Length > 0
+                && !string.Equals(birther, mother, StringComparison.Ordinal)
+                ? Surrogacy
+                : Pregnancy;
+        }
+
+        /// <summary>Returns true only for an exact birth route supported by B1.</summary>
+        public static bool IsKnown(string value)
+        {
+            return value == Pregnancy || value == Surrogacy || value == GrowthVat;
+        }
+    }
+
+    /// <summary>Exact non-birth endings for an observed pregnancy family arc.</summary>
+    internal static class BiotechFamilyEndTokens
+    {
+        public const string Loss = "loss";
+        public const string EndedUnknown = "ended_unknown";
     }
 
     /// <summary>One trait identity copied on the main thread.</summary>
@@ -319,6 +363,7 @@ namespace PawnDiary.Capture
         public int familyArcRetentionTicks = 3600000;
         public int birthNamingPollTicks = 2500;
         public int birthNamingGraceTicks = 60000;
+        public int birthCorrelationExpiryTicks = 2500;
         public int maximumBirthWriters = 2;
         public string newInterestDescription = string.Empty;
         public string deepenedInterestDescription = string.Empty;
@@ -488,7 +533,7 @@ namespace PawnDiary.Capture
     }
 
     /// <summary>Exact participant fact; eligibility is captured before pure writer selection.</summary>
-    internal class FamilyParticipantFact
+    internal partial class FamilyParticipantFact
     {
         public string pawnId = string.Empty;
         public string displayName = string.Empty;
@@ -497,7 +542,7 @@ namespace PawnDiary.Capture
     }
 
     /// <summary>Canonical event-time birth snapshot. Distinct roles remain distinct even for one pawn.</summary>
-    internal class BirthMutationSnapshot
+    internal partial class BirthMutationSnapshot
     {
         public string familyArcId = string.Empty;
         public string childId = string.Empty;
@@ -518,7 +563,7 @@ namespace PawnDiary.Capture
     }
 
     /// <summary>One selected birth writer in deterministic role-certainty order.</summary>
-    internal class BirthWriterFact
+    internal partial class BirthWriterFact
     {
         public string pawnId = string.Empty;
         public string displayName = string.Empty;
@@ -526,8 +571,28 @@ namespace PawnDiary.Capture
     }
 
     /// <summary>At most two adult birth writers; the child is always the subject, never a writer.</summary>
-    internal class BirthWriterSelection
+    internal partial class BirthWriterSelection
     {
         public List<BirthWriterFact> writers = new List<BirthWriterFact>();
+    }
+
+    /// <summary>
+    /// Saved ownership of a canonical birth while the child's final/current name is still pending.
+    /// It contains detached facts only; live Pawn/Thing references are resolved again at flush time.
+    /// </summary>
+    internal partial class PendingBiotechBirthState
+    {
+        public BirthMutationSnapshot snapshot;
+        public BirthWriterSelection writers;
+        public int createdTick;
+    }
+
+    /// <summary>Detached current naming state read from a live newborn or stillborn child's corpse.</summary>
+    internal class BirthChildNamingState
+    {
+        public bool found;
+        public string childName = string.Empty;
+        public int namingDeadline;
+        public bool dead;
     }
 }

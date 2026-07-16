@@ -160,6 +160,185 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Biotech: snapshots exact adult participants before ApplyBirthOutcome begins. Eligibility is
+        /// frozen here so pure writer selection never needs a live Pawn or settings object.
+        /// </summary>
+        public static bool TryCaptureBirthStart(
+            Pawn geneticMother,
+            Thing birtherThing,
+            Pawn father,
+            Pawn doctor,
+            bool ritualBirth,
+            out BirthMutationSnapshot snapshot,
+            out bool birtherAliveBefore)
+        {
+            snapshot = null;
+            birtherAliveBefore = false;
+            if (!ModsConfig.BiotechActive || birtherThing == null)
+            {
+                return false;
+            }
+
+            Pawn birther = birtherThing as Pawn;
+            birtherAliveBefore = birther != null && !birther.Dead;
+            BirthMutationSnapshot captured = new BirthMutationSnapshot
+            {
+                birther = BirthParticipant(birther, BiotechFamilyRoleTokens.Birther),
+                geneticMother = BirthParticipant(geneticMother, BiotechFamilyRoleTokens.GeneticMother),
+                father = BirthParticipant(father, BiotechFamilyRoleTokens.Father),
+                doctor = BirthParticipant(doctor, "doctor"),
+                ritualBirth = ritualBirth,
+                birthTick = Find.TickManager?.TicksGame ?? 0
+            };
+
+            // A growth vat can have no adult birther. At least one exact adult or the exact vat route
+            // must still exist before this call is useful to family correlation.
+            if (captured.birther == null && captured.geneticMother == null && captured.father == null
+                && !(birtherThing is Building_GrowthVat))
+            {
+                return false;
+            }
+
+            snapshot = captured;
+            return true;
+        }
+
+        /// <summary>
+        /// Biotech: completes a detached birth snapshot from the exact returned child/corpse and the
+        /// already-applied participant state. No live object escapes except the immediate child output.
+        /// </summary>
+        public static bool TryCompleteBirthSnapshot(
+            BirthMutationSnapshot snapshot,
+            Thing result,
+            Thing birtherThing,
+            int positivityIndex,
+            bool birtherAliveBefore,
+            out Pawn child)
+        {
+            child = null;
+            if (!ModsConfig.BiotechActive || snapshot == null || result == null)
+            {
+                return false;
+            }
+
+            child = result as Pawn;
+            Corpse corpse = result as Corpse;
+            if (child == null)
+            {
+                child = corpse?.InnerPawn;
+            }
+
+            if (child == null || child.RaceProps == null || !child.RaceProps.Humanlike)
+            {
+                return false;
+            }
+
+            string childId = FamilyPawnId(child);
+            if (childId.Length == 0)
+            {
+                return false;
+            }
+
+            bool stillbirth = corpse != null;
+            snapshot.childId = childId;
+            snapshot.currentChildName = FamilyPawnName(child);
+            snapshot.outcomeToken = BiotechBirthOutcomeTokens.FromCanonicalResult(
+                stillbirth,
+                positivityIndex);
+            if (!BiotechBirthOutcomeTokens.IsKnown(snapshot.outcomeToken))
+            {
+                return false;
+            }
+
+            Pawn birther = birtherThing as Pawn;
+            snapshot.methodToken = BiotechBirthMethodTokens.FromCanonicalParticipants(
+                birtherThing is Building_GrowthVat,
+                FamilyPawnId(birther),
+                snapshot.geneticMother?.pawnId);
+            snapshot.birtherDied = birtherAliveBefore && birther != null && birther.Dead;
+            snapshot.namingDeadline = child.babyNamingDeadline;
+            snapshot.namingResolved = child.babyNamingDeadline == -1;
+            snapshot.birthTick = Find.TickManager?.TicksGame ?? snapshot.birthTick;
+            return true;
+        }
+
+        /// <summary>
+        /// Biotech: resolves a saved newborn ID to its current name/deadline, including a stillborn
+        /// pawn held inside a map corpse. Missing is a normal result after despawn or mod removal.
+        /// </summary>
+        public static bool TryCaptureBirthChildNaming(
+            string childId,
+            out BirthChildNamingState state,
+            out Pawn child)
+        {
+            state = new BirthChildNamingState();
+            child = null;
+            if (!ModsConfig.BiotechActive || string.IsNullOrWhiteSpace(childId))
+            {
+                return false;
+            }
+
+            string id = childId.Trim();
+            if (Find.Maps != null)
+            {
+                for (int mapIndex = 0; mapIndex < Find.Maps.Count && child == null; mapIndex++)
+                {
+                    Map map = Find.Maps[mapIndex];
+                    List<Pawn> pawns = map?.mapPawns?.AllPawns;
+                    if (pawns != null)
+                    {
+                        for (int i = 0; i < pawns.Count; i++)
+                        {
+                            Pawn candidate = pawns[i];
+                            if (candidate != null && candidate.GetUniqueLoadID() == id)
+                            {
+                                child = candidate;
+                                break;
+                            }
+                        }
+                    }
+
+                    List<Thing> corpses = map?.listerThings?.ThingsInGroup(ThingRequestGroup.Corpse);
+                    if (child == null && corpses != null)
+                    {
+                        for (int i = 0; i < corpses.Count; i++)
+                        {
+                            Pawn candidate = (corpses[i] as Corpse)?.InnerPawn;
+                            if (candidate != null && candidate.GetUniqueLoadID() == id)
+                            {
+                                child = candidate;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (child == null && Find.WorldPawns?.AllPawnsAlive != null)
+            {
+                foreach (Pawn candidate in Find.WorldPawns.AllPawnsAlive)
+                {
+                    if (candidate != null && candidate.GetUniqueLoadID() == id)
+                    {
+                        child = candidate;
+                        break;
+                    }
+                }
+            }
+
+            if (child == null)
+            {
+                return false;
+            }
+
+            state.found = true;
+            state.childName = FamilyPawnName(child);
+            state.namingDeadline = child.babyNamingDeadline;
+            state.dead = child.Dead;
+            return true;
+        }
+
+        /// <summary>
         /// Biotech: copies one living player baby/child and exact Parent/ParentBirth relations. This
         /// is used both when growth occurs and for the silent one-time baseline of older saves.
         /// </summary>
@@ -293,6 +472,23 @@ namespace PawnDiary
         private static string FamilyPawnName(Pawn pawn)
         {
             return pawn == null ? string.Empty : DiaryLineCleaner.CleanLine(pawn.LabelShortCap);
+        }
+
+        private static FamilyParticipantFact BirthParticipant(Pawn pawn, string roleToken)
+        {
+            string pawnId = FamilyPawnId(pawn);
+            if (pawnId.Length == 0)
+            {
+                return null;
+            }
+
+            return new FamilyParticipantFact
+            {
+                pawnId = pawnId,
+                displayName = FamilyPawnName(pawn),
+                roleToken = roleToken,
+                eligible = DiaryGameComponent.IsDiaryEligible(pawn)
+            };
         }
 
         private static void CaptureGrowthTraits(Pawn pawn, List<GrowthTraitFact> destination)

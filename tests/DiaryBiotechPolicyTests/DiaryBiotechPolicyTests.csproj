@@ -15,5 +15,6 @@
     <Compile Include="..\..\Source\Capture\Biotech\FamilySupportPolicy.cs" Link="FamilySupportPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\FamilyArcPolicy.cs" Link="FamilyArcPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\BirthOwnershipPolicy.cs" Link="BirthOwnershipPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Biotech\BirthRecordPolicy.cs" Link="BirthRecordPolicy.cs" />
   </ItemGroup>
 </Project>

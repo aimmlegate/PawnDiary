@@ -228,6 +228,113 @@ namespace PawnDiary.Capture
             return arc;
         }
 
+        /// <summary>
+        /// Attaches one exact ApplyBirthOutcome result to a unique open pregnancy arc, or creates the
+        /// frozen child-keyed fallback when no unique match exists. The arc key never changes afterward.
+        /// </summary>
+        public static BiotechFamilyArcState AttachBirth(
+            List<BiotechFamilyArcState> arcs,
+            BirthMutationSnapshot snapshot,
+            int maximumSupporterRows,
+            out bool alreadyAttached)
+        {
+            alreadyAttached = false;
+            if (arcs == null || snapshot == null || !ValidId(snapshot.childId)
+                || !BiotechBirthOutcomeTokens.IsKnown(snapshot.outcomeToken)
+                || !BiotechBirthMethodTokens.IsKnown(snapshot.methodToken))
+            {
+                return null;
+            }
+
+            BiotechFamilyArcState arc = FindByChild(arcs, snapshot.childId);
+            if (arc == null)
+            {
+                arc = FindUniqueBirthArc(arcs, snapshot);
+            }
+
+            if (arc == null)
+            {
+                string arcId = BiotechArcKeys.FamilyFromChild(snapshot.childId);
+                if (arcId.Length == 0)
+                {
+                    return null;
+                }
+
+                arc = new BiotechFamilyArcState
+                {
+                    familyArcId = arcId,
+                    openedTick = Math.Max(0, snapshot.birthTick)
+                };
+                arcs.Add(arc);
+            }
+
+            alreadyAttached = BiotechBirthOutcomeTokens.IsKnown(arc.birthOutcomeToken)
+                && string.Equals(arc.childId, snapshot.childId.Trim(), StringComparison.Ordinal);
+            snapshot.familyArcId = arc.familyArcId;
+            if (alreadyAttached)
+            {
+                // A repeated/modded ApplyBirthOutcome call may carry changed live state. The first
+                // exact canonical attachment owns historical birth truth; replay checks decide only
+                // whether its already-recorded/pending page should consume the repeated mature rows.
+                return arc;
+            }
+
+            arc.childId = snapshot.childId.Trim();
+            arc.childNameAtBirth = PreferValue(arc.childNameAtBirth, snapshot.currentChildName);
+            arc.currentChildName = PreferValue(snapshot.currentChildName, arc.currentChildName);
+            CopyBirthParticipant(ref arc.birtherId, ref arc.birtherName, snapshot.birther);
+            CopyBirthParticipant(ref arc.geneticMotherId, ref arc.geneticMotherName, snapshot.geneticMother);
+            CopyBirthParticipant(ref arc.fatherId, ref arc.fatherName, snapshot.father);
+            arc.birthTick = Math.Max(arc.birthTick, Math.Max(0, snapshot.birthTick));
+            arc.lastObservedTick = Math.Max(arc.lastObservedTick, Math.Max(0, snapshot.birthTick));
+            arc.birthOutcomeToken = snapshot.outcomeToken;
+            arc.birthMethodToken = snapshot.methodToken;
+            arc.namingResolved |= snapshot.namingResolved;
+            arc.closed = true;
+            arc.baselineOnly = false;
+            arc.detailsCompacted = false;
+
+            AddBirthSupporter(arc, snapshot.birther, BiotechFamilyRoleTokens.BirthParent, snapshot.birthTick);
+            AddBirthSupporter(arc, snapshot.geneticMother, BiotechFamilyRoleTokens.Parent, snapshot.birthTick);
+            AddBirthSupporter(arc, snapshot.father, BiotechFamilyRoleTokens.Parent, snapshot.birthTick);
+            arc.supporters = NormalizeSupporters(arc.supporters, Math.Max(1, maximumSupporterRows));
+            return arc;
+        }
+
+        /// <summary>Finds the exact arc opened by one pregnancy/labor Hediff ID.</summary>
+        public static BiotechFamilyArcState FindArcByHediff(
+            List<BiotechFamilyArcState> arcs,
+            string hediffId)
+        {
+            return arcs == null ? null : FindByHediff(arcs, hediffId);
+        }
+
+        /// <summary>Closes an exact miscarried arc without turning the loss into a birth.</summary>
+        public static void ClosePregnancyLoss(BiotechFamilyArcState arc, int observedTick)
+        {
+            if (arc == null)
+            {
+                return;
+            }
+
+            arc.closed = true;
+            arc.birthOutcomeToken = BiotechFamilyEndTokens.Loss;
+            arc.lastObservedTick = Math.Max(arc.lastObservedTick, Math.Max(0, observedTick));
+        }
+
+        /// <summary>Silently closes a disappeared unresolved arc without guessing miscarriage or termination.</summary>
+        public static void CloseUnknown(BiotechFamilyArcState arc, int observedTick)
+        {
+            if (arc == null || arc.closed || arc.birthTick > 0)
+            {
+                return;
+            }
+
+            arc.closed = true;
+            arc.birthOutcomeToken = BiotechFamilyEndTokens.EndedUnknown;
+            arc.lastObservedTick = Math.Max(arc.lastObservedTick, Math.Max(0, observedTick));
+        }
+
         /// <summary>Records one exact lesson/play observation and returns its child family arc.</summary>
         public static BiotechFamilyArcState ObserveActivity(
             List<BiotechFamilyArcState> arcs,
@@ -473,6 +580,18 @@ namespace PawnDiary.Capture
             arc.fatherName = Clean(arc.fatherName);
             arc.childNameAtBirth = Clean(arc.childNameAtBirth);
             arc.currentChildName = Clean(arc.currentChildName);
+            arc.birthOutcomeToken = Clean(arc.birthOutcomeToken);
+            if (!BiotechBirthOutcomeTokens.IsKnown(arc.birthOutcomeToken)
+                && arc.birthOutcomeToken != BiotechFamilyEndTokens.Loss
+                && arc.birthOutcomeToken != BiotechFamilyEndTokens.EndedUnknown)
+            {
+                arc.birthOutcomeToken = string.Empty;
+            }
+            arc.birthMethodToken = Clean(arc.birthMethodToken);
+            if (!BiotechBirthMethodTokens.IsKnown(arc.birthMethodToken))
+            {
+                arc.birthMethodToken = string.Empty;
+            }
             arc.openedTick = ClampTick(arc.openedTick, currentTick);
             arc.birthTick = ClampTick(arc.birthTick, currentTick);
             arc.lastObservedTick = ClampTick(arc.lastObservedTick, currentTick);
@@ -695,6 +814,93 @@ namespace PawnDiary.Capture
                 if (best == null || arc.lastObservedTick > best.lastObservedTick) best = arc;
             }
             return best;
+        }
+
+        private static BiotechFamilyArcState FindUniqueBirthArc(
+            List<BiotechFamilyArcState> arcs,
+            BirthMutationSnapshot snapshot)
+        {
+            string birtherId = ParticipantId(snapshot.birther);
+            if (birtherId.Length == 0)
+            {
+                return null;
+            }
+
+            string motherId = ParticipantId(snapshot.geneticMother);
+            string fatherId = ParticipantId(snapshot.father);
+            BiotechFamilyArcState best = null;
+            int bestTick = -1;
+            bool ambiguous = false;
+            for (int i = 0; i < arcs.Count; i++)
+            {
+                BiotechFamilyArcState arc = arcs[i];
+                if (arc == null || arc.closed || !string.IsNullOrWhiteSpace(arc.childId)
+                    || !string.Equals(arc.birtherId, birtherId, StringComparison.Ordinal)
+                    || !SameWhenKnown(arc.geneticMotherId, motherId)
+                    || !SameWhenKnown(arc.fatherId, fatherId))
+                {
+                    continue;
+                }
+
+                int candidateTick = Math.Max(arc.openedTick, arc.lastObservedTick);
+                if (candidateTick > bestTick)
+                {
+                    best = arc;
+                    bestTick = candidateTick;
+                    ambiguous = false;
+                }
+                else if (candidateTick == bestTick)
+                {
+                    ambiguous = true;
+                }
+            }
+
+            return ambiguous ? null : best;
+        }
+
+        private static void CopyBirthParticipant(
+            ref string targetId,
+            ref string targetName,
+            FamilyParticipantFact participant)
+        {
+            if (participant == null)
+            {
+                return;
+            }
+
+            Prefer(ref targetId, participant.pawnId);
+            Prefer(ref targetName, participant.displayName);
+        }
+
+        private static void AddBirthSupporter(
+            BiotechFamilyArcState arc,
+            FamilyParticipantFact participant,
+            string relationToken,
+            int observedTick)
+        {
+            if (participant == null || !ValidId(participant.pawnId))
+            {
+                return;
+            }
+
+            UpsertSupporter(
+                arc,
+                participant.pawnId,
+                participant.displayName,
+                relationToken,
+                0,
+                Math.Max(0, observedTick));
+        }
+
+        private static string ParticipantId(FamilyParticipantFact participant)
+        {
+            return Clean(participant?.pawnId);
+        }
+
+        private static string PreferValue(string preferred, string fallback)
+        {
+            string value = Clean(preferred);
+            return value.Length > 0 ? value : Clean(fallback);
         }
 
         private static void CopyHediffParticipants(BiotechFamilyArcState arc, FamilyHediffSnapshot snapshot)
