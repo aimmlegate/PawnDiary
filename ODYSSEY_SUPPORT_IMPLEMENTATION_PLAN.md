@@ -1,8 +1,10 @@
 # Pawn Diary — Odyssey Support Implementation Plan
 
-Status: scope-review draft; the RimWorld 1.6 journey/landing feasibility spike is complete, later
-life-support and Mechhive hooks still require their own spikes, and this file changes no production
-behavior.
+Status: Phases O1.0-O1.1 completed on 2026-07-17 against RimWorld 1.6.4871. The frozen contracts now
+have an assembly-free pure policy implementation and 88 passing assertions, but no production
+behavior changed. This was started as a user-directed scheduling exception while five Biotech Phase
+4 manual acceptance rows remain open. O1.2 is the next Odyssey implementation slice; later
+life-support and Mechhive hooks still require their own spikes.
 
 Scheduling authority: implement Odyssey phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Odyssey.
@@ -276,9 +278,9 @@ Defs. Exact signatures must be re-checked immediately before implementation.
 - `GravshipUtility.TravelTo` is public static and is the preferred commit seam. It means vanilla
   actually converted the captured ship into a travelling world object.
 - `Gravship` exposes `Engine`, `Pawns`, `Label`, `destinationTile`, and a stable world-object ID.
-- `Building_GravEngine` keeps private launch information with pilot, copilot, quality, and a
-  negative-outcome flag. Access is optional and must fail soft; journey capture cannot depend on
-  every private field remaining available.
+- `Building_GravEngine.launchInfo` is currently a public `LaunchInfo` field whose `pilot`, `copilot`,
+  `quality`, and `doNegativeOutcome` fields are also public. Treat this as optional version-fragile
+  input anyway: journey capture must fail soft and cannot depend on every field remaining available.
 
 Do not patch private `TakeoffEnded` merely to learn that travel committed. The public `TravelTo`
 call is narrower and more resilient.
@@ -968,6 +970,11 @@ and `CHANGELOG.md`, runs relevant tests, builds Debug, and stages the rebuilt DL
 
 ### Phase O1.0 — Freeze contracts and re-check signatures
 
+> **Implementation status (2026-07-17): complete; documentation/contracts only.** Rechecked the
+> installed RimWorld 1.6.4871 assembly and Odyssey Defs, corrected the launch-info visibility note,
+> and froze the O1 names, save keys, arc grammar, schema tokens, ownership, and old-save behavior
+> below. No C#, XML Def, save field, settings row, Harmony patch, or page behavior was added.
+
 1. Re-read current code through CodeGraph.
 2. Re-check exact installed method signatures and private field names.
 3. Confirm the package gate and no-DLC settings behavior.
@@ -977,11 +984,115 @@ and `CHANGELOG.md`, runs relevant tests, builds Debug, and stages the rebuilt DL
 
 Exit: reviewers agree on event ownership, contracts, and saved tokens.
 
+#### O1.0 frozen contract registry
+
+These spellings are schema/save compatibility. Later phases may add fields or tokens, but must not
+rename or reinterpret these once production state exists.
+
+**DLC identity and policy names**
+
+- package ID: `Ludeon.RimWorld.Odyssey`;
+- live gate: `ModsConfig.OdysseyActive`;
+- policy Def name: `Diary_Odyssey`;
+- existing launch group: `ritualGravship`;
+- new landing group: `odysseyGravshipLanding`;
+- new group domain / event type: `GravshipJourney`;
+- synthetic landing event Def name: `OdysseyGravshipLanding`.
+
+The new landing group must use `enableWhenPackageIdsLoaded=Ludeon.RimWorld.Odyssey`. The existing
+`ritualGravship` group is not package-gated today; O1.4 owns adding that gate together with its
+departure-only wording so a base-only settings screen becomes clean in the same behavioral slice.
+
+**Additive component save keys**
+
+- `odysseyActiveJourney` — nullable `OdysseyJourneyState` for the one committed trip;
+- `odysseyTravelHistory` — non-null `OdysseyTravelHistoryState` containing initialization/trust,
+  bounded novelty history, homes, timestamps, and emitted-journey IDs.
+
+Each saved model owns its internal `schemaVersion`; O1 does not add a third component-level version
+key. Missing keys mean a pre-feature save and enter the silent baseline described below.
+
+**Identity and dedup grammar**
+
+- journey ID and shared Narrative Continuity arc key:
+  `odyssey-journey|<shipStableId>|<departureTick>`;
+- landing ownership/dedup key:
+  `odyssey-landing|<shipStableId>|<departureTick>`.
+
+`shipStableId` prefers the travelling `Gravship` load ID and falls back to the engine load ID only
+when the world object is unavailable. It is trimmed and rejected if blank or if it contains `|`.
+`departureTick` is the non-negative `TravelTo` commit tick. The journey ID already is the arc key;
+never wrap it in a second `odyssey-journey|...` prefix.
+
+**Stable structured tokens**
+
+- narrative phases: `departed`, `arrived`, `returned`;
+- landing reasons: `first_orbit`, `new_biome_category`, `major_destination`, `homecoming`,
+  `long_journey`, `rough_landing`;
+- POV roles: `pilot`, `copilot`, `crew`;
+- destination layers: `surface`, `orbit`, `unknown`;
+- duration bands: `short`, `ordinary`, `long`;
+- launch-quality bands: `poor`, `ordinary`, `excellent`, `unknown`.
+
+Reason priority, thresholds, mappings, and quality/duration cutoffs remain XML policy in O1.1/O1.2;
+only the token spellings are frozen here. The prompt schema keys in §15.3 are likewise frozen.
+
+**Installed 1.6.4871 signatures reconfirmed**
+
+- `RitualOutcomeEffectWorker_GravshipLaunch.Apply(float progress, Dictionary<Pawn,int>
+  totalPresence, LordJob_Ritual jobRitual)`;
+- `Verse.WorldComponent_GravshipController.InitiateTakeoff(Building_GravEngine engine,
+  PlanetTile targetTile)`;
+- `RimWorld.GravshipUtility.TravelTo(Gravship gravship, PlanetTile oldTile,
+  PlanetTile newTile)`;
+- `Verse.WorldComponent_GravshipController.InitiateLanding(Gravship gravship, Map map,
+  IntVec3 landingPos, Rot4 landingRot)`;
+- private instance `Verse.WorldComponent_GravshipController.LandingEnded()` with zero parameters;
+- `LandingOutcomeWorker.ApplyOutcome(Gravship gravship)` remains public virtual and all four shipped
+  outcome workers override it;
+- `Gravship.TickInterval(int delta)` remains protected virtual and is not an O1 patch target.
+
+Reconfirmed supporting state: `WorldComponent_GravshipController.gravship` is private,
+`landingMap` is public, `Gravship.destinationTile` is public, `Gravship.Engine`, `Pawns`, and `Label`
+are public getters, `Game.Gravship` is a public property, and the launch-info fields listed in §6.2
+are public in this build. `LandingEnded` still requires defensive manual registration and one warning
+on lookup failure.
+
+**Frozen old-save semantics**
+
+1. Missing Odyssey keys initialize history without emitting a departure, landing, or catch-up page.
+2. The first baseline sets `historyInitialized=true` and
+   `historyTrustworthyForFirstClaims=false`, then stores only currently visible ship/location/home
+   facts.
+3. A ship already travelling becomes an incomplete active-journey baseline. Its later landing may
+   qualify only from exact event-local reasons such as a mapped major destination or verified rough
+   landing—not `first_orbit`, `new_biome_category`, or invented departure history.
+4. History becomes trustworthy for future first/new comparisons only after one post-feature
+   `TravelTo` commit establishes the relevant baseline.
+5. A missing/invalid hook, ship ID, or destination fails open to vanilla and creates no partial state
+   or page.
+
+**Frozen page ownership**
+
+- launch ritual: existing Ritual route only;
+- takeoff intent, `TravelTo`, and landing start: state only, no page;
+- successful `LandingEnded`: the sole `GravshipJourney` landing owner;
+- landing outcome: context on that landing, never a second page;
+- `TileSettled`: no Pawn Diary owner;
+- quest acceptance/completion/failure: existing Quest route.
+
 O1.0–O1.1 may proceed beside Narrative Continuity N0. Narrative Continuity N1 must land before O1.2
 adds persistence/prompt context, and the Odyssey provider/emissions join Narrative Continuity N2 with
 Biotech B1 where practical.
 
 ### Phase O1.1 — Pure policy and tests
+
+> **Implementation status (2026-07-17): complete; pure policy only.** Added detached contracts and
+> exact location classification, deterministic two-writer selection, launch-quality/duration bands,
+> landing reason/cooldown planning, bounded idempotent history mutation, silent old-save baselining,
+> and prompt-safe bounded context. `DiaryOdysseyPolicyTests` passes 88 assertions without
+> RimWorld/Verse/Unity references. No Def, save field, settings row, Harmony patch, or page behavior
+> was added; O1.2 is next.
 
 1. Add plain contracts.
 2. Add XML snapshot/fallback projection for tests.

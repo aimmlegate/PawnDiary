@@ -53,7 +53,7 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, DLC-safe live reads. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, and the DLC-neutral Narrative Continuity contracts/selector/reflection policy. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, and the inert Odyssey O1.1 journey/location/history/writer/context policy. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
@@ -2156,6 +2156,10 @@ Never rename a key "for cleanliness" alone.
   DLL's assembly version (currently `2.4.1.0` in this checkout). It ships **only**
   `PawnDiary.dll` — it must never bundle `0Harmony.dll` in `1.6/Assemblies/`.
 - No paid DLC is required. Optional DLC data must no-op cleanly when absent.
+- Odyssey O1.0-O1.1 is currently an inert foundation: schema/save token spellings and installed
+  1.6.4871 signatures are frozen, and pure detached location, landing-reason, history, writer, and
+  bounded-context policy exists under `Source/Pipeline/`. It adds no Def, save field, settings row,
+  Harmony patch, or page source yet. O1.2 owns the first guarded live context and persistence layer.
 - DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks. This
   includes Biotech growth trait/skill/work-disabled snapshots and Ideology precept/role reads used by
   body-mod stance policy; other code consumes plain detached rows, labels, defNames, or booleans.
@@ -2248,6 +2252,7 @@ dotnet run --project tests/DiarySaveNormalizationTests/DiarySaveNormalizationTes
 dotnet run --project tests/DiaryObservedConditionTests/DiaryObservedConditionTests.csproj
 dotnet run --project tests/NarrativeContinuityTests/NarrativeContinuityTests.csproj
 dotnet run --project tests/DiaryBiotechPolicyTests/DiaryBiotechPolicyTests.csproj
+dotnet run --project tests/DiaryOdysseyPolicyTests/DiaryOdysseyPolicyTests.csproj
 dotnet run --project tests/SpeakUpBridgeLogicTests/SpeakUpBridgeLogicTests.csproj
 dotnet run --project tests/RimpsycheBridgeLogicTests/RimpsycheBridgeLogicTests.csproj
 dotnet run --project tests/PowerfulAiBridgeLogicTests/PowerfulAiBridgeLogicTests.csproj

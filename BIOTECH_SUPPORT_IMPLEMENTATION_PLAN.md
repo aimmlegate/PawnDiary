@@ -17,6 +17,10 @@
 > no-DLC-safe. N2-B adds bounded exact family/current visible identity lenses through the shared fixed
 > provider list.
 >
+> **Acceptance update (2026-07-17):** all existing automated suites are reported passing. Manual
+> rows 1, 2, 5, 6, and 8 are user-confirmed passes; rows 3, 4, 7, 9, and 10 remain TODOs in
+> `tests/SAVE_COMPATIBILITY_SMOKETEST.md`. Phase 4 therefore remains open.
+>
 > **Review follow-ups (2026-07-16):** pending-birth/arc maintenance now runs without the DLC (a
 > Biotech-removed save flushes frozen birth pages after grace and keeps pruning arcs, matching the
 > growth side); pending growth ownership no longer tick-expires while the pawn's growth letter is
@@ -1702,8 +1706,9 @@ writer, naming before/after save, disabled canonical group, and thrown-owner tes
 > recovery. The second runner pass reached 191/193 and proved the B1 event needed an explicit
 > `tale=BiotechFamilyBirth` marker to select the important template; that route and the loaded template
 > contract are now both pinned. Rerun with one active Pawn
-> Diary copy, then run and record the remaining
-> `tests/SAVE_COMPATIBILITY_SMOKETEST.md` rows before marking this phase complete.
+> Diary copy completed with all existing automated suites reported passing. Manual rows 1, 2, 5,
+> 6, and 8 are recorded as passes; complete rows 3, 4, 7, 9, and 10 in
+> `tests/SAVE_COMPATIBILITY_SMOKETEST.md` before marking this phase complete.
 
 1. Prompt previews and compact/full mode review.
 2. No-Biotech and old-save smoke tests.

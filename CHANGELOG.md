@@ -1,5 +1,15 @@
 # Changelog
 
+- **2026-07-17 — Completed Odyssey O1.0-O1.1's inert journey-policy foundation.** Reconfirmed the
+  installed RimWorld 1.6.4871 gravship signatures and froze Odyssey package/gate names, save keys,
+  arc/dedup grammar, event/group names, schema tokens, page ownership, and silent old-save semantics.
+  Added DLC-free contracts plus pure exact location classification, landing reason/cooldown planning,
+  bounded idempotent history, deterministic pilot/copilot/crew selection, and prompt-safe context;
+  `DiaryOdysseyPolicyTests` passes 88 assertions and is wired into the verification hook. No Def,
+  save field, settings row, Harmony patch, or page source exists yet; O1.2 is next. The Biotech B1
+  acceptance runbook now records user-confirmed passes for rows 1, 2, 5, 6, and 8, with rows 3, 4,
+  7, 9, and 10 retained as explicit TODOs, so Biotech Phase 4 remains open.
+
 - **2026-07-17 — Added focused automated coverage for the remaining shipped DLC integrations.**
   Loaded-game progression fixtures now drive real Royalty psylink and title state through the private
   scanners, assert exact pages, and reject repeats. Ideology and Anomaly gained internal copied-fact

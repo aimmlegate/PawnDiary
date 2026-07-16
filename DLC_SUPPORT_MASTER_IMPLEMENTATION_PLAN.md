@@ -197,6 +197,12 @@ This is the low-cost prompt-quality release. Do not continue into A1 study/conta
 > family arc, selects at most two adult writers, preserves pending naming across save/load, rejects replay,
 > and fails open to the mature routes. The next permitted slice remains Biotech Phase 4's manual B1
 > acceptance matrix in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
+>
+> **Manual checkpoint update (2026-07-17):** all existing automated suites are reported passing.
+> Manual matrix rows 1, 2, 5, 6, and 8 are user-confirmed passes; rows 3, 4, 7, 9, and 10 remain
+> explicit TODOs, so Biotech Phase 4 and Wave 3 remain open. At the user's direction, Odyssey O1.0
+> proceeded as a documentation-only scheduling exception; it did not add runtime behavior or claim
+> the Wave 3 release gate.
 
 ### Implement in this exact order
 
@@ -224,6 +230,12 @@ one relevant shared lens. It never reveals predicted genes/xenotype or invents a
 Release family/growth before genes, mechanitors, pollution, or secondary Biotech stories.
 
 ## 9. Wave 4 — Odyssey journey flagship
+
+> **Implementation status (2026-07-17): O1.0-O1.1 complete; pure foundation only.** Installed 1.6
+> signatures, package/gate names, saved keys, event/group names, arc grammar, tokens, ownership, and
+> old-save semantics are frozen. Detached location, novelty, cooldown, history, writer, and context
+> policy now passes 88 assembly-free assertions. No production behavior changed. O1.2 is next, while
+> the five deferred Biotech manual rows remain tracked separately.
 
 ### Implement in this exact order
 

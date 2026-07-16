@@ -132,6 +132,12 @@ their weather route, volcanic ash remains a prompt-only observed condition, and 
 hediff spellings remain eligible prompt enchantments. These are plain-string inertness tests, not a
 claim that the planned journey/landing state machine exists.
 
+Odyssey O1.1 adds `DiaryOdysseyPolicyTests`, an assembly-free suite with 88 assertions freezing the
+journey/landing tokens and IDs, exact location mapping, deterministic pilot/copilot/crew selection,
+quality and duration bands, landing reason priority, cooldown exceptions, bounded idempotent history,
+silent old-save baselining, and prompt-safe bounded context. This remains a pure policy seam: O1.2
+must add guarded live collection and Scribe/RimTest coverage before any stateful integration exists.
+
 Master Wave 3 / Biotech Phases 0–3 plus Phase 4 automated hardening use
 `DiaryBiotechPolicyTests`, an assembly-free suite that freezes
 the complete family arc grammar, additive save/context keys, actual before/after growth diffing,

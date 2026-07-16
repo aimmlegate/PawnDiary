@@ -117,6 +117,25 @@ and pre-cap component-Scribe/admission recovery. Run those suites in-game first;
 the acceptance record for UI presentation, genuine save/mod-list transitions, optional-mod gameplay,
 uncovered birth routes, and perceived performance.
 
+### Acceptance record (2026-07-17)
+
+The user confirmed the following manual rows passed. Exact RimWorld version, mod-list, save-fixture,
+and language metadata were not supplied with the result, so append those details here if a later
+release audit requires a reproducible run record.
+
+- [x] Row 1 — base game only (no Biotech).
+- [x] Row 2 — old-save baseline.
+- [ ] **TODO:** Row 3 — growth ownership.
+- [ ] **TODO:** Row 4 — prompt detail and previews.
+- [x] Row 5 — family observation + SpeakUp.
+- [x] Row 6 — birth/naming matrix.
+- [ ] **TODO:** Row 7 — RimTalk and bridge smoke.
+- [x] Row 8 — caps/performance.
+- [ ] **TODO:** Row 9 — pre-cap ownership fixture.
+- [ ] **TODO:** Row 10 — Biotech removed mid-save.
+
+Biotech Phase 4 remains open until the five TODO rows are recorded as passed.
+
 1. **Base game only (no Biotech).** Start and load a colony with Pawn Diary + Harmony only. Confirm
    `progressionGrowthMoment` and `biotechFamilyBirth` are absent from Events settings, the development
    log has no Pawn Diary/DLC/Scribe error, ordinary birthdays still work, and save → reload remains

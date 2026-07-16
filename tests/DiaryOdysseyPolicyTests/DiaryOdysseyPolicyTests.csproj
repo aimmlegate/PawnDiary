@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <NoWarn>0649</NoWarn>
+  </PropertyGroup>
+
+  <!-- Link only plain contracts/policies. Any accidental RimWorld/Verse/Unity dependency fails build. -->
+  <ItemGroup>
+    <Compile Include="..\..\Source\Pipeline\OdysseyJourneyContracts.cs" Link="OdysseyJourneyContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\OdysseyLocationPolicy.cs" Link="OdysseyLocationPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\OdysseyWriterPolicy.cs" Link="OdysseyWriterPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\OdysseyLandingPolicy.cs" Link="OdysseyLandingPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\OdysseyContextFormatter.cs" Link="OdysseyContextFormatter.cs" />
+  </ItemGroup>
+</Project>
