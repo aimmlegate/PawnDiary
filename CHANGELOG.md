@@ -1,5 +1,11 @@
 # Changelog
 
+- **2026-07-17 — Corrected the multi-preset birth prompt RimTest fixture.** The loaded-game suite's
+  final 192/193 run showed that its Full/Balanced/Compact loop assigned three different children one
+  birther-owned family arc, so production correctly deduplicated the second birth. The fixture now
+  mirrors the child-owned family arc contract: each preset exercises a distinct canonical birth while
+  the existing same-child replay test continues to prove once-only suppression.
+
 - **2026-07-16 — Fixed canonical birth prompt routing and exact CreepJoiner fixture state.** The
   second all-DLC runner reached 191/193 and proved the loaded template fields were current: canonical
   birth context carried `birth_outcome=healthy` but lacked its Tale-domain marker, so policy recovery

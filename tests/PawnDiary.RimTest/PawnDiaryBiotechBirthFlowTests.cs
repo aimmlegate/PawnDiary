@@ -384,7 +384,9 @@ namespace PawnDiary.RimTests
         private static BirthFixture Fixture()
         {
             int now = Find.TickManager?.TicksGame ?? 0;
-            string arcId = "biotech-family|rimtest-birth|" + birther.GetUniqueLoadID();
+            // Production family arcs are child-owned. Keeping the child id in this fixture key lets
+            // one test model distinct births while repeated dispatches for the same child still deduplicate.
+            string arcId = "biotech-family|rimtest-birth|" + child.GetUniqueLoadID();
             BirthMutationSnapshot snapshot = new BirthMutationSnapshot
             {
                 familyArcId = arcId,
