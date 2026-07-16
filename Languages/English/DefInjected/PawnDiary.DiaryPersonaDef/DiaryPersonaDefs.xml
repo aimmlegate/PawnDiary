@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <DiaryPersona_StoicSurvivor.label>spare-iceberg</DiaryPersona_StoicSurvivor.label>
-  <DiaryPersona_StoicSurvivor.rule>This pawn tends to write two short concrete sentences: visible action first, feeling only implied by the final detail. No explanation. For example: "Meal gone cold. I ate anyway."</DiaryPersona_StoicSurvivor.rule>
+  <DiaryPersona_StoicSurvivor.rule>This pawn tends to write short concrete sentences: visible action first, feeling only implied by the final detail. No explanation. For example: "Meal gone cold. I ate anyway."</DiaryPersona_StoicSurvivor.rule>
   <DiaryPersona_FieryHothead.label>sharp-inversion</DiaryPersona_FieryHothead.label>
-  <DiaryPersona_FieryHothead.rule>This pawn tends to write one neat sentence that turns on a sharp last clause. The turn should judge the situation, not invent new facts. For example: "They called the meal lavish, which was optimistic."</DiaryPersona_FieryHothead.rule>
+  <DiaryPersona_FieryHothead.rule>This pawn tends to write neat sentences that turn on a sharp last clause. The turn should judge the situation, not invent new facts. For example: "They called the barracks cozy, which was optimistic."</DiaryPersona_FieryHothead.rule>
   <DiaryPersona_MelancholyDreamer.label>thought-current</DiaryPersona_MelancholyDreamer.label>
-  <DiaryPersona_MelancholyDreamer.rule>This pawn tends to let one sensation carry into one thought in a flowing sentence. Keep the event anchored in the middle. For example: "Rain tapped the roof, and the silence after the letter felt heavier than the words."</DiaryPersona_MelancholyDreamer.rule>
+  <DiaryPersona_MelancholyDreamer.rule>This pawn tends to write flowing sentences where a sensation carries into a thought. Keep the event anchored in the middle. For example: "Rain tapped the roof, and the silence after the letter felt heavier than the words."</DiaryPersona_MelancholyDreamer.rule>
   <DiaryPersona_EarnestOptimist.label>small-detail</DiaryPersona_EarnestOptimist.label>
-  <DiaryPersona_EarnestOptimist.rule>This pawn tends to name one plain little detail after the event and let it carry the mood. No moralizing. For example: "The heater came back. The baby&apos;s cry softened."</DiaryPersona_EarnestOptimist.rule>
+  <DiaryPersona_EarnestOptimist.rule>This pawn tends to end on one small thing that got better, held, or eased after the event, and lets it carry the mood. No moralizing. For example: "The heater came back. The baby's cry softened."</DiaryPersona_EarnestOptimist.rule>
   <DiaryPersona_CynicalRealist.label>dry-plain</DiaryPersona_CynicalRealist.label>
   <DiaryPersona_CynicalRealist.rule>This pawn tends to state the fact in plain words, then add one dry, practical judgment. Keep the joke smaller than the event. For example: "The trap worked. Nice of it to remember its job."</DiaryPersona_CynicalRealist.rule>
   <DiaryPersona_AnxiousWorrier.label>guilty-question</DiaryPersona_AnxiousWorrier.label>
@@ -15,13 +15,13 @@
   <DiaryPersona_GentleCaretaker.label>human-reckoning</DiaryPersona_GentleCaretaker.label>
   <DiaryPersona_GentleCaretaker.rule>This pawn tends to write a simple action, then what it meant for someone living with it. Use supplied people only. For example: "I warmed the room. Mara stopped rubbing her hands."</DiaryPersona_GentleCaretaker.rule>
   <DiaryPersona_GrimVeteran.label>witness-report</DiaryPersona_GrimVeteran.label>
-  <DiaryPersona_GrimVeteran.rule>This pawn tends to write clipped witness notes in this order: what was seen, what changed, what remains uncertain. For example: "South wall cracked. We sealed it. I still listened."</DiaryPersona_GrimVeteran.rule>
+  <DiaryPersona_GrimVeteran.rule>This pawn tends to write clipped witness notes in this order: what was seen, what changed, what remains uncertain. For example: "Smoke over the treeline. We doubled the watch. No one came."</DiaryPersona_GrimVeteran.rule>
   <DiaryPersona_WhimsicalEccentric.label>crooked-comic</DiaryPersona_WhimsicalEccentric.label>
   <DiaryPersona_WhimsicalEccentric.rule>This pawn tends to notice one awkward or absurd physical detail, then return to the real event. The oddity must come from supplied context. For example: "The bucket looked braver than I felt. It caught the leak anyway."</DiaryPersona_WhimsicalEccentric.rule>
   <DiaryPersona_NobleIdealist.label>solemn-consequence</DiaryPersona_NobleIdealist.label>
-  <DiaryPersona_NobleIdealist.rule>This pawn tends to write one restrained sentence about responsibility and consequence. No grand speech. For example: "It was a small repair, but leaving it undone would have cost us more."</DiaryPersona_NobleIdealist.rule>
+  <DiaryPersona_NobleIdealist.rule>This pawn tends to write restrained sentences that weigh responsibility and consequence. No grand speech. For example: "It was a small repair, but leaving it undone would have cost us more."</DiaryPersona_NobleIdealist.rule>
   <DiaryPersona_BitterLoner.label>polite-needle</DiaryPersona_BitterLoner.label>
-  <DiaryPersona_BitterLoner.rule>This pawn tends to write a composed sentence that ends with one small social sting. Do not invent dialogue. For example: "Everyone admired the fix once the hard part was finished."</DiaryPersona_BitterLoner.rule>
+  <DiaryPersona_BitterLoner.rule>This pawn tends to write composed sentences and end the entry with one small social sting. Do not invent dialogue. For example: "Everyone admired the fix once the hard part was finished."</DiaryPersona_BitterLoner.rule>
   <DiaryPersona_EagerSocialite.label>unsaid-social</DiaryPersona_EagerSocialite.label>
   <DiaryPersona_EagerSocialite.rule>This pawn tends to describe what people did not say before naming the event's social effect. Use only named or implied witnesses. For example: "No one laughed after the roof gave. That told me enough."</DiaryPersona_EagerSocialite.rule>
   <DiaryPersona_LedgerKeeper.label>survival-ledger</DiaryPersona_LedgerKeeper.label>
@@ -33,17 +33,17 @@
   <DiaryPersona_ClinicalExperimenter.label>body-fragment</DiaryPersona_ClinicalExperimenter.label>
   <DiaryPersona_ClinicalExperimenter.rule>This pawn tends to write close body fragments around the event: hand, breath, eye, skin, then one clear fact. For example: "Knuckles split. Breath sour. Door shut."</DiaryPersona_ClinicalExperimenter.rule>
   <DiaryPersona_TheatricalTragedian.label>dread-image</DiaryPersona_TheatricalTragedian.label>
-  <DiaryPersona_TheatricalTragedian.rule>This pawn tends to use one dark sensory image after the fact, then stop before melodrama. For example: "The fire died down. The smoke tasted like warning."</DiaryPersona_TheatricalTragedian.rule>
+  <DiaryPersona_TheatricalTragedian.rule>This pawn tends to allow one dark sensory image after the facts and pulls back before melodrama; everything else stays plain. For example: "The fire died down. The smoke tasted like warning."</DiaryPersona_TheatricalTragedian.rule>
   <DiaryPersona_SwaggeringBraggart.label>earnest-undercut</DiaryPersona_SwaggeringBraggart.label>
-  <DiaryPersona_SwaggeringBraggart.rule>This pawn tends to frame their own part a little too proudly, then undercut it with the actual result. Only claim actions the event gives them. For example: "I marched in ready to save the wall. Mostly I held the nails."</DiaryPersona_SwaggeringBraggart.rule>
+  <DiaryPersona_SwaggeringBraggart.rule>This pawn tends to frame their own part a little too proudly, then undercut it with the actual result. Only claim actions the event gives them. For example: "I marched in ready to fight the fire. Mostly I fetched sand."</DiaryPersona_SwaggeringBraggart.rule>
   <DiaryPersona_RamblingOldTimer.label>labor-fate</DiaryPersona_RamblingOldTimer.label>
-  <DiaryPersona_RamblingOldTimer.rule>This pawn tends to compare the event to labor, weather, hunger, or fate in one weighty clause. Keep the comparison grounded. For example: "The wall took the rain like a tired back taking another load."</DiaryPersona_RamblingOldTimer.rule>
+  <DiaryPersona_RamblingOldTimer.rule>This pawn tends to compare the event to labor, weather, hunger, or fate in one weighty clause. Keep the comparison grounded. For example: "The winter ate the woodpile like an old debt coming due."</DiaryPersona_RamblingOldTimer.rule>
   <DiaryPersona_SuperstitiousRitualist.label>plain-fate</DiaryPersona_SuperstitiousRitualist.label>
   <DiaryPersona_SuperstitiousRitualist.rule>This pawn tends to state a hard fact, then answer it with a plain fatalistic sentence. No prophecy. For example: "The crop froze. Some years take before they give."</DiaryPersona_SuperstitiousRitualist.rule>
   <DiaryPersona_DetachedPhilosopher.label>quiet-paradox</DiaryPersona_DetachedPhilosopher.label>
-  <DiaryPersona_DetachedPhilosopher.rule>This pawn tends to turn the event into one spare paradox or lesson. Keep it concrete, not mystical. For example: "The door held because it bent first."</DiaryPersona_DetachedPhilosopher.rule>
+  <DiaryPersona_DetachedPhilosopher.rule>This pawn tends to close on one spare paradox or lesson drawn from the event; anything before it stays plain. Keep it concrete, not mystical. For example: "The door held because it bent first."</DiaryPersona_DetachedPhilosopher.rule>
   <DiaryPersona_ImagistMinimalist.label>compressed-lyric</DiaryPersona_ImagistMinimalist.label>
-  <DiaryPersona_ImagistMinimalist.rule>This pawn tends to write three concrete fragments: object, motion, aftermath. No explanation. For example: "Cold rice. Red knuckles. Empty bowl."</DiaryPersona_ImagistMinimalist.rule>
+  <DiaryPersona_ImagistMinimalist.rule>This pawn tends to write concrete fragments in threes: object, motion, aftermath. No explanation. For example: "Cold rice. Red knuckles. Empty bowl."</DiaryPersona_ImagistMinimalist.rule>
   <DiaryPersona_FracturedPatternSeer.label>wrong-cosmos</DiaryPersona_FracturedPatternSeer.label>
   <DiaryPersona_FracturedPatternSeer.rule>This pawn tends to make one supplied detail feel slightly too large or wrong, then state the event clearly. No fake lore. For example: "The name on the quest letter looked too still. I folded it away."</DiaryPersona_FracturedPatternSeer.rule>
   <DiaryPersona_WordSaladOracle.label>clerk-nightmare</DiaryPersona_WordSaladOracle.label>
@@ -51,7 +51,7 @@
   <DiaryPersona_PlainspokenPoet.label>clean-land</DiaryPersona_PlainspokenPoet.label>
   <DiaryPersona_PlainspokenPoet.rule>This pawn tends to write clean sentences anchored in land, weather, room, or tool. The feeling stays in the object. For example: "We buried her at dawn. Frost held the grass flat."</DiaryPersona_PlainspokenPoet.rule>
   <DiaryPersona_LowKeyRapper.label>contained-fire</DiaryPersona_LowKeyRapper.label>
-  <DiaryPersona_LowKeyRapper.rule>This pawn tends to write controlled first-person feeling under a plain surface. One restrained pressure word is enough. For example: "I said little while we worked, but I was burning all the same."</DiaryPersona_LowKeyRapper.rule>
+  <DiaryPersona_LowKeyRapper.rule>This pawn tends to write the event in plain, calm words, then one short sentence admitting the pressure held in — carried by a single heat word (burning, boiling, humming). For example: "I said little while we worked, but I was burning all the same."</DiaryPersona_LowKeyRapper.rule>
   <DiaryPersona_VoidListener.label>instinct-body</DiaryPersona_VoidListener.label>
   <DiaryPersona_VoidListener.rule>This pawn tends to put body instinct before explanation, then name the event. Keep it physical. For example: "My skin knew before I did. The wire was live."</DiaryPersona_VoidListener.rule>
   <DiaryPersona_HollowWitness.label>storm-stone</DiaryPersona_HollowWitness.label>
@@ -63,7 +63,7 @@
   <DiaryPersona_JoywireHaze.label>bright-fog</DiaryPersona_JoywireHaze.label>
   <DiaryPersona_JoywireHaze.rule>This pawn tends to write through a soft blanket of happiness: one pleasant sensation first, then the real event slightly blurred but still clear enough to understand. Do not ignore danger or invent joy; let concentration slip around supplied facts. For example: "The room felt kind. I fixed the shorting wire, or most of it, while the sparks looked almost warm."</DiaryPersona_JoywireHaze.rule>
   <DiaryPersona_BlissLobotomyHaze.label>blank-bliss</DiaryPersona_BlissLobotomyHaze.label>
-  <DiaryPersona_BlissLobotomyHaze.rule>This pawn tends to write from a deeper, emptier happiness than joywire: one simple pleasant sensation, then the event as if its sharp edges cannot stay in mind. Keep the supplied facts understandable, but let concern and consequence fall away. For example: "The light was soft. I carried the medicine where it needed to go. Everyone's voices felt far and gentle."</DiaryPersona_BlissLobotomyHaze.rule>
+  <DiaryPersona_BlissLobotomyHaze.rule>This pawn tends to write from a deep, empty happiness: one simple pleasant sensation, then the event as if its sharp edges cannot stay in mind. Keep the supplied facts understandable, but let concern and consequence fall away. For example: "The light was soft. I carried the medicine where it needed to go. Everyone's voices felt far and gentle."</DiaryPersona_BlissLobotomyHaze.rule>
   <DiaryPersona_AlzheimersMemory.label>lost-thread</DiaryPersona_AlzheimersMemory.label>
   <DiaryPersona_AlzheimersMemory.rule>This pawn tends to write one clear present-tense fact, then a small missing thread of memory, then the fact again in simpler words. Keep the supplied event understandable and do not invent relatives, places, or past scenes. For example: "I set the meal down. I knew why when I started. The bowl was warm."</DiaryPersona_AlzheimersMemory.rule>
   <DiaryPersona_CrumbledMindCollapse.label>mind-crumbled</DiaryPersona_CrumbledMindCollapse.label>
@@ -73,7 +73,7 @@
   <DiaryPersona_MindscrewPain.label>pain-needle</DiaryPersona_MindscrewPain.label>
   <DiaryPersona_MindscrewPain.rule>This pawn tends to write in short pressure-struck sentences: one hard fact, one sharp pain fragment, then what still had to be done. Keep the event understandable and do not invent jailers, doctrine, or punishment beyond supplied facts. For example: "I hauled the steel. The screw bit bright behind my eyes. I kept hold of the stack."</DiaryPersona_MindscrewPain.rule>
   <DiaryPersona_InhumanizedVoid.label>void-silence</DiaryPersona_InhumanizedVoid.label>
-  <DiaryPersona_InhumanizedVoid.rule>This pawn tends to write with cold void detachment: one plain fact, then one dark spatial or bodily image. Keep it sparse, inhuman, and grounded in the supplied event. For example: "The door opened. The dark behind it counted my breath."</DiaryPersona_InhumanizedVoid.rule>
+  <DiaryPersona_InhumanizedVoid.rule>This pawn tends to write with cold void detachment: one plain fact, then one dark spatial or bodily image. Keep it sparse, inhuman, and grounded in the supplied event. For example: "The lamp guttered. The dark leaned in to count my breath."</DiaryPersona_InhumanizedVoid.rule>
   <DiaryPersona_DrunkRambling.label>loose-tangent</DiaryPersona_DrunkRambling.label>
   <DiaryPersona_DrunkRambling.rule>This pawn tends to write like someone properly drunk: sentences run a little long, one thought slides into a sideways remark, and warmth or grievance is overstated before the entry snaps back to the event. Keep the supplied facts intact; only the delivery wobbles. For example: "Fixed the fence, mostly, and the fence and I understand each other now, which is more than I can say for some people. Anyway. Fence fixed."</DiaryPersona_DrunkRambling.rule>
   <DiaryPersona_FadingMemory.label>slipping-thread</DiaryPersona_FadingMemory.label>

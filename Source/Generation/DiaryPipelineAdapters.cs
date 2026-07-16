@@ -289,7 +289,18 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            return "PawnDiary.Prompt.PersonaVoice".Translate(personaRule.Trim()).Resolve();
+            return InjectVoiceRule("PawnDiary.Prompt.PersonaVoice", personaRule);
+        }
+
+        // The voice frames take the pawn's rule as their {0} argument, and that rule must reach the
+        // model VERBATIM: base-style rules and player-authored custom/external rules carry deliberate
+        // casing ("spare-iceberg: ...", "end every entry with ..."). Vanilla's args-Translate path
+        // (GrammarResolverSimple.Formatted) sentence-cases the whole resolved string — treating every
+        // ':' as a sentence break — which silently rewrites that text. So resolve the frame with the
+        // arg-free Translate (which skips the grammar resolver) and splice the rule in ourselves.
+        private static string InjectVoiceRule(string frameKey, string rule)
+        {
+            return frameKey.Translate().Resolve().Replace("{0}", rule.Trim());
         }
 
         // Wraps the pawn's psychotype (outlook) rule in its model-facing frame. Placed BEFORE the writing
@@ -303,7 +314,7 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            return "PawnDiary.Prompt.PsychotypeLens".Translate(psychotypeRule.Trim()).Resolve();
+            return InjectVoiceRule("PawnDiary.Prompt.PsychotypeLens", psychotypeRule);
         }
 
         // Wraps one chosen humor cue (a structural sentence-shape license) in the same kind of
@@ -317,7 +328,7 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            return "PawnDiary.Prompt.HumorVoice".Translate(humorCue.Trim()).Resolve();
+            return InjectVoiceRule("PawnDiary.Prompt.HumorVoice", humorCue);
         }
 
         // Joins the psychotype, writing-style, and humor blocks in that fixed order, each separated by a

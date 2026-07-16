@@ -1236,6 +1236,13 @@ Hot event-window paths use `EventWindowPolicy.CouldMatchByDefName` before resolv
 expensive work. Window recording is isolated from normal raid, quest, hediff, and other capture paths;
 a window failure must not suppress the base diary entry.
 
+Event-window pages honor the player's settings Events row: `RecordEventWindowPhase` classifies the
+window's `defName` in the Interaction domain (e.g. `Birthday` -> `eventWindowBirthday`) and skips the
+page when `PawnDiarySettings.IsGroupEnabled` says the row is off. Only the page is suppressed —
+window open/close state, dedup stamps, and active prompt candidates keep working, and the Biotech
+growth fallback relies on this gate to consume baselines without releasing a Birthday page when both
+its rows are disabled.
+
 The event-coverage pass added three incident-driven tone windows: `MechClusterLanded` (records one
 start page per map colonist, then keeps a decaying dread candidate active for up to three days),
 plus `ShortCircuitAftermath` and `SelfTameJoined` (tone-only, never pages). Every def that records
@@ -1502,7 +1509,13 @@ as a field in the **user** prompt. The single load-bearing line is
 `PromptAssembler.ComposeSystem(baseSystemPrompt, personaVoiceBlock, includePersona)`; the voice block
 is built by `DiaryPipelineAdapters.CombinedVoiceBlock`, which joins the psychotype lens, the writing
 style, and the humor cue in that fixed order (outlook first, style last as the harder mechanical
-constraint). The neutral death/arrival chronicles and the title follow-up set `includePersona=false`
+constraint). Each of the three blocks splices its rule into the localized Keyed frame **verbatim**
+(`DiaryPipelineAdapters.InjectVoiceRule` resolves the frame with the arg-free `.Translate()` and
+replaces `{0}` itself). Never switch these back to the args-`Translate` overloads: vanilla routes
+those through `GrammarResolverSimple.Formatted`, whose `GenText.CapitalizeSentences` pass treats every
+`:` as a sentence break and silently rewrites player/XML-authored rule text
+("sentinel: end every entry…" became "sentinel: End every entry…"). The neutral death/arrival
+chronicles and the title follow-up set `includePersona=false`
 so they stay voice-free (psychotype included). Regression tests in `tests/DiaryPipelineTests` pin this
 contract: pure unit tests on `ComposeSystem`, an end-to-end test that the psychotype lens reaches the
 system prompt before the style and never the user prompt, and a shipped-XML contract test asserting
@@ -2168,7 +2181,10 @@ Do not translate or localize:
 
 When editing XML Def text:
 
-- Keep English DefInjected stubs in sync.
+- Keep English DefInjected stubs in sync. This is load-bearing, not cosmetic: RimWorld applies the
+  active language's DefInjected **over** the Def XML, so a stale English stub silently reverts a Def
+  edit in English games (this once shifted every prompt-template field label by two after new fields
+  were inserted mid-list, and dropped the first-person/anti-slop system-prompt lines).
 - Use fully qualified custom-Def folders, such as
   `Languages/English/DefInjected/PawnDiary.DiaryInteractionGroupDef/`.
 - Treat indexed DefInjected entries as positional schema. Inserting, removing, or reordering an XML

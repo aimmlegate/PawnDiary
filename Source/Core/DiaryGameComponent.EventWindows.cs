@@ -577,6 +577,19 @@ namespace PawnDiary
         private void RecordEventWindowPhase(DiaryEventWindowDef def, ActiveEventWindowState active,
             string phase, EventWindowSignalFacts facts, Map map, Pawn subjectPawn)
         {
+            // Event-window pages classify as Interaction-domain events by their window defName (e.g.
+            // "Birthday" -> eventWindowBirthday), and that group is the settings Events row players
+            // toggle. Honor it at this one choke point every start/end/timeout page passes through, so
+            // a disabled row stops the page while window state, dedup, and prompt coloring keep
+            // working. This is also the contract the Biotech growth fallback relies on: with the row
+            // disabled, ReleaseBiotechGrowthToOrdinaryBirthday consumes baselines without a page.
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyDefName(
+                GroupDomain.Interaction, def.defName);
+            if (group != null && !PawnDiaryMod.Settings.IsGroupEnabled(group.defName))
+            {
+                return;
+            }
+
             List<Pawn> pawns = EventWindowPawns(def, active, facts, map, subjectPawn);
             if (pawns.Count == 0)
             {

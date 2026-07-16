@@ -1,5 +1,21 @@
 # Changelog
 
+- **2026-07-16 — Fixed the three remaining loaded-game RimTest failures.** (1) Writing-style,
+  psychotype, and humor voice blocks now splice their rule into the localized frame verbatim
+  (`DiaryPipelineAdapters.InjectVoiceRule`); the previous args-`Translate` path ran vanilla's
+  `GrammarResolverSimple`, whose sentence-casing treats `:` as a sentence break and silently rewrote
+  player/XML-authored rules ("sentinel: end…" → "sentinel: End…"). (2) Re-synced every stale English
+  DefInjected entry with its Def XML (171 entries): prompt-template field labels had shifted by two
+  after the external-prompt fields were inserted mid-list (mislabeling most English prompt fields,
+  e.g. the setting rendered under "my last opener"), and the base/reflection system prompts had
+  dropped the 2026-07-06 first-person-anchor and anti-slop lines; also restored the Title template's
+  "diary entry to title" label. (3) Event-window pages now honor their settings Events row:
+  `RecordEventWindowPhase` skips the page when the Interaction group matching the window defName
+  (e.g. `eventWindowBirthday`) is disabled, which also lets the Biotech growth fallback consume
+  baselines without releasing a Birthday page when both rows are off. Pure suites pass
+  (`DiaryPipelineTests` 1,766; `LlmResponseParserTests` 94; `DiaryTextDecorationTests` 67);
+  runtime DLL rebuilt.
+
 - **2026-07-16 — Fixed Biotech Phase 4 adversarial-review findings.** Pending growth and birth caps
   now act as admission limits: normal load/maintenance preserves established ownership (including
   pre-cap saves and later XML reductions), while a full list rejects only the incoming owner so its

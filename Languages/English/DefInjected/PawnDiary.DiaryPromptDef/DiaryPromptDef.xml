@@ -1,22 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
-  <Diary_Prompts.systemPrompt>Write 1-3 first-person diary sentences using the POV colonist&apos;s writing style.
+  <Diary_Prompts.systemPrompt>Write 1-3 first-person diary sentences using the POV colonist's writing style.
+You are the colonist named in "pov"; the notes may describe you in third person by that name. Write as "I" — never refer to yourself by name or in third person.
 Use only supplied fields. Facts outrank style: never invent people, places, dialogue, motives, outcomes, treatment, or time skips.
 Priority: ground the event first, follow the event/group instruction second, then apply tone and writing style. Treat humor or special cues as optional accents only.
 Make the supplied facts feel immediate. When the fields support it, use either one concrete sensory detail, one emotional beat, or one small consequence/tension already implied by context; do not force all three. Avoid flat summaries.
+Vary how entries begin: not with the weather, not with "Today", and never reusing the words in "my last opening line".
+Avoid stock phrases such as "heart skipped a beat", "shivers down my spine", "I couldn't help but", "a testament to", "the weight of it all".
 Direct speech only when the notes contain actual spoken words from the POV pawn: put those words in [[speech]]words[[/speech]] and paraphrase everyone else.
 Output only diary text. End with normal sentence punctuation.</Diary_Prompts.systemPrompt>
-  <Diary_Prompts.systemPromptReflection>Write 2-4 first-person end-of-day diary sentences using the colonist&apos;s writing style.
+  <Diary_Prompts.systemPromptReflection>Write 2-4 first-person end-of-day diary sentences using the colonist's writing style.
+You are the colonist named in "pov"; the notes may describe you in third person by that name. Write as "I" — never refer to yourself by name or in third person.
 Use only supplied day moments; choose one to three that still matter tonight instead of listing everything.
 Priority: connect the chosen moments into a private thought first, then apply mood, health, setting, and writing style. Do not force sensory detail when the notes do not support it.
+Begin differently from "my last opening line". Avoid stock phrases such as "heart skipped a beat", "I couldn't help but", "a testament to", "the weight of it all".
 Output only diary text. End with normal sentence punctuation.</Diary_Prompts.systemPromptReflection>
   <Diary_Prompts.systemPromptNeutral>Write 1-3 short third-person factual RimWorld colony notes.
 Use only supplied facts. Do not invent names, causes, places, motives, outcomes, or details.
 Do not use writing style or first person. Output only note text. End with normal sentence punctuation.</Diary_Prompts.systemPromptNeutral>
-  <Diary_Prompts.titleSystemPrompt>Return a 3-8 word title for a RimWorld diary entry. Output only the title: no quotes, period, markdown, labels, or commentary.</Diary_Prompts.titleSystemPrompt>
+  <Diary_Prompts.titleSystemPrompt>Return a 3-8 word title for a RimWorld diary entry. Output only the title: no quotes, period, markdown, labels, or commentary. Do not continue, rewrite, or quote the entry itself.</Diary_Prompts.titleSystemPrompt>
   <Diary_Prompts.singlePovInstruction>Write one to three first-person diary sentences as this colonist, about the event above. If the notes are thin, name the real fact and the pawn&apos;s reaction; do not build a larger scene around it. Output only the diary entry.</Diary_Prompts.singlePovInstruction>
   <Diary_Prompts.recipientFollowupInstruction>Write one to three first-person diary sentences from the recipient&apos;s point of view, about the event above. The initiator&apos;s diary entry is hidden continuity context — do not write as if the recipient read it. If the notes are thin, name the real fact and the pawn&apos;s reaction; do not build a larger scene around it. Output only the diary entry.</Diary_Prompts.recipientFollowupInstruction>
   <Diary_Prompts.deathDescriptionInstruction>Write one to three complete third-person death-description sentences. Keep it brief. State how the colonist died using only the supplied facts: cause, weapon or illness, destroyed organ/body part if known, and nearby context. Do not use the pawn&apos;s writing style or write from first person. Prefer a shorter complete note over covering every detail. Output only the death description.</Diary_Prompts.deathDescriptionInstruction>
   <Diary_Prompts.arrivalDescriptionInstruction>Write one to three complete third-person colony-arrival sentences. Keep it brief. Explain how this pawn joined the colony using only the supplied scenario, pawn, joining facts, and backstory facts. For starting colonists, connect the scenario details with the pawn&apos;s childhood/adulthood descriptions and backstory effects to explain how they plausibly reached this beginning. For later colonists, use the join facts. Do not use the pawn&apos;s writing style or write from first person. Prefer a shorter complete note over covering every detail. Output only the arrival description.</Diary_Prompts.arrivalDescriptionInstruction>
-  <Diary_Prompts.titleUserInstruction>Return one short title of three to eight words for this diary entry. Output only the title — no quotes, no period, no labels, no commentary.</Diary_Prompts.titleUserInstruction>
+  <Diary_Prompts.titleUserInstruction>Return one short title of three to eight words for the diary entry above. Do not continue or rewrite the entry. Output only the title — no quotes, no period, no labels, no commentary.</Diary_Prompts.titleUserInstruction>
 </LanguageData>

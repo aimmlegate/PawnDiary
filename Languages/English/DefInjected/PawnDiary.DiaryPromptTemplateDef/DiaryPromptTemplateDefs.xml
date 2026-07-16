@@ -8,23 +8,23 @@
   <DiaryPromptTemplate_PairDefault.fields.5.label>instruction</DiaryPromptTemplate_PairDefault.fields.5.label>
   <DiaryPromptTemplate_PairDefault.fields.6.label>event prompt</DiaryPromptTemplate_PairDefault.fields.6.label>
   <DiaryPromptTemplate_PairDefault.fields.7.label>event enhancement</DiaryPromptTemplate_PairDefault.fields.7.label>
-  <DiaryPromptTemplate_PairDefault.fields.8.label>ritual role</DiaryPromptTemplate_PairDefault.fields.8.label>
-  <DiaryPromptTemplate_PairDefault.fields.9.label>ritual title</DiaryPromptTemplate_PairDefault.fields.9.label>
-  <DiaryPromptTemplate_PairDefault.fields.10.label>ability</DiaryPromptTemplate_PairDefault.fields.10.label>
-  <DiaryPromptTemplate_PairDefault.fields.11.label>ability category</DiaryPromptTemplate_PairDefault.fields.11.label>
-  <DiaryPromptTemplate_PairDefault.fields.12.label>ability target</DiaryPromptTemplate_PairDefault.fields.12.label>
-  <DiaryPromptTemplate_PairDefault.fields.13.label>ability cooldown ticks</DiaryPromptTemplate_PairDefault.fields.13.label>
-  <DiaryPromptTemplate_PairDefault.fields.14.label>raid arrival mode</DiaryPromptTemplate_PairDefault.fields.14.label>
-  <DiaryPromptTemplate_PairDefault.fields.15.label>raid strategy</DiaryPromptTemplate_PairDefault.fields.15.label>
-  <DiaryPromptTemplate_PairDefault.fields.16.label>raid points</DiaryPromptTemplate_PairDefault.fields.16.label>
-  <DiaryPromptTemplate_PairDefault.fields.17.label>royal title</DiaryPromptTemplate_PairDefault.fields.17.label>
-  <DiaryPromptTemplate_PairDefault.fields.18.label>ideoligion role</DiaryPromptTemplate_PairDefault.fields.18.label>
-  <DiaryPromptTemplate_PairDefault.fields.19.label>important context</DiaryPromptTemplate_PairDefault.fields.19.label>
-  <DiaryPromptTemplate_PairDefault.fields.20.label>setting</DiaryPromptTemplate_PairDefault.fields.20.label>
-  <DiaryPromptTemplate_PairDefault.fields.21.label>tone</DiaryPromptTemplate_PairDefault.fields.21.label>
-  <DiaryPromptTemplate_PairDefault.fields.22.label>relationship</DiaryPromptTemplate_PairDefault.fields.22.label>
-  <DiaryPromptTemplate_PairDefault.fields.23.label>my last opener (not repeat)</DiaryPromptTemplate_PairDefault.fields.23.label>
-  <DiaryPromptTemplate_PairDefault.fields.24.label>previous diary ending (continue from this)</DiaryPromptTemplate_PairDefault.fields.24.label>
+  <DiaryPromptTemplate_PairDefault.fields.8.label>external prompt instruction</DiaryPromptTemplate_PairDefault.fields.8.label>
+  <DiaryPromptTemplate_PairDefault.fields.9.label>external prompt fragment</DiaryPromptTemplate_PairDefault.fields.9.label>
+  <DiaryPromptTemplate_PairDefault.fields.10.label>ritual role</DiaryPromptTemplate_PairDefault.fields.10.label>
+  <DiaryPromptTemplate_PairDefault.fields.11.label>ritual title</DiaryPromptTemplate_PairDefault.fields.11.label>
+  <DiaryPromptTemplate_PairDefault.fields.12.label>ability</DiaryPromptTemplate_PairDefault.fields.12.label>
+  <DiaryPromptTemplate_PairDefault.fields.13.label>ability category</DiaryPromptTemplate_PairDefault.fields.13.label>
+  <DiaryPromptTemplate_PairDefault.fields.14.label>ability target</DiaryPromptTemplate_PairDefault.fields.14.label>
+  <DiaryPromptTemplate_PairDefault.fields.15.label>ability recharge ticks (long recharge = rarer, weightier use)</DiaryPromptTemplate_PairDefault.fields.15.label>
+  <DiaryPromptTemplate_PairDefault.fields.16.label>raid arrival mode</DiaryPromptTemplate_PairDefault.fields.16.label>
+  <DiaryPromptTemplate_PairDefault.fields.17.label>raid strategy</DiaryPromptTemplate_PairDefault.fields.17.label>
+  <DiaryPromptTemplate_PairDefault.fields.18.label>raid points</DiaryPromptTemplate_PairDefault.fields.18.label>
+  <DiaryPromptTemplate_PairDefault.fields.19.label>royal title</DiaryPromptTemplate_PairDefault.fields.19.label>
+  <DiaryPromptTemplate_PairDefault.fields.20.label>ideoligion role</DiaryPromptTemplate_PairDefault.fields.20.label>
+  <DiaryPromptTemplate_PairDefault.fields.21.label>important context</DiaryPromptTemplate_PairDefault.fields.21.label>
+  <DiaryPromptTemplate_PairDefault.fields.22.label>setting</DiaryPromptTemplate_PairDefault.fields.22.label>
+  <DiaryPromptTemplate_PairDefault.fields.23.label>tone</DiaryPromptTemplate_PairDefault.fields.23.label>
+  <DiaryPromptTemplate_PairDefault.fields.24.label>relationship</DiaryPromptTemplate_PairDefault.fields.24.label>
   <DiaryPromptTemplate_PairImportant.fields.0.label>event</DiaryPromptTemplate_PairImportant.fields.0.label>
   <DiaryPromptTemplate_PairImportant.fields.1.label>pov</DiaryPromptTemplate_PairImportant.fields.1.label>
   <DiaryPromptTemplate_PairImportant.fields.2.label>role</DiaryPromptTemplate_PairImportant.fields.2.label>
@@ -61,26 +61,26 @@
   <DiaryPromptTemplate_PairCombat.fields.5.label>instruction</DiaryPromptTemplate_PairCombat.fields.5.label>
   <DiaryPromptTemplate_PairCombat.fields.6.label>event prompt</DiaryPromptTemplate_PairCombat.fields.6.label>
   <DiaryPromptTemplate_PairCombat.fields.7.label>event enhancement</DiaryPromptTemplate_PairCombat.fields.7.label>
-  <DiaryPromptTemplate_PairCombat.fields.8.label>ritual role</DiaryPromptTemplate_PairCombat.fields.8.label>
-  <DiaryPromptTemplate_PairCombat.fields.9.label>ritual title</DiaryPromptTemplate_PairCombat.fields.9.label>
-  <DiaryPromptTemplate_PairCombat.fields.10.label>ability</DiaryPromptTemplate_PairCombat.fields.10.label>
-  <DiaryPromptTemplate_PairCombat.fields.11.label>ability category</DiaryPromptTemplate_PairCombat.fields.11.label>
-  <DiaryPromptTemplate_PairCombat.fields.12.label>ability target</DiaryPromptTemplate_PairCombat.fields.12.label>
-  <DiaryPromptTemplate_PairCombat.fields.13.label>ability cooldown ticks</DiaryPromptTemplate_PairCombat.fields.13.label>
-  <DiaryPromptTemplate_PairCombat.fields.14.label>raid arrival mode</DiaryPromptTemplate_PairCombat.fields.14.label>
-  <DiaryPromptTemplate_PairCombat.fields.15.label>raid strategy</DiaryPromptTemplate_PairCombat.fields.15.label>
-  <DiaryPromptTemplate_PairCombat.fields.16.label>raid points</DiaryPromptTemplate_PairCombat.fields.16.label>
-  <DiaryPromptTemplate_PairCombat.fields.17.label>royal title</DiaryPromptTemplate_PairCombat.fields.17.label>
-  <DiaryPromptTemplate_PairCombat.fields.18.label>ideoligion role</DiaryPromptTemplate_PairCombat.fields.18.label>
-  <DiaryPromptTemplate_PairCombat.fields.19.label>you</DiaryPromptTemplate_PairCombat.fields.19.label>
-  <DiaryPromptTemplate_PairCombat.fields.20.label>important context</DiaryPromptTemplate_PairCombat.fields.20.label>
-  <DiaryPromptTemplate_PairCombat.fields.21.label>setting</DiaryPromptTemplate_PairCombat.fields.21.label>
-  <DiaryPromptTemplate_PairCombat.fields.22.label>tone</DiaryPromptTemplate_PairCombat.fields.22.label>
-  <DiaryPromptTemplate_PairCombat.fields.23.label>relationship</DiaryPromptTemplate_PairCombat.fields.23.label>
-  <DiaryPromptTemplate_PairCombat.fields.24.label>my last opener (not repeat)</DiaryPromptTemplate_PairCombat.fields.24.label>
-  <DiaryPromptTemplate_PairCombat.fields.25.label>weapon</DiaryPromptTemplate_PairCombat.fields.25.label>
-  <DiaryPromptTemplate_PairCombat.fields.26.label>initiator diary (hidden context)</DiaryPromptTemplate_PairCombat.fields.26.label>
-  <DiaryPromptTemplate_PairCombat.fields.27.label>previous diary ending (continue from this)</DiaryPromptTemplate_PairCombat.fields.27.label>
+  <DiaryPromptTemplate_PairCombat.fields.8.label>external prompt instruction</DiaryPromptTemplate_PairCombat.fields.8.label>
+  <DiaryPromptTemplate_PairCombat.fields.9.label>external prompt fragment</DiaryPromptTemplate_PairCombat.fields.9.label>
+  <DiaryPromptTemplate_PairCombat.fields.10.label>ritual role</DiaryPromptTemplate_PairCombat.fields.10.label>
+  <DiaryPromptTemplate_PairCombat.fields.11.label>ritual title</DiaryPromptTemplate_PairCombat.fields.11.label>
+  <DiaryPromptTemplate_PairCombat.fields.12.label>ability</DiaryPromptTemplate_PairCombat.fields.12.label>
+  <DiaryPromptTemplate_PairCombat.fields.13.label>ability category</DiaryPromptTemplate_PairCombat.fields.13.label>
+  <DiaryPromptTemplate_PairCombat.fields.14.label>ability target</DiaryPromptTemplate_PairCombat.fields.14.label>
+  <DiaryPromptTemplate_PairCombat.fields.15.label>ability recharge ticks (long recharge = rarer, weightier use)</DiaryPromptTemplate_PairCombat.fields.15.label>
+  <DiaryPromptTemplate_PairCombat.fields.16.label>raid arrival mode</DiaryPromptTemplate_PairCombat.fields.16.label>
+  <DiaryPromptTemplate_PairCombat.fields.17.label>raid strategy</DiaryPromptTemplate_PairCombat.fields.17.label>
+  <DiaryPromptTemplate_PairCombat.fields.18.label>raid points</DiaryPromptTemplate_PairCombat.fields.18.label>
+  <DiaryPromptTemplate_PairCombat.fields.19.label>royal title</DiaryPromptTemplate_PairCombat.fields.19.label>
+  <DiaryPromptTemplate_PairCombat.fields.20.label>ideoligion role</DiaryPromptTemplate_PairCombat.fields.20.label>
+  <DiaryPromptTemplate_PairCombat.fields.21.label>you</DiaryPromptTemplate_PairCombat.fields.21.label>
+  <DiaryPromptTemplate_PairCombat.fields.22.label>important context</DiaryPromptTemplate_PairCombat.fields.22.label>
+  <DiaryPromptTemplate_PairCombat.fields.23.label>setting</DiaryPromptTemplate_PairCombat.fields.23.label>
+  <DiaryPromptTemplate_PairCombat.fields.24.label>tone</DiaryPromptTemplate_PairCombat.fields.24.label>
+  <DiaryPromptTemplate_PairCombat.fields.25.label>relationship</DiaryPromptTemplate_PairCombat.fields.25.label>
+  <DiaryPromptTemplate_PairCombat.fields.26.label>my last opening line (do not reuse)</DiaryPromptTemplate_PairCombat.fields.26.label>
+  <DiaryPromptTemplate_PairCombat.fields.27.label>weapon</DiaryPromptTemplate_PairCombat.fields.27.label>
   <DiaryPromptTemplate_PairBatched.fields.0.label>event</DiaryPromptTemplate_PairBatched.fields.0.label>
   <DiaryPromptTemplate_PairBatched.fields.1.label>pov</DiaryPromptTemplate_PairBatched.fields.1.label>
   <DiaryPromptTemplate_PairBatched.fields.2.label>role</DiaryPromptTemplate_PairBatched.fields.2.label>
@@ -89,60 +89,60 @@
   <DiaryPromptTemplate_PairBatched.fields.5.label>instruction</DiaryPromptTemplate_PairBatched.fields.5.label>
   <DiaryPromptTemplate_PairBatched.fields.6.label>event prompt</DiaryPromptTemplate_PairBatched.fields.6.label>
   <DiaryPromptTemplate_PairBatched.fields.7.label>event enhancement</DiaryPromptTemplate_PairBatched.fields.7.label>
-  <DiaryPromptTemplate_PairBatched.fields.8.label>ritual role</DiaryPromptTemplate_PairBatched.fields.8.label>
-  <DiaryPromptTemplate_PairBatched.fields.9.label>ritual title</DiaryPromptTemplate_PairBatched.fields.9.label>
-  <DiaryPromptTemplate_PairBatched.fields.10.label>ability</DiaryPromptTemplate_PairBatched.fields.10.label>
-  <DiaryPromptTemplate_PairBatched.fields.11.label>ability category</DiaryPromptTemplate_PairBatched.fields.11.label>
-  <DiaryPromptTemplate_PairBatched.fields.12.label>ability target</DiaryPromptTemplate_PairBatched.fields.12.label>
-  <DiaryPromptTemplate_PairBatched.fields.13.label>ability cooldown ticks</DiaryPromptTemplate_PairBatched.fields.13.label>
-  <DiaryPromptTemplate_PairBatched.fields.14.label>raid arrival mode</DiaryPromptTemplate_PairBatched.fields.14.label>
-  <DiaryPromptTemplate_PairBatched.fields.15.label>raid strategy</DiaryPromptTemplate_PairBatched.fields.15.label>
-  <DiaryPromptTemplate_PairBatched.fields.16.label>raid points</DiaryPromptTemplate_PairBatched.fields.16.label>
-  <DiaryPromptTemplate_PairBatched.fields.17.label>royal title</DiaryPromptTemplate_PairBatched.fields.17.label>
-  <DiaryPromptTemplate_PairBatched.fields.18.label>ideoligion role</DiaryPromptTemplate_PairBatched.fields.18.label>
-  <DiaryPromptTemplate_PairBatched.fields.19.label>important context</DiaryPromptTemplate_PairBatched.fields.19.label>
-  <DiaryPromptTemplate_PairBatched.fields.20.label>setting</DiaryPromptTemplate_PairBatched.fields.20.label>
-  <DiaryPromptTemplate_PairBatched.fields.21.label>tone</DiaryPromptTemplate_PairBatched.fields.21.label>
-  <DiaryPromptTemplate_PairBatched.fields.22.label>my last opener (not repeat)</DiaryPromptTemplate_PairBatched.fields.22.label>
-  <DiaryPromptTemplate_PairBatched.fields.23.label>previous diary ending (continue from this)</DiaryPromptTemplate_PairBatched.fields.23.label>
+  <DiaryPromptTemplate_PairBatched.fields.8.label>external prompt instruction</DiaryPromptTemplate_PairBatched.fields.8.label>
+  <DiaryPromptTemplate_PairBatched.fields.9.label>external prompt fragment</DiaryPromptTemplate_PairBatched.fields.9.label>
+  <DiaryPromptTemplate_PairBatched.fields.10.label>ritual role</DiaryPromptTemplate_PairBatched.fields.10.label>
+  <DiaryPromptTemplate_PairBatched.fields.11.label>ritual title</DiaryPromptTemplate_PairBatched.fields.11.label>
+  <DiaryPromptTemplate_PairBatched.fields.12.label>ability</DiaryPromptTemplate_PairBatched.fields.12.label>
+  <DiaryPromptTemplate_PairBatched.fields.13.label>ability category</DiaryPromptTemplate_PairBatched.fields.13.label>
+  <DiaryPromptTemplate_PairBatched.fields.14.label>ability target</DiaryPromptTemplate_PairBatched.fields.14.label>
+  <DiaryPromptTemplate_PairBatched.fields.15.label>ability recharge ticks (long recharge = rarer, weightier use)</DiaryPromptTemplate_PairBatched.fields.15.label>
+  <DiaryPromptTemplate_PairBatched.fields.16.label>raid arrival mode</DiaryPromptTemplate_PairBatched.fields.16.label>
+  <DiaryPromptTemplate_PairBatched.fields.17.label>raid strategy</DiaryPromptTemplate_PairBatched.fields.17.label>
+  <DiaryPromptTemplate_PairBatched.fields.18.label>raid points</DiaryPromptTemplate_PairBatched.fields.18.label>
+  <DiaryPromptTemplate_PairBatched.fields.19.label>royal title</DiaryPromptTemplate_PairBatched.fields.19.label>
+  <DiaryPromptTemplate_PairBatched.fields.20.label>ideoligion role</DiaryPromptTemplate_PairBatched.fields.20.label>
+  <DiaryPromptTemplate_PairBatched.fields.21.label>important context</DiaryPromptTemplate_PairBatched.fields.21.label>
+  <DiaryPromptTemplate_PairBatched.fields.22.label>setting</DiaryPromptTemplate_PairBatched.fields.22.label>
+  <DiaryPromptTemplate_PairBatched.fields.23.label>tone</DiaryPromptTemplate_PairBatched.fields.23.label>
   <DiaryPromptTemplate_SoloDefault.fields.0.label>event</DiaryPromptTemplate_SoloDefault.fields.0.label>
   <DiaryPromptTemplate_SoloDefault.fields.1.label>pov</DiaryPromptTemplate_SoloDefault.fields.1.label>
   <DiaryPromptTemplate_SoloDefault.fields.2.label>what happened</DiaryPromptTemplate_SoloDefault.fields.2.label>
   <DiaryPromptTemplate_SoloDefault.fields.3.label>instruction</DiaryPromptTemplate_SoloDefault.fields.3.label>
   <DiaryPromptTemplate_SoloDefault.fields.4.label>event prompt</DiaryPromptTemplate_SoloDefault.fields.4.label>
   <DiaryPromptTemplate_SoloDefault.fields.5.label>event enhancement</DiaryPromptTemplate_SoloDefault.fields.5.label>
-  <DiaryPromptTemplate_SoloDefault.fields.6.label>quest name</DiaryPromptTemplate_SoloDefault.fields.6.label>
-  <DiaryPromptTemplate_SoloDefault.fields.7.label>quest lifecycle</DiaryPromptTemplate_SoloDefault.fields.7.label>
-  <DiaryPromptTemplate_SoloDefault.fields.8.label>quest faction</DiaryPromptTemplate_SoloDefault.fields.8.label>
-  <DiaryPromptTemplate_SoloDefault.fields.9.label>quest rewards</DiaryPromptTemplate_SoloDefault.fields.9.label>
-  <DiaryPromptTemplate_SoloDefault.fields.10.label>progression kind</DiaryPromptTemplate_SoloDefault.fields.10.label>
-  <DiaryPromptTemplate_SoloDefault.fields.11.label>skill</DiaryPromptTemplate_SoloDefault.fields.11.label>
-  <DiaryPromptTemplate_SoloDefault.fields.12.label>skill level</DiaryPromptTemplate_SoloDefault.fields.12.label>
-  <DiaryPromptTemplate_SoloDefault.fields.13.label>previous skill milestone</DiaryPromptTemplate_SoloDefault.fields.13.label>
-  <DiaryPromptTemplate_SoloDefault.fields.14.label>passion</DiaryPromptTemplate_SoloDefault.fields.14.label>
-  <DiaryPromptTemplate_SoloDefault.fields.15.label>psylink level</DiaryPromptTemplate_SoloDefault.fields.15.label>
-  <DiaryPromptTemplate_SoloDefault.fields.16.label>previous psylink level</DiaryPromptTemplate_SoloDefault.fields.16.label>
-  <DiaryPromptTemplate_SoloDefault.fields.17.label>xenotype</DiaryPromptTemplate_SoloDefault.fields.17.label>
-  <DiaryPromptTemplate_SoloDefault.fields.18.label>previous xenotype</DiaryPromptTemplate_SoloDefault.fields.18.label>
-  <DiaryPromptTemplate_SoloDefault.fields.19.label>major_xenotype</DiaryPromptTemplate_SoloDefault.fields.19.label>
-  <DiaryPromptTemplate_SoloDefault.fields.20.label>title</DiaryPromptTemplate_SoloDefault.fields.20.label>
-  <DiaryPromptTemplate_SoloDefault.fields.21.label>previous title</DiaryPromptTemplate_SoloDefault.fields.21.label>
-  <DiaryPromptTemplate_SoloDefault.fields.22.label>ritual role</DiaryPromptTemplate_SoloDefault.fields.22.label>
-  <DiaryPromptTemplate_SoloDefault.fields.23.label>ritual title</DiaryPromptTemplate_SoloDefault.fields.23.label>
-  <DiaryPromptTemplate_SoloDefault.fields.24.label>ability</DiaryPromptTemplate_SoloDefault.fields.24.label>
-  <DiaryPromptTemplate_SoloDefault.fields.25.label>ability category</DiaryPromptTemplate_SoloDefault.fields.25.label>
-  <DiaryPromptTemplate_SoloDefault.fields.26.label>ability target</DiaryPromptTemplate_SoloDefault.fields.26.label>
-  <DiaryPromptTemplate_SoloDefault.fields.27.label>ability cooldown ticks</DiaryPromptTemplate_SoloDefault.fields.27.label>
-  <DiaryPromptTemplate_SoloDefault.fields.28.label>raid arrival mode</DiaryPromptTemplate_SoloDefault.fields.28.label>
-  <DiaryPromptTemplate_SoloDefault.fields.29.label>raid strategy</DiaryPromptTemplate_SoloDefault.fields.29.label>
-  <DiaryPromptTemplate_SoloDefault.fields.30.label>raid points</DiaryPromptTemplate_SoloDefault.fields.30.label>
-  <DiaryPromptTemplate_SoloDefault.fields.31.label>royal title</DiaryPromptTemplate_SoloDefault.fields.31.label>
-  <DiaryPromptTemplate_SoloDefault.fields.32.label>ideoligion role</DiaryPromptTemplate_SoloDefault.fields.32.label>
-  <DiaryPromptTemplate_SoloDefault.fields.33.label>important context</DiaryPromptTemplate_SoloDefault.fields.33.label>
-  <DiaryPromptTemplate_SoloDefault.fields.34.label>setting</DiaryPromptTemplate_SoloDefault.fields.34.label>
-  <DiaryPromptTemplate_SoloDefault.fields.35.label>tone</DiaryPromptTemplate_SoloDefault.fields.35.label>
-  <DiaryPromptTemplate_SoloDefault.fields.36.label>my last opener (not repeat)</DiaryPromptTemplate_SoloDefault.fields.36.label>
-  <DiaryPromptTemplate_SoloDefault.fields.37.label>previous diary ending (continue from this)</DiaryPromptTemplate_SoloDefault.fields.37.label>
+  <DiaryPromptTemplate_SoloDefault.fields.6.label>external prompt instruction</DiaryPromptTemplate_SoloDefault.fields.6.label>
+  <DiaryPromptTemplate_SoloDefault.fields.7.label>external prompt fragment</DiaryPromptTemplate_SoloDefault.fields.7.label>
+  <DiaryPromptTemplate_SoloDefault.fields.8.label>quest name</DiaryPromptTemplate_SoloDefault.fields.8.label>
+  <DiaryPromptTemplate_SoloDefault.fields.9.label>quest lifecycle</DiaryPromptTemplate_SoloDefault.fields.9.label>
+  <DiaryPromptTemplate_SoloDefault.fields.10.label>quest faction</DiaryPromptTemplate_SoloDefault.fields.10.label>
+  <DiaryPromptTemplate_SoloDefault.fields.11.label>quest rewards</DiaryPromptTemplate_SoloDefault.fields.11.label>
+  <DiaryPromptTemplate_SoloDefault.fields.12.label>progression kind</DiaryPromptTemplate_SoloDefault.fields.12.label>
+  <DiaryPromptTemplate_SoloDefault.fields.13.label>skill</DiaryPromptTemplate_SoloDefault.fields.13.label>
+  <DiaryPromptTemplate_SoloDefault.fields.14.label>skill level</DiaryPromptTemplate_SoloDefault.fields.14.label>
+  <DiaryPromptTemplate_SoloDefault.fields.15.label>previous skill milestone</DiaryPromptTemplate_SoloDefault.fields.15.label>
+  <DiaryPromptTemplate_SoloDefault.fields.16.label>passion</DiaryPromptTemplate_SoloDefault.fields.16.label>
+  <DiaryPromptTemplate_SoloDefault.fields.17.label>psylink level</DiaryPromptTemplate_SoloDefault.fields.17.label>
+  <DiaryPromptTemplate_SoloDefault.fields.18.label>previous psylink level</DiaryPromptTemplate_SoloDefault.fields.18.label>
+  <DiaryPromptTemplate_SoloDefault.fields.19.label>xenotype</DiaryPromptTemplate_SoloDefault.fields.19.label>
+  <DiaryPromptTemplate_SoloDefault.fields.20.label>previous xenotype</DiaryPromptTemplate_SoloDefault.fields.20.label>
+  <DiaryPromptTemplate_SoloDefault.fields.21.label>major xenotype</DiaryPromptTemplate_SoloDefault.fields.21.label>
+  <DiaryPromptTemplate_SoloDefault.fields.22.label>title</DiaryPromptTemplate_SoloDefault.fields.22.label>
+  <DiaryPromptTemplate_SoloDefault.fields.23.label>previous title</DiaryPromptTemplate_SoloDefault.fields.23.label>
+  <DiaryPromptTemplate_SoloDefault.fields.24.label>ritual role</DiaryPromptTemplate_SoloDefault.fields.24.label>
+  <DiaryPromptTemplate_SoloDefault.fields.25.label>ritual title</DiaryPromptTemplate_SoloDefault.fields.25.label>
+  <DiaryPromptTemplate_SoloDefault.fields.26.label>ability</DiaryPromptTemplate_SoloDefault.fields.26.label>
+  <DiaryPromptTemplate_SoloDefault.fields.27.label>ability category</DiaryPromptTemplate_SoloDefault.fields.27.label>
+  <DiaryPromptTemplate_SoloDefault.fields.28.label>ability target</DiaryPromptTemplate_SoloDefault.fields.28.label>
+  <DiaryPromptTemplate_SoloDefault.fields.29.label>ability recharge ticks (long recharge = rarer, weightier use)</DiaryPromptTemplate_SoloDefault.fields.29.label>
+  <DiaryPromptTemplate_SoloDefault.fields.30.label>raid arrival mode</DiaryPromptTemplate_SoloDefault.fields.30.label>
+  <DiaryPromptTemplate_SoloDefault.fields.31.label>raid strategy</DiaryPromptTemplate_SoloDefault.fields.31.label>
+  <DiaryPromptTemplate_SoloDefault.fields.32.label>raid points</DiaryPromptTemplate_SoloDefault.fields.32.label>
+  <DiaryPromptTemplate_SoloDefault.fields.33.label>royal title</DiaryPromptTemplate_SoloDefault.fields.33.label>
+  <DiaryPromptTemplate_SoloDefault.fields.34.label>ideoligion role</DiaryPromptTemplate_SoloDefault.fields.34.label>
+  <DiaryPromptTemplate_SoloDefault.fields.35.label>important context</DiaryPromptTemplate_SoloDefault.fields.35.label>
+  <DiaryPromptTemplate_SoloDefault.fields.36.label>setting</DiaryPromptTemplate_SoloDefault.fields.36.label>
+  <DiaryPromptTemplate_SoloDefault.fields.37.label>tone</DiaryPromptTemplate_SoloDefault.fields.37.label>
   <DiaryPromptTemplate_SoloImportant.fields.0.label>event</DiaryPromptTemplate_SoloImportant.fields.0.label>
   <DiaryPromptTemplate_SoloImportant.fields.1.label>pov</DiaryPromptTemplate_SoloImportant.fields.1.label>
   <DiaryPromptTemplate_SoloImportant.fields.2.label>what happened</DiaryPromptTemplate_SoloImportant.fields.2.label>
@@ -190,68 +190,68 @@
   <DiaryPromptTemplate_SoloInternalState.fields.3.label>instruction</DiaryPromptTemplate_SoloInternalState.fields.3.label>
   <DiaryPromptTemplate_SoloInternalState.fields.4.label>event prompt</DiaryPromptTemplate_SoloInternalState.fields.4.label>
   <DiaryPromptTemplate_SoloInternalState.fields.5.label>event enhancement</DiaryPromptTemplate_SoloInternalState.fields.5.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.6.label>progression kind</DiaryPromptTemplate_SoloInternalState.fields.6.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.7.label>skill</DiaryPromptTemplate_SoloInternalState.fields.7.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.8.label>skill level</DiaryPromptTemplate_SoloInternalState.fields.8.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.9.label>previous skill milestone</DiaryPromptTemplate_SoloInternalState.fields.9.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.10.label>passion</DiaryPromptTemplate_SoloInternalState.fields.10.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.11.label>psylink level</DiaryPromptTemplate_SoloInternalState.fields.11.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.12.label>previous psylink level</DiaryPromptTemplate_SoloInternalState.fields.12.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.13.label>xenotype</DiaryPromptTemplate_SoloInternalState.fields.13.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.14.label>previous xenotype</DiaryPromptTemplate_SoloInternalState.fields.14.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.15.label>major_xenotype</DiaryPromptTemplate_SoloInternalState.fields.15.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.16.label>title</DiaryPromptTemplate_SoloInternalState.fields.16.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.17.label>previous title</DiaryPromptTemplate_SoloInternalState.fields.17.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.18.label>ritual role</DiaryPromptTemplate_SoloInternalState.fields.18.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.19.label>ritual title</DiaryPromptTemplate_SoloInternalState.fields.19.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.20.label>ability</DiaryPromptTemplate_SoloInternalState.fields.20.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.21.label>ability category</DiaryPromptTemplate_SoloInternalState.fields.21.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.22.label>ability target</DiaryPromptTemplate_SoloInternalState.fields.22.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.23.label>ability cooldown ticks</DiaryPromptTemplate_SoloInternalState.fields.23.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.24.label>raid arrival mode</DiaryPromptTemplate_SoloInternalState.fields.24.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.25.label>raid strategy</DiaryPromptTemplate_SoloInternalState.fields.25.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.26.label>raid points</DiaryPromptTemplate_SoloInternalState.fields.26.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.27.label>royal title</DiaryPromptTemplate_SoloInternalState.fields.27.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.28.label>ideoligion role</DiaryPromptTemplate_SoloInternalState.fields.28.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.29.label>important context</DiaryPromptTemplate_SoloInternalState.fields.29.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.30.label>setting</DiaryPromptTemplate_SoloInternalState.fields.30.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.31.label>tone</DiaryPromptTemplate_SoloInternalState.fields.31.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.32.label>my last opener (not repeat)</DiaryPromptTemplate_SoloInternalState.fields.32.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.33.label>previous diary ending (continue from this)</DiaryPromptTemplate_SoloInternalState.fields.33.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.6.label>external prompt instruction</DiaryPromptTemplate_SoloInternalState.fields.6.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.7.label>external prompt fragment</DiaryPromptTemplate_SoloInternalState.fields.7.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.8.label>progression kind</DiaryPromptTemplate_SoloInternalState.fields.8.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.9.label>skill</DiaryPromptTemplate_SoloInternalState.fields.9.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.10.label>skill level</DiaryPromptTemplate_SoloInternalState.fields.10.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.11.label>previous skill milestone</DiaryPromptTemplate_SoloInternalState.fields.11.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.12.label>passion</DiaryPromptTemplate_SoloInternalState.fields.12.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.13.label>psylink level</DiaryPromptTemplate_SoloInternalState.fields.13.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.14.label>previous psylink level</DiaryPromptTemplate_SoloInternalState.fields.14.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.15.label>xenotype</DiaryPromptTemplate_SoloInternalState.fields.15.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.16.label>previous xenotype</DiaryPromptTemplate_SoloInternalState.fields.16.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.17.label>major xenotype</DiaryPromptTemplate_SoloInternalState.fields.17.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.18.label>title</DiaryPromptTemplate_SoloInternalState.fields.18.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.19.label>previous title</DiaryPromptTemplate_SoloInternalState.fields.19.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.20.label>ritual role</DiaryPromptTemplate_SoloInternalState.fields.20.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.21.label>ritual title</DiaryPromptTemplate_SoloInternalState.fields.21.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.22.label>ability</DiaryPromptTemplate_SoloInternalState.fields.22.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.23.label>ability category</DiaryPromptTemplate_SoloInternalState.fields.23.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.24.label>ability target</DiaryPromptTemplate_SoloInternalState.fields.24.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.25.label>ability recharge ticks (long recharge = rarer, weightier use)</DiaryPromptTemplate_SoloInternalState.fields.25.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.26.label>raid arrival mode</DiaryPromptTemplate_SoloInternalState.fields.26.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.27.label>raid strategy</DiaryPromptTemplate_SoloInternalState.fields.27.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.28.label>raid points</DiaryPromptTemplate_SoloInternalState.fields.28.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.29.label>royal title</DiaryPromptTemplate_SoloInternalState.fields.29.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.30.label>ideoligion role</DiaryPromptTemplate_SoloInternalState.fields.30.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.31.label>important context</DiaryPromptTemplate_SoloInternalState.fields.31.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.32.label>setting</DiaryPromptTemplate_SoloInternalState.fields.32.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.33.label>tone</DiaryPromptTemplate_SoloInternalState.fields.33.label>
   <DiaryPromptTemplate_SoloBatched.fields.0.label>event</DiaryPromptTemplate_SoloBatched.fields.0.label>
   <DiaryPromptTemplate_SoloBatched.fields.1.label>pov</DiaryPromptTemplate_SoloBatched.fields.1.label>
   <DiaryPromptTemplate_SoloBatched.fields.2.label>what happened</DiaryPromptTemplate_SoloBatched.fields.2.label>
   <DiaryPromptTemplate_SoloBatched.fields.3.label>instruction</DiaryPromptTemplate_SoloBatched.fields.3.label>
   <DiaryPromptTemplate_SoloBatched.fields.4.label>event prompt</DiaryPromptTemplate_SoloBatched.fields.4.label>
   <DiaryPromptTemplate_SoloBatched.fields.5.label>event enhancement</DiaryPromptTemplate_SoloBatched.fields.5.label>
-  <DiaryPromptTemplate_SoloBatched.fields.6.label>progression kind</DiaryPromptTemplate_SoloBatched.fields.6.label>
-  <DiaryPromptTemplate_SoloBatched.fields.7.label>skill</DiaryPromptTemplate_SoloBatched.fields.7.label>
-  <DiaryPromptTemplate_SoloBatched.fields.8.label>skill level</DiaryPromptTemplate_SoloBatched.fields.8.label>
-  <DiaryPromptTemplate_SoloBatched.fields.9.label>previous skill milestone</DiaryPromptTemplate_SoloBatched.fields.9.label>
-  <DiaryPromptTemplate_SoloBatched.fields.10.label>passion</DiaryPromptTemplate_SoloBatched.fields.10.label>
-  <DiaryPromptTemplate_SoloBatched.fields.11.label>psylink level</DiaryPromptTemplate_SoloBatched.fields.11.label>
-  <DiaryPromptTemplate_SoloBatched.fields.12.label>previous psylink level</DiaryPromptTemplate_SoloBatched.fields.12.label>
-  <DiaryPromptTemplate_SoloBatched.fields.13.label>xenotype</DiaryPromptTemplate_SoloBatched.fields.13.label>
-  <DiaryPromptTemplate_SoloBatched.fields.14.label>previous xenotype</DiaryPromptTemplate_SoloBatched.fields.14.label>
-  <DiaryPromptTemplate_SoloBatched.fields.15.label>major_xenotype</DiaryPromptTemplate_SoloBatched.fields.15.label>
-  <DiaryPromptTemplate_SoloBatched.fields.16.label>title</DiaryPromptTemplate_SoloBatched.fields.16.label>
-  <DiaryPromptTemplate_SoloBatched.fields.17.label>previous title</DiaryPromptTemplate_SoloBatched.fields.17.label>
-  <DiaryPromptTemplate_SoloBatched.fields.18.label>ritual role</DiaryPromptTemplate_SoloBatched.fields.18.label>
-  <DiaryPromptTemplate_SoloBatched.fields.19.label>ritual title</DiaryPromptTemplate_SoloBatched.fields.19.label>
-  <DiaryPromptTemplate_SoloBatched.fields.20.label>ability</DiaryPromptTemplate_SoloBatched.fields.20.label>
-  <DiaryPromptTemplate_SoloBatched.fields.21.label>ability category</DiaryPromptTemplate_SoloBatched.fields.21.label>
-  <DiaryPromptTemplate_SoloBatched.fields.22.label>ability target</DiaryPromptTemplate_SoloBatched.fields.22.label>
-  <DiaryPromptTemplate_SoloBatched.fields.23.label>ability cooldown ticks</DiaryPromptTemplate_SoloBatched.fields.23.label>
-  <DiaryPromptTemplate_SoloBatched.fields.24.label>raid arrival mode</DiaryPromptTemplate_SoloBatched.fields.24.label>
-  <DiaryPromptTemplate_SoloBatched.fields.25.label>raid strategy</DiaryPromptTemplate_SoloBatched.fields.25.label>
-  <DiaryPromptTemplate_SoloBatched.fields.26.label>raid points</DiaryPromptTemplate_SoloBatched.fields.26.label>
-  <DiaryPromptTemplate_SoloBatched.fields.27.label>royal title</DiaryPromptTemplate_SoloBatched.fields.27.label>
-  <DiaryPromptTemplate_SoloBatched.fields.28.label>ideoligion role</DiaryPromptTemplate_SoloBatched.fields.28.label>
-  <DiaryPromptTemplate_SoloBatched.fields.29.label>important context</DiaryPromptTemplate_SoloBatched.fields.29.label>
-  <DiaryPromptTemplate_SoloBatched.fields.30.label>setting</DiaryPromptTemplate_SoloBatched.fields.30.label>
-  <DiaryPromptTemplate_SoloBatched.fields.31.label>tone</DiaryPromptTemplate_SoloBatched.fields.31.label>
-  <DiaryPromptTemplate_SoloBatched.fields.32.label>my last opener (not repeat)</DiaryPromptTemplate_SoloBatched.fields.32.label>
-  <DiaryPromptTemplate_SoloBatched.fields.33.label>previous diary ending (continue from this)</DiaryPromptTemplate_SoloBatched.fields.33.label>
+  <DiaryPromptTemplate_SoloBatched.fields.6.label>external prompt instruction</DiaryPromptTemplate_SoloBatched.fields.6.label>
+  <DiaryPromptTemplate_SoloBatched.fields.7.label>external prompt fragment</DiaryPromptTemplate_SoloBatched.fields.7.label>
+  <DiaryPromptTemplate_SoloBatched.fields.8.label>progression kind</DiaryPromptTemplate_SoloBatched.fields.8.label>
+  <DiaryPromptTemplate_SoloBatched.fields.9.label>skill</DiaryPromptTemplate_SoloBatched.fields.9.label>
+  <DiaryPromptTemplate_SoloBatched.fields.10.label>skill level</DiaryPromptTemplate_SoloBatched.fields.10.label>
+  <DiaryPromptTemplate_SoloBatched.fields.11.label>previous skill milestone</DiaryPromptTemplate_SoloBatched.fields.11.label>
+  <DiaryPromptTemplate_SoloBatched.fields.12.label>passion</DiaryPromptTemplate_SoloBatched.fields.12.label>
+  <DiaryPromptTemplate_SoloBatched.fields.13.label>psylink level</DiaryPromptTemplate_SoloBatched.fields.13.label>
+  <DiaryPromptTemplate_SoloBatched.fields.14.label>previous psylink level</DiaryPromptTemplate_SoloBatched.fields.14.label>
+  <DiaryPromptTemplate_SoloBatched.fields.15.label>xenotype</DiaryPromptTemplate_SoloBatched.fields.15.label>
+  <DiaryPromptTemplate_SoloBatched.fields.16.label>previous xenotype</DiaryPromptTemplate_SoloBatched.fields.16.label>
+  <DiaryPromptTemplate_SoloBatched.fields.17.label>major xenotype</DiaryPromptTemplate_SoloBatched.fields.17.label>
+  <DiaryPromptTemplate_SoloBatched.fields.18.label>title</DiaryPromptTemplate_SoloBatched.fields.18.label>
+  <DiaryPromptTemplate_SoloBatched.fields.19.label>previous title</DiaryPromptTemplate_SoloBatched.fields.19.label>
+  <DiaryPromptTemplate_SoloBatched.fields.20.label>ritual role</DiaryPromptTemplate_SoloBatched.fields.20.label>
+  <DiaryPromptTemplate_SoloBatched.fields.21.label>ritual title</DiaryPromptTemplate_SoloBatched.fields.21.label>
+  <DiaryPromptTemplate_SoloBatched.fields.22.label>ability</DiaryPromptTemplate_SoloBatched.fields.22.label>
+  <DiaryPromptTemplate_SoloBatched.fields.23.label>ability category</DiaryPromptTemplate_SoloBatched.fields.23.label>
+  <DiaryPromptTemplate_SoloBatched.fields.24.label>ability target</DiaryPromptTemplate_SoloBatched.fields.24.label>
+  <DiaryPromptTemplate_SoloBatched.fields.25.label>ability recharge ticks (long recharge = rarer, weightier use)</DiaryPromptTemplate_SoloBatched.fields.25.label>
+  <DiaryPromptTemplate_SoloBatched.fields.26.label>raid arrival mode</DiaryPromptTemplate_SoloBatched.fields.26.label>
+  <DiaryPromptTemplate_SoloBatched.fields.27.label>raid strategy</DiaryPromptTemplate_SoloBatched.fields.27.label>
+  <DiaryPromptTemplate_SoloBatched.fields.28.label>raid points</DiaryPromptTemplate_SoloBatched.fields.28.label>
+  <DiaryPromptTemplate_SoloBatched.fields.29.label>royal title</DiaryPromptTemplate_SoloBatched.fields.29.label>
+  <DiaryPromptTemplate_SoloBatched.fields.30.label>ideoligion role</DiaryPromptTemplate_SoloBatched.fields.30.label>
+  <DiaryPromptTemplate_SoloBatched.fields.31.label>important context</DiaryPromptTemplate_SoloBatched.fields.31.label>
+  <DiaryPromptTemplate_SoloBatched.fields.32.label>setting</DiaryPromptTemplate_SoloBatched.fields.32.label>
+  <DiaryPromptTemplate_SoloBatched.fields.33.label>tone</DiaryPromptTemplate_SoloBatched.fields.33.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.0.label>event</DiaryPromptTemplate_SoloDayReflection.fields.0.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.1.label>pov</DiaryPromptTemplate_SoloDayReflection.fields.1.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.2.label>what happened</DiaryPromptTemplate_SoloDayReflection.fields.2.label>
@@ -268,7 +268,7 @@
   <DiaryPromptTemplate_SoloDayReflection.fields.13.label>previous psylink level</DiaryPromptTemplate_SoloDayReflection.fields.13.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.14.label>xenotype</DiaryPromptTemplate_SoloDayReflection.fields.14.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.15.label>previous xenotype</DiaryPromptTemplate_SoloDayReflection.fields.15.label>
-  <DiaryPromptTemplate_SoloDayReflection.fields.16.label>major_xenotype</DiaryPromptTemplate_SoloDayReflection.fields.16.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.16.label>major xenotype</DiaryPromptTemplate_SoloDayReflection.fields.16.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.17.label>title</DiaryPromptTemplate_SoloDayReflection.fields.17.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.18.label>previous title</DiaryPromptTemplate_SoloDayReflection.fields.18.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.19.label>ritual role</DiaryPromptTemplate_SoloDayReflection.fields.19.label>
@@ -276,7 +276,7 @@
   <DiaryPromptTemplate_SoloDayReflection.fields.21.label>ability</DiaryPromptTemplate_SoloDayReflection.fields.21.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.22.label>ability category</DiaryPromptTemplate_SoloDayReflection.fields.22.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.23.label>ability target</DiaryPromptTemplate_SoloDayReflection.fields.23.label>
-  <DiaryPromptTemplate_SoloDayReflection.fields.24.label>ability cooldown ticks</DiaryPromptTemplate_SoloDayReflection.fields.24.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.24.label>ability recharge ticks (long recharge = rarer, weightier use)</DiaryPromptTemplate_SoloDayReflection.fields.24.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.25.label>raid arrival mode</DiaryPromptTemplate_SoloDayReflection.fields.25.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.26.label>raid strategy</DiaryPromptTemplate_SoloDayReflection.fields.26.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.27.label>raid points</DiaryPromptTemplate_SoloDayReflection.fields.27.label>
@@ -285,9 +285,10 @@
   <DiaryPromptTemplate_SoloDayReflection.fields.30.label>important context</DiaryPromptTemplate_SoloDayReflection.fields.30.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.31.label>setting</DiaryPromptTemplate_SoloDayReflection.fields.31.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.32.label>tone</DiaryPromptTemplate_SoloDayReflection.fields.32.label>
-  <DiaryPromptTemplate_SoloDayReflection.fields.33.label>my last opener (not repeat)</DiaryPromptTemplate_SoloDayReflection.fields.33.label>
-  <DiaryPromptTemplate_SoloDayReflection.fields.34.label>previous diary ending (continue from this)</DiaryPromptTemplate_SoloDayReflection.fields.34.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.33.label>my last opening line (do not reuse)</DiaryPromptTemplate_SoloDayReflection.fields.33.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.34.label>how my previous entry ended (continuity; do not retell it)</DiaryPromptTemplate_SoloDayReflection.fields.34.label>
   <DiaryPromptTemplate_SoloQuadrumReflection.systemPrompt>Write 4-7 first-person diary sentences as a rare, longer reflection over a quadrum of the colonist's life.
+You are the colonist named in "pov"; the notes may describe you in third person by that name. Write as "I" — never refer to yourself by name or in third person.
 Use the colonist's writing style. Mention at least two supplied dates naturally, not as a ledger.
 Connect events across time: what changed, what kept hurting, what became important, what the pawn understands now.
 Do not write a bullet list. Output only diary text. End with normal sentence punctuation.</DiaryPromptTemplate_SoloQuadrumReflection.systemPrompt>
@@ -302,9 +303,10 @@ Do not write a bullet list. Output only diary text. End with normal sentence pun
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.7.label>event enhancement</DiaryPromptTemplate_SoloQuadrumReflection.fields.7.label>
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.8.label>important entry count</DiaryPromptTemplate_SoloQuadrumReflection.fields.8.label>
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.9.label>setting</DiaryPromptTemplate_SoloQuadrumReflection.fields.9.label>
-  <DiaryPromptTemplate_SoloQuadrumReflection.fields.10.label>my last opener (not repeat)</DiaryPromptTemplate_SoloQuadrumReflection.fields.10.label>
-  <DiaryPromptTemplate_SoloQuadrumReflection.fields.11.label>previous diary ending (continue from this)</DiaryPromptTemplate_SoloQuadrumReflection.fields.11.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.10.label>my last opening line (do not reuse)</DiaryPromptTemplate_SoloQuadrumReflection.fields.10.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.11.label>how my previous entry ended (continuity; do not retell it)</DiaryPromptTemplate_SoloQuadrumReflection.fields.11.label>
   <DiaryPromptTemplate_SoloArcReflection.systemPrompt>Write 5-8 first-person diary sentences as a rare private life-arc reflection.
+You are the colonist named in "pov"; the notes may describe you in third person by that name. Write as "I" — never refer to yourself by name or in third person.
 Use the pawn's writing style and current self-understanding. The supplied memories are evidence, not a checklist.
 Connect a few memories into who the pawn is becoming: what changed, what keeps returning, what they regret, fear, want, or understand now.
 Do not write a report, biography, bullet list, or mechanical summary. Output only diary text. End with normal sentence punctuation.</DiaryPromptTemplate_SoloArcReflection.systemPrompt>
@@ -322,8 +324,8 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_SoloArcReflection.fields.10.label>entries this year</DiaryPromptTemplate_SoloArcReflection.fields.10.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.11.label>forced yearly arc</DiaryPromptTemplate_SoloArcReflection.fields.11.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.12.label>setting</DiaryPromptTemplate_SoloArcReflection.fields.12.label>
-  <DiaryPromptTemplate_SoloArcReflection.fields.13.label>my last opener (not repeat)</DiaryPromptTemplate_SoloArcReflection.fields.13.label>
-  <DiaryPromptTemplate_SoloArcReflection.fields.14.label>previous diary ending (continue from this)</DiaryPromptTemplate_SoloArcReflection.fields.14.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.13.label>my last opening line (do not reuse)</DiaryPromptTemplate_SoloArcReflection.fields.13.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.14.label>how my previous entry ended (continuity; do not retell it)</DiaryPromptTemplate_SoloArcReflection.fields.14.label>
   <DiaryPromptTemplate_DeathDescription.fields.0.label>event</DiaryPromptTemplate_DeathDescription.fields.0.label>
   <DiaryPromptTemplate_DeathDescription.fields.1.label>event prompt</DiaryPromptTemplate_DeathDescription.fields.1.label>
   <DiaryPromptTemplate_DeathDescription.fields.2.label>event enhancement</DiaryPromptTemplate_DeathDescription.fields.2.label>
@@ -340,7 +342,7 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_ArrivalDescription.fields.5.label>arrival facts</DiaryPromptTemplate_ArrivalDescription.fields.5.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.6.label>colonist pawn</DiaryPromptTemplate_ArrivalDescription.fields.6.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.7.label>setting</DiaryPromptTemplate_ArrivalDescription.fields.7.label>
-  <DiaryPromptTemplate_Title.fields.0.label>entry</DiaryPromptTemplate_Title.fields.0.label>
+  <DiaryPromptTemplate_Title.fields.0.label>diary entry to title</DiaryPromptTemplate_Title.fields.0.label>
   <!-- Appended prompt fields: indexes intentionally follow the live XML lists so existing indexed
        translations remain stable. -->
   <DiaryPromptTemplate_SoloDefault.fields.40.label>trait</DiaryPromptTemplate_SoloDefault.fields.40.label>
