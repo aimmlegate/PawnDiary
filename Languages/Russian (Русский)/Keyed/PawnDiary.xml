@@ -96,6 +96,14 @@
   <PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Text>Титул {0} сменился с йомена на рыцаря.</PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>Получена новая черта</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>В характере {0} произошёл надлом: теперь это нервный человек.</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>
+  <PawnDiary.Dev.PromptSuite.BiotechGrowth.Label>Момент взросления (Biotech)</PawnDiary.Dev.PromptSuite.BiotechGrowth.Label>
+  <PawnDiary.Dev.PromptSuite.BiotechGrowth.Markers>growth_moment=true; birthday_age=10; opportunity_band=high; opportunity_description=было доступно несколько значимых вариантов; selected_trait=добрый; selected_trait_description=склонность помогать другим, даже когда это чего-то стоит; new_interest_1=медицина; interest_change_1=появился новый интерес; observed_upbringing_description=регулярные уроки этого взрослого повлияли на воспитание ребёнка; supporter_name={1}; supporter_role=observed_teacher; initiator_family_role=child; recipient_family_role=observed_teacher</PawnDiary.Dev.PromptSuite.BiotechGrowth.Markers>
+  <PawnDiary.Dev.PromptSuite.BiotechGrowth.Initiator>Мы с {0} были рядом, когда выбор в момент взросления стал окончательным.</PawnDiary.Dev.PromptSuite.BiotechGrowth.Initiator>
+  <PawnDiary.Dev.PromptSuite.BiotechGrowth.Recipient>Мы с {0} были рядом, когда выбор в момент взросления стал окончательным.</PawnDiary.Dev.PromptSuite.BiotechGrowth.Recipient>
+  <PawnDiary.Dev.PromptSuite.BiotechBirth.Label>Рождение в семье (Biotech)</PawnDiary.Dev.PromptSuite.BiotechBirth.Label>
+  <PawnDiary.Dev.PromptSuite.BiotechBirth.Markers>biotech_birth=true; child_name=Роуэн; birth_outcome=healthy; birth_method=pregnancy; birther_name={0}; father_name={1}; initiator_family_role=birther; recipient_family_role=father</PawnDiary.Dev.PromptSuite.BiotechBirth.Markers>
+  <PawnDiary.Dev.PromptSuite.BiotechBirth.Initiator>Мы с {0} были рядом, когда родился ребёнок.</PawnDiary.Dev.PromptSuite.BiotechBirth.Initiator>
+  <PawnDiary.Dev.PromptSuite.BiotechBirth.Recipient>Мы с {0} были рядом, когда родился ребёнок.</PawnDiary.Dev.PromptSuite.BiotechBirth.Recipient>
   <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>Обязательный годовой итог</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>
   <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>Воспоминания {0} за 5504 год:&#10;- 4-е апримая: налёт, после которого мастерская выгорела.&#10;- 8-е апримая: строительство поднялось до 12.&#10;- 2-е джугуста: третий уровень пси-связи.&#10;- 9-е децембария: превращение в сангофага.</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>
   <PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Label>Итог после важного события</PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Label>

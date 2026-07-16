@@ -174,7 +174,10 @@ This is the low-cost prompt-quality release. Do not continue into A1 study/conta
 
 ## 8. Wave 3 — Biotech family flagship
 
-> **Implementation status (2026-07-16): in progress.** Biotech Phases 0–3 and Narrative N2-B are complete. Stable B1
+> **Implementation status (2026-07-16): in progress.** Biotech Phases 0–3 and Narrative N2-B are complete. Phase 4's
+> automated hardening is also implemented: bounded B1 prompt projection/previews and context-detail
+> tests, no-DLC metadata checks, deterministic pending-state caps, and SpeakUp/RimTalk logic/build smoke
+> all pass. The loaded-game acceptance matrix is still required, so B2 remains blocked. Stable B1
 > contracts/policy/settings now feed live, atomic birthday/growth-letter ownership with saved postponed
 > rows, auto/choice diffs, mature ordinary fallback, progression consumption, saved family continuity,
 > exact lesson/play observations, truthful child/supporter pages, and source-owned N1 identity evidence.
@@ -182,8 +185,8 @@ This is the low-cost prompt-quality release. Do not continue into A1 study/conta
 > family/current visible identity candidates on canonical growth pages. The exact birth owner now stages
 > mature Tale/Thought signals around `ApplyBirthOutcome`, reserves the matching later ritual owner, attaches exact outcome/method facts to the
 > family arc, selects at most two adult writers, preserves pending naming across save/load, rejects replay,
-> and fails open to the mature routes. The next permitted slice is Biotech Phase 4 / B1 compatibility and
-> release hardening.
+> and fails open to the mature routes. The next permitted slice remains Biotech Phase 4's manual B1
+> acceptance matrix in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
 ### Implement in this exact order
 

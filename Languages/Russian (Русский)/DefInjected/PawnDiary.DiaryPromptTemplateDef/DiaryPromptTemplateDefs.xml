@@ -414,4 +414,64 @@
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.12.label>повествовательный контекст</DiaryPromptTemplate_SoloQuadrumReflection.fields.12.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.15.label>повествовательный контекст</DiaryPromptTemplate_SoloArcReflection.fields.15.label>
 
+  <!-- Biotech Phase 4: model-facing B1 facts appended to important pair/solo templates. -->
+  <DiaryPromptTemplate_PairImportant.fields.29.label>возраст на день рождения</DiaryPromptTemplate_PairImportant.fields.29.label>
+  <DiaryPromptTemplate_PairImportant.fields.30.label>возможности в момент взросления</DiaryPromptTemplate_PairImportant.fields.30.label>
+  <DiaryPromptTemplate_PairImportant.fields.31.label>выбранная черта</DiaryPromptTemplate_PairImportant.fields.31.label>
+  <DiaryPromptTemplate_PairImportant.fields.32.label>значение выбранной черты</DiaryPromptTemplate_PairImportant.fields.32.label>
+  <DiaryPromptTemplate_PairImportant.fields.33.label>интерес 1</DiaryPromptTemplate_PairImportant.fields.33.label>
+  <DiaryPromptTemplate_PairImportant.fields.34.label>изменение интереса 1</DiaryPromptTemplate_PairImportant.fields.34.label>
+  <DiaryPromptTemplate_PairImportant.fields.35.label>интерес 2</DiaryPromptTemplate_PairImportant.fields.35.label>
+  <DiaryPromptTemplate_PairImportant.fields.36.label>изменение интереса 2</DiaryPromptTemplate_PairImportant.fields.36.label>
+  <DiaryPromptTemplate_PairImportant.fields.37.label>интерес 3</DiaryPromptTemplate_PairImportant.fields.37.label>
+  <DiaryPromptTemplate_PairImportant.fields.38.label>изменение интереса 3</DiaryPromptTemplate_PairImportant.fields.38.label>
+  <DiaryPromptTemplate_PairImportant.fields.39.label>интерес 4</DiaryPromptTemplate_PairImportant.fields.39.label>
+  <DiaryPromptTemplate_PairImportant.fields.40.label>изменение интереса 4</DiaryPromptTemplate_PairImportant.fields.40.label>
+  <DiaryPromptTemplate_PairImportant.fields.41.label>наблюдавшееся воспитание</DiaryPromptTemplate_PairImportant.fields.41.label>
+  <DiaryPromptTemplate_PairImportant.fields.42.label>прежнее имя</DiaryPromptTemplate_PairImportant.fields.42.label>
+  <DiaryPromptTemplate_PairImportant.fields.43.label>нынешнее имя</DiaryPromptTemplate_PairImportant.fields.43.label>
+  <DiaryPromptTemplate_PairImportant.fields.44.label>новые обязанности</DiaryPromptTemplate_PairImportant.fields.44.label>
+  <DiaryPromptTemplate_PairImportant.fields.45.label>поддерживающий взрослый</DiaryPromptTemplate_PairImportant.fields.45.label>
+  <DiaryPromptTemplate_PairImportant.fields.46.label>роль поддерживающего взрослого</DiaryPromptTemplate_PairImportant.fields.46.label>
+  <DiaryPromptTemplate_PairImportant.fields.47.label>семейная роль инициатора</DiaryPromptTemplate_PairImportant.fields.47.label>
+  <DiaryPromptTemplate_PairImportant.fields.48.label>семейная роль адресата</DiaryPromptTemplate_PairImportant.fields.48.label>
+  <DiaryPromptTemplate_PairImportant.fields.49.label>ребёнок</DiaryPromptTemplate_PairImportant.fields.49.label>
+  <DiaryPromptTemplate_PairImportant.fields.50.label>исход родов</DiaryPromptTemplate_PairImportant.fields.50.label>
+  <DiaryPromptTemplate_PairImportant.fields.51.label>способ рождения</DiaryPromptTemplate_PairImportant.fields.51.label>
+  <DiaryPromptTemplate_PairImportant.fields.52.label>родивший родитель</DiaryPromptTemplate_PairImportant.fields.52.label>
+  <DiaryPromptTemplate_PairImportant.fields.53.label>генетическая мать</DiaryPromptTemplate_PairImportant.fields.53.label>
+  <DiaryPromptTemplate_PairImportant.fields.54.label>отец</DiaryPromptTemplate_PairImportant.fields.54.label>
+  <DiaryPromptTemplate_PairImportant.fields.55.label>врач</DiaryPromptTemplate_PairImportant.fields.55.label>
+  <DiaryPromptTemplate_PairImportant.fields.56.label>родивший родитель умер</DiaryPromptTemplate_PairImportant.fields.56.label>
+  <DiaryPromptTemplate_PairImportant.fields.57.label>ритуальные роды</DiaryPromptTemplate_PairImportant.fields.57.label>
+  <DiaryPromptTemplate_SoloImportant.fields.44.label>возраст на день рождения</DiaryPromptTemplate_SoloImportant.fields.44.label>
+  <DiaryPromptTemplate_SoloImportant.fields.45.label>возможности в момент взросления</DiaryPromptTemplate_SoloImportant.fields.45.label>
+  <DiaryPromptTemplate_SoloImportant.fields.46.label>выбранная черта</DiaryPromptTemplate_SoloImportant.fields.46.label>
+  <DiaryPromptTemplate_SoloImportant.fields.47.label>значение выбранной черты</DiaryPromptTemplate_SoloImportant.fields.47.label>
+  <DiaryPromptTemplate_SoloImportant.fields.48.label>интерес 1</DiaryPromptTemplate_SoloImportant.fields.48.label>
+  <DiaryPromptTemplate_SoloImportant.fields.49.label>изменение интереса 1</DiaryPromptTemplate_SoloImportant.fields.49.label>
+  <DiaryPromptTemplate_SoloImportant.fields.50.label>интерес 2</DiaryPromptTemplate_SoloImportant.fields.50.label>
+  <DiaryPromptTemplate_SoloImportant.fields.51.label>изменение интереса 2</DiaryPromptTemplate_SoloImportant.fields.51.label>
+  <DiaryPromptTemplate_SoloImportant.fields.52.label>интерес 3</DiaryPromptTemplate_SoloImportant.fields.52.label>
+  <DiaryPromptTemplate_SoloImportant.fields.53.label>изменение интереса 3</DiaryPromptTemplate_SoloImportant.fields.53.label>
+  <DiaryPromptTemplate_SoloImportant.fields.54.label>интерес 4</DiaryPromptTemplate_SoloImportant.fields.54.label>
+  <DiaryPromptTemplate_SoloImportant.fields.55.label>изменение интереса 4</DiaryPromptTemplate_SoloImportant.fields.55.label>
+  <DiaryPromptTemplate_SoloImportant.fields.56.label>наблюдавшееся воспитание</DiaryPromptTemplate_SoloImportant.fields.56.label>
+  <DiaryPromptTemplate_SoloImportant.fields.57.label>прежнее имя</DiaryPromptTemplate_SoloImportant.fields.57.label>
+  <DiaryPromptTemplate_SoloImportant.fields.58.label>нынешнее имя</DiaryPromptTemplate_SoloImportant.fields.58.label>
+  <DiaryPromptTemplate_SoloImportant.fields.59.label>новые обязанности</DiaryPromptTemplate_SoloImportant.fields.59.label>
+  <DiaryPromptTemplate_SoloImportant.fields.60.label>поддерживающий взрослый</DiaryPromptTemplate_SoloImportant.fields.60.label>
+  <DiaryPromptTemplate_SoloImportant.fields.61.label>роль поддерживающего взрослого</DiaryPromptTemplate_SoloImportant.fields.61.label>
+  <DiaryPromptTemplate_SoloImportant.fields.62.label>семейная роль инициатора</DiaryPromptTemplate_SoloImportant.fields.62.label>
+  <DiaryPromptTemplate_SoloImportant.fields.63.label>семейная роль адресата</DiaryPromptTemplate_SoloImportant.fields.63.label>
+  <DiaryPromptTemplate_SoloImportant.fields.64.label>ребёнок</DiaryPromptTemplate_SoloImportant.fields.64.label>
+  <DiaryPromptTemplate_SoloImportant.fields.65.label>исход родов</DiaryPromptTemplate_SoloImportant.fields.65.label>
+  <DiaryPromptTemplate_SoloImportant.fields.66.label>способ рождения</DiaryPromptTemplate_SoloImportant.fields.66.label>
+  <DiaryPromptTemplate_SoloImportant.fields.67.label>родивший родитель</DiaryPromptTemplate_SoloImportant.fields.67.label>
+  <DiaryPromptTemplate_SoloImportant.fields.68.label>генетическая мать</DiaryPromptTemplate_SoloImportant.fields.68.label>
+  <DiaryPromptTemplate_SoloImportant.fields.69.label>отец</DiaryPromptTemplate_SoloImportant.fields.69.label>
+  <DiaryPromptTemplate_SoloImportant.fields.70.label>врач</DiaryPromptTemplate_SoloImportant.fields.70.label>
+  <DiaryPromptTemplate_SoloImportant.fields.71.label>родивший родитель умер</DiaryPromptTemplate_SoloImportant.fields.71.label>
+  <DiaryPromptTemplate_SoloImportant.fields.72.label>ритуальные роды</DiaryPromptTemplate_SoloImportant.fields.72.label>
+
 </LanguageData>

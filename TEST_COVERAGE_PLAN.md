@@ -125,12 +125,14 @@ one window, `Gleaming` maps to none, localized fallbacks exist, and the three ex
 bounded source evidence. The EVT-22 RimTest fixture exercises the live package-gated page/evidence
 path when Anomaly is active and the no-op branch otherwise.
 
-Master Wave 3 / Biotech Phases 0–3 use `DiaryBiotechPolicyTests`, an assembly-free suite that freezes
+Master Wave 3 / Biotech Phases 0–3 plus Phase 4 automated hardening use
+`DiaryBiotechPolicyTests`, an assembly-free suite that freezes
 the complete family arc grammar, additive save/context keys, actual before/after growth diffing,
 NoTrait and ambiguous auto-trait handling, passion verification, opportunity boundaries,
 deterministic supporter tiers/ties, child/supporter writer shapes, capped birth writer ordering,
 legacy settings inheritance, bounded context formatting, XML policy coverage, exact classifier
-groups/package gates, pending-row normalization/expiry/grace, pregnancy/labor correlation,
+groups/package gates, pending-row normalization/expiry/grace and deterministic newest-row caps,
+the absence of a Biotech mod dependency, pregnancy/labor correlation,
 lesson/play/memory classification, unsummarized evidence, duplicate repair, compaction/retention,
 exact birth-arc attachment/idempotence, naming/writer-availability flush and durable-record policy,
 labor-to-pushing single-arc continuity, multiple-birth evidence cloning, exact-parent precedence,
@@ -146,8 +148,15 @@ hot-event replay rejection, frozen event-time prompt/display facts, and chronolo
 a final-death boundary. The Scribe fixture round-trips detached pending growth and birth rows,
 deep family arc/supporter state, and nested consumed ages, while the DLC-safety fixture drives the guarded
 growth/family/birth snapshot accessors and pins exact runtime method signatures.
+`DiaryPipelineTests` additionally renders B1 growth and birth through the important pair/solo shapes
+at Full, Balanced, and Compact with an exhausted optional budget, requiring the central qualitative
+facts while rejecting IDs/numeric tiers/ticks/correlation tokens. It parses the shipped templates to
+pin both context-key projections and every English/Russian indexed label; the dev prompt fixture panel
+ships localized synthetic growth/birth cases. The SpeakUp and RimTalk pure suites and bridge builds
+remain the automated adapter smoke.
 Vanilla age-7/10/13 letter postponement/click-through and live healthy/ill/stillborn/vat/surrogacy/
-ritual/naming/fail-open birth paths remain the Phase-4 manual loaded-game acceptance matrix.
+ritual/naming/fail-open birth paths, a base-only run, an oldest-supported save, and loaded-adapter
+observation remain the Phase-4 manual acceptance matrix in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
 Narrative N2-B extends `NarrativeContinuityTests` with assembly-free checks for family-continuity
 classification, exact arc/subject candidate construction, fixed provider ordering, inactive-DLC and

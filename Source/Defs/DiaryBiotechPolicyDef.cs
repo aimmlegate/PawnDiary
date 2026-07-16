@@ -30,6 +30,7 @@ namespace PawnDiary
     {
         public int growthPendingExpiryTicks = 180000;
         public int growthFallbackGraceTicks = 60000;
+        public int maximumPendingGrowthRows = 256;
         public List<DiaryBiotechOpportunityBandDef> opportunityBands =
             new List<DiaryBiotechOpportunityBandDef>();
         // Localized prompt prose for passion transitions. Stable passion tokens stay in the pure
@@ -61,6 +62,7 @@ namespace PawnDiary
         public int birthNamingGraceTicks = 60000;
         public int birthCorrelationExpiryTicks = 2500;
         public int maximumBirthWriters = 2;
+        public int maximumPendingBirthRows = 256;
 
         /// <summary>Reports malformed XML policy at Def load instead of failing inside a later hook.</summary>
         public override IEnumerable<string> ConfigErrors()
@@ -72,6 +74,8 @@ namespace PawnDiary
 
             if (growthPendingExpiryTicks <= 0) yield return "growthPendingExpiryTicks must be positive.";
             if (growthFallbackGraceTicks < 0) yield return "growthFallbackGraceTicks cannot be negative.";
+            if (maximumPendingGrowthRows <= 0 || maximumPendingGrowthRows > 2048)
+                yield return "maximumPendingGrowthRows must stay between one and the defensive 2048-row cap.";
             if (string.IsNullOrWhiteSpace(newInterestDescription))
                 yield return "newInterestDescription must contain DefInjected prompt prose.";
             if (string.IsNullOrWhiteSpace(deepenedInterestDescription))
@@ -95,6 +99,8 @@ namespace PawnDiary
             {
                 yield return "maximumBirthWriters must stay between one and the hard two-writer cap.";
             }
+            if (maximumPendingBirthRows <= 0 || maximumPendingBirthRows > 2048)
+                yield return "maximumPendingBirthRows must stay between one and the defensive 2048-row cap.";
             if (!HasNonBlankMatcher(matureBirthDefNames))
                 yield return "matureBirthDefNames must contain at least one exact Def name.";
             if (!HasNonBlankMatcher(miscarriageBirtherThoughtDefNames))
@@ -208,6 +214,10 @@ namespace PawnDiary
 
             result.growthPendingExpiryTicks = Positive(source.growthPendingExpiryTicks, result.growthPendingExpiryTicks);
             result.growthFallbackGraceTicks = Math.Max(0, source.growthFallbackGraceTicks);
+            result.maximumPendingGrowthRows = BoundedPositive(
+                source.maximumPendingGrowthRows,
+                result.maximumPendingGrowthRows,
+                2048);
             result.familyActivityPairDedupTicks = Math.Max(0, source.familyActivityPairDedupTicks);
             result.supporterMinimumEvidence = Positive(source.supporterMinimumEvidence, result.supporterMinimumEvidence);
             result.maximumSupporterRows = Positive(source.maximumSupporterRows, result.maximumSupporterRows);
@@ -220,6 +230,10 @@ namespace PawnDiary
             result.maximumBirthWriters = source.maximumBirthWriters < 1 || source.maximumBirthWriters > 2
                 ? result.maximumBirthWriters
                 : source.maximumBirthWriters;
+            result.maximumPendingBirthRows = BoundedPositive(
+                source.maximumPendingBirthRows,
+                result.maximumPendingBirthRows,
+                2048);
             result.newInterestDescription = source.newInterestDescription ?? string.Empty;
             result.deepenedInterestDescription = source.deepenedInterestDescription ?? string.Empty;
             result.familySinceBirthNarrativeFormat = source.familySinceBirthNarrativeFormat ?? string.Empty;
@@ -313,6 +327,13 @@ namespace PawnDiary
         private static int Positive(int value, int fallback)
         {
             return value > 0 ? value : fallback;
+        }
+
+        // XML may be hand-edited after ConfigErrors ran. Keep persisted-list caps inside the stable
+        // defensive ceiling even when a malformed live Def reaches the snapshot adapter.
+        private static int BoundedPositive(int value, int fallback, int maximum)
+        {
+            return value <= 0 || value > maximum ? fallback : value;
         }
     }
 }

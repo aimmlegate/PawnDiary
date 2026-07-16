@@ -148,7 +148,8 @@ namespace PawnDiary
                 });
                 pendingBiotechBirths = PendingBiotechBirthPolicy.Normalize(
                     pendingBiotechBirths,
-                    Find.TickManager?.TicksGame ?? state.snapshot.birthTick);
+                    Find.TickManager?.TicksGame ?? state.snapshot.birthTick,
+                    policy.maximumPendingBirthRows);
                 return HasPendingBiotechBirth(state.snapshot.familyArcId);
             }
 
@@ -411,7 +412,8 @@ namespace PawnDiary
                     policy.maximumSupporterRows);
                 pendingBiotechBirths = PendingBiotechBirthPolicy.Normalize(
                     pendingBiotechBirths,
-                    now);
+                    now,
+                    policy.maximumPendingBirthRows);
                 familyObservationVersion = Math.Max(0,
                     Math.Min(CurrentFamilyObservationVersion, familyObservationVersion));
             }
@@ -636,7 +638,10 @@ namespace PawnDiary
 
             int now = Find.TickManager?.TicksGame ?? 0;
             BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
-            pendingBiotechBirths = PendingBiotechBirthPolicy.Normalize(pendingBiotechBirths, now);
+            pendingBiotechBirths = PendingBiotechBirthPolicy.Normalize(
+                pendingBiotechBirths,
+                now,
+                policy.maximumPendingBirthRows);
             for (int i = pendingBiotechBirths.Count - 1; i >= 0; i--)
             {
                 PendingBiotechBirthState pending = pendingBiotechBirths[i];

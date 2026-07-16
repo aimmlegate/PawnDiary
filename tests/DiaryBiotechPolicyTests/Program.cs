@@ -281,6 +281,21 @@ namespace DiaryBiotechPolicyTests
                 !PendingBiotechGrowthMomentPolicy.IsPastFallbackGrace(newer, 409, 200));
             AssertTrue("negative grace is disabled",
                 !PendingBiotechGrowthMomentPolicy.IsPastFallbackGrace(newer, 9999, -1));
+
+            List<PendingBiotechGrowthMoment> capped = PendingBiotechGrowthMomentPolicy.Normalize(
+                new[]
+                {
+                    Pending("OldGrowth", 7, 100, 110),
+                    Pending("MiddleGrowth", 7, 200, 210),
+                    Pending("NewGrowth", 7, 300, 310)
+                },
+                currentTick: 500,
+                maximumRows: 2);
+            AssertEqual("pending growth rows respect configured cap", 2, capped.Count);
+            AssertTrue("pending growth cap keeps newest ownership",
+                capped.Any(row => row.pawnId == "MiddleGrowth")
+                && capped.Any(row => row.pawnId == "NewGrowth")
+                && !capped.Any(row => row.pawnId == "OldGrowth"));
         }
 
         private static void TestFamilyArcObservationAndRetention()
@@ -868,6 +883,21 @@ namespace DiaryBiotechPolicyTests
                     60,
                     currentWriterCount: 0));
 
+            List<PendingBiotechBirthState> cappedBirths = PendingBiotechBirthPolicy.Normalize(
+                new List<PendingBiotechBirthState>
+                {
+                    PendingBirth("OldBirth", 100),
+                    PendingBirth("MiddleBirth", 200),
+                    PendingBirth("NewBirth", 300)
+                },
+                currentTick: 500,
+                maximumRows: 2);
+            AssertEqual("pending birth rows respect configured cap", 2, cappedBirths.Count);
+            AssertTrue("pending birth cap keeps newest ownership",
+                cappedBirths.Any(row => row.snapshot.childId == "MiddleBirth")
+                && cappedBirths.Any(row => row.snapshot.childId == "NewBirth")
+                && !cappedBirths.Any(row => row.snapshot.childId == "OldBirth"));
+
             AssertTrue("durable birth row matches exact arc and child",
                 BirthRecordPolicy.Matches(
                     BiotechEventDefNames.FamilyBirth,
@@ -999,6 +1029,8 @@ namespace DiaryBiotechPolicyTests
             XElement def = policy.Descendants("PawnDiary.DiaryBiotechPolicyDef").Single();
             AssertEqual("policy defName", "Diary_BiotechPolicy", Value(def, "defName"));
             AssertEqual("policy max birth writers", "2", Value(def, "maximumBirthWriters"));
+            AssertEqual("policy max pending growth rows", "256", Value(def, "maximumPendingGrowthRows"));
+            AssertEqual("policy max pending birth rows", "256", Value(def, "maximumPendingBirthRows"));
             AssertEqual("policy birth correlation expiry", "2500", Value(def, "birthCorrelationExpiryTicks"));
             AssertEqual("policy supporter minimum", "2", Value(def, "supporterMinimumEvidence"));
             AssertTrue("new-interest prompt prose is XML-owned",
@@ -1069,6 +1101,14 @@ namespace DiaryBiotechPolicyTests
                 groups.Root.Elements("PawnDiary.DiaryInteractionGroupDef").Count(group =>
                     Value(group, "domain") == "Tale" && Value(group, "order") == "315"));
 
+            // Biotech is optional content, never a mod dependency. The package-gated groups above
+            // should simply stay disabled in a base-game install.
+            XDocument about = XDocument.Load(Path.Combine(root, "About", "About.xml"));
+            AssertTrue("About.xml does not require Biotech",
+                !about.Descendants("modDependencies").Descendants("packageId").Any(packageId =>
+                    string.Equals(packageId.Value.Trim(), "Ludeon.RimWorld.Biotech",
+                        StringComparison.OrdinalIgnoreCase)));
+
             AssertLocalization(root, "English");
             AssertLocalization(root, "Russian (Русский)");
         }
@@ -1129,7 +1169,15 @@ namespace DiaryBiotechPolicyTests
                 "PawnDiary.Event.Biotech.Birth.Outcome.Healthy",
                 "PawnDiary.Event.Biotech.Birth.Outcome.InfantIllness",
                 "PawnDiary.Event.Biotech.Birth.Outcome.Stillbirth",
-                "PawnDiary.Event.Biotech.Birth.BirtherDied"
+                "PawnDiary.Event.Biotech.Birth.BirtherDied",
+                "PawnDiary.Dev.PromptSuite.BiotechGrowth.Label",
+                "PawnDiary.Dev.PromptSuite.BiotechGrowth.Markers",
+                "PawnDiary.Dev.PromptSuite.BiotechGrowth.Initiator",
+                "PawnDiary.Dev.PromptSuite.BiotechGrowth.Recipient",
+                "PawnDiary.Dev.PromptSuite.BiotechBirth.Label",
+                "PawnDiary.Dev.PromptSuite.BiotechBirth.Markers",
+                "PawnDiary.Dev.PromptSuite.BiotechBirth.Initiator",
+                "PawnDiary.Dev.PromptSuite.BiotechBirth.Recipient"
             };
             foreach (string key in keyedNames)
             {
@@ -1226,6 +1274,29 @@ namespace DiaryBiotechPolicyTests
                 birthTick = tick,
                 namingDeadline = tick + 100,
                 namingResolved = false
+            };
+        }
+
+        private static PendingBiotechBirthState PendingBirth(string childId, int tick)
+        {
+            BirthMutationSnapshot snapshot = BirthSnapshot(childId, tick);
+            snapshot.familyArcId = "biotech-family|" + childId;
+            return new PendingBiotechBirthState
+            {
+                snapshot = snapshot,
+                writers = new BirthWriterSelection
+                {
+                    writers = new List<BirthWriterFact>
+                    {
+                        new BirthWriterFact
+                        {
+                            pawnId = "Birther_" + childId,
+                            displayName = "Ari",
+                            roleToken = BiotechFamilyRoleTokens.Birther
+                        }
+                    }
+                },
+                createdTick = tick
             };
         }
 

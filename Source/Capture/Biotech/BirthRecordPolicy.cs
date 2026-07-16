@@ -35,13 +35,18 @@ namespace PawnDiary.Capture
     /// <summary>Normalizes saved naming ownership and decides its bounded flush point.</summary>
     internal static class PendingBiotechBirthPolicy
     {
+        private const int DefaultMaximumRows = 256;
+        private const int HardMaximumRows = 2048;
+
         /// <summary>
-        /// Drops malformed/future rows, de-duplicates by family arc, caps writers at two, and returns
-        /// stable birth-tick/arc ordering. The original detached objects are repaired in place.
+        /// Drops malformed/future rows, de-duplicates by family arc, caps writers at two, retains only
+        /// the newest XML-bounded rows, and returns stable birth-tick/arc ordering. The original detached
+        /// objects are repaired in place.
         /// </summary>
         public static List<PendingBiotechBirthState> Normalize(
             IList<PendingBiotechBirthState> source,
-            int currentTick)
+            int currentTick,
+            int maximumRows = DefaultMaximumRows)
         {
             int now = Math.Max(0, currentTick);
             Dictionary<string, PendingBiotechBirthState> byArc =
@@ -69,6 +74,15 @@ namespace PawnDiary.Capture
             List<PendingBiotechBirthState> result =
                 new List<PendingBiotechBirthState>(byArc.Values);
             result.Sort(Compare);
+            int rowCap = maximumRows < 1 || maximumRows > HardMaximumRows
+                ? DefaultMaximumRows
+                : maximumRows;
+            if (result.Count > rowCap)
+            {
+                // Compare sorts oldest first. In an extreme/corrupt save, discard the oldest overflow
+                // and keep the newest ownership rows; output remains in stable chronological order.
+                result.RemoveRange(0, result.Count - rowCap);
+            }
             return result;
         }
 

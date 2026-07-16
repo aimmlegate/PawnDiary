@@ -71,12 +71,13 @@ namespace PawnDiary
 
             birthday.growthTier = Math.Max(0, Math.Min(8, growthTier));
             birthday.beforeSnapshot.growthTier = birthday.growthTier;
+            int now = Find.TickManager?.TicksGame ?? birthday.birthdayTick;
             PendingBiotechGrowthMoment row = new PendingBiotechGrowthMoment
             {
                 pawnId = birthday.pawnId,
                 birthdayAge = birthday.birthdayAge,
                 birthdayTick = birthday.birthdayTick,
-                configuredTick = Find.TickManager.TicksGame,
+                configuredTick = now,
                 growthTier = birthday.growthTier,
                 newResponsibilities = newResponsibilities,
                 correlationId = BiotechArcKeys.GrowthCorrelation(birthday.pawnId, birthday.birthdayAge),
@@ -86,7 +87,16 @@ namespace PawnDiary
 
             RemovePendingBiotechGrowth(row.pawnId, row.birthdayAge);
             pendingBiotechGrowthMoments.Add(row);
-            birthday.configuredLetterOwnsBirthday = true;
+            pendingBiotechGrowthMoments = PendingBiotechGrowthMomentPolicy.Normalize(
+                pendingBiotechGrowthMoments,
+                now,
+                DiaryBiotechPolicy.Snapshot().maximumPendingGrowthRows);
+            // If an extreme/corrupt state hit the defensive cap and displaced this row, do not suppress
+            // the ordinary Birthday owner. The patch will fail open instead of claiming unsaved work.
+            birthday.configuredLetterOwnsBirthday = PendingBiotechGrowthMomentPolicy.FindNewest(
+                pendingBiotechGrowthMoments,
+                row.pawnId,
+                row.birthdayAge) != null;
         }
 
         /// <summary>
@@ -277,9 +287,11 @@ namespace PawnDiary
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 int now = Find.TickManager == null ? 0 : Find.TickManager.TicksGame;
+                BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
                 pendingBiotechGrowthMoments = PendingBiotechGrowthMomentPolicy.Normalize(
                     pendingBiotechGrowthMoments,
-                    now);
+                    now,
+                    policy.maximumPendingGrowthRows);
             }
         }
 
@@ -311,7 +323,8 @@ namespace PawnDiary
             BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
             pendingBiotechGrowthMoments = PendingBiotechGrowthMomentPolicy.Normalize(
                 pendingBiotechGrowthMoments,
-                now);
+                now,
+                policy.maximumPendingGrowthRows);
             for (int i = pendingBiotechGrowthMoments.Count - 1; i >= 0; i--)
             {
                 PendingBiotechGrowthMoment pending = pendingBiotechGrowthMoments[i];

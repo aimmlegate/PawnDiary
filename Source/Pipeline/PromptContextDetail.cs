@@ -315,12 +315,39 @@ namespace PawnDiary
                     || Eq(contextKey, ExternalEventRequestText.PromptFragmentContextKey)
                     || Eq(contextKey, "quadrum")
                     || Eq(contextKey, "quadrum_dates")
-                    || Eq(contextKey, "arc_year")))
+                    || Eq(contextKey, "arc_year")
+                    || IsRequiredBiotechContextKey(contextKey)))
             {
                 return true;
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Keeps the small, event-defining Biotech B1 facts in every prompt-detail preset. These are
+        /// stable context-schema tokens (not tunable prose): Compact may discard supporting descriptions,
+        /// participant lists, and continuity, but it must not turn a growth choice or birth into an
+        /// ambiguous generic event. Internal IDs, raw band tokens, numeric tiers, ticks, and family-arc
+        /// keys are deliberately absent from this list and therefore never become required prompt fields.
+        /// </summary>
+        private static bool IsRequiredBiotechContextKey(string contextKey)
+        {
+            return Eq(contextKey, "birthday_age")
+                || Eq(contextKey, "opportunity_description")
+                || Eq(contextKey, "selected_trait")
+                || StartsWithAny(contextKey, "new_interest_", "interest_change_")
+                || Eq(contextKey, "previous_name")
+                || Eq(contextKey, "current_name")
+                || Eq(contextKey, "new_responsibilities")
+                || Eq(contextKey, "supporter_role")
+                || Eq(contextKey, "initiator_family_role")
+                || Eq(contextKey, "recipient_family_role")
+                || Eq(contextKey, "child_name")
+                || Eq(contextKey, "birth_outcome")
+                || Eq(contextKey, "birth_method")
+                || Eq(contextKey, "birther_died")
+                || Eq(contextKey, "ritual_birth");
         }
 
         private static int Score(

@@ -45,6 +45,7 @@ namespace PawnDiary
             internal DevPromptSuiteFixtureShape shape;
             public string eventDefName;
             public string markers; // gameContext driving tokens, WITHOUT label/reason/dev_prompt_suite
+            public string markersKey; // optional localized gameContext used by DLC prompt previews
             public string reasonKey; // optional keyed reason appended to context (null for most)
             public string initiatorTextKey; // pair only
             public string recipientTextKey; // pair only
@@ -139,6 +140,20 @@ namespace PawnDiary
             Solo("ProgressionTraitGained", "PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label", ProgressionEventData.TraitGainedDefName,
                 "progression=TraitGained; progression_kind=trait; new_value=Nervous; trait=Nervous; trait_def=Nerves; trait_description=Some people are just high-strung, prone to worry and quicker to break under strain. This one is one of them.",
                 null, "PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text"),
+            PairWithLocalizedMarkers(
+                "BiotechGrowth",
+                "PawnDiary.Dev.PromptSuite.BiotechGrowth.Label",
+                GrowthMomentEventData.DefName,
+                "PawnDiary.Dev.PromptSuite.BiotechGrowth.Markers",
+                "PawnDiary.Dev.PromptSuite.BiotechGrowth.Initiator",
+                "PawnDiary.Dev.PromptSuite.BiotechGrowth.Recipient"),
+            PairWithLocalizedMarkers(
+                "BiotechBirth",
+                "PawnDiary.Dev.PromptSuite.BiotechBirth.Label",
+                FamilyBirthEventData.DefName,
+                "PawnDiary.Dev.PromptSuite.BiotechBirth.Markers",
+                "PawnDiary.Dev.PromptSuite.BiotechBirth.Initiator",
+                "PawnDiary.Dev.PromptSuite.BiotechBirth.Recipient"),
             Solo("ArcReflectionForced", "PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label", ArcReflectionEventData.DefNameToken,
                 "arc_reflection=true; arc_year=5504; forced=true; selected_memories=6; candidate_memories=18; entries_this_year=0",
                 null, "PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text"),
@@ -182,6 +197,30 @@ namespace PawnDiary
                 markers = markers,
                 reasonKey = reasonKey,
                 textKey = textKey
+            };
+        }
+
+        /// <summary>
+        /// Defines a pair fixture whose model-facing context values come from a Keyed translation.
+        /// Stable schema names remain English, while descriptive values follow the active language.
+        /// </summary>
+        private static DevPromptSuiteEntry PairWithLocalizedMarkers(
+            string id,
+            string labelKey,
+            string eventDefName,
+            string markersKey,
+            string initiatorTextKey,
+            string recipientTextKey)
+        {
+            return new DevPromptSuiteEntry
+            {
+                id = id,
+                labelKey = labelKey,
+                shape = DevPromptSuiteFixtureShape.Pair,
+                eventDefName = eventDefName,
+                markersKey = markersKey,
+                initiatorTextKey = initiatorTextKey,
+                recipientTextKey = recipientTextKey
             };
         }
 
@@ -386,7 +425,7 @@ namespace PawnDiary
         {
             string label = SuiteLabel(entry.labelKey);
             string instruction = SuiteInstruction();
-            string context = SuiteContext(entry, pawn, label);
+            string context = SuiteContext(entry, pawn, partner, label);
 
             DiaryEvent diaryEvent;
             if (entry.pair)
@@ -416,7 +455,7 @@ namespace PawnDiary
             return diaryEvent;
         }
 
-        private static string SuiteContext(DevPromptSuiteEntry entry, Pawn pawn, string label)
+        private static string SuiteContext(DevPromptSuiteEntry entry, Pawn pawn, Pawn partner, string label)
         {
             if (entry == null)
             {
@@ -448,7 +487,10 @@ namespace PawnDiary
                     + "; " + DevPromptSuiteMarker;
             }
 
-            return entry.markers
+            string markers = string.IsNullOrWhiteSpace(entry.markersKey)
+                ? entry.markers
+                : SuiteMarkers(entry.markersKey, pawn, partner);
+            return markers
                 + "; label=" + label
                 + (string.IsNullOrEmpty(entry.reasonKey) ? string.Empty : "; reason=" + SuiteReason(entry.reasonKey))
                 + "; " + DevPromptSuiteMarker;
@@ -490,6 +532,13 @@ namespace PawnDiary
         private static string SuiteReason(string key)
         {
             return SuiteLabel(key);
+        }
+
+        private static string SuiteMarkers(string key, Pawn pawn, Pawn partner)
+        {
+            string pawnName = DiaryLineCleaner.CleanLine(pawn?.LabelShortCap);
+            string partnerName = DiaryLineCleaner.CleanLine(partner?.LabelShortCap);
+            return key.Translate(pawnName, partnerName).Resolve();
         }
 
         private static string SuiteLabel(string key)

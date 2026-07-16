@@ -109,6 +109,39 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>initiator's private entry (you never read it; keep continuity, never mention it)</label><source>HiddenInitiatorEntry</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
+      <!-- Biotech B1 prompt projection. Append-only so every older indexed DefInjected label keeps
+           its existing field number. IDs, raw band tokens, numeric tiers, ticks, and family-arc
+           correlation tokens stay
+           out of the model-facing template by design. Empty keys are omitted by PromptAssembler. -->
+      <li><label>birthday age</label><source>GameContext</source><contextKey>birthday_age</contextKey></li>
+      <li><label>opportunity at growth</label><source>GameContext</source><contextKey>opportunity_description</contextKey></li>
+      <li><label>chosen trait</label><source>GameContext</source><contextKey>selected_trait</contextKey></li>
+      <li><label>chosen trait meaning</label><source>GameContext</source><contextKey>selected_trait_description</contextKey></li>
+      <li><label>interest 1</label><source>GameContext</source><contextKey>new_interest_1</contextKey></li>
+      <li><label>interest 1 change</label><source>GameContext</source><contextKey>interest_change_1</contextKey></li>
+      <li><label>interest 2</label><source>GameContext</source><contextKey>new_interest_2</contextKey></li>
+      <li><label>interest 2 change</label><source>GameContext</source><contextKey>interest_change_2</contextKey></li>
+      <li><label>interest 3</label><source>GameContext</source><contextKey>new_interest_3</contextKey></li>
+      <li><label>interest 3 change</label><source>GameContext</source><contextKey>interest_change_3</contextKey></li>
+      <li><label>interest 4</label><source>GameContext</source><contextKey>new_interest_4</contextKey></li>
+      <li><label>interest 4 change</label><source>GameContext</source><contextKey>interest_change_4</contextKey></li>
+      <li><label>observed upbringing</label><source>GameContext</source><contextKey>observed_upbringing_description</contextKey></li>
+      <li><label>previous name</label><source>GameContext</source><contextKey>previous_name</contextKey></li>
+      <li><label>current name</label><source>GameContext</source><contextKey>current_name</contextKey></li>
+      <li><label>new responsibilities</label><source>GameContext</source><contextKey>new_responsibilities</contextKey></li>
+      <li><label>supporting adult</label><source>GameContext</source><contextKey>supporter_name</contextKey></li>
+      <li><label>supporting adult role</label><source>GameContext</source><contextKey>supporter_role</contextKey></li>
+      <li><label>initiator family role</label><source>GameContext</source><contextKey>initiator_family_role</contextKey></li>
+      <li><label>recipient family role</label><source>GameContext</source><contextKey>recipient_family_role</contextKey></li>
+      <li><label>child</label><source>GameContext</source><contextKey>child_name</contextKey></li>
+      <li><label>birth outcome</label><source>GameContext</source><contextKey>birth_outcome</contextKey></li>
+      <li><label>birth method</label><source>GameContext</source><contextKey>birth_method</contextKey></li>
+      <li><label>birther</label><source>GameContext</source><contextKey>birther_name</contextKey></li>
+      <li><label>genetic mother</label><source>GameContext</source><contextKey>genetic_mother_name</contextKey></li>
+      <li><label>father</label><source>GameContext</source><contextKey>father_name</contextKey></li>
+      <li><label>doctor</label><source>GameContext</source><contextKey>doctor_name</contextKey></li>
+      <li><label>birther died</label><source>GameContext</source><contextKey>birther_died</contextKey></li>
+      <li><label>ritual birth</label><source>GameContext</source><contextKey>ritual_birth</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -317,6 +350,39 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
+      <!-- Biotech B1 prompt projection. Append-only so every older indexed DefInjected label keeps
+           its existing field number. IDs, raw band tokens, numeric tiers, ticks, and family-arc
+           correlation tokens stay
+           out of the model-facing template by design. Empty keys are omitted by PromptAssembler. -->
+      <li><label>birthday age</label><source>GameContext</source><contextKey>birthday_age</contextKey></li>
+      <li><label>opportunity at growth</label><source>GameContext</source><contextKey>opportunity_description</contextKey></li>
+      <li><label>chosen trait</label><source>GameContext</source><contextKey>selected_trait</contextKey></li>
+      <li><label>chosen trait meaning</label><source>GameContext</source><contextKey>selected_trait_description</contextKey></li>
+      <li><label>interest 1</label><source>GameContext</source><contextKey>new_interest_1</contextKey></li>
+      <li><label>interest 1 change</label><source>GameContext</source><contextKey>interest_change_1</contextKey></li>
+      <li><label>interest 2</label><source>GameContext</source><contextKey>new_interest_2</contextKey></li>
+      <li><label>interest 2 change</label><source>GameContext</source><contextKey>interest_change_2</contextKey></li>
+      <li><label>interest 3</label><source>GameContext</source><contextKey>new_interest_3</contextKey></li>
+      <li><label>interest 3 change</label><source>GameContext</source><contextKey>interest_change_3</contextKey></li>
+      <li><label>interest 4</label><source>GameContext</source><contextKey>new_interest_4</contextKey></li>
+      <li><label>interest 4 change</label><source>GameContext</source><contextKey>interest_change_4</contextKey></li>
+      <li><label>observed upbringing</label><source>GameContext</source><contextKey>observed_upbringing_description</contextKey></li>
+      <li><label>previous name</label><source>GameContext</source><contextKey>previous_name</contextKey></li>
+      <li><label>current name</label><source>GameContext</source><contextKey>current_name</contextKey></li>
+      <li><label>new responsibilities</label><source>GameContext</source><contextKey>new_responsibilities</contextKey></li>
+      <li><label>supporting adult</label><source>GameContext</source><contextKey>supporter_name</contextKey></li>
+      <li><label>supporting adult role</label><source>GameContext</source><contextKey>supporter_role</contextKey></li>
+      <li><label>initiator family role</label><source>GameContext</source><contextKey>initiator_family_role</contextKey></li>
+      <li><label>recipient family role</label><source>GameContext</source><contextKey>recipient_family_role</contextKey></li>
+      <li><label>child</label><source>GameContext</source><contextKey>child_name</contextKey></li>
+      <li><label>birth outcome</label><source>GameContext</source><contextKey>birth_outcome</contextKey></li>
+      <li><label>birth method</label><source>GameContext</source><contextKey>birth_method</contextKey></li>
+      <li><label>birther</label><source>GameContext</source><contextKey>birther_name</contextKey></li>
+      <li><label>genetic mother</label><source>GameContext</source><contextKey>genetic_mother_name</contextKey></li>
+      <li><label>father</label><source>GameContext</source><contextKey>father_name</contextKey></li>
+      <li><label>doctor</label><source>GameContext</source><contextKey>doctor_name</contextKey></li>
+      <li><label>birther died</label><source>GameContext</source><contextKey>birther_died</contextKey></li>
+      <li><label>ritual birth</label><source>GameContext</source><contextKey>ritual_birth</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

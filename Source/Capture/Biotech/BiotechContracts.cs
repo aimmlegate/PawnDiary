@@ -357,6 +357,7 @@ namespace PawnDiary.Capture
     {
         public int growthPendingExpiryTicks = 180000;
         public int growthFallbackGraceTicks = 60000;
+        public int maximumPendingGrowthRows = 256;
         public int familyActivityPairDedupTicks = 2500;
         public int supporterMinimumEvidence = 2;
         public int maximumSupporterRows = 12;
@@ -365,6 +366,7 @@ namespace PawnDiary.Capture
         public int birthNamingGraceTicks = 60000;
         public int birthCorrelationExpiryTicks = 2500;
         public int maximumBirthWriters = 2;
+        public int maximumPendingBirthRows = 256;
         public string newInterestDescription = string.Empty;
         public string deepenedInterestDescription = string.Empty;
         public string familySinceBirthNarrativeFormat = string.Empty;

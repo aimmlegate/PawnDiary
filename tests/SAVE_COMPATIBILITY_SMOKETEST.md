@@ -101,6 +101,52 @@ field-level math that runs after Scribe has populated the fields.
 
 ---
 
+## Biotech B1 Phase 4 acceptance matrix
+
+Run this matrix before marking Biotech Phase 4 complete. Keep prompt-test mode on for prompt review so
+no model request leaves the game; turn it off only when deliberately reviewing generated prose.
+
+1. **Base game only (no Biotech).** Start and load a colony with Pawn Diary + Harmony only. Confirm
+   `progressionGrowthMoment` and `biotechFamilyBirth` are absent from Events settings, the development
+   log has no Pawn Diary/DLC/Scribe error, ordinary birthdays still work, and save → reload remains
+   clean. `About.xml` must list Harmony as the only required mod.
+2. **Old save baseline.** Load the oldest supported pre-Biotech-Pawn-Diary save once with Biotech
+   active and existing children/parents. The first pass may create silent exact child/parent baseline
+   rows, but must create no historical pregnancy, lesson, birth, or growth page. Save and reload; no
+   baseline page may appear on the second load, and existing diary pages/settings must remain intact.
+3. **Growth ownership.** Exercise ages 7, 10, and 13, including a `NoTrait` choice, multiple passion
+   changes, a nickname, new responsibilities, auto-resolution, and a postponed letter saved/reloaded
+   before selection. Each committed choice produces at most one canonical page, consumes the ordinary
+   Birthday owner only while genuinely pending, and never prints numeric tier/option/work lists.
+4. **Prompt detail and previews.** In the event test panel generate the localized **Biotech growth
+   moment** and **Biotech family birth** fixtures under Full, Balanced, and Compact. Full should show
+   every supplied story field. Compact must still show the localized growth opportunity description,
+   chosen trait and interest, plus the birth child/outcome/writer role. No prompt may show a Thing ID, family-arc ID,
+   tick, numeric growth tier, or correlation token.
+5. **Family observation + SpeakUp.** With SpeakUp loaded, disable Pawn Diary's ordinary teaching page
+   group, then allow exact BabyPlay/Lesson activity before the next growth moment. No lesson page is
+   required, but the later canonical growth page should use the observed parent/teacher role and
+   qualitative upbringing when the exact evidence threshold is met. Repeat once without SpeakUp; page
+   ownership and family arc identity must remain the same.
+6. **Birth/naming matrix.** Exercise healthy, infant-illness, stillbirth, pregnancy, surrogacy,
+   growth-vat, ritual/non-ritual, one/two/no eligible writer, naming before/after save, birther death,
+   and a deliberately failed owner. Each successful owner emits once at the original birth tick; the
+   child is the subject and never a POV. A failed/disabled owner releases the mature fallback once.
+7. **RimTalk and bridge smoke.** Load RimTalk Bridge, generate/read recent growth and birth pages, and
+   confirm its context/memory injection accepts them as ordinary Progression/Tale entries without a
+   duplicate Pawn Diary page, recursive submission, or exception. Rebuild and run both bridge logic
+   suites before the playthrough.
+8. **Caps/performance.** Inspect the save after the matrix: `pendingBiotechGrowthMoments` and
+   `pendingBiotechBirths` should normally be empty and can never retain more than their XML caps
+   (`256` by default, hard ceiling `2048`); each family arc has at most `maximumSupporterRows` rows
+   (`12` by default). Run a multi-family colony at speed 4 through several progression scans and one
+   naming poll; there must be no per-tick warnings, repeated pages, or visible hitch from B1 state.
+
+Record the RimWorld version, active mod list, save fixture, language, and pass/fail result for each
+row. Automated builds and pure/RimTest source coverage do not replace these live ownership checks.
+
+---
+
 ## Mod-compatibility adapters (1-2-3 Personalities / VSIE)
 
 These separate adapter mods live under `integrations/` and are inert without their target mod. Run

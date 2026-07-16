@@ -1,5 +1,20 @@
 # Changelog
 
+- **2026-07-16 — Continued DLC integration: Biotech Phase 4 automated hardening.** Important pair and
+  solo prompt templates now project verified growth opportunity/choice, family-role, child, birth
+  outcome/method, and exact participant facts; Full keeps all supplied details while Balanced/Compact
+  retain the central B1 facts even with no optional budget. Stable IDs, numeric tiers, ticks, and
+  correlation tokens remain out of model prompts. Added localized English/Russian growth and birth
+  fixtures to the prompt test panel, repaired stale English indexed labels on both important templates,
+  and pinned every important-template field index in both languages. Persisted pending growth and
+  birth owners now have XML-owned 256-row defaults, a hard 2048-row ceiling, deterministic newest-row
+  retention, and live overflow fail-open behavior. Added no-Biotech dependency, prompt-mode, projection,
+  localization, and cap regressions (`DiaryBiotechPolicyTests`: 355 assertions;
+  `DiaryPipelineTests`: 1,766 assertions), rebuilt and smoke-tested the SpeakUp/RimTalk bridges, updated
+  the loaded-game acceptance runbook/plans/docs, and rebuilt the runtime DLL. The manual no-DLC,
+  old-save, live growth/birth, and loaded-adapter matrix remains before Phase 4 can be marked complete;
+  B2 has not begun.
+
 - **2026-07-16 — Fixed Biotech Phase 3 adversarial review findings.** Normal labor now keeps
   `PregnancyLabor` and `PregnancyLaborPushing` on one family arc; same-birth siblings keep separate
   child arcs while inheriting the shared pregnancy/supporter evidence. Known incoming parents now

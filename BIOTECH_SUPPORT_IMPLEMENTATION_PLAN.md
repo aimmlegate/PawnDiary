@@ -1,11 +1,16 @@
 # Pawn Diary — Biotech Support Implementation Plan
 
-> **Status:** Phases 0–3 plus Narrative N2-B implemented in Master Wave 3, 2026-07-16. Canonical age-7/10/13 growth
+> **Status:** Phases 0–3 plus Narrative N2-B implemented in Master Wave 3, 2026-07-16. Phase 4's
+> automated release-hardening slice is implemented: important templates project bounded B1 facts,
+> Full/Balanced/Compact and indexed localization contracts are pinned, localized dev previews exist,
+> pending owner lists have XML-owned defensive caps, no-DLC metadata is asserted, and SpeakUp/RimTalk
+> logic/build smoke checks pass. The loaded-game no-DLC/old-save/growth/birth/adapter matrix remains
+> the Phase 4 exit item; B2 must not begin before it is accepted. Canonical age-7/10/13 growth
 > observation, postponed-choice persistence, auto resolution, ordinary Birthday fallback, progression
 > consumption, saved family arcs, exact lesson/play evidence, truthful child/supporter writer shapes,
 > canonical birth/naming ownership, mature-source arbitration, and source-owned N1 evidence are live and
 > no-DLC-safe. N2-B adds bounded exact family/current visible identity lenses through the shared fixed
-> provider list. B1 compatibility and release hardening is now the next permitted slice (Phase 4).
+> provider list.
 >
 > **Scheduling authority:** implement Biotech phases only in the waves assigned by
 > `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Biotech.
@@ -1664,6 +1669,14 @@ Exit gate: healthy, illness, stillbirth, surrogacy, vat, ritual/non-ritual, one/
 writer, naming before/after save, disabled canonical group, and thrown-owner tests pass.
 
 ### Phase 4 — B1 compatibility and release hardening
+
+> **Implementation status (2026-07-16): automated hardening complete; manual acceptance pending.**
+> Important pair/solo templates now project growth opportunity/choice and birth participant/outcome
+> facts without exposing IDs, numeric tiers, ticks, or correlation tokens. Compact keeps the plan's
+> central facts under an exhausted optional budget. English/Russian indexed labels and localized dev
+> previews are covered. No-Biotech metadata/guards, existing Scribe and old-save normalization paths,
+> both adapter logic suites/builds, supporter/transient limits, and new XML-owned pending-row caps have
+> been audited. Run and record `tests/SAVE_COMPATIBILITY_SMOKETEST.md` before marking this phase complete.
 
 1. Prompt previews and compact/full mode review.
 2. No-Biotech and old-save smoke tests.

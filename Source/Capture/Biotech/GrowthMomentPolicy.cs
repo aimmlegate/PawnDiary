@@ -289,13 +289,18 @@ namespace PawnDiary.Capture
     /// </summary>
     internal static class PendingBiotechGrowthMomentPolicy
     {
+        private const int DefaultMaximumRows = 256;
+        private const int HardMaximumRows = 2048;
+
         /// <summary>
-        /// Repairs rows, drops malformed entries, and keeps the newest row for each pawn/age pair.
-        /// Future ticks are clamped to the current game tick so corrupt saves cannot postpone cleanup.
+        /// Repairs rows, drops malformed entries, keeps the newest row for each pawn/age pair, and
+        /// retains only the newest XML-bounded rows. Future ticks are clamped to the current game tick
+        /// so corrupt saves cannot postpone cleanup.
         /// </summary>
         public static List<PendingBiotechGrowthMoment> Normalize(
             IList<PendingBiotechGrowthMoment> source,
-            int currentTick)
+            int currentTick,
+            int maximumRows = DefaultMaximumRows)
         {
             int now = Math.Max(0, currentTick);
             Dictionary<string, PendingBiotechGrowthMoment> newestByKey =
@@ -326,12 +331,35 @@ namespace PawnDiary.Capture
 
             List<PendingBiotechGrowthMoment> result =
                 new List<PendingBiotechGrowthMoment>(newestByKey.Values);
+            int rowCap = maximumRows < 1 || maximumRows > HardMaximumRows
+                ? DefaultMaximumRows
+                : maximumRows;
+            if (result.Count > rowCap)
+            {
+                result.Sort(CompareNewestFirst);
+                result.RemoveRange(rowCap, result.Count - rowCap);
+            }
+
             result.Sort((left, right) =>
             {
                 int pawn = string.CompareOrdinal(left.pawnId, right.pawnId);
                 return pawn != 0 ? pawn : left.birthdayAge.CompareTo(right.birthdayAge);
             });
             return result;
+        }
+
+        // Newest ownership wins when a malformed or extreme save exceeds the configured cap. Stable
+        // pawn/age ties keep normalization deterministic across load order and runtime versions.
+        private static int CompareNewestFirst(
+            PendingBiotechGrowthMoment left,
+            PendingBiotechGrowthMoment right)
+        {
+            int value = right.birthdayTick.CompareTo(left.birthdayTick);
+            if (value != 0) return value;
+            value = right.configuredTick.CompareTo(left.configuredTick);
+            if (value != 0) return value;
+            value = string.CompareOrdinal(left.pawnId, right.pawnId);
+            return value != 0 ? value : left.birthdayAge.CompareTo(right.birthdayAge);
         }
 
         /// <summary>Finds the newest unresolved row for one exact pawn and canonical growth age.</summary>

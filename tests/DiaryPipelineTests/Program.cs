@@ -23,6 +23,8 @@ namespace DiaryPipelineTests
             TestPromptTemplatePolicyReachesPromptPlan();
             TestQuestPromptPlanFields();
             TestProgressionPromptPlanFields();
+            TestBiotechPromptPlanFields();
+            TestBiotechPromptTemplateXmlContract();
             TestDualPovPromptPlans();
             TestRecipientFollowupPlan();
             TestNeutralGenerationPlans();
@@ -827,6 +829,238 @@ namespace DiaryPipelineTests
                 "trait: Nervous");
             AssertContains("trait progression description reaches assembled prompt", traitPlan.userPrompt,
                 "trait description: Prone to anxiety and tension.");
+        }
+
+        // Biotech B1 records exact machine-readable context for save correlation, but only the useful
+        // story facts should cross the prompt-template boundary. This pins both important-event shapes
+        // and deliberately gives Balanced/Compact almost no optional budget: required growth/birth facts
+        // must still survive, while IDs and raw diagnostic bands must never appear even under Full.
+        private static void TestBiotechPromptPlanFields()
+        {
+            PromptContextBudgets tinyBudgets = new PromptContextBudgets
+            {
+                balancedDefault = 1,
+                compactDefault = 1
+            };
+            PromptContextDetailLevel[] levels =
+            {
+                PromptContextDetailLevel.Full,
+                PromptContextDetailLevel.Balanced,
+                PromptContextDetailLevel.Compact
+            };
+
+            DiaryEventPayload growth = PairPayload(
+                "e-biotech-growth",
+                "growth moment",
+                "Alice made a lasting childhood choice with Bob nearby.",
+                "Bob watched Alice make a lasting childhood choice.");
+            growth.gameContext = "growth_moment=true; child_id=Thing_Child_42; birthday_age=10; "
+                + "growth_stage=Teenager; family_arc_id=biotech-family|Thing_Child_42; "
+                + "opportunity_band=high; opportunity_description=several meaningful choices were available; "
+                + "observed_upbringing_band=strong; observed_upbringing_description=regular lessons shaped the child; "
+                + "selected_trait=Kind; selected_trait_description=inclined to help others; "
+                + "new_interest_1=Medicine; interest_change_1=new passion; "
+                + "previous_name=Alice Child; current_name=Alice Stone; "
+                + "new_responsibilities=adult work and combat; supporter_id=Thing_Adult_9; "
+                + "supporter_name=Bob; supporter_role=observed_teacher; "
+                + "initiator_family_role=child; recipient_family_role=observed_teacher";
+
+            for (int i = 0; i < levels.Length; i++)
+            {
+                PromptContextDetailLevel level = levels[i];
+                string suffix = " (" + level + ")";
+                DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = growth,
+                    policy = Policy(combat: false, important: true),
+                    povRole = DiaryPipelineRoles.Initiator,
+                    contextDetailLevel = level,
+                    contextBudgets = tinyBudgets
+                });
+
+                AssertEqual("Biotech growth uses pair-important template" + suffix,
+                    DiaryPipelineTemplates.PairImportant, plan.templateKey);
+                AssertContains("growth birthday survives detail budget" + suffix, plan.userPrompt,
+                    "birthday age: 10");
+                AssertContains("localized growth opportunity survives detail budget" + suffix, plan.userPrompt,
+                    "opportunity at growth: several meaningful choices were available");
+                AssertContains("growth trait survives detail budget" + suffix, plan.userPrompt,
+                    "chosen trait: Kind");
+                AssertContains("growth interest survives detail budget" + suffix, plan.userPrompt,
+                    "interest 1: Medicine");
+                AssertContains("growth interest change survives detail budget" + suffix, plan.userPrompt,
+                    "interest 1 change: new passion");
+                AssertContains("growth renamed value survives detail budget" + suffix, plan.userPrompt,
+                    "current name: Alice Stone");
+                AssertContains("growth responsibilities survive detail budget" + suffix, plan.userPrompt,
+                    "new responsibilities: adult work and combat");
+                AssertContains("growth supporter role survives detail budget" + suffix, plan.userPrompt,
+                    "supporting adult role: observed_teacher");
+                AssertContains("growth child role survives detail budget" + suffix, plan.userPrompt,
+                    "initiator family role: child");
+                AssertTrue("growth child ID never reaches prompt" + suffix,
+                    !plan.userPrompt.Contains("Thing_Child_42"));
+                AssertTrue("growth family arc ID never reaches prompt" + suffix,
+                    !plan.userPrompt.Contains("biotech-family|"));
+                AssertTrue("growth raw upbringing band never reaches prompt" + suffix,
+                    !plan.userPrompt.Contains("observed_upbringing_band"));
+
+                if (level == PromptContextDetailLevel.Full)
+                {
+                    AssertContains("Full growth keeps optional trait meaning", plan.userPrompt,
+                        "chosen trait meaning: inclined to help others");
+                    AssertContains("Full growth keeps optional upbringing description", plan.userPrompt,
+                        "observed upbringing: regular lessons shaped the child");
+                    AssertContains("Full growth keeps optional supporter name", plan.userPrompt,
+                        "supporting adult: Bob");
+                }
+            }
+
+            DiaryEventPayload birth = SoloPayload(
+                "e-biotech-birth",
+                "family birth",
+                "Alice gave birth to Rowan while the family gathered nearby.");
+            birth.gameContext = "biotech_birth=true; child_id=Thing_Child_77; "
+                + "family_arc_id=biotech-family|Thing_Child_77; child_name=Rowan; "
+                + "birth_outcome=healthy; birth_method=pregnancy; "
+                + "birther_id=Thing_Birther_1; birther_name=Alice; "
+                + "genetic_mother_id=Thing_Mother_1; genetic_mother_name=Alice; "
+                + "father_id=Thing_Father_2; father_name=Bob; doctor_id=Thing_Doctor_3; doctor_name=Cara; "
+                + "birther_died=false; ritual_birth=false; "
+                + "initiator_family_role=birther; recipient_family_role=father";
+
+            for (int i = 0; i < levels.Length; i++)
+            {
+                PromptContextDetailLevel level = levels[i];
+                string suffix = " (" + level + ")";
+                DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = birth,
+                    policy = Policy(combat: false, important: true),
+                    povRole = DiaryPipelineRoles.Initiator,
+                    contextDetailLevel = level,
+                    contextBudgets = tinyBudgets
+                });
+
+                AssertEqual("Biotech birth uses solo-important template" + suffix,
+                    DiaryPipelineTemplates.SoloImportant, plan.templateKey);
+                AssertContains("birth child survives detail budget" + suffix, plan.userPrompt,
+                    "child: Rowan");
+                AssertContains("birth outcome survives detail budget" + suffix, plan.userPrompt,
+                    "birth outcome: healthy");
+                AssertContains("birth method survives detail budget" + suffix, plan.userPrompt,
+                    "birth method: pregnancy");
+                AssertContains("birth writer role survives detail budget" + suffix, plan.userPrompt,
+                    "initiator family role: birther");
+                AssertContains("birth related role survives detail budget" + suffix, plan.userPrompt,
+                    "recipient family role: father");
+                AssertContains("birth mortality fact survives detail budget" + suffix, plan.userPrompt,
+                    "birther died: false");
+                AssertContains("birth ritual fact survives detail budget" + suffix, plan.userPrompt,
+                    "ritual birth: false");
+                AssertTrue("birth child ID never reaches prompt" + suffix,
+                    !plan.userPrompt.Contains("Thing_Child_77"));
+                AssertTrue("birth participant IDs never reach prompt" + suffix,
+                    !plan.userPrompt.Contains("Thing_Birther_1")
+                    && !plan.userPrompt.Contains("Thing_Mother_1")
+                    && !plan.userPrompt.Contains("Thing_Father_2")
+                    && !plan.userPrompt.Contains("Thing_Doctor_3"));
+
+                if (level == PromptContextDetailLevel.Full)
+                {
+                    AssertContains("Full birth keeps optional birther name", plan.userPrompt,
+                        "birther: Alice");
+                    AssertContains("Full birth keeps optional father name", plan.userPrompt,
+                        "father: Bob");
+                    AssertContains("Full birth keeps optional doctor name", plan.userPrompt,
+                        "doctor: Cara");
+                }
+            }
+        }
+
+        // The template-field lists are DefInjected by numeric index. Appending a field to the wrong
+        // template or inserting one in the middle can therefore silently pair a translated label with
+        // the wrong value. This fixture locks the shipped projection and every English/Russian index.
+        private static void TestBiotechPromptTemplateXmlContract()
+        {
+            XDocument templates = XDocument.Load(RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
+            XDocument english = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryPromptTemplateDef",
+                "DiaryPromptTemplateDefs.xml"));
+            XDocument russian = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryPromptTemplateDef",
+                "DiaryPromptTemplateDefs.xml"));
+
+            string[] requiredContextKeys =
+            {
+                "birthday_age", "opportunity_description", "selected_trait",
+                "selected_trait_description", "new_interest_1", "interest_change_1",
+                "new_interest_2", "interest_change_2", "new_interest_3", "interest_change_3",
+                "new_interest_4", "interest_change_4", "observed_upbringing_description",
+                "previous_name", "current_name", "new_responsibilities", "supporter_name",
+                "supporter_role", "initiator_family_role", "recipient_family_role", "child_name",
+                "birth_outcome", "birth_method", "birther_name", "genetic_mother_name",
+                "father_name", "doctor_name", "birther_died", "ritual_birth"
+            };
+            string[] templateDefNames =
+            {
+                "DiaryPromptTemplate_PairImportant",
+                "DiaryPromptTemplate_SoloImportant"
+            };
+
+            for (int templateIndex = 0; templateIndex < templateDefNames.Length; templateIndex++)
+            {
+                string defName = templateDefNames[templateIndex];
+                XElement template = FindDef(
+                    templates, "PawnDiary.DiaryPromptTemplateDef", defName);
+                AssertTrue("Biotech prompt template exists: " + defName, template != null);
+
+                List<XElement> fields = new List<XElement>(template.Element("fields").Elements("li"));
+                HashSet<string> contextKeys = new HashSet<string>(StringComparer.Ordinal);
+                for (int fieldIndex = 0; fieldIndex < fields.Count; fieldIndex++)
+                {
+                    XElement field = fields[fieldIndex];
+                    if (ReadBool(field, "enabled", defaultValue: true)
+                        && string.Equals(ChildValue(field, "source"), "GameContext", StringComparison.Ordinal))
+                    {
+                        string contextKey = ChildValue(field, "contextKey");
+                        contextKeys.Add(contextKey);
+                        AssertTrue(defName + " excludes machine IDs from prompt fields at index " + fieldIndex,
+                            !contextKey.EndsWith("_id", StringComparison.Ordinal));
+                    }
+
+                    string localizationKey = defName + ".fields." + fieldIndex + ".label";
+                    string baseLabel = ChildValue(field, "label");
+                    AssertEqual("English indexed prompt label stays aligned: " + localizationKey,
+                        baseLabel, ChildValue(english.Root, localizationKey));
+                    AssertTrue("Russian indexed prompt label exists: " + localizationKey,
+                        !string.IsNullOrWhiteSpace(ChildValue(russian.Root, localizationKey)));
+                }
+
+                for (int keyIndex = 0; keyIndex < requiredContextKeys.Length; keyIndex++)
+                {
+                    string contextKey = requiredContextKeys[keyIndex];
+                    AssertTrue(defName + " projects Biotech context key " + contextKey,
+                        contextKeys.Contains(contextKey));
+                }
+
+                AssertTrue(defName + " excludes raw upbringing band",
+                    !contextKeys.Contains("observed_upbringing_band"));
+                AssertTrue(defName + " excludes raw opportunity band token",
+                    !contextKeys.Contains("opportunity_band"));
+                AssertTrue(defName + " excludes family arc correlation token",
+                    !contextKeys.Contains("family_arc_id"));
+            }
+
+            // B1 events are important by policy. Keeping these fields off SoloDefault prevents them from
+            // accidentally expanding ordinary-event prompts and catches append-to-the-wrong-list mistakes.
+            XElement soloDefault = FindDef(
+                templates, "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplate_SoloDefault");
+            foreach (XElement field in soloDefault.Element("fields").Elements("li"))
+            {
+                AssertTrue("SoloDefault does not carry Biotech B1 projection",
+                    !string.Equals(ChildValue(field, "contextKey"), "birthday_age", StringComparison.Ordinal));
+            }
         }
 
         private static void TestDualPovPromptPlans()
@@ -4013,6 +4247,35 @@ namespace DiaryPipelineTests
                     ContextField("previous royal title", "previous_title"),
                     ContextField("arc year", "arc_year"),
                     ContextField("selected memories", "selected_memories"),
+                    ContextField("birthday age", "birthday_age"),
+                    ContextField("opportunity at growth", "opportunity_description"),
+                    ContextField("chosen trait", "selected_trait"),
+                    ContextField("chosen trait meaning", "selected_trait_description"),
+                    ContextField("interest 1", "new_interest_1"),
+                    ContextField("interest 1 change", "interest_change_1"),
+                    ContextField("interest 2", "new_interest_2"),
+                    ContextField("interest 2 change", "interest_change_2"),
+                    ContextField("interest 3", "new_interest_3"),
+                    ContextField("interest 3 change", "interest_change_3"),
+                    ContextField("interest 4", "new_interest_4"),
+                    ContextField("interest 4 change", "interest_change_4"),
+                    ContextField("observed upbringing", "observed_upbringing_description"),
+                    ContextField("previous name", "previous_name"),
+                    ContextField("current name", "current_name"),
+                    ContextField("new responsibilities", "new_responsibilities"),
+                    ContextField("supporting adult", "supporter_name"),
+                    ContextField("supporting adult role", "supporter_role"),
+                    ContextField("initiator family role", "initiator_family_role"),
+                    ContextField("recipient family role", "recipient_family_role"),
+                    ContextField("child", "child_name"),
+                    ContextField("birth outcome", "birth_outcome"),
+                    ContextField("birth method", "birth_method"),
+                    ContextField("birther", "birther_name"),
+                    ContextField("genetic mother", "genetic_mother_name"),
+                    ContextField("father", "father_name"),
+                    ContextField("doctor", "doctor_name"),
+                    ContextField("birther died", "birther_died"),
+                    ContextField("ritual birth", "ritual_birth"),
                     Field("weapon", "Weapon"),
                     Field("important context", "PromptEnchantment"),
                     Field("previous diary ending (continue from this)", "PreviousEntryEnding"),

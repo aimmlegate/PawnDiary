@@ -8,6 +8,7 @@
 
     <growthPendingExpiryTicks>180000</growthPendingExpiryTicks>
     <growthFallbackGraceTicks>60000</growthFallbackGraceTicks>
+    <maximumPendingGrowthRows>256</maximumPendingGrowthRows>
     <opportunityBands>
       <li>
         <minimumTier>0</minimumTier>
@@ -99,5 +100,6 @@
     <birthNamingGraceTicks>60000</birthNamingGraceTicks>
     <birthCorrelationExpiryTicks>2500</birthCorrelationExpiryTicks>
     <maximumBirthWriters>2</maximumBirthWriters>
+    <maximumPendingBirthRows>256</maximumPendingBirthRows>
   </PawnDiary.DiaryBiotechPolicyDef>
 </Defs>
