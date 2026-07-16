@@ -24,6 +24,7 @@ namespace DiaryBiotechPolicyTests
             TestFamilyArcObservationAndRetention();
             TestSupporterSelectionAndWriterShapes();
             TestBirthWriterSelection();
+            TestBirthCorrelationClassification();
             TestBirthArcAndPendingOwnership();
             TestSettingsInheritance();
             TestContextFormatting();
@@ -62,6 +63,40 @@ namespace DiaryBiotechPolicyTests
                     "10",
                     "Child_1",
                     10));
+        }
+
+        private static void TestBirthCorrelationClassification()
+        {
+            BiotechPolicySnapshot policy = BiotechPolicySnapshot.CreateDefault();
+            AssertTrue("mature birth exact Def accepted",
+                BirthCorrelationPolicy.IsMatureBirthDef("BabyBorn", policy));
+            AssertTrue("unrelated Tale does not enter birth ownership",
+                !BirthCorrelationPolicy.IsMatureBirthDef("Birthday", policy));
+            AssertEqual("birther miscarriage role", BiotechFamilyRoleTokens.Birther,
+                BirthCorrelationPolicy.MiscarriageRole(
+                    "Miscarried", "Birther", "Birther", "Mother", "Father", policy));
+            AssertEqual("genetic mother partner-loss role", BiotechFamilyRoleTokens.GeneticMother,
+                BirthCorrelationPolicy.MiscarriageRole(
+                    "PartnerMiscarried", "Mother", "Birther", "Mother", "Father", policy));
+            AssertEqual("father partner-loss role", BiotechFamilyRoleTokens.Father,
+                BirthCorrelationPolicy.MiscarriageRole(
+                    "PartnerMiscarried", "Father", "Birther", "Mother", "Father", policy));
+            AssertEqual("wrong pawn receives no miscarriage role", string.Empty,
+                BirthCorrelationPolicy.MiscarriageRole(
+                    "Miscarried", "Father", "Birther", "Mother", "Father", policy));
+
+            BiotechPolicySnapshot custom = BiotechPolicySnapshot.CreateDefault();
+            custom.matureBirthDefNames.Clear();
+            custom.matureBirthDefNames.Add("ModdedBirth");
+            custom.miscarriageBirtherThoughtDefNames.Clear();
+            custom.miscarriageBirtherThoughtDefNames.Add("ModdedLoss");
+            AssertTrue("XML snapshot can replace mature classifier",
+                BirthCorrelationPolicy.IsMatureBirthDef("ModdedBirth", custom));
+            AssertTrue("replaced mature classifier drops vanilla name",
+                !BirthCorrelationPolicy.IsMatureBirthDef("BabyBorn", custom));
+            AssertEqual("XML snapshot can replace loss classifier", BiotechFamilyRoleTokens.Birther,
+                BirthCorrelationPolicy.MiscarriageRole(
+                    "ModdedLoss", "Birther", "Birther", "Mother", "Father", custom));
         }
 
         private static void TestStableSchemaAndArcKeys()
@@ -298,6 +333,20 @@ namespace DiaryBiotechPolicyTests
                 }, 12);
             AssertTrue("labor correlates to pregnancy object", object.ReferenceEquals(pregnancy, labor));
             AssertEqual("labor ID appended", "Hediff_2", pregnancy.laborHediffId);
+            BiotechFamilyArcState pushing = FamilyArcPolicy.ObserveFamilyHediff(arcs,
+                new FamilyHediffSnapshot
+                {
+                    kindToken = BiotechFamilyHediffKindTokens.Labor,
+                    hediffId = "Hediff_3",
+                    birtherId = "Birther",
+                    geneticMotherId = "Mother",
+                    fatherId = "Father",
+                    observedTick = 210
+                }, 12);
+            AssertTrue("labor-pushing transition reuses pregnancy arc",
+                object.ReferenceEquals(pregnancy, pushing));
+            AssertEqual("pushing replaces active labor ID", "Hediff_3", pregnancy.laborHediffId);
+            AssertEqual("pregnancy labor lifecycle stays one arc", 1, arcs.Count);
             AssertEqual("live unresolved pregnancy remains retained", FamilyArcRetentionAction.Keep,
                 FamilyArcPolicy.DecideRetention(
                     pregnancy,
@@ -582,6 +631,21 @@ namespace DiaryBiotechPolicyTests
                 && attached.supporters.Exists(row => row.adultId == "Mother"
                     && row.relationToken == BiotechFamilyRoleTokens.Parent));
 
+            BirthMutationSnapshot twinBirth = BirthSnapshot("Twin", 200);
+            BiotechFamilyArcState twin = FamilyArcPolicy.AttachBirth(
+                arcs,
+                twinBirth,
+                policy.maximumSupporterRows,
+                out alreadyAttached);
+            AssertTrue("twin receives its own child-keyed arc", !alreadyAttached
+                && twin.familyArcId == "biotech-family|Twin"
+                && twin.familyArcId != attached.familyArcId);
+            AssertEqual("twin retains pregnancy evidence", attached.pregnancyHediffId,
+                twin.pregnancyHediffId);
+            AssertTrue("twin clones family supporters without sharing mutable rows",
+                twin.supporters.Count == attached.supporters.Count
+                && !object.ReferenceEquals(twin.supporters[0], attached.supporters[0]));
+
             BirthMutationSnapshot repeated = BirthSnapshot("Child", 250);
             repeated.outcomeToken = BiotechBirthOutcomeTokens.Stillbirth;
             repeated.methodToken = BiotechBirthMethodTokens.GrowthVat;
@@ -605,6 +669,34 @@ namespace DiaryBiotechPolicyTests
                 out alreadyAttached);
             AssertEqual("ambiguous pregnancies use child-key fallback",
                 "biotech-family|OtherChild", fallback.familyArcId);
+
+            BiotechFamilyArcState exactParents = OpenBirthArc(
+                "biotech-family|Birther|Exact", "Exact", 40);
+            BiotechFamilyArcState unknownParents = OpenBirthArc(
+                "biotech-family|Birther|UnknownParents", "UnknownParents", 60);
+            unknownParents.geneticMotherId = string.Empty;
+            unknownParents.fatherId = string.Empty;
+            BirthMutationSnapshot exactParentBirth = BirthSnapshot("ExactChild", 80);
+            BiotechFamilyArcState exactMatch = FamilyArcPolicy.AttachBirth(
+                new List<BiotechFamilyArcState> { exactParents, unknownParents },
+                exactParentBirth,
+                policy.maximumSupporterRows,
+                out alreadyAttached);
+            AssertEqual("known parents select the exact matching arc", exactParents.familyArcId,
+                exactMatch.familyArcId);
+
+            BiotechFamilyArcState strictWildcard = OpenBirthArc(
+                "biotech-family|Birther|StrictWildcard", "StrictWildcard", 90);
+            strictWildcard.geneticMotherId = string.Empty;
+            strictWildcard.fatherId = string.Empty;
+            BirthMutationSnapshot strictBirth = BirthSnapshot("StrictChild", 100);
+            BiotechFamilyArcState strictFallback = FamilyArcPolicy.AttachBirth(
+                new List<BiotechFamilyArcState> { strictWildcard },
+                strictBirth,
+                policy.maximumSupporterRows,
+                out alreadyAttached);
+            AssertEqual("known incoming parents reject blank-parent wildcard arcs",
+                "biotech-family|StrictChild", strictFallback.familyArcId);
 
             BiotechFamilyArcState loss = OpenBirthArc("biotech-family|Birther|Loss", "Loss", 10);
             FamilyArcPolicy.ClosePregnancyLoss(loss, 20);
@@ -658,12 +750,64 @@ namespace DiaryBiotechPolicyTests
                         }
                     }
                 },
+                eventContext = new BirthEventContextSnapshot
+                {
+                    birthTick = 999,
+                    birthDate = "birth date",
+                    writers = new List<BirthWriterContextSnapshot>
+                    {
+                        new BirthWriterContextSnapshot
+                        {
+                            pawnId = "Birther",
+                            displayName = "Ari at birth",
+                            pawnSummary = "birth summary",
+                            continuity = "birth continuity",
+                            pairContinuity = "birth pair continuity",
+                            staggeredIntensity = 99
+                        },
+                        new BirthWriterContextSnapshot { pawnId = "Stranger" }
+                    }
+                },
                 createdTick = 200
             };
             List<PendingBiotechBirthState> normalized = PendingBiotechBirthPolicy.Normalize(
                 new List<PendingBiotechBirthState> { null, pending }, 250);
             AssertEqual("one valid pending birth remains", 1, normalized.Count);
             AssertEqual("pending writers are distinct and capped", 2, normalized[0].writers.writers.Count);
+            AssertEqual("pending context tick follows canonical snapshot", birth.birthTick,
+                normalized[0].eventContext.birthTick);
+            AssertEqual("pending context retains only frozen writers", 1,
+                normalized[0].eventContext.writers.Count);
+            AssertEqual("pending handwriting intensity is clamped", 4,
+                normalized[0].eventContext.writers[0].staggeredIntensity);
+            AssertEqual("pending context keeps event-time continuity", "birth pair continuity",
+                normalized[0].eventContext.writers[0].pairContinuity);
+
+            BirthMutationSnapshot loadBeforeTickRestore = BirthSnapshot("LoadChild", 500);
+            loadBeforeTickRestore.familyArcId = "biotech-family|LoadChild";
+            List<PendingBiotechBirthState> tickZeroLoad = PendingBiotechBirthPolicy.Normalize(
+                new List<PendingBiotechBirthState>
+                {
+                    new PendingBiotechBirthState
+                    {
+                        snapshot = loadBeforeTickRestore,
+                        writers = new BirthWriterSelection
+                        {
+                            writers = new List<BirthWriterFact>
+                            {
+                                new BirthWriterFact
+                                {
+                                    pawnId = "Birther",
+                                    roleToken = BiotechFamilyRoleTokens.Birther
+                                }
+                            }
+                        },
+                        createdTick = 500
+                    }
+                },
+                0);
+            AssertEqual("tick-zero load does not discard a valid future-looking pending row", 1,
+                tickZeroLoad.Count);
             AssertTrue("accepted naming flushes",
                 PendingBiotechBirthPolicy.ShouldFlush(pending, new BirthChildNamingState
                 {
@@ -873,6 +1017,13 @@ namespace DiaryBiotechPolicyTests
                 Values(def.Element("familyPregnancyHediffDefNames")));
             AssertSequence("policy labor Hediffs", new[] { "PregnancyLabor", "PregnancyLaborPushing" },
                 Values(def.Element("familyLaborHediffDefNames")));
+            AssertSequence("policy mature birth correlation Defs",
+                new[] { "GaveBirth", "BabyBorn", "Stillbirth" },
+                Values(def.Element("matureBirthDefNames")));
+            AssertSequence("policy birther miscarriage Thought Defs", new[] { "Miscarried" },
+                Values(def.Element("miscarriageBirtherThoughtDefNames")));
+            AssertSequence("policy partner miscarriage Thought Defs", new[] { "PartnerMiscarried" },
+                Values(def.Element("miscarriagePartnerThoughtDefNames")));
 
             List<XElement> opportunity = def.Element("opportunityBands").Elements("li").ToList();
             AssertEqual("four opportunity bands", 4, opportunity.Count);

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
 using RimWorld;
-using UnityEngine;
 using Verse;
 
 namespace PawnDiary.Ingestion
@@ -18,6 +17,7 @@ namespace PawnDiary.Ingestion
         private readonly BirthWriterSelection writers;
         private readonly List<Pawn> writerPawns;
         private readonly Pawn child;
+        private readonly BirthEventContextSnapshot eventContext;
         private readonly bool enabledAtBirth;
 
         public FamilyBirthSignal(
@@ -26,13 +26,17 @@ namespace PawnDiary.Ingestion
             BirthWriterSelection writers,
             List<Pawn> writerPawns,
             Pawn child,
+            BirthEventContextSnapshot eventContext,
             bool enabledAtBirth)
         {
             this.payload = payload;
             this.snapshot = snapshot;
             this.writers = writers;
             this.writerPawns = writerPawns ?? new List<Pawn>();
+            // child may deliberately be null for a stillbirth whose corpse was already removed. The
+            // detached snapshot remains authoritative and narrative evidence tolerates the missing live Pawn.
             this.child = child;
+            this.eventContext = eventContext;
             this.enabledAtBirth = enabledAtBirth;
         }
 
@@ -77,8 +81,8 @@ namespace PawnDiary.Ingestion
             if (pair)
             {
                 string text = "PawnDiary.Event.Biotech.Birth.PairFallback".Translate(
-                    writerPawns[0].LabelShortCap,
-                    writerPawns[1].LabelShortCap,
+                    WriterName(0),
+                    WriterName(1),
                     childName,
                     summary).Resolve();
                 diaryEvent = sink.AddPairwiseEvent(
@@ -89,12 +93,14 @@ namespace PawnDiary.Ingestion
                     text,
                     text,
                     instruction,
-                    gameContext);
+                    gameContext,
+                    eventContext,
+                    snapshot.birthTick);
             }
             else
             {
                 string text = "PawnDiary.Event.Biotech.Birth.Fallback".Translate(
-                    writerPawns[0].LabelShortCap,
+                    WriterName(0),
                     childName,
                     summary).Resolve();
                 diaryEvent = sink.AddSoloEvent(
@@ -104,10 +110,11 @@ namespace PawnDiary.Ingestion
                     label,
                     text,
                     instruction,
-                    gameContext);
+                    gameContext,
+                    eventContext,
+                    snapshot.birthTick);
             }
 
-            RestoreBirthTime(diaryEvent, snapshot.birthTick);
             BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
             ApplyNarrativeEvidence(
                 diaryEvent,
@@ -147,6 +154,19 @@ namespace PawnDiary.Ingestion
             }
         }
 
+        private string WriterName(int index)
+        {
+            if (writers?.writers != null && index >= 0 && index < writers.writers.Count
+                && !string.IsNullOrWhiteSpace(writers.writers[index]?.displayName))
+            {
+                return writers.writers[index].displayName;
+            }
+
+            return index >= 0 && index < writerPawns.Count && writerPawns[index] != null
+                ? writerPawns[index].LabelShortCap
+                : string.Empty;
+        }
+
         private static string OutcomeSummary(BirthMutationSnapshot value)
         {
             string key = value.outcomeToken == BiotechBirthOutcomeTokens.Stillbirth
@@ -160,22 +180,6 @@ namespace PawnDiary.Ingestion
                 summary += "; " + "PawnDiary.Event.Biotech.Birth.BirtherDied".Translate().Resolve();
             }
             return summary;
-        }
-
-        private static void RestoreBirthTime(DiaryEvent diaryEvent, int birthTick)
-        {
-            if (diaryEvent == null || birthTick < 0 || Find.TickManager == null)
-            {
-                return;
-            }
-
-            int now = Find.TickManager.TicksGame;
-            int elapsed = Math.Max(0, now - birthTick);
-            long absolute = Math.Max(0L, (long)Find.TickManager.TicksAbs - elapsed);
-            diaryEvent.tick = birthTick;
-            diaryEvent.date = GenDate.DateFullStringAt(
-                absolute > int.MaxValue ? int.MaxValue : (int)absolute,
-                Vector2.zero);
         }
 
         private static void ApplyNarrativeEvidence(

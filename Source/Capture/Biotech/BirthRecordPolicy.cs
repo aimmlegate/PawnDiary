@@ -146,7 +146,7 @@ namespace PawnDiary.Capture
                 || !BiotechBirthOutcomeTokens.IsKnown(snapshot.outcomeToken)
                 || !BiotechBirthMethodTokens.IsKnown(snapshot.methodToken)
                 || snapshot.birthTick < 0
-                || snapshot.birthTick > currentTick)
+                || (currentTick > 0 && snapshot.birthTick > currentTick))
             {
                 return null;
             }
@@ -155,7 +155,71 @@ namespace PawnDiary.Capture
             snapshot.namingResolved = snapshot.namingResolved || snapshot.namingDeadline == -1;
             row.createdTick = Math.Max(snapshot.birthTick, Math.Min(currentTick, Math.Max(0, row.createdTick)));
             row.writers = NormalizeWriters(row.writers);
+            row.eventContext = NormalizeEventContext(row.eventContext, snapshot.birthTick, row.writers);
             return row.writers.writers.Count == 0 ? null : row;
+        }
+
+        private static BirthEventContextSnapshot NormalizeEventContext(
+            BirthEventContextSnapshot source,
+            int birthTick,
+            BirthWriterSelection writers)
+        {
+            if (source == null)
+            {
+                // Legacy pending rows did not save event-time context. Runtime emission preserves the
+                // birth tick and falls back to live context only for those pre-fix saves.
+                return null;
+            }
+
+            BirthEventContextSnapshot result = new BirthEventContextSnapshot
+            {
+                birthTick = Math.Max(0, birthTick),
+                birthDate = source.birthDate ?? string.Empty
+            };
+            List<BirthWriterContextSnapshot> rows = source.writers;
+            if (rows == null || writers?.writers == null)
+            {
+                return result;
+            }
+
+            HashSet<string> accepted = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < writers.writers.Count; i++)
+            {
+                string writerId = Clean(writers.writers[i]?.pawnId);
+                if (writerId.Length > 0)
+                {
+                    accepted.Add(writerId);
+                }
+            }
+
+            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < rows.Count && result.writers.Count < 2; i++)
+            {
+                BirthWriterContextSnapshot row = rows[i];
+                string pawnId = Clean(row?.pawnId);
+                if (pawnId.Length == 0 || !accepted.Contains(pawnId) || !seen.Add(pawnId))
+                {
+                    continue;
+                }
+
+                result.writers.Add(new BirthWriterContextSnapshot
+                {
+                    pawnId = pawnId,
+                    displayName = BiotechContextText.Clean(row.displayName),
+                    pawnSummary = row.pawnSummary ?? string.Empty,
+                    surroundings = row.surroundings ?? string.Empty,
+                    continuity = row.continuity ?? string.Empty,
+                    pairContinuity = row.pairContinuity ?? string.Empty,
+                    lastOpener = row.lastOpener ?? string.Empty,
+                    previousEntryEnding = row.previousEntryEnding ?? string.Empty,
+                    weapon = row.weapon ?? string.Empty,
+                    staggeredIntensity = Math.Max(0, Math.Min(4, row.staggeredIntensity)),
+                    textDecorationFacts = row.textDecorationFacts ?? string.Empty,
+                    skipFirstPersonGeneration = row.skipFirstPersonGeneration
+                });
+            }
+
+            return result;
         }
 
         private static BirthWriterSelection NormalizeWriters(BirthWriterSelection source)

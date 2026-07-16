@@ -8,6 +8,7 @@
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -23,57 +24,144 @@ namespace PawnDiary
         internal DiaryEvent AddPairwiseEvent(Pawn initiator, Pawn recipient, string defName, string label,
             string initiatorText, string recipientText, string instruction, string gameContext)
         {
+            return AddPairwiseEventCore(
+                initiator,
+                recipient,
+                defName,
+                label,
+                initiatorText,
+                recipientText,
+                instruction,
+                gameContext,
+                null,
+                -1);
+        }
+
+        /// <summary>
+        /// Creates a pair page at a historical birth tick from context frozen at that birth boundary.
+        /// </summary>
+        internal DiaryEvent AddPairwiseEvent(Pawn initiator, Pawn recipient, string defName, string label,
+            string initiatorText, string recipientText, string instruction, string gameContext,
+            BirthEventContextSnapshot capturedContext, int historicalTick)
+        {
+            return AddPairwiseEventCore(
+                initiator,
+                recipient,
+                defName,
+                label,
+                initiatorText,
+                recipientText,
+                instruction,
+                gameContext,
+                capturedContext,
+                historicalTick);
+        }
+
+        /// <summary>Creates a pair page from a staged signal at its original captured tick.</summary>
+        internal DiaryEvent AddPairwiseEvent(Pawn initiator, Pawn recipient, string defName, string label,
+            string initiatorText, string recipientText, string instruction, string gameContext,
+            int historicalTick)
+        {
+            return AddPairwiseEventCore(
+                initiator,
+                recipient,
+                defName,
+                label,
+                initiatorText,
+                recipientText,
+                instruction,
+                gameContext,
+                null,
+                historicalTick);
+        }
+
+        private DiaryEvent AddPairwiseEventCore(
+            Pawn initiator,
+            Pawn recipient,
+            string defName,
+            string label,
+            string initiatorText,
+            string recipientText,
+            string instruction,
+            string gameContext,
+            BirthEventContextSnapshot capturedContext,
+            int historicalTick)
+        {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
+            string initiatorId = initiator.GetUniqueLoadID();
+            string recipientId = recipient.GetUniqueLoadID();
+            BirthWriterContextSnapshot initiatorCapture = FindBirthWriterContext(capturedContext, initiatorId);
+            BirthWriterContextSnapshot recipientCapture = FindBirthWriterContext(capturedContext, recipientId);
+            string initiatorName = CapturedOrLiveName(initiatorCapture, initiator);
+            string recipientName = CapturedOrLiveName(recipientCapture, recipient);
             string neutralText = string.Equals(initiatorText, recipientText, StringComparison.OrdinalIgnoreCase)
                 ? initiatorText
-                : initiator.LabelShortCap + ": " + initiatorText + " / " + recipient.LabelShortCap + ": " + recipientText;
+                : initiatorName + ": " + initiatorText + " / " + recipientName + ": " + recipientText;
 
             DiaryEvent diaryEvent = new DiaryEvent
             {
                 eventId = Guid.NewGuid().ToString("N"),
-                tick = Find.TickManager.TicksGame,
-                date = GenDate.DateFullStringAt(Find.TickManager.TicksAbs, Vector2.zero),
+                tick = ResolveEventTick(historicalTick),
+                date = ResolveEventDate(capturedContext, historicalTick),
                 interactionDefName = defName,
                 interactionLabel = label,
-                initiatorPawnId = initiator.GetUniqueLoadID(),
-                recipientPawnId = recipient.GetUniqueLoadID(),
-                initiatorName = initiator.LabelShortCap,
-                recipientName = recipient.LabelShortCap,
+                initiatorPawnId = initiatorId,
+                recipientPawnId = recipientId,
+                initiatorName = initiatorName,
+                recipientName = recipientName,
                 initiatorText = initiatorText,
                 recipientText = recipientText,
                 neutralText = neutralText,
                 gameContext = gameContext,
                 instruction = instruction,
                 colorCue = DiaryEvent.ResolveColorCue(defName, gameContext),
-                initiatorPawnSummary = DiaryContextBuilder.BuildPawnSummary(initiator),
-                recipientPawnSummary = DiaryContextBuilder.BuildPawnSummary(recipient),
-                initiatorSurroundings = DiaryContextBuilder.BuildSurroundingsSummary(initiator),
-                recipientSurroundings = DiaryContextBuilder.BuildSurroundingsSummary(recipient),
-                initiatorContinuity = DiaryContextBuilder.BuildContinuitySummary(initiator, recipient, activeEvents),
-                recipientContinuity = DiaryContextBuilder.BuildContinuitySummary(recipient, initiator, activeEvents),
-                initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(initiator.GetUniqueLoadID(), activeEvents),
-                recipientLastOpener = DiaryContextBuilder.LatestDiaryOpener(recipient.GetUniqueLoadID(), activeEvents),
-                initiatorPreviousEntryEnding = DiaryContextBuilder.LatestDiaryEnding(initiator.GetUniqueLoadID(), activeEvents),
-                recipientPreviousEntryEnding = DiaryContextBuilder.LatestDiaryEnding(recipient.GetUniqueLoadID(), activeEvents),
-                initiatorWeapon = DiaryContextBuilder.EquippedWeapon(initiator),
-                recipientWeapon = DiaryContextBuilder.EquippedWeapon(recipient),
+                initiatorPawnSummary = CapturedOrFallback(initiatorCapture?.pawnSummary,
+                    () => DiaryContextBuilder.BuildPawnSummary(initiator)),
+                recipientPawnSummary = CapturedOrFallback(recipientCapture?.pawnSummary,
+                    () => DiaryContextBuilder.BuildPawnSummary(recipient)),
+                initiatorSurroundings = CapturedOrFallback(initiatorCapture?.surroundings,
+                    () => DiaryContextBuilder.BuildSurroundingsSummary(initiator)),
+                recipientSurroundings = CapturedOrFallback(recipientCapture?.surroundings,
+                    () => DiaryContextBuilder.BuildSurroundingsSummary(recipient)),
+                initiatorContinuity = CapturedOrFallback(initiatorCapture?.pairContinuity,
+                    () => DiaryContextBuilder.BuildContinuitySummary(initiator, recipient, activeEvents)),
+                recipientContinuity = CapturedOrFallback(recipientCapture?.pairContinuity,
+                    () => DiaryContextBuilder.BuildContinuitySummary(recipient, initiator, activeEvents)),
+                initiatorLastOpener = CapturedOrFallback(initiatorCapture?.lastOpener,
+                    () => DiaryContextBuilder.LatestDiaryOpener(initiatorId, activeEvents), true),
+                recipientLastOpener = CapturedOrFallback(recipientCapture?.lastOpener,
+                    () => DiaryContextBuilder.LatestDiaryOpener(recipientId, activeEvents), true),
+                initiatorPreviousEntryEnding = CapturedOrFallback(initiatorCapture?.previousEntryEnding,
+                    () => DiaryContextBuilder.LatestDiaryEnding(initiatorId, activeEvents), true),
+                recipientPreviousEntryEnding = CapturedOrFallback(recipientCapture?.previousEntryEnding,
+                    () => DiaryContextBuilder.LatestDiaryEnding(recipientId, activeEvents), true),
+                initiatorWeapon = CapturedOrFallback(initiatorCapture?.weapon,
+                    () => DiaryContextBuilder.EquippedWeapon(initiator), true),
+                recipientWeapon = CapturedOrFallback(recipientCapture?.weapon,
+                    () => DiaryContextBuilder.EquippedWeapon(recipient), true),
                 initiatorStatus = DiaryEvent.NotGeneratedStatus,
                 recipientStatus = DiaryEvent.NotGeneratedStatus,
                 neutralStatus = DiaryEvent.NotGeneratedStatus
             };
 
-            MarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.InitiatorRole, initiator);
-            MarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.RecipientRole, recipient);
+            ApplyCapturedOrLiveGenerationEligibility(
+                diaryEvent, DiaryEvent.InitiatorRole, initiator, initiatorCapture);
+            ApplyCapturedOrLiveGenerationEligibility(
+                diaryEvent, DiaryEvent.RecipientRole, recipient, recipientCapture);
             // Snapshot display-only pawn facts (staggered handwriting, text-decoration hediff/trait
             // names) from the live pawns here, then store plain values on the model. After this the
             // DiaryEvent never touches Pawn state. See PawnFactCapture / AGENTS.md ("barrier").
-            diaryEvent.SetStaggeredIntensity(DiaryEvent.InitiatorRole, PawnFactCapture.StaggeredIntensity(initiator));
-            diaryEvent.SetStaggeredIntensity(DiaryEvent.RecipientRole, PawnFactCapture.StaggeredIntensity(recipient));
-            diaryEvent.SetTextDecorationFacts(DiaryEvent.InitiatorRole, PawnFactCapture.TextDecorationFacts(initiator));
-            diaryEvent.SetTextDecorationFacts(DiaryEvent.RecipientRole, PawnFactCapture.TextDecorationFacts(recipient));
+            diaryEvent.SetStaggeredIntensity(DiaryEvent.InitiatorRole,
+                initiatorCapture?.staggeredIntensity ?? PawnFactCapture.StaggeredIntensity(initiator));
+            diaryEvent.SetStaggeredIntensity(DiaryEvent.RecipientRole,
+                recipientCapture?.staggeredIntensity ?? PawnFactCapture.StaggeredIntensity(recipient));
+            diaryEvent.SetTextDecorationFacts(DiaryEvent.InitiatorRole,
+                initiatorCapture?.textDecorationFacts ?? PawnFactCapture.TextDecorationFacts(initiator));
+            diaryEvent.SetTextDecorationFacts(DiaryEvent.RecipientRole,
+                recipientCapture?.textDecorationFacts ?? PawnFactCapture.TextDecorationFacts(recipient));
             events.Register(diaryEvent);
-            AddEventRef(initiator, diaryEvent.eventId);
-            AddEventRef(recipient, diaryEvent.eventId);
+            AddEventRef(initiator, diaryEvent.eventId, historicalTick >= 0);
+            AddEventRef(recipient, diaryEvent.eventId, historicalTick >= 0);
             ApplyDiaryEventLimits();
             if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
             {
@@ -94,17 +182,69 @@ namespace PawnDiary
         internal DiaryEvent AddSoloEvent(Pawn pawn, Pawn otherPawn, string defName, string label,
             string text, string instruction, string gameContext)
         {
+            return AddSoloEventCore(
+                pawn, otherPawn, defName, label, text, instruction, gameContext, null, -1);
+        }
+
+        /// <summary>
+        /// Creates a solo page at a historical birth tick from context frozen at that birth boundary.
+        /// </summary>
+        internal DiaryEvent AddSoloEvent(Pawn pawn, Pawn otherPawn, string defName, string label,
+            string text, string instruction, string gameContext,
+            BirthEventContextSnapshot capturedContext, int historicalTick)
+        {
+            return AddSoloEventCore(
+                pawn,
+                otherPawn,
+                defName,
+                label,
+                text,
+                instruction,
+                gameContext,
+                capturedContext,
+                historicalTick);
+        }
+
+        /// <summary>Creates a solo page from a staged signal at its original captured tick.</summary>
+        internal DiaryEvent AddSoloEvent(Pawn pawn, Pawn otherPawn, string defName, string label,
+            string text, string instruction, string gameContext, int historicalTick)
+        {
+            return AddSoloEventCore(
+                pawn,
+                otherPawn,
+                defName,
+                label,
+                text,
+                instruction,
+                gameContext,
+                null,
+                historicalTick);
+        }
+
+        private DiaryEvent AddSoloEventCore(
+            Pawn pawn,
+            Pawn otherPawn,
+            string defName,
+            string label,
+            string text,
+            string instruction,
+            string gameContext,
+            BirthEventContextSnapshot capturedContext,
+            int historicalTick)
+        {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
+            string pawnId = pawn.GetUniqueLoadID();
+            BirthWriterContextSnapshot pawnCapture = FindBirthWriterContext(capturedContext, pawnId);
             DiaryEvent diaryEvent = new DiaryEvent
             {
                 eventId = Guid.NewGuid().ToString("N"),
-                tick = Find.TickManager.TicksGame,
-                date = GenDate.DateFullStringAt(Find.TickManager.TicksAbs, Vector2.zero),
+                tick = ResolveEventTick(historicalTick),
+                date = ResolveEventDate(capturedContext, historicalTick),
                 interactionDefName = defName,
                 interactionLabel = label,
-                initiatorPawnId = pawn.GetUniqueLoadID(),
+                initiatorPawnId = pawnId,
                 recipientPawnId = string.Empty,
-                initiatorName = pawn.LabelShortCap,
+                initiatorName = CapturedOrLiveName(pawnCapture, pawn),
                 recipientName = string.Empty,
                 initiatorText = text,
                 recipientText = string.Empty,
@@ -112,17 +252,23 @@ namespace PawnDiary
                 gameContext = gameContext,
                 instruction = instruction,
                 colorCue = DiaryEvent.ResolveColorCue(defName, gameContext),
-                initiatorPawnSummary = DiaryContextBuilder.BuildPawnSummary(pawn),
+                initiatorPawnSummary = CapturedOrFallback(pawnCapture?.pawnSummary,
+                    () => DiaryContextBuilder.BuildPawnSummary(pawn)),
                 recipientPawnSummary = "n/a",
-                initiatorSurroundings = DiaryContextBuilder.BuildSurroundingsSummary(pawn),
+                initiatorSurroundings = CapturedOrFallback(pawnCapture?.surroundings,
+                    () => DiaryContextBuilder.BuildSurroundingsSummary(pawn)),
                 recipientSurroundings = "n/a",
-                initiatorContinuity = DiaryContextBuilder.BuildContinuitySummary(pawn, otherPawn, activeEvents),
+                initiatorContinuity = CapturedOrFallback(pawnCapture?.continuity,
+                    () => DiaryContextBuilder.BuildContinuitySummary(pawn, otherPawn, activeEvents)),
                 recipientContinuity = "none",
-                initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(pawn.GetUniqueLoadID(), activeEvents),
+                initiatorLastOpener = CapturedOrFallback(pawnCapture?.lastOpener,
+                    () => DiaryContextBuilder.LatestDiaryOpener(pawnId, activeEvents), true),
                 recipientLastOpener = string.Empty,
-                initiatorPreviousEntryEnding = DiaryContextBuilder.LatestDiaryEnding(pawn.GetUniqueLoadID(), activeEvents),
+                initiatorPreviousEntryEnding = CapturedOrFallback(pawnCapture?.previousEntryEnding,
+                    () => DiaryContextBuilder.LatestDiaryEnding(pawnId, activeEvents), true),
                 recipientPreviousEntryEnding = string.Empty,
-                initiatorWeapon = DiaryContextBuilder.EquippedWeapon(pawn),
+                initiatorWeapon = CapturedOrFallback(pawnCapture?.weapon,
+                    () => DiaryContextBuilder.EquippedWeapon(pawn), true),
                 recipientWeapon = string.Empty,
                 solo = true,
                 initiatorStatus = DiaryEvent.NotGeneratedStatus,
@@ -130,11 +276,14 @@ namespace PawnDiary
                 neutralStatus = DiaryEvent.NotGeneratedStatus
             };
 
-            MarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.InitiatorRole, pawn);
-            diaryEvent.SetStaggeredIntensity(DiaryEvent.InitiatorRole, PawnFactCapture.StaggeredIntensity(pawn));
-            diaryEvent.SetTextDecorationFacts(DiaryEvent.InitiatorRole, PawnFactCapture.TextDecorationFacts(pawn));
+            ApplyCapturedOrLiveGenerationEligibility(
+                diaryEvent, DiaryEvent.InitiatorRole, pawn, pawnCapture);
+            diaryEvent.SetStaggeredIntensity(DiaryEvent.InitiatorRole,
+                pawnCapture?.staggeredIntensity ?? PawnFactCapture.StaggeredIntensity(pawn));
+            diaryEvent.SetTextDecorationFacts(DiaryEvent.InitiatorRole,
+                pawnCapture?.textDecorationFacts ?? PawnFactCapture.TextDecorationFacts(pawn));
             events.Register(diaryEvent);
-            AddEventRef(pawn, diaryEvent.eventId);
+            AddEventRef(pawn, diaryEvent.eventId, historicalTick >= 0);
             ApplyDiaryEventLimits();
             if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
             {
@@ -142,6 +291,91 @@ namespace PawnDiary
             }
 
             return diaryEvent;
+        }
+
+        private static BirthWriterContextSnapshot FindBirthWriterContext(
+            BirthEventContextSnapshot capturedContext,
+            string pawnId)
+        {
+            if (capturedContext?.writers == null || string.IsNullOrWhiteSpace(pawnId))
+            {
+                return null;
+            }
+
+            for (int i = 0; i < capturedContext.writers.Count; i++)
+            {
+                BirthWriterContextSnapshot row = capturedContext.writers[i];
+                if (row != null && string.Equals(row.pawnId, pawnId, StringComparison.Ordinal))
+                {
+                    return row;
+                }
+            }
+
+            return null;
+        }
+
+        private static string CapturedOrLiveName(BirthWriterContextSnapshot captured, Pawn pawn)
+        {
+            return captured != null && !string.IsNullOrWhiteSpace(captured.displayName)
+                ? captured.displayName
+                : pawn.LabelShortCap;
+        }
+
+        private static string CapturedOrFallback(
+            string captured,
+            Func<string> fallback,
+            bool blankIsCaptured = false)
+        {
+            if (captured != null && (blankIsCaptured || !string.IsNullOrWhiteSpace(captured)))
+            {
+                return captured;
+            }
+
+            return fallback == null ? string.Empty : fallback();
+        }
+
+        private static int ResolveEventTick(int historicalTick)
+        {
+            return historicalTick >= 0 ? historicalTick : Find.TickManager.TicksGame;
+        }
+
+        private static string ResolveEventDate(
+            BirthEventContextSnapshot capturedContext,
+            int historicalTick)
+        {
+            if (!string.IsNullOrWhiteSpace(capturedContext?.birthDate))
+            {
+                return capturedContext.birthDate;
+            }
+
+            if (historicalTick < 0)
+            {
+                return GenDate.DateFullStringAt(Find.TickManager.TicksAbs, Vector2.zero);
+            }
+
+            int elapsed = Math.Max(0, Find.TickManager.TicksGame - historicalTick);
+            long absolute = Math.Max(0L, (long)Find.TickManager.TicksAbs - elapsed);
+            return GenDate.DateFullStringAt(
+                absolute > int.MaxValue ? int.MaxValue : (int)absolute,
+                Vector2.zero);
+        }
+
+        private static void ApplyCapturedOrLiveGenerationEligibility(
+            DiaryEvent diaryEvent,
+            string povRole,
+            Pawn pawn,
+            BirthWriterContextSnapshot captured)
+        {
+            if (captured == null)
+            {
+                MarkIncapacitatedPovSkipped(diaryEvent, povRole, pawn);
+                return;
+            }
+
+            if (captured.skipFirstPersonGeneration)
+            {
+                diaryEvent.MarkSkipped(povRole, IncapacitatedSkipReason());
+            }
         }
     }
 }

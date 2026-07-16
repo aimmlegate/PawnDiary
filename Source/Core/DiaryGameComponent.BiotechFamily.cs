@@ -26,7 +26,7 @@ namespace PawnDiary
 
         // PlayLog and accepted social memories can describe the same lesson. This transient cache
         // collapses the pair/kind inside the XML-owned window and is reset at every game/load boundary.
-        private static readonly Dictionary<string, int> RecentBiotechFamilyActivities =
+        private readonly Dictionary<string, int> RecentBiotechFamilyActivities =
             new Dictionary<string, int>(StringComparer.Ordinal);
 
         /// <summary>Begins exact birth capture before vanilla emits nested Tale/Thought signals.</summary>
@@ -53,6 +53,7 @@ namespace PawnDiary
                 return null;
             }
 
+            BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
             return new BiotechBirthCallState
             {
                 snapshot = snapshot,
@@ -60,7 +61,7 @@ namespace PawnDiary
                 birther = birtherThing as Pawn,
                 geneticMother = geneticMother,
                 father = father,
-                correlationScope = BiotechBirthCorrelation.BeginBirth(ritualJob)
+                correlationScope = BiotechBirthCorrelation.BeginBirth(ritualJob, policy)
             };
         }
 
@@ -123,6 +124,12 @@ namespace PawnDiary
                 return false;
             }
 
+            BirthEventContextSnapshot eventContext = CaptureBiotechBirthEventContext(
+                state.snapshot,
+                resolvedWriters,
+                writerPawns,
+                child);
+
             bool writerBecameUnavailable = writerPawns.Count < writers.writers.Count;
             for (int i = 0; i < writerPawns.Count; i++)
             {
@@ -136,6 +143,7 @@ namespace PawnDiary
                 {
                     snapshot = state.snapshot,
                     writers = writers,
+                    eventContext = eventContext,
                     createdTick = Find.TickManager?.TicksGame ?? state.snapshot.birthTick
                 });
                 pendingBiotechBirths = PendingBiotechBirthPolicy.Normalize(
@@ -149,6 +157,7 @@ namespace PawnDiary
                 resolvedWriters,
                 writerPawns,
                 child,
+                eventContext,
                 enabledAtBirth: true);
         }
 
@@ -164,7 +173,9 @@ namespace PawnDiary
             BiotechFamilyArcState arc = FamilyArcPolicy.FindArcByHediff(
                 biotechFamilyArcs,
                 hediff.GetUniqueLoadID());
-            MiscarriageCorrelationScope scope = BiotechBirthCorrelation.BeginMiscarriage(arc);
+            MiscarriageCorrelationScope scope = BiotechBirthCorrelation.BeginMiscarriage(
+                arc,
+                DiaryBiotechPolicy.Snapshot());
             return arc == null || scope == null
                 ? null
                 : new BiotechMiscarriageCallState { arc = arc, correlationScope = scope };
@@ -418,7 +429,7 @@ namespace PawnDiary
         }
 
         /// <summary>Clears transient cross-source activity dedup without touching loaded arcs.</summary>
-        private static void ResetBiotechFamilyTransientState()
+        private void ResetBiotechFamilyTransientState()
         {
             RecentBiotechFamilyActivities.Clear();
             BiotechBirthCorrelation.Clear();
@@ -592,7 +603,7 @@ namespace PawnDiary
                 policy?.maximumSupporterRows ?? 12);
         }
 
-        private static void PruneTransientFamilyDedup(int now, int window)
+        private void PruneTransientFamilyDedup(int now, int window)
         {
             if (RecentBiotechFamilyActivities.Count <= MaximumTransientFamilyDedupRows) return;
             string oldestKey = null;
@@ -691,6 +702,7 @@ namespace PawnDiary
                     resolvedWriters,
                     writerPawns,
                     child,
+                    pending.eventContext,
                     enabledAtBirth: true))
                 {
                     pendingBiotechBirths.RemoveAt(i);
@@ -725,6 +737,7 @@ namespace PawnDiary
             BirthWriterSelection writers,
             List<Pawn> writerPawns,
             Pawn child,
+            BirthEventContextSnapshot eventContext,
             bool enabledAtBirth)
         {
             if (snapshot == null || writers?.writers == null || writerPawns == null
@@ -751,7 +764,72 @@ namespace PawnDiary
                 writers,
                 writerPawns,
                 child,
+                eventContext ?? CaptureBiotechBirthEventContext(
+                    snapshot,
+                    writers,
+                    writerPawns,
+                    child),
                 enabledAtBirth));
+        }
+
+        /// <summary>
+        /// Freezes prompt/display facts at the canonical birth boundary so a later naming flush cannot
+        /// borrow future surroundings, continuity, pawn names, or handwriting state.
+        /// </summary>
+        private BirthEventContextSnapshot CaptureBiotechBirthEventContext(
+            BirthMutationSnapshot snapshot,
+            BirthWriterSelection writers,
+            List<Pawn> writerPawns,
+            Pawn child)
+        {
+            if (snapshot == null || writers?.writers == null || writerPawns == null
+                || writers.writers.Count != writerPawns.Count)
+            {
+                return null;
+            }
+
+            IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
+            BirthEventContextSnapshot result = new BirthEventContextSnapshot
+            {
+                birthTick = Math.Max(0, snapshot.birthTick),
+                birthDate = GenDate.DateFullStringAt(
+                    Find.TickManager?.TicksAbs ?? 0,
+                    UnityEngine.Vector2.zero)
+            };
+            bool pair = writerPawns.Count > 1;
+            for (int i = 0; i < writerPawns.Count; i++)
+            {
+                Pawn pawn = writerPawns[i];
+                BirthWriterFact writer = writers.writers[i];
+                if (pawn == null || writer == null)
+                {
+                    continue;
+                }
+
+                Pawn otherWriter = pair ? writerPawns[i == 0 ? 1 : 0] : null;
+                string soloContinuity = DiaryContextBuilder.BuildContinuitySummary(pawn, child, activeEvents);
+                result.writers.Add(new BirthWriterContextSnapshot
+                {
+                    pawnId = writer.pawnId,
+                    displayName = string.IsNullOrWhiteSpace(writer.displayName)
+                        ? pawn.LabelShortCap
+                        : writer.displayName,
+                    pawnSummary = DiaryContextBuilder.BuildPawnSummary(pawn),
+                    surroundings = DiaryContextBuilder.BuildSurroundingsSummary(pawn),
+                    continuity = soloContinuity,
+                    pairContinuity = pair
+                        ? DiaryContextBuilder.BuildContinuitySummary(pawn, otherWriter, activeEvents)
+                        : soloContinuity,
+                    lastOpener = DiaryContextBuilder.LatestDiaryOpener(writer.pawnId, activeEvents),
+                    previousEntryEnding = DiaryContextBuilder.LatestDiaryEnding(writer.pawnId, activeEvents),
+                    weapon = DiaryContextBuilder.EquippedWeapon(pawn),
+                    staggeredIntensity = PawnFactCapture.StaggeredIntensity(pawn),
+                    textDecorationFacts = PawnFactCapture.TextDecorationFacts(pawn),
+                    skipFirstPersonGeneration = ShouldSkipFirstPersonGenerationForIncapacitation(pawn)
+                });
+            }
+
+            return result;
         }
 
         private List<Pawn> ResolveImmediateBirthWriters(

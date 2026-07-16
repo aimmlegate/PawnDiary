@@ -377,6 +377,9 @@ namespace PawnDiary.Capture
         public List<string> familyLaborHediffDefNames = new List<string>();
         public List<string> familyLessonAdultThoughtDefNames = new List<string>();
         public List<string> familyLessonChildThoughtDefNames = new List<string>();
+        public List<string> matureBirthDefNames = new List<string>();
+        public List<string> miscarriageBirtherThoughtDefNames = new List<string>();
+        public List<string> miscarriagePartnerThoughtDefNames = new List<string>();
         public List<BiotechOpportunityBandRule> opportunityBands = new List<BiotechOpportunityBandRule>();
         public List<BiotechObservationBandRule> observationBands = new List<BiotechObservationBandRule>();
 
@@ -391,6 +394,13 @@ namespace PawnDiary.Capture
             snapshot.observationBands.Add(ObservationBand(1, "light"));
             snapshot.observationBands.Add(ObservationBand(4, "steady"));
             snapshot.observationBands.Add(ObservationBand(8, "deep"));
+            // Safe fallbacks keep correlation fail-open if the XML Def is unavailable during startup.
+            // The live policy normally replaces these with the XML-owned exact matcher lists.
+            snapshot.matureBirthDefNames.Add("GaveBirth");
+            snapshot.matureBirthDefNames.Add("BabyBorn");
+            snapshot.matureBirthDefNames.Add("Stillbirth");
+            snapshot.miscarriageBirtherThoughtDefNames.Add("Miscarried");
+            snapshot.miscarriagePartnerThoughtDefNames.Add("PartnerMiscarried");
             return snapshot;
         }
 
@@ -577,6 +587,34 @@ namespace PawnDiary.Capture
     }
 
     /// <summary>
+    /// Event-time prompt/display facts for one canonical birth writer. These are detached from the
+    /// live Pawn so a naming delay cannot pull later surroundings or diary continuity backward in time.
+    /// </summary>
+    internal partial class BirthWriterContextSnapshot
+    {
+        public string pawnId = string.Empty;
+        public string displayName = string.Empty;
+        public string pawnSummary = string.Empty;
+        public string surroundings = string.Empty;
+        public string continuity = string.Empty;
+        public string pairContinuity = string.Empty;
+        public string lastOpener = string.Empty;
+        public string previousEntryEnding = string.Empty;
+        public string weapon = string.Empty;
+        public int staggeredIntensity;
+        public string textDecorationFacts = string.Empty;
+        public bool skipFirstPersonGeneration;
+    }
+
+    /// <summary>Frozen chronology plus the one/two writer contexts for a canonical birth page.</summary>
+    internal partial class BirthEventContextSnapshot
+    {
+        public int birthTick;
+        public string birthDate = string.Empty;
+        public List<BirthWriterContextSnapshot> writers = new List<BirthWriterContextSnapshot>();
+    }
+
+    /// <summary>
     /// Saved ownership of a canonical birth while the child's final/current name is still pending.
     /// It contains detached facts only; live Pawn/Thing references are resolved again at flush time.
     /// </summary>
@@ -584,6 +622,7 @@ namespace PawnDiary.Capture
     {
         public BirthMutationSnapshot snapshot;
         public BirthWriterSelection writers;
+        public BirthEventContextSnapshot eventContext;
         public int createdTick;
     }
 

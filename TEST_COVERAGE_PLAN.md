@@ -133,14 +133,17 @@ legacy settings inheritance, bounded context formatting, XML policy coverage, ex
 groups/package gates, pending-row normalization/expiry/grace, pregnancy/labor correlation,
 lesson/play/memory classification, unsummarized evidence, duplicate repair, compaction/retention,
 exact birth-arc attachment/idempotence, naming/writer-availability flush and durable-record policy,
+labor-to-pushing single-arc continuity, multiple-birth evidence cloning, exact-parent precedence,
+XML-owned mature-birth/miscarriage classification, tick-zero load repair, frozen pending birth context,
 malformed birth-token repair, and English/Russian DefInjected/Keyed
 text. `DiaryCapturePolicyTests` also requires both catalog types/Specs and their
 solo/pair/drop/dedup decisions. `PawnDiaryBiotechGrowthFlowTests` covers the live growth
 component boundary: canonical page creation with family context and N1 identity evidence, durable-event/consumed-age
 dedup repair, trait/skill baseline consumption, Birthday fallback when canonical growth is disabled,
 and zero pages with both groups disabled. `PawnDiaryBiotechBirthFlowTests` covers final canonical pair
-dispatch, child-subject/never-POV shape, original tick, exact context, per-role bond evidence, and
-hot-event replay rejection. The Scribe fixture round-trips detached pending growth and birth rows,
+dispatch, child-subject/never-POV shape, original tick, exact context, per-role bond evidence,
+hot-event replay rejection, frozen event-time prompt/display facts, and chronological insertion before
+a final-death boundary. The Scribe fixture round-trips detached pending growth and birth rows,
 deep family arc/supporter state, and nested consumed ages, while the DLC-safety fixture drives the guarded
 growth/family/birth snapshot accessors and pins exact runtime method signatures.
 Vanilla age-7/10/13 letter postponement/click-through and live healthy/ill/stillborn/vat/surrogacy/

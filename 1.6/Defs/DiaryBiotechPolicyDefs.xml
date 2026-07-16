@@ -63,6 +63,17 @@
       <li>PregnancyLabor</li>
       <li>PregnancyLaborPushing</li>
     </familyLaborHediffDefNames>
+    <matureBirthDefNames>
+      <li>GaveBirth</li>
+      <li>BabyBorn</li>
+      <li>Stillbirth</li>
+    </matureBirthDefNames>
+    <miscarriageBirtherThoughtDefNames>
+      <li>Miscarried</li>
+    </miscarriageBirtherThoughtDefNames>
+    <miscarriagePartnerThoughtDefNames>
+      <li>PartnerMiscarried</li>
+    </miscarriagePartnerThoughtDefNames>
 
     <observationBands>
       <li>

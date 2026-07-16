@@ -260,10 +260,22 @@ namespace PawnDiary.Capture
                     return null;
                 }
 
+                BiotechFamilyArcState sibling = FindSiblingBirthArc(arcs, snapshot);
                 arc = new BiotechFamilyArcState
                 {
                     familyArcId = arcId,
-                    openedTick = Math.Max(0, snapshot.birthTick)
+                    openedTick = sibling == null
+                        ? Math.Max(0, snapshot.birthTick)
+                        : sibling.openedTick,
+                    pregnancyHediffId = sibling?.pregnancyHediffId ?? string.Empty,
+                    laborHediffId = sibling?.laborHediffId ?? string.Empty,
+                    birtherId = sibling?.birtherId ?? string.Empty,
+                    geneticMotherId = sibling?.geneticMotherId ?? string.Empty,
+                    fatherId = sibling?.fatherId ?? string.Empty,
+                    birtherName = sibling?.birtherName ?? string.Empty,
+                    geneticMotherName = sibling?.geneticMotherName ?? string.Empty,
+                    fatherName = sibling?.fatherName ?? string.Empty,
+                    supporters = CloneSupporters(sibling?.supporters)
                 };
                 arcs.Add(arc);
             }
@@ -799,21 +811,49 @@ namespace PawnDiary.Capture
             FamilyHediffSnapshot snapshot)
         {
             BiotechFamilyArcState best = FindByHediff(arcs, snapshot.hediffId);
+            if (best != null)
+            {
+                return best;
+            }
+
+            int bestCompatibility = -1;
+            int bestTick = -1;
+            bool ambiguous = false;
             for (int i = 0; i < arcs.Count; i++)
             {
                 BiotechFamilyArcState arc = arcs[i];
                 if (arc == null || string.IsNullOrWhiteSpace(arc.pregnancyHediffId)
-                    || !string.IsNullOrWhiteSpace(arc.laborHediffId)
                     || arc.closed
-                    || !string.Equals(arc.birtherId, snapshot.birtherId.Trim(), StringComparison.Ordinal)
-                    || !SameWhenKnown(arc.geneticMotherId, snapshot.geneticMotherId)
-                    || !SameWhenKnown(arc.fatherId, snapshot.fatherId))
+                    || !string.Equals(arc.birtherId, snapshot.birtherId.Trim(), StringComparison.Ordinal))
                 {
                     continue;
                 }
-                if (best == null || arc.lastObservedTick > best.lastObservedTick) best = arc;
+
+                int compatibility = ParentCompatibility(
+                    arc.geneticMotherId,
+                    snapshot.geneticMotherId,
+                    arc.fatherId,
+                    snapshot.fatherId);
+                if (compatibility < 0)
+                {
+                    continue;
+                }
+
+                int candidateTick = Math.Max(arc.openedTick, arc.lastObservedTick);
+                if (compatibility > bestCompatibility
+                    || (compatibility == bestCompatibility && candidateTick > bestTick))
+                {
+                    best = arc;
+                    bestCompatibility = compatibility;
+                    bestTick = candidateTick;
+                    ambiguous = false;
+                }
+                else if (compatibility == bestCompatibility && candidateTick == bestTick)
+                {
+                    ambiguous = true;
+                }
             }
-            return best;
+            return ambiguous ? null : best;
         }
 
         private static BiotechFamilyArcState FindUniqueBirthArc(
@@ -829,33 +869,120 @@ namespace PawnDiary.Capture
             string motherId = ParticipantId(snapshot.geneticMother);
             string fatherId = ParticipantId(snapshot.father);
             BiotechFamilyArcState best = null;
+            int bestCompatibility = -1;
             int bestTick = -1;
             bool ambiguous = false;
             for (int i = 0; i < arcs.Count; i++)
             {
                 BiotechFamilyArcState arc = arcs[i];
                 if (arc == null || arc.closed || !string.IsNullOrWhiteSpace(arc.childId)
-                    || !string.Equals(arc.birtherId, birtherId, StringComparison.Ordinal)
-                    || !SameWhenKnown(arc.geneticMotherId, motherId)
-                    || !SameWhenKnown(arc.fatherId, fatherId))
+                    || !string.Equals(arc.birtherId, birtherId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                int compatibility = ParentCompatibility(
+                    arc.geneticMotherId,
+                    motherId,
+                    arc.fatherId,
+                    fatherId);
+                if (compatibility < 0)
                 {
                     continue;
                 }
 
                 int candidateTick = Math.Max(arc.openedTick, arc.lastObservedTick);
-                if (candidateTick > bestTick)
+                if (compatibility > bestCompatibility
+                    || (compatibility == bestCompatibility && candidateTick > bestTick))
                 {
                     best = arc;
+                    bestCompatibility = compatibility;
                     bestTick = candidateTick;
                     ambiguous = false;
                 }
-                else if (candidateTick == bestTick)
+                else if (compatibility == bestCompatibility && candidateTick == bestTick)
                 {
                     ambiguous = true;
                 }
             }
 
             return ambiguous ? null : best;
+        }
+
+        private static BiotechFamilyArcState FindSiblingBirthArc(
+            List<BiotechFamilyArcState> arcs,
+            BirthMutationSnapshot snapshot)
+        {
+            string birtherId = ParticipantId(snapshot.birther);
+            string motherId = ParticipantId(snapshot.geneticMother);
+            string fatherId = ParticipantId(snapshot.father);
+            if (birtherId.Length == 0)
+            {
+                return null;
+            }
+
+            BiotechFamilyArcState best = null;
+            int bestCompatibility = -1;
+            for (int i = 0; i < arcs.Count; i++)
+            {
+                BiotechFamilyArcState arc = arcs[i];
+                if (arc == null || !arc.closed || arc.birthTick != snapshot.birthTick
+                    || string.IsNullOrWhiteSpace(arc.childId)
+                    || !BiotechBirthOutcomeTokens.IsKnown(arc.birthOutcomeToken)
+                    || !string.Equals(arc.birtherId, birtherId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                int compatibility = ParentCompatibility(
+                    arc.geneticMotherId,
+                    motherId,
+                    arc.fatherId,
+                    fatherId);
+                if (compatibility > bestCompatibility)
+                {
+                    best = arc;
+                    bestCompatibility = compatibility;
+                }
+            }
+
+            return best;
+        }
+
+        private static List<FamilySupportObservationState> CloneSupporters(
+            IList<FamilySupportObservationState> source)
+        {
+            List<FamilySupportObservationState> result = new List<FamilySupportObservationState>();
+            if (source == null)
+            {
+                return result;
+            }
+
+            for (int i = 0; i < source.Count; i++)
+            {
+                FamilySupportObservationState row = source[i];
+                if (row == null)
+                {
+                    continue;
+                }
+
+                result.Add(new FamilySupportObservationState
+                {
+                    adultId = row.adultId,
+                    lastDisplayName = row.lastDisplayName,
+                    relationToken = row.relationToken,
+                    lessonCount = row.lessonCount,
+                    babyPlayCount = row.babyPlayCount,
+                    careCount = row.careCount,
+                    summarizedLessonCount = row.summarizedLessonCount,
+                    summarizedBabyPlayCount = row.summarizedBabyPlayCount,
+                    summarizedCareCount = row.summarizedCareCount,
+                    firstObservedTick = row.firstObservedTick,
+                    lastObservedTick = row.lastObservedTick
+                });
+            }
+
+            return result;
         }
 
         private static void CopyBirthParticipant(
@@ -941,11 +1068,35 @@ namespace PawnDiary.Capture
             return false;
         }
 
-        private static bool SameWhenKnown(string first, string second)
+        private static int ParentCompatibility(
+            string arcMotherId,
+            string incomingMotherId,
+            string arcFatherId,
+            string incomingFatherId)
         {
-            string left = Clean(first);
-            string right = Clean(second);
-            return left.Length == 0 || right.Length == 0 || string.Equals(left, right, StringComparison.Ordinal);
+            int mother = ParticipantCompatibility(arcMotherId, incomingMotherId);
+            int father = ParticipantCompatibility(arcFatherId, incomingFatherId);
+            return mother < 0 || father < 0 ? -1 : mother + father;
+        }
+
+        private static int ParticipantCompatibility(string arcId, string incomingId)
+        {
+            string existing = Clean(arcId);
+            string incoming = Clean(incomingId);
+            if (incoming.Length == 0)
+            {
+                return 0;
+            }
+
+            if (existing.Length == 0)
+            {
+                // A known incoming parent must never claim an arc whose parent was unknown. That
+                // blank row could belong to a different sibling pregnancy; only an incoming snapshot
+                // that also lacks the parent may use wildcard correlation.
+                return -1;
+            }
+
+            return string.Equals(existing, incoming, StringComparison.Ordinal) ? 2 : -1;
         }
 
         private static int TotalEvidence(FamilySupportObservationState row)

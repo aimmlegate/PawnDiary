@@ -89,6 +89,55 @@ namespace PawnDiary.Capture
         }
     }
 
+    /// <summary>Persists one writer's event-time prompt and display facts.</summary>
+    internal partial class BirthWriterContextSnapshot : IExposable
+    {
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref pawnId, "pawnId");
+            Scribe_Values.Look(ref displayName, "displayName");
+            Scribe_Values.Look(ref pawnSummary, "pawnSummary");
+            Scribe_Values.Look(ref surroundings, "surroundings");
+            Scribe_Values.Look(ref continuity, "continuity");
+            Scribe_Values.Look(ref pairContinuity, "pairContinuity");
+            Scribe_Values.Look(ref lastOpener, "lastOpener");
+            Scribe_Values.Look(ref previousEntryEnding, "previousEntryEnding");
+            Scribe_Values.Look(ref weapon, "weapon");
+            Scribe_Values.Look(ref staggeredIntensity, "staggeredIntensity", 0);
+            Scribe_Values.Look(ref textDecorationFacts, "textDecorationFacts");
+            Scribe_Values.Look(ref skipFirstPersonGeneration, "skipFirstPersonGeneration", false);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                pawnId = pawnId ?? string.Empty;
+                displayName = displayName ?? string.Empty;
+                pawnSummary = pawnSummary ?? string.Empty;
+                surroundings = surroundings ?? string.Empty;
+                continuity = continuity ?? string.Empty;
+                pairContinuity = pairContinuity ?? string.Empty;
+                lastOpener = lastOpener ?? string.Empty;
+                previousEntryEnding = previousEntryEnding ?? string.Empty;
+                weapon = weapon ?? string.Empty;
+                textDecorationFacts = textDecorationFacts ?? string.Empty;
+            }
+        }
+    }
+
+    /// <summary>Persists the event-time chronology and writer contexts across a naming wait.</summary>
+    internal partial class BirthEventContextSnapshot : IExposable
+    {
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref birthTick, "birthTick", 0);
+            Scribe_Values.Look(ref birthDate, "birthDate");
+            Scribe_Collections.Look(ref writers, "writers", LookMode.Deep);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                birthDate = birthDate ?? string.Empty;
+                writers = writers ?? new List<BirthWriterContextSnapshot>();
+            }
+        }
+    }
+
     /// <summary>Saves one canonical birth until naming resolves or the bounded wait expires.</summary>
     internal partial class PendingBiotechBirthState : IExposable
     {
@@ -96,6 +145,7 @@ namespace PawnDiary.Capture
         {
             Scribe_Deep.Look(ref snapshot, "snapshot");
             Scribe_Deep.Look(ref writers, "writers");
+            Scribe_Deep.Look(ref eventContext, "eventContext");
             Scribe_Values.Look(ref createdTick, "createdTick", 0);
         }
     }

@@ -48,6 +48,9 @@ namespace PawnDiary
         public List<string> familyLaborHediffDefNames = new List<string>();
         public List<string> familyLessonAdultThoughtDefNames = new List<string>();
         public List<string> familyLessonChildThoughtDefNames = new List<string>();
+        public List<string> matureBirthDefNames = new List<string>();
+        public List<string> miscarriageBirtherThoughtDefNames = new List<string>();
+        public List<string> miscarriagePartnerThoughtDefNames = new List<string>();
         public int familyActivityPairDedupTicks = 2500;
         public List<DiaryBiotechObservationBandDef> observationBands =
             new List<DiaryBiotechObservationBandDef>();
@@ -92,9 +95,25 @@ namespace PawnDiary
             {
                 yield return "maximumBirthWriters must stay between one and the hard two-writer cap.";
             }
+            if (!HasNonBlankMatcher(matureBirthDefNames))
+                yield return "matureBirthDefNames must contain at least one exact Def name.";
+            if (!HasNonBlankMatcher(miscarriageBirtherThoughtDefNames))
+                yield return "miscarriageBirtherThoughtDefNames must contain at least one exact Def name.";
+            if (!HasNonBlankMatcher(miscarriagePartnerThoughtDefNames))
+                yield return "miscarriagePartnerThoughtDefNames must contain at least one exact Def name.";
 
             foreach (string error in OpportunityBandErrors(opportunityBands)) yield return error;
             foreach (string error in ObservationBandErrors(observationBands)) yield return error;
+        }
+
+        internal static bool HasNonBlankMatcher(List<string> values)
+        {
+            if (values == null) return false;
+            for (int i = 0; i < values.Count; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(values[i])) return true;
+            }
+            return false;
         }
 
         private static IEnumerable<string> OpportunityBandErrors(List<DiaryBiotechOpportunityBandDef> bands)
@@ -215,6 +234,13 @@ namespace PawnDiary
             CopyStrings(source.familyLaborHediffDefNames, result.familyLaborHediffDefNames);
             CopyStrings(source.familyLessonAdultThoughtDefNames, result.familyLessonAdultThoughtDefNames);
             CopyStrings(source.familyLessonChildThoughtDefNames, result.familyLessonChildThoughtDefNames);
+            ReplaceStrings(source.matureBirthDefNames, result.matureBirthDefNames);
+            ReplaceStrings(
+                source.miscarriageBirtherThoughtDefNames,
+                result.miscarriageBirtherThoughtDefNames);
+            ReplaceStrings(
+                source.miscarriagePartnerThoughtDefNames,
+                result.miscarriagePartnerThoughtDefNames);
             return result;
         }
 
@@ -275,6 +301,13 @@ namespace PawnDiary
                 string value = (source[i] ?? string.Empty).Trim();
                 if (value.Length > 0 && seen.Add(value)) destination.Add(value);
             }
+        }
+
+        private static void ReplaceStrings(List<string> source, List<string> destination)
+        {
+            if (!DiaryBiotechPolicyDef.HasNonBlankMatcher(source)) return;
+            destination.Clear();
+            CopyStrings(source, destination);
         }
 
         private static int Positive(int value, int fallback)

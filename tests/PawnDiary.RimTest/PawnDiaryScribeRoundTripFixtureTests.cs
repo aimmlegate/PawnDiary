@@ -633,6 +633,29 @@ namespace PawnDiary.RimTests
                             roleToken = BiotechFamilyRoleTokens.GeneticMother
                         }
                     }
+                },
+                eventContext = new BirthEventContextSnapshot
+                {
+                    birthTick = 22000,
+                    birthDate = "4th Aprimay 5500",
+                    writers = new List<BirthWriterContextSnapshot>
+                    {
+                        new BirthWriterContextSnapshot
+                        {
+                            pawnId = "Thing_Birther",
+                            displayName = "Ari",
+                            pawnSummary = "Ari at the birth boundary",
+                            surroundings = "a hospital room",
+                            continuity = "parent of Baby 1",
+                            pairContinuity = "partner of Bo",
+                            lastOpener = "Before today",
+                            previousEntryEnding = "I hoped we were ready.",
+                            weapon = "none",
+                            staggeredIntensity = 2,
+                            textDecorationFacts = "hediff=Labor",
+                            skipFirstPersonGeneration = true
+                        }
+                    }
                 }
             };
 
@@ -653,6 +676,16 @@ namespace PawnDiary.RimTests
                 "pending first writer role");
             AssertStr(BiotechFamilyRoleTokens.GeneticMother, loaded.writers.writers[1].roleToken,
                 "pending second writer role");
+            Require(loaded.eventContext?.writers != null && loaded.eventContext.writers.Count == 1,
+                "pending birth event-time context should survive.");
+            AssertInt(22000, loaded.eventContext.birthTick, "pending context birth tick");
+            AssertStr("4th Aprimay 5500", loaded.eventContext.birthDate, "pending context date");
+            AssertStr("Ari at the birth boundary", loaded.eventContext.writers[0].pawnSummary,
+                "pending context pawn summary");
+            AssertStr("partner of Bo", loaded.eventContext.writers[0].pairContinuity,
+                "pending context pair continuity");
+            Require(loaded.eventContext.writers[0].skipFirstPersonGeneration,
+                "pending context generation eligibility should survive.");
         }
 
         /// <summary>

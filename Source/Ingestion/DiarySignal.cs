@@ -24,6 +24,7 @@
 // extends it like a discriminated-union member, and Dispatch is the one switch that routes them all.)
 using System.Collections.Generic;
 using PawnDiary.Capture;
+using Verse;
 
 namespace PawnDiary.Ingestion
 {
@@ -34,6 +35,8 @@ namespace PawnDiary.Ingestion
     /// </summary>
     internal abstract class DiarySignal
     {
+        private int historicalEventTick = -1;
+
         /// <summary>
         /// The plain, RimWorld-free payload the catalog decides on. Carries the event type plus the
         /// facts the pure <c>Decide</c> needs. Built by the subclass from live state at capture time.
@@ -84,6 +87,66 @@ namespace PawnDiary.Ingestion
         /// chosen generic key is empty.
         /// </summary>
         public virtual int EventTypeDedupWindowTicks => DiaryTuning.Current.genericEventTypeDedupTicks;
+
+        /// <summary>
+        /// Marks a captured signal for chronological insertion when an ownership scope must release it
+        /// later. The tick is transient; the signal itself never enters a save.
+        /// </summary>
+        internal void PreserveHistoricalOrdering(int eventTick)
+        {
+            historicalEventTick = System.Math.Max(0, eventTick);
+        }
+
+        /// <summary>Creates a solo event, preserving a staged signal's original chronology when set.</summary>
+        protected DiaryEvent CreateSoloEvent(
+            DiaryGameComponent sink,
+            Pawn pawn,
+            Pawn otherPawn,
+            string defName,
+            string label,
+            string text,
+            string instruction,
+            string gameContext)
+        {
+            return historicalEventTick >= 0
+                ? sink.AddSoloEvent(
+                    pawn, otherPawn, defName, label, text, instruction, gameContext, historicalEventTick)
+                : sink.AddSoloEvent(pawn, otherPawn, defName, label, text, instruction, gameContext);
+        }
+
+        /// <summary>Creates a pair event, preserving a staged signal's original chronology when set.</summary>
+        protected DiaryEvent CreatePairwiseEvent(
+            DiaryGameComponent sink,
+            Pawn initiator,
+            Pawn recipient,
+            string defName,
+            string label,
+            string initiatorText,
+            string recipientText,
+            string instruction,
+            string gameContext)
+        {
+            return historicalEventTick >= 0
+                ? sink.AddPairwiseEvent(
+                    initiator,
+                    recipient,
+                    defName,
+                    label,
+                    initiatorText,
+                    recipientText,
+                    instruction,
+                    gameContext,
+                    historicalEventTick)
+                : sink.AddPairwiseEvent(
+                    initiator,
+                    recipient,
+                    defName,
+                    label,
+                    initiatorText,
+                    recipientText,
+                    instruction,
+                    gameContext);
+        }
 
         /// <summary>
         /// Performs the impure side effect the decision asks for: build the localized event text and

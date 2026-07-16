@@ -63,7 +63,6 @@ namespace PawnDiary
         }
 
         private static void Prefix(
-            Precept_Ritual ritual,
             Pawn geneticMother,
             Thing birtherThing,
             Pawn father,
@@ -83,7 +82,7 @@ namespace PawnDiary
                     birtherThing,
                     father,
                     doctor,
-                    ritual != null,
+                    lordJobRitual != null,
                     lordJobRitual);
             }
             catch (Exception exception)
@@ -143,9 +142,12 @@ namespace PawnDiary
 
                 try
                 {
+                    // canonicalClaimed records whether our own Postfix committed ownership. Harmony
+                    // also passes exceptions thrown by later third-party postfixes to this Finalizer;
+                    // those must not release signals that Pawn Diary already consumed successfully.
                     BiotechBirthCorrelation.CloseBirth(
                         __state.correlationScope,
-                        __exception == null && __state.canonicalClaimed,
+                        __state.canonicalClaimed,
                         Find.TickManager?.TicksGame ?? 0,
                         expiryTicks);
                 }

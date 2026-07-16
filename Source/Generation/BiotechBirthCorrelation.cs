@@ -35,6 +35,7 @@ namespace PawnDiary
     internal sealed class BirthCorrelationScope
     {
         internal LordJob_Ritual ritualJob;
+        internal BiotechPolicySnapshot policy;
         internal readonly List<DiarySignal> stagedSignals = new List<DiarySignal>();
     }
 
@@ -45,12 +46,16 @@ namespace PawnDiary
         internal string birtherId = string.Empty;
         internal string geneticMotherId = string.Empty;
         internal string fatherId = string.Empty;
+        internal BiotechPolicySnapshot policy;
     }
 
     /// <summary>Coordinates birth duplicate suppression without retaining state across games.</summary>
     internal static class BiotechBirthCorrelation
     {
         private const int MaximumRecentRitualOwners = 32;
+        // Harmony and RimWorld invoke these scopes on the main game thread only. They are static so
+        // nested Tale/Thought patches can see the active ApplyBirthOutcome call, and Clear runs at
+        // every game/new-game/load boundary so state never crosses saves.
         private static readonly List<BirthCorrelationScope> BirthScopes =
             new List<BirthCorrelationScope>();
         private static readonly List<MiscarriageCorrelationScope> MiscarriageScopes =
@@ -59,9 +64,15 @@ namespace PawnDiary
             new List<RecentRitualBirthOwner>();
 
         /// <summary>Opens the innermost owner scope before vanilla emits nested birth signals.</summary>
-        public static BirthCorrelationScope BeginBirth(LordJob_Ritual ritualJob)
+        public static BirthCorrelationScope BeginBirth(
+            LordJob_Ritual ritualJob,
+            BiotechPolicySnapshot policy)
         {
-            BirthCorrelationScope scope = new BirthCorrelationScope { ritualJob = ritualJob };
+            BirthCorrelationScope scope = new BirthCorrelationScope
+            {
+                ritualJob = ritualJob,
+                policy = policy ?? BiotechPolicySnapshot.CreateDefault()
+            };
             BirthScopes.Add(scope);
             return scope;
         }
@@ -72,12 +83,23 @@ namespace PawnDiary
         /// </summary>
         public static bool TryStageMatureSignal(string sourceDefName, DiarySignal signal)
         {
-            if (BirthScopes.Count == 0 || signal == null || !IsMatureBirthDef(sourceDefName))
+            if (BirthScopes.Count == 0 || signal == null)
             {
                 return false;
             }
 
-            BirthScopes[BirthScopes.Count - 1].stagedSignals.Add(signal);
+            BirthCorrelationScope scope = BirthScopes[BirthScopes.Count - 1];
+            if (!BirthCorrelationPolicy.IsMatureBirthDef(sourceDefName, scope.policy))
+            {
+                return false;
+            }
+
+            DiaryEventData capturedPayload = signal.Payload;
+            signal.PreserveHistoricalOrdering(
+                capturedPayload == null
+                    ? Find.TickManager?.TicksGame ?? 0
+                    : capturedPayload.Tick);
+            scope.stagedSignals.Add(signal);
             return true;
         }
 
@@ -151,7 +173,9 @@ namespace PawnDiary
         }
 
         /// <summary>Opens exact family-loss context before vanilla creates sibling memories.</summary>
-        public static MiscarriageCorrelationScope BeginMiscarriage(BiotechFamilyArcState arc)
+        public static MiscarriageCorrelationScope BeginMiscarriage(
+            BiotechFamilyArcState arc,
+            BiotechPolicySnapshot policy)
         {
             if (arc == null || string.IsNullOrWhiteSpace(arc.familyArcId))
             {
@@ -163,7 +187,8 @@ namespace PawnDiary
                 familyArcId = arc.familyArcId,
                 birtherId = arc.birtherId ?? string.Empty,
                 geneticMotherId = arc.geneticMotherId ?? string.Empty,
-                fatherId = arc.fatherId ?? string.Empty
+                fatherId = arc.fatherId ?? string.Empty,
+                policy = policy ?? BiotechPolicySnapshot.CreateDefault()
             };
             MiscarriageScopes.Add(scope);
             return scope;
@@ -178,23 +203,13 @@ namespace PawnDiary
             }
 
             MiscarriageCorrelationScope scope = MiscarriageScopes[MiscarriageScopes.Count - 1];
-            string pawnId = pawn.GetUniqueLoadID();
-            string role = string.Empty;
-            if (thoughtDefName == "Miscarried" && pawnId == scope.birtherId)
-            {
-                role = BiotechFamilyRoleTokens.Birther;
-            }
-            else if (thoughtDefName == "PartnerMiscarried")
-            {
-                if (pawnId == scope.geneticMotherId)
-                {
-                    role = BiotechFamilyRoleTokens.GeneticMother;
-                }
-                else if (pawnId == scope.fatherId)
-                {
-                    role = BiotechFamilyRoleTokens.Father;
-                }
-            }
+            string role = BirthCorrelationPolicy.MiscarriageRole(
+                thoughtDefName,
+                pawn.GetUniqueLoadID(),
+                scope.birtherId,
+                scope.geneticMotherId,
+                scope.fatherId,
+                scope.policy);
 
             if (role.Length == 0)
             {
@@ -221,11 +236,6 @@ namespace PawnDiary
             BirthScopes.Clear();
             MiscarriageScopes.Clear();
             RecentRitualOwners.Clear();
-        }
-
-        private static bool IsMatureBirthDef(string defName)
-        {
-            return defName == "GaveBirth" || defName == "BabyBorn" || defName == "Stillbirth";
         }
 
         private static void RememberRitualOwner(LordJob_Ritual ritualJob, int now, int expiryTicks)

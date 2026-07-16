@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using PawnDiary.Capture;
+using PawnDiary.Ingestion;
 using RimTestRedux;
 using Verse;
 
@@ -17,6 +18,9 @@ namespace PawnDiary.RimTests
     public static class PawnDiaryBiotechBirthFlowTests
     {
         private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+        private static readonly FieldInfo DiariesByIdField = typeof(DiaryGameComponent).GetField(
+            "diariesById",
+            PrivateInstance);
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn birther;
@@ -81,7 +85,7 @@ namespace PawnDiary.RimTests
                 father);
 
             scope.RequirePairRefs(diaryEvent, birther, father);
-            RequireContext(diaryEvent, "family_birth=true");
+            RequireContext(diaryEvent, "biotech_birth=true");
             RequireContext(diaryEvent, "family_arc_id=" + fixture.snapshot.familyArcId);
             RequireContext(diaryEvent, "child_id=" + fixture.snapshot.childId);
             RequireContext(diaryEvent, "birth_outcome=healthy");
@@ -117,6 +121,133 @@ namespace PawnDiary.RimTests
                 birther,
                 father);
             scope.RequireNoNewEvent(() => InvokeDispatch(fixture));
+        }
+
+        /// <summary>A delayed naming flush uses the prompt/display facts frozen at the birth boundary.</summary>
+        [Test]
+        public static void CanonicalBirthUsesFrozenEventTimeContext()
+        {
+            if (!ModsConfig.BiotechActive)
+            {
+                Log.Message("[PawnDiary RimTest Biotech birth] not applicable (Biotech inactive).");
+                return;
+            }
+
+            BirthFixture fixture = Fixture();
+            fixture.eventContext = new BirthEventContextSnapshot
+            {
+                birthTick = fixture.snapshot.birthTick,
+                birthDate = "frozen birth date",
+                writers = new List<BirthWriterContextSnapshot>
+                {
+                    FrozenWriter(birther, "Ari at birth", "birther summary", "birther room",
+                        "birther-child continuity", "birther-father continuity"),
+                    FrozenWriter(father, "Cy at birth", "father summary", "father room",
+                        "father-child continuity", "father-birther continuity")
+                }
+            };
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => InvokeDispatch(fixture),
+                FamilyBirthEventData.DefName,
+                birther,
+                father);
+
+            PawnDiaryRimTestScope.Require(diaryEvent.tick == fixture.snapshot.birthTick,
+                "Frozen birth tick was not used by the event factory.");
+            PawnDiaryRimTestScope.Require(diaryEvent.date == "frozen birth date",
+                "Frozen birth date was not used by the event factory.");
+            PawnDiaryRimTestScope.Require(diaryEvent.initiatorName == "Ari at birth"
+                    && diaryEvent.recipientName == "Cy at birth",
+                "Writer names drifted after the birth boundary.");
+            PawnDiaryRimTestScope.Require(diaryEvent.initiatorPawnSummary == "birther summary"
+                    && diaryEvent.recipientPawnSummary == "father summary",
+                "Writer summaries did not come from the frozen birth context.");
+            PawnDiaryRimTestScope.Require(diaryEvent.initiatorSurroundings == "birther room"
+                    && diaryEvent.recipientSurroundings == "father room",
+                "Writer surroundings did not come from the frozen birth context.");
+            PawnDiaryRimTestScope.Require(diaryEvent.initiatorContinuity == "birther-father continuity"
+                    && diaryEvent.recipientContinuity == "father-birther continuity",
+                "Pair continuity did not come from the frozen birth context.");
+        }
+
+        /// <summary>A delayed birth sorts before the birther's later/same-call final-death boundary.</summary>
+        [Test]
+        public static void HistoricalBirthRemainsBeforeFinalDeathBoundary()
+        {
+            if (!ModsConfig.BiotechActive)
+            {
+                Log.Message("[PawnDiary RimTest Biotech birth] not applicable (Biotech inactive).");
+                return;
+            }
+
+            BirthFixture fixture = Fixture();
+            string birtherId = birther.GetUniqueLoadID();
+            DiaryEvent death = scope.Component.AddSoloEvent(
+                birther,
+                null,
+                "RimTestFinalDeath",
+                "death",
+                "death",
+                string.Empty,
+                "death_description=true; death_victim_id=" + birtherId);
+            DiaryEvent birth = scope.FireAndRequireEvent(
+                () => InvokeDispatch(fixture),
+                FamilyBirthEventData.DefName,
+                birther,
+                father);
+
+            RequireEventBefore(birther, birth, death,
+                "Historical birth was sorted outside the final-death boundary.");
+        }
+
+        /// <summary>Fail-open mature signals retain their captured tick when released after vanilla.</summary>
+        [Test]
+        public static void ReleasedMatureFallbackRemainsBeforeFinalDeathBoundary()
+        {
+            if (!ModsConfig.BiotechActive)
+            {
+                Log.Message("[PawnDiary RimTest Biotech birth] not applicable (Biotech inactive).");
+                return;
+            }
+
+            int now = Find.TickManager?.TicksGame ?? 0;
+            HistoricalFallbackSignal signal = new HistoricalFallbackSignal(birther, Math.Max(0, now - 10));
+            BirthCorrelationScope ownership = BiotechBirthCorrelation.BeginBirth(
+                null,
+                BiotechPolicySnapshot.CreateDefault());
+            bool closed = false;
+            try
+            {
+                PawnDiaryRimTestScope.Require(
+                    BiotechBirthCorrelation.TryStageMatureSignal("BabyBorn", signal),
+                    "The XML-owned mature birth signal was not staged.");
+                string birtherId = birther.GetUniqueLoadID();
+                DiaryEvent death = scope.Component.AddSoloEvent(
+                    birther,
+                    null,
+                    "RimTestFallbackFinalDeath",
+                    "death",
+                    "death",
+                    string.Empty,
+                    "death_description=true; death_victim_id=" + birtherId);
+
+                BiotechBirthCorrelation.CloseBirth(ownership, false, now, 2500);
+                closed = true;
+                PawnDiaryRimTestScope.Require(signal.emittedEvent != null,
+                    "The unclaimed mature fallback signal was not released.");
+                PawnDiaryRimTestScope.Require(signal.emittedEvent.tick == signal.Payload.Tick,
+                    "The released mature fallback did not retain its captured tick.");
+                RequireEventBefore(birther, signal.emittedEvent, death,
+                    "Released mature fallback was sorted outside the final-death boundary.");
+            }
+            finally
+            {
+                if (!closed)
+                {
+                    BiotechBirthCorrelation.CloseBirth(ownership, true, now, 2500);
+                }
+            }
         }
 
         private static BirthFixture Fixture()
@@ -175,6 +306,30 @@ namespace PawnDiary.RimTests
             };
         }
 
+        private static BirthWriterContextSnapshot FrozenWriter(
+            Pawn pawn,
+            string name,
+            string summary,
+            string surroundings,
+            string soloContinuity,
+            string pairContinuity)
+        {
+            return new BirthWriterContextSnapshot
+            {
+                pawnId = pawn.GetUniqueLoadID(),
+                displayName = name,
+                pawnSummary = summary,
+                surroundings = surroundings,
+                continuity = soloContinuity,
+                pairContinuity = pairContinuity,
+                lastOpener = string.Empty,
+                previousEntryEnding = string.Empty,
+                weapon = string.Empty,
+                staggeredIntensity = 3,
+                textDecorationFacts = "fixture=frozen"
+            };
+        }
+
         private static bool InvokeDispatch(BirthFixture fixture)
         {
             try
@@ -185,6 +340,7 @@ namespace PawnDiary.RimTests
                     fixture.writers,
                     fixture.writerPawns,
                     child,
+                    fixture.eventContext,
                     true
                 });
             }
@@ -219,11 +375,77 @@ namespace PawnDiary.RimTests
                 "Canonical birth did not retain bond-lifecycle evidence for role '" + role + "'.");
         }
 
+        private static void RequireEventBefore(
+            Pawn pawn,
+            DiaryEvent earlier,
+            DiaryEvent later,
+            string failure)
+        {
+            Dictionary<string, PawnDiaryRecord> diaries = DiariesByIdField?.GetValue(scope.Component)
+                as Dictionary<string, PawnDiaryRecord>;
+            PawnDiaryRecord diary = null;
+            string pawnId = pawn?.GetUniqueLoadID();
+            PawnDiaryRimTestScope.Require(diaries != null && pawnId != null
+                    && diaries.TryGetValue(pawnId, out diary) && diary?.eventIds != null,
+                "Could not inspect the pawn diary index.");
+            int earlierIndex = diary.eventIds.IndexOf(earlier?.eventId);
+            int laterIndex = diary.eventIds.IndexOf(later?.eventId);
+            PawnDiaryRimTestScope.Require(
+                earlierIndex >= 0 && laterIndex >= 0 && earlierIndex < laterIndex,
+                failure);
+        }
+
         private sealed class BirthFixture
         {
             public BirthMutationSnapshot snapshot;
             public BirthWriterSelection writers;
             public List<Pawn> writerPawns;
+            public BirthEventContextSnapshot eventContext;
+        }
+
+        private sealed class HistoricalFallbackSignal : DiarySignal
+        {
+            private readonly Pawn pawn;
+            private readonly FamilyBirthEventData payload;
+
+            public HistoricalFallbackSignal(Pawn pawn, int tick)
+            {
+                this.pawn = pawn;
+                string pawnId = pawn.GetUniqueLoadID();
+                payload = new FamilyBirthEventData
+                {
+                    PawnId = pawnId,
+                    Tick = tick,
+                    FamilyArcId = "biotech-family|rimtest-fallback|" + pawnId,
+                    FirstWriterId = pawnId,
+                    FirstWriterEligible = true,
+                    HasValidSnapshot = true
+                };
+            }
+
+            public DiaryEvent emittedEvent;
+
+            public override DiaryEventData Payload => payload;
+
+            public override CaptureContext BuildContext()
+            {
+                return DiaryGameComponent.BuildCaptureContext(true, true, true, true);
+            }
+
+            public override string DedupKey => "rimtest-mature-fallback|" + payload.PawnId;
+
+            public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
+            {
+                emittedEvent = CreateSoloEvent(
+                    sink,
+                    pawn,
+                    null,
+                    "RimTestMatureBirthFallback",
+                    "birth fallback",
+                    "birth fallback",
+                    string.Empty,
+                    "source=rimtest_mature_birth_fallback");
+            }
         }
     }
 }

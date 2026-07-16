@@ -122,7 +122,7 @@ namespace PawnDiary.Ingestion
             if (plan.Shape == TaleEventData.TaleEmitShape.Pair)
             {
                 string text = BuildTalePairText(firstPawn, secondPawn, label, attachedDef);
-                DiaryEvent pairEvent = sink.AddPairwiseEvent(firstPawn, secondPawn, taleDef.defName, label,
+                DiaryEvent pairEvent = CreatePairwiseEvent(sink, firstPawn, secondPawn, taleDef.defName, label,
                     text, text, instruction, gameContext);
                 if (plan.DeathDescription)
                 {
@@ -139,7 +139,8 @@ namespace PawnDiary.Ingestion
             Pawn povPawn = plan.PovIsFirstPawn ? firstPawn : secondPawn;
             Pawn otherPawn = plan.PovIsFirstPawn ? secondPawn : firstPawn;
             string soloText = DiaryGameComponent.BuildTaleSoloText(povPawn, label, otherPawn, attachedDef);
-            DiaryEvent soloEvent = sink.AddSoloEvent(povPawn, otherPawn, taleDef.defName, label, soloText, instruction, gameContext);
+            DiaryEvent soloEvent = CreateSoloEvent(
+                sink, povPawn, otherPawn, taleDef.defName, label, soloText, instruction, gameContext);
             if (plan.DeathDescription)
             {
                 sink.AddDeathEventRef(deathVictim, soloEvent.eventId);

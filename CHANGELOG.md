@@ -1,5 +1,20 @@
 # Changelog
 
+- **2026-07-16 — Fixed Biotech Phase 3 adversarial review findings.** Normal labor now keeps
+  `PregnancyLabor` and `PregnancyLaborPushing` on one family arc; same-birth siblings keep separate
+  child arcs while inheriting the shared pregnancy/supporter evidence. Known incoming parents now
+  require exact saved-ID matches; wildcard correlation is limited to missing incoming parents. Ritual
+  classification now requires the performed `LordJob_Ritual`, and canonical
+  ownership survives exceptions thrown by later third-party postfixes. Released fail-open mature
+  signals retain their captured tick and insert before a same-call death boundary. Mature birth and
+  miscarriage Def-name classifiers moved into `DiaryBiotechPolicyDefs.xml` with pure role/classifier coverage.
+  Pending naming rows now deep-save event-time writer names, prompt context, calendar date, handwriting,
+  and generation eligibility; delayed pages use those frozen facts and insert chronologically before a
+  same-call final-death boundary. Tick-zero load normalization no longer discards valid pending births,
+  the transient activity cache is game-component scoped, and the incorrect RimTest context assertion
+  was repaired. Added labor/twin/parent/classifier/persistence/context/death-boundary regressions (332
+  pure assertions), updated docs/coverage, and rebuilt runtime/RimTest DLLs.
+
 - **2026-07-16 — Continued DLC integration: Master Wave 3 / Biotech Phase 3.** Added canonical
   family-birth ownership at RimWorld 1.6's exact `PregnancyUtility.ApplyBirthOutcome` boundary with a
   stack-safe prefix/postfix/finalizer correlation scope. Exact child/corpse outcome, pregnancy/

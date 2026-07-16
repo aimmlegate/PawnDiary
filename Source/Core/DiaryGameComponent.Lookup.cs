@@ -286,7 +286,7 @@ namespace PawnDiary
         /// <summary>
         /// Adds an event ID to a pawn's diary, creating the diary record if necessary.
         /// </summary>
-        private void AddEventRef(Pawn pawn, string eventId)
+        private void AddEventRef(Pawn pawn, string eventId, bool insertChronologically = false)
         {
             if (!IsDiaryEligible(pawn) || string.IsNullOrWhiteSpace(eventId))
             {
@@ -321,11 +321,56 @@ namespace PawnDiary
                 {
                     diary.eventIds.Insert(0, eventId);
                 }
+                else if (insertChronologically && diaryEvent != null)
+                {
+                    int insertionIndex = HistoricalEventInsertionIndex(diary, diaryEvent, pawnId);
+                    if (insertionIndex >= 0)
+                    {
+                        diary.eventIds.Insert(insertionIndex, eventId);
+                    }
+                    else
+                    {
+                        diary.eventIds.Add(eventId);
+                    }
+                }
                 else
                 {
                     diary.eventIds.Add(eventId);
                 }
             }
+        }
+
+        /// <summary>
+        /// Finds where a delayed historical event belongs. A same-tick final-death page sorts after
+        /// the historical event so childbirth remains visible when the birther died in vanilla's call.
+        /// </summary>
+        private int HistoricalEventInsertionIndex(
+            PawnDiaryRecord diary,
+            DiaryEvent historicalEvent,
+            string pawnId)
+        {
+            if (diary?.eventIds == null || historicalEvent == null)
+            {
+                return -1;
+            }
+
+            for (int i = 0; i < diary.eventIds.Count; i++)
+            {
+                DiaryEvent existing = events.FindEvent(diary.eventIds[i]);
+                if (existing == null || existing.IsArrivalDescriptionFor(pawnId))
+                {
+                    continue;
+                }
+
+                if (existing.tick > historicalEvent.tick
+                    || (existing.tick == historicalEvent.tick
+                        && existing.IsDeathDescriptionFor(pawnId)))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         /// <summary>

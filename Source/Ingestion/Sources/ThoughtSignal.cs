@@ -120,7 +120,8 @@ namespace PawnDiary.Ingestion
                 "PawnDiary.Event.ThoughtPositive", "PawnDiary.Event.ThoughtNegative", "PawnDiary.Event.Thought",
                 pawn.LabelShortCap, label);
 
-            DiaryEvent thoughtEvent = sink.AddSoloEvent(pawn, null, payload.DefName, label, text, instruction, gameContext);
+            DiaryEvent thoughtEvent = CreateSoloEvent(
+                sink, pawn, null, payload.DefName, label, text, instruction, gameContext);
             thoughtEvent.moodImpact = payload.MoodImpact;
             sink.QueueSolo(thoughtEvent, DiaryEvent.InitiatorRole);
         }
