@@ -213,6 +213,33 @@ namespace PawnDiary.Capture
         }
     }
 
+    /// <summary>
+    /// Shared admission and corruption ceilings for detached pending Biotech ownership. The XML value
+    /// controls whether a new owner may be admitted; already-claimed rows are preserved until they
+    /// resolve. Only the fixed hard ceiling may truncate a malformed or hostile save.
+    /// </summary>
+    internal static class BiotechPendingOwnershipLimits
+    {
+        public const int DefaultMaximumRows = 256;
+        public const int HardMaximumRows = 2048;
+
+        /// <summary>Repairs an invalid XML/requested limit to the safe shipped default.</summary>
+        public static int NormalizeMaximumRows(int requestedMaximumRows)
+        {
+            return requestedMaximumRows < 1 || requestedMaximumRows > HardMaximumRows
+                ? DefaultMaximumRows
+                : requestedMaximumRows;
+        }
+
+        /// <summary>
+        /// True when one more live owner may be admitted without displacing an existing claimed row.
+        /// </summary>
+        public static bool CanAdmit(int existingRows, int requestedMaximumRows)
+        {
+            return Math.Max(0, existingRows) < NormalizeMaximumRows(requestedMaximumRows);
+        }
+    }
+
     /// <summary>Exact birth-method tokens; unknown methods remain empty rather than guessed.</summary>
     internal static class BiotechBirthMethodTokens
     {
@@ -357,7 +384,7 @@ namespace PawnDiary.Capture
     {
         public int growthPendingExpiryTicks = 180000;
         public int growthFallbackGraceTicks = 60000;
-        public int maximumPendingGrowthRows = 256;
+        public int maximumPendingGrowthRows = BiotechPendingOwnershipLimits.DefaultMaximumRows;
         public int familyActivityPairDedupTicks = 2500;
         public int supporterMinimumEvidence = 2;
         public int maximumSupporterRows = 12;
@@ -366,7 +393,7 @@ namespace PawnDiary.Capture
         public int birthNamingGraceTicks = 60000;
         public int birthCorrelationExpiryTicks = 2500;
         public int maximumBirthWriters = 2;
-        public int maximumPendingBirthRows = 256;
+        public int maximumPendingBirthRows = BiotechPendingOwnershipLimits.DefaultMaximumRows;
         public string newInterestDescription = string.Empty;
         public string deepenedInterestDescription = string.Empty;
         public string familySinceBirthNarrativeFormat = string.Empty;

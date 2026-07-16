@@ -139,17 +139,31 @@ namespace PawnDiary
             if (!state.snapshot.namingResolved && !writerBecameUnavailable)
             {
                 EnsurePendingBiotechBirthList();
+                int now = Find.TickManager?.TicksGame ?? state.snapshot.birthTick;
+                pendingBiotechBirths = PendingBiotechBirthPolicy.Normalize(
+                    pendingBiotechBirths,
+                    now,
+                    BiotechPendingOwnershipLimits.HardMaximumRows);
+                if (!BiotechPendingOwnershipLimits.CanAdmit(
+                    pendingBiotechBirths.Count,
+                    policy.maximumPendingBirthRows))
+                {
+                    // The mature-signal correlation scope sees false and releases this new birth through
+                    // its ordinary fallback. Existing pending naming owners remain intact.
+                    return false;
+                }
+
                 pendingBiotechBirths.Add(new PendingBiotechBirthState
                 {
                     snapshot = state.snapshot,
                     writers = writers,
                     eventContext = eventContext,
-                    createdTick = Find.TickManager?.TicksGame ?? state.snapshot.birthTick
+                    createdTick = now
                 });
                 pendingBiotechBirths = PendingBiotechBirthPolicy.Normalize(
                     pendingBiotechBirths,
-                    Find.TickManager?.TicksGame ?? state.snapshot.birthTick,
-                    policy.maximumPendingBirthRows);
+                    now,
+                    BiotechPendingOwnershipLimits.HardMaximumRows);
                 return HasPendingBiotechBirth(state.snapshot.familyArcId);
             }
 
@@ -413,7 +427,7 @@ namespace PawnDiary
                 pendingBiotechBirths = PendingBiotechBirthPolicy.Normalize(
                     pendingBiotechBirths,
                     now,
-                    policy.maximumPendingBirthRows);
+                    BiotechPendingOwnershipLimits.HardMaximumRows);
                 familyObservationVersion = Math.Max(0,
                     Math.Min(CurrentFamilyObservationVersion, familyObservationVersion));
             }
@@ -641,7 +655,7 @@ namespace PawnDiary
             pendingBiotechBirths = PendingBiotechBirthPolicy.Normalize(
                 pendingBiotechBirths,
                 now,
-                policy.maximumPendingBirthRows);
+                BiotechPendingOwnershipLimits.HardMaximumRows);
             for (int i = pendingBiotechBirths.Count - 1; i >= 0; i--)
             {
                 PendingBiotechBirthState pending = pendingBiotechBirths[i];

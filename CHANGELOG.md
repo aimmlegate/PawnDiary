@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-07-16 — Fixed Biotech Phase 4 adversarial-review findings.** Pending growth and birth caps
+  now act as admission limits: normal load/maintenance preserves established ownership (including
+  pre-cap saves and later XML reductions), while a full list rejects only the incoming owner so its
+  ordinary Birthday/mature-birth source fails open. Centralized the shared 256-row default and 2048-row
+  corruption ceiling, added exact-boundary/invalid-cap/hard-ceiling/admission regressions, and expanded
+  the save-compat matrix for pre-cap overflow. The localized dev growth preview now uses production
+  `broad`/`teacher` tokens instead of impossible `high`/`observed_teacher` values.
+
 - **2026-07-16 — Continued DLC integration: Biotech Phase 4 automated hardening.** Important pair and
   solo prompt templates now project verified growth opportunity/choice, family-role, child, birth
   outcome/method, and exact participant facts; Full keeps all supplied details while Balanced/Compact

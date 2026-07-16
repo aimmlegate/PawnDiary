@@ -296,6 +296,47 @@ namespace DiaryBiotechPolicyTests
                 capped.Any(row => row.pawnId == "MiddleGrowth")
                 && capped.Any(row => row.pawnId == "NewGrowth")
                 && !capped.Any(row => row.pawnId == "OldGrowth"));
+
+            List<PendingBiotechGrowthMoment> exactGrowthCap = PendingBiotechGrowthMomentPolicy.Normalize(
+                new[]
+                {
+                    Pending("ExactGrowthA", 7, 100, 110),
+                    Pending("ExactGrowthB", 7, 200, 210)
+                },
+                currentTick: 500,
+                maximumRows: 2);
+            AssertEqual("pending growth exact-cap boundary keeps every row", 2, exactGrowthCap.Count);
+
+            List<PendingBiotechGrowthMoment> manyGrowthRows = new List<PendingBiotechGrowthMoment>();
+            for (int i = 0; i < 300; i++)
+            {
+                manyGrowthRows.Add(Pending("GrowthCap_" + i, 7, i + 1, i + 1));
+            }
+
+            AssertEqual("hard ceiling preserves a pre-cap save above the XML default", 300,
+                PendingBiotechGrowthMomentPolicy.Normalize(
+                    manyGrowthRows,
+                    currentTick: 500,
+                    maximumRows: BiotechPendingOwnershipLimits.HardMaximumRows).Count);
+            foreach (int invalidCap in new[] { 0, -1, 9999 })
+            {
+                List<PendingBiotechGrowthMoment> repairedCap =
+                    PendingBiotechGrowthMomentPolicy.Normalize(
+                        manyGrowthRows,
+                        currentTick: 500,
+                        maximumRows: invalidCap);
+                AssertEqual("invalid pending growth cap uses shipped default " + invalidCap,
+                    BiotechPendingOwnershipLimits.DefaultMaximumRows,
+                    repairedCap.Count);
+                AssertTrue("invalid pending growth cap keeps newest rows " + invalidCap,
+                    repairedCap.Any(row => row.pawnId == "GrowthCap_299")
+                    && !repairedCap.Any(row => row.pawnId == "GrowthCap_0"));
+            }
+
+            AssertTrue("growth admission accepts the final free slot",
+                BiotechPendingOwnershipLimits.CanAdmit(existingRows: 1, requestedMaximumRows: 2));
+            AssertTrue("growth admission rejects a newcomer instead of evicting claimed ownership",
+                !BiotechPendingOwnershipLimits.CanAdmit(existingRows: 2, requestedMaximumRows: 2));
         }
 
         private static void TestFamilyArcObservationAndRetention()
@@ -898,6 +939,46 @@ namespace DiaryBiotechPolicyTests
                 && cappedBirths.Any(row => row.snapshot.childId == "NewBirth")
                 && !cappedBirths.Any(row => row.snapshot.childId == "OldBirth"));
 
+            List<PendingBiotechBirthState> exactBirthCap = PendingBiotechBirthPolicy.Normalize(
+                new List<PendingBiotechBirthState>
+                {
+                    PendingBirth("ExactBirthA", 100),
+                    PendingBirth("ExactBirthB", 200)
+                },
+                currentTick: 500,
+                maximumRows: 2);
+            AssertEqual("pending birth exact-cap boundary keeps every row", 2, exactBirthCap.Count);
+
+            List<PendingBiotechBirthState> manyBirthRows = new List<PendingBiotechBirthState>();
+            for (int i = 0; i < 300; i++)
+            {
+                manyBirthRows.Add(PendingBirth("BirthCap_" + i, i + 1));
+            }
+
+            AssertEqual("hard ceiling preserves pending births above the XML default", 300,
+                PendingBiotechBirthPolicy.Normalize(
+                    manyBirthRows,
+                    currentTick: 500,
+                    maximumRows: BiotechPendingOwnershipLimits.HardMaximumRows).Count);
+            foreach (int invalidCap in new[] { 0, -1, 9999 })
+            {
+                List<PendingBiotechBirthState> repairedCap = PendingBiotechBirthPolicy.Normalize(
+                    manyBirthRows,
+                    currentTick: 500,
+                    maximumRows: invalidCap);
+                AssertEqual("invalid pending birth cap uses shipped default " + invalidCap,
+                    BiotechPendingOwnershipLimits.DefaultMaximumRows,
+                    repairedCap.Count);
+                AssertTrue("invalid pending birth cap keeps newest rows " + invalidCap,
+                    repairedCap.Any(row => row.snapshot.childId == "BirthCap_299")
+                    && !repairedCap.Any(row => row.snapshot.childId == "BirthCap_0"));
+            }
+
+            AssertTrue("birth admission accepts the final free slot",
+                BiotechPendingOwnershipLimits.CanAdmit(existingRows: 1, requestedMaximumRows: 2));
+            AssertTrue("birth admission rejects a newcomer instead of evicting claimed ownership",
+                !BiotechPendingOwnershipLimits.CanAdmit(existingRows: 2, requestedMaximumRows: 2));
+
             AssertTrue("durable birth row matches exact arc and child",
                 BirthRecordPolicy.Matches(
                     BiotechEventDefNames.FamilyBirth,
@@ -1183,6 +1264,16 @@ namespace DiaryBiotechPolicyTests
             {
                 AssertTrue(language + " keyed fallback " + key, Value(keyed.Root, key).Length > 0);
             }
+
+            string growthMarkers = Value(
+                keyed.Root,
+                "PawnDiary.Dev.PromptSuite.BiotechGrowth.Markers");
+            AssertTrue(language + " growth preview uses a production opportunity token",
+                growthMarkers.Contains("opportunity_band=broad"));
+            AssertTrue(language + " growth preview uses production family-role tokens",
+                growthMarkers.Contains("supporter_role=teacher")
+                && growthMarkers.Contains("recipient_family_role=teacher")
+                && !growthMarkers.Contains("observed_teacher"));
         }
 
         private static GrowthPawnSnapshot Snapshot(

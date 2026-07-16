@@ -856,14 +856,14 @@ namespace DiaryPipelineTests
                 "Bob watched Alice make a lasting childhood choice.");
             growth.gameContext = "growth_moment=true; child_id=Thing_Child_42; birthday_age=10; "
                 + "growth_stage=Teenager; family_arc_id=biotech-family|Thing_Child_42; "
-                + "opportunity_band=high; opportunity_description=several meaningful choices were available; "
+                + "opportunity_band=broad; opportunity_description=several meaningful choices were available; "
                 + "observed_upbringing_band=strong; observed_upbringing_description=regular lessons shaped the child; "
                 + "selected_trait=Kind; selected_trait_description=inclined to help others; "
                 + "new_interest_1=Medicine; interest_change_1=new passion; "
                 + "previous_name=Alice Child; current_name=Alice Stone; "
                 + "new_responsibilities=adult work and combat; supporter_id=Thing_Adult_9; "
-                + "supporter_name=Bob; supporter_role=observed_teacher; "
-                + "initiator_family_role=child; recipient_family_role=observed_teacher";
+                + "supporter_name=Bob; supporter_role=teacher; "
+                + "initiator_family_role=child; recipient_family_role=teacher";
 
             for (int i = 0; i < levels.Length; i++)
             {
@@ -895,7 +895,7 @@ namespace DiaryPipelineTests
                 AssertContains("growth responsibilities survive detail budget" + suffix, plan.userPrompt,
                     "new responsibilities: adult work and combat");
                 AssertContains("growth supporter role survives detail budget" + suffix, plan.userPrompt,
-                    "supporting adult role: observed_teacher");
+                    "supporting adult role: teacher");
                 AssertContains("growth child role survives detail budget" + suffix, plan.userPrompt,
                     "initiator family role: child");
                 AssertTrue("growth child ID never reaches prompt" + suffix,

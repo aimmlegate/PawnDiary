@@ -3,7 +3,7 @@
 > **Status:** Phases 0–3 plus Narrative N2-B implemented in Master Wave 3, 2026-07-16. Phase 4's
 > automated release-hardening slice is implemented: important templates project bounded B1 facts,
 > Full/Balanced/Compact and indexed localization contracts are pinned, localized dev previews exist,
-> pending owner lists have XML-owned defensive caps, no-DLC metadata is asserted, and SpeakUp/RimTalk
+> pending owner lists have XML-owned ownership-preserving admission limits, no-DLC metadata is asserted, and SpeakUp/RimTalk
 > logic/build smoke checks pass. The loaded-game no-DLC/old-save/growth/birth/adapter matrix remains
 > the Phase 4 exit item; B2 must not begin before it is accepted. Canonical age-7/10/13 growth
 > observation, postponed-choice persistence, auto resolution, ordinary Birthday fallback, progression
@@ -1675,7 +1675,7 @@ writer, naming before/after save, disabled canonical group, and thrown-owner tes
 > facts without exposing IDs, numeric tiers, ticks, or correlation tokens. Compact keeps the plan's
 > central facts under an exhausted optional budget. English/Russian indexed labels and localized dev
 > previews are covered. No-Biotech metadata/guards, existing Scribe and old-save normalization paths,
-> both adapter logic suites/builds, supporter/transient limits, and new XML-owned pending-row caps have
+> both adapter logic suites/builds, supporter/transient limits, and XML-owned pending-owner admission limits have
 > been audited. Run and record `tests/SAVE_COMPATIBILITY_SMOKETEST.md` before marking this phase complete.
 
 1. Prompt previews and compact/full mode review.

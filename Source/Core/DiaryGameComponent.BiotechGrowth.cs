@@ -86,13 +86,25 @@ namespace PawnDiary
             };
 
             RemovePendingBiotechGrowth(row.pawnId, row.birthdayAge);
-            pendingBiotechGrowthMoments.Add(row);
             pendingBiotechGrowthMoments = PendingBiotechGrowthMomentPolicy.Normalize(
                 pendingBiotechGrowthMoments,
                 now,
-                DiaryBiotechPolicy.Snapshot().maximumPendingGrowthRows);
-            // If an extreme/corrupt state hit the defensive cap and displaced this row, do not suppress
-            // the ordinary Birthday owner. The patch will fail open instead of claiming unsaved work.
+                BiotechPendingOwnershipLimits.HardMaximumRows);
+            int admissionLimit = DiaryBiotechPolicy.Snapshot().maximumPendingGrowthRows;
+            if (BiotechPendingOwnershipLimits.CanAdmit(
+                pendingBiotechGrowthMoments.Count,
+                admissionLimit))
+            {
+                pendingBiotechGrowthMoments.Add(row);
+                pendingBiotechGrowthMoments = PendingBiotechGrowthMomentPolicy.Normalize(
+                    pendingBiotechGrowthMoments,
+                    now,
+                    BiotechPendingOwnershipLimits.HardMaximumRows);
+            }
+
+            // A full admission limit preserves every older claimed letter and rejects only this new
+            // owner. TryFinish can still capture a same-call auto resolution; otherwise it returns false
+            // so the ordinary Birthday path remains available.
             birthday.configuredLetterOwnsBirthday = PendingBiotechGrowthMomentPolicy.FindNewest(
                 pendingBiotechGrowthMoments,
                 row.pawnId,
@@ -287,11 +299,10 @@ namespace PawnDiary
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 int now = Find.TickManager == null ? 0 : Find.TickManager.TicksGame;
-                BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
                 pendingBiotechGrowthMoments = PendingBiotechGrowthMomentPolicy.Normalize(
                     pendingBiotechGrowthMoments,
                     now,
-                    policy.maximumPendingGrowthRows);
+                    BiotechPendingOwnershipLimits.HardMaximumRows);
             }
         }
 
@@ -324,7 +335,7 @@ namespace PawnDiary
             pendingBiotechGrowthMoments = PendingBiotechGrowthMomentPolicy.Normalize(
                 pendingBiotechGrowthMoments,
                 now,
-                policy.maximumPendingGrowthRows);
+                BiotechPendingOwnershipLimits.HardMaximumRows);
             for (int i = pendingBiotechGrowthMoments.Count - 1; i >= 0; i--)
             {
                 PendingBiotechGrowthMoment pending = pendingBiotechGrowthMoments[i];

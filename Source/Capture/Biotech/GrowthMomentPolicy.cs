@@ -289,18 +289,16 @@ namespace PawnDiary.Capture
     /// </summary>
     internal static class PendingBiotechGrowthMomentPolicy
     {
-        private const int DefaultMaximumRows = 256;
-        private const int HardMaximumRows = 2048;
-
         /// <summary>
         /// Repairs rows, drops malformed entries, keeps the newest row for each pawn/age pair, and
-        /// retains only the newest XML-bounded rows. Future ticks are clamped to the current game tick
-        /// so corrupt saves cannot postpone cleanup.
+        /// applies only the requested defensive truncation ceiling. Live callers use the fixed hard
+        /// ceiling here and enforce the XML limit before admitting a new owner, so normal load/maintenance
+        /// never discards already-claimed work. Future ticks are clamped to the current game tick.
         /// </summary>
         public static List<PendingBiotechGrowthMoment> Normalize(
             IList<PendingBiotechGrowthMoment> source,
             int currentTick,
-            int maximumRows = DefaultMaximumRows)
+            int maximumRows = BiotechPendingOwnershipLimits.DefaultMaximumRows)
         {
             int now = Math.Max(0, currentTick);
             Dictionary<string, PendingBiotechGrowthMoment> newestByKey =
@@ -331,9 +329,7 @@ namespace PawnDiary.Capture
 
             List<PendingBiotechGrowthMoment> result =
                 new List<PendingBiotechGrowthMoment>(newestByKey.Values);
-            int rowCap = maximumRows < 1 || maximumRows > HardMaximumRows
-                ? DefaultMaximumRows
-                : maximumRows;
+            int rowCap = BiotechPendingOwnershipLimits.NormalizeMaximumRows(maximumRows);
             if (result.Count > rowCap)
             {
                 result.Sort(CompareNewestFirst);
@@ -348,7 +344,7 @@ namespace PawnDiary.Capture
             return result;
         }
 
-        // Newest ownership wins when a malformed or extreme save exceeds the configured cap. Stable
+        // Newest ownership wins only when a malformed/extreme save exceeds the defensive ceiling. Stable
         // pawn/age ties keep normalization deterministic across load order and runtime versions.
         private static int CompareNewestFirst(
             PendingBiotechGrowthMoment left,

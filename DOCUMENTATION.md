@@ -287,9 +287,11 @@ IDs, raw band tokens, numeric growth tiers, ticks, and family correlation tokens
 ownership state or internal `gameContext` where applicable, but have no prompt-template selector.
 English/Russian indexed DefInjected labels are pinned
 to the important-template field order, and the dev prompt suite includes localized synthetic growth
-and birth previews. The two pending ownership lists now have XML-owned 256-row defaults (with a hard
-2048-row defensive ceiling), deterministic newest-row retention, and fail open if an extreme overflow
-prevents the current live owner from being saved. The loaded-game growth/birth/no-DLC/old-save and
+and birth previews. The two pending ownership lists now have XML-owned 256-row admission defaults and
+a shared hard 2048-row corruption ceiling. Normal load/maintenance preserves every established owner
+up to that hard ceiling, even if XML is later lowered or an older save already exceeds the configured
+limit; while full, only the incoming growth/birth owner is rejected so its ordinary source fails open.
+Defensive hard-ceiling repair remains deterministic and keeps the newest valid rows. The loaded-game growth/birth/no-DLC/old-save and
 adapter acceptance matrix remains manual in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
 Live surroundings are optional prompt flavor and are collected fail-soft. In particular,
@@ -1127,7 +1129,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeRollPolicyDefs.xml` | numeric tuning for the psychotype roll: family bases, bonuses, wildcard chance, jitter range, duplicate penalty |
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; the main-thread builder snapshots it before fixed-order pure provider selection |
-| `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory plus mature-birth/miscarriage matchers, supporter thresholds/caps, naming timing, family retention, two-writer birth cap, and defensive pending-growth/pending-birth row caps; Phases 1–4 and N2-B use these fields live |
+| `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory plus mature-birth/miscarriage matchers, supporter thresholds/caps, naming timing, family retention, two-writer birth cap, and pending-growth/pending-birth admission limits; Phases 1–4 and N2-B use these fields live |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
 | `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |
 | `DiaryUiStyleDef.xml` / `DiaryTextDecorationDefs.xml` | UI dimensions/colors and display-only rich-text decoration |
@@ -2044,9 +2046,9 @@ and gated by the persisted `errorReportingNoticeShown` flag) tells the player it
 | `activeEventWindows` | currently active XML event windows |
 | `activeObservedConditions` | currently active live-state observed conditions |
 | `observedConditionCooldownUntilTick` | saved restart cooldowns for ended observed-condition identities |
-| `pendingBiotechGrowthMoments` | detached pawn/age/tick/before-snapshot ownership for postponed Biotech growth letters; no live Pawn or Letter reference; XML-capped at 256 newest rows by default (hard defensive ceiling 2048) |
+| `pendingBiotechGrowthMoments` | detached pawn/age/tick/before-snapshot ownership for postponed Biotech growth letters; no live Pawn or Letter reference; new owners use an XML admission limit of 256 by default, established owners survive config reductions/old-save overflow, and only the hard corruption ceiling of 2048 may truncate |
 | `biotechFamilyArcs` | detached stable-ID family continuity, exact pregnancy/labor/birth facts, bounded supporter observations, and summarized growth ages |
-| `pendingBiotechBirths` | detached exact birth snapshot, frozen adult writer order, and per-writer event-time prompt/display context while newborn naming is unresolved; no live Pawn, Thing, Corpse, or ritual reference; XML-capped at 256 newest rows by default (hard defensive ceiling 2048) |
+| `pendingBiotechBirths` | detached exact birth snapshot, frozen adult writer order, and per-writer event-time prompt/display context while newborn naming is unresolved; no live Pawn, Thing, Corpse, or ritual reference; new owners use an XML admission limit of 256 by default, with established ownership preserved up to the hard 2048-row corruption ceiling |
 | `familyObservationVersion` | additive family old-save baseline version; prevents invented historical pregnancy/birth/activity catch-up |
 
 Hot events and archive rows are separate on purpose. Hot `DiaryEvent` rows keep prompts, retry state,
@@ -2266,7 +2268,8 @@ canonical two-adult birth emission, child-subject/never-POV shape, exact context
 evidence for both writers, frozen event-time context, chronological birth-before-death ordering, and
 durable birth replay rejection using detached exact snapshots. Phase 4 adds pure Full/Balanced/Compact
 prompt assertions with a deliberately exhausted optional budget, shipped XML/English/Russian indexed
-label checks, deterministic pending-list cap tests, an About.xml no-Biotech-dependency assertion, and
+label checks, invalid/exact-boundary/hard-ceiling pending-list tests, ownership-preserving admission
+checks, an About.xml no-Biotech-dependency assertion, and
 localized growth/birth entries in the prompt fixture panel. SpeakUp and RimTalk logic suites plus both
 bridge builds are the automated adapter smoke; the manual growth-letter, no-DLC/old-save, adapter, and
 live birth/naming matrices still run in game. Sources whose real

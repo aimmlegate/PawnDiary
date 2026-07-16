@@ -137,10 +137,17 @@ no model request leaves the game; turn it off only when deliberately reviewing g
    duplicate Pawn Diary page, recursive submission, or exception. Rebuild and run both bridge logic
    suites before the playthrough.
 8. **Caps/performance.** Inspect the save after the matrix: `pendingBiotechGrowthMoments` and
-   `pendingBiotechBirths` should normally be empty and can never retain more than their XML caps
-   (`256` by default, hard ceiling `2048`); each family arc has at most `maximumSupporterRows` rows
-   (`12` by default). Run a multi-family colony at speed 4 through several progression scans and one
-   naming poll; there must be no per-tick warnings, repeated pages, or visible hitch from B1 state.
+   `pendingBiotechBirths` should normally be empty. Their XML values are admission limits (`256` by
+   default): a full list rejects only the incoming owner and releases its ordinary fallback; it never
+   evicts an established owner. A save loaded with more than the XML limit may temporarily retain those
+   established rows until they resolve, but normalization must stay at or below the fixed `2048`-row
+   corruption ceiling. Each family arc has at most `maximumSupporterRows` rows (`12` by default). Run a
+   multi-family colony at speed 4 through several progression scans and one naming poll; there must be
+   no per-tick warnings, repeated pages, or visible hitch from B1 state.
+9. **Pre-cap ownership fixture.** Load or instrument a save with more than 256 valid pending growth and
+   birth rows but fewer than 2048. Confirm load preserves every established row, saving round-trips them,
+   and a newly triggered growth/birth owner fails open without changing the existing set. Resolve one
+   old row, trigger one new owner, and confirm admission resumes without a duplicate or missing page.
 
 Record the RimWorld version, active mod list, save fixture, language, and pass/fail result for each
 row. Automated builds and pure/RimTest source coverage do not replace these live ownership checks.

@@ -176,7 +176,7 @@ This is the low-cost prompt-quality release. Do not continue into A1 study/conta
 
 > **Implementation status (2026-07-16): in progress.** Biotech Phases 0–3 and Narrative N2-B are complete. Phase 4's
 > automated hardening is also implemented: bounded B1 prompt projection/previews and context-detail
-> tests, no-DLC metadata checks, deterministic pending-state caps, and SpeakUp/RimTalk logic/build smoke
+> tests, no-DLC metadata checks, ownership-preserving pending-state admission limits, and SpeakUp/RimTalk logic/build smoke
 > all pass. The loaded-game acceptance matrix is still required, so B2 remains blocked. Stable B1
 > contracts/policy/settings now feed live, atomic birthday/growth-letter ownership with saved postponed
 > rows, auto/choice diffs, mature ordinary fallback, progression consumption, saved family continuity,

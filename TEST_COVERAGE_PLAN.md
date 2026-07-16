@@ -131,7 +131,8 @@ the complete family arc grammar, additive save/context keys, actual before/after
 NoTrait and ambiguous auto-trait handling, passion verification, opportunity boundaries,
 deterministic supporter tiers/ties, child/supporter writer shapes, capped birth writer ordering,
 legacy settings inheritance, bounded context formatting, XML policy coverage, exact classifier
-groups/package gates, pending-row normalization/expiry/grace and deterministic newest-row caps,
+groups/package gates, pending-row normalization/expiry/grace, exact/invalid/hard cap boundaries,
+deterministic defensive truncation, and ownership-preserving admission limits,
 the absence of a Biotech mod dependency, pregnancy/labor correlation,
 lesson/play/memory classification, unsummarized evidence, duplicate repair, compaction/retention,
 exact birth-arc attachment/idempotence, naming/writer-availability flush and durable-record policy,
