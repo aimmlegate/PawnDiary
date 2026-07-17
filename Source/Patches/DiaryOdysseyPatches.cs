@@ -152,4 +152,83 @@ namespace PawnDiary
             });
         }
     }
+
+    /// <summary>
+    /// Defensively patches every concrete landing-outcome override. A postfix observes only workers
+    /// that returned successfully, then enriches the already pending canonical landing instead of
+    /// creating another page. Discovery also covers compatible modded outcome subclasses.
+    /// </summary>
+    internal static class OdysseyLandingOutcomePatch
+    {
+        private static FieldInfo outcomeDefField;
+
+        /// <summary>True when the private Def field and at least one concrete override were patched.</summary>
+        public static bool HooksReady { get; private set; }
+
+        /// <summary>Registers all declared ApplyOutcome overrides through exact signature lookup.</summary>
+        public static void TryRegister(Harmony harmony)
+        {
+            HooksReady = false;
+            if (harmony == null) return;
+            outcomeDefField = AccessTools.Field(typeof(LandingOutcomeWorker), "def");
+            MethodInfo postfix = AccessTools.DeclaredMethod(
+                typeof(OdysseyLandingOutcomePatch), nameof(Postfix));
+            if (outcomeDefField == null || postfix == null)
+            {
+                Log.Warning("[Pawn Diary] Odyssey landing-outcome internals changed; exact outcome "
+                    + "context is disabled while vanilla landing remains untouched.");
+                return;
+            }
+
+            int patched = 0;
+            foreach (Type type in GenTypes.AllTypes)
+            {
+                if (type == null || type.IsAbstract || type == typeof(LandingOutcomeWorker)
+                    || !typeof(LandingOutcomeWorker).IsAssignableFrom(type))
+                {
+                    continue;
+                }
+
+                MethodBase target = AccessTools.DeclaredMethod(
+                    type, nameof(LandingOutcomeWorker.ApplyOutcome), new[] { typeof(Gravship) });
+                if (target == null) continue;
+                try
+                {
+                    harmony.Patch(target, postfix: new HarmonyMethod(postfix));
+                    patched++;
+                }
+                catch (Exception exception)
+                {
+                    Log.Warning("[Pawn Diary] Could not patch Odyssey landing outcome " + type.FullName
+                        + "; that exact outcome will omit context: " + exception.Message);
+                }
+            }
+
+            HooksReady = patched > 0;
+            if (!HooksReady)
+            {
+                Log.Warning("[Pawn Diary] No concrete Odyssey landing-outcome override was found; "
+                    + "exact outcome context is disabled.");
+            }
+        }
+
+        private static void Postfix(LandingOutcomeWorker __instance, Gravship gravship)
+        {
+            if (!ModsConfig.OdysseyActive || Verse.Current.ProgramState != ProgramState.Playing
+                || __instance == null || gravship == null)
+            {
+                return;
+            }
+
+            DiaryPatchSafety.Run("Odyssey.LandingOutcome.Postfix", () =>
+            {
+                LandingOutcomeDef outcome = outcomeDefField.GetValue(__instance) as LandingOutcomeDef;
+                if (outcome == null) return;
+                DiaryGameComponent.Instance?.ObserveOdysseyLandingOutcome(
+                    gravship,
+                    outcome.defName,
+                    outcome.letterLabel);
+            });
+        }
+    }
 }

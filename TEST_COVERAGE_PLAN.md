@@ -129,6 +129,9 @@ Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departur
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,
 and saved landing context recovers the new domain. `OrbitalDebris`/`VacuumExposureRevealed`, weather,
 prompt-only volcanic atmosphere, and both vacuum hediff spellings retain their generic routes.
+O2 removes the stale `Flooding` mood identity and freezes the package-gated `SeasonalFlood`
+`ThingPresent` observer, prompt-only page policy, hysteresis/cooldown, exact `GravNausea` matcher,
+XML tuning, and English/Russian Keyed plus DefInjected coverage.
 
 Odyssey O1.1-O1.5 uses `DiaryOdysseyPolicyTests`, an assembly-free suite with 119 assertions freezing the
 journey/landing tokens and IDs, exact location mapping, deterministic pilot/copilot/crew selection,
@@ -148,6 +151,14 @@ combined Odyssey acceptance run. O1.5 adds a loaded eligible-writer routine land
 an explicit `TileSettled` no-pawn drop, and localized Full/Balanced/Compact prompt-suite rendering.
 `DiaryPipelineTests` also exhausts the optional context budget and proves the required Odyssey
 phase/reason/duration/role/ship/origin/destination facts survive while stable IDs and ticks do not.
+O2 extends the loaded fixture with active/inactive package-gate checks for `SeasonalFloodActive` and
+loaded exact matcher/tuning checks for `DiaryEnchant_GravNausea`; live combined execution remains in
+the deferred Odyssey acceptance run.
+The same fixture asserts fail-soft registration on all four shipped `LandingOutcomeWorker` overrides.
+`DiaryOdysseyPolicyTests` now has 126 assertions, including wrong-ship/empty-outcome rejection, exact
+outcome attachment, Def-identity omission, visible-label sanitization, and bounded context. Pipeline
+coverage now passes 2,019 assertions, keeps `landing_outcome` in Full/Balanced/Compact, and locks both
+localized indexed labels.
 
 Narrative N2-O extends `NarrativeContinuityTests` to 104 assembly-free assertions. It covers the one-row
 Odyssey home candidate, exact ship/journey/location identity, family-event ambient selection, landing

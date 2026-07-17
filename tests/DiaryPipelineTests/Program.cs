@@ -1086,7 +1086,8 @@ namespace DiaryPipelineTests
             string sharedContext = "odyssey_journey=true; journey_id=odyssey-journey|Ship_7|500; "
                 + "ship_stable_id=WorldObject_7; departure_tick=500; journey_phase=landing; "
                 + "journey_reason=major_destination; journey_secondary_reason=long_journey; "
-                + "journey_duration=long; rough_landing=false; launch_quality=excellent; "
+                + "journey_duration=long; rough_landing=true; landing_outcome=minor gravship crash; "
+                + "launch_quality=excellent; "
                 + "ship_name=Wayfarer; origin=Temperate forest; origin_key=planet-layer-0-tile-10; "
                 + "destination=Orbital mechhive; destination_key=planet-layer-1-tile-20; "
                 + "destination_layer=orbit; destination_biome=Orbit; "
@@ -1143,6 +1144,8 @@ namespace DiaryPipelineTests
                     "origin: Temperate forest");
                 AssertContains("Odyssey destination survives detail budget" + suffix, pairPlan.userPrompt,
                     "destination: Orbital mechhive");
+                AssertContains("Odyssey exact landing outcome survives detail budget" + suffix,
+                    pairPlan.userPrompt, "landing outcome: minor gravship crash");
                 AssertContains("Odyssey solo POV role survives detail budget" + suffix, soloPlan.userPrompt,
                     "journey role: pilot");
                 AssertTrue("Odyssey stable IDs and ticks stay out of prompt" + suffix,
@@ -3207,8 +3210,8 @@ namespace DiaryPipelineTests
             AssertEqual("Odyssey volcanic ash routes to weather hardship",
                 "moodeventWeatherHardship",
                 ResolveInteractionGroup(groups, "MoodEvent", "VolcanicAsh", false));
-            AssertEqual("Odyssey flooding routes to weather hardship",
-                "moodeventWeatherHardship",
+            AssertEqual("stale Odyssey Flooding mood identity uses only the generic fallback",
+                "moodeventOther",
                 ResolveInteractionGroup(groups, "MoodEvent", "Flooding", false));
 
             XDocument observed = XDocument.Load(RepoPath("1.6", "Defs", "DiaryObservedConditionDefs.xml"));
@@ -3222,6 +3225,26 @@ namespace DiaryPipelineTests
             AssertEqual("Odyssey volcanic atmosphere remains prompt-only",
                 "false", ChildValue(volcanic, "recordStartEvent"));
 
+            XElement seasonalFlood = FindDef(
+                observed, "PawnDiary.DiaryObservedConditionDef", "SeasonalFloodActive");
+            AssertTrue("Odyssey seasonal-flood observed-condition row exists", seasonalFlood != null);
+            AssertEqual("Odyssey seasonal-flood row is package-gated",
+                "Ludeon.RimWorld.Odyssey", seasonalFlood?.Attribute("MayRequire")?.Value ?? string.Empty);
+            AssertEqual("Odyssey seasonal flood uses thing-presence observer",
+                "ThingPresent", ChildValue(seasonalFlood, "observerType"));
+            AssertTrue("Odyssey seasonal flood matches exact installed thing identity",
+                HasListValue(seasonalFlood, "matchDefNames", "SeasonalFlood"));
+            AssertEqual("Odyssey seasonal flood has scan-gap end hysteresis",
+                "5000", ChildValue(seasonalFlood, "endDebounceTicks"));
+            AssertEqual("Odyssey seasonal flood has restart cooldown",
+                "15000", ChildValue(seasonalFlood, "restartCooldownTicks"));
+            AssertEqual("Odyssey seasonal flood never records a start page",
+                "false", ChildValue(seasonalFlood, "recordStartEvent"));
+            AssertEqual("Odyssey seasonal flood never records an end page",
+                "false", ChildValue(seasonalFlood, "recordEndEvent"));
+            AssertEqual("Odyssey seasonal flood can shade authorized prompts",
+                "true", ChildValue(seasonalFlood, "promptEnabled"));
+
             XDocument enchantments = XDocument.Load(RepoPath(
                 "1.6", "Defs", "DiaryPromptEnchantmentDefs.xml"));
             XElement vacuum = FindDef(
@@ -3231,6 +3254,56 @@ namespace DiaryPipelineTests
                 HasListValue(vacuum, "hediffDefNames", "VacuumExposure"));
             AssertTrue("Odyssey vacuum enchantment matches VacuumBurn fallback",
                 HasListValue(vacuum, "hediffDefNames", "VacuumBurn"));
+
+            XElement gravNausea = FindDef(
+                enchantments, "PawnDiary.DiaryPromptEnchantmentDef", "DiaryEnchant_GravNausea");
+            AssertTrue("Odyssey grav-nausea enchantment row exists", gravNausea != null);
+            AssertTrue("Odyssey grav-nausea enchantment matches exact installed hediff identity",
+                HasListValue(gravNausea, "hediffDefNames", "GravNausea"));
+            AssertEqual("Odyssey grav-nausea chance is XML-owned", "0.7", ChildValue(gravNausea, "chance"));
+            AssertEqual("Odyssey grav-nausea weight is XML-owned", "1.1", ChildValue(gravNausea, "weight"));
+            AssertEqual("Odyssey grav-nausea severity is XML-owned", "1.2", ChildValue(gravNausea, "severity"));
+
+            XDocument englishKeyed = XDocument.Load(RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
+            XDocument russianKeyed = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
+            string[] seasonalPromptKeys =
+            {
+                "PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Priority",
+                "PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Condition",
+                "PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Description",
+                "PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Cue.Paths",
+                "PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Cue.Recede"
+            };
+            for (int i = 0; i < seasonalPromptKeys.Length; i++)
+            {
+                string key = seasonalPromptKeys[i];
+                AssertTrue("English Odyssey seasonal-flood prompt text exists: " + key,
+                    !string.IsNullOrWhiteSpace(KeyedValue(englishKeyed, key)));
+                AssertTrue("Russian Odyssey seasonal-flood prompt text exists: " + key,
+                    !string.IsNullOrWhiteSpace(KeyedValue(russianKeyed, key)));
+            }
+
+            XDocument englishObserved = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryObservedConditionDef",
+                "DiaryObservedConditionDefs.xml"));
+            XDocument russianObserved = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryObservedConditionDef",
+                "DiaryObservedConditionDefs.xml"));
+            XDocument englishEnchantments = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryPromptEnchantmentDef",
+                "DiaryPromptEnchantmentDefs.xml"));
+            XDocument russianEnchantments = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryPromptEnchantmentDef",
+                "DiaryPromptEnchantmentDefs.xml"));
+            AssertTrue("English Odyssey seasonal-flood Def label exists",
+                !string.IsNullOrWhiteSpace(englishObserved.Root?.Element("SeasonalFloodActive.label")?.Value));
+            AssertTrue("Russian Odyssey seasonal-flood Def label exists",
+                !string.IsNullOrWhiteSpace(russianObserved.Root?.Element("SeasonalFloodActive.label")?.Value));
+            AssertTrue("English Odyssey grav-nausea Def label exists",
+                !string.IsNullOrWhiteSpace(englishEnchantments.Root?.Element("DiaryEnchant_GravNausea.label")?.Value));
+            AssertTrue("Russian Odyssey grav-nausea Def label exists",
+                !string.IsNullOrWhiteSpace(russianEnchantments.Root?.Element("DiaryEnchant_GravNausea.label")?.Value));
         }
 
         // O1.2 adds a no-DLC-safe policy Def and two mobile-home prompt strings. This fixture locks
@@ -3317,7 +3390,8 @@ namespace DiaryPipelineTests
                 "pov_journey_role",
                 "ship_name",
                 "origin",
-                "destination"
+                "destination",
+                "landing_outcome"
             };
             for (int i = 0; i < requiredPromptKeys.Length; i++)
             {
@@ -3326,6 +3400,25 @@ namespace DiaryPipelineTests
                     HasPromptContextField(pairImportant, key));
                 AssertTrue("Odyssey solo-important prompt field exists: " + key,
                     HasPromptContextField(soloImportant, key));
+            }
+            XDocument englishPromptLabels = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryPromptTemplateDef",
+                "DiaryPromptTemplateDefs.xml"));
+            XDocument russianPromptLabels = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryPromptTemplateDef",
+                "DiaryPromptTemplateDefs.xml"));
+            string[] outcomeLabelKeys =
+            {
+                "DiaryPromptTemplate_PairImportant.fields.74.label",
+                "DiaryPromptTemplate_SoloImportant.fields.89.label"
+            };
+            for (int i = 0; i < outcomeLabelKeys.Length; i++)
+            {
+                string key = outcomeLabelKeys[i];
+                AssertTrue("English Odyssey landing-outcome prompt label exists: " + key,
+                    !string.IsNullOrWhiteSpace(englishPromptLabels.Root?.Element(key)?.Value));
+                AssertTrue("Russian Odyssey landing-outcome prompt label exists: " + key,
+                    !string.IsNullOrWhiteSpace(russianPromptLabels.Root?.Element(key)?.Value));
             }
 
             XDocument englishKeyed = XDocument.Load(RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
@@ -4613,6 +4706,7 @@ namespace DiaryPipelineTests
                     ContextField("crew count", "crew_count"),
                     ContextField("rough landing", "rough_landing"),
                     ContextField("launch quality", "launch_quality"),
+                    ContextField("landing outcome", "landing_outcome"),
                     Field("weapon", "Weapon"),
                     Field("important context", "PromptEnchantment"),
                     Field("previous diary ending (continue from this)", "PreviousEntryEnding"),

@@ -300,6 +300,8 @@ namespace PawnDiary
         public string shipStableId = string.Empty;
         public OdysseyLocationSnapshot destination;
         public int captureTick;
+        public string landingOutcomeDefName = string.Empty;
+        public string landingOutcomeLabel = string.Empty;
         public List<OdysseyWriterCandidate> writers = new List<OdysseyWriterCandidate>();
     }
 
@@ -315,6 +317,8 @@ namespace PawnDiary
         public int departureTick;
         public string launchQualityBand = OdysseyLaunchQualityTokens.Unknown;
         public bool roughLanding;
+        public string landingOutcomeDefName = string.Empty;
+        public string landingOutcomeLabel = string.Empty;
         public bool sourceComplete;
         public bool baselineOnly;
         public bool landingApplied;

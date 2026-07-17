@@ -1403,9 +1403,8 @@
       <li>ColdSnap</li>
       <li>HeatWave</li>
       <li>VolcanicWinter</li>
-      <!-- Odyssey sky/water hardships; plain strings sit inert without the DLC. -->
+      <!-- Odyssey sky hardship; the SeasonalFlood thing is observed separately as live state. -->
       <li>VolcanicAsh</li>
-      <li>Flooding</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -2569,7 +2568,7 @@
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Odyssey</li>
     </enableWhenPackageIdsLoaded>
-    <instruction>a gravship has successfully arrived—write the supplied journey reason, duration, POV role, ship, origin, and destination as first-person experience; treat a quest site only as an arrival, never as quest completion, and invent no hazards or outcomes beyond the supplied facts</instruction>
+    <instruction>a gravship has successfully arrived—write the supplied journey reason, duration, POV role, ship, origin, and destination as first-person experience; when an exact landing outcome is supplied, weave only that visible consequence into the same landing; treat a quest site only as an arrival, never as quest completion, and invent no hazards or outcomes beyond the supplied facts</instruction>
     <tone>with arrival relief, crew focus, and the weight of a mobile home coming down</tone>
     <tones>
       <li>grounded and sensory, centered on descent, touchdown, and what this destination means</li>

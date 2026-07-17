@@ -491,6 +491,7 @@
   <DiaryPromptTemplate_PairImportant.fields.71.label>численность экипажа</DiaryPromptTemplate_PairImportant.fields.71.label>
   <DiaryPromptTemplate_PairImportant.fields.72.label>жёсткая посадка</DiaryPromptTemplate_PairImportant.fields.72.label>
   <DiaryPromptTemplate_PairImportant.fields.73.label>качество запуска</DiaryPromptTemplate_PairImportant.fields.73.label>
+  <DiaryPromptTemplate_PairImportant.fields.74.label>исход посадки</DiaryPromptTemplate_PairImportant.fields.74.label>
   <DiaryPromptTemplate_SoloImportant.fields.73.label>этап путешествия</DiaryPromptTemplate_SoloImportant.fields.73.label>
   <DiaryPromptTemplate_SoloImportant.fields.74.label>причина путешествия</DiaryPromptTemplate_SoloImportant.fields.74.label>
   <DiaryPromptTemplate_SoloImportant.fields.75.label>дополнительная причина путешествия</DiaryPromptTemplate_SoloImportant.fields.75.label>
@@ -507,5 +508,6 @@
   <DiaryPromptTemplate_SoloImportant.fields.86.label>численность экипажа</DiaryPromptTemplate_SoloImportant.fields.86.label>
   <DiaryPromptTemplate_SoloImportant.fields.87.label>жёсткая посадка</DiaryPromptTemplate_SoloImportant.fields.87.label>
   <DiaryPromptTemplate_SoloImportant.fields.88.label>качество запуска</DiaryPromptTemplate_SoloImportant.fields.88.label>
+  <DiaryPromptTemplate_SoloImportant.fields.89.label>исход посадки</DiaryPromptTemplate_SoloImportant.fields.89.label>
 
 </LanguageData>

@@ -103,6 +103,24 @@ namespace PawnDiary
                 <= Math.Max(1, effective.landingCorrelationTicks);
         }
 
+        /// <summary>
+        /// Attaches an exact, successfully applied vanilla outcome to its correlated pending landing.
+        /// Empty identities, another ship, or delimiter-only prompt data are rejected fail-soft.
+        /// </summary>
+        public static bool TryAttachLandingOutcome(
+            OdysseyPendingLanding pending,
+            string shipStableId,
+            string outcomeDefName,
+            string outcomeLabel)
+        {
+            if (pending == null || !Same(pending.shipStableId, shipStableId)) return false;
+            string defName = CleanIdentity(outcomeDefName);
+            if (defName.Length == 0) return false;
+            pending.landingOutcomeDefName = defName;
+            pending.landingOutcomeLabel = Clean(outcomeLabel);
+            return true;
+        }
+
         /// <summary>True when a transient or active row has exceeded its conservative retention cap.</summary>
         public static bool IsExpired(int capturedTick, int nowTick, int retentionTicks)
         {

@@ -1,5 +1,6 @@
-// In-game O1.2-O1.4/N2-O fixtures for Odyssey policy, guarded context, persistence, state-only
-// takeoff/travel boundaries, canonical successful-landing ownership, and narrative evidence.
+// In-game O1.2-O2/N2-O fixtures for Odyssey policy, guarded context, persistence, state-only
+// takeoff/travel boundaries, canonical successful-landing ownership, narrative evidence, and
+// package-safe environmental policy Defs.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,7 @@ using Verse;
 
 namespace PawnDiary.RimTests
 {
-    /// <summary>Proves Odyssey state, canonical landing ownership, and N2-O provider boundaries.</summary>
+    /// <summary>Proves Odyssey state, landing ownership, environmental policy, and N2-O boundaries.</summary>
     [TestSuite]
     public static class PawnDiaryOdysseyJourneyFlowTests
     {
@@ -49,6 +50,64 @@ namespace PawnDiary.RimTests
             Require(HasOwnedPatch(finish, typeof(OdysseyLandingEndedPatch), prefix: true)
                     && HasOwnedPatch(finish, typeof(OdysseyLandingEndedPatch), prefix: false),
                 "LandingEnded lacks Pawn Diary's paired prefix/postfix.");
+
+            Require(OdysseyLandingOutcomePatch.HooksReady,
+                "The defensive landing-outcome override hooks did not report ready.");
+            Type[] outcomeWorkers =
+            {
+                typeof(LandingOutcomeWorker_MinorGravshipCrash),
+                typeof(LandingOutcomeWorker_ThrusterBreakdown),
+                typeof(LandingOutcomeWorker_OverheatedGravEngine),
+                typeof(LandingOutcomeWorker_GravNausea)
+            };
+            for (int i = 0; i < outcomeWorkers.Length; i++)
+            {
+                MethodBase apply = AccessTools.DeclaredMethod(
+                    outcomeWorkers[i], nameof(LandingOutcomeWorker.ApplyOutcome),
+                    new[] { typeof(Gravship) });
+                Require(HasOwnedPatch(apply, typeof(OdysseyLandingOutcomePatch), prefix: false),
+                    outcomeWorkers[i].Name + " lacks Pawn Diary's exact successful-outcome postfix.");
+            }
+        }
+
+        /// <summary>
+        /// Proves the O2 seasonal-flood settings row is absent without Odyssey and loaded with its
+        /// exact Thing matcher when Odyssey is active. Grav nausea is string-matched, so its harmless
+        /// enchantment policy may load in either case and simply finds no hediff without the DLC.
+        /// </summary>
+        [Test]
+        public static void EnvironmentalPolicyDefsRespectPackageAndExactMatchers()
+        {
+            DiaryObservedConditionDef flood = DefDatabase<DiaryObservedConditionDef>.GetNamedSilentFail(
+                "SeasonalFloodActive");
+            if (!ModsConfig.OdysseyActive)
+            {
+                Require(flood == null,
+                    "SeasonalFloodActive settings must be absent when Odyssey is inactive.");
+            }
+            else
+            {
+                Require(flood != null
+                        && flood.observerType == ObservedConditionObserverType.ThingPresent
+                        && flood.matchDefNames != null
+                        && flood.matchDefNames.Count == 1
+                        && flood.matchDefNames[0] == "SeasonalFlood",
+                    "Loaded SeasonalFloodActive policy did not keep its exact ThingPresent matcher.");
+                Require(!flood.recordStartEvent && !flood.recordEndEvent && flood.promptEnabled,
+                    "Loaded SeasonalFloodActive policy must remain prompt-only.");
+            }
+
+            DiaryPromptEnchantmentDef nausea = DefDatabase<DiaryPromptEnchantmentDef>.GetNamedSilentFail(
+                "DiaryEnchant_GravNausea");
+            Require(nausea != null
+                    && nausea.hediffDefNames != null
+                    && nausea.hediffDefNames.Count == 1
+                    && nausea.hediffDefNames[0] == "GravNausea",
+                "Loaded grav-nausea enchantment did not keep its exact hediff matcher.");
+            Require(Math.Abs(nausea.chance - 0.7f) < 0.0001f
+                    && Math.Abs(nausea.weight - 1.1f) < 0.0001f
+                    && Math.Abs(nausea.severity - 1.2f) < 0.0001f,
+                "Loaded grav-nausea chance/weight/severity drifted from XML policy.");
         }
 
         /// <summary>

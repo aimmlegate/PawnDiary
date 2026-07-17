@@ -1,5 +1,21 @@
 # Changelog
 
+- **2026-07-17 — Implemented Odyssey O2's XML-first environmental slice.** Removed the ineffective
+  `Flooding` MoodEvent matcher and added an Odyssey-gated, map-scoped `ThingPresent` observed
+  condition for the installed `SeasonalFlood` ThingDef. It uses XML-owned scan/end hysteresis,
+  restart cooldown, decay, and weight; it only shades authorized prompts and never creates start/end
+  pages. Added exact-string `GravNausea` prompt context with XML chance/weight/severity, plus English
+  and Russian Keyed/DefInjected text. Assembly-free contracts lock the package gate, matcher,
+  no-page policy, tuning, and localization; the Odyssey loaded fixture locks active/inactive Def
+  loading and exact projected policy. Existing visible-condition and vacuum owners remain unchanged.
+  Also verified and implemented exact negative landing consequences: startup defensively discovers
+  and postfix-patches concrete `LandingOutcomeWorker.ApplyOutcome` overrides, then a successful worker
+  correlates its exact Def and localized visible label into the same transient landing transaction.
+  `landing_outcome` is required when present across Full/Balanced/Compact, no second page or save field
+  is added, and a changed hook fails soft. Pure Odyssey coverage now passes 126 assertions, pipeline
+  coverage 2,019, and the loaded fixture asserts all four shipped overrides. Life support remains
+  behind its documented O2 feasibility gate.
+
 - **2026-07-17 — Completed Odyssey O1.5 automated hardening and delivery prep.** Found and closed the
   prompt-boundary gap that left O1.4's frozen landing schema off the model-facing templates. Appended
   English/Russian Odyssey fields to the important pair/solo templates; made phase, reasons, duration,

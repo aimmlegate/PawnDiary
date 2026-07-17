@@ -446,6 +446,7 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_PairImportant.fields.71.label>crew count</DiaryPromptTemplate_PairImportant.fields.71.label>
   <DiaryPromptTemplate_PairImportant.fields.72.label>rough landing</DiaryPromptTemplate_PairImportant.fields.72.label>
   <DiaryPromptTemplate_PairImportant.fields.73.label>launch quality</DiaryPromptTemplate_PairImportant.fields.73.label>
+  <DiaryPromptTemplate_PairImportant.fields.74.label>landing outcome</DiaryPromptTemplate_PairImportant.fields.74.label>
   <DiaryPromptTemplate_SoloImportant.fields.73.label>journey phase</DiaryPromptTemplate_SoloImportant.fields.73.label>
   <DiaryPromptTemplate_SoloImportant.fields.74.label>journey reason</DiaryPromptTemplate_SoloImportant.fields.74.label>
   <DiaryPromptTemplate_SoloImportant.fields.75.label>secondary journey reason</DiaryPromptTemplate_SoloImportant.fields.75.label>
@@ -462,5 +463,6 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_SoloImportant.fields.86.label>crew count</DiaryPromptTemplate_SoloImportant.fields.86.label>
   <DiaryPromptTemplate_SoloImportant.fields.87.label>rough landing</DiaryPromptTemplate_SoloImportant.fields.87.label>
   <DiaryPromptTemplate_SoloImportant.fields.88.label>launch quality</DiaryPromptTemplate_SoloImportant.fields.88.label>
+  <DiaryPromptTemplate_SoloImportant.fields.89.label>landing outcome</DiaryPromptTemplate_SoloImportant.fields.89.label>
 
 </LanguageData>

@@ -376,6 +376,44 @@
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
+  <!-- Odyssey O2: SeasonalFlood is a live map thing, not a one-shot mood/game-condition event.
+       Package-gating keeps the Def and its settings row out of no-Odyssey games. The short end
+       debounce ignores transient scan gaps; the restart cooldown prevents rapid reactivation near
+       receding water. It only shades later prompts and never creates a page by itself. -->
+  <PawnDiary.DiaryObservedConditionDef MayRequire="Ludeon.RimWorld.Odyssey">
+    <defName>SeasonalFloodActive</defName>
+    <label>seasonal flooding</label>
+    <conditionKey>SeasonalFloodActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>ThingPresent</observerType>
+    <pollIntervalTicks>2500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>5000</endDebounceTicks>
+    <restartCooldownTicks>15000</restartCooldownTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <maxEvidenceLabels>0</maxEvidenceLabels>
+    <matchDefNames>
+      <li>SeasonalFlood</li>
+    </matchDefNames>
+
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>5</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Cue.Paths</li>
+      <li>PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Cue.Recede</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
   <!-- ===== Anomaly lasting horror (main focus). Condition-backed weather first. ===== -->
 
   <PawnDiary.DiaryObservedConditionDef>

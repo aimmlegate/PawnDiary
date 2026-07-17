@@ -372,6 +372,19 @@ namespace DiaryOdysseyPolicyTests
                 !OdysseyLifecyclePolicy.PendingLandingMatches(pending, "WorldObject_13", 1075, policy));
             AssertTrue("expired pending landing rejected",
                 !OdysseyLifecyclePolicy.PendingLandingMatches(pending, "WorldObject_12", 1076, policy));
+            AssertTrue("wrong-ship exact landing outcome rejected",
+                !OdysseyLifecyclePolicy.TryAttachLandingOutcome(
+                    pending, "WorldObject_13", "MinorGravshipCrash", "minor gravship crash"));
+            AssertTrue("empty exact landing outcome rejected",
+                !OdysseyLifecyclePolicy.TryAttachLandingOutcome(
+                    pending, "WorldObject_12", " ", "minor gravship crash"));
+            AssertTrue("exact successful landing outcome attaches",
+                OdysseyLifecyclePolicy.TryAttachLandingOutcome(
+                    pending, "WorldObject_12", "MinorGravshipCrash", "minor gravship crash"));
+            AssertEqual("exact landing outcome Def retained", "MinorGravshipCrash",
+                pending.landingOutcomeDefName);
+            AssertEqual("visible landing outcome label retained", "minor gravship crash",
+                pending.landingOutcomeLabel);
             AssertTrue("backward transient time expires safely",
                 OdysseyLifecyclePolicy.IsExpired(100, 99, 1000));
         }
@@ -379,7 +392,7 @@ namespace DiaryOdysseyPolicyTests
         private static void TestBoundedContextFormatting()
         {
             OdysseyPolicySnapshot policy = Policy();
-            policy.maximumContextCharacters = 260;
+            policy.maximumContextCharacters = 340;
             policy.maximumContextValueCharacters = 40;
             OdysseyJourneySnapshot journey = Journey(100, true);
             journey.shipStableId = "SecretShipId";
@@ -387,6 +400,8 @@ namespace DiaryOdysseyPolicyTests
             journey.shipName = "The Ark; raw_key=bad\nSecond line";
             journey.launchQualityBand = "excellent";
             journey.roughLanding = true;
+            journey.landingOutcomeDefName = "MinorGravshipCrash";
+            journey.landingOutcomeLabel = "minor crash; fake=bad";
             journey.origin.visibleLabel = "Old Home";
             journey.destination = Location("SecretTile42", "orbit", "Biome_Frozen", "Site_Mechhive");
             journey.destination.visibleLabel = "The Silent Platform";
@@ -397,11 +412,14 @@ namespace DiaryOdysseyPolicyTests
 
             string context = OdysseyContextFormatter.FormatLanding(
                 journey, journey.destination, plan, "Pilot", policy);
-            AssertTrue("context bounded", context.Length <= 260);
+            AssertTrue("context bounded", context.Length <= 340);
             AssertContains("journey marker", context, "odyssey_journey=true");
             AssertContains("landing phase", context, "journey_phase=landing");
             AssertContains("primary reason", context, "journey_reason=major_destination");
             AssertContains("POV role", context, "pov_journey_role=pilot");
+            AssertContains("exact landing outcome label", context, "landing_outcome=minor crash fake bad");
+            AssertTrue("exact outcome Def identity omitted",
+                context.IndexOf("MinorGravshipCrash", StringComparison.Ordinal) < 0);
             AssertTrue("stable ship id omitted", context.IndexOf("SecretShipId", StringComparison.Ordinal) < 0);
             AssertTrue("tile key omitted", context.IndexOf("SecretTile42", StringComparison.Ordinal) < 0);
             AssertTrue("ticks omitted", context.IndexOf("70000", StringComparison.Ordinal) < 0);

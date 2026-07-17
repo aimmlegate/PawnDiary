@@ -341,6 +341,14 @@ Terminal void outcomes remain deferred to the endings wave.
 
 ## 13. Wave 8 — Odyssey environmental depth
 
+> **Progress 2026-07-17:** the XML-first O2 slice is implemented: the stale `Flooding` mood matcher
+> is replaced by an Odyssey-gated, prompt-only `SeasonalFlood` `ThingPresent` observer, existing
+> visible-condition projection remains unduplicated, and `GravNausea` is bounded prompt context.
+> Focused XML/localization and loaded-Def contracts are present. The exact negative landing-outcome
+> seam is also implemented through fail-soft discovery of every concrete worker override; a successful
+> worker enriches the same canonical landing and never creates a second page. The life-support
+> feasibility spike, N3-O, and the combined in-game acceptance run remain open.
+
 ### Implement
 
 Complete **Odyssey O2** and extend **N3-O**:

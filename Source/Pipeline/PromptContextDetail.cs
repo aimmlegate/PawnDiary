@@ -352,8 +352,10 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Keeps the minimum truth needed to write a gravship landing in every detail preset. The
-        /// remaining Odyssey fields (crew roster, biome/site labels, launch quality, and roughness)
+        /// Keeps the minimum truth needed to write a gravship landing in every detail preset.
+        /// An exact landing outcome is also required when supplied because the group instruction asks
+        /// the writer to use that visible consequence. Remaining Odyssey fields (crew roster,
+        /// biome/site labels, launch quality, and roughness)
         /// are useful supporting evidence, but Compact may trim them before it trims the journey's
         /// reason, duration, ship, origin, destination, or a solo writer's journey role.
         /// </summary>
@@ -366,7 +368,8 @@ namespace PawnDiary
                 || Eq(contextKey, "pov_journey_role")
                 || Eq(contextKey, "ship_name")
                 || Eq(contextKey, "origin")
-                || Eq(contextKey, "destination");
+                || Eq(contextKey, "destination")
+                || Eq(contextKey, "landing_outcome");
         }
 
         private static int Score(

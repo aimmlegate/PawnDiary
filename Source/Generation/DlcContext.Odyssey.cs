@@ -306,6 +306,23 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Returns the exact travelling gravship identity for synchronous landing correlation.
+        /// No-Odyssey and malformed live-object paths fail closed to an empty identity.
+        /// </summary>
+        internal static string OdysseyStableShipId(Gravship gravship)
+        {
+            if (!ModsConfig.OdysseyActive || gravship == null) return string.Empty;
+            try
+            {
+                return CleanStableId(gravship.GetUniqueLoadID());
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
+        }
+
         private static OdysseyLocationSnapshot CaptureLocation(
             PlanetTile tile,
             BiomeDef biome,

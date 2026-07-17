@@ -1193,6 +1193,11 @@
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Condition>ash dimming the sun</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Description>ash high in the atmosphere has dimmed the sun for a long stretch; days are gray and cold, plants grow slowly, and the light itself feels rationed</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Description>
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Cue.DimSky>gray, rationed daylight</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Cue.DimSky>
+  <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Priority>let the swollen water shape the background without turning it into a second event</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Condition>seasonal floodwater spreading over low ground</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Description>rainfall upriver has swollen the river and floodwater covers familiar low ground; it will recede, but paths and routines bend around the water meanwhile</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Cue.Paths>water over familiar paths</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Cue.Paths>
+  <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Cue.Recede>waiting for the river to fall</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Cue.Recede>
   <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Priority>override normal context with the wrongness of the blood rain</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Priority>
   <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Condition>red rain that should not exist</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Description>a red rain is falling and it changes those it soaks: anger rises too easily in people and animals alike; write the wrongness of the weather and the fear of what it does to tempers, without explaining it</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Description>

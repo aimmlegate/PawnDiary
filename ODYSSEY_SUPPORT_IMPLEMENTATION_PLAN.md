@@ -105,9 +105,9 @@ Required for the first Odyssey release:
   facts have been verified.
 - Add an arc reflection after the Mechhive ending only when its exact resolution owner is known.
 
-O1 is implementation-ready at the hook and architecture level. O2 is ready for the seasonal-flood
-and `GravNausea` slices, but not for a life-support event. O3 is intentionally a reviewed direction,
-not authorization to guess at Mechhive choice state.
+O1 is implemented through O1.5. O2's seasonal-flood, `GravNausea`, and exact landing-outcome slices
+are implemented; life support remains behind its separate feasibility gate. O3 is
+intentionally a reviewed direction, not authorization to guess at Mechhive choice state.
 
 ## 2. Product outcome
 
@@ -646,6 +646,12 @@ entry.
 
 ## 11. Environmental and landing-consequence policy (O2)
 
+> **Progress 2026-07-17:** §11.1 and §11.3 are implemented with localized XML policy, assembly-free
+> contracts, and a focused loaded-Def RimTest. The generic visible-condition audit found no new owner
+> was needed for §11.2. Section 11.4 is implemented through discovered concrete-worker postfixes that
+> capture only successfully applied exact outcomes and enrich the same landing page. Section 11.5
+> remains a separate evidence-gated spike.
+
 ### 11.1 Seasonal flooding
 
 The current `Flooding` mood matcher cannot work as intended. Implement the smallest correction:
@@ -680,6 +686,13 @@ Existing `VacuumExposure`/`VacuumBurn` behavior remains. Do not add a second Ody
 event route.
 
 ### 11.4 Exact landing outcomes
+
+**Implemented 2026-07-17.** Startup defensively discovers each concrete
+`LandingOutcomeWorker.ApplyOutcome(Gravship)` override and patches it with a shared postfix. The
+postfix runs only after a successful concrete worker return, reads its exact `LandingOutcomeDef`,
+correlates the same live ship to the transient finish row, and projects the localized letter label as
+`landing_outcome`. The canonical landing remains the sole event owner; no outcome state is persisted.
+Missing/changed overrides log once and omit only this optional fact.
 
 O2 may enrich the O1 event with an exact outcome only if:
 

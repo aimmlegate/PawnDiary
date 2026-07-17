@@ -1342,6 +1342,10 @@ is retained to retry an optional end page because no eligible pawn was available
 Shipped notable defs:
 
 - `MapThreatActive`, `ToxicFalloutActive`, `SolarFlareActive`: prompt-tone only.
+- `SeasonalFloodActive`: Odyssey-gated map-scoped `ThingPresent` observer for the exact
+  `SeasonalFlood` ThingDef. It has short end hysteresis plus a restart cooldown, shades authorized
+  prompts while floodwater exists, and never records start/end pages. Its `MayRequire` gate removes
+  the Def and settings row entirely when Odyssey is inactive.
 - `AnomalyGrayFleshEvidence`: records the observable Anomaly sample but hides the item label from
   prompts; the LLM-facing wording frames it as paranoia and fear that something may infect and
   imitate people. It decays over time, is suppressed once a visible metalhorror or metalhorror debris
@@ -2190,6 +2194,16 @@ Never rename a key "for cleanliness" alone.
   fields remain available under budget. A localized Odyssey pair fixture exposes the same shape in
   the dev prompt suite. Stable journey/ship/location IDs and ticks have no template field and remain
   event-internal.
+- Odyssey O2's XML-first environmental slice corrects seasonal flooding to observe the live
+  `SeasonalFlood` ThingDef instead of the nonexistent `Flooding` mood identity. The package-gated,
+  map-scoped condition is prompt-only with bounded hysteresis/cooldown. `GravNausea` is an exact
+  string-matched prompt enchantment with XML-owned chance/weight/severity and cannot authorize a page.
+  Generic visible `GameCondition` projection remains the owner for conditions it already covers.
+  O2 also defensively discovers and postfix-patches every concrete `LandingOutcomeWorker.ApplyOutcome`
+  override. A postfix runs only after the concrete worker succeeds, reads the exact applied
+  `LandingOutcomeDef`, correlates it to the same transient pending ship, and adds its localized visible
+  label as required `landing_outcome` context on the one canonical landing page. It adds no page and
+  no save field; missing hooks merely omit the detail. Life support remains behind its feasibility gate.
 - DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks. This
   includes Biotech growth trait/skill/work-disabled snapshots and Ideology precept/role reads used by
   body-mod stance policy; other code consumes plain detached rows, labels, defNames, or booleans.
@@ -2343,7 +2357,7 @@ by submitting the exact per-unit production signal the scanner emits, which keep
 deterministic; the suite README lists the two suites (death, raid) that still need a disposable colony
 because their vanilla trigger has un-restorable side effects.
 
-`PawnDiaryOdysseyJourneyFlowTests` covers the O1.2-O1.5 boundary without mutating a player's real
+`PawnDiaryOdysseyJourneyFlowTests` covers the O1.2-O2 boundary without mutating a player's real
 gravship: loaded XML policy and mappings, guarded active/inactive map projection, vanilla's exact
 pawn-on-gravship predicate, prompt-safe mobile-home surroundings, both frozen Scribe keys,
 missing/corrupt/oversized load repair, exact Harmony registration, and detached
@@ -2356,6 +2370,11 @@ explicit no-pawn `TileSettled` drop, and a localized Odyssey prompt-suite render
 Balanced, and Compact. The assembly-free pipeline suite repeats the preset check with a deliberately
 exhausted optional budget and proves stable journey/ship/location IDs and ticks never cross the
 template boundary. The combined live Odyssey save run remains deferred until the batch is complete.
+O2 adds loaded-Def checks for the Odyssey-active/inactive seasonal-flood package gate, exact
+`ThingPresent` matching, prompt-only page policy, and the exact `GravNausea` matcher and tuning.
+It also asserts that all four shipped concrete landing-outcome overrides carry Pawn Diary's
+successful-return postfix; pure policy tests cover exact-ship correlation/rejection and sanitized,
+bounded outcome prompt projection.
 
 The DLC-focused generic flows now include installed-Royalty positive scanner fixtures for a real
 `PsychicAmplifier` hediff and a disposable real `RoyalTitle`, each asserting exact context and repeat

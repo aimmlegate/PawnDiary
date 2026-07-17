@@ -160,6 +160,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>crew count</label><source>GameContext</source><contextKey>crew_count</contextKey></li>
       <li><label>rough landing</label><source>GameContext</source><contextKey>rough_landing</contextKey></li>
       <li><label>launch quality</label><source>GameContext</source><contextKey>launch_quality</contextKey></li>
+      <li><label>landing outcome</label><source>GameContext</source><contextKey>landing_outcome</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -419,6 +420,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>crew count</label><source>GameContext</source><contextKey>crew_count</contextKey></li>
       <li><label>rough landing</label><source>GameContext</source><contextKey>rough_landing</contextKey></li>
       <li><label>launch quality</label><source>GameContext</source><contextKey>launch_quality</contextKey></li>
+      <li><label>landing outcome</label><source>GameContext</source><contextKey>landing_outcome</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

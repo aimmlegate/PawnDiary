@@ -1031,4 +1031,17 @@
     </hediffDefNames>
   </PawnDiary.DiaryPromptEnchantmentDef>
 
+  <!-- Odyssey O2: temporary grav nausea can color an already-authorized entry, but never creates
+       one. The matcher is a plain defName string and therefore remains inert without Odyssey. -->
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_GravNausea</defName>
+    <label>grav nausea</label>
+    <chance>0.7</chance>
+    <weight>1.1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>GravNausea</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
 </Defs>

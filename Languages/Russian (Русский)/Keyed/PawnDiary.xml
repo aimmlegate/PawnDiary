@@ -1191,6 +1191,11 @@
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Condition>пепел застит солнце</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Description>пепел высоко в небе надолго притушил солнце; дни стоят серые и холодные, всё растёт медленно, и сам свет будто выдают по норме</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Description>
   <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Cue.DimSky>серый свет по норме</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Cue.DimSky>
+  <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Priority>пусть разлившаяся вода остаётся фоном, не превращаясь во второе событие</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Condition>сезонный паводок затопил низины</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Description>дожди выше по течению подняли реку, и паводок скрыл знакомые низины; вода уйдёт, но пока тропы и повседневные дела приходится подстраивать под разлив</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Cue.Paths>вода на знакомых тропах</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Cue.Paths>
+  <PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Cue.Recede>ожидание спада воды</PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Cue.Recede>
   <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Priority>пусть даже обычные события кажутся зловещими из-за кровавого дождя</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Priority>
   <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Condition>красный дождь, которого не должно быть</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Description>идёт красный дождь, и он меняет тех, кого промочил: злость поднимается слишком легко и в людях, и в зверях; пиши о неестественности самой погоды и страхе перед тем, что она делает с характерами, ничего не объясняя</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Description>

@@ -46,6 +46,7 @@ namespace PawnDiary
             Add(fields, "ship_name", journey.shipName, maximum, valueMaximum);
             Add(fields, "origin", LocationLabel(journey.origin), maximum, valueMaximum);
             Add(fields, "destination", LocationLabel(finalDestination), maximum, valueMaximum);
+            Add(fields, "landing_outcome", journey.landingOutcomeLabel, maximum, valueMaximum);
             Add(fields, "destination_layer",
                 finalDestination == null ? string.Empty : OdysseyLocationLayerTokens.Normalize(finalDestination.layerToken),
                 maximum, valueMaximum);

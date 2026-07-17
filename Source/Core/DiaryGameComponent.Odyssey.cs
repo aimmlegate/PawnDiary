@@ -359,13 +359,38 @@ namespace PawnDiary
         internal bool CaptureOdysseyLandingFinish(OdysseyPendingLanding finish)
         {
             OdysseyPolicySnapshot policy = DiaryOdysseyPolicy.Snapshot();
-            return !ClearExpiredOdysseyJourney(finish?.captureTick ?? 0, policy)
+            bool valid = !ClearExpiredOdysseyJourney(finish?.captureTick ?? 0, policy)
                 && odysseyActiveJourney != null
                 && finish != null
                 && string.Equals(
                     odysseyActiveJourney.shipStableId,
                     finish.shipStableId,
                     StringComparison.Ordinal);
+            if (valid)
+            {
+                // Keep the exact finish object as the synchronous outcome hand-off. The outcome
+                // worker runs after LandingEnded's prefix and before its postfix.
+                odysseyPendingLanding = finish;
+            }
+            return valid;
+        }
+
+        /// <summary>
+        /// Receives one exact outcome only after its concrete vanilla worker returned successfully.
+        /// The live gravship is reduced to its stable ID before pure correlation mutates transient state.
+        /// </summary>
+        internal bool ObserveOdysseyLandingOutcome(
+            Gravship gravship,
+            string outcomeDefName,
+            string outcomeLabel)
+        {
+            if (!ModsConfig.OdysseyActive || gravship == null) return false;
+            string shipStableId = DlcContext.OdysseyStableShipId(gravship);
+            return OdysseyLifecyclePolicy.TryAttachLandingOutcome(
+                odysseyPendingLanding,
+                shipStableId,
+                outcomeDefName,
+                outcomeLabel);
         }
 
         /// <summary>
@@ -389,6 +414,10 @@ namespace PawnDiary
                 ? odysseyPendingLanding
                 : null;
             OdysseyLocationSnapshot destination = finish.destination ?? correlated?.destination ?? journey.destination;
+            OdysseyPendingLanding outcomeSource = correlated ?? finish;
+            journey.landingOutcomeDefName = outcomeSource?.landingOutcomeDefName ?? string.Empty;
+            journey.landingOutcomeLabel = outcomeSource?.landingOutcomeLabel ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(journey.landingOutcomeDefName)) journey.roughLanding = true;
             List<OdysseyWriterCandidate> writers = finish.writers != null && finish.writers.Count > 0
                 ? finish.writers
                 : correlated?.writers;
