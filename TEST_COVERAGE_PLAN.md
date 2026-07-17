@@ -205,24 +205,31 @@ solo/pair/drop/dedup decisions. `PawnDiaryBiotechGrowthFlowTests` covers the liv
 component boundary: canonical page creation with family context and N1 identity evidence, durable-event/consumed-age
 dedup repair, trait/skill baseline consumption, Birthday fallback when canonical growth is disabled,
 zero pages with both groups disabled, and the real vanilla `ConfigureGrowthLetter` → `MakeChoices`
-Harmony boundary for a committed `NoTrait`/passion choice. It also captures loaded Full/Balanced/Compact
-growth prompts and rejects private IDs/tier/correlation fields. `PawnDiaryBiotechBirthFlowTests` covers
+Harmony boundary at ages 7/10/13 for `NoTrait`, multiple passions, nickname/responsibility changes,
+auto-resolution, and a Scribe-restored postponed owner. It also exercises the live pre-cap rejection/
+recovery boundary, captures loaded Full/Balanced/Compact growth prompts, and rejects private
+IDs/tier/correlation fields. `PawnDiaryBiotechBirthFlowTests` covers
 final canonical pair dispatch, child-subject/never-POV shape, original tick, exact context, per-role bond
 evidence, hot-event replay rejection, frozen event-time prompt/display facts, chronological insertion before
 a final-death boundary, a live-child delayed naming flush, and loaded Full/Balanced/Compact birth prompts.
 The Scribe fixtures round-trip detached pending growth and birth rows, deep family arc/supporter state,
 nested consumed ages, component-level missing/corrupt/oversized lists, and pre-cap ownership/admission recovery,
 while the DLC-safety fixture drives the guarded growth/family/birth snapshot accessors and pins exact runtime
-method signatures.
+method signatures. `PawnDiaryBiotechDlcOffMaintenanceTests` constructs frozen plain-DTO owners in a
+base-only loaded game and proves growth fallback, frozen canonical birth flush, removal, and replay
+silence. `PawnDiaryRimTalkBridgeRuntimeTests` reflects over the actually loaded optional assemblies and
+proves recent growth/birth memories enter RimTalk shared memory without recursive submission.
 `DiaryPipelineTests` additionally renders B1 growth and birth through the important pair/solo shapes
 at Full, Balanced, and Compact with an exhausted optional budget, requiring the central qualitative
 facts while rejecting IDs/numeric tiers/ticks/correlation tokens. It parses the shipped templates to
 pin both context-key projections and every English/Russian indexed label; the dev prompt fixture panel
-ships localized synthetic growth/birth cases. The SpeakUp and RimTalk pure suites and bridge builds
-remain the automated adapter smoke.
-Vanilla letter UI presentation/postponed save reload and live healthy/ill/stillborn/vat/surrogacy/
-ritual/naming/fail-open birth paths, a base-only run, an oldest-supported save, and loaded-adapter
-observation remain the Phase-4 manual acceptance matrix in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
+ships localized synthetic growth/birth cases. The SpeakUp and RimTalk pure suites and bridge builds,
+plus the loaded RimTalk runtime fixture, are the automated adapter smoke.
+Vanilla letter and localized-preview visual presentation, the real cross-launch DLC on/off/on sequence,
+live healthy/ill/stillborn/vat/surrogacy/ritual/naming/fail-open birth paths, a base-only launch, an
+oldest-supported save, and one loaded-adapter UI observation remain manual acceptance items in
+`tests/SAVE_COMPATIBILITY_SMOKETEST.md`. The postponed-owner, pre-cap, and DLC-off maintenance behavior
+is automated but still requires its indicated in-game RimTest profile to be recorded as passed.
 
 Biotech Phase 5 extends `DiaryBiotechPolicyTests` with assembly-free gene selection, transition, context,
 and observation coverage.

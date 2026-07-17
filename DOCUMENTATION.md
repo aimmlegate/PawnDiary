@@ -2413,18 +2413,22 @@ Twenty EVT event-flow suites (`PawnDiary*FlowTests.cs`) now sit on this harness,
 `TEST_COVERAGE_PLAN.md §3` — EVT-01 through EVT-23 — plus the supplemental
 `PawnDiaryBiotechGrowthFlowTests` and `PawnDiaryBiotechBirthFlowTests` B1 suites. They verify growth
 once-only emission, progression consumption, ordinary fallback, both-groups-disabled observation,
-the real vanilla `ConfigureGrowthLetter` → `MakeChoices` Harmony boundary for a `NoTrait`/passion
-choice, canonical two-adult birth emission, child-subject/never-POV shape, exact context, source-owned
+the real vanilla `ConfigureGrowthLetter` → `MakeChoices` Harmony boundary at ages 7/10/13 for
+`NoTrait`, multiple passions, nickname/responsibility changes, auto-resolution, and a Scribe-restored
+postponed owner, canonical two-adult birth emission, child-subject/never-POV shape, exact context, source-owned
 N1 evidence for both writers, frozen event-time context, chronological birth-before-death ordering,
 durable birth replay rejection, and a live-child delayed naming flush using the original event time.
 Both suites capture loaded Full/Balanced/Compact B1 prompts and require the central story facts while
 rejecting Thing IDs, family-arc IDs, numeric tiers, and correlation tokens. Phase 4 also adds pure
 prompt assertions with a deliberately exhausted optional budget, shipped XML/English/Russian indexed
 label checks, invalid/exact-boundary/hard-ceiling pending-list tests, ownership-preserving admission
-checks, component-Scribe pre-cap preservation/admission recovery, an About.xml no-Biotech-dependency
-assertion, and localized growth/birth entries in the prompt fixture panel. SpeakUp and RimTalk logic
-suites plus both bridge builds are the automated adapter smoke; the manual no-DLC/old-save, UI,
-adapter, performance, and remaining live birth-route matrices still run in game. Sources whose real
+checks, component-Scribe and live-component pre-cap preservation/admission recovery, an About.xml
+no-Biotech-dependency assertion, and localized growth/birth entries in the prompt fixture panel. A
+base-only loaded fixture drains frozen growth/birth owners and rejects replay, while an optional-package
+runtime fixture reflects over the real RimTalk bridge and verifies shared-memory injection without
+recursive submission. SpeakUp/RimTalk pure suites plus both bridge builds remain supporting adapter
+smoke. These new loaded fixtures must still be run in their matching game profiles; visual letter/
+preview inspection and the real cross-launch DLC on/off/on transition remain manual. Sources whose real
 trigger needs a loaded map, the
 storyteller, or a periodic scanner (raid/mood/quest/reflection/window/observed-condition) are exercised
 by submitting the exact per-unit production signal the scanner emits, which keeps the tests mapless and
@@ -2520,8 +2524,9 @@ diary-tab view-model contracts, and the DLC compatibility matrix. That matrix as
 omission, real installed-DLC pawn state through final summary/enchantment adapters, exact official
 package/group/window/settings availability, fragile DLC hook signatures, and optional capture
 capability fail-open behavior. Production invalidates the gene comparison baseline when a save loads
-without Biotech; cross-launch DLC removal/re-enable acceptance remains manual because `ModsConfig`
-cannot be safely rewritten inside one running game. `scripts/verify-coverage.ps1` is the one-command
+without Biotech. `PawnDiaryBiotechDlcOffMaintenanceTests` now proves frozen pending-owner maintenance
+inside a genuinely base-only loaded profile; cross-launch DLC removal/re-enable acceptance remains
+manual because `ModsConfig` cannot be safely rewritten inside one running game. `scripts/verify-coverage.ps1` is the one-command
 audit that builds everything, runs the pure suites, and prints the EVT requirement matrix. The
 transport/async-runtime layer (`§6.3`) is intentionally deferred — see the suite README — because
 `LlmClient` is static and session-global and cannot be driven safely from an in-game test without a

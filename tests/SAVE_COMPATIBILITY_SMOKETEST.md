@@ -181,11 +181,11 @@ only proves the fixture compiles; it does not count as executing either Odyssey 
 Run this matrix before marking Biotech Phase 4 complete. Keep prompt-test mode on for prompt review so
 no model request leaves the game; turn it off only when deliberately reviewing generated prose.
 
-The Biotech RimTest suites now automate the real vanilla growth-letter configure/`NoTrait` choice
-boundary, delayed live-child naming flush, Full/Balanced/Compact growth and birth prompt projection,
-and pre-cap component-Scribe/admission recovery. Run those suites in-game first; the rows below remain
-the acceptance record for UI presentation, genuine save/mod-list transitions, optional-mod gameplay,
-uncovered birth routes, and perceived performance.
+The Biotech RimTest suites now automate the real vanilla age-7/10/13 growth-letter boundary,
+`NoTrait`/multiple-passion/nickname/responsibility choices, auto-resolution, postponed-owner Scribe
+recovery, delayed live-child naming, Full/Balanced/Compact prompt projection, live pre-cap admission,
+loaded RimTalk shared-memory injection, and DLC-off pending-row maintenance. These new fixtures compile
+but still need the matching in-game profiles below; do not record them as passed from a build alone.
 
 ### Acceptance record (2026-07-17)
 
@@ -195,16 +195,17 @@ release audit requires a reproducible run record.
 
 - [x] Row 1 — base game only (no Biotech).
 - [x] Row 2 — old-save baseline.
-- [ ] **TODO:** Row 3 — growth ownership.
-- [ ] **TODO:** Row 4 — prompt detail and previews.
+- [ ] **AUTOMATED RUN TODO:** Row 3 — run `PawnDiaryBiotechGrowthFlowTests` with Biotech; manually click one real growth letter to inspect presentation.
+- [ ] **AUTOMATED RUN TODO:** Row 4 — run the loaded prompt fixtures; manually inspect the localized preview rendering.
 - [x] Row 5 — family observation + SpeakUp.
 - [x] Row 6 — birth/naming matrix.
-- [ ] **TODO:** Row 7 — RimTalk and bridge smoke.
+- [ ] **AUTOMATED RUN TODO:** Row 7 — run `PawnDiaryRimTalkBridgeRuntimeTests` with RimTalk + bridge; manually inspect one real chat/read UI result.
 - [x] Row 8 — caps/performance.
-- [ ] **TODO:** Row 9 — pre-cap ownership fixture.
-- [ ] **TODO:** Row 10 — Biotech removed mid-save.
+- [ ] **AUTOMATED RUN TODO:** Row 9 — run the growth, birth, and component-state pre-cap fixtures; no separate manual behavior check remains.
+- [ ] **AUTOMATED RUN TODO:** Row 10 — run `PawnDiaryBiotechDlcOffMaintenanceTests` in a base-only colony; the real Biotech on → off → on restart sequence remains manual.
 
-Biotech Phase 4 remains open until the five TODO rows are recorded as passed.
+Biotech Phase 4 remains open until the five automated runs and the manual-only checks identified above
+are recorded as passed. Row 9 becomes complete from its RimTest runs; it has no remaining manual step.
 
 1. **Base game only (no Biotech).** Start and load a colony with Pawn Diary + Harmony only. Confirm
    `progressionGrowthMoment` and `biotechFamilyBirth` are absent from Events settings, the development
@@ -218,11 +219,16 @@ Biotech Phase 4 remains open until the five TODO rows are recorded as passed.
    changes, a nickname, new responsibilities, auto-resolution, and a postponed letter saved/reloaded
    before selection. Each committed choice produces at most one canonical page, consumes the ordinary
    Birthday owner only while genuinely pending, and never prints numeric tier/option/work lists.
+   **Automation:** run `PawnDiaryBiotechGrowthFlowTests`. **Manual-only TODO:** click one actual vanilla
+   growth letter and confirm its presentation/interaction is normal; the fixture calls the same methods
+   directly and therefore cannot judge the rendered letter.
 4. **Prompt detail and previews.** In the event test panel generate the localized **Biotech growth
    moment** and **Biotech family birth** fixtures under Full, Balanced, and Compact. Full should show
    every supplied story field. Compact must still show the localized growth opportunity description,
    chosen trait and interest, plus the birth child/outcome/writer role. No prompt may show a Thing ID, family-arc ID,
-   tick, numeric growth tier, or correlation token.
+   tick, numeric growth tier, or correlation token. **Automation:** the growth and birth flow suites
+   assert the prompt bodies under all three presets. **Manual-only TODO:** visually inspect localized
+   preview labels, wrapping, and readability in the event test panel.
 5. **Family observation + SpeakUp.** With SpeakUp loaded, disable Pawn Diary's ordinary teaching page
    group, then allow exact BabyPlay/Lesson activity before the next growth moment. No lesson page is
    required, but the later canonical growth page should use the observed parent/teacher role and
@@ -240,7 +246,9 @@ Biotech Phase 4 remains open until the five TODO rows are recorded as passed.
 7. **RimTalk and bridge smoke.** Load RimTalk Bridge, generate/read recent growth and birth pages, and
    confirm its context/memory injection accepts them as ordinary Progression/Tale entries without a
    duplicate Pawn Diary page, recursive submission, or exception. Rebuild and run both bridge logic
-   suites before the playthrough.
+   suites before the playthrough. **Automation:** run `PawnDiaryRimTalkBridgeRuntimeTests` with both
+   optional packages active. **Manual-only TODO:** open one real RimTalk chat/read surface and confirm
+   the injected memories are presented normally; recursion/duplicate/state assertions are automated.
 8. **Caps/performance.** Inspect the save after the matrix: `pendingBiotechGrowthMoments` and
    `pendingBiotechBirths` should normally be empty. Their XML values are admission limits (`256` by
    default): a full list rejects only the incoming owner and releases its ordinary fallback; it never
@@ -253,7 +261,9 @@ Biotech Phase 4 remains open until the five TODO rows are recorded as passed.
    birth rows but fewer than 2048. Confirm load preserves every established row, saving round-trips them,
    and a newly triggered growth/birth owner fails open without changing the existing set. Resolve enough
    old rows to move the count below the current admission limit, trigger one new owner, and confirm
-   admission resumes without a duplicate or missing page.
+   admission resumes without a duplicate or missing page. **Automation only:** run
+   `PawnDiaryBiotechComponentStateFixtureTests`, `PawnDiaryBiotechGrowthFlowTests`, and
+   `PawnDiaryBiotechBirthFlowTests`; no separate manual step remains once all three pass in game.
 10. **Biotech removed mid-save.** Take a Biotech save that contains at least one open family arc, one
    pending growth row, and one pending birth row (instrument via dev if needed), then disable Biotech
    and load. Expected: no Pawn Diary/Scribe error beyond RimWorld's own missing-content warnings; the
@@ -263,7 +273,10 @@ Biotech Phase 4 remains open until the five TODO rows are recorded as passed.
    DLC), or prune with a single warning when every writer is gone; family arcs keep compacting and
    pruning. Save again, reload, and confirm the state keeps shrinking rather than freezing. Re-enable
    Biotech and confirm the game loads cleanly and remaining state resumes normal maintenance — nothing
-   double-fires for pages already written while the DLC was off.
+   double-fires for pages already written while the DLC was off. **Automation:** in a base-only colony,
+   run `PawnDiaryBiotechDlcOffMaintenanceTests` to prove frozen growth/birth maintenance and replay
+   silence. **Manual-only TODO:** perform the actual three-launch Biotech on → off → on mod-list sequence,
+   inspect the development log, settings-row visibility, open-arc compaction, and final reload.
 
 Record the RimWorld version, active mod list, save fixture, language, and pass/fail result for each
 row. Automated builds and pure/RimTest source coverage do not replace these live ownership checks.

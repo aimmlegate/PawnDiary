@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-07-17 — Automated the remaining Biotech B1 acceptance behavior.** Expanded loaded growth
+  coverage through real age-7/10/13 letters, multiple passions, nickname/responsibility changes,
+  auto-resolution, postponed-owner Scribe recovery, and live pre-cap rejection/recovery. Added a
+  reflection-only loaded RimTalk shared-memory smoke and a base-only frozen growth/birth maintenance
+  fixture, both with duplicate/replay assertions. Split the acceptance record into in-game automated
+  runs and the genuinely manual visual UI/cross-launch checks. No production behavior changed; rebuilt
+  the committed RimTest assembly, with the new in-game profile runs still pending.
+
 - **2026-07-17 — Fixed adversarial-review findings in Biotech gene compatibility.** Exact live gene
   membership now remains complete up to the fixed 2048-row defensive ceiling; only the persisted XML-
   bounded baseline is truncated, carries a new frozen `geneObservedMembershipTruncated` key, and never

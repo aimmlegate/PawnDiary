@@ -1,8 +1,9 @@
 // In-game orchestration tests for the canonical Biotech birth emitter. Pure tests cover exact birth
 // classification, family-arc attachment, writer selection, naming ownership, and save normalization;
 // this fixture proves the detached result becomes one pair page with shared context/evidence, the saved
-// naming owner flushes once through live pawn lookup, and loaded prompt templates hide private IDs. Test
-// pawns generate only under prompt-test capture, so no LLM request can leave the loaded game.
+// naming owner flushes once through live pawn lookup, live pre-cap admission fails open and recovers,
+// and loaded prompt templates hide private IDs. Test pawns generate only under prompt-test capture, so
+// no LLM request can leave the loaded game.
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -18,6 +19,8 @@ namespace PawnDiary.RimTests
     public static class PawnDiaryBiotechBirthFlowTests
     {
         private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+        private const string FixtureArcPrefix = "biotech-family|rimtest-birth|";
+        private const string PreCapFixturePrefix = "biotech-family|rimtest-precap-birth|";
         private static readonly FieldInfo DiariesByIdField = typeof(DiaryGameComponent).GetField(
             "diariesById",
             PrivateInstance);
@@ -29,6 +32,7 @@ namespace PawnDiary.RimTests
         private static MethodInfo dispatchBirthMethod;
         private static MethodInfo maintainPendingBirthsMethod;
         private static FieldInfo pendingBirthsField;
+        private static FieldInfo familyArcsField;
 
         /// <summary>Creates isolated adult writers plus a test subject and enables the birth group.</summary>
         [BeforeEach]
@@ -47,7 +51,11 @@ namespace PawnDiary.RimTests
             pendingBirthsField = typeof(DiaryGameComponent).GetField(
                 "pendingBiotechBirths",
                 PrivateInstance);
-            if (dispatchBirthMethod == null || maintainPendingBirthsMethod == null || pendingBirthsField == null)
+            familyArcsField = typeof(DiaryGameComponent).GetField(
+                "biotechFamilyArcs",
+                PrivateInstance);
+            if (dispatchBirthMethod == null || maintainPendingBirthsMethod == null
+                || pendingBirthsField == null || familyArcsField == null)
             {
                 throw new AssertionException(
                     "Could not bind the production birth dispatch/pending-ownership members.");
@@ -72,6 +80,7 @@ namespace PawnDiary.RimTests
                 dispatchBirthMethod = null;
                 maintainPendingBirthsMethod = null;
                 pendingBirthsField = null;
+                familyArcsField = null;
             }
         }
 
@@ -327,6 +336,72 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// The actual component preserves established birth owners above the authored admission cap,
+        /// rejects one new unnamed birth without eviction, then admits it after fixture rows make room.
+        /// </summary>
+        [Test]
+        public static void LivePreCapBirthAdmissionRejectsThenResumes()
+        {
+            if (!ModsConfig.BiotechActive)
+            {
+                Log.Message("[PawnDiary RimTest Biotech birth pre-cap] not applicable (Biotech inactive).");
+                return;
+            }
+
+            int limit = DiaryBiotechPolicy.Snapshot().maximumPendingBirthRows;
+            List<PendingBiotechBirthState> rows = PendingBirthRows();
+            if (rows.Count >= limit)
+            {
+                Log.Message("[PawnDiary RimTest Biotech birth pre-cap] skipped: the loaded save already owns "
+                    + rows.Count + " pending birth rows.");
+                return;
+            }
+
+            int now = Find.TickManager?.TicksGame ?? 0;
+            int required = limit + 1 - rows.Count;
+            for (int i = 0; i < required; i++)
+            {
+                rows.Add(ValidPendingBirth(
+                    PreCapFixturePrefix + i,
+                    "PawnDiary_RimTest_PreCapBirthChild_" + i,
+                    "PawnDiary_RimTest_PreCapBirthWriter_" + i,
+                    now));
+            }
+
+            HashSet<string> establishedIds = PendingBirthArcIds(PendingBirthRows());
+            child.babyNamingDeadline = now + 60000;
+            BirthFixture fixture = Fixture();
+            BiotechBirthCallState state = new BiotechBirthCallState
+            {
+                snapshot = fixture.snapshot,
+                birtherAliveBefore = true,
+                birther = birther,
+                geneticMother = birther,
+                father = father
+            };
+
+            bool rejected = scope.Component.CompleteBiotechBirth(state, child, birther, 2);
+            PawnDiaryRimTestScope.Require(!rejected,
+                "An over-limit live component incorrectly admitted a new pending birth owner.");
+            PawnDiaryRimTestScope.Require(
+                establishedIds.SetEquals(PendingBirthArcIds(PendingBirthRows())),
+                "Rejecting a new over-limit birth owner changed the established pending set.");
+
+            rows = PendingBirthRows();
+            rows.RemoveAll(row => row?.snapshot?.familyArcId != null
+                && row.snapshot.familyArcId.StartsWith(PreCapFixturePrefix, StringComparison.Ordinal));
+            PawnDiaryRimTestScope.Require(rows.Count < limit,
+                "The fixture could not return pending births below the admission limit.");
+
+            bool admitted = scope.Component.CompleteBiotechBirth(state, child, birther, 2);
+            PawnDiaryRimTestScope.Require(admitted,
+                "Pending birth ownership did not resume after room returned below the admission limit.");
+            PawnDiaryRimTestScope.Require(
+                PendingBirthRows().Exists(row => row?.snapshot?.familyArcId == state.snapshot.familyArcId),
+                "The resumed live birth owner was not retained in pending component state.");
+        }
+
+        /// <summary>
         /// Loaded pair-important templates retain the exact child, outcome, method, and adult roles for
         /// Full/Balanced/Compact prompts without exposing stable IDs or the family correlation key.
         /// </summary>
@@ -386,7 +461,7 @@ namespace PawnDiary.RimTests
             int now = Find.TickManager?.TicksGame ?? 0;
             // Production family arcs are child-owned. Keeping the child id in this fixture key lets
             // one test model distinct births while repeated dispatches for the same child still deduplicate.
-            string arcId = "biotech-family|rimtest-birth|" + child.GetUniqueLoadID();
+            string arcId = FixtureArcPrefix + child.GetUniqueLoadID();
             BirthMutationSnapshot snapshot = new BirthMutationSnapshot
             {
                 familyArcId = arcId,
@@ -437,6 +512,57 @@ namespace PawnDiary.RimTests
                 displayName = pawn.LabelShortCap,
                 roleToken = role
             };
+        }
+
+        private static PendingBiotechBirthState ValidPendingBirth(
+            string familyArcId,
+            string childId,
+            string writerId,
+            int tick)
+        {
+            return new PendingBiotechBirthState
+            {
+                createdTick = tick,
+                snapshot = new BirthMutationSnapshot
+                {
+                    familyArcId = familyArcId,
+                    childId = childId,
+                    currentChildName = "Pre-cap child",
+                    outcomeToken = BiotechBirthOutcomeTokens.Healthy,
+                    methodToken = BiotechBirthMethodTokens.Pregnancy,
+                    namingDeadline = tick + 60000,
+                    namingResolved = false,
+                    birthTick = tick,
+                    correlationId = "birth|" + familyArcId
+                },
+                writers = new BirthWriterSelection
+                {
+                    writers = new List<BirthWriterFact>
+                    {
+                        new BirthWriterFact
+                        {
+                            pawnId = writerId,
+                            displayName = "Pre-cap writer",
+                            roleToken = BiotechFamilyRoleTokens.Birther
+                        }
+                    }
+                }
+            };
+        }
+
+        private static HashSet<string> PendingBirthArcIds(List<PendingBiotechBirthState> rows)
+        {
+            HashSet<string> result = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < rows.Count; i++)
+            {
+                string arcId = rows[i]?.snapshot?.familyArcId;
+                if (!string.IsNullOrWhiteSpace(arcId))
+                {
+                    result.Add(arcId);
+                }
+            }
+
+            return result;
         }
 
         private static BirthWriterContextSnapshot FrozenWriter(
@@ -517,9 +643,13 @@ namespace PawnDiary.RimTests
             List<PendingBiotechBirthState> rows = pendingBirthsField.GetValue(scope.Component)
                 as List<PendingBiotechBirthState>;
             rows?.RemoveAll(row => row?.snapshot?.familyArcId != null
-                && row.snapshot.familyArcId.StartsWith(
-                    "biotech-family|rimtest-birth|",
-                    StringComparison.Ordinal));
+                && (row.snapshot.familyArcId.StartsWith(FixtureArcPrefix, StringComparison.Ordinal)
+                    || row.snapshot.familyArcId.StartsWith(PreCapFixturePrefix, StringComparison.Ordinal)));
+            List<BiotechFamilyArcState> arcs = familyArcsField.GetValue(scope.Component)
+                as List<BiotechFamilyArcState>;
+            arcs?.RemoveAll(arc => arc?.familyArcId != null
+                && (arc.familyArcId.StartsWith(FixtureArcPrefix, StringComparison.Ordinal)
+                    || arc.familyArcId.StartsWith(PreCapFixturePrefix, StringComparison.Ordinal)));
         }
 
         private static void RequireLoadedBirthPromptFields()

@@ -198,9 +198,11 @@ This is the low-cost prompt-quality release. Do not continue into A1 study/conta
 > and fails open to the mature routes. A user-directed scheduling exception recorded below permits
 > Biotech Phase 5 work while Phase 4's manual B1 acceptance matrix remains open.
 >
-> **Manual checkpoint update (2026-07-17):** all existing automated suites are reported passing.
-> Manual matrix rows 1, 2, 5, 6, and 8 are user-confirmed passes; rows 3, 4, 7, 9, and 10 remain
-> explicit TODOs, so Biotech Phase 4 and Wave 3 remain open. At the user's direction, Odyssey O1.0
+> **Acceptance checkpoint update (2026-07-17):** existing automated suites are reported passing, and
+> new compiled RimTests cover the behavioral contracts in rows 3, 4, 7, 9, and 10. Their Biotech,
+> RimTalk, and base-only runner passes remain TODO. Manual-only work is now the visual letter/preview
+> checks, one real RimTalk UI read, and the three-launch Biotech on → off → on transition; therefore
+> Biotech Phase 4 and Wave 3 remain open. At the user's direction, Odyssey O1.0
 > proceeded as a documentation-only scheduling exception; it did not add runtime behavior or claim
 > the Wave 3 release gate.
 >

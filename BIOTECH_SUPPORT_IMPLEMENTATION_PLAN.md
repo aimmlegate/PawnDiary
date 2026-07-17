@@ -18,9 +18,11 @@
 > no-DLC-safe. N2-B adds bounded exact family/current visible identity lenses through the shared fixed
 > provider list.
 >
-> **Acceptance update (2026-07-17):** all existing automated suites are reported passing. Manual
-> rows 1, 2, 5, 6, and 8 are user-confirmed passes; rows 3, 4, 7, 9, and 10 remain TODOs in
-> `tests/SAVE_COMPATIBILITY_SMOKETEST.md`. Phase 4 therefore remains open.
+> **Acceptance update (2026-07-17):** existing automated suites are reported passing, and new RimTests
+> now cover the behavioral contracts in rows 3, 4, 7, 9, and 10. Those new tests compile but still need
+> their Biotech, RimTalk, and base-only in-game runs. Manual-only work is limited to growth-letter and
+> localized-preview presentation, one real RimTalk UI read, and the cross-launch Biotech on → off → on
+> transition. Rows 1, 2, 5, 6, and 8 remain user-confirmed passes; Phase 4 remains open.
 >
 > **User-directed scheduling exception (2026-07-17):** Biotech Phase 5 may proceed while those five
 > Phase 4 manual rows await a later playthrough. This changes scheduling only: it does not waive,
@@ -1714,9 +1716,11 @@ writer, naming before/after save, disabled canonical group, and thrown-owner tes
 > recovery. The second runner pass reached 191/193 and proved the B1 event needed an explicit
 > `tale=BiotechFamilyBirth` marker to select the important template; that route and the loaded template
 > contract are now both pinned. Rerun with one active Pawn
-> Diary copy completed with all existing automated suites reported passing. Manual rows 1, 2, 5,
-> 6, and 8 are recorded as passes; complete rows 3, 4, 7, 9, and 10 in
-> `tests/SAVE_COMPATIBILITY_SMOKETEST.md` before marking this phase complete.
+> Diary copy completed with all existing automated suites reported passing. New compiled RimTests cover
+> age-7/10/13/auto/postponed growth, all prompt presets, loaded RimTalk injection, live pre-cap recovery,
+> and base-only frozen-row maintenance. Run those fixtures in their required profiles and complete only
+> the visual UI and real cross-launch checks marked manual in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`
+> before marking this phase complete.
 
 1. Prompt previews and compact/full mode review.
 2. No-Biotech and old-save smoke tests.
