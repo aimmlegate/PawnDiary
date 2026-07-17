@@ -1,5 +1,17 @@
 # Changelog
 
+- **2026-07-17 — Fixed adversarial-review findings in Biotech gene compatibility.** Exact live gene
+  membership now remains complete up to the fixed 2048-row defensive ceiling; only the persisted XML-
+  bounded baseline is truncated, carries a new frozen `geneObservedMembershipTruncated` key, and never
+  infers membership deltas from an incomplete window. Bumped that baseline to version 2 so old bounded
+  rows silently rebaseline, and invalidated comparison state on DLC-off load so save-without-Biotech
+  then re-enable cannot create a stale catch-up page. Fixed nested Ability ownership to continue past a
+  nonmatching inner scope, contained every local Ability patch phase, made exact-event dedup keys
+  tick-independent, simplified active-fact admission, and package-gated the gene-identity group. Added
+  pure cap/version/dedup/XML regressions plus compiled RimTests for nested scopes, disabled-output
+  advancement, DLC-baseline invalidation, independent live membership, explicit no-DLC skips, the new
+  Scribe marker, and populated legacy progression rows. Rebuilt both committed DLLs.
+
 - **2026-07-17 — Hardened the Biotech reimplant replay fixture from live evidence.** A RimWorld
   1.6.4871 rev591 loaded-game run passed 217/218 RimTests and reached the real
   `GeneUtility.ReimplantXenogerm` hook, canonical recipient page, bounded context, and enclosing

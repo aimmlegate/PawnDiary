@@ -835,7 +835,12 @@ namespace PawnDiary
         /// <summary>Opens same-call ownership scope before a Biotech reimplant ability can mutate genes.</summary>
         public static void Prefix(LocalTargetInfo target, ref BiotechGeneAbilityScope __state)
         {
-            __state = BiotechGeneMutationCorrelation.BeginAbility(target.Thing as Pawn);
+            BiotechGeneAbilityScope opened = null;
+            DiaryPatchSafety.Run("AbilityActivateLocalPatch.Prefix", () =>
+            {
+                opened = BiotechGeneMutationCorrelation.BeginAbility(target.Thing as Pawn);
+            });
+            __state = opened;
         }
 
         /// <summary>
@@ -849,9 +854,9 @@ namespace PawnDiary
             bool __result,
             BiotechGeneAbilityScope __state)
         {
-            bool canonicalGeneOwner = BiotechGeneMutationCorrelation.CloseAbility(__state);
             DiaryPatchSafety.Run("AbilityActivateLocalPatch", () =>
             {
+                bool canonicalGeneOwner = BiotechGeneMutationCorrelation.CloseAbility(__state);
                 if (!__result || __instance == null || canonicalGeneOwner)
                 {
                     return;
@@ -864,7 +869,10 @@ namespace PawnDiary
         /// <summary>Closes the transient scope even if vanilla or another postfix throws.</summary>
         public static Exception Finalizer(Exception __exception, BiotechGeneAbilityScope __state)
         {
-            BiotechGeneMutationCorrelation.CloseAbility(__state);
+            DiaryPatchSafety.Run("AbilityActivateLocalPatch.Finalizer", () =>
+            {
+                BiotechGeneMutationCorrelation.CloseAbility(__state);
+            });
             return __exception;
         }
     }

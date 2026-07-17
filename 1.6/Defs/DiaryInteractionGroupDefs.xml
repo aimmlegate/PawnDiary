@@ -2892,6 +2892,9 @@
     <domain>Progression</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Biotech</li>
+    </enableWhenPackageIdsLoaded>
     <instruction>a gene-identity change; write the bodily and identity shift from the pawn's perspective using only the supplied xenotype and selected gene-theme facts</instruction>
     <tone>with intimate bodily consequence</tone>
     <tones>

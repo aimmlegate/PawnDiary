@@ -57,9 +57,11 @@ namespace PawnDiary.Capture
     {
         public string xenotypeDefName = string.Empty;
         public string xenotypeLabel = string.Empty;
-        // Bounded installed membership is separate from active salience facts. Temporary override/
-        // suppression changes therefore cannot masquerade as gene addition/removal.
+        // Installed membership is separate from active salience facts. Temporary override/suppression
+        // changes therefore cannot masquerade as gene addition/removal. The live adapter keeps the
+        // complete set up to the fixed defensive ceiling; this flag says even that ceiling was hit.
         public List<string> installedGeneDefNames = new List<string>();
+        public bool installedMembershipTruncated;
         public List<GeneFact> genes = new List<GeneFact>();
     }
 
@@ -73,6 +75,21 @@ namespace PawnDiary.Capture
         public string xenotypeDefName = string.Empty;
         public string xenotypeLabel = string.Empty;
         public List<string> geneDefNames = new List<string>();
+        public bool membershipTruncated;
+    }
+
+    /// <summary>Stable exact-event identities shared by production dispatch and pure tests.</summary>
+    internal static class GeneIdentityEventKeys
+    {
+        /// <summary>
+        /// Returns a tick-independent dedup key so the configured recent-event window can suppress
+        /// two capture paths that report the same mutation on adjacent ticks.
+        /// </summary>
+        public static string DedupKey(string pawnId, string causeToken)
+        {
+            return "progression-gene|" + (pawnId ?? string.Empty).Trim() + "|"
+                + (causeToken ?? string.Empty).Trim();
+        }
     }
 
     /// <summary>

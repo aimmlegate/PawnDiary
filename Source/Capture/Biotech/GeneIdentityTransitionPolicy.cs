@@ -26,19 +26,28 @@ namespace PawnDiary.Capture
                 xenotypeIdentityChanged = IdentityChanged(safeBefore, safeAfter)
             };
 
-            foreach (string defName in afterNames)
+            // A bounded saved baseline is not a set: an alphabetically earlier addition can displace
+            // an unchanged final row. Suppress membership-only inference whenever either side says its
+            // membership is incomplete. Exact live before/after hooks do not set this flag unless the
+            // fixed 2048-row corruption ceiling is genuinely exceeded.
+            bool membershipComparable = !safeBefore.installedMembershipTruncated
+                && !safeAfter.installedMembershipTruncated;
+            if (membershipComparable)
             {
-                if (beforeNames.Contains(defName)) continue;
-                decision.addedGeneCount++;
-                GeneFact fact;
-                if (afterFacts.TryGetValue(defName, out fact)) decision.mutation.addedGenes.Add(fact);
-            }
-            foreach (string defName in beforeNames)
-            {
-                if (afterNames.Contains(defName)) continue;
-                decision.removedGeneCount++;
-                GeneFact fact;
-                if (beforeFacts.TryGetValue(defName, out fact)) decision.mutation.removedGenes.Add(fact);
+                foreach (string defName in afterNames)
+                {
+                    if (beforeNames.Contains(defName)) continue;
+                    decision.addedGeneCount++;
+                    GeneFact fact;
+                    if (afterFacts.TryGetValue(defName, out fact)) decision.mutation.addedGenes.Add(fact);
+                }
+                foreach (string defName in beforeNames)
+                {
+                    if (afterNames.Contains(defName)) continue;
+                    decision.removedGeneCount++;
+                    GeneFact fact;
+                    if (beforeFacts.TryGetValue(defName, out fact)) decision.mutation.removedGenes.Add(fact);
+                }
             }
 
             decision.mutation.addedGenes.Sort(CompareFacts);
@@ -67,7 +76,8 @@ namespace PawnDiary.Capture
             GeneIdentitySnapshot snapshot = new GeneIdentitySnapshot
             {
                 xenotypeDefName = observation?.xenotypeDefName ?? string.Empty,
-                xenotypeLabel = observation?.xenotypeLabel ?? string.Empty
+                xenotypeLabel = observation?.xenotypeLabel ?? string.Empty,
+                installedMembershipTruncated = observation?.membershipTruncated == true
             };
             if (observation?.geneDefNames != null)
             {

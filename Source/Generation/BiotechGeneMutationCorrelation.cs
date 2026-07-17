@@ -54,8 +54,8 @@ namespace PawnDiary
                 if (string.Equals(scope.targetPawnId, pawnId, System.StringComparison.Ordinal))
                 {
                     scope.canonicalClaimed = true;
+                    return;
                 }
-                return;
             }
         }
 

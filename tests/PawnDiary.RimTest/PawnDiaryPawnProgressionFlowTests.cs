@@ -37,6 +37,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.Serialization;
 using PawnDiary.Capture;
 using RimTestRedux;
 using RimWorld;
@@ -284,21 +285,33 @@ namespace PawnDiary.RimTests
         [Test]
         public static void RealReimplantHookEmitsOnceAndClaimsAbilityScope()
         {
-            if (!ModsConfig.BiotechActive) return;
+            if (!RequireBiotechOrSkip(nameof(RealReimplantHookEmitsOnceAndClaimsAbilityScope))) return;
             Pawn caster = scope.CreateAdultColonist();
-            if (caster?.genes == null || pawn?.genes == null) return;
+            if (caster?.genes == null || pawn?.genes == null) throw new AssertionException(
+                "Biotech is active but the reimplant fixture pawn has no gene tracker.");
             GeneDef added = PickVisibleUninstalledGene(caster, pawn);
             if (added == null) throw new AssertionException(
                 "Biotech is active but no visible uninstalled GeneDef was available for reimplant testing.");
             caster.genes.AddGene(added, xenogene: true);
 
-            BiotechGeneAbilityScope abilityScope = BiotechGeneMutationCorrelation.BeginAbility(pawn);
+            BiotechGeneAbilityScope abilityScope = null;
+            AbilityActivateLocalPatch.Prefix(new LocalTargetInfo(pawn), ref abilityScope);
             scope.RegisterCleanup(() => BiotechGeneMutationCorrelation.CloseAbility(abilityScope));
             DiaryEvent diaryEvent = scope.FireAndRequireEvent(
                 () => GeneUtility.ReimplantXenogerm(caster, pawn),
                 ProgressionEventData.GeneIdentityChangedDefName,
                 pawn,
                 null);
+            // Drive the production outer postfix as well. It reads no Ability fields once canonical
+            // ownership is true, so an uninitialized non-null instance is sufficient and cannot start
+            // a real ability or mutate the colony.
+            Ability placeholderAbility = (Ability)FormatterServices.GetUninitializedObject(typeof(Ability));
+            scope.RequireNoNewEvent(() => AbilityActivateLocalPatch.Postfix(
+                placeholderAbility,
+                new LocalTargetInfo(pawn),
+                LocalTargetInfo.Invalid,
+                __result: true,
+                __state: abilityScope));
             bool claimed = BiotechGeneMutationCorrelation.CloseAbility(abilityScope);
 
             scope.RequireSoloRef(diaryEvent, pawn);
@@ -323,7 +336,9 @@ namespace PawnDiary.RimTests
         [Test]
         public static void RealImplantItemHookEmitsOneBoundedGenePage()
         {
-            if (!ModsConfig.BiotechActive || pawn?.genes == null) return;
+            if (!RequireBiotechOrSkip(nameof(RealImplantItemHookEmitsOneBoundedGenePage))) return;
+            if (pawn?.genes == null) throw new AssertionException(
+                "Biotech is active but the implant fixture pawn has no gene tracker.");
             GeneDef added = PickVisibleUninstalledGene(null, pawn);
             if (added == null) throw new AssertionException(
                 "Biotech is active but no visible uninstalled GeneDef was available for implant testing.");
@@ -356,6 +371,79 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// A nested nonmatching ability must not hide an older matching scope. This reproduces the
+        /// reverse-stack arbitration bug without depending on a particular vanilla ability Def.
+        /// </summary>
+        [Test]
+        public static void NestedAbilityClaimFindsInnermostMatchingTarget()
+        {
+            if (!RequireBiotechOrSkip(nameof(NestedAbilityClaimFindsInnermostMatchingTarget))) return;
+            Pawn otherTarget = scope.CreateAdultColonist();
+            BiotechGeneAbilityScope matching = BiotechGeneMutationCorrelation.BeginAbility(pawn);
+            BiotechGeneAbilityScope nonmatching = BiotechGeneMutationCorrelation.BeginAbility(otherTarget);
+            scope.RegisterCleanup(() =>
+            {
+                BiotechGeneMutationCorrelation.CloseAbility(nonmatching);
+                BiotechGeneMutationCorrelation.CloseAbility(matching);
+            });
+
+            BiotechGeneMutationCorrelation.ClaimCurrentAbility(pawn);
+            PawnDiaryRimTestScope.Require(
+                !BiotechGeneMutationCorrelation.CloseAbility(nonmatching),
+                "A nonmatching nested ability incorrectly claimed the canonical gene page.");
+            PawnDiaryRimTestScope.Require(
+                BiotechGeneMutationCorrelation.CloseAbility(matching),
+                "The matching outer ability was hidden by a nonmatching nested scope.");
+        }
+
+        /// <summary>
+        /// The production per-pawn scanner advances Biotech identity while Progression output is off,
+        /// then emits no catch-up page when output is enabled again.
+        /// </summary>
+        [Test]
+        public static void DisabledProgressionAdvancesGeneBaselineWithoutCatchUp()
+        {
+            if (!RequireBiotechOrSkip(nameof(DisabledProgressionAdvancesGeneBaselineWithoutCatchUp))) return;
+            if (pawn?.genes == null) throw new AssertionException(
+                "Biotech is active but the scanner fixture pawn has no gene tracker.");
+
+            // First enabled pass establishes every progression baseline silently.
+            scope.RequireNoNewEvent(() => scope.Component.ScanPawnProgressionForDiaryEvents(
+                pawn, progressionEnabled: true, observeBiotechGenes: true));
+            GeneDef added = PickVisibleUninstalledGene(null, pawn);
+            if (added == null) throw new AssertionException(
+                "Biotech is active but no visible uninstalled GeneDef was available for scanner testing.");
+            pawn.genes.AddGene(added, xenogene: true);
+
+            scope.RequireNoNewEvent(() => scope.Component.ScanPawnProgressionForDiaryEvents(
+                pawn, progressionEnabled: false, observeBiotechGenes: true));
+            scope.RequireNoNewEvent(() => scope.Component.ScanPawnProgressionForDiaryEvents(
+                pawn, progressionEnabled: true, observeBiotechGenes: true));
+        }
+
+        /// <summary>A DLC-off load invalidation leaves a clean version-zero row for silent rebaseline.</summary>
+        [Test]
+        public static void GeneObservationInvalidationClearsStaleDlcBaseline()
+        {
+            GeneIdentityObservationState observation = new GeneIdentityObservationState
+            {
+                geneObservationVersion = GeneIdentityObservationPolicy.CurrentVersion,
+                xenotypeDefName = "Stale",
+                xenotypeLabel = "stale",
+                geneDefNames = new List<string> { "Gene_Stale" },
+                membershipTruncated = true
+            };
+            observation.Invalidate();
+            PawnDiaryRimTestScope.Require(
+                observation.geneObservationVersion == 0
+                    && observation.xenotypeDefName.Length == 0
+                    && observation.xenotypeLabel.Length == 0
+                    && observation.geneDefNames.Count == 0
+                    && !observation.membershipTruncated,
+                "DLC-off invalidation retained stale gene comparison state.");
+        }
+
+        /// <summary>
         /// Biotech Phase 5. The guarded live projector returns detached current membership only with
         /// Biotech, and the observation adapter establishes a versioned silent baseline. A later
         /// observation can advance the retained scalar keys when output is disabled without a page.
@@ -379,13 +467,23 @@ namespace PawnDiary.RimTests
 
             PawnDiaryRimTestScope.Require(captured && identity != null,
                 "Biotech is active but the guarded gene projector returned no snapshot.");
+            string liveXenotypeDefName = pawn.genes.Xenotype?.defName ?? string.Empty;
             PawnDiaryRimTestScope.Require(
-                identity.xenotypeDefName == DlcContext.XenotypeDefName(pawn)
-                    && identity.xenotypeLabel == DlcContext.XenotypeLabel(pawn),
-                "The detached identity snapshot did not preserve the live xenotype identity.");
+                identity.xenotypeDefName == liveXenotypeDefName,
+                "The detached identity snapshot did not preserve the live xenotype Def identity.");
             HashSet<string> uniqueDefNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             HashSet<string> installedDefNames = new HashSet<string>(
                 identity.installedGeneDefNames, StringComparer.OrdinalIgnoreCase);
+            HashSet<string> liveInstalledDefNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            List<Gene> liveGenes = pawn.genes.GenesListForReading;
+            for (int i = 0; i < liveGenes.Count; i++)
+            {
+                string defName = liveGenes[i]?.def?.defName;
+                if (!string.IsNullOrWhiteSpace(defName)) liveInstalledDefNames.Add(defName.Trim());
+            }
+            PawnDiaryRimTestScope.Require(
+                installedDefNames.SetEquals(liveInstalledDefNames),
+                "The detached identity membership differed from the live gene tracker.");
             for (int i = 0; i < identity.genes.Count; i++)
             {
                 GeneFact fact = identity.genes[i];
@@ -811,6 +909,14 @@ namespace PawnDiary.RimTests
                 diaryEvent.gameContext != null
                     && diaryEvent.gameContext.IndexOf(expectedFragment, StringComparison.Ordinal) >= 0,
                 "The progression event context did not contain the expected fact '" + expectedFragment + "'.");
+        }
+
+        private static bool RequireBiotechOrSkip(string fixtureName)
+        {
+            if (ModsConfig.BiotechActive) return true;
+            Log.Message("[Pawn Diary RimTest] SKIP " + fixtureName
+                + ": Biotech is not active in this test profile.");
+            return false;
         }
 
         private static GeneDef PickVisibleUninstalledGene(Pawn first, Pawn second)

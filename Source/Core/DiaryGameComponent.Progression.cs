@@ -36,38 +36,55 @@ namespace PawnDiary
             List<Pawn> colonists = SnapshotFreeColonists();
             for (int i = 0; i < colonists.Count; i++)
             {
-                Pawn pawn = colonists[i];
-                if (!IsDiaryEligible(pawn))
-                {
-                    continue;
-                }
+                ScanPawnProgressionForDiaryEvents(
+                    colonists[i],
+                    progressionEnabled,
+                    observeBiotechGenes);
+            }
+        }
 
-                PawnDiaryRecord diary = FindDiary(pawn, true);
-                if (diary == null)
-                {
-                    continue;
-                }
+        /// <summary>
+        /// Runs one pawn through the same progression bookkeeping used by the colony scanner. Keeping
+        /// this seam internal lets the in-game suite prove disabled-output advancement without touching
+        /// unrelated player colonists.
+        /// </summary>
+        internal void ScanPawnProgressionForDiaryEvents(
+            Pawn pawn,
+            bool progressionEnabled,
+            bool observeBiotechGenes)
+        {
+            if (!IsDiaryEligible(pawn)) return;
+            PawnDiaryRecord diary = FindDiary(pawn, true);
+            if (diary == null) return;
 
-                PawnProgressionState state = diary.EnsureProgressionState();
-                bool baseline = state.baselineProgressionOnNextScan;
-                if (observeBiotechGenes)
-                {
-                    // The first/disabled pass is bookkeeping only. Enabled later passes may emit one
-                    // significant fallback, but every path advances before returning.
-                    ObserveGeneIdentity(pawn, state, progressionEnabled && !baseline);
-                }
-                if (!progressionEnabled)
-                {
-                    continue;
-                }
-                ScanPassionSkillMilestones(pawn, state, baseline);
-                ScanPsylinkLevel(pawn, state, baseline);
-                ScanRoyalTitleChange(pawn, state, baseline);
-                ScanTraitGain(pawn, state);
-                if (baseline)
-                {
-                    state.baselineProgressionOnNextScan = false;
-                }
+            PawnProgressionState state = diary.EnsureProgressionState();
+            bool baseline = state.baselineProgressionOnNextScan;
+            if (observeBiotechGenes)
+            {
+                // The first/disabled pass is bookkeeping only. Enabled later passes may emit one
+                // significant fallback, but every path advances before returning.
+                ObserveGeneIdentity(pawn, state, progressionEnabled && !baseline);
+            }
+            if (!progressionEnabled) return;
+
+            ScanPassionSkillMilestones(pawn, state, baseline);
+            ScanPsylinkLevel(pawn, state, baseline);
+            ScanRoyalTitleChange(pawn, state, baseline);
+            ScanTraitGain(pawn, state);
+            if (baseline) state.baselineProgressionOnNextScan = false;
+        }
+
+        /// <summary>
+        /// Removes comparison state captured while Biotech was installed. A save made with the DLC
+        /// disabled therefore cannot report a stale catch-up mutation if the DLC is enabled later.
+        /// </summary>
+        private void InvalidateBiotechGeneObservationsWithoutDlc()
+        {
+            if (ModsConfig.BiotechActive || diaries == null) return;
+            for (int i = 0; i < diaries.Count; i++)
+            {
+                diaries[i]?.progressionState?.biotechProgressionState?
+                    .geneIdentityObservation?.Invalidate();
             }
         }
 
@@ -217,8 +234,9 @@ namespace PawnDiary
             string label = "PawnDiary.Event.Biotech.GeneIdentity.Label".Translate().Resolve();
             string text = "PawnDiary.Event.Biotech.GeneIdentity.Text"
                 .Translate(pawn.LabelShortCap).Resolve();
-            string dedupKey = "progression-gene|" + pawn.GetUniqueLoadID() + "|"
-                + (causeToken ?? string.Empty) + "|" + Find.TickManager.TicksGame;
+            string dedupKey = GeneIdentityEventKeys.DedupKey(
+                pawn.GetUniqueLoadID(),
+                causeToken);
             return DispatchProgression(
                 pawn,
                 data,

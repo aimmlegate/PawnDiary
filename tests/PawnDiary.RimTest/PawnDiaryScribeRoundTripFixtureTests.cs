@@ -771,6 +771,7 @@ namespace PawnDiary.RimTests
             geneObservation.xenotypeDefName = "CustomXenotype";
             geneObservation.xenotypeLabel = "Custom identity";
             geneObservation.geneDefNames = new List<string> { "Gene_Alpha", "Gene_Beta" };
+            geneObservation.membershipTruncated = true;
 
             PawnArcScheduleState arc = new PawnArcScheduleState
             {
@@ -837,6 +838,8 @@ namespace PawnDiary.RimTests
                 "record nested gene xenotype label");
             AssertStrList(new List<string> { "Gene_Alpha", "Gene_Beta" },
                 loadedGeneObservation.geneDefNames, "record nested gene membership");
+            Require(loadedGeneObservation.membershipTruncated,
+                "record nested gene truncation marker should survive load.");
 
             Require(loaded.arcSchedule != null, "record arcSchedule should be non-null after load.");
             AssertInt(1234, loaded.arcSchedule.lastArcEntryTick, "record arc lastArcEntryTick");
@@ -867,6 +870,30 @@ namespace PawnDiary.RimTests
                     && oldSaveGeneObservation.geneDefNames != null
                     && oldSaveGeneObservation.geneDefNames.Count == 0,
                 "an old save with no gene keys should normalize to an uninitialized empty row.");
+
+            // A real pre-Biotech record can already have populated scalar progression state while its
+            // additive nested Biotech row is absent. Prove that exact shape preserves the old fields
+            // and creates only an uninitialized, silent gene observation.
+            PawnDiaryRecord legacyOriginal = new PawnDiaryRecord
+            {
+                pawnId = "Thing_Human_LegacyProgression",
+                pawnName = "Legacy",
+                progressionState = new PawnProgressionState
+                {
+                    highestPsylinkLevelRecorded = 2,
+                    biotechProgressionState = null
+                }
+            };
+            PawnDiaryRecord legacyLoaded = ScribeRoundTrip(legacyOriginal);
+            Require(legacyLoaded.progressionState != null
+                    && legacyLoaded.progressionState.highestPsylinkLevelRecorded == 2,
+                "a populated legacy progression row lost its pre-Biotech fields.");
+            GeneIdentityObservationState legacyGeneObservation = legacyLoaded.progressionState
+                .EnsureBiotechState().EnsureGeneIdentityObservation();
+            Require(legacyGeneObservation.geneObservationVersion == 0
+                    && legacyGeneObservation.geneDefNames.Count == 0
+                    && !legacyGeneObservation.membershipTruncated,
+                "a populated legacy progression row invented a current gene baseline.");
         }
 
         // ---- Scribe round-trip machinery -----------------------------------------------------------

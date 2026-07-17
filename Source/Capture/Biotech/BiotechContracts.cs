@@ -30,6 +30,7 @@ namespace PawnDiary.Capture
         public const string GeneObservedXenotypeDefName = "geneObservedXenotypeDefName";
         public const string GeneObservedXenotypeLabel = "geneObservedXenotypeLabel";
         public const string GeneObservedDefNames = "geneObservedDefNames";
+        public const string GeneObservedMembershipTruncated = "geneObservedMembershipTruncated";
     }
 
     /// <summary>Stable semicolon-context keys. These are schema labels, not localized prompt prose.</summary>

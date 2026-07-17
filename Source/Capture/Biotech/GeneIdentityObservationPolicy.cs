@@ -10,7 +10,10 @@ namespace PawnDiary.Capture
     /// <summary>Builds bounded, canonical gene-membership baselines without emitting an event.</summary>
     internal static class GeneIdentityObservationPolicy
     {
-        public const int CurrentVersion = 1;
+        // Version 2 adds an explicit incomplete-membership marker. Version-1 rows are silently
+        // rebaselined because their configured alphabetical cap could make a new gene look like a
+        // simultaneous removal when it displaced the last saved name.
+        public const int CurrentVersion = 2;
         public const int HardMaximumGeneDefNames = 2048;
 
         /// <summary>
@@ -40,6 +43,9 @@ namespace PawnDiary.Capture
                 }
             }
 
+            int cap = Clamp(maximumGeneDefNames, 1, HardMaximumGeneDefNames);
+            observed.membershipTruncated = identity?.installedMembershipTruncated == true
+                || DistinctCleanCount(observed.geneDefNames) > cap;
             observed.geneDefNames = Canonicalize(observed.geneDefNames, maximumGeneDefNames);
             return observed;
         }
@@ -50,12 +56,15 @@ namespace PawnDiary.Capture
             int maximumGeneDefNames,
             int labelCharacterLimit)
         {
+            int cap = Clamp(maximumGeneDefNames, 1, HardMaximumGeneDefNames);
             GeneIdentityObservationSnapshot normalized = new GeneIdentityObservationSnapshot
             {
                 observationVersion = Math.Max(0, state?.observationVersion ?? 0),
                 xenotypeDefName = CleanOneLine(state?.xenotypeDefName),
                 xenotypeLabel = Limit(CleanOneLine(state?.xenotypeLabel), labelCharacterLimit),
-                geneDefNames = Canonicalize(state?.geneDefNames, maximumGeneDefNames)
+                geneDefNames = Canonicalize(state?.geneDefNames, maximumGeneDefNames),
+                membershipTruncated = state?.membershipTruncated == true
+                    || DistinctCleanCount(state?.geneDefNames) > cap
             };
             return normalized;
         }
@@ -83,6 +92,18 @@ namespace PawnDiary.Capture
             result.Sort(CompareStableIds);
             if (result.Count > cap) result.RemoveRange(cap, result.Count - cap);
             return result;
+        }
+
+        private static int DistinctCleanCount(List<string> values)
+        {
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (values == null) return 0;
+            for (int i = 0; i < values.Count; i++)
+            {
+                string value = CleanOneLine(values[i]);
+                if (value.Length > 0) seen.Add(value);
+            }
+            return seen.Count;
         }
 
         private static int CompareStableIds(string left, string right)

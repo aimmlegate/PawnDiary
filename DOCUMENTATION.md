@@ -308,7 +308,8 @@ adapter acceptance matrix remains manual in `tests/SAVE_COMPATIBILITY_SMOKETEST.
 Biotech Phase 5 provides pure policy, exact ownership, and a slow fallback observer. `GeneIdentityContracts.cs` defines
 detached, cleaned gene facts with stable Def names, endogene/xenogene identity, active/hidden/
 suppressed truth, structural effect flags, and an optional qualitative magnitude band. It also
-separates bounded installed membership, active salience facts, and exact added/removed mutation facts.
+separates complete live installed membership (up to the fixed defensive ceiling), active salience
+facts, and exact added/removed mutation facts.
 `GeneSaliencePolicy.cs` scores
 those facts using the primitive-only fields in `DiaryBiotechPolicyDefs.xml`: structural category
 weights, event-delta and gene-kind bonuses, duplicate-category diversity, force/exclude corrections,
@@ -319,15 +320,22 @@ never an output. `DlcContext.TryCaptureGeneIdentity` is main-thread-only and dou
 `ModsConfig.BiotechActive` plus `pawn.genes`; it copies only direct `GeneDef` fields and the base
 description, never `DescriptionFull` or arbitrary mod getters. The progression cadence writes a
 nested `GeneIdentityObservationState` even when Progression output is disabled. Its frozen additive
-keys store an explicit version, current xenotype Def/label, and sorted installed Def names; an empty
-list remains distinguishable from an old save because version zero means uninitialized. The old
-scalar xenotype fields remain populated for migration.
+keys store an explicit version, current xenotype Def/label, sorted installed Def names, and an
+additive `geneObservedMembershipTruncated` marker. The XML-owned cap applies to this saved baseline,
+not to exact live before/after snapshots. When the cap is hit, fallback comparison treats membership
+as incomplete instead of inventing a removal when an earlier name displaces the final saved row.
+Version 2 introduced that marker, so version-1 rows silently establish a fresh baseline once; an
+empty list remains distinguishable from an old save because version zero means uninitialized. The old
+scalar xenotype fields remain populated for migration. Loading a save while Biotech is inactive
+invalidates only this comparison baseline, so saving DLC-off and later re-enabling Biotech performs a
+silent rebaseline rather than reporting stale DLC state.
 
-`GeneIdentityTransitionPolicy` compares stable xenotype identity and bounded installed membership,
+`GeneIdentityTransitionPolicy` compares stable xenotype identity and complete installed membership,
 retains exact before-state facts for removed genes, and admits slow membership-only fallback only when
 the XML-owned `geneMinimumFallbackChanges` threshold is met (two by default). Stable xenotype Def
 changes always qualify; localized label-only changes with the same Def do not, so switching language
-cannot invent a page. `GeneIdentityContextFormatter` exposes only selected themes and bounded,
+cannot invent a page. Membership deltas are suppressed when either snapshot is explicitly incomplete;
+stable xenotype identity can still be compared. `GeneIdentityContextFormatter` exposes only selected themes and bounded,
 separator-safe labels—never the complete membership set. The event-time context uses
 `gene_identity_transition`, previous/current xenotype identity, exact or observed cause, up to four
 theme label/description/change/category rows, optional reimplanting pawn identity, and the
@@ -339,8 +347,11 @@ theme label/description/change/category rows, optional reimplanting pawn identit
 mutation, update the saved observation before the next slow scan, and emit one recipient-only
 `GeneIdentityChanged` Progression page. Reimplantation occurs inside `Ability.Activate`; a bounded
 same-call scope is claimed only after the canonical page commits, so the outer generic Ability page is
-suppressed on success and remains available if canonical dispatch fails. The scope is cleared at every
-Game construction and contains no saved/live reference after the call closes. Empty mutation,
+suppressed on success and remains available if canonical dispatch fails. Reverse-stack claiming skips
+nonmatching nested abilities, and all three local-Ability patch phases are contained by
+`DiaryPatchSafety`. Exact gene-event dedup keys omit the current tick so the configured recent-event
+window can suppress adjacent-tick duplicate capture. The scope is cleared at every Game construction
+and contains no saved/live reference after the call closes. Empty mutation,
 first-old-save baseline, disabled output, one-row fallback noise, and active/suppressed recalculation
 remain silent. Every live read is still behind `ModsConfig.BiotechActive` plus `pawn.genes`, and the XML
 contains no DLC Def reference or dependency.
@@ -2508,8 +2519,9 @@ of the diary models and repository index rebuilds, the public `PawnDiaryApi` sur
 diary-tab view-model contracts, and the DLC compatibility matrix. That matrix asserts base-only/null
 omission, real installed-DLC pawn state through final summary/enchantment adapters, exact official
 package/group/window/settings availability, fragile DLC hook signatures, and optional capture
-capability fail-open behavior. Cross-launch DLC removal/re-enable save testing remains manual because
-`ModsConfig` cannot be safely rewritten inside one running game. `scripts/verify-coverage.ps1` is the one-command
+capability fail-open behavior. Production invalidates the gene comparison baseline when a save loads
+without Biotech; cross-launch DLC removal/re-enable acceptance remains manual because `ModsConfig`
+cannot be safely rewritten inside one running game. `scripts/verify-coverage.ps1` is the one-command
 audit that builds everything, runs the pure suites, and prints the EVT requirement matrix. The
 transport/async-runtime layer (`§6.3`) is intentionally deferred — see the suite README — because
 `LlmClient` is static and session-global and cannot be driven safely from an in-game test without a

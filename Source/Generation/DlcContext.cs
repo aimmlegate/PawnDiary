@@ -666,9 +666,7 @@ namespace PawnDiary
                         // not create salience candidates or mutation prose.
                         continue;
                     }
-                    GeneFact existing;
-                    if (!byDefName.TryGetValue(defName, out existing)
-                        || (fact.active && !existing.active))
+                    if (!byDefName.ContainsKey(defName))
                     {
                         byDefName[defName] = fact;
                     }
@@ -678,17 +676,20 @@ namespace PawnDiary
             List<string> defNames = new List<string>(byDefName.Keys);
             defNames.Sort(StringComparer.OrdinalIgnoreCase);
             captured.installedGeneDefNames.Sort(StringComparer.OrdinalIgnoreCase);
-            int maximumRows = DiaryBiotechPolicy.Snapshot().geneSalience.maximumObservedGeneDefNames;
-            maximumRows = Math.Max(1, Math.Min(
+            int maximumFactRows = DiaryBiotechPolicy.Snapshot().geneSalience.maximumObservedGeneDefNames;
+            maximumFactRows = Math.Max(1, Math.Min(
                 GeneIdentityObservationPolicy.HardMaximumGeneDefNames,
-                maximumRows));
-            if (captured.installedGeneDefNames.Count > maximumRows)
+                maximumFactRows));
+            if (captured.installedGeneDefNames.Count
+                > GeneIdentityObservationPolicy.HardMaximumGeneDefNames)
             {
+                captured.installedMembershipTruncated = true;
                 captured.installedGeneDefNames.RemoveRange(
-                    maximumRows,
-                    captured.installedGeneDefNames.Count - maximumRows);
+                    GeneIdentityObservationPolicy.HardMaximumGeneDefNames,
+                    captured.installedGeneDefNames.Count
+                        - GeneIdentityObservationPolicy.HardMaximumGeneDefNames);
             }
-            int factCount = Math.Min(defNames.Count, maximumRows);
+            int factCount = Math.Min(defNames.Count, maximumFactRows);
             for (int i = 0; i < factCount; i++)
             {
                 captured.genes.Add(byDefName[defNames[i]]);

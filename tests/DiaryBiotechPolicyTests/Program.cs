@@ -176,6 +176,8 @@ namespace DiaryBiotechPolicyTests
             AssertEqual("gene observation label cleaned and capped", "Long custom", observed.xenotypeLabel);
             AssertSequence("gene observation membership deduped sorted and capped",
                 new[] { "gene_alpha", "Gene_Middle" }, observed.geneDefNames);
+            AssertTrue("gene observation records incomplete bounded membership",
+                observed.membershipTruncated);
             AssertEqual("gene observation does not mutate source membership", 5,
                 identity.installedGeneDefNames.Count);
             AssertTrue("version marker distinguishes a valid empty membership",
@@ -198,6 +200,21 @@ namespace DiaryBiotechPolicyTests
                 new[] { "Gene_A", "Gene_B" }, normalized.geneDefNames);
             AssertTrue("uninitialized row is not mistaken for empty baseline",
                 !GeneIdentityObservationPolicy.HasCurrentBaseline(normalized));
+            GeneIdentityObservationSnapshot repairedOverflow = GeneIdentityObservationPolicy.Normalize(
+                new GeneIdentityObservationSnapshot
+                {
+                    observationVersion = GeneIdentityObservationPolicy.CurrentVersion,
+                    geneDefNames = new List<string> { "Gene_A", "Gene_B", "Gene_C" }
+                },
+                maximumGeneDefNames: 2,
+                labelCharacterLimit: 80);
+            AssertTrue("normalization marks corrupt overflow as incomplete",
+                repairedOverflow.membershipTruncated);
+            AssertTrue("version-one baseline is re-established under the truncation schema",
+                !GeneIdentityObservationPolicy.HasCurrentBaseline(new GeneIdentityObservationSnapshot
+                {
+                    observationVersion = 1
+                }));
         }
 
         private static void TestGeneTransitionDiffFallbackAndContext()
@@ -279,6 +296,40 @@ namespace DiaryBiotechPolicyTests
             };
             AssertTrue("active/suppressed recalculation never becomes membership mutation",
                 !GeneIdentityTransitionPolicy.Evaluate(after, suppressionOnly, policy).HasAnyChange);
+
+            // The configured persisted cap is a storage window, not a complete set. Adding an earlier
+            // name may displace the last saved row, so fallback must not fabricate that row's removal.
+            GeneIdentitySnapshot boundedBefore = GeneIdentityTransitionPolicy.FromObservation(
+                GeneIdentityObservationPolicy.Observe(
+                    new GeneIdentitySnapshot
+                    {
+                        installedGeneDefNames = new List<string> { "Gene_B", "Gene_C" }
+                    },
+                    maximumGeneDefNames: 1,
+                    labelCharacterLimit: 80));
+            GeneIdentitySnapshot boundedAfter = new GeneIdentitySnapshot
+            {
+                installedGeneDefNames = new List<string> { "Gene_A", "Gene_B", "Gene_C" }
+            };
+            GeneIdentityTransitionDecision uncertainBounded = GeneIdentityTransitionPolicy.Evaluate(
+                boundedBefore, boundedAfter, policy);
+            AssertTrue("incomplete saved membership cannot invent fallback deltas",
+                !uncertainBounded.HasAnyChange);
+
+            GeneIdentitySnapshot exactBefore = new GeneIdentitySnapshot
+            {
+                installedGeneDefNames = new List<string> { "Gene_B", "Gene_C" }
+            };
+            GeneIdentityTransitionDecision exactAddition = GeneIdentityTransitionPolicy.Evaluate(
+                exactBefore, boundedAfter, policy);
+            AssertEqual("complete exact membership keeps the real addition", 1,
+                exactAddition.addedGeneCount);
+            AssertEqual("complete exact membership invents no displaced removal", 0,
+                exactAddition.removedGeneCount);
+
+            AssertEqual("gene event dedup key is stable across capture ticks",
+                "progression-gene|Pawn_7|xenogerm_reimplant",
+                GeneIdentityEventKeys.DedupKey(" Pawn_7 ", " xenogerm_reimplant "));
 
             string context = GeneIdentityContextFormatter.Format(
                 before,
@@ -408,6 +459,8 @@ namespace DiaryBiotechPolicyTests
                 BiotechSaveKeys.GeneObservedXenotypeLabel);
             AssertEqual("gene membership Scribe key", "geneObservedDefNames",
                 BiotechSaveKeys.GeneObservedDefNames);
+            AssertEqual("gene truncation Scribe key", "geneObservedMembershipTruncated",
+                BiotechSaveKeys.GeneObservedMembershipTruncated);
         }
 
         private static void TestGrowthDiffAndTruthBoundaries()
@@ -1501,6 +1554,8 @@ namespace DiaryBiotechPolicyTests
                 Values(growth.Element("enableWhenPackageIdsLoaded")));
             AssertSequence("birth package gate", new[] { "Ludeon.RimWorld.Biotech" },
                 Values(birth.Element("enableWhenPackageIdsLoaded")));
+            AssertSequence("gene identity package gate", new[] { "Ludeon.RimWorld.Biotech" },
+                Values(geneIdentity.Element("enableWhenPackageIdsLoaded")));
             AssertTrue("growth has no token/catch-all matcher",
                 growth.Element("matchTokens") == null && Value(growth, "catchAll") != "true");
             AssertTrue("birth has no token/catch-all matcher",

@@ -283,8 +283,8 @@ prompt-capture mode so no network request can leave the game.
 2. **Old-save baseline.** With Biotech active, load an old save whose colonists already have vanilla
    and/or custom genes. Keep Progression output disabled through one scan, save, reload, then re-enable
    it. Confirm no historical page appears and the save contains nested
-   `geneIdentityObservationState` with `geneObservationVersion=1`, current xenotype identity, and
-   bounded `geneObservedDefNames`.
+   `geneIdentityObservationState` with `geneObservationVersion=2`, current xenotype identity, bounded
+   `geneObservedDefNames`, and `geneObservedMembershipTruncated=true` only when the XML cap was hit.
 3. **Exact ownership.** In a disposable Biotech colony run the two exact fixtures above. Confirm the
    real vanilla methods each create exactly one recipient-only `GeneIdentityChanged` event. Reimplant
    context must carry `xenogerm_reimplant`, the other pawn, selected themes, and no generic Ability
@@ -299,7 +299,9 @@ prompt-capture mode so no network request can leave the game.
 5. **Reload/no resurrection.** Save after one exact and one fallback page, reload, and wait through two
    progression scans. Confirm both remain exactly once, no transient ability owner survives load, and
    later genuine mutations still record. Repeat loading that save without Biotech: Pawn Diary must
-   retain primitive saved rows without resolving a DLC Def or emitting a page.
+   retain primitive saved rows without resolving a DLC Def or emitting a page. Save once in that
+   DLC-off state, re-enable Biotech, reload, and confirm the first gene scan silently writes a fresh
+   version-2 baseline instead of emitting a catch-up identity page.
 
 **Live checkpoint (2026-07-17):** RimWorld 1.6.4871 rev591 ran the loaded all-suite configuration at
 217/218. Both exact vanilla xenogerm methods passed their canonical event checks; reimplant also passed

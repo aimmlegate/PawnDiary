@@ -1,6 +1,7 @@
 // Saved, per-pawn Biotech gene baseline. This model stores only primitive detached facts: a version,
-// current xenotype identity, and stable installed-gene Def names. Live Pawn/Gene reads remain in
-// DlcContext, and selection/event ownership remains in pure capture policies.
+// current xenotype identity, stable installed-gene Def names, and whether the bounded list is
+// incomplete. Live Pawn/Gene reads remain in DlcContext, and selection/event ownership remains in
+// pure capture policies.
 //
 // New to C#/RimWorld? See AGENTS.md ("IExposable").
 using System.Collections.Generic;
@@ -16,6 +17,7 @@ namespace PawnDiary
         public string xenotypeDefName = string.Empty;
         public string xenotypeLabel = string.Empty;
         public List<string> geneDefNames = new List<string>();
+        public bool membershipTruncated;
 
         /// <summary>Scribes the additive frozen keys; old saves load an uninitialized version-zero row.</summary>
         public void ExposeData()
@@ -34,6 +36,10 @@ namespace PawnDiary
                 ref geneDefNames,
                 BiotechSaveKeys.GeneObservedDefNames,
                 LookMode.Value);
+            Scribe_Values.Look(
+                ref membershipTruncated,
+                BiotechSaveKeys.GeneObservedMembershipTruncated,
+                false);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -74,6 +80,19 @@ namespace PawnDiary
             return Snapshot();
         }
 
+        /// <summary>
+        /// Discards a DLC-dependent comparison baseline while retaining a valid, harmless save row.
+        /// The next Biotech-enabled scan establishes current truth silently.
+        /// </summary>
+        internal void Invalidate()
+        {
+            geneObservationVersion = 0;
+            xenotypeDefName = string.Empty;
+            xenotypeLabel = string.Empty;
+            geneDefNames = new List<string>();
+            membershipTruncated = false;
+        }
+
         private GeneIdentityObservationSnapshot Snapshot()
         {
             return new GeneIdentityObservationSnapshot
@@ -81,6 +100,7 @@ namespace PawnDiary
                 observationVersion = geneObservationVersion,
                 xenotypeDefName = xenotypeDefName,
                 xenotypeLabel = xenotypeLabel,
+                membershipTruncated = membershipTruncated,
                 geneDefNames = geneDefNames == null
                     ? new List<string>()
                     : new List<string>(geneDefNames)
@@ -93,6 +113,7 @@ namespace PawnDiary
             xenotypeDefName = snapshot?.xenotypeDefName ?? string.Empty;
             xenotypeLabel = snapshot?.xenotypeLabel ?? string.Empty;
             geneDefNames = snapshot?.geneDefNames ?? new List<string>();
+            membershipTruncated = snapshot?.membershipTruncated == true;
         }
     }
 }

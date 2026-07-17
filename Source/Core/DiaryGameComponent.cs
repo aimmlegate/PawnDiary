@@ -299,6 +299,7 @@ namespace PawnDiary
             ResetBiotechFamilyTransientState();
             nextBiotechBirthNamingPollTick = 0;
             BootstrapBiotechFamilyArcsForLoadedSave();
+            InvalidateBiotechGeneObservationsWithoutDlc();
             BootstrapOdysseyForLoadedSave();
             // Do NOT BeginSession here: the constructor already started this Game's session and
             // cancelled any requests left over from a previous Game. Loaded events have had their
