@@ -170,8 +170,9 @@ only proves the fixture compiles; it does not count as executing either Odyssey 
   `PawnDiary_Odyssey_RimTest_PhaseB_Completed`.
 - **Observed fixture hardening:** a run-at-startup invocation at the Odyssey-enabled main menu exposed
   null-host failures before any loaded game existed. The test assembly now checks `Current.Game` and
-  `DiaryGameComponent.Instance` before using `Find` or instance-field reflection. Its post-fix live
-  main-menu rerun is still pending; builds/hooks do not substitute for that one remaining runtime check.
+  `DiaryGameComponent.Instance` before using `Find` or instance-field reflection. The post-fix live
+  main-menu rerun logged all five intended skips and no Odyssey runtime-suite error, closing this
+  acceptance row.
 
 ---
 

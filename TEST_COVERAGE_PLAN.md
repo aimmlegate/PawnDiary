@@ -399,8 +399,10 @@ errors. The Odyssey profile passed the real cancellation/full-lifecycle fixtures
 continuation; Phase C confirmed one durable page/marker, no resurrected lifecycle state, and deleted
 both reserved saves. Startup also demonstrated that an Odyssey-enabled main menu has no
 `Current.Game`/component, so the runtime fixture now checks those hosts before using `Find` or
-instance-field reflection. A post-fix live main-menu rerun remains the only runtime-suite acceptance
-gap; compilation and repository verification are recorded separately.
+instance-field reflection. The post-fix live main-menu rerun produced all five intended skips with no
+Odyssey suite error, closing the runtime-suite acceptance gap. That all-suite run separately exposed
+EVT-22's Anomaly-inactive helper contradiction; the monolith fixture now requires loaded/enabled Defs
+without requiring their package before it asserts the package-gated no-op branch.
 
 ## 7. Settings, Integration API, UI, And Compatibility
 

@@ -1246,6 +1246,9 @@ destroyed cluster stops coloring prompts promptly.
 Hot event-window paths use `EventWindowPolicy.CouldMatchByDefName` before resolving labels or doing
 expensive work. Window recording is isolated from normal raid, quest, hediff, and other capture paths;
 a window failure must not suppress the base diary entry.
+The EVT-22 loaded fixture distinguishes a Def being loaded/enabled from its optional package being
+active: exact monolith Defs must exist in either configuration, create their source-owned chapters
+when Anomaly is active, and remain inert when `MissingRequiredPackage()` reports Anomaly absent.
 
 Event-window pages honor the player's settings Events row: `RecordEventWindowPhase` classifies the
 window's `defName` in the Interaction domain (e.g. `Birthday` -> `eventWindowBirthday`) and skips the
@@ -2419,7 +2422,8 @@ The 2026-07-17 focused run passed the real cancellation/full-lifecycle tests and
 Phase C left exactly one durable page/marker before cleanup, resurrected no active/transient state, and
 deleted both reserved saves. A base-only profile separately produced all five explicit Odyssey-inactive
 runtime skips without Pawn Diary Odyssey patch/XML/type-initializer errors. The post-hardening
-Odyssey-enabled main-menu skip remains the only runtime-suite live rerun gap.
+Odyssey-enabled main-menu rerun also produced all five intended no-host skips with no Odyssey suite
+error, closing the runtime-suite live gap.
 
 The DLC-focused generic flows now include installed-Royalty positive scanner fixtures for a real
 `PsychicAmplifier` hediff and a disposable real `RoyalTitle`, each asserting exact context and repeat

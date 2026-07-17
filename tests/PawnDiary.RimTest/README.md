@@ -74,7 +74,7 @@ owners. Both use the shared harness:
 | `PawnDiaryDayReflectionFlowTests` | 19 | Day/quadrum reflection highlight + once-per-day guard + evidence consumption. |
 | `PawnDiaryArcReflectionFlowTests` | 20 | Arc reflection year/gap limits + memory filter/dedup + backoff. |
 | `PawnDiaryExternalApiFlowTests` | 21 | `PawnDiaryApi` submit solo/pair, group gate, budget, listener notify. |
-| `PawnDiaryEventWindowFlowTests` | 22 | Event-window start/end/one-shot/timeout + prompt-bias state. |
+| `PawnDiaryEventWindowFlowTests` | 22 | Event-window start/end/one-shot/timeout + prompt-bias state; exact monolith ownership when Anomaly is active and inert loaded Defs when it is absent. |
 | `PawnDiaryObservedConditionFlowTests` | 23 | Observed-condition start/end debounce + scope identity + restart cooldown. |
 
 Do not run the prompt suites with two copies of Pawn Diary active. RimWorld can load Def XML from one

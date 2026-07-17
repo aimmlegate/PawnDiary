@@ -255,11 +255,17 @@ namespace PawnDiary.RimTests
             string[] levelDefNames = { "Stirring", "Waking", "VoidAwakened" };
             string[] phases = { "stirring", "waking", "void_awakened" };
 
-            DiaryEventWindowDef firstWindow = RequireWindowDef(windowDefNames[0]);
+            // These XML Defs stay loaded when Anomaly is absent, but MissingRequiredPackage() makes
+            // their runtime routes inert. Use the loaded-only helper so this test can exercise that
+            // no-DLC branch instead of failing before it reaches the intended assertion.
+            DiaryEventWindowDef firstWindow = RequireLoadedWindowDef(windowDefNames[0]);
             bool anomalyAvailable = !firstWindow.MissingRequiredPackage();
             for (int i = 0; i < windowDefNames.Length; i++)
             {
-                RequireWindowDef(windowDefNames[i]);
+                if (anomalyAvailable)
+                    RequireWindowDef(windowDefNames[i]);
+                else
+                    RequireLoadedWindowDef(windowDefNames[i]);
                 string levelDefName = levelDefNames[i];
                 if (!anomalyAvailable)
                 {
@@ -431,6 +437,15 @@ namespace PawnDiary.RimTests
         // failure, not a DLC-absent skip.
         private static DiaryEventWindowDef RequireWindowDef(string defName)
         {
+            DiaryEventWindowDef def = RequireLoadedWindowDef(defName);
+            PawnDiaryRimTestScope.Require(
+                !def.MissingRequiredPackage(),
+                "Event-window def '" + defName + "' must be enabled and available for this test.");
+            return def;
+        }
+
+        private static DiaryEventWindowDef RequireLoadedWindowDef(string defName)
+        {
             DiaryEventWindowDef def = DefDatabase<DiaryEventWindowDef>.GetNamedSilentFail(defName);
             if (def == null)
             {
@@ -439,8 +454,8 @@ namespace PawnDiary.RimTests
             }
 
             PawnDiaryRimTestScope.Require(
-                def.enabled && !def.MissingRequiredPackage(),
-                "Event-window def '" + defName + "' must be enabled and available for this test.");
+                def.enabled,
+                "Event-window def '" + defName + "' must be enabled for this test.");
             return def;
         }
 

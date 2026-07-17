@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-07-17 — Closed the live main-menu rerun and inactive-Anomaly fixture failure.** The rebuilt
+  Odyssey runtime suite produced all five intended no-host skips at the main menu with no Odyssey
+  error, closing the final live rerun gap from the prior hardening. The same all-suite log exposed one
+  separate test-only contradiction: EVT-22 tried to verify the Anomaly-inactive monolith no-op only
+  after a helper had already required Anomaly to be active. Split loaded/enabled Def validation from
+  package availability so the fixture now tests exact monolith chapters with Anomaly and inert loaded
+  Defs without it. Production capture behavior and DLC dependencies are unchanged.
+
 - **2026-07-17 — Executed and hardened the Odyssey live acceptance fixtures.** Ran RimWorld
   `1.6.4871 rev591` in English with isolated base-only and Odyssey-only RimTest profiles. The base
   profile produced all five explicit Odyssey-inactive runtime skips without Pawn Diary Odyssey
