@@ -164,6 +164,18 @@ outcome attachment, Def-identity omission, visible-label sanitization, and bound
 coverage now passes 2,028 assertions, keeps `landing_outcome` and the correct pilot/copilot POV role in
 Full/Balanced/Compact, and locks both localized indexed labels.
 
+Odyssey runtime hardening adds `PawnDiaryOdysseyRuntimeLifecycleTests`, deliberately limited to the
+facts that detached/component fixtures cannot prove. `InitiateTakeoff` and `InitiateLanding` are entered
+through their real public methods so the installed Pawn Diary Harmony prefixes receive live engine,
+tile, gravship, map, and pawn payloads; a last-priority test-only prefix suppresses only their unsafe
+graphics/cutscene bodies. `GravshipUtility.TravelTo` and private `LandingEnded` execute their real
+vanilla bodies. The suite therefore proves a cross-layer trip keeps the pre-rewrite surface origin
+after the engine/pilot are despawned, takeoff without `TravelTo` stays transient, successful landing
+creates one canonical rough-landing event/marker, and a repeated finish callback creates neither.
+Every fixture explicitly logs `SKIP` when Odyssey is inactive or a real player gravship is present,
+and failure-safe cleanup restores component/controller state, time speed, the mask engine, world
+objects, spawned things, pawns, events, diary indexes, and temporary Harmony patches.
+
 Narrative N2-O extends `NarrativeContinuityTests` to 104 assembly-free assertions. It covers the one-row
 Odyssey home candidate, exact ship/journey/location identity, family-event ambient selection, landing
 exact-arc selection, inactive-provider/unknown-knowledge/disconnected-POV/unknown-location silence, and
@@ -367,6 +379,18 @@ test markers. N1 additionally proves old-save empty defaults, archive arc/subjec
 retention, Full/Balanced/Compact core-fixture selection, and prompt-field omission when no context was
 selected. Run the same fixture with a copy of the oldest supported save in
 `SAVE_COMPATIBILITY_SMOKETEST.md`.
+
+The Odyssey process-boundary subset is implemented as three named RimTests because RimTest Redux's
+synchronous runner is disposed with the current `Game` and cannot safely continue one test method
+through `GameDataSaveLoader.LoadGame`. Phase A uses real `TravelTo`, seeds bounded history/trust/home
+tenure/launch cooldown, captures one transient pending landing, and writes
+`PawnDiary_Odyssey_RimTest_PhaseA_Active`. Phase B must be run after manually loading that save; it
+verifies the two frozen save keys, newest-row retention, and the intentional absence of non-scribed
+takeoff/pending state, completes the real Harmony landing finish exactly once, then writes
+`PawnDiary_Odyssey_RimTest_PhaseB_Completed`. Phase C must be run after loading the completed save; it
+proves one page/marker survived the second reload, no transient/active journey resurrected, and stale
+completion cannot add output. Phase C deletes both named disposable saves and all fixture-owned live
+state. The exact continuation is in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
 ## 7. Settings, Integration API, UI, And Compatibility
 

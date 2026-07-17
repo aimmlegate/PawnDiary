@@ -106,6 +106,55 @@ field-level math that runs after Scribe has populated the fields.
 
 ---
 
+## Odyssey real-lifecycle and three-phase save/reload fixture
+
+RimTest Redux runs a test synchronously inside the current `Game`. Calling
+`GameDataSaveLoader.LoadGame` from that method disposes the runner, the test assembly's live fixture,
+and its cleanup scope before an assertion can continue. Pawn Diary therefore automates every
+deterministic phase but leaves the two process boundaries as explicit operator steps.
+
+Prerequisites: use a disposable Odyssey-enabled colony with a loaded surface map, no active/travelling
+gravship, and no parked player grav engine on the current map. Enable only Harmony, RimTest Redux,
+Pawn Diary, and Odyssey for the focused run. The runtime tests log a visible `SKIP` reason instead of
+touching state when Odyssey is inactive or these safety preconditions are not met.
+
+1. Run `PawnDiaryOdysseyRuntimeLifecycleTests.RealInitiateTakeoffCancellationLeavesNoSavedJourneyOrPage`
+   and `RealHarmonyLifecycleTravelsAndLandsExactlyOnce`.
+   - The cutscene starters enter their real vanilla public methods, but a last-priority test prefix
+     suppresses the graphics/capture originals after Pawn Diary's installed prefixes receive the live
+     payloads.
+   - `GravshipUtility.TravelTo` and private `LandingEnded` run their real vanilla bodies.
+   - Expected: the cancelled takeoff has transient intent only; the cross-layer trip retains the true
+     surface origin after engine/pilot despawn and vanilla tile rewriting; successful landing creates
+     one rough-landing page and one emitted marker; replay creates neither.
+2. Run `SaveReloadPhaseAWriteActiveJourneySave`.
+   - It overwrites the deliberately reserved save name
+     `PawnDiary_Odyssey_RimTest_PhaseA_Active`, using real `TravelTo` to save an active gravship journey.
+   - It seeds trustworthy bounded history, current-home tenure (`1234`), launch-page cooldown (`2345`),
+     and a real `InitiateLanding` pending row. The pending row is intentionally transient and is not one
+     of the frozen save keys; Phase B must find it absent after load.
+   - The test restores the currently loaded colony after writing. Only the named disposable save remains.
+3. Return to the main menu and load `PawnDiary_Odyssey_RimTest_PhaseA_Active`. Keep the game paused.
+   Run `SaveReloadPhaseBVerifyAndCompleteJourney` only.
+   - Expected: `odysseyActiveJourney` and `odysseyTravelHistory` restore; trust, home key/tenure,
+     launch cooldown, and the newest bounded location rows match Phase A; transient intent/pending are
+     null; real landing completion creates exactly one page/marker and a duplicate finish callback is
+     inert.
+   - Phase B writes `PawnDiary_Odyssey_RimTest_PhaseB_Completed`, then consumes/cleans the live Phase A
+     fixture. Load the new save rather than continuing to play the consumed Phase A instance.
+4. Return to the main menu and load `PawnDiary_Odyssey_RimTest_PhaseB_Completed`. Run
+   `SaveReloadPhaseCVerifyNoResurrection` only.
+   - Expected: exactly one canonical landing page and one emitted journey marker survive; active journey,
+     takeoff intent, pending landing, and travelling world object remain absent; a stale completion call
+     cannot add an event or marker.
+   - Phase C removes fixture events/diary rows/pawns/engine and deletes both reserved save files in a
+     failure-safe `finally`. If RimWorld was closed before Phase C, delete those two named saves manually.
+
+Record the RimWorld build, active mod list, language, and Phase A/B/C log lines. A successful C# build
+only proves the fixture compiles; it does not count as executing either Odyssey or base-only runtime.
+
+---
+
 ## Biotech B1 Phase 4 acceptance matrix
 
 Run this matrix before marking Biotech Phase 4 complete. Keep prompt-test mode on for prompt review so

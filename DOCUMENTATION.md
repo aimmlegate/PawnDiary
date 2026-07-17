@@ -2390,6 +2390,29 @@ It also asserts that all four shipped concrete landing-outcome overrides carry P
 successful-return postfix; pure policy tests cover exact-ship correlation/rejection and sanitized,
 bounded outcome prompt projection.
 
+`PawnDiaryOdysseyRuntimeLifecycleTests` covers only the host behavior the detached suite cannot prove.
+It enters the real `InitiateTakeoff` and `InitiateLanding` public methods with isolated live objects;
+a last-priority test-assembly Harmony prefix suppresses their graphics/cutscene bodies only after Pawn
+Diary's installed prefixes have received the payload. Real vanilla `GravshipUtility.TravelTo` then
+performs its cross-layer tile rewrite/world-object add, and real private `LandingEnded` clears the
+controller and calls Pawn Diary's successful postfix. The fixture asserts that the surface origin
+survives engine/pilot despawn and tile rewriting, cancellation never commits, one landing creates one
+event/marker, and callback replay is inert. It refuses to run when Odyssey is inactive or the loaded
+map already owns a player gravship, and every temporary patch, world object, engine, pawn, component
+row, controller field, event, diary index, time-speed change, and mask reference is restored in
+failure-safe cleanup.
+
+The same suite supplies a genuine three-run save fixture. Phase A writes a disposable save after real
+`TravelTo`, preserving the frozen `odysseyActiveJourney` and `odysseyTravelHistory` keys plus bounded
+history, trust, current-home tenure, and launch cooldown. A pending landing is captured before save but
+is intentionally absent after load because intent/pending rows remain cutscene-local and are not frozen
+save keys. Phase B, run after manually loading Phase A, verifies those contracts, completes the real
+landing exactly once, and writes the completed save. Phase C, run after a second manual reload, verifies
+one durable page/marker and no resurrected active/transient state, then deletes the two reserved saves.
+RimTest Redux cannot safely automate the load calls inside one synchronous test because loading
+disposes the current `Game` and runner; `tests/SAVE_COMPATIBILITY_SMOKETEST.md` records the exact
+continuation. Building the RimTest DLL is reported separately from executing these phases in RimWorld.
+
 The DLC-focused generic flows now include installed-Royalty positive scanner fixtures for a real
 `PsychicAmplifier` hediff and a disposable real `RoyalTitle`, each asserting exact context and repeat
 suppression. Ideology and Anomaly ritual tests use internal copied-fact fixture seams because safely

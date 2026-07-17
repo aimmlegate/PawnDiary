@@ -1,5 +1,16 @@
 # Changelog
 
+- **2026-07-17 — Added real-runtime Odyssey lifecycle and phased save/reload hardening.** Added a
+  focused RimTest suite that enters the actual `InitiateTakeoff`/`InitiateLanding` methods so Pawn
+  Diary's installed Harmony prefixes receive live payloads, executes vanilla cross-layer `TravelTo`
+  and successful private `LandingEnded`, and verifies pre-rewrite origin survival, cancellation,
+  exactly-one landing page/marker, replay rejection, and failure-safe cleanup. Added a genuine
+  Phase A/B/C disposable-save flow for the frozen active-journey/history keys, bounded history, trust,
+  home tenure, launch cooldown, transient pending-state omission, post-reload landing completion, and
+  second-reload non-resurrection. RimTest cannot keep one synchronous test alive while RimWorld
+  disposes/reloads the `Game`, so the two exact manual continuation steps are documented. No production
+  behavior or DLC dependency changed; rebuilt the committed RimTest DLL.
+
 - **2026-07-17 — Closed the Odyssey adversarial-review findings.** Preserved the true pre-rewrite
   `TravelTo` origin tile, prevented pre-feature mid-flight baselines from inventing elapsed duration or
   `long_journey`, and made pair landing prompts project the correct pilot/copilot/crew role separately

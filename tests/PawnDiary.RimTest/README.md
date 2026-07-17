@@ -67,6 +67,7 @@ owners. Both use the shared harness:
 | `PawnDiaryBiotechComponentStateFixtureTests` | B1 | Real-Scribe component keys, old/malformed/oversized rows, hard ceiling, and pre-cap admission recovery. |
 | `PawnDiaryDlcSafetyFixtureTests` | 7.3 | Null/base-only omission, installed-DLC positive pawn state (including a temporary vanilla CreepJoiner tracker with a real loaded form), exact specialized/generic-fallback classifier policy, official package/group/window/settings matrix, fragile hook signatures, and optional-adapter fail-open readiness. |
 | `PawnDiaryOdysseyJourneyFlowTests` | O1.2–O1.5/N2-O | Loaded Odyssey policy/context/Scribe repair, exact lifecycle hooks, idempotent intent→travel state, exact-onboard provider snapshots, writerless landing rollback, one canonical two-POV major landing, eligible-writer routine-hop suppression, `TileSettled` non-ownership, and Full/Balanced/Compact localized prompt fixtures. |
+| `PawnDiaryOdysseyRuntimeLifecycleTests` | O1 runtime/save | Real Harmony payloads through the public takeoff/landing entry points, real vanilla cross-layer `TravelTo` and successful `LandingEnded`, cancellation/replay cleanup, plus the manual-boundary Phase A/B/C disposable-save flow. |
 | `PawnDiaryQuestFlowTests` | 16 | Quest accept/complete/fail fan-out + label sanitation + dedup. |
 | `PawnDiaryRitualFlowTests` | 17 | Ideology/Anomaly four-perspective production fan-out through internal fact fixtures, pawn-ID uniqueness, colony dedup, context/localization, and DLC-safe fields. |
 | `PawnDiaryArrivalFlowTests` | 18 | Neutral arrival page + first-ordering + bootstrap resilience. |
@@ -99,6 +100,12 @@ tracked follow-up:
 **Run these two on a disposable colony:** their real trigger has vanilla side effects no test can undo.
 - `PawnDiaryDeathFlowTests` (EVT-10): a real `Pawn.Kill` gives *other* colonists `ColonistLost`/`KnowColonistDied` mood memories and may raise a death letter.
 - `PawnDiaryRaidFlowTests` (EVT-13): drives the per-colonist raid signal for the isolated test pawn, but the colony-dedup and fan-out contract are checked against the live map; a full end-to-end fan-out would write pages into real colonists' diaries, so it is intentionally not driven.
+
+Run `PawnDiaryOdysseyRuntimeLifecycleTests` on a disposable Odyssey colony too. Its test objects and
+component/controller mutations are failure-safely removed, and the launch/landing visual originals are
+suppressed, but real `TravelTo` and `LandingEnded` briefly mutate vanilla world/controller state. The
+suite refuses to compete with an active or parked player gravship. Its Phase A/B/C process-boundary
+steps and reserved save names are documented in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
 ### Transport / async runtime (plan §6.3) — deferred by design
 
