@@ -538,6 +538,16 @@ invisible; selected context is event-time frozen; no real DLC behavior changes y
 > other source slots remain empty stubs. Candidate prose is DefInjected, unconnected/no-DLC/child-only
 > paths stay empty, and no provider creates fan-out. N2-O remains scheduled with Odyssey O1.
 >
+> **N2-O progress (2026-07-17): complete as the pre-O1.4 provider/reference dependency.** The fixed
+> list now accepts one detached Odyssey snapshot and proposes at most one DefInjected mobile-home
+> lens after the guarded adapter proves the exact POV pawn, gravship, and visible location. Matching
+> committed journeys carry the exact Odyssey arc; existing Biotech growth/birth pages pass the snapshot
+> at event time and can select verified ambient home context without cross-DLC coupling. Pure factories
+> freeze `departed`, `arrived`, and `returned` ship/place evidence and references without authorizing
+> a page. O1.4 now consumes the landing factory only after its canonical event exists. Inactive DLC,
+> unknown knowledge/location, disconnected POVs, and malformed prose
+> stay empty; `NarrativeContinuityTests` now passes 104 assertions.
+>
 > **Review follow-up (2026-07-16): repetition history wired live.** The persisted per-POV selection
 > keys (§8.4) were being saved and archived but never fed back into build requests, leaving the XML
 > `repetitionPenalty` inert. Growth, birth, and event-window sources now pass the POV pawn's recent

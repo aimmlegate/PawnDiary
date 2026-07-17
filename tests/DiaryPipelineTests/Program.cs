@@ -25,6 +25,7 @@ namespace DiaryPipelineTests
             TestProgressionPromptPlanFields();
             TestBiotechPromptPlanFields();
             TestBiotechPromptTemplateXmlContract();
+            TestOdysseyPromptPlanFields();
             TestDualPovPromptPlans();
             TestRecipientFollowupPlan();
             TestNeutralGenerationPlans();
@@ -1062,6 +1063,103 @@ namespace DiaryPipelineTests
             {
                 AssertTrue("SoloDefault does not carry Biotech B1 projection",
                     !string.Equals(ChildValue(field, "contextKey"), "birthday_age", StringComparison.Ordinal));
+            }
+        }
+
+        // Odyssey O1.5: a landing event is useless to the model if its frozen journey context never
+        // crosses the prompt-template boundary. Pin both important shapes and deliberately shrink the
+        // Balanced/Compact budget to one character: the minimum journey truth must still survive, while
+        // stable correlation IDs and ticks remain unavailable to every prompt preset.
+        private static void TestOdysseyPromptPlanFields()
+        {
+            PromptContextBudgets tinyBudgets = new PromptContextBudgets
+            {
+                balancedDefault = 1,
+                compactDefault = 1
+            };
+            PromptContextDetailLevel[] levels =
+            {
+                PromptContextDetailLevel.Full,
+                PromptContextDetailLevel.Balanced,
+                PromptContextDetailLevel.Compact
+            };
+            string sharedContext = "odyssey_journey=true; journey_id=odyssey-journey|Ship_7|500; "
+                + "ship_stable_id=WorldObject_7; departure_tick=500; journey_phase=landing; "
+                + "journey_reason=major_destination; journey_secondary_reason=long_journey; "
+                + "journey_duration=long; rough_landing=false; launch_quality=excellent; "
+                + "ship_name=Wayfarer; origin=Temperate forest; origin_key=planet-layer-0-tile-10; "
+                + "destination=Orbital mechhive; destination_key=planet-layer-1-tile-20; "
+                + "destination_layer=orbit; destination_biome=Orbit; "
+                + "destination_site=Orbital mechhive; pilot=Alice; copilot=Bob; crew_count=2";
+
+            DiaryEventPayload pair = PairPayload(
+                "e-odyssey-pair",
+                "gravship landing",
+                "Alice and Bob brought Wayfarer down at the orbital mechhive.",
+                "Bob and Alice brought Wayfarer down at the orbital mechhive.");
+            pair.gameContext = sharedContext;
+            DiaryEventPayload solo = SoloPayload(
+                "e-odyssey-solo",
+                "gravship landing",
+                "Alice brought Wayfarer down at the orbital mechhive as pilot.");
+            solo.gameContext = sharedContext + "; pov_journey_role=pilot";
+
+            for (int i = 0; i < levels.Length; i++)
+            {
+                PromptContextDetailLevel level = levels[i];
+                string suffix = " (" + level + ")";
+                DiaryPromptPlan pairPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = pair,
+                    policy = Policy(combat: false, important: true),
+                    povRole = DiaryPipelineRoles.Initiator,
+                    contextDetailLevel = level,
+                    contextBudgets = tinyBudgets
+                });
+                DiaryPromptPlan soloPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = solo,
+                    policy = Policy(combat: false, important: true),
+                    povRole = DiaryPipelineRoles.Initiator,
+                    contextDetailLevel = level,
+                    contextBudgets = tinyBudgets
+                });
+
+                AssertEqual("Odyssey pair uses pair-important template" + suffix,
+                    DiaryPipelineTemplates.PairImportant, pairPlan.templateKey);
+                AssertEqual("Odyssey solo uses solo-important template" + suffix,
+                    DiaryPipelineTemplates.SoloImportant, soloPlan.templateKey);
+                AssertContains("Odyssey phase survives detail budget" + suffix, pairPlan.userPrompt,
+                    "journey phase: landing");
+                AssertContains("Odyssey reason survives detail budget" + suffix, pairPlan.userPrompt,
+                    "journey reason: major_destination");
+                AssertContains("Odyssey secondary reason survives detail budget" + suffix, pairPlan.userPrompt,
+                    "secondary journey reason: long_journey");
+                AssertContains("Odyssey duration survives detail budget" + suffix, pairPlan.userPrompt,
+                    "journey duration: long");
+                AssertContains("Odyssey ship survives detail budget" + suffix, pairPlan.userPrompt,
+                    "ship: Wayfarer");
+                AssertContains("Odyssey origin survives detail budget" + suffix, pairPlan.userPrompt,
+                    "origin: Temperate forest");
+                AssertContains("Odyssey destination survives detail budget" + suffix, pairPlan.userPrompt,
+                    "destination: Orbital mechhive");
+                AssertContains("Odyssey solo POV role survives detail budget" + suffix, soloPlan.userPrompt,
+                    "journey role: pilot");
+                AssertTrue("Odyssey stable IDs and ticks stay out of prompt" + suffix,
+                    !pairPlan.userPrompt.Contains("WorldObject_7")
+                    && !pairPlan.userPrompt.Contains("odyssey-journey|")
+                    && !pairPlan.userPrompt.Contains("planet-layer-")
+                    && !pairPlan.userPrompt.Contains("departure_tick"));
+
+                if (level == PromptContextDetailLevel.Full)
+                {
+                    AssertContains("Full Odyssey prompt keeps destination site", pairPlan.userPrompt,
+                        "destination site: Orbital mechhive");
+                    AssertContains("Full Odyssey prompt keeps pilot", pairPlan.userPrompt, "pilot: Alice");
+                    AssertContains("Full Odyssey prompt keeps copilot", pairPlan.userPrompt, "copilot: Bob");
+                    AssertContains("Full Odyssey prompt keeps launch quality", pairPlan.userPrompt,
+                        "launch quality: excellent");
+                }
             }
         }
 
@@ -3057,10 +3155,8 @@ namespace DiaryPipelineTests
             }
         }
 
-        // Pins the smaller Odyssey integration that exists before the planned O1 journey state machine:
-        // launch ritual classification, orbital/vacuum Tale routing, hostile-weather routing, persistent
-        // volcanic-ash atmosphere, and vacuum prompt enchantment. Every matcher is a plain string and must
-        // remain available in a no-Odyssey process, where absent game Defs simply never produce a signal.
+        // Pins Odyssey's departure-only Ritual group, canonical landing group, and earlier generic
+        // orbital/vacuum/weather integration. Both Odyssey-owned settings rows are package-gated.
         private static void TestOdysseyExistingIntegrationXmlPolicy()
         {
             XDocument groups = XDocument.Load(RepoPath("1.6", "Defs", "DiaryInteractionGroupDefs.xml"));
@@ -3072,22 +3168,37 @@ namespace DiaryPipelineTests
                 HasListValue(gravship, "matchTokens", "GravshipLaunch"));
             AssertTrue("Odyssey gravship ritual matches behavior identity",
                 HasListValue(gravship, "matchTokens", "RitualBehaviorWorker_GravshipLaunch"));
-            AssertTrue("Odyssey string-only ritual matcher has no package dependency",
-                !HasListValue(gravship, "enableWhenPackageIdsLoaded", null));
+            AssertTrue("Odyssey launch settings are package-gated",
+                HasListValue(gravship, "enableWhenPackageIdsLoaded", "Ludeon.RimWorld.Odyssey"));
+            AssertTrue("Odyssey launch wording forbids premature destination/landing claims",
+                ChildValue(gravship, "instruction").IndexOf("landing occurred", StringComparison.OrdinalIgnoreCase) >= 0
+                && ChildValue(gravship, "instruction").IndexOf("destination was chosen", StringComparison.OrdinalIgnoreCase) >= 0);
             AssertEqual("Odyssey launch classifier reaches gravship ritual",
                 "ritualGravship",
                 ResolveInteractionGroup(
                     groups,
                     "Ritual",
                     "Ritual_GravshipLaunch;RitualBehaviorWorker_GravshipLaunch",
-                    false));
+                    true));
             AssertEqual("Odyssey launch classifier is case-insensitive",
                 "ritualGravship",
                 ResolveInteractionGroup(
                     groups,
                     "Ritual",
                     "ritual_gravshiplaunch;ritualbehaviorworker_gravshiplaunch",
-                    false));
+                    true));
+
+            XElement landing = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "odysseyGravshipLanding");
+            AssertTrue("Odyssey landing group exists", landing != null);
+            AssertEqual("Odyssey landing group domain", "GravshipJourney", ChildValue(landing, "domain"));
+            AssertTrue("Odyssey landing exact Def match",
+                HasListValue(landing, "matchDefNames", "OdysseyGravshipLanding"));
+            AssertTrue("Odyssey landing settings are package-gated",
+                HasListValue(landing, "enableWhenPackageIdsLoaded", "Ludeon.RimWorld.Odyssey"));
+            AssertEqual("Odyssey landing classifier reaches exact group",
+                "odysseyGravshipLanding",
+                ResolveInteractionGroup(groups, "GravshipJourney", "OdysseyGravshipLanding", true));
 
             AssertEqual("Odyssey orbital debris Tale routes to incident",
                 "taleincident", ResolveInteractionGroup(groups, "Tale", "OrbitalDebris", false));
@@ -3136,6 +3247,24 @@ namespace DiaryPipelineTests
                 "ritualGravship", ChildValue(policy, "launchGroupKey"));
             AssertEqual("Odyssey landing group identity is frozen",
                 "odysseyGravshipLanding", ChildValue(policy, "landingGroupKey"));
+            AssertEqual("Odyssey O1.4 novelty-gated landing pages are XML-enabled",
+                "true", ChildValue(policy, "landingPageEnabled"));
+            AssertTrue("Odyssey N2-O mobile-home format is XML-owned",
+                !string.IsNullOrWhiteSpace(ChildValue(policy, "mobileHomeNarrativeFormat")));
+            XDocument englishOdyssey = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryOdysseyPolicyDef",
+                "DiaryOdysseyPolicyDefs.xml"));
+            XDocument russianOdyssey = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryOdysseyPolicyDef",
+                "DiaryOdysseyPolicyDefs.xml"));
+            string englishHome = englishOdyssey.Root?.Element(
+                "Diary_Odyssey.mobileHomeNarrativeFormat")?.Value ?? string.Empty;
+            string russianHome = russianOdyssey.Root?.Element(
+                "Diary_Odyssey.mobileHomeNarrativeFormat")?.Value ?? string.Empty;
+            AssertTrue("Odyssey N2-O English format keeps both placeholders",
+                englishHome.Contains("{0}") && englishHome.Contains("{1}"));
+            AssertTrue("Odyssey N2-O Russian format keeps both placeholders",
+                russianHome.Contains("{0}") && russianHome.Contains("{1}"));
             AssertEqual("Odyssey launch writer cap", "2", ChildValue(policy, "maximumLaunchWriters"));
             AssertEqual("Odyssey landing writer cap", "2", ChildValue(policy, "maximumLandingWriters"));
 
@@ -3173,6 +3302,32 @@ namespace DiaryPipelineTests
             AssertTrue("Odyssey policy contains no DLC XML dependency references",
                 policyDocument.ToString().IndexOf("MayRequire", StringComparison.OrdinalIgnoreCase) < 0);
 
+            XDocument promptTemplates = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
+            XElement pairImportant = FindDef(
+                promptTemplates, "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplate_PairImportant");
+            XElement soloImportant = FindDef(
+                promptTemplates, "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplate_SoloImportant");
+            string[] requiredPromptKeys =
+            {
+                "journey_phase",
+                "journey_reason",
+                "journey_secondary_reason",
+                "journey_duration",
+                "pov_journey_role",
+                "ship_name",
+                "origin",
+                "destination"
+            };
+            for (int i = 0; i < requiredPromptKeys.Length; i++)
+            {
+                string key = requiredPromptKeys[i];
+                AssertTrue("Odyssey pair-important prompt field exists: " + key,
+                    HasPromptContextField(pairImportant, key));
+                AssertTrue("Odyssey solo-important prompt field exists: " + key,
+                    HasPromptContextField(soloImportant, key));
+            }
+
             XDocument englishKeyed = XDocument.Load(RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
             XDocument russianKeyed = XDocument.Load(RepoPath(
                 "Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
@@ -3184,6 +3339,27 @@ namespace DiaryPipelineTests
                 AssertTrue("Russian Odyssey mobile-home text exists: " + mobileHomeKeys[i],
                     !string.IsNullOrWhiteSpace(KeyedValue(russianKeyed, mobileHomeKeys[i])));
             }
+            string[] promptFixtureKeys =
+            {
+                "PawnDiary.Dev.PromptSuite.OdysseyLanding.Label",
+                "PawnDiary.Dev.PromptSuite.OdysseyLanding.Markers",
+                "PawnDiary.Dev.PromptSuite.OdysseyLanding.Initiator",
+                "PawnDiary.Dev.PromptSuite.OdysseyLanding.Recipient"
+            };
+            for (int i = 0; i < promptFixtureKeys.Length; i++)
+            {
+                string key = promptFixtureKeys[i];
+                AssertTrue("English Odyssey prompt fixture text exists: " + key,
+                    !string.IsNullOrWhiteSpace(KeyedValue(englishKeyed, key)));
+                AssertTrue("Russian Odyssey prompt fixture text exists: " + key,
+                    !string.IsNullOrWhiteSpace(KeyedValue(russianKeyed, key)));
+            }
+            AssertTrue("English Odyssey prompt markers retain both pawn placeholders",
+                KeyedValue(englishKeyed, "PawnDiary.Dev.PromptSuite.OdysseyLanding.Markers").Contains("{0}")
+                && KeyedValue(englishKeyed, "PawnDiary.Dev.PromptSuite.OdysseyLanding.Markers").Contains("{1}"));
+            AssertTrue("Russian Odyssey prompt markers retain both pawn placeholders",
+                KeyedValue(russianKeyed, "PawnDiary.Dev.PromptSuite.OdysseyLanding.Markers").Contains("{0}")
+                && KeyedValue(russianKeyed, "PawnDiary.Dev.PromptSuite.OdysseyLanding.Markers").Contains("{1}"));
 
             XDocument englishDefInjected = XDocument.Load(RepoPath(
                 "Languages", "English", "DefInjected", "PawnDiary.DiaryOdysseyPolicyDef",
@@ -3925,6 +4101,9 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.DomainForContext("ability=Stun; ability_label=stun; ability_category=Psycast"));
             AssertEqual("progression marker domain", "Progression",
                 DiaryEventDomainClassifier.DomainForContext("progression=SkillMilestone; progression_kind=skill"));
+            AssertEqual("Odyssey journey marker domain", "GravshipJourney",
+                DiaryEventDomainClassifier.DomainForContext(
+                    "odyssey_journey=true; journey_phase=landing; journey_reason=homecoming"));
             AssertEqual("arc reflection marker domain", "Reflection",
                 DiaryEventDomainClassifier.DomainForContext("arc_reflection=true; arc_year=5504"));
             AssertEqual("external marker wins over adapter context markers", "External",
@@ -4418,6 +4597,22 @@ namespace DiaryPipelineTests
                     ContextField("doctor", "doctor_name"),
                     ContextField("birther died", "birther_died"),
                     ContextField("ritual birth", "ritual_birth"),
+                    ContextField("journey phase", "journey_phase"),
+                    ContextField("journey reason", "journey_reason"),
+                    ContextField("secondary journey reason", "journey_secondary_reason"),
+                    ContextField("journey duration", "journey_duration"),
+                    ContextField("journey role", "pov_journey_role"),
+                    ContextField("ship", "ship_name"),
+                    ContextField("origin", "origin"),
+                    ContextField("destination", "destination"),
+                    ContextField("destination layer", "destination_layer"),
+                    ContextField("destination biome", "destination_biome"),
+                    ContextField("destination site", "destination_site"),
+                    ContextField("pilot", "pilot"),
+                    ContextField("copilot", "copilot"),
+                    ContextField("crew count", "crew_count"),
+                    ContextField("rough landing", "rough_landing"),
+                    ContextField("launch quality", "launch_quality"),
                     Field("weapon", "Weapon"),
                     Field("important context", "PromptEnchantment"),
                     Field("previous diary ending (continue from this)", "PreviousEntryEnding"),
@@ -4865,6 +5060,26 @@ namespace DiaryPipelineTests
             {
                 if (string.Equals(ChildValue(row, firstField), firstValue, StringComparison.OrdinalIgnoreCase)
                     && string.Equals(ChildValue(row, secondField), secondValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasPromptContextField(XElement template, string contextKey)
+        {
+            XElement fields = template?.Element("fields");
+            if (fields == null)
+            {
+                return false;
+            }
+
+            foreach (XElement field in fields.Elements("li"))
+            {
+                if (string.Equals(ChildValue(field, "source"), "GameContext", StringComparison.Ordinal)
+                    && string.Equals(ChildValue(field, "contextKey"), contextKey, StringComparison.Ordinal))
                 {
                     return true;
                 }

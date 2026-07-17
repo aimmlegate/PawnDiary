@@ -154,6 +154,13 @@ namespace PawnDiary
                 "PawnDiary.Dev.PromptSuite.BiotechBirth.Markers",
                 "PawnDiary.Dev.PromptSuite.BiotechBirth.Initiator",
                 "PawnDiary.Dev.PromptSuite.BiotechBirth.Recipient"),
+            PairWithLocalizedMarkers(
+                "OdysseyLanding",
+                "PawnDiary.Dev.PromptSuite.OdysseyLanding.Label",
+                OdysseyEventDefNames.Landing,
+                "PawnDiary.Dev.PromptSuite.OdysseyLanding.Markers",
+                "PawnDiary.Dev.PromptSuite.OdysseyLanding.Initiator",
+                "PawnDiary.Dev.PromptSuite.OdysseyLanding.Recipient"),
             Solo("ArcReflectionForced", "PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label", ArcReflectionEventData.DefNameToken,
                 "arc_reflection=true; arc_year=5504; forced=true; selected_memories=6; candidate_memories=18; entries_this_year=0",
                 null, "PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text"),

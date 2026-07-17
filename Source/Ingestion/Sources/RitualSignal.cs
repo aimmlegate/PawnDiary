@@ -39,6 +39,9 @@ namespace PawnDiary.Ingestion
         private readonly Pawn targetPawn;
         private readonly List<Pawn> fixtureParticipants;
         private readonly List<Pawn> fixtureSpectators;
+        // Ordinary rituals keep their unlimited existing fanout. Only the exact Odyssey launch
+        // group replaces this with the XML-owned cap after passing its Odyssey cooldown.
+        private readonly int maximumWriters = int.MaxValue;
 
         internal LordJob_Ritual RitualJob { get; }
         internal RitualRoleAssignments Assignments { get; }
@@ -76,11 +79,29 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
+            int eventTick = Find.TickManager == null ? 0 : Find.TickManager.TicksGame;
+            bool odysseyLaunch = ModsConfig.OdysseyActive
+                && string.Equals(group.defName, OdysseyGroupDefNames.Launch, StringComparison.Ordinal);
+            if (odysseyLaunch)
+            {
+                OdysseyPolicySnapshot odysseyPolicy = DiaryOdysseyPolicy.Snapshot();
+                if (string.Equals(group.defName, odysseyPolicy.launchGroupKey, StringComparison.Ordinal))
+                {
+                    DiaryGameComponent component = DiaryGameComponent.Instance;
+                    if (component == null || !component.AllowsOdysseyLaunchRitualAt(eventTick))
+                    {
+                        return;
+                    }
+
+                    maximumWriters = Math.Max(1, Math.Min(2, odysseyPolicy.maximumLaunchWriters));
+                }
+            }
+
             // Snapshot one XML-owned thematic variant once for the whole ritual. Every pawn keeps
             // the same ceremony framing, while the child signal appends its own localized role guide.
             // A deterministic local seed avoids consuming RimWorld's global simulation RNG merely
             // to choose cosmetic prompt prose.
-            int instructionTick = Find.TickManager == null ? 0 : Find.TickManager.TicksGame;
+            int instructionTick = eventTick;
             int instructionSeed = PromptVariants.HashSeed(defName + "|" + instructionTick);
             GroupInstruction = PromptVariants.Pick(group.instructions, group.instruction, instructionSeed);
 
@@ -170,15 +191,18 @@ namespace PawnDiary.Ingestion
             }
 
             HashSet<string> seen = new HashSet<string>();
+            int yielded = 0;
 
             // Order matches the old RecordRitualFinished: organizer, target, participants, spectators.
             foreach (DiarySignal s in PerPawn(organizer, targetPawn, RitualEventData.PerspectiveOrganizer, seen))
             {
                 yield return s;
+                if (++yielded >= maximumWriters) yield break;
             }
             foreach (DiarySignal s in PerPawn(targetPawn, organizer, RitualEventData.PerspectiveTarget, seen))
             {
                 yield return s;
+                if (++yielded >= maximumWriters) yield break;
             }
 
             List<Pawn> participants = Assignments?.Participants ?? fixtureParticipants;
@@ -189,6 +213,7 @@ namespace PawnDiary.Ingestion
                     foreach (DiarySignal s in PerPawn(participants[i], organizer, RitualEventData.PerspectiveParticipant, seen))
                     {
                         yield return s;
+                        if (++yielded >= maximumWriters) yield break;
                     }
                 }
             }
@@ -201,6 +226,7 @@ namespace PawnDiary.Ingestion
                     foreach (DiarySignal s in PerPawn(spectators[i], organizer, RitualEventData.PerspectiveSpectator, seen))
                     {
                         yield return s;
+                        if (++yielded >= maximumWriters) yield break;
                     }
                 }
             }

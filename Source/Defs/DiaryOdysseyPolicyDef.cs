@@ -32,9 +32,12 @@ namespace PawnDiary
     public sealed class DiaryOdysseyPolicyDef : Def
     {
         public bool enabled = true;
+        public bool landingPageEnabled;
         public string packageId = "Ludeon.RimWorld.Odyssey";
         public string launchGroupKey = "ritualGravship";
         public string landingGroupKey = "odysseyGravshipLanding";
+        // N2-O provider prose. {0} is the visible ship name and {1} the visible location label.
+        public string mobileHomeNarrativeFormat;
         public int takeoffCorrelationTicks = 2500;
         public int landingCorrelationTicks = 2500;
         public int staleJourneyRetentionTicks = 3600000;
@@ -67,6 +70,8 @@ namespace PawnDiary
             if (string.IsNullOrWhiteSpace(packageId)) yield return "packageId must be non-blank.";
             if (string.IsNullOrWhiteSpace(launchGroupKey)) yield return "launchGroupKey must be non-blank.";
             if (string.IsNullOrWhiteSpace(landingGroupKey)) yield return "landingGroupKey must be non-blank.";
+            if (string.IsNullOrWhiteSpace(mobileHomeNarrativeFormat))
+                yield return "mobileHomeNarrativeFormat must contain DefInjected prompt prose.";
             if (takeoffCorrelationTicks <= 0) yield return "takeoffCorrelationTicks must be positive.";
             if (landingCorrelationTicks <= 0) yield return "landingCorrelationTicks must be positive.";
             if (staleJourneyRetentionTicks <= 0) yield return "staleJourneyRetentionTicks must be positive.";
@@ -160,7 +165,13 @@ namespace PawnDiary
         public static OdysseyPolicySnapshot Snapshot()
         {
             DiaryOdysseyPolicyDef source = DefDatabase<DiaryOdysseyPolicyDef>.GetNamedSilentFail(DefName);
-            if (source != null && ReferenceEquals(source, cachedSource) && cachedSnapshot != null)
+            // DefInjected can replace prompt prose on a runtime language switch while retaining the
+            // same Def object. Include the localized field in the cache key so event-time text follows it.
+            if (source != null && ReferenceEquals(source, cachedSource) && cachedSnapshot != null
+                && string.Equals(
+                    source.mobileHomeNarrativeFormat ?? string.Empty,
+                    cachedSnapshot.mobileHomeNarrativeFormat,
+                    StringComparison.Ordinal))
             {
                 return cachedSnapshot;
             }
@@ -169,9 +180,11 @@ namespace PawnDiary
             if (source == null) return result;
 
             result.enabled = source.enabled;
+            result.landingPageEnabled = source.landingPageEnabled;
             result.packageId = Clean(source.packageId, result.packageId);
             result.launchGroupKey = Clean(source.launchGroupKey, result.launchGroupKey);
             result.landingGroupKey = Clean(source.landingGroupKey, result.landingGroupKey);
+            result.mobileHomeNarrativeFormat = source.mobileHomeNarrativeFormat ?? string.Empty;
             result.takeoffCorrelationTicks = Positive(source.takeoffCorrelationTicks, result.takeoffCorrelationTicks);
             result.landingCorrelationTicks = Positive(source.landingCorrelationTicks, result.landingCorrelationTicks);
             result.staleJourneyRetentionTicks = Positive(source.staleJourneyRetentionTicks, result.staleJourneyRetentionTicks);

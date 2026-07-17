@@ -125,22 +125,37 @@ one window, `Gleaming` maps to none, localized fallbacks exist, and the three ex
 bounded source evidence. The EVT-22 RimTest fixture exercises the live package-gated page/evidence
 path when Anomaly is active and the no-op branch otherwise.
 
-The pre-O1 Odyssey integration has a focused shipped-XML contract in `DiaryPipelineTests`: the
-gravship launch ritual resolves by both launch and behavior tokens without a package dependency,
-`OrbitalDebris` and `VacuumExposureRevealed` retain their Tale routes, `VolcanicAsh`/`Flooding` retain
-their weather route, volcanic ash remains a prompt-only observed condition, and both supported vacuum
-hediff spellings remain eligible prompt enchantments. These are plain-string inertness tests, not a
-claim that the planned journey/landing state machine exists.
+Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
+and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,
+and saved landing context recovers the new domain. `OrbitalDebris`/`VacuumExposureRevealed`, weather,
+prompt-only volcanic atmosphere, and both vacuum hediff spellings retain their generic routes.
 
-Odyssey O1.1 adds `DiaryOdysseyPolicyTests`, an assembly-free suite with 88 assertions freezing the
+Odyssey O1.1-O1.5 uses `DiaryOdysseyPolicyTests`, an assembly-free suite with 119 assertions freezing the
 journey/landing tokens and IDs, exact location mapping, deterministic pilot/copilot/crew selection,
 quality and duration bands, landing reason priority, cooldown exceptions, bounded idempotent history,
-silent old-save baselining, and prompt-safe bounded context. O1.2 adds
+silent old-save baselining, prompt-safe bounded context, exact intent/landing correlation, conservative
+fallback commits, transient expiry, departure-history mutation, and launch cooldown boundaries.
+`DiaryCapturePolicyTests` additionally pins the registered `GravshipJourney` solo/pair/drop decision
+and frozen landing dedup key. O1.2 adds
 `PawnDiaryOdysseyJourneyFlowTests`: loaded XML projection/mappings, Odyssey-active/inactive guarded
 map capture, exact vanilla onboard scoping, mobile-home prompt safety, real-Scribe round trips under
 both frozen component keys, missing-key untrusted baselining, corrupt journey rejection, and bounded
-newest-history retention. O1.2 still registers no lifecycle hook and emits no page; O1.3 extends the
-suite with takeoff/travel/landing state transitions.
+newest-history retention. O1.3 extends it with exact public/private Harmony registration and detached
+state-only intent/TravelTo/landing-start ownership. O1.4 adds an authorized-without-live-writer
+transaction fixture plus a major two-writer finish that creates one pair event, commits one page/ID,
+and rejects replay. The fixture assembly is built now; its loaded-game execution is deferred to the
+combined Odyssey acceptance run. O1.5 adds a loaded eligible-writer routine landing/no-page fixture,
+an explicit `TileSettled` no-pawn drop, and localized Full/Balanced/Compact prompt-suite rendering.
+`DiaryPipelineTests` also exhausts the optional context budget and proves the required Odyssey
+phase/reason/duration/role/ship/origin/destination facts survive while stable IDs and ticks do not.
+
+Narrative N2-O extends `NarrativeContinuityTests` to 104 assembly-free assertions. It covers the one-row
+Odyssey home candidate, exact ship/journey/location identity, family-event ambient selection, landing
+exact-arc selection, inactive-provider/unknown-knowledge/disconnected-POV/unknown-location silence, and
+the frozen departure plus arrived/returned ship/place reference factories. Loaded RimTests exercise the
+fixed provider list and Def-backed format, while `PawnDiaryOdysseyJourneyFlowTests` proves the live
+snapshot exists iff vanilla's exact onboard predicate succeeds. The existing growth/birth owner passes
+that snapshot at event time; N2-O adds no hook, event, writer fan-out, or new save field.
 
 Master Wave 3 / Biotech Phases 0–3 plus Phase 4 automated hardening use
 `DiaryBiotechPolicyTests`, an assembly-free suite that freezes

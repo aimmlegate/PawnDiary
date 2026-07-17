@@ -1,6 +1,6 @@
-// In-game fixture for Narrative Continuity N1's main-thread policy adapter. It deliberately supplies
-// only synthetic/core candidates: this proves the storage/prompt seam without reading a DLC tracker,
-// requiring a DLC Def, or changing any live source's event behavior before N2.
+// In-game fixtures for Narrative Continuity's main-thread policy adapter. Core rows prove the N1
+// storage/prompt seam; N2-O adds a detached Odyssey home row to prove loaded-Def provider selection
+// without requiring a live gravship in the test map.
 using System;
 using System.Collections.Generic;
 using RimTestRedux;
@@ -8,8 +8,8 @@ using RimTestRedux;
 namespace PawnDiary.RimTests
 {
     /// <summary>
-    /// Exercises the loaded Def-backed N1 builder through zero-, one-, and two-lens core fixtures,
-    /// then proves the selected frozen text reaches a first-person prompt. No Pawn/DLC data is read.
+    /// Exercises the loaded Def-backed builder through core and detached Odyssey fixtures, then proves
+    /// selected frozen text reaches a first-person prompt. No live DLC tracker is required here.
     /// </summary>
     [TestSuite]
     public static class PawnDiaryNarrativeContinuityFixtureTests
@@ -101,6 +101,59 @@ namespace PawnDiary.RimTests
             Require(plan.userPrompt != null && plan.userPrompt.IndexOf("First core fact.", StringComparison.Ordinal) >= 0
                     && plan.userPrompt.IndexOf("Second core fact.", StringComparison.Ordinal) >= 0,
                 "The frozen selected facts should reach the first-person prompt through the N1 payload.");
+        }
+
+        /// <summary>Loaded N2-O orchestration selects an exact occupied-home snapshot and fails closed.</summary>
+        [Test]
+        public static void OdysseyHomeFixtureUsesLoadedProviderAndKnowledgeGates()
+        {
+            OdysseyNarrativeSnapshot odyssey = new OdysseyNarrativeSnapshot
+            {
+                providerAvailable = true,
+                povPawnId = "Thing_Human_NarrativeFixture",
+                shipStableId = "WorldObject_RimTestShip",
+                shipName = "Wayfarer",
+                journeyId = "odyssey-journey|WorldObject_RimTestShip|50",
+                locationKey = "planet-layer-1-tile-42",
+                locationLabel = "Frozen plain",
+                homeText = "At this event, the writer was aboard Wayfarer at the frozen plain.",
+                sourceTick = 90,
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true
+            };
+            NarrativeContextBuildResult selected = NarrativeContextBuilder.Build(
+                new NarrativeContextBuildRequest
+                {
+                    eventId = "rimtest-odyssey-narrative",
+                    eventTick = 100,
+                    povPawnId = odyssey.povPawnId,
+                    povRole = DiaryEvent.InitiatorRole,
+                    evidence = new List<NarrativeEvidence> { Evidence() },
+                    odyssey = odyssey,
+                    contextDetailLevel = PromptContextDetailLevel.Full,
+                    deterministicSeed = 17
+                });
+            Require(selected.selection.selectedCandidates.Count == 1
+                    && selected.selection.selectedCandidates[0].provider == NarrativeProviderTokens.Odyssey,
+                "The loaded fixed provider list did not select the detached Odyssey home lens.");
+            Require(selected.selection.narrativeContext.IndexOf("Wayfarer", StringComparison.Ordinal) >= 0,
+                "The selected N2-O factual unit lost its frozen visible ship name.");
+
+            odyssey.hasVerifiedPovConnection = false;
+            NarrativeContextBuildResult disconnected = NarrativeContextBuilder.Build(
+                new NarrativeContextBuildRequest
+                {
+                    eventId = "rimtest-odyssey-disconnected",
+                    eventTick = 100,
+                    povPawnId = odyssey.povPawnId,
+                    povRole = DiaryEvent.InitiatorRole,
+                    evidence = new List<NarrativeEvidence> { Evidence() },
+                    odyssey = odyssey,
+                    contextDetailLevel = PromptContextDetailLevel.Full
+                });
+            Require(disconnected.selection.selectedCandidates.Count == 0
+                    && string.IsNullOrEmpty(disconnected.selection.narrativeContext),
+                "A disconnected Odyssey POV received optional home context.");
         }
 
         private static NarrativeContextBuildResult Build(

@@ -84,6 +84,7 @@ namespace PawnDiary.Capture
             // Biotech growth and canonical family birth are live B1 catalog routes.
             Register(new GrowthMomentEventSpec());
             Register(new FamilyBirthEventSpec());
+            Register(new GravshipJourneyEventSpec());
         }
     }
 }

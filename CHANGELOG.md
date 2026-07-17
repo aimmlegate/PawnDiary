@@ -1,5 +1,49 @@
 # Changelog
 
+- **2026-07-17 — Completed Odyssey O1.5 automated hardening and delivery prep.** Found and closed the
+  prompt-boundary gap that left O1.4's frozen landing schema off the model-facing templates. Appended
+  English/Russian Odyssey fields to the important pair/solo templates; made phase, reasons, duration,
+  solo journey role, ship, origin, and destination mandatory under Full/Balanced/Compact; retained
+  optional site/biome/crew/roughness/launch-quality evidence; and kept stable IDs, location keys, and
+  ticks event-internal. Added a localized Odyssey landing entry to the dev prompt suite plus pure and
+  loaded preset assertions, an explicit no-pawn `TileSettled` regression, and an eligible-writer
+  routine-hop no-page fixture. Existing tests cover intent-only cancellation, idempotent TravelTo,
+  major-site/writerless ownership, mid-flight Scribe, old-save distrust, and guarded no-DLC reads.
+  Automated XML/localization/pure/build verification is complete; the combined in-game Odyssey save
+  matrix remains intentionally deferred until the batch is complete.
+
+- **2026-07-17 — Completed Master Wave 4 / Odyssey O1.4 landing event and launch truth.** Added the
+  concrete `GravshipJourney` catalog payload/Spec/signal/domain and Odyssey-gated landing group with
+  English/Russian role and fallback prose. Successful vanilla `LandingEnded` now creates exactly one
+  novelty-authorized solo or pair-shaped landing event (maximum two POVs), freezes the bounded landing
+  schema plus source-owned ship/place Narrative Continuity evidence, and commits page cooldown/dedup
+  history only after the event exists; routine, disabled, duplicate, or writerless landings still
+  advance observation history without a page. Retuned `ritualGravship` to departure-only truth,
+  package-gated its settings row, and applied the Odyssey-only XML writer cap/prior-departure cooldown
+  without changing other rituals. Added pure catalog/launch policy, XML/domain, transaction, and
+  loaded pair-event fixtures. The focused RimTest assembly builds; its in-game run is intentionally
+  deferred to the combined Odyssey acceptance pass. O1.5 hardening is next.
+
+- **2026-07-17 — Completed Master Wave 4 / Narrative N2-O provider and reference dependency.** Replaced
+  the Odyssey provider stub with one pure bounded mobile-home candidate, backed by a guarded event-time
+  snapshot that requires vanilla's exact pawn-on-gravship predicate plus visible ship/location facts.
+  Existing canonical Biotech growth and birth pages can now select that frozen home lens without new
+  page ownership or cross-DLC live objects; matching committed journeys carry exact-arc relevance.
+  Added DefInjected English/Russian provider prose and pure `departed`/`arrived`/`returned` ship/place
+  evidence factories for O1.4. Narrative Continuity now passes 104 assembly-free assertions, and
+  loaded RimTests cover the fixed provider list, knowledge/connection gates, and exact-onboard live
+  boundary. Landing emission remains XML-disabled; O1.4 is next.
+
+- **2026-07-17 — Completed Master Wave 4 / Odyssey O1.3 state-only lifecycle hooks.** Added guarded
+  exact-signature capture for takeoff intent, vanilla `GravshipUtility.TravelTo` commit, and landing
+  start, plus defensive manual registration of private `LandingEnded`. Travel commit now creates one
+  detached saved journey, establishes bounded trustworthy departure history, correlates optional
+  launch information through cached reflection, and rejects replay by journey ID. Successful landing
+  advances history only after vanilla returns and then clears transient/active state. The XML-owned
+  `landingPageEnabled` switch remains false and no Odyssey event sink exists, so O1.3 creates no page.
+  Pure Odyssey coverage now passes 112 assertions; RimTests pin runtime signatures, actual Harmony
+  registration, idempotent component flow, and zero event/page mutations. Narrative N2-O followed.
+
 - **2026-07-17 — Completed Master Wave 4 / Odyssey O1.2 guarded context and persistence.** Added the
   XML-owned `Diary_Odyssey` policy with exact string-only biome/site mappings, a DLC-gated live
   map/gravship adapter, detached versioned active-journey and bounded travel-history Scribe state under

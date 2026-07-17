@@ -231,10 +231,16 @@ Release family/growth before genes, mechanitors, pollution, or secondary Biotech
 
 ## 9. Wave 4 — Odyssey journey flagship
 
-> **Implementation status (2026-07-17): O1.0-O1.2 complete; no lifecycle hooks/pages yet.** Installed
-> signatures and stable contracts are frozen; pure policy passes 88 assembly-free assertions. XML
-> policy, guarded location/mobile-home capture, bounded journey/history Scribe state, silent old-save
-> baselining, and focused RimTests are now present. O1.3 state-only lifecycle hooks are next, while the
+> **Implementation status (2026-07-17): O1.0-O1.5 and Narrative N2-O implemented; combined manual
+> acceptance remains deferred.**
+> Installed signatures and stable contracts are frozen; Odyssey policy passes 119 assembly-free
+> assertions and shared Narrative Continuity passes 104. XML policy, guarded location/mobile-home
+> capture, bounded journey/history Scribe state, silent old-save baselining, exact lifecycle hooks,
+> the exact-POV journey/home provider, departure/landing reference factories, and focused RimTests are
+> now present. One novelty-gated landing event (maximum two POVs), corrected/bounded launch policy,
+> and focused compiled RimTest coverage are present; the combined in-game acceptance run remains
+> deferred until the Odyssey batch is complete. O1.5 now adds prompt projection/preset guarantees,
+> localized fixtures, and routine/duplicate-owner hardening, while the
 > five deferred Biotech manual rows remain tracked separately.
 
 ### Implement in this exact order

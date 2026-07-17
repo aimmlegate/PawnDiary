@@ -50,6 +50,8 @@
     <Compile Include="..\..\Source\Capture\Events\ExternalEventData.cs" Link="Capture\Events\ExternalEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\GrowthMomentEventData.cs" Link="Capture\Events\GrowthMomentEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\FamilyBirthEventData.cs" Link="Capture\Events\FamilyBirthEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\GravshipJourneyEventData.cs" Link="Capture\Events\GravshipJourneyEventData.cs" />
+    <Compile Include="..\..\Source\Pipeline\OdysseyJourneyContracts.cs" Link="Pipeline\OdysseyJourneyContracts.cs" />
     <!-- Pure, System-only game-context field parser — links here so the external game-context
          security tests can assert a smuggled key cannot be resolved back out. -->
     <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" Link="Generation\DiaryContextFields.cs" />
@@ -77,5 +79,6 @@
     <Compile Include="..\..\Source\Capture\Specs\ExternalEventSpec.cs" Link="Capture\Specs\ExternalEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\GrowthMomentEventSpec.cs" Link="Capture\Specs\GrowthMomentEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\FamilyBirthEventSpec.cs" Link="Capture\Specs\FamilyBirthEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\GravshipJourneyEventSpec.cs" Link="Capture\Specs\GravshipJourneyEventSpec.cs" />
   </ItemGroup>
 </Project>

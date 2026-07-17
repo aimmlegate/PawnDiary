@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <Diary_Odyssey.label>Odyssey gravship journey policy</Diary_Odyssey.label>
+  <Diary_Odyssey.mobileHomeNarrativeFormat>At this event, the writer was aboard {0}, their exact gravship home at {1}.</Diary_Odyssey.mobileHomeNarrativeFormat>
 </LanguageData>

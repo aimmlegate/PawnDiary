@@ -1,10 +1,15 @@
 # Pawn Diary — Odyssey Support Implementation Plan
 
-Status: Phases O1.0-O1.2 completed on 2026-07-17 against RimWorld 1.6.4871. Frozen contracts now have
+Status: Phases O1.0-O1.5 plus Narrative N2-O implemented on 2026-07-17 against RimWorld 1.6.4871. Frozen contracts now have
 assembly-free policy, XML projection, guarded live location/mobile-home capture, and additive bounded
-journey/history persistence. O1.2 still adds no lifecycle hook or Odyssey page. This was started as a
+journey/history persistence, state-only takeoff/travel/landing hooks, and the exact-POV journey/home
+provider plus departure/landing evidence factories; O1.4 adds the one novelty-gated landing event,
+bounded launch policy, and package-gated groups; O1.5 projects the complete landing truth into the
+important prompt templates, protects its core fields under every context preset, adds a localized dev
+fixture, and pins routine/no-writer/old-save/mid-flight/`TileSettled` boundaries. This was started as a
 user-directed scheduling exception while five Biotech Phase 4 manual acceptance rows remain open.
-O1.3 is the next Odyssey implementation slice; later life-support and Mechhive hooks still require
+The combined in-game acceptance run remains deferred at the user's direction until the Odyssey batch
+is complete; later life-support and Mechhive hooks require
 their own spikes.
 
 Scheduling authority: implement Odyssey phases only in the waves assigned by
@@ -1123,6 +1128,14 @@ Exit: save/load and no-DLC behavior work before any new page source exists.
 
 ### Phase O1.3 — State-only lifecycle hooks
 
+> **Implementation status (2026-07-17): complete; state/history only.** Added guarded exact-signature
+> prefixes/postfixes for `InitiateTakeoff`, `GravshipUtility.TravelTo`, and `InitiateLanding`, plus a
+> defensive manual private `LandingEnded` registration. Transient intent/pending rows never scribe;
+> `TravelTo` alone commits the active journey/departure history, replay is journey-ID idempotent, and
+> successful finish applies landing history only after vanilla returns. `landingPageEnabled=false`
+> remains XML-owned and the component has no event sink, so no O1.3 seam can create or consume a page.
+> Pure lifecycle coverage now passes 112 assertions and focused RimTests pin hook registration/state flow.
+
 1. Add `InitiateTakeoff` intent capture.
 2. Add `TravelTo` commit.
 3. Add `InitiateLanding` pending capture.
@@ -1133,7 +1146,29 @@ Exit: save/load and no-DLC behavior work before any new page source exists.
 Exit: real travel creates correct state, routine play creates no new page, and missing hooks fail
 soft.
 
+### Narrative N2-O — Journey/home provider and references
+
+> **Implementation status (2026-07-17): complete; provider/reference seam only.** Added one pure
+> Odyssey home provider, exact-POV guarded event-time snapshots, DefInjected English/Russian factual
+> prose, and pure departure/landing evidence factories with the frozen journey arc and ship/place
+> references. Existing Biotech growth/birth pages may select the home lens only when vanilla proves
+> their writer is aboard that exact gravship; matching landing evidence receives exact-arc relevance.
+> Inactive/unknown/disconnected paths are silent. Shared pure coverage passes 104 assertions and loaded
+> RimTests cover the fixed provider list plus exact-onboard adapter boundary. No Odyssey event, save
+> field, settings row, or page owner was added in N2-O itself; completed O1.4 now consumes its landing
+> evidence factory from the canonical event owner.
+
+Exit: the exact family-on-gravship combination can select one frozen home lens, departure/arrival
+references are ready for source-owned pages, and every absent/unverified path remains unchanged.
+
 ### Phase O1.4 — Landing event and launch truth
+
+> **Implementation status (2026-07-17): complete.** Added the concrete event catalog route and exact
+> package-gated landing group, enabled novelty-gated `LandingEnded` emission, committed page history
+> only after durable event creation, attached source-owned arrival evidence, corrected launch prose,
+> and applied the Odyssey-only launch cap/prior-departure cooldown. Pure capture/Odyssey/pipeline
+> suites pass; the new loaded two-POV/transaction fixture compiles and will run with the combined O1
+> in-game acceptance pass.
 
 1. Add concrete catalog type, payload, Spec, signal, and domain.
 2. Add landing group, prompt variants, role text, and settings.
@@ -1144,6 +1179,15 @@ soft.
 Exit: O1 acceptance scenarios pass in RimTest and a manual Odyssey save.
 
 ### Phase O1.5 — Hardening and delivery
+
+> **Implementation status (2026-07-17): automated hardening complete; combined manual acceptance
+> deferred.** Added append-only English/Russian important-template fields for the bounded landing
+> schema, made phase/reason/duration/role/ship/origin/destination mandatory under Full, Balanced, and
+> Compact, registered a localized pair prompt fixture, and added pure/loaded regressions for the
+> no-pawn `TileSettled` Tale and an eligible-writer routine landing. Existing focused fixtures already
+> cover intent-only cancellation, idempotent travel, writerless major landing, mid-flight Scribe,
+> old-save distrust, major-site pair ownership, and no-DLC guarded reads. All automated validation is
+> run in this slice; the §18.5 save scenarios remain the single deferred in-game pass.
 
 1. Run old-save, mid-flight save/load, cancellation, routine-hop, major-site, and no-writer cases.
 2. Verify `TileSettled` does not duplicate.

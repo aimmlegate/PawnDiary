@@ -183,10 +183,15 @@
   <ritualChildbirth.tones.0>medical, intimate, and careful around pain, care, danger, and relief</ritualChildbirth.tones.0>
   <ritualChildbirth.tones.1>tender but unsentimental, focused on the body, helpers, and immediate outcome</ritualChildbirth.tones.1>
   <ritualGravship.label>Gravship launch</ritualGravship.label>
-  <ritualGravship.instruction>a gravship launch or landing ritual completed—write it as technical, operational, and dangerous: systems, countdown, lift, flight, landing, and crew discipline</ritualGravship.instruction>
+  <ritualGravship.instruction>a gravship departure ceremony completed before destination selection—center preflight checks, countdown, ignition, liftoff anticipation, and crew discipline; do not claim a destination was chosen, travel began, or a landing occurred</ritualGravship.instruction>
   <ritualGravship.tone>with technical pressure and launch-day focus</ritualGravship.tone>
-  <ritualGravship.tones.0>technical and procedural, centered on systems, thrust, flight, and touchdown</ritualGravship.tones.0>
-  <ritualGravship.tones.1>tense and crew-minded, with launch checks, hard vibration, and landing consequence</ritualGravship.tones.1>
+  <ritualGravship.tones.0>technical and procedural, centered on checks, systems, countdown, and readiness</ritualGravship.tones.0>
+  <ritualGravship.tones.1>tense and crew-minded, with launch discipline and restrained anticipation</ritualGravship.tones.1>
+  <odysseyGravshipLanding.label>Gravship landing</odysseyGravshipLanding.label>
+  <odysseyGravshipLanding.instruction>a gravship has successfully arrived—write the supplied journey reason, duration, POV role, ship, origin, and destination as first-person experience; treat a quest site only as an arrival, never as quest completion, and invent no hazards or outcomes beyond the supplied facts</odysseyGravshipLanding.instruction>
+  <odysseyGravshipLanding.tone>with arrival relief, crew focus, and the weight of a mobile home coming down</odysseyGravshipLanding.tone>
+  <odysseyGravshipLanding.tones.0>grounded and sensory, centered on descent, touchdown, and what this destination means</odysseyGravshipLanding.tones.0>
+  <odysseyGravshipLanding.tones.1>crew-minded and reflective, weighing the completed passage without inventing what follows</odysseyGravshipLanding.tones.1>
   <ritualAnomalyInvitation.label>Anomaly invitations</ritualAnomalyInvitation.label>
   <ritualAnomalyInvitation.instruction>a psychic ritual meant to call something toward the colony completed—center the pawn&apos;s captured perspective, deliberate invitation, and uncertainty; do not claim what arrived or what happened afterward</ritualAnomalyInvitation.instruction>
   <ritualAnomalyInvitation.tone>with deliberate invitation and uncertain dread</ritualAnomalyInvitation.tone>

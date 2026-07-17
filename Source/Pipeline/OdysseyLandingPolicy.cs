@@ -268,9 +268,65 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>Bounds the existing launch-ritual route without owning a second journey event.</summary>
+    internal static class OdysseyLaunchPolicy
+    {
+        /// <summary>
+        /// Allows the first observed launch and suppresses a later launch ceremony only while the
+        /// previous committed departure remains inside the XML-owned Odyssey cooldown.
+        /// </summary>
+        public static bool AllowsPage(int previousDepartureTick, int ritualTick, OdysseyPolicySnapshot policy)
+        {
+            OdysseyPolicySnapshot effective = policy ?? OdysseyPolicySnapshot.CreateDefault();
+            if (!effective.enabled || ritualTick < 0) return false;
+            if (previousDepartureTick < 0 || effective.launchCooldownTicks <= 0) return true;
+            return (long)ritualTick - previousDepartureTick >= effective.launchCooldownTicks;
+        }
+    }
+
     /// <summary>Applies landing mutations and old-save baselines to detached bounded history.</summary>
     internal static class OdysseyHistoryPolicy
     {
+        /// <summary>
+        /// Records one post-feature travel commit before landing. The origin becomes known history and
+        /// future first/new claims become trustworthy; callers enforce journey-id idempotence.
+        /// </summary>
+        public static OdysseyTravelHistorySnapshot ApplyDeparture(
+            OdysseyTravelHistorySnapshot source,
+            OdysseyJourneySnapshot journey,
+            OdysseyPolicySnapshot policy)
+        {
+            OdysseyPolicySnapshot effective = policy ?? OdysseyPolicySnapshot.CreateDefault();
+            OdysseyTravelHistorySnapshot result = Normalize(source, effective);
+            if (journey == null || journey.departureTick < 0
+                || string.IsNullOrWhiteSpace(journey.journeyId)
+                || string.IsNullOrWhiteSpace(journey.shipStableId))
+            {
+                return result;
+            }
+
+            result.historyInitialized = true;
+            result.historyTrustworthyForFirstClaims = true;
+            if (result.committedJourneyCount < int.MaxValue)
+            {
+                result.committedJourneyCount++;
+            }
+            result.lastDepartureTick = Math.Max(result.lastDepartureTick, journey.departureTick);
+            OdysseyLocationSnapshot origin = OdysseyLocationPolicy.Classify(journey.origin, effective);
+            AppendUnique(result.visitedLayerKeys, One(origin.layerToken), 8, true);
+            AppendUnique(result.visitedCategoryKeys, One(origin.categoryToken),
+                Positive(effective.maximumVisitedCategories, 64), true);
+            AppendUnique(result.visitedLocationKeys, One(origin.stableKey),
+                Positive(effective.maximumVisitedLocations, 128), true);
+            if (origin.isPlayerHome)
+            {
+                AppendUnique(result.homeKeys, One(origin.stableKey),
+                    Positive(effective.maximumHomeKeys, 32), true);
+            }
+
+            return result;
+        }
+
         /// <summary>Applies one plan idempotently and keeps newest unique rows under defensive caps.</summary>
         public static OdysseyTravelHistorySnapshot Apply(
             OdysseyTravelHistorySnapshot source,

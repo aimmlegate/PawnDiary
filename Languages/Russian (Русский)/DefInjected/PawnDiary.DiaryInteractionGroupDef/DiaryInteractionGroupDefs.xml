@@ -252,10 +252,15 @@
   <ritualChildbirth.tones.0>медицински, сокровенно и бережно вокруг боли, заботы, опасности и облегчения</ritualChildbirth.tones.0>
   <ritualChildbirth.tones.1>нежно, но без сентиментальности, с упором на тело, помощников и непосредственный исход</ritualChildbirth.tones.1>
   <ritualGravship.label>Запуск гравикорабля</ritualGravship.label>
-  <ritualGravship.instruction>завершён ритуал запуска или посадки гравикорабля; пиши технически, операционно и опасно: системы, отсчёт, подъём, полёт, посадка и дисциплина экипажа</ritualGravship.instruction>
+  <ritualGravship.instruction>завершена церемония отправления гравикорабля до выбора пункта назначения; сосредоточься на предстартовых проверках, отсчёте, зажигании, ожидании подъёма и дисциплине экипажа; не утверждай, что пункт назначения выбран, путешествие началось или посадка состоялась</ritualGravship.instruction>
   <ritualGravship.tone>с техническим давлением и сосредоточенностью дня запуска</ritualGravship.tone>
-  <ritualGravship.tones.0>технично и процедурно, с упором на системы, тягу, полёт и касание земли</ritualGravship.tones.0>
-  <ritualGravship.tones.1>напряжённо и по-экипажному, с предстартовыми проверками, жёсткой вибрацией и последствиями посадки</ritualGravship.tones.1>
+  <ritualGravship.tones.0>технично и процедурно, с упором на проверки, системы, отсчёт и готовность</ritualGravship.tones.0>
+  <ritualGravship.tones.1>напряжённо и по-экипажному, с дисциплиной запуска и сдержанным ожиданием</ritualGravship.tones.1>
+  <odysseyGravshipLanding.label>Посадка гравикорабля</odysseyGravshipLanding.label>
+  <odysseyGravshipLanding.instruction>гравикорабль успешно прибыл; опиши от первого лица переданные причину путешествия, его длительность, роль рассказчика, корабль, место отправления и назначения; место задания означает только прибытие, а не завершение задания; не выдумывай опасности и последствия сверх переданных фактов</odysseyGravshipLanding.instruction>
+  <odysseyGravshipLanding.tone>с облегчением прибытия, вниманием к экипажу и весом опускающегося мобильного дома</odysseyGravshipLanding.tone>
+  <odysseyGravshipLanding.tones.0>приземлённо и чувственно, с упором на снижение, касание земли и значение этого места</odysseyGravshipLanding.tones.0>
+  <odysseyGravshipLanding.tones.1>по-экипажному и задумчиво, осмысляя завершённый путь и не выдумывая продолжение</odysseyGravshipLanding.tones.1>
   <ritualAnomalyInvitation.label>Призывающие псионические ритуалы</ritualAnomalyInvitation.label>
   <ritualAnomalyInvitation.instruction>завершён псионический ритуал, призывающий нечто к поселению; держись переданной точки зрения, намеренного призыва и неизвестности, не утверждай, что именно явилось и что случилось потом</ritualAnomalyInvitation.instruction>
   <ritualAnomalyInvitation.tone>с намеренным призывом и тревогой неизвестности</ritualAnomalyInvitation.tone>

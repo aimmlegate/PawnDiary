@@ -222,6 +222,7 @@ namespace PawnDiary.Ingestion
                         contextDetailLevel = PawnDiarySettings.NormalizeContextDetailLevel(
                             PawnDiaryMod.Settings?.contextDetailLevel ?? PromptContextDetailLevel.Full),
                         biotech = BuildBiotechSnapshot(povPawn, child, value, policy),
+                        odyssey = sink?.OdysseyNarrativeSnapshotFor(povPawn, value.birthTick),
                         evidence = new List<NarrativeEvidence>
                         {
                             new NarrativeEvidence

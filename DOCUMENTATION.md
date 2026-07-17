@@ -52,11 +52,11 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge). |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
-| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including the guarded Odyssey location/mobile-home projection. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, and Odyssey journey/location/history/writer/context policy. |
+| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Odyssey location/mobile-home and lifecycle snapshots. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, and Odyssey lifecycle/journey/location/history/writer/context policy. |
 | `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including `DiaryOdysseyPolicyDef`. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey active-journey/history state. |
-| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches. |
+| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, and guarded Odyssey lifecycle seams. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper projects plus the optional in-game `PawnDiary.RimTest` smoke suite. |
@@ -164,7 +164,7 @@ Generation starts only after an event exists in the saved hot store.
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
 
-**Narrative Continuity (Master Waves 1–3 / N1 + N2-B)** supplies the shared persistence and
+**Narrative Continuity (Master Waves 1–4 / N1 + N2-B + N2-O)** supplies the shared persistence and
 optional prompt seam for DLC integrations. Each first-person event POV can save bounded, explicitly
 known evidence, prose-free references, selected-candidate keys, and frozen `narrativeContext`; old
 saves normalize all four to empty. `NarrativeContextBuilder` snapshots
@@ -180,9 +180,18 @@ enumerates genes, predicts a future xenotype, infers parental emotion, or create
 Only exact lesson/play/care counters qualify as observed upbringing; a prior recorded growth age alone
 does not turn a child-only arc into family evidence. Exact `Parent`/`ParentBirth` baseline rows qualify
 even when they have no activity count.
-Royalty, Ideology, Anomaly, and Odyssey provider slots intentionally return empty until their scheduled
-source waves. Provider absence, no Biotech, unconnected POVs, child-only arcs, or malformed translated
-format strings preserve the ordinary prompt with no narrative-context field.
+N2-O replaces the Odyssey stub with one bounded mobile-home provider candidate only when the guarded
+adapter proves the exact POV pawn is currently inside vanilla's grav field and captures an exact visible
+ship/location. A matching committed journey ID upgrades the lens to exact-arc relevance; a Biotech
+growth/family page aboard that ship may otherwise use it only as verified ambient home context. The
+DefInjected factual unit is frozen at event time, includes no engine/fuel/cell/hidden-site state, and
+creates no page. Pure departure/landing evidence factories freeze `departed`, `arrived`, and `returned`
+references, including exact ship/place subjects and an optional correlated departure event ID. O1.4's
+canonical landing owner now supplies arrival evidence only after its DiaryEvent exists; the factories
+still do not authorize an event themselves. Royalty, Ideology, and Anomaly provider slots remain empty
+until their scheduled source waves. Provider absence, no relevant DLC, unconnected POVs, child-only
+arcs, unknown locations/knowledge, or malformed translated format strings preserve the ordinary prompt
+with no narrative-context field.
 
 `DiaryPipelineAdapters` copy the frozen context into the plain payload, and first-person template
 fields render it only when non-empty, prefixed by DefInjected policy wording. All neutral chronicle and
@@ -191,7 +200,7 @@ so Full/Balanced/Compact budgets choose complete factual lenses before text is s
 never truncates a selected fact. Archive compaction copies
 only references and selection keys, and `DiaryArchiveRepository` rebuilds bounded pawn-scoped exact-arc
 and exact-subject indexes after load or retention. Source-specific pages remain their own sole capture
-owners; N2-B only enriches the already-authorized growth page and cannot create another event.
+owners; N2-B/N2-O only enrich already-authorized pages and cannot create another event.
 
 N0 froze exactly four evidence facets—`identity_transition`, `bond_lifecycle`,
 `journey_chapter`, and `ambient_pressure`—rather than creating generic DLC events. They cover the
@@ -199,7 +208,7 @@ planned Royalty persona/title/ascent moments, Ideology conversion/stance interpr
 growth/family/mechanitor moments, Anomaly visible transformation/monolith/containment pressure, and
 Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned grammar such as
 `biotech-family|&lt;birtherId&gt;|&lt;pregnancyHediffId&gt;` (or the child-ID fallback) and
-`odyssey-journey|&lt;journeyId&gt;`; they contain stable IDs only
+`odyssey-journey|&lt;shipStableId&gt;|&lt;departureTick&gt;`; they contain stable IDs only
 (never localized labels) and reference equality is ordinal/case-sensitive. N1 serializes the frozen
 additive save-key suffixes under each POV/archive row; it performs no retroactive inference or
 catch-up on older pages.
@@ -2065,8 +2074,8 @@ and gated by the persisted `errorReportingNoticeShown` flag) tells the player it
 | `biotechFamilyArcs` | detached stable-ID family continuity, exact pregnancy/labor/birth facts, bounded supporter observations, and summarized growth ages |
 | `pendingBiotechBirths` | detached exact birth snapshot, frozen adult writer order, and per-writer event-time prompt/display context while newborn naming is unresolved; no live Pawn, Thing, Corpse, or ritual reference; new owners use an XML admission limit of 256 by default, with established ownership preserved up to the hard 2048-row corruption ceiling. Pending rows, arcs, and growth rows are maintained (flush/fallback/prune) even when Biotech is later disabled, so a DLC-removed save shrinks instead of freezing |
 | `familyObservationVersion` | additive family old-save baseline version; prevents invented historical pregnancy/birth/activity catch-up |
-| `odysseyActiveJourney` | nullable detached active gravship journey (stable IDs, event-time labels, locations, qualitative launch state, and bounded writer facts); O1.2 only creates an incomplete row when baselining a save already in flight |
-| `odysseyTravelHistory` | versioned, bounded Odyssey novelty/home/cooldown history; missing old-save keys baseline silently with first/new claims disabled and never create a page |
+| `odysseyActiveJourney` | nullable detached active gravship journey (stable IDs, event-time labels, locations, qualitative launch state, and bounded writer facts); O1.3 commits it only after vanilla `TravelTo`, while an old save already in flight receives an explicitly incomplete baseline row |
+| `odysseyTravelHistory` | versioned, bounded Odyssey novelty/home/cooldown history; O1.3 records committed departure origins and successful landing observations, while missing old-save keys baseline silently with first/new claims disabled and never create a page |
 
 Hot events and archive rows are separate on purpose. Hot `DiaryEvent` rows keep prompts, retry state,
 raw/generated text, status, LLM metadata, titles, context, source ids, and per-role state. Compact
@@ -2160,13 +2169,27 @@ Never rename a key "for cleanliness" alone.
   DLL's assembly version (currently `2.4.1.0` in this checkout). It ships **only**
   `PawnDiary.dll` — it must never bundle `0Harmony.dll` in `1.6/Assemblies/`.
 - No paid DLC is required. Optional DLC data must no-op cleanly when absent.
-- Odyssey O1.0-O1.2 now provides the frozen contracts, XML policy, guarded live location/mobile-home
-  projection, and two additive detached save models. Every live read returns before touching Odyssey
+- Odyssey O1.0-O1.5 now provides the frozen contracts, XML policy, guarded live location/mobile-home
+  projection, two additive detached save models, state-only takeoff/travel boundaries, and one
+  canonical successful-landing event. Every
+  live read returns before touching Odyssey
   state unless `ModsConfig.OdysseyActive`; the policy XML contains only primitive values and plain
   Def-name strings. Missing old-save keys baseline silently and distrust first/new claims. O1.2 adds
   localized mobile-home surroundings only for a pawn vanilla confirms is inside the exact gravship
-  field. It still registers no takeoff/landing hook and creates no Odyssey page; O1.3 owns state-only
-  lifecycle hooks.
+  field. O1.3 captures `InitiateTakeoff` intent, commits an idempotent journey only from vanilla
+  `GravshipUtility.TravelTo`, snapshots `InitiateLanding`, and defensively patches private
+  `LandingEnded` to act only after successful completion. O1.4 adds `GravshipJourney`: meaningful
+  landings create one solo or pair-shaped event with at most two deterministic pilot/copilot/crew
+  POVs, while routine/disabled/duplicate/writerless landings update history only. Page tick and emitted
+  journey ID are committed only after the event exists. The existing launch Ritual owner is now
+  departure-only, Odyssey-package-gated, capped at two XML-configured writers, and cooled against the
+  prior committed departure; no takeoff or `TravelTo` page was added. O1.5 appends the landing schema
+  to both important prompt templates and marks phase, primary/secondary reason, duration, solo POV
+  role, ship, origin, and destination as required context, so Full/Balanced/Compact cannot erase the
+  facts the landing instruction asks the model to use. Supporting biome/site/crew/quality/roughness
+  fields remain available under budget. A localized Odyssey pair fixture exposes the same shape in
+  the dev prompt suite. Stable journey/ship/location IDs and ticks have no template field and remain
+  event-internal.
 - DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks. This
   includes Biotech growth trait/skill/work-disabled snapshots and Ideology precept/role reads used by
   body-mod stance policy; other code consumes plain detached rows, labels, defNames, or booleans.
@@ -2320,12 +2343,19 @@ by submitting the exact per-unit production signal the scanner emits, which keep
 deterministic; the suite README lists the two suites (death, raid) that still need a disposable colony
 because their vanilla trigger has un-restorable side effects.
 
-`PawnDiaryOdysseyJourneyFlowTests` covers the O1.2 boundary without starting a real gravship journey:
-the loaded XML policy and exact mappings, guarded active/inactive live map projection, vanilla's exact
-pawn-on-gravship predicate, prompt-safe mobile-home surroundings, both frozen component Scribe keys,
-missing-key old-save baselining, corrupt-journey rejection, and bounded newest-first history repair.
-O1.3 extends this suite with actual takeoff/travel/landing state transitions; O1.4 owns page/prompt
-emission tests.
+`PawnDiaryOdysseyJourneyFlowTests` covers the O1.2-O1.5 boundary without mutating a player's real
+gravship: loaded XML policy and mappings, guarded active/inactive map projection, vanilla's exact
+pawn-on-gravship predicate, prompt-safe mobile-home surroundings, both frozen Scribe keys,
+missing/corrupt/oversized load repair, exact Harmony registration, and detached
+intent→commit→landing component transitions. The flow asserts commit replay is idempotent, landing
+start does not touch novelty, an authorized landing without live writers advances observation history
+without consuming a page marker, and a major landing with two live diary writers creates exactly one
+pair-shaped event, freezes Odyssey context, commits one emitted journey ID, and rejects replay.
+O1.5 adds an eligible-writer routine hop that must update observation history without a page, the
+explicit no-pawn `TileSettled` drop, and a localized Odyssey prompt-suite render under Full,
+Balanced, and Compact. The assembly-free pipeline suite repeats the preset check with a deliberately
+exhausted optional budget and proves stable journey/ship/location IDs and ticks never cross the
+template boundary. The combined live Odyssey save run remains deferred until the batch is complete.
 
 The DLC-focused generic flows now include installed-Royalty positive scanner fixtures for a real
 `PsychicAmplifier` hediff and a disposable real `RoyalTitle`, each asserting exact context and repeat
@@ -2333,10 +2363,11 @@ suppression. Ideology and Anomaly ritual tests use internal copied-fact fixture 
 constructing their live ritual job objects would start a real colony ritual; only that reflective
 object extraction is bypassed. The fixtures still execute production fan-out ordering, pawn-ID
 uniqueness, colony dedup, child capture decisions, persisted solo pages, diary references, and prompt
-context for all four perspectives. `DiaryPipelineTests` separately pins the existing pre-O1 Odyssey
-plain-string routes for gravship launch, orbital debris, vacuum exposure, volcanic ash/flooding,
-prompt-only volcanic atmosphere, and vacuum enchantments. Odyssey journey/landing remains planned,
-not implied by these matcher tests.
+context for all four perspectives. `DiaryPipelineTests` separately pins Odyssey's package-gated,
+departure-only gravship launch group; exact `GravshipJourney` landing group/domain; XML-enabled novelty
+switch; orbital debris, vacuum exposure, volcanic ash/flooding, prompt-only volcanic atmosphere, and
+vacuum enchantments. `DiaryCapturePolicyTests` pins the canonical solo/pair/drop route, while
+`DiaryOdysseyPolicyTests` pins writer limits, novelty/history, context, and launch cooldown boundaries.
 
 Canonical birth context begins with `tale=BiotechFamilyBirth`, then carries the B1 child, outcome,
 method, and adult-role facts. The Tale marker is what makes saved-event/prompt classification recover

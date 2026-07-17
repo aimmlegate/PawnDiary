@@ -316,7 +316,8 @@ namespace PawnDiary
                     || Eq(contextKey, "quadrum")
                     || Eq(contextKey, "quadrum_dates")
                     || Eq(contextKey, "arc_year")
-                    || IsRequiredBiotechContextKey(contextKey)))
+                    || IsRequiredBiotechContextKey(contextKey)
+                    || IsRequiredOdysseyContextKey(contextKey)))
             {
                 return true;
             }
@@ -348,6 +349,24 @@ namespace PawnDiary
                 || Eq(contextKey, "birth_method")
                 || Eq(contextKey, "birther_died")
                 || Eq(contextKey, "ritual_birth");
+        }
+
+        /// <summary>
+        /// Keeps the minimum truth needed to write a gravship landing in every detail preset. The
+        /// remaining Odyssey fields (crew roster, biome/site labels, launch quality, and roughness)
+        /// are useful supporting evidence, but Compact may trim them before it trims the journey's
+        /// reason, duration, ship, origin, destination, or a solo writer's journey role.
+        /// </summary>
+        private static bool IsRequiredOdysseyContextKey(string contextKey)
+        {
+            return Eq(contextKey, "journey_phase")
+                || Eq(contextKey, "journey_reason")
+                || Eq(contextKey, "journey_secondary_reason")
+                || Eq(contextKey, "journey_duration")
+                || Eq(contextKey, "pov_journey_role")
+                || Eq(contextKey, "ship_name")
+                || Eq(contextKey, "origin")
+                || Eq(contextKey, "destination");
         }
 
         private static int Score(

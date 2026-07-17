@@ -54,6 +54,10 @@
       <HintPath>$(RimWorldManaged)\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>..\..\Source\Libs\0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="PawnDiary">
       <HintPath>$(PawnDiaryReference)</HintPath>
       <Private>False</Private>

@@ -2542,16 +2542,43 @@
     <domain>Ritual</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
-    <instruction>a gravship launch or landing ritual completed—write it as technical, operational, and dangerous: systems, countdown, lift, flight, landing, and crew discipline</instruction>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Odyssey</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a gravship departure ceremony completed before destination selection—center preflight checks, countdown, ignition, liftoff anticipation, and crew discipline; do not claim a destination was chosen, travel began, or a landing occurred</instruction>
     <tone>with technical pressure and launch-day focus</tone>
     <tones>
-      <li>technical and procedural, centered on systems, thrust, flight, and touchdown</li>
-      <li>tense and crew-minded, with launch checks, hard vibration, and landing consequence</li>
+      <li>technical and procedural, centered on checks, systems, countdown, and readiness</li>
+      <li>tense and crew-minded, with launch discipline and restrained anticipation</li>
     </tones>
     <matchTokens>
       <li>GravshipLaunch</li>
       <li>RitualBehaviorWorker_GravshipLaunch</li>
     </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Odyssey O1.4 canonical successful landing. TravelTo and landing start remain state-only;
+       this exact synthetic Def is emitted once after vanilla LandingEnded returns successfully. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>odysseyGravshipLanding</defName>
+    <label>Gravship landing</label>
+    <order>766</order>
+    <domain>GravshipJourney</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Odyssey</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a gravship has successfully arrived—write the supplied journey reason, duration, POV role, ship, origin, and destination as first-person experience; treat a quest site only as an arrival, never as quest completion, and invent no hazards or outcomes beyond the supplied facts</instruction>
+    <tone>with arrival relief, crew focus, and the weight of a mobile home coming down</tone>
+    <tones>
+      <li>grounded and sensory, centered on descent, touchdown, and what this destination means</li>
+      <li>crew-minded and reflective, weighing the completed passage without inventing what follows</li>
+    </tones>
+    <colorCue>eventful</colorCue>
+    <matchDefNames>
+      <li>OdysseyGravshipLanding</li>
+    </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
   <!-- Anomaly A0 exact psychic-ritual families. The saved classifier key is

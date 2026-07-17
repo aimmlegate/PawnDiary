@@ -110,6 +110,10 @@
   <PawnDiary.Dev.PromptSuite.BiotechBirth.Markers>biotech_birth=true; child_name=Rowan; birth_outcome=healthy; birth_method=pregnancy; birther_name={0}; father_name={1}; initiator_family_role=birther; recipient_family_role=father</PawnDiary.Dev.PromptSuite.BiotechBirth.Markers>
   <PawnDiary.Dev.PromptSuite.BiotechBirth.Initiator>A child was born, with {0} beside me.</PawnDiary.Dev.PromptSuite.BiotechBirth.Initiator>
   <PawnDiary.Dev.PromptSuite.BiotechBirth.Recipient>A child was born, with {0} beside me.</PawnDiary.Dev.PromptSuite.BiotechBirth.Recipient>
+  <PawnDiary.Dev.PromptSuite.OdysseyLanding.Label>Odyssey gravship landing</PawnDiary.Dev.PromptSuite.OdysseyLanding.Label>
+  <PawnDiary.Dev.PromptSuite.OdysseyLanding.Markers>odyssey_journey=true; journey_phase=landing; journey_reason=major_destination; journey_secondary_reason=long_journey; journey_duration=long; rough_landing=false; launch_quality=excellent; ship_name=Wayfarer; origin=Temperate forest; destination=Orbital mechhive; destination_layer=orbit; destination_biome=Orbit; destination_site=Orbital mechhive; pilot={0}; copilot={1}; crew_count=2</PawnDiary.Dev.PromptSuite.OdysseyLanding.Markers>
+  <PawnDiary.Dev.PromptSuite.OdysseyLanding.Initiator>{0} and I brought Wayfarer down at the orbital mechhive after a long passage; I served as pilot and {0} as copilot.</PawnDiary.Dev.PromptSuite.OdysseyLanding.Initiator>
+  <PawnDiary.Dev.PromptSuite.OdysseyLanding.Recipient>{0} and I brought Wayfarer down at the orbital mechhive after a long passage; I served as copilot and {0} as pilot.</PawnDiary.Dev.PromptSuite.OdysseyLanding.Recipient>
   <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>Forced yearly arc</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>
   <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>{0}'s memories from year 5504:&#10;- 4 Aprimay: survived a raid that left the workshop burned.&#10;- 8 Aprimay: reached Construction 12.&#10;- 2 Jugust: gained psylink level 3.&#10;- 9 Decembary: became a sanguophage.</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>
   <PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Label>Major-event arc</PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Label>
@@ -1418,6 +1422,14 @@
   <PawnDiary.Event.Biotech.Birth.Outcome.InfantIllness>the baby was born alive with immediate infant illness</PawnDiary.Event.Biotech.Birth.Outcome.InfantIllness>
   <PawnDiary.Event.Biotech.Birth.Outcome.Stillbirth>the child was stillborn</PawnDiary.Event.Biotech.Birth.Outcome.Stillbirth>
   <PawnDiary.Event.Biotech.Birth.BirtherDied>the birther died during childbirth</PawnDiary.Event.Biotech.Birth.BirtherDied>
+  <PawnDiary.Event.Odyssey.Landing.Label>Gravship landing</PawnDiary.Event.Odyssey.Landing.Label>
+  <PawnDiary.Event.Odyssey.Landing.Fallback>{0} helped bring {1} down at {2} as {3}.</PawnDiary.Event.Odyssey.Landing.Fallback>
+  <PawnDiary.Event.Odyssey.Landing.PairFallback>{0} helped bring {1} down at {2} as {3}, alongside {4} as {5}.</PawnDiary.Event.Odyssey.Landing.PairFallback>
+  <PawnDiary.Event.Odyssey.Role.Pilot>pilot</PawnDiary.Event.Odyssey.Role.Pilot>
+  <PawnDiary.Event.Odyssey.Role.Copilot>copilot</PawnDiary.Event.Odyssey.Role.Copilot>
+  <PawnDiary.Event.Odyssey.Role.Crew>crew</PawnDiary.Event.Odyssey.Role.Crew>
+  <PawnDiary.Event.Odyssey.ShipFallback>the gravship</PawnDiary.Event.Odyssey.ShipFallback>
+  <PawnDiary.Event.Odyssey.DestinationFallback>the landing site</PawnDiary.Event.Odyssey.DestinationFallback>
 
   <!-- Odyssey O1.2 mobile-home surroundings. -->
   <PawnDiary.Ctx.GravshipHome>aboard the gravship {0}</PawnDiary.Ctx.GravshipHome>

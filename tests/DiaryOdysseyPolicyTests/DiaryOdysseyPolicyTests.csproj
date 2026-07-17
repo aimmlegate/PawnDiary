@@ -13,6 +13,7 @@
     <Compile Include="..\..\Source\Pipeline\OdysseyLocationPolicy.cs" Link="OdysseyLocationPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\OdysseyWriterPolicy.cs" Link="OdysseyWriterPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\OdysseyLandingPolicy.cs" Link="OdysseyLandingPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\OdysseyLifecyclePolicy.cs" Link="OdysseyLifecyclePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\OdysseyContextFormatter.cs" Link="OdysseyContextFormatter.cs" />
   </ItemGroup>
 </Project>

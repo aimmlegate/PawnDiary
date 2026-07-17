@@ -287,6 +287,7 @@ namespace PawnDiary.Ingestion
                             familyArc,
                             policy,
                             diaryEvent.tick),
+                        odyssey = sink?.OdysseyNarrativeSnapshotFor(povPawn, diaryEvent.tick),
                         evidence = new List<NarrativeEvidence>
                         {
                             new NarrativeEvidence

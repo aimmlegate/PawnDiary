@@ -46,6 +46,7 @@ using PawnDiary.Capture;
 using PawnDiary.Integration;
 using RimTestRedux;
 using RimWorld;
+using RimWorld.Planet;
 using Verse;
 using Verse.AI.Group;
 
@@ -570,6 +571,22 @@ namespace PawnDiary.RimTests
             RequireMethod(typeof(LordJob_Ritual), "ApplyOutcome", typeof(void),
                 new[] { typeof(float), typeof(bool), typeof(bool), typeof(bool) });
             RequireMethod(typeof(LordToil_PsychicRitual), "RitualCompleted", typeof(void), Type.EmptyTypes);
+
+            Type gravshipController = typeof(WorldComponent_GravshipController);
+            RequireMethod(gravshipController, "InitiateTakeoff", typeof(void),
+                new[] { typeof(Building_GravEngine), typeof(PlanetTile) });
+            RequireMethod(typeof(GravshipUtility), "TravelTo", typeof(void),
+                new[] { typeof(Gravship), typeof(PlanetTile), typeof(PlanetTile) });
+            RequireMethod(gravshipController, "InitiateLanding", typeof(void),
+                new[] { typeof(Gravship), typeof(Map), typeof(IntVec3), typeof(Rot4) });
+            RequireMethod(gravshipController, "LandingEnded", typeof(void), Type.EmptyTypes);
+            RequireField(gravshipController, "gravship", typeof(Gravship));
+            RequireField(gravshipController, "map", typeof(Map));
+            RequireField(typeof(Building_GravEngine), "launchInfo", typeof(LaunchInfo));
+            RequireField(typeof(LaunchInfo), "pilot", typeof(Pawn));
+            RequireField(typeof(LaunchInfo), "copilot", typeof(Pawn));
+            RequireField(typeof(LaunchInfo), "quality", typeof(float));
+            RequireField(typeof(LaunchInfo), "doNegativeOutcome", typeof(bool));
         }
 
         /// <summary>
@@ -652,6 +669,8 @@ namespace PawnDiary.RimTests
         {
             Dictionary<string, string> expectedGroups = new Dictionary<string, string>
             {
+                { "ritualGravship", OdysseyPackageId },
+                { "odysseyGravshipLanding", OdysseyPackageId },
                 { "eventWindowVoidMonolith", AnomalyPackageId },
                 { "biotechFamilyBirth", BiotechPackageId },
                 { "ritualAnomalyInvitation", AnomalyPackageId },

@@ -12,6 +12,13 @@ namespace PawnDiary
         public const string Landing = "OdysseyGravshipLanding";
     }
 
+    /// <summary>Stable XML group keys shared by the launch adapter and landing owner.</summary>
+    internal static class OdysseyGroupDefNames
+    {
+        public const string Launch = "ritualGravship";
+        public const string Landing = "odysseyGravshipLanding";
+    }
+
     /// <summary>Additive component save keys frozen before Odyssey persistence is introduced.</summary>
     internal static class OdysseySaveKeys
     {
@@ -150,9 +157,12 @@ namespace PawnDiary
     internal sealed class OdysseyPolicySnapshot
     {
         public bool enabled = true;
+        public bool landingPageEnabled;
         public string packageId = "Ludeon.RimWorld.Odyssey";
-        public string launchGroupKey = "ritualGravship";
-        public string landingGroupKey = "odysseyGravshipLanding";
+        public string launchGroupKey = OdysseyGroupDefNames.Launch;
+        public string landingGroupKey = OdysseyGroupDefNames.Landing;
+        // Prompt prose is DefInjected at runtime. Empty is the safe no-Def fallback: omit the lens.
+        public string mobileHomeNarrativeFormat = string.Empty;
         public int takeoffCorrelationTicks = 2500;
         public int landingCorrelationTicks = 2500;
         public int staleJourneyRetentionTicks = 3600000;
@@ -267,6 +277,29 @@ namespace PawnDiary
         public int captureTick;
         public string launchQualityBand = OdysseyLaunchQualityTokens.Unknown;
         public bool roughLanding;
+        public List<OdysseyWriterCandidate> writers = new List<OdysseyWriterCandidate>();
+    }
+
+    /// <summary>Detached facts observed after vanilla commits a gravship to world travel.</summary>
+    internal sealed class OdysseyTravelCommitObservation
+    {
+        public string shipStableId = string.Empty;
+        public string engineId = string.Empty;
+        public string shipName = string.Empty;
+        public OdysseyLocationSnapshot origin;
+        public OdysseyLocationSnapshot destination;
+        public int departureTick;
+        public string launchQualityBand = OdysseyLaunchQualityTokens.Unknown;
+        public bool roughLanding;
+        public List<OdysseyWriterCandidate> writers = new List<OdysseyWriterCandidate>();
+    }
+
+    /// <summary>Transient detached landing facts retained only across the vanilla landing cutscene.</summary>
+    internal sealed class OdysseyPendingLanding
+    {
+        public string shipStableId = string.Empty;
+        public OdysseyLocationSnapshot destination;
+        public int captureTick;
         public List<OdysseyWriterCandidate> writers = new List<OdysseyWriterCandidate>();
     }
 

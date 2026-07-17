@@ -6,9 +6,12 @@
     <defName>Diary_Odyssey</defName>
     <label>Odyssey gravship journey policy</label>
     <enabled>true</enabled>
+    <!-- O1.3 observes lifecycle/history only. O1.4 enables the concrete landing event route. -->
+    <landingPageEnabled>true</landingPageEnabled>
     <packageId>Ludeon.RimWorld.Odyssey</packageId>
     <launchGroupKey>ritualGravship</launchGroupKey>
     <landingGroupKey>odysseyGravshipLanding</landingGroupKey>
+    <mobileHomeNarrativeFormat>At this event, the writer was aboard {0}, their exact gravship home at {1}.</mobileHomeNarrativeFormat>
     <takeoffCorrelationTicks>2500</takeoffCorrelationTicks>
     <landingCorrelationTicks>2500</landingCorrelationTicks>
     <staleJourneyRetentionTicks>3600000</staleJourneyRetentionTicks>

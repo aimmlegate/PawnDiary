@@ -142,6 +142,24 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>doctor</label><source>GameContext</source><contextKey>doctor_name</contextKey></li>
       <li><label>birther died</label><source>GameContext</source><contextKey>birther_died</contextKey></li>
       <li><label>ritual birth</label><source>GameContext</source><contextKey>ritual_birth</contextKey></li>
+      <!-- Odyssey O1.5 prompt projection. Append-only for the same indexed-localization reason as
+           Biotech above. Stable IDs, tile coordinates, ticks, and fuel remain event-internal. -->
+      <li><label>journey phase</label><source>GameContext</source><contextKey>journey_phase</contextKey></li>
+      <li><label>journey reason</label><source>GameContext</source><contextKey>journey_reason</contextKey></li>
+      <li><label>secondary journey reason</label><source>GameContext</source><contextKey>journey_secondary_reason</contextKey></li>
+      <li><label>journey duration</label><source>GameContext</source><contextKey>journey_duration</contextKey></li>
+      <li><label>journey role</label><source>GameContext</source><contextKey>pov_journey_role</contextKey></li>
+      <li><label>ship</label><source>GameContext</source><contextKey>ship_name</contextKey></li>
+      <li><label>origin</label><source>GameContext</source><contextKey>origin</contextKey></li>
+      <li><label>destination</label><source>GameContext</source><contextKey>destination</contextKey></li>
+      <li><label>destination layer</label><source>GameContext</source><contextKey>destination_layer</contextKey></li>
+      <li><label>destination biome</label><source>GameContext</source><contextKey>destination_biome</contextKey></li>
+      <li><label>destination site</label><source>GameContext</source><contextKey>destination_site</contextKey></li>
+      <li><label>pilot</label><source>GameContext</source><contextKey>pilot</contextKey></li>
+      <li><label>copilot</label><source>GameContext</source><contextKey>copilot</contextKey></li>
+      <li><label>crew count</label><source>GameContext</source><contextKey>crew_count</contextKey></li>
+      <li><label>rough landing</label><source>GameContext</source><contextKey>rough_landing</contextKey></li>
+      <li><label>launch quality</label><source>GameContext</source><contextKey>launch_quality</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -383,6 +401,24 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>doctor</label><source>GameContext</source><contextKey>doctor_name</contextKey></li>
       <li><label>birther died</label><source>GameContext</source><contextKey>birther_died</contextKey></li>
       <li><label>ritual birth</label><source>GameContext</source><contextKey>ritual_birth</contextKey></li>
+      <!-- Odyssey O1.5 prompt projection. Keep this append-only: DefInjected field labels below are
+           indexed, and moving an older row would silently attach the wrong translation. -->
+      <li><label>journey phase</label><source>GameContext</source><contextKey>journey_phase</contextKey></li>
+      <li><label>journey reason</label><source>GameContext</source><contextKey>journey_reason</contextKey></li>
+      <li><label>secondary journey reason</label><source>GameContext</source><contextKey>journey_secondary_reason</contextKey></li>
+      <li><label>journey duration</label><source>GameContext</source><contextKey>journey_duration</contextKey></li>
+      <li><label>journey role</label><source>GameContext</source><contextKey>pov_journey_role</contextKey></li>
+      <li><label>ship</label><source>GameContext</source><contextKey>ship_name</contextKey></li>
+      <li><label>origin</label><source>GameContext</source><contextKey>origin</contextKey></li>
+      <li><label>destination</label><source>GameContext</source><contextKey>destination</contextKey></li>
+      <li><label>destination layer</label><source>GameContext</source><contextKey>destination_layer</contextKey></li>
+      <li><label>destination biome</label><source>GameContext</source><contextKey>destination_biome</contextKey></li>
+      <li><label>destination site</label><source>GameContext</source><contextKey>destination_site</contextKey></li>
+      <li><label>pilot</label><source>GameContext</source><contextKey>pilot</contextKey></li>
+      <li><label>copilot</label><source>GameContext</source><contextKey>copilot</contextKey></li>
+      <li><label>crew count</label><source>GameContext</source><contextKey>crew_count</contextKey></li>
+      <li><label>rough landing</label><source>GameContext</source><contextKey>rough_landing</contextKey></li>
+      <li><label>launch quality</label><source>GameContext</source><contextKey>launch_quality</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

@@ -1,4 +1,4 @@
-// Standalone no-RimWorld tests for Master Wave 4 / Odyssey O1.1. The project links only the plain
+// Standalone no-RimWorld tests for Master Wave 4 / Odyssey O1 policy. The project links only the plain
 // contracts and pure policies, so any accidental Verse/Unity/Harmony dependency fails compilation.
 using System;
 using System.Collections.Generic;
@@ -16,10 +16,13 @@ namespace DiaryOdysseyPolicyTests
             TestExactLocationClassification();
             TestDeterministicWriterSelection();
             TestQualitativeBands();
+            TestLaunchCooldownPolicy();
             TestReasonPriorityAndHistoryMutation();
             TestCooldownAndBypass();
             TestUntrustedHistoryAndDropPaths();
             TestHistoryNormalizationAndOldSaveBaseline();
+            TestLifecycleCorrelationCommitAndDepartureHistory();
+            TestLifecycleFallbackExpiryAndLandingCorrelation();
             TestBoundedContextFormatting();
             Console.WriteLine("DiaryOdysseyPolicyTests passed " + assertions + " assertions.");
             return 0;
@@ -28,6 +31,8 @@ namespace DiaryOdysseyPolicyTests
         private static void TestFrozenSchemaAndArcKeys()
         {
             AssertEqual("landing event Def", "OdysseyGravshipLanding", OdysseyEventDefNames.Landing);
+            AssertEqual("launch group key", "ritualGravship", OdysseyGroupDefNames.Launch);
+            AssertEqual("landing group key", "odysseyGravshipLanding", OdysseyGroupDefNames.Landing);
             AssertEqual("active journey save key", "odysseyActiveJourney", OdysseySaveKeys.ActiveJourney);
             AssertEqual("history save key", "odysseyTravelHistory", OdysseySaveKeys.TravelHistory);
             AssertEqual("journey id", "odyssey-journey|Ship_7|0", OdysseyArcKeys.Journey(" Ship_7 ", 0));
@@ -110,6 +115,23 @@ namespace DiaryOdysseyPolicyTests
             AssertEqual("ordinary quality", "ordinary", OdysseyJourneyPolicy.LaunchQualityBand(0.5f, policy));
             AssertEqual("excellent quality", "excellent", OdysseyJourneyPolicy.LaunchQualityBand(0.9f, policy));
             AssertEqual("NaN quality unknown", "unknown", OdysseyJourneyPolicy.LaunchQualityBand(float.NaN, policy));
+        }
+
+        private static void TestLaunchCooldownPolicy()
+        {
+            OdysseyPolicySnapshot policy = Policy();
+            policy.launchCooldownTicks = 60000;
+            AssertTrue("first launch ritual allowed", OdysseyLaunchPolicy.AllowsPage(-1, 100, policy));
+            AssertTrue("launch inside prior-departure cooldown drops",
+                !OdysseyLaunchPolicy.AllowsPage(100, 60099, policy));
+            AssertTrue("launch at cooldown boundary allowed",
+                OdysseyLaunchPolicy.AllowsPage(100, 60100, policy));
+            policy.launchCooldownTicks = 0;
+            AssertTrue("disabled launch cooldown allows repeat",
+                OdysseyLaunchPolicy.AllowsPage(100, 101, policy));
+            policy.enabled = false;
+            AssertTrue("disabled Odyssey policy suppresses launch adapter",
+                !OdysseyLaunchPolicy.AllowsPage(-1, 100, policy));
         }
 
         private static void TestReasonPriorityAndHistoryMutation()
@@ -243,6 +265,115 @@ namespace DiaryOdysseyPolicyTests
             AssertTrue("established trust not reset", repeated.historyTrustworthyForFirstClaims);
             AssertEqual("established feature tick preserved", 1234, repeated.featureStartTick);
             AssertTrue("repeated baseline does not add location", !repeated.visitedLocationKeys.Contains("other"));
+        }
+
+        private static void TestLifecycleCorrelationCommitAndDepartureHistory()
+        {
+            OdysseyPolicySnapshot policy = Policy();
+            OdysseyTakeoffIntent intent = new OdysseyTakeoffIntent
+            {
+                engineId = "Thing_Engine7",
+                shipName = "Wayfarer",
+                origin = Location("home-a", "surface", "Biome_Frozen", string.Empty),
+                selectedTargetKey = "orbit-b",
+                captureTick = 100,
+                launchQualityBand = OdysseyLaunchQualityTokens.Excellent,
+                roughLanding = true,
+                writers = new List<OdysseyWriterCandidate> { Writer("Pilot", "pilot", true, true, true) }
+            };
+            intent.origin.isPlayerHome = true;
+            OdysseyTravelCommitObservation commit = new OdysseyTravelCommitObservation
+            {
+                shipStableId = "WorldObject_12",
+                engineId = "Thing_Engine7",
+                shipName = string.Empty,
+                origin = Location("fallback-origin", "surface", string.Empty, string.Empty),
+                destination = Location("orbit-b", "orbit", "Biome_Frozen", string.Empty),
+                departureTick = 200,
+                launchQualityBand = OdysseyLaunchQualityTokens.Poor,
+                writers = new List<OdysseyWriterCandidate> { Writer("Crew", "crew", true, true, true) }
+            };
+
+            bool matched;
+            OdysseyJourneySnapshot journey = OdysseyLifecyclePolicy.BuildJourney(
+                commit, intent, policy, out matched);
+            AssertTrue("exact timely takeoff intent correlates", matched);
+            AssertEqual("commit owns stable journey id", "odyssey-journey|WorldObject_12|200", journey.journeyId);
+            AssertEqual("matched intent supplies missing ship name", "Wayfarer", journey.shipName);
+            AssertEqual("matched intent preserves pre-despawn origin", "home-a", journey.origin.stableKey);
+            AssertEqual("matched intent preserves launch quality", "excellent", journey.launchQualityBand);
+            AssertTrue("matched intent preserves coarse rough flag", journey.roughLanding);
+            AssertTrue("matched intent marks complete source", journey.sourceComplete);
+            AssertEqual("matched intent writers win", "Pilot", journey.writers[0].pawnId);
+
+            OdysseyTravelHistorySnapshot history = OdysseyHistoryPolicy.ApplyDeparture(
+                new OdysseyTravelHistorySnapshot(), journey, policy);
+            AssertTrue("post-feature departure initializes trustworthy history",
+                history.historyInitialized && history.historyTrustworthyForFirstClaims);
+            AssertEqual("departure increments committed count", 1, history.committedJourneyCount);
+            AssertEqual("departure tick recorded", 200, history.lastDepartureTick);
+            AssertTrue("departure seeds exact origin", history.visitedLocationKeys.Contains("home-a"));
+            AssertTrue("departure seeds former home", history.homeKeys.Contains("home-a"));
+            AssertEqual("departure does not fake landing observation", -1, history.lastLandingObservationTick);
+
+            history.committedJourneyCount = int.MaxValue;
+            OdysseyTravelHistorySnapshot saturated = OdysseyHistoryPolicy.ApplyDeparture(
+                history, journey, policy);
+            AssertEqual("departure count saturates instead of overflowing",
+                int.MaxValue, saturated.committedJourneyCount);
+        }
+
+        private static void TestLifecycleFallbackExpiryAndLandingCorrelation()
+        {
+            OdysseyPolicySnapshot policy = Policy();
+            policy.takeoffCorrelationTicks = 50;
+            policy.landingCorrelationTicks = 75;
+            OdysseyTakeoffIntent stale = new OdysseyTakeoffIntent
+            {
+                engineId = "Thing_Engine7",
+                selectedTargetKey = "target",
+                captureTick = 100,
+                origin = Location("old-origin", "surface", string.Empty, string.Empty)
+            };
+            OdysseyTravelCommitObservation commit = new OdysseyTravelCommitObservation
+            {
+                shipStableId = "WorldObject_12",
+                engineId = "Thing_Engine7",
+                shipName = "Wayfarer",
+                origin = Location("fallback-origin", "surface", string.Empty, string.Empty),
+                destination = Location("target", "orbit", string.Empty, string.Empty),
+                departureTick = 151,
+                launchQualityBand = OdysseyLaunchQualityTokens.Ordinary,
+                writers = new List<OdysseyWriterCandidate> { Writer("Crew", "crew", true, true, true) }
+            };
+
+            bool matched;
+            OdysseyJourneySnapshot fallback = OdysseyLifecyclePolicy.BuildJourney(
+                commit, stale, policy, out matched);
+            AssertTrue("expired takeoff intent rejected", !matched);
+            AssertEqual("fallback uses commit origin", "fallback-origin", fallback.origin.stableKey);
+            AssertTrue("fallback is explicitly incomplete", !fallback.sourceComplete);
+            AssertEqual("fallback uses live commit writer", "Crew", fallback.writers[0].pawnId);
+
+            stale.captureTick = 150;
+            stale.selectedTargetKey = "other-target";
+            fallback = OdysseyLifecyclePolicy.BuildJourney(commit, stale, policy, out matched);
+            AssertTrue("wrong target intent rejected", !matched);
+
+            OdysseyPendingLanding pending = new OdysseyPendingLanding
+            {
+                shipStableId = "WorldObject_12",
+                captureTick = 1000,
+                destination = Location("target", "orbit", string.Empty, string.Empty)
+            };
+            AssertTrue("timely exact pending landing correlates",
+                OdysseyLifecyclePolicy.PendingLandingMatches(pending, "WorldObject_12", 1075, policy));
+            AssertTrue("wrong ship pending landing rejected",
+                !OdysseyLifecyclePolicy.PendingLandingMatches(pending, "WorldObject_13", 1075, policy));
+            AssertTrue("expired pending landing rejected",
+                !OdysseyLifecyclePolicy.PendingLandingMatches(pending, "WorldObject_12", 1076, policy));
+            AssertTrue("backward transient time expires safely",
+                OdysseyLifecyclePolicy.IsExpired(100, 99, 1000));
         }
 
         private static void TestBoundedContextFormatting()

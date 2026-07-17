@@ -25,6 +25,7 @@ namespace PawnDiary
         public const string Ability = "Ability";
         public const string Progression = "Progression";
         public const string Reflection = "Reflection";
+        public const string GravshipJourney = "GravshipJourney";
         public const string External = "External";
 
         /// <summary>
@@ -34,6 +35,7 @@ namespace PawnDiary
         public static string DomainForContext(string context)
         {
             if (DiaryContextFields.HasMarker(context, "external=")) return External;
+            if (DiaryContextFields.HasMarker(context, "odyssey_journey=")) return GravshipJourney;
             if (DiaryContextFields.HasMarker(context, "tale=")) return Tale;
             if (DiaryContextFields.HasMarker(context, "mood_event=")) return MoodEvent;
             if (DiaryContextFields.HasMarker(context, "thought=")) return Thought;

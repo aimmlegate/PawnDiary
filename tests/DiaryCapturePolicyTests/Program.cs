@@ -83,6 +83,7 @@ namespace DiaryCapturePolicyTests
             TestArcReflectionDecide();
             TestArcReflectionBuildGameContextFormat();
             TestBiotechCatalogDecisions();
+            TestGravshipJourneyCatalogDecisions();
             TestMonolithActivationProvenance();
             TestCatalogDispatch();
             TestCatalogContract();
@@ -452,6 +453,8 @@ namespace DiaryCapturePolicyTests
                 TaleEventData.Decide(
                     new TaleEventData { DefName = "KilledMan" },  // FirstEligible/SecondEligible default false
                     Ctx()));
+            AssertEqual("Odyssey TileSettled no-pawn Tale stays unowned", CaptureDecision.Drop,
+                TaleEventData.Decide(new TaleEventData { DefName = "TileSettled" }, Ctx()));
 
             // Final shape: single eligible pawn → solo.
             AssertEqual("tale first-only eligible generates solo", CaptureDecision.GenerateSolo,
@@ -1599,6 +1602,39 @@ namespace DiaryCapturePolicyTests
             AssertEqual("birth stable dedup", "birth|biotech-family|Child_1", birth.DedupKey());
         }
 
+        private static void TestGravshipJourneyCatalogDecisions()
+        {
+            GravshipJourneyEventData landing = new GravshipJourneyEventData
+            {
+                JourneyId = "odyssey-journey|Ship_1|100",
+                ShipStableId = "Ship_1",
+                DepartureTick = 100,
+                HasValidPlan = true,
+                WritePage = true,
+                FirstWriterId = "Pilot_1",
+                FirstWriterEligible = true
+            };
+            AssertEqual("Odyssey one writer solo", CaptureDecision.GenerateSolo,
+                GravshipJourneyEventData.Decide(landing, Ctx()));
+            landing.SecondWriterId = "Copilot_1";
+            landing.SecondWriterEligible = true;
+            AssertEqual("Odyssey two writers one pair event", CaptureDecision.GeneratePair,
+                GravshipJourneyEventData.Decide(landing, Ctx()));
+            landing.SecondWriterId = landing.FirstWriterId;
+            AssertEqual("Odyssey duplicate writer remains solo", CaptureDecision.GenerateSolo,
+                GravshipJourneyEventData.Decide(landing, Ctx()));
+            landing.SecondWriterId = "Copilot_1";
+            landing.WritePage = false;
+            AssertEqual("Odyssey routine landing drops", CaptureDecision.Drop,
+                GravshipJourneyEventData.Decide(landing, Ctx()));
+            landing.WritePage = true;
+            landing.AlreadyRecorded = true;
+            AssertEqual("Odyssey durable replay drops", CaptureDecision.Drop,
+                GravshipJourneyEventData.Decide(landing, Ctx()));
+            landing.AlreadyRecorded = false;
+            AssertEqual("Odyssey landing dedup", "odyssey-landing|Ship_1|100", landing.DedupKey());
+        }
+
         private static void TestMonolithActivationProvenance()
         {
             AssertTrue("past-due monolith timer is automatic",
@@ -1751,6 +1787,20 @@ namespace DiaryCapturePolicyTests
                     FirstWriterId = "Adult_1",
                     FirstWriterEligible = true,
                     HasValidSnapshot = true
+                }, Ctx()));
+
+            DiaryEventSpec landingSpec = DiaryEventCatalog.Get(DiaryEventType.GravshipJourney);
+            AssertTrue("catalog has GravshipJourney spec", landingSpec is GravshipJourneyEventSpec);
+            AssertEqual("catalog dispatches GravshipJourney decision", CaptureDecision.GenerateSolo,
+                landingSpec.Decide(new GravshipJourneyEventData
+                {
+                    JourneyId = "odyssey-journey|Ship_1|100",
+                    ShipStableId = "Ship_1",
+                    DepartureTick = 100,
+                    HasValidPlan = true,
+                    WritePage = true,
+                    FirstWriterId = "Pilot_1",
+                    FirstWriterEligible = true
                 }, Ctx()));
 
             // Unregistered spec returns null — callers must treat as Drop.

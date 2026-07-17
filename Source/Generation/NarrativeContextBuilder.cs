@@ -1,7 +1,7 @@
 // Event-time adapter for Narrative Continuity. Source-owned events supply already-authorized, plain
 // evidence and guarded providers supply factual candidates; this builder snapshots XML policy on the
-// main thread, queries the fixed pure provider list, and calls the pure selector. N2-B adds the first
-// real provider through a detached Biotech snapshot; other provider rows remain deliberate empty stubs.
+// main thread, queries the fixed pure provider list, and calls the pure selector. N2-B and N2-O add
+// detached Biotech and Odyssey snapshots; other provider rows remain deliberate empty stubs.
 //
 // New to C#/RimWorld? See AGENTS.md ("DLC-safety" and "architecture barriers").
 using System;
@@ -25,6 +25,7 @@ namespace PawnDiary
         // Core fixture candidates remain a narrow test seam beside the fixed provider list.
         public List<NarrativeLensCandidate> coreCandidates = new List<NarrativeLensCandidate>();
         public BiotechNarrativeSnapshot biotech;
+        public OdysseyNarrativeSnapshot odyssey;
         public List<string> recentSelectedCandidateKeys = new List<string>();
         public PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full;
         public int deterministicSeed = 1;
@@ -89,7 +90,8 @@ namespace PawnDiary
                 List<NarrativeLensCandidate> candidates = NarrativeProviderOrchestrator.Collect(
                     result.evidence,
                     request.coreCandidates,
-                    request.biotech);
+                    request.biotech,
+                    request.odyssey);
                 result.selection = NarrativeContextSelector.Select(new NarrativeContextRequest
                 {
                     evidence = result.evidence,

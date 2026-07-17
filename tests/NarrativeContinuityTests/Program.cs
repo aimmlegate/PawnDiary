@@ -1,5 +1,5 @@
-// Standalone, no-RimWorld checks for Master Wave 0 / Narrative Continuity N0. The project file links
-// only pure source, which makes any accidental Verse/Unity/DLC dependency a compile-time failure.
+// Standalone, no-RimWorld checks for the shared Narrative Continuity layer through N2-O. The project
+// file links only pure source, making any accidental Verse/Unity/DLC dependency a compile-time failure.
 using System;
 using System.Collections.Generic;
 using PawnDiary;
@@ -21,6 +21,7 @@ namespace NarrativeContinuityTests
             TestReferenceEqualityAndDeduplication();
             TestPersistenceCapsAndPromptFormatting();
             TestBiotechProviderApplicabilityAndTruthGates();
+            TestOdysseyProviderEvidenceAndCrossDlcGates();
             TestReflectionPriorityAndDeferredConsumption();
             Console.WriteLine("NarrativeContinuityTests passed " + assertions + " assertions.");
             return 0;
@@ -136,10 +137,121 @@ namespace NarrativeContinuityTests
                 new List<NarrativeEvidence> { evidence },
                 new List<NarrativeLensCandidate> { Candidate("core-first", NarrativeCategoryTokens.Home,
                     NarrativeFacetTokens.IdentityTransition) },
-                snapshot);
+                snapshot,
+                null);
             AssertEqual("fixed provider list preserves core-first deterministic order", "core-first",
                 fixedOrder[0].candidateKey);
             AssertEqual("empty future provider stubs add no candidates", 3, fixedOrder.Count);
+        }
+
+        private static void TestOdysseyProviderEvidenceAndCrossDlcGates()
+        {
+            NarrativeEvidence familyEvidence = Evidence();
+            familyEvidence.facet = NarrativeFacetTokens.BondLifecycle;
+            familyEvidence.beliefTopics = new List<string> { "family" };
+            OdysseyNarrativeSnapshot snapshot = new OdysseyNarrativeSnapshot
+            {
+                providerAvailable = true,
+                povPawnId = "pawn-1",
+                shipStableId = "WorldObject_12",
+                shipName = "Wayfarer",
+                journeyId = "odyssey-journey|WorldObject_12|800",
+                locationKey = "planet-layer-1-tile-42",
+                locationLabel = "Frozen plain",
+                homeText = "At this event, the writer was aboard Wayfarer at the frozen plain.",
+                sourceTick = 1000,
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true
+            };
+
+            List<NarrativeLensCandidate> candidates = OdysseyNarrativeProvider.Build(
+                new List<NarrativeEvidence> { familyEvidence }, snapshot);
+            AssertEqual("exact occupied Odyssey home yields one bounded candidate", 1, candidates.Count);
+            AssertEqual("Odyssey candidate owns home category", NarrativeCategoryTokens.Home,
+                candidates[0].category);
+            AssertEqual("Odyssey candidate carries committed journey arc", snapshot.journeyId,
+                candidates[0].arcKey);
+            AssertEqual("Odyssey candidate identifies exact ship", snapshot.shipStableId,
+                candidates[0].subjectId);
+
+            NarrativeContextSelection familySelection = NarrativeContextSelector.Select(
+                new NarrativeContextRequest
+                {
+                    policy = NarrativePolicySnapshot.CreateDefault(),
+                    currentTick = 1000,
+                    evidence = new List<NarrativeEvidence> { familyEvidence },
+                    candidates = candidates,
+                    detailLevel = NarrativeDetailLevelTokens.Full
+                });
+            AssertEqual("family event aboard exact gravship selects one home lens", 1,
+                familySelection.selectedCandidates.Count);
+            AssertTrue("cross-DLC family/home relevance stays verified ambient",
+                familySelection.selectionReasons.Contains(NarrativeRelationshipTokens.Ambient));
+
+            snapshot.providerAvailable = false;
+            AssertEqual("inactive Odyssey provider is silent", 0,
+                OdysseyNarrativeProvider.Build(new List<NarrativeEvidence> { familyEvidence }, snapshot).Count);
+            snapshot.providerAvailable = true;
+            snapshot.pawnCanKnow = false;
+            AssertEqual("unknown Odyssey home fails closed", 0,
+                OdysseyNarrativeProvider.Build(new List<NarrativeEvidence> { familyEvidence }, snapshot).Count);
+            snapshot.pawnCanKnow = true;
+            snapshot.hasVerifiedPovConnection = false;
+            AssertEqual("pawn outside exact grav field receives no Odyssey lens", 0,
+                OdysseyNarrativeProvider.Build(new List<NarrativeEvidence> { familyEvidence }, snapshot).Count);
+            snapshot.hasVerifiedPovConnection = true;
+            snapshot.povPawnId = "different-pawn";
+            AssertEqual("provider snapshot must match the exact evidence POV", 0,
+                OdysseyNarrativeProvider.Build(new List<NarrativeEvidence> { familyEvidence }, snapshot).Count);
+            snapshot.povPawnId = "pawn-1";
+            string location = snapshot.locationKey;
+            snapshot.locationKey = string.Empty;
+            AssertEqual("unknown location receives no Odyssey lens", 0,
+                OdysseyNarrativeProvider.Build(new List<NarrativeEvidence> { familyEvidence }, snapshot).Count);
+            snapshot.locationKey = location;
+
+            List<NarrativeEvidence> departure = OdysseyNarrativeEvidenceFactory.Departure(
+                "departure-event", 800, "pawn-1", "pilot", snapshot.journeyId,
+                snapshot.shipStableId, snapshot.shipName, "Ritual", true);
+            AssertEqual("committed departure creates one ship evidence row", 1, departure.Count);
+            AssertEqual("departure phase is frozen", OdysseyNarrativePhaseTokens.Departed,
+                departure[0].phase);
+            AssertEqual("departure evidence keeps exact journey arc", snapshot.journeyId,
+                departure[0].arcKey);
+            NarrativeReference departureReference = NarrativeReferencePolicy.FromEvidence(departure[0]);
+            AssertEqual("departure reference keeps exact ship subject", NarrativeSubjectKindTokens.Ship,
+                departureReference.subjectKind);
+
+            List<NarrativeEvidence> landing = OdysseyNarrativeEvidenceFactory.Landing(
+                "landing-event", 1200, "pawn-1", "pilot", snapshot.journeyId,
+                snapshot.shipStableId, snapshot.shipName, snapshot.locationKey, snapshot.locationLabel,
+                "departure-event", "GravshipJourney", true, true);
+            AssertEqual("landing creates exact ship and visible-place evidence", 2, landing.Count);
+            AssertEqual("homecoming phase is returned", OdysseyNarrativePhaseTokens.Returned,
+                landing[0].phase);
+            AssertEqual("landing place reference is exact", NarrativeSubjectKindTokens.Place,
+                landing[1].subjectKind);
+            AssertEqual("landing links the correlated departure", "departure-event",
+                landing[0].relatedEventId);
+
+            NarrativeContextSelection landingSelection = NarrativeContextSelector.Select(
+                new NarrativeContextRequest
+                {
+                    policy = NarrativePolicySnapshot.CreateDefault(),
+                    currentTick = 1200,
+                    evidence = landing,
+                    candidates = candidates,
+                    detailLevel = NarrativeDetailLevelTokens.Full
+                });
+            AssertEqual("landing selects matching journey home once", 1,
+                landingSelection.selectedCandidates.Count);
+            AssertTrue("landing/home match is exact arc",
+                landingSelection.selectionReasons.Contains(NarrativeRelationshipTokens.ExactArc));
+
+            AssertEqual("missing ship identity creates no departure evidence", 0,
+                OdysseyNarrativeEvidenceFactory.Departure(
+                    "bad", 1, "pawn-1", "crew", snapshot.journeyId,
+                    string.Empty, string.Empty, "Ritual", true).Count);
         }
 
         private static void TestScorePrecedenceAndTerminalRelevance()

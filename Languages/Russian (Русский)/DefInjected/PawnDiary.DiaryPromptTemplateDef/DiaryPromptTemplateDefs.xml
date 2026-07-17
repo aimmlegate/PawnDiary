@@ -474,4 +474,38 @@
   <DiaryPromptTemplate_SoloImportant.fields.71.label>родивший родитель умер</DiaryPromptTemplate_SoloImportant.fields.71.label>
   <DiaryPromptTemplate_SoloImportant.fields.72.label>ритуальные роды</DiaryPromptTemplate_SoloImportant.fields.72.label>
 
+  <!-- Поля подсказки Odyssey O1.5; только добавление в конец. -->
+  <DiaryPromptTemplate_PairImportant.fields.58.label>этап путешествия</DiaryPromptTemplate_PairImportant.fields.58.label>
+  <DiaryPromptTemplate_PairImportant.fields.59.label>причина путешествия</DiaryPromptTemplate_PairImportant.fields.59.label>
+  <DiaryPromptTemplate_PairImportant.fields.60.label>дополнительная причина путешествия</DiaryPromptTemplate_PairImportant.fields.60.label>
+  <DiaryPromptTemplate_PairImportant.fields.61.label>длительность путешествия</DiaryPromptTemplate_PairImportant.fields.61.label>
+  <DiaryPromptTemplate_PairImportant.fields.62.label>роль в путешествии</DiaryPromptTemplate_PairImportant.fields.62.label>
+  <DiaryPromptTemplate_PairImportant.fields.63.label>корабль</DiaryPromptTemplate_PairImportant.fields.63.label>
+  <DiaryPromptTemplate_PairImportant.fields.64.label>место отправления</DiaryPromptTemplate_PairImportant.fields.64.label>
+  <DiaryPromptTemplate_PairImportant.fields.65.label>место назначения</DiaryPromptTemplate_PairImportant.fields.65.label>
+  <DiaryPromptTemplate_PairImportant.fields.66.label>слой назначения</DiaryPromptTemplate_PairImportant.fields.66.label>
+  <DiaryPromptTemplate_PairImportant.fields.67.label>биом назначения</DiaryPromptTemplate_PairImportant.fields.67.label>
+  <DiaryPromptTemplate_PairImportant.fields.68.label>объект назначения</DiaryPromptTemplate_PairImportant.fields.68.label>
+  <DiaryPromptTemplate_PairImportant.fields.69.label>пилот</DiaryPromptTemplate_PairImportant.fields.69.label>
+  <DiaryPromptTemplate_PairImportant.fields.70.label>второй пилот</DiaryPromptTemplate_PairImportant.fields.70.label>
+  <DiaryPromptTemplate_PairImportant.fields.71.label>численность экипажа</DiaryPromptTemplate_PairImportant.fields.71.label>
+  <DiaryPromptTemplate_PairImportant.fields.72.label>жёсткая посадка</DiaryPromptTemplate_PairImportant.fields.72.label>
+  <DiaryPromptTemplate_PairImportant.fields.73.label>качество запуска</DiaryPromptTemplate_PairImportant.fields.73.label>
+  <DiaryPromptTemplate_SoloImportant.fields.73.label>этап путешествия</DiaryPromptTemplate_SoloImportant.fields.73.label>
+  <DiaryPromptTemplate_SoloImportant.fields.74.label>причина путешествия</DiaryPromptTemplate_SoloImportant.fields.74.label>
+  <DiaryPromptTemplate_SoloImportant.fields.75.label>дополнительная причина путешествия</DiaryPromptTemplate_SoloImportant.fields.75.label>
+  <DiaryPromptTemplate_SoloImportant.fields.76.label>длительность путешествия</DiaryPromptTemplate_SoloImportant.fields.76.label>
+  <DiaryPromptTemplate_SoloImportant.fields.77.label>роль в путешествии</DiaryPromptTemplate_SoloImportant.fields.77.label>
+  <DiaryPromptTemplate_SoloImportant.fields.78.label>корабль</DiaryPromptTemplate_SoloImportant.fields.78.label>
+  <DiaryPromptTemplate_SoloImportant.fields.79.label>место отправления</DiaryPromptTemplate_SoloImportant.fields.79.label>
+  <DiaryPromptTemplate_SoloImportant.fields.80.label>место назначения</DiaryPromptTemplate_SoloImportant.fields.80.label>
+  <DiaryPromptTemplate_SoloImportant.fields.81.label>слой назначения</DiaryPromptTemplate_SoloImportant.fields.81.label>
+  <DiaryPromptTemplate_SoloImportant.fields.82.label>биом назначения</DiaryPromptTemplate_SoloImportant.fields.82.label>
+  <DiaryPromptTemplate_SoloImportant.fields.83.label>объект назначения</DiaryPromptTemplate_SoloImportant.fields.83.label>
+  <DiaryPromptTemplate_SoloImportant.fields.84.label>пилот</DiaryPromptTemplate_SoloImportant.fields.84.label>
+  <DiaryPromptTemplate_SoloImportant.fields.85.label>второй пилот</DiaryPromptTemplate_SoloImportant.fields.85.label>
+  <DiaryPromptTemplate_SoloImportant.fields.86.label>численность экипажа</DiaryPromptTemplate_SoloImportant.fields.86.label>
+  <DiaryPromptTemplate_SoloImportant.fields.87.label>жёсткая посадка</DiaryPromptTemplate_SoloImportant.fields.87.label>
+  <DiaryPromptTemplate_SoloImportant.fields.88.label>качество запуска</DiaryPromptTemplate_SoloImportant.fields.88.label>
+
 </LanguageData>

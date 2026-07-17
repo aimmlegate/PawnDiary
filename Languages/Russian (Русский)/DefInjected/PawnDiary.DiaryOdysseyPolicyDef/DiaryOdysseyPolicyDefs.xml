@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <Diary_Odyssey.label>Политика путешествий гравилёта Odyssey</Diary_Odyssey.label>
+  <Diary_Odyssey.mobileHomeNarrativeFormat>В момент этого события автор был на борту {0}, своего гравилёта-дома в точке {1}.</Diary_Odyssey.mobileHomeNarrativeFormat>
 </LanguageData>

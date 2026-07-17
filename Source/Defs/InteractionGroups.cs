@@ -26,7 +26,8 @@ namespace PawnDiary
     // fans out to three groups; Ritual groups match Precept_Ritual defNames from finished Ideology rituals.
     // Ability groups match AbilityDef defNames/category tokens from successful Ability.Activate.
     // Progression groups match synthetic source tokens from the pawn progression scanner.
-    // Reflection groups match synthetic day/quadrum/arc reflection source tokens.
+    // Reflection groups match synthetic day/quadrum/arc reflection source tokens. GravshipJourney
+    // matches the one synthetic Odyssey successful-landing Def name.
     // External groups match the eventKey strings other mods submit through the public
     // integration API (PawnDiary.Integration.PawnDiaryApi); adapter mods usually ship them.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
@@ -47,6 +48,7 @@ namespace PawnDiary
         Ability,
         Progression,
         Reflection,
+        GravshipJourney,
         External
     }
 
@@ -679,6 +681,13 @@ namespace PawnDiary
             return ClassifyIn(GroupDomain.Progression, progressionDefName);
         }
 
+        // Odyssey landing has an exact synthetic Def name and no catch-all. The shipped XML row is
+        // package-gated, so the classifier remains inert and the settings row stays hidden without DLC.
+        public static DiaryInteractionGroupDef ClassifyGravshipJourney(string journeyDefName)
+        {
+            return ClassifyRequiredMatch(GroupDomain.GravshipJourney, journeyDefName);
+        }
+
         // First External-domain group that explicitly matches an integration-API eventKey. Like
         // Romance, live capture must NOT fall back to a catch-all here: only eventKeys some XML
         // group claims may create diary entries, so an unclaimed submission from another mod is
@@ -907,6 +916,12 @@ namespace PawnDiary
         // Progression-domain instruction. The scanner has already picked the group from the synthetic
         // progression source token, so this mirrors work-domain instruction resolution.
         public static string InstructionForProgression(DiaryInteractionGroupDef group)
+        {
+            return InstructionForGroup(group);
+        }
+
+        // GravshipJourney-domain instruction. The signal already resolved the exact landing group.
+        public static string InstructionForGravshipJourney(DiaryInteractionGroupDef group)
         {
             return InstructionForGroup(group);
         }
