@@ -1,6 +1,6 @@
-// XML schema and main-thread snapshot adapter for Biotech B1 growth/family policy. The Def owns all
-// tunable thresholds, exact activity matcher strings, and localized qualitative descriptions. Pure
-// policies receive a detached BiotechPolicySnapshot and never touch DefDatabase themselves.
+// XML schema and main-thread snapshot adapter for Biotech growth, family, and gene-salience policy.
+// The Def owns tunable thresholds, weights, exact matcher strings, and localized qualitative text.
+// Pure policies receive a detached BiotechPolicySnapshot and never touch DefDatabase themselves.
 using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
@@ -25,7 +25,14 @@ namespace PawnDiary
         public string description;
     }
 
-    /// <summary>Singleton XML-owned policy for Biotech B1; it contains no live DLC Def reference.</summary>
+    /// <summary>One structural gene-category token and its XML-owned salience weight.</summary>
+    public class DiaryGeneCategoryWeightDef
+    {
+        public string category;
+        public int weight;
+    }
+
+    /// <summary>Singleton XML-owned Biotech policy; it contains no live DLC Def reference.</summary>
     public class DiaryBiotechPolicyDef : Def
     {
         public int growthPendingExpiryTicks = 180000;
@@ -63,6 +70,24 @@ namespace PawnDiary
         public int birthCorrelationExpiryTicks = 2500;
         public int maximumBirthWriters = 2;
         public int maximumPendingBirthRows = BiotechPendingOwnershipLimits.DefaultMaximumRows;
+        // Phase 5 policy uses only primitive values and plain Def-name strings. They are safe when
+        // Biotech is absent because no XML row below resolves a DLC Def.
+        public int geneMaximumThemes = 4;
+        public int geneDeltaBonus = 100;
+        public int geneXenogeneBonus = 4;
+        public int geneEndogeneBonus = 2;
+        public int geneDuplicateCategoryPenalty = 30;
+        public int geneForcedDefNameBonus = 1000;
+        public int geneLabelCharacterLimit = 80;
+        public int geneDescriptionCharacterLimit = 240;
+        public int geneTotalTextCharacterLimit = 640;
+        public int geneMaximumObservedDefNames = 512;
+        public int geneMinimumFallbackChanges = 2;
+        public List<DiaryGeneCategoryWeightDef> geneCategoryWeights =
+            new List<DiaryGeneCategoryWeightDef>();
+        public List<string> geneForceIncludeDefNames = new List<string>();
+        public List<string> geneExcludeDefNames = new List<string>();
+        public List<string> geneAllowDuplicateCategories = new List<string>();
 
         /// <summary>Reports malformed XML policy at Def load instead of failing inside a later hook.</summary>
         public override IEnumerable<string> ConfigErrors()
@@ -111,9 +136,34 @@ namespace PawnDiary
                 yield return "miscarriageBirtherThoughtDefNames must contain at least one exact Def name.";
             if (!HasNonBlankMatcher(miscarriagePartnerThoughtDefNames))
                 yield return "miscarriagePartnerThoughtDefNames must contain at least one exact Def name.";
+            if (geneMaximumThemes < 1 || geneMaximumThemes > GeneSaliencePolicySnapshot.HardMaximumThemes)
+                yield return "geneMaximumThemes must stay between one and the defensive "
+                    + GeneSaliencePolicySnapshot.HardMaximumThemes + "-theme cap.";
+            if (geneDeltaBonus < 0) yield return "geneDeltaBonus cannot be negative.";
+            if (geneDuplicateCategoryPenalty < 0)
+                yield return "geneDuplicateCategoryPenalty cannot be negative.";
+            if (geneForcedDefNameBonus < 0) yield return "geneForcedDefNameBonus cannot be negative.";
+            if (geneLabelCharacterLimit < 1
+                || geneLabelCharacterLimit > GeneSaliencePolicySnapshot.HardMaximumTextCharacters)
+                yield return "geneLabelCharacterLimit must stay within the defensive text cap.";
+            if (geneDescriptionCharacterLimit < 1
+                || geneDescriptionCharacterLimit > GeneSaliencePolicySnapshot.HardMaximumTextCharacters)
+                yield return "geneDescriptionCharacterLimit must stay within the defensive text cap.";
+            if (geneTotalTextCharacterLimit < 1
+                || geneTotalTextCharacterLimit > GeneSaliencePolicySnapshot.HardMaximumTextCharacters)
+                yield return "geneTotalTextCharacterLimit must stay within the defensive text cap.";
+            if (geneMaximumObservedDefNames < 1
+                || geneMaximumObservedDefNames > GeneIdentityObservationPolicy.HardMaximumGeneDefNames)
+                yield return "geneMaximumObservedDefNames must stay between one and the defensive "
+                    + GeneIdentityObservationPolicy.HardMaximumGeneDefNames + "-row cap.";
+            if (geneMinimumFallbackChanges < 1
+                || geneMinimumFallbackChanges > GeneIdentityObservationPolicy.HardMaximumGeneDefNames)
+                yield return "geneMinimumFallbackChanges must stay between one and the defensive "
+                    + GeneIdentityObservationPolicy.HardMaximumGeneDefNames + "-row cap.";
 
             foreach (string error in OpportunityBandErrors(opportunityBands)) yield return error;
             foreach (string error in ObservationBandErrors(observationBands)) yield return error;
+            foreach (string error in GeneCategoryWeightErrors(geneCategoryWeights)) yield return error;
         }
 
         internal static bool HasNonBlankMatcher(List<string> values)
@@ -199,6 +249,28 @@ namespace PawnDiary
                 }
             }
         }
+
+        private static IEnumerable<string> GeneCategoryWeightErrors(List<DiaryGeneCategoryWeightDef> weights)
+        {
+            if (weights == null || weights.Count == 0)
+            {
+                yield return "geneCategoryWeights must contain at least one structural category.";
+                yield break;
+            }
+
+            HashSet<string> categories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < weights.Count; i++)
+            {
+                DiaryGeneCategoryWeightDef row = weights[i];
+                if (row == null || string.IsNullOrWhiteSpace(row.category))
+                {
+                    yield return "geneCategoryWeights rows require a non-blank category token.";
+                    continue;
+                }
+                if (!categories.Add(row.category.Trim()))
+                    yield return "geneCategoryWeights category tokens must be unique.";
+            }
+        }
     }
 
     /// <summary>Copies the singleton live Def into a detached plain snapshot with safe fallbacks.</summary>
@@ -260,6 +332,7 @@ namespace PawnDiary
             result.familyObservedNarrativeFormat = source.familyObservedNarrativeFormat ?? string.Empty;
             result.familyBaselineNarrativeFormat = source.familyBaselineNarrativeFormat ?? string.Empty;
             result.identityNarrativeFormat = source.identityNarrativeFormat ?? string.Empty;
+            result.geneSalience = CopyGeneSalience(source, result.geneSalience);
             CopyOpportunityBands(source.opportunityBands, result);
             CopyObservationBands(source.observationBands, result);
             CopyStrings(source.familyActivityExactDefNames, result.familyActivityExactDefNames);
@@ -339,6 +412,61 @@ namespace PawnDiary
             }
         }
 
+        private static GeneSaliencePolicySnapshot CopyGeneSalience(
+            DiaryBiotechPolicyDef source,
+            GeneSaliencePolicySnapshot fallback)
+        {
+            GeneSaliencePolicySnapshot result = new GeneSaliencePolicySnapshot
+            {
+                maximumThemes = source.geneMaximumThemes < 1
+                    || source.geneMaximumThemes > GeneSaliencePolicySnapshot.HardMaximumThemes
+                    ? fallback.maximumThemes : source.geneMaximumThemes,
+                deltaBonus = Math.Max(0, source.geneDeltaBonus),
+                xenogeneBonus = source.geneXenogeneBonus,
+                endogeneBonus = source.geneEndogeneBonus,
+                duplicateCategoryPenalty = Math.Max(0, source.geneDuplicateCategoryPenalty),
+                forcedDefNameBonus = Math.Max(0, source.geneForcedDefNameBonus),
+                labelCharacterLimit = TextLimit(source.geneLabelCharacterLimit, fallback.labelCharacterLimit),
+                descriptionCharacterLimit = TextLimit(
+                    source.geneDescriptionCharacterLimit,
+                    fallback.descriptionCharacterLimit),
+                totalTextCharacterLimit = TextLimit(
+                    source.geneTotalTextCharacterLimit,
+                    fallback.totalTextCharacterLimit),
+                maximumObservedGeneDefNames = source.geneMaximumObservedDefNames < 1
+                    || source.geneMaximumObservedDefNames > GeneIdentityObservationPolicy.HardMaximumGeneDefNames
+                    ? fallback.maximumObservedGeneDefNames : source.geneMaximumObservedDefNames,
+                minimumFallbackGeneChanges = source.geneMinimumFallbackChanges < 1
+                    || source.geneMinimumFallbackChanges > GeneIdentityObservationPolicy.HardMaximumGeneDefNames
+                    ? fallback.minimumFallbackGeneChanges : source.geneMinimumFallbackChanges
+            };
+
+            if (source.geneCategoryWeights != null)
+            {
+                HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < source.geneCategoryWeights.Count; i++)
+                {
+                    DiaryGeneCategoryWeightDef row = source.geneCategoryWeights[i];
+                    string category = row == null ? string.Empty : (row.category ?? string.Empty).Trim();
+                    if (category.Length > 0 && seen.Add(category))
+                    {
+                        result.categoryWeights.Add(new GeneCategoryWeightRule
+                        {
+                            category = category,
+                            weight = row.weight
+                        });
+                    }
+                }
+            }
+            if (result.categoryWeights.Count == 0)
+                result.categoryWeights = fallback.categoryWeights;
+
+            CopyStrings(source.geneForceIncludeDefNames, result.forceIncludeDefNames);
+            CopyStrings(source.geneExcludeDefNames, result.excludeDefNames);
+            CopyStrings(source.geneAllowDuplicateCategories, result.allowDuplicateCategories);
+            return result;
+        }
+
         private static void ReplaceStrings(List<string> source, List<string> destination)
         {
             if (!DiaryBiotechPolicyDef.HasNonBlankMatcher(source)) return;
@@ -349,6 +477,12 @@ namespace PawnDiary
         private static int Positive(int value, int fallback)
         {
             return value > 0 ? value : fallback;
+        }
+
+        private static int TextLimit(int value, int fallback)
+        {
+            return value < 1 || value > GeneSaliencePolicySnapshot.HardMaximumTextCharacters
+                ? fallback : value;
         }
 
     }

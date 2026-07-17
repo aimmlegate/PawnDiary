@@ -270,6 +270,42 @@ row. Automated builds and pure/RimTest source coverage do not replace these live
 
 ---
 
+## Biotech Phase 5 gene-identity acceptance (not a Phase 4 gate)
+
+This separate TODO does not change the five open B1 rows above. Run it with generation disabled or
+prompt-capture mode so no network request can leave the game.
+
+1. **Base-only safety.** Load Base + Harmony + RimTest Redux + Pawn Diary with Biotech inactive. Run
+   `GeneIdentityProjectionAndVersionedBaselineAreSilent`, `RealReimplantHookEmitsOnceAndClaimsAbilityScope`,
+   and `RealImplantItemHookEmitsOneBoundedGenePage`. The guarded fixture must take its inactive branch;
+   both exact fixtures must visibly skip. Check `Player.log` for patch-registration, missing-Def,
+   type-initializer, XML, or gene-observation errors.
+2. **Old-save baseline.** With Biotech active, load an old save whose colonists already have vanilla
+   and/or custom genes. Keep Progression output disabled through one scan, save, reload, then re-enable
+   it. Confirm no historical page appears and the save contains nested
+   `geneIdentityObservationState` with `geneObservationVersion=1`, current xenotype identity, and
+   bounded `geneObservedDefNames`.
+3. **Exact ownership.** In a disposable Biotech colony run the two exact fixtures above. Confirm the
+   real vanilla methods each create exactly one recipient-only `GeneIdentityChanged` event. Reimplant
+   context must carry `xenogerm_reimplant`, the other pawn, selected themes, and no generic Ability
+   duplicate; item implantation must carry `xenogerm_implant`. Replaying unchanged membership must be
+   silent. Inspect `Player.log` and verify every test pawn, Xenogerm, Hediff, event, diary row, and
+   transient ability scope is removed.
+4. **Fallback and caps.** Outside an exact call, cause a stable xenotype Def transition or at least the
+   XML minimum (default two) installed-gene membership changes, then let the slow progression scan run.
+   Confirm one `observed_change` page with at most four separator-safe themes. A single membership-only
+   fluctuation, active/suppressed recalculation, and a language switch with the same stable Def must be
+   silent. Confirm full membership never appears in `gameContext` or the prompt preview.
+5. **Reload/no resurrection.** Save after one exact and one fallback page, reload, and wait through two
+   progression scans. Confirm both remain exactly once, no transient ability owner survives load, and
+   later genuine mutations still record. Repeat loading that save without Biotech: Pawn Diary must
+   retain primitive saved rows without resolving a DLC Def or emitting a page.
+
+- [ ] **TODO:** Record exact RimWorld version, language, active mod list, old-save fixture, all RimTest
+  results, prompt/context evidence, cleanup audit, both DLC branches, and relevant `Player.log` lines.
+
+---
+
 ## Mod-compatibility adapters (1-2-3 Personalities / VSIE)
 
 These separate adapter mods live under `integrations/` and are inert without their target mod. Run

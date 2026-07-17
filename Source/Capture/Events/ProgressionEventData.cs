@@ -14,6 +14,7 @@ namespace PawnDiary.Capture
         public const string SkillMilestoneDefName = "SkillMilestone";
         public const string PsylinkLevelDefName = "PsylinkLevel";
         public const string XenotypeChangedDefName = "XenotypeChanged";
+        public const string GeneIdentityChangedDefName = "GeneIdentityChanged";
         public const string RoyalTitleChangedDefName = "RoyalTitleChanged";
         public const string TraitGainedDefName = "TraitGained";
         public const string OtherDefName = "ProgressionOther";

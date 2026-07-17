@@ -1,5 +1,47 @@
 # Changelog
 
+- **2026-07-17 — Finished Biotech Phase 5 salient-gene integration (live acceptance pending).** Added
+  pure exact membership diff/fallback-significance policy and separator-safe bounded context formatting;
+  the Progression prompt now receives at most four selected gene themes and never full membership.
+  Defensively registered the verified RimWorld 1.6 `GeneUtility.ImplantXenogermItem(Pawn, Xenogerm)`
+  and `ReimplantXenogerm(Pawn, Pawn)` boundaries, with before/after snapshots, immediate baseline
+  advancement, recipient-only `GeneIdentityChanged` ownership, and no-op replay rejection. A same-call
+  ability scope suppresses the generic reimplant Ability page only after canonical dispatch commits and
+  is reset at every Game boundary. The slow observer now emits stable xenotype changes or XML-significant
+  membership changes (`geneMinimumFallbackChanges=2`) while old-save initialization, disabled output,
+  one-gene churn, suppression recalculation, and localized label changes remain silent. Added localized
+  page/group prose, an enriched prompt fixture, pure transition/context/XML assertions, and compiled
+  real-body RimTests for both exact vanilla methods plus ability ownership. Updated architecture,
+  coverage, roadmap, and manual save/DLC matrices; the new live fixtures are not yet executed.
+
+- **2026-07-17 — Added Biotech Phase 5 guarded gene snapshots and silent saved baselines.** Added
+  `DlcContext.TryCaptureGeneIdentity`, which double-gates live reads, separates bounded installed
+  membership from active salience facts, uses direct `GeneDef` fields/base descriptions, and remains
+  inert without Biotech. Added nested `GeneIdentityObservationState` with frozen version/xenotype/
+  membership Scribe keys, deterministic normalization, an XML-owned 512-row configured cap and fixed 2048-row
+  corruption caps. The progression cadence advances this observation even when Progression output is
+  disabled while retaining the old scalar xenotype keys for migration, and initially emitted no gene page. Added
+  pure baseline tests plus compiled RimTests for guarded projection, inactive-DLC silence, old-save
+  initialization, disabled-output advancement, and real Scribe round-trip. The later Phase 5 completion
+  entry above adds exact mutation hooks, fallback output, and prompt projection.
+
+- **2026-07-17 — Started Biotech Phase 5 with the pure salient-gene foundation.** Under an explicit
+  user-directed scheduling exception, Phase 5 may proceed while Phase 4 manual rows 3, 4, 7, 9, and
+  10 remain open; those rows are not waived and B1/Wave 3 is not marked complete. Added detached gene
+  identity and exact mutation contracts plus an XML-driven deterministic selector that prioritizes
+  added/removed facts, favors category diversity, supports force/exclude corrections, filters hidden
+  or inactive bookkeeping, caps output at four themes, and bounds cleaned text. Extended the Biotech
+  policy Def/snapshot and assembly-free suite to 410 passing assertions. This first step adds no live
+  gene reads, save keys, Harmony hooks, prompt fields, pages, or DLC dependency.
+
+- **2026-07-17 — Reconciled Odyssey O1 acceptance status before continuing Biotech Phase 4.** Updated
+  the Odyssey and master plans plus the coverage record to reflect the completed live evidence already
+  recorded in the save-compatibility runbook: clean base-only skips, passing real cancellation and
+  cross-layer landing, passing Phase A/B/C reloads, exactly-once output, no lifecycle resurrection,
+  and removal of both reserved saves. The broader Odyssey component/prompt-flow rerun remains a
+  separate follow-up, O2/O3 remain unstarted, and Biotech Phase 4 rows 3, 4, 7, 9, and 10 remain open.
+  No production behavior or DLC dependency changed.
+
 - **2026-07-17 — Closed the live main-menu rerun and inactive-Anomaly fixture failure.** The rebuilt
   Odyssey runtime suite produced all five intended no-host skips at the main menu with no Odyssey
   error, closing the final live rerun gap from the prior hardening. The same all-suite log exposed one

@@ -305,6 +305,46 @@ limit; while full, only the incoming growth/birth owner is rejected so its ordin
 Defensive hard-ceiling repair remains deterministic and keeps the newest valid rows. The loaded-game growth/birth/no-DLC/old-save and
 adapter acceptance matrix remains manual in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
+Biotech Phase 5 provides pure policy, exact ownership, and a slow fallback observer. `GeneIdentityContracts.cs` defines
+detached, cleaned gene facts with stable Def names, endogene/xenogene identity, active/hidden/
+suppressed truth, structural effect flags, and an optional qualitative magnitude band. It also
+separates bounded installed membership, active salience facts, and exact added/removed mutation facts.
+`GeneSaliencePolicy.cs` scores
+those facts using the primitive-only fields in `DiaryBiotechPolicyDefs.xml`: structural category
+weights, event-delta and gene-kind bonuses, duplicate-category diversity, force/exclude corrections,
+label/description/total-text caps, and a 512-row observed-membership default with a fixed 2048-row
+corruption ceiling. Selection is deterministic and returns at most four themes;
+hidden, inactive, suppressed, malformed, and excluded facts are omitted, and full gene membership is
+never an output. `DlcContext.TryCaptureGeneIdentity` is main-thread-only and double-gated by
+`ModsConfig.BiotechActive` plus `pawn.genes`; it copies only direct `GeneDef` fields and the base
+description, never `DescriptionFull` or arbitrary mod getters. The progression cadence writes a
+nested `GeneIdentityObservationState` even when Progression output is disabled. Its frozen additive
+keys store an explicit version, current xenotype Def/label, and sorted installed Def names; an empty
+list remains distinguishable from an old save because version zero means uninitialized. The old
+scalar xenotype fields remain populated for migration.
+
+`GeneIdentityTransitionPolicy` compares stable xenotype identity and bounded installed membership,
+retains exact before-state facts for removed genes, and admits slow membership-only fallback only when
+the XML-owned `geneMinimumFallbackChanges` threshold is met (two by default). Stable xenotype Def
+changes always qualify; localized label-only changes with the same Def do not, so switching language
+cannot invent a page. `GeneIdentityContextFormatter` exposes only selected themes and bounded,
+separator-safe labels—never the complete membership set. The event-time context uses
+`gene_identity_transition`, previous/current xenotype identity, exact or observed cause, up to four
+theme label/description/change/category rows, optional reimplanting pawn identity, and the
+`identity_transition` narrative facet.
+
+`BiotechXenogermMutationPatch` defensively registers the verified RimWorld 1.6 public signatures
+`GeneUtility.ImplantXenogermItem(Pawn, Xenogerm)` and
+`GeneUtility.ReimplantXenogerm(Pawn, Pawn)`. Prefix/postfix snapshots own every non-empty exact
+mutation, update the saved observation before the next slow scan, and emit one recipient-only
+`GeneIdentityChanged` Progression page. Reimplantation occurs inside `Ability.Activate`; a bounded
+same-call scope is claimed only after the canonical page commits, so the outer generic Ability page is
+suppressed on success and remains available if canonical dispatch fails. The scope is cleared at every
+Game construction and contains no saved/live reference after the call closes. Empty mutation,
+first-old-save baseline, disabled output, one-row fallback noise, and active/suppressed recalculation
+remain silent. Every live read is still behind `ModsConfig.BiotechActive` plus `pawn.genes`, and the XML
+contains no DLC Def reference or dependency.
+
 Live surroundings are optional prompt flavor and are collected fail-soft. In particular,
 `Room.GetRoomRoleLabel()` can lazily recalculate the room's stats/role; if RimWorld or another room
 patch throws during that recalculation, Pawn Diary omits only the room-role label and continues
@@ -1140,7 +1180,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeRollPolicyDefs.xml` | numeric tuning for the psychotype roll: family bases, bonuses, wildcard chance, jitter range, duplicate penalty |
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; the main-thread builder snapshots it before fixed-order pure provider selection. The repetition policy is live: every narrative-capable source feeds the selector the POV pawn's most recent persisted selection keys (newest hot pages, then archive rows, bounded by `maxRecentSelectedCandidateKeys`), so `repetitionPenalty` dampens re-picking the same lens while exact-arc continuations stay exempt via `exactArcRepetitionPenalty` |
-| `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory plus mature-birth/miscarriage matchers, supporter thresholds/caps, naming timing, family retention, two-writer birth cap, and pending-growth/pending-birth admission limits; Phases 1–4 and N2-B use these fields live |
+| `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory plus mature-birth/miscarriage matchers, supporter thresholds/caps, naming timing, family retention, two-writer birth cap, pending-growth/pending-birth admission limits, and Phase-5 gene category/theme/text/observation/fallback-significance policy; Phases 1–5 and N2-B use these fields live |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
 | `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |
 | `DiaryUiStyleDef.xml` / `DiaryTextDecorationDefs.xml` | UI dimensions/colors and display-only rich-text decoration |
@@ -2108,7 +2148,10 @@ scans.
 with those fields absent, then normalize to empty baseline-pending state. The progression state stores
 only highest passion-skill milestones, last observed psylink/xenotype/royal-title values, the set
 of known trait keys (`<defName>|<degree>`) used to detect newly gained traits, and an additive nested
-`biotechProgressionState` whose Phase-1 `consumedGrowthAges` list is limited to 7/10/13. The arc
+`biotechProgressionState` whose Phase-1 `consumedGrowthAges` list is limited to 7/10/13 and whose
+Phase-5 nested `geneIdentityObservationState` stores an explicit baseline version, bounded sorted
+installed Def names, and current xenotype identity. The retained scalar xenotype fields are migration/
+downgrade compatibility only; the nested row is authoritative for fallback diffing. The arc
 schedule stores only cadence bookkeeping (`lastArcEntryTick`, `lastArcEntryYear`,
 `arcEntriesThisYear`, `forcedArcYear`, recently used memory ids, and the last retryable
 memory-shortfall tick/year). Neither field is a history database; existing diary pages remain the

@@ -2887,12 +2887,12 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionXenotype</defName>
-    <label>Xenotype changed</label>
+    <label>Gene identity changed</label>
     <order>815</order>
     <domain>Progression</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
-    <instruction>a xenotype change; write the bodily and identity shift from the pawn's perspective using only the supplied old and new labels</instruction>
+    <instruction>a gene-identity change; write the bodily and identity shift from the pawn's perspective using only the supplied xenotype and selected gene-theme facts</instruction>
     <tone>with intimate bodily consequence</tone>
     <tones>
       <li>changed and watchful, noticing the self becoming unfamiliar</li>
@@ -2901,6 +2901,7 @@
     <colorCue>danger</colorCue>
     <matchDefNames>
       <li>XenotypeChanged</li>
+      <li>GeneIdentityChanged</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 

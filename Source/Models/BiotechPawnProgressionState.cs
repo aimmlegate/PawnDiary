@@ -1,6 +1,6 @@
-// Per-pawn, additive Biotech progression bookkeeping. Phase 1 uses only consumed growth ages; later
-// Biotech phases may extend this nested row for gene/mechanitor/bond baselines without adding more
-// top-level PawnDiaryRecord fields.
+// Per-pawn, additive Biotech progression bookkeeping. Growth consumption and the nested gene
+// observation baseline live here so later mechanitor/bond work can extend one stable parent row
+// instead of adding more top-level PawnDiaryRecord fields.
 //
 // New to C#/RimWorld? See AGENTS.md ("IExposable").
 using System;
@@ -15,6 +15,7 @@ namespace PawnDiary
     {
         public int growthObservationVersion = 1;
         public List<int> consumedGrowthAges = new List<int>();
+        public GeneIdentityObservationState geneIdentityObservation = new GeneIdentityObservationState();
 
         public void ExposeData()
         {
@@ -23,6 +24,9 @@ namespace PawnDiary
                 BiotechSaveKeys.GrowthObservationVersion,
                 1);
             Scribe_Collections.Look(ref consumedGrowthAges, "consumedGrowthAges", LookMode.Value);
+            Scribe_Deep.Look(
+                ref geneIdentityObservation,
+                BiotechSaveKeys.GeneIdentityObservationState);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -51,6 +55,11 @@ namespace PawnDiary
             }
 
             consumedGrowthAges.Sort();
+            if (geneIdentityObservation == null)
+            {
+                geneIdentityObservation = new GeneIdentityObservationState();
+            }
+            geneIdentityObservation.Normalize();
         }
 
         /// <summary>Returns whether canonical ownership for this age was already consumed.</summary>
@@ -77,6 +86,17 @@ namespace PawnDiary
                 consumedGrowthAges.Add(age);
                 consumedGrowthAges.Sort();
             }
+        }
+
+        /// <summary>Returns the normalized nested gene observation row.</summary>
+        public GeneIdentityObservationState EnsureGeneIdentityObservation()
+        {
+            if (geneIdentityObservation == null)
+            {
+                geneIdentityObservation = new GeneIdentityObservationState();
+            }
+            geneIdentityObservation.Normalize();
+            return geneIdentityObservation;
         }
     }
 }

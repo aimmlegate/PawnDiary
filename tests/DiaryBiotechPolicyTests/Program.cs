@@ -1,6 +1,6 @@
-// Standalone no-RimWorld tests for Master Wave 3 / Biotech B1. Besides exercising pure B1
-// decisions, this suite parses the shipped XML/localization so stable IDs, package gates, band prose,
-// and exact classifier ownership cannot drift independently of the contracts.
+// Standalone no-RimWorld tests for Biotech B1 and the Phase 5 pure gene-policy foundation. Besides
+// exercising pure decisions, this suite parses shipped XML/localization so stable IDs, package
+// gates, policy caps, band prose, and exact classifier ownership cannot drift from the contracts.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -28,9 +28,280 @@ namespace DiaryBiotechPolicyTests
             TestBirthArcAndPendingOwnership();
             TestSettingsInheritance();
             TestContextFormatting();
+            TestGeneSalienceCardinalityAndDeltas();
+            TestGeneSalienceDiversityCorrectionsAndDeterminism();
+            TestGeneSalienceFilteringAndTextCaps();
+            TestGeneObservationBaselineAndNormalization();
+            TestGeneTransitionDiffFallbackAndContext();
             TestShippedXmlPolicyAndLocalization();
             Console.WriteLine("DiaryBiotechPolicyTests passed " + assertions + " assertions.");
             return 0;
+        }
+
+        private static void TestGeneSalienceCardinalityAndDeltas()
+        {
+            GeneSaliencePolicySnapshot policy = GeneSaliencePolicySnapshot.CreateDefault();
+            AssertEqual("zero genes produce no themes", 0,
+                GeneSaliencePolicy.Select(new GeneIdentitySnapshot(), null, policy).Count);
+
+            GeneIdentitySnapshot one = new GeneIdentitySnapshot();
+            one.genes.Add(Gene("Gene_Only", "Only", GeneCategoryTokens.Social));
+            AssertSequence("one usable gene stays one theme", new[] { "Gene_Only" },
+                GeneSaliencePolicy.Select(one, null, policy).Select(theme => theme.defName));
+
+            GeneIdentitySnapshot many = new GeneIdentitySnapshot();
+            many.genes.Add(Gene("Gene_AbilityA", "Ability A", GeneCategoryTokens.Ability));
+            many.genes.Add(Gene("Gene_Trait", "Trait", GeneCategoryTokens.Trait));
+            many.genes.Add(Gene("Gene_Need", "Need", GeneCategoryTokens.Need));
+            many.genes.Add(Gene("Gene_Social", "Social", GeneCategoryTokens.Social));
+            many.genes.Add(Gene("Gene_Stat", "Stat", GeneCategoryTokens.Stat));
+            many.genes.Add(Gene("Gene_Other", "Other", GeneCategoryTokens.Other));
+            List<GeneTheme> bounded = GeneSaliencePolicy.Select(many, null, policy);
+            AssertEqual("many genes never expose full membership", 4, bounded.Count);
+            AssertSequence("highest diverse categories selected", new[]
+            {
+                "Gene_AbilityA", "Gene_Trait", "Gene_Need", "Gene_Social"
+            }, bounded.Select(theme => theme.defName));
+
+            GeneMutationSnapshot mutation = new GeneMutationSnapshot();
+            mutation.addedGenes.Add(Gene("Gene_Added", "Added", GeneCategoryTokens.Other));
+            mutation.removedGenes.Add(Gene("Gene_Removed", "Removed", GeneCategoryTokens.Stat));
+            List<GeneTheme> changed = GeneSaliencePolicy.Select(many, mutation, policy);
+            AssertTrue("both exact deltas outrank unchanged candidates",
+                changed.Take(2).Select(theme => theme.defName)
+                    .OrderBy(value => value).SequenceEqual(new[] { "Gene_Added", "Gene_Removed" }));
+            AssertEqual("added token preserved", GeneChangeTokens.Added,
+                changed.Single(theme => theme.defName == "Gene_Added").change);
+            AssertEqual("removed token preserved", GeneChangeTokens.Removed,
+                changed.Single(theme => theme.defName == "Gene_Removed").change);
+
+            GeneIdentitySnapshot duplicateMembership = new GeneIdentitySnapshot();
+            duplicateMembership.genes.Add(Gene("Gene_Added", "Added", GeneCategoryTokens.Other));
+            AssertEqual("added membership is emitted once", 1,
+                GeneSaliencePolicy.Select(duplicateMembership, mutation, policy)
+                    .Count(theme => theme.defName == "Gene_Added"));
+        }
+
+        private static void TestGeneSalienceDiversityCorrectionsAndDeterminism()
+        {
+            GeneSaliencePolicySnapshot policy = GeneSaliencePolicySnapshot.CreateDefault();
+            GeneIdentitySnapshot snapshot = new GeneIdentitySnapshot();
+            snapshot.genes.Add(Gene("Gene_AbilityB", "Ability B", GeneCategoryTokens.Ability));
+            snapshot.genes.Add(Gene("Gene_AbilityA", "Ability A", GeneCategoryTokens.Ability));
+            snapshot.genes.Add(Gene("Gene_Trait", "Trait", GeneCategoryTokens.Trait));
+            snapshot.genes.Add(Gene("Gene_Excluded", "Excluded", GeneCategoryTokens.Resource));
+            snapshot.genes.Add(Gene("Gene_Forced", "Forced", GeneCategoryTokens.Other));
+            policy.excludeDefNames.Add("gene_excluded");
+            policy.forceIncludeDefNames.Add("gene_forced");
+
+            List<GeneTheme> selected = GeneSaliencePolicy.Select(snapshot, null, policy);
+            AssertEqual("force correction outranks category weights", "Gene_Forced", selected[0].defName);
+            AssertTrue("exclude correction removes exact Def", selected.All(theme => theme.defName != "Gene_Excluded"));
+            AssertTrue("category diversity beats second ability",
+                selected.FindIndex(theme => theme.defName == "Gene_Trait")
+                    < selected.FindIndex(theme => theme.defName == "Gene_AbilityB"));
+
+            GeneIdentitySnapshot ties = new GeneIdentitySnapshot();
+            ties.genes.Add(Gene("Gene_Zed", "Zed", GeneCategoryTokens.Social));
+            ties.genes.Add(Gene("Gene_Alpha", "Alpha", GeneCategoryTokens.Social));
+            List<GeneTheme> first = GeneSaliencePolicy.Select(ties, null, policy);
+            ties.genes.Reverse();
+            List<GeneTheme> second = GeneSaliencePolicy.Select(ties, null, policy);
+            AssertSequence("tie order ignores input enumeration", first.Select(theme => theme.defName),
+                second.Select(theme => theme.defName));
+            AssertEqual("ordinal Def name breaks exact tie", "Gene_Alpha", first[0].defName);
+
+            policy.allowDuplicateCategories.Add(GeneCategoryTokens.Social);
+            AssertSequence("XML exception permits same-category ordering",
+                new[] { "Gene_Alpha", "Gene_Zed" },
+                GeneSaliencePolicy.Select(ties, null, policy).Select(theme => theme.defName));
+        }
+
+        private static void TestGeneSalienceFilteringAndTextCaps()
+        {
+            GeneSaliencePolicySnapshot policy = GeneSaliencePolicySnapshot.CreateDefault();
+            policy.labelCharacterLimit = 6;
+            policy.descriptionCharacterLimit = 9;
+            policy.totalTextCharacterLimit = 13;
+            GeneIdentitySnapshot snapshot = new GeneIdentitySnapshot();
+            snapshot.genes.Add(Gene("Gene_Valid", "  Long\t label  ", GeneCategoryTokens.Trait,
+                "long\r\n description with repeated   spaces"));
+            GeneFact hidden = Gene("Gene_Hidden", "Hidden", GeneCategoryTokens.Ability);
+            hidden.hidden = true;
+            snapshot.genes.Add(hidden);
+            GeneFact inactive = Gene("Gene_Inactive", "Inactive", GeneCategoryTokens.Ability);
+            inactive.active = false;
+            snapshot.genes.Add(inactive);
+            GeneFact suppressed = Gene("Gene_Suppressed", "Suppressed", GeneCategoryTokens.Ability);
+            suppressed.suppressed = true;
+            snapshot.genes.Add(suppressed);
+            snapshot.genes.Add(Gene(string.Empty, "Missing key", GeneCategoryTokens.Ability));
+
+            List<GeneTheme> selected = GeneSaliencePolicy.Select(snapshot, null, policy);
+            AssertEqual("bookkeeping and malformed genes are omitted", 1, selected.Count);
+            AssertEqual("label whitespace cleaned and capped", "Long l", selected[0].label);
+            AssertEqual("description consumes remaining total cap", "long de", selected[0].description);
+            AssertTrue("combined text obeys XML total cap",
+                selected.Sum(theme => theme.label.Length + theme.description.Length) <= 13);
+            AssertTrue("control whitespace never reaches selected text",
+                !selected[0].label.Contains("\t") && !selected[0].description.Contains("\r")
+                    && !selected[0].description.Contains("\n"));
+        }
+
+        private static void TestGeneObservationBaselineAndNormalization()
+        {
+            GeneIdentitySnapshot identity = new GeneIdentitySnapshot
+            {
+                xenotypeDefName = " CustomXenotype ",
+                xenotypeLabel = "  Long\tcustom\r\nidentity  ",
+                installedGeneDefNames = new List<string>
+                {
+                    "Gene_Zed", "gene_alpha", "Gene_Alpha", "", "Gene_Middle"
+                },
+                genes = new List<GeneFact>
+                {
+                    Gene("Gene_Zed", "Zed", GeneCategoryTokens.Other),
+                    Gene("gene_alpha", "Alpha", GeneCategoryTokens.Other),
+                    Gene("Gene_Alpha", "Duplicate", GeneCategoryTokens.Other),
+                    Gene("", "Malformed", GeneCategoryTokens.Other),
+                    Gene("Gene_Middle", "Middle", GeneCategoryTokens.Other)
+                }
+            };
+
+            GeneIdentityObservationSnapshot observed = GeneIdentityObservationPolicy.Observe(
+                identity, maximumGeneDefNames: 2, labelCharacterLimit: 11);
+            AssertEqual("gene observation version", GeneIdentityObservationPolicy.CurrentVersion,
+                observed.observationVersion);
+            AssertEqual("gene observation xenotype Def trimmed", "CustomXenotype", observed.xenotypeDefName);
+            AssertEqual("gene observation label cleaned and capped", "Long custom", observed.xenotypeLabel);
+            AssertSequence("gene observation membership deduped sorted and capped",
+                new[] { "gene_alpha", "Gene_Middle" }, observed.geneDefNames);
+            AssertEqual("gene observation does not mutate source membership", 5,
+                identity.installedGeneDefNames.Count);
+            AssertTrue("version marker distinguishes a valid empty membership",
+                GeneIdentityObservationPolicy.HasCurrentBaseline(GeneIdentityObservationPolicy.Observe(
+                    new GeneIdentitySnapshot(), 10, 80)));
+
+            GeneIdentityObservationSnapshot malformed = new GeneIdentityObservationSnapshot
+            {
+                observationVersion = -7,
+                xenotypeDefName = "  Baseliner\n",
+                xenotypeLabel = " base\t liner ",
+                geneDefNames = new List<string> { " Gene_B ", null, "gene_b", "Gene_A" }
+            };
+            GeneIdentityObservationSnapshot normalized = GeneIdentityObservationPolicy.Normalize(
+                malformed, maximumGeneDefNames: 10, labelCharacterLimit: 80);
+            AssertEqual("malformed observation version stays uninitialized", 0, normalized.observationVersion);
+            AssertEqual("normalized xenotype Def one line", "Baseliner", normalized.xenotypeDefName);
+            AssertEqual("normalized xenotype label one line", "base liner", normalized.xenotypeLabel);
+            AssertSequence("normalized membership is unique and deterministic",
+                new[] { "Gene_A", "Gene_B" }, normalized.geneDefNames);
+            AssertTrue("uninitialized row is not mistaken for empty baseline",
+                !GeneIdentityObservationPolicy.HasCurrentBaseline(normalized));
+        }
+
+        private static void TestGeneTransitionDiffFallbackAndContext()
+        {
+            GeneSaliencePolicySnapshot policy = GeneSaliencePolicySnapshot.CreateDefault();
+            GeneIdentitySnapshot before = new GeneIdentitySnapshot
+            {
+                xenotypeDefName = "Baseliner",
+                xenotypeLabel = "Baseliner"
+            };
+            before.installedGeneDefNames.AddRange(new[] { "Gene_Removed", "Gene_Stable" });
+            before.genes.Add(Gene("Gene_Removed", "Old; voice", GeneCategoryTokens.Social));
+            before.genes.Add(Gene("Gene_Stable", "Stable", GeneCategoryTokens.Stat));
+
+            GeneIdentitySnapshot after = new GeneIdentitySnapshot
+            {
+                xenotypeDefName = "Custom",
+                xenotypeLabel = "Night=kin\r\nPrime"
+            };
+            after.installedGeneDefNames.AddRange(new[] { "Gene_Added", "Gene_Stable", "Gene_Unselected" });
+            after.genes.Add(Gene("Gene_Added", "New; hunger", GeneCategoryTokens.Need,
+                "Needs=hemogen; after dusk"));
+            after.genes.Add(Gene("Gene_Stable", "Stable", GeneCategoryTokens.Stat));
+            after.genes.Add(Gene("Gene_Unselected", "Unselected", GeneCategoryTokens.Other));
+
+            GeneIdentityTransitionDecision decision = GeneIdentityTransitionPolicy.Evaluate(
+                before, after, policy);
+            AssertTrue("stable xenotype Def transition detected", decision.xenotypeIdentityChanged);
+            AssertEqual("one installed gene added", 2, decision.addedGeneCount);
+            AssertEqual("one installed gene removed", 1, decision.removedGeneCount);
+            AssertSequence("exact added facts deterministic", new[] { "Gene_Added", "Gene_Unselected" },
+                decision.mutation.addedGenes.Select(fact => fact.defName));
+            AssertSequence("removed fact retains before-state prose", new[] { "Gene_Removed" },
+                decision.mutation.removedGenes.Select(fact => fact.defName));
+            AssertEqual("delta theme outranks unchanged fact", "Gene_Added", decision.themes[0].defName);
+            AssertTrue("exact transition emits", decision.HasAnyChange);
+            AssertTrue("xenotype transition ignores fallback threshold",
+                GeneIdentityTransitionPolicy.ShouldEmitFallback(decision, 99));
+
+            GeneIdentitySnapshot translatedLabel = new GeneIdentitySnapshot
+            {
+                xenotypeDefName = "Custom",
+                xenotypeLabel = "Localized different label"
+            };
+            translatedLabel.installedGeneDefNames.AddRange(after.installedGeneDefNames);
+            translatedLabel.genes.AddRange(after.genes);
+            GeneIdentityTransitionDecision languageOnly = GeneIdentityTransitionPolicy.Evaluate(
+                after, translatedLabel, policy);
+            AssertTrue("localized label change with stable Def is silent", !languageOnly.HasAnyChange);
+
+            GeneIdentitySnapshot oneAdded = GeneIdentityTransitionPolicy.FromObservation(
+                new GeneIdentityObservationSnapshot
+                {
+                    observationVersion = GeneIdentityObservationPolicy.CurrentVersion,
+                    xenotypeDefName = "Baseliner",
+                    xenotypeLabel = "Baseliner",
+                    geneDefNames = new List<string> { "Gene_Stable" }
+                });
+            GeneIdentitySnapshot oneAddedAfter = new GeneIdentitySnapshot
+            {
+                xenotypeDefName = "Baseliner",
+                xenotypeLabel = "Baseliner",
+                installedGeneDefNames = new List<string> { "Gene_Stable", "Gene_Added" },
+                genes = new List<GeneFact> { Gene("Gene_Added", "Added", GeneCategoryTokens.Trait) }
+            };
+            GeneIdentityTransitionDecision smallFallback = GeneIdentityTransitionPolicy.Evaluate(
+                oneAdded, oneAddedAfter, policy);
+            AssertTrue("one-gene fallback stays below configured significance",
+                !GeneIdentityTransitionPolicy.ShouldEmitFallback(smallFallback, 2));
+            AssertTrue("XML can admit one-gene fallback",
+                GeneIdentityTransitionPolicy.ShouldEmitFallback(smallFallback, 1));
+
+            GeneIdentitySnapshot suppressionOnly = new GeneIdentitySnapshot
+            {
+                xenotypeDefName = after.xenotypeDefName,
+                xenotypeLabel = after.xenotypeLabel,
+                installedGeneDefNames = new List<string>(after.installedGeneDefNames),
+                genes = new List<GeneFact>()
+            };
+            AssertTrue("active/suppressed recalculation never becomes membership mutation",
+                !GeneIdentityTransitionPolicy.Evaluate(after, suppressionOnly, policy).HasAnyChange);
+
+            string context = GeneIdentityContextFormatter.Format(
+                before,
+                after,
+                decision,
+                GeneChangeCauseTokens.XenogermReimplant,
+                "Caster; Name=One",
+                "Pawn=7;bad",
+                20);
+            AssertContains("context marks identity transition", context, "gene_identity_transition=true");
+            AssertContains("context stores exact cause", context,
+                "gene_change_cause=" + GeneChangeCauseTokens.XenogermReimplant);
+            AssertContains("context stores selected theme", context, "gene_theme_1=New, hunger");
+            AssertContains("context stores theme change", context, "gene_theme_change_1=added");
+            AssertContains("context stores narrative facet", context,
+                "narrative_facets=identity_transition");
+            AssertTrue("context values cannot inject fields",
+                !context.Contains("; Name=") && !context.Contains(";bad")
+                && context.Contains("other_pawn=Caster, Name:One"));
+            AssertTrue("context never serializes complete membership",
+                !context.Contains("gene_membership") && !context.Contains("Gene_Stable"));
+            AssertEqual("outer progression label is separator-safe and capped", "Night:ki",
+                GeneIdentityContextFormatter.CleanField("Night=kin;raw", 8));
         }
 
         private static void TestGrowthRecordMatching()
@@ -103,6 +374,12 @@ namespace DiaryBiotechPolicyTests
         {
             AssertEqual("growth event defName", "BiotechGrowthMoment", BiotechEventDefNames.GrowthMoment);
             AssertEqual("birth event defName", "BiotechFamilyBirth", BiotechEventDefNames.FamilyBirth);
+            AssertEqual("implant cause token", "xenogerm_implant",
+                GeneChangeCauseTokens.XenogermImplant);
+            AssertEqual("reimplant cause token", "xenogerm_reimplant",
+                GeneChangeCauseTokens.XenogermReimplant);
+            AssertEqual("fallback cause token", "observed_change",
+                GeneChangeCauseTokens.ObservedChange);
             AssertEqual("pregnancy arc key", "biotech-family|Birther_1|Hediff_7",
                 BiotechArcKeys.FamilyFromPregnancy(" Birther_1 ", "Hediff_7"));
             AssertEqual("child arc key", "biotech-family|Child_4", BiotechArcKeys.FamilyFromChild("Child_4"));
@@ -121,6 +398,16 @@ namespace DiaryBiotechPolicyTests
             AssertEqual("pending birth Scribe key", "pendingBiotechBirths", BiotechSaveKeys.PendingBirths);
             AssertEqual("nested progression Scribe key", "biotechProgressionState",
                 BiotechSaveKeys.PawnProgressionState);
+            AssertEqual("nested gene observation Scribe key", "geneIdentityObservationState",
+                BiotechSaveKeys.GeneIdentityObservationState);
+            AssertEqual("gene observation version Scribe key", "geneObservationVersion",
+                BiotechSaveKeys.GeneObservationVersion);
+            AssertEqual("gene xenotype Def Scribe key", "geneObservedXenotypeDefName",
+                BiotechSaveKeys.GeneObservedXenotypeDefName);
+            AssertEqual("gene xenotype label Scribe key", "geneObservedXenotypeLabel",
+                BiotechSaveKeys.GeneObservedXenotypeLabel);
+            AssertEqual("gene membership Scribe key", "geneObservedDefNames",
+                BiotechSaveKeys.GeneObservedDefNames);
         }
 
         private static void TestGrowthDiffAndTruthBoundaries()
@@ -1135,6 +1422,25 @@ namespace DiaryBiotechPolicyTests
             AssertEqual("policy max pending birth rows", "256", Value(def, "maximumPendingBirthRows"));
             AssertEqual("policy birth correlation expiry", "2500", Value(def, "birthCorrelationExpiryTicks"));
             AssertEqual("policy supporter minimum", "2", Value(def, "supporterMinimumEvidence"));
+            AssertEqual("gene theme cap", "4", Value(def, "geneMaximumThemes"));
+            AssertEqual("gene delta bonus", "100", Value(def, "geneDeltaBonus"));
+            AssertEqual("gene duplicate-category penalty", "30", Value(def, "geneDuplicateCategoryPenalty"));
+            AssertEqual("gene label cap", "80", Value(def, "geneLabelCharacterLimit"));
+            AssertEqual("gene description cap", "240", Value(def, "geneDescriptionCharacterLimit"));
+            AssertEqual("gene total text cap", "640", Value(def, "geneTotalTextCharacterLimit"));
+            AssertEqual("gene observed membership cap", "512", Value(def, "geneMaximumObservedDefNames"));
+            AssertEqual("gene fallback significance", "2", Value(def, "geneMinimumFallbackChanges"));
+            List<XElement> geneWeights = def.Element("geneCategoryWeights").Elements("li").ToList();
+            AssertSequence("gene structural categories", new[]
+            {
+                "ability", "trait", "resource", "need", "aging", "environment", "violence",
+                "emotion", "social", "capacity", "appearance", "stat", "other"
+            }, geneWeights.Select(row => Value(row, "category")));
+            AssertEqual("gene categories are unique", geneWeights.Count,
+                geneWeights.Select(row => Value(row, "category")).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+            AssertTrue("gene correction lists contain no unconditional DLC Def reference",
+                Values(def.Element("geneForceIncludeDefNames")).Length == 0
+                && Values(def.Element("geneExcludeDefNames")).Length == 0);
             AssertTrue("new-interest prompt prose is XML-owned",
                 Value(def, "newInterestDescription").Length > 0);
             AssertTrue("deepened-interest prompt prose is XML-owned",
@@ -1179,6 +1485,7 @@ namespace DiaryBiotechPolicyTests
             XDocument groups = XDocument.Load(Path.Combine(root, "1.6", "Defs", "DiaryInteractionGroupDefs.xml"));
             XElement growth = Group(groups, "progressionGrowthMoment");
             XElement birth = Group(groups, "biotechFamilyBirth");
+            XElement geneIdentity = Group(groups, "progressionXenotype");
             AssertEqual("growth group order", "800", Value(growth, "order"));
             AssertEqual("growth domain", "Progression", Value(growth, "domain"));
             AssertSequence("growth exact classifier", new[] { "BiotechGrowthMoment" },
@@ -1187,6 +1494,9 @@ namespace DiaryBiotechPolicyTests
             AssertEqual("birth domain", "Tale", Value(birth, "domain"));
             AssertSequence("birth exact classifier", new[] { "BiotechFamilyBirth" },
                 Values(birth.Element("matchDefNames")));
+            AssertSequence("gene identity classifier retains legacy and rich tokens",
+                new[] { "XenotypeChanged", "GeneIdentityChanged" },
+                Values(geneIdentity.Element("matchDefNames")));
             AssertSequence("growth package gate", new[] { "Ludeon.RimWorld.Biotech" },
                 Values(growth.Element("enableWhenPackageIdsLoaded")));
             AssertSequence("birth package gate", new[] { "Ludeon.RimWorld.Biotech" },
@@ -1225,7 +1535,8 @@ namespace DiaryBiotechPolicyTests
                 "progressionGrowthMoment.tone", "progressionGrowthMoment.tones.0",
                 "progressionGrowthMoment.tones.1", "biotechFamilyBirth.label",
                 "biotechFamilyBirth.instruction", "biotechFamilyBirth.tone",
-                "biotechFamilyBirth.tones.0", "biotechFamilyBirth.tones.1"
+                "biotechFamilyBirth.tones.0", "biotechFamilyBirth.tones.1",
+                "progressionXenotype.label", "progressionXenotype.instruction"
             };
             foreach (string key in groupKeys)
             {
@@ -1272,6 +1583,8 @@ namespace DiaryBiotechPolicyTests
                 "PawnDiary.Event.Biotech.Birth.Outcome.InfantIllness",
                 "PawnDiary.Event.Biotech.Birth.Outcome.Stillbirth",
                 "PawnDiary.Event.Biotech.Birth.BirtherDied",
+                "PawnDiary.Event.Biotech.GeneIdentity.Label",
+                "PawnDiary.Event.Biotech.GeneIdentity.Text",
                 "PawnDiary.Dev.PromptSuite.BiotechGrowth.Label",
                 "PawnDiary.Dev.PromptSuite.BiotechGrowth.Markers",
                 "PawnDiary.Dev.PromptSuite.BiotechGrowth.Initiator",
@@ -1339,6 +1652,33 @@ namespace DiaryBiotechPolicyTests
         private static GrowthTraitFact Trait(string key, string label, string description)
         {
             return new GrowthTraitFact { traitKey = key, label = label, description = description };
+        }
+
+        private static GeneFact Gene(string defName, string label, string category, string description = null)
+        {
+            GeneFact fact = new GeneFact
+            {
+                defName = defName,
+                label = label,
+                description = description ?? label + " description",
+                isEndogene = true
+            };
+            switch (category)
+            {
+                case GeneCategoryTokens.Ability: fact.affectsAbility = true; break;
+                case GeneCategoryTokens.Trait: fact.affectsTrait = true; break;
+                case GeneCategoryTokens.Resource: fact.affectsResource = true; break;
+                case GeneCategoryTokens.Need: fact.affectsNeed = true; break;
+                case GeneCategoryTokens.Appearance: fact.affectsAppearance = true; break;
+                case GeneCategoryTokens.Aging: fact.affectsAging = true; break;
+                case GeneCategoryTokens.Environment: fact.affectsEnvironment = true; break;
+                case GeneCategoryTokens.Violence: fact.affectsViolence = true; break;
+                case GeneCategoryTokens.Emotion: fact.affectsEmotion = true; break;
+                case GeneCategoryTokens.Social: fact.affectsSocial = true; break;
+                case GeneCategoryTokens.Capacity: fact.affectsCapacity = true; break;
+                case GeneCategoryTokens.Stat: fact.affectsStat = true; break;
+            }
+            return fact;
         }
 
         private static GrowthSkillFact Skill(string key, string label, string passion)

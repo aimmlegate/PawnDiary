@@ -25,6 +25,11 @@ namespace PawnDiary.Capture
         public const string PawnProgressionState = "biotechProgressionState";
         public const string FamilyObservationVersion = "familyObservationVersion";
         public const string GrowthObservationVersion = "growthObservationVersion";
+        public const string GeneIdentityObservationState = "geneIdentityObservationState";
+        public const string GeneObservationVersion = "geneObservationVersion";
+        public const string GeneObservedXenotypeDefName = "geneObservedXenotypeDefName";
+        public const string GeneObservedXenotypeLabel = "geneObservedXenotypeLabel";
+        public const string GeneObservedDefNames = "geneObservedDefNames";
     }
 
     /// <summary>Stable semicolon-context keys. These are schema labels, not localized prompt prose.</summary>
@@ -379,7 +384,7 @@ namespace PawnDiary.Capture
         public string description = string.Empty;
     }
 
-    /// <summary>XML-owned B1 policy snapshot with code fallbacks that contain no prompt prose.</summary>
+    /// <summary>XML-owned Biotech policy snapshot with code fallbacks that contain no prompt prose.</summary>
     internal class BiotechPolicySnapshot
     {
         public int growthPendingExpiryTicks = 180000;
@@ -411,6 +416,7 @@ namespace PawnDiary.Capture
         public List<string> miscarriagePartnerThoughtDefNames = new List<string>();
         public List<BiotechOpportunityBandRule> opportunityBands = new List<BiotechOpportunityBandRule>();
         public List<BiotechObservationBandRule> observationBands = new List<BiotechObservationBandRule>();
+        public GeneSaliencePolicySnapshot geneSalience = GeneSaliencePolicySnapshot.CreateDefault();
 
         /// <summary>Creates a complete safe policy whose fallback bands contain no prompt prose.</summary>
         public static BiotechPolicySnapshot CreateDefault()

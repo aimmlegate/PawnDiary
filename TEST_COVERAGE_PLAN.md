@@ -149,14 +149,16 @@ newest-history retention. O1.3 extends it with exact public/private Harmony regi
 state-only intent/TravelTo/landing-start ownership. O1.4 adds an authorized-without-live-writer
 transaction fixture plus a major two-writer finish that creates one pair event, commits one page/ID,
 and rejects replay. The major path also attaches an exact landing outcome before component completion
-and asserts roughness/outcome plus both pair-role mappings. The fixture assembly is built now; its loaded-game execution is deferred to the
-combined Odyssey acceptance run. O1.5 adds a loaded eligible-writer routine landing/no-page fixture,
+and asserts roughness/outcome plus both pair-role mappings. The focused O1 runtime/save acceptance is
+complete; a loaded rerun of this broader component/prompt-flow fixture remains a separate follow-up.
+O1.5 adds a loaded eligible-writer routine landing/no-page fixture,
 an explicit `TileSettled` no-pawn drop, and localized Full/Balanced/Compact prompt-suite rendering.
 `DiaryPipelineTests` also exhausts the optional context budget and proves the required Odyssey
 phase/reason/duration/role/ship/origin/destination facts survive while stable IDs and ticks do not.
 O2 extends the loaded fixture with active/inactive package-gate checks for `SeasonalFloodActive` and
-loaded exact matcher/tuning checks for `DiaryEnchant_GravNausea`; live combined execution remains in
-the deferred Odyssey acceptance run. The prompt-suite fixture supplies its isolated copilot explicitly,
+loaded exact matcher/tuning checks for `DiaryEnchant_GravNausea`; their live execution remains an
+O2-specific future gap and is not part of the completed O1 runtime/save acceptance. The prompt-suite
+fixture supplies its isolated copilot explicitly,
 so its dual-POV assertions are independent of the player's live colonist ordering.
 The same fixture asserts fail-soft registration on all four shipped `LandingOutcomeWorker` overrides.
 `DiaryOdysseyPolicyTests` now has 158 assertions, including wrong-ship/empty-outcome rejection, exact
@@ -221,6 +223,26 @@ remain the automated adapter smoke.
 Vanilla letter UI presentation/postponed save reload and live healthy/ill/stillborn/vat/surrogacy/
 ritual/naming/fail-open birth paths, a base-only run, an oldest-supported save, and loaded-adapter
 observation remain the Phase-4 manual acceptance matrix in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
+
+Biotech Phase 5 extends `DiaryBiotechPolicyTests` with assembly-free gene selection, transition, context,
+and observation coverage.
+It pins zero/one/two/four/many cardinality, the four-theme ceiling, added/removed delta priority over
+unchanged membership, deterministic Def-name ties independent of input order, category diversity and
+its XML exception, force/exclude corrections, duplicate post-mutation membership collapse, filtering
+of hidden/inactive/suppressed/malformed rows, whitespace cleaning, and per-field/total text caps. The
+suite also pins the explicit empty-baseline version, membership de-duplication/sorting/capping,
+malformed-row normalization without accidental version upgrade, exact deterministic before/after
+membership deltas, retained removed-gene facts, stable-Def-versus-localized-label identity rules,
+XML minimum fallback significance, separator-injection resistance, bounded outer labels, frozen gene Scribe keys, and parses
+the shipped category weights and primitive policy caps while asserting the empty
+correction lists contain no unconditional DLC Def reference. New RimTest source exercises guarded real
+`Gene`/`GeneDef` projection in both DLC branches, silent first/current observation, disabled-output
+advancement, nested Scribe round-trip, missing-key version-zero normalization, a real vanilla
+`GeneUtility.ReimplantXenogerm` mutation with same-call Ability ownership and replay silence, and a
+real vanilla `GeneUtility.ImplantXenogermItem` mutation with bounded event-time context. The dev prompt
+suite includes an exact reimplant fixture. These fixtures compile but have not yet been executed in
+RimWorld; live no-DLC, exact-hook, Player.log, prompt, fallback, and save/reload evidence remains the
+separate Phase 5 manual matrix.
 
 Narrative N2-B extends `NarrativeContinuityTests` with assembly-free checks for family-continuity
 classification, exact arc/subject candidate construction, fixed provider ordering, inactive-DLC and

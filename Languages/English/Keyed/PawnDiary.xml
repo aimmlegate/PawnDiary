@@ -1284,6 +1284,8 @@
   <PawnDiary.Event.ProgressionPsylinkText>{0} gained psylink level {1}.</PawnDiary.Event.ProgressionPsylinkText>
   <PawnDiary.Event.ProgressionXenotypeLabel>Xenotype: {0}</PawnDiary.Event.ProgressionXenotypeLabel>
   <PawnDiary.Event.ProgressionXenotypeText>{0}'s xenotype changed from {1} to {2}.</PawnDiary.Event.ProgressionXenotypeText>
+  <PawnDiary.Event.Biotech.GeneIdentity.Label>Gene identity changed</PawnDiary.Event.Biotech.GeneIdentity.Label>
+  <PawnDiary.Event.Biotech.GeneIdentity.Text>{0}'s genetic identity changed.</PawnDiary.Event.Biotech.GeneIdentity.Text>
   <PawnDiary.Event.ProgressionRoyalTitleLabel>Royal title: {0}</PawnDiary.Event.ProgressionRoyalTitleLabel>
   <PawnDiary.Event.ProgressionRoyalTitleText>{0}'s royal title changed from {1} to {2}.</PawnDiary.Event.ProgressionRoyalTitleText>
   <PawnDiary.Event.ProgressionTraitLabel>New trait: {0}</PawnDiary.Event.ProgressionTraitLabel>

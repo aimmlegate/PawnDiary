@@ -762,8 +762,15 @@ namespace PawnDiary.RimTests
             };
             progression.SetSkillMilestone("Shooting", 10);
             progression.SetSkillMilestone("Melee", 4);
-            progression.EnsureBiotechState().ConsumeGrowthAge(7);
-            progression.EnsureBiotechState().ConsumeGrowthAge(10);
+            BiotechPawnProgressionState biotechProgression = progression.EnsureBiotechState();
+            biotechProgression.ConsumeGrowthAge(7);
+            biotechProgression.ConsumeGrowthAge(10);
+            GeneIdentityObservationState geneObservation =
+                biotechProgression.EnsureGeneIdentityObservation();
+            geneObservation.geneObservationVersion = GeneIdentityObservationPolicy.CurrentVersion;
+            geneObservation.xenotypeDefName = "CustomXenotype";
+            geneObservation.xenotypeLabel = "Custom identity";
+            geneObservation.geneDefNames = new List<string> { "Gene_Alpha", "Gene_Beta" };
 
             PawnArcScheduleState arc = new PawnArcScheduleState
             {
@@ -818,6 +825,18 @@ namespace PawnDiary.RimTests
                 loaded.progressionState.EnsureBiotechState().HasConsumedGrowthAge(7)
                     && loaded.progressionState.EnsureBiotechState().HasConsumedGrowthAge(10),
                 "record nested Biotech consumed growth ages should survive load.");
+            GeneIdentityObservationState loadedGeneObservation = loaded.progressionState
+                .EnsureBiotechState().EnsureGeneIdentityObservation();
+            AssertInt(
+                GeneIdentityObservationPolicy.CurrentVersion,
+                loadedGeneObservation.geneObservationVersion,
+                "record nested gene observation version");
+            AssertStr("CustomXenotype", loadedGeneObservation.xenotypeDefName,
+                "record nested gene xenotype Def");
+            AssertStr("Custom identity", loadedGeneObservation.xenotypeLabel,
+                "record nested gene xenotype label");
+            AssertStrList(new List<string> { "Gene_Alpha", "Gene_Beta" },
+                loadedGeneObservation.geneDefNames, "record nested gene membership");
 
             Require(loaded.arcSchedule != null, "record arcSchedule should be non-null after load.");
             AssertInt(1234, loaded.arcSchedule.lastArcEntryTick, "record arc lastArcEntryTick");
@@ -842,6 +861,12 @@ namespace PawnDiary.RimTests
                 "record null eventIds should load as a non-null empty list.");
             Require(nullLoaded.progressionState != null, "record null progressionState should load as non-null.");
             Require(nullLoaded.arcSchedule != null, "record null arcSchedule should load as non-null.");
+            GeneIdentityObservationState oldSaveGeneObservation = nullLoaded.progressionState
+                .EnsureBiotechState().EnsureGeneIdentityObservation();
+            Require(oldSaveGeneObservation.geneObservationVersion == 0
+                    && oldSaveGeneObservation.geneDefNames != null
+                    && oldSaveGeneObservation.geneDefNames.Count == 0,
+                "an old save with no gene keys should normalize to an uninitialized empty row.");
         }
 
         // ---- Scribe round-trip machinery -----------------------------------------------------------

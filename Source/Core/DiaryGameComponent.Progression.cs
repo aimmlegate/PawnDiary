@@ -1,7 +1,8 @@
 // Pawn progression scanner. This watches slow-changing pawn state that does not always have a clean
-// one-shot vanilla hook: passion skill milestones, psylink levels, xenotype changes, and royal-title
-// changes. It stores only scanner baselines/highest values on PawnDiaryRecord; existing diary pages
-// remain the history layer used by reflections.
+// one-shot vanilla hook: passion skill milestones, psylink levels, xenotype/gene changes, and royal
+// titles. It stores only scanner baselines/highest values on PawnDiaryRecord; existing diary pages
+// remain the history layer used by reflections. Phase 5 gene observation advances even when the
+// Progression page source is disabled, so re-enabling it cannot create a catch-up identity page.
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -24,7 +25,10 @@ namespace PawnDiary
             // disabled. Settings control page creation; they never freeze saved observation state.
             MaintainPendingBiotechGrowthMoments();
             MaintainBiotechFamilyArcs();
-            if (PawnDiaryMod.Settings == null || !DiarySignalPolicies.Enabled(DiarySignalPolicies.Progression))
+            bool progressionEnabled = PawnDiaryMod.Settings != null
+                && DiarySignalPolicies.Enabled(DiarySignalPolicies.Progression);
+            bool observeBiotechGenes = ModsConfig.BiotechActive;
+            if (!progressionEnabled && !observeBiotechGenes)
             {
                 return;
             }
@@ -46,9 +50,18 @@ namespace PawnDiary
 
                 PawnProgressionState state = diary.EnsureProgressionState();
                 bool baseline = state.baselineProgressionOnNextScan;
+                if (observeBiotechGenes)
+                {
+                    // The first/disabled pass is bookkeeping only. Enabled later passes may emit one
+                    // significant fallback, but every path advances before returning.
+                    ObserveGeneIdentity(pawn, state, progressionEnabled && !baseline);
+                }
+                if (!progressionEnabled)
+                {
+                    continue;
+                }
                 ScanPassionSkillMilestones(pawn, state, baseline);
                 ScanPsylinkLevel(pawn, state, baseline);
-                ScanXenotypeChange(pawn, state, baseline);
                 ScanRoyalTitleChange(pawn, state, baseline);
                 ScanTraitGain(pawn, state);
                 if (baseline)
@@ -56,6 +69,164 @@ namespace PawnDiary
                     state.baselineProgressionOnNextScan = false;
                 }
             }
+        }
+
+        /// <summary>
+        /// Captures and advances the bounded current gene baseline. First/disabled passes are silent;
+        /// enabled later passes may emit one XML-significant fallback identity transition.
+        /// </summary>
+        private void ObserveGeneIdentity(
+            Pawn pawn,
+            PawnProgressionState state,
+            bool allowFallbackEmission)
+        {
+            GeneIdentitySnapshot identity;
+            if (state == null || !DlcContext.TryCaptureGeneIdentity(pawn, out identity))
+            {
+                return;
+            }
+
+            GeneIdentityObservationState observation = state.EnsureBiotechState()
+                .EnsureGeneIdentityObservation();
+            bool firstCurrentBaseline = !observation.HasCurrentBaseline();
+            GeneSaliencePolicySnapshot policy = DiaryBiotechPolicy.Snapshot().geneSalience;
+            GeneIdentitySnapshot before = GeneIdentityTransitionPolicy.FromObservation(
+                observation.CaptureSnapshot());
+            GeneIdentityTransitionDecision decision = firstCurrentBaseline
+                ? null
+                : GeneIdentityTransitionPolicy.Evaluate(before, identity, policy);
+            observation.Observe(
+                identity,
+                policy.maximumObservedGeneDefNames,
+                policy.labelCharacterLimit);
+            // Frozen legacy keys remain current for old-save/downgrade compatibility, but the nested
+            // versioned observation is authoritative for Phase 5 diffing.
+            state.lastObservedXenotypeDefName = identity.xenotypeDefName ?? string.Empty;
+            state.lastObservedXenotypeLabel = identity.xenotypeLabel ?? string.Empty;
+            if (!allowFallbackEmission || firstCurrentBaseline
+                || !GeneIdentityTransitionPolicy.ShouldEmitFallback(
+                    decision,
+                    policy.minimumFallbackGeneChanges)) return;
+
+            EmitGeneIdentityTransition(
+                pawn,
+                before,
+                identity,
+                decision,
+                GeneChangeCauseTokens.ObservedChange,
+                null);
+        }
+
+        /// <summary>Captures exact recipient before-state for one verified vanilla xenogerm call.</summary>
+        internal BiotechGeneMutationCallState BeginBiotechGeneMutation(
+            Pawn recipient,
+            Pawn otherPawn,
+            string causeToken)
+        {
+            if (!GamePlaying || !ModsConfig.BiotechActive || !IsDiaryEligible(recipient)) return null;
+            GeneIdentitySnapshot before;
+            if (!DlcContext.TryCaptureGeneIdentity(recipient, out before)) return null;
+            return new BiotechGeneMutationCallState
+            {
+                recipient = recipient,
+                otherPawn = otherPawn,
+                causeToken = causeToken ?? string.Empty,
+                before = before
+            };
+        }
+
+        /// <summary>
+        /// Completes an exact xenogerm mutation, advances observation immediately, and emits at most one
+        /// canonical recipient page. Returns true only when that page committed.
+        /// </summary>
+        internal bool CompleteBiotechGeneMutation(BiotechGeneMutationCallState call)
+        {
+            GeneIdentitySnapshot after;
+            if (call?.recipient == null || call.before == null
+                || !ModsConfig.BiotechActive
+                || !DlcContext.TryCaptureGeneIdentity(call.recipient, out after)) return false;
+
+            PawnDiaryRecord diary = FindDiary(call.recipient, true);
+            if (diary == null) return false;
+            PawnProgressionState state = diary.EnsureProgressionState();
+            GeneIdentityObservationState observation = state.EnsureBiotechState()
+                .EnsureGeneIdentityObservation();
+            GeneSaliencePolicySnapshot policy = DiaryBiotechPolicy.Snapshot().geneSalience;
+            GeneIdentityTransitionDecision decision = GeneIdentityTransitionPolicy.Evaluate(
+                call.before,
+                after,
+                policy);
+
+            // Advance even for an empty/disabled result so the slow observer cannot replay this call.
+            observation.Observe(after, policy.maximumObservedGeneDefNames, policy.labelCharacterLimit);
+            state.lastObservedXenotypeDefName = after.xenotypeDefName ?? string.Empty;
+            state.lastObservedXenotypeLabel = after.xenotypeLabel ?? string.Empty;
+            if (!decision.HasAnyChange) return false;
+
+            bool emitted = EmitGeneIdentityTransition(
+                call.recipient,
+                call.before,
+                after,
+                decision,
+                call.causeToken,
+                call.otherPawn);
+            if (emitted && string.Equals(
+                call.causeToken,
+                GeneChangeCauseTokens.XenogermReimplant,
+                StringComparison.Ordinal))
+            {
+                BiotechGeneMutationCorrelation.ClaimCurrentAbility(call.recipient);
+            }
+            return emitted;
+        }
+
+        private bool EmitGeneIdentityTransition(
+            Pawn pawn,
+            GeneIdentitySnapshot before,
+            GeneIdentitySnapshot after,
+            GeneIdentityTransitionDecision decision,
+            string causeToken,
+            Pawn otherPawn)
+        {
+            if (pawn == null || decision == null || !decision.HasAnyChange) return false;
+            GeneSaliencePolicySnapshot policy = DiaryBiotechPolicy.Snapshot().geneSalience;
+            bool major = IsMajorArcXenotype(after?.xenotypeDefName);
+            string context = GeneIdentityContextFormatter.Format(
+                before,
+                after,
+                decision,
+                causeToken,
+                otherPawn?.LabelShortCap,
+                otherPawn?.GetUniqueLoadID(),
+                policy.labelCharacterLimit);
+            context += "; major_xenotype=" + (major ? "true" : "false");
+            string previousLabel = GeneIdentityContextFormatter.CleanField(
+                before?.xenotypeLabel,
+                policy.labelCharacterLimit);
+            string currentLabel = GeneIdentityContextFormatter.CleanField(
+                after?.xenotypeLabel,
+                policy.labelCharacterLimit);
+            ProgressionEventData data = ProgressionData(
+                pawn,
+                ProgressionEventData.GeneIdentityChangedDefName,
+                "gene_identity",
+                currentLabel,
+                previousLabel,
+                currentLabel,
+                context);
+            string label = "PawnDiary.Event.Biotech.GeneIdentity.Label".Translate().Resolve();
+            string text = "PawnDiary.Event.Biotech.GeneIdentity.Text"
+                .Translate(pawn.LabelShortCap).Resolve();
+            string dedupKey = "progression-gene|" + pawn.GetUniqueLoadID() + "|"
+                + (causeToken ?? string.Empty) + "|" + Find.TickManager.TicksGame;
+            return DispatchProgression(
+                pawn,
+                data,
+                label,
+                text,
+                major,
+                dedupKey,
+                DiaryTuning.Current.genericEventTypeDedupTicks);
         }
 
         private void ScanPassionSkillMilestones(Pawn pawn, PawnProgressionState state, bool baseline)
@@ -156,51 +327,9 @@ namespace PawnDiary
 
         private void ScanXenotypeChange(Pawn pawn, PawnProgressionState state, bool baseline)
         {
-            string currentDef = DlcContext.XenotypeDefName(pawn);
-            string currentLabel = DlcContext.XenotypeLabel(pawn);
-            if (baseline)
-            {
-                state.lastObservedXenotypeDefName = currentDef;
-                state.lastObservedXenotypeLabel = currentLabel;
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(currentDef)
-                && string.IsNullOrWhiteSpace(state.lastObservedXenotypeDefName))
-            {
-                state.lastObservedXenotypeLabel = currentLabel;
-                return;
-            }
-
-            if (!Changed(state.lastObservedXenotypeDefName, state.lastObservedXenotypeLabel, currentDef, currentLabel))
-            {
-                return;
-            }
-
-            string previousLabel = string.IsNullOrWhiteSpace(state.lastObservedXenotypeLabel)
-                ? "none"
-                : state.lastObservedXenotypeLabel;
-            state.lastObservedXenotypeDefName = currentDef;
-            state.lastObservedXenotypeLabel = currentLabel;
-
-            bool majorArcXenotype = IsMajorArcXenotype(currentDef);
-            string extraContext = "previous_xenotype=" + previousLabel
-                + "; xenotype=" + currentLabel
-                + "; xenotype_def=" + currentDef
-                + "; major_xenotype=" + (majorArcXenotype ? "true" : "false");
-            ProgressionEventData data = ProgressionData(
-                pawn,
-                ProgressionEventData.XenotypeChangedDefName,
-                "xenotype",
-                currentLabel,
-                previousLabel,
-                currentLabel,
-                extraContext);
-            string label = "PawnDiary.Event.ProgressionXenotypeLabel"
-                .Translate(currentLabel).Resolve();
-            string text = "PawnDiary.Event.ProgressionXenotypeText"
-                .Translate(pawn.LabelShortCap, previousLabel, currentLabel).Resolve();
-            DispatchProgression(pawn, data, label, text, majorArcCandidate: majorArcXenotype);
+            // Retained as a narrow reflection-compatible wrapper for the existing RimTest fixture.
+            // The top-level scanner calls ObserveGeneIdentity directly so disabled output still advances.
+            ObserveGeneIdentity(pawn, state, !baseline);
         }
 
         private void ScanRoyalTitleChange(Pawn pawn, PawnProgressionState state, bool baseline)

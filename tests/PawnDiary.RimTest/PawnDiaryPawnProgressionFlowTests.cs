@@ -2,7 +2,7 @@
 //
 // EVT-15 is the skill/trait milestone tracker — distinct from EVT-04 (situational thought-stage
 // progression). The component periodically scans each free colonist and, for a genuine forward step
-// (a passion skill crossing a configured milestone, a newly gained trait, a major xenotype change),
+// (a passion skill crossing a configured milestone, a newly gained trait, a gene-identity change),
 // writes one solo diary page. First scan of a pawn BASELINES current state silently so loading an old
 // save never bursts a page for every long-standing skill/trait.
 //
@@ -12,14 +12,14 @@
 // unspawned test colonist, and invoking it would record real progression pages for the developer's
 // actual colonists (state this suite could never clean up). The genuine EVT-15 contract
 // (baseline / only-upward / exact-context / major-change arc request) lives entirely in the private
-// per-pawn updaters ScanPassionSkillMilestones / ScanTraitGain / ScanXenotypeChange /
+// per-pawn updaters ScanPassionSkillMilestones / ScanTraitGain / ObserveGeneIdentity /
 // ScanPsylinkLevel / ScanRoyalTitleChange, so this suite drives those directly against the isolated
 // pawn — exactly what the top-level scan does per colonist, minus the live-colony enumeration. They
 // are private today, so the suite reaches them by reflection; see productionSeamNeeded in the
 // integration report for the internal seam that would remove it.
 //
 // Determinism: the milestone list (DiaryTuningDef.progressionSkillMilestones) and the major-arc
-// xenotype tuning are XML-backed, so each test snapshots and forces the exact values it needs (a
+// xenotype/gene tuning are XML-backed, so each test snapshots and forces the exact values it needs (a
 // single skill milestone, a pawn's own xenotype marked "major") and restores them in teardown instead
 // of depending on shipped defaults or looping until a roll passes. To keep the multi-skill scan
 // single-valued, every OTHER skill's passion is cleared so only the one target skill can emit.
@@ -70,6 +70,7 @@ namespace PawnDiary.RimTests
         private static MethodInfo scanXenotypeMethod;  // void ScanXenotypeChange(Pawn, PawnProgressionState, bool baseline)
         private static MethodInfo scanPsylinkMethod;   // void ScanPsylinkLevel(Pawn, PawnProgressionState, bool baseline)
         private static MethodInfo scanRoyalTitleMethod; // void ScanRoyalTitleChange(Pawn, PawnProgressionState, bool baseline)
+        private static MethodInfo observeGeneIdentityMethod; // void ObserveGeneIdentity(Pawn, PawnProgressionState, bool)
 
         /// <summary>
         /// Opens a scope, enables the progression interaction groups and the Progression signal policy
@@ -248,20 +249,183 @@ namespace PawnDiary.RimTests
             ForceMajorXenotype(currentXenotypeDefName);
 
             PawnProgressionState state = new PawnProgressionState();
-            // Simulate a prior, different xenotype so the scanner sees a genuine change without mutating
-            // the pawn's genes. This lives on the test-owned state object, not any persisted store.
-            state.lastObservedXenotypeDefName = "PawnDiaryTest_PreviousXenotype";
-            state.lastObservedXenotypeLabel = "PawnDiaryTest_PreviousXenotype";
+            GeneIdentitySnapshot liveIdentity;
+            PawnDiaryRimTestScope.Require(DlcContext.TryCaptureGeneIdentity(pawn, out liveIdentity),
+                "The Biotech fixture could not project the test pawn's live gene identity.");
+            // Simulate a current-version prior observation with different stable xenotype identity but
+            // identical membership. This avoids mutating live genes merely to exercise fallback ownership.
+            GeneIdentityObservationState observation = state.EnsureBiotechState()
+                .EnsureGeneIdentityObservation();
+            observation.geneObservationVersion = GeneIdentityObservationPolicy.CurrentVersion;
+            observation.xenotypeDefName = "PawnDiaryTest_PreviousXenotype";
+            observation.xenotypeLabel = "PawnDiaryTest_PreviousXenotype";
+            observation.geneDefNames = new List<string>(liveIdentity.installedGeneDefNames);
 
             DiaryEvent diaryEvent = scope.FireAndRequireEvent(
                 () => InvokeScanXenotype(state, baseline: false),
-                ProgressionEventData.XenotypeChangedDefName,
+                ProgressionEventData.GeneIdentityChangedDefName,
                 pawn,
                 null);
 
             scope.RequireSoloRef(diaryEvent, pawn);
-            RequireContextContains(diaryEvent, "progression=" + ProgressionEventData.XenotypeChangedDefName);
+            RequireContextContains(diaryEvent,
+                "progression=" + ProgressionEventData.GeneIdentityChangedDefName);
+            RequireContextContains(diaryEvent, "gene_identity_transition=true");
+            RequireContextContains(diaryEvent,
+                "gene_change_cause=" + GeneChangeCauseTokens.ObservedChange);
             RequireContextContains(diaryEvent, "major_xenotype=true");
+        }
+
+        /// <summary>
+        /// Biotech Phase 5 exact ownership. The real vanilla ReimplantXenogerm body mutates a disposable
+        /// recipient, installed Harmony receives both Pawns, one canonical gene page commits, the outer
+        /// ability scope is claimed, and replaying the same membership produces no second page.
+        /// </summary>
+        [Test]
+        public static void RealReimplantHookEmitsOnceAndClaimsAbilityScope()
+        {
+            if (!ModsConfig.BiotechActive) return;
+            Pawn caster = scope.CreateAdultColonist();
+            if (caster?.genes == null || pawn?.genes == null) return;
+            GeneDef added = PickVisibleUninstalledGene(caster, pawn);
+            if (added == null) throw new AssertionException(
+                "Biotech is active but no visible uninstalled GeneDef was available for reimplant testing.");
+            caster.genes.AddGene(added, xenogene: true);
+
+            BiotechGeneAbilityScope abilityScope = BiotechGeneMutationCorrelation.BeginAbility(pawn);
+            scope.RegisterCleanup(() => BiotechGeneMutationCorrelation.CloseAbility(abilityScope));
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => GeneUtility.ReimplantXenogerm(caster, pawn),
+                ProgressionEventData.GeneIdentityChangedDefName,
+                pawn,
+                null);
+            bool claimed = BiotechGeneMutationCorrelation.CloseAbility(abilityScope);
+
+            scope.RequireSoloRef(diaryEvent, pawn);
+            RequireContextContains(diaryEvent,
+                "gene_change_cause=" + GeneChangeCauseTokens.XenogermReimplant);
+            RequireContextContains(diaryEvent, "other_pawn_id=" + caster.GetUniqueLoadID());
+            RequireContextContains(diaryEvent, "gene_theme_1=");
+            PawnDiaryRimTestScope.Require(claimed,
+                "The canonical reimplant page did not claim its enclosing ability scope.");
+            scope.RequireNoNewEvent(() => GeneUtility.ReimplantXenogerm(caster, pawn));
+        }
+
+        /// <summary>Biotech Phase 5 exact item implantation enters the real vanilla method once.</summary>
+        [Test]
+        public static void RealImplantItemHookEmitsOneBoundedGenePage()
+        {
+            if (!ModsConfig.BiotechActive || pawn?.genes == null) return;
+            GeneDef added = PickVisibleUninstalledGene(null, pawn);
+            if (added == null) throw new AssertionException(
+                "Biotech is active but no visible uninstalled GeneDef was available for implant testing.");
+            Xenogerm xenogerm = ThingMaker.MakeThing(ThingDefOf.Xenogerm) as Xenogerm;
+            if (xenogerm == null) throw new AssertionException("Could not create a disposable Xenogerm.");
+            FieldInfo geneSetField = typeof(GeneSetHolderBase).GetField(
+                "geneSet",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            if (geneSetField == null) throw new AssertionException(
+                "RimWorld 1.6 GeneSetHolderBase.geneSet changed; update the fixture defensively.");
+            GeneSet geneSet = new GeneSet();
+            geneSet.AddGene(added);
+            geneSetField.SetValue(xenogerm, geneSet);
+            xenogerm.xenotypeName = "Pawn Diary RimTest";
+            scope.RegisterCleanup(() =>
+            {
+                if (xenogerm != null && !xenogerm.Destroyed) xenogerm.Destroy();
+            });
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => GeneUtility.ImplantXenogermItem(pawn, xenogerm),
+                ProgressionEventData.GeneIdentityChangedDefName,
+                pawn,
+                null);
+            scope.RequireSoloRef(diaryEvent, pawn);
+            RequireContextContains(diaryEvent,
+                "gene_change_cause=" + GeneChangeCauseTokens.XenogermImplant);
+            RequireContextContains(diaryEvent, "gene_identity_transition=true");
+            RequireContextContains(diaryEvent, "narrative_facets=identity_transition");
+        }
+
+        /// <summary>
+        /// Biotech Phase 5. The guarded live projector returns detached current membership only with
+        /// Biotech, and the observation adapter establishes a versioned silent baseline. A later
+        /// observation can advance the retained scalar keys when output is disabled without a page.
+        /// </summary>
+        [Test]
+        public static void GeneIdentityProjectionAndVersionedBaselineAreSilent()
+        {
+            GeneIdentitySnapshot identity;
+            bool captured = DlcContext.TryCaptureGeneIdentity(pawn, out identity);
+            if (!ModsConfig.BiotechActive)
+            {
+                PawnDiaryRimTestScope.Require(!captured && identity == null,
+                    "Biotech is inactive but live gene projection returned a snapshot.");
+                PawnProgressionState inactiveState = new PawnProgressionState();
+                scope.RequireNoNewEvent(() => InvokeObserveGeneIdentity(inactiveState, true));
+                PawnDiaryRimTestScope.Require(inactiveState.EnsureBiotechState()
+                        .EnsureGeneIdentityObservation().geneObservationVersion == 0,
+                    "Biotech-inactive observation should not invent a baseline version.");
+                return;
+            }
+
+            PawnDiaryRimTestScope.Require(captured && identity != null,
+                "Biotech is active but the guarded gene projector returned no snapshot.");
+            PawnDiaryRimTestScope.Require(
+                identity.xenotypeDefName == DlcContext.XenotypeDefName(pawn)
+                    && identity.xenotypeLabel == DlcContext.XenotypeLabel(pawn),
+                "The detached identity snapshot did not preserve the live xenotype identity.");
+            HashSet<string> uniqueDefNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            HashSet<string> installedDefNames = new HashSet<string>(
+                identity.installedGeneDefNames, StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < identity.genes.Count; i++)
+            {
+                GeneFact fact = identity.genes[i];
+                PawnDiaryRimTestScope.Require(fact != null
+                        && !string.IsNullOrWhiteSpace(fact.defName)
+                        && !string.IsNullOrWhiteSpace(fact.label)
+                        && uniqueDefNames.Add(fact.defName),
+                    "Live gene projection returned a blank or duplicate detached fact.");
+                PawnDiaryRimTestScope.Require(
+                    fact.label.IndexOf('\n') < 0 && fact.label.IndexOf('\r') < 0
+                        && fact.description.IndexOf('\n') < 0 && fact.description.IndexOf('\r') < 0,
+                    "Live gene projection leaked multi-line label/description text.");
+            }
+            PawnDiaryRimTestScope.Require(
+                uniqueDefNames.IsSubsetOf(installedDefNames),
+                "An active projected gene fact was absent from installed membership.");
+
+            PawnProgressionState state = new PawnProgressionState
+            {
+                baselineProgressionOnNextScan = false,
+                lastObservedXenotypeDefName = "Legacy_Previous",
+                lastObservedXenotypeLabel = "legacy previous"
+            };
+            scope.RequireNoNewEvent(() => InvokeObserveGeneIdentity(state, false));
+            GeneIdentityObservationState observed = state.EnsureBiotechState()
+                .EnsureGeneIdentityObservation();
+            PawnDiaryRimTestScope.Require(
+                observed.geneObservationVersion == GeneIdentityObservationPolicy.CurrentVersion,
+                "First live gene observation did not set the frozen current version.");
+            PawnDiaryRimTestScope.Require(
+                observed.xenotypeDefName == identity.xenotypeDefName
+                    && observed.xenotypeLabel == identity.xenotypeLabel,
+                "First live gene observation did not copy xenotype identity.");
+            PawnDiaryRimTestScope.Require(
+                new HashSet<string>(observed.geneDefNames, StringComparer.OrdinalIgnoreCase)
+                    .SetEquals(installedDefNames),
+                "First live gene observation did not copy exact installed-gene membership.");
+            PawnDiaryRimTestScope.Require(
+                state.lastObservedXenotypeDefName == identity.xenotypeDefName,
+                "Old-save migration did not silently advance the retained xenotype scalar.");
+
+            state.lastObservedXenotypeDefName = "Disabled_Output_Previous";
+            state.lastObservedXenotypeLabel = "disabled output previous";
+            scope.RequireNoNewEvent(() => InvokeObserveGeneIdentity(state, true));
+            PawnDiaryRimTestScope.Require(
+                state.lastObservedXenotypeDefName == identity.xenotypeDefName
+                    && state.lastObservedXenotypeLabel == identity.xenotypeLabel,
+                "Observation while output is disabled did not advance the retained scalar baseline.");
         }
 
         /// <summary>
@@ -411,6 +575,14 @@ namespace PawnDiary.RimTests
             Invoke(scanRoyalTitleMethod, new object[] { pawn, state, baseline });
         }
 
+        private static void InvokeObserveGeneIdentity(
+            PawnProgressionState state,
+            bool advanceLegacyXenotypeBaseline)
+        {
+            Invoke(observeGeneIdentityMethod,
+                new object[] { pawn, state, advanceLegacyXenotypeBaseline });
+        }
+
         private static void Invoke(MethodInfo method, object[] args)
         {
             try
@@ -549,6 +721,7 @@ namespace PawnDiary.RimTests
             EnableProgressionGroup(ProgressionEventData.SkillMilestoneDefName);
             EnableProgressionGroup(ProgressionEventData.TraitGainedDefName);
             EnableProgressionGroup(ProgressionEventData.XenotypeChangedDefName);
+            EnableProgressionGroup(ProgressionEventData.GeneIdentityChangedDefName);
             EnableProgressionGroup(ProgressionEventData.PsylinkLevelDefName);
             EnableProgressionGroup(ProgressionEventData.RoyalTitleChangedDefName);
         }
@@ -578,12 +751,14 @@ namespace PawnDiary.RimTests
             scanXenotypeMethod = typeof(DiaryGameComponent).GetMethod("ScanXenotypeChange", PrivateInstance);
             scanPsylinkMethod = typeof(DiaryGameComponent).GetMethod("ScanPsylinkLevel", PrivateInstance);
             scanRoyalTitleMethod = typeof(DiaryGameComponent).GetMethod("ScanRoyalTitleChange", PrivateInstance);
+            observeGeneIdentityMethod = typeof(DiaryGameComponent).GetMethod("ObserveGeneIdentity", PrivateInstance);
 
             RequireHandle(scanSkillMethod, "ScanPassionSkillMilestones");
             RequireHandle(scanTraitMethod, "ScanTraitGain");
             RequireHandle(scanXenotypeMethod, "ScanXenotypeChange");
             RequireHandle(scanPsylinkMethod, "ScanPsylinkLevel");
             RequireHandle(scanRoyalTitleMethod, "ScanRoyalTitleChange");
+            RequireHandle(observeGeneIdentityMethod, "ObserveGeneIdentity");
         }
 
         private static void RequireHandle(object handle, string name)
@@ -602,6 +777,31 @@ namespace PawnDiary.RimTests
                 diaryEvent.gameContext != null
                     && diaryEvent.gameContext.IndexOf(expectedFragment, StringComparison.Ordinal) >= 0,
                 "The progression event context did not contain the expected fact '" + expectedFragment + "'.");
+        }
+
+        private static GeneDef PickVisibleUninstalledGene(Pawn first, Pawn second)
+        {
+            List<GeneDef> defs = DefDatabase<GeneDef>.AllDefsListForReading;
+            for (int i = 0; i < defs.Count; i++)
+            {
+                GeneDef def = defs[i];
+                if (def == null || string.IsNullOrWhiteSpace(def.defName) || def.displayCategory == null)
+                    continue;
+                if (HasGene(first, def) || HasGene(second, def)) continue;
+                return def;
+            }
+            return null;
+        }
+
+        private static bool HasGene(Pawn candidate, GeneDef def)
+        {
+            List<Gene> genes = candidate?.genes?.GenesListForReading;
+            if (genes == null) return false;
+            for (int i = 0; i < genes.Count; i++)
+            {
+                if (genes[i]?.def == def) return true;
+            }
+            return false;
         }
     }
 }

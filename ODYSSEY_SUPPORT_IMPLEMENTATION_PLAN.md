@@ -8,9 +8,11 @@ bounded launch policy, and package-gated groups; O1.5 projects the complete land
 important prompt templates, protects its core fields under every context preset, adds a localized dev
 fixture, and pins routine/no-writer/old-save/mid-flight/`TileSettled` boundaries. This was started as a
 user-directed scheduling exception while five Biotech Phase 4 manual acceptance rows remain open.
-The combined in-game acceptance run remains deferred at the user's direction until the Odyssey batch
-is complete; later life-support and Mechhive hooks require
-their own spikes.
+The focused O1 runtime/save acceptance completed on 2026-07-17: base-only startup skipped all five
+Odyssey lifecycle fixtures cleanly, real cancellation and cross-layer travel/landing passed, and the
+Phase A/B/C reload sequence preserved the frozen keys, rejected replay/resurrection, and deleted both
+reserved saves. The broader loaded component/prompt-flow rerun remains separate, and later O2/O3
+life-support and Mechhive hooks still require their own spikes.
 
 Scheduling authority: implement Odyssey phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Odyssey.

@@ -942,6 +942,8 @@
   <PawnDiary.Event.ProgressionPsylinkText>Уровень пси-связи у {0}: {1}.</PawnDiary.Event.ProgressionPsylinkText>
   <PawnDiary.Event.ProgressionXenotypeLabel>Ксенотип: {0}</PawnDiary.Event.ProgressionXenotypeLabel>
   <PawnDiary.Event.ProgressionXenotypeText>Ксенотип {0} изменился: {1} → {2}.</PawnDiary.Event.ProgressionXenotypeText>
+  <PawnDiary.Event.Biotech.GeneIdentity.Label>Генная идентичность изменилась</PawnDiary.Event.Biotech.GeneIdentity.Label>
+  <PawnDiary.Event.Biotech.GeneIdentity.Text>Генетическая идентичность {0} изменилась.</PawnDiary.Event.Biotech.GeneIdentity.Text>
   <PawnDiary.Event.ProgressionRoyalTitleLabel>Королевский титул: {0}</PawnDiary.Event.ProgressionRoyalTitleLabel>
   <PawnDiary.Event.ProgressionRoyalTitleText>Королевский титул {0} изменился: {1} → {2}.</PawnDiary.Event.ProgressionRoyalTitleText>
   <PawnDiary.Event.ProgressionTraitLabel>Новая черта: {0}</PawnDiary.Event.ProgressionTraitLabel>

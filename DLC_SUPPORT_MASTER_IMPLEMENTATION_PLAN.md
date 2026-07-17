@@ -187,7 +187,7 @@ This is the low-cost prompt-quality release. Do not continue into A1 study/conta
 > canonical birth context needs `tale=BiotechFamilyBirth` so prompt recovery selects the important B1
 > template instead of PairDefault. Both now have focused regression assertions. The duplicate core
 > package remains an independent environment error; a clean single-copy rerun and
-> the remaining loaded-game acceptance matrix are required, so B2 remains blocked. Stable B1
+> the remaining loaded-game acceptance matrix are required before B1 can close. Stable B1
 > contracts/policy/settings now feed live, atomic birthday/growth-letter ownership with saved postponed
 > rows, auto/choice diffs, mature ordinary fallback, progression consumption, saved family continuity,
 > exact lesson/play observations, truthful child/supporter pages, and source-owned N1 identity evidence.
@@ -195,14 +195,21 @@ This is the low-cost prompt-quality release. Do not continue into A1 study/conta
 > family/current visible identity candidates on canonical growth pages. The exact birth owner now stages
 > mature Tale/Thought signals around `ApplyBirthOutcome`, reserves the matching later ritual owner, attaches exact outcome/method facts to the
 > family arc, selects at most two adult writers, preserves pending naming across save/load, rejects replay,
-> and fails open to the mature routes. The next permitted slice remains Biotech Phase 4's manual B1
-> acceptance matrix in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
+> and fails open to the mature routes. A user-directed scheduling exception recorded below permits
+> Biotech Phase 5 work while Phase 4's manual B1 acceptance matrix remains open.
 >
 > **Manual checkpoint update (2026-07-17):** all existing automated suites are reported passing.
 > Manual matrix rows 1, 2, 5, 6, and 8 are user-confirmed passes; rows 3, 4, 7, 9, and 10 remain
 > explicit TODOs, so Biotech Phase 4 and Wave 3 remain open. At the user's direction, Odyssey O1.0
 > proceeded as a documentation-only scheduling exception; it did not add runtime behavior or claim
 > the Wave 3 release gate.
+>
+> **Biotech Phase 5 scheduling exception (2026-07-17):** at the user's direction, the five deferred
+> Phase 4 manual rows no longer block starting Biotech 5. They remain mandatory for closing B1/Wave 3.
+> Biotech 5 is implemented: plain gene identity/mutation contracts, an XML-driven pure salience and
+> fallback policy, guarded live projection, nested versioned baseline persistence, exact xenogerm
+> hooks, same-call Ability arbitration, bounded prompt context, canonical page ownership, and automated
+> coverage. Live no-DLC, exact-hook, fallback, and save/reload acceptance remains a manual TODO.
 
 ### Implement in this exact order
 
@@ -231,17 +238,18 @@ Release family/growth before genes, mechanitors, pollution, or secondary Biotech
 
 ## 9. Wave 4 — Odyssey journey flagship
 
-> **Implementation status (2026-07-17): O1.0-O1.5 and Narrative N2-O implemented; combined manual
-> acceptance remains deferred.**
-> Installed signatures and stable contracts are frozen; Odyssey policy passes 119 assembly-free
+> **Implementation status (2026-07-17): O1.0-O1.5 and Narrative N2-O implemented; focused O1
+> runtime/save acceptance complete.**
+> Installed signatures and stable contracts are frozen; Odyssey policy passes 158 assembly-free
 > assertions and shared Narrative Continuity passes 104. XML policy, guarded location/mobile-home
 > capture, bounded journey/history Scribe state, silent old-save baselining, exact lifecycle hooks,
 > the exact-POV journey/home provider, departure/landing reference factories, and focused RimTests are
-> now present. One novelty-gated landing event (maximum two POVs), corrected/bounded launch policy,
-> and focused compiled RimTest coverage are present; the combined in-game acceptance run remains
-> deferred until the Odyssey batch is complete. O1.5 now adds prompt projection/preset guarantees,
-> localized fixtures, and routine/duplicate-owner hardening, while the
-> five deferred Biotech manual rows remain tracked separately.
+> now present. Base-only startup skipped all five lifecycle fixtures cleanly; real takeoff cancellation,
+> cross-layer travel/landing, and the Phase A/B/C save/reload sequence passed with exactly-once output,
+> no lifecycle resurrection, and both reserved saves removed. O1.5 adds prompt projection/preset
+> guarantees, localized fixtures, and routine/duplicate-owner hardening. Its broader loaded
+> component/prompt-flow rerun remains separate, O2/O3 are not started, and the five deferred Biotech
+> manual rows remain tracked separately.
 
 ### Implement in this exact order
 
@@ -295,9 +303,15 @@ Do not include succession, permits, or Royal Ascent yet.
 
 ## 11. Wave 6 — Biotech identity and mechanitor depth
 
+> **Implementation status (2026-07-17): Biotech 5 implementation complete by explicit scheduling
+> exception; live acceptance pending.** Pure policy, guarded persistence, exact/fallback ownership,
+> Ability arbitration, and bounded prompt context are present. This does not claim the Wave 3/B1
+> manual release gate.
+
 ### Implement in this exact order
 
-1. **Biotech 5** — salient-gene context using the XML-driven pure selector.
+1. **Biotech 5 (implemented; live acceptance pending)** — pure contracts/XML selector, guarded live
+   projection, versioned baseline, exact mutation ownership, fallback emission, and prompt context.
 2. Extend **N3-B** with exact identity candidates and repetition policy.
 3. **Biotech 6** — mechlink, first controlled mech, first consequential mech combat, significant loss,
    and boss-tier mechanitor lifecycle.

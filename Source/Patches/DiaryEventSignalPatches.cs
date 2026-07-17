@@ -832,21 +832,40 @@ namespace PawnDiary
     [HarmonyPatch(typeof(Ability), nameof(Ability.Activate), new[] { typeof(LocalTargetInfo), typeof(LocalTargetInfo) })]
     internal static class AbilityActivateLocalPatch
     {
+        /// <summary>Opens same-call ownership scope before a Biotech reimplant ability can mutate genes.</summary>
+        public static void Prefix(LocalTargetInfo target, ref BiotechGeneAbilityScope __state)
+        {
+            __state = BiotechGeneMutationCorrelation.BeginAbility(target.Thing as Pawn);
+        }
+
         /// <summary>
         /// Harmony Postfix for Ability.Activate(LocalTargetInfo, LocalTargetInfo). Only successful
         /// activations are forwarded; the component handles sampling and prompt policy.
         /// </summary>
-        public static void Postfix(Ability __instance, LocalTargetInfo target, LocalTargetInfo dest, bool __result)
+        public static void Postfix(
+            Ability __instance,
+            LocalTargetInfo target,
+            LocalTargetInfo dest,
+            bool __result,
+            BiotechGeneAbilityScope __state)
         {
+            bool canonicalGeneOwner = BiotechGeneMutationCorrelation.CloseAbility(__state);
             DiaryPatchSafety.Run("AbilityActivateLocalPatch", () =>
             {
-                if (!__result || __instance == null)
+                if (!__result || __instance == null || canonicalGeneOwner)
                 {
                     return;
                 }
 
                 DiaryEvents.Submit(new AbilitySignal(__instance, target, dest));
             });
+        }
+
+        /// <summary>Closes the transient scope even if vanilla or another postfix throws.</summary>
+        public static Exception Finalizer(Exception __exception, BiotechGeneAbilityScope __state)
+        {
+            BiotechGeneMutationCorrelation.CloseAbility(__state);
+            return __exception;
         }
     }
 

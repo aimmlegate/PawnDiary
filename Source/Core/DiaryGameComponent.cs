@@ -210,6 +210,7 @@ namespace PawnDiary
             ArrivalContextCache.Clear();
             ResetBiotechGrowthTransientState();
             ResetBiotechFamilyTransientState();
+            BiotechGeneMutationCorrelation.Clear();
             // TicksGame can repeat across different games, so drop the per-tick free-colonist snapshot
             // here (every Game construction) rather than risk reusing the previous game's list.
             ResetFreeColonistSnapshot();

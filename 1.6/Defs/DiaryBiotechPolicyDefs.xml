@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
-  <!-- B1-only policy. This Def uses our own classes plus plain string matchers, so it is safe to
+  <!-- Biotech policy. This Def uses our own classes plus plain string matchers, so it is safe to
        load without Biotech; live adapters remain responsible for ModsConfig.BiotechActive gates. -->
   <PawnDiary.DiaryBiotechPolicyDef>
     <defName>Diary_BiotechPolicy</defName>
@@ -104,5 +104,39 @@
     <maximumBirthWriters>2</maximumBirthWriters>
     <!-- Admission limit for new ownership; it never evicts an established pending naming owner. -->
     <maximumPendingBirthRows>256</maximumPendingBirthRows>
+
+    <!-- Phase 5 gene salience. Category tokens and correction lists are plain strings, not DLC
+         Def references. The selector reports at most four themes, never complete gene membership. -->
+    <geneMaximumThemes>4</geneMaximumThemes>
+    <geneDeltaBonus>100</geneDeltaBonus>
+    <geneXenogeneBonus>4</geneXenogeneBonus>
+    <geneEndogeneBonus>2</geneEndogeneBonus>
+    <geneDuplicateCategoryPenalty>30</geneDuplicateCategoryPenalty>
+    <geneForcedDefNameBonus>1000</geneForcedDefNameBonus>
+    <geneLabelCharacterLimit>80</geneLabelCharacterLimit>
+    <geneDescriptionCharacterLimit>240</geneDescriptionCharacterLimit>
+    <geneTotalTextCharacterLimit>640</geneTotalTextCharacterLimit>
+    <geneMaximumObservedDefNames>512</geneMaximumObservedDefNames>
+    <!-- Slow fallback ignores a single membership-only fluctuation. Exact xenogerm hooks still own
+         every verified non-empty mutation, and any stable xenotype Def transition always emits. -->
+    <geneMinimumFallbackChanges>2</geneMinimumFallbackChanges>
+    <geneCategoryWeights>
+      <li><category>ability</category><weight>60</weight></li>
+      <li><category>trait</category><weight>55</weight></li>
+      <li><category>resource</category><weight>50</weight></li>
+      <li><category>need</category><weight>45</weight></li>
+      <li><category>aging</category><weight>40</weight></li>
+      <li><category>environment</category><weight>35</weight></li>
+      <li><category>violence</category><weight>34</weight></li>
+      <li><category>emotion</category><weight>33</weight></li>
+      <li><category>social</category><weight>32</weight></li>
+      <li><category>capacity</category><weight>30</weight></li>
+      <li><category>appearance</category><weight>20</weight></li>
+      <li><category>stat</category><weight>10</weight></li>
+      <li><category>other</category><weight>0</weight></li>
+    </geneCategoryWeights>
+    <geneForceIncludeDefNames />
+    <geneExcludeDefNames />
+    <geneAllowDuplicateCategories />
   </PawnDiary.DiaryBiotechPolicyDef>
 </Defs>

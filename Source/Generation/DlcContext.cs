@@ -624,6 +624,169 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Biotech: copies the pawn's current xenotype and installed genes into detached facts. The
+        /// membership includes inactive/overridden genes for stable diffing, while each fact carries
+        /// active/hidden/suppressed truth so the pure salience selector can reject bookkeeping rows.
+        /// Returns false without Biotech or without a gene tracker.
+        /// </summary>
+        public static bool TryCaptureGeneIdentity(Pawn pawn, out GeneIdentitySnapshot snapshot)
+        {
+            snapshot = null;
+            if (!ModsConfig.BiotechActive || pawn?.genes == null)
+            {
+                return false;
+            }
+
+            GeneIdentitySnapshot captured = new GeneIdentitySnapshot
+            {
+                xenotypeDefName = XenotypeDefName(pawn),
+                xenotypeLabel = XenotypeLabel(pawn)
+            };
+            List<Gene> genes = pawn.genes.GenesListForReading;
+            Dictionary<string, GeneFact> byDefName =
+                new Dictionary<string, GeneFact>(StringComparer.OrdinalIgnoreCase);
+            HashSet<string> installedDefNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (genes != null)
+            {
+                for (int i = 0; i < genes.Count; i++)
+                {
+                    Gene gene = genes[i];
+                    GeneDef def = gene?.def;
+                    string defName = (def?.defName ?? string.Empty).Trim();
+                    if (defName.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    GeneFact fact = CaptureGeneFact(pawn, gene, def, defName);
+                    if (installedDefNames.Add(defName)) captured.installedGeneDefNames.Add(defName);
+                    if (!fact.active)
+                    {
+                        // Installed membership is retained above, but temporary override/age gates do
+                        // not create salience candidates or mutation prose.
+                        continue;
+                    }
+                    GeneFact existing;
+                    if (!byDefName.TryGetValue(defName, out existing)
+                        || (fact.active && !existing.active))
+                    {
+                        byDefName[defName] = fact;
+                    }
+                }
+            }
+
+            List<string> defNames = new List<string>(byDefName.Keys);
+            defNames.Sort(StringComparer.OrdinalIgnoreCase);
+            captured.installedGeneDefNames.Sort(StringComparer.OrdinalIgnoreCase);
+            int maximumRows = DiaryBiotechPolicy.Snapshot().geneSalience.maximumObservedGeneDefNames;
+            maximumRows = Math.Max(1, Math.Min(
+                GeneIdentityObservationPolicy.HardMaximumGeneDefNames,
+                maximumRows));
+            if (captured.installedGeneDefNames.Count > maximumRows)
+            {
+                captured.installedGeneDefNames.RemoveRange(
+                    maximumRows,
+                    captured.installedGeneDefNames.Count - maximumRows);
+            }
+            int factCount = Math.Min(defNames.Count, maximumRows);
+            for (int i = 0; i < factCount; i++)
+            {
+                captured.genes.Add(byDefName[defNames[i]]);
+            }
+
+            snapshot = captured;
+            return true;
+        }
+
+        private static GeneFact CaptureGeneFact(Pawn pawn, Gene gene, GeneDef def, string defName)
+        {
+            bool suppressed = true;
+            bool active = false;
+            try
+            {
+                suppressed = gene.Overridden;
+                active = gene.Active && !suppressed;
+            }
+            catch
+            {
+                // A broken modded Gene getter becomes inert bookkeeping rather than aborting the scan.
+            }
+
+            bool xenogene = false;
+            bool geneKindKnown = false;
+            try
+            {
+                xenogene = pawn.genes.IsXenogene(gene);
+                geneKindKnown = true;
+            }
+            catch
+            {
+                // GenesListForReading normally contains only endogenes/xenogenes. If a custom tracker
+                // violates that contract, keep the kind flags false rather than guessing.
+            }
+
+            string label = string.Empty;
+            try
+            {
+                label = DiaryLineCleaner.CleanLine(def.LabelCap);
+            }
+            catch
+            {
+                // Stable defName below remains a truthful label fallback.
+            }
+            if (string.IsNullOrWhiteSpace(label)) label = defName;
+
+            // Use the Def's base description only. DescriptionFull expands mechanics and raw stats,
+            // which the Phase 5 contract explicitly excludes from prompt-facing facts.
+            string description = DiaryLineCleaner.CleanLine(def.description);
+            return new GeneFact
+            {
+                defName = defName,
+                label = label,
+                description = description,
+                isEndogene = geneKindKnown && !xenogene,
+                isXenogene = geneKindKnown && xenogene,
+                hidden = def.displayCategory == null,
+                active = active,
+                suppressed = suppressed,
+                affectsAbility = def.abilities != null && def.abilities.Count > 0,
+                affectsTrait = (def.forcedTraits != null && def.forcedTraits.Count > 0)
+                    || (def.suppressedTraits != null && def.suppressedTraits.Count > 0),
+                affectsResource = def.resourceGizmoType != null
+                    || !string.IsNullOrWhiteSpace(def.resourceLabel),
+                affectsNeed = (def.disablesNeeds != null && def.disablesNeeds.Count > 0)
+                    || (def.enablesNeeds != null && def.enablesNeeds.Count > 0),
+                affectsAppearance = GeneAffectsAppearance(def),
+                affectsAging = def.biologicalAgeTickFactorFromAgeCurve != null,
+                affectsEnvironment = def.dislikesSunlight || def.ignoreDarkness
+                    || def.immuneToToxGasExposure || def.immuneToVacuumBurns
+                    || def.waterCellCost.HasValue,
+                affectsViolence = (def.damageFactors != null && def.damageFactors.Count > 0)
+                    || (def.disabledWorkTags & WorkTags.Violent) != WorkTags.None,
+                affectsEmotion = def.mentalBreakDef != null || def.mentalBreakMtbDays > 0f
+                    || def.aggroMentalBreakSelectionChanceFactor != 1f,
+                affectsSocial = def.socialFightChanceFactor != 1f || def.lovinMTBFactor != 1f
+                    || def.missingGeneRomanceChanceFactor != 1f
+                    || (def.disabledWorkTags & WorkTags.Social) != WorkTags.None,
+                affectsCapacity = (def.capMods != null && def.capMods.Count > 0)
+                    || def.painFactor != 1f || def.painOffset != 0f || def.sterilize,
+                affectsStat = (def.statFactors != null && def.statFactors.Count > 0)
+                    || (def.statOffsets != null && def.statOffsets.Count > 0)
+                    || (def.conditionalStatAffecters != null && def.conditionalStatAffecters.Count > 0)
+            };
+        }
+
+        private static bool GeneAffectsAppearance(GeneDef def)
+        {
+            return def.bodyType.HasValue || def.forcedHair != null
+                || (def.forcedHeadTypes != null && def.forcedHeadTypes.Count > 0)
+                || def.fur != null || def.hairColorOverride.HasValue
+                || def.skinColorBase.HasValue || def.skinColorOverride.HasValue
+                || def.renderNodeProperties != null && def.renderNodeProperties.Count > 0
+                || def.womenCanHaveBeards || !def.tattoosVisible || def.neverGrayHair;
+        }
+
+        /// <summary>
         /// Biotech: the pawn's xenotype label (e.g. "Sanguophage", "Hussar"). Empty without
         /// Biotech, and empty for a plain Baseliner human because that default carries no signal.
         /// A custom-named xenotype (UniqueXenotype) is always shown.

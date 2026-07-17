@@ -10,6 +10,10 @@
   <!-- Link only plain contracts/policies. Any accidental RimWorld/Verse/Unity dependency fails build. -->
   <ItemGroup>
     <Compile Include="..\..\Source\Capture\Biotech\BiotechContracts.cs" Link="BiotechContracts.cs" />
+    <Compile Include="..\..\Source\Capture\Biotech\GeneIdentityContracts.cs" Link="GeneIdentityContracts.cs" />
+    <Compile Include="..\..\Source\Capture\Biotech\GeneIdentityObservationPolicy.cs" Link="GeneIdentityObservationPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Biotech\GeneIdentityTransitionPolicy.cs" Link="GeneIdentityTransitionPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Biotech\GeneSaliencePolicy.cs" Link="GeneSaliencePolicy.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\GrowthMomentPolicy.cs" Link="GrowthMomentPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\GrowthRecordPolicy.cs" Link="GrowthRecordPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\FamilySupportPolicy.cs" Link="FamilySupportPolicy.cs" />

@@ -9,8 +9,9 @@
 > PairDefault, which has no B1 fields. Canonical context now emits `tale=BiotechFamilyBirth`, with pure
 > and loaded-game route assertions. The duplicate active core copy remains a separate environment
 > error. A clean single-copy rerun plus
-> the loaded-game no-DLC/old-save/growth/birth/adapter matrix remain the Phase 4 exit items; B2 must
-> not begin before they are accepted. Canonical age-7/10/13 growth
+> the loaded-game no-DLC/old-save/growth/birth/adapter matrix remain the Phase 4 exit items. The
+> original B2 scheduling gate is explicitly overridden by the user-directed exception below; those
+> manual rows still remain required before Phase 4 or B1 may be called complete. Canonical age-7/10/13 growth
 > observation, postponed-choice persistence, auto resolution, ordinary Birthday fallback, progression
 > consumption, saved family arcs, exact lesson/play evidence, truthful child/supporter writer shapes,
 > canonical birth/naming ownership, mature-source arbitration, and source-owned N1 evidence are live and
@@ -20,6 +21,13 @@
 > **Acceptance update (2026-07-17):** all existing automated suites are reported passing. Manual
 > rows 1, 2, 5, 6, and 8 are user-confirmed passes; rows 3, 4, 7, 9, and 10 remain TODOs in
 > `tests/SAVE_COMPATIBILITY_SMOKETEST.md`. Phase 4 therefore remains open.
+>
+> **User-directed scheduling exception (2026-07-17):** Biotech Phase 5 may proceed while those five
+> Phase 4 manual rows await a later playthrough. This changes scheduling only: it does not waive,
+> pass, or remove any B1 acceptance row. Phase 5 is now implemented: detached `GeneFact` contracts,
+> XML-owned deterministic salience/fallback policy, guarded live projection, a versioned silent saved
+> baseline, exact xenogerm ownership, same-call Ability arbitration, rich bounded prompt context, and
+> significant slow fallback output. Live Phase 5 execution remains a separate manual TODO.
 >
 > **Review follow-ups (2026-07-16):** pending-birth/arc maintenance now runs without the DLC (a
 > Biotech-removed save flushes frozen birth pages after grace and keeps pruning arcs, matching the
@@ -1720,11 +1728,22 @@ Exit gate: B1 definition of done is met. B2 work does not begin in the same chan
 
 ### Phase 5 — Salient genes
 
-1. Add pure projection contract/salience policy and XML.
-2. Add guarded snapshots and versioned silent baseline.
-3. Add exact xenogerm hooks and ability arbitration.
-4. Upgrade fallback xenotype progression context.
-5. Harden custom/modded xenotype text/caps.
+> **Implementation status (2026-07-17): implementation complete under the user-directed scheduling
+> exception; live acceptance pending.** `GeneFact`, identity/mutation snapshots, bounded themes, structural-category weights,
+> event-delta/endogene/xenogene scores, diversity penalties/exceptions, force/exclude corrections,
+> deterministic ties, and text/theme caps are pure and XML-owned. `DlcContext` now projects direct
+> `GeneDef` fields behind the Biotech/tracker guard, while nested `GeneIdentityObservationState`
+> silently Scribes current xenotype plus bounded installed membership under an explicit version.
+> Observation advances even with Progression output disabled and retains the old scalar keys for
+> migration. Exact `GeneUtility` implant/reimplant hooks now emit one recipient page, successful
+> reimplant ownership suppresses only its enclosing generic Ability page, and the slow observer emits
+> XML-significant stable-identity/membership changes with bounded separator-safe theme context.
+
+1. **Implemented:** add pure projection contract/salience policy and XML.
+2. **Implemented:** add guarded snapshots and versioned silent baseline.
+3. **Implemented:** add exact xenogerm hooks and ability arbitration.
+4. **Implemented:** upgrade fallback xenotype progression context.
+5. **Implemented:** harden custom/modded xenotype text/caps.
 
 Exit gate: selected themes are relevant and bounded; exact/fallback routes emit once; old saves and
 routine gene recalculation stay silent.

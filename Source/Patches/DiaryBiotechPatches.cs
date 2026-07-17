@@ -442,4 +442,112 @@ namespace PawnDiary
             return value is bool && (bool)value;
         }
     }
+
+    /// <summary>
+    /// Captures the two stable RimWorld 1.6 xenogerm mutation boundaries. Registration is defensive:
+    /// either changed signature disables only that exact route and leaves the slow observer available.
+    /// </summary>
+    internal static class BiotechXenogermMutationPatch
+    {
+        /// <summary>Resolves and patches GeneUtility implant/reimplant with verified parameter lists.</summary>
+        public static void TryRegister(Harmony harmony)
+        {
+            if (harmony == null) return;
+            MethodBase implant = AccessTools.DeclaredMethod(
+                typeof(GeneUtility),
+                nameof(GeneUtility.ImplantXenogermItem),
+                new[] { typeof(Pawn), typeof(Xenogerm) });
+            MethodBase reimplant = AccessTools.DeclaredMethod(
+                typeof(GeneUtility),
+                nameof(GeneUtility.ReimplantXenogerm),
+                new[] { typeof(Pawn), typeof(Pawn) });
+            TryPatch(
+                harmony,
+                implant,
+                nameof(ImplantPrefix),
+                nameof(CompletePostfix),
+                "GeneUtility.ImplantXenogermItem");
+            TryPatch(
+                harmony,
+                reimplant,
+                nameof(ReimplantPrefix),
+                nameof(CompletePostfix),
+                "GeneUtility.ReimplantXenogerm");
+        }
+
+        private static void TryPatch(
+            Harmony harmony,
+            MethodBase target,
+            string prefixName,
+            string postfixName,
+            string targetName)
+        {
+            if (target == null)
+            {
+                Log.Warning("[Pawn Diary] " + targetName + " changed; exact Biotech gene capture "
+                    + "is disabled for that route and the slow observer remains active.");
+                return;
+            }
+            try
+            {
+                harmony.Patch(
+                    target,
+                    prefix: new HarmonyMethod(typeof(BiotechXenogermMutationPatch), prefixName),
+                    postfix: new HarmonyMethod(typeof(BiotechXenogermMutationPatch), postfixName),
+                    finalizer: new HarmonyMethod(typeof(BiotechXenogermMutationPatch), nameof(Finalizer)));
+            }
+            catch (Exception exception)
+            {
+                Log.Warning("[Pawn Diary] Could not register " + targetName + "; the slow Biotech "
+                    + "gene observer remains active. " + exception);
+            }
+        }
+
+        private static void ImplantPrefix(Pawn pawn, ref BiotechGeneMutationCallState __state)
+        {
+            Begin(pawn, null, GeneChangeCauseTokens.XenogermImplant, ref __state);
+        }
+
+        private static void ReimplantPrefix(
+            Pawn caster,
+            Pawn recipient,
+            ref BiotechGeneMutationCallState __state)
+        {
+            Begin(recipient, caster, GeneChangeCauseTokens.XenogermReimplant, ref __state);
+        }
+
+        private static void Begin(
+            Pawn recipient,
+            Pawn otherPawn,
+            string causeToken,
+            ref BiotechGeneMutationCallState state)
+        {
+            if (!ModsConfig.BiotechActive || recipient == null) return;
+            BiotechGeneMutationCallState captured = null;
+            DiaryPatchSafety.Run("BiotechXenogermMutationPatch.Prefix", () =>
+            {
+                captured = DiaryGameComponent.Instance?.BeginBiotechGeneMutation(
+                    recipient,
+                    otherPawn,
+                    causeToken);
+            });
+            state = captured;
+        }
+
+        private static void CompletePostfix(BiotechGeneMutationCallState __state)
+        {
+            if (__state == null) return;
+            DiaryPatchSafety.Run("BiotechXenogermMutationPatch.Postfix", () =>
+            {
+                DiaryGameComponent.Instance?.CompleteBiotechGeneMutation(__state);
+            });
+        }
+
+        private static Exception Finalizer(Exception __exception)
+        {
+            // The call state is stack-local Harmony __state, so there is no cache to clean here. Keep
+            // vanilla's exception unchanged; a later slow scan can observe any partial successful change.
+            return __exception;
+        }
+    }
 }
