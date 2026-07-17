@@ -1,5 +1,11 @@
 # Changelog
 
+- **2026-07-17 — Corrected two loaded Odyssey RimTest fixture assumptions.** The official-DLC catalog
+  now recognizes `ritualGravship`'s intentional narrow token classifier instead of requiring an exact
+  ritual defName, and the localized Odyssey prompt fixture supplies its isolated copilot through a
+  dev-only explicit-partner seam rather than depending on the player's live colonist ordering. Normal
+  prompt-suite UI partner selection and gameplay behavior are unchanged.
+
 - **2026-07-17 — Implemented Odyssey O2's XML-first environmental slice.** Removed the ineffective
   `Flooding` MoodEvent matcher and added an Odyssey-gated, map-scoped `ThingPresent` observed
   condition for the installed `SeasonalFlood` ThingDef. It uses XML-owned scan/end hysteresis,

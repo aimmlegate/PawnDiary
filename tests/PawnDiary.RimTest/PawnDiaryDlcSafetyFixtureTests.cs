@@ -725,6 +725,16 @@ namespace PawnDiary.RimTests
                         "The generic Anomaly psychic-ritual fallback must remain narrowly token-keyed by "
                         + "'PsychicRitual'; exact ritual families belong in the specialized groups above it.");
                 }
+                else if (string.Equals(expected.Key, "ritualGravship", StringComparison.Ordinal))
+                {
+                    PawnDiaryRimTestScope.Require(
+                        (group.matchDefNames == null || group.matchDefNames.Count == 0)
+                        && group.matchTokens != null
+                        && new HashSet<string>(group.matchTokens, StringComparer.Ordinal).SetEquals(
+                            new[] { "GravshipLaunch", "RitualBehaviorWorker_GravshipLaunch" }),
+                        "The Odyssey gravship-launch ritual must retain its two narrow runtime tokens; "
+                        + "it intentionally has no exact ritual defName classifier.");
+                }
                 else
                 {
                     PawnDiaryRimTestScope.Require(group.matchDefNames != null && group.matchDefNames.Count > 0,

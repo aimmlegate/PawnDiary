@@ -153,7 +153,8 @@ an explicit `TileSettled` no-pawn drop, and localized Full/Balanced/Compact prom
 phase/reason/duration/role/ship/origin/destination facts survive while stable IDs and ticks do not.
 O2 extends the loaded fixture with active/inactive package-gate checks for `SeasonalFloodActive` and
 loaded exact matcher/tuning checks for `DiaryEnchant_GravNausea`; live combined execution remains in
-the deferred Odyssey acceptance run.
+the deferred Odyssey acceptance run. The prompt-suite fixture supplies its isolated copilot explicitly,
+so its dual-POV assertions are independent of the player's live colonist ordering.
 The same fixture asserts fail-soft registration on all four shipped `LandingOutcomeWorker` overrides.
 `DiaryOdysseyPolicyTests` now has 126 assertions, including wrong-ship/empty-outcome rejection, exact
 outcome attachment, Def-identity omission, visible-label sanitization, and bounded context. Pipeline
@@ -405,7 +406,8 @@ null-pawn guards even when DLC flags are active; final prompt/public-summary omi
 absent; positive non-Baseliner, royal-title, player-ideoligion/precept/eligible-role, and temporary
 vanilla CreepJoiner-tracker state backed by a real loaded form when installed; exact set equality for all official-DLC interaction
 groups and event windows; exact classifier keys for specialized ritual families plus the deliberate
-`PsychicRitual` token fallback; `ModsConfig`/package-helper/settings-visibility agreement; fragile
+`PsychicRitual` and gravship-launch token classifiers; `ModsConfig`/package-helper/settings-visibility
+agreement; fragile
 Biotech growth/birth,
 Anomaly monolith/corpse, and Ideology/Anomaly ritual signatures; and optional-adapter capability
 ready/not-ready fail-open behavior. A new official package-gated Def must update that exact catalog

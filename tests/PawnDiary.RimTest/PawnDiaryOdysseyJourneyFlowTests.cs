@@ -390,9 +390,12 @@ namespace PawnDiary.RimTests
                 for (int i = 0; i < levels.Length; i++)
                 {
                     PawnDiaryMod.Settings.contextDetailLevel = levels[i];
-                    Require(scope.Component.ShowPromptSuiteEntryForDev(pilot, entry),
+                    Require(scope.Component.ShowPromptSuiteEntryForDev(pilot, entry, copilot),
                         "The Odyssey prompt fixture could not be rendered for " + levels[i] + ".");
                     DiaryEvent diaryEvent = PromptSuiteEvent(scope.Component);
+                    Require(diaryEvent.recipientPawnId == copilot.GetUniqueLoadID(),
+                        "The Odyssey prompt fixture did not use its explicit isolated copilot for "
+                        + levels[i] + ".");
                     string initiatorPrompt = scope.CapturedPrompt(diaryEvent, DiaryEvent.InitiatorRole);
                     string recipientPrompt = scope.CapturedPrompt(diaryEvent, DiaryEvent.RecipientRole);
                     string suffix = " (" + levels[i] + ")";

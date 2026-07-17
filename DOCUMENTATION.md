@@ -2369,7 +2369,9 @@ O1.5 adds an eligible-writer routine hop that must update observation history wi
 explicit no-pawn `TileSettled` drop, and a localized Odyssey prompt-suite render under Full,
 Balanced, and Compact. The assembly-free pipeline suite repeats the preset check with a deliberately
 exhausted optional budget and proves stable journey/ship/location IDs and ticks never cross the
-template boundary. The combined live Odyssey save run remains deferred until the batch is complete.
+template boundary. The loaded fixture passes its isolated copilot explicitly to the dev-only suite
+entry helper, so a player's existing colonist order cannot change the asserted pair. The combined live
+Odyssey save run remains deferred until the batch is complete.
 O2 adds loaded-Def checks for the Odyssey-active/inactive seasonal-flood package gate, exact
 `ThingPresent` matching, prompt-only page policy, and the exact `GravNausea` matcher and tuning.
 It also asserts that all four shipped concrete landing-outcome overrides carry Pawn Diary's

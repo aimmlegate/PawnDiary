@@ -336,9 +336,13 @@ namespace PawnDiary
         /// catalog entry, then routes it through the generation queue so its prompt is captured as a
         /// prompt_only card. Returns true on success; false outside dev mode, when prompt test mode is
         /// off, when generation is disabled for the pawn, or when a pair entry has no partner. The UI
-        /// handler enables prompt test mode before calling.
+        /// handler enables prompt test mode before calling. Loaded-game tests may supply an explicit
+        /// partner so their assertions do not depend on the player's live colonist-list ordering.
         /// </summary>
-        internal bool ShowPromptSuiteEntryForDev(Pawn pawn, DevPromptSuiteEntry entry)
+        internal bool ShowPromptSuiteEntryForDev(
+            Pawn pawn,
+            DevPromptSuiteEntry entry,
+            Pawn explicitPartner = null)
         {
             if (!CanUsePromptSuiteForDev(pawn) || entry == null)
             {
@@ -347,7 +351,7 @@ namespace PawnDiary
 
             // Replace semantics: clear previous test entries first so only one is live at a time.
             ClearPromptSuiteForDev();
-            return AppendPromptSuiteEntryForDev(pawn, entry);
+            return AppendPromptSuiteEntryForDev(pawn, entry, explicitPartner);
         }
 
         /// <summary>
@@ -382,7 +386,10 @@ namespace PawnDiary
                 && DiaryGenerationEnabledFor(pawn);
         }
 
-        private bool AppendPromptSuiteEntryForDev(Pawn pawn, DevPromptSuiteEntry entry)
+        private bool AppendPromptSuiteEntryForDev(
+            Pawn pawn,
+            DevPromptSuiteEntry entry,
+            Pawn explicitPartner = null)
         {
             if (!CanUsePromptSuiteForDev(pawn) || entry == null)
             {
@@ -392,7 +399,7 @@ namespace PawnDiary
             Pawn partner = null;
             if (entry.pair)
             {
-                partner = ResolvePairPartner(pawn, null);
+                partner = ResolvePairPartner(pawn, explicitPartner);
                 if (partner == null)
                 {
                     return false;
