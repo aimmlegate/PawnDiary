@@ -49,16 +49,23 @@ sentences), and pawn identity is never *shown* to the model, only used to select
 RimTalk ecosystem ("Lucid Chronicle") is converging on layered long-term memory — this wave is
 the differentiator.
 
-| Item | Work |
-|---|---|
-| A1 | Rolling recent-pages window: condensed snippets of the last 2–5 entries in everyday prompts, token-budgeted, context-detail-aware (reuse the arc-reflection sampling pattern) |
-| A2 | Per-pawn memoir digest: every K entries / each quadrum, one generation compresses older pages into a "life so far" string (saved per pawn), injected as a prompt field |
-| A6 | Content-level anti-repetition: recently-narrated keys per pawn → "do not retell" guidance |
-| B5 | (Optional) voice-drift guard: quote 1–2 of the pawn's own past phrasings back to the model |
+**Architecture settled 2026-07-17 — full design in Appendix D.** Canonical constraints locked
+during design: **no LLM summarization, no full-context dumps** — memory is data selection in
+code + weighted random gates, like every other prompt input; strict pure/impure boundary; the
+existing context system (thoughts, previous-entry bridge, reflections, day summaries) is **not
+rewritten** — memory lands as an additive enhancement in the prompt-enchantment mold.
 
-**Acceptance:** continuity observable across ≥5 consecutive entries in playtest; measured
-token-cost delta at default settings; save round-trip + retention interplay covered (extend the
-`DiaryRetention` + pipeline test suites); memoir regenerates sanely after archive compaction.
+| Step | Work |
+|---|---|
+| 1 | Pawn-knowledge facade (`PawnMind`): sectioned snapshot capture + pure views; `BuildPawnSummary` reimplemented on it as a **byte-identical drop-in** (golden-test-proven, zero prompt drift) |
+| 2 | Memory enhancement: unified L1–L3 candidate query + one pure selector + an enchantment-style `memory` prompt field (template-gated, XML-tuned, off by default until tuned) |
+| 3 | L3 long-term store: tagged/weighted item bag (`MemoryTag` flags enum, machine-only severity, forget-on-query fuzz), centralized deposit policy, caps + eviction |
+| 4 | Content-level anti-repetition (A6) via selector dedup keys + capture-side same-story suppression; voice-drift guard (B5) optional garnish |
+
+**Acceptance:** step 1 lands with byte-identical golden output (hard gate); **zero new LLM
+calls** introduced by the whole wave; L3 bag save round-trips + caps/eviction covered by pure
+tests; memory field gates default conservative; continuity observable across ≥5 consecutive
+entries in playtest.
 
 ### Wave C3 ⇄ — Library & navigation
 
@@ -206,13 +213,12 @@ player-facing mechanics.
 
 ### A. Narrative memory & history depth
 
-- **A1. Rolling recent-pages window (S/M)** — widen the 1-entry bridge: condensed snippets of the
-  last N entries (configurable, token-budgeted) in everyday prompts. Limits live in
-  `DiaryTuningDef.xml`; needs an assembler that samples/truncates like arc-reflection does.
-- **A2. Per-pawn long-term memoir digest (M/L)** — every K entries (or each quadrum) one cheap
-  call compresses older pages into a ≤N-char "life so far" digest stored per pawn; everyday
-  prompts get a `memoir:` line. Reuses reflection machinery + cold archive. ~1 extra call per
-  pawn per K entries for a large continuity win.
+- **A1. Rolling recent-pages window (S/M)** — *superseded 2026-07-17: realized as the L2
+  diary-recall projection of the memory system (Appendix D); hot entries surface via the unified
+  selector rather than a fixed last-N block.*
+- **A2. Per-pawn long-term memoir digest (M/L)** — *vetoed as designed 2026-07-17: LLM
+  summarization contradicts the mod's canonical approach (data selection in code + weighted
+  gates, no model-written summaries). Replaced by the L3 compact long-term store (Appendix D).*
 - **A3. Open-threads ledger (M, deferred → narrative-continuity track)** — extract 1–3
   unresolved threads (grudge, worry, hope) per entry, decay them, feed the top thread back as
   `ongoing:` context. This is what the stubbed narrative-continuity layer wants to be — implement
@@ -341,3 +347,174 @@ player-facing mechanics.
 - **Deprioritized to last (author's call):** D1+D2 wizard/sample-entry and the settings-UX
   cluster (D3–D6, G1, G2) — onboarding value acknowledged, reader/prose quality first → Wave C7.
 - **Deferred:** C3 · C9 fonts · F4 · B3 · G3 · A3/A4 (narrative-continuity track).
+
+## Appendix D — Memory system design (Wave C2 architecture, settled 2026-07-17)
+
+Design discussion outcome; supersedes catalog items A1/A2 as originally written. Status: design
+reference for future implementation — re-verify named seams before coding.
+
+### Canonical principles (non-negotiable)
+
+1. **No LLM summaries, no full-context dumps.** Memory is data selection in code + weighted
+   random gates into the prompt — the same canonical mechanism as weather mention, thought pick,
+   humor chance. The model never writes or maintains memory state. Zero new LLM calls.
+2. **Additive enhancement.** The existing context system (thoughts, previous-entry bridge, day
+   summaries, reflections) is not rewritten. Memory contributes one optional, template-gated
+   prompt field in the mold of `DiaryPromptEnchantmentDef` — everything behind it invisible.
+3. **Strict pure/impure boundary.** Impure code only captures snapshots (main-thread, no
+   decisions); all filtering/scoring/gating/fuzz is pure, golden-testable code in
+   `Source/Pipeline`.
+4. **Game state is the single source of truth.** Everything inferable stays inferred; only
+   non-inferable facts are ever stored.
+
+### The three layers
+
+| Layer | Truth lives in | Decay mechanism | Persistence cost | Usage weight |
+|---|---|---|---|---|
+| **L1 game state** | the game (thoughts, relations, hediffs/scars, `pawn.records`) | native — thoughts age out, opinions drift, wounds heal | none | highest |
+| **L2 hot diary** | `DiaryEventRepository` (≤100 events/pawn) | existing hot→archive eviction (archived rows fall out of queryable memory — natural fading) | already paid | middle |
+| **L3 long-term store** | new per-pawn tagged item bag | forget-on-query fuzz + capped eviction | small, new | lowest ("least used, most critical") |
+
+**L1-residue rule for L3:** anything `pawn.records` already tracks (kills, downs, mental
+states, operations…) is L1 — never duplicated into L3. L3 holds only what the game doesn't
+index: mostly **moments** (who I lost and how, the raid I nearly died in, the wedding) and rare
+diary-semantic aggregates.
+
+### The pawn-knowledge facade (`PawnMind` — working name)
+
+One adapter is the single gateway to "what this pawn knows, feels, remembers." All pawn-data
+reads (existing and new) become views over one captured snapshot:
+
+```csharp
+// IMPURE, thin, main-thread — the only code touching Pawn.
+// Section-masked: capture only what the template's field list + memory gate need.
+PawnMindGatherer.Capture(pawn, ctx, SectionMask needed) -> PawnMindSnapshot
+
+// PURE immutable value object, sectioned (no god object):
+PawnMindSnapshot {
+    Identity      // sex, life stage, xenotype, title, faith, traits, backstory
+    Mood          // mood bucket + raw thought list
+    Health        // conditions, capacities, pain, scars
+    Social        // relations, opinions
+    Counters      // curated game records (closed enum key set)
+    DiaryRecall   // L2: hot entries projected to candidates
+    LongMemory    // L3: the item bag
+    ExternalLines // API v8 RegisterPawnContextProvider output — absorbed, contract unchanged
+}
+
+// PURE adapter over the snapshot:
+PawnMind {
+    Summary()        // byte-identical to today's BuildPawnSummary — the drop-in
+    Thoughts(filter) // LINQ-style queries over snapshot sections
+    RelationTo(id)
+    Counter(key)
+    Memories(query)  // unified L1–L3 candidate query (below)
+}
+```
+
+**Drop-in contract:** `BuildPawnSummary` reimplemented on `PawnMind.Summary()` must produce
+byte-identical prompts, proven by the existing prompt-lab golden suite — zero drift is the
+merge gate. Snapshot is transient (never saved); only the L3 bag touches `ExposeData`.
+Side benefits: the snapshot is the natural prompt-lab fixture format and feeds a dev-mode
+"what does this pawn remember" inspector; immutability opens the door (later) to off-thread
+prompt assembly.
+
+### Unified candidate query + selector
+
+All three layers project into one normalized shape; the selector never knows layer internals:
+
+```csharp
+MemoryQuery      { PawnId, Tick, ContextTags /*from event cue/group*/, Shape, CharBudget, Seed }
+MemoryCandidate  { Layer, Tags, Salience /*0..1, normalized BY the source*/,
+                   AgeTicks, Text /*model-visible*/, FadedText?, DedupKey }
+
+score = Salience
+      × TagOverlap(query.ContextTags, c.Tags)   // popcount over flags
+      × RecencyDecay(c.AgeTicks)
+      × LayerWeight(c.Layer)                    // L1 > L2 > L3, XML-tunable
+// then: repetition penalty vs recently-used DedupKeys (hard for L2/L3, soft for L1),
+// seeded recall roll, canonical weighted gate → 0..2 picks within CharBudget
+```
+
+Selected candidates render into one `memory` prompt field. Gate chances per shape (reflections
+high, important medium, everyday low), layer weights, decay half-lives: all XML
+(`DiaryTuningDef` / small `DiaryMemoryPolicyDef`). Deliberately **not** wired into the
+narrative-continuity selector (in-flight DLC track): shared pure primitives (decay curves,
+seeded gate, repetition-key memory) go into common utilities both use — one toolbox, two thin
+policies; convergence possible post-N4 with zero source changes.
+
+### L3 store — item envelope
+
+```csharp
+[Flags] public enum MemoryTag : long   // explicit values, append-only forever,
+{ None = 0, Combat = 1<<0, Violence = 1<<1, Loss = 1<<2, Family = 1<<3,
+  Social = 1<<4, Romantic = 1<<5, Ritual = 1<<6, Health = 1<<7, /* … ≤64 */ }
+// persisted as the numeric value (renames free; unknown future bits load harmlessly)
+
+MemoryItem {
+    key           // stable code-constant for accumulators; guid for moments
+    value         // number, accumulators only
+    text          // self-describing model-visible fragment: "killed {value} raiders"
+    fadedText     // optional writer-provided degraded variant
+    tags          // MemoryTag flags
+    severity      // 0–10, MACHINE-ONLY: eviction/query/fuzz — never rendered to the model
+    createdTick, lastReinforcedTick
+}
+```
+
+- **Two item kinds:** accumulators (stable key, updatable value, idempotent by source event id)
+  and moments (append-once). v1 likely ships **moments-only**; accumulators added when one
+  proves non-inferable.
+- **Severity is trait-relative:** deposit sites pass a base severity; a pure trait/psychotype
+  multiplier adjusts per pawn (a Bloodthirsty pawn's 40th kill ≠ a Kind pawn's first).
+  Anchored scale: 1–3 flavor / 4–6 notable / 7–8 formative / 9–10 identity-defining.
+- **Closed vocabularies:** tags and accumulator keys are compile-time constants (house
+  discipline, cf. `DiaryEventType` reserved members); external adapters pick from the published
+  taxonomy via the API — no free-form strings.
+
+### Forget-on-query (never modify storage)
+
+Store truth; degrade the view. A deterministic fuzz seeded on (pawn, item, entry) — stable
+within one entry, drifting over time — with width `f(severity band, age since reinforcement)`:
+sharp text when fresh/reinforced ("thirty-seven — I remember every one"), `fadedText` or a
+failed recall roll when stale and minor. Severity 9–10 exempt ("will never forget").
+Reinforcement (same-key re-deposit) bumps `lastReinforcedTick` — repetition restores clarity
+instead of spamming duplicates. Pure function → fully testable.
+
+### Limits & eviction
+
+- Moments: cap ≈48/pawn (`DiaryTuningDef` knob); evict lowest `severity × recencyDecay`;
+  severity 9–10 eviction-exempt but the exempt set itself capped (≈8).
+- Accumulators: bounded by the closed key set — nothing to evict.
+- Backstop: per-pawn serialized-size ceiling (free-form `text`).
+
+### Writes — centralized deposit policy
+
+No changes to capture specs. One pure `MemoryDepositPolicy: (event snapshot) → deposits`,
+observing the finalized event stream on the existing dispatch path (like retention/dedup
+policies do), idempotent by source event id. One file answers "what does a pawn remember."
+Starter catalog (small on purpose): death of bonded/related pawn (9) · own near-death (8) ·
+child born (8) · wedding (7) · arrival at colony (7, once) · betrayal/social fight with close
+relation (6) · psylink/title milestone (6) · first kill as a *moment* (trait-scaled; the count
+stays L1).
+
+### Migration phases (keeps "no rewrite" honest)
+
+1. **Facade refactor (invisible):** Gatherer + Snapshot + `PawnMind`; pawn-summary read sites
+   swap over; golden tests prove byte-identical output. No new features.
+2. **Memory enhancement (additive):** `Memories(query)` + selector + gated prompt field + L3
+   store & deposit policy.
+3. **Opportunistic (never big-bang):** event-specific context extractors migrate to the facade
+   only when touched for other reasons.
+
+### Open questions
+
+- Facade name (`PawnMind` / `PawnKnowledge` / `PawnContextSource`) and final section list
+  (audit `DiaryContextBuilder` read sites).
+- The cue/group → `MemoryTag` mapping table (single-sourced; also produces query
+  `ContextTags`) — needs an author pass over ~15 cues + interaction groups.
+- Default policy numbers (layer weights, per-shape gate chances, decay half-lives) — the
+  defaults are the product.
+- Fuzz rendering details: writer-provided `fadedText` vs pure vague-ifying transform (lean:
+  writer-provided; no clever string surgery); sharp-number threshold for accumulators.
+- Phase-1 scope: pawn-summary reads only (lean) vs. also the hottest event extractors.
