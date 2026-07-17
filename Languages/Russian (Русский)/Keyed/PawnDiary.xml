@@ -105,7 +105,7 @@
   <PawnDiary.Dev.PromptSuite.BiotechBirth.Initiator>Мы с {0} были рядом, когда родился ребёнок.</PawnDiary.Dev.PromptSuite.BiotechBirth.Initiator>
   <PawnDiary.Dev.PromptSuite.BiotechBirth.Recipient>Мы с {0} были рядом, когда родился ребёнок.</PawnDiary.Dev.PromptSuite.BiotechBirth.Recipient>
   <PawnDiary.Dev.PromptSuite.OdysseyLanding.Label>Посадка гравикорабля (Odyssey)</PawnDiary.Dev.PromptSuite.OdysseyLanding.Label>
-  <PawnDiary.Dev.PromptSuite.OdysseyLanding.Markers>odyssey_journey=true; journey_phase=landing; journey_reason=major_destination; journey_secondary_reason=long_journey; journey_duration=long; rough_landing=false; launch_quality=excellent; ship_name=Странник; origin=умеренный лес; destination=орбитальный мех-улей; destination_layer=orbit; destination_biome=Орбита; destination_site=орбитальный мех-улей; pilot={0}; copilot={1}; crew_count=2</PawnDiary.Dev.PromptSuite.OdysseyLanding.Markers>
+  <PawnDiary.Dev.PromptSuite.OdysseyLanding.Markers>odyssey_journey=true; journey_phase=landing; journey_reason=major_destination; journey_secondary_reason=long_journey; journey_duration=long; odyssey_initiator_role=pilot; odyssey_recipient_role=copilot; rough_landing=false; launch_quality=excellent; ship_name=Странник; origin=умеренный лес; destination=орбитальный мех-улей; destination_layer=orbit; destination_biome=Орбита; destination_site=орбитальный мех-улей; pilot={0}; copilot={1}; crew_count=2</PawnDiary.Dev.PromptSuite.OdysseyLanding.Markers>
   <PawnDiary.Dev.PromptSuite.OdysseyLanding.Initiator>Мы с {0} посадили «Странник» у орбитального мех-улья после долгого перехода; я был пилотом, а {0} — вторым пилотом.</PawnDiary.Dev.PromptSuite.OdysseyLanding.Initiator>
   <PawnDiary.Dev.PromptSuite.OdysseyLanding.Recipient>Мы с {0} посадили «Странник» у орбитального мех-улья после долгого перехода; я был вторым пилотом, а {0} — пилотом.</PawnDiary.Dev.PromptSuite.OdysseyLanding.Recipient>
   <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>Обязательный годовой итог</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>
@@ -1417,6 +1417,6 @@
   <PawnDiary.Event.Odyssey.DestinationFallback>месте посадки</PawnDiary.Event.Odyssey.DestinationFallback>
 
   <!-- Контекст мобильного дома Odyssey O1.2. -->
-  <PawnDiary.Ctx.GravshipHome>на борту гравилёта {0}</PawnDiary.Ctx.GravshipHome>
-  <PawnDiary.Ctx.GravshipHomeAt>на борту гравилёта {0} у места {1}</PawnDiary.Ctx.GravshipHomeAt>
+  <PawnDiary.Ctx.GravshipHome>на борту гравикорабля {0}</PawnDiary.Ctx.GravshipHome>
+  <PawnDiary.Ctx.GravshipHomeAt>на борту гравикорабля {0} у места {1}</PawnDiary.Ctx.GravshipHomeAt>
 </LanguageData>

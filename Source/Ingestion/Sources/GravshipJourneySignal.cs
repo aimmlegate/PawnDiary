@@ -96,8 +96,13 @@ namespace PawnDiary.Ingestion
 
             if (decision == CaptureDecision.GeneratePair && firstPawn != null && secondPawn != null)
             {
-                string context = OdysseyContextFormatter.FormatLanding(
-                    journey, destination, plan, string.Empty, policy);
+                string context = OdysseyContextFormatter.FormatLandingPair(
+                    journey,
+                    destination,
+                    plan,
+                    firstCandidate?.pawnId,
+                    secondCandidate?.pawnId,
+                    policy);
                 string firstText = PairText(firstPawn, firstCandidate, secondPawn, secondCandidate, shipName, placeName);
                 string secondText = PairText(secondPawn, secondCandidate, firstPawn, firstCandidate, shipName, placeName);
                 CreatedEvent = CreatePairwiseEvent(

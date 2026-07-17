@@ -10,12 +10,58 @@ namespace PawnDiary
     /// <summary>Formats the frozen §15.3 Odyssey schema as semicolon-separated context facts.</summary>
     internal static class OdysseyContextFormatter
     {
+        // Pair events own one saved gameContext, so these two internal facts preserve each DiaryEvent
+        // role until the pure prompt planner projects the one truthful pov_journey_role for its POV.
+        internal const string InitiatorJourneyRoleKey = "odyssey_initiator_role";
+        internal const string RecipientJourneyRoleKey = "odyssey_recipient_role";
+
         /// <summary>Builds one POV's bounded context, preserving core reason/role facts before extras.</summary>
         public static string FormatLanding(
             OdysseyJourneySnapshot journey,
             OdysseyLocationSnapshot destination,
             OdysseyLandingPlan plan,
             string povPawnId,
+            OdysseyPolicySnapshot policy)
+        {
+            return FormatLandingCore(
+                journey,
+                destination,
+                plan,
+                RoleFor(plan?.selectedWriters, povPawnId),
+                string.Empty,
+                string.Empty,
+                policy);
+        }
+
+        /// <summary>
+        /// Builds one shared pair-event context while preserving both event-role-to-journey-role mappings.
+        /// The prompt planner replaces these internal facts with one POV-specific public schema field.
+        /// </summary>
+        public static string FormatLandingPair(
+            OdysseyJourneySnapshot journey,
+            OdysseyLocationSnapshot destination,
+            OdysseyLandingPlan plan,
+            string initiatorPawnId,
+            string recipientPawnId,
+            OdysseyPolicySnapshot policy)
+        {
+            return FormatLandingCore(
+                journey,
+                destination,
+                plan,
+                string.Empty,
+                RoleFor(plan?.selectedWriters, initiatorPawnId),
+                RoleFor(plan?.selectedWriters, recipientPawnId),
+                policy);
+        }
+
+        private static string FormatLandingCore(
+            OdysseyJourneySnapshot journey,
+            OdysseyLocationSnapshot destination,
+            OdysseyLandingPlan plan,
+            string povJourneyRole,
+            string initiatorJourneyRole,
+            string recipientJourneyRole,
             OdysseyPolicySnapshot policy)
         {
             if (journey == null || plan == null || string.IsNullOrWhiteSpace(plan.primaryReason))
@@ -39,7 +85,9 @@ namespace PawnDiary
             Add(fields, "journey_reason", plan.primaryReason, maximum, valueMaximum);
             Add(fields, "journey_secondary_reason", plan.secondaryReason, maximum, valueMaximum);
             Add(fields, "journey_duration", plan.durationBand, maximum, valueMaximum);
-            Add(fields, "pov_journey_role", RoleFor(plan.selectedWriters, povPawnId), maximum, valueMaximum);
+            Add(fields, "pov_journey_role", povJourneyRole, maximum, valueMaximum);
+            Add(fields, InitiatorJourneyRoleKey, initiatorJourneyRole, maximum, valueMaximum);
+            Add(fields, RecipientJourneyRoleKey, recipientJourneyRole, maximum, valueMaximum);
             Add(fields, "rough_landing", journey.roughLanding ? "true" : "false", maximum, valueMaximum);
             Add(fields, "launch_quality", journey.launchQualityBand, maximum, valueMaximum);
 
@@ -48,13 +96,19 @@ namespace PawnDiary
             Add(fields, "destination", LocationLabel(finalDestination), maximum, valueMaximum);
             Add(fields, "landing_outcome", journey.landingOutcomeLabel, maximum, valueMaximum);
             Add(fields, "destination_layer",
-                finalDestination == null ? string.Empty : OdysseyLocationLayerTokens.Normalize(finalDestination.layerToken),
+                finalDestination == null || !finalDestination.visible
+                    ? string.Empty
+                    : OdysseyLocationLayerTokens.Normalize(finalDestination.layerToken),
                 maximum, valueMaximum);
             Add(fields, "destination_biome",
-                finalDestination == null ? string.Empty : finalDestination.biomeLabel,
+                finalDestination == null || !finalDestination.visible
+                    ? string.Empty
+                    : finalDestination.biomeLabel,
                 maximum, valueMaximum);
             Add(fields, "destination_site",
-                finalDestination == null ? string.Empty : finalDestination.siteLabel,
+                finalDestination == null || !finalDestination.visible
+                    ? string.Empty
+                    : finalDestination.siteLabel,
                 maximum, valueMaximum);
             Add(fields, "pilot", WriterName(journey.writers, OdysseyJourneyRoleTokens.Pilot),
                 maximum, valueMaximum);
@@ -62,6 +116,73 @@ namespace PawnDiary
                 maximum, valueMaximum);
             Add(fields, "crew_count", CrewCount(journey.writers).ToString(), maximum, valueMaximum);
             return string.Join("; ", fields.ToArray());
+        }
+
+        /// <summary>
+        /// Replaces shared pair-only role mappings with the one public role fact for this prompt. The
+        /// result never grows beyond the saved context because two internal facts become at most one.
+        /// </summary>
+        internal static string ProjectPairRoleForPov(string context, string diaryPovRole)
+        {
+            if (string.IsNullOrWhiteSpace(context)
+                || !string.IsNullOrWhiteSpace(ContextValue(context, "pov_journey_role")))
+            {
+                return context ?? string.Empty;
+            }
+
+            string selectedKey = string.Equals(
+                diaryPovRole,
+                "recipient",
+                StringComparison.OrdinalIgnoreCase)
+                    ? RecipientJourneyRoleKey
+                    : InitiatorJourneyRoleKey;
+            string journeyRole = ContextValue(context, selectedKey);
+            List<string> projected = new List<string>();
+            string[] facts = context.Split(';');
+            for (int i = 0; i < facts.Length; i++)
+            {
+                string fact = facts[i].Trim();
+                if (fact.Length == 0
+                    || IsContextKey(fact, InitiatorJourneyRoleKey)
+                    || IsContextKey(fact, RecipientJourneyRoleKey))
+                {
+                    continue;
+                }
+                projected.Add(fact);
+            }
+
+            if (OdysseyJourneyRoleTokens.Rank(journeyRole) != int.MaxValue)
+            {
+                projected.Add("pov_journey_role=" + journeyRole);
+            }
+            return string.Join("; ", projected.ToArray());
+        }
+
+        private static bool IsContextKey(string fact, string key)
+        {
+            int separator = fact.IndexOf('=');
+            return separator > 0
+                && string.Equals(fact.Substring(0, separator).Trim(), key, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string ContextValue(string context, string key)
+        {
+            if (string.IsNullOrWhiteSpace(context) || string.IsNullOrWhiteSpace(key)) return string.Empty;
+            string[] facts = context.Split(';');
+            for (int i = 0; i < facts.Length; i++)
+            {
+                string fact = facts[i].Trim();
+                int separator = fact.IndexOf('=');
+                if (separator > 0
+                    && string.Equals(
+                        fact.Substring(0, separator).Trim(),
+                        key,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return fact.Substring(separator + 1).Trim();
+                }
+            }
+            return string.Empty;
         }
 
         private static void Add(

@@ -2079,7 +2079,7 @@ and gated by the persisted `errorReportingNoticeShown` flag) tells the player it
 | `pendingBiotechBirths` | detached exact birth snapshot, frozen adult writer order, and per-writer event-time prompt/display context while newborn naming is unresolved; no live Pawn, Thing, Corpse, or ritual reference; new owners use an XML admission limit of 256 by default, with established ownership preserved up to the hard 2048-row corruption ceiling. Pending rows, arcs, and growth rows are maintained (flush/fallback/prune) even when Biotech is later disabled, so a DLC-removed save shrinks instead of freezing |
 | `familyObservationVersion` | additive family old-save baseline version; prevents invented historical pregnancy/birth/activity catch-up |
 | `odysseyActiveJourney` | nullable detached active gravship journey (stable IDs, event-time labels, locations, qualitative launch state, and bounded writer facts); O1.3 commits it only after vanilla `TravelTo`, while an old save already in flight receives an explicitly incomplete baseline row |
-| `odysseyTravelHistory` | versioned, bounded Odyssey novelty/home/cooldown history; O1.3 records committed departure origins and successful landing observations, while missing old-save keys baseline silently with first/new claims disabled and never create a page |
+| `odysseyTravelHistory` | versioned, bounded Odyssey novelty/home/cooldown history; schema 2 adds the last emitted launch-page tick plus the exact current-home key/tenure start used by launch policy. O1.3 records committed departure origins and successful landing observations, while missing old-save keys baseline silently with first/new and synthetic-duration claims disabled and never create a page |
 
 Hot events and archive rows are separate on purpose. Hot `DiaryEvent` rows keep prompts, retry state,
 raw/generated text, status, LLM metadata, titles, context, source ids, and per-role state. Compact
@@ -2181,19 +2181,28 @@ Never rename a key "for cleanliness" alone.
   Def-name strings. Missing old-save keys baseline silently and distrust first/new claims. O1.2 adds
   localized mobile-home surroundings only for a pawn vanilla confirms is inside the exact gravship
   field. O1.3 captures `InitiateTakeoff` intent, commits an idempotent journey only from vanilla
-  `GravshipUtility.TravelTo`, snapshots `InitiateLanding`, and defensively patches private
+  `GravshipUtility.TravelTo`; its prefix preserves the true origin tile before vanilla rewrites the
+  by-value `oldTile` argument onto the destination layer. It snapshots `InitiateLanding` and defensively patches private
   `LandingEnded` to act only after successful completion. O1.4 adds `GravshipJourney`: meaningful
   landings create one solo or pair-shaped event with at most two deterministic pilot/copilot/crew
   POVs, while routine/disabled/duplicate/writerless landings update history only. Page tick and emitted
-  journey ID are committed only after the event exists. The existing launch Ritual owner is now
-  departure-only, Odyssey-package-gated, capped at two XML-configured writers, and cooled against the
-  prior committed departure; no takeoff or `TravelTo` page was added. O1.5 appends the landing schema
-  to both important prompt templates and marks phase, primary/secondary reason, duration, solo POV
-  role, ship, origin, and destination as required context, so Full/Balanced/Compact cannot erase the
+  journey ID are committed only after the event exists. Pre-feature mid-flight baselines may still
+  write exact event-local major/rough facts, but never infer elapsed duration or `long_journey` from
+  their synthetic load tick. The existing launch Ritual owner is departure-only,
+  Odyssey-package-gated, capped at two XML-configured writers, and cooled against the prior emitted
+  launch page. The cooldown marker is committed only after at least one ritual `DiaryEvent` exists;
+  cancelling destination selection cannot create repeat pages. A verified current-home tenure may
+  bypass cooldown once after `longHeldHomeMinimumTicks`, and travel commit clears that tenure until a
+  later successful home landing establishes another. No takeoff or `TravelTo` page was added. O1.5 appends the landing schema
+  to both important prompt templates and marks phase, primary/secondary reason, duration, per-POV
+  journey role, ship, origin, and destination as required context, so Full/Balanced/Compact cannot erase the
   facts the landing instruction asks the model to use. Supporting biome/site/crew/quality/roughness
-  fields remain available under budget. A localized Odyssey pair fixture exposes the same shape in
-  the dev prompt suite. Stable journey/ship/location IDs and ticks have no template field and remain
-  event-internal.
+  fields remain available under budget. Pair events save both initiator/recipient journey-role
+  mappings internally, then the pure prompt planner projects exactly one `pov_journey_role` for each
+  prompt; the internal mapping keys never render. A localized Odyssey pair fixture exposes the same
+  shape in the dev prompt suite. Stable journey/ship/location IDs and ticks have no template field and
+  remain event-internal. Mobile-home surroundings also suppress a second biome fragment when the
+  visible gravship location already uses that same biome label.
 - Odyssey O2's XML-first environmental slice corrects seasonal flooding to observe the live
   `SeasonalFlood` ThingDef instead of the nonexistent `Flooding` mood identity. The package-gated,
   map-scoped condition is prompt-only with bounded hysteresis/cooldown. `GravNausea` is an exact
@@ -2361,10 +2370,13 @@ because their vanilla trigger has un-restorable side effects.
 gravship: loaded XML policy and mappings, guarded active/inactive map projection, vanilla's exact
 pawn-on-gravship predicate, prompt-safe mobile-home surroundings, both frozen Scribe keys,
 missing/corrupt/oversized load repair, exact Harmony registration, and detached
-intent→commit→landing component transitions. The flow asserts commit replay is idempotent, landing
+  intent→commit→landing component transitions. The flow asserts both the origin-preserving TravelTo
+  prefix and commit replay idempotence, landing
 start does not touch novelty, an authorized landing without live writers advances observation history
 without consuming a page marker, and a major landing with two live diary writers creates exactly one
-pair-shaped event, freezes Odyssey context, commits one emitted journey ID, and rejects replay.
+  pair-shaped event, freezes per-POV role mappings plus exact outcome/roughness context, commits one
+  emitted journey ID, and rejects replay. Real-Scribe coverage includes the additive launch-page and
+  current-home-tenure fields and rejects separator-bearing stable ship IDs.
 O1.5 adds an eligible-writer routine hop that must update observation history without a page, the
 explicit no-pawn `TileSettled` drop, and a localized Odyssey prompt-suite render under Full,
 Balanced, and Compact. The assembly-free pipeline suite repeats the preset check with a deliberately
@@ -2388,7 +2400,9 @@ context for all four perspectives. `DiaryPipelineTests` separately pins Odyssey'
 departure-only gravship launch group; exact `GravshipJourney` landing group/domain; XML-enabled novelty
 switch; orbital debris, vacuum exposure, volcanic ash/flooding, prompt-only volcanic atmosphere, and
 vacuum enchantments. `DiaryCapturePolicyTests` pins the canonical solo/pair/drop route, while
-`DiaryOdysseyPolicyTests` pins writer limits, novelty/history, context, and launch cooldown boundaries.
+`DiaryOdysseyPolicyTests` pins writer limits, novelty/history, baseline duration distrust, first-orbit
+and rough-only positive paths, homecoming negatives, invalid-input drops, hidden-destination omission,
+per-POV pair projection, transactional launch-page cooldown, and one-use long-held-home boundaries.
 
 Canonical birth context begins with `tale=BiotechFamilyBirth`, then carries the B1 child, outcome,
 method, and adult-role facts. The Tale marker is what makes saved-event/prompt classification recover

@@ -1633,6 +1633,35 @@ namespace DiaryCapturePolicyTests
                 GravshipJourneyEventData.Decide(landing, Ctx()));
             landing.AlreadyRecorded = false;
             AssertEqual("Odyssey landing dedup", "odyssey-landing|Ship_1|100", landing.DedupKey());
+
+            AssertEqual("Odyssey disabled signal drops", CaptureDecision.Drop,
+                GravshipJourneyEventData.Decide(landing, Ctx(signal: false)));
+            AssertEqual("Odyssey disabled user group drops", CaptureDecision.Drop,
+                GravshipJourneyEventData.Decide(landing, Ctx(user: false)));
+            landing.HasValidPlan = false;
+            AssertEqual("Odyssey invalid plan drops", CaptureDecision.Drop,
+                GravshipJourneyEventData.Decide(landing, Ctx()));
+            landing.HasValidPlan = true;
+            landing.JourneyId = string.Empty;
+            AssertEqual("Odyssey empty journey identity drops", CaptureDecision.Drop,
+                GravshipJourneyEventData.Decide(landing, Ctx()));
+            landing.JourneyId = "odyssey-journey|Ship_1|100";
+            landing.ShipStableId = string.Empty;
+            AssertEqual("Odyssey empty ship identity drops", CaptureDecision.Drop,
+                GravshipJourneyEventData.Decide(landing, Ctx()));
+            landing.ShipStableId = "Ship_1";
+            landing.DepartureTick = -1;
+            AssertEqual("Odyssey negative departure drops", CaptureDecision.Drop,
+                GravshipJourneyEventData.Decide(landing, Ctx()));
+            landing.DepartureTick = 100;
+            landing.FirstWriterEligible = false;
+            landing.SecondWriterEligible = false;
+            AssertEqual("Odyssey ineligible writers drop", CaptureDecision.Drop,
+                GravshipJourneyEventData.Decide(landing, Ctx()));
+            landing.FirstWriterEligible = true;
+            landing.FirstWriterId = string.Empty;
+            AssertEqual("Odyssey empty eligible writer id drops", CaptureDecision.Drop,
+                GravshipJourneyEventData.Decide(landing, Ctx()));
         }
 
         private static void TestMonolithActivationProvenance()

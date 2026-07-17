@@ -247,14 +247,17 @@ namespace PawnDiary
     /// <summary>Saved bounded novelty, home, cooldown, and emitted-journey history.</summary>
     internal sealed class OdysseyTravelHistoryState : IExposable
     {
-        public int schemaVersion = 1;
+        public int schemaVersion = 2;
         public bool historyInitialized;
         public bool historyTrustworthyForFirstClaims;
         public int featureStartTick;
         public int committedJourneyCount;
         public int lastDepartureTick = -1;
+        public int lastLaunchPageTick = -1;
         public int lastLandingObservationTick = -1;
         public int lastLandingPageTick = -1;
+        public string currentHomeKey = string.Empty;
+        public int currentHomeSinceTick = -1;
         public List<string> visitedLayerKeys = new List<string>();
         public List<string> visitedCategoryKeys = new List<string>();
         public List<string> visitedLocationKeys = new List<string>();
@@ -263,14 +266,17 @@ namespace PawnDiary
 
         public void ExposeData()
         {
-            Scribe_Values.Look(ref schemaVersion, "schemaVersion", 1);
+            Scribe_Values.Look(ref schemaVersion, "schemaVersion", 2);
             Scribe_Values.Look(ref historyInitialized, "historyInitialized", false);
             Scribe_Values.Look(ref historyTrustworthyForFirstClaims, "historyTrustworthyForFirstClaims", false);
             Scribe_Values.Look(ref featureStartTick, "featureStartTick", 0);
             Scribe_Values.Look(ref committedJourneyCount, "committedJourneyCount", 0);
             Scribe_Values.Look(ref lastDepartureTick, "lastDepartureTick", -1);
+            Scribe_Values.Look(ref lastLaunchPageTick, "lastLaunchPageTick", -1);
             Scribe_Values.Look(ref lastLandingObservationTick, "lastLandingObservationTick", -1);
             Scribe_Values.Look(ref lastLandingPageTick, "lastLandingPageTick", -1);
+            Scribe_Values.Look(ref currentHomeKey, "currentHomeKey");
+            Scribe_Values.Look(ref currentHomeSinceTick, "currentHomeSinceTick", -1);
             Scribe_Collections.Look(ref visitedLayerKeys, "visitedLayerKeys", LookMode.Value);
             Scribe_Collections.Look(ref visitedCategoryKeys, "visitedCategoryKeys", LookMode.Value);
             Scribe_Collections.Look(ref visitedLocationKeys, "visitedLocationKeys", LookMode.Value);
@@ -290,8 +296,11 @@ namespace PawnDiary
                 featureStartTick = featureStartTick,
                 committedJourneyCount = committedJourneyCount,
                 lastDepartureTick = lastDepartureTick,
+                lastLaunchPageTick = lastLaunchPageTick,
                 lastLandingObservationTick = lastLandingObservationTick,
                 lastLandingPageTick = lastLandingPageTick,
+                currentHomeKey = currentHomeKey ?? string.Empty,
+                currentHomeSinceTick = currentHomeSinceTick,
                 visitedLayerKeys = new List<string>(visitedLayerKeys),
                 visitedCategoryKeys = new List<string>(visitedCategoryKeys),
                 visitedLocationKeys = new List<string>(visitedLocationKeys),
@@ -311,8 +320,11 @@ namespace PawnDiary
                 featureStartTick = source.featureStartTick,
                 committedJourneyCount = source.committedJourneyCount,
                 lastDepartureTick = source.lastDepartureTick,
+                lastLaunchPageTick = source.lastLaunchPageTick,
                 lastLandingObservationTick = source.lastLandingObservationTick,
                 lastLandingPageTick = source.lastLandingPageTick,
+                currentHomeKey = source.currentHomeKey ?? string.Empty,
+                currentHomeSinceTick = source.currentHomeSinceTick,
                 visitedLayerKeys = source.visitedLayerKeys == null
                     ? new List<string>() : new List<string>(source.visitedLayerKeys),
                 visitedCategoryKeys = source.visitedCategoryKeys == null
@@ -328,6 +340,7 @@ namespace PawnDiary
 
         private void EnsureLists()
         {
+            currentHomeKey = currentHomeKey ?? string.Empty;
             visitedLayerKeys = visitedLayerKeys ?? new List<string>();
             visitedCategoryKeys = visitedCategoryKeys ?? new List<string>();
             visitedLocationKeys = visitedLocationKeys ?? new List<string>();
@@ -350,7 +363,7 @@ namespace PawnDiary
             OdysseyPolicySnapshot effective = policy ?? OdysseyPolicySnapshot.CreateDefault();
             OdysseyJourneySnapshot snapshot = source.ToSnapshot();
             snapshot.schemaVersion = Math.Max(1, snapshot.schemaVersion);
-            snapshot.shipStableId = CleanIdentity(snapshot.shipStableId);
+            snapshot.shipStableId = CleanStableIdentity(snapshot.shipStableId);
             snapshot.journeyId = CleanIdentity(snapshot.journeyId);
             snapshot.shipName = CleanLabel(snapshot.shipName, effective);
             snapshot.departureTick = Math.Max(0, snapshot.departureTick);
@@ -450,6 +463,12 @@ namespace PawnDiary
             return cleaned.Length <= HardMaximumIdentityCharacters
                 ? cleaned
                 : cleaned.Substring(0, HardMaximumIdentityCharacters);
+        }
+
+        private static string CleanStableIdentity(string value)
+        {
+            string raw = (value ?? string.Empty).Trim();
+            return raw.IndexOf('|') >= 0 ? string.Empty : CleanIdentity(raw);
         }
 
         private static string CleanLabel(string value, OdysseyPolicySnapshot policy)

@@ -31,12 +31,21 @@ namespace PawnDiary
         new[] { typeof(Gravship), typeof(PlanetTile), typeof(PlanetTile) })]
     internal static class OdysseyTravelToPatch
     {
-        private static void Postfix(Gravship gravship, PlanetTile oldTile, PlanetTile newTile)
+        /// <summary>
+        /// Preserves the true origin before vanilla rewrites its by-value oldTile argument onto the
+        /// destination layer for cross-layer travel.
+        /// </summary>
+        private static void Prefix(PlanetTile oldTile, ref PlanetTile __state)
+        {
+            __state = oldTile;
+        }
+
+        private static void Postfix(Gravship gravship, PlanetTile newTile, PlanetTile __state)
         {
             if (!ModsConfig.OdysseyActive || Verse.Current.ProgramState != ProgramState.Playing) return;
             DiaryPatchSafety.Run("Odyssey.TravelTo", () =>
             {
-                DiaryGameComponent.Instance?.ObserveOdysseyTravelCommit(gravship, oldTile, newTile);
+                DiaryGameComponent.Instance?.ObserveOdysseyTravelCommit(gravship, __state, newTile);
             });
         }
     }

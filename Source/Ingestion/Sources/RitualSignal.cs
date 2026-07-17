@@ -39,6 +39,8 @@ namespace PawnDiary.Ingestion
         private readonly Pawn targetPawn;
         private readonly List<Pawn> fixtureParticipants;
         private readonly List<Pawn> fixtureSpectators;
+        private readonly bool odysseyLaunchAuthorized;
+        private readonly int odysseyLaunchTick = -1;
         // Ordinary rituals keep their unlimited existing fanout. Only the exact Odyssey launch
         // group replaces this with the XML-owned cap after passing its Odyssey cooldown.
         private readonly int maximumWriters = int.MaxValue;
@@ -88,12 +90,15 @@ namespace PawnDiary.Ingestion
                 if (string.Equals(group.defName, odysseyPolicy.launchGroupKey, StringComparison.Ordinal))
                 {
                     DiaryGameComponent component = DiaryGameComponent.Instance;
-                    if (component == null || !component.AllowsOdysseyLaunchRitualAt(eventTick))
+                    if (component == null
+                        || !component.AllowsOdysseyLaunchRitualAt(eventTick, ritualJob.Organizer))
                     {
                         return;
                     }
 
                     maximumWriters = Math.Max(1, Math.Min(2, odysseyPolicy.maximumLaunchWriters));
+                    odysseyLaunchAuthorized = true;
+                    odysseyLaunchTick = eventTick;
                 }
             }
 
@@ -252,6 +257,15 @@ namespace PawnDiary.Ingestion
         internal string RoleLabelFor(Pawn pawn, string perspective)
         {
             return RitualRoleLabel(RitualJob, Assignments, pawn, perspective);
+        }
+
+        /// <summary>Marks cooldown state only after one child successfully creates its saved page.</summary>
+        internal void NotifyPageCreated(DiaryGameComponent sink)
+        {
+            if (odysseyLaunchAuthorized)
+            {
+                sink?.MarkOdysseyLaunchPageAt(odysseyLaunchTick);
+            }
         }
 
         // ── Helpers moved verbatim from the old DiaryGameComponent.Rituals.cs ──
@@ -451,6 +465,7 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
+            source.NotifyPageCreated(sink);
             sink.QueueSolo(ritualEvent, DiaryEvent.InitiatorRole);
         }
     }

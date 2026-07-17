@@ -1086,7 +1086,8 @@ namespace DiaryPipelineTests
             string sharedContext = "odyssey_journey=true; journey_id=odyssey-journey|Ship_7|500; "
                 + "ship_stable_id=WorldObject_7; departure_tick=500; journey_phase=landing; "
                 + "journey_reason=major_destination; journey_secondary_reason=long_journey; "
-                + "journey_duration=long; rough_landing=true; landing_outcome=minor gravship crash; "
+                + "journey_duration=long; odyssey_initiator_role=pilot; odyssey_recipient_role=copilot; "
+                + "rough_landing=true; landing_outcome=minor gravship crash; "
                 + "launch_quality=excellent; "
                 + "ship_name=Wayfarer; origin=Temperate forest; origin_key=planet-layer-0-tile-10; "
                 + "destination=Orbital mechhive; destination_key=planet-layer-1-tile-20; "
@@ -1125,6 +1126,14 @@ namespace DiaryPipelineTests
                     contextDetailLevel = level,
                     contextBudgets = tinyBudgets
                 });
+                DiaryPromptPlan recipientPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = pair,
+                    policy = Policy(combat: false, important: true),
+                    povRole = DiaryPipelineRoles.Recipient,
+                    contextDetailLevel = level,
+                    contextBudgets = tinyBudgets
+                });
 
                 AssertEqual("Odyssey pair uses pair-important template" + suffix,
                     DiaryPipelineTemplates.PairImportant, pairPlan.templateKey);
@@ -1148,6 +1157,15 @@ namespace DiaryPipelineTests
                     pairPlan.userPrompt, "landing outcome: minor gravship crash");
                 AssertContains("Odyssey solo POV role survives detail budget" + suffix, soloPlan.userPrompt,
                     "journey role: pilot");
+                AssertContains("Odyssey pair initiator role survives detail budget" + suffix,
+                    pairPlan.userPrompt, "journey role: pilot");
+                AssertContains("Odyssey pair recipient role survives detail budget" + suffix,
+                    recipientPlan.userPrompt, "journey role: copilot");
+                AssertTrue("Odyssey internal pair-role facts never reach either prompt" + suffix,
+                    !pairPlan.userPrompt.Contains("odyssey_initiator_role")
+                    && !pairPlan.userPrompt.Contains("odyssey_recipient_role")
+                    && !recipientPlan.userPrompt.Contains("odyssey_initiator_role")
+                    && !recipientPlan.userPrompt.Contains("odyssey_recipient_role"));
                 AssertTrue("Odyssey stable IDs and ticks stay out of prompt" + suffix,
                     !pairPlan.userPrompt.Contains("WorldObject_7")
                     && !pairPlan.userPrompt.Contains("odyssey-journey|")

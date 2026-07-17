@@ -488,7 +488,9 @@ two ships.
 
 ### 8.3 Travel commit
 
-At `GravshipUtility.TravelTo` postfix:
+At `GravshipUtility.TravelTo`, a prefix first copies the original `oldTile` into Harmony `__state`
+because vanilla rewrites that by-value argument onto `newTile.Layer` during cross-layer travel. The
+postfix then:
 
 - Require Odyssey active and a valid gravship/destination.
 - Correlate the transient intent by engine/world-object identity and a short XML time window.
@@ -909,6 +911,11 @@ Permitted structured fields include:
 
 Schema labels and role/sentinel tokens stay stable English by the documented carve-out. Visible
 values and all prose are cleaned, bounded, and localized.
+
+A pair-shaped `DiaryEvent` owns one saved `gameContext`, so it stores bounded internal
+initiator/recipient journey-role mappings. Prompt planning removes those internal keys and projects
+exactly one public `pov_journey_role` for the requested POV; a shared pair context must never stamp
+the pilot's role onto the copilot prompt.
 
 Do not include raw tile IDs, internal Def descriptions, coordinates, hidden site parts, or every
 crew name.

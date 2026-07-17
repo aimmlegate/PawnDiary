@@ -176,6 +176,9 @@ namespace PawnDiary
         {
             DiaryPovPayload pov = payload.Pov(request.povRole);
             DiaryPovPayload other = OtherPov(payload, request.povRole);
+            string projectedGameContext = OdysseyContextFormatter.ProjectPairRoleForPov(
+                payload.gameContext,
+                request.povRole);
             string victimRole = DiaryContextFields.Value(payload.gameContext, "death_victim_role");
             string victimName = DiaryContextFields.Value(payload.gameContext, "death_victim");
             string arrivalPawnName = DiaryContextFields.Value(payload.gameContext, "arrival_pawn");
@@ -212,7 +215,7 @@ namespace PawnDiary
                 arrivalPawn = string.IsNullOrWhiteSpace(arrivalPawnName) ? payload.initiator?.name : arrivalPawnName,
                 arrivalFacts = BuildArrivalFacts(payload.gameContext),
                 entryText = request.entryText,
-                gameContext = payload.gameContext
+                gameContext = projectedGameContext
             };
         }
 

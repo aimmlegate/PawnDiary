@@ -130,12 +130,41 @@ namespace PawnDiary
         /// Applies the Odyssey-only launch cooldown to the existing Ritual owner. Other ritual groups
         /// never call this seam and retain their normal fanout behavior.
         /// </summary>
-        internal bool AllowsOdysseyLaunchRitualAt(int ritualTick)
+        internal bool AllowsOdysseyLaunchRitualAt(int ritualTick, Pawn ritualPawn)
         {
             if (!ModsConfig.OdysseyActive) return false;
             OdysseyPolicySnapshot policy = DiaryOdysseyPolicy.Snapshot();
-            int previousDeparture = odysseyTravelHistory?.lastDepartureTick ?? -1;
-            return OdysseyLaunchPolicy.AllowsPage(previousDeparture, ritualTick, policy);
+            OdysseyTravelHistorySnapshot history = odysseyTravelHistory?.ToSnapshot()
+                ?? new OdysseyTravelHistorySnapshot();
+            OdysseyLocationSnapshot currentLocation;
+            bool leavingLongHeldHome = DlcContext.TryCaptureOdysseyLocation(
+                    ritualPawn,
+                    out currentLocation)
+                && OdysseyLaunchPolicy.IsLeavingLongHeldHome(
+                    history,
+                    currentLocation,
+                    ritualTick,
+                    policy);
+            return OdysseyLaunchPolicy.AllowsPage(
+                history.lastLaunchPageTick,
+                ritualTick,
+                leavingLongHeldHome,
+                policy);
+        }
+
+        /// <summary>
+        /// Commits the Odyssey launch cooldown only after the ritual owner created a real DiaryEvent.
+        /// Repeated fan-out children at the same tick remain idempotent.
+        /// </summary>
+        internal void MarkOdysseyLaunchPageAt(int ritualTick)
+        {
+            if (!ModsConfig.OdysseyActive || ritualTick < 0) return;
+            OdysseyPolicySnapshot policy = DiaryOdysseyPolicy.Snapshot();
+            odysseyTravelHistory = OdysseyTravelHistoryState.FromSnapshot(
+                OdysseyHistoryPolicy.MarkLaunchPage(
+                    odysseyTravelHistory?.ToSnapshot(),
+                    ritualTick,
+                    policy));
         }
 
         /// <summary>

@@ -20,6 +20,8 @@ namespace DiaryOdysseyPolicyTests
             TestReasonPriorityAndHistoryMutation();
             TestCooldownAndBypass();
             TestUntrustedHistoryAndDropPaths();
+            TestBaselineAndFailClosedLandingPolicy();
+            TestReasonEdgeCases();
             TestHistoryNormalizationAndOldSaveBaseline();
             TestLifecycleCorrelationCommitAndDepartureHistory();
             TestLifecycleFallbackExpiryAndLandingCorrelation();
@@ -121,17 +123,40 @@ namespace DiaryOdysseyPolicyTests
         {
             OdysseyPolicySnapshot policy = Policy();
             policy.launchCooldownTicks = 60000;
-            AssertTrue("first launch ritual allowed", OdysseyLaunchPolicy.AllowsPage(-1, 100, policy));
-            AssertTrue("launch inside prior-departure cooldown drops",
-                !OdysseyLaunchPolicy.AllowsPage(100, 60099, policy));
+            AssertTrue("first launch ritual allowed", OdysseyLaunchPolicy.AllowsPage(-1, 100, false, policy));
+            AssertTrue("launch inside prior-page cooldown drops",
+                !OdysseyLaunchPolicy.AllowsPage(100, 60099, false, policy));
             AssertTrue("launch at cooldown boundary allowed",
-                OdysseyLaunchPolicy.AllowsPage(100, 60100, policy));
+                OdysseyLaunchPolicy.AllowsPage(100, 60100, false, policy));
+            AssertTrue("verified long-held home bypasses cooldown",
+                OdysseyLaunchPolicy.AllowsPage(100, 101, true, policy));
             policy.launchCooldownTicks = 0;
             AssertTrue("disabled launch cooldown allows repeat",
-                OdysseyLaunchPolicy.AllowsPage(100, 101, policy));
+                OdysseyLaunchPolicy.AllowsPage(100, 101, false, policy));
             policy.enabled = false;
             AssertTrue("disabled Odyssey policy suppresses launch adapter",
-                !OdysseyLaunchPolicy.AllowsPage(-1, 100, policy));
+                !OdysseyLaunchPolicy.AllowsPage(-1, 100, false, policy));
+
+            policy.enabled = true;
+            policy.launchCooldownTicks = 60000;
+            policy.longHeldHomeMinimumTicks = 500;
+            OdysseyTravelHistorySnapshot history = History(true);
+            history.currentHomeKey = "home-a";
+            history.currentHomeSinceTick = 100;
+            history.lastLaunchPageTick = 50;
+            OdysseyLocationSnapshot home = Location("home-a", "surface", string.Empty, string.Empty);
+            home.isPlayerHome = true;
+            AssertTrue("exact old tenure is long-held",
+                OdysseyLaunchPolicy.IsLeavingLongHeldHome(history, home, 600, policy));
+            OdysseyTravelHistorySnapshot marked = OdysseyHistoryPolicy.MarkLaunchPage(history, 600, policy);
+            AssertEqual("launch page tick commits transactionally", 600, marked.lastLaunchPageTick);
+            AssertTrue("cancel retry cannot reuse same long-held tenure",
+                !OdysseyLaunchPolicy.IsLeavingLongHeldHome(marked, home, 601, policy));
+            AssertTrue("cancel retry remains inside page cooldown",
+                !OdysseyLaunchPolicy.AllowsPage(marked.lastLaunchPageTick, 601, false, policy));
+            home.stableKey = "other-home";
+            AssertTrue("wrong visible home cannot bypass cooldown",
+                !OdysseyLaunchPolicy.IsLeavingLongHeldHome(history, home, 600, policy));
         }
 
         private static void TestReasonPriorityAndHistoryMutation()
@@ -227,6 +252,89 @@ namespace DiaryOdysseyPolicyTests
                 plan.historyMutation.landingObservationTick);
         }
 
+        private static void TestBaselineAndFailClosedLandingPolicy()
+        {
+            OdysseyPolicySnapshot policy = Policy();
+            OdysseyTravelHistorySnapshot history = History(false);
+            OdysseyJourneySnapshot baseline = Journey(100, true);
+            baseline.baselineOnly = true;
+            baseline.sourceComplete = false;
+            baseline.destination = Location("routine", "surface", string.Empty, string.Empty);
+
+            OdysseyLandingPlan plan = OdysseyLandingPolicy.Plan(
+                Observation(baseline, 70000, true), history, policy);
+            AssertEqual("baseline cannot invent long-journey reason", string.Empty, plan.primaryReason);
+            AssertEqual("baseline omits invented duration", string.Empty, plan.durationBand);
+            AssertTrue("baseline routine landing stays silent", !plan.writePage);
+
+            baseline.destination = Location("major", "surface", string.Empty, "Site_Mechhive");
+            plan = OdysseyLandingPolicy.Plan(Observation(baseline, 70000, true), history, policy);
+            AssertEqual("baseline exact major fact may authorize", "major_destination", plan.primaryReason);
+            AssertEqual("baseline major still omits invented duration", string.Empty, plan.durationBand);
+
+            AssertEqual("null observation fails closed", -1,
+                OdysseyLandingPolicy.Plan(null, history, policy).historyMutation.landingObservationTick);
+            OdysseyJourneySnapshot invalid = Journey(100, true);
+            invalid.journeyId = string.Empty;
+            AssertEqual("empty journey id fails closed", -1,
+                OdysseyLandingPolicy.Plan(Observation(invalid, 1000, true), history, policy)
+                    .historyMutation.landingObservationTick);
+            invalid = Journey(100, true);
+            invalid.shipStableId = string.Empty;
+            AssertEqual("empty ship id fails closed", -1,
+                OdysseyLandingPolicy.Plan(Observation(invalid, 1000, true), history, policy)
+                    .historyMutation.landingObservationTick);
+            invalid = Journey(100, true);
+            AssertEqual("negative landing tick fails closed", -1,
+                OdysseyLandingPolicy.Plan(Observation(invalid, -1, true), history, policy)
+                    .historyMutation.landingObservationTick);
+        }
+
+        private static void TestReasonEdgeCases()
+        {
+            OdysseyPolicySnapshot policy = Policy();
+            OdysseyTravelHistorySnapshot history = History(true);
+            OdysseyJourneySnapshot journey = Journey(100, true);
+            journey.destination = Location("orbit-a", "orbit", string.Empty, string.Empty);
+            OdysseyLandingPlan plan = OdysseyLandingPolicy.Plan(
+                Observation(journey, 1000, true), history, policy);
+            AssertEqual("first orbit positive case", "first_orbit", plan.primaryReason);
+
+            journey = Journey(100, true);
+            journey.roughLanding = true;
+            journey.destination = Location("known", "surface", string.Empty, string.Empty);
+            history.visitedLocationKeys.Add("known");
+            history.lastLandingPageTick = 999;
+            plan = OdysseyLandingPolicy.Plan(Observation(journey, 1000, true), history, policy);
+            AssertEqual("rough landing alone is primary", "rough_landing", plan.primaryReason);
+            AssertTrue("rough landing alone bypasses cooldown", plan.writePage && !plan.droppedByCooldown);
+
+            journey = Journey(100, true);
+            journey.destination = Location("home-b", "surface", string.Empty, string.Empty);
+            history = History(true);
+            history.homeKeys.Add("home-b");
+            history.committedJourneyCount = 1;
+            plan = OdysseyLandingPolicy.Plan(Observation(journey, 1000, true), history, policy);
+            AssertTrue("homecoming requires intervening journey", plan.primaryReason != "homecoming");
+            history.committedJourneyCount = 2;
+            journey.origin.stableKey = "home-b";
+            plan = OdysseyLandingPolicy.Plan(Observation(journey, 1000, true), history, policy);
+            AssertTrue("homecoming requires different origin", plan.primaryReason != "homecoming");
+
+            policy.shortJourneyMaximumTicks = 100;
+            policy.longJourneyMinimumTicks = 50;
+            journey = Journey(0, true);
+            journey.destination = Location("known-2", "surface", string.Empty, string.Empty);
+            history = History(true);
+            history.visitedLocationKeys.Add("known-2");
+            plan = OdysseyLandingPolicy.Plan(Observation(journey, 100, true), history, policy);
+            AssertTrue("misconfigured threshold cannot call short journey long",
+                plan.primaryReason != "long_journey" && plan.durationBand == "short");
+            plan = OdysseyLandingPolicy.Plan(Observation(journey, 101, true), history, policy);
+            AssertEqual("reason and duration share effective long boundary", "long_journey", plan.primaryReason);
+            AssertEqual("effective long boundary produces long band", "long", plan.durationBand);
+        }
+
         private static void TestHistoryNormalizationAndOldSaveBaseline()
         {
             OdysseyPolicySnapshot policy = Policy();
@@ -242,7 +350,7 @@ namespace DiaryOdysseyPolicyTests
                 emittedJourneyIds = null
             };
             OdysseyTravelHistorySnapshot normalized = OdysseyHistoryPolicy.Normalize(malformed, policy);
-            AssertEqual("schema repaired", 1, normalized.schemaVersion);
+            AssertEqual("schema repaired", 2, normalized.schemaVersion);
             AssertEqual("negative feature tick repaired", 0, normalized.featureStartTick);
             AssertEqual("negative count repaired", 0, normalized.committedJourneyCount);
             AssertEqual("category cap", 2, normalized.visitedCategoryKeys.Count);
@@ -257,6 +365,8 @@ namespace DiaryOdysseyPolicyTests
             AssertTrue("old save distrusts first claims", !baseline.historyTrustworthyForFirstClaims);
             AssertEqual("feature start stored", 1234, baseline.featureStartTick);
             AssertTrue("visible home seeded", baseline.homeKeys.Contains("old-home"));
+            AssertEqual("visible current home seeded", "old-home", baseline.currentHomeKey);
+            AssertEqual("home tenure starts at feature boundary", 1234, baseline.currentHomeSinceTick);
             AssertEqual("baseline emits no page id", 0, baseline.emittedJourneyIds.Count);
 
             baseline.historyTrustworthyForFirstClaims = true;
@@ -314,6 +424,7 @@ namespace DiaryOdysseyPolicyTests
             AssertEqual("departure tick recorded", 200, history.lastDepartureTick);
             AssertTrue("departure seeds exact origin", history.visitedLocationKeys.Contains("home-a"));
             AssertTrue("departure seeds former home", history.homeKeys.Contains("home-a"));
+            AssertEqual("departure clears current home tenure", string.Empty, history.currentHomeKey);
             AssertEqual("departure does not fake landing observation", -1, history.lastLandingObservationTick);
 
             history.committedJourneyCount = int.MaxValue;
@@ -426,6 +537,42 @@ namespace DiaryOdysseyPolicyTests
             AssertTrue("context injection sanitized",
                 context.IndexOf("raw_key=bad", StringComparison.Ordinal) < 0
                 && context.IndexOf('\n') < 0);
+
+            string pairContext = OdysseyContextFormatter.FormatLandingPair(
+                journey,
+                journey.destination,
+                plan,
+                "Pilot",
+                "Copilot",
+                policy);
+            AssertTrue("shared pair context does not lie about one POV",
+                pairContext.IndexOf("pov_journey_role=", StringComparison.Ordinal) < 0);
+            string initiatorContext = OdysseyContextFormatter.ProjectPairRoleForPov(pairContext, "initiator");
+            string recipientContext = OdysseyContextFormatter.ProjectPairRoleForPov(pairContext, "recipient");
+            AssertContains("pair initiator gets pilot role", initiatorContext, "pov_journey_role=pilot");
+            AssertContains("pair recipient gets copilot role", recipientContext, "pov_journey_role=copilot");
+            AssertTrue("pair internal role facts never reach projected prompt context",
+                initiatorContext.IndexOf(OdysseyContextFormatter.InitiatorJourneyRoleKey,
+                    StringComparison.Ordinal) < 0
+                && recipientContext.IndexOf(OdysseyContextFormatter.RecipientJourneyRoleKey,
+                    StringComparison.Ordinal) < 0);
+
+            OdysseyLocationSnapshot hidden = Location(
+                "HiddenTile",
+                "orbit",
+                "HiddenBiome",
+                "HiddenSite");
+            hidden.visibleLabel = "Hidden Place";
+            hidden.biomeLabel = "Hidden Biome";
+            hidden.siteLabel = "Hidden Site";
+            hidden.visible = false;
+            context = OdysseyContextFormatter.FormatLanding(journey, hidden, plan, "Pilot", policy);
+            AssertTrue("hidden destination labels never format",
+                context.IndexOf("Hidden Place", StringComparison.Ordinal) < 0
+                && context.IndexOf("Hidden Biome", StringComparison.Ordinal) < 0
+                && context.IndexOf("Hidden Site", StringComparison.Ordinal) < 0);
+            AssertTrue("hidden destination layer never formats",
+                context.IndexOf("destination_layer=", StringComparison.Ordinal) < 0);
             AssertEqual("value cleaner", "a b c", OdysseyContextFormatter.CleanValue("a;b=c", 50));
         }
 

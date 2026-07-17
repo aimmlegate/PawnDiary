@@ -41,8 +41,9 @@ namespace PawnDiary.RimTests
 
             Require(HasOwnedPatch(takeoff, typeof(OdysseyInitiateTakeoffPatch), prefix: true),
                 "InitiateTakeoff lacks Pawn Diary's exact O1.3 prefix.");
-            Require(HasOwnedPatch(travel, typeof(OdysseyTravelToPatch), prefix: false),
-                "GravshipUtility.TravelTo lacks Pawn Diary's exact O1.3 postfix.");
+            Require(HasOwnedPatch(travel, typeof(OdysseyTravelToPatch), prefix: true)
+                    && HasOwnedPatch(travel, typeof(OdysseyTravelToPatch), prefix: false),
+                "GravshipUtility.TravelTo lacks Pawn Diary's origin-preserving prefix/postfix pair.");
             Require(HasOwnedPatch(landing, typeof(OdysseyInitiateLandingPatch), prefix: true),
                 "InitiateLanding lacks Pawn Diary's exact O1.3 prefix.");
             Require(OdysseyLandingEndedPatch.HooksReady,
@@ -325,6 +326,14 @@ namespace PawnDiary.RimTests
                     captureTick = landingTick,
                     writers = writers
                 };
+                Require(scope.Component.CaptureOdysseyLandingFinish(finish),
+                    "The major landing finish could not establish its synchronous outcome hand-off.");
+                Require(OdysseyLifecyclePolicy.TryAttachLandingOutcome(
+                        finish,
+                        shipId,
+                        "MinorGravshipCrash",
+                        "minor gravship crash"),
+                    "The exact landing outcome could not attach before component completion.");
 
                 DiaryEvent diaryEvent = scope.FireAndRequireEvent(
                     () => scope.Component.CompleteOdysseyLanding(
@@ -336,8 +345,23 @@ namespace PawnDiary.RimTests
                     "Two selected Odyssey writers did not share one pair-shaped DiaryEvent.");
                 Require(diaryEvent.gameContext.Contains("odyssey_journey=true")
                         && diaryEvent.gameContext.Contains("journey_phase=landing")
-                        && diaryEvent.gameContext.Contains("journey_reason=major_destination"),
+                        && diaryEvent.gameContext.Contains("journey_reason=major_destination")
+                        && diaryEvent.gameContext.Contains("rough_landing=true")
+                        && diaryEvent.gameContext.Contains("landing_outcome=minor gravship crash"),
                     "Canonical landing event lost its frozen Odyssey context markers.");
+                AssertStr(OdysseyJourneyRoleTokens.Pilot,
+                    DiaryContextFields.Value(
+                        diaryEvent.gameContext,
+                        OdysseyContextFormatter.InitiatorJourneyRoleKey),
+                    "pair initiator journey role");
+                AssertStr(OdysseyJourneyRoleTokens.Copilot,
+                    DiaryContextFields.Value(
+                        diaryEvent.gameContext,
+                        OdysseyContextFormatter.RecipientJourneyRoleKey),
+                    "pair recipient journey role");
+                Require(string.IsNullOrWhiteSpace(
+                        DiaryContextFields.Value(diaryEvent.gameContext, "pov_journey_role")),
+                    "A shared pair event falsely stamped one POV's role onto both writers.");
                 OdysseyTravelHistoryState applied = historyField.GetValue(scope.Component)
                     as OdysseyTravelHistoryState;
                 AssertInt(landingTick, applied?.lastLandingPageTick ?? -1,
@@ -412,6 +436,14 @@ namespace PawnDiary.RimTests
                     RequirePromptContains(initiatorPrompt, copilot.LabelShortCap, "copilot name" + suffix);
                     RequirePromptContains(recipientPrompt, ship, "recipient ship" + suffix);
                     RequirePromptContains(recipientPrompt, destination, "recipient destination" + suffix);
+                    RequirePromptContains(initiatorPrompt, OdysseyJourneyRoleTokens.Pilot,
+                        "initiator journey role" + suffix);
+                    RequirePromptContains(recipientPrompt, OdysseyJourneyRoleTokens.Copilot,
+                        "recipient journey role" + suffix);
+                    RequirePromptOmits(initiatorPrompt, OdysseyContextFormatter.InitiatorJourneyRoleKey,
+                        "internal initiator-role key" + suffix);
+                    RequirePromptOmits(recipientPrompt, OdysseyContextFormatter.RecipientJourneyRoleKey,
+                        "internal recipient-role key" + suffix);
                     RequirePromptOmits(initiatorPrompt, "odyssey-journey|", "journey ID" + suffix);
                     RequirePromptOmits(initiatorPrompt, "WorldObject_", "ship stable ID" + suffix);
                     RequirePromptOmits(initiatorPrompt, "planet-layer-", "location key" + suffix);
@@ -632,6 +664,14 @@ namespace PawnDiary.RimTests
                             && narrative.homeText.IndexOf(mobileHome.shipName,
                                 StringComparison.OrdinalIgnoreCase) >= 0,
                         "Exact onboard state did not freeze one matching N2-O provider snapshot.");
+                    string visibleLocation = mobileHome.location?.visibleLabel ?? string.Empty;
+                    string biomeLabel = pawn.Map.Biome?.label ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(visibleLocation)
+                        && string.Equals(visibleLocation, biomeLabel, StringComparison.OrdinalIgnoreCase))
+                    {
+                        AssertInt(1, CountOccurrences(surroundings, biomeLabel),
+                            "mobile-home biome appears once");
+                    }
                 }
                 else
                 {
@@ -665,6 +705,9 @@ namespace PawnDiary.RimTests
                     featureStartTick = 100,
                     committedJourneyCount = 2,
                     lastDepartureTick = 500,
+                    lastLaunchPageTick = 450,
+                    currentHomeKey = "planet-layer-0-tile-10",
+                    currentHomeSinceTick = 300,
                     visitedLayerKeys = new List<string> { "surface", "orbit" },
                     visitedCategoryKeys = new List<string> { "forest" },
                     visitedLocationKeys = new List<string> { "planet-layer-0-tile-10" },
@@ -682,6 +725,10 @@ namespace PawnDiary.RimTests
                 "destination biome Def name");
             AssertInt(2, loaded.activeJourney.writers.Count, "bounded saved writers");
             AssertInt(2, loaded.travelHistory.visitedLayerKeys.Count, "visited layers");
+            AssertInt(450, loaded.travelHistory.lastLaunchPageTick, "last launch page tick");
+            AssertStr("planet-layer-0-tile-10", loaded.travelHistory.currentHomeKey,
+                "current home key");
+            AssertInt(300, loaded.travelHistory.currentHomeSinceTick, "current home tenure tick");
             Require(loaded.travelHistory.historyTrustworthyForFirstClaims,
                 "Trustworthy post-feature history lost its trust flag on load.");
             Require(policy.maximumEmittedJourneyIds > 0,
@@ -719,6 +766,9 @@ namespace PawnDiary.RimTests
                 "Old-save baseline invented a committed journey");
             Require(baseline.emittedJourneyIds.Count == 0,
                 "Old-save baseline invented an emitted landing page.");
+            AssertStr("planet-layer-0-tile-12", baseline.currentHomeKey,
+                "old-save visible current home");
+            AssertInt(900, baseline.currentHomeSinceTick, "old-save home tenure boundary");
         }
 
         /// <summary>Corrupt journey identity drops and oversized history retains only newest bounded rows.</summary>
@@ -748,6 +798,10 @@ namespace PawnDiary.RimTests
             });
             Require(loaded.activeJourney == null,
                 "A corrupt blank-id active journey survived load normalization.");
+            OdysseyJourneyState separatorCorrupt = ValidJourney();
+            separatorCorrupt.shipStableId = "WorldObject|Injected";
+            Require(OdysseyStatePersistence.NormalizeJourney(separatorCorrupt, policy) == null,
+                "A pipe-bearing stable ship identity survived save normalization.");
             AssertInt(policy.maximumVisitedLocations, loaded.travelHistory.visitedLocationKeys.Count,
                 "visited-location policy cap");
             AssertStr("location-" + (overflow - 1),
@@ -851,6 +905,19 @@ namespace PawnDiary.RimTests
             DiaryEventRepository repository = field.GetValue(component) as DiaryEventRepository;
             if (repository == null) throw new AssertionException("Diary event repository was unavailable.");
             return repository.Count;
+        }
+
+        private static int CountOccurrences(string value, string fragment)
+        {
+            if (string.IsNullOrEmpty(value) || string.IsNullOrEmpty(fragment)) return 0;
+            int count = 0;
+            int index = 0;
+            while ((index = value.IndexOf(fragment, index, StringComparison.OrdinalIgnoreCase)) >= 0)
+            {
+                count++;
+                index += fragment.Length;
+            }
+            return count;
         }
 
         private static DiaryEvent PromptSuiteEvent(DiaryGameComponent component)

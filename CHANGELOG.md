@@ -1,5 +1,16 @@
 # Changelog
 
+- **2026-07-17 — Closed the Odyssey adversarial-review findings.** Preserved the true pre-rewrite
+  `TravelTo` origin tile, prevented pre-feature mid-flight baselines from inventing elapsed duration or
+  `long_journey`, and made pair landing prompts project the correct pilot/copilot/crew role separately
+  for each POV. Launch policy now persists schema-2 `lastLaunchPageTick` and current-home tenure,
+  commits cooldown only after a ritual page exists, permits the XML long-held-home bypass once per
+  tenure, and cannot spam pages after destination cancellation. Hidden destination detail and duplicate
+  mobile-home biome text are suppressed, Russian gravship terminology now follows the glossary, and
+  stable ship IDs are separator-hardened on load. Expanded pure coverage to 158 Odyssey, 651 capture,
+  and 2,028 pipeline assertions; expanded RimTests for the TravelTo prefix, exact outcome enrichment,
+  pair-role mappings, and additive Scribe fields. Rebuilt both committed DLLs.
+
 - **2026-07-17 — Corrected two loaded Odyssey RimTest fixture assumptions.** The official-DLC catalog
   now recognizes `ritualGravship`'s intentional narrow token classifier instead of requiring an exact
   ritual defName, and the localized Odyssey prompt fixture supplies its isolated copilot through a

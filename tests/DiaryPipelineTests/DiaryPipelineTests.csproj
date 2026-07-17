@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
+    <NoWarn>0649</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +18,8 @@
     <Compile Include="..\..\Source\Pipeline\DiaryEntryTitleFilter.cs" Link="DiaryEntryTitleFilter.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEntryStatsAccumulator.cs" Link="DiaryEntryStatsAccumulator.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryPromptPlanner.cs" Link="DiaryPromptPlanner.cs" />
+    <Compile Include="..\..\Source\Pipeline\OdysseyJourneyContracts.cs" Link="OdysseyJourneyContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\OdysseyContextFormatter.cs" Link="OdysseyContextFormatter.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContextPrompt.cs" Link="NarrativeContextPrompt.cs" />
     <Compile Include="..\..\Source\Pipeline\PromptContextDetail.cs" Link="PromptContextDetail.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEventDomainClassifier.cs" Link="DiaryEventDomainClassifier.cs" />

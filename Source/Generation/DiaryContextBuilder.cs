@@ -362,13 +362,14 @@ namespace PawnDiary
 
             parts.Add((outdoors ? "PawnDiary.Ctx.Outdoors" : "PawnDiary.Ctx.Indoors").Translate());
 
+            string odysseyLocationLabel = string.Empty;
             OdysseyMobileHomeSnapshot mobileHome;
             if (DlcContext.TryCaptureOdysseyMobileHome(pawn, out mobileHome))
             {
-                string location = mobileHome.location?.visibleLabel ?? string.Empty;
-                parts.Add(string.IsNullOrWhiteSpace(location)
+                odysseyLocationLabel = mobileHome.location?.visibleLabel ?? string.Empty;
+                parts.Add(string.IsNullOrWhiteSpace(odysseyLocationLabel)
                     ? "PawnDiary.Ctx.GravshipHome".Translate(mobileHome.shipName)
-                    : "PawnDiary.Ctx.GravshipHomeAt".Translate(mobileHome.shipName, location));
+                    : "PawnDiary.Ctx.GravshipHomeAt".Translate(mobileHome.shipName, odysseyLocationLabel));
             }
 
             // Weather and biome only matter when the pawn is exposed to them, and weather is added
@@ -383,7 +384,11 @@ namespace PawnDiary
                     parts.Add(ExternalText(weather.label));
                 }
 
-                if (pawn.Map.Biome != null)
+                if (pawn.Map.Biome != null
+                    && !string.Equals(
+                        DiaryLineCleaner.CleanLine(odysseyLocationLabel),
+                        DiaryLineCleaner.CleanLine(pawn.Map.Biome.label),
+                        StringComparison.OrdinalIgnoreCase))
                 {
                     parts.Add(ExternalText(pawn.Map.Biome.label));
                 }

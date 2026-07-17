@@ -338,14 +338,17 @@ namespace PawnDiary
     /// <summary>Detached saved novelty/history input; lists are normalized by pure policy.</summary>
     internal sealed class OdysseyTravelHistorySnapshot
     {
-        public int schemaVersion = 1;
+        public int schemaVersion = 2;
         public bool historyInitialized;
         public bool historyTrustworthyForFirstClaims;
         public int featureStartTick;
         public int committedJourneyCount;
         public int lastDepartureTick = -1;
+        public int lastLaunchPageTick = -1;
         public int lastLandingObservationTick = -1;
         public int lastLandingPageTick = -1;
+        public string currentHomeKey = string.Empty;
+        public int currentHomeSinceTick = -1;
         public List<string> visitedLayerKeys = new List<string>();
         public List<string> visitedCategoryKeys = new List<string>();
         public List<string> visitedLocationKeys = new List<string>();
@@ -358,6 +361,8 @@ namespace PawnDiary
     {
         public int landingObservationTick = -1;
         public int landingPageTick = -1;
+        public bool destinationObserved;
+        public string destinationHomeKey = string.Empty;
         public string journeyIdToMarkEmitted = string.Empty;
         public List<string> visitedLayerKeys = new List<string>();
         public List<string> visitedCategoryKeys = new List<string>();

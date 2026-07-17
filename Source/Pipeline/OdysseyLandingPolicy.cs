@@ -15,10 +15,18 @@ namespace PawnDiary
             OdysseyPolicySnapshot effective = policy ?? OdysseyPolicySnapshot.CreateDefault();
             long elapsed = Math.Max(0L, (long)landingTick - departureTick);
             int shortMaximum = Math.Max(0, effective.shortJourneyMaximumTicks);
-            int longMinimum = Math.Max(shortMaximum + 1, effective.longJourneyMinimumTicks);
+            int longMinimum = EffectiveLongMinimum(effective);
             if (elapsed <= shortMaximum) return OdysseyDurationTokens.Short;
             if (elapsed >= longMinimum) return OdysseyDurationTokens.Long;
             return OdysseyDurationTokens.Ordinary;
+        }
+
+        /// <summary>Keeps the long-reason and duration-band thresholds consistent under bad XML.</summary>
+        internal static int EffectiveLongMinimum(OdysseyPolicySnapshot policy)
+        {
+            OdysseyPolicySnapshot effective = policy ?? OdysseyPolicySnapshot.CreateDefault();
+            return Math.Max(Math.Max(0, effective.shortJourneyMaximumTicks) + 1,
+                effective.longJourneyMinimumTicks);
         }
 
         /// <summary>Maps numeric ritual quality into a stable token; NaN/infinity remains unknown.</summary>
@@ -67,10 +75,14 @@ namespace PawnDiary
             OdysseyTravelHistorySnapshot prior = history ?? new OdysseyTravelHistorySnapshot();
             OdysseyLocationSnapshot rawDestination = observation.destination ?? journey.destination;
             OdysseyLocationSnapshot destination = OdysseyLocationPolicy.Classify(rawDestination, effective);
-            plan.durationBand = OdysseyJourneyPolicy.DurationBand(
-                journey.departureTick,
-                observation.landingTick,
-                effective);
+            // A pre-feature mid-flight baseline uses the load tick only as a correlation ID. It is not
+            // a truthful departure observation, so never turn it into elapsed-time prose.
+            plan.durationBand = journey.baselineOnly
+                ? string.Empty
+                : OdysseyJourneyPolicy.DurationBand(
+                    journey.departureTick,
+                    observation.landingTick,
+                    effective);
             plan.historyMutation = BuildMutation(journey, destination, observation.landingTick);
 
             List<ReasonCandidate> reasons = QualifyingReasons(journey, destination, prior, observation, effective);
@@ -155,7 +167,8 @@ namespace PawnDiary
 
             long elapsed = Math.Max(0L, (long)observation.landingTick - journey.departureTick);
             AddIf(result, OdysseyLandingReasonTokens.LongJourney,
-                elapsed >= Math.Max(1, policy.longJourneyMinimumTicks), policy);
+                !journey.baselineOnly
+                && elapsed >= OdysseyJourneyPolicy.EffectiveLongMinimum(policy), policy);
             return result;
         }
 
@@ -206,7 +219,11 @@ namespace PawnDiary
         {
             OdysseyHistoryMutation mutation = new OdysseyHistoryMutation
             {
-                landingObservationTick = landingTick
+                landingObservationTick = landingTick,
+                destinationObserved = destination != null && destination.visible,
+                destinationHomeKey = destination != null && destination.visible && destination.isPlayerHome
+                    ? Clean(destination.stableKey)
+                    : string.Empty
             };
             AddNonBlank(mutation.visitedLayerKeys, destination.layerToken);
             AddNonBlank(mutation.visitedCategoryKeys, destination.categoryToken);
@@ -272,15 +289,44 @@ namespace PawnDiary
     internal static class OdysseyLaunchPolicy
     {
         /// <summary>
-        /// Allows the first observed launch and suppresses a later launch ceremony only while the
-        /// previous committed departure remains inside the XML-owned Odyssey cooldown.
+        /// Allows the first observed launch, a launch leaving a verified long-held home, or a launch
+        /// after the prior emitted launch page has left the XML-owned cooldown.
         /// </summary>
-        public static bool AllowsPage(int previousDepartureTick, int ritualTick, OdysseyPolicySnapshot policy)
+        public static bool AllowsPage(
+            int previousLaunchPageTick,
+            int ritualTick,
+            bool leavingLongHeldHome,
+            OdysseyPolicySnapshot policy)
         {
             OdysseyPolicySnapshot effective = policy ?? OdysseyPolicySnapshot.CreateDefault();
             if (!effective.enabled || ritualTick < 0) return false;
-            if (previousDepartureTick < 0 || effective.launchCooldownTicks <= 0) return true;
-            return (long)ritualTick - previousDepartureTick >= effective.launchCooldownTicks;
+            if (leavingLongHeldHome || previousLaunchPageTick < 0 || effective.launchCooldownTicks <= 0)
+                return true;
+            return (long)ritualTick - previousLaunchPageTick >= effective.launchCooldownTicks;
+        }
+
+        /// <summary>Checks only saved home-tenure facts against one exact currently visible home.</summary>
+        public static bool IsLeavingLongHeldHome(
+            OdysseyTravelHistorySnapshot history,
+            OdysseyLocationSnapshot currentLocation,
+            int ritualTick,
+            OdysseyPolicySnapshot policy)
+        {
+            OdysseyPolicySnapshot effective = policy ?? OdysseyPolicySnapshot.CreateDefault();
+            return history != null
+                && currentLocation != null
+                && currentLocation.visible
+                && currentLocation.isPlayerHome
+                && ritualTick >= 0
+                && history.currentHomeSinceTick >= 0
+                && history.lastLaunchPageTick < history.currentHomeSinceTick
+                && !string.IsNullOrWhiteSpace(history.currentHomeKey)
+                && string.Equals(
+                    history.currentHomeKey.Trim(),
+                    (currentLocation.stableKey ?? string.Empty).Trim(),
+                    StringComparison.OrdinalIgnoreCase)
+                && (long)ritualTick - history.currentHomeSinceTick
+                    >= Math.Max(1, effective.longHeldHomeMinimumTicks);
         }
     }
 
@@ -324,6 +370,25 @@ namespace PawnDiary
                     Positive(effective.maximumHomeKeys, 32), true);
             }
 
+            // Once travel commits, the ship is no longer occupying its prior surface home. A later
+            // successful landing observation will establish a new tenure when appropriate.
+            result.currentHomeKey = string.Empty;
+            result.currentHomeSinceTick = -1;
+
+            return result;
+        }
+
+        /// <summary>Records a launch cooldown only after at least one ritual DiaryEvent exists.</summary>
+        public static OdysseyTravelHistorySnapshot MarkLaunchPage(
+            OdysseyTravelHistorySnapshot source,
+            int launchPageTick,
+            OdysseyPolicySnapshot policy)
+        {
+            OdysseyTravelHistorySnapshot result = Normalize(source, policy);
+            if (launchPageTick >= 0)
+            {
+                result.lastLaunchPageTick = Math.Max(result.lastLaunchPageTick, launchPageTick);
+            }
             return result;
         }
 
@@ -348,6 +413,28 @@ namespace PawnDiary
             if (mutation.landingPageTick >= 0)
             {
                 result.lastLandingPageTick = Math.Max(result.lastLandingPageTick, mutation.landingPageTick);
+            }
+
+            if (mutation.destinationObserved)
+            {
+                string destinationHomeKey = Clean(mutation.destinationHomeKey);
+                if (destinationHomeKey.Length == 0)
+                {
+                    result.currentHomeKey = string.Empty;
+                    result.currentHomeSinceTick = -1;
+                }
+                else if (!string.Equals(
+                    result.currentHomeKey,
+                    destinationHomeKey,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    result.currentHomeKey = destinationHomeKey;
+                    result.currentHomeSinceTick = mutation.landingObservationTick;
+                }
+                else if (result.currentHomeSinceTick < 0)
+                {
+                    result.currentHomeSinceTick = mutation.landingObservationTick;
+                }
             }
 
             AppendUnique(result.visitedLayerKeys, mutation.visitedLayerKeys, 8, true);
@@ -393,6 +480,8 @@ namespace PawnDiary
             {
                 AppendUnique(result.homeKeys, One(location.stableKey),
                     Positive(effective.maximumHomeKeys, 32), true);
+                result.currentHomeKey = Clean(location.stableKey);
+                result.currentHomeSinceTick = Math.Max(0, featureStartTick);
             }
 
             return result;
@@ -407,16 +496,25 @@ namespace PawnDiary
             OdysseyTravelHistorySnapshot result = new OdysseyTravelHistorySnapshot();
             if (source != null)
             {
-                result.schemaVersion = Math.Max(1, source.schemaVersion);
+                result.schemaVersion = Math.Max(2, source.schemaVersion);
                 result.historyInitialized = source.historyInitialized;
                 result.historyTrustworthyForFirstClaims = source.historyTrustworthyForFirstClaims;
                 result.featureStartTick = Math.Max(0, source.featureStartTick);
                 result.committedJourneyCount = Math.Max(0, source.committedJourneyCount);
                 result.lastDepartureTick = source.lastDepartureTick < -1 ? -1 : source.lastDepartureTick;
+                result.lastLaunchPageTick = source.lastLaunchPageTick < -1 ? -1 : source.lastLaunchPageTick;
                 result.lastLandingObservationTick = source.lastLandingObservationTick < -1
                     ? -1 : source.lastLandingObservationTick;
                 result.lastLandingPageTick = source.lastLandingPageTick < -1
                     ? -1 : source.lastLandingPageTick;
+                result.currentHomeKey = Clean(source.currentHomeKey);
+                result.currentHomeSinceTick = source.currentHomeSinceTick < -1
+                    ? -1
+                    : source.currentHomeSinceTick;
+                if (result.currentHomeKey.Length == 0)
+                {
+                    result.currentHomeSinceTick = -1;
+                }
             }
 
             AppendUnique(result.visitedLayerKeys, source == null ? null : source.visitedLayerKeys, 8, true);
@@ -473,6 +571,11 @@ namespace PawnDiary
         private static int Positive(int value, int fallback)
         {
             return value > 0 ? value : fallback;
+        }
+
+        private static string Clean(string value)
+        {
+            return (value ?? string.Empty).Trim();
         }
     }
 }

@@ -133,20 +133,23 @@ O2 removes the stale `Flooding` mood identity and freezes the package-gated `Sea
 `ThingPresent` observer, prompt-only page policy, hysteresis/cooldown, exact `GravNausea` matcher,
 XML tuning, and English/Russian Keyed plus DefInjected coverage.
 
-Odyssey O1.1-O1.5 uses `DiaryOdysseyPolicyTests`, an assembly-free suite with 119 assertions freezing the
+Odyssey O1.1-O1.5 uses `DiaryOdysseyPolicyTests`, an assembly-free suite with 158 assertions freezing the
 journey/landing tokens and IDs, exact location mapping, deterministic pilot/copilot/crew selection,
 quality and duration bands, landing reason priority, cooldown exceptions, bounded idempotent history,
 silent old-save baselining, prompt-safe bounded context, exact intent/landing correlation, conservative
-fallback commits, transient expiry, departure-history mutation, and launch cooldown boundaries.
-`DiaryCapturePolicyTests` additionally pins the registered `GravshipJourney` solo/pair/drop decision
-and frozen landing dedup key. O1.2 adds
+fallback commits, transient expiry, departure-history mutation, transactional launch-page cooldown,
+one-use long-held-home bypass, old-save synthetic-duration suppression, positive first-orbit and
+rough-only paths, homecoming negatives, invalid-input drops, hidden-destination omission, and per-POV
+pair-role projection. `DiaryCapturePolicyTests` additionally pins all registered `GravshipJourney`
+enablement/identity/writer guards, the solo/pair/drop decision, and frozen landing dedup key. O1.2 adds
 `PawnDiaryOdysseyJourneyFlowTests`: loaded XML projection/mappings, Odyssey-active/inactive guarded
 map capture, exact vanilla onboard scoping, mobile-home prompt safety, real-Scribe round trips under
 both frozen component keys, missing-key untrusted baselining, corrupt journey rejection, and bounded
 newest-history retention. O1.3 extends it with exact public/private Harmony registration and detached
 state-only intent/TravelTo/landing-start ownership. O1.4 adds an authorized-without-live-writer
 transaction fixture plus a major two-writer finish that creates one pair event, commits one page/ID,
-and rejects replay. The fixture assembly is built now; its loaded-game execution is deferred to the
+and rejects replay. The major path also attaches an exact landing outcome before component completion
+and asserts roughness/outcome plus both pair-role mappings. The fixture assembly is built now; its loaded-game execution is deferred to the
 combined Odyssey acceptance run. O1.5 adds a loaded eligible-writer routine landing/no-page fixture,
 an explicit `TileSettled` no-pawn drop, and localized Full/Balanced/Compact prompt-suite rendering.
 `DiaryPipelineTests` also exhausts the optional context budget and proves the required Odyssey
@@ -156,10 +159,10 @@ loaded exact matcher/tuning checks for `DiaryEnchant_GravNausea`; live combined 
 the deferred Odyssey acceptance run. The prompt-suite fixture supplies its isolated copilot explicitly,
 so its dual-POV assertions are independent of the player's live colonist ordering.
 The same fixture asserts fail-soft registration on all four shipped `LandingOutcomeWorker` overrides.
-`DiaryOdysseyPolicyTests` now has 126 assertions, including wrong-ship/empty-outcome rejection, exact
+`DiaryOdysseyPolicyTests` now has 158 assertions, including wrong-ship/empty-outcome rejection, exact
 outcome attachment, Def-identity omission, visible-label sanitization, and bounded context. Pipeline
-coverage now passes 2,019 assertions, keeps `landing_outcome` in Full/Balanced/Compact, and locks both
-localized indexed labels.
+coverage now passes 2,028 assertions, keeps `landing_outcome` and the correct pilot/copilot POV role in
+Full/Balanced/Compact, and locks both localized indexed labels.
 
 Narrative N2-O extends `NarrativeContinuityTests` to 104 assembly-free assertions. It covers the one-row
 Odyssey home candidate, exact ship/journey/location identity, family-event ambient selection, landing
