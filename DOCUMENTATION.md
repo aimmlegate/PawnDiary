@@ -345,6 +345,14 @@ first-old-save baseline, disabled output, one-row fallback noise, and active/sup
 remain silent. Every live read is still behind `ModsConfig.BiotechActive` plus `pawn.genes`, and the XML
 contains no DLC Def reference or dependency.
 
+The exact reimplant RimTest enters the public vanilla method twice, but the replay is separated by a
+fixture-only simulation of the normal xenogerm-regrowth cooldown. RimWorld 1.6.4871 live evidence
+showed why this is required: immediately reimplanting again while `XenogermReplicating` remains active
+is intentionally lethal vanilla behavior and correctly creates a death page. The fixture removes only
+`XenogermLossShock`, `XenogermReplicating`, and the recipient's `XenogerminationComa` before the second
+call, then retains the broad no-new-event assertion. Production capture never removes or changes these
+hediffs.
+
 Live surroundings are optional prompt flavor and are collected fail-soft. In particular,
 `Room.GetRoomRoleLabel()` can lazily recalculate the room's stats/role; if RimWorld or another room
 patch throws during that recalculation, Pawn Diary omits only the room-role label and continues

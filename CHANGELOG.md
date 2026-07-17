@@ -1,5 +1,14 @@
 # Changelog
 
+- **2026-07-17 — Hardened the Biotech reimplant replay fixture from live evidence.** A RimWorld
+  1.6.4871 rev591 loaded-game run passed 217/218 RimTests and reached the real
+  `GeneUtility.ReimplantXenogerm` hook, canonical recipient page, bounded context, and enclosing
+  Ability claim. Its immediate replay then correctly produced `PawnDiary_DeathFallback`: vanilla
+  makes a second `XenogermReplicating` hediff lethal while the caster's genes are still regrowing.
+  The fixture now models the normal cooldown completing by removing only vanilla's temporary
+  reimplant hediffs before replay, preserving the strict no-new-event assertion. Production behavior
+  and assertions are unchanged; the rebuilt fixture still requires an in-game confirmation rerun.
+
 - **2026-07-17 — Finished Biotech Phase 5 salient-gene integration (live acceptance pending).** Added
   pure exact membership diff/fallback-significance policy and separator-safe bounded context formatting;
   the Progression prompt now receives at most four selected gene themes and never full membership.

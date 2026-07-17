@@ -301,6 +301,14 @@ prompt-capture mode so no network request can leave the game.
    later genuine mutations still record. Repeat loading that save without Biotech: Pawn Diary must
    retain primitive saved rows without resolving a DLC Def or emitting a page.
 
+**Live checkpoint (2026-07-17):** RimWorld 1.6.4871 rev591 ran the loaded all-suite configuration at
+217/218. Both exact vanilla xenogerm methods passed their canonical event checks; reimplant also passed
+its context and Ability-claim assertions. The remaining failure occurred only when the fixture called
+`ReimplantXenogerm` again immediately: vanilla stacked `XenogermReplicating` to its lethal stage and
+Pawn Diary correctly captured `PawnDiary_DeathFallback`. The fixture now clears the temporary vanilla
+reimplant cooldown hediffs before replay. Rerun the corrected reimplant test before checking item 3;
+the base-only, minimal-mod log, fallback/caps, and reload items remain open.
+
 - [ ] **TODO:** Record exact RimWorld version, language, active mod list, old-save fixture, all RimTest
   results, prompt/context evidence, cleanup audit, both DLC branches, and relevant `Player.log` lines.
 

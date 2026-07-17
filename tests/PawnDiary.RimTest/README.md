@@ -77,6 +77,11 @@ owners. Both use the shared harness:
 | `PawnDiaryEventWindowFlowTests` | 22 | Event-window start/end/one-shot/timeout + prompt-bias state; exact monolith ownership when Anomaly is active and inert loaded Defs when it is absent. |
 | `PawnDiaryObservedConditionFlowTests` | 23 | Observed-condition start/end debounce + scope identity + restart cooldown. |
 
+The reimplant replay fixture deliberately completes vanilla's temporary loss-shock, gene-regrowth,
+and recipient-coma cooldowns before calling the real public method again. An immediate raw replay is
+not a valid silence check: vanilla makes a second `XenogermReplicating` application lethal, which
+correctly routes through Pawn Diary's death fallback instead of indicating a duplicate gene page.
+
 Do not run the prompt suites with two copies of Pawn Diary active. RimWorld can load Def XML from one
 copy and `PawnDiary.RimTest.dll` from another, producing a test binary/XML contract that no single
 checkout contains. The Biotech birth prompt suite checks its loaded `PairImportant` fields up front

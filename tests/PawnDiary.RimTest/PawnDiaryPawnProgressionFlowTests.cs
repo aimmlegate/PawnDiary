@@ -308,6 +308,14 @@ namespace PawnDiary.RimTests
             RequireContextContains(diaryEvent, "gene_theme_1=");
             PawnDiaryRimTestScope.Require(claimed,
                 "The canonical reimplant page did not claim its enclosing ability scope.");
+
+            // Vanilla deliberately kills a caster who reimplants while XenogermReplicating is still
+            // active: a second severity-1 copy reaches the hediff's consciousness-zero stage. The public
+            // method does not enforce the ability UI's cooldown itself, so an immediate direct replay is
+            // not a valid unchanged-state test. Model the cooldown completing, including the recipient's
+            // temporary coma, before entering the real method again. This keeps RequireNoNewEvent strict:
+            // an unexpected gene, health, or death page still fails the fixture.
+            CompleteVanillaReimplantRecovery(caster, pawn);
             scope.RequireNoNewEvent(() => GeneUtility.ReimplantXenogerm(caster, pawn));
         }
 
@@ -669,6 +677,32 @@ namespace PawnDiary.RimTests
             }
 
             throw new AssertionException("EVT-15 could not find a TraitDef the test pawn lacks.");
+        }
+
+        /// <summary>
+        /// Removes only the three temporary vanilla hediffs created by a successful xenogerm reimplant,
+        /// reproducing the state after their normal cooldowns expire without advancing the loaded colony.
+        /// </summary>
+        private static void CompleteVanillaReimplantRecovery(Pawn caster, Pawn recipient)
+        {
+            RemoveAllHediffsOfDef(caster, HediffDefOf.XenogermLossShock);
+            RemoveAllHediffsOfDef(caster, HediffDefOf.XenogermReplicating);
+            RemoveAllHediffsOfDef(recipient, HediffDefOf.XenogerminationComa);
+        }
+
+        /// <summary>Removes every matching hediff defensively because modded health code may allow duplicates.</summary>
+        private static void RemoveAllHediffsOfDef(Pawn target, HediffDef def)
+        {
+            if (target?.health?.hediffSet == null || def == null)
+            {
+                return;
+            }
+
+            Hediff matching;
+            while ((matching = target.health.hediffSet.GetFirstHediffOfDef(def)) != null)
+            {
+                target.health.RemoveHediff(matching);
+            }
         }
 
         // ----- tuning / settings forcing ----------------------------------------------------------

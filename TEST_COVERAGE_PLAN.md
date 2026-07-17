@@ -240,9 +240,13 @@ correction lists contain no unconditional DLC Def reference. New RimTest source 
 advancement, nested Scribe round-trip, missing-key version-zero normalization, a real vanilla
 `GeneUtility.ReimplantXenogerm` mutation with same-call Ability ownership and replay silence, and a
 real vanilla `GeneUtility.ImplantXenogermItem` mutation with bounded event-time context. The dev prompt
-suite includes an exact reimplant fixture. These fixtures compile but have not yet been executed in
-RimWorld; live no-DLC, exact-hook, Player.log, prompt, fallback, and save/reload evidence remains the
-separate Phase 5 manual matrix.
+suite includes an exact reimplant fixture. A loaded RimWorld 1.6.4871 rev591 all-suite run passed
+217/218 fixtures: both real xenogerm method paths and the reimplant canonical page/context/Ability claim
+executed successfully. The only failure was fixture-owned: its immediate second reimplant violated
+vanilla's lethal `XenogermReplicating` cooldown. The corrected fixture now removes only the three
+temporary vanilla reimplant hediffs before its unchanged replay; that replay needs an in-game rerun.
+Live no-DLC, minimal-mod Player.log, prompt, fallback, and save/reload evidence remains the separate
+Phase 5 manual matrix.
 
 Narrative N2-B extends `NarrativeContinuityTests` with assembly-free checks for family-continuity
 classification, exact arc/subject candidate construction, fixed provider ordering, inactive-DLC and
