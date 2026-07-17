@@ -392,6 +392,16 @@ proves one page/marker survived the second reload, no transient/active journey r
 completion cannot add output. Phase C deletes both named disposable saves and all fixture-owned live
 state. The exact continuation is in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
+The focused 2026-07-17 runtime run used RimWorld `1.6.4871 rev591`, English, and isolated base-only
+and Odyssey-only mod profiles. Base-only startup produced all five explicit
+`ModsConfig.OdysseyActive == false` runtime skips without Pawn Diary patch/XML/type-initializer
+errors. The Odyssey profile passed the real cancellation/full-lifecycle fixtures and Phase A/B/C
+continuation; Phase C confirmed one durable page/marker, no resurrected lifecycle state, and deleted
+both reserved saves. Startup also demonstrated that an Odyssey-enabled main menu has no
+`Current.Game`/component, so the runtime fixture now checks those hosts before using `Find` or
+instance-field reflection. A post-fix live main-menu rerun remains the only runtime-suite acceptance
+gap; compilation and repository verification are recorded separately.
+
 ## 7. Settings, Integration API, UI, And Compatibility
 
 ### 7.1 Settings and external API

@@ -313,6 +313,14 @@ namespace PawnDiary.RimTests
         {
             if (!RequireOdysseyOrSkip("save Phase B")) return;
             DiaryGameComponent component = DiaryGameComponent.Instance;
+            // RimTest can run suites automatically while RimWorld is still at the main menu. There is
+            // no GameComponent in that state, so fail soft before reflection asks for an instance field.
+            if (component == null)
+            {
+                Log.Message(LogPrefix + "SKIP save Phase B: no loaded game component; load '"
+                    + PhaseASaveName + "' first.");
+                return;
+            }
             OdysseyJourneyState active = ActiveJourneyField.GetValue(component) as OdysseyJourneyState;
             if (active == null || active.shipName != FixtureShipName)
             {
@@ -431,6 +439,13 @@ namespace PawnDiary.RimTests
         {
             if (!RequireOdysseyOrSkip("save Phase C")) return;
             DiaryGameComponent component = DiaryGameComponent.Instance;
+            // See Phase B: an Odyssey-enabled main menu has no component or repository to inspect.
+            if (component == null)
+            {
+                Log.Message(LogPrefix + "SKIP save Phase C: no loaded game component; load '"
+                    + PhaseBSaveName + "' first.");
+                return;
+            }
             List<DiaryEvent> fixtureEvents = FixtureLandingEvents(component);
             if (fixtureEvents.Count == 0)
             {
@@ -503,9 +518,21 @@ namespace PawnDiary.RimTests
             out WorldComponent_GravshipController controller,
             string label)
         {
+            map = null;
+            controller = null;
+            destination = PlanetTile.Invalid;
+
+            // Find.CurrentMap and Find.GravshipController dereference Current.Game internally. RimTest's
+            // run-at-startup option may enter this suite at the main menu, where Current.Game is null.
+            if (Current.Game == null)
+            {
+                Log.Message(LogPrefix + "SKIP " + label
+                    + ": a loaded game, surface map, and generated Odyssey orbit layer are required.");
+                return false;
+            }
+
             map = Find.CurrentMap;
             controller = Find.GravshipController;
-            destination = PlanetTile.Invalid;
             if (map == null || controller == null || Find.WorldGrid?.Orbit == null)
             {
                 Log.Message(LogPrefix + "SKIP " + label

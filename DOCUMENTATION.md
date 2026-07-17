@@ -2383,7 +2383,8 @@ Balanced, and Compact. The assembly-free pipeline suite repeats the preset check
 exhausted optional budget and proves stable journey/ship/location IDs and ticks never cross the
 template boundary. The loaded fixture passes its isolated copilot explicitly to the dev-only suite
 entry helper, so a player's existing colonist order cannot change the asserted pair. The combined live
-Odyssey save run remains deferred until the batch is complete.
+Odyssey runtime/save run completed on 2026-07-17 against RimWorld `1.6.4871 rev591` in English; a
+focused loaded rerun of this broader component/prompt flow suite remains separate.
 O2 adds loaded-Def checks for the Odyssey-active/inactive seasonal-flood package gate, exact
 `ThingPresent` matching, prompt-only page policy, and the exact `GravNausea` matcher and tuning.
 It also asserts that all four shipped concrete landing-outcome overrides carry Pawn Diary's
@@ -2400,7 +2401,9 @@ survives engine/pilot despawn and tile rewriting, cancellation never commits, on
 event/marker, and callback replay is inert. It refuses to run when Odyssey is inactive or the loaded
 map already owns a player gravship, and every temporary patch, world object, engine, pawn, component
 row, controller field, event, diary index, time-speed change, and mask reference is restored in
-failure-safe cleanup.
+failure-safe cleanup. RimTest may also discover or start the suite at the main menu; the fixture checks
+for `Current.Game` and `DiaryGameComponent.Instance` before touching `Find` or instance reflection and
+logs a visible skip when the loaded-game host is absent.
 
 The same suite supplies a genuine three-run save fixture. Phase A writes a disposable save after real
 `TravelTo`, preserving the frozen `odysseyActiveJourney` and `odysseyTravelHistory` keys plus bounded
@@ -2412,6 +2415,11 @@ one durable page/marker and no resurrected active/transient state, then deletes 
 RimTest Redux cannot safely automate the load calls inside one synchronous test because loading
 disposes the current `Game` and runner; `tests/SAVE_COMPATIBILITY_SMOKETEST.md` records the exact
 continuation. Building the RimTest DLL is reported separately from executing these phases in RimWorld.
+The 2026-07-17 focused run passed the real cancellation/full-lifecycle tests and all three save phases;
+Phase C left exactly one durable page/marker before cleanup, resurrected no active/transient state, and
+deleted both reserved saves. A base-only profile separately produced all five explicit Odyssey-inactive
+runtime skips without Pawn Diary Odyssey patch/XML/type-initializer errors. The post-hardening
+Odyssey-enabled main-menu skip remains the only runtime-suite live rerun gap.
 
 The DLC-focused generic flows now include installed-Royalty positive scanner fixtures for a real
 `PsychicAmplifier` hediff and a disposable real `RoyalTitle`, each asserting exact context and repeat

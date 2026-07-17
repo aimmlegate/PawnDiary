@@ -105,7 +105,9 @@ Run `PawnDiaryOdysseyRuntimeLifecycleTests` on a disposable Odyssey colony too. 
 component/controller mutations are failure-safely removed, and the launch/landing visual originals are
 suppressed, but real `TravelTo` and `LandingEnded` briefly mutate vanilla world/controller state. The
 suite refuses to compete with an active or parked player gravship. Its Phase A/B/C process-boundary
-steps and reserved save names are documented in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
+steps and reserved save names are documented in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`. If RimTest's
+run-at-startup option enters this loaded-game suite at the main menu, every runtime/phase fixture logs
+an explicit skip before dereferencing `Find` or the absent `DiaryGameComponent`.
 
 ### Transport / async runtime (plan §6.3) — deferred by design
 

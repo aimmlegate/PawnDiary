@@ -153,6 +153,26 @@ touching state when Odyssey is inactive or these safety preconditions are not me
 Record the RimWorld build, active mod list, language, and Phase A/B/C log lines. A successful C# build
 only proves the fixture compiles; it does not count as executing either Odyssey or base-only runtime.
 
+### Acceptance record (2026-07-17)
+
+- **Host:** RimWorld `1.6.4871 rev591`, English, Harmony `2.4.1.0`.
+- **Odyssey inactive:** isolated profile with Harmony, base RimWorld, Laboratory (RimTest Redux's
+  dependency), RimTest Redux, and Pawn Diary. All five runtime fixtures logged the explicit
+  `ModsConfig.OdysseyActive is false` skip before touching Odyssey state. No Pawn Diary Odyssey
+  patch-registration, missing-Def, XML, or type-initializer error was found in `Player.log`.
+- **Odyssey active:** isolated profile adding only Odyssey to the same list, using a disposable dev
+  colony. The real cancellation and cross-layer lifecycle fixtures completed without a focused test
+  error. Phase A, Phase B, and Phase C each logged `PASS`; the two reloads preserved the frozen active
+  journey/history contracts, omitted transient intent/pending rows, completed exactly one landing
+  page/marker, rejected replay, and resurrected no lifecycle state.
+- **Cleanup:** Phase C removed both reserved save files; neither the isolated nor normal save folder
+  contains `PawnDiary_Odyssey_RimTest_PhaseA_Active` or
+  `PawnDiary_Odyssey_RimTest_PhaseB_Completed`.
+- **Observed fixture hardening:** a run-at-startup invocation at the Odyssey-enabled main menu exposed
+  null-host failures before any loaded game existed. The test assembly now checks `Current.Game` and
+  `DiaryGameComponent.Instance` before using `Find` or instance-field reflection. Its post-fix live
+  main-menu rerun is still pending; builds/hooks do not substitute for that one remaining runtime check.
+
 ---
 
 ## Biotech B1 Phase 4 acceptance matrix

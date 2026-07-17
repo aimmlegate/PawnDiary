@@ -1,5 +1,16 @@
 # Changelog
 
+- **2026-07-17 — Executed and hardened the Odyssey live acceptance fixtures.** Ran RimWorld
+  `1.6.4871 rev591` in English with isolated base-only and Odyssey-only RimTest profiles. The base
+  profile produced all five explicit Odyssey-inactive runtime skips without Pawn Diary Odyssey
+  patch/XML/type-initializer errors. The Odyssey profile passed real takeoff cancellation,
+  cross-layer travel/landing exactly-once behavior, and the full Phase A/B/C save/reload sequence;
+  Phase C proved no lifecycle resurrection and removed both reserved saves. The live run also exposed
+  test-only null-target failures when RimTest started the loaded-game suite at the main menu, so the
+  runtime fixture now checks for `Current.Game` and `DiaryGameComponent.Instance` before using `Find`
+  or instance-field reflection and logs a visible skip instead. Production behavior and DLC
+  dependencies are unchanged; a post-fix live main-menu rerun remains pending.
+
 - **2026-07-17 — Added real-runtime Odyssey lifecycle and phased save/reload hardening.** Added a
   focused RimTest suite that enters the actual `InitiateTakeoff`/`InitiateLanding` methods so Pawn
   Diary's installed Harmony prefixes receive live payloads, executes vanilla cross-layer `TravelTo`
