@@ -68,17 +68,7 @@ divider · C10 typography quick-controls · C8 unread-pages overview on gizmo ri
 **Acceptance:** search over hot + 10k archive rows without frame drops (virtualization and
 height cache intact); filters localized.
 
-### Wave C4 ⇄ — Onboarding & trust *(the v0.5 → growth wave)*
-
-D1 provider wizard (OpenAI / OpenRouter / Google-compat / Ollama / LM Studio presets) ·
-D2 "write a sample entry now" button · D4 cost-estimator line · G1 per-lane usage counters ·
-G2 global pause switch · D3 Main-tab regrouping · D6 optional per-pawn freeform voice note
-(competitor parity, layered on top of the auto persona system).
-
-**Acceptance:** fresh install → first real entry in <3 minutes with only an API key; counters
-persist per session; the wizard never blocks the expert path.
-
-### Wave C5 — Keepsakes & sharing *(after C2/C3: compilation uses memoir + stars)*
+### Wave C4 — Keepsakes & sharing *(after C2/C3: compilation uses memoir + stars)*
 
 F1 player-facing export (per-pawn/colony; txt / Markdown / themed HTML) · F3 memoir compilation
 (life summary + starred entries + final page) · C6 portraits/mood glyphs on cards.
@@ -86,7 +76,7 @@ F1 player-facing export (per-pawn/colony; txt / Markdown / themed HTML) · F3 me
 **Acceptance:** HTML opens standalone with theme colors; exports fully localized; corpse and
 departed pawns exportable.
 
-### Wave C6 — New story sources & pacing *(capture-side; schedule away from DLC capture work to avoid seam collisions)*
+### Wave C5 — New story sources & pacing *(capture-side; schedule away from DLC capture work to avoid seam collisions)*
 
 H2 anniversaries & record milestones (records deltas, birthdays, arrival anniversaries) ·
 H1 battle-log beats in combat prompts · H3 letters-archive context for reflections ·
@@ -96,11 +86,22 @@ DayReflection; per-day soft cap) · B4 length dynamics · H6 art flavor (optiona
 **Acceptance:** every new capture behind a group toggle (default sane); RimTest EVT matrix rows
 added; dedup/cooldown verified; per-day scan cost profiled.
 
-### Wave C7 — Atmosphere polish *(anytime garnish)*
+### Wave C6 — Atmosphere polish *(anytime garnish)*
 
 C7 new-entry reveal animation (alpha/ink sweep — avoid text-length changes that break the
 measured-height cache) · E1 drop caps + ornaments · E3 pull-quote epigraphs · C9 parchment/light
 theme preset.
+
+### Wave C7 — Onboarding & settings UX *(deliberately last, per author's call — reader and prose quality first)*
+
+D1 provider wizard (OpenAI / OpenRouter / Google-compat / Ollama / LM Studio presets) ·
+D2 "write a sample entry now" button · D4 cost-estimator line · G1 per-lane usage counters ·
+G2 global pause switch · D3 Main-tab regrouping · D5 style previews in the studios ·
+D6 optional per-pawn freeform voice note (competitor parity, layered on top of the auto persona
+system).
+
+**Acceptance:** fresh install → first real entry in <3 minutes with only an API key; counters
+persist per session; the wizard never blocks the expert path.
 
 ### Anytime / infra
 
@@ -194,8 +195,9 @@ entries cite concrete beats); no per-pawn freeform steering; keepsakes/export (d
 AamuLumi's bar); ecosystem mindshare (RimTalk is the platform today); cost legibility (no usage
 counters; pacing model is smart but opaque).
 
-**Net:** depth leader in a field of breadth plays. The wave order exploits exactly this: protect
-the depth lead (C2) while closing the felt-in-ten-minutes gaps (C1, C4-wave, C5).
+**Net:** depth leader in a field of breadth plays. The wave order protects the depth lead first
+(C1, C2) and closes reader-facing gaps next (C3, C4); the onboarding/settings gaps are real but
+deliberately taken last (Wave C7) — reader and prose quality outrank setup friction here.
 
 ## Appendix C — Idea catalog (reference)
 
@@ -334,6 +336,8 @@ player-facing mechanics.
 ### Priority tiers (rationale behind the wave order)
 
 - **Tier 1 (small, immediate):** A5 · C4 · B1 · C2 · F2 → Wave C1.
-- **Tier 2 (flagship arc):** A1+A2 · C1 · D1+D2 · F1 · C7 → Waves C2–C5/C7.
-- **Tier 3 (distinctive delight):** H2 · H4 · B6 · C6 · H5 → Waves C5–C6.
+- **Tier 2 (flagship arc):** A1+A2 · C1 · F1 · C7 → Waves C2–C4/C6.
+- **Tier 3 (distinctive delight):** H2 · H4 · B6 · C6 · H5 → Waves C3–C5.
+- **Deprioritized to last (author's call):** D1+D2 wizard/sample-entry and the settings-UX
+  cluster (D3–D6, G1, G2) — onboarding value acknowledged, reader/prose quality first → Wave C7.
 - **Deferred:** C3 · C9 fonts · F4 · B3 · G3 · A3/A4 (narrative-continuity track).
