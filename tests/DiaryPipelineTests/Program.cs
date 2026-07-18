@@ -3629,8 +3629,6 @@ namespace DiaryPipelineTests
                 policyDocument, "PawnDiary.DiaryRoyaltyPolicyDef", "Diary_Royalty");
             AssertEqual("persona separation reconciliation cadence is XML-owned",
                 "2500", ChildValue(policy, "reconciliationCadenceTicks"));
-            AssertEqual("persona thought ownership window is XML-owned",
-                "2500", ChildValue(policy, "personaThoughtCorrelationTicks"));
 
             XDocument templates = XDocument.Load(
                 RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));

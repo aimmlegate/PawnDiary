@@ -2,7 +2,7 @@
 
 Status: Phases 0–2 and the Narrative N3-R core dependency are implemented as of 2026-07-18.
 Phase 2 now ships exact persona-weapon formation, meaningful separation/recovery, destruction, and
-transfer lifecycle pages with guarded Harmony collection, saved state, exact thought ownership,
+transfer lifecycle pages with guarded Harmony collection, saved state, late-visible recovery,
 package-gated settings/prompts, English/Russian localization, prompt fixtures, and N3-R evidence.
 Loaded-game Phase-2 acceptance is still pending; Phases 3–8 remain. This status does not pass, waive,
 or remove any earlier Biotech B1 manual acceptance row.
@@ -544,7 +544,8 @@ Use separate, resettable caches for:
 - quick-military-aid raid signals awaiting the later successful permit callback;
 - destruction/death/map-removal persona end causes;
 - exact tale/persona ownership during one capture action.
-- persona-trait thought signals briefly awaiting a lifecycle/tale owner.
+- persona-trait kill-memory signals briefly awaiting a Phase-3 Tale owner, only if the real memory
+  callback is verified; Phase-2 bonded situational thoughts require no cache.
 - exact royal-title award/loss thought signals briefly awaiting a title/ritual owner.
 
 Every cache must:
@@ -760,11 +761,13 @@ Pure selection ranks structure before optional exact overrides:
 No localized word matching is permitted. Ties use a stable hash of event identity and trait defName so
 the same event remains deterministic while different bonds do not always choose the first XML entry.
 
-Persona trait thoughts are secondary evidence when they are caused by the same bond/kill action.
-Open a narrow scope with the exact `WeaponTraitDef.bondedThought`/`killThought` Def IDs, stage only a
-matching pawn/thought signal, and let the accepted lifecycle or tale event claim it. If no Royalty
-event claims the thought before the short expiry, flush it through the unchanged `ThoughtSignal`
-path. Never suppress a ThoughtDef globally merely because a persona trait can produce it.
+Persona trait thoughts are secondary evidence when they are caused by the same kill action. Vanilla
+`WeaponTraitDef.bondedThought` rows are `Thought_Situational`, so they never enter
+`MemoryThoughtHandler.TryGainMemory` and Phase 2 must not construct a dead staging scope around them.
+For Phase 3, open a narrow scope only for a verified stored `killThought` memory callback, stage only a
+matching pawn/thought signal, and let the accepted Tale event claim it. If no Royalty event claims the
+thought before the short expiry, flush it through the unchanged `ThoughtSignal` path. Never suppress a
+ThoughtDef globally merely because a persona trait can produce it.
 
 ### 8.6 Bond endings and transfers
 
@@ -1376,17 +1379,21 @@ describe structural behavior where applicable.
 > Formation and exact transfer start one epoch page, short swaps remain pending/silent, the independent
 > elapsed reconciliation deadline emits one threshold separation and only its corresponding recovery,
 > destruction emits one standalone ending, and pawn death/map removal/unknown cleanup remain silent
-> owners for later reconciliation or Phase 3. Exact bonded-thought signals are staged synchronously and
-> consumed only when the lifecycle page persists; otherwise they re-enter normal Thought capture.
+> owners for later reconciliation or Phase 3. Historical bonds missed by the first loaded-map baseline
+> are adopted silently when they become visible, and current provider facts require exact live coding.
+> Vanilla bonded thoughts are situational rather than memory callbacks, so the dead Phase-2 staging
+> path was removed; exact thought ownership remains reserved for Phase-3 kill memories.
 > `PersonaWeaponEventData`/Spec, bounded context formatting, the exact `PersonaWeapon` domain/group,
 > four event-prompt rows, append-only `SoloImportant` projection, bilingual localization, and four dev
 > prompt fixtures are present. N3-R persona evidence is attached after the page exists. Pure coverage
-> passes 205 Royalty, 660 capture, and 2,196 pipeline assertions; the Debug DLL builds. The exit-gate
-> scenarios still require a recorded loaded-game run, so this phase is not marked acceptance-complete.
+> passes 211 Royalty, 660 capture, and 2,195 pipeline assertions; the core and focused real-coding/
+> hook-audit RimTest DLLs build. The exit-gate scenarios still require a recorded loaded-game run, so
+> this phase is not marked acceptance-complete.
 
 1. Defensively register coding, equipment evidence, destruction, and cleanup hooks.
 2. Emit bond formation.
-3. Stage/claim exact bonded-thought side effects around lifecycle actions.
+3. Verify bonded-thought delivery; because vanilla uses situational thoughts, keep Phase 2 out of the
+   memory hot path and reserve exact staged ownership for Phase-3 kill memories.
 4. Add slow reconciliation for separation/recovery.
 5. Add destruction/transfer ownership.
 6. Add XML groups, prompts, settings, localization, prompt fixtures, docs, changelog, and DLL.
@@ -1500,8 +1507,8 @@ Persona milestone and traits:
 - qualifying tales that would normally batch or pair become exactly one solo killer milestone;
 - initiator-killer and recipient-killer Tale mappings both identify the correct pawn;
 - ambiguous or death-context-mismatched killer role fails closed;
-- exact bonded/kill thought is claimed by the matching lifecycle/milestone, while an unmatched or
-  unclaimed thought retains current Thought behavior;
+- an exact verified kill memory is claimed by the matching Phase-3 milestone, while an unmatched or
+  unclaimed memory retains current Thought behavior;
 - kill-thought trait outranks unrelated equipped-hediff trait;
 - no relevant trait -> weapon only;
 - more than maximum -> deterministic bounded selection;
@@ -1566,6 +1573,9 @@ permit availability.
 
 - Royalty inactive/no tracker -> all collectors empty and hooks no-op.
 - Persona bond round trip with saved state.
+- Real coding creates one formation; a late-visible missing row is silently adopted and `UnCode`
+  removes saved-only current context.
+- All six exact `CompBladelinkWeapon` lifecycle methods retain Pawn Diary's owned patch methods.
 - Short swap versus persistent separation/recovery.
 - Destruction versus map removal.
 - First qualifying kill with a real victim and preserved death handling.

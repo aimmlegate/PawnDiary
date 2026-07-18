@@ -98,7 +98,15 @@ namespace PawnDiary
 
             if (token == PersonaObservationTokens.Primary)
             {
-                decision.nextState.lastPrimaryObservedTick = observation.tick;
+                // A steady primary observation is still meaningful saved truth: recovery duration is
+                // measured from the last tick at which the bond was actually observed in hand. Without
+                // this state-change flag the impure adapter discards the copied timestamp whenever the
+                // phase itself stays Active.
+                if (decision.nextState.lastPrimaryObservedTick != observation.tick)
+                {
+                    decision.nextState.lastPrimaryObservedTick = observation.tick;
+                    decision.stateChanged = true;
+                }
                 if (decision.nextState.phaseToken == PersonaBondPhaseTokens.SeparationPending)
                 {
                     decision.nextState.phaseToken = PersonaBondPhaseTokens.Active;

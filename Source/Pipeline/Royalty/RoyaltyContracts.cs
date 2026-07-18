@@ -195,8 +195,7 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Plain prospective persona state. Phase 0 does not Scribe this value; Phase 1 will adapt the
-    /// same facts into save-owned records after old-save baselining is implemented.
+    /// Plain persona state shared by the pure policy and the Phase-1/2 save adapter.
     /// </summary>
     internal sealed class PersonaBondStateSnapshot
     {
@@ -302,7 +301,6 @@ namespace PawnDiary
         public bool enabled = true;
         public int separationThresholdTicks = 60000;
         public int reconciliationCadenceTicks = 2500;
-        public int personaThoughtCorrelationTicks = 2500;
         public int maximumSelectedTraits = 2;
         public int maximumTraitCandidates = 32;
         public int maximumTraitLabelCharacters = 80;

@@ -454,6 +454,7 @@ namespace PawnDiary
         /// <summary>Clears plain static correlation state after every new-game or load boundary.</summary>
         public override void FinalizeInit()
         {
+            base.FinalizeInit();
             try
             {
                 RoyaltyTransientState.Reset();

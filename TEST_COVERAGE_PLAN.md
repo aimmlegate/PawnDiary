@@ -126,7 +126,7 @@ bounded source evidence. The EVT-22 RimTest fixture exercises the live package-g
 path when Anomaly is active and the no-op branch otherwise.
 
 Master Wave 5 / Royalty Phases 0–2 plus N3-R evidence use `RoyaltyContextTests`, now a
-205-assertion assembly-free suite. It
+211-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing
 Narrative Continuity `bond_lifecycle`/`weapon` contract; formation/load-baseline/re-equip,
 pending/threshold/unobservable separation, recorded/unrecorded recovery, destruction/death/transfer,
@@ -140,7 +140,8 @@ matching, inclusive correlation boundaries, pending/claim/expiry, one-fallback d
 level/correlation, and malformed/null behavior. The shipped policy XML is parsed separately and its
 detached `CreateDefault` path is exercised. Phase 1 additionally covers conservative persona
 baselines, malformed phase/tick/cause repair, duplicate weapon ownership, trait/row caps, faction-title
-dedup, highest-seniority selection, stable ordering, missing rows, and corruption ceilings. The new
+dedup, highest-seniority selection, stable ordering, missing rows, corruption ceilings, exact live
+weapon validation for provider facts, and persistence of steady-primary observation ticks. The new
 N3-R adds exact pawn title-transition evidence, authority/status/duty/death topic boundaries, major
 loss salience, and rejection of no-change/malformed rows. `PawnDiaryRoyaltyStateFixtureTests` compiles against RimTest Redux and exercises deep persona Scribe
 round-trip, per-pawn faction-title/psylink preservation, old-save version-zero versus initialized-empty
@@ -148,18 +149,22 @@ markers, and guarded no-Royalty persona/title/psylink collection. Building that 
 that it was executed inside a loaded game; that acceptance remains explicit.
 
 Phase 2 adds pure ownership and shipped-contract coverage across the other suites. Royalty tests pin
-exact bonded-thought pawn/Def matching and bounded persona context formatting. Capture tests require
+the exact pawn/Def thought-owner contract reserved for Phase-3 kill memories and bounded persona
+context formatting. Capture tests require
 the registered `PersonaWeapon` catalog/Spec, solo/drop decisions, stable
 `persona-weapon|weapon|epoch|phase` dedup, and exact phase/Def/trait tokens; the suite now passes 660
 assertions. Pipeline tests pin the dedicated domain, Royalty-package-gated no-catch-all group, all four
 exact event-prompt rows, append-only `SoloImportant` field indices `90–101`, English/Russian
 DefInjected and Keyed coverage, all four prompt fixtures, required Compact lifecycle/previous-pawn
 facts, optional trait behavior, and exclusion of internal IDs, epoch, ticks, and correlation keys; the
-suite now passes 2,196 assertions. Runtime code commits saved state before optional dispatch, stages
-and releases/claims exact bonded thoughts, and registers defensive Royalty-only seams, but the bond,
-short-swap, separation, recovery, destruction, map-removal, transfer, save/load, and no-Royalty
-loaded-game matrix remains unchecked in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`. Phase 2 is therefore
-code-complete, not acceptance-complete; Phase 3 combat/death behavior is not claimed.
+suite now passes 2,195 assertions. Runtime code commits saved state before optional dispatch and
+registers defensive Royalty-only seams. It intentionally does not stage vanilla `bondedThought`
+because those are situational rather than memory callbacks. `PawnDiaryRoyaltyFlowTests` now compiles a
+real coding/formation, late-visible silent baseline, `UnCode` live-context invalidation, and six-target
+Harmony audit. The broader short-swap, separation, recovery, destruction, map-removal, transfer,
+save/load, and no-Royalty loaded-game matrix remains unchecked in
+`tests/SAVE_COMPATIBILITY_SMOKETEST.md`. Phase 2 is therefore code-complete, not
+acceptance-complete; Phase 3 combat/death behavior is not claimed.
 
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,
@@ -199,7 +204,7 @@ so its dual-POV assertions are independent of the player's live colonist orderin
 The same fixture asserts fail-soft registration on all four shipped `LandingOutcomeWorker` overrides.
 `DiaryOdysseyPolicyTests` now has 158 assertions, including wrong-ship/empty-outcome rejection, exact
 outcome attachment, Def-identity omission, visible-label sanitization, and bounded context. Pipeline
-coverage now passes 2,196 assertions, keeps `landing_outcome` and the correct pilot/copilot POV role in
+coverage now passes 2,195 assertions, keeps `landing_outcome` and the correct pilot/copilot POV role in
 Full/Balanced/Compact, and locks both localized indexed labels.
 
 Odyssey runtime hardening adds `PawnDiaryOdysseyRuntimeLifecycleTests`, deliberately limited to the
@@ -313,7 +318,9 @@ pin all seven synthetic Def names, the Biotech package gate, combat role lists, 
 English/Russian group and event key. `PawnDiaryBiotechMechanitorFlowTests` calls the real
 `HediffSet.AddHediff/RemoveHediff` lifecycle and audits the verified relation, Tale, death, boss-call,
 boss-spawn, and boss-defeat Harmony targets. It also drives a real disabled-output Overseer relation,
-rejects same-faction combat as the first hostile milestone, and verifies balanced nested death scope.
+rejects same-faction combat as the first hostile milestone, verifies balanced nested death scope, and
+proves unspawned starting mechlink add/remove callbacks update truth without emitting pages. The
+relation fixture now uses vanilla's mech-side `Overseer` direction before asserting controller state.
 The nested Scribe round-trip includes consumed flags, one mech tenure/loss row, and one boss
 call/defeat row with its exact spawned pawn ID. The loaded fixture and manual matrix remain TODO.
 The first user-supplied RimWorld 1.6.4871 all-DLC run reached 234/236 tests and exposed a missing exact

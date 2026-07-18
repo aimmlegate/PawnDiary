@@ -30,6 +30,7 @@ namespace PawnDiary.RimTests
             progression.enabled = true;
             scope.RegisterCleanup(() => progression.enabled = original);
             controller = scope.CreateAdultColonist();
+            scope.SpawnAsLiveColonist(controller);
         }
 
         [AfterEach]
@@ -74,6 +75,27 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Pawn generation and save restoration can add a starting mechlink before the pawn is
+        /// spawned. Those callbacks must establish truth without inventing install/removal pages.
+        /// </summary>
+        [Test]
+        public static void UnspawnedStartingMechlinkBaselinesSilently()
+        {
+            if (!RequireBiotechOrSkip(nameof(UnspawnedStartingMechlinkBaselinesSilently))) return;
+            Pawn generated = scope.CreateAdultColonist();
+            Hediff mechlink = HediffMaker.MakeHediff(HediffDefOf.MechlinkImplant, generated);
+
+            scope.RequireNoNewEvent(() => generated.health.AddHediff(mechlink));
+            MechanitorObservationState state = MechanitorState(generated);
+            PawnDiaryRimTestScope.Require(state.IsInitialized() && state.mechlinkPresent,
+                "An unspawned starting mechlink did not establish a silent present baseline.");
+
+            scope.RequireNoNewEvent(() => generated.health.RemoveHediff(mechlink));
+            PawnDiaryRimTestScope.Require(!state.mechlinkPresent,
+                "Silent unspawned mechlink removal did not update saved truth.");
+        }
+
+        /// <summary>
         /// Exercises the real Overseer relation and Tale hooks with per-pawn generation disabled.
         /// Observation must still consume the exact first-control milestone, while a same-faction kill
         /// must not consume the hostile-combat milestone.
@@ -99,7 +121,8 @@ namespace PawnDiary.RimTests
             Hediff mechlink = HediffMaker.MakeHediff(HediffDefOf.MechlinkImplant, controller);
             controller.health.AddHediff(mechlink);
 
-            controller.relations.AddDirectRelation(PawnRelationDefOf.Overseer, mech);
+            // Vanilla stores Overseer on the mech side: mech -> human controller.
+            mech.relations.AddDirectRelation(PawnRelationDefOf.Overseer, controller);
             MechanitorObservationState state = MechanitorState(controller);
             PawnDiaryRimTestScope.Require(state.firstControlledPageConsumed,
                 "The exact first Overseer relation was not consumed while output was disabled.");

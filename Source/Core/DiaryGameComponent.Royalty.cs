@@ -204,7 +204,6 @@ namespace PawnDiary
             if (!RoyaltyPersonaRuntimeReady()) return;
             List<Pawn> colonists = SnapshotFreeColonists();
             BaselineRoyaltyStateIfNeeded(colonists);
-            if (royaltyPersonaBonds == null || royaltyPersonaBonds.Count == 0) return;
 
             Dictionary<string, PersonaWeaponSnapshot> visible =
                 new Dictionary<string, PersonaWeaponSnapshot>(StringComparer.Ordinal);
@@ -219,6 +218,30 @@ namespace PawnDiary
                     if (weapons[j] != null && !string.IsNullOrWhiteSpace(weapons[j].weaponThingId))
                         visible[weapons[j].weaponThingId] = weapons[j];
             }
+
+            // The versioned first baseline only sees free colonists on currently loaded maps. A
+            // pre-existing bond can become visible later when a caravan returns or another map is
+            // loaded. Adopt each such bond silently at first sight; otherwise the global version bit
+            // would make that historical bond permanently invisible to lifecycle reconciliation.
+            List<PersonaWeaponSnapshot> newlyVisible =
+                new List<PersonaWeaponSnapshot>(visible.Values);
+            newlyVisible.Sort((left, right) => string.CompareOrdinal(
+                left?.weaponThingId ?? string.Empty,
+                right?.weaponThingId ?? string.Empty));
+            for (int i = 0; i < newlyVisible.Count; i++)
+            {
+                PersonaWeaponSnapshot weapon = newlyVisible[i];
+                if (weapon == null || PersonaBondIndex(weapon.weaponThingId) >= 0) continue;
+                Pawn pawn;
+                pawnsById.TryGetValue(weapon.codedPawnId ?? string.Empty, out pawn);
+                ApplyRoyaltyPersonaObservation(
+                    weapon,
+                    pawn,
+                    PersonaObservationTokens.Baseline,
+                    false);
+            }
+
+            if (royaltyPersonaBonds == null || royaltyPersonaBonds.Count == 0) return;
 
             // Snapshot rows first because Apply may replace/normalize the backing saved list.
             List<PersonaBondStateSnapshot> rows = new List<PersonaBondStateSnapshot>();
@@ -417,6 +440,8 @@ namespace PawnDiary
             result.povPawnId = pawnId;
             result.pawnCanKnow = true;
             result.hasVerifiedPovConnection = true;
+            List<PersonaWeaponSnapshot> visiblePersonaWeapons =
+                DlcContext.CapturePersonaWeapons(pawn);
 
             if (royaltyPersonaObservationVersion >= RoyaltyStatePersistence.CurrentObservationVersion
                 && royaltyPersonaBonds != null)
@@ -424,8 +449,8 @@ namespace PawnDiary
                 for (int i = 0; i < royaltyPersonaBonds.Count; i++)
                 {
                     PersonaBondState state = royaltyPersonaBonds[i];
-                    if (state == null || !PersonaBondPhaseTokens.IsLive(state.phaseToken)
-                        || !string.Equals(state.currentPawnId, pawnId, StringComparison.Ordinal)) continue;
+                    if (state == null || !RoyaltyStatePersistence.IsCurrentVisiblePersonaBond(
+                        state.ToSnapshot(), pawnId, visiblePersonaWeapons)) continue;
                     string arcKey = RoyaltyArcKeys.Persona(state.weaponThingId, state.bondEpoch);
                     string text = FormatRoyaltyNarrative(
                         policy.personaNarrativeFormat,

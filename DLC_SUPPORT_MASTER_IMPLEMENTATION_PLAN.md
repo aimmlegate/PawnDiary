@@ -294,10 +294,12 @@ Do not add seasonal flooding, life support, or Mechhive choices in this wave.
 > and title-identity candidates, adds source-owned persona/title evidence factories, and snapshots
 > current guarded Royalty facts using DefInjected prose. Phase 2 adds defensive persona coding,
 > equipment, destruction, map-removal, and cleanup hooks; exact formation/transfer ownership;
-> elapsed reconciliation for meaningful separation/recovery; exact bonded-thought stage/claim;
-> package-gated groups, prompts, localization, prompt fixtures, and N3-R evidence attachment. The
-> pure suites pass 205 Royalty, 125 Narrative Continuity, 660 capture, and 2,196 pipeline assertions,
-> and the focused RimTest fixture builds, but Phase-2 loaded-game execution is not claimed. Royalty
+> elapsed reconciliation for meaningful separation/recovery; late-visible silent adoption; live
+> provider validation; package-gated groups, prompts, localization, prompt fixtures, and N3-R evidence
+> attachment. Vanilla bonded persona thoughts are situational, so the dead memory-correlation design
+> was removed and reserved for verified Phase-3 kill memories. The pure suites pass 211 Royalty, 125
+> Narrative Continuity, 660 capture, and 2,195 pipeline assertions, and focused real-coding/hook-audit
+> RimTests build, but Phase-2 loaded-game execution is not claimed. Royalty
 > Phases 3–4 remain, so the R1
 > release gate and Wave 5 completion are not claimed.
 

@@ -42,49 +42,21 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns coded persona weapons currently owned by this pawn's equipment/inventory graph.
-        /// Unavailable/off-map weapons are intentionally not inferred as separation evidence.
+        /// Returns the exact persona weapon currently bonded to this pawn. Vanilla keeps
+        /// equipment.bondedWeapon pointing at a merely dropped/swapped weapon and clears it only on
+        /// UnCode, so this one reference distinguishes observable separation from unavailable cleanup
+        /// without scanning every equipment and inventory item on each reconciliation pass.
         /// </summary>
         public static List<PersonaWeaponSnapshot> CapturePersonaWeapons(Pawn pawn)
         {
             List<PersonaWeaponSnapshot> result = new List<PersonaWeaponSnapshot>();
             if (!ModsConfig.RoyaltyActive || pawn == null) return result;
-            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
-
-            CapturePersonaCandidate(pawn.equipment?.bondedWeapon as ThingWithComps, pawn, seen, result);
-            List<ThingWithComps> equipment = pawn.equipment?.AllEquipmentListForReading;
-            if (equipment != null)
-                for (int i = 0; i < equipment.Count; i++)
-                    CapturePersonaCandidate(equipment[i], pawn, seen, result);
-
-            ThingOwner<Thing> inventory = pawn.inventory?.innerContainer;
-            if (inventory != null)
-                for (int i = 0; i < inventory.Count; i++)
-                    CapturePersonaCandidate(inventory[i] as ThingWithComps, pawn, seen, result);
-
-            result.Sort((left, right) => string.CompareOrdinal(left.weaponThingId, right.weaponThingId));
-            return result;
-        }
-
-        /// <summary>
-        /// Copies the exact bonded-memory Def names a persona weapon can grant during CodeFor. The
-        /// strings are used only by the synchronous thought-ownership scope; no ThoughtDef escapes.
-        /// </summary>
-        public static List<string> CapturePersonaBondedThoughtDefNames(ThingWithComps weapon)
-        {
-            List<string> result = new List<string>();
-            if (!ModsConfig.RoyaltyActive || weapon == null) return result;
-            CompBladelinkWeapon comp = weapon.TryGetComp<CompBladelinkWeapon>();
-            List<WeaponTraitDef> traits = comp?.TraitsListForReading;
-            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            int cap = Math.Max(1, Math.Min(128,
-                DiaryRoyaltyPolicy.Snapshot().maximumTraitCandidates));
-            for (int i = 0; i < (traits?.Count ?? 0) && result.Count < cap; i++)
+            PersonaWeaponSnapshot captured;
+            if (TryCapturePersonaWeapon(pawn.equipment?.bondedWeapon as ThingWithComps, pawn, out captured)
+                && string.Equals(captured.codedPawnId, pawn.GetUniqueLoadID(), StringComparison.Ordinal))
             {
-                string defName = traits[i]?.bondedThought?.defName ?? string.Empty;
-                if (!string.IsNullOrWhiteSpace(defName) && seen.Add(defName)) result.Add(defName);
+                result.Add(captured);
             }
-            result.Sort(StringComparer.Ordinal);
             return result;
         }
 
@@ -157,19 +129,6 @@ namespace PawnDiary
             return highest;
         }
 
-        private static void CapturePersonaCandidate(
-            ThingWithComps weapon,
-            Pawn pawn,
-            HashSet<string> seen,
-            List<PersonaWeaponSnapshot> result)
-        {
-            PersonaWeaponSnapshot captured;
-            if (!TryCapturePersonaWeapon(weapon, pawn, out captured)
-                || !string.Equals(captured.codedPawnId, pawn.GetUniqueLoadID(), StringComparison.Ordinal)
-                || !seen.Add(captured.weaponThingId)) return;
-            result.Add(captured);
-        }
-
         private static List<PersonaTraitFact> CapturePersonaTraits(
             CompBladelinkWeapon comp,
             RoyaltyPolicySnapshot policy)
@@ -226,13 +185,23 @@ namespace PawnDiary
         {
             value = 0;
             if (instance == null) return false;
-            BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            Type type = instance.GetType();
-            FieldInfo field = type.GetField(memberName, flags);
-            if (field != null && TryCoerceRoyaltyInt(field.GetValue(instance), out value)) return true;
-            PropertyInfo property = type.GetProperty(memberName, flags);
-            return property != null && property.GetIndexParameters().Length == 0
-                && TryCoerceRoyaltyInt(property.GetValue(instance, null), out value);
+            try
+            {
+                BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+                Type type = instance.GetType();
+                FieldInfo field = type.GetField(memberName, flags);
+                if (field != null && TryCoerceRoyaltyInt(field.GetValue(instance), out value)) return true;
+                PropertyInfo property = type.GetProperty(memberName, flags);
+                return property != null && property.GetIndexParameters().Length == 0
+                    && TryCoerceRoyaltyInt(property.GetValue(instance, null), out value);
+            }
+            catch
+            {
+                // A malformed modded getter contributes no level; the remaining matching hediffs
+                // still deserve a chance to provide a valid psylink observation.
+                value = 0;
+                return false;
+            }
         }
 
         private static bool TryCoerceRoyaltyInt(object raw, out int value)

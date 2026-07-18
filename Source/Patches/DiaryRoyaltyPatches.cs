@@ -18,7 +18,6 @@ namespace PawnDiary
             public ThingWithComps weapon;
             public Pawn pawn;
             public PersonaWeaponSnapshot before;
-            public RoyaltyPersonaThoughtCorrelation.Scope thoughtScope;
         }
 
         /// <summary>True when every required persona lifecycle seam was registered.</summary>
@@ -32,7 +31,7 @@ namespace PawnDiary
             bool ready = true;
             ready &= Patch(harmony,
                 AccessTools.DeclaredMethod(type, nameof(CompBladelinkWeapon.CodeFor), new[] { typeof(Pawn) }),
-                nameof(CodeForPrefix), nameof(CodeForPostfix), nameof(CodeForFinalizer));
+                nameof(CodeForPrefix), nameof(CodeForPostfix));
             ready &= Patch(harmony,
                 AccessTools.DeclaredMethod(type, nameof(CompBladelinkWeapon.Notify_Equipped), new[] { typeof(Pawn) }),
                 null, nameof(EquippedPostfix));
@@ -100,9 +99,7 @@ namespace PawnDiary
                 {
                     weapon = weapon,
                     pawn = pawn,
-                    before = DiaryGameComponent.Instance?.BeginRoyaltyPersonaCoding(weapon, pawn),
-                    thoughtScope = RoyaltyPersonaThoughtCorrelation.Begin(
-                        pawn.GetUniqueLoadID(), DlcContext.CapturePersonaBondedThoughtDefNames(weapon))
+                    before = DiaryGameComponent.Instance?.BeginRoyaltyPersonaCoding(weapon, pawn)
                 };
             });
             __state = captured;
@@ -111,29 +108,14 @@ namespace PawnDiary
         private static void CodeForPostfix(CodingPatchState __state)
         {
             if (__state == null) return;
-            bool accepted = false;
             if (RuntimeReady())
             {
                 DiaryPatchSafety.Run("Royalty.Persona.CodeFor.Postfix", () =>
                 {
-                    accepted = DiaryGameComponent.Instance?.CompleteRoyaltyPersonaCoding(
-                        __state.weapon, __state.pawn, __state.before) == true;
+                    DiaryGameComponent.Instance?.CompleteRoyaltyPersonaCoding(
+                        __state.weapon, __state.pawn, __state.before);
                 });
             }
-            DiaryPatchSafety.Run("Royalty.Persona.CodeFor.ThoughtClose", () =>
-                RoyaltyPersonaThoughtCorrelation.Close(__state.thoughtScope, accepted));
-        }
-
-        /// <summary>
-        /// Releases the exact thought scope when vanilla coding throws. On the normal path the
-        /// postfix already closed it, and Close is deliberately idempotent.
-        /// </summary>
-        private static Exception CodeForFinalizer(Exception __exception, CodingPatchState __state)
-        {
-            if (__exception != null && __state != null)
-                DiaryPatchSafety.Run("Royalty.Persona.CodeFor.Finalizer", () =>
-                    RoyaltyPersonaThoughtCorrelation.Close(__state.thoughtScope, false));
-            return __exception;
         }
 
         private static void EquippedPostfix(CompBladelinkWeapon __instance, Pawn pawn)

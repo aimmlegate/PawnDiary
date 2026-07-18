@@ -1,5 +1,20 @@
 # Changelog
 
+- **2026-07-18 — Adversarially hardened Royalty Phase 2 and mechanitor lifecycle edges.** Persona
+  reconciliation now silently adopts historical coded weapons first exposed after the global old-save
+  baseline, persists steady-primary observation ticks, and requires the exact live coded weapon before
+  N3-R labels a saved bond current. Persona collection now follows vanilla's retained
+  `equipment.bondedWeapon` pointer instead of scanning every equipment/inventory item, Royalty policy
+  snapshots are cached per active language, and malformed modded psylink getters fail soft. Removed the
+  dead bonded-thought correlation path and XML window because vanilla bonded thoughts are situational,
+  not `MemoryThoughtHandler` memories; the pure owner contract remains for Phase-3 kill memories.
+  Mechlink add/remove hooks now baseline unspawned generation/restoration silently while preserving
+  real spawned first operations, and the Overseer fixture uses vanilla's mech-to-controller direction.
+  Added pure regressions for live bond visibility and primary timestamps plus focused RimTests for real
+  persona coding, late visibility, `UnCode`, all six Royalty hooks, and unspawned mechlinks. Royalty
+  tests pass 211 assertions, pipeline tests pass 2,195, and both core/RimTest Debug DLLs build; the full
+  loaded Royalty acceptance matrix remains pending.
+
 - **2026-07-18 — Repaired failures exposed by the supplied all-DLC RimTest runs.** Exact
   mechlink installation and removal contexts now include their canonical
   `mechanitor_moment=mechlink_installed` / `mechanitor_moment=mechlink_removed` fields instead of

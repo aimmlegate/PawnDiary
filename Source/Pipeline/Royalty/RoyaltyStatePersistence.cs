@@ -93,6 +93,37 @@ namespace PawnDiary
             return reversed;
         }
 
+        /// <summary>
+        /// Returns whether a saved live bond is also visible as the exact pawn's current coded weapon.
+        /// Saved lifecycle state alone is insufficient for current-context enrichment: map removal and
+        /// ambiguous UnCode deliberately preserve that state so a later return can reconcile silently.
+        /// </summary>
+        public static bool IsCurrentVisiblePersonaBond(
+            PersonaBondStateSnapshot state,
+            string pawnId,
+            IList<PersonaWeaponSnapshot> visibleWeapons)
+        {
+            if (state == null || !PersonaBondPhaseTokens.IsLive(state.phaseToken)
+                || !SafeId(pawnId)
+                || !string.Equals(state.currentPawnId, Clean(pawnId), StringComparison.Ordinal)
+                || visibleWeapons == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < visibleWeapons.Count; i++)
+            {
+                PersonaWeaponSnapshot weapon = visibleWeapons[i];
+                if (weapon != null && !weapon.isDestroyed
+                    && string.Equals(weapon.weaponThingId, state.weaponThingId, StringComparison.Ordinal)
+                    && string.Equals(weapon.codedPawnId, state.currentPawnId, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>Copies current faction titles into a silent, deterministically ordered baseline.</summary>
         public static List<RoyalTitleObservationSnapshot> BaselineTitles(
             IList<RoyalTitleSnapshot> titles,

@@ -1,5 +1,5 @@
-// Resettable Royalty correlation state. Most caches remain reserved Phase-1 shells; Phase 2 also
-// clears the synchronous persona-thought owner maintained in RoyaltyPersonaThoughtCorrelation.
+// Resettable Royalty correlation state. Most caches remain reserved Phase-1 shells for later
+// title, mutation, permit, and combat/death ownership phases.
 using System.Collections.Generic;
 
 namespace PawnDiary
@@ -30,7 +30,6 @@ namespace PawnDiary
             talePersonaOwners.Clear();
             personaTraitThoughtOwners.Clear();
             royalTitleThoughtOwners.Clear();
-            RoyaltyPersonaThoughtCorrelation.Reset();
         }
     }
 }

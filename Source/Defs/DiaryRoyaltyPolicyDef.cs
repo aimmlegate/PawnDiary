@@ -38,7 +38,6 @@ namespace PawnDiary
         public bool enabled = true;
         public int separationThresholdTicks = 60000;
         public int reconciliationCadenceTicks = 2500;
-        public int personaThoughtCorrelationTicks = 2500;
         public int maximumSelectedTraits = 2;
         public int maximumTraitCandidates = 32;
         public int maximumTraitLabelCharacters = 80;
@@ -66,8 +65,6 @@ namespace PawnDiary
             foreach (string error in base.ConfigErrors()) yield return error;
             if (separationThresholdTicks <= 0) yield return "separationThresholdTicks must be positive.";
             if (reconciliationCadenceTicks <= 0) yield return "reconciliationCadenceTicks must be positive.";
-            if (personaThoughtCorrelationTicks <= 0)
-                yield return "personaThoughtCorrelationTicks must be positive.";
             if (maximumSelectedTraits < 1 || maximumSelectedTraits > 2)
                 yield return "maximumSelectedTraits must be 1 or 2.";
             if (maximumTraitCandidates < 1 || maximumTraitCandidates > 128)
@@ -150,8 +147,17 @@ namespace PawnDiary
     {
         internal const string DefName = "Diary_Royalty";
 
+        // Def content is stable after loading and callers treat the detached lists as read-only. The
+        // localized DefInjected prose is copied by value, so a language switch invalidates the cache.
+        // Avoiding a deep copy here matters because this snapshot is read from reconciliation and
+        // event-capture paths.
+        private static RoyaltyPolicySnapshot cached;
+        private static LoadedLanguage cachedLanguage;
+
         public static RoyaltyPolicySnapshot Snapshot()
         {
+            if (cached != null && cachedLanguage == LanguageDatabase.activeLanguage) return cached;
+
             RoyaltyPolicySnapshot result = RoyaltyPolicySnapshot.CreateDefault();
             DiaryRoyaltyPolicyDef source = DefDatabase<DiaryRoyaltyPolicyDef>.GetNamedSilentFail(DefName);
             if (source == null) return result;
@@ -159,8 +165,6 @@ namespace PawnDiary
             result.enabled = source.enabled;
             result.separationThresholdTicks = Positive(source.separationThresholdTicks, result.separationThresholdTicks);
             result.reconciliationCadenceTicks = Positive(source.reconciliationCadenceTicks, result.reconciliationCadenceTicks);
-            result.personaThoughtCorrelationTicks = Positive(
-                source.personaThoughtCorrelationTicks, result.personaThoughtCorrelationTicks);
             result.maximumSelectedTraits = Between(source.maximumSelectedTraits, 1, 2, result.maximumSelectedTraits);
             result.maximumTraitCandidates = Between(source.maximumTraitCandidates, 1, 128, result.maximumTraitCandidates);
             result.maximumTraitLabelCharacters = Positive(
@@ -185,6 +189,8 @@ namespace PawnDiary
             if (tales.Count > 0) result.qualifyingTales = tales;
             result.traitWorkerRules = CopyWorkers(source.traitWorkerRules);
             result.traitOverrides = CopyOverrides(source.traitOverrides);
+            cached = result;
+            cachedLanguage = LanguageDatabase.activeLanguage;
             return result;
         }
 

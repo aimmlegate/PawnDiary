@@ -73,9 +73,7 @@ namespace PawnDiary.Ingestion
 
         public override string DedupKey => payload.DedupKey();
 
-        public override int DedupWindowTicks => Math.Max(
-            Math.Max(1, policy.separationThresholdTicks),
-            Math.Max(1, policy.personaThoughtCorrelationTicks));
+        public override int DedupWindowTicks => Math.Max(1, policy.separationThresholdTicks);
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {

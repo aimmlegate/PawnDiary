@@ -17,7 +17,7 @@ namespace RoyaltyContextTests
             TestFormationAndBaselineMatrix();
             TestSeparationRecoveryMatrix();
             TestEndingTransferAndDisabledMatrix();
-            TestLifecycleContextAndThoughtOwnership();
+            TestLifecycleContextVisibilityAndReservedThoughtOwnership();
             TestTraitStructuralRankingOrderingAndCaps();
             TestTraitSanitizationOverridesAndMalformedRows();
             TestMilestoneQualificationAndOwnership();
@@ -90,7 +90,6 @@ namespace RoyaltyContextTests
             RoyaltyPolicySnapshot policy = RoyaltyPolicySnapshot.CreateDefault();
             AssertEqual("fallback separation", 60000, policy.separationThresholdTicks);
             AssertEqual("fallback reconciliation", 2500, policy.reconciliationCadenceTicks);
-            AssertEqual("fallback persona thought correlation", 2500, policy.personaThoughtCorrelationTicks);
             AssertEqual("fallback trait cap", 2, policy.maximumSelectedTraits);
             AssertEqual("fallback Tale rows", 2, policy.qualifyingTales.Count);
             AssertEqual("fallback first Tale", "KilledMan", policy.qualifyingTales[0].taleDefName);
@@ -112,7 +111,7 @@ namespace RoyaltyContextTests
                 RoyalMutationOwnershipPolicy.Plan(null, null, 0, false, true, false, null).mutations.Count);
         }
 
-        private static void TestLifecycleContextAndThoughtOwnership()
+        private static void TestLifecycleContextVisibilityAndReservedThoughtOwnership()
         {
             RoyaltyPolicySnapshot policy = Policy(1000);
             PersonaBondStateSnapshot previous = ActiveState();
@@ -140,11 +139,13 @@ namespace RoyaltyContextTests
                 Weapon("Weapon_1", "Pawn_A", true), previous,
                 new PersonaLifecycleDecision { narrativePhase = "invented" }, selected, "", policy).Length == 0);
 
-            List<string> thoughts = new List<string> { "BondedPersonaWeapon" };
+            // Phase 2 does not correlate vanilla bonded situational thoughts through the memory
+            // callback. Keep this exact pure owner contract for Phase 3 killThought memories.
+            List<string> thoughts = new List<string> { "PersonaWeaponKillMemory" };
             AssertTrue("exact persona thought owner matches", PersonaThoughtOwnershipPolicy.Matches(
-                "Pawn_A", thoughts, "Pawn_A", "bondedpersonaweapon"));
+                "Pawn_A", thoughts, "Pawn_A", "personaweaponkillmemory"));
             AssertTrue("wrong pawn cannot be claimed", !PersonaThoughtOwnershipPolicy.Matches(
-                "Pawn_A", thoughts, "Pawn_B", "BondedPersonaWeapon"));
+                "Pawn_A", thoughts, "Pawn_B", "PersonaWeaponKillMemory"));
             AssertTrue("wrong thought cannot be claimed", !PersonaThoughtOwnershipPolicy.Matches(
                 "Pawn_A", thoughts, "Pawn_A", "OtherThought"));
         }
@@ -204,6 +205,25 @@ namespace RoyaltyContextTests
             AssertEqual("baseline trait cap and duplicate", 2, baseline.traits.Count);
             AssertTrue("baseline invalid weapon rejected",
                 RoyaltyStatePersistence.BaselinePersona(Weapon("bad|id", "Pawn_Save", true), 1, 2) == null);
+
+            List<PersonaWeaponSnapshot> visible = new List<PersonaWeaponSnapshot> { weapon };
+            AssertTrue("exact live visible bond is current context",
+                RoyaltyStatePersistence.IsCurrentVisiblePersonaBond(baseline, "Pawn_Save", visible));
+            AssertTrue("missing live weapon excludes stale saved bond", !RoyaltyStatePersistence
+                .IsCurrentVisiblePersonaBond(baseline, "Pawn_Save", new List<PersonaWeaponSnapshot>()));
+            PersonaWeaponSnapshot wrongOwner = Weapon("Weapon_Save", "Pawn_Other", true);
+            AssertTrue("wrong live coded pawn excludes saved bond", !RoyaltyStatePersistence
+                .IsCurrentVisiblePersonaBond(baseline, "Pawn_Save",
+                    new List<PersonaWeaponSnapshot> { wrongOwner }));
+            PersonaWeaponSnapshot destroyed = Weapon("Weapon_Save", "Pawn_Save", true);
+            destroyed.isDestroyed = true;
+            AssertTrue("destroyed live weapon excludes saved bond", !RoyaltyStatePersistence
+                .IsCurrentVisiblePersonaBond(baseline, "Pawn_Save",
+                    new List<PersonaWeaponSnapshot> { destroyed }));
+            PersonaBondStateSnapshot ended = RoyaltyStatePersistence.NormalizePersona(baseline, 2);
+            ended.phaseToken = PersonaBondPhaseTokens.Ended;
+            AssertTrue("ended saved bond is never current context", !RoyaltyStatePersistence
+                .IsCurrentVisiblePersonaBond(ended, "Pawn_Save", visible));
 
             PersonaBondStateSnapshot malformed = ActiveState();
             malformed.weaponThingId = "Weapon_Duplicate";
@@ -273,7 +293,12 @@ namespace RoyaltyContextTests
         private static void TestSeparationRecoveryMatrix()
         {
             RoyaltyPolicySnapshot policy = Policy(1000);
-            PersonaBondStateSnapshot state = ActiveState();
+            PersonaLifecycleDecision steady = PersonaLifecyclePolicy.Evaluate(
+                ActiveState(), Observation(PersonaObservationTokens.Primary, 50, true), policy);
+            AssertTrue("new primary timestamp is persisted", steady.stateChanged);
+            AssertEqual("new primary timestamp value", 50, steady.nextState.lastPrimaryObservedTick);
+
+            PersonaBondStateSnapshot state = steady.nextState;
             PersonaLifecycleDecision pending = PersonaLifecyclePolicy.Evaluate(
                 state, Observation(PersonaObservationTokens.NotPrimary, 100, true), policy);
             AssertEqual("loss starts pending", PersonaBondPhaseTokens.SeparationPending, pending.nextState.phaseToken);

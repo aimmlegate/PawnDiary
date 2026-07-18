@@ -61,6 +61,10 @@ namespace PawnDiary
             if (state == null || state.mechlinkPresent) return;
             state.observationVersion = MechanitorObservationState.CurrentVersion;
             state.mechlinkPresent = true;
+            // Starting mechlinks are added while generated pawns are still unspawned, and load
+            // restoration may invoke the same callback. Preserve the observed truth but never turn
+            // those setup operations into a historical install page.
+            if (!MechanitorLifecycleHookCanEmit(controller)) return;
             EmitMechanitorProgression(
                 controller,
                 MechanitorEventDefNames.MechlinkInstalled,
@@ -84,6 +88,7 @@ namespace PawnDiary
             if (state.IsInitialized() && !state.mechlinkPresent) return;
             state.observationVersion = MechanitorObservationState.CurrentVersion;
             state.mechlinkPresent = false;
+            if (!MechanitorLifecycleHookCanEmit(controller)) return;
             EmitMechanitorProgression(
                 controller,
                 MechanitorEventDefNames.MechlinkRemoved,
@@ -94,6 +99,15 @@ namespace PawnDiary
                 MechanitorContextKeys.MechanitorMoment + "=mechlink_removed; mechanitor="
                     + controller.LabelShortCap,
                 "mechanitor-mechlink-remove|" + controller.GetUniqueLoadID());
+        }
+
+        /// <summary>
+        /// True only when a mechlink callback represents live play rather than pawn generation or
+        /// save restoration. A genuine operation targets a spawned controller.
+        /// </summary>
+        private static bool MechanitorLifecycleHookCanEmit(Pawn controller)
+        {
+            return controller?.Spawned == true && Scribe.mode == LoadSaveMode.Inactive;
         }
 
         /// <summary>Baselines existing control before vanilla adds a new Overseer relation.</summary>
