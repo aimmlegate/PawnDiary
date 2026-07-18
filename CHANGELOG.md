@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-07-19 — Fixed two false-negative Royalty Phase-3 loaded assertions.** The expanded loaded
+  run reached 242/244: milestone ownership, Thought fallback, save flags, and death enrichment all
+  passed, while two combat-batch checks incorrectly searched `interactionDefName=talecombat`.
+  Flushed Tale batches actually keep either the one source Tale Def or the XML `syntheticDefName` in
+  that field and store `group=talecombat; batch=tale` in saved context. The fixture now queries those
+  exact context fields, so it verifies the production batch contract without depending on batch size.
+  Runtime behavior is unchanged; a focused loaded rerun remains pending.
+
 - **2026-07-18 — Hardened Royalty Phase 3 after a consolidated adversarial review.** Vanilla's real
   `KilledMajorThreat` path can also record an ordinary melee/ranged/capacity combat Tale in the same
   `Pawn.Kill`; those eight exact double-pawn companion Tale shapes are now XML-owned, staged only in

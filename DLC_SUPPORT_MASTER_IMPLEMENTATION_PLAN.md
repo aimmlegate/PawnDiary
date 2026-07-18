@@ -304,8 +304,10 @@ Do not add seasonal flooding, life support, or Mechhive choices in this wave.
 > and fail open; save normalization preserves the observed/recorded distinction. The pure suites pass
 > 245 Royalty, 125 Narrative Continuity, 665 capture, and 2,290 pipeline assertions. The Phase-2
 > automated loaded suite is user-confirmed green; its manual matrix remains open. The first Phase-3
-> loaded run reached 240/241 and exposed a pre-dead Tale timing gate; the exact `Pawn.Kill`-scope fix
-> plus expanded adversarial fixtures now await a clean rerun. Royalty Phase 4 remains, so the R1
+> loaded run reached 240/241 and exposed a pre-dead Tale timing gate. The expanded rerun reached
+> 242/244; its only failures were fixture queries that treated the `talecombat` group key as a flushed
+> event Def instead of reading the saved Tale-batch context. Those queries are fixed and await a
+> focused rerun. Royalty Phase 4 remains, so the R1
 > release gate and Wave 5 completion are not claimed.
 
 ### Implement in this exact order

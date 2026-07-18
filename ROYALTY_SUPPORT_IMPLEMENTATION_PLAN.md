@@ -1422,7 +1422,7 @@ acceptance scenarios pass.
 
 ### Phase 3 — Persona combat and death integration
 
-> **Implementation status (2026-07-18): code-complete; first loaded run 240/241; focused rerun and
+> **Implementation status (2026-07-19): code-complete; expanded loaded run 242/244; focused rerun and
 > manual acceptance pending.** A qualifying Tale is resolved only from exact XML killer/victim roles
 > inside the matching active `Pawn.Kill` scope while the exact coded weapon is still the killer's
 > primary. The saved first-kill truth advances even when its Royalty-gated group is disabled or page
@@ -1437,8 +1437,10 @@ acceptance scenarios pass.
 > recorded and repairs recorded-implies-observed. Pure suites pass 245 Royalty, 665 capture, and 2,290
 > pipeline assertions; expanded real-kill/delayed-batch/disabled-output/non-primary-death/Scribe
 > RimTests compile. The first loaded run exposed that `KilledMajorThreat` precedes `health.SetDead()`;
-> the balanced exact kill scope now supplies death proof at that callback. The expanded clean rerun and
-> Phase-3 manual matrix remain unchecked.
+> the balanced exact kill scope now supplies death proof at that callback. The expanded rerun's two
+> remaining failures were fixture-only combat-batch queries: `talecombat` is a saved `group=` value,
+> while the event Def is the source Tale or `TaleCombatBatch`. The corrected focused rerun and Phase-3
+> manual matrix remain unchecked.
 
 1. Project persona context into `TaleSignal` at capture time.
 2. Add pure qualifying-milestone and trait selection.

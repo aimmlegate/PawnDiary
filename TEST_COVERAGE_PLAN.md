@@ -180,8 +180,11 @@ guaranteed vanilla major-threat kill, delayed companion-batch flush, same-tick o
 disabled-milestone fallback, primary and non-primary bonded-wielder deaths, and Scribe flag fixtures.
 Pure coverage is 245 Royalty and 2,290 pipeline assertions. The first loaded Phase-3 run passed 240/241
 tests and exposed that production read `victim.Dead` before vanilla's later `health.SetDead()`; the
-exact active scope fixes that timing. The expanded clean loaded rerun and all manual rows remain
-required; neither Phase 2 nor Phase 3 is manually acceptance-complete.
+exact active scope fixes that timing. The expanded run reached 242/244; its two failures were
+false-negative fixture queries that searched for `interactionDefName=talecombat`, even though a
+flushed batch stores either its source/synthetic Def there and identifies the group through exact
+`group=talecombat; batch=tale` context fields. The corrected focused loaded rerun and all manual rows
+remain required; neither Phase 2 nor Phase 3 is manually acceptance-complete.
 
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,

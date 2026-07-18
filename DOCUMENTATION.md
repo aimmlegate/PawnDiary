@@ -330,8 +330,10 @@ produces no standalone `PersonaWeaponBondEnded` page. All live Royalty reads rem
 `DlcContext`, and the kill hot path gates Royalty before allocating its Thought-name list. Policy XML
 contains only string Def names/primitive roles, so a no-Royalty game follows the unchanged
 Tale/Thought/death paths. Pure suites pass 245 Royalty and 2,290 pipeline assertions; the expanded
-RimTests compile. The first loaded run's 240/241 timing failure is fixed, but the new focused loaded
-rerun and Phase-3 manual matrix remain pending.
+RimTests compile. The first loaded run's 240/241 timing failure is fixed. The expanded rerun reached
+242/244: both remaining failures were fixture-only combat-batch queries that searched for the group
+Def as an event Def instead of reading the saved `group=talecombat; batch=tale` fields. Those queries
+are corrected; a focused loaded rerun and the Phase-3 manual matrix remain pending.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13

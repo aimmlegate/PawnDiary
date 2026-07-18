@@ -181,7 +181,7 @@ namespace PawnDiary.RimTests
                 DamageDefOf.Crush, 10000f, instigator: pawn, weapon: weapon.def);
             int before = CountEvents(PersonaMilestoneContextFormatter.FirstKillDefName);
             int thoughtBefore = CountEventsForPawn(KillThoughtDefName, pawn);
-            int combatBefore = CountEventsForPawn("talecombat", pawn);
+            int combatBefore = CountTaleBatchesForPawn("talecombat", pawn);
             DiaryEvent milestone = scope.FireAndRequireEvent(
                 () => firstVictim.Kill(firstDamage),
                 PersonaMilestoneContextFormatter.FirstKillDefName,
@@ -209,7 +209,7 @@ namespace PawnDiary.RimTests
                 "The canonical milestone left a duplicate persona kill-thought page.");
             FlushAllTaleBatches();
             PawnDiaryRimTestScope.Require(
-                CountEventsForPawn("talecombat", pawn) == combatBefore,
+                CountTaleBatchesForPawn("talecombat", pawn) == combatBefore,
                 "Flushing delayed Tale batches exposed a companion combat page for the canonical kill.");
 
             Pawn secondVictim = CreateMajorThreatVictim();
@@ -225,7 +225,7 @@ namespace PawnDiary.RimTests
                 "A later ordinary kill-thought was over-suppressed by the earlier milestone.");
             FlushAllTaleBatches();
             PawnDiaryRimTestScope.Require(
-                CountEventsForPawn("talecombat", pawn) == combatBefore + 1,
+                CountTaleBatchesForPawn("talecombat", pawn) == combatBefore + 1,
                 "A later ordinary major-threat kill did not retain one batched combat page.");
         }
 
@@ -279,7 +279,7 @@ namespace PawnDiary.RimTests
                 DamageDefOf.Crush, 10000f, instigator: pawn, weapon: weapon.def);
             int milestoneBefore = CountEvents(PersonaMilestoneContextFormatter.FirstKillDefName);
             int thoughtBefore = CountEventsForPawn(KillThoughtDefName, pawn);
-            int combatBefore = CountEventsForPawn("talecombat", pawn);
+            int combatBefore = CountTaleBatchesForPawn("talecombat", pawn);
             scope.FireAndRequireEvent(
                 () => victim.Kill(damage),
                 KillThoughtDefName,
@@ -300,7 +300,7 @@ namespace PawnDiary.RimTests
                 "Disabled milestone did not release the ordinary kill-thought page.");
             FlushAllTaleBatches();
             PawnDiaryRimTestScope.Require(
-                CountEventsForPawn("talecombat", pawn) == combatBefore + 1,
+                CountTaleBatchesForPawn("talecombat", pawn) == combatBefore + 1,
                 "Disabled milestone did not release the ordinary combat Tales as one batch.");
         }
 
@@ -476,6 +476,25 @@ namespace PawnDiary.RimTests
             string pawnId = owner.GetUniqueLoadID();
             return repository.AllEvents.Count(row => row != null
                 && string.Equals(row.interactionDefName, defName, StringComparison.Ordinal)
+                && (string.Equals(row.initiatorPawnId, pawnId, StringComparison.Ordinal)
+                    || string.Equals(row.recipientPawnId, pawnId, StringComparison.Ordinal)));
+        }
+
+        /// <summary>
+        /// Counts flushed Tale batches by their saved group/batch context contract. The batch event's
+        /// interactionDefName is the source Tale for one item or the XML syntheticDefName for several;
+        /// it is never the interaction-group defName itself.
+        /// </summary>
+        private static int CountTaleBatchesForPawn(string groupDefName, Pawn owner)
+        {
+            DiaryEventRepository repository = EventsField?.GetValue(scope.Component)
+                as DiaryEventRepository;
+            PawnDiaryRimTestScope.Require(repository != null && owner != null,
+                "Could not read the event repository/pawn for Royalty Tale-batch assertions.");
+            string pawnId = owner.GetUniqueLoadID();
+            return repository.AllEvents.Count(row => row != null
+                && DiaryContextFields.FieldEquals(row.gameContext, "group", groupDefName)
+                && DiaryContextFields.FieldEquals(row.gameContext, "batch", "tale")
                 && (string.Equals(row.initiatorPawnId, pawnId, StringComparison.Ordinal)
                     || string.Equals(row.recipientPawnId, pawnId, StringComparison.Ordinal)));
         }
