@@ -792,6 +792,7 @@ namespace PawnDiary.RimTests
                 bossDefName = "Boss_Diabolus",
                 bossKindDefName = "Diabolus",
                 bossLabel = "Diabolus",
+                bossPawnId = "Thing_Boss_Diabolus_42",
                 calledTick = 456,
                 defeatedObserved = true
             });
@@ -881,6 +882,8 @@ namespace PawnDiary.RimTests
                 "record nested boss call/defeat row should survive load.");
             AssertStr("Boss_Diabolus", loadedMechanitor.bossCalls[0].bossDefName,
                 "record nested boss Def");
+            AssertStr("Thing_Boss_Diabolus_42", loadedMechanitor.bossCalls[0].bossPawnId,
+                "record nested exact boss pawn ID");
 
             Require(loaded.arcSchedule != null, "record arcSchedule should be non-null after load.");
             AssertInt(1234, loaded.arcSchedule.lastArcEntryTick, "record arc lastArcEntryTick");

@@ -378,15 +378,26 @@ Biotech Phase 6 adds a human-centered mechanitor lifecycle without polling bandw
 nested `MechanitorObservationState` stores an explicit observation version, current mechlink flag,
 first-controlled/first-combat consumption, bounded stable-ID mech tenure rows, and bounded exact boss
 call rows. The first old-save scan copies current Overseer relations silently and consumes historical
-“first” milestones; later slow scans only maintain tenure. All live tracker/relation/name projection is
+“first” milestones; imported relations begin tenure at that scan tick rather than backdating service
+from vanilla relation history. Later slow scans normalize once per controller and then maintain tenure.
+Exact first-relation and hostile-combat observations consume their milestones even when generation is
+disabled, so re-enabling output cannot turn a later occurrence into a false “first.” All live
+tracker/relation/name projection is
 double-gated in `DlcContext`, so no-Biotech profiles return empty facts. Exact Harmony owners are
 `Hediff_Mechlink.PostAdd/PostRemoved`, `Pawn_RelationsTracker.AddDirectRelation` for the string-matched
 `Overseer` relation, configured successful `TaleRecorder` combat Tales, the existing `Pawn.Kill`
 prefix before relation cleanup, and `CompUseEffect_CallBossgroup` correlated to
-`GameComponent_Bossgroup.Notify_BossgroupCalled/Notify_PawnKilled`. A committed controller page claims
-the generic combat Tale; failed/disabled canonical dispatch fails open. Mech loss records only a
+`GameComponent_Bossgroup.Notify_BossgroupCalled`, boss `Pawn.SpawnSetup`, and
+`GameComponent_Bossgroup.Notify_PawnKilled`. Only hostile target Tales qualify for the first-combat
+milestone. A committed controller page claims the generic combat Tale; disabled/failed canonical output
+still fails open to generic ownership while the exact observation remains consumed. Mech loss records only a
 non-numerically player-named mech or one observed for the XML minimum (15 days by default). Boss defeat
-prose proves only that the caller's saved threat was defeated and never names a final attacker. XML
+rows save the spawned boss pawn's load ID, so one death resolves one controller across overlapping
+same-kind calls; legacy rows backfill only when exactly one matching call is unambiguous. Completed
+mech-loss rows are recycled at the observation cap before active ownership is refused. `Pawn.Kill`
+starts death-suppression scope only for actual mechanitors, projects loss only for mechanoids, and
+balances nested scope release in its finalizer. Boss defeat prose proves only that the caller's saved
+threat was defeated and never names a final attacker. XML
 owns the combat Tale role lists, tenure threshold, 64-mech and 16-boss defaults, one Biotech-gated
 Progression group, and all English/Russian prompt/UI prose; fixed corruption ceilings remain in code.
 
@@ -2452,7 +2463,10 @@ checks, component-Scribe and live-component pre-cap preservation/admission recov
 no-Biotech-dependency assertion, and localized growth/birth entries in the prompt fixture panel. A
 base-only loaded fixture drains frozen growth/birth owners and rejects replay, while an optional-package
 runtime fixture reflects over the real RimTalk bridge and verifies shared-memory injection without
-recursive submission. SpeakUp/RimTalk pure suites plus both bridge builds remain supporting adapter
+recursive submission. That fixture resolves `diary_shared` through RimTalk's live
+`ContextHookRegistry`, verifies the bridge-owned `{{diary_shared}}` entry in the active prompt preset,
+and uses pair-owned growth-linked/birth-linked memories (canonical solo growth pages are not themselves
+pair memory). SpeakUp/RimTalk pure suites plus both bridge builds remain supporting adapter
 smoke. These new loaded fixtures must still be run in their matching game profiles; visual letter/
 preview inspection and the real cross-launch DLC on/off/on transition remain manual. Sources whose real
 trigger needs a loaded map, the

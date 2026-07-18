@@ -1516,7 +1516,8 @@ namespace DiaryBiotechPolicyTests
             AssertTrue("old-save baseline initializes", oldSave.IsInitialized());
             AssertTrue("old-save existing control consumes first page", oldSave.firstControlledPageConsumed);
             AssertTrue("old-save existing control consumes first combat", oldSave.firstControlledCombatPageConsumed);
-            AssertEqual("relation start seeds observed tenure", 100, oldSave.observedMechs[0].firstObservedTick);
+            AssertEqual("old-save tenure begins at first Pawn Diary observation", 500,
+                oldSave.observedMechs[0].firstObservedTick);
 
             numerical.controlled = false;
             MechanitorObservationState overseenButDisconnected = new MechanitorObservationState();
@@ -1535,6 +1536,19 @@ namespace DiaryBiotechPolicyTests
             AssertEqual("XML mech cap does not evict established ownership", 1, newController.observedMechs.Count);
             AssertEqual("first admitted mech retained", "Mech_2", newController.observedMechs[0].mechId);
 
+            newController.observedMechs[0].lossObserved = true;
+            MechanitorMechObservationState recycled = newController.ObserveMech(
+                numerical, 700, maximumMechs: 1);
+            AssertNotNull("completed mech row is recycled at the admission cap", recycled);
+            AssertEqual("new active ownership replaces completed history", "Mech_1",
+                newController.observedMechs[0].mechId);
+
+            MechanitorObservationState allActive = new MechanitorObservationState();
+            allActive.Baseline(new MechanitorControllerSnapshot(), 500, maximumMechs: 1);
+            allActive.ObserveMech(custom, 500, maximumMechs: 1);
+            AssertTrue("active ownership is never evicted to admit another mech",
+                allActive.ObserveMech(numerical, 700, maximumMechs: 1) == null);
+
             MechanitorBossCallObservationState boss = new MechanitorBossCallObservationState
             {
                 bossgroupDefName = "Bossgroup_Diabolus",
@@ -1549,6 +1563,58 @@ namespace DiaryBiotechPolicyTests
             newController.bossCalls[0].defeatedObserved = true;
             AssertTrue("defeat semantics preserve prior call", newController.bossCalls[0].defeatedObserved
                 && newController.bossCalls[0].calledTick == 600);
+
+            MechanitorBossCallObservationState olderCall = BossCall("Diabolus", 800);
+            MechanitorBossCallObservationState newerCall = BossCall("Diabolus", 900);
+            List<MechanitorBossOwnershipCandidate> candidates = new List<MechanitorBossOwnershipCandidate>
+            {
+                new MechanitorBossOwnershipCandidate { ownerId = "Controller_B", call = newerCall },
+                new MechanitorBossOwnershipCandidate { ownerId = "Controller_A", call = olderCall }
+            };
+            MechanitorBossOwnershipCandidate firstSpawn = MechanitorLifecyclePolicy.AssignSpawnedBoss(
+                candidates, "Diabolus", "Pawn_Boss_1");
+            MechanitorBossOwnershipCandidate secondSpawn = MechanitorLifecyclePolicy.AssignSpawnedBoss(
+                candidates, "Diabolus", "Pawn_Boss_2");
+            AssertEqual("first spawned boss owns oldest global call", "Controller_A", firstSpawn.ownerId);
+            AssertEqual("second spawned boss owns remaining call", "Controller_B", secondSpawn.ownerId);
+            AssertEqual("spawn assignment saves exact pawn ID", "Pawn_Boss_1", olderCall.bossPawnId);
+            AssertEqual("exact death resolves only its assigned controller", "Controller_B",
+                MechanitorLifecyclePolicy.FindDefeatedBoss(
+                    candidates, "Diabolus", "Pawn_Boss_2").ownerId);
+
+            List<MechanitorBossOwnershipCandidate> ambiguousLegacy =
+                new List<MechanitorBossOwnershipCandidate>
+                {
+                    new MechanitorBossOwnershipCandidate
+                    {
+                        ownerId = "Controller_A",
+                        call = BossCall("WarQueen", 1000)
+                    },
+                    new MechanitorBossOwnershipCandidate
+                    {
+                        ownerId = "Controller_B",
+                        call = BossCall("WarQueen", 1100)
+                    }
+                };
+            AssertTrue("ambiguous legacy same-kind death fails closed",
+                MechanitorLifecyclePolicy.FindDefeatedBoss(
+                    ambiguousLegacy, "WarQueen", "Pawn_Boss_3") == null);
+            ambiguousLegacy.RemoveAt(1);
+            AssertEqual("unique legacy call receives safe exact-ID backfill", "Controller_A",
+                MechanitorLifecyclePolicy.FindDefeatedBoss(
+                    ambiguousLegacy, "WarQueen", "Pawn_Boss_3").ownerId);
+        }
+
+        private static MechanitorBossCallObservationState BossCall(string kindDefName, int calledTick)
+        {
+            return new MechanitorBossCallObservationState
+            {
+                bossgroupDefName = "Bossgroup_" + kindDefName,
+                bossDefName = "Boss_" + kindDefName,
+                bossKindDefName = kindDefName,
+                bossLabel = kindDefName,
+                calledTick = calledTick
+            };
         }
 
         private static void TestShippedXmlPolicyAndLocalization()

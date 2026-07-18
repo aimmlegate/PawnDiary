@@ -219,7 +219,9 @@ while the DLC-safety fixture drives the guarded growth/family/birth snapshot acc
 method signatures. `PawnDiaryBiotechDlcOffMaintenanceTests` constructs frozen plain-DTO owners in a
 base-only loaded game and proves growth fallback, frozen canonical birth flush, removal, and replay
 silence. `PawnDiaryRimTalkBridgeRuntimeTests` reflects over the actually loaded optional assemblies and
-proves recent growth/birth memories enter RimTalk shared memory without recursive submission.
+proves pair-owned growth-linked/birth-linked memories enter RimTalk shared memory without recursive
+submission. It resolves the provider through RimTalk's registered `diary_shared` context variable and
+verifies the bridge-owned `{{diary_shared}}` entry exists in the active prompt preset.
 `DiaryPipelineTests` additionally renders B1 growth and birth through the important pair/solo shapes
 at Full, Balanced, and Compact with an exhausted optional budget, requiring the central qualitative
 facts while rejecting IDs/numeric tiers/ticks/correlation tokens. It parses the shipped templates to
@@ -266,12 +268,16 @@ the canonical page to persist the salient gene label, stable candidate key, exac
 
 Biotech Phase 6 adds pure mechanitor coverage for old-save versus empty baselines, numerical versus
 custom mech names, the inclusive long-service boundary, significant-loss admission, first/second Tale
-instigator roles, bounded mech ownership, and saved boss call/defeat semantics. Shipped-XML assertions
+instigator roles, observation-time old-save tenure, completed-row cap recycling without active-row
+eviction, and cross-controller exact boss-pawn assignment/defeat (including ambiguous legacy failure).
+Shipped-XML assertions
 pin all seven synthetic Def names, the Biotech package gate, combat role lists, tenure/caps, and every
 English/Russian group and event key. `PawnDiaryBiotechMechanitorFlowTests` calls the real
 `HediffSet.AddHediff/RemoveHediff` lifecycle and audits the verified relation, Tale, death, boss-call,
-and boss-defeat Harmony targets. The nested Scribe round-trip includes consumed flags, one mech
-tenure/loss row, and one boss call/defeat row. The loaded fixture and manual matrix remain TODO.
+boss-spawn, and boss-defeat Harmony targets. It also drives a real disabled-output Overseer relation,
+rejects same-faction combat as the first hostile milestone, and verifies balanced nested death scope.
+The nested Scribe round-trip includes consumed flags, one mech tenure/loss row, and one boss
+call/defeat row with its exact spawned pawn ID. The loaded fixture and manual matrix remain TODO.
 
 Narrative N2-B extends `NarrativeContinuityTests` with assembly-free checks for family-continuity
 classification, exact arc/subject candidate construction, fixed provider ordering, inactive-DLC and

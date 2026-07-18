@@ -4,6 +4,7 @@
 //
 // New to C#/RimWorld? See AGENTS.md ("Optional-mod hooks") and docs/lore/build.md.
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using PawnDiary.Integration;
@@ -25,11 +26,12 @@ namespace PawnDiary.RimTests
         private const BindingFlags StaticAny = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         /// <summary>
-        /// Two completed caller-authored memories enter the bridge's real shared-memory block. Reading
-        /// that block is side-effect free: the pair retains exactly the two submitted events.
+        /// Two completed caller-authored pair memories enter the context variable registered with
+        /// RimTalk. Auto-injection adds the variable token to the active preset, and reading the block
+        /// is side-effect free: the pair retains exactly the two submitted events.
         /// </summary>
         [Test]
-        public static void LoadedBridgeInjectsGrowthAndBirthMemoriesWithoutRecursion()
+        public static void RegisteredBridgeInjectsPairMemoriesAndAutoEntryWithoutRecursion()
         {
             if (!ModsConfig.IsActive(BridgePackageId) || !ModsConfig.IsActive(RimTalkPackageId))
             {
@@ -42,6 +44,8 @@ namespace PawnDiary.RimTests
             Type injectorType = ResolveType(
                 "PawnDiaryRimTalkBridge.SharedMemoryInjector, PawnDiaryRimTalkBridge");
             Type promptContextType = ResolveType("RimTalk.Prompt.PromptContext, RimTalk");
+            Type contextRegistryType = ResolveType("RimTalk.API.ContextHookRegistry, RimTalk");
+            Type promptApiType = ResolveType("RimTalk.API.RimTalkPromptAPI, RimTalk");
             FieldInfo settingsField = RequireField(modType, "Settings");
             object bridgeSettings = settingsField.GetValue(null);
             PawnDiaryRimTestScope.Require(bridgeSettings != null,
@@ -50,9 +54,14 @@ namespace PawnDiary.RimTests
             FieldInfo integrationLevelField = RequireField(bridgeSettings.GetType(), "integrationLevel");
             FieldInfo injectSharedMemoryField = RequireField(bridgeSettings.GetType(), "injectSharedMemory");
             FieldInfo sharedMemoryCountField = RequireField(bridgeSettings.GetType(), "sharedMemoryCount");
+            FieldInfo autoInjectField = RequireField(bridgeSettings.GetType(), "autoInjectSharedMemory");
             MethodInfo resetMethod = RequireMethod(injectorType, "ResetForNewGame");
-            MethodInfo sharedForMethod = RequireMethod(injectorType, "SharedFor");
             MethodInfo processQueueMethod = RequireMethod(injectorType, "ProcessQueue");
+            MethodInfo syncAutoInjectMethod = RequireMethod(injectorType, "SyncAutoInject");
+            MethodInfo hasContextVariableMethod = RequireMethod(contextRegistryType, "HasContextVariable");
+            MethodInfo tryGetContextVariableMethod = RequireMethod(
+                contextRegistryType, "TryGetContextVariable");
+            MethodInfo getActivePresetMethod = RequireMethod(promptApiType, "GetActivePreset");
 
             PawnDiaryRimTestScope scope = PawnDiaryRimTestScope.Begin();
             Pawn first = null;
@@ -62,32 +71,39 @@ namespace PawnDiary.RimTests
             int originalLevel = (int)integrationLevelField.GetValue(bridgeSettings);
             bool originalInject = (bool)injectSharedMemoryField.GetValue(bridgeSettings);
             int originalCount = (int)sharedMemoryCountField.GetValue(bridgeSettings);
+            bool originalAutoInject = (bool)autoInjectField.GetValue(bridgeSettings);
             try
             {
                 coreSettings.allowExternalIntegrations = true;
                 integrationLevelField.SetValue(bridgeSettings, 1);
                 injectSharedMemoryField.SetValue(bridgeSettings, true);
                 sharedMemoryCountField.SetValue(bridgeSettings, 3);
+                autoInjectField.SetValue(bridgeSettings, true);
                 resetMethod.Invoke(null, null);
+                syncAutoInjectMethod.Invoke(null, null);
+                PawnDiaryRimTestScope.Require(
+                    (bool)hasContextVariableMethod.Invoke(null, new object[] { "diary_shared" }),
+                    "RimTalk's registry does not contain the bridge's diary_shared variable.");
+                RequireAutoInjectedEntry(getActivePresetMethod.Invoke(null, null));
 
                 first = scope.CreateAdultColonist();
                 second = scope.CreateAdultColonist();
                 scope.SpawnAsLiveColonist(first);
                 scope.SpawnAsLiveColonist(second);
 
-                DiaryEventSubmissionResult growth = SubmitMemory(
+                DiaryEventSubmissionResult growthLinked = SubmitMemory(
                     first,
                     second,
-                    "pawndiary_rimtest_biotech_growth_memory",
-                    "A growth moment remembered",
+                    "pawndiary_rimtest_growth_linked_pair_memory",
+                    "A growth-linked memory",
                     "They remembered choosing new interests together.");
-                DiaryEventSubmissionResult birth = SubmitMemory(
+                DiaryEventSubmissionResult birthLinked = SubmitMemory(
                     first,
                     second,
-                    "pawndiary_rimtest_biotech_birth_memory",
-                    "A family birth remembered",
+                    "pawndiary_rimtest_birth_linked_pair_memory",
+                    "A birth-linked family memory",
                     "They remembered welcoming a child into the family.");
-                PawnDiaryRimTestScope.Require(growth.recorded && birth.recorded,
+                PawnDiaryRimTestScope.Require(growthLinked.recorded && birthLinked.recorded,
                     "The bridge fixture could not create its two completed source memories.");
 
                 int beforeCount = ContextEntryCount(first);
@@ -96,31 +112,73 @@ namespace PawnDiary.RimTests
                 SetProperty(promptContextType, promptContext, "AllPawns", new List<Pawn> { first, second });
                 SetProperty(promptContextType, promptContext, "IsPreview", false);
 
-                // The provider intentionally queues a main-thread cache fill on the first read.
-                sharedForMethod.Invoke(null, new[] { promptContext });
+                // Resolve through RimTalk's registry, not the bridge's helper, so this proves the
+                // production RegisterContextVariable attachment as well as provider behavior.
+                GetRegisteredContextVariable(tryGetContextVariableMethod, promptContext);
                 processQueueMethod.Invoke(null, new object[] { Find.TickManager?.TicksGame ?? 0 });
-                string block = sharedForMethod.Invoke(null, new[] { promptContext }) as string;
+                string block = GetRegisteredContextVariable(
+                    tryGetContextVariableMethod, promptContext);
 
                 PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(block),
                     "The active RimTalk bridge returned no shared-memory block.");
                 PawnDiaryRimTestScope.Require(
-                    block.IndexOf("A growth moment remembered", StringComparison.OrdinalIgnoreCase) >= 0,
-                    "The shared-memory block omitted the completed growth memory.");
+                    block.IndexOf("A growth-linked memory", StringComparison.OrdinalIgnoreCase) >= 0,
+                    "The shared-memory block omitted the completed growth-linked pair memory.");
                 PawnDiaryRimTestScope.Require(
-                    block.IndexOf("A family birth remembered", StringComparison.OrdinalIgnoreCase) >= 0,
-                    "The shared-memory block omitted the completed birth memory.");
+                    block.IndexOf("A birth-linked family memory", StringComparison.OrdinalIgnoreCase) >= 0,
+                    "The shared-memory block omitted the completed birth-linked pair memory.");
                 PawnDiaryRimTestScope.Require(ContextEntryCount(first) == beforeCount,
                     "Reading RimTalk shared memory recursively created or removed a Pawn Diary entry.");
             }
             finally
             {
-                resetMethod.Invoke(null, null);
-                integrationLevelField.SetValue(bridgeSettings, originalLevel);
-                injectSharedMemoryField.SetValue(bridgeSettings, originalInject);
-                sharedMemoryCountField.SetValue(bridgeSettings, originalCount);
-                coreSettings.allowExternalIntegrations = originalExternal;
-                scope.TearDown();
+                try
+                {
+                    resetMethod.Invoke(null, null);
+                    integrationLevelField.SetValue(bridgeSettings, originalLevel);
+                    injectSharedMemoryField.SetValue(bridgeSettings, originalInject);
+                    sharedMemoryCountField.SetValue(bridgeSettings, originalCount);
+                    autoInjectField.SetValue(bridgeSettings, originalAutoInject);
+                    coreSettings.allowExternalIntegrations = originalExternal;
+                    syncAutoInjectMethod.Invoke(null, null);
+                }
+                finally
+                {
+                    scope.TearDown();
+                }
             }
+        }
+
+        private static string GetRegisteredContextVariable(MethodInfo method, object promptContext)
+        {
+            object[] arguments = { "diary_shared", promptContext, null };
+            bool found = (bool)method.Invoke(null, arguments);
+            PawnDiaryRimTestScope.Require(found,
+                "RimTalk could not resolve its registered diary_shared context variable.");
+            return arguments[2] as string ?? string.Empty;
+        }
+
+        private static void RequireAutoInjectedEntry(object preset)
+        {
+            PawnDiaryRimTestScope.Require(preset != null,
+                "RimTalk returned no active prompt preset after bridge auto-injection.");
+            FieldInfo entriesField = RequireField(preset.GetType(), "Entries");
+            IEnumerable entries = entriesField.GetValue(preset) as IEnumerable;
+            PawnDiaryRimTestScope.Require(entries != null,
+                "RimTalk's active prompt preset exposed no entry collection.");
+            foreach (object entry in entries)
+            {
+                if (entry == null) continue;
+                PropertyInfo sourceProperty = entry.GetType().GetProperty("SourceModId");
+                FieldInfo contentField = entry.GetType().GetField("Content");
+                string source = sourceProperty?.GetValue(entry, null) as string;
+                string content = contentField?.GetValue(entry) as string;
+                if (string.Equals(source, "aimmlegate.pawndiary.rimtalkbridge",
+                        StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(content, "{{diary_shared}}", StringComparison.Ordinal)) return;
+            }
+            throw new AssertionException(
+                "The active RimTalk preset omitted the bridge-owned {{diary_shared}} prompt entry.");
         }
 
         private static DiaryEventSubmissionResult SubmitMemory(

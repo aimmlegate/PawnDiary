@@ -175,6 +175,32 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Generates and tracks a non-colonist pawn for DLC/runtime seam tests. The pawn is never given
+        /// a diary record, and ordinary scope teardown removes it from the map/world before destroying it.
+        /// </summary>
+        public Pawn CreateTrackedPawn(PawnKindDef kindDef, Faction faction)
+        {
+            if (kindDef == null)
+            {
+                throw new AssertionException("A tracked test pawn requires a PawnKindDef.");
+            }
+            Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(
+                kindDef,
+                faction,
+                PawnGenerationContext.NonPlayer,
+                forceGenerateNewPawn: true,
+                canGeneratePawnRelations: false));
+            if (pawn == null)
+            {
+                throw new AssertionException(
+                    "RimWorld failed to generate tracked test pawn kind " + kindDef.defName + ".");
+            }
+            testPawns.Add(pawn);
+            testPawnIds.Add(pawn.GetUniqueLoadID());
+            return pawn;
+        }
+
+        /// <summary>
         /// Like <see cref="CreateAdultColonist"/> but leaves diary generation ENABLED so a fired event
         /// runs the real prompt pipeline. Only valid after <see cref="EnablePromptCapture"/>: prompt-test
         /// mode makes the pipeline stamp the rendered prompt on the event and stop before any network

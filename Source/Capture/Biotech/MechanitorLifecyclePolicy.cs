@@ -76,8 +76,19 @@ namespace PawnDiary.Capture
         public string bossDefName = string.Empty;
         public string bossKindDefName = string.Empty;
         public string bossLabel = string.Empty;
+        public string bossPawnId = string.Empty;
         public int calledTick;
         public bool defeatedObserved;
+    }
+
+    /// <summary>
+    /// One detached boss-call candidate. The owner ID makes cross-controller selection deterministic
+    /// without passing a live diary record into the pure ownership policy.
+    /// </summary>
+    internal sealed class MechanitorBossOwnershipCandidate
+    {
+        public string ownerId = string.Empty;
+        public MechanitorBossCallObservationState call;
     }
 
     /// <summary>Saved per-controller observation; pages remain the narrative history.</summary>
@@ -110,12 +121,13 @@ namespace PawnDiary.Capture
         {
             observationVersion = CurrentVersion;
             mechlinkPresent = snapshot != null && snapshot.hasMechlink;
-            observedMechs.Clear();
+            if (observedMechs == null) observedMechs = new List<MechanitorMechObservationState>();
+            else observedMechs.Clear();
             List<MechanitorMechSnapshot> mechs = snapshot?.overseenMechs;
             if (mechs != null)
             {
                 for (int i = 0; i < mechs.Count; i++)
-                    ObserveMech(mechs[i], currentTick, maximumMechs);
+                    ObserveMech(mechs[i], currentTick, maximumMechs, useRelationStartTick: false);
             }
 
             bool hadExistingOverseer = observedMechs.Count > 0;
@@ -136,28 +148,39 @@ namespace PawnDiary.Capture
             int currentTick,
             int maximumMechs)
         {
+            return ObserveMech(mech, currentTick, maximumMechs, useRelationStartTick: true);
+        }
+
+        private MechanitorMechObservationState ObserveMech(
+            MechanitorMechSnapshot mech,
+            int currentTick,
+            int maximumMechs,
+            bool useRelationStartTick)
+        {
             string id = CleanId(mech?.mechId);
             if (id.Length == 0) return null;
-            Normalize(maximumMechs, HardMaximumBossCalls);
+            if (observedMechs == null) observedMechs = new List<MechanitorMechObservationState>();
             for (int i = 0; i < observedMechs.Count; i++)
             {
                 MechanitorMechObservationState existing = observedMechs[i];
+                if (existing == null) continue;
                 if (!string.Equals(existing.mechId, id, StringComparison.Ordinal)) continue;
                 existing.lastDisplayName = CleanText(mech.displayName);
                 existing.kindDefName = CleanId(mech.kindDefName);
                 if (existing.firstObservedTick <= 0)
-                    existing.firstObservedTick = StartTick(mech, currentTick);
+                    existing.firstObservedTick = StartTick(mech, currentTick, useRelationStartTick);
                 return existing;
             }
 
             int cap = NormalizeCap(maximumMechs, HardMaximumMechs, 64);
-            if (observedMechs.Count >= cap) return null;
+            while (observedMechs.Count >= cap)
+                if (!ReclaimOldestCompletedMech()) return null;
             MechanitorMechObservationState created = new MechanitorMechObservationState
             {
                 mechId = id,
                 lastDisplayName = CleanText(mech.displayName),
                 kindDefName = CleanId(mech.kindDefName),
-                firstObservedTick = StartTick(mech, currentTick)
+                firstObservedTick = StartTick(mech, currentTick, useRelationStartTick)
             };
             observedMechs.Add(created);
             return created;
@@ -203,14 +226,37 @@ namespace PawnDiary.Capture
                 row.bossDefName = boss;
                 row.bossKindDefName = CleanId(row.bossKindDefName);
                 row.bossLabel = CleanText(row.bossLabel);
+                row.bossPawnId = CleanId(row.bossPawnId);
                 row.calledTick = Math.Max(0, row.calledTick);
             }
             TrimOldest(bossCalls, NormalizeCap(maximumBossCalls, HardMaximumBossCalls, 16));
         }
 
-        private static int StartTick(MechanitorMechSnapshot mech, int currentTick)
+        private bool ReclaimOldestCompletedMech()
+        {
+            int selectedIndex = -1;
+            int selectedTick = int.MaxValue;
+            for (int i = 0; i < observedMechs.Count; i++)
+            {
+                MechanitorMechObservationState row = observedMechs[i];
+                if (row == null || !row.lossObserved) continue;
+                int tick = Math.Max(0, row.firstObservedTick);
+                if (selectedIndex >= 0 && tick >= selectedTick) continue;
+                selectedIndex = i;
+                selectedTick = tick;
+            }
+            if (selectedIndex < 0) return false;
+            observedMechs.RemoveAt(selectedIndex);
+            return true;
+        }
+
+        private static int StartTick(
+            MechanitorMechSnapshot mech,
+            int currentTick,
+            bool useRelationStartTick)
         {
             int now = Math.Max(0, currentTick);
+            if (!useRelationStartTick) return now;
             int relation = Math.Max(0, mech?.relationStartTick ?? 0);
             return relation > 0 && relation <= now ? relation : now;
         }
@@ -277,6 +323,112 @@ namespace PawnDiary.Capture
         {
             if (Contains(firstPawnDefNames, taleDefName)) return 1;
             return Contains(secondPawnDefNames, taleDefName) ? 2 : 0;
+        }
+
+        /// <summary>
+        /// Assigns a newly spawned boss pawn to the oldest matching unresolved call across all
+        /// controllers. Spawn order supplies the instance correlation that the later vanilla death
+        /// callback omits.
+        /// </summary>
+        public static MechanitorBossOwnershipCandidate AssignSpawnedBoss(
+            IList<MechanitorBossOwnershipCandidate> candidates,
+            string bossKindDefName,
+            string bossPawnId)
+        {
+            string kind = CleanToken(bossKindDefName);
+            string pawnId = CleanToken(bossPawnId);
+            if (candidates == null || kind.Length == 0 || pawnId.Length == 0) return null;
+
+            MechanitorBossOwnershipCandidate existing = FindExactBoss(
+                candidates, kind, pawnId, includeDefeated: true);
+            if (existing != null) return existing;
+
+            MechanitorBossOwnershipCandidate selected = null;
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                MechanitorBossOwnershipCandidate candidate = candidates[i];
+                MechanitorBossCallObservationState call = candidate?.call;
+                if (call == null || call.defeatedObserved
+                    || CleanToken(call.bossPawnId).Length > 0
+                    || !string.Equals(CleanToken(call.bossKindDefName), kind,
+                        StringComparison.OrdinalIgnoreCase)) continue;
+                if (selected == null || CompareBossCandidates(candidate, selected) < 0)
+                    selected = candidate;
+            }
+            if (selected != null) selected.call.bossPawnId = pawnId;
+            return selected;
+        }
+
+        /// <summary>
+        /// Resolves one exact spawned boss. A pre-field legacy save may fall back only when there is
+        /// exactly one unassigned matching call, so an ambiguous death never credits several callers.
+        /// </summary>
+        public static MechanitorBossOwnershipCandidate FindDefeatedBoss(
+            IList<MechanitorBossOwnershipCandidate> candidates,
+            string bossKindDefName,
+            string bossPawnId)
+        {
+            string kind = CleanToken(bossKindDefName);
+            string pawnId = CleanToken(bossPawnId);
+            if (candidates == null || kind.Length == 0 || pawnId.Length == 0) return null;
+            MechanitorBossOwnershipCandidate exact = FindExactBoss(
+                candidates, kind, pawnId, includeDefeated: false);
+            if (exact != null) return exact;
+
+            MechanitorBossOwnershipCandidate legacy = null;
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                MechanitorBossOwnershipCandidate candidate = candidates[i];
+                MechanitorBossCallObservationState call = candidate?.call;
+                if (call == null || call.defeatedObserved
+                    || CleanToken(call.bossPawnId).Length > 0
+                    || !string.Equals(CleanToken(call.bossKindDefName), kind,
+                        StringComparison.OrdinalIgnoreCase)) continue;
+                if (legacy != null) return null;
+                legacy = candidate;
+            }
+            if (legacy != null) legacy.call.bossPawnId = pawnId;
+            return legacy;
+        }
+
+        private static MechanitorBossOwnershipCandidate FindExactBoss(
+            IList<MechanitorBossOwnershipCandidate> candidates,
+            string kind,
+            string pawnId,
+            bool includeDefeated)
+        {
+            MechanitorBossOwnershipCandidate selected = null;
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                MechanitorBossOwnershipCandidate candidate = candidates[i];
+                MechanitorBossCallObservationState call = candidate?.call;
+                if (call == null || (!includeDefeated && call.defeatedObserved)
+                    || !string.Equals(CleanToken(call.bossKindDefName), kind,
+                        StringComparison.OrdinalIgnoreCase)
+                    || !string.Equals(CleanToken(call.bossPawnId), pawnId,
+                        StringComparison.Ordinal)) continue;
+                if (selected == null || CompareBossCandidates(candidate, selected) < 0)
+                    selected = candidate;
+            }
+            return selected;
+        }
+
+        private static int CompareBossCandidates(
+            MechanitorBossOwnershipCandidate left,
+            MechanitorBossOwnershipCandidate right)
+        {
+            int tick = Math.Max(0, left.call.calledTick).CompareTo(Math.Max(0, right.call.calledTick));
+            if (tick != 0) return tick;
+            int owner = string.Compare(CleanToken(left.ownerId), CleanToken(right.ownerId),
+                StringComparison.Ordinal);
+            if (owner != 0) return owner;
+            return string.Compare(CleanToken(left.call.bossDefName), CleanToken(right.call.bossDefName),
+                StringComparison.Ordinal);
+        }
+
+        private static string CleanToken(string value)
+        {
+            return (value ?? string.Empty).Trim();
         }
 
         private static bool Contains(IList<string> values, string candidate)

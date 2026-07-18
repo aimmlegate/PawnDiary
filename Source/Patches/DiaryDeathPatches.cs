@@ -21,14 +21,25 @@ namespace PawnDiary
         /// Harmony Prefix for Pawn.Kill. Captures death cause details for colonists before vanilla
         /// mutates death/corpse state and records the corresponding Tale.
         /// </summary>
-        public static void Prefix(Pawn __instance, DamageInfo? dinfo, Hediff exactCulprit)
+        public static void Prefix(
+            Pawn __instance,
+            DamageInfo? dinfo,
+            Hediff exactCulprit,
+            out bool __state)
         {
+            bool scopeStarted = false;
             DiaryPatchSafety.Run("PawnKillPatch.Prefix", () =>
             {
-                MechanitorDeathScope.Begin(__instance);
+                if (ModsConfig.BiotechActive && __instance?.mechanitor != null)
+                {
+                    MechanitorDeathScope.Begin(__instance);
+                    scopeStarted = true;
+                }
                 DeathContextCache.Capture(__instance, dinfo, exactCulprit);
-                DiaryGameComponent.Instance?.OnControlledMechDying(__instance);
+                if (ModsConfig.BiotechActive && __instance?.RaceProps?.IsMechanoid == true)
+                    DiaryGameComponent.Instance?.OnControlledMechDying(__instance);
             });
+            __state = scopeStarted;
         }
 
         /// <summary>
@@ -39,7 +50,6 @@ namespace PawnDiary
         {
             DiaryPatchSafety.Run("PawnKillPatch.Postfix", () =>
             {
-                MechanitorDeathScope.End(__instance);
                 // Pawn.Kill fires for every death — animals, raiders, mechs — but only a humanlike
                 // colonist can ever get a death page. Gate before building/submitting the signal so
                 // the common non-colonist kill does no allocation or bus work. The decider re-checks
@@ -55,9 +65,12 @@ namespace PawnDiary
         }
 
         /// <summary>Guarantees the death scope closes even if vanilla or another patch throws.</summary>
-        public static System.Exception Finalizer(Pawn __instance, System.Exception __exception)
+        public static System.Exception Finalizer(
+            Pawn __instance,
+            bool __state,
+            System.Exception __exception)
         {
-            MechanitorDeathScope.End(__instance);
+            if (__state) MechanitorDeathScope.End(__instance);
             return __exception;
         }
     }

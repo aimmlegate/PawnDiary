@@ -191,7 +191,8 @@ The Biotech RimTest suites now automate the real vanilla age-7/10/13 growth-lett
 recovery, delayed live-child naming, Full/Balanced/Compact prompt projection, live pre-cap admission,
 loaded RimTalk shared-memory injection, and DLC-off pending-row maintenance. The supplied all-DLC run
 passed the Biotech growth/prompt/pre-cap paths; RimTalk and DLC-off maintenance still need their
-matching profiles.
+matching profiles. The DLC-off fixture no longer skips young colonies: it temporarily uses zero
+recovery grace and fails loudly if the base-only profile is not in a loaded game.
 
 ### Acceptance record (2026-07-17)
 
@@ -346,7 +347,8 @@ verified Harmony registrations. The following live behavior remains explicitly T
 2. **Old-save baseline and settings.** Load an old Biotech mechanitor with one or more controlled mechs,
    wait through a progression scan, save/reload, and inspect the nested `mechanitorObservationState`.
    Existing control must silently consume both historical first flags, record bounded stable IDs and
-   relation tenure, and create no catch-up page even with the group disabled/re-enabled.
+   tenure beginning at the first Pawn Diary observation (not the older vanilla relation tick), and
+   create no catch-up page even with the group disabled/re-enabled.
 3. **Exact first lifecycle.** On a fresh pawn, install a mechlink and connect the first mech. Confirm one
    install and one first-controlled controller page. Add/reassign/disconnect later mechs and change
    bandwidth/control groups repeatedly; routine churn must stay silent. Remove the mechlink while
@@ -354,13 +356,17 @@ verified Harmony registrations. The following live behavior remains explicitly T
    no extra removal page.
 4. **Combat and loss ownership.** Let a currently controlled mech produce one configured combat Tale.
    Confirm one controller `BiotechFirstControlledMechCombat` page and no generic Tale duplicate; later
-   configured combat is silent. Kill a recent numerical mech such as “Lifter 1” (silent), a custom-
+   configured combat is silent. First produce a same-faction/friendly-fire Tale and confirm it neither
+   emits nor consumes the hostile first-combat milestone. Kill a recent numerical mech such as
+   “Lifter 1” (silent), a custom-
    named mech (one loss page), and an unnamed mech observed for the XML 15-day boundary (one loss page).
    Check exact death facts where available and verify the controller is never described as the attacker.
 5. **Boss chapter and reload.** Use the real boss caller, confirm one saved caller-owned call page, save
    before defeat, reload, then defeat that exact boss. Confirm one `BiotechBossDefeated` page says only
    that the called threat was defeated, never who landed the final blow. Repeated manager/Tale order and
-   a second reload must not duplicate either chapter; unrelated boss deaths must fail open.
+   a second reload must not duplicate either chapter; unrelated boss deaths must fail open. With two
+   controllers holding overlapping same-kind calls, spawn and defeat both bosses and confirm each exact
+   pawn ID resolves only its own caller.
 
 - [ ] **TODO:** Record RimWorld version, language, active mod list, old/fresh save fixtures, Phase-6
   RimTest results, all five live rows, cleanup audit, both DLC branches, and relevant `Player.log` lines.

@@ -25,8 +25,22 @@ namespace PawnDiary
             if (progression == null
                 || !DlcContext.TryCaptureMechanitorController(controller, out snapshot)) return;
             BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
-            MechanitorObservationState state = progression.EnsureBiotechState()
-                .EnsureMechanitorObservation();
+            // This hourly batch may contain many mechs. Initialize the narrow nested row directly and
+            // normalize it once at the XML cap before the loop; calling the general Ensure methods here
+            // would normalize the same list repeatedly before we even visit its members.
+            BiotechPawnProgressionState biotech = progression.biotechProgressionState;
+            if (biotech == null)
+            {
+                biotech = new BiotechPawnProgressionState();
+                progression.biotechProgressionState = biotech;
+            }
+            MechanitorObservationState state = biotech.mechanitorObservation;
+            if (state == null)
+            {
+                state = new MechanitorObservationState();
+                biotech.mechanitorObservation = state;
+            }
+            state.Normalize(policy.mechanitorMaximumObservedMechs, policy.mechanitorMaximumBossCalls);
             int tick = Find.TickManager.TicksGame;
             if (!state.IsInitialized())
             {
@@ -37,7 +51,6 @@ namespace PawnDiary
             state.mechlinkPresent = snapshot.hasMechlink;
             for (int i = 0; i < snapshot.overseenMechs.Count; i++)
                 state.ObserveMech(snapshot.overseenMechs[i], tick, policy.mechanitorMaximumObservedMechs);
-            state.Normalize(policy.mechanitorMaximumObservedMechs, policy.mechanitorMaximumBossCalls);
         }
 
         /// <summary>Records one exact successful mechlink installation.</summary>
@@ -130,9 +143,12 @@ namespace PawnDiary
             BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
             state.ObserveMech(mech, Find.TickManager.TicksGame, policy.mechanitorMaximumObservedMechs);
             if (state.firstControlledPageConsumed) return;
+            // Observation is truth, while page creation is optional output. Consume the exact first
+            // relation even when this pawn's generation toggle is currently disabled.
+            state.firstControlledPageConsumed = true;
 
             string context = MechanitorMechContext("first_controlled_mech", mech, 0, false);
-            bool emitted = EmitMechanitorProgression(
+            EmitMechanitorProgression(
                 call.controller,
                 MechanitorEventDefNames.FirstControlledMech,
                 "first_controlled_mech",
@@ -141,13 +157,12 @@ namespace PawnDiary
                     .Translate(call.controller.LabelShortCap, mech.displayName).Resolve(),
                 context,
                 "mechanitor-first-mech|" + call.controller.GetUniqueLoadID());
-            if (emitted) state.firstControlledPageConsumed = true;
         }
 
         /// <summary>
-        /// Claims the first configured combat Tale whose exact instigator is a currently controlled
-        /// mech. A successful controller page suppresses the ordinary Tale route; a disabled/failed
-        /// page fails open so generic ownership remains available.
+        /// Observes the first configured hostile combat Tale whose exact instigator is a currently
+        /// controlled mech. A successful controller page suppresses the ordinary Tale route; disabled
+        /// output still consumes the exact occurrence but fails open so generic ownership remains.
         /// </summary>
         internal bool TryHandleMechanitorCombatTale(Tale tale, TaleDef taleDef)
         {
@@ -165,11 +180,16 @@ namespace PawnDiary
             Pawn controller;
             MechanitorMechSnapshot snapshot;
             if (!DlcContext.TryCaptureControlledMech(mech, out controller, out snapshot)
-                || !snapshot.controlled || !IsDiaryEligible(controller)) return false;
+                || !snapshot.controlled || !IsDiaryEligible(controller)
+                || target == null || !target.HostileTo(controller)) return false;
 
             MechanitorObservationState state = MechanitorStateFor(controller, true);
             if (state == null || state.firstControlledCombatPageConsumed) return false;
             state.ObserveMech(snapshot, Find.TickManager.TicksGame, policy.mechanitorMaximumObservedMechs);
+            // As with first control, the exact hostile combat occurrence is consumed independently
+            // from optional output. The return value still controls whether generic Tale ownership
+            // should be suppressed for this invocation.
+            state.firstControlledCombatPageConsumed = true;
             string context = MechanitorMechContext("first_controlled_mech_combat", snapshot, 0, false)
                 + "; " + MechanitorContextKeys.CombatTale + "=" + taleDef.defName;
             if (target != null)
@@ -184,7 +204,6 @@ namespace PawnDiary
                     .Translate(controller.LabelShortCap, snapshot.displayName).Resolve(),
                 context,
                 "mechanitor-first-combat|" + controller.GetUniqueLoadID());
-            if (emitted) state.firstControlledCombatPageConsumed = true;
             return emitted;
         }
 
@@ -193,7 +212,8 @@ namespace PawnDiary
         {
             Pawn controller;
             MechanitorMechSnapshot snapshot;
-            if (!GamePlaying || !DlcContext.TryCaptureControlledMech(mech, out controller, out snapshot)
+            if (!GamePlaying || !ModsConfig.BiotechActive
+                || !DlcContext.TryCaptureControlledMech(mech, out controller, out snapshot)
                 || !snapshot.controlled || !IsDiaryEligible(controller)) return;
             MechanitorObservationState state = MechanitorStateFor(controller, true);
             if (state == null) return;
@@ -266,44 +286,68 @@ namespace PawnDiary
                     + row.bossgroupDefName + "|" + tick);
         }
 
+        /// <summary>Correlates an exact spawned boss pawn to one globally oldest pending call.</summary>
+        internal void OnMechanitorBossSpawned(Pawn bossPawn)
+        {
+            if (!GamePlaying || !ModsConfig.BiotechActive || bossPawn?.kindDef == null) return;
+            List<MechanitorBossOwnershipCandidate> candidates = BossOwnershipCandidates();
+            MechanitorLifecyclePolicy.AssignSpawnedBoss(
+                candidates,
+                bossPawn.kindDef.defName,
+                bossPawn.GetUniqueLoadID());
+        }
+
         /// <summary>
-        /// Applies a verified boss death to every exact unresolved caller row. The page states only
+        /// Applies a verified boss death to its exact spawned-pawn ownership row. The page states only
         /// that the called threat was defeated; it never invents who struck the final blow.
         /// </summary>
         internal void OnMechanitorBossDefeated(Pawn bossPawn)
         {
             if (!GamePlaying || !ModsConfig.BiotechActive || bossPawn?.kindDef == null || diaries == null)
                 return;
-            string kindDefName = bossPawn.kindDef.defName;
+            MechanitorBossOwnershipCandidate candidate = MechanitorLifecyclePolicy.FindDefeatedBoss(
+                BossOwnershipCandidates(),
+                bossPawn.kindDef.defName,
+                bossPawn.GetUniqueLoadID());
+            MechanitorBossCallObservationState row = candidate?.call;
+            if (row == null) return;
+            row.defeatedObserved = true;
+            Pawn caller = FindLivePawnByLoadId(candidate.ownerId);
+            if (!IsDiaryEligible(caller)) return;
+            EmitMechanitorProgression(
+                caller,
+                MechanitorEventDefNames.BossDefeated,
+                "boss_defeated",
+                "PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Label".Translate().Resolve(),
+                "PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Text"
+                    .Translate(caller.LabelShortCap, row.bossLabel).Resolve(),
+                BossContext("boss_defeated", row, called: true, defeated: true),
+                "mechanitor-boss-defeated|" + caller.GetUniqueLoadID() + "|"
+                    + row.bossDefName + "|" + row.calledTick);
+        }
+
+        private List<MechanitorBossOwnershipCandidate> BossOwnershipCandidates()
+        {
+            List<MechanitorBossOwnershipCandidate> candidates =
+                new List<MechanitorBossOwnershipCandidate>();
+            if (diaries == null) return candidates;
             for (int i = 0; i < diaries.Count; i++)
             {
                 PawnDiaryRecord diary = diaries[i];
-                MechanitorObservationState state = diary?.progressionState?.biotechProgressionState?
-                    .mechanitorObservation;
-                if (state?.bossCalls == null) continue;
-                // A killed boss resolves only the newest matching unresolved chapter for this
-                // controller. Older repeated calls cannot all claim one pawn death.
-                for (int j = state.bossCalls.Count - 1; j >= 0; j--)
+                List<MechanitorBossCallObservationState> calls = diary?.progressionState?
+                    .biotechProgressionState?.mechanitorObservation?.bossCalls;
+                if (calls == null) continue;
+                for (int j = 0; j < calls.Count; j++)
                 {
-                    MechanitorBossCallObservationState row = state.bossCalls[j];
-                    if (row == null || row.defeatedObserved || !string.Equals(
-                        row.bossKindDefName, kindDefName, StringComparison.OrdinalIgnoreCase)) continue;
-                    row.defeatedObserved = true;
-                    Pawn caller = FindLivePawnByLoadId(diary.pawnId);
-                    if (!IsDiaryEligible(caller)) break;
-                    EmitMechanitorProgression(
-                        caller,
-                        MechanitorEventDefNames.BossDefeated,
-                        "boss_defeated",
-                        "PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Label".Translate().Resolve(),
-                        "PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Text"
-                            .Translate(caller.LabelShortCap, row.bossLabel).Resolve(),
-                        BossContext("boss_defeated", row, called: true, defeated: true),
-                        "mechanitor-boss-defeated|" + caller.GetUniqueLoadID() + "|"
-                            + row.bossDefName + "|" + row.calledTick);
-                    break;
+                    if (calls[j] == null) continue;
+                    candidates.Add(new MechanitorBossOwnershipCandidate
+                    {
+                        ownerId = diary.pawnId ?? string.Empty,
+                        call = calls[j]
+                    });
                 }
             }
+            return candidates;
         }
 
         private MechanitorObservationState MechanitorStateFor(Pawn controller, bool create)

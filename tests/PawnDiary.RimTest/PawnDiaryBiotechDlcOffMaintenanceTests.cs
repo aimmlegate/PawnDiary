@@ -31,21 +31,13 @@ namespace PawnDiary.RimTests
                 Log.Message("[PawnDiary RimTest Biotech-off maintenance] not applicable (Biotech active).");
                 return;
             }
-            if (DiaryGameComponent.Instance == null || Find.TickManager == null)
-            {
-                Log.Message("[PawnDiary RimTest Biotech-off maintenance] skipped: load a base-only colony first.");
-                return;
-            }
+            PawnDiaryRimTestScope.Require(DiaryGameComponent.Instance != null && Find.TickManager != null,
+                "The Biotech-off profile must run in a loaded base-only colony.");
 
             BiotechPolicySnapshot policy = DiaryBiotechPolicy.Snapshot();
-            int requiredAge = Math.Max(policy.growthFallbackGraceTicks, policy.birthNamingGraceTicks) + 1;
             int now = Find.TickManager.TicksGame;
-            if (now <= requiredAge)
-            {
-                Log.Message("[PawnDiary RimTest Biotech-off maintenance] skipped: the loaded colony is only "
-                    + now + " ticks old; advance beyond " + requiredAge + " ticks.");
-                return;
-            }
+            int originalGrowthGrace = policy.growthFallbackGraceTicks;
+            int originalBirthGrace = policy.birthNamingGraceTicks;
 
             PawnDiaryRimTestScope scope = PawnDiaryRimTestScope.Begin(
                 "eventWindowBirthday",
@@ -60,6 +52,11 @@ namespace PawnDiary.RimTests
             Pawn child = null;
             try
             {
+                // The snapshot is process-shared and read-only by convention; the test temporarily sets
+                // both recovery windows to zero so a brand-new base-only colony exercises the assertions
+                // instead of silently skipping until enough game ticks have elapsed.
+                policy.growthFallbackGraceTicks = 0;
+                policy.birthNamingGraceTicks = 0;
                 growthPawn = scope.CreateAdultColonist();
                 birther = scope.CreateAdultColonist();
                 father = scope.CreateAdultColonist();
@@ -69,7 +66,7 @@ namespace PawnDiary.RimTests
                 scope.SpawnAsLiveColonist(father);
                 scope.SpawnAsLiveColonist(child);
 
-                int oldTick = now - requiredAge;
+                int oldTick = Math.Max(0, now);
                 string growthId = growthPawn.GetUniqueLoadID();
                 string arcId = FixturePrefix + child.GetUniqueLoadID();
                 List<PendingBiotechGrowthMoment> growthRows =
@@ -163,6 +160,8 @@ namespace PawnDiary.RimTests
             }
             finally
             {
+                policy.growthFallbackGraceTicks = originalGrowthGrace;
+                policy.birthNamingGraceTicks = originalBirthGrace;
                 CurrentGrowthRows(growthField, scope.Component).RemoveAll(
                     row => row?.familyArcId != null
                         && row.familyArcId.StartsWith(FixturePrefix, StringComparison.Ordinal));

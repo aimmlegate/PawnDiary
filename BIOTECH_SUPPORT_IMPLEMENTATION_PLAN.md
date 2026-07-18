@@ -1769,7 +1769,10 @@ routine gene recalculation stay silent.
 > Versioned per-controller state silently baselines existing mechlinks and Overseer relations; exact
 > mechlink, first relation, configured combat Tale, controlled-mech death, and boss manager hooks own
 > the seven canonical controller chapters. Custom-name/long-service loss salience, Tale instigator
-> roles, tenure, and bounded mech/boss rows are pure and XML-owned. The loaded suite remains TODO.
+> roles, tenure, and bounded mech/boss rows are pure and XML-owned. Review hardening makes milestone
+> observation independent from optional output, starts old-save tenure at observation, requires hostile
+> combat, recycles completed mech rows, correlates boss spawn load IDs across controllers, and balances
+> nested death scopes. The expanded loaded suite remains TODO.
 
 1. **Implemented:** add state/baseline and mechlink hooks.
 2. **Implemented:** observe first Overseer relation.

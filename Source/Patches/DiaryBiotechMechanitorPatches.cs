@@ -140,6 +140,23 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>Captures the exact pawn instance created for one previously accepted boss call.</summary>
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.SpawnSetup), new[] { typeof(Map), typeof(bool) })]
+    internal static class MechanitorBossSpawnedPatch
+    {
+        /// <summary>Type-narrows the spawn hot path before consulting saved boss-call ownership.</summary>
+        public static void Postfix(Pawn __instance, bool respawningAfterLoad)
+        {
+            // Existing bosses in an old save have no trustworthy call-to-instance mapping. Leave them
+            // unassigned so the death path can use its unique-only legacy fallback rather than guessing
+            // from map load order. A boss arriving after load uses the ordinary false path and is exact.
+            if (!ModsConfig.BiotechActive || respawningAfterLoad
+                || __instance?.RaceProps?.IsMechanoid != true) return;
+            DiaryPatchSafety.Run("MechanitorBossSpawnedPatch", () =>
+                DiaryGameComponent.Instance?.OnMechanitorBossSpawned(__instance));
+        }
+    }
+
     /// <summary>Confirms the boss pawn's defeat without claiming who delivered the final blow.</summary>
     [HarmonyPatch(typeof(GameComponent_Bossgroup), nameof(GameComponent_Bossgroup.Notify_PawnKilled))]
     internal static class MechanitorBossDefeatedPatch

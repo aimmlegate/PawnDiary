@@ -30,6 +30,7 @@ namespace PawnDiary.Capture
             Scribe_Values.Look(ref bossDefName, "bossDefName");
             Scribe_Values.Look(ref bossKindDefName, "bossKindDefName");
             Scribe_Values.Look(ref bossLabel, "bossLabel");
+            Scribe_Values.Look(ref bossPawnId, "bossPawnId");
             Scribe_Values.Look(ref calledTick, "calledTick", 0);
             Scribe_Values.Look(ref defeatedObserved, "defeatedObserved", false);
         }

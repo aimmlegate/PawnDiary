@@ -1,5 +1,15 @@
 # Changelog
 
+- **2026-07-18 — Closed the Phase-6 adversarial review and test gaps.** First control/combat truth now
+  advances even while output is disabled; combat requires a hostile target; old-save mech tenure begins
+  at Pawn Diary's observation instead of vanilla's older relation tick. Completed loss rows recycle at
+  the cap without evicting active ownership, repeated scans normalize once per controller, and the death
+  hot path type-narrows before mechanitor work while nested scope releases balance only in the finalizer.
+  Boss calls now save the exact spawned pawn ID, so overlapping same-kind calls resolve one controller;
+  ambiguous legacy deaths fail closed. Added pure cap/tenure/cross-controller regressions, real disabled-
+  output/friendly-fire/death-scope/patch RimTests, exact boss-ID Scribe coverage, young-colony DLC-off
+  execution, and RimTalk registry plus active-preset attachment assertions; rebuilt both committed DLLs.
+
 - **2026-07-18 — Implemented Biotech Phase 6 mechanitor lifecycle (live acceptance pending).** Added
   silent versioned old-save baselines and bounded per-controller mech tenure/boss-call state; exact
   mechlink install/removal, first Overseer relation, first configured controlled-mech combat, custom-
