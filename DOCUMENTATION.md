@@ -283,8 +283,9 @@ correlation keys are never prompt-template fields. The Royalty-package-gated exa
 event-prompt rows route all lifecycle pages through `SoloImportant`; English/Russian DefInjected and
 Keyed text plus four prompt-test fixtures cover formation, separation, recovery, and ending. The source
 attaches N3-R bond evidence only after page creation. A focused loaded fixture now drives real coding,
-late-visible silent adoption, `UnCode` context invalidation, and all six exact Harmony targets; its DLL
-build is not an in-game pass. The remaining Phase-2 exit-gate scenarios are listed in
+late-visible silent adoption across the production one-tick colonist-snapshot boundary, next-cadence
+separation inference, `UnCode` context invalidation, and all six exact Harmony targets; its DLL build
+is not an in-game pass. The remaining Phase-2 exit-gate scenarios are listed in
 `tests/SAVE_COMPATIBILITY_SMOKETEST.md`; title/psylink pages remain Phase 4.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,

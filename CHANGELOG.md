@@ -1,5 +1,11 @@
 # Changelog
 
+- **2026-07-18 — Repaired the Royalty loaded fixture's paused-tick simulation.** The late-visibility
+  test now clears the production one-tick free-colonist snapshot before simulating the next scheduled
+  reconciliation. Previously the pawn was spawned and reconciled in one paused tick, so the fixture
+  kept reading the legitimate pre-spawn cache and falsely reported that the historical bond was not
+  adopted. Failure output now includes the observed row phase, kill-consumption flag, and pawn ID.
+
 - **2026-07-18 — Fixed the loaded Royalty late-visibility acceptance failure.** Persona
   reconciliation no longer baselines a newly visible historical bond and immediately reuses that
   same first observation as not-primary separation evidence. The first sight now remains an active,

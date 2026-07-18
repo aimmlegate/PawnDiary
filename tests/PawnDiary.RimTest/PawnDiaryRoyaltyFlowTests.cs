@@ -18,10 +18,13 @@ namespace PawnDiary.RimTests
     public static class PawnDiaryRoyaltyFlowTests
     {
         private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+        private const BindingFlags PrivateStatic = BindingFlags.Static | BindingFlags.NonPublic;
         private static readonly FieldInfo PersonaBondsField =
             typeof(DiaryGameComponent).GetField("royaltyPersonaBonds", PrivateInstance);
         private static readonly MethodInfo ReconcileMethod =
             typeof(DiaryGameComponent).GetMethod("ReconcileRoyaltyPersonaBonds", PrivateInstance);
+        private static readonly MethodInfo ResetFreeColonistSnapshotMethod =
+            typeof(DiaryGameComponent).GetMethod("ResetFreeColonistSnapshot", PrivateStatic);
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
@@ -76,13 +79,24 @@ namespace PawnDiary.RimTests
 
             string weaponId = weapon.GetUniqueLoadID();
             RemovePersonaRows(weaponId, pawn.GetUniqueLoadID());
-            scope.RequireNoNewEvent(() => ReconcileMethod?.Invoke(scope.Component, null));
+            PawnDiaryRimTestScope.Require(ReconcileMethod != null
+                    && ResetFreeColonistSnapshotMethod != null,
+                "Could not resolve the exact reconciliation/cache-reset fixture seams.");
+            scope.RequireNoNewEvent(() =>
+            {
+                // The test runner is paused, so spawning the pawn and reconciling happen in one game
+                // tick. Production intentionally caches free colonists for that tick; clear the
+                // pre-spawn snapshot to model the next scheduled observation after a caravan/map load.
+                ResetFreeColonistSnapshotMethod.Invoke(null, null);
+                ReconcileMethod.Invoke(scope.Component, null);
+            });
             PersonaBondState adopted = PersonaRows().SingleOrDefault(row =>
                 row != null && row.weaponThingId == weaponId);
             PawnDiaryRimTestScope.Require(adopted != null
                     && adopted.phaseToken == PersonaBondPhaseTokens.Active
                     && adopted.firstConsequentialKillObserved,
-                "Late-visible historical persona bond was not silently adopted as a consumed baseline.");
+                "Late-visible historical persona bond was not silently adopted as a consumed baseline; "
+                    + Describe(adopted) + ".");
 
             scope.RequireNoNewEvent(() => ReconcileMethod?.Invoke(scope.Component, null));
             adopted = PersonaRows().SingleOrDefault(row =>
@@ -178,6 +192,15 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(rows != null,
                 "Could not read DiaryGameComponent.royaltyPersonaBonds for fixture cleanup/assertion.");
             return rows;
+        }
+
+        private static string Describe(PersonaBondState state)
+        {
+            return state == null
+                ? "row=missing"
+                : "phase=" + (state.phaseToken ?? "<null>")
+                    + ", firstKillConsumed=" + state.firstConsequentialKillObserved
+                    + ", pawnId=" + (state.currentPawnId ?? "<null>");
         }
 
         private static void RemovePersonaRows(string weaponId, string pawnId)
