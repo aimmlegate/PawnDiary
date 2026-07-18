@@ -1,5 +1,9 @@
 # Changelog
 
+- **2026-07-18 — Corrected the loaded mechanitor combat regression fixture.** The real RimWorld 1.6
+  `KilledMelee` Tale requires killer, victim, and weapon arguments; the adversarial friendly/hostile
+  combat RimTest now supplies the base-game club Def instead of failing during Tale construction.
+
 - **2026-07-18 — Closed the Phase-6 adversarial review and test gaps.** First control/combat truth now
   advances even while output is disabled; combat requires a hostile target; old-save mech tenure begins
   at Pawn Diary's observation instead of vanilla's older relation tick. Completed loss rows recycle at

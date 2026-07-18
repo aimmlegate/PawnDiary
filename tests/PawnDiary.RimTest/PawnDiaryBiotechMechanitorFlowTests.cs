@@ -93,6 +93,9 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(hostileFaction != null,
                 "The loaded Biotech test colony has no faction hostile to the player.");
             Pawn hostileTarget = scope.CreateTrackedPawn(PawnKindDefOf.Colonist, hostileFaction);
+            ThingDef meleeWeapon = DefDatabase<ThingDef>.GetNamedSilentFail("MeleeWeapon_Club");
+            PawnDiaryRimTestScope.Require(meleeWeapon != null,
+                "The base-game club ThingDef required by KilledMelee is unavailable.");
             Hediff mechlink = HediffMaker.MakeHediff(HediffDefOf.MechlinkImplant, controller);
             controller.health.AddHediff(mechlink);
 
@@ -105,13 +108,25 @@ namespace PawnDiary.RimTests
 
             Tale friendlyTale = null;
             scope.RegisterCleanup(() => RemoveRecordedTale(friendlyTale));
-            friendlyTale = TaleRecorder.RecordTale(TaleDefOf.KilledMelee, mech, friendlyTarget);
+            friendlyTale = TaleRecorder.RecordTale(
+                TaleDefOf.KilledMelee,
+                mech,
+                friendlyTarget,
+                meleeWeapon);
+            PawnDiaryRimTestScope.Require(friendlyTale != null,
+                "RimWorld did not construct the friendly KilledMelee Tale fixture.");
             PawnDiaryRimTestScope.Require(!state.firstControlledCombatPageConsumed,
                 "A same-faction mech kill consumed the hostile first-combat milestone.");
 
             Tale hostileTale = null;
             scope.RegisterCleanup(() => RemoveRecordedTale(hostileTale));
-            hostileTale = TaleRecorder.RecordTale(TaleDefOf.KilledMelee, mech, hostileTarget);
+            hostileTale = TaleRecorder.RecordTale(
+                TaleDefOf.KilledMelee,
+                mech,
+                hostileTarget,
+                meleeWeapon);
+            PawnDiaryRimTestScope.Require(hostileTale != null,
+                "RimWorld did not construct the hostile KilledMelee Tale fixture.");
             PawnDiaryRimTestScope.Require(state.firstControlledCombatPageConsumed,
                 "The exact hostile first-combat Tale was not consumed while output was disabled.");
         }
