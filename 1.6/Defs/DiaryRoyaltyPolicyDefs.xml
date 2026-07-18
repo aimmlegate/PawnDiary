@@ -34,13 +34,6 @@
          through Tale death metadata; these rows never infer a role from list position. -->
     <qualifyingTales>
       <li>
-        <taleDefName>KilledMan</taleDefName>
-        <killerRoleToken>initiator</killerRoleToken>
-        <victimRoleToken>recipient</victimRoleToken>
-        <minimumSignificance>1</minimumSignificance>
-        <requireVictimDeath>true</requireVictimDeath>
-      </li>
-      <li>
         <taleDefName>KilledMajorThreat</taleDefName>
         <killerRoleToken>initiator</killerRoleToken>
         <victimRoleToken>recipient</victimRoleToken>
@@ -48,6 +41,20 @@
         <requireVictimDeath>true</requireVictimDeath>
       </li>
     </qualifyingTales>
+
+    <!-- Ordinary double-pawn Tales which vanilla may record in the same Pawn.Kill call before or
+         after KilledMajorThreat. They are staged only inside that exact call and released unchanged
+         unless the milestone is accepted, so ordinary kills and disabled output keep vanilla flow. -->
+    <personaKillCompanionTales>
+      <li><taleDefName>KilledChild</taleDefName><killerRoleToken>initiator</killerRoleToken><victimRoleToken>recipient</victimRoleToken></li>
+      <li><taleDefName>KilledColonist</taleDefName><killerRoleToken>initiator</killerRoleToken><victimRoleToken>recipient</victimRoleToken></li>
+      <li><taleDefName>KilledColonyAnimal</taleDefName><killerRoleToken>initiator</killerRoleToken><victimRoleToken>recipient</victimRoleToken></li>
+      <li><taleDefName>KilledMortar</taleDefName><killerRoleToken>initiator</killerRoleToken><victimRoleToken>recipient</victimRoleToken></li>
+      <li><taleDefName>KilledLongRange</taleDefName><killerRoleToken>initiator</killerRoleToken><victimRoleToken>recipient</victimRoleToken></li>
+      <li><taleDefName>KilledMelee</taleDefName><killerRoleToken>initiator</killerRoleToken><victimRoleToken>recipient</victimRoleToken></li>
+      <li><taleDefName>DefeatedHostileFactionLeader</taleDefName><killerRoleToken>initiator</killerRoleToken><victimRoleToken>recipient</victimRoleToken></li>
+      <li><taleDefName>KilledCapacity</taleDefName><killerRoleToken>initiator</killerRoleToken><victimRoleToken>recipient</victimRoleToken></li>
+    </personaKillCompanionTales>
 
     <!-- Worker mappings and exact mod compatibility overrides are intentionally empty until an
          installed structural worker or mod requires an explicit, reviewed mapping. -->

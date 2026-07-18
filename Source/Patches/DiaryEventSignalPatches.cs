@@ -44,7 +44,8 @@ namespace PawnDiary
                 }
 
                 TaleSignal signal = new TaleSignal(__result, def);
-                if (!BiotechBirthCorrelation.TryStageMatureSignal(def.defName, signal))
+                if (!BiotechBirthCorrelation.TryStageMatureSignal(def.defName, signal)
+                    && !signal.TryStageAsPersonaKillCompanion())
                 {
                     DiaryEvents.Submit(signal);
                 }

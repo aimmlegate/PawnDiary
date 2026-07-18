@@ -67,7 +67,9 @@ namespace PawnDiary
         /// </summary>
         public static bool TryCapturePersonaKillThoughtDefNames(Pawn pawn, out List<string> thoughtDefNames)
         {
-            thoughtDefNames = new List<string>();
+            // Keep the no-Royalty/no-equipment hot path allocation-free. Pawn.Kill calls this
+            // unconditionally so the DLC gate must precede construction of the result list.
+            thoughtDefNames = null;
             if (!ModsConfig.RoyaltyActive || pawn?.equipment == null) return false;
             ThingWithComps weapon = pawn.equipment.bondedWeapon as ThingWithComps;
             PersonaWeaponSnapshot captured;
@@ -76,6 +78,7 @@ namespace PawnDiary
                 || !string.Equals(captured.codedPawnId, pawn.GetUniqueLoadID(), StringComparison.Ordinal))
                 return false;
 
+            thoughtDefNames = new List<string>();
             CompBladelinkWeapon comp = weapon.TryGetComp<CompBladelinkWeapon>();
             List<WeaponTraitDef> traits = comp?.TraitsListForReading;
             HashSet<string> unique = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

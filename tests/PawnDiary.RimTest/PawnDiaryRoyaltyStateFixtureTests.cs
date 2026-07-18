@@ -45,6 +45,7 @@ namespace PawnDiary.RimTests
                 bondStartedTick = 100,
                 pendingSeparationTick = 200,
                 firstConsequentialKillObserved = true,
+                firstConsequentialKillEventRecorded = true,
                 lastPrimaryObservedTick = 150,
                 traits = new List<PersonaTraitState>
                 {
@@ -65,9 +66,24 @@ namespace PawnDiary.RimTests
             Require(loaded.phaseToken == PersonaBondPhaseTokens.SeparationPending
                     && loaded.pendingSeparationTick == 200,
                 "persona pending-separation state did not survive Scribe.");
-            Require(loaded.firstConsequentialKillObserved && loaded.traits?.Count == 1
+            Require(loaded.firstConsequentialKillObserved
+                    && loaded.firstConsequentialKillEventRecorded
+                    && loaded.traits?.Count == 1
                     && loaded.traits[0].hasBondedThought,
                 "persona milestone/trait facts did not survive Scribe normalization.");
+
+            PersonaBondState consumedWithoutPage = ScribeRoundTrip(new PersonaBondState
+            {
+                weaponThingId = "Weapon_RoyaltyDisabledFixture",
+                bondEpoch = 1,
+                currentPawnId = "Pawn_RoyaltyFixture",
+                phaseToken = PersonaBondPhaseTokens.Active,
+                firstConsequentialKillObserved = true,
+                firstConsequentialKillEventRecorded = false
+            });
+            Require(consumedWithoutPage.firstConsequentialKillObserved
+                    && !consumedWithoutPage.firstConsequentialKillEventRecorded,
+                "Scribe collapsed the observed-without-page milestone distinction.");
         }
 
         /// <summary>Per-pawn title rows are additive; a missing old-save row remains version zero.</summary>

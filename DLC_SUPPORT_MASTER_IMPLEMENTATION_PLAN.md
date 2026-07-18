@@ -298,11 +298,15 @@ Do not add seasonal flooding, life support, or Mechhive choices in this wave.
 > provider validation; package-gated groups, prompts, localization, prompt fixtures, and N3-R evidence
 > attachment. Vanilla bonded persona thoughts are situational. Phase 3 instead verifies exact
 > persona-trait `killThought` memories, gives the first qualifying Tale one canonical solo killer page,
-> consumes first-kill truth independently from page acceptance, and enriches the existing wielder-death
-> page from a pre-`UnCode` snapshot. The pure suites pass 226 Royalty, 125 Narrative Continuity, 665
-> capture, and 2,265 pipeline assertions. The Phase-2 automated loaded suite is user-confirmed green;
-> its manual matrix remains open. Focused Phase-3 real-kill/death RimTests compile but have not yet run
-> in game. Royalty Phase 4 remains, so the R1 release gate and Wave 5 completion are not claimed.
+> consumes first-kill truth independently from page acceptance, owns exact same-call ordinary combat
+> Tales without stealing victim death, and enriches the existing wielder-death page from a pre-`UnCode`
+> snapshot even when the live coded weapon is non-primary. Kill-signal buffers are bounded, one-shot,
+> and fail open; save normalization preserves the observed/recorded distinction. The pure suites pass
+> 245 Royalty, 125 Narrative Continuity, 665 capture, and 2,290 pipeline assertions. The Phase-2
+> automated loaded suite is user-confirmed green; its manual matrix remains open. The first Phase-3
+> loaded run reached 240/241 and exposed a pre-dead Tale timing gate; the exact `Pawn.Kill`-scope fix
+> plus expanded adversarial fixtures now await a clean rerun. Royalty Phase 4 remains, so the R1
+> release gate and Wave 5 completion are not claimed.
 
 ### Implement in this exact order
 

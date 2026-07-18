@@ -1,5 +1,29 @@
 # Changelog
 
+- **2026-07-18 — Hardened Royalty Phase 3 after a consolidated adversarial review.** Vanilla's real
+  `KilledMajorThreat` path can also record an ordinary melee/ranged/capacity combat Tale in the same
+  `Pawn.Kill`; those eight exact double-pawn companion Tale shapes are now XML-owned, staged only in
+  that matching kill call, claimed by an accepted canonical milestone, and released unchanged when
+  the milestone is disabled/rejected. The nonexistent vanilla `KilledMan` policy row was removed.
+  Persona kill-Thought correlation is now lossless and one-shot: it de-duplicates exact Def signals,
+  fails open at its defensive 128-signal cap, carries only still-missing expected Defs while the
+  60-tick active scope remains open, consumes each once, and failure-isolates every fallback submission.
+  Wielder death now retains a still-coded live separated/non-primary bond; saved `recorded=true`
+  repairs the implied `observed=true` invariant; no-Royalty kills avoid a needless list allocation;
+  and the prompt fixture now mirrors the real Tale class/source label. Pure coverage is 245 Royalty
+  and 2,290 pipeline assertions. RimTests now exercise delayed Tale flush, a same-tick second kill,
+  disabled-output fallback, non-primary wielder death, and both save-flag states; they compile, with a
+  fresh loaded run still pending.
+  The developer prompt fixture now uses the same `tale; label; taleClass` ordering and capitalization
+  as production context output; neutral death templates document why trait meanings remain omitted.
+
+- **2026-07-18 — Fixed the first loaded Royalty Phase-3 milestone failure.** The supplied loaded run
+  passed 240/241 tests and exposed that vanilla records `KilledMajorThreat` inside
+  `Pawn.DoKillSideEffects`, before `Pawn.Kill` reaches `health.SetDead()`. Persona qualification now
+  treats the already-matched, balanced `Pawn.Kill` scope as the death proof at that pre-dead Tale
+  callback instead of reading the necessarily-false later pawn state. The existing real
+  major-threat RimTest remains the regression; a fresh loaded rerun is pending.
+
 - **2026-07-18 — Implemented Master Wave 5 / Royalty Phase 3 persona combat and death integration.**
   The first configured qualifying Tale now becomes one canonical solo killer-POV
   `PersonaWeaponFirstConsequentialKill` page only when the exact coded persona weapon is the killer's

@@ -292,24 +292,46 @@ Phase 3 integrates persona combat through existing owners instead of adding a pa
 The `Pawn.Kill` prefix opens a short-lived exact death scope while the pawn/weapon relationship still
 exists. `TaleSignal` accepts a milestone only when the configured Tale rule supplies distinct known
 killer/victim roles, the Tale victim matches that scope, and the killer's current primary is the exact
-coded weapon. The first qualifying truth is saved as observed even when `personaWeaponMilestone` is
-disabled or page creation is rejected, so re-enabling cannot retell a later kill as the first. An
+coded weapon. The shipped qualifier is the verified vanilla `KilledMajorThreat`; `KilledMan` is not a
+RimWorld 1.6 Tale and is deliberately absent. Vanilla records `KilledMajorThreat` during
+`Pawn.DoKillSideEffects`, before
+`health.SetDead()`, so that matched balanced scope—not the still-false `victim.Dead` property—is the
+death proof at Tale capture time. The first qualifying truth is saved as observed even when
+`personaWeaponMilestone` is disabled or page creation is rejected, so re-enabling cannot retell a
+later kill as the first. Save normalization also treats a recorded page as proof that observation
+occurred while preserving the valid observed-without-page state. An
 accepted milestone relabels that one existing Tale as `PersonaWeaponFirstConsequentialKill`, forces
 one solo killer POV, preserves `tale=` plus `tale_source_def`, source label, and role markers, and sets
 the separate durable-page flag only after repository insertion. It does not add `persona_weapon=`, so
 the event remains Tale-owned and existing victim death routing/dedup stays intact.
 
+Vanilla may record an ordinary melee, ranged, mortar, child/colonist/animal, faction-leader, or
+capacity Tale around the major-threat Tale in that same call. XML lists those eight exact
+initiator-killer/recipient-victim companions. They stage only after their roles match the same active
+scope: an accepted milestone owns them, while an unclaimed scope releases them in order to ordinary
+Tale batching. `KilledBy` remains outside that list so the victim's existing death route is never
+stolen. Defensive companion overflow fails open rather than losing a Tale.
+
 The same prefix copies exact `killThought` Def names only from structural traits on the current coded
-primary weapon. Thought callbacks are staged against the active scope or the bounded XML-owned
-`60`-tick inverse-order window; the durable milestone claims only its exact pawn/Def signals. Closing
-the scope releases every unclaimed signal exactly once through ordinary Thought capture. This makes
-disabled/rejected milestones fail open without duplicating a claimed Thought. For a bonded wielder's
-own death, `DeathContextCache` captures weapon, bond, and bounded trait facts before vanilla `UnCode`
-and appends them to whichever existing Tale/fallback death description wins. Pawn death therefore
+primary weapon. Exact pawn/Def callbacks stage once in the active scope. A durable milestone discards
+already-staged signals and carries only still-missing expected Defs while that exact scope remains
+open, so either Tale/Thought callback order is handled synchronously. The transient buffer is bounded
+to 128 unique Defs, de-duplicates repeats, and fails open on overflow. Once `Pawn.Kill` closes, the
+Thought callback has no victim identity, so unmatched late memories deliberately follow the ordinary
+path rather than a killer-wide recent-owner suppression. Closing an unclaimed scope releases each
+Thought and companion Tale through its own failure-isolated ordinary submission. This makes
+disabled/rejected milestones lossless without duplicating claimed signals.
+
+For a bonded wielder's own death, `DeathContextCache` captures weapon, bond, and bounded trait facts
+before vanilla `UnCode` and appends them to whichever existing Tale/fallback death description wins.
+The exact live coded bond remains eligible when separation is pending/separated and the weapon is no
+longer primary; primary status is a kill-milestone rule, not a death-ending rule. Pawn death therefore
 produces no standalone `PersonaWeaponBondEnded` page. All live Royalty reads remain double-guarded in
-`DlcContext`, policy XML contains only string Def names/primitive roles, and a no-Royalty game follows
-the unchanged Tale/Thought/death paths. The focused real major-threat/repeat and wielder-death loaded
-fixtures compile; their in-game run and the Phase-3 manual matrix are still pending.
+`DlcContext`, and the kill hot path gates Royalty before allocating its Thought-name list. Policy XML
+contains only string Def names/primitive roles, so a no-Royalty game follows the unchanged
+Tale/Thought/death paths. Pure suites pass 245 Royalty and 2,290 pipeline assertions; the expanded
+RimTests compile. The first loaded run's 240/241 timing failure is fixed, but the new focused loaded
+rerun and Phase-3 manual matrix remain pending.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13
@@ -2350,6 +2372,16 @@ Before touching save keys, read:
 Do not rename historical flat POV keys such as `initiator*`, `recipient*`, or `neutral*`. Do not
 rename `maxActiveDiaryEvents`; the meaning changed to per-pawn hot refs, but the saved key remains
 the compatibility bridge.
+
+Royalty Phase-3 `gameContext` markers are also a frozen soft contract for prompt selection and diary
+decorations, including events already saved before an update. Keep the marker names and separators
+stable: `persona_milestone`, `tale_source_def`, `tale_source_label`, `tale_killer_role`,
+`tale_victim_role`, `persona_weapon_id`, `persona_weapon_def`, `persona_weapon_name`,
+`bond_epoch`, `bond_previous_state`, `bond_new_state`, `bond_end_cause`, and the indexed
+`persona_trait_<n>` / `persona_trait_description_<n>` keys. The separate Phase-2 standalone pages
+may emit `persona_weapon=`; Phase-3 Tale/death pages intentionally do not. Adding a marker is
+additive, but renaming/removing one requires a migration or compatibility handling in every parser
+and template that consumes it.
 
 ### 9b. Post-load repair, and where it is tested
 

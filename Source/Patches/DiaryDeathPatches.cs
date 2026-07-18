@@ -35,16 +35,36 @@ namespace PawnDiary
             Hediff exactCulprit,
             out KillPatchState __state)
         {
-            KillPatchState state = new KillPatchState();
+            // Pawn.Kill also covers animal/raider/mech deaths that can never produce a diary death
+            // page. Avoid allocating the state and capture closure for those common no-op calls,
+            // while retaining the Royalty candidate path for a colonist persona wielder killing a
+            // non-humanlike target (the qualifying major-threat Tale is emitted before SetDead).
+            Pawn killer = dinfo.HasValue ? dinfo.Value.Instigator as Pawn : null;
+            bool humanlikeColonist = __instance?.RaceProps?.Humanlike == true && __instance.IsColonist;
+            bool mechanoidVictim = ModsConfig.BiotechActive
+                && __instance?.RaceProps?.IsMechanoid == true;
+            bool personaCandidate = ModsConfig.RoyaltyActive
+                && killer?.equipment?.bondedWeapon is ThingWithComps;
+            if (!humanlikeColonist && !mechanoidVictim && !personaCandidate)
+            {
+                __state = null;
+                return;
+            }
+
+            // A mechanoid victim still needs the notification below, but it does not use a scope
+            // state; allocate one only when a colonist death or persona correlation can close it.
+            KillPatchState state = humanlikeColonist || personaCandidate
+                ? new KillPatchState()
+                : null;
             DiaryPatchSafety.Run("PawnKillPatch.Prefix", () =>
             {
-                if (ModsConfig.BiotechActive && __instance?.mechanitor != null)
+                if (humanlikeColonist && ModsConfig.BiotechActive && __instance?.mechanitor != null)
                 {
                     MechanitorDeathScope.Begin(__instance);
                     state.mechanitorScopeStarted = true;
                 }
-                DeathContextCache.Capture(__instance, dinfo, exactCulprit);
-                Pawn killer = dinfo.HasValue ? dinfo.Value.Instigator as Pawn : null;
+                if (humanlikeColonist)
+                    DeathContextCache.Capture(__instance, dinfo, exactCulprit);
                 List<string> killThoughtDefNames;
                 if (DlcContext.TryCapturePersonaKillThoughtDefNames(killer, out killThoughtDefNames))
                 {
@@ -73,8 +93,8 @@ namespace PawnDiary
                 // Pawn.Kill fires for every death — animals, raiders, mechs — but only a humanlike
                 // colonist can ever get a death page. Gate before building/submitting the signal so
                 // the common non-colonist kill does no allocation or bus work. The decider re-checks
-                // eligibility, so this is a fast pre-filter, not the authority. (Capture in the Prefix
-                // is left unconditional: it is cheap and only read back for an eligible pawn.)
+                // eligibility, so this is a fast pre-filter, not the authority. The Prefix already
+                // avoids the death snapshot for non-colonists while retaining mech/persona hooks.
                 if (!DiaryGameComponent.IsDeathDescriptionEligible(__instance))
                 {
                     return;

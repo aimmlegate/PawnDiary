@@ -12,6 +12,7 @@
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContracts.cs" Link="NarrativeContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyaltyContracts.cs" Link="RoyaltyContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\PersonaLifecyclePolicy.cs" Link="PersonaLifecyclePolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\PersonaKillCorrelationPolicy.cs" Link="PersonaKillCorrelationPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\PersonaThoughtOwnershipPolicy.cs" Link="PersonaThoughtOwnershipPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\PersonaWeaponContextFormatter.cs" Link="PersonaWeaponContextFormatter.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\PersonaMilestoneContextFormatter.cs" Link="PersonaMilestoneContextFormatter.cs" />

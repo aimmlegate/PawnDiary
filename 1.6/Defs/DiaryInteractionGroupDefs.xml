@@ -1111,7 +1111,6 @@
       <li>KilledBy</li>
     </deathVictimInitiatorDefNames>
     <deathVictimRecipientDefNames>
-      <li>KilledMan</li>
       <li>KilledCapacity</li>
       <li>KilledLongRange</li>
       <li>KilledMajorThreat</li>

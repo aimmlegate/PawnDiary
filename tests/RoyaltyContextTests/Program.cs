@@ -18,6 +18,7 @@ namespace RoyaltyContextTests
             TestSeparationRecoveryMatrix();
             TestEndingTransferAndDisabledMatrix();
             TestLifecycleContextVisibilityAndReservedThoughtOwnership();
+            TestPersonaKillCorrelationBufferPolicy();
             TestTraitStructuralRankingOrderingAndCaps();
             TestTraitSanitizationOverridesAndMalformedRows();
             TestMilestoneQualificationAndOwnership();
@@ -91,13 +92,20 @@ namespace RoyaltyContextTests
             AssertEqual("fallback separation", 60000, policy.separationThresholdTicks);
             AssertEqual("fallback reconciliation", 2500, policy.reconciliationCadenceTicks);
             AssertEqual("fallback trait cap", 2, policy.maximumSelectedTraits);
-            AssertEqual("fallback Tale rows", 2, policy.qualifyingTales.Count);
-            AssertEqual("fallback first Tale", "KilledMan", policy.qualifyingTales[0].taleDefName);
+            AssertEqual("fallback Tale rows", 1, policy.qualifyingTales.Count);
+            AssertEqual("fallback first Tale", "KilledMajorThreat", policy.qualifyingTales[0].taleDefName);
             AssertEqual("fallback killer role", RoyaltyTaleRoleTokens.Initiator,
                 policy.qualifyingTales[0].killerRoleToken);
             AssertEqual("fallback victim role", RoyaltyTaleRoleTokens.Recipient,
                 policy.qualifyingTales[0].victimRoleToken);
             AssertEqual("fallback kill-thought correlation", 60, policy.killThoughtCorrelationTicks);
+            AssertEqual("fallback companion Tale rows", 8, policy.personaKillCompanionTales.Count);
+            AssertEqual("fallback companion Tale", "KilledMelee",
+                policy.personaKillCompanionTales[5].taleDefName);
+            AssertEqual("fallback companion killer role", RoyaltyTaleRoleTokens.Initiator,
+                policy.personaKillCompanionTales[5].killerRoleToken);
+            AssertEqual("fallback companion victim role", RoyaltyTaleRoleTokens.Recipient,
+                policy.personaKillCompanionTales[5].victimRoleToken);
 
             policy.separationThresholdTicks = -10;
             PersonaBondStateSnapshot state = ActiveState();
@@ -181,6 +189,28 @@ namespace RoyaltyContextTests
                 deathContext.Contains("bond_end_cause=pawn_death"));
             AssertTrue("wielder death omits standalone persona marker",
                 !deathContext.Contains("persona_weapon="));
+        }
+
+        private static void TestPersonaKillCorrelationBufferPolicy()
+        {
+            AssertEqual("new exact signal stages", PersonaKillSignalAction.Stage,
+                PersonaKillCorrelationPolicy.Decide(false, false, 0, 1));
+            AssertEqual("duplicate exact signal suppresses", PersonaKillSignalAction.Suppress,
+                PersonaKillCorrelationPolicy.Decide(false, true, 0, 1));
+            AssertEqual("claimed exact signal suppresses", PersonaKillSignalAction.Suppress,
+                PersonaKillCorrelationPolicy.Decide(true, false, 0, 1));
+            AssertEqual("full bounded buffer fails open", PersonaKillSignalAction.PassThrough,
+                PersonaKillCorrelationPolicy.Decide(false, false, 1, 1));
+            AssertTrue("kill scope remains live at its opening tick",
+                !PersonaKillCorrelationPolicy.IsExpired(100, 100, 60));
+            AssertTrue("kill scope remains live at its inclusive expiry boundary",
+                !PersonaKillCorrelationPolicy.IsExpired(100, 160, 60));
+            AssertTrue("kill scope expires after its elapsed window",
+                PersonaKillCorrelationPolicy.IsExpired(100, 161, 60));
+            AssertTrue("backwards tick invalidates kill scope",
+                PersonaKillCorrelationPolicy.IsExpired(100, 99, 60));
+            AssertTrue("non-positive correlation uses one-tick minimum",
+                PersonaKillCorrelationPolicy.IsExpired(100, 102, 0));
         }
 
         private static void TestFormationAndBaselineMatrix()
@@ -271,6 +301,11 @@ namespace RoyaltyContextTests
             AssertEqual("nonpending clears pending tick", -1, repaired.pendingSeparationTick);
             AssertEqual("nonended clears ending tick", -1, repaired.endedTick);
             AssertEqual("nonended clears cause", PersonaEndCauseTokens.None, repaired.endCauseToken);
+            malformed.firstConsequentialKillObserved = false;
+            malformed.firstConsequentialKillEventRecorded = true;
+            repaired = RoyaltyStatePersistence.NormalizePersona(malformed, 2);
+            AssertTrue("recorded milestone repairs observed invariant",
+                repaired.firstConsequentialKillObserved);
 
             PersonaBondStateSnapshot older = ActiveState();
             older.weaponThingId = "Weapon_Duplicate";
@@ -579,6 +614,8 @@ namespace RoyaltyContextTests
             AssertTrue("minimum significance boundary", !PersonaMilestonePolicy.Evaluate(input, policy).qualifies);
             input = Milestone(); input.victimPresent = false;
             AssertTrue("missing victim fails closed", !PersonaMilestonePolicy.Evaluate(input, policy).qualifies);
+            input = Milestone(); input.victimDied = false;
+            AssertTrue("surviving victim fails closed", !PersonaMilestonePolicy.Evaluate(input, policy).qualifies);
             input = Milestone(); input.resolvedKillerRoleToken = string.Empty;
             AssertTrue("ambiguous killer role fails closed", !PersonaMilestonePolicy.Evaluate(input, policy).qualifies);
             input = Milestone(); input.deathVictimRoleToken = input.resolvedKillerRoleToken;
@@ -591,11 +628,17 @@ namespace RoyaltyContextTests
             string resolvedKiller;
             string resolvedVictim;
             AssertTrue("exact Tale roles resolve", PersonaMilestonePolicy.TryResolveRoles(
-                "KilledMan", policy, out resolvedKiller, out resolvedVictim));
+                "KilledMajorThreat", policy, out resolvedKiller, out resolvedVictim));
             AssertEqual("resolved killer role", RoyaltyTaleRoleTokens.Initiator, resolvedKiller);
             AssertEqual("resolved victim role", RoyaltyTaleRoleTokens.Recipient, resolvedVictim);
             AssertTrue("unknown Tale roles do not resolve", !PersonaMilestonePolicy.TryResolveRoles(
                 "BuiltTable", policy, out resolvedKiller, out resolvedVictim));
+            AssertTrue("companion Tale roles resolve", PersonaMilestonePolicy.TryResolveCompanionRoles(
+                "KilledMelee", policy, out resolvedKiller, out resolvedVictim));
+            AssertEqual("companion killer role", RoyaltyTaleRoleTokens.Initiator, resolvedKiller);
+            AssertEqual("companion victim role", RoyaltyTaleRoleTokens.Recipient, resolvedVictim);
+            AssertTrue("qualifier is not its own companion", !PersonaMilestonePolicy.TryResolveCompanionRoles(
+                "KilledMajorThreat", policy, out resolvedKiller, out resolvedVictim));
 
             policy.qualifyingTales[0].killerRoleToken = RoyaltyTaleRoleTokens.Recipient;
             policy.qualifyingTales[0].victimRoleToken = RoyaltyTaleRoleTokens.Initiator;
@@ -864,7 +907,7 @@ namespace RoyaltyContextTests
             {
                 bond = ActiveState(),
                 currentWeapon = Weapon("Weapon_1", "Pawn_A", true),
-                taleDefName = "KilledMan",
+                taleDefName = "KilledMajorThreat",
                 resolvedKillerRoleToken = RoyaltyTaleRoleTokens.Initiator,
                 deathVictimRoleToken = RoyaltyTaleRoleTokens.Recipient,
                 significance = 1,

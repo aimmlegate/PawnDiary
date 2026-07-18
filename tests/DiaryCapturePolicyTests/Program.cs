@@ -431,7 +431,7 @@ namespace DiaryCapturePolicyTests
             AssertEqual("tale null data drops", CaptureDecision.Drop,
                 TaleEventData.Decide(null, Ctx()));
             AssertEqual("tale null ctx drops", CaptureDecision.Drop,
-                TaleEventData.Decide(Tale("KilledMan"), null));
+                TaleEventData.Decide(Tale("KilledColonist"), null));
 
             // Covered-elsewhere: defName in TaleEventData.CoveredElsewhere set.
             AssertEqual("tale covered elsewhere drops", CaptureDecision.Drop,
@@ -445,21 +445,21 @@ namespace DiaryCapturePolicyTests
 
             // Signal / user gates.
             AssertEqual("tale signal disabled drops", CaptureDecision.Drop,
-                TaleEventData.Decide(Tale("KilledMan"), Ctx(signal: false)));
+                TaleEventData.Decide(Tale("KilledColonist"), Ctx(signal: false)));
             AssertEqual("tale user disabled drops", CaptureDecision.Drop,
-                TaleEventData.Decide(Tale("KilledMan"), Ctx(user: false)));
+                TaleEventData.Decide(Tale("KilledColonist"), Ctx(user: false)));
 
             // Eligibility: neither participant eligible → Drop.
             AssertEqual("tale no eligible pawns drops", CaptureDecision.Drop,
                 TaleEventData.Decide(
-                    new TaleEventData { DefName = "KilledMan" },  // FirstEligible/SecondEligible default false
+                    new TaleEventData { DefName = "KilledColonist" },  // FirstEligible/SecondEligible default false
                     Ctx()));
             AssertEqual("Odyssey TileSettled no-pawn Tale stays unowned", CaptureDecision.Drop,
                 TaleEventData.Decide(new TaleEventData { DefName = "TileSettled" }, Ctx()));
 
             // Final shape: single eligible pawn → solo.
             AssertEqual("tale first-only eligible generates solo", CaptureDecision.GenerateSolo,
-                TaleEventData.Decide(Tale("KilledMan", firstEligible: true), Ctx()));
+                TaleEventData.Decide(Tale("KilledColonist", firstEligible: true), Ctx()));
             AssertEqual("tale second-only eligible generates solo", CaptureDecision.GenerateSolo,
                 TaleEventData.Decide(Tale("Wounded", firstEligible: false, secondEligible: true), Ctx()));
 
@@ -473,9 +473,9 @@ namespace DiaryCapturePolicyTests
             AssertEqual("tale solo death description", CaptureDecision.GenerateSoloDeathDescription,
                 TaleEventData.Decide(Tale("Died", firstEligible: true, deathDescription: true), Ctx()));
             AssertEqual("tale pair death description", CaptureDecision.GeneratePairDeathDescription,
-                TaleEventData.Decide(Tale("KilledMan", firstEligible: true, secondEligible: true, deathDescription: true), Ctx()));
+                TaleEventData.Decide(Tale("KilledColonist", firstEligible: true, secondEligible: true, deathDescription: true), Ctx()));
             AssertEqual("tale death beats batch", CaptureDecision.GeneratePairDeathDescription,
-                TaleEventData.Decide(Tale("KilledMan", firstEligible: true, secondEligible: true, batched: true, deathDescription: true), Ctx()));
+                TaleEventData.Decide(Tale("KilledColonist", firstEligible: true, secondEligible: true, batched: true, deathDescription: true), Ctx()));
 
             TaleEventData forcedFirst = Tale(
                 "PersonaWeaponFirstConsequentialKill", firstEligible: true, secondEligible: true,
@@ -500,9 +500,9 @@ namespace DiaryCapturePolicyTests
         {
             // Base format: 3 mandatory fields, no attachedDef.
             string baseCtx = TaleEventData.BuildGameContext(
-                "KilledMan", "killed a man", "Tale_DoublePawn", null, null);
+                "KilledColonist", "killed a colonist", "Tale_DoublePawn", null, null);
             AssertEqual("tale base context",
-                "tale=KilledMan; label=killed a man; taleClass=Tale_DoublePawn",
+                "tale=KilledColonist; label=killed a colonist; taleClass=Tale_DoublePawn",
                 baseCtx);
 
             // With attached def (research project, skill, etc.) — both fields present.
@@ -1760,7 +1760,7 @@ namespace DiaryCapturePolicyTests
             AssertTrue("catalog has Tale spec", taleSpec is TaleEventSpec);
             AssertEqual("catalog dispatches Tale decision",
                 CaptureDecision.GenerateSolo,
-                taleSpec.Decide(Tale("KilledMan", firstEligible: true), Ctx()));
+                taleSpec.Decide(Tale("KilledColonist", firstEligible: true), Ctx()));
 
             DiaryEventSpec hediffSpec = DiaryEventCatalog.Get(DiaryEventType.Hediff);
             AssertTrue("catalog has Hediff spec", hediffSpec is HediffEventSpec);
@@ -1980,8 +1980,8 @@ namespace DiaryCapturePolicyTests
 
             // Tale: one window per taleDef + both pawn ids (empty when a pawn is absent).
             AssertEqual("tale dedup key (double pawn)",
-                "tale|KilledMan|A|B",
-                new TaleEventData { DefName = "KilledMan", FirstPawnId = "A", SecondPawnId = "B" }.DedupKey());
+                "tale|KilledColonist|A|B",
+                new TaleEventData { DefName = "KilledColonist", FirstPawnId = "A", SecondPawnId = "B" }.DedupKey());
             AssertEqual("tale dedup key (single pawn, empty second)",
                 "tale|DidResearch|A|",
                 new TaleEventData { DefName = "DidResearch", FirstPawnId = "A" }.DedupKey());

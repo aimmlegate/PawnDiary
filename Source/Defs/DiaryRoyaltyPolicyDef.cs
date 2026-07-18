@@ -16,6 +16,14 @@ namespace PawnDiary
         public bool requireVictimDeath = true;
     }
 
+    /// <summary>XML role row for one ordinary Tale emitted alongside a persona kill milestone.</summary>
+    public sealed class DiaryRoyaltyTaleRoleDef
+    {
+        public string taleDefName = string.Empty;
+        public string killerRoleToken = string.Empty;
+        public string victimRoleToken = string.Empty;
+    }
+
     /// <summary>XML structural mapping from a worker type-name token to one event weight.</summary>
     public sealed class DiaryRoyaltyTraitWorkerRuleDef
     {
@@ -56,6 +64,8 @@ namespace PawnDiary
         public string titleNarrativeFormat = string.Empty;
         public string titleWithDutiesNarrativeFormat = string.Empty;
         public List<DiaryRoyaltyTaleRuleDef> qualifyingTales = new List<DiaryRoyaltyTaleRuleDef>();
+        public List<DiaryRoyaltyTaleRoleDef> personaKillCompanionTales =
+            new List<DiaryRoyaltyTaleRoleDef>();
         public List<DiaryRoyaltyTraitWorkerRuleDef> traitWorkerRules =
             new List<DiaryRoyaltyTraitWorkerRuleDef>();
         public List<DiaryRoyaltyTraitOverrideDef> traitOverrides =
@@ -93,6 +103,7 @@ namespace PawnDiary
             {
                 yield return "qualifyingTales must contain at least one exact Tale defName.";
             }
+
             else
             {
                 for (int i = 0; i < qualifyingTales.Count; i++)
@@ -111,6 +122,29 @@ namespace PawnDiary
                         yield return "qualifyingTales row " + i + " must use distinct killer and victim roles.";
                     if (row != null && row.minimumSignificance < 0)
                         yield return "qualifyingTales row " + i + " has negative minimumSignificance.";
+                }
+            }
+
+            HashSet<string> companionTales = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (personaKillCompanionTales == null || personaKillCompanionTales.Count == 0)
+            {
+                yield return "personaKillCompanionTales must contain at least one exact Tale defName.";
+            }
+            else
+            {
+                for (int i = 0; i < personaKillCompanionTales.Count; i++)
+                {
+                    DiaryRoyaltyTaleRoleDef row = personaKillCompanionTales[i];
+                    string defName = Clean(row == null ? null : row.taleDefName);
+                    string role = Clean(row == null ? null : row.killerRoleToken);
+                    string victimRole = Clean(row == null ? null : row.victimRoleToken);
+                    if (!SafeToken(defName))
+                        yield return "personaKillCompanionTales row " + i + " has an unsafe Tale defName.";
+                    else if (!companionTales.Add(defName))
+                        yield return "personaKillCompanionTales repeats '" + defName + "'.";
+                    if (!RoyaltyTaleRoleTokens.IsKnown(role)
+                        || !RoyaltyTaleRoleTokens.IsKnown(victimRole) || role == victimRole)
+                        yield return "personaKillCompanionTales row " + i + " needs distinct known roles.";
                 }
             }
 
@@ -197,6 +231,8 @@ namespace PawnDiary
 
             List<RoyaltyTaleQualificationRule> tales = CopyTales(source.qualifyingTales);
             if (tales.Count > 0) result.qualifyingTales = tales;
+            List<RoyaltyTaleRoleRule> companionTales = CopyRoleTales(source.personaKillCompanionTales);
+            if (companionTales.Count > 0) result.personaKillCompanionTales = companionTales;
             result.traitWorkerRules = CopyWorkers(source.traitWorkerRules);
             result.traitOverrides = CopyOverrides(source.traitOverrides);
             cached = result;
@@ -225,6 +261,30 @@ namespace PawnDiary
                     victimRoleToken = victimRole,
                     minimumSignificance = Math.Max(0, row.minimumSignificance),
                     requireVictimDeath = row.requireVictimDeath
+                });
+            }
+            return result;
+        }
+
+        private static List<RoyaltyTaleRoleRule> CopyRoleTales(List<DiaryRoyaltyTaleRoleDef> source)
+        {
+            List<RoyaltyTaleRoleRule> result = new List<RoyaltyTaleRoleRule>();
+            if (source == null) return result;
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < source.Count; i++)
+            {
+                DiaryRoyaltyTaleRoleDef row = source[i];
+                string defName = Safe(row == null ? null : row.taleDefName);
+                string role = Safe(row == null ? null : row.killerRoleToken);
+                string victimRole = Safe(row == null ? null : row.victimRoleToken);
+                if (defName.Length == 0 || !RoyaltyTaleRoleTokens.IsKnown(role)
+                    || !RoyaltyTaleRoleTokens.IsKnown(victimRole) || role == victimRole
+                    || !seen.Add(defName)) continue;
+                result.Add(new RoyaltyTaleRoleRule
+                {
+                    taleDefName = defName,
+                    killerRoleToken = role,
+                    victimRoleToken = victimRole
                 });
             }
             return result;

@@ -168,13 +168,20 @@ transfer, save/load, localization, and no-Royalty manual rows in
 Phase 3 projects an exact active `Pawn.Kill` scope into qualifying Tale capture. The first truth is
 consumed even when the milestone group is disabled or the page is rejected, while an accepted page
 is forced to one solo killer POV and retains the source Tale marker/roles. Exact persona `killThought`
-signals are staged for the bounded 60-tick callback-order window, claimed only by the durable
-milestone, and otherwise released once through ordinary Thought capture. Wielder death snapshots
-pre-`UnCode` persona facts into the existing death page and never creates a standalone bond-ending
-page. `PawnDiaryRoyaltyFlowTests` compiles real coding/formation, late-visible baseline, hook audit,
-guaranteed vanilla major-threat kill, repeat suppression, and bonded-wielder death fixtures. The new
-Phase-3 loaded fixtures and all Phase-3 manual rows still require execution inside RimWorld; neither
-Phase 2 nor Phase 3 is manually acceptance-complete.
+signals and the eight exact same-call companion Tales are staged in bounded fail-open buffers, claimed
+only by the durable milestone, and otherwise released independently through ordinary capture. The
+60-tick inverse-order owner carries only missing ThoughtDefs and consumes each once. Wielder death
+snapshots pre-`UnCode` persona facts into the existing death page—including a live coded non-primary
+bond—and never creates a standalone bond-ending page. Save tests cover recorded+observed and
+observed-without-recorded round trips plus recorded-implies-observed repair.
+
+`PawnDiaryRoyaltyFlowTests` now compiles real coding/formation, late-visible baseline, hook audit,
+guaranteed vanilla major-threat kill, delayed companion-batch flush, same-tick ordinary second kill,
+disabled-milestone fallback, primary and non-primary bonded-wielder deaths, and Scribe flag fixtures.
+Pure coverage is 245 Royalty and 2,290 pipeline assertions. The first loaded Phase-3 run passed 240/241
+tests and exposed that production read `victim.Dead` before vanilla's later `health.SetDead()`; the
+exact active scope fixes that timing. The expanded clean loaded rerun and all manual rows remain
+required; neither Phase 2 nor Phase 3 is manually acceptance-complete.
 
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,
@@ -345,8 +352,9 @@ loaded run reached 235/236, confirming those corrections and exposing one final 
 assumption: `ritualRoyal` intentionally classifies throne-speech and anima-linking rituals through four
 narrow runtime tokens rather than exact def-name keys. Its token-only contract is now asserted beside
 the equivalent Odyssey and Anomaly exceptions. The user subsequently confirmed the Phase-2 automated
-loaded suite green. No Biotech B1 or Royalty Phase-2 manual acceptance row is closed by that result,
-and the newly added Phase-3 loaded fixtures still need their first in-game run.
+loaded suite green. No Biotech B1 or Royalty Phase-2 manual acceptance row is closed by that result.
+The first Phase-3 in-game run reached 240/241 and exposed the pre-dead Tale timing gate; its focused
+fix now needs a fresh loaded rerun.
 
 Narrative N2-B extends `NarrativeContinuityTests` with assembly-free checks for family-continuity
 classification, exact arc/subject candidate construction, fixed provider ordering, inactive-DLC and

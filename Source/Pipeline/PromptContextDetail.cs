@@ -380,6 +380,8 @@ namespace PawnDiary
         private static bool IsRequiredRoyaltyContextKey(string contextKey)
         {
             return Eq(contextKey, "persona_weapon_name")
+                // Phase 2 standalone bond pages may emit persona_weapon; Phase 3 Tale/death pages
+                // intentionally carry the bond facts as namespaced gameContext keys instead.
                 || Eq(contextKey, "persona_weapon")
                 || Eq(contextKey, "persona_milestone")
                 || Eq(contextKey, "tale_source_def")

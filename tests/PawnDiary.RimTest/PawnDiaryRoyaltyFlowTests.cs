@@ -19,6 +19,8 @@ namespace PawnDiary.RimTests
     [TestSuite]
     public static class PawnDiaryRoyaltyFlowTests
     {
+        private const string KillThoughtTraitDefName = "OnKill_ThoughtGood";
+        private const string KillThoughtDefName = "OnKill_GoodThought";
         private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
         private const BindingFlags PrivateStatic = BindingFlags.Static | BindingFlags.NonPublic;
         private static readonly FieldInfo PersonaBondsField =
@@ -29,6 +31,10 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetMethod("ReconcileRoyaltyPersonaBonds", PrivateInstance);
         private static readonly MethodInfo ResetFreeColonistSnapshotMethod =
             typeof(DiaryGameComponent).GetMethod("ResetFreeColonistSnapshot", PrivateStatic);
+        private static readonly MethodInfo FlushAllTaleBatchesMethod =
+            typeof(DiaryGameComponent).GetMethod("FlushAllTaleBatches", PrivateInstance);
+        private static readonly FieldInfo PersonaWeaponTraitsField =
+            typeof(CompBladelinkWeapon).GetField("traits", PrivateInstance);
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
@@ -37,7 +43,8 @@ namespace PawnDiary.RimTests
         public static void SetUp()
         {
             scope = PawnDiaryRimTestScope.Begin(
-                "personaWeaponLifecycle", "personaWeaponMilestone", "talecombat");
+                "personaWeaponLifecycle", "personaWeaponMilestone", "talecombat", "thoughtPositive");
+            PersonaKillThoughtCorrelation.Clear();
             pawn = scope.CreateAdultColonist();
             scope.SpawnAsLiveColonist(pawn);
             scope.RegisterCleanup(() => RemovePersonaRows(string.Empty, pawn?.GetUniqueLoadID()));
@@ -49,6 +56,7 @@ namespace PawnDiary.RimTests
             try { scope?.TearDown(); }
             finally
             {
+                PersonaKillThoughtCorrelation.Clear();
                 scope = null;
                 pawn = null;
             }
@@ -161,6 +169,7 @@ namespace PawnDiary.RimTests
             ThingWithComps weapon;
             CompBladelinkWeapon comp;
             CreatePersonaWeapon(out weapon, out comp);
+            ForceKillThoughtTrait(comp);
             comp.CodeFor(pawn);
             pawn.equipment.AddEquipment(weapon);
             PawnDiaryRimTestScope.Require(ReferenceEquals(pawn.equipment.Primary, weapon),
@@ -171,6 +180,8 @@ namespace PawnDiary.RimTests
             DamageInfo firstDamage = new DamageInfo(
                 DamageDefOf.Crush, 10000f, instigator: pawn, weapon: weapon.def);
             int before = CountEvents(PersonaMilestoneContextFormatter.FirstKillDefName);
+            int thoughtBefore = CountEventsForPawn(KillThoughtDefName, pawn);
+            int combatBefore = CountEventsForPawn("talecombat", pawn);
             DiaryEvent milestone = scope.FireAndRequireEvent(
                 () => firstVictim.Kill(firstDamage),
                 PersonaMilestoneContextFormatter.FirstKillDefName,
@@ -193,6 +204,13 @@ namespace PawnDiary.RimTests
                     && state.firstConsequentialKillObserved
                     && state.firstConsequentialKillEventRecorded,
                 "The accepted real kill did not persist both observed truth and durable page ownership.");
+            PawnDiaryRimTestScope.Require(
+                CountEventsForPawn(KillThoughtDefName, pawn) == thoughtBefore,
+                "The canonical milestone left a duplicate persona kill-thought page.");
+            FlushAllTaleBatches();
+            PawnDiaryRimTestScope.Require(
+                CountEventsForPawn("talecombat", pawn) == combatBefore,
+                "Flushing delayed Tale batches exposed a companion combat page for the canonical kill.");
 
             Pawn secondVictim = CreateMajorThreatVictim();
             RegisterDeadPawnCleanup(secondVictim);
@@ -202,6 +220,88 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 CountEvents(PersonaMilestoneContextFormatter.FirstKillDefName) == before + 1,
                 "A later real major-threat kill was mislabeled as another first persona milestone.");
+            PawnDiaryRimTestScope.Require(
+                CountEventsForPawn(KillThoughtDefName, pawn) == thoughtBefore + 1,
+                "A later ordinary kill-thought was over-suppressed by the earlier milestone.");
+            FlushAllTaleBatches();
+            PawnDiaryRimTestScope.Require(
+                CountEventsForPawn("talecombat", pawn) == combatBefore + 1,
+                "A later ordinary major-threat kill did not retain one batched combat page.");
+        }
+
+        /// <summary>
+        /// A memory callback has killer/ThoughtDef identity but no victim. Once the exact
+        /// Pawn.Kill scope closes, it must therefore fail open; a recent-owner cache would
+        /// incorrectly suppress a later kill's otherwise ordinary thought.
+        /// </summary>
+        [Test]
+        public static void LateKillThoughtAfterClosedScopeFailsOpen()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(LateKillThoughtAfterClosedScopeFailsOpen))) return;
+            Pawn victim = scope.CreateAdultColonist();
+            int tick = Find.TickManager?.TicksGame ?? 0;
+            PersonaKillCorrelationScope killScope = PersonaKillThoughtCorrelation.Begin(
+                victim,
+                pawn,
+                new List<string> { KillThoughtDefName },
+                tick,
+                correlationTicks: 60);
+            PawnDiaryRimTestScope.Require(killScope != null,
+                "The exact persona kill scope could not be opened for the late-thought regression.");
+            PersonaKillThoughtCorrelation.Claim(killScope, tick);
+            PersonaKillThoughtCorrelation.End(killScope);
+
+            bool suppressed = PersonaKillThoughtCorrelation.TryStageOrSuppress(
+                pawn, KillThoughtDefName, signal: null, tick: tick + 1);
+            PawnDiaryRimTestScope.Require(!suppressed,
+                "A post-scope kill-thought was suppressed without victim identity; it must fail open.");
+        }
+
+        /// <summary>
+        /// Disabling the milestone consumes gameplay truth but releases the exact Thought and Tales
+        /// back to their ordinary pipelines instead of silently dropping them.
+        /// </summary>
+        [Test]
+        public static void DisabledMilestoneReleasesOrdinaryKillSignals()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(DisabledMilestoneReleasesOrdinaryKillSignals))) return;
+            PawnDiaryMod.Settings.SetGroupEnabled("personaWeaponMilestone", false);
+            ThingWithComps weapon;
+            CompBladelinkWeapon comp;
+            CreatePersonaWeapon(out weapon, out comp);
+            ForceKillThoughtTrait(comp);
+            comp.CodeFor(pawn);
+            pawn.equipment.AddEquipment(weapon);
+
+            Pawn victim = CreateMajorThreatVictim();
+            RegisterDeadPawnCleanup(victim);
+            DamageInfo damage = new DamageInfo(
+                DamageDefOf.Crush, 10000f, instigator: pawn, weapon: weapon.def);
+            int milestoneBefore = CountEvents(PersonaMilestoneContextFormatter.FirstKillDefName);
+            int thoughtBefore = CountEventsForPawn(KillThoughtDefName, pawn);
+            int combatBefore = CountEventsForPawn("talecombat", pawn);
+            scope.FireAndRequireEvent(
+                () => victim.Kill(damage),
+                KillThoughtDefName,
+                pawn,
+                null);
+
+            PersonaBondState state = PersonaRows().SingleOrDefault(row => row != null
+                && row.weaponThingId == weapon.GetUniqueLoadID());
+            PawnDiaryRimTestScope.Require(state != null
+                    && state.firstConsequentialKillObserved
+                    && !state.firstConsequentialKillEventRecorded,
+                "Disabled milestone did not preserve observed-versus-recorded save semantics.");
+            PawnDiaryRimTestScope.Require(
+                CountEvents(PersonaMilestoneContextFormatter.FirstKillDefName) == milestoneBefore,
+                "Disabled milestone unexpectedly created a canonical page.");
+            PawnDiaryRimTestScope.Require(
+                CountEventsForPawn(KillThoughtDefName, pawn) == thoughtBefore + 1,
+                "Disabled milestone did not release the ordinary kill-thought page.");
+            FlushAllTaleBatches();
+            PawnDiaryRimTestScope.Require(
+                CountEventsForPawn("talecombat", pawn) == combatBefore + 1,
+                "Disabled milestone did not release the ordinary combat Tales as one batch.");
         }
 
         /// <summary>
@@ -225,17 +325,62 @@ namespace PawnDiary.RimTests
                 DeathFallbackSignal.DeathFallbackDefName,
                 pawn,
                 null);
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            int weaponNameCap = Math.Max(1, policy?.maximumTraitLabelCharacters ?? weaponName.Length);
+            string expectedWeaponName = weaponName.Length <= weaponNameCap
+                ? weaponName
+                : weaponName.Substring(0, weaponNameCap).TrimEnd();
             PawnDiaryRimTestScope.Require(death.HasDeathDescription(),
                 "The bonded wielder's existing page was not a neutral death description.");
             PawnDiaryRimTestScope.Require(death.gameContext != null
                     && death.gameContext.Contains("persona_milestone=wielder_death")
-                    && death.gameContext.Contains("persona_weapon_name=" + weaponName)
+                    && death.gameContext.Contains("persona_weapon_name=" + expectedWeaponName)
                     && death.gameContext.Contains("bond_end_cause=pawn_death")
                     && !death.gameContext.Contains("persona_weapon="),
                 "The death page did not retain the exact pre-UnCode persona relationship context.");
             PawnDiaryRimTestScope.Require(
                 CountEvents(PersonaWeaponEventData.BondEndedDefName) == 0,
                 "Pawn death created a duplicate standalone persona-bond ending page.");
+        }
+
+        /// <summary>
+        /// A still-coded weapon need not be primary when its wielder dies. The pending/separated
+        /// relationship must still enrich the one existing death page before vanilla UnCode.
+        /// </summary>
+        [Test]
+        public static void NonPrimaryCodedWielderDeathRetainsPersonaContext()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(NonPrimaryCodedWielderDeathRetainsPersonaContext))) return;
+            RegisterDeadPawnCleanup(pawn);
+            ThingWithComps weapon;
+            CompBladelinkWeapon comp;
+            CreatePersonaWeapon(out weapon, out comp);
+            comp.CodeFor(pawn);
+            pawn.equipment.AddEquipment(weapon);
+            scope.RequireNoNewEvent(() => pawn.equipment.Remove(weapon));
+
+            List<PersonaWeaponSnapshot> visible = DlcContext.CapturePersonaWeapons(pawn);
+            PersonaBondState beforeDeath = PersonaRows().SingleOrDefault(row => row != null
+                && row.weaponThingId == weapon.GetUniqueLoadID());
+            PawnDiaryRimTestScope.Require(visible.Count == 1
+                    && !visible[0].isCurrentlyPrimary
+                    && string.Equals(visible[0].codedPawnId, pawn.GetUniqueLoadID(), StringComparison.Ordinal)
+                    && beforeDeath != null
+                    && PersonaBondPhaseTokens.IsLive(beforeDeath.phaseToken),
+                "Fixture did not establish one non-primary, still-coded live persona bond.");
+
+            DiaryEvent death = scope.FireAndRequireEvent(
+                () => pawn.Kill(null),
+                DeathFallbackSignal.DeathFallbackDefName,
+                pawn,
+                null);
+            PawnDiaryRimTestScope.Require(death.gameContext != null
+                    && death.gameContext.Contains("persona_milestone=wielder_death")
+                    && death.gameContext.Contains("bond_end_cause=pawn_death"),
+                "Non-primary coded wielder death lost its exact persona context.");
+            PawnDiaryRimTestScope.Require(
+                CountEvents(PersonaWeaponEventData.BondEndedDefName) == 0,
+                "Non-primary coded wielder death created a duplicate standalone ending page.");
         }
 
         private static void CreatePersonaWeapon(
@@ -295,6 +440,23 @@ namespace PawnDiary.RimTests
             return victim;
         }
 
+        private static void ForceKillThoughtTrait(CompBladelinkWeapon comp)
+        {
+            WeaponTraitDef trait = DefDatabase<WeaponTraitDef>.GetNamedSilentFail(KillThoughtTraitDefName);
+            PawnDiaryRimTestScope.Require(PersonaWeaponTraitsField != null
+                    && comp != null && trait?.killThought != null
+                    && string.Equals(trait.killThought.defName, KillThoughtDefName, StringComparison.Ordinal),
+                "Could not resolve the real persona kill-thought trait fixture.");
+            PersonaWeaponTraitsField.SetValue(comp, new List<WeaponTraitDef> { trait });
+        }
+
+        private static void FlushAllTaleBatches()
+        {
+            PawnDiaryRimTestScope.Require(FlushAllTaleBatchesMethod != null,
+                "Could not resolve DiaryGameComponent.FlushAllTaleBatches for delayed-Tale assertions.");
+            FlushAllTaleBatchesMethod.Invoke(scope.Component, null);
+        }
+
         private static int CountEvents(string defName)
         {
             DiaryEventRepository repository = EventsField?.GetValue(scope.Component)
@@ -303,6 +465,19 @@ namespace PawnDiary.RimTests
                 "Could not read the event repository for Royalty milestone assertions.");
             return repository.AllEvents.Count(row => row != null
                 && string.Equals(row.interactionDefName, defName, StringComparison.Ordinal));
+        }
+
+        private static int CountEventsForPawn(string defName, Pawn owner)
+        {
+            DiaryEventRepository repository = EventsField?.GetValue(scope.Component)
+                as DiaryEventRepository;
+            PawnDiaryRimTestScope.Require(repository != null && owner != null,
+                "Could not read the event repository/pawn for Royalty ownership assertions.");
+            string pawnId = owner.GetUniqueLoadID();
+            return repository.AllEvents.Count(row => row != null
+                && string.Equals(row.interactionDefName, defName, StringComparison.Ordinal)
+                && (string.Equals(row.initiatorPawnId, pawnId, StringComparison.Ordinal)
+                    || string.Equals(row.recipientPawnId, pawnId, StringComparison.Ordinal)));
         }
 
         private static void RegisterDeadPawnCleanup(Pawn deadPawn)

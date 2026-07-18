@@ -85,7 +85,7 @@ namespace PawnDiary.Ingestion
                     PersonaWeaponSnapshot capturedWeapon = null;
                     PersonaBondStateSnapshot capturedBond = null;
                     PersonaMilestoneDecision capturedMilestone = null;
-                    bool enrich = ReferenceEquals(deathVictim, victim) && exactScope
+                    bool enrich = exactScope
                         && DiaryGameComponent.Instance != null
                         && DiaryGameComponent.Instance.TryObserveRoyaltyPersonaMilestone(
                             killer,
@@ -123,7 +123,7 @@ namespace PawnDiary.Ingestion
             payload = new TaleEventData
             {
                 PawnId = firstPawn?.GetUniqueLoadID() ?? string.Empty,
-                Tick = Find.TickManager.TicksGame,
+                Tick = Find.TickManager?.TicksGame ?? 0,
                 DefName = personaMilestone != null
                     ? PersonaMilestoneContextFormatter.FirstKillDefName
                     : taleDef.defName,
@@ -142,6 +142,28 @@ namespace PawnDiary.Ingestion
         }
 
         public override DiaryEventData Payload => payload;
+
+        /// <summary>
+        /// Stages an XML-owned ordinary combat Tale only when its exact killer/victim roles match
+        /// the active Pawn.Kill scope. This never qualifies a milestone on its own.
+        /// </summary>
+        public bool TryStageAsPersonaKillCompanion()
+        {
+            if (!ModsConfig.RoyaltyActive || taleDef == null) return false;
+            string killerRole;
+            string victimRole;
+            if (!PersonaMilestonePolicy.TryResolveCompanionRoles(
+                taleDef.defName,
+                DiaryRoyaltyPolicy.Snapshot(),
+                out killerRole,
+                out victimRole)) return false;
+            Pawn killer = PawnForRole(killerRole, firstPawn, secondPawn);
+            Pawn victim = PawnForRole(victimRole, firstPawn, secondPawn);
+            PersonaKillCorrelationScope scope;
+            return PersonaKillThoughtCorrelation.TryMatchActiveKill(killer, victim, out scope)
+                && PersonaKillThoughtCorrelation.TryStageOrSuppressCompanionTale(
+                    scope, taleDef.defName, this);
+        }
 
         public override CaptureContext BuildContext()
         {
@@ -261,15 +283,21 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
+            sink.QueueSolo(soloEvent, DiaryEvent.InitiatorRole);
+
+            // QueueSolo is the final repository/queue step for this canonical Tale page. Promote
+            // durable milestone ownership only after it succeeds, so a future queue failure leaves
+            // the observed-but-unrecorded state recoverable and lets the kill scope release safely.
             if (personaMilestone != null)
             {
                 sink.MarkRoyaltyPersonaMilestoneAccepted(
                     personaWeapon.weaponThingId, personaBond.bondEpoch);
+                // Dispatch/Emit is synchronous inside TaleRecorder.RecordTale. Claim must therefore
+                // happen before PawnKillPatch.Finalizer closes the exact scope; if that call chain
+                // ever becomes queued, this invariant must be revisited with an explicit hand-off.
                 PersonaKillThoughtCorrelation.Claim(personaKillScope, payload.Tick);
                 ApplyPersonaNarrativeEvidence(sink, soloEvent);
             }
-
-            sink.QueueSolo(soloEvent, DiaryEvent.InitiatorRole);
         }
 
         // ── Tale-specific helpers moved verbatim from the old DiaryGameComponent.Tales.cs ──

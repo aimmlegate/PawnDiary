@@ -63,7 +63,8 @@ owners. Both use the shared harness:
 | `PawnDiaryMoodConditionFlowTests` | 14 | GameCondition mood fan-out + classification + group gate. |
 | `PawnDiaryPawnProgressionFlowTests` | 15 | Skill/trait milestone baseline + upward-only + arc request; installed-Royalty psylink/title scanners; guarded/versioned Biotech gene projection, rich fallback, real implant/reimplant hooks, same-call Ability ownership, replay silence, and the N3-B salient identity lens/stable repetition key. |
 | `PawnDiaryBiotechMechanitorFlowTests` | B6 | Real spawned mechlink install/removal pages, silent unspawned starting-state callbacks, vanilla mech-side Overseer ownership, combat gating, and Harmony registration audits for mechlink, relation, Tale, pre-cleanup death, boss call, and boss defeat seams. |
-| `PawnDiaryRoyaltyFlowTests` | R2 | Real persona-weapon coding/formation, silent late-visible baseline adoption, live-context invalidation after `UnCode`, and all six exact Royalty persona Harmony targets. |
+| `PawnDiaryRoyaltyFlowTests` | R2/R3 | Real persona-weapon coding/formation, silent late-visible baseline adoption, live-context invalidation after `UnCode`, all six exact Harmony targets, real major-threat milestone ownership, delayed companion-Tale flush, one-shot kill-Thought fallback, disabled output, and primary/non-primary wielder death. |
+| `PawnDiaryRoyaltyStateFixtureTests` | R1/R3 save | Real-Scribe persona/title state, legacy markers, distinct observed/recorded milestone flags, and guarded no-Royalty collectors. |
 | `PawnDiaryBiotechGrowthFlowTests` | B1 | Family-keyed canonical growth/N1 evidence, baseline/fallback, real age-7/10/13 growth-letter hooks, multiple passions, nickname/responsibility changes, auto-resolution, postponed-owner Scribe recovery, live pre-cap admission, and loaded detail-preset prompts. |
 | `PawnDiaryBiotechBirthFlowTests` | B1 | Canonical two-adult birth, Tale-domain/important-group routing, child-never-POV shape, delayed naming flush, replay rejection, live pre-cap admission recovery, loaded detail-preset prompts, and a loaded-template preflight. |
 | `PawnDiaryBiotechComponentStateFixtureTests` | B1 | Real-Scribe component keys, old/malformed/oversized rows, hard ceiling, and pre-cap admission recovery. |
@@ -109,6 +110,9 @@ tracked follow-up:
 **Run these two on a disposable colony:** their real trigger has vanilla side effects no test can undo.
 - `PawnDiaryDeathFlowTests` (EVT-10): a real `Pawn.Kill` gives *other* colonists `ColonistLost`/`KnowColonistDied` mood memories and may raise a death letter.
 - `PawnDiaryRaidFlowTests` (EVT-13): drives the per-colonist raid signal for the isolated test pawn, but the colony-dedup and fan-out contract are checked against the live map; a full end-to-end fan-out would write pages into real colonists' diaries, so it is intentionally not driven.
+
+Run `PawnDiaryRoyaltyFlowTests` on a disposable Royalty colony as well. Its death fixtures call real
+`Pawn.Kill`, and its adversarial ownership assertions explicitly flush all pending Tale batches.
 
 Run `PawnDiaryOdysseyRuntimeLifecycleTests` on a disposable Odyssey colony too. Its test objects and
 component/controller mutations are failure-safely removed, and the launch/landing visual originals are

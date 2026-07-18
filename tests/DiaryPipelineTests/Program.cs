@@ -3701,7 +3701,9 @@ namespace DiaryPipelineTests
                 "60", ChildValue(policy, "killThoughtCorrelationTicks"));
             List<XElement> taleRules = new List<XElement>(
                 policy.Element("qualifyingTales").Elements("li"));
-            AssertEqual("Royalty policy keeps two exact qualifying Tale rows", 2, taleRules.Count);
+            AssertEqual("Royalty policy keeps one verified qualifying Tale row", 1, taleRules.Count);
+            AssertEqual("Royalty milestone qualifier is the vanilla major-threat Tale",
+                "KilledMajorThreat", ChildValue(taleRules[0], "taleDefName"));
             for (int i = 0; i < taleRules.Count; i++)
             {
                 AssertEqual("qualifying Tale killer role is exact", "initiator",
@@ -3709,6 +3711,28 @@ namespace DiaryPipelineTests
                 AssertEqual("qualifying Tale victim role is exact", "recipient",
                     ChildValue(taleRules[i], "victimRoleToken"));
             }
+            List<XElement> companionRules = new List<XElement>(
+                policy.Element("personaKillCompanionTales").Elements("li"));
+            string[] expectedCompanionNames =
+            {
+                "KilledChild", "KilledColonist", "KilledColonyAnimal", "KilledMortar",
+                "KilledLongRange", "KilledMelee", "DefeatedHostileFactionLeader", "KilledCapacity"
+            };
+            AssertEqual("Royalty policy owns eight exact same-kill companion Tales",
+                expectedCompanionNames.Length, companionRules.Count);
+            for (int i = 0; i < companionRules.Count; i++)
+            {
+                AssertEqual("companion Tale name is a verified vanilla def",
+                    expectedCompanionNames[i], ChildValue(companionRules[i], "taleDefName"));
+                AssertEqual("companion Tale killer role is exact", "initiator",
+                    ChildValue(companionRules[i], "killerRoleToken"));
+                AssertEqual("companion Tale victim role is exact", "recipient",
+                    ChildValue(companionRules[i], "victimRoleToken"));
+            }
+            XElement combatTales = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "talecombat");
+            AssertTrue("qualifier remains the only major-threat death recipient",
+                HasListValue(combatTales, "deathVictimRecipientDefNames", "KilledMajorThreat"));
 
             XDocument templates = XDocument.Load(
                 RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));

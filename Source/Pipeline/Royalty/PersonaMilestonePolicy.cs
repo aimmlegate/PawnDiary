@@ -81,6 +81,32 @@ namespace PawnDiary
             return true;
         }
 
+        /// <summary>
+        /// Resolves an ordinary Tale which the canonical milestone may own when both were emitted
+        /// inside the same exact Pawn.Kill scope. A companion row never qualifies a milestone.
+        /// </summary>
+        public static bool TryResolveCompanionRoles(
+            string taleDefName,
+            RoyaltyPolicySnapshot policy,
+            out string killerRoleToken,
+            out string victimRoleToken)
+        {
+            killerRoleToken = string.Empty;
+            victimRoleToken = string.Empty;
+            RoyaltyPolicySnapshot effective = policy ?? RoyaltyPolicySnapshot.CreateDefault();
+            RoyaltyTaleRoleRule rule = MatchingRoleRule(
+                taleDefName,
+                effective.personaKillCompanionTales);
+            if (rule == null) return false;
+            string killer = Clean(rule.killerRoleToken);
+            string victim = Clean(rule.victimRoleToken);
+            if (!RoyaltyTaleRoleTokens.IsKnown(killer) || !RoyaltyTaleRoleTokens.IsKnown(victim)
+                || string.Equals(killer, victim, StringComparison.Ordinal)) return false;
+            killerRoleToken = killer;
+            victimRoleToken = victim;
+            return true;
+        }
+
         private static RoyaltyTaleQualificationRule MatchingRule(
             string taleDefName,
             System.Collections.Generic.IList<RoyaltyTaleQualificationRule> rules)
@@ -90,6 +116,22 @@ namespace PawnDiary
             for (int i = 0; i < rules.Count; i++)
             {
                 RoyaltyTaleQualificationRule row = rules[i];
+                if (row != null && string.Equals(key, (row.taleDefName ?? string.Empty).Trim(),
+                    StringComparison.OrdinalIgnoreCase))
+                    return row;
+            }
+            return null;
+        }
+
+        private static RoyaltyTaleRoleRule MatchingRoleRule(
+            string taleDefName,
+            System.Collections.Generic.IList<RoyaltyTaleRoleRule> rules)
+        {
+            string key = (taleDefName ?? string.Empty).Trim();
+            if (key.Length == 0 || rules == null) return null;
+            for (int i = 0; i < rules.Count; i++)
+            {
+                RoyaltyTaleRoleRule row = rules[i];
                 if (row != null && string.Equals(key, (row.taleDefName ?? string.Empty).Trim(),
                     StringComparison.OrdinalIgnoreCase))
                     return row;

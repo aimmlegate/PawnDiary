@@ -284,6 +284,18 @@ namespace PawnDiary
         public bool requireVictimDeath = true;
     }
 
+    /// <summary>
+    /// Exact participant roles for an ordinary Tale emitted by the same Pawn.Kill call as a
+    /// persona milestone. These rows describe duplicate ownership only; they never qualify the
+    /// milestone by themselves.
+    /// </summary>
+    internal sealed class RoyaltyTaleRoleRule
+    {
+        public string taleDefName = string.Empty;
+        public string killerRoleToken = string.Empty;
+        public string victimRoleToken = string.Empty;
+    }
+
     /// <summary>One XML-owned worker-category relevance mapping.</summary>
     internal sealed class RoyaltyTraitWorkerRule
     {
@@ -327,6 +339,8 @@ namespace PawnDiary
         public string titleWithDutiesNarrativeFormat = string.Empty;
         public List<RoyaltyTaleQualificationRule> qualifyingTales =
             new List<RoyaltyTaleQualificationRule>();
+        public List<RoyaltyTaleRoleRule> personaKillCompanionTales =
+            new List<RoyaltyTaleRoleRule>();
         public List<RoyaltyTraitWorkerRule> traitWorkerRules =
             new List<RoyaltyTraitWorkerRule>();
         public List<RoyaltyTraitOverrideRule> traitOverrides =
@@ -338,21 +352,31 @@ namespace PawnDiary
             RoyaltyPolicySnapshot policy = new RoyaltyPolicySnapshot();
             policy.qualifyingTales.Add(new RoyaltyTaleQualificationRule
             {
-                taleDefName = "KilledMan",
-                killerRoleToken = RoyaltyTaleRoleTokens.Initiator,
-                victimRoleToken = RoyaltyTaleRoleTokens.Recipient,
-                minimumSignificance = 1,
-                requireVictimDeath = true
-            });
-            policy.qualifyingTales.Add(new RoyaltyTaleQualificationRule
-            {
                 taleDefName = "KilledMajorThreat",
                 killerRoleToken = RoyaltyTaleRoleTokens.Initiator,
                 victimRoleToken = RoyaltyTaleRoleTokens.Recipient,
                 minimumSignificance = 1,
                 requireVictimDeath = true
             });
+            AddCompanionTale(policy, "KilledChild");
+            AddCompanionTale(policy, "KilledColonist");
+            AddCompanionTale(policy, "KilledColonyAnimal");
+            AddCompanionTale(policy, "KilledMortar");
+            AddCompanionTale(policy, "KilledLongRange");
+            AddCompanionTale(policy, "KilledMelee");
+            AddCompanionTale(policy, "DefeatedHostileFactionLeader");
+            AddCompanionTale(policy, "KilledCapacity");
             return policy;
+        }
+
+        private static void AddCompanionTale(RoyaltyPolicySnapshot policy, string taleDefName)
+        {
+            policy.personaKillCompanionTales.Add(new RoyaltyTaleRoleRule
+            {
+                taleDefName = taleDefName,
+                killerRoleToken = RoyaltyTaleRoleTokens.Initiator,
+                victimRoleToken = RoyaltyTaleRoleTokens.Recipient
+            });
         }
     }
 

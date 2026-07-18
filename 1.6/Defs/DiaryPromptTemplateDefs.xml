@@ -673,6 +673,8 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
       <li><label>bond ending cause</label><source>GameContext</source><contextKey>bond_end_cause</contextKey></li>
       <li><label>persona trait 1</label><source>GameContext</source><contextKey>persona_trait_1</contextKey></li>
       <li><label>persona trait 2</label><source>GameContext</source><contextKey>persona_trait_2</contextKey></li>
+      <!-- DeathDescription intentionally keeps the compact trait labels only; the full meanings
+           remain on SoloImportant first-kill prompts to keep neutral death prompts brief. -->
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

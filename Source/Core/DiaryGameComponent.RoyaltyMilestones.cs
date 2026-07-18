@@ -32,7 +32,11 @@ namespace PawnDiary
             milestone = null;
             if (!RoyaltyPersonaRuntimeReady() || killer == null || victim == null
                 || !IsDiaryEligible(killer)) return false;
-            BaselineRoyaltyStateIfNeeded(SnapshotFreeColonists());
+            // SnapshotFreeColonists allocates a fresh list. The version gate is checked here as
+            // well as inside the baseline routine because qualifying Tales are frequent after the
+            // first observation and do not need to rebuild an already-established baseline.
+            if (royaltyPersonaObservationVersion < RoyaltyStatePersistence.CurrentObservationVersion)
+                BaselineRoyaltyStateIfNeeded(SnapshotFreeColonists());
 
             List<PersonaWeaponSnapshot> visible = DlcContext.CapturePersonaWeapons(killer);
             if (visible.Count != 1 || !visible[0].isCurrentlyPrimary) return false;
@@ -58,7 +62,11 @@ namespace PawnDiary
                     deathVictimRoleToken = victimRoleToken ?? string.Empty,
                     significance = Math.Max(0, significance),
                     victimPresent = true,
-                    victimDied = victim.Dead || victim.health?.State == PawnHealthState.Dead,
+                    // Vanilla records KilledMajorThreat inside Pawn.DoKillSideEffects, before
+                    // Pawn.Kill reaches health.SetDead(). The exact balanced Pawn.Kill scope is the
+                    // death proof available at this callback; reading victim.Dead here always rejects
+                    // a legitimate Tale because that later mutation has not happened yet.
+                    victimDied = exactKillScope,
                     hasDeathContext = exactKillScope,
                     deathContextMatchesKiller = exactKillScope,
                     personaGroupEnabled = personaGroupEnabled,
@@ -102,7 +110,10 @@ namespace PawnDiary
             if (!RoyaltyPersonaRuntimeReady() || pawn == null) return string.Empty;
             BaselineRoyaltyStateIfNeeded(SnapshotFreeColonists());
             List<PersonaWeaponSnapshot> visible = DlcContext.CapturePersonaWeapons(pawn);
-            if (visible.Count != 1 || !visible[0].isCurrentlyPrimary) return string.Empty;
+            // A living separation-pending/separated bond can still be coded to this pawn while the
+            // weapon sits in another equipment slot. Death ends that exact bond too; primary status
+            // is required for a kill milestone, not for preserving the wielder-death context.
+            if (visible.Count != 1) return string.Empty;
             PersonaWeaponSnapshot weapon = visible[0];
             int index = PersonaBondIndex(weapon.weaponThingId);
             PersonaBondState state = index >= 0 ? royaltyPersonaBonds[index] : null;

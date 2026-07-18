@@ -66,7 +66,10 @@ namespace PawnDiary
                     ? Math.Max(-1, source.pendingSeparationTick)
                     : -1,
                 separationEmitted = source.separationEmitted,
-                firstConsequentialKillObserved = source.firstConsequentialKillObserved,
+                // Recorded is a stronger historical fact than observed. Repair legacy/corrupt rows
+                // that somehow persisted the flags in the impossible inverse combination.
+                firstConsequentialKillObserved = source.firstConsequentialKillObserved
+                    || source.firstConsequentialKillEventRecorded,
                 firstConsequentialKillEventRecorded = source.firstConsequentialKillEventRecorded,
                 lastPrimaryObservedTick = Math.Max(-1, source.lastPrimaryObservedTick),
                 endedTick = phase == PersonaBondPhaseTokens.Ended ? Math.Max(-1, source.endedTick) : -1,

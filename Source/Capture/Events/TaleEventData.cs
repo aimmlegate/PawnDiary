@@ -24,7 +24,7 @@ namespace PawnDiary.Capture
     {
         public override DiaryEventType EventType => DiaryEventType.Tale;
 
-        /// <summary>The tale's defName (e.g. "KilledMan", "Wounded", "DidResearch").</summary>
+        /// <summary>The tale's defName (e.g. "KilledMelee", "Wounded", "DidResearch").</summary>
         public string DefName;
 
         /// <summary>The first pawn's id (or null for SinglePawn tales where the pawn is missing).

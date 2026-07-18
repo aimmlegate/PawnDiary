@@ -6,8 +6,9 @@ transfer lifecycle pages with guarded Harmony collection, saved state, late-visi
 package-gated settings/prompts, English/Russian localization, prompt fixtures, and N3-R evidence.
 Its automated loaded suite is user-confirmed green, while the hands-on Phase-2 matrix remains open.
 Phase 3 now owns the first qualifying persona kill through the existing Tale page and enriches the
-existing wielder-death page with pre-`UnCode` context; its loaded fixtures and manual matrix remain
-pending. Phases 4–8 remain. This status does not pass, waive, or remove any earlier Biotech B1 manual
+existing wielder-death page with pre-`UnCode` context. Its first loaded run reached 240/241 and exposed
+a pre-dead Tale timing gate that is now fixed; a clean rerun and the manual matrix remain pending.
+Phases 4–8 remain. This status does not pass, waive, or remove any earlier Biotech B1 manual
 acceptance row.
 
 Scheduling authority: implement Royalty phases only in the waves assigned by
@@ -720,13 +721,16 @@ creating a “reunion” page after no separation page existed.
 
 ### 8.4 First consequential kill
 
-The canonical hook is the existing `TaleSignal`, because it has both participants, the tale Def,
-victim-role metadata/death correlation, and current equipment at the same gameplay moment.
+The canonical hook is the existing `TaleSignal`, because it has both participants, the Tale Def,
+the exact active `Pawn.Kill` correlation, and current equipment at the same gameplay moment.
 
-“Has the killer” means the adapter derives the role from existing exact death-victim metadata (the
-other pawn is the killer) and, when available, confirms it against the death-context instigator ID.
-The XML Royalty policy may add narrow TaleDef -> killer/victim role corrections. Missing or
-contradictory role evidence fails closed; list order is never treated as semantics.
+“Has the killer” means an exact XML TaleDef row names distinct initiator/recipient roles and those
+pawns match the most-recently-added exact active kill scope. Missing or contradictory role evidence fails closed;
+list order is never treated as semantics. The shipped qualifier is only the verified vanilla
+`KilledMajorThreat`; `KilledMan` does not exist in RimWorld 1.6 and must not be used as a fallback.
+The same policy separately lists the eight ordinary double-pawn companion Tales vanilla can emit
+around that qualifier. Companion rows can be owned by an already-qualified milestone but can never
+qualify one themselves; `KilledBy` stays with victim-death ownership.
 
 Pure `PersonaMilestonePolicy` receives:
 
@@ -746,10 +750,13 @@ If it qualifies:
   never be mislabeled as the bond's first; separately record whether the page was accepted;
 - select normally one and at most two kill-relevant traits;
 - claim the killer-POV combat page for that action so no parallel persona event is submitted;
+- claim exact ordinary companion Tales staged in that same kill call, including delayed batch input;
 - preserve any separate victim death page or victim-POV handling already required by death policy.
 
-If it does not qualify, existing tale batching and capture behavior remain unchanged. XML should ship
-with a deliberately narrow initial tale/victim policy and be tunable without recompilation.
+If it does not qualify, every staged companion returns to existing Tale batching. Both bounded Tale
+and Thought buffers fail open on defensive overflow, so capacity pressure cannot silently lose an
+ordinary signal. XML ships with a deliberately narrow initial policy and is tunable without
+recompilation.
 
 ### 8.5 Trait relevance
 
@@ -767,10 +774,14 @@ the same event remains deterministic while different bonds do not always choose 
 Persona trait thoughts are secondary evidence when they are caused by the same kill action. Vanilla
 `WeaponTraitDef.bondedThought` rows are `Thought_Situational`, so they never enter
 `MemoryThoughtHandler.TryGainMemory` and Phase 2 must not construct a dead staging scope around them.
-For Phase 3, open a narrow scope only for a verified stored `killThought` memory callback, stage only a
-matching pawn/thought signal, and let the accepted Tale event claim it. If no Royalty event claims the
-thought before the short expiry, flush it through the unchanged `ThoughtSignal` path. Never suppress a
-ThoughtDef globally merely because a persona trait can produce it.
+For Phase 3, open a narrow scope only for verified stored `killThought` Defs on the exact current
+weapon, stage each matching pawn/Def once, and let the accepted Tale event claim it. Carry only
+expected Defs not already staged while that exact `Pawn.Kill` scope remains open, so either callback
+order is handled synchronously; consume each at most once. The memory hook has no victim argument,
+so after the scope closes an unmatched memory must fail open through the unchanged `ThoughtSignal`
+path rather than a killer-wide recent-owner cache. If no Royalty event claims the scope, flush each
+staged signal independently. Never suppress a ThoughtDef globally merely because a persona trait can
+produce it.
 
 ### 8.6 Bond endings and transfers
 
@@ -782,7 +793,8 @@ Cause precedence is:
 4. unknown uncode;
 5. map removal/lifecycle cleanup.
 
-Death owns its existing page. Destruction may own a persona page. A transfer is two truths—a prior
+Death owns its existing page, including when the exact live coded bond is pending/separated and its
+weapon is no longer primary. Destruction may own a persona page. A transfer is two truths—a prior
 bond ended and a new one formed—but the implementation should prefer one new-owner formation page
 with concise exact previous-bond context when both edges correlate. Unknown uncode is saved for
 reconciliation and normally silent. Map removal is always silent.
@@ -1114,7 +1126,8 @@ For a genuinely new bond after baselining, normal lifecycle behavior begins imme
 - Deep-scribe only Pawn Diary's plain state records.
 - Do not deep-scribe or reference-scribe persona weapons, permits, titles, or quests.
 - Use stable strings/integers/booleans and defensive defaults.
-- Preserve unknown future enum/token values as safe `unknown` during normalization.
+- Normalize unknown future enum/token values to the existing safe `untracked`/`none` sentinels until
+  a versioned `unknown` state is introduced; do not reinterpret them as a live bond or a real ending.
 - Bound tombstones/ended bond records by XML or a defensive cap while retaining records still needed
   by saved pending events.
 - Reset all static caches in `FinalizeInit`; they otherwise leak across exit-to-menu and another save.
@@ -1129,6 +1142,7 @@ Add one policy Def with safe C# fallbacks for:
 - bond tombstone retention/caps;
 - qualifying tale defNames, explicit killer/victim role corrections, and optional victim/significance
   conditions;
+- exact same-`Pawn.Kill` companion Tale defNames and roles, separate from qualification;
 - trait structural weights and worker-category mappings;
 - maximum selected persona traits;
 - title/psylink cause correlation lifetimes;
@@ -1408,26 +1422,30 @@ acceptance scenarios pass.
 
 ### Phase 3 — Persona combat and death integration
 
-> **Implementation status (2026-07-18): code-complete; focused loaded fixtures compile; in-game and
+> **Implementation status (2026-07-18): code-complete; first loaded run 240/241; focused rerun and
 > manual acceptance pending.** A qualifying Tale is resolved only from exact XML killer/victim roles
 > inside the matching active `Pawn.Kill` scope while the exact coded weapon is still the killer's
 > primary. The saved first-kill truth advances even when its Royalty-gated group is disabled or page
 > creation fails; only a durable accepted page sets the separate recorded flag. The canonical page is
 > forced to one solo killer POV, retains `tale=` plus the source Tale/role facts, and attaches N3-R bond
-> evidence without creating a standalone persona domain marker. Exact persona-trait `killThought`
-> Defs are staged across the XML-bounded 60-tick callback-order window and claimed only by that durable
-> page; every unclaimed signal returns once to ordinary Thought capture. The death prefix snapshots
-> persona facts before vanilla `UnCode`, and the existing Tale/fallback death owner appends them without
-> emitting `PersonaWeaponBondEnded`. Pure suites pass 226 Royalty, 665 capture, and 2,265 pipeline
-> assertions; real major-threat kill/repeat and bonded-wielder death RimTests compile. The new loaded
-> fixtures and the Phase-3 manual matrix remain unchecked.
+> evidence without creating a standalone persona domain marker. Exact same-call companion Tales and
+> persona-trait `killThought` Defs are staged losslessly; only the durable page claims them, while a
+> disabled/rejected milestone releases every ordinary path. Late Thought ownership is per-Def and
+> one-shot, with fail-open bounded buffers. The death prefix snapshots persona facts before vanilla
+> `UnCode`, including a still-coded non-primary live bond, and the existing Tale/fallback death owner
+> appends them without emitting `PersonaWeaponBondEnded`. Save normalization preserves observed versus
+> recorded and repairs recorded-implies-observed. Pure suites pass 245 Royalty, 665 capture, and 2,290
+> pipeline assertions; expanded real-kill/delayed-batch/disabled-output/non-primary-death/Scribe
+> RimTests compile. The first loaded run exposed that `KilledMajorThreat` precedes `health.SetDead()`;
+> the balanced exact kill scope now supplies death proof at that callback. The expanded clean rerun and
+> Phase-3 manual matrix remain unchecked.
 
 1. Project persona context into `TaleSignal` at capture time.
 2. Add pure qualifying-milestone and trait selection.
 3. Mark the qualifying gameplay milestone observed regardless of group enablement; track accepted
    page creation separately so a later kill is never presented as the first.
-4. Stage/claim exact kill-thought side effects, with ordinary Thought fallback when no milestone owns
-   them.
+4. Stage/claim exact kill-thought and same-call companion-Tale side effects, with lossless ordinary
+   fallback when no milestone owns them.
 5. Snapshot bond context in the existing death prefix/cache.
 6. Add per-POV dedup tests and preserve victim death behavior.
 

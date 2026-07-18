@@ -556,6 +556,24 @@ namespace PawnDiary
             string markers = string.IsNullOrWhiteSpace(entry.markersKey)
                 ? entry.markers
                 : SuiteMarkers(entry.markersKey, pawn, partner);
+            if (string.Equals(
+                entry.markersKey,
+                "PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Markers",
+                System.StringComparison.Ordinal))
+            {
+                // Keep the dev fixture's structured prefix in the same order as TaleSignal's
+                // production gameContext: tale, label, taleClass, then the Royalty markers.
+                int firstSeparator = markers.IndexOf("; ", System.StringComparison.Ordinal);
+                if (firstSeparator >= 0)
+                {
+                    markers = markers.Substring(0, firstSeparator + 2)
+                        + "label=" + label + "; "
+                        + markers.Substring(firstSeparator + 2);
+                    return markers
+                        + (string.IsNullOrEmpty(entry.reasonKey) ? string.Empty : "; reason=" + SuiteReason(entry.reasonKey))
+                        + "; " + DevPromptSuiteMarker;
+                }
+            }
             return markers
                 + "; label=" + label
                 + (string.IsNullOrEmpty(entry.reasonKey) ? string.Empty : "; reason=" + SuiteReason(entry.reasonKey))
