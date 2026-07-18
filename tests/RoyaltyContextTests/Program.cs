@@ -23,6 +23,8 @@ namespace RoyaltyContextTests
             TestTitleTransitionMatrixAndDutyCaps();
             TestMutationExactOwnersAndDedup();
             TestMutationExpiryMismatchAndFallback();
+            TestPersonaPersistenceBaselinesAndNormalization();
+            TestTitleObservationNormalizationAndOrdering();
             Console.WriteLine("RoyaltyContextTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -117,6 +119,92 @@ namespace RoyaltyContextTests
                 !PersonaLifecyclePolicy.Evaluate(null, malformed, policy).stateChanged);
             malformed.weapon = null;
             AssertTrue("null weapon rejected", !PersonaLifecyclePolicy.Evaluate(null, malformed, policy).stateChanged);
+        }
+
+        private static void TestPersonaPersistenceBaselinesAndNormalization()
+        {
+            PersonaWeaponSnapshot weapon = Weapon("Weapon_Save", "Pawn_Save", true);
+            weapon.displayName = "  Voice; of Dawn  ";
+            weapon.traits = new List<PersonaTraitFact>
+            {
+                Trait("Trait_B", bondedThought: true, worker: "Worker.B"),
+                Trait("Trait_B", kill: true, worker: "Worker.Duplicate"),
+                Trait("Trait_A", bondedHediff: true, worker: "Worker.A")
+            };
+            PersonaBondStateSnapshot baseline = RoyaltyStatePersistence.BaselinePersona(weapon, -5, 2);
+            AssertNotNull("valid persona baseline", baseline);
+            AssertEqual("baseline phase active", PersonaBondPhaseTokens.Active, baseline.phaseToken);
+            AssertEqual("baseline epoch one", 1, baseline.bondEpoch);
+            AssertTrue("baseline consumes historical first kill", baseline.firstConsequentialKillObserved);
+            AssertEqual("baseline clamps tick", 0, baseline.bondStartedTick);
+            AssertEqual("baseline sanitizes semicolon", "Voice, of Dawn", baseline.lastDisplayName);
+            AssertEqual("baseline trait cap and duplicate", 2, baseline.traits.Count);
+            AssertTrue("baseline invalid weapon rejected",
+                RoyaltyStatePersistence.BaselinePersona(Weapon("bad|id", "Pawn_Save", true), 1, 2) == null);
+
+            PersonaBondStateSnapshot malformed = ActiveState();
+            malformed.weaponThingId = "Weapon_Duplicate";
+            malformed.phaseToken = "invented";
+            malformed.bondEpoch = -9;
+            malformed.pendingSeparationTick = 50;
+            malformed.endedTick = 40;
+            malformed.endCauseToken = "invented";
+            PersonaBondStateSnapshot repaired = RoyaltyStatePersistence.NormalizePersona(malformed, 2);
+            AssertEqual("unknown phase repairs", PersonaBondPhaseTokens.Untracked, repaired.phaseToken);
+            AssertEqual("untracked epoch clamps zero", 0, repaired.bondEpoch);
+            AssertEqual("nonpending clears pending tick", -1, repaired.pendingSeparationTick);
+            AssertEqual("nonended clears ending tick", -1, repaired.endedTick);
+            AssertEqual("nonended clears cause", PersonaEndCauseTokens.None, repaired.endCauseToken);
+
+            PersonaBondStateSnapshot older = ActiveState();
+            older.weaponThingId = "Weapon_Duplicate";
+            older.lastDisplayName = "Older";
+            PersonaBondStateSnapshot newer = ActiveState();
+            newer.weaponThingId = "Weapon_Duplicate";
+            newer.lastDisplayName = "Newer";
+            List<PersonaBondStateSnapshot> rows = RoyaltyStatePersistence.NormalizePersonas(
+                new List<PersonaBondStateSnapshot> { older, null, newer, ActiveState() }, 2, 2);
+            AssertEqual("persona row cap", 2, rows.Count);
+            AssertEqual("duplicate keeps newest", "Newer", rows[0].lastDisplayName);
+        }
+
+        private static void TestTitleObservationNormalizationAndOrdering()
+        {
+            List<RoyalTitleSnapshot> titles = new List<RoyalTitleSnapshot>
+            {
+                Title("Pawn_A", "Faction_Z", "Baron", 5, "speech"),
+                Title("Pawn_A", "Faction_A", "Freeholder", 1),
+                Title("Pawn_A", "Faction_A", "Count", 7, "bedroom")
+            };
+            List<RoyalTitleObservationSnapshot> baseline = RoyaltyStatePersistence.BaselineTitles(titles, -10);
+            AssertEqual("title baseline faction dedup", 2, baseline.Count);
+            AssertEqual("title baseline deterministic first faction", "Faction_A", baseline[0].factionId);
+            AssertEqual("title baseline keeps highest seniority", "Count", baseline[0].titleDefName);
+            AssertEqual("title baseline clamps tick", 0, baseline[0].lastObservedTick);
+
+            List<RoyalTitleObservationSnapshot> normalized = RoyaltyStatePersistence.NormalizeTitleObservations(
+                new List<RoyalTitleObservationSnapshot>
+                {
+                    null,
+                    new RoyalTitleObservationSnapshot { factionId = "bad|id", titleDefName = "Count" },
+                    new RoyalTitleObservationSnapshot
+                    {
+                        factionId = "Faction_B", factionName = " Empire; West ", titleDefName = "Knight",
+                        titleLabel = " Knight ", seniority = -2, lastObservedTick = -8
+                    },
+                    new RoyalTitleObservationSnapshot
+                    {
+                        factionId = "Faction_B", titleDefName = "Baron", seniority = 4, lastObservedTick = 10
+                    },
+                    new RoyalTitleObservationSnapshot
+                    {
+                        factionId = "Faction_C", titleDefName = "Yeoman", seniority = 1, lastObservedTick = 5
+                    }
+                }, 1);
+            AssertEqual("title observation cap", 1, normalized.Count);
+            AssertEqual("title cap follows stable faction ordering", "Faction_B", normalized[0].factionId);
+            AssertEqual("duplicate faction keeps higher title", "Baron", normalized[0].titleDefName);
+            AssertEqual("title seniority normalized", 4, normalized[0].seniority);
         }
 
         private static void TestSeparationRecoveryMatrix()

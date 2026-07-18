@@ -5,7 +5,6 @@
 // Progression page source is disabled, so re-enabling it cannot create a catch-up identity page.
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using PawnDiary.Capture;
 using PawnDiary.Ingestion;
 using RimWorld;
@@ -28,12 +27,14 @@ namespace PawnDiary
             bool progressionEnabled = PawnDiaryMod.Settings != null
                 && DiarySignalPolicies.Enabled(DiarySignalPolicies.Progression);
             bool observeBiotech = ModsConfig.BiotechActive;
-            if (!progressionEnabled && !observeBiotech)
+            bool observeRoyalty = ModsConfig.RoyaltyActive;
+            if (!progressionEnabled && !observeBiotech && !observeRoyalty)
             {
                 return;
             }
 
             List<Pawn> colonists = SnapshotFreeColonists();
+            BaselineRoyaltyStateIfNeeded(colonists);
             for (int i = 0; i < colonists.Count; i++)
             {
                 ScanPawnProgressionForDiaryEvents(
@@ -431,7 +432,10 @@ namespace PawnDiary
 
         private void ScanPsylinkLevel(Pawn pawn, PawnProgressionState state, bool baseline)
         {
-            int currentLevel = CurrentPsylinkLevel(pawn);
+            // An absent DLC tracker means unavailable data, not a level loss. Preserve the saved
+            // scalar so re-enabling Royalty cannot create a synthetic catch-up increase.
+            if (!ModsConfig.RoyaltyActive) return;
+            int currentLevel = DlcContext.CurrentPsylinkLevel(pawn);
             int previousLevel = state.highestPsylinkLevelRecorded;
             ProgressionLevelDecision decision = ProgressionMilestonePolicy.EvaluateLevelIncrease(
                 currentLevel,
@@ -472,6 +476,9 @@ namespace PawnDiary
 
         private void ScanRoyalTitleChange(Pawn pawn, PawnProgressionState state, bool baseline)
         {
+            // Empty guarded data while Royalty is inactive is not evidence that a faction title was
+            // lost. The faction-aware observation row remains untouched until Royalty is available.
+            if (!ModsConfig.RoyaltyActive) return;
             string currentDef = DlcContext.RoyalTitleDefName(pawn);
             string currentLabel = DlcContext.RoyalTitleLabel(pawn);
             if (baseline)
@@ -728,109 +735,6 @@ namespace PawnDiary
                 Context = context,
                 AlreadyRecorded = false
             };
-        }
-
-        private static int CurrentPsylinkLevel(Pawn pawn)
-        {
-            if (pawn?.health?.hediffSet?.hediffs == null)
-            {
-                return 0;
-            }
-
-            int highest = 0;
-            List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
-            for (int i = 0; i < hediffs.Count; i++)
-            {
-                Hediff hediff = hediffs[i];
-                if (!MatchesDefName(DiaryTuning.Current.psylinkHediffDefNames, hediff?.def?.defName))
-                {
-                    continue;
-                }
-
-                int level;
-                if (TryGetPsylinkLevel(hediff, out level) && level > highest)
-                {
-                    highest = level;
-                }
-            }
-
-            return highest;
-        }
-
-        private static bool TryGetPsylinkLevel(Hediff hediff, out int level)
-        {
-            level = 0;
-            if (hediff == null)
-            {
-                return false;
-            }
-
-            if (TryReadIntMember(hediff, "level", out level)
-                || TryReadIntMember(hediff, "Level", out level))
-            {
-                level = ClampPsylinkLevel(level);
-                return level > 0;
-            }
-
-            try
-            {
-                if (hediff.def?.stages != null && hediff.def.stages.Count > 0)
-                {
-                    level = ClampPsylinkLevel(hediff.CurStageIndex + 1);
-                    return level > 0;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-
-            return false;
-        }
-
-        private static bool TryReadIntMember(object instance, string memberName, out int value)
-        {
-            value = 0;
-            if (instance == null || string.IsNullOrWhiteSpace(memberName))
-            {
-                return false;
-            }
-
-            BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            Type type = instance.GetType();
-            FieldInfo field = type.GetField(memberName, flags);
-            if (field != null && TryCoerceInt(field.GetValue(instance), out value))
-            {
-                return true;
-            }
-
-            PropertyInfo property = type.GetProperty(memberName, flags);
-            return property != null && property.GetIndexParameters().Length == 0
-                && TryCoerceInt(property.GetValue(instance, null), out value);
-        }
-
-        private static bool TryCoerceInt(object raw, out int value)
-        {
-            value = 0;
-            if (raw is int)
-            {
-                value = (int)raw;
-                return true;
-            }
-
-            if (raw is float)
-            {
-                value = (int)(float)raw;
-                return true;
-            }
-
-            if (raw is double)
-            {
-                value = (int)(double)raw;
-                return true;
-            }
-
-            return raw != null && int.TryParse(raw.ToString(), out value);
         }
 
         private static int ClampPsylinkLevel(int level)

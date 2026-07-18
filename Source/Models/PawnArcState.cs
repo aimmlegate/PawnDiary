@@ -53,6 +53,10 @@ namespace PawnDiary
         // Additive nested Biotech state. Old/no-DLC saves load a harmless empty row; live DLC reads
         // remain in DlcContext and never occur from this save model.
         public BiotechPawnProgressionState biotechProgressionState;
+        // Royalty-specific initialization is separate from the older shared progression baseline.
+        // A missing version-zero row means "baseline once"; version one plus an empty title list is
+        // a legitimate observed titleless pawn.
+        public RoyaltyPawnProgressionState royaltyObservationState;
 
         public void ExposeData()
         {
@@ -66,6 +70,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref baselineTraitGainOnNextScan, "baselineTraitGainOnNextScan", true);
             Scribe_Values.Look(ref baselineProgressionOnNextScan, "baselineProgressionOnNextScan", true);
             Scribe_Deep.Look(ref biotechProgressionState, BiotechSaveKeys.PawnProgressionState);
+            Scribe_Deep.Look(ref royaltyObservationState, RoyaltySaveKeys.PawnObservationState);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -116,6 +121,12 @@ namespace PawnDiary
                 biotechProgressionState = new BiotechPawnProgressionState();
             }
             biotechProgressionState.Normalize();
+
+            if (royaltyObservationState == null)
+            {
+                royaltyObservationState = new RoyaltyPawnProgressionState();
+            }
+            royaltyObservationState.Normalize();
 
             HashSet<string> seenTraitKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i < knownTraitKeys.Count; i++)
@@ -186,6 +197,18 @@ namespace PawnDiary
 
             biotechProgressionState.Normalize();
             return biotechProgressionState;
+        }
+
+        /// <summary>Returns the normalized nested Royalty title/psylink observation row.</summary>
+        public RoyaltyPawnProgressionState EnsureRoyaltyState()
+        {
+            if (royaltyObservationState == null)
+            {
+                royaltyObservationState = new RoyaltyPawnProgressionState();
+            }
+
+            royaltyObservationState.Normalize();
+            return royaltyObservationState;
         }
     }
 

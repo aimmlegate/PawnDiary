@@ -16,5 +16,6 @@
     <Compile Include="..\..\Source\Pipeline\Royalty\PersonaMilestonePolicy.cs" Link="PersonaMilestonePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyalTitleTransitionPolicy.cs" Link="RoyalTitleTransitionPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyalMutationOwnershipPolicy.cs" Link="RoyalMutationOwnershipPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\RoyaltyStatePersistence.cs" Link="RoyaltyStatePersistence.cs" />
   </ItemGroup>
 </Project>

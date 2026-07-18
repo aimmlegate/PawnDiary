@@ -1309,8 +1309,9 @@ same vanilla class.
 > its detached snapshot retains safe code fallbacks. Pure policies now cover the complete R1
 > lifecycle, first-consequential-milestone ownership, structural trait selection, faction-specific
 > title transitions/duty deltas, and title/psylink owner/fallback dedup matrix. The assembly-free
-> `RoyaltyContextTests` suite passes 164 assertions. This status claims no loaded-game acceptance;
-> Phase 1 collection/persistence and all player-visible behavior remain unimplemented.
+> `RoyaltyContextTests` suite passed 164 assertions at that checkpoint. Phase 0 itself claimed no
+> loaded-game acceptance; Phase 1 collection/persistence is now implemented as described below,
+> while all player-visible Royalty behavior remains unimplemented.
 
 1. Confirm Narrative Continuity N0 token/arc-key contracts and add plain Royalty snapshot/state
    contracts that map to them without referencing live shared providers.
@@ -1326,6 +1327,18 @@ Narrative Continuity N0–N1 must land before Phase 2 creates persona pages. Pha
 Royalty state in parallel, but it must not invent a temporary Royalty-only continuity save schema.
 
 ### Phase 1 — Guarded collection and silent baselining
+
+> **Implementation status (2026-07-18): code-complete, loaded-game execution not claimed.** Added
+> double-guarded `DlcContext` projections for persona weapons/structural traits, highest title per
+> faction with duty categories, and current psylink level. Added a versioned deep-scribed global
+> persona ledger plus nested per-pawn faction-title observations, deterministic malformed/null/
+> duplicate/cap normalization, conservative old-save bond/title/psylink baselines, and resettable
+> plain transient correlation shells cleared from `FinalizeInit`. Existing bonds consume the
+> historical first-kill milestone and all baselines are silent. `RoyaltyContextTests` now passes 187
+> assembly-free assertions; `PawnDiaryRoyaltyStateFixtureTests` builds with the RimTest assembly and
+> covers Scribe round-trip, missing-key markers, and no-Royalty collectors. No Phase-2 hook, page,
+> provider, prompt, setting, or other player-visible behavior was added. A real loaded-game RimTest
+> run remains an explicit acceptance item rather than an inferred claim.
 
 1. Extend `DlcContext` with guarded persona/title/psylink projections.
 2. Add deep-scribed persona state and normalization.

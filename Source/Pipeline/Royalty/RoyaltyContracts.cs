@@ -349,6 +349,17 @@ namespace PawnDiary
         public List<string> dutyCategoryTokens = new List<string>();
     }
 
+    /// <summary>Saved comparison facts for one pawn's highest title in one faction.</summary>
+    internal sealed class RoyalTitleObservationSnapshot
+    {
+        public string factionId = string.Empty;
+        public string factionName = string.Empty;
+        public string titleDefName = string.Empty;
+        public string titleLabel = string.Empty;
+        public int seniority;
+        public int lastObservedTick = -1;
+    }
+
     /// <summary>Plain immediate before/after title mutation.</summary>
     internal sealed class RoyalTitleMutationSnapshot
     {

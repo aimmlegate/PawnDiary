@@ -52,10 +52,10 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge). |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
-| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Odyssey location/mobile-home and lifecycle snapshots. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, Odyssey lifecycle/journey/location/history/writer/context policy, and contract-only Royalty persona/title/psylink decisions. |
+| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Odyssey location/mobile-home/lifecycle and Royalty persona/title/psylink snapshots. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, Odyssey lifecycle/journey/location/history/writer/context policy, and Royalty persona/title/psylink decisions plus save normalization. |
 | `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including `DiaryOdysseyPolicyDef` and the contract-only `DiaryRoyaltyPolicyDef`. |
-| `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey active-journey/history state. |
+| `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history and Royalty persona/faction-title observation state. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, and guarded Odyssey lifecycle seams. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
@@ -220,9 +220,10 @@ Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned gra
 additive save-key suffixes under each POV/archive row; it performs no retroactive inference or
 catch-up on older pages.
 
-**Royalty Phase 0 (Master Wave 5; contract-only)** freezes the detached R1 boundary without changing
-runtime behavior. `RoyaltyContracts` represents persona weapon/trait/bond state, faction-specific
-title before/after facts, and psylink/title mutation cause scopes using primitives and copied lists.
+**Royalty Phases 0–1 (Master Wave 5; page-silent foundation)** freeze the detached R1 boundary and
+save current truth without creating a diary page. `RoyaltyContracts` represents persona
+weapon/trait/bond state, faction-specific title before/after facts, and psylink/title mutation cause
+scopes using primitives and copied lists.
 `PersonaLifecyclePolicy` advances formation, meaningful separation, recovery, destruction/death,
 transfer, unobservable, map-removal, and disabled-output truth deterministically; page eligibility is
 a separate result so later re-enabling cannot create catch-up stories. `PersonaTraitPolicy` ranks
@@ -232,9 +233,17 @@ localized wording. `PersonaMilestonePolicy`, `RoyalTitleTransitionPolicy`, and
 `RoyalMutationOwnershipPolicy` freeze first-kill ownership, faction/seniority title classification,
 and exact bestowing/anima/neuroformer/succession/unknown fallback dedup rules. The XML Def contains
 only primitive values and string identifiers with safe code fallbacks; it has no direct Royalty Def
-reference. There are no live Royalty reads, Harmony hooks, Scribe fields, provider candidates, page
-sources, settings rows, prompt attachments, or player-visible changes in this phase. The existing
-guarded `DlcContext.RoyalTitle*` summary and scalar progression scanner remain unchanged.
+reference. Phase 1 adds `DlcContext.Royalty` collectors double-guarded by
+`ModsConfig.RoyaltyActive` plus live pawn/comp/tracker null checks. They copy coded persona weapon and
+structural trait facts, the highest title per faction with bounded duty categories, and the current
+psylink level; the existing `DlcContext.RoyalTitle*` summary remains available unchanged. A versioned
+global `royaltyPersonaBonds` deep list and nested versioned per-pawn faction-title list distinguish an
+old missing key from a legitimate initialized-empty ledger. The first available scan baselines
+existing bonds/titles/psylink silently; pre-existing bonds conservatively mark their historical first
+consequential kill observed. Normalization repairs null/unsafe/duplicate rows, ticks, phases, and caps,
+while `FinalizeInit` clears plain future-correlation cache shells so state cannot cross colonies.
+Royalty-inactive scans preserve saved title/psylink truth. There are still no Royalty Harmony hooks,
+provider candidates, page sources, settings rows, prompt attachments, or player-visible changes.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13
@@ -2224,7 +2233,11 @@ of known trait keys (`<defName>|<degree>`) used to detect newly gained traits, a
 `biotechProgressionState` whose Phase-1 `consumedGrowthAges` list is limited to 7/10/13 and whose
 Phase-5 nested `geneIdentityObservationState` stores an explicit baseline version, bounded sorted
 installed Def names, and current xenotype identity. The retained scalar xenotype fields are migration/
-downgrade compatibility only; the nested row is authoritative for fallback diffing. The arc
+downgrade compatibility only; the nested row is authoritative for fallback diffing. The progression
+row also owns additive `royaltyObservationState`: an explicit version and a bounded, sorted list of
+plain highest-title observations keyed by faction ID. The older scalar Royalty title fields remain for
+migration/downgrade compatibility and are not converted into an invented faction. Persona bonds live
+once at component scope because weapon Thing ID plus bond epoch—not a pawn row—is their identity. The arc
 schedule stores only cadence bookkeeping (`lastArcEntryTick`, `lastArcEntryYear`,
 `arcEntriesThisYear`, `forcedArcYear`, recently used memory ids, and the last retryable
 memory-shortfall tick/year). Neither field is a history database; existing diary pages remain the

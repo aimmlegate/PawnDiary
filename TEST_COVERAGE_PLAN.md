@@ -125,7 +125,7 @@ one window, `Gleaming` maps to none, localized fallbacks exist, and the three ex
 bounded source evidence. The EVT-22 RimTest fixture exercises the live package-gated page/evidence
 path when Anomaly is active and the no-op branch otherwise.
 
-Master Wave 5 / Royalty Phase 0 adds `RoyaltyContextTests`, a 164-assertion assembly-free suite. It
+Master Wave 5 / Royalty Phases 0–1 use `RoyaltyContextTests`, now a 187-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing
 Narrative Continuity `bond_lifecycle`/`weapon` contract; formation/load-baseline/re-equip,
 pending/threshold/unobservable separation, recorded/unrecorded recovery, destruction/death/transfer,
@@ -137,8 +137,13 @@ first title/promotion/demotion/loss/no-op, faction identity, seniority, bounded 
 disabled observation advancement; and exact bestowing/anima/neuroformer/succession title/psylink
 matching, inclusive correlation boundaries, pending/claim/expiry, one-fallback dedup, mismatched pawn/
 level/correlation, and malformed/null behavior. The shipped policy XML is parsed separately and its
-detached `CreateDefault` path is exercised. Phase 0 has no RimTest or loaded-game acceptance claim
-because it intentionally adds no hook, live read, persistence, page, provider, prompt, or setting.
+detached `CreateDefault` path is exercised. Phase 1 additionally covers conservative persona
+baselines, malformed phase/tick/cause repair, duplicate weapon ownership, trait/row caps, faction-title
+dedup, highest-seniority selection, stable ordering, missing rows, and corruption ceilings. The new
+`PawnDiaryRoyaltyStateFixtureTests` compiles against RimTest Redux and exercises deep persona Scribe
+round-trip, per-pawn faction-title/psylink preservation, old-save version-zero versus initialized-empty
+markers, and guarded no-Royalty persona/title/psylink collection. Building that fixture is not a claim
+that it was executed inside a loaded game; that acceptance remains explicit. No page behavior exists.
 
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,

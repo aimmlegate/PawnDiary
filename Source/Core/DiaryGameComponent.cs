@@ -368,6 +368,7 @@ namespace PawnDiary
             ExposeBiotechGrowthData();
             ExposeBiotechFamilyData();
             ExposeOdysseyData();
+            ExposeRoyaltyData();
 
             // Before writing generated-speech PlayLog state, drop rows RimWorld's PlayLog has already
             // pruned so stale LogIDs cannot accumulate or block future injection.
@@ -441,6 +442,21 @@ namespace PawnDiary
                     Log.ErrorOnce("[Pawn Diary] Post-load diary rebuild failed: " + e,
                         "DiaryGameComponent.ExposeData.PostLoad".GetHashCode());
                 }
+            }
+        }
+
+        /// <summary>Clears plain static correlation state after every new-game or load boundary.</summary>
+        public override void FinalizeInit()
+        {
+            try
+            {
+                RoyaltyTransientState.Reset();
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Royalty transient-state reset failed: " + exception,
+                    "PawnDiary.Royalty.Reset".GetHashCode());
             }
         }
 

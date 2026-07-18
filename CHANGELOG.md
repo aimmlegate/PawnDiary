@@ -1,5 +1,16 @@
 # Changelog
 
+- **2026-07-18 — Implemented Master Wave 5 / Royalty Phase 1 (page-silent foundation).** Added
+  guarded persona weapon/structural trait, per-faction title/duty, and psylink projections; versioned
+  deep-scribed global persona and nested per-pawn title observation state; deterministic malformed,
+  duplicate, ordering, and cap normalization; conservative silent old-save bond/title/psylink
+  baselines; Royalty-inactive baseline preservation; and resettable plain future-correlation shells.
+  Existing persona bonds mark historical first-kill ownership consumed, so the upgrade cannot invent
+  a later “first.” `RoyaltyContextTests` now passes 187 assembly-free assertions, and the focused
+  Scribe/no-DLC RimTest fixture compiles. This slice adds no Royalty Harmony hook, page, provider,
+  prompt, setting, dependency, or player-visible behavior, and does not claim a loaded-game fixture
+  run. Wave 5, the R1 gate, and the earlier Biotech B1 manual rows all remain open.
+
 - **2026-07-18 — Implemented Master Wave 5 / Royalty Phase 0 (contract-only).** Added plain R1
   persona weapon/trait/bond, faction-title, psylink, cause-scope, and ownership contracts; mapped
   persona continuity to the frozen `royalty-persona|<weaponThingId>|<bondEpoch>` shared arc grammar;
