@@ -1,5 +1,16 @@
 # Changelog
 
+- **2026-07-18 — Implemented Master Wave 5 / Royalty Phase 0 (contract-only).** Added plain R1
+  persona weapon/trait/bond, faction-title, psylink, cause-scope, and ownership contracts; mapped
+  persona continuity to the frozen `royalty-persona|<weaponThingId>|<bondEpoch>` shared arc grammar;
+  added an XML-owned `DiaryRoyaltyPolicyDef` with safe detached fallbacks; and implemented pure
+  deterministic lifecycle, meaningful separation/recovery/end, structural trait selection, first
+  consequential milestone, title transition, and title/psylink dedup decisions. The new assembly-free
+  `RoyaltyContextTests` suite passes 164 assertions. This slice adds no hooks, live Royalty reads,
+  Scribe state, provider, page, prompt, setting, dependency, or player-visible behavior; Royalty
+  Phase 1 and loaded-game acceptance remain pending, and the earlier Biotech B1 manual gates remain
+  open under the explicit scheduling exception.
+
 - **2026-07-18 — Corrected the loaded mechanitor combat regression fixture.** The real RimWorld 1.6
   `KilledMelee` Tale requires killer, victim, and weapon arguments; the adversarial friendly/hostile
   combat RimTest now supplies the base-game club Def instead of failing during Tale construction.

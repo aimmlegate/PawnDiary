@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Phase 0 contains only primitive values and exact string identifiers. There are deliberately
+       no Royalty Def references, so this policy loads safely when the DLC is absent. -->
+  <PawnDiary.DiaryRoyaltyPolicyDef>
+    <defName>Diary_Royalty</defName>
+    <label>Royalty persona and progression policy</label>
+    <enabled>true</enabled>
+    <separationThresholdTicks>60000</separationThresholdTicks>
+    <reconciliationCadenceTicks>2500</reconciliationCadenceTicks>
+    <maximumSelectedTraits>2</maximumSelectedTraits>
+    <maximumTraitCandidates>32</maximumTraitCandidates>
+    <maximumTraitLabelCharacters>80</maximumTraitLabelCharacters>
+    <maximumTraitDescriptionCharacters>240</maximumTraitDescriptionCharacters>
+    <maximumDutyCategoryTokens>2</maximumDutyCategoryTokens>
+    <titleCorrelationTicks>2500</titleCorrelationTicks>
+    <psylinkCorrelationTicks>2500</psylinkCorrelationTicks>
+    <killThoughtWeight>100</killThoughtWeight>
+    <bondedThoughtWeight>70</bondedThoughtWeight>
+    <bondedHediffWeight>60</bondedHediffWeight>
+    <equippedHediffWeight>40</equippedHediffWeight>
+    <!-- Compatibility corrections remain weaker than event-specific structural evidence. -->
+    <exactOverrideMaximumWeight>50</exactOverrideMaximumWeight>
+
+    <!-- Exact Tale defName strings only. The later adapter must still prove the killer/victim roles
+         through Tale death metadata; these rows never infer a role from list position. -->
+    <qualifyingTales>
+      <li>
+        <taleDefName>KilledMan</taleDefName>
+        <minimumSignificance>1</minimumSignificance>
+        <requireVictimDeath>true</requireVictimDeath>
+      </li>
+      <li>
+        <taleDefName>KilledMajorThreat</taleDefName>
+        <minimumSignificance>1</minimumSignificance>
+        <requireVictimDeath>true</requireVictimDeath>
+      </li>
+    </qualifyingTales>
+
+    <!-- Worker mappings and exact mod compatibility overrides are intentionally empty until an
+         installed structural worker or mod requires an explicit, reviewed mapping. -->
+    <traitWorkerRules />
+    <traitOverrides />
+  </PawnDiary.DiaryRoyaltyPolicyDef>
+</Defs>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <NoWarn>0649</NoWarn>
+  </PropertyGroup>
+
+  <!-- Only plain contracts/policies are linked. A Verse/RimWorld/Unity/Harmony dependency fails. -->
+  <ItemGroup>
+    <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContracts.cs" Link="NarrativeContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\RoyaltyContracts.cs" Link="RoyaltyContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\PersonaLifecyclePolicy.cs" Link="PersonaLifecyclePolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\PersonaTraitPolicy.cs" Link="PersonaTraitPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\PersonaMilestonePolicy.cs" Link="PersonaMilestonePolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\RoyalTitleTransitionPolicy.cs" Link="RoyalTitleTransitionPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\RoyalMutationOwnershipPolicy.cs" Link="RoyalMutationOwnershipPolicy.cs" />
+  </ItemGroup>
+</Project>

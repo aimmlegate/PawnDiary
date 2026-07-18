@@ -282,9 +282,18 @@ Do not add seasonal flooding, life support, or Mechhive choices in this wave.
 
 ## 10. Wave 5 — Royalty persona and progression flagship
 
+> **Implementation status (2026-07-18): Royalty Phase 0 complete; Wave 5 remains in progress.** By
+> explicit user scheduling exception, Phase 0 began while the five Biotech B1 manual acceptance rows
+> remain open; those earlier gates are neither passed nor removed. The contract-only slice adds plain
+> persona/title/psylink snapshots, the shared `royalty-persona|<weaponThingId>|<bondEpoch>` arc
+> grammar, XML-owned policy with safe fallbacks, pure deterministic lifecycle/trait/milestone/title/
+> mutation ownership decisions, and 164 assembly-free assertions. It adds no hooks, live reads,
+> persistence, provider, pages, prompts, settings, or player-visible behavior. Royalty Phase 1 is the
+> next permitted Wave-5 slice; the R1 release gate is not claimed.
+
 ### Implement in this exact order
 
-1. **Royalty 0** — pure persona/title/psylink contracts and policy.
+1. **Royalty 0 (implemented; contract-only)** — pure persona/title/psylink contracts and policy.
 2. **Royalty 1** — guarded collection, persistence, and silent baseline.
 3. **Narrative N3-R core** — persona/title provider plus required bond/identity evidence.
 4. **Royalty 2** — persona lifecycle pages.

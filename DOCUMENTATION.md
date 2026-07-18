@@ -53,8 +53,8 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Odyssey location/mobile-home and lifecycle snapshots. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, and Odyssey lifecycle/journey/location/history/writer/context policy. |
-| `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including `DiaryOdysseyPolicyDef`. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, Odyssey lifecycle/journey/location/history/writer/context policy, and contract-only Royalty persona/title/psylink decisions. |
+| `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including `DiaryOdysseyPolicyDef` and the contract-only `DiaryRoyaltyPolicyDef`. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey active-journey/history state. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, and guarded Odyssey lifecycle seams. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
@@ -214,10 +214,27 @@ planned Royalty persona/title/ascent moments, Ideology conversion/stance interpr
 growth/family/mechanitor moments, Anomaly visible transformation/monolith/containment pressure, and
 Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned grammar such as
 `biotech-family|&lt;birtherId&gt;|&lt;pregnancyHediffId&gt;` (or the child-ID fallback) and
-`odyssey-journey|&lt;shipStableId&gt;|&lt;departureTick&gt;`; they contain stable IDs only
+`odyssey-journey|&lt;shipStableId&gt;|&lt;departureTick&gt;`, and
+`royalty-persona|&lt;weaponThingId&gt;|&lt;bondEpoch&gt;`; they contain stable IDs only
 (never localized labels) and reference equality is ordinal/case-sensitive. N1 serializes the frozen
 additive save-key suffixes under each POV/archive row; it performs no retroactive inference or
 catch-up on older pages.
+
+**Royalty Phase 0 (Master Wave 5; contract-only)** freezes the detached R1 boundary without changing
+runtime behavior. `RoyaltyContracts` represents persona weapon/trait/bond state, faction-specific
+title before/after facts, and psylink/title mutation cause scopes using primitives and copied lists.
+`PersonaLifecyclePolicy` advances formation, meaningful separation, recovery, destruction/death,
+transfer, unobservable, map-removal, and disabled-output truth deterministically; page eligibility is
+a separate result so later re-enabling cannot create catch-up stories. `PersonaTraitPolicy` ranks
+structural kill/bond signals and XML worker mappings before bounded exact compatibility overrides,
+uses a stable event+Def-name tie break, and selects at most two sanitized facts without parsing
+localized wording. `PersonaMilestonePolicy`, `RoyalTitleTransitionPolicy`, and
+`RoyalMutationOwnershipPolicy` freeze first-kill ownership, faction/seniority title classification,
+and exact bestowing/anima/neuroformer/succession/unknown fallback dedup rules. The XML Def contains
+only primitive values and string identifiers with safe code fallbacks; it has no direct Royalty Def
+reference. There are no live Royalty reads, Harmony hooks, Scribe fields, provider candidates, page
+sources, settings rows, prompt attachments, or player-visible changes in this phase. The existing
+guarded `DlcContext.RoyalTitle*` summary and scalar progression scanner remain unchanged.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13
@@ -2408,6 +2425,7 @@ dotnet run --project tests/DiaryObservedConditionTests/DiaryObservedConditionTes
 dotnet run --project tests/NarrativeContinuityTests/NarrativeContinuityTests.csproj
 dotnet run --project tests/DiaryBiotechPolicyTests/DiaryBiotechPolicyTests.csproj
 dotnet run --project tests/DiaryOdysseyPolicyTests/DiaryOdysseyPolicyTests.csproj
+dotnet run --project tests/RoyaltyContextTests/RoyaltyContextTests.csproj
 dotnet run --project tests/SpeakUpBridgeLogicTests/SpeakUpBridgeLogicTests.csproj
 dotnet run --project tests/RimpsycheBridgeLogicTests/RimpsycheBridgeLogicTests.csproj
 dotnet run --project tests/PowerfulAiBridgeLogicTests/PowerfulAiBridgeLogicTests.csproj

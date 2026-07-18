@@ -1,7 +1,9 @@
 # Pawn Diary — Royalty Support Implementation Plan
 
-Status: scope-review draft; the RimWorld 1.6 feasibility spike is complete, and this file changes no
-production behavior.
+Status: Phase 0 implemented on 2026-07-18 as a contract-only slice. Plain persona/title/psylink
+snapshots, the frozen persona arc grammar, XML-owned policy with safe fallbacks, pure lifecycle/trait/
+milestone/title/mutation decisions, and standalone tests are present. No live collection, Harmony,
+Scribe state, provider, page, prompt, setting, or other player-visible behavior has begun.
 
 Scheduling authority: implement Royalty phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Royalty.
@@ -1299,6 +1301,16 @@ Each phase is a smallest safe change. Do not combine later phases merely because
 same vanilla class.
 
 ### Phase 0 — Freeze pure contracts and XML policy
+
+> **Implementation status (2026-07-18): complete.** `RoyaltyContracts` maps persona continuity to
+> the existing N0/N1 `bond_lifecycle` + `weapon` contract with
+> `royalty-persona|<weaponThingId>|<bondEpoch>`. `DiaryRoyaltyPolicyDef` owns separation/correlation,
+> Tale qualification, structural trait weights/mappings, output/text caps, and compatibility rows;
+> its detached snapshot retains safe code fallbacks. Pure policies now cover the complete R1
+> lifecycle, first-consequential-milestone ownership, structural trait selection, faction-specific
+> title transitions/duty deltas, and title/psylink owner/fallback dedup matrix. The assembly-free
+> `RoyaltyContextTests` suite passes 164 assertions. This status claims no loaded-game acceptance;
+> Phase 1 collection/persistence and all player-visible behavior remain unimplemented.
 
 1. Confirm Narrative Continuity N0 token/arc-key contracts and add plain Royalty snapshot/state
    contracts that map to them without referencing live shared providers.
