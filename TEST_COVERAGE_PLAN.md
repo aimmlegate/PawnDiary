@@ -200,8 +200,11 @@ projection. Capture-policy and Narrative Continuity remain green at 665 and 125 
 `PawnDiaryRoyaltyProgressionFlowTests` now compiles loaded fixtures for real `SetTitle` promotion/loss,
 scanner loss/no-catch-up, bestowing/anima ritual ownership, neuroformer cause, unmatched title-memory
 release, and no-Royalty silence; `PawnDiaryRoyaltyFlowTests` audits all four exact new Harmony seams.
-These Phase-4 loaded fixtures have not yet run in RimWorld, and every Phase-2/3/4 hands-on row remains
-open. R1 is therefore code-complete but not acceptance-complete.
+The first Phase-4 loaded-game run reached 249/252. One exact Harmony postfix parameter-name mismatch
+disabled the title callback and caused both the hook-audit and real-promotion failures; the remaining
+failure was an outdated four-token ritual-catalog expectation after Phase 4 added two bestowing tokens.
+Both defects are corrected, but the loaded rerun and every Phase-2/3/4 hands-on row remain open. R1 is
+therefore code-complete but not acceptance-complete.
 
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,

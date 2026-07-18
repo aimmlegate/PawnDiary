@@ -229,7 +229,7 @@ namespace PawnDiary
         private static void TitleChangedPostfix(
             Pawn_RoyaltyTracker __instance,
             Faction faction,
-            RoyalTitleDef currentTitle,
+            RoyalTitleDef prevTitle,
             RoyalTitleDef newTitle)
         {
             if (!RuntimeReady()) return;
@@ -239,7 +239,7 @@ namespace PawnDiary
                 RoyalTitleSnapshot previous;
                 RoyalTitleSnapshot current;
                 if (DlcContext.TryCaptureRoyalTitleTransition(
-                    __instance, faction, currentTitle, newTitle,
+                    __instance, faction, prevTitle, newTitle,
                     out pawn, out previous, out current))
                     DiaryGameComponent.Instance?.ObserveRoyalTitleHook(pawn, previous, current);
             });

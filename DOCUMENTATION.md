@@ -229,7 +229,7 @@ additive save-key suffixes under each POV/archive row; it performs no retroactiv
 catch-up on older pages.
 
 **Royalty Phases 0–4 plus Narrative N3-R core (Master Wave 5; Phase-2 and Phase-3 automated loaded
-suites green; Phase-4 loaded execution and all hands-on matrices pending)**
+suites green; Phase-4 first loaded run 249/252, fixes applied, rerun and all hands-on matrices pending)**
 freeze the detached R1 boundary and now own persona-weapon lifecycle, first-kill/death enrichment,
 and exact title/psylink correctness.
 `RoyaltyContracts`
@@ -339,7 +339,8 @@ Phase 3 automated loaded coverage green only; its hands-on matrix remains open. 
 Phase-3 result did not close R1; Phase-4 acceptance status is recorded below.
 
 Phase 4 defensively registers RimWorld 1.6's private
-`Pawn_RoyaltyTracker.OnPostTitleChanged(Faction, RoyalTitleDef, RoyalTitleDef)` through the existing
+`Pawn_RoyaltyTracker.OnPostTitleChanged(Faction faction, RoyalTitleDef prevTitle, RoyalTitleDef newTitle)`
+through the existing
 registrar, plus the exact bestowing worker, anima-link completion, and implant-use boundaries. Each
 target is resolved by exact signature; a missing/changed method warns once and leaves the independent
 scanner active. Live title, faction, duty, actor, item-defName, memory, and psylink reads remain in
@@ -368,8 +369,10 @@ before/after facts. SoloImportant's append-only indices 107–112 project mutati
 transition, faction, psylink cause, and duty changes; required title/psylink facts reuse earlier stable
 fields. Exact English/Russian prompts cover four title transitions, psylink/neuroformer, bestowing,
 and anima linking. Pure suites pass 283 Royalty, 2,437 pipeline, 665 capture-policy, and 125 Narrative
-Continuity assertions; the runtime and RimTest assemblies build. Focused loaded execution and every
-Phase-2/3/4 hands-on row remain explicit R1 acceptance work.
+Continuity assertions; the runtime and RimTest assemblies build. The first loaded-game run reached
+249/252: an exact Harmony argument-name mismatch disabled the title hook and caused the promotion
+failure, while an outdated ritual-token fixture caused the third failure. Both defects are corrected;
+the loaded rerun and every Phase-2/3/4 hands-on row remain explicit R1 acceptance work.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13

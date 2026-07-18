@@ -1,5 +1,14 @@
 # Changelog
 
+- **2026-07-19 — Fixed the two blockers from Royalty Phase 4's first loaded run.** The loaded-game
+  suite reached 249/252: Harmony rejected the private title postfix because its previous-title
+  argument was named `currentTitle` instead of RimWorld 1.6's exact `prevTitle`, which also caused
+  the real `SetTitle` promotion fixture to emit no page. The postfix now binds the exact vanilla
+  parameter name. The third failure was fixture-only: the official-DLC catalog still expected the
+  pre-Phase-4 four-token Royalty ritual family, so it now freezes all six narrow throne-speech,
+  bestowing, and anima-linking tokens. Automated build verification is green; a loaded rerun remains
+  required before Phase 4 or R1 acceptance can be claimed.
+
 - **2026-07-19 — Implemented Royalty Phase 4 title and psylink correctness.** Defensively registered
   the exact private faction-title callback plus bestowing, anima-linking, and neuroformer cause
   boundaries; added exact gained/promoted/demoted/lost pages, per-faction immediate observation,

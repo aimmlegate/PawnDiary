@@ -737,16 +737,19 @@ namespace PawnDiary.RimTests
                     PawnDiaryRimTestScope.Require(
                         (group.matchDefNames == null || group.matchDefNames.Count == 0)
                         && group.matchTokens != null
-                        && group.matchTokens.Count == 4
+                        && group.matchTokens.Count == 6
                         && new HashSet<string>(group.matchTokens, StringComparer.Ordinal).SetEquals(new[]
                         {
                             "ThroneSpeech",
+                            "BestowingCeremony",
                             "AnimaTreeLinking",
+                            "RitualOutcomeEffectWorker_Bestowing",
                             "RitualBehaviorWorker_ThroneSpeech",
                             "RitualBehaviorWorker_AnimaLinking"
                         }),
-                        "The Royalty ritual family must retain its four narrow throne-speech/anima-linking "
-                        + "runtime tokens; it intentionally has no exact ritual defName classifier.");
+                        "The Royalty ritual family must retain its six narrow throne-speech, bestowing, "
+                        + "and anima-linking runtime tokens; it intentionally has no exact ritual defName "
+                        + "classifier.");
                 }
                 else if (string.Equals(expected.Key, "ritualGravship", StringComparison.Ordinal))
                 {

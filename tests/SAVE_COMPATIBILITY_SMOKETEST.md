@@ -439,8 +439,14 @@ as well as the visible page. The first qualifying kill is a vanilla qualifying T
 
 Phase 4 owns exact faction-title edges and title/psylink cause arbitration. Use a fresh eligible pawn
 for each destructive branch. Keep prompt-test mode enabled while inspecting prompts; no model request
-is required. The focused fixture source and rebuilt RimTest DLL are present, but the loaded run and all
-manual rows below remain open.
+is required. The focused fixture source and rebuilt RimTest DLL are present, but the loaded rerun and
+all manual rows below remain open.
+
+The first loaded-game run on RimWorld 1.6.4871 reached 249/252. Two failures shared one runtime cause:
+Harmony rejected the title postfix's non-vanilla `currentTitle` argument name, so the hook audit and
+real promotion fixture both failed. The third was an outdated four-token ritual-catalog fixture after
+Phase 4 added two narrow bestowing tokens. Both fixes are applied; keep the automated row open until a
+fresh loaded rerun records the new total.
 
 - [x] **ASSEMBLY-FREE/BUILD:** Pure suites pass 283 Royalty, 2,437 pipeline, 665 capture-policy, and
   125 Narrative Continuity assertions; runtime and RimTest assemblies build.
