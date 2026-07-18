@@ -305,18 +305,21 @@ Do not include succession, permits, or Royal Ascent yet.
 
 ## 11. Wave 6 — Biotech identity and mechanitor depth
 
-> **Implementation status (2026-07-17): Biotech 5 implementation complete by explicit scheduling
-> exception; live acceptance pending.** Pure policy, guarded persistence, exact/fallback ownership,
-> Ability arbitration, and bounded prompt context are present. This does not claim the Wave 3/B1
+> **Implementation status (2026-07-18): Biotech 5, Biotech 6, and the first N3-B identity extension
+> are implemented by explicit scheduling exception; the N3-B loaded acceptance passed and Phase-6
+> live acceptance is pending.** Pure policy, guarded
+> persistence, exact/fallback ownership, bounded prompt context, one exact salient-gene identity
+> candidate, and persisted-key repetition policy are present. This does not claim the Wave 3/B1
 > manual release gate.
 
 ### Implement in this exact order
 
 1. **Biotech 5 (implemented; live acceptance pending)** — pure contracts/XML selector, guarded live
    projection, versioned baseline, exact mutation ownership, fallback emission, and prompt context.
-2. Extend **N3-B** with exact identity candidates and repetition policy.
-3. **Biotech 6** — mechlink, first controlled mech, first consequential mech combat, significant loss,
-   and boss-tier mechanitor lifecycle.
+2. **N3-B gene identity (implemented; loaded acceptance passed)** — exact-subject salient-gene
+   candidate, stable persisted selection key, and the shared repetition penalty.
+3. **Biotech 6 (implemented; live acceptance pending)** — mechlink, first controlled mech, first
+   consequential mech combat, significant loss, and boss-tier mechanitor lifecycle.
 4. Extend **N3-B** with mechanitor bond/chapter references.
 
 ### Exit gate

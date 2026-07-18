@@ -118,6 +118,11 @@ gravship, and no parked player grav engine on the current map. Enable only Harmo
 Pawn Diary, and Odyssey for the focused run. The runtime tests log a visible `SKIP` reason instead of
 touching state when Odyssey is inactive or these safety preconditions are not met.
 
+**Live checkpoint (2026-07-17):** Phase A passed in the supplied all-DLC loaded run and wrote
+`PawnDiary_Odyssey_RimTest_PhaseA_Active`. The next operator step is to return to the main menu, load
+that save, keep the game paused, and run `SaveReloadPhaseBVerifyAndCompleteJourney` only. Phase C
+remains pending after Phase B writes its completed save.
+
 1. Run `PawnDiaryOdysseyRuntimeLifecycleTests.RealInitiateTakeoffCancellationLeavesNoSavedJourneyOrPage`
    and `RealHarmonyLifecycleTravelsAndLandsExactlyOnce`.
    - The cutscene starters enter their real vanilla public methods, but a last-priority test prefix
@@ -184,8 +189,9 @@ no model request leaves the game; turn it off only when deliberately reviewing g
 The Biotech RimTest suites now automate the real vanilla age-7/10/13 growth-letter boundary,
 `NoTrait`/multiple-passion/nickname/responsibility choices, auto-resolution, postponed-owner Scribe
 recovery, delayed live-child naming, Full/Balanced/Compact prompt projection, live pre-cap admission,
-loaded RimTalk shared-memory injection, and DLC-off pending-row maintenance. These new fixtures compile
-but still need the matching in-game profiles below; do not record them as passed from a build alone.
+loaded RimTalk shared-memory injection, and DLC-off pending-row maintenance. The supplied all-DLC run
+passed the Biotech growth/prompt/pre-cap paths; RimTalk and DLC-off maintenance still need their
+matching profiles.
 
 ### Acceptance record (2026-07-17)
 
@@ -195,17 +201,17 @@ release audit requires a reproducible run record.
 
 - [x] Row 1 — base game only (no Biotech).
 - [x] Row 2 — old-save baseline.
-- [ ] **AUTOMATED RUN TODO:** Row 3 — run `PawnDiaryBiotechGrowthFlowTests` with Biotech; manually click one real growth letter to inspect presentation.
-- [ ] **AUTOMATED RUN TODO:** Row 4 — run the loaded prompt fixtures; manually inspect the localized preview rendering.
+- [ ] **AUTOMATION PASSED / MANUAL TODO:** Row 3 — `PawnDiaryBiotechGrowthFlowTests` passed with Biotech; manually click one real growth letter to inspect presentation.
+- [ ] **AUTOMATION PASSED / MANUAL TODO:** Row 4 — the loaded prompt fixtures passed; manually inspect the localized preview rendering.
 - [x] Row 5 — family observation + SpeakUp.
 - [x] Row 6 — birth/naming matrix.
 - [ ] **AUTOMATED RUN TODO:** Row 7 — run `PawnDiaryRimTalkBridgeRuntimeTests` with RimTalk + bridge; manually inspect one real chat/read UI result.
 - [x] Row 8 — caps/performance.
-- [ ] **AUTOMATED RUN TODO:** Row 9 — run the growth, birth, and component-state pre-cap fixtures; no separate manual behavior check remains.
+- [x] Row 9 — growth, birth, and component-state pre-cap fixtures passed in the all-DLC loaded run; no separate manual behavior check remains.
 - [ ] **AUTOMATED RUN TODO:** Row 10 — run `PawnDiaryBiotechDlcOffMaintenanceTests` in a base-only colony; the real Biotech on → off → on restart sequence remains manual.
 
-Biotech Phase 4 remains open until the five automated runs and the manual-only checks identified above
-are recorded as passed. Row 9 becomes complete from its RimTest runs; it has no remaining manual step.
+Biotech Phase 4 remains open until the remaining RimTalk/base-only automated profiles and manual-only
+checks identified above are recorded as passed.
 
 1. **Base game only (no Biotech).** Start and load a colony with Pawn Diary + Harmony only. Confirm
    `progressionGrowthMoment` and `biotechFamilyBirth` are absent from Events settings, the development
@@ -316,16 +322,48 @@ prompt-capture mode so no network request can leave the game.
    DLC-off state, re-enable Biotech, reload, and confirm the first gene scan silently writes a fresh
    version-2 baseline instead of emitting a catch-up identity page.
 
-**Live checkpoint (2026-07-17):** RimWorld 1.6.4871 rev591 ran the loaded all-suite configuration at
-217/218. Both exact vanilla xenogerm methods passed their canonical event checks; reimplant also passed
-its context and Ability-claim assertions. The remaining failure occurred only when the fixture called
-`ReimplantXenogerm` again immediately: vanilla stacked `XenogermReplicating` to its lethal stage and
-Pawn Diary correctly captured `PawnDiary_DeathFallback`. The fixture now clears the temporary vanilla
-reimplant cooldown hediffs before replay. Rerun the corrected reimplant test before checking item 3;
-the base-only, minimal-mod log, fallback/caps, and reload items remain open.
+**Live checkpoint (2026-07-17):** RimWorld 1.6.4871 rev591 later ran the loaded all-DLC suite at
+227/228. Both exact vanilla xenogerm methods, the corrected cooldown-separated reimplant replay, and
+the N3-B salient identity context/key/evidence assertions passed. The sole failure was the loaded
+official-DLC expected-group matrix omitting the intentionally Biotech-gated `progressionXenotype` row;
+the fixture now includes it. Exact ownership item 3 is confirmed. The corrected matrix itself needs
+one rerun; base-only, minimal-mod log, fallback/caps, and reload items remain open.
 
 - [ ] **TODO:** Record exact RimWorld version, language, active mod list, old-save fixture, all RimTest
   results, prompt/context evidence, cleanup audit, both DLC branches, and relevant `Player.log` lines.
+
+---
+
+## Biotech Phase 6 mechanitor acceptance
+
+Run with generation disabled or prompt capture. The pure suite already pins baseline/name/tenure/Tale
+roles/caps, and `PawnDiaryBiotechMechanitorFlowTests` automates a real mechlink install/removal plus all
+verified Harmony registrations. The following live behavior remains explicitly TODO:
+
+1. **Base-only safety.** Load Base + Harmony + RimTest Redux + Pawn Diary without Biotech. Run the
+   Phase-6 suite: the real lifecycle test must skip, the patch audit must pass, and `Player.log` must
+   contain no missing Def, type initializer, XML, tracker, or patch-registration error.
+2. **Old-save baseline and settings.** Load an old Biotech mechanitor with one or more controlled mechs,
+   wait through a progression scan, save/reload, and inspect the nested `mechanitorObservationState`.
+   Existing control must silently consume both historical first flags, record bounded stable IDs and
+   relation tenure, and create no catch-up page even with the group disabled/re-enabled.
+3. **Exact first lifecycle.** On a fresh pawn, install a mechlink and connect the first mech. Confirm one
+   install and one first-controlled controller page. Add/reassign/disconnect later mechs and change
+   bandwidth/control groups repeatedly; routine churn must stay silent. Remove the mechlink while
+   alive for one removal page, then separately kill a mechanitor and confirm death-driven removal adds
+   no extra removal page.
+4. **Combat and loss ownership.** Let a currently controlled mech produce one configured combat Tale.
+   Confirm one controller `BiotechFirstControlledMechCombat` page and no generic Tale duplicate; later
+   configured combat is silent. Kill a recent numerical mech such as “Lifter 1” (silent), a custom-
+   named mech (one loss page), and an unnamed mech observed for the XML 15-day boundary (one loss page).
+   Check exact death facts where available and verify the controller is never described as the attacker.
+5. **Boss chapter and reload.** Use the real boss caller, confirm one saved caller-owned call page, save
+   before defeat, reload, then defeat that exact boss. Confirm one `BiotechBossDefeated` page says only
+   that the called threat was defeated, never who landed the final blow. Repeated manager/Tale order and
+   a second reload must not duplicate either chapter; unrelated boss deaths must fail open.
+
+- [ ] **TODO:** Record RimWorld version, language, active mod list, old/fresh save fixtures, Phase-6
+  RimTest results, all five live rows, cleanup audit, both DLC branches, and relevant `Player.log` lines.
 
 ---
 

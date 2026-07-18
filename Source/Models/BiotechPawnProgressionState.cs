@@ -16,6 +16,7 @@ namespace PawnDiary
         public int growthObservationVersion = 1;
         public List<int> consumedGrowthAges = new List<int>();
         public GeneIdentityObservationState geneIdentityObservation = new GeneIdentityObservationState();
+        internal MechanitorObservationState mechanitorObservation = new MechanitorObservationState();
 
         public void ExposeData()
         {
@@ -27,6 +28,9 @@ namespace PawnDiary
             Scribe_Deep.Look(
                 ref geneIdentityObservation,
                 BiotechSaveKeys.GeneIdentityObservationState);
+            Scribe_Deep.Look(
+                ref mechanitorObservation,
+                BiotechSaveKeys.MechanitorObservationState);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -60,6 +64,13 @@ namespace PawnDiary
                 geneIdentityObservation = new GeneIdentityObservationState();
             }
             geneIdentityObservation.Normalize();
+            if (mechanitorObservation == null)
+            {
+                mechanitorObservation = new MechanitorObservationState();
+            }
+            mechanitorObservation.Normalize(
+                MechanitorObservationState.HardMaximumMechs,
+                MechanitorObservationState.HardMaximumBossCalls);
         }
 
         /// <summary>Returns whether canonical ownership for this age was already consumed.</summary>
@@ -97,6 +108,19 @@ namespace PawnDiary
             }
             geneIdentityObservation.Normalize();
             return geneIdentityObservation;
+        }
+
+        /// <summary>Returns the normalized nested mechanitor observation row.</summary>
+        internal MechanitorObservationState EnsureMechanitorObservation()
+        {
+            if (mechanitorObservation == null)
+            {
+                mechanitorObservation = new MechanitorObservationState();
+            }
+            mechanitorObservation.Normalize(
+                MechanitorObservationState.HardMaximumMechs,
+                MechanitorObservationState.HardMaximumBossCalls);
+            return mechanitorObservation;
         }
     }
 }

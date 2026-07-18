@@ -61,7 +61,8 @@ owners. Both use the shared harness:
 | `PawnDiaryWorkFlowTests` | 12 | Work passion/chore/dark-study facts + same-work suppression. |
 | `PawnDiaryRaidFlowTests` | 13 | Raid per-colonist fan-out + colony dedup + bypass classes. |
 | `PawnDiaryMoodConditionFlowTests` | 14 | GameCondition mood fan-out + classification + group gate. |
-| `PawnDiaryPawnProgressionFlowTests` | 15 | Skill/trait milestone baseline + upward-only + arc request; installed-Royalty psylink/title scanners; guarded/versioned Biotech gene projection, rich fallback, real implant/reimplant hooks, same-call Ability ownership, and replay silence. |
+| `PawnDiaryPawnProgressionFlowTests` | 15 | Skill/trait milestone baseline + upward-only + arc request; installed-Royalty psylink/title scanners; guarded/versioned Biotech gene projection, rich fallback, real implant/reimplant hooks, same-call Ability ownership, replay silence, and the N3-B salient identity lens/stable repetition key. |
+| `PawnDiaryBiotechMechanitorFlowTests` | 2 | Real vanilla mechlink install/removal pages plus Harmony registration audits for mechlink, Overseer relation, combat Tale, pre-cleanup death, boss call, and boss defeat seams. |
 | `PawnDiaryBiotechGrowthFlowTests` | B1 | Family-keyed canonical growth/N1 evidence, baseline/fallback, real age-7/10/13 growth-letter hooks, multiple passions, nickname/responsibility changes, auto-resolution, postponed-owner Scribe recovery, live pre-cap admission, and loaded detail-preset prompts. |
 | `PawnDiaryBiotechBirthFlowTests` | B1 | Canonical two-adult birth, Tale-domain/important-group routing, child-never-POV shape, delayed naming flush, replay rejection, live pre-cap admission recovery, loaded detail-preset prompts, and a loaded-template preflight. |
 | `PawnDiaryBiotechComponentStateFixtureTests` | B1 | Real-Scribe component keys, old/malformed/oversized rows, hard ceiling, and pre-cap admission recovery. |

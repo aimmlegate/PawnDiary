@@ -4,7 +4,7 @@
        load without Biotech; live adapters remain responsible for ModsConfig.BiotechActive gates. -->
   <PawnDiary.DiaryBiotechPolicyDef>
     <defName>Diary_BiotechPolicy</defName>
-    <label>Biotech growth and family policy</label>
+    <label>Biotech narrative policy</label>
 
     <growthPendingExpiryTicks>180000</growthPendingExpiryTicks>
     <growthFallbackGraceTicks>60000</growthFallbackGraceTicks>
@@ -43,6 +43,7 @@
     <familyObservedNarrativeFormat>This growth continues the directly observed childhood story around {0}.</familyObservedNarrativeFormat>
     <familyBaselineNarrativeFormat>This growth belongs to {0}&apos;s exact known family continuity.</familyBaselineNarrativeFormat>
     <identityNarrativeFormat>{0}&apos;s current visible xenotype is {1}; treat it as present identity, never as a prediction about genes.</identityNarrativeFormat>
+    <geneIdentityNarrativeFormat>The visible gene-identity change affecting {0} centered on {1}; keep it as one bounded theme, never a gene list.</geneIdentityNarrativeFormat>
 
     <familyActivityExactDefNames>
       <li>BabyPlay</li>
@@ -138,5 +139,21 @@
     <geneForceIncludeDefNames />
     <geneExcludeDefNames />
     <geneAllowDuplicateCategories />
+
+    <!-- Phase 6 mechanitor salience. Fifteen days makes an unnamed loss narratively significant;
+         explicitly player-named mechs qualify immediately. Tale lists also freeze the exact vanilla
+         pawn role that represents the acting controlled mech. -->
+    <mechanitorLongServiceTicks>900000</mechanitorLongServiceTicks>
+    <mechanitorMaximumObservedMechs>64</mechanitorMaximumObservedMechs>
+    <mechanitorMaximumBossCalls>16</mechanitorMaximumBossCalls>
+    <mechanitorCombatFirstPawnDefNames>
+      <li>KilledLongRange</li>
+      <li>KilledMelee</li>
+      <li>KilledMajorThreat</li>
+      <li>DefeatedHostileFactionLeader</li>
+    </mechanitorCombatFirstPawnDefNames>
+    <mechanitorCombatSecondPawnDefNames>
+      <li>KilledBy</li>
+    </mechanitorCombatSecondPawnDefNames>
   </PawnDiary.DiaryBiotechPolicyDef>
 </Defs>

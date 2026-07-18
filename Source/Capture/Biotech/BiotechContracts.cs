@@ -31,6 +31,8 @@ namespace PawnDiary.Capture
         public const string GeneObservedXenotypeLabel = "geneObservedXenotypeLabel";
         public const string GeneObservedDefNames = "geneObservedDefNames";
         public const string GeneObservedMembershipTruncated = "geneObservedMembershipTruncated";
+        public const string MechanitorObservationState = "mechanitorObservationState";
+        public const string MechanitorObservationVersion = "mechanitorObservationVersion";
     }
 
     /// <summary>Stable semicolon-context keys. These are schema labels, not localized prompt prose.</summary>
@@ -406,6 +408,7 @@ namespace PawnDiary.Capture
         public string familyObservedNarrativeFormat = string.Empty;
         public string familyBaselineNarrativeFormat = string.Empty;
         public string identityNarrativeFormat = string.Empty;
+        public string geneIdentityNarrativeFormat = string.Empty;
         public List<string> familyActivityExactDefNames = new List<string>();
         public List<string> familyActivityPrefixes = new List<string>();
         public List<string> familyPregnancyHediffDefNames = new List<string>();
@@ -418,6 +421,11 @@ namespace PawnDiary.Capture
         public List<BiotechOpportunityBandRule> opportunityBands = new List<BiotechOpportunityBandRule>();
         public List<BiotechObservationBandRule> observationBands = new List<BiotechObservationBandRule>();
         public GeneSaliencePolicySnapshot geneSalience = GeneSaliencePolicySnapshot.CreateDefault();
+        public int mechanitorLongServiceTicks = 900000;
+        public int mechanitorMaximumObservedMechs = 64;
+        public int mechanitorMaximumBossCalls = 16;
+        public List<string> mechanitorCombatFirstPawnDefNames = new List<string>();
+        public List<string> mechanitorCombatSecondPawnDefNames = new List<string>();
 
         /// <summary>Creates a complete safe policy whose fallback bands contain no prompt prose.</summary>
         public static BiotechPolicySnapshot CreateDefault()
@@ -437,6 +445,11 @@ namespace PawnDiary.Capture
             snapshot.matureBirthDefNames.Add("Stillbirth");
             snapshot.miscarriageBirtherThoughtDefNames.Add("Miscarried");
             snapshot.miscarriagePartnerThoughtDefNames.Add("PartnerMiscarried");
+            snapshot.mechanitorCombatFirstPawnDefNames.Add("KilledLongRange");
+            snapshot.mechanitorCombatFirstPawnDefNames.Add("KilledMelee");
+            snapshot.mechanitorCombatFirstPawnDefNames.Add("KilledMajorThreat");
+            snapshot.mechanitorCombatFirstPawnDefNames.Add("DefeatedHostileFactionLeader");
+            snapshot.mechanitorCombatSecondPawnDefNames.Add("KilledBy");
             return snapshot;
         }
 

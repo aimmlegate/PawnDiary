@@ -33,6 +33,7 @@ namespace DiaryBiotechPolicyTests
             TestGeneSalienceFilteringAndTextCaps();
             TestGeneObservationBaselineAndNormalization();
             TestGeneTransitionDiffFallbackAndContext();
+            TestMechanitorLifecyclePolicy();
             TestShippedXmlPolicyAndLocalization();
             Console.WriteLine("DiaryBiotechPolicyTests passed " + assertions + " assertions.");
             return 0;
@@ -1464,6 +1465,92 @@ namespace DiaryBiotechPolicyTests
                 && !birthContext.Contains("999") && !birthContext.Contains("123"));
         }
 
+        private static void TestMechanitorLifecyclePolicy()
+        {
+            MechanitorMechSnapshot numerical = new MechanitorMechSnapshot
+            {
+                mechId = "Mech_1",
+                displayName = "Lifter 1",
+                hasExplicitName = true,
+                numericalName = true,
+                relationStartTick = 100,
+                controlled = true
+            };
+            MechanitorMechSnapshot custom = new MechanitorMechSnapshot
+            {
+                mechId = "Mech_2",
+                displayName = "Moss",
+                hasExplicitName = true,
+                numericalName = false,
+                relationStartTick = 100
+            };
+            AssertTrue("numerical vanilla mech name is not player identity",
+                !MechanitorLifecyclePolicy.IsPlayerNamed(numerical));
+            AssertTrue("custom mech name is player identity",
+                MechanitorLifecyclePolicy.IsPlayerNamed(custom));
+            AssertTrue("tenure just below boundary is routine",
+                !MechanitorLifecyclePolicy.IsLongServing(100, 999, 900));
+            AssertTrue("tenure boundary is inclusive",
+                MechanitorLifecyclePolicy.IsLongServing(100, 1000, 900));
+            AssertTrue("custom name records immediate loss",
+                MechanitorLifecyclePolicy.ShouldRecordLoss(custom, 100, 101, 900));
+            AssertTrue("recent numerical mech loss stays silent",
+                !MechanitorLifecyclePolicy.ShouldRecordLoss(numerical, 100, 101, 900));
+
+            List<string> first = new List<string> { "KilledMelee" };
+            List<string> second = new List<string> { "KilledBy" };
+            AssertEqual("first-pawn combat role", 1,
+                MechanitorLifecyclePolicy.CombatInstigatorRole("killedmelee", first, second));
+            AssertEqual("second-pawn combat role", 2,
+                MechanitorLifecyclePolicy.CombatInstigatorRole("KilledBy", first, second));
+            AssertEqual("unconfigured Tale is not owned", 0,
+                MechanitorLifecyclePolicy.CombatInstigatorRole("Downed", first, second));
+
+            MechanitorObservationState oldSave = new MechanitorObservationState();
+            MechanitorControllerSnapshot baseline = new MechanitorControllerSnapshot
+            {
+                hasMechlink = true,
+                overseenMechs = new List<MechanitorMechSnapshot> { numerical }
+            };
+            oldSave.Baseline(baseline, 500, maximumMechs: 64);
+            AssertTrue("old-save baseline initializes", oldSave.IsInitialized());
+            AssertTrue("old-save existing control consumes first page", oldSave.firstControlledPageConsumed);
+            AssertTrue("old-save existing control consumes first combat", oldSave.firstControlledCombatPageConsumed);
+            AssertEqual("relation start seeds observed tenure", 100, oldSave.observedMechs[0].firstObservedTick);
+
+            numerical.controlled = false;
+            MechanitorObservationState overseenButDisconnected = new MechanitorObservationState();
+            overseenButDisconnected.Baseline(baseline, 500, 64);
+            AssertTrue("overseen but uncontrolled baseline leaves first combat available",
+                !overseenButDisconnected.firstControlledCombatPageConsumed);
+            numerical.controlled = true;
+
+            MechanitorObservationState newController = new MechanitorObservationState();
+            newController.Baseline(new MechanitorControllerSnapshot { hasMechlink = true }, 500, 64);
+            AssertTrue("empty baseline leaves first page available", !newController.firstControlledPageConsumed);
+            AssertTrue("empty baseline leaves first combat available",
+                !newController.firstControlledCombatPageConsumed);
+            newController.ObserveMech(custom, 500, maximumMechs: 1);
+            newController.ObserveMech(numerical, 500, maximumMechs: 1);
+            AssertEqual("XML mech cap does not evict established ownership", 1, newController.observedMechs.Count);
+            AssertEqual("first admitted mech retained", "Mech_2", newController.observedMechs[0].mechId);
+
+            MechanitorBossCallObservationState boss = new MechanitorBossCallObservationState
+            {
+                bossgroupDefName = "Bossgroup_Diabolus",
+                bossDefName = "Boss_Diabolus",
+                bossKindDefName = "Diabolus",
+                bossLabel = "Diabolus",
+                calledTick = 600
+            };
+            newController.bossCalls.Add(boss);
+            newController.Normalize(1, 1);
+            AssertTrue("boss call begins unresolved", !newController.bossCalls[0].defeatedObserved);
+            newController.bossCalls[0].defeatedObserved = true;
+            AssertTrue("defeat semantics preserve prior call", newController.bossCalls[0].defeatedObserved
+                && newController.bossCalls[0].calledTick == 600);
+        }
+
         private static void TestShippedXmlPolicyAndLocalization()
         {
             string root = RepositoryRoot();
@@ -1483,6 +1570,18 @@ namespace DiaryBiotechPolicyTests
             AssertEqual("gene total text cap", "640", Value(def, "geneTotalTextCharacterLimit"));
             AssertEqual("gene observed membership cap", "512", Value(def, "geneMaximumObservedDefNames"));
             AssertEqual("gene fallback significance", "2", Value(def, "geneMinimumFallbackChanges"));
+            AssertEqual("mechanitor long-service threshold", "900000",
+                Value(def, "mechanitorLongServiceTicks"));
+            AssertEqual("mechanitor observed-mech cap", "64",
+                Value(def, "mechanitorMaximumObservedMechs"));
+            AssertEqual("mechanitor boss-call cap", "16",
+                Value(def, "mechanitorMaximumBossCalls"));
+            AssertSequence("mechanitor first-pawn combat Tales", new[]
+            {
+                "KilledLongRange", "KilledMelee", "KilledMajorThreat", "DefeatedHostileFactionLeader"
+            }, Values(def.Element("mechanitorCombatFirstPawnDefNames")));
+            AssertSequence("mechanitor second-pawn combat Tales", new[] { "KilledBy" },
+                Values(def.Element("mechanitorCombatSecondPawnDefNames")));
             List<XElement> geneWeights = def.Element("geneCategoryWeights").Elements("li").ToList();
             AssertSequence("gene structural categories", new[]
             {
@@ -1498,6 +1597,8 @@ namespace DiaryBiotechPolicyTests
                 Value(def, "newInterestDescription").Length > 0);
             AssertTrue("deepened-interest prompt prose is XML-owned",
                 Value(def, "deepenedInterestDescription").Length > 0);
+            AssertTrue("N3-B gene-identity narrative prose is XML-owned",
+                Value(def, "geneIdentityNarrativeFormat").Length > 0);
             AssertTrue("policy exact BabyPlay matcher",
                 Values(def.Element("familyActivityExactDefNames")).Contains("BabyPlay"));
             AssertTrue("policy Lesson prefix",
@@ -1539,6 +1640,7 @@ namespace DiaryBiotechPolicyTests
             XElement growth = Group(groups, "progressionGrowthMoment");
             XElement birth = Group(groups, "biotechFamilyBirth");
             XElement geneIdentity = Group(groups, "progressionXenotype");
+            XElement mechanitor = Group(groups, "progressionMechanitorLifecycle");
             AssertEqual("growth group order", "800", Value(growth, "order"));
             AssertEqual("growth domain", "Progression", Value(growth, "domain"));
             AssertSequence("growth exact classifier", new[] { "BiotechGrowthMoment" },
@@ -1556,6 +1658,20 @@ namespace DiaryBiotechPolicyTests
                 Values(birth.Element("enableWhenPackageIdsLoaded")));
             AssertSequence("gene identity package gate", new[] { "Ludeon.RimWorld.Biotech" },
                 Values(geneIdentity.Element("enableWhenPackageIdsLoaded")));
+            AssertEqual("mechanitor group order", "798", Value(mechanitor, "order"));
+            AssertEqual("mechanitor domain", "Progression", Value(mechanitor, "domain"));
+            AssertSequence("mechanitor exact classifiers", new[]
+            {
+                MechanitorEventDefNames.MechlinkInstalled,
+                MechanitorEventDefNames.MechlinkRemoved,
+                MechanitorEventDefNames.FirstControlledMech,
+                MechanitorEventDefNames.FirstControlledMechCombat,
+                MechanitorEventDefNames.SignificantMechLoss,
+                MechanitorEventDefNames.BossCalled,
+                MechanitorEventDefNames.BossDefeated
+            }, Values(mechanitor.Element("matchDefNames")));
+            AssertSequence("mechanitor package gate", new[] { "Ludeon.RimWorld.Biotech" },
+                Values(mechanitor.Element("enableWhenPackageIdsLoaded")));
             AssertTrue("growth has no token/catch-all matcher",
                 growth.Element("matchTokens") == null && Value(growth, "catchAll") != "true");
             AssertTrue("birth has no token/catch-all matcher",
@@ -1592,6 +1708,11 @@ namespace DiaryBiotechPolicyTests
                 "biotechFamilyBirth.instruction", "biotechFamilyBirth.tone",
                 "biotechFamilyBirth.tones.0", "biotechFamilyBirth.tones.1",
                 "progressionXenotype.label", "progressionXenotype.instruction"
+                , "progressionMechanitorLifecycle.label",
+                "progressionMechanitorLifecycle.instruction",
+                "progressionMechanitorLifecycle.tone",
+                "progressionMechanitorLifecycle.tones.0",
+                "progressionMechanitorLifecycle.tones.1"
             };
             foreach (string key in groupKeys)
             {
@@ -1606,6 +1727,8 @@ namespace DiaryBiotechPolicyTests
                 Value(policy.Root, "Diary_BiotechPolicy.newInterestDescription").Length > 0);
             AssertTrue(language + " deepened-interest description",
                 Value(policy.Root, "Diary_BiotechPolicy.deepenedInterestDescription").Length > 0);
+            AssertTrue(language + " N3-B gene-identity narrative format",
+                Value(policy.Root, "Diary_BiotechPolicy.geneIdentityNarrativeFormat").Length > 0);
             for (int i = 0; i < 4; i++)
             {
                 AssertTrue(language + " opportunity description " + i,
@@ -1640,6 +1763,20 @@ namespace DiaryBiotechPolicyTests
                 "PawnDiary.Event.Biotech.Birth.BirtherDied",
                 "PawnDiary.Event.Biotech.GeneIdentity.Label",
                 "PawnDiary.Event.Biotech.GeneIdentity.Text",
+                "PawnDiary.Event.Biotech.Mechanitor.MechlinkInstalled.Label",
+                "PawnDiary.Event.Biotech.Mechanitor.MechlinkInstalled.Text",
+                "PawnDiary.Event.Biotech.Mechanitor.MechlinkRemoved.Label",
+                "PawnDiary.Event.Biotech.Mechanitor.MechlinkRemoved.Text",
+                "PawnDiary.Event.Biotech.Mechanitor.FirstMech.Label",
+                "PawnDiary.Event.Biotech.Mechanitor.FirstMech.Text",
+                "PawnDiary.Event.Biotech.Mechanitor.FirstCombat.Label",
+                "PawnDiary.Event.Biotech.Mechanitor.FirstCombat.Text",
+                "PawnDiary.Event.Biotech.Mechanitor.MechLoss.Label",
+                "PawnDiary.Event.Biotech.Mechanitor.MechLoss.Text",
+                "PawnDiary.Event.Biotech.Mechanitor.BossCalled.Label",
+                "PawnDiary.Event.Biotech.Mechanitor.BossCalled.Text",
+                "PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Label",
+                "PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Text",
                 "PawnDiary.Dev.PromptSuite.BiotechGrowth.Label",
                 "PawnDiary.Dev.PromptSuite.BiotechGrowth.Markers",
                 "PawnDiary.Dev.PromptSuite.BiotechGrowth.Initiator",

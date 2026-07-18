@@ -1,4 +1,5 @@
-// Standalone, no-RimWorld checks for the shared Narrative Continuity layer through N2-O. The project
+// Standalone, no-RimWorld checks for the shared Narrative Continuity layer through the first N3-B
+// gene-identity extension. The project
 // file links only pure source, making any accidental Verse/Unity/DLC dependency a compile-time failure.
 using System;
 using System.Collections.Generic;
@@ -109,9 +110,51 @@ namespace NarrativeContinuityTests
                 candidates.Count);
             AssertEqual("family candidate uses exact saved arc", evidence.arcKey, candidates[0].arcKey);
             AssertEqual("identity candidate uses exact child subject", "pawn-1", candidates[1].subjectId);
+            AssertEqual("legacy N2 identity key falls back to the xenotype defName",
+                "biotech|identity|pawn-1|Yttakin", candidates[1].candidateKey);
             AssertTrue("provider never emits gene-list text",
                 candidates[0].text.IndexOf("gene", StringComparison.OrdinalIgnoreCase) < 0
                 && candidates[1].text.IndexOf("gene", StringComparison.OrdinalIgnoreCase) < 0);
+
+            snapshot.identityStableKey = "gene|Gene_FireSpew";
+            snapshot.identityText = "Ari's visible identity change centered on fire spew.";
+            snapshot.identityTopicTokens = new List<string> { "gene" };
+            List<NarrativeLensCandidate> geneCandidates = BiotechNarrativeProvider.Build(
+                new List<NarrativeEvidence> { evidence }, snapshot);
+            NarrativeLensCandidate geneIdentity = geneCandidates[1];
+            AssertEqual("N3-B stable key identifies one salient gene rather than full membership",
+                "biotech|identity|pawn-1|gene|Gene_FireSpew", geneIdentity.candidateKey);
+            AssertTrue("N3-B gene candidate keeps bounded identity and gene topics",
+                geneIdentity.topicTokens.Contains("identity")
+                    && geneIdentity.topicTokens.Contains("gene")
+                    && geneIdentity.topicTokens.Count == 2);
+
+            NarrativePolicySnapshot repetitionPolicy = NarrativePolicySnapshot.CreateDefault();
+            repetitionPolicy.maxSelectedCandidates = 2;
+            Budget(repetitionPolicy, NarrativeDetailLevelTokens.Full).maxLenses = 2;
+            Budget(repetitionPolicy, NarrativeDetailLevelTokens.Full).characterBudget = 1000;
+            Func<List<string>, NarrativeContextSelection> selectGene = recentKeys =>
+                NarrativeContextSelector.Select(new NarrativeContextRequest
+                {
+                    policy = repetitionPolicy,
+                    detailLevel = NarrativeDetailLevelTokens.Full,
+                    currentTick = 1000,
+                    evidence = new List<NarrativeEvidence> { evidence },
+                    recentSelectedCandidateKeys = recentKeys ?? new List<string>(),
+                    candidates = new List<NarrativeLensCandidate>
+                    {
+                        geneIdentity,
+                        Candidate("fresh-bonding-topic", NarrativeCategoryTokens.Chapter,
+                            NarrativeFacetTokens.JourneyChapter,
+                            topics: new List<string> { "bonding" }, sourceTick: 1000)
+                    }
+                });
+            AssertEqual("fresh exact gene identity outranks a direct topic",
+                geneIdentity.candidateKey, selectGene(null).selectedCandidates[0].candidateKey);
+            AssertEqual("persisted exact gene key activates ordinary repetition penalty",
+                "fresh-bonding-topic",
+                selectGene(new List<string> { geneIdentity.candidateKey })
+                    .selectedCandidates[0].candidateKey);
 
             snapshot.providerAvailable = false;
             AssertEqual("inactive Biotech provider is silent", 0,

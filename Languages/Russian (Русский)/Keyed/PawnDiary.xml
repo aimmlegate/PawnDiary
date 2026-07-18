@@ -944,6 +944,20 @@
   <PawnDiary.Event.ProgressionXenotypeText>Ксенотип {0} изменился: {1} → {2}.</PawnDiary.Event.ProgressionXenotypeText>
   <PawnDiary.Event.Biotech.GeneIdentity.Label>Генная идентичность изменилась</PawnDiary.Event.Biotech.GeneIdentity.Label>
   <PawnDiary.Event.Biotech.GeneIdentity.Text>Генетическая идентичность {0} изменилась.</PawnDiary.Event.Biotech.GeneIdentity.Text>
+  <PawnDiary.Event.Biotech.Mechanitor.MechlinkInstalled.Label>Установлен мехлинк</PawnDiary.Event.Biotech.Mechanitor.MechlinkInstalled.Label>
+  <PawnDiary.Event.Biotech.Mechanitor.MechlinkInstalled.Text>{0} стал механитором.</PawnDiary.Event.Biotech.Mechanitor.MechlinkInstalled.Text>
+  <PawnDiary.Event.Biotech.Mechanitor.MechlinkRemoved.Label>Мехлинк удалён</PawnDiary.Event.Biotech.Mechanitor.MechlinkRemoved.Label>
+  <PawnDiary.Event.Biotech.Mechanitor.MechlinkRemoved.Text>Мехлинк {0} был удалён.</PawnDiary.Event.Biotech.Mechanitor.MechlinkRemoved.Text>
+  <PawnDiary.Event.Biotech.Mechanitor.FirstMech.Label>Первый подконтрольный мех</PawnDiary.Event.Biotech.Mechanitor.FirstMech.Label>
+  <PawnDiary.Event.Biotech.Mechanitor.FirstMech.Text>{0} взял под контроль {1}, своего первого меха.</PawnDiary.Event.Biotech.Mechanitor.FirstMech.Text>
+  <PawnDiary.Event.Biotech.Mechanitor.FirstCombat.Label>Первый бой подконтрольного меха</PawnDiary.Event.Biotech.Mechanitor.FirstCombat.Label>
+  <PawnDiary.Event.Biotech.Mechanitor.FirstCombat.Text>{0} увидел, как {1} впервые добился значимого боевого результата под прямым контролем.</PawnDiary.Event.Biotech.Mechanitor.FirstCombat.Text>
+  <PawnDiary.Event.Biotech.Mechanitor.MechLoss.Label>Потеря значимого меха</PawnDiary.Event.Biotech.Mechanitor.MechLoss.Label>
+  <PawnDiary.Event.Biotech.Mechanitor.MechLoss.Text>{0} потерял {1} — меха, чьё имя или долгая служба сделали потерю значимой.</PawnDiary.Event.Biotech.Mechanitor.MechLoss.Text>
+  <PawnDiary.Event.Biotech.Mechanitor.BossCalled.Label>Вызвана угроза босса</PawnDiary.Event.Biotech.Mechanitor.BossCalled.Label>
+  <PawnDiary.Event.Biotech.Mechanitor.BossCalled.Text>{0} намеренно вызвал угрозу во главе с {1}.</PawnDiary.Event.Biotech.Mechanitor.BossCalled.Text>
+  <PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Label>Вызванный босс побеждён</PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Label>
+  <PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Text>Угроза во главе с {1}, которую вызвал {0}, была побеждена.</PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Text>
   <PawnDiary.Event.ProgressionRoyalTitleLabel>Королевский титул: {0}</PawnDiary.Event.ProgressionRoyalTitleLabel>
   <PawnDiary.Event.ProgressionRoyalTitleText>Королевский титул {0} изменился: {1} → {2}.</PawnDiary.Event.ProgressionRoyalTitleText>
   <PawnDiary.Event.ProgressionTraitLabel>Новая черта: {0}</PawnDiary.Event.ProgressionTraitLabel>

@@ -332,7 +332,10 @@ namespace PawnDiary.RimTests
             scope.RequireNoNewEvent(() => GeneUtility.ReimplantXenogerm(caster, pawn));
         }
 
-        /// <summary>Biotech Phase 5 exact item implantation enters the real vanilla method once.</summary>
+        /// <summary>
+        /// Biotech Phase 5 exact item implantation enters the real vanilla method once, while N3-B
+        /// freezes one exact-subject salient identity lens and its stable repetition key.
+        /// </summary>
         [Test]
         public static void RealImplantItemHookEmitsOneBoundedGenePage()
         {
@@ -368,6 +371,23 @@ namespace PawnDiary.RimTests
                 "gene_change_cause=" + GeneChangeCauseTokens.XenogermImplant);
             RequireContextContains(diaryEvent, "gene_identity_transition=true");
             RequireContextContains(diaryEvent, "narrative_facets=identity_transition");
+            string narrative = diaryEvent.NarrativeContextForRole(DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(
+                !string.IsNullOrWhiteSpace(narrative)
+                    && narrative.IndexOf(added.label, StringComparison.OrdinalIgnoreCase) >= 0,
+                "The exact implant page did not freeze its selected salient gene identity lens.");
+            string expectedCandidateKey = "biotech|identity|" + pawn.GetUniqueLoadID()
+                + "|gene|" + added.defName;
+            PawnDiaryRimTestScope.Require(
+                diaryEvent.NarrativeSelectedCandidateKeysForRole(DiaryEvent.InitiatorRole)
+                    .Contains(expectedCandidateKey),
+                "The exact implant page did not persist the stable N3-B repetition key.");
+            PawnDiaryRimTestScope.Require(
+                diaryEvent.NarrativeEvidenceForRole(DiaryEvent.InitiatorRole).Exists(row => row != null
+                    && row.facet == NarrativeFacetTokens.IdentityTransition
+                    && row.subjectId == pawn.GetUniqueLoadID()
+                    && row.sourceDomain == "biotech_gene"),
+                "The exact implant page did not persist its source-owned identity evidence.");
         }
 
         /// <summary>

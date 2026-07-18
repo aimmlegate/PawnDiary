@@ -1,6 +1,8 @@
 // Progression ingestion signal — the impure emit half of the pawn progression scanner. The scanner
 // observes live pawn state, updates small saved bookkeeping, then submits this signal when a future
 // change should become an ordinary solo diary page.
+using System;
+using System.Collections.Generic;
 using PawnDiary.Capture;
 using Verse;
 
@@ -22,10 +24,14 @@ namespace PawnDiary.Ingestion
         private readonly bool signalEnabled;
         private readonly string dedupKey;
         private readonly int dedupWindowTicks;
+        private readonly List<NarrativeEvidence> narrativeEvidence;
+        private readonly BiotechNarrativeSnapshot biotechNarrative;
 
         public ProgressionSignal(ProgressionEventData payload, Pawn pawn, string label, string text,
             string instruction, string gameContext, bool eligible, bool userEnabled, bool signalEnabled,
-            string dedupKey = null, int dedupWindowTicks = 0)
+            string dedupKey = null, int dedupWindowTicks = 0,
+            List<NarrativeEvidence> narrativeEvidence = null,
+            BiotechNarrativeSnapshot biotechNarrative = null)
         {
             this.payload = payload;
             this.pawn = pawn;
@@ -38,6 +44,8 @@ namespace PawnDiary.Ingestion
             this.signalEnabled = signalEnabled;
             this.dedupKey = dedupKey;
             this.dedupWindowTicks = dedupWindowTicks;
+            this.narrativeEvidence = narrativeEvidence;
+            this.biotechNarrative = biotechNarrative;
         }
 
         public override DiaryEventData Payload => payload;
@@ -69,7 +77,51 @@ namespace PawnDiary.Ingestion
 
             DiaryEvent diaryEvent = sink.AddSoloEvent(pawn, null, payload.DefName,
                 label, text, instruction, gameContext);
+            ApplyNarrativeEvidence(sink, diaryEvent);
             sink.QueueSolo(diaryEvent, DiaryEvent.InitiatorRole);
+        }
+
+        /// <summary>
+        /// Freezes optional source-owned continuity before generation. Ordinary skill/title/trait
+        /// progression supplies no evidence and keeps the historical zero-work path.
+        /// </summary>
+        private void ApplyNarrativeEvidence(DiaryGameComponent sink, DiaryEvent diaryEvent)
+        {
+            if (sink == null || diaryEvent == null || pawn == null
+                || narrativeEvidence == null || narrativeEvidence.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                string pawnId = pawn.GetUniqueLoadID();
+                NarrativeContextBuildResult result = NarrativeContextBuilder.Build(
+                    new NarrativeContextBuildRequest
+                    {
+                        eventId = diaryEvent.eventId,
+                        eventTick = diaryEvent.tick,
+                        povPawnId = pawnId,
+                        povRole = DiaryEvent.InitiatorRole,
+                        evidence = narrativeEvidence,
+                        biotech = biotechNarrative,
+                        odyssey = sink.OdysseyNarrativeSnapshotFor(pawn, diaryEvent.tick),
+                        recentSelectedCandidateKeys = sink.RecentNarrativeSelectedCandidateKeys(pawnId),
+                        contextDetailLevel = PawnDiarySettings.NormalizeContextDetailLevel(
+                            PawnDiaryMod.Settings?.contextDetailLevel ?? PromptContextDetailLevel.Full)
+                    });
+                if (result.evidence.Count > 0)
+                {
+                    diaryEvent.ApplyNarrativeContext(DiaryEvent.InitiatorRole, result);
+                }
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Progression Narrative Continuity evidence failed; the page remains: "
+                    + exception,
+                    "PawnDiary.Progression.NarrativeEvidence".GetHashCode());
+            }
         }
     }
 }

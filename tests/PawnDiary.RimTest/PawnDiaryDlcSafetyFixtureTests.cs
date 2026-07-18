@@ -680,7 +680,9 @@ namespace PawnDiary.RimTests
                 { "ritualAnomalyAbduction", AnomalyPackageId },
                 { "ritualAnomalyDeathRefusal", AnomalyPackageId },
                 { "ritualAnomalyPsychic", AnomalyPackageId },
-                { "progressionGrowthMoment", BiotechPackageId }
+                { "progressionGrowthMoment", BiotechPackageId },
+                { "progressionMechanitorLifecycle", BiotechPackageId },
+                { "progressionXenotype", BiotechPackageId }
             };
             Dictionary<string, string> expectedWindows = new Dictionary<string, string>
             {

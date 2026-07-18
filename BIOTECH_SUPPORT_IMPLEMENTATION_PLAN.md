@@ -18,11 +18,13 @@
 > no-DLC-safe. N2-B adds bounded exact family/current visible identity lenses through the shared fixed
 > provider list.
 >
-> **Acceptance update (2026-07-17):** existing automated suites are reported passing, and new RimTests
-> now cover the behavioral contracts in rows 3, 4, 7, 9, and 10. Those new tests compile but still need
-> their Biotech, RimTalk, and base-only in-game runs. Manual-only work is limited to growth-letter and
-> localized-preview presentation, one real RimTalk UI read, and the cross-launch Biotech on → off → on
-> transition. Rows 1, 2, 5, 6, and 8 remain user-confirmed passes; Phase 4 remains open.
+> **Acceptance update (2026-07-17):** the supplied all-DLC loaded run passed 227/228 tests. It confirms
+> the Biotech growth/prompt/pre-cap behavior in rows 3, 4, and 9; the sole failure was the stale
+> official-DLC expected-group matrix now corrected in source. RimTalk was inactive and the base-only
+> maintenance fixture correctly reported not applicable, so rows 7 and 10 still need their matching
+> profiles. Manual-only work remains growth-letter/localized-preview presentation, one real RimTalk UI
+> read, and the cross-launch Biotech on → off → on transition. Rows 1, 2, 5, 6, and 8 remain
+> user-confirmed passes; Phase 4 remains open.
 >
 > **User-directed scheduling exception (2026-07-17):** Biotech Phase 5 may proceed while those five
 > Phase 4 manual rows await a later playthrough. This changes scheduling only: it does not waive,
@@ -30,6 +32,13 @@
 > XML-owned deterministic salience/fallback policy, guarded live projection, a versioned silent saved
 > baseline, exact xenogerm ownership, same-call Ability arbitration, rich bounded prompt context, and
 > significant slow fallback output. Live Phase 5 execution remains a separate manual TODO.
+>
+> **N3-B identity extension (2026-07-17): implemented; loaded acceptance passed.** Every qualifying
+> `GeneIdentityChanged` page can now offer one exact-subject continuity lens from the leading theme
+> already selected by Phase 5. The stable gene Def key participates in the shared persisted-history
+> repetition penalty; XML owns the factual prose, and no extra scan, gene list, hook, page, writer, or
+> save field was introduced. The supplied all-DLC run passed the real implant assertion; its only
+> suite failure was the now-corrected official-DLC catalog expectation.
 >
 > **Review follow-ups (2026-07-16):** pending-birth/arc maintenance now runs without the DLC (a
 > Biotech-removed save flushes frozen birth pages after grace and keeps pruning arcs, matching the
@@ -1741,7 +1750,9 @@ Exit gate: B1 definition of done is met. B2 work does not begin in the same chan
 > Observation advances even with Progression output disabled and retains the old scalar keys for
 > migration. Exact `GeneUtility` implant/reimplant hooks now emit one recipient page, successful
 > reimplant ownership suppresses only its enclosing generic Ability page, and the slow observer emits
-> XML-significant stable-identity/membership changes with bounded separator-safe theme context.
+> XML-significant stable-identity/membership changes with bounded separator-safe theme context. The
+> leading selected theme also feeds one N3-B exact-subject identity candidate with a stable gene Def
+> selection key, activating the shared persisted-history repetition penalty without rescanning genes.
 
 1. **Implemented:** add pure projection contract/salience policy and XML.
 2. **Implemented:** add guarded snapshots and versioned silent baseline.
@@ -1754,12 +1765,18 @@ routine gene recalculation stay silent.
 
 ### Phase 6 — Mechanitor lifecycle
 
-1. Add state/baseline and mechlink hooks.
-2. Observe first Overseer relation.
-3. Qualify first controlled-mech combat through Tale ownership.
-4. Add significant mech loss around death.
-5. Add boss call/defeat chapters.
-6. Tune XML significance and caps.
+> **Implementation status (2026-07-18): implementation complete; loaded/manual acceptance pending.**
+> Versioned per-controller state silently baselines existing mechlinks and Overseer relations; exact
+> mechlink, first relation, configured combat Tale, controlled-mech death, and boss manager hooks own
+> the seven canonical controller chapters. Custom-name/long-service loss salience, Tale instigator
+> roles, tenure, and bounded mech/boss rows are pure and XML-owned. The loaded suite remains TODO.
+
+1. **Implemented:** add state/baseline and mechlink hooks.
+2. **Implemented:** observe first Overseer relation.
+3. **Implemented:** qualify first controlled-mech combat through Tale ownership.
+4. **Implemented:** add significant mech loss around death.
+5. **Implemented:** add boss call/defeat chapters.
+6. **Implemented:** tune XML significance and caps.
 
 Exit gate: every milestone matrix case and duplicate order passes; routine mech operations remain
 silent in a long dev simulation.

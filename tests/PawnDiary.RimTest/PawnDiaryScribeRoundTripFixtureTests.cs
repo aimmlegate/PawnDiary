@@ -772,6 +772,29 @@ namespace PawnDiary.RimTests
             geneObservation.xenotypeLabel = "Custom identity";
             geneObservation.geneDefNames = new List<string> { "Gene_Alpha", "Gene_Beta" };
             geneObservation.membershipTruncated = true;
+            MechanitorObservationState mechanitor =
+                biotechProgression.EnsureMechanitorObservation();
+            mechanitor.observationVersion = MechanitorObservationState.CurrentVersion;
+            mechanitor.mechlinkPresent = true;
+            mechanitor.firstControlledPageConsumed = true;
+            mechanitor.firstControlledCombatPageConsumed = true;
+            mechanitor.observedMechs.Add(new MechanitorMechObservationState
+            {
+                mechId = "Thing_Mech_Moss",
+                lastDisplayName = "Moss",
+                kindDefName = "Lifter",
+                firstObservedTick = 123,
+                lossObserved = true
+            });
+            mechanitor.bossCalls.Add(new MechanitorBossCallObservationState
+            {
+                bossgroupDefName = "Bossgroup_Diabolus",
+                bossDefName = "Boss_Diabolus",
+                bossKindDefName = "Diabolus",
+                bossLabel = "Diabolus",
+                calledTick = 456,
+                defeatedObserved = true
+            });
 
             PawnArcScheduleState arc = new PawnArcScheduleState
             {
@@ -840,6 +863,24 @@ namespace PawnDiary.RimTests
                 loadedGeneObservation.geneDefNames, "record nested gene membership");
             Require(loadedGeneObservation.membershipTruncated,
                 "record nested gene truncation marker should survive load.");
+            MechanitorObservationState loadedMechanitor = loaded.progressionState
+                .EnsureBiotechState().EnsureMechanitorObservation();
+            AssertInt(MechanitorObservationState.CurrentVersion,
+                loadedMechanitor.observationVersion, "record nested mechanitor observation version");
+            Require(loadedMechanitor.mechlinkPresent
+                    && loadedMechanitor.firstControlledPageConsumed
+                    && loadedMechanitor.firstControlledCombatPageConsumed,
+                "record nested mechanitor lifecycle flags should survive load.");
+            Require(loadedMechanitor.observedMechs.Count == 1
+                    && loadedMechanitor.observedMechs[0].lossObserved,
+                "record nested observed-mech row should survive load.");
+            AssertStr("Thing_Mech_Moss", loadedMechanitor.observedMechs[0].mechId,
+                "record nested observed mech ID");
+            Require(loadedMechanitor.bossCalls.Count == 1
+                    && loadedMechanitor.bossCalls[0].defeatedObserved,
+                "record nested boss call/defeat row should survive load.");
+            AssertStr("Boss_Diabolus", loadedMechanitor.bossCalls[0].bossDefName,
+                "record nested boss Def");
 
             Require(loaded.arcSchedule != null, "record arcSchedule should be non-null after load.");
             AssertInt(1234, loaded.arcSchedule.lastArcEntryTick, "record arc lastArcEntryTick");
@@ -870,6 +911,12 @@ namespace PawnDiary.RimTests
                     && oldSaveGeneObservation.geneDefNames != null
                     && oldSaveGeneObservation.geneDefNames.Count == 0,
                 "an old save with no gene keys should normalize to an uninitialized empty row.");
+            MechanitorObservationState oldSaveMechanitor = nullLoaded.progressionState
+                .EnsureBiotechState().EnsureMechanitorObservation();
+            Require(oldSaveMechanitor.observationVersion == 0
+                    && oldSaveMechanitor.observedMechs.Count == 0
+                    && oldSaveMechanitor.bossCalls.Count == 0,
+                "an old save with no mechanitor keys should remain an uninitialized silent row.");
 
             // A real pre-Biotech record can already have populated scalar progression state while its
             // additive nested Biotech row is absent. Prove that exact shape preserves the old fields

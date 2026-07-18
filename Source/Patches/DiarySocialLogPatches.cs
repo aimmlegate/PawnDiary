@@ -251,7 +251,26 @@ namespace PawnDiary
         /// <see cref="RomanceSignal"/>, which filters to romance relations and records a pairwise
         /// diary event when both pawns are eligible.
         /// </summary>
-        public static void Postfix(Pawn_RelationsTracker __instance, PawnRelationDef def, Pawn otherPawn)
+        public static void Prefix(Pawn_RelationsTracker __instance, PawnRelationDef def, Pawn otherPawn,
+            out MechanitorRelationCallState __state)
+        {
+            __state = null;
+            // C# does not allow an out Harmony state parameter inside the usual safety lambda, so
+            // this one prefix uses the equivalent inline fail-open guard.
+            try
+            {
+                Pawn pawn = PawnField?.GetValue(__instance) as Pawn;
+                __state = DiaryGameComponent.Instance?.BeginMechanitorRelation(pawn, otherPawn, def);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[Pawn Diary] PawnRelationAddPatch.MechanitorPrefix failed and was skipped: " + e,
+                    "PawnRelationAddPatch.MechanitorPrefix".GetHashCode());
+            }
+        }
+
+        public static void Postfix(Pawn_RelationsTracker __instance, PawnRelationDef def, Pawn otherPawn,
+            MechanitorRelationCallState __state)
         {
             DiaryPatchSafety.Run("PawnRelationAddPatch", () =>
             {
@@ -266,6 +285,9 @@ namespace PawnDiary
                     return;
                 }
 
+                // Mechanitor ownership runs first: Overseer is not romance, and its exact relation
+                // must be observed before any later handler can return or mutate state.
+                DiaryGameComponent.Instance?.CompleteMechanitorRelation(__state);
                 DiaryEvents.Submit(new RomanceSignal(pawn, otherPawn, def));
             });
         }

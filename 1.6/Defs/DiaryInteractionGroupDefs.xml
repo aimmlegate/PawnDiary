@@ -2823,6 +2823,35 @@
 
   <!-- ===== Progression domain: synthetic pawn-development signals ===== -->
 
+  <!-- Biotech Phase 6 canonical controller POV for mechanitor lifecycle chapters. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionMechanitorLifecycle</defName>
+    <label>Mechanitor lifecycle</label>
+    <order>798</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Biotech</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a mechanitor lifecycle chapter; write from the human controller&apos;s perspective using only the supplied mech, service, combat, or boss-threat facts, never treating bandwidth as emotion and never inventing who struck a final blow</instruction>
+    <tone>with responsibility for minds made into command and consequence</tone>
+    <tones>
+      <li>intimate and accountable, centered on the controller&apos;s bond with command</li>
+      <li>technological but personal, keeping exact machines and threats grounded in lived consequence</li>
+    </tones>
+    <colorCue>eventful</colorCue>
+    <matchDefNames>
+      <li>BiotechMechlinkInstalled</li>
+      <li>BiotechMechlinkRemoved</li>
+      <li>BiotechFirstControlledMech</li>
+      <li>BiotechFirstControlledMechCombat</li>
+      <li>BiotechSignificantMechLoss</li>
+      <li>BiotechBossCalled</li>
+      <li>BiotechBossDefeated</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <!-- Biotech B1 committed growth choice. Phase 1 owns the exact birthday/letter mutation and
        releases the mature Birthday route whenever canonical capture cannot truthfully complete. -->
   <PawnDiary.DiaryInteractionGroupDef>

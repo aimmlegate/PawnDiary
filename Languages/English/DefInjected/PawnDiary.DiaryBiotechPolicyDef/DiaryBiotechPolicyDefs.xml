@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
-  <Diary_BiotechPolicy.label>Biotech growth and family policy</Diary_BiotechPolicy.label>
+  <Diary_BiotechPolicy.label>Biotech narrative policy</Diary_BiotechPolicy.label>
   <Diary_BiotechPolicy.opportunityBands.0.description>the child faced a narrow set of opportunities, without assigning blame for why</Diary_BiotechPolicy.opportunityBands.0.description>
   <Diary_BiotechPolicy.opportunityBands.1.description>the child had a mixed but meaningful range of paths to choose from</Diary_BiotechPolicy.opportunityBands.1.description>
   <Diary_BiotechPolicy.opportunityBands.2.description>the child reached this moment with a broad range of possible paths</Diary_BiotechPolicy.opportunityBands.2.description>
@@ -11,6 +11,7 @@
   <Diary_BiotechPolicy.familyObservedNarrativeFormat>This growth continues the directly observed childhood story around {0}.</Diary_BiotechPolicy.familyObservedNarrativeFormat>
   <Diary_BiotechPolicy.familyBaselineNarrativeFormat>This growth belongs to {0}&apos;s exact known family continuity.</Diary_BiotechPolicy.familyBaselineNarrativeFormat>
   <Diary_BiotechPolicy.identityNarrativeFormat>{0}&apos;s current visible xenotype is {1}; treat it as present identity, never as a prediction about genes.</Diary_BiotechPolicy.identityNarrativeFormat>
+  <Diary_BiotechPolicy.geneIdentityNarrativeFormat>The visible gene-identity change affecting {0} centered on {1}; keep it as one bounded theme, never a gene list.</Diary_BiotechPolicy.geneIdentityNarrativeFormat>
   <Diary_BiotechPolicy.observationBands.0.description>there are a few exact memories of this adult teaching or playing with the child</Diary_BiotechPolicy.observationBands.0.description>
   <Diary_BiotechPolicy.observationBands.1.description>this adult has been a steady, directly observed presence in the child&apos;s learning</Diary_BiotechPolicy.observationBands.1.description>
   <Diary_BiotechPolicy.observationBands.2.description>many directly observed lessons or play moments connect this adult to the child&apos;s upbringing</Diary_BiotechPolicy.observationBands.2.description>

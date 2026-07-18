@@ -164,7 +164,7 @@ Generation starts only after an event exists in the saved hot store.
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
 
-**Narrative Continuity (Master Waves 1–4 / N1 + N2-B + N2-O)** supplies the shared persistence and
+**Narrative Continuity (Master Waves 1–6 / N1 + N2-B + N2-O + first N3-B identity slice)** supplies the shared persistence and
 optional prompt seam for DLC integrations. Each first-person event POV can save bounded, explicitly
 known evidence, prose-free references, selected-candidate keys, and frozen `narrativeContext`; old
 saves normalize all four to empty. `NarrativeContextBuilder` snapshots
@@ -180,6 +180,12 @@ enumerates genes, predicts a future xenotype, infers parental emotion, or create
 Only exact lesson/play/care counters qualify as observed upbringing; a prior recorded growth age alone
 does not turn a child-only arc into family evidence. Exact `Parent`/`ParentBirth` baseline rows qualify
 even when they have no activity count.
+Gene identity progression pages now add exact-subject identity evidence and may freeze one N3-B
+candidate from the leading gene theme already selected by Phase 5. The candidate key
+`biotech|identity|<pawnId>|gene|<geneDefName>` is persisted through the ordinary selected-key history,
+so the shared repetition penalty can prefer a fresh applicable lens later. The provider never rescans
+or lists installed membership, creates another page, or adds a new save owner; older xenotype-only
+snapshots retain their existing xenotype Def-name fallback.
 N2-O replaces the Odyssey stub with one bounded mobile-home provider candidate only when the guarded
 adapter proves the exact POV pawn is currently inside vanilla's grav field and captures an exact visible
 ship/location. A matching committed journey ID upgrades the lens to exact-arc relevance; a Biotech
@@ -339,7 +345,9 @@ stable xenotype identity can still be compared. `GeneIdentityContextFormatter` e
 separator-safe labels—never the complete membership set. The event-time context uses
 `gene_identity_transition`, previous/current xenotype identity, exact or observed cause, up to four
 theme label/description/change/category rows, optional reimplanting pawn identity, and the
-`identity_transition` narrative facet.
+`identity_transition` narrative facet. The first valid already-selected theme also supplies the N3-B
+identity lens through XML-owned prose and a stable gene Def key; no second gene scan or full-membership
+prompt projection occurs.
 
 `BiotechXenogermMutationPatch` defensively registers the verified RimWorld 1.6 public signatures
 `GeneUtility.ImplantXenogermItem(Pawn, Xenogerm)` and
@@ -361,8 +369,26 @@ fixture-only simulation of the normal xenogerm-regrowth cooldown. RimWorld 1.6.4
 showed why this is required: immediately reimplanting again while `XenogermReplicating` remains active
 is intentionally lethal vanilla behavior and correctly creates a death page. The fixture removes only
 `XenogermLossShock`, `XenogermReplicating`, and the recipient's `XenogerminationComa` before the second
-call, then retains the broad no-new-event assertion. Production capture never removes or changes these
-hediffs.
+call, then retains the broad no-new-event assertion. A later 227/228 all-DLC run passed this corrected
+replay and the N3-B real-implant narrative assertion; its sole failure was a stale test-only official-
+DLC group matrix, now synced with the Biotech-gated `progressionXenotype` production row. Production
+capture never removes or changes these hediffs.
+
+Biotech Phase 6 adds a human-centered mechanitor lifecycle without polling bandwidth. Each diary's
+nested `MechanitorObservationState` stores an explicit observation version, current mechlink flag,
+first-controlled/first-combat consumption, bounded stable-ID mech tenure rows, and bounded exact boss
+call rows. The first old-save scan copies current Overseer relations silently and consumes historical
+“first” milestones; later slow scans only maintain tenure. All live tracker/relation/name projection is
+double-gated in `DlcContext`, so no-Biotech profiles return empty facts. Exact Harmony owners are
+`Hediff_Mechlink.PostAdd/PostRemoved`, `Pawn_RelationsTracker.AddDirectRelation` for the string-matched
+`Overseer` relation, configured successful `TaleRecorder` combat Tales, the existing `Pawn.Kill`
+prefix before relation cleanup, and `CompUseEffect_CallBossgroup` correlated to
+`GameComponent_Bossgroup.Notify_BossgroupCalled/Notify_PawnKilled`. A committed controller page claims
+the generic combat Tale; failed/disabled canonical dispatch fails open. Mech loss records only a
+non-numerically player-named mech or one observed for the XML minimum (15 days by default). Boss defeat
+prose proves only that the caller's saved threat was defeated and never names a final attacker. XML
+owns the combat Tale role lists, tenure threshold, 64-mech and 16-boss defaults, one Biotech-gated
+Progression group, and all English/Russian prompt/UI prose; fixed corruption ceilings remain in code.
 
 Live surroundings are optional prompt flavor and are collected fail-soft. In particular,
 `Room.GetRoomRoleLabel()` can lazily recalculate the room's stats/role; if RimWorld or another room
@@ -1199,7 +1225,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeRollPolicyDefs.xml` | numeric tuning for the psychotype roll: family bases, bonuses, wildcard chance, jitter range, duplicate penalty |
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; the main-thread builder snapshots it before fixed-order pure provider selection. The repetition policy is live: every narrative-capable source feeds the selector the POV pawn's most recent persisted selection keys (newest hot pages, then archive rows, bounded by `maxRecentSelectedCandidateKeys`), so `repetitionPenalty` dampens re-picking the same lens while exact-arc continuations stay exempt via `exactArcRepetitionPenalty` |
-| `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory plus mature-birth/miscarriage matchers, supporter thresholds/caps, naming timing, family retention, two-writer birth cap, pending-growth/pending-birth admission limits, and Phase-5 gene category/theme/text/observation/fallback-significance policy; Phases 1–5 and N2-B use these fields live |
+| `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory plus mature-birth/miscarriage matchers, supporter thresholds/caps, naming timing, family retention, two-writer birth cap, pending-growth/pending-birth admission limits, Phase-5 gene category/theme/text/observation/fallback-significance policy, N3-B salient-gene identity prose, and Phase-6 mechanitor combat Tale roles/tenure/state caps; Phases 1–6, N2-B, and the first N3-B slice use these fields live |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
 | `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |
 | `DiaryUiStyleDef.xml` / `DiaryTextDecorationDefs.xml` | UI dimensions/colors and display-only rich-text decoration |

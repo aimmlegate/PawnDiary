@@ -178,7 +178,8 @@ Every fixture explicitly logs `SKIP` when Odyssey is inactive or a real player g
 and failure-safe cleanup restores component/controller state, time speed, the mask engine, world
 objects, spawned things, pawns, events, diary indexes, and temporary Harmony patches.
 
-Narrative N2-O extends `NarrativeContinuityTests` to 104 assembly-free assertions. It covers the one-row
+Narrative N2-O and the first N3-B identity slice extend `NarrativeContinuityTests` to 109 assembly-free
+assertions. N2-O covers the one-row
 Odyssey home candidate, exact ship/journey/location identity, family-event ambient selection, landing
 exact-arc selection, inactive-provider/unknown-knowledge/disconnected-POV/unknown-location silence, and
 the frozen departure plus arrived/returned ship/place reference factories. Loaded RimTests exercise the
@@ -247,13 +248,30 @@ correction lists contain no unconditional DLC Def reference. New RimTest source 
 advancement, nested Scribe round-trip, missing-key version-zero normalization, a real vanilla
 `GeneUtility.ReimplantXenogerm` mutation with same-call Ability ownership and replay silence, and a
 real vanilla `GeneUtility.ImplantXenogermItem` mutation with bounded event-time context. The dev prompt
-suite includes an exact reimplant fixture. A loaded RimWorld 1.6.4871 rev591 all-suite run passed
-217/218 fixtures: both real xenogerm method paths and the reimplant canonical page/context/Ability claim
-executed successfully. The only failure was fixture-owned: its immediate second reimplant violated
-vanilla's lethal `XenogermReplicating` cooldown. The corrected fixture now removes only the three
-temporary vanilla reimplant hediffs before its unchanged replay; that replay needs an in-game rerun.
+suite includes an exact reimplant fixture. An initial loaded RimWorld 1.6.4871 rev591 all-suite run
+passed 217/218 fixtures and exposed the fixture's invalid immediate reimplant during vanilla's lethal
+`XenogermReplicating` cooldown. The corrected fixture removes only the three temporary vanilla
+reimplant hediffs before its unchanged replay. A later all-DLC run passed that replay and 227/228 tests
+overall; its sole failure was a stale official-DLC expected-group matrix, now updated to include the
+intentionally Biotech-gated `progressionXenotype` row.
 Live no-DLC, minimal-mod Player.log, prompt, fallback, and save/reload evidence remains the separate
 Phase 5 manual matrix.
+
+The first Narrative N3-B identity slice proves the N2 xenotype-key fallback, the exact stable
+`gene|<geneDefName>` identity key, bounded identity/gene topics, exact-subject selection, and ordinary
+recent-history repetition reordering against a fresh applicable lens. `DiaryBiotechPolicyTests` pins
+the new XML and English/Russian DefInjected prose. The real implant loaded fixture now also requires
+the canonical page to persist the salient gene label, stable candidate key, exact pawn subject, and
+`biotech_gene` source domain. The supplied all-DLC loaded run passed this real implant fixture.
+
+Biotech Phase 6 adds pure mechanitor coverage for old-save versus empty baselines, numerical versus
+custom mech names, the inclusive long-service boundary, significant-loss admission, first/second Tale
+instigator roles, bounded mech ownership, and saved boss call/defeat semantics. Shipped-XML assertions
+pin all seven synthetic Def names, the Biotech package gate, combat role lists, tenure/caps, and every
+English/Russian group and event key. `PawnDiaryBiotechMechanitorFlowTests` calls the real
+`HediffSet.AddHediff/RemoveHediff` lifecycle and audits the verified relation, Tale, death, boss-call,
+and boss-defeat Harmony targets. The nested Scribe round-trip includes consumed flags, one mech
+tenure/loss row, and one boss call/defeat row. The loaded fixture and manual matrix remain TODO.
 
 Narrative N2-B extends `NarrativeContinuityTests` with assembly-free checks for family-continuity
 classification, exact arc/subject candidate construction, fixed provider ordering, inactive-DLC and

@@ -27,8 +27,8 @@ namespace PawnDiary
             MaintainBiotechFamilyArcs();
             bool progressionEnabled = PawnDiaryMod.Settings != null
                 && DiarySignalPolicies.Enabled(DiarySignalPolicies.Progression);
-            bool observeBiotechGenes = ModsConfig.BiotechActive;
-            if (!progressionEnabled && !observeBiotechGenes)
+            bool observeBiotech = ModsConfig.BiotechActive;
+            if (!progressionEnabled && !observeBiotech)
             {
                 return;
             }
@@ -39,7 +39,7 @@ namespace PawnDiary
                 ScanPawnProgressionForDiaryEvents(
                     colonists[i],
                     progressionEnabled,
-                    observeBiotechGenes);
+                    observeBiotech);
             }
         }
 
@@ -61,6 +61,9 @@ namespace PawnDiary
             bool baseline = state.baselineProgressionOnNextScan;
             if (observeBiotechGenes)
             {
+                // Phase 6 tenure/baseline state advances even when Progression pages are disabled.
+                // This prevents an old save or later re-enable from inventing a "first" mech.
+                ObserveMechanitorState(pawn, state);
                 // The first/disabled pass is bookkeeping only. Enabled later passes may emit one
                 // significant fallback, but every path advances before returning.
                 ObserveGeneIdentity(pawn, state, progressionEnabled && !baseline);
@@ -206,7 +209,8 @@ namespace PawnDiary
             Pawn otherPawn)
         {
             if (pawn == null || decision == null || !decision.HasAnyChange) return false;
-            GeneSaliencePolicySnapshot policy = DiaryBiotechPolicy.Snapshot().geneSalience;
+            BiotechPolicySnapshot biotechPolicy = DiaryBiotechPolicy.Snapshot();
+            GeneSaliencePolicySnapshot policy = biotechPolicy.geneSalience;
             bool major = IsMajorArcXenotype(after?.xenotypeDefName);
             string context = GeneIdentityContextFormatter.Format(
                 before,
@@ -237,6 +241,28 @@ namespace PawnDiary
             string dedupKey = GeneIdentityEventKeys.DedupKey(
                 pawn.GetUniqueLoadID(),
                 causeToken);
+            BiotechNarrativeSnapshot narrativeSnapshot = BuildGeneIdentityNarrativeSnapshot(
+                pawn,
+                after,
+                decision,
+                biotechPolicy,
+                data.Tick);
+            List<NarrativeEvidence> narrativeEvidence = new List<NarrativeEvidence>
+            {
+                new NarrativeEvidence
+                {
+                    facet = NarrativeFacetTokens.IdentityTransition,
+                    phase = causeToken ?? string.Empty,
+                    subjectKind = NarrativeSubjectKindTokens.Pawn,
+                    subjectId = pawn.GetUniqueLoadID(),
+                    subjectLabel = pawn.LabelShortCap,
+                    beliefTopics = new List<string> { "identity", "gene" },
+                    salience = major ? NarrativeSalienceTokens.Major : NarrativeSalienceTokens.Meaningful,
+                    pawnCanKnow = true,
+                    sourceDomain = "biotech_gene",
+                    sourceDefName = ProgressionEventData.GeneIdentityChangedDefName
+                }
+            };
             return DispatchProgression(
                 pawn,
                 data,
@@ -244,7 +270,101 @@ namespace PawnDiary
                 text,
                 major,
                 dedupKey,
-                DiaryTuning.Current.genericEventTypeDedupTicks);
+                DiaryTuning.Current.genericEventTypeDedupTicks,
+                narrativeEvidence,
+                narrativeSnapshot);
+        }
+
+        /// <summary>
+        /// Converts the already-selected leading gene theme into one exact-subject identity lens. It
+        /// never enumerates genes here: the Phase-5 selector already bounded and sanitized the decision.
+        /// A xenotype-only change retains the existing N2 visible-xenotype fallback.
+        /// </summary>
+        private static BiotechNarrativeSnapshot BuildGeneIdentityNarrativeSnapshot(
+            Pawn pawn,
+            GeneIdentitySnapshot after,
+            GeneIdentityTransitionDecision decision,
+            BiotechPolicySnapshot policy,
+            int sourceTick)
+        {
+            if (!ModsConfig.BiotechActive || pawn == null || after == null || decision == null)
+            {
+                return null;
+            }
+
+            GeneTheme leadingTheme = null;
+            if (decision.themes != null)
+            {
+                for (int i = 0; i < decision.themes.Count; i++)
+                {
+                    GeneTheme candidate = decision.themes[i];
+                    if (candidate != null && !string.IsNullOrWhiteSpace(candidate.defName)
+                        && !string.IsNullOrWhiteSpace(candidate.label))
+                    {
+                        leadingTheme = candidate;
+                        break;
+                    }
+                }
+            }
+
+            string pawnName = DiaryLineCleaner.CleanLine(pawn.LabelShortCap);
+            string stableKey;
+            string identityText;
+            List<string> topics = new List<string> { "identity" };
+            if (leadingTheme != null)
+            {
+                stableKey = "gene|" + leadingTheme.defName.Trim();
+                identityText = FormatGeneIdentityNarrative(
+                    policy?.geneIdentityNarrativeFormat,
+                    pawnName,
+                    leadingTheme.label);
+                topics.Add("gene");
+            }
+            else
+            {
+                stableKey = (after.xenotypeDefName ?? string.Empty).Trim();
+                identityText = FormatGeneIdentityNarrative(
+                    policy?.identityNarrativeFormat,
+                    pawnName,
+                    after.xenotypeLabel);
+                topics.Add("xenotype");
+            }
+
+            return new BiotechNarrativeSnapshot
+            {
+                providerAvailable = true,
+                povPawnId = pawn.GetUniqueLoadID(),
+                childId = pawn.GetUniqueLoadID(),
+                xenotypeDefName = after.xenotypeDefName ?? string.Empty,
+                identityStableKey = stableKey,
+                identityText = identityText,
+                identityTopicTokens = topics,
+                sourceTick = sourceTick,
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true
+            };
+        }
+
+        private static string FormatGeneIdentityNarrative(
+            string format,
+            string pawnName,
+            string visibleTheme)
+        {
+            if (string.IsNullOrWhiteSpace(format) || string.IsNullOrWhiteSpace(pawnName)
+                || string.IsNullOrWhiteSpace(visibleTheme))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return DiaryLineCleaner.CleanLine(string.Format(format, pawnName, visibleTheme));
+            }
+            catch (FormatException)
+            {
+                // Malformed custom DefInjected prose disables only this optional continuity lens.
+                return string.Empty;
+            }
         }
 
         private void ScanPassionSkillMilestones(Pawn pawn, PawnProgressionState state, bool baseline)
@@ -555,7 +675,9 @@ namespace PawnDiary
         }
 
         private bool DispatchProgression(Pawn pawn, ProgressionEventData data, string label, string text,
-            bool majorArcCandidate, string dedupKey = null, int dedupWindowTicks = 0)
+            bool majorArcCandidate, string dedupKey = null, int dedupWindowTicks = 0,
+            List<NarrativeEvidence> narrativeEvidence = null,
+            BiotechNarrativeSnapshot biotechNarrative = null)
         {
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyProgression(data.DefName);
             bool userEnabled = group != null && PawnDiaryMod.Settings != null
@@ -580,7 +702,9 @@ namespace PawnDiary
                 userEnabled,
                 signalEnabled,
                 dedupKey,
-                dedupWindowTicks));
+                dedupWindowTicks,
+                narrativeEvidence,
+                biotechNarrative));
             if (emitted && majorArcCandidate)
             {
                 ConsiderArcReflectionAfterMajorEvent(pawn);

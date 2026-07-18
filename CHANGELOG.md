@@ -1,5 +1,28 @@
 # Changelog
 
+- **2026-07-18 — Implemented Biotech Phase 6 mechanitor lifecycle (live acceptance pending).** Added
+  silent versioned old-save baselines and bounded per-controller mech tenure/boss-call state; exact
+  mechlink install/removal, first Overseer relation, first configured controlled-mech combat, custom-
+  named or 15-day mech loss, and confirmed boss call/defeat chapters. Combat Tale ownership fails open,
+  death-driven mechlink removal stays silent, and boss defeat never invents the final attacker. Added
+  XML-owned Tale roles/tenure/caps, one Biotech-gated Progression group, English/Russian localization,
+  67 new standalone assertions, real-mechlink/patch-audit RimTests, Scribe coverage, docs, and rebuilt DLLs.
+
+- **2026-07-17 — Synced the loaded official-DLC catalog fixture after the Phase-5 package gate.** An
+  all-DLC RimWorld 1.6.4871 run passed 227/228 loaded tests; the sole failure showed that the fixture's
+  expected official-group set omitted the intentionally Biotech-gated `progressionXenotype` row.
+  Added that existing production row to the matrix. The same run confirms the corrected reimplant
+  replay and the new N3-B salient identity context/key/evidence assertions; no production behavior
+  changed. Base-only, RimTalk, and Odyssey save Phase B/C branches remain separate runs.
+
+- **2026-07-17 — Added the first N3-B salient-gene continuity lens (loaded acceptance passed).**
+  Existing `GeneIdentityChanged` pages now attach exact-subject identity evidence and may select one
+  XML-worded lens from Phase 5's already-chosen leading gene theme. A stable gene Def candidate key is
+  persisted through ordinary Narrative Continuity history, activating the shared repetition penalty
+  without another gene scan, membership list, hook, page owner, writer, or save field. Extended pure
+  provider/policy coverage and the real implant RimTest assertion; rebuilt both committed DLLs. The
+  supplied all-DLC loaded run passed the new assertion.
+
 - **2026-07-17 — Automated the remaining Biotech B1 acceptance behavior.** Expanded loaded growth
   coverage through real age-7/10/13 letters, multiple passions, nickname/responsibility changes,
   auto-resolution, postponed-owner Scribe recovery, and live pre-cap rejection/recovery. Added a
@@ -27,7 +50,8 @@
   makes a second `XenogermReplicating` hediff lethal while the caster's genes are still regrowing.
   The fixture now models the normal cooldown completing by removing only vanilla's temporary
   reimplant hediffs before replay, preserving the strict no-new-event assertion. Production behavior
-  and assertions are unchanged; the rebuilt fixture still requires an in-game confirmation rerun.
+  and assertions are unchanged. The later 227/228 all-DLC run confirmed the corrected replay; its
+  only failure was the now-synced official-DLC catalog expectation.
 
 - **2026-07-17 — Finished Biotech Phase 5 salient-gene integration (live acceptance pending).** Added
   pure exact membership diff/fallback-significance policy and separator-safe bounded context formatting;

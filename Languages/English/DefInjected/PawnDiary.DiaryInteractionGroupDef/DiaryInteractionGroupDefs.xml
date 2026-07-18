@@ -487,6 +487,12 @@
   <progressionGrowthMoment.tones.0>personal and forward-looking, grounded in the trait or interests that actually changed</progressionGrowthMoment.tones.0>
   <progressionGrowthMoment.tones.1>aware that new choices opened without turning opportunity into a score or inventing who caused it</progressionGrowthMoment.tones.1>
 
+  <progressionMechanitorLifecycle.label>Mechanitor lifecycle</progressionMechanitorLifecycle.label>
+  <progressionMechanitorLifecycle.instruction>a mechanitor lifecycle chapter; write from the human controller&apos;s perspective using only the supplied mech, service, combat, or boss-threat facts, never treating bandwidth as emotion and never inventing who struck a final blow</progressionMechanitorLifecycle.instruction>
+  <progressionMechanitorLifecycle.tone>with responsibility for minds made into command and consequence</progressionMechanitorLifecycle.tone>
+  <progressionMechanitorLifecycle.tones.0>intimate and accountable, centered on the controller&apos;s bond with command</progressionMechanitorLifecycle.tones.0>
+  <progressionMechanitorLifecycle.tones.1>technological but personal, keeping exact machines and threats grounded in lived consequence</progressionMechanitorLifecycle.tones.1>
+
   <biotechFamilyBirth.label>Family birth</biotechFamilyBirth.label>
   <biotechFamilyBirth.instruction>a canonical family birth remembered by an exact adult participant; use only the supplied role and outcome facts, allow mixed fear, grief, exhaustion, relief, or uncertainty, and never assume joy or wanted parenthood</biotechFamilyBirth.instruction>
   <biotechFamilyBirth.tone>with intimate consequence and emotionally honest uncertainty</biotechFamilyBirth.tone>

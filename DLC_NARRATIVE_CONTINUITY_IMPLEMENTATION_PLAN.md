@@ -567,6 +567,15 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 
 ### Phase N3 — Ideology interpretation and remaining providers
 
+> **N3-B identity progress (2026-07-17): implemented; loaded acceptance passed.** The existing
+> `GeneIdentityChanged` page now supplies exact-subject identity evidence and one provider candidate
+> from Phase 5's already-selected leading gene theme. Its stable
+> `biotech|identity|<pawnId>|gene|<geneDefName>` selection key enters ordinary Narrative Continuity
+> history, so the shared repetition penalty can prefer a fresh applicable lens on later pages. The
+> prose is XML/DefInjected, no full membership is rescanned or listed, and no hook, page owner, writer,
+> or save field was added. Pure tests pin selection/repetition, and the supplied all-DLC loaded run
+> passed the real implant context/key/evidence assertion.
+
 1. Route high-confidence `EventRelativeStanceResolver` output through the shared interpretation
    category for ordinary event enrichment.
 2. Add Royalty persona/title/court candidates with exact applicability gates.

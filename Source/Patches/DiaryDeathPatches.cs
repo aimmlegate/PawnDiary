@@ -25,7 +25,9 @@ namespace PawnDiary
         {
             DiaryPatchSafety.Run("PawnKillPatch.Prefix", () =>
             {
+                MechanitorDeathScope.Begin(__instance);
                 DeathContextCache.Capture(__instance, dinfo, exactCulprit);
+                DiaryGameComponent.Instance?.OnControlledMechDying(__instance);
             });
         }
 
@@ -37,6 +39,7 @@ namespace PawnDiary
         {
             DiaryPatchSafety.Run("PawnKillPatch.Postfix", () =>
             {
+                MechanitorDeathScope.End(__instance);
                 // Pawn.Kill fires for every death — animals, raiders, mechs — but only a humanlike
                 // colonist can ever get a death page. Gate before building/submitting the signal so
                 // the common non-colonist kill does no allocation or bus work. The decider re-checks
@@ -49,6 +52,13 @@ namespace PawnDiary
 
                 DiaryEvents.Submit(new DeathFallbackSignal(__instance));
             });
+        }
+
+        /// <summary>Guarantees the death scope closes even if vanilla or another patch throws.</summary>
+        public static System.Exception Finalizer(Pawn __instance, System.Exception __exception)
+        {
+            MechanitorDeathScope.End(__instance);
+            return __exception;
         }
     }
 }

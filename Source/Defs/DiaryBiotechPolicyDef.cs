@@ -44,12 +44,13 @@ namespace PawnDiary
         // contract, while these DefInjected descriptions are what the LLM actually sees.
         public string newInterestDescription;
         public string deepenedInterestDescription;
-        // N2-B provider prose is DefInjected. {0} is the child's visible short name; the identity
-        // format additionally uses {1} for the visible current xenotype label.
+        // N2/N3-B provider prose is DefInjected. {0} is the pawn's visible short name; identity
+        // formats additionally use {1} for the visible current xenotype or one salient gene theme.
         public string familySinceBirthNarrativeFormat;
         public string familyObservedNarrativeFormat;
         public string familyBaselineNarrativeFormat;
         public string identityNarrativeFormat;
+        public string geneIdentityNarrativeFormat;
         public List<string> familyActivityExactDefNames = new List<string>();
         public List<string> familyActivityPrefixes = new List<string>();
         public List<string> familyPregnancyHediffDefNames = new List<string>();
@@ -88,6 +89,13 @@ namespace PawnDiary
         public List<string> geneForceIncludeDefNames = new List<string>();
         public List<string> geneExcludeDefNames = new List<string>();
         public List<string> geneAllowDuplicateCategories = new List<string>();
+        // Phase 6 mechanitor policy. Tale role lists are split because vanilla's KilledBy Tale puts
+        // the killer second while the combat Tales put the killer first.
+        public int mechanitorLongServiceTicks = 900000;
+        public int mechanitorMaximumObservedMechs = 64;
+        public int mechanitorMaximumBossCalls = 16;
+        public List<string> mechanitorCombatFirstPawnDefNames = new List<string>();
+        public List<string> mechanitorCombatSecondPawnDefNames = new List<string>();
 
         /// <summary>Reports malformed XML policy at Def load instead of failing inside a later hook.</summary>
         public override IEnumerable<string> ConfigErrors()
@@ -115,6 +123,8 @@ namespace PawnDiary
                 yield return "familyBaselineNarrativeFormat must contain DefInjected prompt prose.";
             if (string.IsNullOrWhiteSpace(identityNarrativeFormat))
                 yield return "identityNarrativeFormat must contain DefInjected prompt prose.";
+            if (string.IsNullOrWhiteSpace(geneIdentityNarrativeFormat))
+                yield return "geneIdentityNarrativeFormat must contain DefInjected prompt prose.";
             if (familyActivityPairDedupTicks < 0) yield return "familyActivityPairDedupTicks cannot be negative.";
             if (supporterMinimumEvidence <= 0) yield return "supporterMinimumEvidence must be positive.";
             if (maximumSupporterRows <= 0) yield return "maximumSupporterRows must be positive.";
@@ -160,6 +170,17 @@ namespace PawnDiary
                 || geneMinimumFallbackChanges > GeneIdentityObservationPolicy.HardMaximumGeneDefNames)
                 yield return "geneMinimumFallbackChanges must stay between one and the defensive "
                     + GeneIdentityObservationPolicy.HardMaximumGeneDefNames + "-row cap.";
+            if (mechanitorLongServiceTicks <= 0)
+                yield return "mechanitorLongServiceTicks must be positive.";
+            if (mechanitorMaximumObservedMechs < 1
+                || mechanitorMaximumObservedMechs > MechanitorObservationState.HardMaximumMechs)
+                yield return "mechanitorMaximumObservedMechs must stay within the defensive row cap.";
+            if (mechanitorMaximumBossCalls < 1
+                || mechanitorMaximumBossCalls > MechanitorObservationState.HardMaximumBossCalls)
+                yield return "mechanitorMaximumBossCalls must stay within the defensive row cap.";
+            if (!HasNonBlankMatcher(mechanitorCombatFirstPawnDefNames)
+                && !HasNonBlankMatcher(mechanitorCombatSecondPawnDefNames))
+                yield return "mechanitor combat Tale ownership requires at least one exact Def name.";
 
             foreach (string error in OpportunityBandErrors(opportunityBands)) yield return error;
             foreach (string error in ObservationBandErrors(observationBands)) yield return error;
@@ -332,7 +353,17 @@ namespace PawnDiary
             result.familyObservedNarrativeFormat = source.familyObservedNarrativeFormat ?? string.Empty;
             result.familyBaselineNarrativeFormat = source.familyBaselineNarrativeFormat ?? string.Empty;
             result.identityNarrativeFormat = source.identityNarrativeFormat ?? string.Empty;
+            result.geneIdentityNarrativeFormat = source.geneIdentityNarrativeFormat ?? string.Empty;
             result.geneSalience = CopyGeneSalience(source, result.geneSalience);
+            result.mechanitorLongServiceTicks = Positive(
+                source.mechanitorLongServiceTicks,
+                result.mechanitorLongServiceTicks);
+            result.mechanitorMaximumObservedMechs = source.mechanitorMaximumObservedMechs < 1
+                || source.mechanitorMaximumObservedMechs > MechanitorObservationState.HardMaximumMechs
+                ? result.mechanitorMaximumObservedMechs : source.mechanitorMaximumObservedMechs;
+            result.mechanitorMaximumBossCalls = source.mechanitorMaximumBossCalls < 1
+                || source.mechanitorMaximumBossCalls > MechanitorObservationState.HardMaximumBossCalls
+                ? result.mechanitorMaximumBossCalls : source.mechanitorMaximumBossCalls;
             CopyOpportunityBands(source.opportunityBands, result);
             CopyObservationBands(source.observationBands, result);
             CopyStrings(source.familyActivityExactDefNames, result.familyActivityExactDefNames);
@@ -348,6 +379,12 @@ namespace PawnDiary
             ReplaceStrings(
                 source.miscarriagePartnerThoughtDefNames,
                 result.miscarriagePartnerThoughtDefNames);
+            ReplaceStrings(
+                source.mechanitorCombatFirstPawnDefNames,
+                result.mechanitorCombatFirstPawnDefNames);
+            ReplaceStrings(
+                source.mechanitorCombatSecondPawnDefNames,
+                result.mechanitorCombatSecondPawnDefNames);
             cached = result;
             cachedLanguage = LanguageDatabase.activeLanguage;
             return result;

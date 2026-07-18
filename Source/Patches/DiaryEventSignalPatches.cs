@@ -38,6 +38,11 @@ namespace PawnDiary
                     return;
                 }
 
+                if (DiaryGameComponent.Instance?.TryHandleMechanitorCombatTale(__result, def) == true)
+                {
+                    return;
+                }
+
                 TaleSignal signal = new TaleSignal(__result, def);
                 if (!BiotechBirthCorrelation.TryStageMatureSignal(def.defName, signal))
                 {

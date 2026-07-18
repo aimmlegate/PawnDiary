@@ -598,6 +598,12 @@
   <progressionGrowthMoment.tones.0>лично и с взглядом вперёд, опираясь только на черту или интересы, которые действительно изменились</progressionGrowthMoment.tones.0>
   <progressionGrowthMoment.tones.1>замечая открывшиеся новые возможности, но не превращая их в оценку и не выдумывая, кто их создал</progressionGrowthMoment.tones.1>
 
+  <progressionMechanitorLifecycle.label>Путь механитора</progressionMechanitorLifecycle.label>
+  <progressionMechanitorLifecycle.instruction>глава пути механитора; пиши от лица человека-контролёра, используя только указанные факты о мехе, сроке службы, бою или угрозе босса, не превращая пропускную способность в эмоцию и не выдумывая, кто нанёс последний удар</progressionMechanitorLifecycle.instruction>
+  <progressionMechanitorLifecycle.tone>с ответственностью за разумы, превращённые в приказ и последствия</progressionMechanitorLifecycle.tone>
+  <progressionMechanitorLifecycle.tones.0>лично и ответственно, сосредоточившись на связи контролёра с командованием</progressionMechanitorLifecycle.tones.0>
+  <progressionMechanitorLifecycle.tones.1>технологично, но по-человечески, связывая конкретные машины и угрозы с пережитыми последствиями</progressionMechanitorLifecycle.tones.1>
+
   <biotechFamilyBirth.label>Рождение в семье</biotechFamilyBirth.label>
   <biotechFamilyBirth.instruction>рождение в семье глазами точно известного взрослого участника; используй только указанные роль и исход, допускай страх, горе, истощение, облегчение или неопределённость и никогда не предполагай радость или желанное родительство</biotechFamilyBirth.instruction>
   <biotechFamilyBirth.tone>с близкими последствиями и честной эмоциональной неопределённостью</biotechFamilyBirth.tone>

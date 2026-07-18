@@ -699,6 +699,131 @@ namespace PawnDiary
             return true;
         }
 
+        /// <summary>
+        /// Copies a pawn's current mechlink and exact Overseer relations behind the shared Biotech
+        /// guard. An ordinary colonist returns a valid empty baseline; a no-DLC pawn returns false.
+        /// </summary>
+        internal static bool TryCaptureMechanitorController(
+            Pawn controller,
+            out MechanitorControllerSnapshot snapshot)
+        {
+            snapshot = null;
+            if (!ModsConfig.BiotechActive || controller == null || controller.relations == null)
+                return false;
+
+            try
+            {
+                snapshot = new MechanitorControllerSnapshot
+                {
+                    controllerId = controller.GetUniqueLoadID(),
+                    hasMechlink = controller.mechanitor != null
+                };
+                List<DirectPawnRelation> relations = controller.relations.DirectRelations;
+                for (int i = 0; i < relations.Count; i++)
+                {
+                    DirectPawnRelation relation = relations[i];
+                    if (!string.Equals(relation?.def?.defName, "Overseer",
+                        StringComparison.OrdinalIgnoreCase)) continue;
+                    MechanitorMechSnapshot mech;
+                    if (TryCaptureMechanitorMech(controller, relation.otherPawn, out mech))
+                    {
+                        mech.relationStartTick = Math.Max(0, relation.startTicks);
+                        snapshot.overseenMechs.Add(mech);
+                    }
+                }
+                return !string.IsNullOrWhiteSpace(snapshot.controllerId);
+            }
+            catch (Exception)
+            {
+                snapshot = null;
+                return false;
+            }
+        }
+
+        /// <summary>Copies one mech only when the supplied pawn is its exact current Overseer.</summary>
+        internal static bool TryCaptureMechanitorMech(
+            Pawn controller,
+            Pawn mech,
+            out MechanitorMechSnapshot snapshot)
+        {
+            snapshot = null;
+            if (!ModsConfig.BiotechActive || controller == null || mech == null
+                || controller.mechanitor == null || controller.relations == null) return false;
+
+            try
+            {
+                DirectPawnRelation overseerRelation = null;
+                List<DirectPawnRelation> relations = controller.relations.DirectRelations;
+                for (int i = 0; i < relations.Count; i++)
+                {
+                    DirectPawnRelation relation = relations[i];
+                    if (relation?.otherPawn == mech && string.Equals(relation.def?.defName,
+                        "Overseer", StringComparison.OrdinalIgnoreCase))
+                    {
+                        overseerRelation = relation;
+                        break;
+                    }
+                }
+                if (overseerRelation == null) return false;
+
+                Name name = mech.Name;
+                snapshot = new MechanitorMechSnapshot
+                {
+                    mechId = mech.GetUniqueLoadID(),
+                    displayName = DiaryLineCleaner.CleanLine(mech.LabelShortCap),
+                    kindDefName = mech.kindDef?.defName ?? string.Empty,
+                    kindLabel = DiaryLineCleaner.CleanLine(mech.KindLabel),
+                    relationStartTick = Math.Max(0, overseerRelation.startTicks),
+                    controlled = controller.mechanitor.ControlledPawns != null
+                        && controller.mechanitor.ControlledPawns.Contains(mech),
+                    hasExplicitName = name != null,
+                    numericalName = name != null && name.Numerical
+                };
+                return !string.IsNullOrWhiteSpace(snapshot.mechId);
+            }
+            catch (Exception)
+            {
+                snapshot = null;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Resolves the exact current Overseer from the mech's relation list, then copies bounded
+        /// facts. Death callers invoke this before vanilla removes the relation.
+        /// </summary>
+        internal static bool TryCaptureControlledMech(
+            Pawn mech,
+            out Pawn controller,
+            out MechanitorMechSnapshot snapshot)
+        {
+            controller = null;
+            snapshot = null;
+            if (!ModsConfig.BiotechActive || mech?.relations == null) return false;
+            try
+            {
+                List<DirectPawnRelation> relations = mech.relations.DirectRelations;
+                for (int i = 0; i < relations.Count; i++)
+                {
+                    DirectPawnRelation relation = relations[i];
+                    if (!string.Equals(relation?.def?.defName, "Overseer",
+                        StringComparison.OrdinalIgnoreCase)) continue;
+                    Pawn candidate = relation.otherPawn;
+                    if (TryCaptureMechanitorMech(candidate, mech, out snapshot))
+                    {
+                        controller = candidate;
+                        return true;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                controller = null;
+                snapshot = null;
+            }
+            return false;
+        }
+
         private static GeneFact CaptureGeneFact(Pawn pawn, Gene gene, GeneDef def, string defName)
         {
             bool suppressed = true;

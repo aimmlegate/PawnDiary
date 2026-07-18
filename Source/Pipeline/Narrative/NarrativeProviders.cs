@@ -29,7 +29,12 @@ namespace PawnDiary
         public string familyContinuity = string.Empty;
         public string familyText = string.Empty;
         public string xenotypeDefName = string.Empty;
+        // N3-B may describe one XML-selected salient gene theme instead of the broad xenotype. This
+        // stable, prose-free key is what repetition policy persists; N2 callers may leave it empty and
+        // retain the xenotype defName fallback.
+        public string identityStableKey = string.Empty;
         public string identityText = string.Empty;
+        public List<string> identityTopicTokens = new List<string>();
         public int sourceTick;
         public bool pawnCanKnow;
         public bool hasVerifiedPovConnection;
@@ -287,20 +292,23 @@ namespace PawnDiary
                 });
             }
 
+            string identityKey = string.IsNullOrWhiteSpace(snapshot.identityStableKey)
+                ? (snapshot.xenotypeDefName ?? string.Empty).Trim()
+                : snapshot.identityStableKey.Trim();
             if (!string.IsNullOrWhiteSpace(snapshot.childId)
-                && !string.IsNullOrWhiteSpace(snapshot.xenotypeDefName)
+                && identityKey.Length > 0
                 && !string.IsNullOrWhiteSpace(snapshot.identityText))
             {
                 result.Add(new NarrativeLensCandidate
                 {
-                    candidateKey = "biotech|identity|" + snapshot.childId + "|" + snapshot.xenotypeDefName.Trim(),
+                    candidateKey = "biotech|identity|" + snapshot.childId + "|" + identityKey,
                     provider = NarrativeProviderTokens.Biotech,
                     category = NarrativeCategoryTokens.Identity,
                     text = snapshot.identityText.Trim(),
                     facet = NarrativeFacetTokens.IdentityTransition,
                     subjectKind = NarrativeSubjectKindTokens.Pawn,
                     subjectId = snapshot.childId,
-                    topicTokens = new List<string> { "identity" },
+                    topicTokens = IdentityTopics(snapshot.identityTopicTokens),
                     sourceTick = snapshot.sourceTick,
                     salience = NarrativeSalienceTokens.Meaningful,
                     relationship = NarrativeRelationshipTokens.ExactSubject,
@@ -310,6 +318,19 @@ namespace PawnDiary
                 });
             }
 
+            return result;
+        }
+
+        private static List<string> IdentityTopics(List<string> source)
+        {
+            List<string> result = new List<string> { "identity" };
+            if (source == null) return result;
+            for (int i = 0; i < source.Count && result.Count < 4; i++)
+            {
+                string token = (source[i] ?? string.Empty).Trim();
+                if (token.Length == 0 || result.Contains(token)) continue;
+                result.Add(token);
+            }
             return result;
         }
 
