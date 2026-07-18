@@ -1,9 +1,11 @@
 # Pawn Diary — Royalty Support Implementation Plan
 
-Status: Phase 0 implemented on 2026-07-18 as a contract-only slice. Plain persona/title/psylink
-snapshots, the frozen persona arc grammar, XML-owned policy with safe fallbacks, pure lifecycle/trait/
-milestone/title/mutation decisions, and standalone tests are present. No live collection, Harmony,
-Scribe state, provider, page, prompt, setting, or other player-visible behavior has begun.
+Status: Phases 0–2 and the Narrative N3-R core dependency are implemented as of 2026-07-18.
+Phase 2 now ships exact persona-weapon formation, meaningful separation/recovery, destruction, and
+transfer lifecycle pages with guarded Harmony collection, saved state, exact thought ownership,
+package-gated settings/prompts, English/Russian localization, prompt fixtures, and N3-R evidence.
+Loaded-game Phase-2 acceptance is still pending; Phases 3–8 remain. This status does not pass, waive,
+or remove any earlier Biotech B1 manual acceptance row.
 
 Scheduling authority: implement Royalty phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Royalty.
@@ -1366,6 +1368,21 @@ describe structural behavior where applicable.
 > hook, page source, setting, save field, or Phase-2 lifecycle behavior was added.
 
 ### Phase 2 — Persona lifecycle pages
+
+> **Implementation status (2026-07-18): code-complete; loaded-game execution not claimed.**
+> `DiaryRoyaltyPatches` defensively registers exact `CompBladelinkWeapon` coding, equipment,
+> destruction, map-removal, and `UnCode` seams only while Royalty is active. Live reads remain behind
+> `DlcContext`; `PersonaLifecyclePolicy` commits the deep-scribed bond row before optional dispatch.
+> Formation and exact transfer start one epoch page, short swaps remain pending/silent, the independent
+> elapsed reconciliation deadline emits one threshold separation and only its corresponding recovery,
+> destruction emits one standalone ending, and pawn death/map removal/unknown cleanup remain silent
+> owners for later reconciliation or Phase 3. Exact bonded-thought signals are staged synchronously and
+> consumed only when the lifecycle page persists; otherwise they re-enter normal Thought capture.
+> `PersonaWeaponEventData`/Spec, bounded context formatting, the exact `PersonaWeapon` domain/group,
+> four event-prompt rows, append-only `SoloImportant` projection, bilingual localization, and four dev
+> prompt fixtures are present. N3-R persona evidence is attached after the page exists. Pure coverage
+> passes 205 Royalty, 660 capture, and 2,196 pipeline assertions; the Debug DLL builds. The exit-gate
+> scenarios still require a recorded loaded-game run, so this phase is not marked acceptance-complete.
 
 1. Defensively register coding, equipment evidence, destruction, and cleanup hooks.
 2. Emit bond formation.

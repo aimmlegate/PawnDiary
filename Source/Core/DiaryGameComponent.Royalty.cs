@@ -1,7 +1,10 @@
-// Royalty Phase-1 save ownership and silent baselining. This partial intentionally creates no page:
-// it only initializes detached bond/title/psylink truth so later hooks cannot backfill old events.
+// Royalty save ownership, silent baselining, and Phase-2 persona lifecycle orchestration. Guarded
+// adapters copy live weapon/Pawn facts here; pure policy commits state before an optional localized
+// page is dispatched, so disabled groups and failed generation never create later catch-up pages.
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
+using PawnDiary.Ingestion;
 using RimWorld;
 using Verse;
 
@@ -103,6 +106,297 @@ namespace PawnDiary
             royaltyPersonaBonds = new List<PersonaBondState>();
             for (int i = 0; i < normalized.Count; i++)
                 royaltyPersonaBonds.Add(PersonaBondState.FromSnapshot(normalized[i]));
+        }
+
+        /// <summary>
+        /// Establishes any old-save baseline before vanilla changes a coded weapon, then captures its
+        /// exact pre-action facts for transfer classification. Called only inside the CodeFor prefix.
+        /// </summary>
+        internal PersonaWeaponSnapshot BeginRoyaltyPersonaCoding(ThingWithComps weapon, Pawn pawn)
+        {
+            if (!RoyaltyPersonaRuntimeReady() || weapon == null || pawn == null) return null;
+            BaselineRoyaltyStateIfNeeded(SnapshotFreeColonists());
+            PersonaWeaponSnapshot before;
+            return DlcContext.TryCapturePersonaWeapon(weapon, pawn, out before) ? before : null;
+        }
+
+        /// <summary>Commits the exact post-CodeFor formation or transfer and returns page ownership.</summary>
+        internal bool CompleteRoyaltyPersonaCoding(
+            ThingWithComps weapon,
+            Pawn pawn,
+            PersonaWeaponSnapshot before)
+        {
+            if (!RoyaltyPersonaRuntimeReady() || weapon == null || pawn == null) return false;
+            PersonaWeaponSnapshot after;
+            if (!DlcContext.TryCapturePersonaWeapon(weapon, pawn, out after)) return false;
+
+            bool exactDifferentPawn = before != null
+                && string.Equals(before.weaponThingId, after.weaponThingId, StringComparison.Ordinal)
+                && !string.IsNullOrWhiteSpace(before.codedPawnId)
+                && !string.Equals(before.codedPawnId, after.codedPawnId, StringComparison.Ordinal);
+            bool exactLivePrevious = exactDifferentPawn && HasLivePersonaBond(
+                after.weaponThingId, before.codedPawnId);
+            string observation = exactLivePrevious
+                ? PersonaObservationTokens.Transfer
+                : PersonaObservationTokens.Coding;
+            return ApplyRoyaltyPersonaObservation(after, pawn, observation, true);
+        }
+
+        /// <summary>Records exact primary/not-primary evidence from persona equipment callbacks.</summary>
+        internal void ObserveRoyaltyPersonaEquipment(ThingWithComps weapon, Pawn pawn)
+        {
+            if (!RoyaltyPersonaRuntimeReady() || weapon == null || pawn == null) return;
+            BaselineRoyaltyStateIfNeeded(SnapshotFreeColonists());
+            PersonaWeaponSnapshot captured;
+            if (!DlcContext.TryCapturePersonaWeapon(weapon, pawn, out captured)) return;
+            ApplyRoyaltyPersonaObservation(
+                captured,
+                pawn,
+                captured.isCurrentlyPrimary
+                    ? PersonaObservationTokens.Primary
+                    : PersonaObservationTokens.NotPrimary,
+                false);
+        }
+
+        /// <summary>Commits an exact weapon-destruction ending before vanilla clears the coded pawn.</summary>
+        internal void ObserveRoyaltyPersonaDestroyed(ThingWithComps weapon)
+        {
+            if (!RoyaltyPersonaRuntimeReady() || weapon == null) return;
+            BaselineRoyaltyStateIfNeeded(SnapshotFreeColonists());
+            CompBladelinkWeapon comp = weapon.TryGetComp<CompBladelinkWeapon>();
+            Pawn pawn = comp?.CodedPawn;
+            PersonaWeaponSnapshot captured;
+            if (!DlcContext.TryCapturePersonaWeapon(weapon, pawn, out captured)) return;
+            string token = pawn?.Dead == true
+                ? PersonaObservationTokens.PawnDeath
+                : PersonaObservationTokens.Destroyed;
+            ApplyRoyaltyPersonaObservation(captured, pawn, token, false);
+        }
+
+        /// <summary>Marks map removal as unavailable evidence; it can cancel but never prove separation.</summary>
+        internal void ObserveRoyaltyPersonaMapRemoved(ThingWithComps weapon)
+        {
+            ObserveRoyaltyPersonaCleanup(weapon, PersonaObservationTokens.MapRemoved);
+        }
+
+        /// <summary>
+        /// Classifies UnCode as pawn death only with exact dead-pawn evidence. Other UnCode calls are
+        /// intentionally ambiguous and leave live state for reconciliation or a higher-priority hook.
+        /// </summary>
+        internal void ObserveRoyaltyPersonaUncode(ThingWithComps weapon)
+        {
+            if (!RoyaltyPersonaRuntimeReady() || weapon == null) return;
+            CompBladelinkWeapon comp = weapon.TryGetComp<CompBladelinkWeapon>();
+            Pawn pawn = comp?.CodedPawn;
+            ObserveRoyaltyPersonaCleanup(
+                weapon,
+                pawn?.Dead == true
+                    ? PersonaObservationTokens.PawnDeath
+                    : PersonaObservationTokens.UnknownUncode);
+        }
+
+        /// <summary>
+        /// Reconciles slow separation/recovery truth from saved live bonds. A missing/off-map weapon
+        /// becomes Unavailable, never NotPrimary, so caravan/loading/map transitions stay silent.
+        /// </summary>
+        private void ReconcileRoyaltyPersonaBonds()
+        {
+            if (!RoyaltyPersonaRuntimeReady()) return;
+            List<Pawn> colonists = SnapshotFreeColonists();
+            BaselineRoyaltyStateIfNeeded(colonists);
+            if (royaltyPersonaBonds == null || royaltyPersonaBonds.Count == 0) return;
+
+            Dictionary<string, PersonaWeaponSnapshot> visible =
+                new Dictionary<string, PersonaWeaponSnapshot>(StringComparer.Ordinal);
+            Dictionary<string, Pawn> pawnsById = new Dictionary<string, Pawn>(StringComparer.Ordinal);
+            for (int i = 0; i < colonists.Count; i++)
+            {
+                Pawn pawn = colonists[i];
+                string pawnId = pawn?.GetUniqueLoadID() ?? string.Empty;
+                if (pawnId.Length > 0) pawnsById[pawnId] = pawn;
+                List<PersonaWeaponSnapshot> weapons = DlcContext.CapturePersonaWeapons(pawn);
+                for (int j = 0; j < weapons.Count; j++)
+                    if (weapons[j] != null && !string.IsNullOrWhiteSpace(weapons[j].weaponThingId))
+                        visible[weapons[j].weaponThingId] = weapons[j];
+            }
+
+            // Snapshot rows first because Apply may replace/normalize the backing saved list.
+            List<PersonaBondStateSnapshot> rows = new List<PersonaBondStateSnapshot>();
+            for (int i = 0; i < royaltyPersonaBonds.Count; i++)
+                if (royaltyPersonaBonds[i] != null) rows.Add(royaltyPersonaBonds[i].ToSnapshot());
+            for (int i = 0; i < rows.Count; i++)
+            {
+                PersonaBondStateSnapshot row = rows[i];
+                if (row == null || !PersonaBondPhaseTokens.IsLive(row.phaseToken)) continue;
+                PersonaWeaponSnapshot weapon;
+                Pawn pawn;
+                pawnsById.TryGetValue(row.currentPawnId ?? string.Empty, out pawn);
+                if (visible.TryGetValue(row.weaponThingId ?? string.Empty, out weapon)
+                    && string.Equals(weapon.codedPawnId, row.currentPawnId, StringComparison.Ordinal))
+                {
+                    ApplyRoyaltyPersonaObservation(
+                        weapon,
+                        pawn,
+                        weapon.isCurrentlyPrimary
+                            ? PersonaObservationTokens.Primary
+                            : PersonaObservationTokens.NotPrimary,
+                        false);
+                }
+                else
+                {
+                    ApplyRoyaltyPersonaObservation(SnapshotFromState(row), pawn,
+                        PersonaObservationTokens.Unavailable, false);
+                }
+            }
+        }
+
+        private void ObserveRoyaltyPersonaCleanup(ThingWithComps weapon, string token)
+        {
+            if (!RoyaltyPersonaRuntimeReady() || weapon == null) return;
+            BaselineRoyaltyStateIfNeeded(SnapshotFreeColonists());
+            CompBladelinkWeapon comp = weapon.TryGetComp<CompBladelinkWeapon>();
+            Pawn pawn = comp?.CodedPawn;
+            PersonaWeaponSnapshot captured;
+            if (DlcContext.TryCapturePersonaWeapon(weapon, pawn, out captured))
+                ApplyRoyaltyPersonaObservation(captured, pawn, token, false);
+        }
+
+        /// <summary>Runs one pure lifecycle transition, saves it, then optionally dispatches its page.</summary>
+        private bool ApplyRoyaltyPersonaObservation(
+            PersonaWeaponSnapshot weapon,
+            Pawn pawn,
+            string observationToken,
+            bool normalPlayCoding)
+        {
+            if (weapon == null || string.IsNullOrWhiteSpace(weapon.weaponThingId)) return false;
+            if (pawn != null && !string.Equals(
+                weapon.codedPawnId, pawn.GetUniqueLoadID(), StringComparison.Ordinal)) return false;
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            int index = PersonaBondIndex(weapon.weaponThingId);
+            PersonaBondStateSnapshot previous = index >= 0
+                ? royaltyPersonaBonds[index].ToSnapshot()
+                : new PersonaBondStateSnapshot();
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyPersonaWeapon(
+                PersonaWeaponEventData.BondFormedDefName);
+            bool groupEnabled = group != null && PawnDiaryMod.Settings != null
+                && PawnDiaryMod.Settings.IsGroupEnabled(group.defName)
+                && pawn != null && IsDiaryEligible(pawn);
+            int now = Find.TickManager?.TicksGame ?? 0;
+            PersonaLifecycleDecision lifecycle = PersonaLifecyclePolicy.Evaluate(
+                previous,
+                new PersonaLifecycleObservation
+                {
+                    observationToken = observationToken,
+                    weapon = weapon,
+                    tick = Math.Max(0, now),
+                    normalPlay = normalPlayCoding && Scribe.mode == LoadSaveMode.Inactive,
+                    groupEnabled = groupEnabled
+                },
+                policy);
+
+            // The pure policy can know that output is enabled, but only the impure repository can
+            // prove a durable separation page actually exists. Commit the phase first with recovery
+            // ownership false, then promote it transactionally after successful event creation.
+            bool separationAwaitsPageAcceptance = lifecycle.shouldEmit
+                && lifecycle.narrativePhase == PersonaNarrativePhaseTokens.BondSeparated;
+            if (separationAwaitsPageAcceptance && lifecycle.nextState != null)
+                lifecycle.nextState.separationEmitted = false;
+
+            if (lifecycle.stateChanged)
+            {
+                PersonaBondStateSnapshot normalized = RoyaltyStatePersistence.NormalizePersona(
+                    lifecycle.nextState, policy.maximumTraitCandidates);
+                if (normalized == null) return false;
+                lifecycle.nextState = normalized;
+                if (index >= 0) royaltyPersonaBonds[index] = PersonaBondState.FromSnapshot(normalized);
+                else
+                {
+                    royaltyPersonaBonds.Add(PersonaBondState.FromSnapshot(normalized));
+                    NormalizeRoyaltyPersonaBonds();
+                }
+                royaltyPersonaObservationVersion = RoyaltyStatePersistence.CurrentObservationVersion;
+            }
+
+            if (!lifecycle.shouldEmit || group == null || pawn == null) return false;
+            string defName = PersonaWeaponEventData.DefNameForPhase(lifecycle.narrativePhase);
+            group = InteractionGroups.ClassifyPersonaWeapon(defName);
+            if (group == null) return false;
+            string eventIdentity = RoyaltyArcKeys.Persona(
+                lifecycle.nextState.weaponThingId, lifecycle.nextState.bondEpoch)
+                + "|" + lifecycle.narrativePhase;
+            string traitToken = PersonaWeaponEventData.TraitEventTokenForPhase(lifecycle.narrativePhase);
+            List<PersonaTraitFact> selected = PersonaTraitPolicy.Select(
+                lifecycle.nextState.traits, traitToken, eventIdentity, policy);
+            string duration = PersonaLifecycleDuration(previous, lifecycle.nextState, lifecycle.narrativePhase, now);
+            PersonaWeaponSignal signal = new PersonaWeaponSignal(
+                pawn, weapon, previous, lifecycle, selected, duration, policy, group, now);
+            bool dispatched = Dispatch(signal);
+            bool accepted = dispatched && signal.CreatedEvent != null;
+            if (separationAwaitsPageAcceptance && accepted)
+                MarkRoyaltyPersonaSeparationAccepted(
+                    lifecycle.nextState.weaponThingId, lifecycle.nextState.bondEpoch);
+            return accepted;
+        }
+
+        private void MarkRoyaltyPersonaSeparationAccepted(string weaponThingId, int bondEpoch)
+        {
+            int index = PersonaBondIndex(weaponThingId);
+            PersonaBondState state = index >= 0 ? royaltyPersonaBonds[index] : null;
+            if (state == null || state.bondEpoch != bondEpoch
+                || state.phaseToken != PersonaBondPhaseTokens.Separated) return;
+            state.separationEmitted = true;
+            royaltyPersonaObservationVersion = RoyaltyStatePersistence.CurrentObservationVersion;
+        }
+
+        private bool HasLivePersonaBond(string weaponThingId, string pawnId)
+        {
+            int index = PersonaBondIndex(weaponThingId);
+            PersonaBondState state = index >= 0 ? royaltyPersonaBonds[index] : null;
+            return state != null && PersonaBondPhaseTokens.IsLive(state.phaseToken)
+                && string.Equals(state.currentPawnId, pawnId, StringComparison.Ordinal);
+        }
+
+        private int PersonaBondIndex(string weaponThingId)
+        {
+            for (int i = 0; i < (royaltyPersonaBonds?.Count ?? 0); i++)
+                if (royaltyPersonaBonds[i] != null && string.Equals(
+                    royaltyPersonaBonds[i].weaponThingId, weaponThingId, StringComparison.Ordinal)) return i;
+            return -1;
+        }
+
+        private static PersonaWeaponSnapshot SnapshotFromState(PersonaBondStateSnapshot state)
+        {
+            return new PersonaWeaponSnapshot
+            {
+                weaponThingId = state?.weaponThingId ?? string.Empty,
+                weaponDefName = state?.weaponDefName ?? string.Empty,
+                displayName = state?.lastDisplayName ?? string.Empty,
+                codedPawnId = state?.currentPawnId ?? string.Empty,
+                codedPawnName = state?.currentPawnName ?? string.Empty,
+                traits = PersonaTraitPolicy.CopyFacts(state?.traits)
+            };
+        }
+
+        private static string PersonaLifecycleDuration(
+            PersonaBondStateSnapshot previous,
+            PersonaBondStateSnapshot next,
+            string phase,
+            int now)
+        {
+            int started = -1;
+            if (phase == PersonaNarrativePhaseTokens.BondSeparated)
+                started = previous?.pendingSeparationTick ?? -1;
+            else if (phase == PersonaNarrativePhaseTokens.BondRecovered)
+                started = previous?.lastPrimaryObservedTick ?? -1;
+            else if (phase == PersonaNarrativePhaseTokens.BondEnded)
+                started = next?.bondStartedTick ?? -1;
+            if (started < 0 || now <= started) return string.Empty;
+            return Math.Max(1, now - started).ToStringTicksToPeriod();
+        }
+
+        private static bool RoyaltyPersonaRuntimeReady()
+        {
+            return ModsConfig.RoyaltyActive && GamePlaying && Scribe.mode == LoadSaveMode.Inactive;
         }
 
         /// <summary>

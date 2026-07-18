@@ -84,6 +84,7 @@ namespace DiaryCapturePolicyTests
             TestArcReflectionBuildGameContextFormat();
             TestBiotechCatalogDecisions();
             TestGravshipJourneyCatalogDecisions();
+            TestPersonaWeaponCatalogDecisions();
             TestMonolithActivationProvenance();
             TestCatalogDispatch();
             TestCatalogContract();
@@ -1662,6 +1663,37 @@ namespace DiaryCapturePolicyTests
             landing.FirstWriterId = string.Empty;
             AssertEqual("Odyssey empty eligible writer id drops", CaptureDecision.Drop,
                 GravshipJourneyEventData.Decide(landing, Ctx()));
+        }
+
+        private static void TestPersonaWeaponCatalogDecisions()
+        {
+            PersonaWeaponEventData formed = new PersonaWeaponEventData
+            {
+                PawnId = "Pawn_A",
+                Tick = 50,
+                DefName = PersonaWeaponEventData.BondFormedDefName,
+                WeaponThingId = "Weapon_1",
+                BondEpoch = 1,
+                NarrativePhase = PersonaNarrativePhaseTokens.BondFormed,
+                PawnEligible = true,
+                HasExactLifecycle = true
+            };
+            AssertEqual("exact persona formation records solo", CaptureDecision.GenerateSolo,
+                PersonaWeaponEventData.Decide(formed, Ctx()));
+            AssertEqual("persona lifecycle dedup key",
+                "persona-weapon|Weapon_1|1|bond_formed", formed.DedupKey());
+            formed.HasExactLifecycle = false;
+            AssertEqual("inexact persona lifecycle drops", CaptureDecision.Drop,
+                PersonaWeaponEventData.Decide(formed, Ctx()));
+            formed.HasExactLifecycle = true;
+            formed.DefName = PersonaWeaponEventData.BondEndedDefName;
+            AssertEqual("mismatched phase and Def drops", CaptureDecision.Drop,
+                PersonaWeaponEventData.Decide(formed, Ctx()));
+            formed.DefName = PersonaWeaponEventData.BondFormedDefName;
+            AssertEqual("disabled persona group drops", CaptureDecision.Drop,
+                PersonaWeaponEventData.Decide(formed, Ctx(user: false)));
+            AssertTrue("catalog registers PersonaWeapon spec",
+                DiaryEventCatalog.Get(DiaryEventType.PersonaWeapon) is PersonaWeaponEventSpec);
         }
 
         private static void TestMonolithActivationProvenance()

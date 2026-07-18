@@ -317,6 +317,7 @@ namespace PawnDiary
                     || Eq(contextKey, "quadrum_dates")
                     || Eq(contextKey, "arc_year")
                     || IsRequiredBiotechContextKey(contextKey)
+                    || IsRequiredRoyaltyContextKey(contextKey)
                     || IsRequiredOdysseyContextKey(contextKey)))
             {
                 return true;
@@ -372,6 +373,22 @@ namespace PawnDiary
                 || Eq(contextKey, "landing_outcome");
         }
 
+        /// <summary>
+        /// Keeps persona identity and the exact lifecycle edge intelligible in Compact prompts.
+        /// Internal Thing IDs and epoch counters remain optional implementation metadata.
+        /// </summary>
+        private static bool IsRequiredRoyaltyContextKey(string contextKey)
+        {
+            return Eq(contextKey, "persona_weapon_name")
+                || Eq(contextKey, "persona_weapon")
+                || Eq(contextKey, "bond_previous_state")
+                || Eq(contextKey, "bond_new_state")
+                || Eq(contextKey, "bond_separation_duration")
+                || Eq(contextKey, "bond_duration")
+                || Eq(contextKey, "bond_previous_pawn")
+                || Eq(contextKey, "bond_end_cause");
+        }
+
         private static int Score(
             DiaryPromptFieldPolicy field,
             string value,
@@ -389,6 +406,8 @@ namespace PawnDiary
             bool progression = DomainOrContext(domain, gameContext, "Progression") || HasAnyMarker(gameContext, "progression=", "skill=", "psylink_level=", "xenotype=", "title=");
             bool ability = DomainOrContext(domain, gameContext, "Ability") || HasAnyMarker(gameContext, "ability=");
             bool ritual = DomainOrContext(domain, gameContext, "Ritual") || HasAnyMarker(gameContext, "ritual=");
+            bool persona = DomainOrContext(domain, gameContext, "PersonaWeapon")
+                || HasAnyMarker(gameContext, "persona_weapon=");
             bool social = HasAnyMarker(gameContext, "worker=Interaction_", "romance=", "kind=married", "def=Insult");
 
             if (Eq(source, "EventEnhancement"))
@@ -456,15 +475,22 @@ namespace PawnDiary
 
             if (Eq(source, "GameContext"))
             {
-                return ScoreContextKey(contextKey, quest, progression, ability, ritual, combat, level, out reason);
+                return ScoreContextKey(contextKey, quest, progression, ability, ritual, combat, persona, level, out reason);
             }
 
             reason = "optional context";
             return 40;
         }
 
-        private static int ScoreContextKey(string contextKey, bool quest, bool progression, bool ability, bool ritual, bool combat, PromptContextDetailLevel level, out string reason)
+        private static int ScoreContextKey(string contextKey, bool quest, bool progression, bool ability,
+            bool ritual, bool combat, bool persona, PromptContextDetailLevel level, out string reason)
         {
+            if (StartsWithAny(contextKey, "persona_", "bond_"))
+            {
+                reason = persona ? "persona lifecycle context" : "persona context";
+                return persona ? 86 : 48;
+            }
+
             if (StartsWithAny(contextKey, "quest_"))
             {
                 reason = quest ? "quest-specific context" : "quest context";

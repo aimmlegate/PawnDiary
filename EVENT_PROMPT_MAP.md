@@ -34,6 +34,7 @@ flowchart TD
         TP["Periodic thought-stage scan<br/>ThoughtProgressionSignal<br/>solo"]
         PR["Periodic pawn progression scan<br/>ProgressionSignal<br/>solo"]
         BG["Biotech birthday + growth letter lifecycle<br/>GrowthMomentSignal<br/>verified age-7/10/13 child solo"]
+        PW["Royalty persona coding/equipment/destruction hooks<br/>plus elapsed reconciliation<br/>PersonaWeaponSignal solo lifecycle"]
         IN["InspirationHandler.TryStartInspiration<br/>InspirationSignal<br/>solo"]
         AB["Ability.Activate overloads<br/>AbilitySignal<br/>cooldown-sampled solo"]
         RO["Pawn_RelationsTracker.AddDirectRelation<br/>RomanceSignal<br/>pair"]
@@ -63,6 +64,7 @@ flowchart TD
     TP --> Submit
     PR --> Submit
     BG --> Submit
+    PW --> Submit
     IN --> Submit
     AB --> Submit
     RO --> Submit
@@ -151,6 +153,9 @@ Important boundaries in the diagram:
   specific group or event-prompt row is added.
 - Accepted quest signals are listened to and stored for bookkeeping/event-window policy, but current
   capture policy does not generate accepted quest diary pages. Completed and failed quest signals do.
+- Exact bonded-thought side effects are staged around Royalty coding, then claimed only if the
+  persona lifecycle page persists; a dropped lifecycle page releases the signal to ordinary Thought
+  capture. This arbitration does not create a second page.
 
 ## 2. Prompt Policy And Template Selection
 
@@ -158,7 +163,7 @@ Important boundaries in the diagram:
 flowchart TD
     Event["Saved DiaryEvent"] --> Payload["DiaryPipelineAdapters.ToPayload"]
     Payload --> Domain["DiaryEventDomainClassifier.DomainForContext"]
-    Domain --> Markers["Markers:<br/>tale, mood_event, thought, inspiration, romance,<br/>work, hediff, mental_state, raid, quest,<br/>ritual, psychic_ritual, ability, progression<br/>else Interaction"]
+    Domain --> Markers["Markers:<br/>tale, mood_event, thought, inspiration, romance,<br/>work, hediff, mental_state, raid, quest,<br/>ritual, psychic_ritual, ability, progression,<br/>persona_weapon<br/>else Interaction"]
     Markers --> Classifier["GroupClassifierKey"]
     Classifier --> QuestKey["Quest uses signal=accepted/completed/failed"]
     Classifier --> RitualKey["Ritual uses defName plus ritual_behavior<br/>or PsychicRitual plus defName"]
@@ -225,12 +230,19 @@ Current shipped event-prompt rows in `DiaryEventPromptDefs.xml`:
 | `DiaryEventPrompt_DayReflection` | `DayReflection` | yes | yes | blank |
 | `DiaryEventPrompt_QuadrumReflection` | `QuadrumReflection` | yes | yes | blank |
 | `DiaryEventPrompt_Progression` | `Progression` | yes | yes | blank |
+| `DiaryEventPrompt_PersonaWeapon` | `PersonaWeapon` | yes | yes | blank |
+| `DiaryEventPrompt_PersonaWeaponBondFormed` | `PersonaWeaponBondFormed` | yes | yes | blank |
+| `DiaryEventPrompt_PersonaWeaponBondSeparated` | `PersonaWeaponBondSeparated` | yes | yes | blank |
+| `DiaryEventPrompt_PersonaWeaponBondRecovered` | `PersonaWeaponBondRecovered` | yes | yes | blank |
+| `DiaryEventPrompt_PersonaWeaponBondEnded` | `PersonaWeaponBondEnded` | yes | yes | blank |
 | `DiaryEventPrompt_ArcReflection` | `ArcReflection` | yes | yes | blank |
 | `DiaryEventPrompt_Arrival` | `Arrival` | yes | yes | blank |
 | `DiaryEventPrompt_Death` | `Death` | yes | yes | blank |
 
-The resolver supports exact defName and group rows, but the current shipped XML only defines the broad
-rows above. Prompt Studio can still override prompt, enhancement, and forced model for resolved keys.
+The resolver supports exact defName and group rows. Royalty Phase 2 ships the four exact persona
+lifecycle rows above in addition to its broad domain fallback; all other rows in this table are broad
+domain/reflection/boundary fallbacks. Prompt Studio can still override prompt, enhancement, and forced
+model for resolved keys.
 
 ## 3. Prompt Enchantments, Writing-Style Overrides, Humor, And Forced Models
 
@@ -332,6 +344,10 @@ flowchart LR
         P5["progressionTraitGained<br/>important SoloImportant<br/>feeds the trait's own description"]
         P6["progressionOther<br/>non-important catch-all"]
     end
+
+    subgraph PersonaGroups["Royalty persona lifecycle"]
+        RP1["personaWeaponLifecycle / order 768<br/>Royalty-gated important SoloImportant<br/>four exact lifecycle Def names; no catch-all"]
+    end
 ```
 
 Group matching is domain-specific and first-match-wins by ascending `order`. Within a group, exact
@@ -339,6 +355,12 @@ defName matching is most precise, then prefixes, suffixes, CamelCase/underscore/
 finally legacy substring tokens. Group `important` controls `SoloImportant`/`PairImportant` routing
 and day/quadrum evidence. Group `combat` controls `PairCombat`, weapon prompt fields, and some
 high-stakes humor classification.
+
+`PersonaWeapon` is its own domain. The Royalty-package-gated `personaWeaponLifecycle` group matches
+only `PersonaWeaponBondFormed`, `PersonaWeaponBondSeparated`, `PersonaWeaponBondRecovered`, and
+`PersonaWeaponBondEnded`; unknown/modded keys do not fall through into a fabricated lifecycle page.
+The source advances saved state even when this visible group is disabled, so re-enabling it cannot
+retell an already-consumed phase.
 
 Ritual fan-out keeps both layers of guidance: the matched XML group's instruction establishes the
 specific rite, then the localized participant-role instruction establishes what this pawn did. This
@@ -413,6 +435,7 @@ Source recording weights:
 | Small talk promotion | Same as strange chat: `base 0.04`, cap `0.6`, bonuses `+0.25/+0.2/+0.2/+0.2`, then shared generation chance. |
 | Work sampling | Scan every `2500` ticks. Chance starts at `0.08`; passion multiplier `1.4`; negative chore/low skill multiplier `1.2`; dark study multiplier `1.5`; recent different work multiplier `0.5`; same work cooldown `180000` ticks; then shared generation chance and clamp. Social/violent work types are ignored. |
 | Pawn progression | Scan every `2500` ticks. Passion skills emit only when reaching configured milestones `8/12/16/20`; first scan baselines. Psylink hediff defNames are XML string matchers; xenotype and royal-title reads go through DLC-safe `DlcContext`. Only psylink level gains and configured major xenotype defNames can currently request a major arc follow-up: default threshold `90`, psylink severity `level / 6 * 100`, and `Sanguophage` as the default major xenotype defName. |
+| Royalty persona lifecycle | Reconcile every `2500` ticks on an independent elapsed deadline. Continuous observable not-primary evidence reaches meaningful separation at `60000` ticks; recovery is page-eligible only after that separation page recorded. Exact bonded-thought stage/claim ownership expires after `2500` ticks. Coding, transfer, destruction, and state-only cleanup are deterministic rather than chance-weighted. |
 | Biotech growth ownership | Ages `7/10/13` only. A real configured letter saves detached ownership until choice or `180000`-tick expiry; a provably mismatched pawn age may release after the `60000`-tick grace. Auto-resolved growth diffs immediately. Canonical disable/failure releases Birthday once, while trait/skill baselines and the consumed age advance regardless of page settings. |
 | Ability sampling | `min 0.03`, `max 0.75`, reference cooldown `60000` ticks. `CooldownWeightedChance = min + (max - min) * cooldown / (cooldown + reference)`, then shared generation chance and clamp. Dedup `300` ticks. |
 | Ordinary raid generation delay | `2500` ticks. Drop-pod raids and infestations bypass the delay. |
@@ -597,7 +620,7 @@ flowchart TD
     Fields --> Common["Common first-person fields:<br/>event, pov, raw evidence, instruction,<br/>event prompt, event enhancement,<br/>important context, setting, tone, last opening line"]
     Fields --> PairFields["Pair extras:<br/>role, with, relationship,<br/>hidden initiator diary for PairImportant and PairCombat"]
     Fields --> CombatFields["Combat extras:<br/>you, weapon"]
-    Fields --> SourceFacts["Context facts:<br/>quest, ritual, ability, raid,<br/>progression skill/psylink/xenotype/title/growth,<br/>royal title, ideoligion role"]
+    Fields --> SourceFacts["Context facts:<br/>quest, ritual, ability, raid,<br/>progression skill/psylink/xenotype/title/growth,<br/>persona weapon lifecycle,<br/>royal title, ideoligion role"]
     Fields --> Boundary["Neutral arrival/death:<br/>event prompt, enhancement, neutral facts,<br/>pawn summary, setting; no persona/enchantment"]
     Fields --> Reflection["Reflections:<br/>day selected highlights and pawn summary<br/>quadrum date range and important count<br/>arc selected year memories and cadence fields"]
     Fields --> Title["Title:<br/>entry text only"]
@@ -612,7 +635,7 @@ Current template keys:
 | `PairCombat` | Pair and combat group, including MentalState domain | Pawn summary, weapon, hidden initiator field; style/enchantment allowed; 2-5 sentence system/final/recipient instructions; `maxTokens=200`. |
 | `PairBatched` | Pair and `batch=` marker, unless combat | No relationship or hidden initiator field; style/enchantment allowed. |
 | `SoloDefault` | Solo, non-batched, non-internal, non-important group | Style/enchantment allowed. |
-| `SoloImportant` | Solo important or solo batched combat | Pawn summary; style/enchantment allowed; 2-5 sentence system/final instructions; `maxTokens=200`. |
+| `SoloImportant` | Solo important or solo batched combat | Pawn summary; style/enchantment allowed; 2-5 sentence system/final instructions; `maxTokens=200`. Royalty persona pages append lifecycle projection fields at stable indices `90–101`; internal IDs/epoch/ticks are not projected. |
 | `SoloInternalState` | Solo with `mood_event=`, `thought=`, `inspiration=`, `work=`, or `hediff=` | Internal-state facts; style/enchantment allowed. |
 | `SoloBatched` | Solo with `batch=`, non-combat | Batched evidence; style/enchantment allowed. |
 | `SoloDayReflection` | `day_reflection=true` | Direct speech disabled; style/enchantment allowed. |

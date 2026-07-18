@@ -2500,6 +2500,9 @@
     <domain>Ritual</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
     <instruction>a Royalty ritual completed—make the ceremony courtly, title-conscious, psychic, or anima-rooted as the ritual title suggests</instruction>
     <tone>with formal rank and ritual authority</tone>
     <tones>
@@ -2554,6 +2557,34 @@
       <li>GravshipLaunch</li>
       <li>RitualBehaviorWorker_GravshipLaunch</li>
     </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Royalty R2 persona lifecycle. Only exact synthetic page identities match. Short weapon swaps,
+       loading/map removal, unknown UnCode, and pawn death remain state/owner evidence and never route
+       through this group. The package gate hides the setting and keeps capture inert without DLC. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>personaWeaponLifecycle</defName>
+    <label>Persona weapon bonds</label>
+    <order>768</order>
+    <domain>PersonaWeapon</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a persona-weapon bond lifecycle edge; use the exact weapon, previous/new bond state, duration, prior bonded pawn, ending cause, and selected structural trait facts supplied; never invent speech, a combat scene, a weapon motive, or a death</instruction>
+    <tone>with intimate loyalty, friction, and the unsettling presence of a weapon that remembers</tone>
+    <tones>
+      <li>intimate and uncanny, treating the bond as a lived relationship without giving the weapon invented dialogue</li>
+      <li>close and reflective, grounded in loyalty, absence, return, or finality shown by the exact lifecycle facts</li>
+    </tones>
+    <colorCue>royalty</colorCue>
+    <matchDefNames>
+      <li>PersonaWeaponBondFormed</li>
+      <li>PersonaWeaponBondSeparated</li>
+      <li>PersonaWeaponBondRecovered</li>
+      <li>PersonaWeaponBondEnded</li>
+    </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
   <!-- Odyssey O1.4 canonical successful landing. TravelTo and landing start remain state-only;
@@ -2902,6 +2933,9 @@
     <domain>Progression</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
     <instruction>a psylink level gain; write the psychic change as lived sensation, responsibility, or unease, without inventing new powers</instruction>
     <tone>with strange inner pressure</tone>
     <tones>
@@ -2944,6 +2978,9 @@
     <domain>Progression</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
     <instruction>a royal title change; write status, burden, pride, or distance through the new title without explaining faction mechanics</instruction>
     <tone>with formal weight and personal cost</tone>
     <tones>

@@ -498,4 +498,9 @@
   <biotechFamilyBirth.tone>with intimate consequence and emotionally honest uncertainty</biotechFamilyBirth.tone>
   <biotechFamilyBirth.tones.0>close to the body and the immediate outcome, without assigning feelings the writer did not supply</biotechFamilyBirth.tones.0>
   <biotechFamilyBirth.tones.1>family-centered but unsentimental, careful about distinct birther, mother, and father roles</biotechFamilyBirth.tones.1>
+  <personaWeaponLifecycle.label>Persona weapon bonds</personaWeaponLifecycle.label>
+  <personaWeaponLifecycle.instruction>a persona-weapon bond lifecycle edge; use the exact weapon, previous/new bond state, duration, prior bonded pawn, ending cause, and selected structural trait facts supplied; never invent speech, a combat scene, a weapon motive, or a death</personaWeaponLifecycle.instruction>
+  <personaWeaponLifecycle.tone>with intimate loyalty, friction, and the unsettling presence of a weapon that remembers</personaWeaponLifecycle.tone>
+  <personaWeaponLifecycle.tones.0>intimate and uncanny, treating the bond as a lived relationship without giving the weapon invented dialogue</personaWeaponLifecycle.tones.0>
+  <personaWeaponLifecycle.tones.1>close and reflective, grounded in loyalty, absence, return, or finality shown by the exact lifecycle facts</personaWeaponLifecycle.tones.1>
 </LanguageData>

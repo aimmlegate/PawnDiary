@@ -1,5 +1,18 @@
 # Changelog
 
+- **2026-07-18 — Implemented Master Wave 5 / Royalty Phase 2 (persona lifecycle pages; loaded
+  acceptance pending).** Added defensive Royalty-only persona coding, equipment, destruction,
+  map-removal, and cleanup registration; exact formation/transfer epochs; silent short-swap handling;
+  independent elapsed separation/recovery reconciliation; destruction ownership; and state-first
+  persistence that prevents disabled-group catch-up. Exact bonded-thought side effects are now staged
+  and claimed only by an accepted lifecycle page, with ordinary Thought fallback otherwise. Added the
+  `PersonaWeapon` catalog/Spec/signal/domain, bounded prompt-safe context, the package-gated exact
+  lifecycle group, four exact event prompts, append-only `SoloImportant` fields, English/Russian text,
+  four prompt fixtures, and N3-R bond evidence attachment. Pure suites pass 205 Royalty, 660 capture,
+  and 2,196 pipeline assertions; all XML parses and the Debug DLL builds. The new loaded-game matrix
+  remains unchecked, so Phase 2 is not acceptance-complete; Royalty Phases 3–4, the R1 release gate,
+  Wave 5, and every previously open Biotech B1 manual acceptance row remain open.
+
 - **2026-07-18 — Implemented Master Wave 5 / Narrative N3-R core (provider/evidence dependency).**
   Replaced the fixed Royalty provider stub with pure bounded persona-bond and faction-title snapshot
   contracts. Persona candidates require the exact frozen bond arc or weapon subject; title candidates

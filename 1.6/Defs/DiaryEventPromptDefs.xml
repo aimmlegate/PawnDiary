@@ -171,6 +171,48 @@
     <enhancement>Make the death note stark and specific, with one concrete cause or setting detail. Use only supplied cause, body-part, weapon, condition, and setting facts; keep it brief.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
+  <!-- Royalty R2 persona lifecycle. Exact rows provide edge-specific guidance; the broad row is
+       the safe fallback for compatibility events that retain the PersonaWeapon domain. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PersonaWeapon</defName>
+    <label>persona weapon bond</label>
+    <eventType>PersonaWeapon</eventType>
+    <prompt>Write an exact persona-weapon bond lifecycle change from the bonded pawn&apos;s point of view.</prompt>
+    <enhancement>Use only the supplied weapon, lifecycle states, duration, prior bond, ending cause, and selected trait facts. Treat the weapon as present and uncanny without inventing dialogue, conscious motives, combat, or a death.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PersonaWeaponBondFormed</defName>
+    <label>persona weapon bond formed</label>
+    <eventType>PersonaWeaponBondFormed</eventType>
+    <prompt>Write the moment an exact persona-weapon bond formed.</prompt>
+    <enhancement>Center first contact, recognition, obligation, or unease grounded in the supplied weapon and traits. If an exact previous bonded pawn is supplied, acknowledge the transfer without inventing how it happened or what the weapon said.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PersonaWeaponBondSeparated</defName>
+    <label>persona weapon bond separated</label>
+    <eventType>PersonaWeaponBondSeparated</eventType>
+    <prompt>Write a persona-weapon bond&apos;s first meaningful period of separation.</prompt>
+    <enhancement>Use the supplied separation duration and state change as absence, friction, jealousy, relief, or unease. This is not proof of destruction, abandonment, transfer, combat, or death.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PersonaWeaponBondRecovered</defName>
+    <label>persona weapon bond recovered</label>
+    <eventType>PersonaWeaponBondRecovered</eventType>
+    <prompt>Write the exact bonded pawn wielding a persona weapon again after a recorded separation.</prompt>
+    <enhancement>Make return and recognition concrete through the supplied duration, weapon, and trait facts. Do not invent apology, dialogue, a fight, or what happened while they were apart.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PersonaWeaponBondEnded</defName>
+    <label>persona weapon bond ended</label>
+    <eventType>PersonaWeaponBondEnded</eventType>
+    <prompt>Write the standalone ending of an exact persona-weapon bond.</prompt>
+    <enhancement>Use the supplied ending cause and bond duration to make finality specific. Do not invent a death, attacker, battle, transfer, or last words beyond the exact facts.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
   <!-- Broad-domain fallback for integration-API events (see INTEGRATIONS.md). Adapter mods can
        ship a narrower DiaryEventPromptDef keyed by their eventKey or group defName; this row only
        catches External events with no more specific policy loaded. -->

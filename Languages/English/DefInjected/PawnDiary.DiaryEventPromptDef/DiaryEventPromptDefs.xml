@@ -57,6 +57,21 @@
   <DiaryEventPrompt_Death.label>death</DiaryEventPrompt_Death.label>
   <DiaryEventPrompt_Death.prompt>Write a factual death note about how the colonist died.</DiaryEventPrompt_Death.prompt>
   <DiaryEventPrompt_Death.enhancement>Make the death note stark and specific, with one concrete cause or setting detail. Use only supplied cause, body-part, weapon, condition, and setting facts; keep it brief.</DiaryEventPrompt_Death.enhancement>
+  <DiaryEventPrompt_PersonaWeapon.label>persona weapon bond</DiaryEventPrompt_PersonaWeapon.label>
+  <DiaryEventPrompt_PersonaWeapon.prompt>Write an exact persona-weapon bond lifecycle change from the bonded pawn&apos;s point of view.</DiaryEventPrompt_PersonaWeapon.prompt>
+  <DiaryEventPrompt_PersonaWeapon.enhancement>Use only the supplied weapon, lifecycle states, duration, prior bond, ending cause, and selected trait facts. Treat the weapon as present and uncanny without inventing dialogue, conscious motives, combat, or a death.</DiaryEventPrompt_PersonaWeapon.enhancement>
+  <DiaryEventPrompt_PersonaWeaponBondFormed.label>persona weapon bond formed</DiaryEventPrompt_PersonaWeaponBondFormed.label>
+  <DiaryEventPrompt_PersonaWeaponBondFormed.prompt>Write the moment an exact persona-weapon bond formed.</DiaryEventPrompt_PersonaWeaponBondFormed.prompt>
+  <DiaryEventPrompt_PersonaWeaponBondFormed.enhancement>Center first contact, recognition, obligation, or unease grounded in the supplied weapon and traits. If an exact previous bonded pawn is supplied, acknowledge the transfer without inventing how it happened or what the weapon said.</DiaryEventPrompt_PersonaWeaponBondFormed.enhancement>
+  <DiaryEventPrompt_PersonaWeaponBondSeparated.label>persona weapon bond separated</DiaryEventPrompt_PersonaWeaponBondSeparated.label>
+  <DiaryEventPrompt_PersonaWeaponBondSeparated.prompt>Write a persona-weapon bond&apos;s first meaningful period of separation.</DiaryEventPrompt_PersonaWeaponBondSeparated.prompt>
+  <DiaryEventPrompt_PersonaWeaponBondSeparated.enhancement>Use the supplied separation duration and state change as absence, friction, jealousy, relief, or unease. This is not proof of destruction, abandonment, transfer, combat, or death.</DiaryEventPrompt_PersonaWeaponBondSeparated.enhancement>
+  <DiaryEventPrompt_PersonaWeaponBondRecovered.label>persona weapon bond recovered</DiaryEventPrompt_PersonaWeaponBondRecovered.label>
+  <DiaryEventPrompt_PersonaWeaponBondRecovered.prompt>Write the exact bonded pawn wielding a persona weapon again after a recorded separation.</DiaryEventPrompt_PersonaWeaponBondRecovered.prompt>
+  <DiaryEventPrompt_PersonaWeaponBondRecovered.enhancement>Make return and recognition concrete through the supplied duration, weapon, and trait facts. Do not invent apology, dialogue, a fight, or what happened while they were apart.</DiaryEventPrompt_PersonaWeaponBondRecovered.enhancement>
+  <DiaryEventPrompt_PersonaWeaponBondEnded.label>persona weapon bond ended</DiaryEventPrompt_PersonaWeaponBondEnded.label>
+  <DiaryEventPrompt_PersonaWeaponBondEnded.prompt>Write the standalone ending of an exact persona-weapon bond.</DiaryEventPrompt_PersonaWeaponBondEnded.prompt>
+  <DiaryEventPrompt_PersonaWeaponBondEnded.enhancement>Use the supplied ending cause and bond duration to make finality specific. Do not invent a death, attacker, battle, transfer, or last words beyond the exact facts.</DiaryEventPrompt_PersonaWeaponBondEnded.enhancement>
   <DiaryEventPrompt_External.label>external mod event</DiaryEventPrompt_External.label>
   <DiaryEventPrompt_External.prompt>Write a moment reported by another mod as something the pawn just lived through.</DiaryEventPrompt_External.prompt>
   <DiaryEventPrompt_External.enhancement>Stay strictly inside the supplied event line and context facts; do not invent mechanics, systems, or unstated participants.</DiaryEventPrompt_External.enhancement>

@@ -17,6 +17,7 @@ namespace RoyaltyContextTests
             TestFormationAndBaselineMatrix();
             TestSeparationRecoveryMatrix();
             TestEndingTransferAndDisabledMatrix();
+            TestLifecycleContextAndThoughtOwnership();
             TestTraitStructuralRankingOrderingAndCaps();
             TestTraitSanitizationOverridesAndMalformedRows();
             TestMilestoneQualificationAndOwnership();
@@ -89,6 +90,7 @@ namespace RoyaltyContextTests
             RoyaltyPolicySnapshot policy = RoyaltyPolicySnapshot.CreateDefault();
             AssertEqual("fallback separation", 60000, policy.separationThresholdTicks);
             AssertEqual("fallback reconciliation", 2500, policy.reconciliationCadenceTicks);
+            AssertEqual("fallback persona thought correlation", 2500, policy.personaThoughtCorrelationTicks);
             AssertEqual("fallback trait cap", 2, policy.maximumSelectedTraits);
             AssertEqual("fallback Tale rows", 2, policy.qualifyingTales.Count);
             AssertEqual("fallback first Tale", "KilledMan", policy.qualifyingTales[0].taleDefName);
@@ -108,6 +110,43 @@ namespace RoyaltyContextTests
                 PersonaTraitPolicy.Select(null, PersonaTraitEventTokens.Kill, "event", null).Count);
             AssertEqual("null mutation batch empty", 0,
                 RoyalMutationOwnershipPolicy.Plan(null, null, 0, false, true, false, null).mutations.Count);
+        }
+
+        private static void TestLifecycleContextAndThoughtOwnership()
+        {
+            RoyaltyPolicySnapshot policy = Policy(1000);
+            PersonaBondStateSnapshot previous = ActiveState();
+            previous.currentPawnName = "Ari";
+            PersonaLifecycleDecision decision = new PersonaLifecycleDecision
+            {
+                narrativePhase = PersonaNarrativePhaseTokens.BondEnded,
+                shouldEmit = true,
+                nextState = ActiveState()
+            };
+            decision.nextState.phaseToken = PersonaBondPhaseTokens.Ended;
+            decision.nextState.endCauseToken = PersonaEndCauseTokens.WeaponDestroyed;
+            List<PersonaTraitFact> selected = new List<PersonaTraitFact>
+            {
+                Trait("Jealous", bondedThought: true),
+                Trait("KillHappy", kill: true)
+            };
+            string context = PersonaWeaponContextFormatter.Format(
+                Weapon("Weapon_1", "Pawn_A", true), previous, decision, selected, "three days", policy);
+            AssertTrue("persona marker formatted", context.Contains("persona_weapon=bond_ended"));
+            AssertTrue("persona exact identity formatted", context.Contains("persona_weapon_id=Weapon_1"));
+            AssertTrue("persona end cause formatted", context.Contains("bond_end_cause=weapon_destroyed"));
+            AssertTrue("persona bounded trait formatted", context.Contains("persona_trait_1=Jealous localized"));
+            AssertTrue("persona formatter rejects unknown phase", PersonaWeaponContextFormatter.Format(
+                Weapon("Weapon_1", "Pawn_A", true), previous,
+                new PersonaLifecycleDecision { narrativePhase = "invented" }, selected, "", policy).Length == 0);
+
+            List<string> thoughts = new List<string> { "BondedPersonaWeapon" };
+            AssertTrue("exact persona thought owner matches", PersonaThoughtOwnershipPolicy.Matches(
+                "Pawn_A", thoughts, "Pawn_A", "bondedpersonaweapon"));
+            AssertTrue("wrong pawn cannot be claimed", !PersonaThoughtOwnershipPolicy.Matches(
+                "Pawn_A", thoughts, "Pawn_B", "BondedPersonaWeapon"));
+            AssertTrue("wrong thought cannot be claimed", !PersonaThoughtOwnershipPolicy.Matches(
+                "Pawn_A", thoughts, "Pawn_A", "OtherThought"));
         }
 
         private static void TestFormationAndBaselineMatrix()

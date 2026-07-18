@@ -421,6 +421,20 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>rough landing</label><source>GameContext</source><contextKey>rough_landing</contextKey></li>
       <li><label>launch quality</label><source>GameContext</source><contextKey>launch_quality</contextKey></li>
       <li><label>landing outcome</label><source>GameContext</source><contextKey>landing_outcome</contextKey></li>
+      <!-- Royalty R2 persona lifecycle projection. Append-only: indexed DefInjected labels must
+           continue to refer to their original rows. Internal Thing IDs and bond epochs stay out. -->
+      <li><label>persona weapon</label><source>GameContext</source><contextKey>persona_weapon_name</contextKey></li>
+      <li><label>bond event</label><source>GameContext</source><contextKey>persona_weapon</contextKey></li>
+      <li><label>previous bond state</label><source>GameContext</source><contextKey>bond_previous_state</contextKey></li>
+      <li><label>new bond state</label><source>GameContext</source><contextKey>bond_new_state</contextKey></li>
+      <li><label>separation duration</label><source>GameContext</source><contextKey>bond_separation_duration</contextKey></li>
+      <li><label>bond duration</label><source>GameContext</source><contextKey>bond_duration</contextKey></li>
+      <li><label>previous bonded pawn</label><source>GameContext</source><contextKey>bond_previous_pawn</contextKey></li>
+      <li><label>bond ending cause</label><source>GameContext</source><contextKey>bond_end_cause</contextKey></li>
+      <li><label>persona trait 1</label><source>GameContext</source><contextKey>persona_trait_1</contextKey></li>
+      <li><label>persona trait 1 meaning</label><source>GameContext</source><contextKey>persona_trait_description_1</contextKey></li>
+      <li><label>persona trait 2</label><source>GameContext</source><contextKey>persona_trait_2</contextKey></li>
+      <li><label>persona trait 2 meaning</label><source>GameContext</source><contextKey>persona_trait_description_2</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

@@ -1,5 +1,5 @@
-// Resettable Phase-1 shells for future exact Royalty correlation. They deliberately store only plain
-// IDs and detached contracts; later phases may populate them, but no hook or behavior uses them yet.
+// Resettable Royalty correlation state. Most caches remain reserved Phase-1 shells; Phase 2 also
+// clears the synchronous persona-thought owner maintained in RoyaltyPersonaThoughtCorrelation.
 using System.Collections.Generic;
 
 namespace PawnDiary
@@ -30,6 +30,7 @@ namespace PawnDiary
             talePersonaOwners.Clear();
             personaTraitThoughtOwners.Clear();
             royalTitleThoughtOwners.Clear();
+            RoyaltyPersonaThoughtCorrelation.Reset();
         }
     }
 }

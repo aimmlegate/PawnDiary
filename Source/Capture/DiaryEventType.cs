@@ -61,6 +61,9 @@ namespace PawnDiary.Capture
         // Odyssey's canonical successful-landing chapter. Takeoff and travel remain state-only;
         // one landing payload chooses a solo page or one pair-shaped event with at most two POVs.
         GravshipJourney,
+        // Royalty persona-weapon formation, meaningful separation/recovery, and standalone ending.
+        // Combat/death enrichment remains a later Royalty phase and does not use this source yet.
+        PersonaWeapon,
 
         // ── Planned future sources (placeholders only — NOT implemented yet) ──
         // No known live RecordX source remains to migrate; batch/ambient flushers are route sinks.

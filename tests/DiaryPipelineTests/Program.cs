@@ -26,6 +26,7 @@ namespace DiaryPipelineTests
             TestBiotechPromptPlanFields();
             TestBiotechPromptTemplateXmlContract();
             TestOdysseyPromptPlanFields();
+            TestRoyaltyPersonaPromptPlanFields();
             TestDualPovPromptPlans();
             TestRecipientFollowupPlan();
             TestNeutralGenerationPlans();
@@ -57,6 +58,7 @@ namespace DiaryPipelineTests
             TestOdysseyExistingIntegrationXmlPolicy();
             TestOdysseyJourneyFoundationXmlContract();
             TestRoyaltyNarrativeProviderXmlContract();
+            TestRoyaltyPersonaLifecycleXmlContract();
             TestProgressionMilestonePolicy();
             TestPsylinkProgressionLevelPolicy();
             TestArcReflectionSchedulePolicy();
@@ -1181,6 +1183,66 @@ namespace DiaryPipelineTests
                     AssertContains("Full Odyssey prompt keeps copilot", pairPlan.userPrompt, "copilot: Bob");
                     AssertContains("Full Odyssey prompt keeps launch quality", pairPlan.userPrompt,
                         "launch quality: excellent");
+                }
+            }
+        }
+
+        private static void TestRoyaltyPersonaPromptPlanFields()
+        {
+            DiaryEventPayload payload = SoloPayload(
+                "e-persona-separated",
+                "separated from persona weapon",
+                "Alice had gone a full day without wielding Quiet Edge.");
+            payload.gameContext = "persona_weapon=bond_separated; persona_weapon_id=Weapon_Test; "
+                + "persona_weapon_def=PersonaMonosword; persona_weapon_name=Quiet Edge; bond_epoch=1; "
+                + "bond_previous_state=separation_pending; bond_new_state=separated; "
+                + "bond_separation_duration=one day; persona_trait_1=Jealous; "
+                + "persona_trait_description_1=Resents being set aside for another weapon.";
+            PromptContextDetailLevel[] levels =
+            {
+                PromptContextDetailLevel.Full,
+                PromptContextDetailLevel.Balanced,
+                PromptContextDetailLevel.Compact
+            };
+            PromptContextBudgets tiny = new PromptContextBudgets
+            {
+                balancedDefault = 1,
+                compactDefault = 1
+            };
+            for (int i = 0; i < levels.Length; i++)
+            {
+                PromptContextDetailLevel level = levels[i];
+                DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = payload,
+                    policy = Policy(combat: false, important: true),
+                    povRole = DiaryPipelineRoles.Initiator,
+                    contextDetailLevel = level,
+                    contextBudgets = tiny
+                });
+                string suffix = " (" + level + ")";
+                AssertEqual("persona lifecycle uses solo-important template" + suffix,
+                    DiaryPipelineTemplates.SoloImportant, plan.templateKey);
+                AssertContains("persona weapon survives detail budget" + suffix,
+                    plan.userPrompt, "persona weapon: Quiet Edge");
+                AssertContains("persona event survives detail budget" + suffix,
+                    plan.userPrompt, "bond event: bond_separated");
+                AssertContains("persona previous state survives detail budget" + suffix,
+                    plan.userPrompt, "previous bond state: separation_pending");
+                AssertContains("persona new state survives detail budget" + suffix,
+                    plan.userPrompt, "new bond state: separated");
+                AssertContains("persona duration survives detail budget" + suffix,
+                    plan.userPrompt, "separation duration: one day");
+                AssertTrue("persona Thing ID never reaches prompt" + suffix,
+                    !plan.userPrompt.Contains("Weapon_Test"));
+                AssertTrue("persona epoch never reaches prompt" + suffix,
+                    !plan.userPrompt.Contains("bond_epoch"));
+                if (level == PromptContextDetailLevel.Full)
+                {
+                    AssertContains("Full persona prompt keeps structural trait", plan.userPrompt,
+                        "persona trait 1: Jealous");
+                    AssertContains("Full persona prompt keeps structural trait meaning", plan.userPrompt,
+                        "persona trait 1 meaning: Resents being set aside for another weapon.");
                 }
             }
         }
@@ -3526,6 +3588,133 @@ namespace DiaryPipelineTests
             }
         }
 
+        private static void TestRoyaltyPersonaLifecycleXmlContract()
+        {
+            const string royaltyPackage = "Ludeon.RimWorld.Royalty";
+            XDocument groups = XDocument.Load(RepoPath("1.6", "Defs", "DiaryInteractionGroupDefs.xml"));
+            XElement persona = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "personaWeaponLifecycle");
+            AssertTrue("Royalty persona lifecycle group exists", persona != null);
+            AssertEqual("Royalty persona lifecycle domain", "PersonaWeapon", ChildValue(persona, "domain"));
+            AssertEqual("Royalty persona lifecycle is important", "true", ChildValue(persona, "important"));
+            AssertTrue("Royalty persona lifecycle settings are package-gated",
+                HasListValue(persona, "enableWhenPackageIdsLoaded", royaltyPackage));
+            string[] eventNames =
+            {
+                "PersonaWeaponBondFormed",
+                "PersonaWeaponBondSeparated",
+                "PersonaWeaponBondRecovered",
+                "PersonaWeaponBondEnded"
+            };
+            for (int i = 0; i < eventNames.Length; i++)
+            {
+                AssertTrue("persona group exact match exists: " + eventNames[i],
+                    HasListValue(persona, "matchDefNames", eventNames[i]));
+                AssertEqual("persona exact classifier resolves: " + eventNames[i],
+                    "personaWeaponLifecycle",
+                    ResolveInteractionGroup(groups, "PersonaWeapon", eventNames[i], true));
+            }
+            string[] gatedExisting = { "ritualRoyal", "progressionPsylink", "progressionRoyalTitle" };
+            for (int i = 0; i < gatedExisting.Length; i++)
+            {
+                XElement group = FindDef(
+                    groups, "PawnDiary.DiaryInteractionGroupDef", gatedExisting[i]);
+                AssertTrue("existing Royalty group is package-gated: " + gatedExisting[i],
+                    HasListValue(group, "enableWhenPackageIdsLoaded", royaltyPackage));
+            }
+
+            XDocument policyDocument = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryRoyaltyPolicyDefs.xml"));
+            XElement policy = FindDef(
+                policyDocument, "PawnDiary.DiaryRoyaltyPolicyDef", "Diary_Royalty");
+            AssertEqual("persona separation reconciliation cadence is XML-owned",
+                "2500", ChildValue(policy, "reconciliationCadenceTicks"));
+            AssertEqual("persona thought ownership window is XML-owned",
+                "2500", ChildValue(policy, "personaThoughtCorrelationTicks"));
+
+            XDocument templates = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
+            XElement solo = FindDef(
+                templates, "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplate_SoloImportant");
+            XElement pair = FindDef(
+                templates, "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplate_PairImportant");
+            string[] contextKeys =
+            {
+                "persona_weapon_name", "persona_weapon", "bond_previous_state", "bond_new_state",
+                "bond_separation_duration", "bond_duration", "bond_previous_pawn", "bond_end_cause",
+                "persona_trait_1", "persona_trait_description_1", "persona_trait_2",
+                "persona_trait_description_2"
+            };
+            AssertEqual("SoloImportant persona projection remains append-only at 102 fields",
+                102, new List<XElement>(solo.Element("fields").Elements("li")).Count);
+            for (int i = 0; i < contextKeys.Length; i++)
+            {
+                AssertTrue("SoloImportant persona prompt field exists: " + contextKeys[i],
+                    HasPromptContextField(solo, contextKeys[i]));
+                AssertTrue("PairImportant does not acquire Phase-2 solo persona field: " + contextKeys[i],
+                    !HasPromptContextField(pair, contextKeys[i]));
+            }
+
+            XDocument englishLabels = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryPromptTemplateDef",
+                "DiaryPromptTemplateDefs.xml"));
+            XDocument russianLabels = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryPromptTemplateDef",
+                "DiaryPromptTemplateDefs.xml"));
+            for (int i = 0; i < contextKeys.Length; i++)
+            {
+                string key = "DiaryPromptTemplate_SoloImportant.fields." + (90 + i) + ".label";
+                AssertTrue("English persona prompt label exists: " + key,
+                    !string.IsNullOrWhiteSpace(englishLabels.Root?.Element(key)?.Value));
+                AssertTrue("Russian persona prompt label exists: " + key,
+                    !string.IsNullOrWhiteSpace(russianLabels.Root?.Element(key)?.Value));
+            }
+
+            XDocument prompts = XDocument.Load(RepoPath("1.6", "Defs", "DiaryEventPromptDefs.xml"));
+            XDocument englishPrompts = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryEventPromptDef",
+                "DiaryEventPromptDefs.xml"));
+            XDocument russianPrompts = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryEventPromptDef",
+                "DiaryEventPromptDefs.xml"));
+            string[] promptSuffixes =
+            {
+                "PersonaWeapon", "PersonaWeaponBondFormed", "PersonaWeaponBondSeparated",
+                "PersonaWeaponBondRecovered", "PersonaWeaponBondEnded"
+            };
+            for (int i = 0; i < promptSuffixes.Length; i++)
+            {
+                string defName = "DiaryEventPrompt_" + promptSuffixes[i];
+                XElement prompt = FindDef(prompts, "PawnDiary.DiaryEventPromptDef", defName);
+                AssertTrue("persona event prompt exists: " + defName, prompt != null);
+                AssertEqual("persona event prompt key is exact: " + defName,
+                    promptSuffixes[i], ChildValue(prompt, "eventType"));
+                AssertTrue("English persona event prompt is localized: " + defName,
+                    !string.IsNullOrWhiteSpace(englishPrompts.Root?.Element(defName + ".prompt")?.Value));
+                AssertTrue("Russian persona event prompt is localized: " + defName,
+                    !string.IsNullOrWhiteSpace(russianPrompts.Root?.Element(defName + ".prompt")?.Value));
+            }
+
+            XDocument englishKeyed = XDocument.Load(
+                RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
+            XDocument russianKeyed = XDocument.Load(
+                RepoPath("Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
+            string[] fixtureKeys =
+            {
+                "PawnDiary.Dev.PromptSuite.PersonaBondFormed.Markers",
+                "PawnDiary.Dev.PromptSuite.PersonaBondSeparated.Markers",
+                "PawnDiary.Dev.PromptSuite.PersonaBondRecovered.Markers",
+                "PawnDiary.Dev.PromptSuite.PersonaBondEnded.Markers"
+            };
+            for (int i = 0; i < fixtureKeys.Length; i++)
+            {
+                AssertTrue("English persona prompt fixture exists: " + fixtureKeys[i],
+                    !string.IsNullOrWhiteSpace(KeyedValue(englishKeyed, fixtureKeys[i])));
+                AssertTrue("Russian persona prompt fixture exists: " + fixtureKeys[i],
+                    !string.IsNullOrWhiteSpace(KeyedValue(russianKeyed, fixtureKeys[i])));
+            }
+        }
+
         private static void TestProgressionMilestonePolicy()
         {
             List<int> milestones = new List<int> { 20, 8, 12, 12, -1, 16 };
@@ -4257,6 +4446,9 @@ namespace DiaryPipelineTests
             AssertEqual("Odyssey journey marker domain", "GravshipJourney",
                 DiaryEventDomainClassifier.DomainForContext(
                     "odyssey_journey=true; journey_phase=landing; journey_reason=homecoming"));
+            AssertEqual("persona weapon marker domain", "PersonaWeapon",
+                DiaryEventDomainClassifier.DomainForContext(
+                    "persona_weapon=bond_recovered; persona_weapon_name=Quiet Edge"));
             AssertEqual("arc reflection marker domain", "Reflection",
                 DiaryEventDomainClassifier.DomainForContext("arc_reflection=true; arc_year=5504"));
             AssertEqual("external marker wins over adapter context markers", "External",
@@ -4767,6 +4959,18 @@ namespace DiaryPipelineTests
                     ContextField("rough landing", "rough_landing"),
                     ContextField("launch quality", "launch_quality"),
                     ContextField("landing outcome", "landing_outcome"),
+                    ContextField("persona weapon", "persona_weapon_name"),
+                    ContextField("bond event", "persona_weapon"),
+                    ContextField("previous bond state", "bond_previous_state"),
+                    ContextField("new bond state", "bond_new_state"),
+                    ContextField("separation duration", "bond_separation_duration"),
+                    ContextField("bond duration", "bond_duration"),
+                    ContextField("previous bonded pawn", "bond_previous_pawn"),
+                    ContextField("bond ending cause", "bond_end_cause"),
+                    ContextField("persona trait 1", "persona_trait_1"),
+                    ContextField("persona trait 1 meaning", "persona_trait_description_1"),
+                    ContextField("persona trait 2", "persona_trait_2"),
+                    ContextField("persona trait 2 meaning", "persona_trait_description_2"),
                     Field("weapon", "Weapon"),
                     Field("important context", "PromptEnchantment"),
                     Field("previous diary ending (continue from this)", "PreviousEntryEnding"),

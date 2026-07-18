@@ -609,4 +609,9 @@
   <biotechFamilyBirth.tone>с близкими последствиями и честной эмоциональной неопределённостью</biotechFamilyBirth.tone>
   <biotechFamilyBirth.tones.0>телесно и близко к непосредственному исходу, не приписывая автору неуказанных чувств</biotechFamilyBirth.tones.0>
   <biotechFamilyBirth.tones.1>о семье, но без сентиментальности, бережно различая роли родившего, генетической матери и отца</biotechFamilyBirth.tones.1>
+  <personaWeaponLifecycle.label>Связь с разумным оружием</personaWeaponLifecycle.label>
+  <personaWeaponLifecycle.instruction>точный этап связи с разумным оружием; используй переданные оружие, прежнее и новое состояния связи, длительность, прежнего связанного поселенца, причину окончания и выбранные структурные факты о чертах; не выдумывай реплики, боевую сцену, мотив оружия или смерть</personaWeaponLifecycle.instruction>
+  <personaWeaponLifecycle.tone>с близкой верностью, трением и тревожным присутствием оружия, которое помнит</personaWeaponLifecycle.tone>
+  <personaWeaponLifecycle.tones.0>близко и странно, как о проживаемых отношениях, но без выдуманных реплик оружия</personaWeaponLifecycle.tones.0>
+  <personaWeaponLifecycle.tones.1>лично и задумчиво, опираясь на верность, отсутствие, возвращение или окончательность из точных фактов</personaWeaponLifecycle.tones.1>
 </LanguageData>

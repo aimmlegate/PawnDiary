@@ -27,7 +27,8 @@ namespace PawnDiary
     // Ability groups match AbilityDef defNames/category tokens from successful Ability.Activate.
     // Progression groups match synthetic source tokens from the pawn progression scanner.
     // Reflection groups match synthetic day/quadrum/arc reflection source tokens. GravshipJourney
-    // matches the one synthetic Odyssey successful-landing Def name.
+    // matches the one synthetic Odyssey successful-landing Def name. PersonaWeapon matches exact
+    // Royalty persona-bond lifecycle page names and has no catch-all.
     // External groups match the eventKey strings other mods submit through the public
     // integration API (PawnDiary.Integration.PawnDiaryApi); adapter mods usually ship them.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
@@ -49,7 +50,8 @@ namespace PawnDiary
         Progression,
         Reflection,
         GravshipJourney,
-        External
+        External,
+        PersonaWeapon
     }
 
     // How an XML batch is keyed. Pair means "one group-level batch" (per pawn pair for
@@ -688,6 +690,13 @@ namespace PawnDiary
             return ClassifyRequiredMatch(GroupDomain.GravshipJourney, journeyDefName);
         }
 
+        // Royalty persona lifecycle pages use exact synthetic Def names and no catch-all. The one
+        // shipped row is package-gated, so it is inert and absent from settings without Royalty.
+        public static DiaryInteractionGroupDef ClassifyPersonaWeapon(string eventDefName)
+        {
+            return ClassifyRequiredMatch(GroupDomain.PersonaWeapon, eventDefName);
+        }
+
         // First External-domain group that explicitly matches an integration-API eventKey. Like
         // Romance, live capture must NOT fall back to a catch-all here: only eventKeys some XML
         // group claims may create diary entries, so an unclaimed submission from another mod is
@@ -922,6 +931,12 @@ namespace PawnDiary
 
         // GravshipJourney-domain instruction. The signal already resolved the exact landing group.
         public static string InstructionForGravshipJourney(DiaryInteractionGroupDef group)
+        {
+            return InstructionForGroup(group);
+        }
+
+        // PersonaWeapon-domain instruction. The lifecycle adapter already resolved the exact group.
+        public static string InstructionForPersonaWeapon(DiaryInteractionGroupDef group)
         {
             return InstructionForGroup(group);
         }

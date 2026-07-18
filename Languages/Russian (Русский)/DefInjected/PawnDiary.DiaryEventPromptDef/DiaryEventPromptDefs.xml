@@ -57,6 +57,21 @@
   <DiaryEventPrompt_Death.label>смерть</DiaryEventPrompt_Death.label>
   <DiaryEventPrompt_Death.prompt>Напиши фактическую заметку об обстоятельствах смерти поселенца.</DiaryEventPrompt_Death.prompt>
   <DiaryEventPrompt_Death.enhancement>Смерть опиши резко и точно, с одной конкретной деталью причины или места. Используй только факты о причине, части тела, оружии, состоянии и обстановке. Кратко.</DiaryEventPrompt_Death.enhancement>
+  <DiaryEventPrompt_PersonaWeapon.label>связь с разумным оружием</DiaryEventPrompt_PersonaWeapon.label>
+  <DiaryEventPrompt_PersonaWeapon.prompt>Опиши точное изменение связи между поселенцем и разумным оружием с точки зрения связанного поселенца.</DiaryEventPrompt_PersonaWeapon.prompt>
+  <DiaryEventPrompt_PersonaWeapon.enhancement>Используй только переданные оружие, состояния связи, длительность, прежнюю связь, причину окончания и выбранные факты о чертах. Оружие может ощущаться странным и присутствующим, но не выдумывай реплики, осознанные мотивы, бой или смерть.</DiaryEventPrompt_PersonaWeapon.enhancement>
+  <DiaryEventPrompt_PersonaWeaponBondFormed.label>возникла связь с разумным оружием</DiaryEventPrompt_PersonaWeaponBondFormed.label>
+  <DiaryEventPrompt_PersonaWeaponBondFormed.prompt>Опиши момент возникновения точной связи с разумным оружием.</DiaryEventPrompt_PersonaWeaponBondFormed.prompt>
+  <DiaryEventPrompt_PersonaWeaponBondFormed.enhancement>Сосредоточься на первом контакте, узнавании, обязательстве или тревоге, опираясь на оружие и переданные черты. Если указан точный прежний связанный поселенец, признай переход связи, но не выдумывай его обстоятельства и слова оружия.</DiaryEventPrompt_PersonaWeaponBondFormed.enhancement>
+  <DiaryEventPrompt_PersonaWeaponBondSeparated.label>разлука с разумным оружием</DiaryEventPrompt_PersonaWeaponBondSeparated.label>
+  <DiaryEventPrompt_PersonaWeaponBondSeparated.prompt>Опиши первый значимый период разлуки в связи с разумным оружием.</DiaryEventPrompt_PersonaWeaponBondSeparated.prompt>
+  <DiaryEventPrompt_PersonaWeaponBondSeparated.enhancement>Используй длительность разлуки и смену состояния как отсутствие, трение, ревность, облегчение или тревогу. Это не доказательство уничтожения, отказа, перехода связи, боя или смерти.</DiaryEventPrompt_PersonaWeaponBondSeparated.enhancement>
+  <DiaryEventPrompt_PersonaWeaponBondRecovered.label>связь с разумным оружием восстановлена</DiaryEventPrompt_PersonaWeaponBondRecovered.label>
+  <DiaryEventPrompt_PersonaWeaponBondRecovered.prompt>Опиши, как точно связанный поселенец снова взял разумное оружие после зафиксированной разлуки.</DiaryEventPrompt_PersonaWeaponBondRecovered.prompt>
+  <DiaryEventPrompt_PersonaWeaponBondRecovered.enhancement>Сделай возвращение и узнавание конкретными через длительность, оружие и факты о чертах. Не выдумывай извинения, реплики, бой или события времени разлуки.</DiaryEventPrompt_PersonaWeaponBondRecovered.enhancement>
+  <DiaryEventPrompt_PersonaWeaponBondEnded.label>связь с разумным оружием окончена</DiaryEventPrompt_PersonaWeaponBondEnded.label>
+  <DiaryEventPrompt_PersonaWeaponBondEnded.prompt>Опиши отдельное окончание точной связи с разумным оружием.</DiaryEventPrompt_PersonaWeaponBondEnded.prompt>
+  <DiaryEventPrompt_PersonaWeaponBondEnded.enhancement>Используй переданную причину окончания и длительность связи, чтобы сделать финал конкретным. Не выдумывай смерть, нападавшего, бой, переход связи или последние слова.</DiaryEventPrompt_PersonaWeaponBondEnded.enhancement>
   <DiaryEventPrompt_External.label>событие другого мода</DiaryEventPrompt_External.label>
   <DiaryEventPrompt_External.prompt>Опиши момент, переданный другим модом, как то, что поселенец только что пережил.</DiaryEventPrompt_External.prompt>
   <DiaryEventPrompt_External.enhancement>Держись строго переданной строки события и фактов контекста; не выдумывай механики, системы или неупомянутых участников.</DiaryEventPrompt_External.enhancement>

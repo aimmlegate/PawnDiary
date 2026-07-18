@@ -373,6 +373,31 @@ verified Harmony registrations. The following live behavior remains explicitly T
 
 ---
 
+## Royalty Phase 2 persona lifecycle acceptance
+
+This is a new Wave-5 gate and does not replace or close any Biotech B1 row above. Run once with
+Royalty active and prompt-test mode enabled, then repeat the no-DLC safety row with Base + Harmony +
+Pawn Diary only. Use a fresh coded persona weapon for each destructive/transfer branch so one branch
+cannot satisfy another through leftover saved state.
+
+| # | Scenario | Expected result | Regression signal |
+|---:|---|---|---|
+| 1 | Code a fresh persona weapon to an eligible colonist during normal play. Repeat equip callbacks without changing ownership. | Exactly one `PersonaWeaponBondFormed` page, one saved positive epoch, exact weapon/pawn context, and no duplicate bonded Thought page. | No page, repeated formation, wrong pawn/weapon, or a second Thought page. |
+| 2 | Briefly switch the bonded pawn to another primary weapon, then re-equip the persona weapon before `60000` observable ticks. | No separation or recovery page; saved state returns to bonded. | Either lifecycle page appears, or pending state survives after recovery. |
+| 3 | Keep the persona weapon observable but not primary across the `60000`-tick threshold and at least one `2500`-tick reconciliation deadline. | Exactly one `PersonaWeaponBondSeparated` page; later scans do not repeat it. | Early/missing/repeated separation, or a generic catch-up page. |
+| 4 | Re-equip after row 3, then separately try recovery after only a short unrecorded swap. | Exactly one `PersonaWeaponBondRecovered` page for the recorded separation; the short-swap branch stays silent. | Missing/repeated recovery or recovery without an accepted separation page. |
+| 5 | Destroy a live coded weapon; in a separate fixture kill its bonded pawn. | Destruction creates one `PersonaWeaponBondEnded` page with the exact cause. Pawn death advances state but creates no standalone Phase-2 ending page; a later Phase-3 canonical death owner may enrich the existing death route. | Duplicate/wrong-cause ending or a standalone `PersonaWeaponBondEnded` page on pawn death. |
+| 6 | Move the weapon/pawn through caravan, transport, despawn, and map-removal transitions, then restore availability. | Unavailable/map-removal evidence never proves separation and emits no lifecycle page by itself. | Off-map travel produces separation/ending or log spam. |
+| 7 | Transfer the exact coded weapon from one living pawn to another through the supported coding path. | One new formation page for the new pawn/epoch with exact previous-pawn context; the old epoch never recovers or repeats. | Same epoch reused, wrong POV, duplicate ending/formation, or later old-owner recovery. |
+| 8 | Save/reload while bonded, pending short separation, meaningfully separated, and after an emitted recovery/ending; cross the threshold across a reload. | The deep-scribed ledger resumes each phase exactly once, preserves elapsed truth, and creates no old-save baseline/catch-up page. | Phase reset, duplicate page, invented old bond, lost pending duration, or corrupted Scribe row. |
+| 9 | Load Base + Harmony + Pawn Diary with Royalty absent and exercise normal play/save/reload. | Royalty hooks/readers no-op; no missing Def/type/patch error and no persona page. | Startup/load exception, XML error, warning spam, or Royalty content dependency. |
+
+- [ ] **TODO:** Record exact RimWorld version, language, active mod list, fresh/old-save fixtures,
+  rows 1–9, all four localized prompt previews, both DLC branches, save excerpts, and relevant
+  `Player.log` lines. Until recorded, Royalty Phase 2 is code-complete but not acceptance-complete.
+
+---
+
 ## Mod-compatibility adapters (1-2-3 Personalities / VSIE)
 
 These separate adapter mods live under `integrations/` and are inert without their target mod. Run

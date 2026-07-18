@@ -17,6 +17,7 @@ namespace PawnDiary
         public static void RegisterFragilePatches(Harmony harmony)
         {
             ThoughtGainPatch.TryRegister(harmony);
+            DiaryRoyaltyPatches.TryRegister(harmony);
             QuestUiAcceptPatch.TryRegister(harmony);
             ProximityLetterEventWindowPatch.TryRegister(harmony);
             VoidMonolithActivationEventWindowPatch.TryRegister(harmony);

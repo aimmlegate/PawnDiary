@@ -1432,6 +1432,29 @@
   <PawnDiary.Event.Odyssey.ShipFallback>гравикорабля</PawnDiary.Event.Odyssey.ShipFallback>
   <PawnDiary.Event.Odyssey.DestinationFallback>месте посадки</PawnDiary.Event.Odyssey.DestinationFallback>
 
+  <!-- Страницы жизненного цикла разумного оружия Royalty R2. -->
+  <PawnDiary.Event.Persona.WeaponFallback>разумным оружием</PawnDiary.Event.Persona.WeaponFallback>
+  <PawnDiary.Event.Persona.Formed.Label>Возникла связь с разумным оружием</PawnDiary.Event.Persona.Formed.Label>
+  <PawnDiary.Event.Persona.Formed.Fallback>Между {0} и {1} возникла связь.</PawnDiary.Event.Persona.Formed.Fallback>
+  <PawnDiary.Event.Persona.Formed.TransferFallback>Новая связь между {0} и {1} сменила точную прежнюю связь с {2}.</PawnDiary.Event.Persona.Formed.TransferFallback>
+  <PawnDiary.Event.Persona.Separated.Label>Разлука с разумным оружием</PawnDiary.Event.Persona.Separated.Label>
+  <PawnDiary.Event.Persona.Separated.Fallback>{0} уже {2} не берёт в руки {1}.</PawnDiary.Event.Persona.Separated.Fallback>
+  <PawnDiary.Event.Persona.Recovered.Label>Связь с разумным оружием восстановлена</PawnDiary.Event.Persona.Recovered.Label>
+  <PawnDiary.Event.Persona.Recovered.Fallback>{0} снова взял в руки {1} после разлуки длиной {2}.</PawnDiary.Event.Persona.Recovered.Fallback>
+  <PawnDiary.Event.Persona.Ended.Label>Связь с разумным оружием окончена</PawnDiary.Event.Persona.Ended.Label>
+  <PawnDiary.Event.Persona.Ended.Fallback>Связь между {0} и {1} окончилась: {2}.</PawnDiary.Event.Persona.Ended.Fallback>
+  <PawnDiary.Event.Persona.EndCause.Destroyed>оружие было уничтожено</PawnDiary.Event.Persona.EndCause.Destroyed>
+  <PawnDiary.Event.Persona.EndCause.Transfer>оружие установило точную новую связь</PawnDiary.Event.Persona.EndCause.Transfer>
+  <PawnDiary.Event.Persona.EndCause.Other>связь достигла подтверждённого конца</PawnDiary.Event.Persona.EndCause.Other>
+  <PawnDiary.Dev.PromptSuite.PersonaBondFormed.Markers>persona_weapon=bond_formed; persona_weapon_id=Weapon_Test; persona_weapon_def=PersonaMonosword; persona_weapon_name=Тихая грань; bond_epoch=1; bond_previous_state=untracked; bond_new_state=active; persona_trait_1=Ревность; persona_trait_description_1=Оружие не терпит, когда его откладывают ради другого.</PawnDiary.Dev.PromptSuite.PersonaBondFormed.Markers>
+  <PawnDiary.Dev.PromptSuite.PersonaBondFormed.Text>Между {0} и разумным оружием «Тихая грань» возникла точная связь.</PawnDiary.Dev.PromptSuite.PersonaBondFormed.Text>
+  <PawnDiary.Dev.PromptSuite.PersonaBondSeparated.Markers>persona_weapon=bond_separated; persona_weapon_id=Weapon_Test; persona_weapon_def=PersonaMonosword; persona_weapon_name=Тихая грань; bond_epoch=1; bond_previous_state=separation_pending; bond_new_state=separated; bond_separation_duration=один день; persona_trait_1=Ревность; persona_trait_description_1=Оружие не терпит, когда его откладывают ради другого.</PawnDiary.Dev.PromptSuite.PersonaBondSeparated.Markers>
+  <PawnDiary.Dev.PromptSuite.PersonaBondSeparated.Text>{0} уже целый день не берёт в руки «Тихую грань».</PawnDiary.Dev.PromptSuite.PersonaBondSeparated.Text>
+  <PawnDiary.Dev.PromptSuite.PersonaBondRecovered.Markers>persona_weapon=bond_recovered; persona_weapon_id=Weapon_Test; persona_weapon_def=PersonaMonosword; persona_weapon_name=Тихая грань; bond_epoch=1; bond_previous_state=separated; bond_new_state=active; bond_separation_duration=один день; persona_trait_1=Ревность; persona_trait_description_1=Оружие не терпит, когда его откладывают ради другого.</PawnDiary.Dev.PromptSuite.PersonaBondRecovered.Markers>
+  <PawnDiary.Dev.PromptSuite.PersonaBondRecovered.Text>{0} снова берёт «Тихую грань» после зафиксированного дня разлуки.</PawnDiary.Dev.PromptSuite.PersonaBondRecovered.Text>
+  <PawnDiary.Dev.PromptSuite.PersonaBondEnded.Markers>persona_weapon=bond_ended; persona_weapon_id=Weapon_Test; persona_weapon_def=PersonaMonosword; persona_weapon_name=Тихая грань; bond_epoch=1; bond_previous_state=active; bond_new_state=ended; bond_duration=два года; bond_end_cause=weapon_destroyed; persona_trait_1=Ревность; persona_trait_description_1=Оружие не терпит, когда его откладывают ради другого.</PawnDiary.Dev.PromptSuite.PersonaBondEnded.Markers>
+  <PawnDiary.Dev.PromptSuite.PersonaBondEnded.Text>Точная связь {0} с «Тихой гранью» окончилась, когда оружие было уничтожено.</PawnDiary.Dev.PromptSuite.PersonaBondEnded.Text>
+
   <!-- Контекст мобильного дома Odyssey O1.2. -->
   <PawnDiary.Ctx.GravshipHome>на борту гравикорабля {0}</PawnDiary.Ctx.GravshipHome>
   <PawnDiary.Ctx.GravshipHomeAt>на борту гравикорабля {0} у места {1}</PawnDiary.Ctx.GravshipHomeAt>

@@ -1,5 +1,5 @@
-// XML-facing Royalty Phase-0 policy. Every gameplay identifier is stored as a plain string, so this
-// Def loads in a base-game-only setup without resolving or requiring a Royalty Def object.
+// XML-facing Royalty policy frozen in Phase 0 and consumed by the Phase-2 persona lifecycle. Every
+// gameplay identifier is a plain string, so this Def loads without resolving a Royalty Def object.
 using System;
 using System.Collections.Generic;
 using Verse;
@@ -38,6 +38,7 @@ namespace PawnDiary
         public bool enabled = true;
         public int separationThresholdTicks = 60000;
         public int reconciliationCadenceTicks = 2500;
+        public int personaThoughtCorrelationTicks = 2500;
         public int maximumSelectedTraits = 2;
         public int maximumTraitCandidates = 32;
         public int maximumTraitLabelCharacters = 80;
@@ -65,6 +66,8 @@ namespace PawnDiary
             foreach (string error in base.ConfigErrors()) yield return error;
             if (separationThresholdTicks <= 0) yield return "separationThresholdTicks must be positive.";
             if (reconciliationCadenceTicks <= 0) yield return "reconciliationCadenceTicks must be positive.";
+            if (personaThoughtCorrelationTicks <= 0)
+                yield return "personaThoughtCorrelationTicks must be positive.";
             if (maximumSelectedTraits < 1 || maximumSelectedTraits > 2)
                 yield return "maximumSelectedTraits must be 1 or 2.";
             if (maximumTraitCandidates < 1 || maximumTraitCandidates > 128)
@@ -156,6 +159,8 @@ namespace PawnDiary
             result.enabled = source.enabled;
             result.separationThresholdTicks = Positive(source.separationThresholdTicks, result.separationThresholdTicks);
             result.reconciliationCadenceTicks = Positive(source.reconciliationCadenceTicks, result.reconciliationCadenceTicks);
+            result.personaThoughtCorrelationTicks = Positive(
+                source.personaThoughtCorrelationTicks, result.personaThoughtCorrelationTicks);
             result.maximumSelectedTraits = Between(source.maximumSelectedTraits, 1, 2, result.maximumSelectedTraits);
             result.maximumTraitCandidates = Between(source.maximumTraitCandidates, 1, 128, result.maximumTraitCandidates);
             result.maximumTraitLabelCharacters = Positive(

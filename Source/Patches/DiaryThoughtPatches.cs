@@ -68,7 +68,9 @@ namespace PawnDiary
                 // de-duplicates them against PlayLog observations before the normal thought page gate.
                 DiaryGameComponent.Instance?.ObserveBiotechFamilyMemory(s.pawn, s.memory);
                 ThoughtSignal signal = new ThoughtSignal(s.pawn, s.memory);
-                if (!BiotechBirthCorrelation.TryStageMatureSignal(s.memory.def.defName, signal))
+                if (!BiotechBirthCorrelation.TryStageMatureSignal(s.memory.def.defName, signal)
+                    && !RoyaltyPersonaThoughtCorrelation.TryStage(
+                        s.pawn.GetUniqueLoadID(), s.memory.def.defName, signal))
                 {
                     DiaryEvents.Submit(signal);
                 }

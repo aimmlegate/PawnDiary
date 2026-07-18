@@ -164,6 +164,30 @@ namespace PawnDiary
                 "PawnDiary.Dev.PromptSuite.OdysseyLanding.Markers",
                 "PawnDiary.Dev.PromptSuite.OdysseyLanding.Initiator",
                 "PawnDiary.Dev.PromptSuite.OdysseyLanding.Recipient"),
+            SoloWithLocalizedMarkers(
+                "PersonaBondFormed",
+                "PawnDiary.Event.Persona.Formed.Label",
+                PersonaWeaponEventData.BondFormedDefName,
+                "PawnDiary.Dev.PromptSuite.PersonaBondFormed.Markers",
+                "PawnDiary.Dev.PromptSuite.PersonaBondFormed.Text"),
+            SoloWithLocalizedMarkers(
+                "PersonaBondSeparated",
+                "PawnDiary.Event.Persona.Separated.Label",
+                PersonaWeaponEventData.BondSeparatedDefName,
+                "PawnDiary.Dev.PromptSuite.PersonaBondSeparated.Markers",
+                "PawnDiary.Dev.PromptSuite.PersonaBondSeparated.Text"),
+            SoloWithLocalizedMarkers(
+                "PersonaBondRecovered",
+                "PawnDiary.Event.Persona.Recovered.Label",
+                PersonaWeaponEventData.BondRecoveredDefName,
+                "PawnDiary.Dev.PromptSuite.PersonaBondRecovered.Markers",
+                "PawnDiary.Dev.PromptSuite.PersonaBondRecovered.Text"),
+            SoloWithLocalizedMarkers(
+                "PersonaBondEnded",
+                "PawnDiary.Event.Persona.Ended.Label",
+                PersonaWeaponEventData.BondEndedDefName,
+                "PawnDiary.Dev.PromptSuite.PersonaBondEnded.Markers",
+                "PawnDiary.Dev.PromptSuite.PersonaBondEnded.Text"),
             Solo("ArcReflectionForced", "PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label", ArcReflectionEventData.DefNameToken,
                 "arc_reflection=true; arc_year=5504; forced=true; selected_memories=6; candidate_memories=18; entries_this_year=0",
                 null, "PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text"),
@@ -231,6 +255,25 @@ namespace PawnDiary
                 markersKey = markersKey,
                 initiatorTextKey = initiatorTextKey,
                 recipientTextKey = recipientTextKey
+            };
+        }
+
+        /// <summary>Defines a solo DLC fixture whose descriptive context values are localized.</summary>
+        private static DevPromptSuiteEntry SoloWithLocalizedMarkers(
+            string id,
+            string labelKey,
+            string eventDefName,
+            string markersKey,
+            string textKey)
+        {
+            return new DevPromptSuiteEntry
+            {
+                id = id,
+                labelKey = labelKey,
+                shape = DevPromptSuiteFixtureShape.Solo,
+                eventDefName = eventDefName,
+                markersKey = markersKey,
+                textKey = textKey
             };
         }
 

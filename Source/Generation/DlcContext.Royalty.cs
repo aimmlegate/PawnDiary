@@ -66,6 +66,28 @@ namespace PawnDiary
             return result;
         }
 
+        /// <summary>
+        /// Copies the exact bonded-memory Def names a persona weapon can grant during CodeFor. The
+        /// strings are used only by the synchronous thought-ownership scope; no ThoughtDef escapes.
+        /// </summary>
+        public static List<string> CapturePersonaBondedThoughtDefNames(ThingWithComps weapon)
+        {
+            List<string> result = new List<string>();
+            if (!ModsConfig.RoyaltyActive || weapon == null) return result;
+            CompBladelinkWeapon comp = weapon.TryGetComp<CompBladelinkWeapon>();
+            List<WeaponTraitDef> traits = comp?.TraitsListForReading;
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int cap = Math.Max(1, Math.Min(128,
+                DiaryRoyaltyPolicy.Snapshot().maximumTraitCandidates));
+            for (int i = 0; i < (traits?.Count ?? 0) && result.Count < cap; i++)
+            {
+                string defName = traits[i]?.bondedThought?.defName ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(defName) && seen.Add(defName)) result.Add(defName);
+            }
+            result.Sort(StringComparer.Ordinal);
+            return result;
+        }
+
         /// <summary>Projects the pawn's highest current Royalty title in every faction.</summary>
         public static List<RoyalTitleSnapshot> CaptureRoyalTitles(Pawn pawn)
         {

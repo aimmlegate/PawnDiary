@@ -1,5 +1,5 @@
 // Plain Royalty contracts and stable schema tokens for the R1 persona, title, and psylink slice.
-// Runtime adapters added in later phases will copy live RimWorld objects into these small values.
+// Phase-1/2 runtime adapters copy live RimWorld objects into these small values.
 // This file deliberately contains no Verse, RimWorld, Unity, Harmony, settings, or Def references.
 using System;
 using System.Collections.Generic;
@@ -302,6 +302,7 @@ namespace PawnDiary
         public bool enabled = true;
         public int separationThresholdTicks = 60000;
         public int reconciliationCadenceTicks = 2500;
+        public int personaThoughtCorrelationTicks = 2500;
         public int maximumSelectedTraits = 2;
         public int maximumTraitCandidates = 32;
         public int maximumTraitLabelCharacters = 80;

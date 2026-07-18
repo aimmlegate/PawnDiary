@@ -1,5 +1,5 @@
-// Pure persona-bond state machine for Royalty Phase 0. Callbacks in later phases will supply exact
-// observations; this policy decides state and ownership without touching a Pawn, Thing, or save.
+// Pure persona-bond state machine frozen in Royalty Phase 0 and consumed by Phase 2's guarded
+// callbacks. It decides state and planned page ownership without touching a Pawn, Thing, or save.
 using System;
 
 namespace PawnDiary
@@ -150,6 +150,9 @@ namespace PawnDiary
             {
                 decision.nextState.phaseToken = PersonaBondPhaseTokens.Separated;
                 decision.nextState.pendingSeparationTick = -1;
+                // Pure policy can only plan output. The runtime adapter commits this as false first
+                // and promotes it after a durable page exists; pure callers model that repository
+                // result by supplying groupEnabled in their accepted/unaccepted matrix row.
                 decision.nextState.separationEmitted = observation.groupEnabled;
                 decision.narrativePhase = PersonaNarrativePhaseTokens.BondSeparated;
                 decision.shouldEmit = observation.groupEnabled;

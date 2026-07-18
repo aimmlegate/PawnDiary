@@ -1452,6 +1452,29 @@
   <PawnDiary.Event.Odyssey.ShipFallback>the gravship</PawnDiary.Event.Odyssey.ShipFallback>
   <PawnDiary.Event.Odyssey.DestinationFallback>the landing site</PawnDiary.Event.Odyssey.DestinationFallback>
 
+  <!-- Royalty R2 persona-weapon lifecycle pages. -->
+  <PawnDiary.Event.Persona.WeaponFallback>the persona weapon</PawnDiary.Event.Persona.WeaponFallback>
+  <PawnDiary.Event.Persona.Formed.Label>Persona weapon bond formed</PawnDiary.Event.Persona.Formed.Label>
+  <PawnDiary.Event.Persona.Formed.Fallback>{0} formed a bond with {1}.</PawnDiary.Event.Persona.Formed.Fallback>
+  <PawnDiary.Event.Persona.Formed.TransferFallback>{0} formed a bond with {1}, replacing its exact previous bond with {2}.</PawnDiary.Event.Persona.Formed.TransferFallback>
+  <PawnDiary.Event.Persona.Separated.Label>Separated from persona weapon</PawnDiary.Event.Persona.Separated.Label>
+  <PawnDiary.Event.Persona.Separated.Fallback>{0} had gone without wielding {1} for {2}.</PawnDiary.Event.Persona.Separated.Fallback>
+  <PawnDiary.Event.Persona.Recovered.Label>Persona weapon bond recovered</PawnDiary.Event.Persona.Recovered.Label>
+  <PawnDiary.Event.Persona.Recovered.Fallback>{0} wielded {1} again after {2} apart.</PawnDiary.Event.Persona.Recovered.Fallback>
+  <PawnDiary.Event.Persona.Ended.Label>Persona weapon bond ended</PawnDiary.Event.Persona.Ended.Label>
+  <PawnDiary.Event.Persona.Ended.Fallback>{0}&apos;s bond with {1} ended because {2}.</PawnDiary.Event.Persona.Ended.Fallback>
+  <PawnDiary.Event.Persona.EndCause.Destroyed>the weapon was destroyed</PawnDiary.Event.Persona.EndCause.Destroyed>
+  <PawnDiary.Event.Persona.EndCause.Transfer>the weapon formed an exact new bond</PawnDiary.Event.Persona.EndCause.Transfer>
+  <PawnDiary.Event.Persona.EndCause.Other>the bond reached its verified end</PawnDiary.Event.Persona.EndCause.Other>
+  <PawnDiary.Dev.PromptSuite.PersonaBondFormed.Markers>persona_weapon=bond_formed; persona_weapon_id=Weapon_Test; persona_weapon_def=PersonaMonosword; persona_weapon_name=Quiet Edge; bond_epoch=1; bond_previous_state=untracked; bond_new_state=active; persona_trait_1=Jealous; persona_trait_description_1=Resents being set aside for another weapon.</PawnDiary.Dev.PromptSuite.PersonaBondFormed.Markers>
+  <PawnDiary.Dev.PromptSuite.PersonaBondFormed.Text>{0} formed an exact bond with the persona weapon Quiet Edge.</PawnDiary.Dev.PromptSuite.PersonaBondFormed.Text>
+  <PawnDiary.Dev.PromptSuite.PersonaBondSeparated.Markers>persona_weapon=bond_separated; persona_weapon_id=Weapon_Test; persona_weapon_def=PersonaMonosword; persona_weapon_name=Quiet Edge; bond_epoch=1; bond_previous_state=separation_pending; bond_new_state=separated; bond_separation_duration=one day; persona_trait_1=Jealous; persona_trait_description_1=Resents being set aside for another weapon.</PawnDiary.Dev.PromptSuite.PersonaBondSeparated.Markers>
+  <PawnDiary.Dev.PromptSuite.PersonaBondSeparated.Text>{0} had gone a full day without wielding Quiet Edge.</PawnDiary.Dev.PromptSuite.PersonaBondSeparated.Text>
+  <PawnDiary.Dev.PromptSuite.PersonaBondRecovered.Markers>persona_weapon=bond_recovered; persona_weapon_id=Weapon_Test; persona_weapon_def=PersonaMonosword; persona_weapon_name=Quiet Edge; bond_epoch=1; bond_previous_state=separated; bond_new_state=active; bond_separation_duration=one day; persona_trait_1=Jealous; persona_trait_description_1=Resents being set aside for another weapon.</PawnDiary.Dev.PromptSuite.PersonaBondRecovered.Markers>
+  <PawnDiary.Dev.PromptSuite.PersonaBondRecovered.Text>{0} wielded Quiet Edge again after a recorded day apart.</PawnDiary.Dev.PromptSuite.PersonaBondRecovered.Text>
+  <PawnDiary.Dev.PromptSuite.PersonaBondEnded.Markers>persona_weapon=bond_ended; persona_weapon_id=Weapon_Test; persona_weapon_def=PersonaMonosword; persona_weapon_name=Quiet Edge; bond_epoch=1; bond_previous_state=active; bond_new_state=ended; bond_duration=two years; bond_end_cause=weapon_destroyed; persona_trait_1=Jealous; persona_trait_description_1=Resents being set aside for another weapon.</PawnDiary.Dev.PromptSuite.PersonaBondEnded.Markers>
+  <PawnDiary.Dev.PromptSuite.PersonaBondEnded.Text>{0}&apos;s exact bond with Quiet Edge ended when the weapon was destroyed.</PawnDiary.Dev.PromptSuite.PersonaBondEnded.Text>
+
   <!-- Odyssey O1.2 mobile-home surroundings. -->
   <PawnDiary.Ctx.GravshipHome>aboard the gravship {0}</PawnDiary.Ctx.GravshipHome>
   <PawnDiary.Ctx.GravshipHomeAt>aboard the gravship {0} at {1}</PawnDiary.Ctx.GravshipHomeAt>

@@ -510,4 +510,16 @@
   <DiaryPromptTemplate_SoloImportant.fields.88.label>качество запуска</DiaryPromptTemplate_SoloImportant.fields.88.label>
   <DiaryPromptTemplate_SoloImportant.fields.89.label>исход посадки</DiaryPromptTemplate_SoloImportant.fields.89.label>
 
+  <DiaryPromptTemplate_SoloImportant.fields.90.label>разумное оружие</DiaryPromptTemplate_SoloImportant.fields.90.label>
+  <DiaryPromptTemplate_SoloImportant.fields.91.label>событие связи</DiaryPromptTemplate_SoloImportant.fields.91.label>
+  <DiaryPromptTemplate_SoloImportant.fields.92.label>прежнее состояние связи</DiaryPromptTemplate_SoloImportant.fields.92.label>
+  <DiaryPromptTemplate_SoloImportant.fields.93.label>новое состояние связи</DiaryPromptTemplate_SoloImportant.fields.93.label>
+  <DiaryPromptTemplate_SoloImportant.fields.94.label>длительность разлуки</DiaryPromptTemplate_SoloImportant.fields.94.label>
+  <DiaryPromptTemplate_SoloImportant.fields.95.label>длительность связи</DiaryPromptTemplate_SoloImportant.fields.95.label>
+  <DiaryPromptTemplate_SoloImportant.fields.96.label>прежний связанный поселенец</DiaryPromptTemplate_SoloImportant.fields.96.label>
+  <DiaryPromptTemplate_SoloImportant.fields.97.label>причина окончания связи</DiaryPromptTemplate_SoloImportant.fields.97.label>
+  <DiaryPromptTemplate_SoloImportant.fields.98.label>черта разумного оружия 1</DiaryPromptTemplate_SoloImportant.fields.98.label>
+  <DiaryPromptTemplate_SoloImportant.fields.99.label>значение черты разумного оружия 1</DiaryPromptTemplate_SoloImportant.fields.99.label>
+  <DiaryPromptTemplate_SoloImportant.fields.100.label>черта разумного оружия 2</DiaryPromptTemplate_SoloImportant.fields.100.label>
+  <DiaryPromptTemplate_SoloImportant.fields.101.label>значение черты разумного оружия 2</DiaryPromptTemplate_SoloImportant.fields.101.label>
 </LanguageData>

@@ -465,4 +465,16 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_SoloImportant.fields.88.label>launch quality</DiaryPromptTemplate_SoloImportant.fields.88.label>
   <DiaryPromptTemplate_SoloImportant.fields.89.label>landing outcome</DiaryPromptTemplate_SoloImportant.fields.89.label>
 
+  <DiaryPromptTemplate_SoloImportant.fields.90.label>persona weapon</DiaryPromptTemplate_SoloImportant.fields.90.label>
+  <DiaryPromptTemplate_SoloImportant.fields.91.label>bond event</DiaryPromptTemplate_SoloImportant.fields.91.label>
+  <DiaryPromptTemplate_SoloImportant.fields.92.label>previous bond state</DiaryPromptTemplate_SoloImportant.fields.92.label>
+  <DiaryPromptTemplate_SoloImportant.fields.93.label>new bond state</DiaryPromptTemplate_SoloImportant.fields.93.label>
+  <DiaryPromptTemplate_SoloImportant.fields.94.label>separation duration</DiaryPromptTemplate_SoloImportant.fields.94.label>
+  <DiaryPromptTemplate_SoloImportant.fields.95.label>bond duration</DiaryPromptTemplate_SoloImportant.fields.95.label>
+  <DiaryPromptTemplate_SoloImportant.fields.96.label>previous bonded pawn</DiaryPromptTemplate_SoloImportant.fields.96.label>
+  <DiaryPromptTemplate_SoloImportant.fields.97.label>bond ending cause</DiaryPromptTemplate_SoloImportant.fields.97.label>
+  <DiaryPromptTemplate_SoloImportant.fields.98.label>persona trait 1</DiaryPromptTemplate_SoloImportant.fields.98.label>
+  <DiaryPromptTemplate_SoloImportant.fields.99.label>persona trait 1 meaning</DiaryPromptTemplate_SoloImportant.fields.99.label>
+  <DiaryPromptTemplate_SoloImportant.fields.100.label>persona trait 2</DiaryPromptTemplate_SoloImportant.fields.100.label>
+  <DiaryPromptTemplate_SoloImportant.fields.101.label>persona trait 2 meaning</DiaryPromptTemplate_SoloImportant.fields.101.label>
 </LanguageData>

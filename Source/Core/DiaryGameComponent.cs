@@ -26,6 +26,7 @@
 //   DiaryGameComponent.TaleBatching.cs   — delayed solo batches for bursty Tale events
 //   DiaryGameComponent.AmbientThoughts.cs — day-note batching for low-impact temporary thoughts
 //   DiaryGameComponent.Odyssey.cs         — guarded Odyssey journey/history save state + baselines
+//   DiaryGameComponent.Royalty.cs         — guarded Royalty state, baselines, persona reconciliation/pages
 //   ──
 //   DiaryGameComponent.EventFactory.cs   — AddPairwiseEvent/AddSoloEvent: build + register DiaryEvents
 //   DiaryGameComponent.Generation.cs     — deciding what to (re)queue (scan + per-pawn re-enable)
@@ -171,6 +172,9 @@ namespace PawnDiary
         // Pawn progression entries are sampled: skills, psylink, titles, and xenotypes are slow-moving
         // state where baseline suppression is more important than catching every internal setter.
         private int nextProgressionScanTick;
+        // Persona bonds use their own XML cadence so disabling progression pages never freezes
+        // separation/recovery truth. This is a deadline, not a modulo check, for stable save timing.
+        private int nextRoyaltyPersonaReconciliationTick;
 
         // Current absolute in-game day. Uses TicksAbs so day-note batching follows the world calendar.
         private static int CurrentDayIndex
@@ -268,6 +272,7 @@ namespace PawnDiary
             nextWorkScanTick = 0;
             nextHediffProgressionScanTick = 0;
             nextProgressionScanTick = 0;
+            nextRoyaltyPersonaReconciliationTick = 0;
             baselineQuestAcceptancesOnNextScan = false;
             initialArrivalScanPending = true;
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
@@ -315,6 +320,7 @@ namespace PawnDiary
             nextWorkScanTick = 0;
             nextHediffProgressionScanTick = 0;
             nextProgressionScanTick = 0;
+            nextRoyaltyPersonaReconciliationTick = 0;
             baselineQuestAcceptancesOnNextScan = !BaselineAcceptedQuests();
             // Loaded saves normally have their arrival pages already, so the founding-arrival
             // bootstrap stays off. But when a free colonist is missing one — a save from a session
@@ -672,6 +678,14 @@ namespace PawnDiary
             {
                 nextProgressionScanTick = now + Math.Max(250, DiarySignalPolicies.ProgressionScanIntervalTicks);
                 ScanPawnProgressionsForDiaryEvents();
+            }
+
+            if (!initialArrivalScanPending && ModsConfig.RoyaltyActive
+                && now >= nextRoyaltyPersonaReconciliationTick)
+            {
+                nextRoyaltyPersonaReconciliationTick = now + Math.Max(
+                    250, DiaryRoyaltyPolicy.Snapshot().reconciliationCadenceTicks);
+                ReconcileRoyaltyPersonaBonds();
             }
 
             if (now >= nextOrphanRecoveryScanTick)
