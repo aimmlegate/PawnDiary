@@ -21,6 +21,7 @@ namespace NarrativeContinuityTests
             TestDetailCapsAndCompleteFactBudget();
             TestReferenceEqualityAndDeduplication();
             TestPersistenceCapsAndPromptFormatting();
+            TestRoyaltyProviderApplicabilityAndBounds();
             TestBiotechProviderApplicabilityAndTruthGates();
             TestOdysseyProviderEvidenceAndCrossDlcGates();
             TestReflectionPriorityAndDeferredConsumption();
@@ -180,11 +181,153 @@ namespace NarrativeContinuityTests
                 new List<NarrativeEvidence> { evidence },
                 new List<NarrativeLensCandidate> { Candidate("core-first", NarrativeCategoryTokens.Home,
                     NarrativeFacetTokens.IdentityTransition) },
+                null,
                 snapshot,
                 null);
             AssertEqual("fixed provider list preserves core-first deterministic order", "core-first",
                 fixedOrder[0].candidateKey);
             AssertEqual("empty future provider stubs add no candidates", 3, fixedOrder.Count);
+        }
+
+        private static void TestRoyaltyProviderApplicabilityAndBounds()
+        {
+            NarrativeEvidence personaEvidence = Evidence();
+            personaEvidence.povPawnId = "pawn-1";
+            personaEvidence.facet = NarrativeFacetTokens.BondLifecycle;
+            personaEvidence.subjectKind = NarrativeSubjectKindTokens.Weapon;
+            personaEvidence.subjectId = "weapon-2";
+            personaEvidence.arcKey = "royalty-persona|weapon-2|1";
+            personaEvidence.beliefTopics = new List<string> { "weapons", "bonding", "loyalty" };
+
+            RoyaltyNarrativeSnapshot snapshot = new RoyaltyNarrativeSnapshot
+            {
+                providerAvailable = true,
+                povPawnId = "pawn-1",
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true,
+                personaBonds = new List<RoyaltyPersonaNarrativeFact>
+                {
+                    PersonaFact("weapon-3", 1),
+                    PersonaFact("weapon-2", 1),
+                    PersonaFact("weapon-1", 1)
+                },
+                titles = new List<RoyaltyTitleNarrativeFact>
+                {
+                    TitleFact("Faction_2", "Baron", new List<string>
+                        { "speech", "apparel", "speech", null })
+                }
+            };
+
+            List<NarrativeLensCandidate> persona = RoyaltyNarrativeProvider.Build(
+                new List<NarrativeEvidence> { personaEvidence }, snapshot);
+            AssertEqual("persona provider admits only the exact weapon/arc", 1, persona.Count);
+            AssertEqual("persona candidate preserves frozen Royalty arc grammar",
+                personaEvidence.arcKey, persona[0].arcKey);
+            AssertEqual("persona candidate key owns the exact bond epoch",
+                "royalty|persona|weapon-2|1", persona[0].candidateKey);
+            personaEvidence.arcKey = string.Empty;
+            AssertEqual("weapon subject without the exact bond arc is insufficient", 0,
+                RoyaltyNarrativeProvider.Build(new List<NarrativeEvidence> { personaEvidence }, snapshot).Count);
+            personaEvidence.arcKey = "royalty-persona|weapon-2|1";
+            snapshot.personaBonds.Add(new RoyaltyPersonaNarrativeFact
+            {
+                weaponThingId = "weapon-2",
+                bondEpoch = 2,
+                arcKey = "royalty-persona|different-weapon|2",
+                text = "Malformed mismatched arc."
+            });
+            AssertEqual("mismatched persona arc grammar is rejected", 1,
+                RoyaltyNarrativeProvider.Build(new List<NarrativeEvidence> { personaEvidence }, snapshot).Count);
+
+            NarrativeEvidence titleEvidence = Evidence();
+            titleEvidence.povPawnId = "pawn-1";
+            titleEvidence.facet = NarrativeFacetTokens.IdentityTransition;
+            titleEvidence.subjectKind = NarrativeSubjectKindTokens.Pawn;
+            titleEvidence.subjectId = "pawn-1";
+            titleEvidence.sourceDomain = "royalty_title";
+            titleEvidence.beliefTopics = new List<string> { "authority", "status", "duty" };
+            snapshot.titles.Add(TitleFact("Faction_2", "Baron", new List<string> { "speech" }));
+            List<NarrativeLensCandidate> title = RoyaltyNarrativeProvider.Build(
+                new List<NarrativeEvidence> { titleEvidence }, snapshot);
+            AssertEqual("exact Royalty identity evidence admits one deduplicated current title", 1, title.Count);
+            AssertEqual("title candidate is faction-specific and stable",
+                "royalty|title|pawn-1|Faction_2|Baron", title[0].candidateKey);
+            AssertTrue("title duties are deduplicated and deterministically ordered",
+                title[0].topicTokens.Count == 5
+                    && title[0].topicTokens[3] == "apparel"
+                    && title[0].topicTokens[4] == "speech");
+
+            NarrativeEvidence biotechIdentity = Evidence();
+            biotechIdentity.povPawnId = "pawn-1";
+            biotechIdentity.facet = NarrativeFacetTokens.IdentityTransition;
+            biotechIdentity.subjectKind = NarrativeSubjectKindTokens.Pawn;
+            biotechIdentity.subjectId = "pawn-1";
+            biotechIdentity.sourceDomain = "biotech_gene";
+            biotechIdentity.beliefTopics = new List<string> { "identity", "genes", "body" };
+            AssertEqual("generic Biotech identity cannot pull unrelated Royalty title context", 0,
+                RoyaltyNarrativeProvider.Build(new List<NarrativeEvidence> { biotechIdentity }, snapshot).Count);
+
+            personaEvidence.povPawnId = "other-pawn";
+            AssertEqual("different POV cannot receive a persona bond", 0,
+                RoyaltyNarrativeProvider.Build(new List<NarrativeEvidence> { personaEvidence }, snapshot).Count);
+            personaEvidence.povPawnId = "pawn-1";
+            snapshot.hasVerifiedPovConnection = false;
+            AssertEqual("unverified Royalty snapshot fails closed", 0,
+                RoyaltyNarrativeProvider.Build(new List<NarrativeEvidence> { personaEvidence }, snapshot).Count);
+            snapshot.hasVerifiedPovConnection = true;
+            snapshot.providerAvailable = false;
+            AssertEqual("absent Royalty provider is independently silent", 0,
+                RoyaltyNarrativeProvider.Build(new List<NarrativeEvidence> { personaEvidence }, snapshot).Count);
+            snapshot.providerAvailable = true;
+
+            snapshot.personaBonds = new List<RoyaltyPersonaNarrativeFact>();
+            List<NarrativeEvidence> manyEvidence = new List<NarrativeEvidence>();
+            for (int i = 8; i >= 1; i--)
+            {
+                snapshot.personaBonds.Add(PersonaFact("weapon-" + i, 1));
+                NarrativeEvidence row = Evidence();
+                row.povPawnId = "pawn-1";
+                row.facet = NarrativeFacetTokens.BondLifecycle;
+                row.subjectKind = NarrativeSubjectKindTokens.Weapon;
+                row.subjectId = "weapon-" + i;
+                row.arcKey = "royalty-persona|weapon-" + i + "|1";
+                manyEvidence.Add(row);
+            }
+            List<NarrativeLensCandidate> bounded = RoyaltyNarrativeProvider.Build(manyEvidence, snapshot);
+            AssertEqual("malformed many-bond snapshot is defensively capped", 4, bounded.Count);
+            AssertEqual("provider sorting is independent of saved list order",
+                "royalty|persona|weapon-1|1", bounded[0].candidateKey);
+            AssertEqual("null evidence is harmless", 0, RoyaltyNarrativeProvider.Build(null, snapshot).Count);
+            AssertEqual("null snapshot is harmless", 0,
+                RoyaltyNarrativeProvider.Build(manyEvidence, null).Count);
+        }
+
+        private static RoyaltyPersonaNarrativeFact PersonaFact(string weaponId, int epoch)
+        {
+            return new RoyaltyPersonaNarrativeFact
+            {
+                weaponThingId = weaponId,
+                weaponName = "Persona weapon",
+                bondEpoch = epoch,
+                arcKey = "royalty-persona|" + weaponId + "|" + epoch,
+                text = "This exact persona-weapon bond remains part of the moment.",
+                sourceTick = 1000
+            };
+        }
+
+        private static RoyaltyTitleNarrativeFact TitleFact(
+            string factionId,
+            string titleDefName,
+            List<string> duties)
+        {
+            return new RoyaltyTitleNarrativeFact
+            {
+                factionId = factionId,
+                titleDefName = titleDefName,
+                text = "The writer currently holds this exact royal title and its active duties.",
+                dutyCategoryTokens = duties,
+                sourceTick = 1000
+            };
         }
 
         private static void TestOdysseyProviderEvidenceAndCrossDlcGates()

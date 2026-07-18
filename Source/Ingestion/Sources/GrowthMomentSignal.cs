@@ -280,6 +280,7 @@ namespace PawnDiary.Ingestion
                         // preset here so Compact/Balanced lens caps apply before the factual unit is saved.
                         contextDetailLevel = PawnDiarySettings.NormalizeContextDetailLevel(
                             PawnDiaryMod.Settings?.contextDetailLevel ?? PromptContextDetailLevel.Full),
+                        royalty = sink?.RoyaltyNarrativeSnapshotFor(povPawn, diaryEvent.tick),
                         biotech = BuildBiotechNarrativeSnapshot(
                             povPawn,
                             child,

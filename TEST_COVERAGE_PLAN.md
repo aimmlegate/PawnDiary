@@ -125,7 +125,7 @@ one window, `Gleaming` maps to none, localized fallbacks exist, and the three ex
 bounded source evidence. The EVT-22 RimTest fixture exercises the live package-gated page/evidence
 path when Anomaly is active and the no-op branch otherwise.
 
-Master Wave 5 / Royalty Phases 0–1 use `RoyaltyContextTests`, now a 187-assertion assembly-free suite. It
+Master Wave 5 / Royalty Phases 0–1 plus N3-R evidence use `RoyaltyContextTests`, now a 196-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing
 Narrative Continuity `bond_lifecycle`/`weapon` contract; formation/load-baseline/re-equip,
 pending/threshold/unobservable separation, recorded/unrecorded recovery, destruction/death/transfer,
@@ -140,7 +140,8 @@ level/correlation, and malformed/null behavior. The shipped policy XML is parsed
 detached `CreateDefault` path is exercised. Phase 1 additionally covers conservative persona
 baselines, malformed phase/tick/cause repair, duplicate weapon ownership, trait/row caps, faction-title
 dedup, highest-seniority selection, stable ordering, missing rows, and corruption ceilings. The new
-`PawnDiaryRoyaltyStateFixtureTests` compiles against RimTest Redux and exercises deep persona Scribe
+N3-R adds exact pawn title-transition evidence, authority/status/duty/death topic boundaries, major
+loss salience, and rejection of no-change/malformed rows. `PawnDiaryRoyaltyStateFixtureTests` compiles against RimTest Redux and exercises deep persona Scribe
 round-trip, per-pawn faction-title/psylink preservation, old-save version-zero versus initialized-empty
 markers, and guarded no-Royalty persona/title/psylink collection. Building that fixture is not a claim
 that it was executed inside a loaded game; that acceptance remains explicit. No page behavior exists.
@@ -198,8 +199,10 @@ Every fixture explicitly logs `SKIP` when Odyssey is inactive or a real player g
 and failure-safe cleanup restores component/controller state, time speed, the mask engine, world
 objects, spawned things, pawns, events, diary indexes, and temporary Harmony patches.
 
-Narrative N2-O and the first N3-B identity slice extend `NarrativeContinuityTests` to 109 assembly-free
-assertions. N2-O covers the one-row
+Narrative N2-O, N3-B identity, and N3-R core extend `NarrativeContinuityTests` to 125 assembly-free
+assertions. N3-R covers exact persona arc/weapon and title POV/domain/topic applicability, cross-DLC
+identity isolation, absent/unknown/unverified/null silence, stable candidate keys and ordering,
+defensive persona/duty caps, and deterministic duty-topic normalization. N2-O covers the one-row
 Odyssey home candidate, exact ship/journey/location identity, family-event ambient selection, landing
 exact-arc selection, inactive-provider/unknown-knowledge/disconnected-POV/unknown-location silence, and
 the frozen departure plus arrived/returned ship/place reference factories. Loaded RimTests exercise the

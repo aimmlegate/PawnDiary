@@ -282,23 +282,27 @@ Do not add seasonal flooding, life support, or Mechhive choices in this wave.
 
 ## 10. Wave 5 — Royalty persona and progression flagship
 
-> **Implementation status (2026-07-18): Royalty Phases 0–1 implemented; Wave 5 remains in progress.** By
+> **Implementation status (2026-07-18): Royalty Phases 0–1 and Narrative N3-R core implemented;
+> Wave 5 remains in progress.** By
 > explicit user scheduling exception, Phase 0 began while the five Biotech B1 manual acceptance rows
 > remain open; those earlier gates are neither passed nor removed. Phase 0 added plain
 > persona/title/psylink snapshots, the shared `royalty-persona|<weaponThingId>|<bondEpoch>` arc
 > grammar, XML-owned policy with safe fallbacks, pure deterministic lifecycle/trait/milestone/title/
 > mutation ownership decisions. Phase 1 adds guarded live projections, versioned plain Scribe state,
 > silent old-save persona/title/psylink baselining, deterministic normalization, and resettable
-> transient correlation shells. The pure suite passes 187 assertions and the focused RimTest fixture
-> builds, but no loaded-game execution is claimed. No Royalty hook, provider, page, prompt, setting,
-> or player-visible behavior exists yet; Narrative N3-R and Royalty Phases 2–4 remain, so the R1
+> transient correlation shells. N3-R replaces the empty Royalty provider slot with exact persona-arc
+> and title-identity candidates, adds source-owned persona/title evidence factories, and snapshots
+> current guarded Royalty facts using DefInjected prose. The pure suites pass 196 Royalty and 125
+> Narrative Continuity assertions and the focused RimTest fixture builds, but no loaded-game execution
+> is claimed. No Royalty hook, lifecycle page, setting, or new page source exists yet; Royalty Phases
+> 2–4 remain, so the R1
 > release gate and Wave 5 completion are not claimed.
 
 ### Implement in this exact order
 
 1. **Royalty 0 (implemented; contract-only)** — pure persona/title/psylink contracts and policy.
 2. **Royalty 1 (implemented; structural, page-silent)** — guarded collection, persistence, and silent baseline.
-3. **Narrative N3-R core** — persona/title provider plus required bond/identity evidence.
+3. **Narrative N3-R core (implemented; provider/evidence only)** — persona/title provider plus required bond/identity evidence.
 4. **Royalty 2** — persona lifecycle pages.
 5. **Royalty 3** — first consequential kill and death integration through existing owners.
 6. **Royalty 4** — immediate title/psylink cause correctness and scanner fallback.

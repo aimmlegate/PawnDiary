@@ -221,6 +221,7 @@ namespace PawnDiary.Ingestion
                             : sink.RecentNarrativeSelectedCandidateKeys(povPawnId),
                         contextDetailLevel = PawnDiarySettings.NormalizeContextDetailLevel(
                             PawnDiaryMod.Settings?.contextDetailLevel ?? PromptContextDetailLevel.Full),
+                        royalty = sink?.RoyaltyNarrativeSnapshotFor(povPawn, value.birthTick),
                         biotech = BuildBiotechSnapshot(povPawn, child, value, policy),
                         odyssey = sink?.OdysseyNarrativeSnapshotFor(povPawn, value.birthTick),
                         evidence = new List<NarrativeEvidence>

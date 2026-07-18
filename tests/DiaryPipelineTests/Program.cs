@@ -56,6 +56,7 @@ namespace DiaryPipelineTests
             TestAnomalySemanticPrecisionXmlPolicy();
             TestOdysseyExistingIntegrationXmlPolicy();
             TestOdysseyJourneyFoundationXmlContract();
+            TestRoyaltyNarrativeProviderXmlContract();
             TestProgressionMilestonePolicy();
             TestPsylinkProgressionLevelPolicy();
             TestArcReflectionSchedulePolicy();
@@ -3482,6 +3483,47 @@ namespace DiaryPipelineTests
                 !string.IsNullOrWhiteSpace(KeyedValue(englishDefInjected, "Diary_Odyssey.label")));
             AssertTrue("Russian Odyssey policy label exists",
                 !string.IsNullOrWhiteSpace(KeyedValue(russianDefInjected, "Diary_Odyssey.label")));
+        }
+
+        private static void TestRoyaltyNarrativeProviderXmlContract()
+        {
+            XDocument policyDocument = XDocument.Load(RepoPath("1.6", "Defs", "DiaryRoyaltyPolicyDefs.xml"));
+            XElement policy = FindDef(
+                policyDocument, "PawnDiary.DiaryRoyaltyPolicyDef", "Diary_Royalty");
+            AssertTrue("Royalty N3-R policy row exists", policy != null);
+            string persona = ChildValue(policy, "personaNarrativeFormat");
+            string title = ChildValue(policy, "titleNarrativeFormat");
+            string titleDuties = ChildValue(policy, "titleWithDutiesNarrativeFormat");
+            AssertTrue("Royalty persona provider prose is XML-owned",
+                persona.Contains("{0}") && persona.Contains("{1}"));
+            AssertTrue("Royalty title provider prose keeps pawn/title/faction placeholders",
+                title.Contains("{0}") && title.Contains("{1}") && title.Contains("{2}"));
+            AssertTrue("Royalty duty provider prose keeps pawn/title/faction placeholders",
+                titleDuties.Contains("{0}") && titleDuties.Contains("{1}") && titleDuties.Contains("{2}"));
+            AssertTrue("Royalty policy has no paid-DLC XML reference",
+                policyDocument.ToString().IndexOf("MayRequire", StringComparison.OrdinalIgnoreCase) < 0
+                    && policyDocument.ToString().IndexOf("Ludeon.RimWorld.Royalty", StringComparison.OrdinalIgnoreCase) < 0);
+
+            XDocument english = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryRoyaltyPolicyDef",
+                "DiaryRoyaltyPolicyDefs.xml"));
+            XDocument russian = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryRoyaltyPolicyDef",
+                "DiaryRoyaltyPolicyDefs.xml"));
+            string[] fields =
+            {
+                "personaNarrativeFormat",
+                "titleNarrativeFormat",
+                "titleWithDutiesNarrativeFormat"
+            };
+            for (int i = 0; i < fields.Length; i++)
+            {
+                string key = "Diary_Royalty." + fields[i];
+                AssertTrue("Royalty English DefInjected prose exists: " + fields[i],
+                    !string.IsNullOrWhiteSpace(english.Root?.Element(key)?.Value));
+                AssertTrue("Royalty Russian DefInjected prose exists: " + fields[i],
+                    !string.IsNullOrWhiteSpace(russian.Root?.Element(key)?.Value));
+            }
         }
 
         private static void TestProgressionMilestonePolicy()

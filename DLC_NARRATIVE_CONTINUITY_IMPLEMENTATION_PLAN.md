@@ -575,10 +575,23 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 > prose is XML/DefInjected, no full membership is rescanned or listed, and no hook, page owner, writer,
 > or save field was added. Pure tests pin selection/repetition, and the supplied all-DLC loaded run
 > passed the real implant context/key/evidence assertion.
+>
+> **N3-R core progress (2026-07-18): implemented as the pre-Royalty-Phase-2 provider/evidence
+> dependency.** The fixed provider list now accepts a detached Royalty snapshot and proposes bounded,
+> deterministically ordered persona-bond candidates only for the exact frozen
+> `royalty-persona|<weaponThingId>|<bondEpoch>` arc or weapon subject. Faction-specific current-title
+> candidates require the exact POV pawn plus Royalty title-domain or authority/status/duty evidence,
+> so unrelated Biotech identity events cannot pull generic rank context. Title transitions map to the
+> shared `identity_transition` contract with no invented title arc; title/faction remain event facts.
+> Guarded current snapshots use XML/DefInjected prose and are passed through existing event-time build
+> requests, but no existing source supplies Royalty evidence yet. Court pressure remains scheduled for
+> the Wave-9 N3-R extension. No hook, page, setting, save schema, or Phase-2 lifecycle behavior was added;
+> `NarrativeContinuityTests` passes 125 assembly-free assertions.
 
 1. Route high-confidence `EventRelativeStanceResolver` output through the shared interpretation
    category for ordinary event enrichment.
-2. Add Royalty persona/title/court candidates with exact applicability gates.
+2. Add Royalty persona/title/court candidates with exact applicability gates. **Core persona/title
+   provider implemented; court pressure remains deferred to the scheduled N3-R extension.**
 3. Add Anomaly visible-state/pressure candidates with spoiler-firewall tests.
 4. Add Biotech mechanitor/pollution and Odyssey environmental extensions as their source phases ship.
 5. Verify two-lens composition and repetition across every provider pair.

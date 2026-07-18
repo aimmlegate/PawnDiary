@@ -1349,6 +1349,22 @@ Royalty state in parallel, but it must not invent a temporary Royalty-only conti
 Exit gate: old/new saves load, no pages change, no-DLC is clean, Debug build passes, docs/changelog
 describe structural behavior where applicable.
 
+### Narrative N3-R core dependency — Persona/title provider and evidence
+
+> **Implementation status (2026-07-18): complete; loaded-game execution not claimed.** The fixed
+> Narrative Continuity provider list now replaces the Royalty empty stub with bounded plain persona
+> and faction-title facts. Persona candidates require the exact frozen bond arc or weapon subject;
+> title candidates require the exact POV pawn plus Royalty title-domain or authority/status/duty
+> evidence, preventing unrelated identity pages from receiving generic rank context. The existing
+> persona mapper and the new title-transition mapper emit shared `bond_lifecycle` and
+> `identity_transition` evidence; title/faction facts never become a Royalty-only arc key. The guarded
+> main-thread adapter copies current Phase-1 bond/title truth, formats optional prose from
+> `DiaryRoyaltyPolicyDef`/DefInjected fields, and passes snapshots through existing build requests.
+> No existing event supplies Royalty evidence yet, so this dependency is structurally inert until
+> Phase 2 or Phase 4's canonical owner attaches it. Court pressure remains deferred to the Wave-9
+> N3-R extension. Pure suites pass 196 Royalty and 125 Narrative Continuity assertions. No Harmony
+> hook, page source, setting, save field, or Phase-2 lifecycle behavior was added.
+
 ### Phase 2 — Persona lifecycle pages
 
 1. Defensively register coding, equipment evidence, destruction, and cleanup hooks.

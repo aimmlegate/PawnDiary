@@ -660,10 +660,10 @@ namespace PawnDiary
                         eventTick = diaryEvent.tick,
                         povPawnId = pawn.GetUniqueLoadID(),
                         povRole = DiaryEvent.InitiatorRole,
+                        royalty = RoyaltyNarrativeSnapshotFor(pawn, diaryEvent.tick),
                         // Feed the selector this POV's persisted selection history. Today no provider
-                        // proposes lens candidates for window evidence (all non-Biotech provider slots
-                        // are stubs), so this is future-proofing: the penalty starts working here the
-                        // moment a window-capable provider ships, with no wiring left to remember.
+                        // proposes a Royalty lens unless the window carries an exact persona/title
+                        // subject contract, so unrelated windows keep the historical zero-lens path.
                         recentSelectedCandidateKeys =
                             RecentNarrativeSelectedCandidateKeys(pawn.GetUniqueLoadID()),
                         evidence = new List<NarrativeEvidence>

@@ -126,6 +126,12 @@ namespace PawnDiary
         public const string Loss = "loss";
         public const string NoChange = "no_change";
         public const string Invalid = "invalid";
+
+        /// <summary>True only for source-owned title changes that can become continuity evidence.</summary>
+        public static bool IsNarrative(string value)
+        {
+            return value == FirstTitle || value == Promotion || value == Demotion || value == Loss;
+        }
     }
 
     /// <summary>Stable cause tokens shared by title and psylink mutation correlation.</summary>
@@ -308,6 +314,11 @@ namespace PawnDiary
         public int bondedHediffWeight = 60;
         public int equippedHediffWeight = 40;
         public int exactOverrideMaximumWeight = 50;
+        // Prompt-visible prose has no hardcoded English fallback. Missing DefInjected text leaves the
+        // optional provider silent while the source-owned diary page continues normally.
+        public string personaNarrativeFormat = string.Empty;
+        public string titleNarrativeFormat = string.Empty;
+        public string titleWithDutiesNarrativeFormat = string.Empty;
         public List<RoyaltyTaleQualificationRule> qualifyingTales =
             new List<RoyaltyTaleQualificationRule>();
         public List<RoyaltyTraitWorkerRule> traitWorkerRules =
@@ -447,6 +458,7 @@ namespace PawnDiary
     internal static class RoyaltyNarrativeEvidenceFactory
     {
         public const string SourceDomain = "royalty_persona";
+        public const string TitleSourceDomain = "royalty_title";
 
         public static NarrativeEvidence Persona(
             string eventId,
@@ -494,6 +506,56 @@ namespace PawnDiary
                     : NarrativeSalienceTokens.Meaningful,
                 pawnCanKnow = pawnCanKnow,
                 sourceDomain = SourceDomain,
+                sourceDefName = (sourceDefName ?? string.Empty).Trim()
+            };
+        }
+
+        /// <summary>
+        /// Builds exact pawn identity evidence for one faction-specific title transition. The title
+        /// and faction remain source facts; no localized title text is embedded in the stable arc key.
+        /// </summary>
+        public static NarrativeEvidence TitleTransition(
+            string eventId,
+            int tick,
+            string povPawnId,
+            string povRole,
+            string subjectPawnId,
+            string subjectPawnName,
+            string phase,
+            string relatedEventId,
+            string sourceDefName,
+            bool successionRelated,
+            bool pawnCanKnow)
+        {
+            if (string.IsNullOrWhiteSpace(eventId) || tick < 0
+                || string.IsNullOrWhiteSpace(povPawnId)
+                || string.IsNullOrWhiteSpace(subjectPawnId)
+                || !RoyalTitleTransitionTokens.IsNarrative(phase)) return null;
+
+            List<string> topics = new List<string> { "authority", "status", "duty" };
+            if (successionRelated) topics.Add("death");
+            return new NarrativeEvidence
+            {
+                eventId = eventId.Trim(),
+                tick = tick,
+                povPawnId = povPawnId.Trim(),
+                povRole = (povRole ?? string.Empty).Trim(),
+                facet = NarrativeFacetTokens.IdentityTransition,
+                phase = phase,
+                subjectKind = NarrativeSubjectKindTokens.Pawn,
+                subjectId = subjectPawnId.Trim(),
+                subjectLabel = (subjectPawnName ?? string.Empty).Trim(),
+                // Title/faction labels are event facts, not continuity identities. N0 freezes no
+                // Royalty title arc grammar, so this intentionally stays empty.
+                arcKey = string.Empty,
+                relatedEventId = (relatedEventId ?? string.Empty).Trim(),
+                beliefTopics = topics,
+                salience = phase == RoyalTitleTransitionTokens.Demotion
+                        || phase == RoyalTitleTransitionTokens.Loss
+                    ? NarrativeSalienceTokens.Major
+                    : NarrativeSalienceTokens.Meaningful,
+                pawnCanKnow = pawnCanKnow,
+                sourceDomain = TitleSourceDomain,
                 sourceDefName = (sourceDefName ?? string.Empty).Trim()
             };
         }

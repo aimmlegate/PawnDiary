@@ -50,6 +50,9 @@ namespace PawnDiary
         public int bondedHediffWeight = 60;
         public int equippedHediffWeight = 40;
         public int exactOverrideMaximumWeight = 50;
+        public string personaNarrativeFormat = string.Empty;
+        public string titleNarrativeFormat = string.Empty;
+        public string titleWithDutiesNarrativeFormat = string.Empty;
         public List<DiaryRoyaltyTaleRuleDef> qualifyingTales = new List<DiaryRoyaltyTaleRuleDef>();
         public List<DiaryRoyaltyTraitWorkerRuleDef> traitWorkerRules =
             new List<DiaryRoyaltyTraitWorkerRuleDef>();
@@ -75,6 +78,12 @@ namespace PawnDiary
             if (killThoughtWeight <= 0 || bondedThoughtWeight <= 0 || bondedHediffWeight <= 0
                 || equippedHediffWeight <= 0 || exactOverrideMaximumWeight <= 0)
                 yield return "persona trait relevance weights must be positive.";
+            if (string.IsNullOrWhiteSpace(personaNarrativeFormat))
+                yield return "personaNarrativeFormat must contain DefInjected prompt prose.";
+            if (string.IsNullOrWhiteSpace(titleNarrativeFormat))
+                yield return "titleNarrativeFormat must contain DefInjected prompt prose.";
+            if (string.IsNullOrWhiteSpace(titleWithDutiesNarrativeFormat))
+                yield return "titleWithDutiesNarrativeFormat must contain DefInjected prompt prose.";
 
             HashSet<string> tales = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (qualifyingTales == null || qualifyingTales.Count == 0)
@@ -163,6 +172,9 @@ namespace PawnDiary
             result.equippedHediffWeight = Positive(source.equippedHediffWeight, result.equippedHediffWeight);
             result.exactOverrideMaximumWeight = Positive(
                 source.exactOverrideMaximumWeight, result.exactOverrideMaximumWeight);
+            result.personaNarrativeFormat = source.personaNarrativeFormat ?? string.Empty;
+            result.titleNarrativeFormat = source.titleNarrativeFormat ?? string.Empty;
+            result.titleWithDutiesNarrativeFormat = source.titleWithDutiesNarrativeFormat ?? string.Empty;
 
             List<RoyaltyTaleQualificationRule> tales = CopyTales(source.qualifyingTales);
             if (tales.Count > 0) result.qualifyingTales = tales;

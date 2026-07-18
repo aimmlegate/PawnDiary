@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <Diary_Royalty.personaNarrativeFormat>Точная связь {0} с персоной-оружием «{1}» остаётся частью этого момента.</Diary_Royalty.personaNarrativeFormat>
+  <Diary_Royalty.titleNarrativeFormat>Сейчас {0} носит точный королевский титул «{1}» во фракции «{2}».</Diary_Royalty.titleNarrativeFormat>
+  <Diary_Royalty.titleWithDutiesNarrativeFormat>Сейчас {0} носит точный королевский титул «{1}» во фракции «{2}»; этот ранг также связан с действующими придворными обязанностями.</Diary_Royalty.titleWithDutiesNarrativeFormat>
+</LanguageData>

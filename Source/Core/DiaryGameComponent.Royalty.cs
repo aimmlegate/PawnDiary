@@ -104,5 +104,95 @@ namespace PawnDiary
             for (int i = 0; i < normalized.Count; i++)
                 royaltyPersonaBonds.Add(PersonaBondState.FromSnapshot(normalized[i]));
         }
+
+        /// <summary>
+        /// Copies the exact POV's current persona bonds and faction-specific titles for the pure N3-R
+        /// provider. The snapshot authorizes no page and contains no live Pawn, weapon, title, or Def.
+        /// </summary>
+        internal RoyaltyNarrativeSnapshot RoyaltyNarrativeSnapshotFor(Pawn pawn, int sourceTick)
+        {
+            RoyaltyNarrativeSnapshot result = new RoyaltyNarrativeSnapshot();
+            if (!ModsConfig.RoyaltyActive || pawn == null) return result;
+
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            string pawnId = pawn.GetUniqueLoadID() ?? string.Empty;
+            string pawnName = PromptTextSanitizer.LocalizedPromptText(pawn.LabelShortCap);
+            if (!policy.enabled || pawnId.Length == 0 || pawnName.Length == 0) return result;
+
+            result.providerAvailable = true;
+            result.povPawnId = pawnId;
+            result.pawnCanKnow = true;
+            result.hasVerifiedPovConnection = true;
+
+            if (royaltyPersonaObservationVersion >= RoyaltyStatePersistence.CurrentObservationVersion
+                && royaltyPersonaBonds != null)
+            {
+                for (int i = 0; i < royaltyPersonaBonds.Count; i++)
+                {
+                    PersonaBondState state = royaltyPersonaBonds[i];
+                    if (state == null || !PersonaBondPhaseTokens.IsLive(state.phaseToken)
+                        || !string.Equals(state.currentPawnId, pawnId, StringComparison.Ordinal)) continue;
+                    string arcKey = RoyaltyArcKeys.Persona(state.weaponThingId, state.bondEpoch);
+                    string text = FormatRoyaltyNarrative(
+                        policy.personaNarrativeFormat,
+                        pawnName,
+                        state.lastDisplayName);
+                    if (arcKey.Length == 0 || text.Length == 0) continue;
+                    result.personaBonds.Add(new RoyaltyPersonaNarrativeFact
+                    {
+                        weaponThingId = state.weaponThingId ?? string.Empty,
+                        weaponName = state.lastDisplayName ?? string.Empty,
+                        bondEpoch = state.bondEpoch,
+                        arcKey = arcKey,
+                        text = text,
+                        // This is a verified current relationship, so age begins at this event-time
+                        // snapshot rather than at an old bond-formation tick.
+                        sourceTick = sourceTick
+                    });
+                }
+            }
+
+            List<RoyalTitleSnapshot> titles = DlcContext.CaptureRoyalTitles(pawn);
+            for (int i = 0; i < titles.Count; i++)
+            {
+                RoyalTitleSnapshot title = titles[i];
+                if (title == null || string.IsNullOrWhiteSpace(title.factionId)
+                    || string.IsNullOrWhiteSpace(title.titleDefName)) continue;
+                string format = title.dutyCategoryTokens != null && title.dutyCategoryTokens.Count > 0
+                    ? policy.titleWithDutiesNarrativeFormat
+                    : policy.titleNarrativeFormat;
+                string text = FormatRoyaltyNarrative(
+                    format,
+                    pawnName,
+                    title.titleLabel,
+                    title.factionName);
+                if (text.Length == 0) continue;
+                result.titles.Add(new RoyaltyTitleNarrativeFact
+                {
+                    factionId = title.factionId,
+                    titleDefName = title.titleDefName,
+                    text = text,
+                    dutyCategoryTokens = title.dutyCategoryTokens == null
+                        ? new List<string>()
+                        : new List<string>(title.dutyCategoryTokens),
+                    sourceTick = sourceTick
+                });
+            }
+            return result;
+        }
+
+        private static string FormatRoyaltyNarrative(string format, params object[] values)
+        {
+            if (string.IsNullOrWhiteSpace(format)) return string.Empty;
+            try
+            {
+                return PromptTextSanitizer.LocalizedPromptText(string.Format(format, values));
+            }
+            catch (FormatException)
+            {
+                // Bad translated placeholders disable this optional lens; the source page survives.
+                return string.Empty;
+            }
+        }
     }
 }

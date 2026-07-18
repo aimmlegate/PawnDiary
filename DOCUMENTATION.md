@@ -54,7 +54,7 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Odyssey location/mobile-home/lifecycle and Royalty persona/title/psylink snapshots. |
 | `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, Odyssey lifecycle/journey/location/history/writer/context policy, and Royalty persona/title/psylink decisions plus save normalization. |
-| `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including `DiaryOdysseyPolicyDef` and the contract-only `DiaryRoyaltyPolicyDef`. |
+| `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including `DiaryOdysseyPolicyDef` and the Royalty policy plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history and Royalty persona/faction-title observation state. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, and guarded Odyssey lifecycle seams. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
@@ -164,7 +164,7 @@ Generation starts only after an event exists in the saved hot store.
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
 
-**Narrative Continuity (Master Waves 1–6 / N1 + N2-B + N2-O + first N3-B identity slice)** supplies the shared persistence and
+**Narrative Continuity (Master Waves 1–6 / N1 + N2-B + N2-O + N3-B identity + N3-R core)** supplies the shared persistence and
 optional prompt seam for DLC integrations. Each first-person event POV can save bounded, explicitly
 known evidence, prose-free references, selected-candidate keys, and frozen `narrativeContext`; old
 saves normalize all four to empty. `NarrativeContextBuilder` snapshots
@@ -194,8 +194,15 @@ DefInjected factual unit is frozen at event time, includes no engine/fuel/cell/h
 creates no page. Pure departure/landing evidence factories freeze `departed`, `arrived`, and `returned`
 references, including exact ship/place subjects and an optional correlated departure event ID. O1.4's
 canonical landing owner now supplies arrival evidence only after its DiaryEvent exists; the factories
-still do not authorize an event themselves. Royalty, Ideology, and Anomaly provider slots remain empty
-until their scheduled source waves. Provider absence, no relevant DLC, unconnected POVs, child-only
+still do not authorize an event themselves. N3-R replaces the Royalty stub with bounded persona-bond
+and current faction-title candidates. Persona facts require the exact saved persona arc or weapon
+subject; title facts require the exact POV pawn plus Royalty title-domain or authority/status/duty
+evidence. A Biotech gene/body identity event therefore cannot pull generic rank context. Title
+evidence uses the shared `identity_transition` facet and keeps title/faction as event facts rather than
+inventing a localized title arc. Existing build requests receive the guarded snapshot, but no current
+page source supplies Royalty evidence, so the provider is inert until its scheduled Royalty owner
+attaches that evidence. Ideology and Anomaly provider slots remain empty until their source waves;
+Royalty court pressure remains deferred to the later N3-R extension. Provider absence, no relevant DLC, unconnected POVs, child-only
 arcs, unknown locations/knowledge, or malformed translated format strings preserve the ordinary prompt
 with no narrative-context field.
 
@@ -220,7 +227,7 @@ Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned gra
 additive save-key suffixes under each POV/archive row; it performs no retroactive inference or
 catch-up on older pages.
 
-**Royalty Phases 0–1 (Master Wave 5; page-silent foundation)** freeze the detached R1 boundary and
+**Royalty Phases 0–1 plus Narrative N3-R core (Master Wave 5; page-silent foundation)** freeze the detached R1 boundary and
 save current truth without creating a diary page. `RoyaltyContracts` represents persona
 weapon/trait/bond state, faction-specific title before/after facts, and psylink/title mutation cause
 scopes using primitives and copied lists.
@@ -242,8 +249,11 @@ old missing key from a legitimate initialized-empty ledger. The first available 
 existing bonds/titles/psylink silently; pre-existing bonds conservatively mark their historical first
 consequential kill observed. Normalization repairs null/unsafe/duplicate rows, ticks, phases, and caps,
 while `FinalizeInit` clears plain future-correlation cache shells so state cannot cross colonies.
-Royalty-inactive scans preserve saved title/psylink truth. There are still no Royalty Harmony hooks,
-provider candidates, page sources, settings rows, prompt attachments, or player-visible changes.
+Royalty-inactive scans preserve saved title/psylink truth. N3-R projects live Phase-1 truth into plain
+persona/title provider facts, applies deterministic caps/order, and uses DefInjected Royalty policy
+formats with empty fallback on malformed prose. Exact applicability means existing non-Royalty pages
+still select no Royalty lens. There are still no Royalty Harmony hooks, Royalty evidence-emitting page
+sources, settings rows, new save fields, or player-visible changes.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13

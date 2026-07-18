@@ -1,5 +1,5 @@
-// Standalone no-game-assembly tests for Master Wave 5 / Royalty Phase 0. These tests exercise only
-// detached DTOs and pure deterministic policy; no runtime collection or player behavior exists yet.
+// Standalone no-game-assembly tests for Royalty policy and N3-R evidence contracts. These tests
+// exercise only detached DTOs and pure deterministic policy; no live game object is available here.
 using System;
 using System.Collections.Generic;
 using PawnDiary;
@@ -58,6 +58,30 @@ namespace RoyaltyContextTests
                 "event", -1, "Pawn_A", "", weapon, 2, PersonaNarrativePhaseTokens.BondFormed, "", "", true) == null);
             AssertTrue("bad evidence phase rejected", RoyaltyNarrativeEvidenceFactory.Persona(
                 "event", 1, "Pawn_A", "", weapon, 2, "unknown", "", "", true) == null);
+
+            NarrativeEvidence title = RoyaltyNarrativeEvidenceFactory.TitleTransition(
+                "event-3", 52, "Pawn_A", "initiator", "Pawn_A", "Ari",
+                RoyalTitleTransitionTokens.Promotion, "event-2", "Baron", false, true);
+            AssertNotNull("valid title transition evidence", title);
+            AssertEqual("title transition uses shared identity facet",
+                NarrativeFacetTokens.IdentityTransition, title.facet);
+            AssertEqual("title transition identifies exact pawn",
+                NarrativeSubjectKindTokens.Pawn, title.subjectKind);
+            AssertEqual("title/faction prose never becomes a Royalty-only arc", string.Empty, title.arcKey);
+            AssertEqual("title evidence domain is stable", "royalty_title", title.sourceDomain);
+            AssertEqual("title evidence carries bounded authority/status/duty topics", 3,
+                title.beliefTopics.Count);
+            title = RoyaltyNarrativeEvidenceFactory.TitleTransition(
+                "event-4", 53, "Pawn_A", "initiator", "Pawn_A", "Ari",
+                RoyalTitleTransitionTokens.Loss, "event-3", "Baron", true, true);
+            AssertEqual("succession-related title transition includes death topic", 4,
+                title.beliefTopics.Count);
+            AssertEqual("title loss is major continuity evidence",
+                NarrativeSalienceTokens.Major, title.salience);
+            AssertTrue("no-change title is not narrative evidence",
+                RoyaltyNarrativeEvidenceFactory.TitleTransition(
+                    "event", 1, "Pawn_A", "", "Pawn_A", "", RoyalTitleTransitionTokens.NoChange,
+                    "", "", false, true) == null);
         }
 
         private static void TestPolicyFallbacksAndMalformedValues()

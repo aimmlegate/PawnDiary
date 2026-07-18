@@ -1,5 +1,18 @@
 # Changelog
 
+- **2026-07-18 — Implemented Master Wave 5 / Narrative N3-R core (provider/evidence dependency).**
+  Replaced the fixed Royalty provider stub with pure bounded persona-bond and faction-title snapshot
+  contracts. Persona candidates require the exact frozen bond arc or weapon subject; title candidates
+  require the exact POV pawn plus Royalty title-domain or authority/status/duty evidence, preventing
+  generic rank context on unrelated Biotech identity pages. Added shared title-transition evidence,
+  guarded current Phase-1 bond/title snapshot projection, deterministic ordering/caps, and XML-owned
+  DefInjected English/Russian provider prose with empty safe fallbacks. Existing event-time builders
+  accept the snapshot, but no existing source emits Royalty evidence, so behavior remains inert until
+  Royalty Phase 2/4 attaches a canonical owner. `RoyaltyContextTests` passes 196 and
+  `NarrativeContinuityTests` 125 assembly-free assertions; Debug builds cleanly. This slice adds no
+  Harmony hook, page source, setting, save field, court-pressure provider, or loaded-game acceptance
+  claim. Wave 5, Royalty Phases 2–4, and the earlier Biotech B1 manual rows remain open.
+
 - **2026-07-18 — Implemented Master Wave 5 / Royalty Phase 1 (page-silent foundation).** Added
   guarded persona weapon/structural trait, per-faction title/duty, and psylink projections; versioned
   deep-scribed global persona and nested per-pawn title observation state; deterministic malformed,

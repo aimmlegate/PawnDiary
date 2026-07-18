@@ -104,6 +104,7 @@ namespace PawnDiary.Ingestion
                         povPawnId = pawnId,
                         povRole = DiaryEvent.InitiatorRole,
                         evidence = narrativeEvidence,
+                        royalty = sink.RoyaltyNarrativeSnapshotFor(pawn, diaryEvent.tick),
                         biotech = biotechNarrative,
                         odyssey = sink.OdysseyNarrativeSnapshotFor(pawn, diaryEvent.tick),
                         recentSelectedCandidateKeys = sink.RecentNarrativeSelectedCandidateKeys(pawnId),
