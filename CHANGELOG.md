@@ -1,5 +1,11 @@
 # Changelog
 
+- **2026-07-18 — Fixed the loaded Royalty late-visibility acceptance failure.** Persona
+  reconciliation no longer baselines a newly visible historical bond and immediately reuses that
+  same first observation as not-primary separation evidence. The first sight now remains an active,
+  consumed historical baseline; a later reconciliation can begin the normal XML-timed separation
+  path. The focused loaded fixture now covers both halves of that cadence.
+
 - **2026-07-18 — Adversarially hardened Royalty Phase 2 and mechanitor lifecycle edges.** Persona
   reconciliation now silently adopts historical coded weapons first exposed after the global old-save
   baseline, persists steady-primary observation ticks, and requires the exact live coded weapon before

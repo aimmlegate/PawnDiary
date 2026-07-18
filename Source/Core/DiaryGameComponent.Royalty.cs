@@ -225,6 +225,7 @@ namespace PawnDiary
             // would make that historical bond permanently invisible to lifecycle reconciliation.
             List<PersonaWeaponSnapshot> newlyVisible =
                 new List<PersonaWeaponSnapshot>(visible.Values);
+            HashSet<string> adoptedThisPass = new HashSet<string>(StringComparer.Ordinal);
             newlyVisible.Sort((left, right) => string.CompareOrdinal(
                 left?.weaponThingId ?? string.Empty,
                 right?.weaponThingId ?? string.Empty));
@@ -239,6 +240,11 @@ namespace PawnDiary
                     pawn,
                     PersonaObservationTokens.Baseline,
                     false);
+                // First sight establishes historical truth only. Treating the same observation as
+                // not-primary below would immediately move a brand-new baseline into separation
+                // pending, even though no elapsed post-baseline evidence has been observed yet.
+                if (PersonaBondIndex(weapon.weaponThingId) >= 0)
+                    adoptedThisPass.Add(weapon.weaponThingId);
             }
 
             if (royaltyPersonaBonds == null || royaltyPersonaBonds.Count == 0) return;
@@ -251,6 +257,7 @@ namespace PawnDiary
             {
                 PersonaBondStateSnapshot row = rows[i];
                 if (row == null || !PersonaBondPhaseTokens.IsLive(row.phaseToken)) continue;
+                if (adoptedThisPass.Contains(row.weaponThingId ?? string.Empty)) continue;
                 PersonaWeaponSnapshot weapon;
                 Pawn pawn;
                 pawnsById.TryGetValue(row.currentPawnId ?? string.Empty, out pawn);

@@ -48,8 +48,9 @@ namespace PawnDiary.RimTests
 
         /// <summary>
         /// Codes a real vanilla persona weapon, removes its saved row to model an old caravan/map that
-        /// was absent at the global baseline, then proves reconciliation silently adopts it. UnCode
-        /// must immediately remove that stale saved relationship from current narrative context.
+        /// was absent at the global baseline, then proves reconciliation silently adopts it without
+        /// inferring separation from the same first sight. A later observation may start that timer;
+        /// UnCode must immediately remove the stale saved relationship from current narrative context.
         /// </summary>
         [Test]
         public static void RealCodingLateVisibilityAndUncodeFollowLiveTruth()
@@ -82,6 +83,13 @@ namespace PawnDiary.RimTests
                     && adopted.phaseToken == PersonaBondPhaseTokens.Active
                     && adopted.firstConsequentialKillObserved,
                 "Late-visible historical persona bond was not silently adopted as a consumed baseline.");
+
+            scope.RequireNoNewEvent(() => ReconcileMethod?.Invoke(scope.Component, null));
+            adopted = PersonaRows().SingleOrDefault(row =>
+                row != null && row.weaponThingId == weaponId);
+            PawnDiaryRimTestScope.Require(adopted != null
+                    && adopted.phaseToken == PersonaBondPhaseTokens.SeparationPending,
+                "A later not-primary observation did not begin normal separation inference.");
 
             scope.RequireNoNewEvent(() => comp.UnCode());
             PawnDiaryRimTestScope.Require(

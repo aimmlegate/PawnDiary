@@ -250,6 +250,8 @@ global `royaltyPersonaBonds` deep list and nested versioned per-pawn faction-tit
 old missing key from a legitimate initialized-empty ledger. The first available scan baselines
 existing bonds/titles/psylink silently; a historical bond first exposed later by a returning caravan or
 newly loaded map is also adopted silently instead of being lost behind the global version marker.
+That first sight is baseline-only; primary/not-primary lifecycle inference starts on the next
+reconciliation observation so one sample cannot both establish history and imply elapsed separation.
 Pre-existing bonds conservatively mark their historical first consequential kill observed.
 Normalization repairs null/unsafe/duplicate rows, ticks, phases, and caps, while `FinalizeInit` clears
 plain future-correlation cache shells so state cannot cross colonies. Royalty-inactive scans preserve
@@ -2294,7 +2296,8 @@ before optional page dispatch, and saved pending/separated state resumes through
 reconciliation deadline after load without inventing an old bond or a catch-up page. Bonds missed by
 the first loaded-map baseline are silently adopted when they later become visible, and provider output
 requires matching current coded-weapon truth even when an ambiguous cleanup intentionally preserves a
-saved row. The arc
+saved row. A late-visible bond's first scan only adopts its historical baseline; subsequent scans own
+primary/not-primary inference. The arc
 schedule stores only cadence bookkeeping (`lastArcEntryTick`, `lastArcEntryYear`,
 `arcEntriesThisYear`, `forcedArcYear`, recently used memory ids, and the last retryable
 memory-shortfall tick/year). Neither field is a history database; existing diary pages remain the
