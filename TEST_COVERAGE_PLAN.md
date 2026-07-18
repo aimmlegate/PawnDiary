@@ -316,6 +316,19 @@ boss-spawn, and boss-defeat Harmony targets. It also drives a real disabled-outp
 rejects same-faction combat as the first hostile milestone, and verifies balanced nested death scope.
 The nested Scribe round-trip includes consumed flags, one mech tenure/loss row, and one boss
 call/defeat row with its exact spawned pawn ID. The loaded fixture and manual matrix remain TODO.
+The first user-supplied RimWorld 1.6.4871 all-DLC run reached 234/236 tests and exposed a missing exact
+mechlink `mechanitor_moment` context field plus stale Royalty expectations in the official-DLC catalog
+matrix. A follow-up 232/236 run confirmed the mechlink repair and showed that the frozen matrix needed
+all four Royalty-gated groups (`ritualRoyal`, `progressionRoyalTitle`, `progressionPsylink`, and
+`personaWeaponLifecycle`). It also exposed three false reflection failures: a pawn voice rule may
+legitimately mention `[[speech]]` while forbidding it, so scanning the entire prompt could not prove
+whether the dedicated instruction channel was appended. The fixture now asserts the empty adapter
+channel, disabled template flag, and rejection of an injected instruction sentinel instead. The next
+loaded run reached 235/236, confirming those corrections and exposing one final matrix-fixture
+assumption: `ritualRoyal` intentionally classifies throne-speech and anima-linking rituals through four
+narrow runtime tokens rather than exact def-name keys. Its token-only contract is now asserted beside
+the equivalent Odyssey and Anomaly exceptions. A fresh loaded rerun remains required; no Biotech B1
+or Royalty Phase 2 manual acceptance row is closed.
 
 Narrative N2-B extends `NarrativeContinuityTests` with assembly-free checks for family-continuity
 classification, exact arc/subject candidate construction, fixed provider ordering, inactive-DLC and

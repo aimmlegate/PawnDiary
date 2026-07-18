@@ -1,5 +1,19 @@
 # Changelog
 
+- **2026-07-18 — Repaired failures exposed by the supplied all-DLC RimTest runs.** Exact
+  mechlink installation and removal contexts now include their canonical
+  `mechanitor_moment=mechlink_installed` / `mechanitor_moment=mechlink_removed` fields instead of
+  exposing only the controller label. The frozen official-DLC interaction-group matrix now includes
+  all four Royalty-gated rows: `ritualRoyal`, `progressionRoyalTitle`, `progressionPsylink`, and
+  `personaWeaponLifecycle`. Reflection prompt fixtures no longer mistake legitimate voice rules that
+  mention `[[speech]]` while forbidding it for an appended direct-speech instruction; they assert the
+  actual adapter/template channel with an injected sentinel. The follow-up run confirmed the
+  mechanitor repair but stopped at 232/236 before those corrections; the next run reached 235/236 and
+  exposed one last fixture assumption that every official DLC group has exact def-name keys. The
+  catalog fixture now explicitly validates `ritualRoyal`'s intended four-token throne-speech/anima
+  classifier. A fresh loaded rerun remains pending, and no Biotech B1 or Royalty Phase 2 manual
+  acceptance row has been marked passed.
+
 - **2026-07-18 — Implemented Master Wave 5 / Royalty Phase 2 (persona lifecycle pages; loaded
   acceptance pending).** Added defensive Royalty-only persona coding, equipment, destruction,
   map-removal, and cleanup registration; exact formation/transfer epochs; silent short-swap handling;

@@ -459,6 +459,9 @@ balances nested scope release in its finalizer. Boss defeat prose proves only th
 threat was defeated and never names a final attacker. XML
 owns the combat Tale role lists, tenure threshold, 64-mech and 16-boss defaults, one Biotech-gated
 Progression group, and all English/Russian prompt/UI prose; fixed corruption ceilings remain in code.
+Every canonical mechanitor page includes the stable `mechanitor_moment=<token>` context field. Exact
+mechlink installation/removal use `mechlink_installed` / `mechlink_removed` alongside the controller
+label, so prompt and test consumers never need to infer the lifecycle edge from localized prose.
 
 Live surroundings are optional prompt flavor and are collected fail-soft. In particular,
 `Room.GetRoomRoleLabel()` can lazily recalculate the room's stats/role; if RimWorld or another room

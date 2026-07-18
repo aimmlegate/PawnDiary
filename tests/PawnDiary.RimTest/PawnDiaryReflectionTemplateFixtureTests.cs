@@ -16,11 +16,11 @@
 // share the DayReflectionSignal + DayReflectionEventData carrier (the template is chosen from the
 // gameContext's day_reflection / quadrum_reflection markers, not the DefName); arc uses ArcReflectionSignal.
 //
-// Which template resolves and the per-template token cap are asserted through the pure
-// DiaryPipelineAdapters.BuildPromptRequest + DiaryPromptPlanner.TemplateKeyFor path (the same policy the
-// live QueuePrompt consumes), because the cap is a request parameter and never appears in the prompt
-// string itself. The rendered marker fields and direct-speech omission are asserted on the captured
-// combined prompt string.
+// Which template resolves, the per-template token cap, and direct-speech instruction omission are
+// asserted through the pure DiaryPipelineAdapters.BuildPromptRequest + DiaryPromptPlanner path (the
+// same policy the live QueuePrompt consumes). A distinctive injected instruction proves the template
+// drops that channel without confusing legitimate writing-style rules that mention the [[speech]]
+// marker while forbidding it. Rendered event/context fields are still asserted on the captured prompt.
 //
 // Determinism: RNG is isolated by the harness; every asserted gameContext value is passed in literally.
 // The two reflection master switches (daySummaryEnabled gates the day/quadrum signal, arcReflectionEnabled
@@ -147,7 +147,7 @@ namespace PawnDiary.RimTests
             RequireContains(prompt, "instruction: " + instruction, "day reflection instruction line");
 
             // Direct-speech instruction is omitted for every reflection template.
-            RequireDirectSpeechOmitted(prompt);
+            RequireDirectSpeechOmitted(diaryEvent, DiaryPromptTemplates.SoloDayReflection);
 
             // The day template drives no per-template cap (0), unlike the quadrum/arc templates.
             RequireTokenCap(diaryEvent, DiaryPromptTemplates.SoloDayReflection, 0);
@@ -200,7 +200,7 @@ namespace PawnDiary.RimTests
             RequireContains(prompt, "quadrum dates: " + QuadrumDates, "quadrum dates marker field");
             RequireContains(prompt, "important entry count: 4", "quadrum important-entry-count marker field");
 
-            RequireDirectSpeechOmitted(prompt);
+            RequireDirectSpeechOmitted(diaryEvent, DiaryPromptTemplates.SoloQuadrumReflection);
 
             // The quadrum template drives the 350-token cap.
             RequireTokenCap(diaryEvent, DiaryPromptTemplates.SoloQuadrumReflection, 350);
@@ -251,7 +251,7 @@ namespace PawnDiary.RimTests
             RequireContains(prompt, "selected memory count: 2", "arc selected-memory-count marker field");
             RequireContains(prompt, "candidate memory count: 2", "arc candidate-memory-count marker field");
 
-            RequireDirectSpeechOmitted(prompt);
+            RequireDirectSpeechOmitted(diaryEvent, DiaryPromptTemplates.SoloArcReflection);
 
             // The arc template drives the 420-token cap.
             RequireTokenCap(diaryEvent, DiaryPromptTemplates.SoloArcReflection, 420);
@@ -332,14 +332,28 @@ namespace PawnDiary.RimTests
                 "The captured reflection prompt did not contain the expected " + what + " ('" + expected + "').");
         }
 
-        // Only the default (non-reflection) system prompt teaches the "[[speech]]" direct-speech token,
-        // and every reflection template sets appendDirectSpeechInstruction=false, so a reflection prompt
-        // must never carry that marker.
-        private static void RequireDirectSpeechOmitted(string prompt)
+        // Voice/persona rules may legitimately mention the stable marker while telling a mute pawn never
+        // to use it, so scanning the whole prompt for "[[speech]]" produces a false failure. Assert the
+        // actual channel instead: the non-interaction adapter supplies no instruction, the loaded template
+        // disables appending one, and even an injected sentinel cannot reach the rendered user prompt.
+        private static void RequireDirectSpeechOmitted(DiaryEvent diaryEvent, string templateKey)
         {
+            const string instructionSentinel = "PDTEST_DIRECT_SPEECH_INSTRUCTION_73f4";
+            DiaryPromptRequest request = RequestFor(diaryEvent);
             PawnDiaryRimTestScope.Require(
-                prompt != null && prompt.IndexOf("[[speech]]", StringComparison.OrdinalIgnoreCase) < 0,
-                "A reflection prompt unexpectedly carried the direct-speech instruction marker '[[speech]]'.");
+                string.IsNullOrWhiteSpace(request.directSpeechInstruction),
+                "The reflection adapter unexpectedly supplied a direct-speech instruction.");
+            DiaryTemplatePolicy template = request.policy.Template(templateKey);
+            PawnDiaryRimTestScope.Require(
+                template != null && !template.appendDirectSpeechInstruction,
+                "The '" + templateKey + "' template unexpectedly enables the direct-speech instruction channel.");
+
+            request.directSpeechInstruction = instructionSentinel;
+            DiaryPromptPlan rendered = DiaryPromptPlanner.Build(request);
+            PawnDiaryRimTestScope.Require(
+                rendered?.userPrompt != null
+                    && rendered.userPrompt.IndexOf(instructionSentinel, StringComparison.Ordinal) < 0,
+                "The '" + templateKey + "' template appended a direct-speech instruction sentinel.");
         }
 
         // Asserts the intentional current absence of the 'important context' field for quadrum/arc: the

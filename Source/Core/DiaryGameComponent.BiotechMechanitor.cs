@@ -68,7 +68,8 @@ namespace PawnDiary
                 "PawnDiary.Event.Biotech.Mechanitor.MechlinkInstalled.Label".Translate().Resolve(),
                 "PawnDiary.Event.Biotech.Mechanitor.MechlinkInstalled.Text"
                     .Translate(controller.LabelShortCap).Resolve(),
-                "mechanitor=" + controller.LabelShortCap,
+                MechanitorContextKeys.MechanitorMoment + "=mechlink_installed; mechanitor="
+                    + controller.LabelShortCap,
                 "mechanitor-mechlink-install|" + controller.GetUniqueLoadID());
         }
 
@@ -90,7 +91,8 @@ namespace PawnDiary
                 "PawnDiary.Event.Biotech.Mechanitor.MechlinkRemoved.Label".Translate().Resolve(),
                 "PawnDiary.Event.Biotech.Mechanitor.MechlinkRemoved.Text"
                     .Translate(controller.LabelShortCap).Resolve(),
-                "mechanitor=" + controller.LabelShortCap,
+                MechanitorContextKeys.MechanitorMoment + "=mechlink_removed; mechanitor="
+                    + controller.LabelShortCap,
                 "mechanitor-mechlink-remove|" + controller.GetUniqueLoadID());
         }
 

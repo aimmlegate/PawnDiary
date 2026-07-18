@@ -671,6 +671,10 @@ namespace PawnDiary.RimTests
             {
                 { "ritualGravship", OdysseyPackageId },
                 { "odysseyGravshipLanding", OdysseyPackageId },
+                { "ritualRoyal", RoyaltyPackageId },
+                { "progressionRoyalTitle", RoyaltyPackageId },
+                { "progressionPsylink", RoyaltyPackageId },
+                { "personaWeaponLifecycle", RoyaltyPackageId },
                 { "eventWindowVoidMonolith", AnomalyPackageId },
                 { "biotechFamilyBirth", BiotechPackageId },
                 { "ritualAnomalyInvitation", AnomalyPackageId },
@@ -726,6 +730,22 @@ namespace PawnDiary.RimTests
                         && string.Equals(group.matchTokens[0], "PsychicRitual", StringComparison.Ordinal),
                         "The generic Anomaly psychic-ritual fallback must remain narrowly token-keyed by "
                         + "'PsychicRitual'; exact ritual families belong in the specialized groups above it.");
+                }
+                else if (string.Equals(expected.Key, "ritualRoyal", StringComparison.Ordinal))
+                {
+                    PawnDiaryRimTestScope.Require(
+                        (group.matchDefNames == null || group.matchDefNames.Count == 0)
+                        && group.matchTokens != null
+                        && group.matchTokens.Count == 4
+                        && new HashSet<string>(group.matchTokens, StringComparer.Ordinal).SetEquals(new[]
+                        {
+                            "ThroneSpeech",
+                            "AnimaTreeLinking",
+                            "RitualBehaviorWorker_ThroneSpeech",
+                            "RitualBehaviorWorker_AnimaLinking"
+                        }),
+                        "The Royalty ritual family must retain its four narrow throne-speech/anima-linking "
+                        + "runtime tokens; it intentionally has no exact ritual defName classifier.");
                 }
                 else if (string.Equals(expected.Key, "ritualGravship", StringComparison.Ordinal))
                 {
