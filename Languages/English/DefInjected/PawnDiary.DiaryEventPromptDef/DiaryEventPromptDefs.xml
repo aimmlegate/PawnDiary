@@ -72,6 +72,9 @@
   <DiaryEventPrompt_PersonaWeaponBondEnded.label>persona weapon bond ended</DiaryEventPrompt_PersonaWeaponBondEnded.label>
   <DiaryEventPrompt_PersonaWeaponBondEnded.prompt>Write the standalone ending of an exact persona-weapon bond.</DiaryEventPrompt_PersonaWeaponBondEnded.prompt>
   <DiaryEventPrompt_PersonaWeaponBondEnded.enhancement>Use the supplied ending cause and bond duration to make finality specific. Do not invent a death, attacker, battle, transfer, or last words beyond the exact facts.</DiaryEventPrompt_PersonaWeaponBondEnded.enhancement>
+  <DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.label>first consequential persona-weapon kill</DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.label>
+  <DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.prompt>Write the exact bonded wielder&apos;s first consequential kill with this persona weapon.</DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.prompt>
+  <DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.enhancement>Use only the supplied victim, source Tale, weapon, bond state, and selected trait facts. Keep the killer as the sole point of view; do not invent dialogue, motives for the weapon, another attack, or the victim&apos;s inner experience.</DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.enhancement>
   <DiaryEventPrompt_External.label>external mod event</DiaryEventPrompt_External.label>
   <DiaryEventPrompt_External.prompt>Write a moment reported by another mod as something the pawn just lived through.</DiaryEventPrompt_External.prompt>
   <DiaryEventPrompt_External.enhancement>Stay strictly inside the supplied event line and context facts; do not invent mechanics, systems, or unstated participants.</DiaryEventPrompt_External.enhancement>

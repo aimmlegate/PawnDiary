@@ -435,6 +435,12 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>persona trait 1 meaning</label><source>GameContext</source><contextKey>persona_trait_description_1</contextKey></li>
       <li><label>persona trait 2</label><source>GameContext</source><contextKey>persona_trait_2</contextKey></li>
       <li><label>persona trait 2 meaning</label><source>GameContext</source><contextKey>persona_trait_description_2</contextKey></li>
+      <!-- Royalty R3 Tale enrichment. Append-only to preserve every earlier DefInjected index. -->
+      <li><label>persona milestone</label><source>GameContext</source><contextKey>persona_milestone</contextKey></li>
+      <li><label>source tale</label><source>GameContext</source><contextKey>tale_source_def</contextKey></li>
+      <li><label>source tale name</label><source>GameContext</source><contextKey>tale_source_label</contextKey></li>
+      <li><label>killer tale role</label><source>GameContext</source><contextKey>tale_killer_role</contextKey></li>
+      <li><label>victim tale role</label><source>GameContext</source><contextKey>tale_victim_role</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -659,6 +665,14 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
       <li><label>death facts</label><source>DeathFacts</source></li>
       <li><label>deceased pawn</label><source>DeathPawnSummary</source></li>
       <li><label>setting</label><source>DeathSetting</source></li>
+      <!-- Royalty R3 relationship-ending facts captured before vanilla uncodes the weapon. -->
+      <li><label>persona weapon</label><source>GameContext</source><contextKey>persona_weapon_name</contextKey></li>
+      <li><label>persona milestone</label><source>GameContext</source><contextKey>persona_milestone</contextKey></li>
+      <li><label>previous bond state</label><source>GameContext</source><contextKey>bond_previous_state</contextKey></li>
+      <li><label>new bond state</label><source>GameContext</source><contextKey>bond_new_state</contextKey></li>
+      <li><label>bond ending cause</label><source>GameContext</source><contextKey>bond_end_cause</contextKey></li>
+      <li><label>persona trait 1</label><source>GameContext</source><contextKey>persona_trait_1</contextKey></li>
+      <li><label>persona trait 2</label><source>GameContext</source><contextKey>persona_trait_2</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

@@ -188,6 +188,12 @@ namespace PawnDiary
                 PersonaWeaponEventData.BondEndedDefName,
                 "PawnDiary.Dev.PromptSuite.PersonaBondEnded.Markers",
                 "PawnDiary.Dev.PromptSuite.PersonaBondEnded.Text"),
+            SoloWithLocalizedMarkers(
+                "PersonaFirstConsequentialKill",
+                "PawnDiary.Event.Persona.FirstKill.Label",
+                PersonaMilestoneContextFormatter.FirstKillDefName,
+                "PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Markers",
+                "PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Text"),
             Solo("ArcReflectionForced", "PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label", ArcReflectionEventData.DefNameToken,
                 "arc_reflection=true; arc_year=5504; forced=true; selected_memories=6; candidate_memories=18; entries_this_year=0",
                 null, "PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text"),

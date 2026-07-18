@@ -380,6 +380,11 @@ Royalty active and prompt-test mode enabled, then repeat the no-DLC safety row w
 Pawn Diary only. Use a fresh coded persona weapon for each destructive/transfer branch so one branch
 cannot satisfy another through leftover saved state.
 
+- [x] **AUTOMATED:** User-confirmed the Phase-2 loaded automated suite green on 2026-07-18.
+- [ ] **MANUAL LATER:** Rows 1–9 below, localized prompt previews, save excerpts, and the
+  Royalty-absent log audit still need a recorded hands-on pass. The automated result does not close
+  these rows.
+
 | # | Scenario | Expected result | Regression signal |
 |---:|---|---|---|
 | 1 | Code a fresh persona weapon to an eligible colonist during normal play. Repeat equip callbacks without changing ownership. | Exactly one `PersonaWeaponBondFormed` page, one saved positive epoch, exact weapon/pawn context, and no duplicate bonded Thought page. | No page, repeated formation, wrong pawn/weapon, or a second Thought page. |
@@ -394,7 +399,39 @@ cannot satisfy another through leftover saved state.
 
 - [ ] **TODO:** Record exact RimWorld version, language, active mod list, fresh/old-save fixtures,
   rows 1–9, all four localized prompt previews, both DLC branches, save excerpts, and relevant
-  `Player.log` lines. Until recorded, Royalty Phase 2 is code-complete but not acceptance-complete.
+  `Player.log` lines. Until recorded, Royalty Phase 2 is automated-green but not manually
+  acceptance-complete.
+
+---
+
+## Royalty Phase 3 persona combat and death acceptance
+
+Phase 3 reuses the existing Tale, Thought, and death owners. Use a newly coded weapon/bond epoch for
+each branch, keep generation disabled unless inspecting a prompt, and inspect the saved event/context
+as well as the visible page. The first qualifying kill is a vanilla qualifying Tale such as
+`KilledMajorThreat`; an arbitrary ordinary kill is not sufficient.
+
+- [x] **ASSEMBLY-FREE:** Pure Royalty/capture/pipeline tests pass, and the focused real-kill/death
+  RimTest fixture compiles.
+- [ ] **AUTOMATED LOADED RUN LATER:** Execute the new Phase-3 RimTests inside a loaded Royalty game;
+  compilation alone is not an in-game pass.
+- [ ] **MANUAL LATER:** Perform and record every row below.
+
+| # | Scenario | Expected result | Regression signal |
+|---:|---|---|---|
+| 1 | With the exact coded persona weapon equipped as primary, make its pawn trigger a configured qualifying Tale (`KilledMajorThreat` in vanilla). | Exactly one solo killer-POV `PersonaWeaponFirstConsequentialKill` page. Context keeps the Tale domain and source Tale, exact killer/victim roles, weapon/bond/trait facts, and no standalone `persona_weapon=` domain marker. | Pair/batch/victim POV, missing source Tale, duplicate page, or a standalone persona event. |
+| 2 | Trigger a second qualifying Tale with the same saved bond epoch. | No second first-kill milestone; the original Tale continues through ordinary behavior. | A later kill is retold as the first or the original Tale is globally suppressed. |
+| 3 | Disable `personaWeaponMilestone`, perform the first qualifying kill, re-enable it, then perform another qualifying kill. | The first truth is consumed without a milestone page; later kills never catch up. The original Tale and any unclaimed exact kill Thought keep their ordinary routes. | Catch-up first-kill page, lost ordinary Tale, or lost Thought. |
+| 4 | Try ordinary/nonqualifying kills, a qualifying Tale with the bonded weapon not primary, mismatched killer/victim scope, and unrelated Thoughts. | Existing Tale/Thought/death behavior is unchanged and the persona milestone is not consumed by an unverified weapon kill. | Persona context leaks onto unrelated events or ordinary capture disappears. |
+| 5 | Verify a persona trait with an exact `killThought`, first with an accepted milestone and then with milestone output disabled/rejected. | The accepted canonical page claims the matching Thought without a duplicate; unclaimed/rejected signals produce the normal Thought page exactly once. | Duplicate milestone+Thought, wrong Def claimed, or silently lost Thought. |
+| 6 | Kill a colonist who is the bonded wielder through an existing Tale death route and separately through `Pawn.Kill(null)` fallback. | The one existing death-description page retains pre-`UnCode` weapon/bond/trait facts and `bond_end_cause=pawn_death`; no standalone `PersonaWeaponBondEnded` page appears. | Missing persona facts, a second death/ending page, or first-person narration by the dead pawn. |
+| 7 | Make a qualifying persona kill whose victim also qualifies for the existing victim-death route. | One solo killer milestone and the existing victim death description coexist under their own dedup owners; no victim route is stolen. | Killer page suppresses victim death, or either route duplicates. |
+| 8 | Save/reload after an observed-but-unrecorded disabled/rejected first kill and after a recorded first-kill page, then make another qualifying kill. | `firstConsequentialKillObserved` and `firstConsequentialKillEventRecorded` retain their distinct meanings; neither save invents another first. | Flags collapse, reset, catch up, or duplicate after reload. |
+| 9 | Repeat normal play/save/reload with Royalty absent. | Tale, Thought, and death capture work normally; persona hooks/context are inert with no missing Def/type/patch warnings. | Startup/load exception, warning spam, or Royalty-only context/page without Royalty. |
+
+- [ ] **TODO:** Record exact RimWorld version, language, active mod list, rows 1–9, the localized
+  first-kill and enriched-death prompt previews, saved flag excerpts, both DLC branches, and relevant
+  `Player.log` lines before calling Phase 3 acceptance-complete.
 
 ---
 

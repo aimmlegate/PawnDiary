@@ -93,6 +93,11 @@ namespace RoyaltyContextTests
             AssertEqual("fallback trait cap", 2, policy.maximumSelectedTraits);
             AssertEqual("fallback Tale rows", 2, policy.qualifyingTales.Count);
             AssertEqual("fallback first Tale", "KilledMan", policy.qualifyingTales[0].taleDefName);
+            AssertEqual("fallback killer role", RoyaltyTaleRoleTokens.Initiator,
+                policy.qualifyingTales[0].killerRoleToken);
+            AssertEqual("fallback victim role", RoyaltyTaleRoleTokens.Recipient,
+                policy.qualifyingTales[0].victimRoleToken);
+            AssertEqual("fallback kill-thought correlation", 60, policy.killThoughtCorrelationTicks);
 
             policy.separationThresholdTicks = -10;
             PersonaBondStateSnapshot state = ActiveState();
@@ -148,6 +153,34 @@ namespace RoyaltyContextTests
                 "Pawn_A", thoughts, "Pawn_B", "PersonaWeaponKillMemory"));
             AssertTrue("wrong thought cannot be claimed", !PersonaThoughtOwnershipPolicy.Matches(
                 "Pawn_A", thoughts, "Pawn_A", "OtherThought"));
+
+            string milestoneContext = PersonaMilestoneContextFormatter.FormatFirstKill(
+                "tale=PersonaWeaponFirstConsequentialKill; label=First kill; taleClass=Tale_DoublePawn",
+                Weapon("Weapon_1", "Pawn_A", true),
+                previous,
+                selected,
+                "KilledMajorThreat",
+                "killed a major threat",
+                RoyaltyTaleRoleTokens.Initiator,
+                RoyaltyTaleRoleTokens.Recipient,
+                policy);
+            AssertTrue("milestone remains Tale-domain", milestoneContext.StartsWith(
+                "tale=PersonaWeaponFirstConsequentialKill", StringComparison.Ordinal));
+            AssertTrue("milestone omits standalone persona marker",
+                !milestoneContext.Contains("persona_weapon="));
+            AssertTrue("milestone source Tale preserved",
+                milestoneContext.Contains("tale_source_def=KilledMajorThreat"));
+            AssertTrue("milestone exact weapon projected",
+                milestoneContext.Contains("persona_weapon_name=North Wind"));
+
+            string deathContext = PersonaMilestoneContextFormatter.FormatWielderDeath(
+                Weapon("Weapon_1", "Pawn_A", true), previous, selected, policy);
+            AssertTrue("wielder death milestone projected",
+                deathContext.Contains("persona_milestone=wielder_death"));
+            AssertTrue("wielder death exact ending projected",
+                deathContext.Contains("bond_end_cause=pawn_death"));
+            AssertTrue("wielder death omits standalone persona marker",
+                !deathContext.Contains("persona_weapon="));
         }
 
         private static void TestFormationAndBaselineMatrix()
@@ -552,8 +585,20 @@ namespace RoyaltyContextTests
             AssertTrue("killer cannot also be death victim", !PersonaMilestonePolicy.Evaluate(input, policy).qualifies);
             input = Milestone(); input.hasDeathContext = true; input.deathContextMatchesKiller = false;
             AssertTrue("death-context mismatch fails closed", !PersonaMilestonePolicy.Evaluate(input, policy).qualifies);
+            input = Milestone(); input.hasDeathContext = false;
+            AssertTrue("missing exact kill scope fails closed", !PersonaMilestonePolicy.Evaluate(input, policy).qualifies);
+
+            string resolvedKiller;
+            string resolvedVictim;
+            AssertTrue("exact Tale roles resolve", PersonaMilestonePolicy.TryResolveRoles(
+                "KilledMan", policy, out resolvedKiller, out resolvedVictim));
+            AssertEqual("resolved killer role", RoyaltyTaleRoleTokens.Initiator, resolvedKiller);
+            AssertEqual("resolved victim role", RoyaltyTaleRoleTokens.Recipient, resolvedVictim);
+            AssertTrue("unknown Tale roles do not resolve", !PersonaMilestonePolicy.TryResolveRoles(
+                "BuiltTable", policy, out resolvedKiller, out resolvedVictim));
 
             policy.qualifyingTales[0].killerRoleToken = RoyaltyTaleRoleTokens.Recipient;
+            policy.qualifyingTales[0].victimRoleToken = RoyaltyTaleRoleTokens.Initiator;
             input = Milestone(); input.resolvedKillerRoleToken = RoyaltyTaleRoleTokens.Initiator;
             AssertTrue("exact role correction enforced", !PersonaMilestonePolicy.Evaluate(input, policy).qualifies);
             input.resolvedKillerRoleToken = RoyaltyTaleRoleTokens.Recipient;

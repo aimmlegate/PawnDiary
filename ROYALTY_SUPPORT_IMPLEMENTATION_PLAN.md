@@ -1,11 +1,14 @@
 # Pawn Diary — Royalty Support Implementation Plan
 
-Status: Phases 0–2 and the Narrative N3-R core dependency are implemented as of 2026-07-18.
+Status: Phases 0–3 and the Narrative N3-R core dependency are implemented as of 2026-07-18.
 Phase 2 now ships exact persona-weapon formation, meaningful separation/recovery, destruction, and
 transfer lifecycle pages with guarded Harmony collection, saved state, late-visible recovery,
 package-gated settings/prompts, English/Russian localization, prompt fixtures, and N3-R evidence.
-Loaded-game Phase-2 acceptance is still pending; Phases 3–8 remain. This status does not pass, waive,
-or remove any earlier Biotech B1 manual acceptance row.
+Its automated loaded suite is user-confirmed green, while the hands-on Phase-2 matrix remains open.
+Phase 3 now owns the first qualifying persona kill through the existing Tale page and enriches the
+existing wielder-death page with pre-`UnCode` context; its loaded fixtures and manual matrix remain
+pending. Phases 4–8 remain. This status does not pass, waive, or remove any earlier Biotech B1 manual
+acceptance row.
 
 Scheduling authority: implement Royalty phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Royalty.
@@ -544,8 +547,8 @@ Use separate, resettable caches for:
 - quick-military-aid raid signals awaiting the later successful permit callback;
 - destruction/death/map-removal persona end causes;
 - exact tale/persona ownership during one capture action.
-- persona-trait kill-memory signals briefly awaiting a Phase-3 Tale owner, only if the real memory
-  callback is verified; Phase-2 bonded situational thoughts require no cache.
+- persona-trait kill-memory signals briefly awaiting the Phase-3 Tale owner through the verified
+  `MemoryThoughtHandler.TryGainMemory` callback; Phase-2 bonded situational thoughts require no cache.
 - exact royal-title award/loss thought signals briefly awaiting a title/ritual owner.
 
 Every cache must:
@@ -1372,7 +1375,8 @@ describe structural behavior where applicable.
 
 ### Phase 2 — Persona lifecycle pages
 
-> **Implementation status (2026-07-18): code-complete; loaded-game execution not claimed.**
+> **Implementation status (2026-07-18): code-complete; automated loaded suite user-confirmed green;
+> manual acceptance still open.**
 > `DiaryRoyaltyPatches` defensively registers exact `CompBladelinkWeapon` coding, equipment,
 > destruction, map-removal, and `UnCode` seams only while Royalty is active. Live reads remain behind
 > `DlcContext`; `PersonaLifecyclePolicy` commits the deep-scribed bond row before optional dispatch.
@@ -1386,9 +1390,10 @@ describe structural behavior where applicable.
 > `PersonaWeaponEventData`/Spec, bounded context formatting, the exact `PersonaWeapon` domain/group,
 > four event-prompt rows, append-only `SoloImportant` projection, bilingual localization, and four dev
 > prompt fixtures are present. N3-R persona evidence is attached after the page exists. Pure coverage
-> passes 211 Royalty, 660 capture, and 2,195 pipeline assertions; the core and focused real-coding/
-> hook-audit RimTest DLLs build. The exit-gate scenarios still require a recorded loaded-game run, so
-> this phase is not marked acceptance-complete.
+> passes 226 Royalty, 665 capture, and 2,265 pipeline assertions after the Phase-3 additions; the core
+> and focused real-coding/hook-audit RimTest DLLs build. The user confirmed the Phase-2 automated loaded
+> suite green. The hands-on exit-gate scenarios still require a recorded pass, so this phase is not
+> marked manually acceptance-complete.
 
 1. Defensively register coding, equipment evidence, destruction, and cleanup hooks.
 2. Emit bond formation.
@@ -1402,6 +1407,20 @@ Exit gate: bond, short-swap, separation, recovery, destruction, map-removal, tra
 acceptance scenarios pass.
 
 ### Phase 3 — Persona combat and death integration
+
+> **Implementation status (2026-07-18): code-complete; focused loaded fixtures compile; in-game and
+> manual acceptance pending.** A qualifying Tale is resolved only from exact XML killer/victim roles
+> inside the matching active `Pawn.Kill` scope while the exact coded weapon is still the killer's
+> primary. The saved first-kill truth advances even when its Royalty-gated group is disabled or page
+> creation fails; only a durable accepted page sets the separate recorded flag. The canonical page is
+> forced to one solo killer POV, retains `tale=` plus the source Tale/role facts, and attaches N3-R bond
+> evidence without creating a standalone persona domain marker. Exact persona-trait `killThought`
+> Defs are staged across the XML-bounded 60-tick callback-order window and claimed only by that durable
+> page; every unclaimed signal returns once to ordinary Thought capture. The death prefix snapshots
+> persona facts before vanilla `UnCode`, and the existing Tale/fallback death owner appends them without
+> emitting `PersonaWeaponBondEnded`. Pure suites pass 226 Royalty, 665 capture, and 2,265 pipeline
+> assertions; real major-threat kill/repeat and bonded-wielder death RimTests compile. The new loaded
+> fixtures and the Phase-3 manual matrix remain unchecked.
 
 1. Project persona context into `TaleSignal` at capture time.
 2. Add pure qualifying-milestone and trait selection.

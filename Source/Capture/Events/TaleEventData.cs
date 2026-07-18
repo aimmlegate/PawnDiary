@@ -60,6 +60,15 @@ namespace PawnDiary.Capture
         public bool IsDeathDescription;
 
         /// <summary>
+        /// True only for a source-owned persona milestone that must stay one exact killer POV even
+        /// when the original Tale had two diary-eligible pawns or a batching policy.
+        /// </summary>
+        public bool ForceSolo;
+
+        /// <summary>When <see cref="ForceSolo"/> is true, selects the first or second captured pawn.</summary>
+        public bool ForceFirstPawnPov;
+
+        /// <summary>
         /// The transient dedup key for this tale event (raw, source-prefixed). Lifted verbatim out of
         /// the old RecordTale: one window per taleDef + both pawn ids (empty when a pawn is absent).
         /// </summary>
@@ -110,6 +119,12 @@ namespace PawnDiary.Capture
                 return CaptureDecision.Drop;
             }
 
+            if (data.ForceSolo)
+            {
+                bool forcedPovEligible = data.ForceFirstPawnPov ? data.FirstEligible : data.SecondEligible;
+                return forcedPovEligible ? CaptureDecision.GenerateSolo : CaptureDecision.Drop;
+            }
+
             if (data.IsDeathDescription)
             {
                 return HasEligibleDistinctPair(data)
@@ -156,7 +171,11 @@ namespace PawnDiary.Capture
         /// Mirrors TaleSignal.Emit exactly: the POV pawn for a solo entry is the first pawn when it is
         /// eligible, else the second.
         /// </summary>
-        public static TaleEmitPlan PlanEmit(CaptureDecision decision, bool firstEligible)
+        public static TaleEmitPlan PlanEmit(
+            CaptureDecision decision,
+            bool firstEligible,
+            bool forceSolo = false,
+            bool forceFirstPawnPov = false)
         {
             switch (decision)
             {
@@ -167,7 +186,10 @@ namespace PawnDiary.Capture
                 case CaptureDecision.GeneratePairDeathDescription:
                     return new TaleEmitPlan(TaleEmitShape.Pair, true, false);
                 case CaptureDecision.GenerateSolo:
-                    return new TaleEmitPlan(TaleEmitShape.Solo, false, firstEligible);
+                    return new TaleEmitPlan(
+                        TaleEmitShape.Solo,
+                        false,
+                        forceSolo ? forceFirstPawnPov : firstEligible);
                 case CaptureDecision.GenerateSoloDeathDescription:
                     return new TaleEmitPlan(TaleEmitShape.Solo, true, firstEligible);
                 default:

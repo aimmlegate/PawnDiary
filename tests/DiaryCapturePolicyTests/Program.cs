@@ -476,6 +476,24 @@ namespace DiaryCapturePolicyTests
                 TaleEventData.Decide(Tale("KilledMan", firstEligible: true, secondEligible: true, deathDescription: true), Ctx()));
             AssertEqual("tale death beats batch", CaptureDecision.GeneratePairDeathDescription,
                 TaleEventData.Decide(Tale("KilledMan", firstEligible: true, secondEligible: true, batched: true, deathDescription: true), Ctx()));
+
+            TaleEventData forcedFirst = Tale(
+                "PersonaWeaponFirstConsequentialKill", firstEligible: true, secondEligible: true,
+                batched: true, deathDescription: true);
+            forcedFirst.ForceSolo = true;
+            forcedFirst.ForceFirstPawnPov = true;
+            AssertEqual("persona milestone forces first-pawn solo before batch/death routing",
+                CaptureDecision.GenerateSolo, TaleEventData.Decide(forcedFirst, Ctx()));
+            forcedFirst.FirstEligible = false;
+            AssertEqual("persona milestone fails closed when exact forced POV is ineligible",
+                CaptureDecision.Drop, TaleEventData.Decide(forcedFirst, Ctx()));
+
+            TaleEventData forcedSecond = Tale(
+                "PersonaWeaponFirstConsequentialKill", firstEligible: true, secondEligible: true);
+            forcedSecond.ForceSolo = true;
+            forcedSecond.ForceFirstPawnPov = false;
+            AssertEqual("persona milestone supports exact second-pawn killer POV",
+                CaptureDecision.GenerateSolo, TaleEventData.Decide(forcedSecond, Ctx()));
         }
 
         private static void TestTaleBuildGameContextFormat()
@@ -2028,6 +2046,15 @@ namespace DiaryCapturePolicyTests
 
             TaleEventData.TaleEmitPlan soloSecond = TaleEventData.PlanEmit(CaptureDecision.GenerateSolo, false);
             AssertTrue("tale plan: solo pov is second when first ineligible", !soloSecond.PovIsFirstPawn);
+
+            TaleEventData.TaleEmitPlan forcedFirst = TaleEventData.PlanEmit(
+                CaptureDecision.GenerateSolo, false, true, true);
+            AssertTrue("tale plan: forced milestone keeps exact first-pawn POV",
+                forcedFirst.PovIsFirstPawn);
+            TaleEventData.TaleEmitPlan forcedSecond = TaleEventData.PlanEmit(
+                CaptureDecision.GenerateSolo, true, true, false);
+            AssertTrue("tale plan: forced milestone keeps exact second-pawn POV",
+                !forcedSecond.PovIsFirstPawn);
 
             TaleEventData.TaleEmitPlan soloDeath = TaleEventData.PlanEmit(CaptureDecision.GenerateSoloDeathDescription, true);
             AssertEqual("tale plan: solo death -> Solo", TaleEventData.TaleEmitShape.Solo, soloDeath.Shape);

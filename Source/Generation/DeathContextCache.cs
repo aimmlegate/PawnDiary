@@ -1,6 +1,8 @@
 // Captures colonist death facts at the exact Pawn.Kill call, then hands those facts to the
 // TaleRecorder path. Tales tell us that a death was notable, but they do not retain the killing
 // blow, damaged part, or culprit hediff, so this small transient cache bridges the two hooks.
+// Royalty Phase 3 also snapshots a bonded persona weapon here before vanilla uncodes it, allowing
+// the existing death page to own that relationship ending without creating a duplicate page.
 // New to C#/RimWorld? See AGENTS.md ("Harmony patches").
 using System;
 using System.Collections.Generic;
@@ -63,6 +65,9 @@ namespace PawnDiary
             AppendCulprit(parts, exactCulprit);
             AppendMissingParts(parts, pawn);
             AppendLifeThreateningHediffs(parts, pawn, exactCulprit);
+
+            string personaDeath = DiaryGameComponent.Instance?.CaptureRoyaltyPersonaWielderDeathContext(pawn);
+            if (!string.IsNullOrWhiteSpace(personaDeath)) parts.Add(personaDeath);
 
             string surroundings = DiaryContextBuilder.BuildSurroundingsSummary(pawn);
             if (!string.IsNullOrWhiteSpace(surroundings) && surroundings != "unknown" && surroundings != "none")

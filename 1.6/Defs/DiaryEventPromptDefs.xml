@@ -213,6 +213,15 @@
     <enhancement>Use the supplied ending cause and bond duration to make finality specific. Do not invent a death, attacker, battle, transfer, or last words beyond the exact facts.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
+  <!-- Royalty R3 reuses the Tale owner but needs exact first-kill guidance. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PersonaWeaponFirstConsequentialKill</defName>
+    <label>first consequential persona-weapon kill</label>
+    <eventType>PersonaWeaponFirstConsequentialKill</eventType>
+    <prompt>Write the exact bonded wielder&apos;s first consequential kill with this persona weapon.</prompt>
+    <enhancement>Use only the supplied victim, source Tale, weapon, bond state, and selected trait facts. Keep the killer as the sole point of view; do not invent dialogue, motives for the weapon, another attack, or the victim&apos;s inner experience.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
   <!-- Broad-domain fallback for integration-API events (see INTEGRATIONS.md). Adapter mods can
        ship a narrower DiaryEventPromptDef keyed by their eventKey or group defName; this row only
        catches External events with no more specific policy loaded. -->

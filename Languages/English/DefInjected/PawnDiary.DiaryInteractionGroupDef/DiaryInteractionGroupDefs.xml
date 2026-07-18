@@ -503,4 +503,9 @@
   <personaWeaponLifecycle.tone>with intimate loyalty, friction, and the unsettling presence of a weapon that remembers</personaWeaponLifecycle.tone>
   <personaWeaponLifecycle.tones.0>intimate and uncanny, treating the bond as a lived relationship without giving the weapon invented dialogue</personaWeaponLifecycle.tones.0>
   <personaWeaponLifecycle.tones.1>close and reflective, grounded in loyalty, absence, return, or finality shown by the exact lifecycle facts</personaWeaponLifecycle.tones.1>
+  <personaWeaponMilestone.label>Persona weapon milestones</personaWeaponMilestone.label>
+  <personaWeaponMilestone.instruction>the first consequential kill made with an exact bonded persona weapon; use the supplied victim, source Tale, weapon, bond state, and selected structural trait facts, keep the killer as the sole diary POV, and never invent dialogue, a weapon motive, another kill, or the victim&apos;s final thoughts</personaWeaponMilestone.instruction>
+  <personaWeaponMilestone.tone>with visceral consequence and the unsettling intimacy of a weapon sharing the moment</personaWeaponMilestone.tone>
+  <personaWeaponMilestone.tones.0>immediate and consequential, grounded in the exact death and the weapon&apos;s established traits without invented speech</personaWeaponMilestone.tones.0>
+  <personaWeaponMilestone.tones.1>close and uneasy, weighing what changed between wielder and weapon after this exact first kill</personaWeaponMilestone.tones.1>
 </LanguageData>

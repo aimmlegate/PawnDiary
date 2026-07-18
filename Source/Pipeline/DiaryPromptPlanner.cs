@@ -309,6 +309,13 @@ namespace PawnDiary
             AddContextFact(parts, context, "other_lethal_conditions", "other conditions");
             AddContextFact(parts, context, "other_pawn", "other pawn");
             AddContextFact(parts, context, "death_surroundings", "surroundings");
+            AddContextFact(parts, context, "persona_milestone", "persona milestone");
+            AddContextFact(parts, context, "persona_weapon_name", "persona weapon");
+            AddContextFact(parts, context, "bond_previous_state", "previous bond state");
+            AddContextFact(parts, context, "bond_new_state", "new bond state");
+            AddContextFact(parts, context, "bond_end_cause", "bond ending cause");
+            AddContextFact(parts, context, "persona_trait_1", "persona trait");
+            AddContextFact(parts, context, "persona_trait_2", "persona trait");
             return string.Join("; ", parts.ToArray());
         }
 

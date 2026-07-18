@@ -282,7 +282,7 @@ Do not add seasonal flooding, life support, or Mechhive choices in this wave.
 
 ## 10. Wave 5 — Royalty persona and progression flagship
 
-> **Implementation status (2026-07-18): Royalty Phases 0–2 and Narrative N3-R core implemented;
+> **Implementation status (2026-07-18): Royalty Phases 0–3 and Narrative N3-R core implemented;
 > Wave 5 remains in progress.** By
 > explicit user scheduling exception, Phase 0 began while the five Biotech B1 manual acceptance rows
 > remain open; those earlier gates are neither passed nor removed. Phase 0 added plain
@@ -296,20 +296,21 @@ Do not add seasonal flooding, life support, or Mechhive choices in this wave.
 > equipment, destruction, map-removal, and cleanup hooks; exact formation/transfer ownership;
 > elapsed reconciliation for meaningful separation/recovery; late-visible silent adoption; live
 > provider validation; package-gated groups, prompts, localization, prompt fixtures, and N3-R evidence
-> attachment. Vanilla bonded persona thoughts are situational, so the dead memory-correlation design
-> was removed and reserved for verified Phase-3 kill memories. The pure suites pass 211 Royalty, 125
-> Narrative Continuity, 660 capture, and 2,195 pipeline assertions, and focused real-coding/hook-audit
-> RimTests build, but Phase-2 loaded-game execution is not claimed. Royalty
-> Phases 3–4 remain, so the R1
-> release gate and Wave 5 completion are not claimed.
+> attachment. Vanilla bonded persona thoughts are situational. Phase 3 instead verifies exact
+> persona-trait `killThought` memories, gives the first qualifying Tale one canonical solo killer page,
+> consumes first-kill truth independently from page acceptance, and enriches the existing wielder-death
+> page from a pre-`UnCode` snapshot. The pure suites pass 226 Royalty, 125 Narrative Continuity, 665
+> capture, and 2,265 pipeline assertions. The Phase-2 automated loaded suite is user-confirmed green;
+> its manual matrix remains open. Focused Phase-3 real-kill/death RimTests compile but have not yet run
+> in game. Royalty Phase 4 remains, so the R1 release gate and Wave 5 completion are not claimed.
 
 ### Implement in this exact order
 
 1. **Royalty 0 (implemented; contract-only)** — pure persona/title/psylink contracts and policy.
 2. **Royalty 1 (implemented; structural, page-silent)** — guarded collection, persistence, and silent baseline.
 3. **Narrative N3-R core (implemented; provider/evidence only)** — persona/title provider plus required bond/identity evidence.
-4. **Royalty 2 (implemented; loaded acceptance pending)** — persona lifecycle pages.
-5. **Royalty 3** — first consequential kill and death integration through existing owners.
+4. **Royalty 2 (implemented; automated green, manual acceptance pending)** — persona lifecycle pages.
+5. **Royalty 3 (implemented; loaded/manual acceptance pending)** — first consequential kill and death integration through existing owners.
 6. **Royalty 4** — immediate title/psylink cause correctness and scanner fallback.
 
 ### Exit gate

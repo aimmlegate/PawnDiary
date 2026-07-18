@@ -380,6 +380,13 @@
   <DiaryPromptTemplate_DeathDescription.fields.5.label>факты смерти</DiaryPromptTemplate_DeathDescription.fields.5.label>
   <DiaryPromptTemplate_DeathDescription.fields.6.label>сведения об умершем</DiaryPromptTemplate_DeathDescription.fields.6.label>
   <DiaryPromptTemplate_DeathDescription.fields.7.label>обстановка</DiaryPromptTemplate_DeathDescription.fields.7.label>
+  <DiaryPromptTemplate_DeathDescription.fields.8.label>разумное оружие</DiaryPromptTemplate_DeathDescription.fields.8.label>
+  <DiaryPromptTemplate_DeathDescription.fields.9.label>веха разумного оружия</DiaryPromptTemplate_DeathDescription.fields.9.label>
+  <DiaryPromptTemplate_DeathDescription.fields.10.label>прежнее состояние связи</DiaryPromptTemplate_DeathDescription.fields.10.label>
+  <DiaryPromptTemplate_DeathDescription.fields.11.label>новое состояние связи</DiaryPromptTemplate_DeathDescription.fields.11.label>
+  <DiaryPromptTemplate_DeathDescription.fields.12.label>причина окончания связи</DiaryPromptTemplate_DeathDescription.fields.12.label>
+  <DiaryPromptTemplate_DeathDescription.fields.13.label>черта разумного оружия 1</DiaryPromptTemplate_DeathDescription.fields.13.label>
+  <DiaryPromptTemplate_DeathDescription.fields.14.label>черта разумного оружия 2</DiaryPromptTemplate_DeathDescription.fields.14.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.0.label>событие</DiaryPromptTemplate_ArrivalDescription.fields.0.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.1.label>указание для события</DiaryPromptTemplate_ArrivalDescription.fields.1.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.2.label>дополнительное указание для события</DiaryPromptTemplate_ArrivalDescription.fields.2.label>
@@ -522,4 +529,9 @@
   <DiaryPromptTemplate_SoloImportant.fields.99.label>значение черты разумного оружия 1</DiaryPromptTemplate_SoloImportant.fields.99.label>
   <DiaryPromptTemplate_SoloImportant.fields.100.label>черта разумного оружия 2</DiaryPromptTemplate_SoloImportant.fields.100.label>
   <DiaryPromptTemplate_SoloImportant.fields.101.label>значение черты разумного оружия 2</DiaryPromptTemplate_SoloImportant.fields.101.label>
+  <DiaryPromptTemplate_SoloImportant.fields.102.label>веха разумного оружия</DiaryPromptTemplate_SoloImportant.fields.102.label>
+  <DiaryPromptTemplate_SoloImportant.fields.103.label>исходное сказание</DiaryPromptTemplate_SoloImportant.fields.103.label>
+  <DiaryPromptTemplate_SoloImportant.fields.104.label>название исходного сказания</DiaryPromptTemplate_SoloImportant.fields.104.label>
+  <DiaryPromptTemplate_SoloImportant.fields.105.label>роль убийцы в сказании</DiaryPromptTemplate_SoloImportant.fields.105.label>
+  <DiaryPromptTemplate_SoloImportant.fields.106.label>роль жертвы в сказании</DiaryPromptTemplate_SoloImportant.fields.106.label>
 </LanguageData>

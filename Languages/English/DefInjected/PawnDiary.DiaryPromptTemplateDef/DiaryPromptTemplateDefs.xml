@@ -334,6 +334,13 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_DeathDescription.fields.5.label>death facts</DiaryPromptTemplate_DeathDescription.fields.5.label>
   <DiaryPromptTemplate_DeathDescription.fields.6.label>deceased pawn</DiaryPromptTemplate_DeathDescription.fields.6.label>
   <DiaryPromptTemplate_DeathDescription.fields.7.label>setting</DiaryPromptTemplate_DeathDescription.fields.7.label>
+  <DiaryPromptTemplate_DeathDescription.fields.8.label>persona weapon</DiaryPromptTemplate_DeathDescription.fields.8.label>
+  <DiaryPromptTemplate_DeathDescription.fields.9.label>persona milestone</DiaryPromptTemplate_DeathDescription.fields.9.label>
+  <DiaryPromptTemplate_DeathDescription.fields.10.label>previous bond state</DiaryPromptTemplate_DeathDescription.fields.10.label>
+  <DiaryPromptTemplate_DeathDescription.fields.11.label>new bond state</DiaryPromptTemplate_DeathDescription.fields.11.label>
+  <DiaryPromptTemplate_DeathDescription.fields.12.label>bond ending cause</DiaryPromptTemplate_DeathDescription.fields.12.label>
+  <DiaryPromptTemplate_DeathDescription.fields.13.label>persona trait 1</DiaryPromptTemplate_DeathDescription.fields.13.label>
+  <DiaryPromptTemplate_DeathDescription.fields.14.label>persona trait 2</DiaryPromptTemplate_DeathDescription.fields.14.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.0.label>event</DiaryPromptTemplate_ArrivalDescription.fields.0.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.1.label>event prompt</DiaryPromptTemplate_ArrivalDescription.fields.1.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.2.label>event enhancement</DiaryPromptTemplate_ArrivalDescription.fields.2.label>
@@ -477,4 +484,9 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_SoloImportant.fields.99.label>persona trait 1 meaning</DiaryPromptTemplate_SoloImportant.fields.99.label>
   <DiaryPromptTemplate_SoloImportant.fields.100.label>persona trait 2</DiaryPromptTemplate_SoloImportant.fields.100.label>
   <DiaryPromptTemplate_SoloImportant.fields.101.label>persona trait 2 meaning</DiaryPromptTemplate_SoloImportant.fields.101.label>
+  <DiaryPromptTemplate_SoloImportant.fields.102.label>persona milestone</DiaryPromptTemplate_SoloImportant.fields.102.label>
+  <DiaryPromptTemplate_SoloImportant.fields.103.label>source tale</DiaryPromptTemplate_SoloImportant.fields.103.label>
+  <DiaryPromptTemplate_SoloImportant.fields.104.label>source tale name</DiaryPromptTemplate_SoloImportant.fields.104.label>
+  <DiaryPromptTemplate_SoloImportant.fields.105.label>killer tale role</DiaryPromptTemplate_SoloImportant.fields.105.label>
+  <DiaryPromptTemplate_SoloImportant.fields.106.label>victim tale role</DiaryPromptTemplate_SoloImportant.fields.106.label>
 </LanguageData>

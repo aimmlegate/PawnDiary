@@ -1,5 +1,20 @@
 # Changelog
 
+- **2026-07-18 — Implemented Master Wave 5 / Royalty Phase 3 persona combat and death integration.**
+  The first configured qualifying Tale now becomes one canonical solo killer-POV
+  `PersonaWeaponFirstConsequentialKill` page only when the exact coded persona weapon is the killer's
+  current primary inside the matching `Pawn.Kill` scope. Observed truth advances independently from
+  durable page acceptance, so disabled/rejected output cannot retell a later kill as the first. Exact
+  structural persona-trait `killThought` signals are staged across an XML-owned 60-tick callback-order
+  window, claimed only by the durable milestone, and otherwise released once through ordinary Thought
+  capture. Bonded-wielder death now snapshots persona context before vanilla `UnCode` and enriches the
+  existing Tale/fallback death page without a standalone bond-ending duplicate. Added the exact
+  Royalty-gated Tale group/prompt, append-only solo/death template fields, English/Russian localization,
+  prompt fixture, pure regressions, and compiling real major-threat/repeat/death RimTests. Pure suites
+  pass 226 Royalty, 665 capture, and 2,265 pipeline assertions. The user also confirmed the Phase-2
+  automated loaded suite green; its manual rows remain explicitly open, while Phase-3 loaded execution
+  and manual acceptance remain pending. Royalty Phase 4 and the R1 release gate were not started.
+
 - **2026-07-18 — Repaired the Royalty loaded fixture's paused-tick simulation.** The late-visibility
   test now clears the production one-tick free-colonist snapshot before simulating the next scheduled
   reconciliation. Previously the pawn was spawned and reconciled in one paused tick, so the fixture

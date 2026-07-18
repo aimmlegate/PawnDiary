@@ -111,9 +111,14 @@ namespace PawnDiary
         public const string Initiator = "initiator";
         public const string Recipient = "recipient";
 
+        public static bool IsKnown(string value)
+        {
+            return value == Initiator || value == Recipient;
+        }
+
         public static bool IsKnownOrEmpty(string value)
         {
-            return string.IsNullOrEmpty(value) || value == Initiator || value == Recipient;
+            return string.IsNullOrEmpty(value) || IsKnown(value);
         }
     }
 
@@ -274,6 +279,7 @@ namespace PawnDiary
     {
         public string taleDefName = string.Empty;
         public string killerRoleToken = string.Empty;
+        public string victimRoleToken = string.Empty;
         public int minimumSignificance;
         public bool requireVictimDeath = true;
     }
@@ -308,6 +314,7 @@ namespace PawnDiary
         public int maximumDutyCategoryTokens = 2;
         public int titleCorrelationTicks = 2500;
         public int psylinkCorrelationTicks = 2500;
+        public int killThoughtCorrelationTicks = 60;
         public int killThoughtWeight = 100;
         public int bondedThoughtWeight = 70;
         public int bondedHediffWeight = 60;
@@ -332,12 +339,16 @@ namespace PawnDiary
             policy.qualifyingTales.Add(new RoyaltyTaleQualificationRule
             {
                 taleDefName = "KilledMan",
+                killerRoleToken = RoyaltyTaleRoleTokens.Initiator,
+                victimRoleToken = RoyaltyTaleRoleTokens.Recipient,
                 minimumSignificance = 1,
                 requireVictimDeath = true
             });
             policy.qualifyingTales.Add(new RoyaltyTaleQualificationRule
             {
                 taleDefName = "KilledMajorThreat",
+                killerRoleToken = RoyaltyTaleRoleTokens.Initiator,
+                victimRoleToken = RoyaltyTaleRoleTokens.Recipient,
                 minimumSignificance = 1,
                 requireVictimDeath = true
             });

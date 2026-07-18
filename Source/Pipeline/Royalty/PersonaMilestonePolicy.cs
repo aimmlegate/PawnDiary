@@ -30,14 +30,14 @@ namespace PawnDiary
             if (rule == null || observation.significance < Math.Max(0, rule.minimumSignificance)
                 || !observation.victimPresent || (rule.requireVictimDeath && !observation.victimDied)
                 || !ValidRole(observation.resolvedKillerRoleToken)
-                || (rule.killerRoleToken != null && rule.killerRoleToken.Trim().Length > 0
-                    && !string.Equals(rule.killerRoleToken.Trim(), observation.resolvedKillerRoleToken.Trim(),
-                        StringComparison.Ordinal))
-                || (observation.deathVictimRoleToken != null
-                    && observation.deathVictimRoleToken.Trim().Length > 0
-                    && string.Equals(observation.deathVictimRoleToken.Trim(),
-                        observation.resolvedKillerRoleToken.Trim(), StringComparison.Ordinal))
-                || (observation.hasDeathContext && !observation.deathContextMatchesKiller))
+                || !ValidRole(observation.deathVictimRoleToken)
+                || !string.Equals(Clean(rule.killerRoleToken), Clean(observation.resolvedKillerRoleToken),
+                    StringComparison.Ordinal)
+                || !string.Equals(Clean(rule.victimRoleToken), Clean(observation.deathVictimRoleToken),
+                    StringComparison.Ordinal)
+                || string.Equals(Clean(observation.deathVictimRoleToken),
+                    Clean(observation.resolvedKillerRoleToken), StringComparison.Ordinal)
+                || !observation.hasDeathContext || !observation.deathContextMatchesKiller)
             {
                 return decision;
             }
@@ -55,6 +55,30 @@ namespace PawnDiary
                 observation.eventIdentity,
                 effective);
             return decision;
+        }
+
+        /// <summary>
+        /// Resolves the XML-owned killer and victim roles for one exact Tale. Both roles must be
+        /// present and distinct; callers never infer combat semantics from Tale pawn-list order.
+        /// </summary>
+        public static bool TryResolveRoles(
+            string taleDefName,
+            RoyaltyPolicySnapshot policy,
+            out string killerRoleToken,
+            out string victimRoleToken)
+        {
+            killerRoleToken = string.Empty;
+            victimRoleToken = string.Empty;
+            RoyaltyPolicySnapshot effective = policy ?? RoyaltyPolicySnapshot.CreateDefault();
+            RoyaltyTaleQualificationRule rule = MatchingRule(taleDefName, effective.qualifyingTales);
+            if (rule == null) return false;
+            string killer = Clean(rule.killerRoleToken);
+            string victim = Clean(rule.victimRoleToken);
+            if (!RoyaltyTaleRoleTokens.IsKnown(killer) || !RoyaltyTaleRoleTokens.IsKnown(victim)
+                || string.Equals(killer, victim, StringComparison.Ordinal)) return false;
+            killerRoleToken = killer;
+            victimRoleToken = victim;
+            return true;
         }
 
         private static RoyaltyTaleQualificationRule MatchingRule(
@@ -84,6 +108,11 @@ namespace PawnDiary
             string a = (left ?? string.Empty).Trim();
             string b = (right ?? string.Empty).Trim();
             return a.Length > 0 && string.Equals(a, b, StringComparison.Ordinal);
+        }
+
+        private static string Clean(string value)
+        {
+            return (value ?? string.Empty).Trim();
         }
     }
 }

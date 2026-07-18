@@ -11,6 +11,7 @@ namespace PawnDiary
     {
         public string taleDefName = string.Empty;
         public string killerRoleToken = string.Empty;
+        public string victimRoleToken = string.Empty;
         public int minimumSignificance;
         public bool requireVictimDeath = true;
     }
@@ -45,6 +46,7 @@ namespace PawnDiary
         public int maximumDutyCategoryTokens = 2;
         public int titleCorrelationTicks = 2500;
         public int psylinkCorrelationTicks = 2500;
+        public int killThoughtCorrelationTicks = 60;
         public int killThoughtWeight = 100;
         public int bondedThoughtWeight = 70;
         public int bondedHediffWeight = 60;
@@ -73,7 +75,8 @@ namespace PawnDiary
                 yield return "persona trait text caps must be positive.";
             if (maximumDutyCategoryTokens < 1 || maximumDutyCategoryTokens > 8)
                 yield return "maximumDutyCategoryTokens must be between 1 and 8.";
-            if (titleCorrelationTicks <= 0 || psylinkCorrelationTicks <= 0)
+            if (titleCorrelationTicks <= 0 || psylinkCorrelationTicks <= 0
+                || killThoughtCorrelationTicks <= 0)
                 yield return "Royal mutation correlation windows must be positive.";
             if (killThoughtWeight <= 0 || bondedThoughtWeight <= 0 || bondedHediffWeight <= 0
                 || equippedHediffWeight <= 0 || exactOverrideMaximumWeight <= 0)
@@ -97,10 +100,15 @@ namespace PawnDiary
                     DiaryRoyaltyTaleRuleDef row = qualifyingTales[i];
                     string defName = Clean(row == null ? null : row.taleDefName);
                     string role = Clean(row == null ? null : row.killerRoleToken);
+                    string victimRole = Clean(row == null ? null : row.victimRoleToken);
                     if (!SafeToken(defName)) yield return "qualifyingTales row " + i + " has an unsafe Tale defName.";
                     else if (!tales.Add(defName)) yield return "qualifyingTales repeats '" + defName + "'.";
-                    if (!RoyaltyTaleRoleTokens.IsKnownOrEmpty(role))
-                        yield return "qualifyingTales row " + i + " has an unknown killerRoleToken.";
+                    if (!RoyaltyTaleRoleTokens.IsKnown(role))
+                        yield return "qualifyingTales row " + i + " needs a known killerRoleToken.";
+                    if (!RoyaltyTaleRoleTokens.IsKnown(victimRole))
+                        yield return "qualifyingTales row " + i + " needs a known victimRoleToken.";
+                    if (role == victimRole)
+                        yield return "qualifyingTales row " + i + " must use distinct killer and victim roles.";
                     if (row != null && row.minimumSignificance < 0)
                         yield return "qualifyingTales row " + i + " has negative minimumSignificance.";
                 }
@@ -175,6 +183,8 @@ namespace PawnDiary
                 source.maximumDutyCategoryTokens, 1, 8, result.maximumDutyCategoryTokens);
             result.titleCorrelationTicks = Positive(source.titleCorrelationTicks, result.titleCorrelationTicks);
             result.psylinkCorrelationTicks = Positive(source.psylinkCorrelationTicks, result.psylinkCorrelationTicks);
+            result.killThoughtCorrelationTicks = Positive(
+                source.killThoughtCorrelationTicks, result.killThoughtCorrelationTicks);
             result.killThoughtWeight = Positive(source.killThoughtWeight, result.killThoughtWeight);
             result.bondedThoughtWeight = Positive(source.bondedThoughtWeight, result.bondedThoughtWeight);
             result.bondedHediffWeight = Positive(source.bondedHediffWeight, result.bondedHediffWeight);
@@ -204,11 +214,15 @@ namespace PawnDiary
                 DiaryRoyaltyTaleRuleDef row = source[i];
                 string defName = Safe(row == null ? null : row.taleDefName);
                 string role = Safe(row == null ? null : row.killerRoleToken);
-                if (defName.Length == 0 || !RoyaltyTaleRoleTokens.IsKnownOrEmpty(role) || !seen.Add(defName)) continue;
+                string victimRole = Safe(row == null ? null : row.victimRoleToken);
+                if (defName.Length == 0 || !RoyaltyTaleRoleTokens.IsKnown(role)
+                    || !RoyaltyTaleRoleTokens.IsKnown(victimRole) || role == victimRole
+                    || !seen.Add(defName)) continue;
                 result.Add(new RoyaltyTaleQualificationRule
                 {
                     taleDefName = defName,
                     killerRoleToken = role,
+                    victimRoleToken = victimRole,
                     minimumSignificance = Math.Max(0, row.minimumSignificance),
                     requireVictimDeath = row.requireVictimDeath
                 });

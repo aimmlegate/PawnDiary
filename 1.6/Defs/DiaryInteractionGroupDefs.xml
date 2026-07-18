@@ -1030,6 +1030,33 @@
 
   <!-- ===== Tale domain: vanilla notable-history events beyond social logs ===== -->
 
+  <!-- Royalty R3 canonical first consequential persona-weapon kill. The runtime projects the
+       qualifying vanilla Tale to this synthetic identity only after exact killer/victim/death
+       correlation. It stays in the Tale domain so saved-page recovery and prompt policy remain
+       those of the existing Tale owner; the package gate keeps it inert without Royalty. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>personaWeaponMilestone</defName>
+    <label>Persona weapon milestones</label>
+    <order>299</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <combat>true</combat>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>the first consequential kill made with an exact bonded persona weapon; use the supplied victim, source Tale, weapon, bond state, and selected structural trait facts, keep the killer as the sole diary POV, and never invent dialogue, a weapon motive, another kill, or the victim&apos;s final thoughts</instruction>
+    <tone>with visceral consequence and the unsettling intimacy of a weapon sharing the moment</tone>
+    <tones>
+      <li>immediate and consequential, grounded in the exact death and the weapon&apos;s established traits without invented speech</li>
+      <li>close and uneasy, weighing what changed between wielder and weapon after this exact first kill</li>
+    </tones>
+    <colorCue>royalty</colorCue>
+    <matchDefNames>
+      <li>PersonaWeaponFirstConsequentialKill</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>talecombat</defName>
     <label>Combat, injuries &amp; death</label>
@@ -1084,6 +1111,7 @@
       <li>KilledBy</li>
     </deathVictimInitiatorDefNames>
     <deathVictimRecipientDefNames>
+      <li>KilledMan</li>
       <li>KilledCapacity</li>
       <li>KilledLongRange</li>
       <li>KilledMajorThreat</li>

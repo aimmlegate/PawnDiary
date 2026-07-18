@@ -60,6 +60,35 @@ namespace PawnDiary
             return result;
         }
 
+        /// <summary>
+        /// Proves that the killer is currently wielding their exact bonded persona weapon and copies
+        /// only that weapon's configured kill-memory Def names. An empty list is still a valid persona
+        /// kill scope: it means the milestone can qualify but there is no thought side effect to own.
+        /// </summary>
+        public static bool TryCapturePersonaKillThoughtDefNames(Pawn pawn, out List<string> thoughtDefNames)
+        {
+            thoughtDefNames = new List<string>();
+            if (!ModsConfig.RoyaltyActive || pawn?.equipment == null) return false;
+            ThingWithComps weapon = pawn.equipment.bondedWeapon as ThingWithComps;
+            PersonaWeaponSnapshot captured;
+            if (!TryCapturePersonaWeapon(weapon, pawn, out captured)
+                || !captured.isCurrentlyPrimary
+                || !string.Equals(captured.codedPawnId, pawn.GetUniqueLoadID(), StringComparison.Ordinal))
+                return false;
+
+            CompBladelinkWeapon comp = weapon.TryGetComp<CompBladelinkWeapon>();
+            List<WeaponTraitDef> traits = comp?.TraitsListForReading;
+            HashSet<string> unique = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < (traits?.Count ?? 0); i++)
+            {
+                string defName = traits[i]?.killThought?.defName;
+                if (!string.IsNullOrWhiteSpace(defName) && unique.Add(defName))
+                    thoughtDefNames.Add(defName.Trim());
+            }
+            thoughtDefNames.Sort(StringComparer.Ordinal);
+            return true;
+        }
+
         /// <summary>Projects the pawn's highest current Royalty title in every faction.</summary>
         public static List<RoyalTitleSnapshot> CaptureRoyalTitles(Pawn pawn)
         {

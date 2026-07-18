@@ -125,8 +125,8 @@ one window, `Gleaming` maps to none, localized fallbacks exist, and the three ex
 bounded source evidence. The EVT-22 RimTest fixture exercises the live package-gated page/evidence
 path when Anomaly is active and the no-op branch otherwise.
 
-Master Wave 5 / Royalty Phases 0–2 plus N3-R evidence use `RoyaltyContextTests`, now a
-211-assertion assembly-free suite. It
+Master Wave 5 / Royalty Phases 0–3 plus N3-R evidence use `RoyaltyContextTests`, now a
+226-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing
 Narrative Continuity `bond_lifecycle`/`weapon` contract; formation/load-baseline/re-equip,
 pending/threshold/unobservable separation, recorded/unrecorded recovery, destruction/death/transfer,
@@ -148,23 +148,33 @@ round-trip, per-pawn faction-title/psylink preservation, old-save version-zero v
 markers, and guarded no-Royalty persona/title/psylink collection. Building that fixture is not a claim
 that it was executed inside a loaded game; that acceptance remains explicit.
 
-Phase 2 adds pure ownership and shipped-contract coverage across the other suites. Royalty tests pin
-the exact pawn/Def thought-owner contract reserved for Phase-3 kill memories and bounded persona
-context formatting. Capture tests require
-the registered `PersonaWeapon` catalog/Spec, solo/drop decisions, stable
-`persona-weapon|weapon|epoch|phase` dedup, and exact phase/Def/trait tokens; the suite now passes 660
-assertions. Pipeline tests pin the dedicated domain, Royalty-package-gated no-catch-all group, all four
-exact event-prompt rows, append-only `SoloImportant` field indices `90–101`, English/Russian
-DefInjected and Keyed coverage, all four prompt fixtures, required Compact lifecycle/previous-pawn
-facts, optional trait behavior, and exclusion of internal IDs, epoch, ticks, and correlation keys; the
-suite now passes 2,195 assertions. Runtime code commits saved state before optional dispatch and
-registers defensive Royalty-only seams. It intentionally does not stage vanilla `bondedThought`
-because those are situational rather than memory callbacks. `PawnDiaryRoyaltyFlowTests` now compiles a
-real coding/formation, late-visible silent baseline, `UnCode` live-context invalidation, and six-target
-Harmony audit. The broader short-swap, separation, recovery, destruction, map-removal, transfer,
-save/load, and no-Royalty loaded-game matrix remains unchecked in
-`tests/SAVE_COMPATIBILITY_SMOKETEST.md`. Phase 2 is therefore code-complete, not
-acceptance-complete; Phase 3 combat/death behavior is not claimed.
+Phases 2–3 add pure ownership and shipped-contract coverage across the other suites. Capture tests
+require the registered `PersonaWeapon` catalog/Spec, lifecycle solo/drop decisions, stable
+`persona-weapon|weapon|epoch|phase` dedup, exact phase/Def/trait tokens, and forced solo killer-POV
+planning for a canonical first-kill page; the suite now passes 665 assertions. Pipeline tests pin the
+dedicated lifecycle domain, the Royalty-package-gated no-catch-all lifecycle and exact Tale milestone
+groups, five exact event-prompt rows, append-only `SoloImportant` lifecycle fields `90–101` and
+milestone fields `102–106`, enriched `DeathDescription` fields, English/Russian DefInjected and Keyed
+coverage, all prompt fixtures, required compact facts, optional trait behavior, and exclusion of
+internal IDs, epoch, ticks, and correlation keys; the suite now passes 2,265 assertions.
+
+Runtime Phase 2 commits saved lifecycle state before optional dispatch and registers defensive
+Royalty-only seams. Vanilla `bondedThought` remains situational and outside the memory hook. The user
+confirmed the repaired Phase-2 loaded automated suite green on 2026-07-18; that result is recorded
+separately from the still-unchecked short-swap, separation, recovery, destruction, map-removal,
+transfer, save/load, localization, and no-Royalty manual rows in
+`tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
+
+Phase 3 projects an exact active `Pawn.Kill` scope into qualifying Tale capture. The first truth is
+consumed even when the milestone group is disabled or the page is rejected, while an accepted page
+is forced to one solo killer POV and retains the source Tale marker/roles. Exact persona `killThought`
+signals are staged for the bounded 60-tick callback-order window, claimed only by the durable
+milestone, and otherwise released once through ordinary Thought capture. Wielder death snapshots
+pre-`UnCode` persona facts into the existing death page and never creates a standalone bond-ending
+page. `PawnDiaryRoyaltyFlowTests` compiles real coding/formation, late-visible baseline, hook audit,
+guaranteed vanilla major-threat kill, repeat suppression, and bonded-wielder death fixtures. The new
+Phase-3 loaded fixtures and all Phase-3 manual rows still require execution inside RimWorld; neither
+Phase 2 nor Phase 3 is manually acceptance-complete.
 
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,
@@ -334,8 +344,9 @@ channel, disabled template flag, and rejection of an injected instruction sentin
 loaded run reached 235/236, confirming those corrections and exposing one final matrix-fixture
 assumption: `ritualRoyal` intentionally classifies throne-speech and anima-linking rituals through four
 narrow runtime tokens rather than exact def-name keys. Its token-only contract is now asserted beside
-the equivalent Odyssey and Anomaly exceptions. A fresh loaded rerun remains required; no Biotech B1
-or Royalty Phase 2 manual acceptance row is closed.
+the equivalent Odyssey and Anomaly exceptions. The user subsequently confirmed the Phase-2 automated
+loaded suite green. No Biotech B1 or Royalty Phase-2 manual acceptance row is closed by that result,
+and the newly added Phase-3 loaded fixtures still need their first in-game run.
 
 Narrative N2-B extends `NarrativeContinuityTests` with assembly-free checks for family-continuity
 classification, exact arc/subject candidate construction, fixed provider ordering, inactive-DLC and

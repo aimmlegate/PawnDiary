@@ -1463,6 +1463,8 @@
   <PawnDiary.Event.Persona.Recovered.Fallback>{0} wielded {1} again after {2} apart.</PawnDiary.Event.Persona.Recovered.Fallback>
   <PawnDiary.Event.Persona.Ended.Label>Persona weapon bond ended</PawnDiary.Event.Persona.Ended.Label>
   <PawnDiary.Event.Persona.Ended.Fallback>{0}&apos;s bond with {1} ended because {2}.</PawnDiary.Event.Persona.Ended.Fallback>
+  <PawnDiary.Event.Persona.FirstKill.Label>First consequential persona-weapon kill</PawnDiary.Event.Persona.FirstKill.Label>
+  <PawnDiary.Event.Persona.FirstKill.Fallback>{0} made their first consequential kill with {1}, killing {2}.</PawnDiary.Event.Persona.FirstKill.Fallback>
   <PawnDiary.Event.Persona.EndCause.Destroyed>the weapon was destroyed</PawnDiary.Event.Persona.EndCause.Destroyed>
   <PawnDiary.Event.Persona.EndCause.Transfer>the weapon formed an exact new bond</PawnDiary.Event.Persona.EndCause.Transfer>
   <PawnDiary.Event.Persona.EndCause.Other>the bond reached its verified end</PawnDiary.Event.Persona.EndCause.Other>
@@ -1474,6 +1476,8 @@
   <PawnDiary.Dev.PromptSuite.PersonaBondRecovered.Text>{0} wielded Quiet Edge again after a recorded day apart.</PawnDiary.Dev.PromptSuite.PersonaBondRecovered.Text>
   <PawnDiary.Dev.PromptSuite.PersonaBondEnded.Markers>persona_weapon=bond_ended; persona_weapon_id=Weapon_Test; persona_weapon_def=PersonaMonosword; persona_weapon_name=Quiet Edge; bond_epoch=1; bond_previous_state=active; bond_new_state=ended; bond_duration=two years; bond_end_cause=weapon_destroyed; persona_trait_1=Jealous; persona_trait_description_1=Resents being set aside for another weapon.</PawnDiary.Dev.PromptSuite.PersonaBondEnded.Markers>
   <PawnDiary.Dev.PromptSuite.PersonaBondEnded.Text>{0}&apos;s exact bond with Quiet Edge ended when the weapon was destroyed.</PawnDiary.Dev.PromptSuite.PersonaBondEnded.Text>
+  <PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Markers>tale=PersonaWeaponFirstConsequentialKill; persona_milestone=first_consequential_kill; tale_source_def=KilledMajorThreat; tale_source_label=killed a major threat; tale_killer_role=initiator; tale_victim_role=recipient; persona_weapon_id=Weapon_Test; persona_weapon_def=PersonaMonosword; persona_weapon_name=Quiet Edge; bond_epoch=1; bond_previous_state=active; bond_new_state=active; persona_trait_1=Kill-focused; persona_trait_description_1=Reacts strongly when the wielder kills.</PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Markers>
+  <PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Text>{0} made their first consequential kill with Quiet Edge.</PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Text>
 
   <!-- Odyssey O1.2 mobile-home surroundings. -->
   <PawnDiary.Ctx.GravshipHome>aboard the gravship {0}</PawnDiary.Ctx.GravshipHome>

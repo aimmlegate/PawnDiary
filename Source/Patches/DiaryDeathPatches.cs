@@ -2,6 +2,7 @@
 // death state, then provide a fallback neutral death page when vanilla does not emit a death Tale.
 // New to this? See AGENTS.md ("Harmony patches").
 using HarmonyLib;
+using System.Collections.Generic;
 using PawnDiary.Ingestion;
 using RimWorld;
 using Verse;
@@ -17,6 +18,13 @@ namespace PawnDiary
     [HarmonyPatch(typeof(Pawn), nameof(Pawn.Kill))]
     internal static class PawnKillPatch
     {
+        /// <summary>Tracks independent Biotech and Royalty scopes across one Pawn.Kill call.</summary>
+        internal sealed class KillPatchState
+        {
+            public bool mechanitorScopeStarted;
+            public PersonaKillCorrelationScope personaKillScope;
+        }
+
         /// <summary>
         /// Harmony Prefix for Pawn.Kill. Captures death cause details for colonists before vanilla
         /// mutates death/corpse state and records the corresponding Tale.
@@ -25,21 +33,33 @@ namespace PawnDiary
             Pawn __instance,
             DamageInfo? dinfo,
             Hediff exactCulprit,
-            out bool __state)
+            out KillPatchState __state)
         {
-            bool scopeStarted = false;
+            KillPatchState state = new KillPatchState();
             DiaryPatchSafety.Run("PawnKillPatch.Prefix", () =>
             {
                 if (ModsConfig.BiotechActive && __instance?.mechanitor != null)
                 {
                     MechanitorDeathScope.Begin(__instance);
-                    scopeStarted = true;
+                    state.mechanitorScopeStarted = true;
                 }
                 DeathContextCache.Capture(__instance, dinfo, exactCulprit);
+                Pawn killer = dinfo.HasValue ? dinfo.Value.Instigator as Pawn : null;
+                List<string> killThoughtDefNames;
+                if (DlcContext.TryCapturePersonaKillThoughtDefNames(killer, out killThoughtDefNames))
+                {
+                    RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+                    state.personaKillScope = PersonaKillThoughtCorrelation.Begin(
+                        __instance,
+                        killer,
+                        killThoughtDefNames,
+                        Find.TickManager?.TicksGame ?? 0,
+                        policy.killThoughtCorrelationTicks);
+                }
                 if (ModsConfig.BiotechActive && __instance?.RaceProps?.IsMechanoid == true)
                     DiaryGameComponent.Instance?.OnControlledMechDying(__instance);
             });
-            __state = scopeStarted;
+            __state = state;
         }
 
         /// <summary>
@@ -67,10 +87,14 @@ namespace PawnDiary
         /// <summary>Guarantees the death scope closes even if vanilla or another patch throws.</summary>
         public static System.Exception Finalizer(
             Pawn __instance,
-            bool __state,
+            KillPatchState __state,
             System.Exception __exception)
         {
-            if (__state) MechanitorDeathScope.End(__instance);
+            DiaryPatchSafety.Run("PawnKillPatch.Finalizer", () =>
+            {
+                if (__state?.mechanitorScopeStarted == true) MechanitorDeathScope.End(__instance);
+                PersonaKillThoughtCorrelation.End(__state?.personaKillScope);
+            });
             return __exception;
         }
     }

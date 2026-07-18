@@ -614,4 +614,9 @@
   <personaWeaponLifecycle.tone>с близкой верностью, трением и тревожным присутствием оружия, которое помнит</personaWeaponLifecycle.tone>
   <personaWeaponLifecycle.tones.0>близко и странно, как о проживаемых отношениях, но без выдуманных реплик оружия</personaWeaponLifecycle.tones.0>
   <personaWeaponLifecycle.tones.1>лично и задумчиво, опираясь на верность, отсутствие, возвращение или окончательность из точных фактов</personaWeaponLifecycle.tones.1>
+  <personaWeaponMilestone.label>Вехи разумного оружия</personaWeaponMilestone.label>
+  <personaWeaponMilestone.instruction>первое значимое убийство точным связанным разумным оружием; используй переданные жертву, исходное сказание, оружие, состояние связи и выбранные структурные факты о чертах, оставь убийцу единственной точкой зрения дневника и не выдумывай реплики, мотив оружия, другое убийство или последние мысли жертвы</personaWeaponMilestone.instruction>
+  <personaWeaponMilestone.tone>с телесными последствиями и тревожной близостью оружия, разделившего этот момент</personaWeaponMilestone.tone>
+  <personaWeaponMilestone.tones.0>непосредственно и весомо, опираясь на точную смерть и установленные черты оружия без выдуманной речи</personaWeaponMilestone.tones.0>
+  <personaWeaponMilestone.tones.1>близко и тревожно, взвешивая перемену между владельцем и оружием после этого точного первого убийства</personaWeaponMilestone.tones.1>
 </LanguageData>

@@ -982,6 +982,7 @@ namespace DiaryPipelineTests
                         "doctor: Cara");
                 }
             }
+
         }
 
         // The template-field lists are DefInjected by numeric index. Appending a field to the wrong
@@ -1245,6 +1246,57 @@ namespace DiaryPipelineTests
                         "persona trait 1 meaning: Resents being set aside for another weapon.");
                 }
             }
+
+            DiaryEventPayload milestonePayload = SoloPayload(
+                "e-persona-kill",
+                "first consequential persona-weapon kill",
+                "Alice made her first consequential kill with Quiet Edge, killing a centipede.");
+            milestonePayload.gameContext = "tale=PersonaWeaponFirstConsequentialKill; "
+                + "persona_milestone=first_consequential_kill; tale_source_def=KilledMajorThreat; "
+                + "tale_source_label=killed a major threat; tale_killer_role=initiator; "
+                + "tale_victim_role=recipient; persona_weapon_name=Quiet Edge; "
+                + "persona_weapon_id=Weapon_Test; bond_epoch=1; bond_previous_state=active; "
+                + "bond_new_state=active";
+            DiaryPromptPlan milestonePlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = milestonePayload,
+                policy = Policy(combat: true, important: true),
+                povRole = DiaryPipelineRoles.Initiator,
+                contextDetailLevel = PromptContextDetailLevel.Compact,
+                contextBudgets = tiny
+            });
+            AssertContains("Compact persona milestone keeps exact phase", milestonePlan.userPrompt,
+                "persona milestone: first_consequential_kill");
+            AssertContains("Compact persona milestone keeps source Tale", milestonePlan.userPrompt,
+                "source tale: KilledMajorThreat");
+            AssertContains("Compact persona milestone keeps source label", milestonePlan.userPrompt,
+                "source tale name: killed a major threat");
+            AssertContains("Compact persona milestone keeps exact killer role", milestonePlan.userPrompt,
+                "killer tale role: initiator");
+            AssertContains("Compact persona milestone keeps exact victim role", milestonePlan.userPrompt,
+                "victim tale role: recipient");
+            AssertTrue("persona milestone internal identity stays out of prompt",
+                !milestonePlan.userPrompt.Contains("Weapon_Test")
+                && !milestonePlan.userPrompt.Contains("bond_epoch"));
+
+            DiaryEventPayload deathPayload = DeathPayload();
+            deathPayload.gameContext += "; persona_milestone=wielder_death; "
+                + "persona_weapon_name=Quiet Edge; bond_previous_state=active; "
+                + "bond_new_state=ended; bond_end_cause=pawn_death; persona_trait_1=Jealous";
+            DiaryPromptPlan deathPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = deathPayload,
+                policy = Policy(combat: false, important: true),
+                povRole = DiaryPipelineRoles.Neutral,
+                contextDetailLevel = PromptContextDetailLevel.Compact,
+                contextBudgets = tiny
+            });
+            AssertContains("wielder death keeps persona weapon", deathPlan.userPrompt,
+                "persona weapon: Quiet Edge");
+            AssertContains("wielder death keeps relationship ending", deathPlan.userPrompt,
+                "persona milestone: wielder_death");
+            AssertContains("wielder death keeps ending cause", deathPlan.userPrompt,
+                "bond ending cause: pawn_death");
         }
 
         private static void TestDualPovPromptPlans()
@@ -3614,6 +3666,22 @@ namespace DiaryPipelineTests
                     "personaWeaponLifecycle",
                     ResolveInteractionGroup(groups, "PersonaWeapon", eventNames[i], true));
             }
+            XElement milestoneGroup = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "personaWeaponMilestone");
+            AssertTrue("Royalty persona milestone group exists", milestoneGroup != null);
+            AssertEqual("Royalty persona milestone remains Tale-domain", "Tale",
+                ChildValue(milestoneGroup, "domain"));
+            AssertEqual("Royalty persona milestone is important", "true",
+                ChildValue(milestoneGroup, "important"));
+            AssertTrue("Royalty persona milestone settings are package-gated",
+                HasListValue(milestoneGroup, "enableWhenPackageIdsLoaded", royaltyPackage));
+            AssertTrue("Royalty persona milestone exact match exists",
+                HasListValue(milestoneGroup, "matchDefNames",
+                    "PersonaWeaponFirstConsequentialKill"));
+            AssertEqual("Royalty persona milestone exact Tale classifier resolves",
+                "personaWeaponMilestone",
+                ResolveInteractionGroup(
+                    groups, "Tale", "PersonaWeaponFirstConsequentialKill", true));
             string[] gatedExisting = { "ritualRoyal", "progressionPsylink", "progressionRoyalTitle" };
             for (int i = 0; i < gatedExisting.Length; i++)
             {
@@ -3629,6 +3697,18 @@ namespace DiaryPipelineTests
                 policyDocument, "PawnDiary.DiaryRoyaltyPolicyDef", "Diary_Royalty");
             AssertEqual("persona separation reconciliation cadence is XML-owned",
                 "2500", ChildValue(policy, "reconciliationCadenceTicks"));
+            AssertEqual("persona kill-thought correlation is XML-owned",
+                "60", ChildValue(policy, "killThoughtCorrelationTicks"));
+            List<XElement> taleRules = new List<XElement>(
+                policy.Element("qualifyingTales").Elements("li"));
+            AssertEqual("Royalty policy keeps two exact qualifying Tale rows", 2, taleRules.Count);
+            for (int i = 0; i < taleRules.Count; i++)
+            {
+                AssertEqual("qualifying Tale killer role is exact", "initiator",
+                    ChildValue(taleRules[i], "killerRoleToken"));
+                AssertEqual("qualifying Tale victim role is exact", "recipient",
+                    ChildValue(taleRules[i], "victimRoleToken"));
+            }
 
             XDocument templates = XDocument.Load(
                 RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
@@ -3641,10 +3721,11 @@ namespace DiaryPipelineTests
                 "persona_weapon_name", "persona_weapon", "bond_previous_state", "bond_new_state",
                 "bond_separation_duration", "bond_duration", "bond_previous_pawn", "bond_end_cause",
                 "persona_trait_1", "persona_trait_description_1", "persona_trait_2",
-                "persona_trait_description_2"
+                "persona_trait_description_2", "persona_milestone", "tale_source_def",
+                "tale_source_label", "tale_killer_role", "tale_victim_role"
             };
-            AssertEqual("SoloImportant persona projection remains append-only at 102 fields",
-                102, new List<XElement>(solo.Element("fields").Elements("li")).Count);
+            AssertEqual("SoloImportant persona projection remains append-only at 107 fields",
+                107, new List<XElement>(solo.Element("fields").Elements("li")).Count);
             for (int i = 0; i < contextKeys.Length; i++)
             {
                 AssertTrue("SoloImportant persona prompt field exists: " + contextKeys[i],
@@ -3652,6 +3733,19 @@ namespace DiaryPipelineTests
                 AssertTrue("PairImportant does not acquire Phase-2 solo persona field: " + contextKeys[i],
                     !HasPromptContextField(pair, contextKeys[i]));
             }
+
+            XElement death = FindDef(
+                templates, "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplate_DeathDescription");
+            string[] deathContextKeys =
+            {
+                "persona_weapon_name", "persona_milestone", "bond_previous_state",
+                "bond_new_state", "bond_end_cause", "persona_trait_1", "persona_trait_2"
+            };
+            AssertEqual("DeathDescription persona ending fields append at 15 total",
+                15, new List<XElement>(death.Element("fields").Elements("li")).Count);
+            for (int i = 0; i < deathContextKeys.Length; i++)
+                AssertTrue("DeathDescription persona ending field exists: " + deathContextKeys[i],
+                    HasPromptContextField(death, deathContextKeys[i]));
 
             XDocument englishLabels = XDocument.Load(RepoPath(
                 "Languages", "English", "DefInjected", "PawnDiary.DiaryPromptTemplateDef",
@@ -3678,7 +3772,8 @@ namespace DiaryPipelineTests
             string[] promptSuffixes =
             {
                 "PersonaWeapon", "PersonaWeaponBondFormed", "PersonaWeaponBondSeparated",
-                "PersonaWeaponBondRecovered", "PersonaWeaponBondEnded"
+                "PersonaWeaponBondRecovered", "PersonaWeaponBondEnded",
+                "PersonaWeaponFirstConsequentialKill"
             };
             for (int i = 0; i < promptSuffixes.Length; i++)
             {
@@ -3702,7 +3797,8 @@ namespace DiaryPipelineTests
                 "PawnDiary.Dev.PromptSuite.PersonaBondFormed.Markers",
                 "PawnDiary.Dev.PromptSuite.PersonaBondSeparated.Markers",
                 "PawnDiary.Dev.PromptSuite.PersonaBondRecovered.Markers",
-                "PawnDiary.Dev.PromptSuite.PersonaBondEnded.Markers"
+                "PawnDiary.Dev.PromptSuite.PersonaBondEnded.Markers",
+                "PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Markers"
             };
             for (int i = 0; i < fixtureKeys.Length; i++)
             {
@@ -4870,7 +4966,14 @@ namespace DiaryPipelineTests
                     Field("what happened", "NeutralText"),
                     Field("death facts", "DeathFacts"),
                     Field("deceased pawn", "DeathPawnSummary"),
-                    Field("setting", "DeathSetting"));
+                    Field("setting", "DeathSetting"),
+                    ContextField("persona weapon", "persona_weapon_name"),
+                    ContextField("persona milestone", "persona_milestone"),
+                    ContextField("previous bond state", "bond_previous_state"),
+                    ContextField("new bond state", "bond_new_state"),
+                    ContextField("bond ending cause", "bond_end_cause"),
+                    ContextField("persona trait 1", "persona_trait_1"),
+                    ContextField("persona trait 2", "persona_trait_2"));
             }
             else if (key == DiaryPipelineTemplates.ArrivalDescription)
             {
@@ -4969,6 +5072,11 @@ namespace DiaryPipelineTests
                     ContextField("persona trait 1 meaning", "persona_trait_description_1"),
                     ContextField("persona trait 2", "persona_trait_2"),
                     ContextField("persona trait 2 meaning", "persona_trait_description_2"),
+                    ContextField("persona milestone", "persona_milestone"),
+                    ContextField("source tale", "tale_source_def"),
+                    ContextField("source tale name", "tale_source_label"),
+                    ContextField("killer tale role", "tale_killer_role"),
+                    ContextField("victim tale role", "tale_victim_role"),
                     Field("weapon", "Weapon"),
                     Field("important context", "PromptEnchantment"),
                     Field("previous diary ending (continue from this)", "PreviousEntryEnding"),

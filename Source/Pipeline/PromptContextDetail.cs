@@ -381,6 +381,11 @@ namespace PawnDiary
         {
             return Eq(contextKey, "persona_weapon_name")
                 || Eq(contextKey, "persona_weapon")
+                || Eq(contextKey, "persona_milestone")
+                || Eq(contextKey, "tale_source_def")
+                || Eq(contextKey, "tale_source_label")
+                || Eq(contextKey, "tale_killer_role")
+                || Eq(contextKey, "tale_victim_role")
                 || Eq(contextKey, "bond_previous_state")
                 || Eq(contextKey, "bond_new_state")
                 || Eq(contextKey, "bond_separation_duration")
@@ -407,7 +412,7 @@ namespace PawnDiary
             bool ability = DomainOrContext(domain, gameContext, "Ability") || HasAnyMarker(gameContext, "ability=");
             bool ritual = DomainOrContext(domain, gameContext, "Ritual") || HasAnyMarker(gameContext, "ritual=");
             bool persona = DomainOrContext(domain, gameContext, "PersonaWeapon")
-                || HasAnyMarker(gameContext, "persona_weapon=");
+                || HasAnyMarker(gameContext, "persona_weapon=", "persona_milestone=");
             bool social = HasAnyMarker(gameContext, "worker=Interaction_", "romance=", "kind=married", "def=Insult");
 
             if (Eq(source, "EventEnhancement"))

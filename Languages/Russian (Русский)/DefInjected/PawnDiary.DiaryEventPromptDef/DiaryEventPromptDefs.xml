@@ -72,6 +72,9 @@
   <DiaryEventPrompt_PersonaWeaponBondEnded.label>связь с разумным оружием окончена</DiaryEventPrompt_PersonaWeaponBondEnded.label>
   <DiaryEventPrompt_PersonaWeaponBondEnded.prompt>Опиши отдельное окончание точной связи с разумным оружием.</DiaryEventPrompt_PersonaWeaponBondEnded.prompt>
   <DiaryEventPrompt_PersonaWeaponBondEnded.enhancement>Используй переданную причину окончания и длительность связи, чтобы сделать финал конкретным. Не выдумывай смерть, нападавшего, бой, переход связи или последние слова.</DiaryEventPrompt_PersonaWeaponBondEnded.enhancement>
+  <DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.label>первое значимое убийство разумным оружием</DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.label>
+  <DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.prompt>Опиши первое значимое убийство, совершённое точно связанным владельцем с этим разумным оружием.</DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.prompt>
+  <DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.enhancement>Используй только переданные жертву, исходное сказание, оружие, состояние связи и выбранные факты о чертах. Оставь убийцу единственной точкой зрения; не выдумывай реплики, мотивы оружия, другую атаку или внутренний опыт жертвы.</DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.enhancement>
   <DiaryEventPrompt_External.label>событие другого мода</DiaryEventPrompt_External.label>
   <DiaryEventPrompt_External.prompt>Опиши момент, переданный другим модом, как то, что поселенец только что пережил.</DiaryEventPrompt_External.prompt>
   <DiaryEventPrompt_External.enhancement>Держись строго переданной строки события и фактов контекста; не выдумывай механики, системы или неупомянутых участников.</DiaryEventPrompt_External.enhancement>

@@ -48,15 +48,15 @@ repo for development, but the Workshop payload omits source code and other devel
 | `LoadFolders.xml` | Normal 1.6 load roots plus the RimTest-only development test assembly gate. |
 | `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
 | `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
-| `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts and Royalty persona-weapon lifecycle identity/dedup decisions. |
-| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including the solo Royalty persona lifecycle emitter. |
+| `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts and Royalty persona-weapon lifecycle identity/dedup plus forced first-kill POV decisions. |
+| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including the solo Royalty persona lifecycle emitter and Tale-owned persona milestone enrichment. |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Odyssey location/mobile-home/lifecycle and Royalty persona/title/psylink snapshots. |
 | `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, Odyssey lifecycle/journey/location/history/writer/context policy, and Royalty persona/title/psylink decisions plus save normalization. |
 | `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including `DiaryOdysseyPolicyDef` and the Royalty policy plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history and Royalty persona/faction-title observation state. |
-| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup seams. |
+| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death correlation seams. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper projects plus the optional in-game `PawnDiary.RimTest` smoke suite. |
@@ -228,9 +228,10 @@ Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned gra
 additive save-key suffixes under each POV/archive row; it performs no retroactive inference or
 catch-up on older pages.
 
-**Royalty Phases 0–2 plus Narrative N3-R core (Master Wave 5; focused RimTest added, full
-Phase-2 loaded acceptance pending)**
-freeze the detached R1 boundary and now own persona-weapon lifecycle pages. `RoyaltyContracts`
+**Royalty Phases 0–3 plus Narrative N3-R core (Master Wave 5; Phase-2 automated loaded suite green,
+manual Phase-2 and loaded/manual Phase-3 acceptance pending)**
+freeze the detached R1 boundary and now own persona-weapon lifecycle, first-kill, and death enrichment.
+`RoyaltyContracts`
 represents persona weapon/trait/bond state, faction-specific title before/after facts, and
 psylink/title mutation cause scopes using primitives and copied lists.
 `PersonaLifecyclePolicy` advances formation, meaningful separation, recovery, destruction/death,
@@ -269,14 +270,13 @@ transfer start a new bond epoch and one formation page. A short primary-weapon s
 and silent; an independent XML-cadenced reconciliation deadline emits one separation only after
 `60000` observable not-primary ticks, and emits recovery only when that separation page was accepted.
 Unavailable/off-map evidence cancels or pauses the inference instead of proving separation.
-Destruction owns one standalone ending. Pawn death ends state without a Phase-2 page, map removal is
-silent, and unknown cleanup remains live for reconciliation; combat, first-kill, and death-page
-enrichment remain exclusively Phase 3.
+Destruction owns one standalone ending. Pawn death ends lifecycle state without a Phase-2 page, map
+removal is silent, and unknown cleanup remains live for reconciliation. The user confirmed the
+Phase-2 automated loaded suite green; its explicit hands-on acceptance rows remain open.
 
 Vanilla persona-trait `bondedThought` rows are situational thoughts, not stored memories, and therefore
 never traverse `MemoryThoughtHandler.TryGainMemory`. Phase 2 deliberately has no bonded-memory
-correlation scope; the pure exact thought-owner helper remains reserved for Phase 3 `killThought`
-memory ownership if a real memory seam is verified. Lifecycle context is bounded and projects the
+correlation scope. Lifecycle context is bounded and projects the
 weapon label, phase, previous/new state, localized durations, exact previous pawn when relevant,
 ending cause, and at most two mapped persona traits. Internal weapon/pawn IDs, epoch, ticks, and
 correlation keys are never prompt-template fields. The Royalty-package-gated exact group and four exact
@@ -284,9 +284,32 @@ event-prompt rows route all lifecycle pages through `SoloImportant`; English/Rus
 Keyed text plus four prompt-test fixtures cover formation, separation, recovery, and ending. The source
 attaches N3-R bond evidence only after page creation. A focused loaded fixture now drives real coding,
 late-visible silent adoption across the production one-tick colonist-snapshot boundary, next-cadence
-separation inference, `UnCode` context invalidation, and all six exact Harmony targets; its DLL build
-is not an in-game pass. The remaining Phase-2 exit-gate scenarios are listed in
+separation inference, `UnCode` context invalidation, and all six exact Harmony targets; its automated
+loaded run is user-confirmed green. The remaining hands-on Phase-2 exit-gate scenarios are listed in
 `tests/SAVE_COMPATIBILITY_SMOKETEST.md`; title/psylink pages remain Phase 4.
+
+Phase 3 integrates persona combat through existing owners instead of adding a parallel kill source.
+The `Pawn.Kill` prefix opens a short-lived exact death scope while the pawn/weapon relationship still
+exists. `TaleSignal` accepts a milestone only when the configured Tale rule supplies distinct known
+killer/victim roles, the Tale victim matches that scope, and the killer's current primary is the exact
+coded weapon. The first qualifying truth is saved as observed even when `personaWeaponMilestone` is
+disabled or page creation is rejected, so re-enabling cannot retell a later kill as the first. An
+accepted milestone relabels that one existing Tale as `PersonaWeaponFirstConsequentialKill`, forces
+one solo killer POV, preserves `tale=` plus `tale_source_def`, source label, and role markers, and sets
+the separate durable-page flag only after repository insertion. It does not add `persona_weapon=`, so
+the event remains Tale-owned and existing victim death routing/dedup stays intact.
+
+The same prefix copies exact `killThought` Def names only from structural traits on the current coded
+primary weapon. Thought callbacks are staged against the active scope or the bounded XML-owned
+`60`-tick inverse-order window; the durable milestone claims only its exact pawn/Def signals. Closing
+the scope releases every unclaimed signal exactly once through ordinary Thought capture. This makes
+disabled/rejected milestones fail open without duplicating a claimed Thought. For a bonded wielder's
+own death, `DeathContextCache` captures weapon, bond, and bounded trait facts before vanilla `UnCode`
+and appends them to whichever existing Tale/fallback death description wins. Pawn death therefore
+produces no standalone `PersonaWeaponBondEnded` page. All live Royalty reads remain double-guarded in
+`DlcContext`, policy XML contains only string Def names/primitive roles, and a no-Royalty game follows
+the unchanged Tale/Thought/death paths. The focused real major-threat/repeat and wielder-death loaded
+fixtures compile; their in-game run and the Phase-3 manual matrix are still pending.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13

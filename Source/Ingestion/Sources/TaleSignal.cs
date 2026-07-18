@@ -8,6 +8,7 @@
 //
 // Pure decision, the CoveredElsewhere skip-list, the dedup key, and the base game-context format live
 // in Source/Capture/Events/TaleEventData.cs. New to C#/RimWorld? See AGENTS.md.
+using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
 using RimWorld;
@@ -29,7 +30,17 @@ namespace PawnDiary.Ingestion
         private readonly bool secondEligible;
         private readonly Pawn deathVictim;
         private readonly bool deathDescription;
+        private readonly bool routesDeathDescription;
         private readonly DiaryInteractionGroupDef batchGroup;
+        private readonly DiaryInteractionGroupDef personaMilestoneGroup;
+        private readonly Pawn personaKiller;
+        private readonly Pawn personaVictim;
+        private readonly string personaKillerRole;
+        private readonly string personaVictimRole;
+        private readonly PersonaWeaponSnapshot personaWeapon;
+        private readonly PersonaBondStateSnapshot personaBond;
+        private readonly PersonaMilestoneDecision personaMilestone;
+        private readonly PersonaKillCorrelationScope personaKillScope;
         private readonly TaleEventData payload;
 
         public TaleSignal(Tale tale, TaleDef taleDef)
@@ -50,21 +61,83 @@ namespace PawnDiary.Ingestion
 
             firstEligible = DiaryGameComponent.IsDiaryEligible(firstPawn) || (deathDescription && firstPawn == deathVictim);
             secondEligible = DiaryGameComponent.IsDiaryEligible(secondPawn) || (deathDescription && secondPawn == deathVictim);
-            batchGroup = deathDescription ? null : DiaryGameComponent.TaleBatchGroupFor(taleDef);
+
+            string killerRole;
+            string victimRole;
+            if (ModsConfig.RoyaltyActive)
+            {
+                RoyaltyPolicySnapshot royaltyPolicy = DiaryRoyaltyPolicy.Snapshot();
+                if (PersonaMilestonePolicy.TryResolveRoles(
+                    taleDef.defName, royaltyPolicy, out killerRole, out victimRole))
+                {
+                    Pawn killer = PawnForRole(killerRole, firstPawn, secondPawn);
+                    Pawn victim = PawnForRole(victimRole, firstPawn, secondPawn);
+                    PersonaKillCorrelationScope killScope;
+                    bool exactScope = PersonaKillThoughtCorrelation.TryMatchActiveKill(
+                        killer, victim, out killScope);
+                    DiaryInteractionGroupDef milestoneGroup = InteractionGroups.ClassifyDefName(
+                        GroupDomain.Tale, PersonaMilestoneContextFormatter.FirstKillDefName);
+                    bool exactMilestoneGroup = milestoneGroup != null
+                        && string.Equals(
+                            milestoneGroup.defName, "personaWeaponMilestone", StringComparison.Ordinal);
+                    bool milestoneGroupEnabled = exactMilestoneGroup
+                        && PawnDiaryMod.Settings.IsGroupEnabled(milestoneGroup.defName);
+                    PersonaWeaponSnapshot capturedWeapon = null;
+                    PersonaBondStateSnapshot capturedBond = null;
+                    PersonaMilestoneDecision capturedMilestone = null;
+                    bool enrich = ReferenceEquals(deathVictim, victim) && exactScope
+                        && DiaryGameComponent.Instance != null
+                        && DiaryGameComponent.Instance.TryObserveRoyaltyPersonaMilestone(
+                            killer,
+                            victim,
+                            taleDef.defName,
+                            killerRole,
+                            victimRole,
+                            (int)Math.Ceiling(Math.Max(0f, taleDef.baseInterest)),
+                            exactScope,
+                            milestoneGroupEnabled,
+                            Find.TickManager?.TicksGame ?? 0,
+                            out capturedWeapon,
+                            out capturedBond,
+                            out capturedMilestone);
+                    if (enrich)
+                    {
+                        personaMilestoneGroup = milestoneGroup;
+                        personaKiller = killer;
+                        personaVictim = victim;
+                        personaKillerRole = killerRole;
+                        personaVictimRole = victimRole;
+                        personaWeapon = capturedWeapon;
+                        personaBond = capturedBond;
+                        personaMilestone = capturedMilestone;
+                        personaKillScope = killScope;
+                    }
+                }
+            }
+
+            routesDeathDescription = deathDescription && personaMilestone == null;
+            batchGroup = routesDeathDescription || personaMilestone != null
+                ? null
+                : DiaryGameComponent.TaleBatchGroupFor(taleDef);
 
             payload = new TaleEventData
             {
                 PawnId = firstPawn?.GetUniqueLoadID() ?? string.Empty,
                 Tick = Find.TickManager.TicksGame,
-                DefName = taleDef.defName,
+                DefName = personaMilestone != null
+                    ? PersonaMilestoneContextFormatter.FirstKillDefName
+                    : taleDef.defName,
                 FirstPawnId = firstPawn?.GetUniqueLoadID(),
                 SecondPawnId = secondPawn?.GetUniqueLoadID(),
                 FirstEligible = firstEligible,
                 SecondEligible = secondEligible,
-                IsCoveredElsewhere = TaleEventData.CoveredElsewhere.Contains(taleDef.defName),
+                IsCoveredElsewhere = personaMilestone == null
+                    && TaleEventData.CoveredElsewhere.Contains(taleDef.defName),
                 IsGameConditionDuplicate = DefDatabase<GameConditionDef>.GetNamedSilentFail(taleDef.defName) != null,
                 IsBatched = batchGroup != null,
-                IsDeathDescription = deathDescription,
+                IsDeathDescription = routesDeathDescription,
+                ForceSolo = personaMilestone != null,
+                ForceFirstPawnPov = personaMilestone != null && ReferenceEquals(personaKiller, firstPawn),
             };
         }
 
@@ -74,7 +147,9 @@ namespace PawnDiary.Ingestion
         {
             return DiaryGameComponent.BuildCaptureContext(
                 eligible: firstEligible || secondEligible,
-                userEnabled: PawnDiaryMod.Settings.IsTaleEnabled(taleDef),
+                userEnabled: personaMilestoneGroup != null
+                    ? PawnDiaryMod.Settings.IsGroupEnabled(personaMilestoneGroup.defName)
+                    : PawnDiaryMod.Settings.IsTaleEnabled(taleDef),
                 signalEnabled: true,
                 ambientSignalEnabled: true);
         }
@@ -85,7 +160,7 @@ namespace PawnDiary.Ingestion
 
         public override string EventTypeDedupKey(DiaryEventData payload, CaptureDecision decision)
         {
-            return deathDescription
+            return routesDeathDescription
                 ? GenericEventTypeDedup.DeathDescriptionKey(deathVictim?.GetUniqueLoadID())
                 : string.Empty;
         }
@@ -94,17 +169,48 @@ namespace PawnDiary.Ingestion
         {
             // Pure routing (unit-tested in DiaryCapturePolicyTests); this method only renders the live
             // text and drives the sink for the chosen shape.
-            TaleEventData.TaleEmitPlan plan = TaleEventData.PlanEmit(decision, firstEligible);
+            TaleEventData.TaleEmitPlan plan = TaleEventData.PlanEmit(
+                decision, firstEligible, payload.ForceSolo, payload.ForceFirstPawnPov);
             if (plan.Shape == TaleEventData.TaleEmitShape.Drop)
             {
                 return;
             }
 
-            string label = CleanTaleLabel(taleDef);
+            string sourceLabel = CleanTaleLabel(taleDef);
+            string label = personaMilestone != null
+                ? "PawnDiary.Event.Persona.FirstKill.Label".Translate().Resolve()
+                : sourceLabel;
             Def attachedDef = AttachedDefFor(tale);
-            string instruction = InteractionGroups.InstructionForTale(taleDef);
-            string gameContext = BuildTaleGameContext(tale, taleDef, label, attachedDef);
-            if (deathDescription)
+            string instruction = personaMilestone != null
+                ? InteractionGroups.InstructionForPersonaWeapon(personaMilestoneGroup)
+                : InteractionGroups.InstructionForTale(taleDef);
+            string gameContext;
+            if (personaMilestone != null)
+            {
+                gameContext = TaleEventData.BuildGameContext(
+                    PersonaMilestoneContextFormatter.FirstKillDefName,
+                    label,
+                    tale.GetType().Name,
+                    attachedDef?.defName,
+                    attachedDef == null
+                        ? string.Empty
+                        : DiaryLineCleaner.CleanLine(attachedDef.LabelCap.Resolve()));
+                gameContext = PersonaMilestoneContextFormatter.FormatFirstKill(
+                    gameContext,
+                    personaWeapon,
+                    personaBond,
+                    personaMilestone.selectedTraits,
+                    taleDef.defName,
+                    sourceLabel,
+                    personaKillerRole,
+                    personaVictimRole,
+                    DiaryRoyaltyPolicy.Snapshot());
+            }
+            else
+            {
+                gameContext = BuildTaleGameContext(tale, taleDef, label, attachedDef);
+            }
+            if (routesDeathDescription)
             {
                 gameContext = AppendDeathDescriptionContext(gameContext, deathVictim, firstPawn, secondPawn);
             }
@@ -122,7 +228,7 @@ namespace PawnDiary.Ingestion
             if (plan.Shape == TaleEventData.TaleEmitShape.Pair)
             {
                 string text = BuildTalePairText(firstPawn, secondPawn, label, attachedDef);
-                DiaryEvent pairEvent = CreatePairwiseEvent(sink, firstPawn, secondPawn, taleDef.defName, label,
+                DiaryEvent pairEvent = CreatePairwiseEvent(sink, firstPawn, secondPawn, payload.DefName, label,
                     text, text, instruction, gameContext);
                 if (plan.DeathDescription)
                 {
@@ -138,14 +244,29 @@ namespace PawnDiary.Ingestion
             // Solo.
             Pawn povPawn = plan.PovIsFirstPawn ? firstPawn : secondPawn;
             Pawn otherPawn = plan.PovIsFirstPawn ? secondPawn : firstPawn;
-            string soloText = DiaryGameComponent.BuildTaleSoloText(povPawn, label, otherPawn, attachedDef);
+            string soloText = personaMilestone != null
+                ? "PawnDiary.Event.Persona.FirstKill.Fallback".Translate(
+                    personaKiller.LabelShortCap,
+                    string.IsNullOrWhiteSpace(personaWeapon.displayName)
+                        ? "PawnDiary.Event.Persona.WeaponFallback".Translate().Resolve()
+                        : personaWeapon.displayName,
+                    personaVictim.LabelShortCap).Resolve()
+                : DiaryGameComponent.BuildTaleSoloText(povPawn, label, otherPawn, attachedDef);
             DiaryEvent soloEvent = CreateSoloEvent(
-                sink, povPawn, otherPawn, taleDef.defName, label, soloText, instruction, gameContext);
+                sink, povPawn, otherPawn, payload.DefName, label, soloText, instruction, gameContext);
             if (plan.DeathDescription)
             {
                 sink.AddDeathEventRef(deathVictim, soloEvent.eventId);
                 sink.QueueDeathDescriptionFor(soloEvent);
                 return;
+            }
+
+            if (personaMilestone != null)
+            {
+                sink.MarkRoyaltyPersonaMilestoneAccepted(
+                    personaWeapon.weaponThingId, personaBond.bondEpoch);
+                PersonaKillThoughtCorrelation.Claim(personaKillScope, payload.Tick);
+                ApplyPersonaNarrativeEvidence(sink, soloEvent);
             }
 
             sink.QueueSolo(soloEvent, DiaryEvent.InitiatorRole);
@@ -266,6 +387,57 @@ namespace PawnDiary.Ingestion
             }
 
             return null;
+        }
+
+        private static Pawn PawnForRole(string role, Pawn firstPawn, Pawn secondPawn)
+        {
+            if (string.Equals(role, RoyaltyTaleRoleTokens.Initiator, StringComparison.Ordinal))
+                return firstPawn;
+            if (string.Equals(role, RoyaltyTaleRoleTokens.Recipient, StringComparison.Ordinal))
+                return secondPawn;
+            return null;
+        }
+
+        private void ApplyPersonaNarrativeEvidence(DiaryGameComponent sink, DiaryEvent diaryEvent)
+        {
+            try
+            {
+                string pawnId = personaKiller.GetUniqueLoadID();
+                NarrativeEvidence evidence = RoyaltyNarrativeEvidenceFactory.Persona(
+                    diaryEvent.eventId,
+                    diaryEvent.tick,
+                    pawnId,
+                    DiaryEvent.InitiatorRole,
+                    personaWeapon,
+                    personaBond.bondEpoch,
+                    PersonaNarrativePhaseTokens.FirstConsequentialKill,
+                    string.Empty,
+                    payload.DefName,
+                    pawnCanKnow: true);
+                if (evidence == null) return;
+                NarrativeContextBuildResult result = NarrativeContextBuilder.Build(
+                    new NarrativeContextBuildRequest
+                    {
+                        eventId = diaryEvent.eventId,
+                        eventTick = diaryEvent.tick,
+                        povPawnId = pawnId,
+                        povRole = DiaryEvent.InitiatorRole,
+                        royalty = sink.RoyaltyNarrativeSnapshotFor(personaKiller, diaryEvent.tick),
+                        recentSelectedCandidateKeys = sink.RecentNarrativeSelectedCandidateKeys(pawnId),
+                        contextDetailLevel = PawnDiarySettings.NormalizeContextDetailLevel(
+                            PawnDiaryMod.Settings?.contextDetailLevel ?? PromptContextDetailLevel.Full),
+                        evidence = new List<NarrativeEvidence> { evidence }
+                    });
+                if (result.evidence.Count > 0)
+                    diaryEvent.ApplyNarrativeContext(DiaryEvent.InitiatorRole, result);
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Persona first-kill Narrative Continuity evidence failed; the page remains: "
+                    + exception,
+                    "PawnDiary.PersonaMilestone.NarrativeEvidence".GetHashCode());
+            }
         }
 
         private static string DeathVictimRole(Pawn deathVictim, Pawn firstPawn, Pawn secondPawn)

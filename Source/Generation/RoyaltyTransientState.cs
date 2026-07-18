@@ -22,6 +22,7 @@ namespace PawnDiary
         /// <summary>Drops every process-local correlation so one colony can never leak into another.</summary>
         public static void Reset()
         {
+            PersonaKillThoughtCorrelation.Clear();
             activeCauseScopes.Clear();
             unclaimedMutations.Clear();
             permitOwners.Clear();
