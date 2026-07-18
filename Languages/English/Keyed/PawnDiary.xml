@@ -86,6 +86,12 @@
   <PawnDiary.Dev.PromptSuite.Quest.Text>{0} learned that the colony accepted a synthetic quest.</PawnDiary.Dev.PromptSuite.Quest.Text>
   <PawnDiary.Dev.PromptSuite.Ritual.Label>Ritual finished</PawnDiary.Dev.PromptSuite.Ritual.Label>
   <PawnDiary.Dev.PromptSuite.Ritual.Text>{0} stood among the colonists as a synthetic ritual ended.</PawnDiary.Dev.PromptSuite.Ritual.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalBestowing.Label>Royal bestowing with exact mutations</PawnDiary.Dev.PromptSuite.RoyalBestowing.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalBestowing.Markers>ritual=BestowingCeremony; ritual_title=Bestowing ceremony; ritual_behavior=RitualOutcomeEffectWorker_Bestowing; ritual_perspective=target; ritual_role=target; outcome=finished; quality=good; royal_mutation_pawn={0}; royal_cause=imperial_bestowing; royal_transition=promotion; royal_faction_id=Faction_Empire; royal_faction=Empire; previous_title=Yeoman; previous_title_def=Yeoman; title=Acolyte; title_def=Acolyte; royal_duty_changes=throne_room; previous_psylink_level=1; psylink_level=2; psylink_cause=imperial_bestowing</PawnDiary.Dev.PromptSuite.RoyalBestowing.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalBestowing.Text>{0} stood at the center of a completed bestowing ceremony.</PawnDiary.Dev.PromptSuite.RoyalBestowing.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalAnimaLinking.Label>Anima linking with exact psylink</PawnDiary.Dev.PromptSuite.RoyalAnimaLinking.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalAnimaLinking.Markers>ritual=AnimaTreeLinking; ritual_title=Anima tree linking; ritual_behavior=RitualBehaviorWorker_AnimaLinking; ritual_perspective=target; ritual_role=target; outcome=finished; quality=good; royal_mutation_pawn={0}; royal_cause=anima_linking; previous_psylink_level=2; psylink_level=3; psylink_cause=anima_linking</PawnDiary.Dev.PromptSuite.RoyalAnimaLinking.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalAnimaLinking.Text>{0} completed a linking ceremony at the anima tree.</PawnDiary.Dev.PromptSuite.RoyalAnimaLinking.Text>
   <PawnDiary.Dev.PromptSuite.Ability.Label>Ability used</PawnDiary.Dev.PromptSuite.Ability.Label>
   <PawnDiary.Dev.PromptSuite.Ability.Text>{0} used a synthetic psycast ability for the diary test.</PawnDiary.Dev.PromptSuite.Ability.Text>
   <PawnDiary.Dev.PromptSuite.DayReflection.Label>End of day</PawnDiary.Dev.PromptSuite.DayReflection.Label>
@@ -96,10 +102,25 @@
   <PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Text>{0} reached Construction 12, one of their major passion skills.</PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionPsylink.Label>Psylink level gained</PawnDiary.Dev.PromptSuite.ProgressionPsylink.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionPsylink.Text>{0} felt the psylink settle deeper, rising to level 3.</PawnDiary.Dev.PromptSuite.ProgressionPsylink.Text>
+  <PawnDiary.Dev.PromptSuite.ProgressionPsylinkNeuroformer.Label>Neuroformer psylink gain</PawnDiary.Dev.PromptSuite.ProgressionPsylinkNeuroformer.Label>
+  <PawnDiary.Dev.PromptSuite.ProgressionPsylinkNeuroformer.Markers>progression=PsylinkLevel; progression_kind=psylink; previous_value=2; new_value=3; royal_mutation_pawn={0}; royal_cause=neuroformer; previous_psylink_level=2; psylink_level=3; psylink_cause=neuroformer</PawnDiary.Dev.PromptSuite.ProgressionPsylinkNeuroformer.Markers>
+  <PawnDiary.Dev.PromptSuite.ProgressionPsylinkNeuroformer.Text>{0} used a neuroformer and gained an exact psylink level.</PawnDiary.Dev.PromptSuite.ProgressionPsylinkNeuroformer.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Label>Sanguophage xenotype</PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Text>{0}'s body changed from baseliner to sanguophage.</PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Label>Royal title changed</PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Text>{0}'s title changed from Yeoman to Knight.</PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleGained.Label>First royal title</PawnDiary.Dev.PromptSuite.RoyalTitleGained.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleGained.Markers>progression=RoyalTitleGained; progression_kind=royal_title; previous_value=none; new_value=Yeoman; royal_mutation_pawn={0}; royal_cause=unknown; royal_transition=first_title; royal_faction_id=Faction_Empire; royal_faction=Empire; previous_title=none; previous_title_def=none; title=Yeoman; title_def=Yeoman</PawnDiary.Dev.PromptSuite.RoyalTitleGained.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleGained.Text>{0} received a first title from the Empire.</PawnDiary.Dev.PromptSuite.RoyalTitleGained.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalTitlePromoted.Label>Royal promotion</PawnDiary.Dev.PromptSuite.RoyalTitlePromoted.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalTitlePromoted.Markers>progression=RoyalTitlePromoted; progression_kind=royal_title; previous_value=Yeoman; new_value=Acolyte; royal_mutation_pawn={0}; royal_cause=unknown; royal_transition=promotion; royal_faction_id=Faction_Empire; royal_faction=Empire; previous_title=Yeoman; previous_title_def=Yeoman; title=Acolyte; title_def=Acolyte; royal_duty_changes=throne_room</PawnDiary.Dev.PromptSuite.RoyalTitlePromoted.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalTitlePromoted.Text>{0}'s imperial title rose from Yeoman to Acolyte.</PawnDiary.Dev.PromptSuite.RoyalTitlePromoted.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleDemoted.Label>Royal demotion</PawnDiary.Dev.PromptSuite.RoyalTitleDemoted.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleDemoted.Markers>progression=RoyalTitleDemoted; progression_kind=royal_title; previous_value=Acolyte; new_value=Yeoman; royal_mutation_pawn={0}; royal_cause=unknown; royal_transition=demotion; royal_faction_id=Faction_Empire; royal_faction=Empire; previous_title=Acolyte; previous_title_def=Acolyte; title=Yeoman; title_def=Yeoman</PawnDiary.Dev.PromptSuite.RoyalTitleDemoted.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleDemoted.Text>{0}'s imperial title fell from Acolyte to Yeoman.</PawnDiary.Dev.PromptSuite.RoyalTitleDemoted.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleLost.Label>Royal title lost</PawnDiary.Dev.PromptSuite.RoyalTitleLost.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleLost.Markers>progression=RoyalTitleLost; progression_kind=royal_title; previous_value=Yeoman; new_value=none; royal_mutation_pawn={0}; royal_cause=unknown; royal_transition=loss; royal_faction_id=Faction_Empire; royal_faction=Empire; previous_title=Yeoman; previous_title_def=Yeoman; title=none; title_def=none</PawnDiary.Dev.PromptSuite.RoyalTitleLost.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleLost.Text>{0} completely lost the imperial title of Yeoman.</PawnDiary.Dev.PromptSuite.RoyalTitleLost.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>New trait gained</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>{0}'s character took a lasting turn: they became nervous.</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>
   <PawnDiary.Dev.PromptSuite.BiotechGrowth.Label>Biotech growth moment</PawnDiary.Dev.PromptSuite.BiotechGrowth.Label>
@@ -1302,6 +1323,16 @@
   <PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Text>The threat {0} called, led by {1}, was defeated.</PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Text>
   <PawnDiary.Event.ProgressionRoyalTitleLabel>Royal title: {0}</PawnDiary.Event.ProgressionRoyalTitleLabel>
   <PawnDiary.Event.ProgressionRoyalTitleText>{0}'s royal title changed from {1} to {2}.</PawnDiary.Event.ProgressionRoyalTitleText>
+  <PawnDiary.Event.RoyalTitle.None>none</PawnDiary.Event.RoyalTitle.None>
+  <PawnDiary.Event.RoyalTitle.UnknownFaction>unknown faction</PawnDiary.Event.RoyalTitle.UnknownFaction>
+  <PawnDiary.Event.RoyalTitle.Gained.Label>First royal title: {0} — {1}</PawnDiary.Event.RoyalTitle.Gained.Label>
+  <PawnDiary.Event.RoyalTitle.Gained.Text>{0} received the title {2} in {3}.</PawnDiary.Event.RoyalTitle.Gained.Text>
+  <PawnDiary.Event.RoyalTitle.Promoted.Label>Royal promotion: {0} — {1}</PawnDiary.Event.RoyalTitle.Promoted.Label>
+  <PawnDiary.Event.RoyalTitle.Promoted.Text>{0}'s title in {3} rose from {1} to {2}.</PawnDiary.Event.RoyalTitle.Promoted.Text>
+  <PawnDiary.Event.RoyalTitle.Demoted.Label>Royal demotion: {0} — {1}</PawnDiary.Event.RoyalTitle.Demoted.Label>
+  <PawnDiary.Event.RoyalTitle.Demoted.Text>{0}'s title in {3} fell from {1} to {2}.</PawnDiary.Event.RoyalTitle.Demoted.Text>
+  <PawnDiary.Event.RoyalTitle.Lost.Label>Royal title lost: {0} — {1}</PawnDiary.Event.RoyalTitle.Lost.Label>
+  <PawnDiary.Event.RoyalTitle.Lost.Text>{0} completely lost the title {1} in {3}.</PawnDiary.Event.RoyalTitle.Lost.Text>
   <PawnDiary.Event.ProgressionTraitLabel>New trait: {0}</PawnDiary.Event.ProgressionTraitLabel>
   <PawnDiary.Event.ProgressionTraitText>{0}'s character took a lasting turn: they became {1}.</PawnDiary.Event.ProgressionTraitText>
   <PawnDiary.Event.ArcReflectionLabel>Year {0} reflection</PawnDiary.Event.ArcReflectionLabel>

@@ -54,7 +54,11 @@ namespace PawnDiary
         public int maximumDutyCategoryTokens = 2;
         public int titleCorrelationTicks = 2500;
         public int psylinkCorrelationTicks = 2500;
+        public int titleThoughtCorrelationTicks = 2500;
         public int killThoughtCorrelationTicks = 60;
+        public int maximumPendingRoyalMutations = 64;
+        public int maximumPendingTitleThoughts = 128;
+        public int maximumRoyaltyContextCharacters = 120;
         public int killThoughtWeight = 100;
         public int bondedThoughtWeight = 70;
         public int bondedHediffWeight = 60;
@@ -70,6 +74,11 @@ namespace PawnDiary
             new List<DiaryRoyaltyTraitWorkerRuleDef>();
         public List<DiaryRoyaltyTraitOverrideDef> traitOverrides =
             new List<DiaryRoyaltyTraitOverrideDef>();
+        // Plain defName strings only: these do not create Royalty Def cross-references when the DLC
+        // is absent. They identify exact canonical ritual/item routes at the guarded adapter edge.
+        public List<string> bestowingRitualDefNames = new List<string>();
+        public List<string> animaRitualDefNames = new List<string>();
+        public List<string> neuroformerThingDefNames = new List<string>();
 
         /// <summary>Reports malformed tunable policy during Def loading.</summary>
         public override IEnumerable<string> ConfigErrors()
@@ -86,8 +95,13 @@ namespace PawnDiary
             if (maximumDutyCategoryTokens < 1 || maximumDutyCategoryTokens > 8)
                 yield return "maximumDutyCategoryTokens must be between 1 and 8.";
             if (titleCorrelationTicks <= 0 || psylinkCorrelationTicks <= 0
-                || killThoughtCorrelationTicks <= 0)
+                || titleThoughtCorrelationTicks <= 0 || killThoughtCorrelationTicks <= 0)
                 yield return "Royal mutation correlation windows must be positive.";
+            if (maximumPendingRoyalMutations < 1 || maximumPendingRoyalMutations > 256
+                || maximumPendingTitleThoughts < 1 || maximumPendingTitleThoughts > 512)
+                yield return "Royal transient admission caps are outside their safe ranges.";
+            if (maximumRoyaltyContextCharacters < 20 || maximumRoyaltyContextCharacters > 512)
+                yield return "maximumRoyaltyContextCharacters must be between 20 and 512.";
             if (killThoughtWeight <= 0 || bondedThoughtWeight <= 0 || bondedHediffWeight <= 0
                 || equippedHediffWeight <= 0 || exactOverrideMaximumWeight <= 0)
                 yield return "persona trait relevance weights must be positive.";
@@ -170,6 +184,29 @@ namespace PawnDiary
                         yield return "traitOverrides row " + i + " needs safe tokens and a positive weight unless excluded.";
                 }
             }
+
+            foreach (string error in TokenListErrors(bestowingRitualDefNames, "bestowingRitualDefNames"))
+                yield return error;
+            foreach (string error in TokenListErrors(animaRitualDefNames, "animaRitualDefNames"))
+                yield return error;
+            foreach (string error in TokenListErrors(neuroformerThingDefNames, "neuroformerThingDefNames"))
+                yield return error;
+        }
+
+        private static IEnumerable<string> TokenListErrors(List<string> values, string fieldName)
+        {
+            if (values == null || values.Count == 0)
+            {
+                yield return fieldName + " must contain at least one exact defName string.";
+                yield break;
+            }
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < values.Count; i++)
+            {
+                string token = Clean(values[i]);
+                if (!SafeToken(token)) yield return fieldName + " row " + i + " is unsafe.";
+                else if (!seen.Add(token)) yield return fieldName + " repeats '" + token + "'.";
+            }
         }
 
         private static bool SafeToken(string value)
@@ -217,8 +254,16 @@ namespace PawnDiary
                 source.maximumDutyCategoryTokens, 1, 8, result.maximumDutyCategoryTokens);
             result.titleCorrelationTicks = Positive(source.titleCorrelationTicks, result.titleCorrelationTicks);
             result.psylinkCorrelationTicks = Positive(source.psylinkCorrelationTicks, result.psylinkCorrelationTicks);
+            result.titleThoughtCorrelationTicks = Positive(
+                source.titleThoughtCorrelationTicks, result.titleThoughtCorrelationTicks);
             result.killThoughtCorrelationTicks = Positive(
                 source.killThoughtCorrelationTicks, result.killThoughtCorrelationTicks);
+            result.maximumPendingRoyalMutations = Between(
+                source.maximumPendingRoyalMutations, 1, 256, result.maximumPendingRoyalMutations);
+            result.maximumPendingTitleThoughts = Between(
+                source.maximumPendingTitleThoughts, 1, 512, result.maximumPendingTitleThoughts);
+            result.maximumRoyaltyContextCharacters = Between(
+                source.maximumRoyaltyContextCharacters, 20, 512, result.maximumRoyaltyContextCharacters);
             result.killThoughtWeight = Positive(source.killThoughtWeight, result.killThoughtWeight);
             result.bondedThoughtWeight = Positive(source.bondedThoughtWeight, result.bondedThoughtWeight);
             result.bondedHediffWeight = Positive(source.bondedHediffWeight, result.bondedHediffWeight);
@@ -235,6 +280,9 @@ namespace PawnDiary
             if (companionTales.Count > 0) result.personaKillCompanionTales = companionTales;
             result.traitWorkerRules = CopyWorkers(source.traitWorkerRules);
             result.traitOverrides = CopyOverrides(source.traitOverrides);
+            CopyTokens(source.bestowingRitualDefNames, result.bestowingRitualDefNames);
+            CopyTokens(source.animaRitualDefNames, result.animaRitualDefNames);
+            CopyTokens(source.neuroformerThingDefNames, result.neuroformerThingDefNames);
             cached = result;
             cachedLanguage = LanguageDatabase.activeLanguage;
             return result;
@@ -330,6 +378,21 @@ namespace PawnDiary
                 });
             }
             return result;
+        }
+
+        private static void CopyTokens(List<string> source, List<string> destination)
+        {
+            if (source == null || destination == null) return;
+            List<string> result = new List<string>();
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < source.Count; i++)
+            {
+                string token = Safe(source[i]);
+                if (token.Length > 0 && seen.Add(token)) result.Add(token);
+            }
+            if (result.Count == 0) return;
+            destination.Clear();
+            destination.AddRange(result);
         }
 
         private static string Safe(string value)

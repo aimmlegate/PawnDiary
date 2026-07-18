@@ -222,6 +222,64 @@
     <enhancement>Use only the supplied victim, source Tale, weapon, bond state, and selected trait facts. Keep the killer as the sole point of view; do not invent dialogue, motives for the weapon, another attack, or the victim&apos;s inner experience.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
+  <!-- Royalty R4 exact title/psylink mutation owners. These keys are plain source defName strings;
+       they are not cross-references to paid-DLC Defs and remain inert when Royalty is absent. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalTitleGained</defName>
+    <label>first royal title</label>
+    <eventType>RoyalTitleGained</eventType>
+    <prompt>Write the pawn receiving their first exact title in the supplied royal faction.</prompt>
+    <enhancement>Preserve the faction, new title, and cause exactly. Show first rank as recognition, obligation, pride, or unease; do not invent a ceremony, duties, or faction mechanics.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalTitlePromoted</defName>
+    <label>royal promotion</label>
+    <eventType>RoyalTitlePromoted</eventType>
+    <prompt>Write an exact promotion from the supplied previous title to the new title in one faction.</prompt>
+    <enhancement>Keep both titles and the faction correct. Optional supplied duty changes may color the reaction, but do not list mechanics or invent a bestowing ceremony.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalTitleDemoted</defName>
+    <label>royal demotion</label>
+    <eventType>RoyalTitleDemoted</eventType>
+    <prompt>Write an exact demotion from the supplied previous title to the lower title in one faction.</prompt>
+    <enhancement>Keep both titles and the faction correct. Center loss of standing, relief, shame, anger, or changed responsibility without inventing blame or political events.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalTitleLost</defName>
+    <label>royal title lost</label>
+    <eventType>RoyalTitleLost</eventType>
+    <prompt>Write the complete loss of the supplied previous royal title in its exact faction.</prompt>
+    <enhancement>Treat the new title value none as complete loss, not promotion or transfer. Use only the supplied cause; do not invent death, succession, punishment, or a replacement title.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_PsylinkLevel</defName>
+    <label>psylink gain</label>
+    <eventType>PsylinkLevel</eventType>
+    <prompt>Write the exact supplied psylink level increase and its known or unknown cause.</prompt>
+    <enhancement>Preserve the before/after levels and cause. Write lived psychic sensation, responsibility, or unease without naming unprovided powers or explaining implant and ritual mechanics.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_BestowingCeremony</defName>
+    <label>royal bestowing ceremony</label>
+    <eventType>BestowingCeremony</eventType>
+    <prompt>Write the completed imperial bestowing ceremony from the supplied ritual role.</prompt>
+    <enhancement>Use the exact mutation pawn, faction, title before/after, psylink before/after, and imperial_bestowing cause when present. Keep all changes in this ritual page; do not invent honors, speeches, powers, or another progression scene.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_AnimaTreeLinking</defName>
+    <label>anima linking ceremony</label>
+    <eventType>AnimaTreeLinking</eventType>
+    <prompt>Write the completed anima linking ceremony from the supplied ritual role.</prompt>
+    <enhancement>Use the exact psylink before/after and anima_linking cause when present. Keep the psychic change in this ritual page and do not invent powers, imperial rank, or extra ritual effects.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
   <!-- Broad-domain fallback for integration-API events (see INTEGRATIONS.md). Adapter mods can
        ship a narrower DiaryEventPromptDef keyed by their eventKey or group defName; this row only
        catches External events with no more specific policy loaded. -->

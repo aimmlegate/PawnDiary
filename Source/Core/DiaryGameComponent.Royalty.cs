@@ -40,7 +40,7 @@ namespace PawnDiary
             int now = Find.TickManager?.TicksGame ?? 0;
             RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
 
-            if (royaltyPersonaObservationVersion < RoyaltyStatePersistence.CurrentObservationVersion)
+            if (royaltyPersonaObservationVersion < RoyaltyStatePersistence.CurrentPersonaObservationVersion)
             {
                 List<PersonaBondStateSnapshot> baselines = new List<PersonaBondStateSnapshot>();
                 HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
@@ -63,7 +63,7 @@ namespace PawnDiary
                 royaltyPersonaBonds = new List<PersonaBondState>();
                 for (int i = 0; i < baselines.Count; i++)
                     royaltyPersonaBonds.Add(PersonaBondState.FromSnapshot(baselines[i]));
-                royaltyPersonaObservationVersion = RoyaltyStatePersistence.CurrentObservationVersion;
+                royaltyPersonaObservationVersion = RoyaltyStatePersistence.CurrentPersonaObservationVersion;
             }
 
             for (int i = 0; i < colonists.Count; i++)
@@ -74,7 +74,8 @@ namespace PawnDiary
                 PawnProgressionState progression = diary?.EnsureProgressionState();
                 RoyaltyPawnProgressionState royalty = progression?.EnsureRoyaltyState();
                 if (royalty == null
-                    || royalty.observationVersion >= RoyaltyStatePersistence.CurrentObservationVersion)
+                    || (royalty.observationVersion >= RoyaltyStatePersistence.CurrentObservationVersion
+                        && royalty.observationAvailable))
                     continue;
 
                 List<RoyalTitleSnapshot> titles = DlcContext.CaptureRoyalTitles(pawn);
@@ -93,7 +94,7 @@ namespace PawnDiary
         private void NormalizeRoyaltyPersonaBonds()
         {
             royaltyPersonaObservationVersion = Math.Max(0, Math.Min(
-                RoyaltyStatePersistence.CurrentObservationVersion,
+                RoyaltyStatePersistence.CurrentPersonaObservationVersion,
                 royaltyPersonaObservationVersion));
             List<PersonaBondStateSnapshot> source = new List<PersonaBondStateSnapshot>();
             if (royaltyPersonaBonds != null)
@@ -344,7 +345,7 @@ namespace PawnDiary
                     royaltyPersonaBonds.Add(PersonaBondState.FromSnapshot(normalized));
                     NormalizeRoyaltyPersonaBonds();
                 }
-                royaltyPersonaObservationVersion = RoyaltyStatePersistence.CurrentObservationVersion;
+                royaltyPersonaObservationVersion = RoyaltyStatePersistence.CurrentPersonaObservationVersion;
             }
 
             if (!lifecycle.shouldEmit || group == null || pawn == null) return false;
@@ -375,7 +376,7 @@ namespace PawnDiary
             if (state == null || state.bondEpoch != bondEpoch
                 || state.phaseToken != PersonaBondPhaseTokens.Separated) return;
             state.separationEmitted = true;
-            royaltyPersonaObservationVersion = RoyaltyStatePersistence.CurrentObservationVersion;
+            royaltyPersonaObservationVersion = RoyaltyStatePersistence.CurrentPersonaObservationVersion;
         }
 
         private bool HasLivePersonaBond(string weaponThingId, string pawnId)
@@ -450,7 +451,7 @@ namespace PawnDiary
             List<PersonaWeaponSnapshot> visiblePersonaWeapons =
                 DlcContext.CapturePersonaWeapons(pawn);
 
-            if (royaltyPersonaObservationVersion >= RoyaltyStatePersistence.CurrentObservationVersion
+            if (royaltyPersonaObservationVersion >= RoyaltyStatePersistence.CurrentPersonaObservationVersion
                 && royaltyPersonaBonds != null)
             {
                 for (int i = 0; i < royaltyPersonaBonds.Count; i++)

@@ -489,4 +489,10 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_SoloImportant.fields.104.label>source tale name</DiaryPromptTemplate_SoloImportant.fields.104.label>
   <DiaryPromptTemplate_SoloImportant.fields.105.label>killer tale role</DiaryPromptTemplate_SoloImportant.fields.105.label>
   <DiaryPromptTemplate_SoloImportant.fields.106.label>victim tale role</DiaryPromptTemplate_SoloImportant.fields.106.label>
+  <DiaryPromptTemplate_SoloImportant.fields.107.label>royal mutation pawn</DiaryPromptTemplate_SoloImportant.fields.107.label>
+  <DiaryPromptTemplate_SoloImportant.fields.108.label>royal cause</DiaryPromptTemplate_SoloImportant.fields.108.label>
+  <DiaryPromptTemplate_SoloImportant.fields.109.label>royal transition</DiaryPromptTemplate_SoloImportant.fields.109.label>
+  <DiaryPromptTemplate_SoloImportant.fields.110.label>royal faction</DiaryPromptTemplate_SoloImportant.fields.110.label>
+  <DiaryPromptTemplate_SoloImportant.fields.111.label>psylink cause</DiaryPromptTemplate_SoloImportant.fields.111.label>
+  <DiaryPromptTemplate_SoloImportant.fields.112.label>new royal duties</DiaryPromptTemplate_SoloImportant.fields.112.label>
 </LanguageData>

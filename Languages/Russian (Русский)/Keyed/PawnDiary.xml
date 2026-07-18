@@ -80,6 +80,12 @@
   <PawnDiary.Dev.PromptSuite.Quest.Text>Новость для {0}: поселение приняло тестовое задание.</PawnDiary.Dev.PromptSuite.Quest.Text>
   <PawnDiary.Dev.PromptSuite.Ritual.Label>Ритуал завершён</PawnDiary.Dev.PromptSuite.Ritual.Label>
   <PawnDiary.Dev.PromptSuite.Ritual.Text>{0}: тестовый ритуал завершился среди собравшихся поселенцев.</PawnDiary.Dev.PromptSuite.Ritual.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalBestowing.Label>Королевское пожалование с точными переменами</PawnDiary.Dev.PromptSuite.RoyalBestowing.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalBestowing.Markers>ritual=BestowingCeremony; ritual_title=церемония пожалования; ritual_behavior=RitualOutcomeEffectWorker_Bestowing; ritual_perspective=target; ritual_role=target; outcome=finished; quality=good; royal_mutation_pawn={0}; royal_cause=imperial_bestowing; royal_transition=promotion; royal_faction_id=Faction_Empire; royal_faction=Империя; previous_title=йомен; previous_title_def=Yeoman; title=аколит; title_def=Acolyte; royal_duty_changes=throne_room; previous_psylink_level=1; psylink_level=2; psylink_cause=imperial_bestowing</PawnDiary.Dev.PromptSuite.RoyalBestowing.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalBestowing.Text>{0} оказался в центре завершённой церемонии пожалования.</PawnDiary.Dev.PromptSuite.RoyalBestowing.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalAnimaLinking.Label>Связь с древом анима и точная пси-связь</PawnDiary.Dev.PromptSuite.RoyalAnimaLinking.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalAnimaLinking.Markers>ritual=AnimaTreeLinking; ritual_title=связь с древом анима; ritual_behavior=RitualBehaviorWorker_AnimaLinking; ritual_perspective=target; ritual_role=target; outcome=finished; quality=good; royal_mutation_pawn={0}; royal_cause=anima_linking; previous_psylink_level=2; psylink_level=3; psylink_cause=anima_linking</PawnDiary.Dev.PromptSuite.RoyalAnimaLinking.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalAnimaLinking.Text>{0} завершил церемонию связи у древа анима.</PawnDiary.Dev.PromptSuite.RoyalAnimaLinking.Text>
   <PawnDiary.Dev.PromptSuite.Ability.Label>Способность применена</PawnDiary.Dev.PromptSuite.Ability.Label>
   <PawnDiary.Dev.PromptSuite.Ability.Text>Проверка дневника: применение тестовой пси-способности у {0}.</PawnDiary.Dev.PromptSuite.Ability.Text>
   <PawnDiary.Dev.PromptSuite.DayReflection.Label>Конец дня</PawnDiary.Dev.PromptSuite.DayReflection.Label>
@@ -90,10 +96,25 @@
   <PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Text>Строительство у {0} поднялось до 12; этот навык давно был больше простого труда.</PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionPsylink.Label>Уровень пси-связи вырос</PawnDiary.Dev.PromptSuite.ProgressionPsylink.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionPsylink.Text>Пси-связь у {0} стала глубже и дошла до третьего уровня.</PawnDiary.Dev.PromptSuite.ProgressionPsylink.Text>
+  <PawnDiary.Dev.PromptSuite.ProgressionPsylinkNeuroformer.Label>Рост пси-связи от нейроформера</PawnDiary.Dev.PromptSuite.ProgressionPsylinkNeuroformer.Label>
+  <PawnDiary.Dev.PromptSuite.ProgressionPsylinkNeuroformer.Markers>progression=PsylinkLevel; progression_kind=psylink; previous_value=2; new_value=3; royal_mutation_pawn={0}; royal_cause=neuroformer; previous_psylink_level=2; psylink_level=3; psylink_cause=neuroformer</PawnDiary.Dev.PromptSuite.ProgressionPsylinkNeuroformer.Markers>
+  <PawnDiary.Dev.PromptSuite.ProgressionPsylinkNeuroformer.Text>{0} применил нейроформер и получил точный новый уровень пси-связи.</PawnDiary.Dev.PromptSuite.ProgressionPsylinkNeuroformer.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Label>Ксенотип сангофага</PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Text>Тело {0} перестало быть базовым и стало телом сангофага.</PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Label>Королевский титул изменился</PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Text>Титул {0} сменился с йомена на рыцаря.</PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleGained.Label>Первый королевский титул</PawnDiary.Dev.PromptSuite.RoyalTitleGained.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleGained.Markers>progression=RoyalTitleGained; progression_kind=royal_title; previous_value=none; new_value=йомен; royal_mutation_pawn={0}; royal_cause=unknown; royal_transition=first_title; royal_faction_id=Faction_Empire; royal_faction=Империя; previous_title=none; previous_title_def=none; title=йомен; title_def=Yeoman</PawnDiary.Dev.PromptSuite.RoyalTitleGained.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleGained.Text>{0} получил первый титул от Империи.</PawnDiary.Dev.PromptSuite.RoyalTitleGained.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalTitlePromoted.Label>Повышение королевского титула</PawnDiary.Dev.PromptSuite.RoyalTitlePromoted.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalTitlePromoted.Markers>progression=RoyalTitlePromoted; progression_kind=royal_title; previous_value=йомен; new_value=аколит; royal_mutation_pawn={0}; royal_cause=unknown; royal_transition=promotion; royal_faction_id=Faction_Empire; royal_faction=Империя; previous_title=йомен; previous_title_def=Yeoman; title=аколит; title_def=Acolyte; royal_duty_changes=throne_room</PawnDiary.Dev.PromptSuite.RoyalTitlePromoted.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalTitlePromoted.Text>Имперский титул {0} повысился с йомена до аколита.</PawnDiary.Dev.PromptSuite.RoyalTitlePromoted.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleDemoted.Label>Понижение королевского титула</PawnDiary.Dev.PromptSuite.RoyalTitleDemoted.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleDemoted.Markers>progression=RoyalTitleDemoted; progression_kind=royal_title; previous_value=аколит; new_value=йомен; royal_mutation_pawn={0}; royal_cause=unknown; royal_transition=demotion; royal_faction_id=Faction_Empire; royal_faction=Империя; previous_title=аколит; previous_title_def=Acolyte; title=йомен; title_def=Yeoman</PawnDiary.Dev.PromptSuite.RoyalTitleDemoted.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleDemoted.Text>Имперский титул {0} понизился с аколита до йомена.</PawnDiary.Dev.PromptSuite.RoyalTitleDemoted.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleLost.Label>Королевский титул утрачен</PawnDiary.Dev.PromptSuite.RoyalTitleLost.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleLost.Markers>progression=RoyalTitleLost; progression_kind=royal_title; previous_value=йомен; new_value=none; royal_mutation_pawn={0}; royal_cause=unknown; royal_transition=loss; royal_faction_id=Faction_Empire; royal_faction=Империя; previous_title=йомен; previous_title_def=Yeoman; title=none; title_def=none</PawnDiary.Dev.PromptSuite.RoyalTitleLost.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalTitleLost.Text>{0} полностью утратил имперский титул йомена.</PawnDiary.Dev.PromptSuite.RoyalTitleLost.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>Получена новая черта</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>В характере {0} произошёл надлом: теперь это нервный человек.</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>
   <PawnDiary.Dev.PromptSuite.BiotechGrowth.Label>Момент взросления (Biotech)</PawnDiary.Dev.PromptSuite.BiotechGrowth.Label>
@@ -960,6 +981,16 @@
   <PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Text>Угроза во главе с {1}, которую вызвал {0}, была побеждена.</PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Text>
   <PawnDiary.Event.ProgressionRoyalTitleLabel>Королевский титул: {0}</PawnDiary.Event.ProgressionRoyalTitleLabel>
   <PawnDiary.Event.ProgressionRoyalTitleText>Королевский титул {0} изменился: {1} → {2}.</PawnDiary.Event.ProgressionRoyalTitleText>
+  <PawnDiary.Event.RoyalTitle.None>нет титула</PawnDiary.Event.RoyalTitle.None>
+  <PawnDiary.Event.RoyalTitle.UnknownFaction>неизвестная фракция</PawnDiary.Event.RoyalTitle.UnknownFaction>
+  <PawnDiary.Event.RoyalTitle.Gained.Label>Первый королевский титул: {0} — {1}</PawnDiary.Event.RoyalTitle.Gained.Label>
+  <PawnDiary.Event.RoyalTitle.Gained.Text>{0} получил титул {2} во фракции {3}.</PawnDiary.Event.RoyalTitle.Gained.Text>
+  <PawnDiary.Event.RoyalTitle.Promoted.Label>Повышение титула: {0} — {1}</PawnDiary.Event.RoyalTitle.Promoted.Label>
+  <PawnDiary.Event.RoyalTitle.Promoted.Text>Титул {0} во фракции {3} повысился: {1} → {2}.</PawnDiary.Event.RoyalTitle.Promoted.Text>
+  <PawnDiary.Event.RoyalTitle.Demoted.Label>Понижение титула: {0} — {1}</PawnDiary.Event.RoyalTitle.Demoted.Label>
+  <PawnDiary.Event.RoyalTitle.Demoted.Text>Титул {0} во фракции {3} понизился: {1} → {2}.</PawnDiary.Event.RoyalTitle.Demoted.Text>
+  <PawnDiary.Event.RoyalTitle.Lost.Label>Королевский титул утрачен: {0} — {1}</PawnDiary.Event.RoyalTitle.Lost.Label>
+  <PawnDiary.Event.RoyalTitle.Lost.Text>{0} полностью утратил титул {1} во фракции {3}.</PawnDiary.Event.RoyalTitle.Lost.Text>
   <PawnDiary.Event.ProgressionTraitLabel>Новая черта: {0}</PawnDiary.Event.ProgressionTraitLabel>
   <PawnDiary.Event.ProgressionTraitText>В характере {0} закрепилась новая черта: {1}.</PawnDiary.Event.ProgressionTraitText>
   <PawnDiary.Event.ArcReflectionLabel>Размышление о {0} годе</PawnDiary.Event.ArcReflectionLabel>

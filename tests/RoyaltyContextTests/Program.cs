@@ -23,8 +23,10 @@ namespace RoyaltyContextTests
             TestTraitSanitizationOverridesAndMalformedRows();
             TestMilestoneQualificationAndOwnership();
             TestTitleTransitionMatrixAndDutyCaps();
+            TestPhase4FactionObservationEdges();
             TestMutationExactOwnersAndDedup();
             TestMutationExpiryMismatchAndFallback();
+            TestPhase4RoutesThoughtsAndContext();
             TestPersonaPersistenceBaselinesAndNormalization();
             TestTitleObservationNormalizationAndOrdering();
             Console.WriteLine("RoyaltyContextTests passed " + assertions + " assertions.");
@@ -746,6 +748,60 @@ namespace RoyaltyContextTests
                 plan.mutations[0].advanceObservation && plan.mutations[1].advanceObservation);
         }
 
+        private static void TestPhase4FactionObservationEdges()
+        {
+            RoyalTitleSnapshot yeoman = Title("Pawn_A", "Empire", "Yeoman", 1);
+            RoyalTitleSnapshot acolyte = Title("Pawn_A", "Empire", "Acolyte", 2);
+            List<RoyalTitleObservationSnapshot> baseline =
+                RoyaltyStatePersistence.BaselineTitles(
+                    new List<RoyalTitleSnapshot> { yeoman }, 100);
+
+            List<RoyalTitleObservationSnapshot> afterHook =
+                RoyalTitleObservationPolicy.Advance(baseline, yeoman, acolyte, 101);
+            AssertEqual("exact hook replaces one faction row", 1, afterHook.Count);
+            AssertEqual("exact hook stores current title", "Acolyte", afterHook[0].titleDefName);
+            AssertEqual("exact hook records immediate tick", 101, afterHook[0].lastObservedTick);
+            AssertEqual("hook update prevents scanner duplicate", 0,
+                RoyalTitleObservationPolicy.Diff(
+                    "Pawn_A", afterHook, new List<RoyalTitleSnapshot> { acolyte }, 102).Count);
+
+            List<RoyalTitleMutationSnapshot> loss = RoyalTitleObservationPolicy.Diff(
+                "Pawn_A", baseline, new List<RoyalTitleSnapshot>(), 102);
+            AssertEqual("scanner fallback includes disappeared faction", 1, loss.Count);
+            AssertEqual("scanner loss preserves faction", "Empire", loss[0].factionId);
+            AssertNotNull("scanner loss preserves previous title", loss[0].previousTitle);
+            AssertTrue("scanner loss has absent current title", loss[0].newTitle == null);
+            AssertEqual("scanner loss classifies exactly", RoyalTitleTransitionTokens.Loss,
+                RoyalTitleTransitionPolicy.Classify(
+                    loss[0].previousTitle, loss[0].newTitle, false, true, Policy(1000)).transitionToken);
+
+            // Observation advance is deliberately independent of a page-output decision. This is
+            // the pure disabled->enabled contract used by the runtime component.
+            RoyalTitleTransitionDecision disabled = RoyalTitleTransitionPolicy.Classify(
+                yeoman, acolyte, false, false, Policy(1000));
+            List<RoyalTitleObservationSnapshot> disabledAdvance =
+                RoyalTitleObservationPolicy.Advance(baseline, yeoman, acolyte, 103);
+            AssertTrue("disabled title edge advances without page",
+                disabled.shouldAdvanceObservation && !disabled.shouldEmit);
+            AssertEqual("re-enable does not catch up disabled edge", 0,
+                RoyalTitleObservationPolicy.Diff(
+                    "Pawn_A", disabledAdvance, new List<RoyalTitleSnapshot> { acolyte }, 104).Count);
+
+            RoyalTitleSnapshot sameLabelOtherFaction = Title(
+                "Pawn_A", "Deserters", "RebelKnight", 2);
+            List<RoyalTitleObservationSnapshot> twoFactionBaseline =
+                RoyaltyStatePersistence.BaselineTitles(
+                    new List<RoyalTitleSnapshot> { yeoman, sameLabelOtherFaction }, 110);
+            List<RoyalTitleMutationSnapshot> oneFactionChange = RoyalTitleObservationPolicy.Diff(
+                "Pawn_A", twoFactionBaseline,
+                new List<RoyalTitleSnapshot> { acolyte, sameLabelOtherFaction }, 111);
+            AssertEqual("identical localized labels stay faction-distinct", 1, oneFactionChange.Count);
+            AssertEqual("only exact changed faction emitted", "Empire", oneFactionChange[0].factionId);
+            AssertEqual("malformed pawn cannot create scanner edges", 0,
+                RoyalTitleObservationPolicy.Diff(
+                    "bad|pawn", baseline, new List<RoyalTitleSnapshot> { acolyte }, 120).Count);
+        }
+
         private static void TestMutationExpiryMismatchAndFallback()
         {
             RoyaltyPolicySnapshot policy = Policy(1000);
@@ -800,6 +856,16 @@ namespace RoyaltyContextTests
                 new List<RoyalMutationFact> { mutations[1] }, wrongLevel, 110, true, true, false, policy);
             AssertTrue("wrong levels cannot claim", !mismatch.mutations[0].exactCauseMatch);
 
+            RoyalMutationCauseScope wrongFaction = Scope(
+                RoyalMutationCauseTokens.ImperialBestowing, "Pawn_A", 100, "corr");
+            wrongFaction.factionId = "Deserters";
+            wrongFaction.previousTitleDefName = "Yeoman";
+            wrongFaction.newTitleDefName = "Acolyte";
+            mismatch = RoyalMutationOwnershipPolicy.Plan(
+                new List<RoyalMutationFact> { mutations[0] }, wrongFaction,
+                110, true, true, false, policy);
+            AssertTrue("wrong faction cannot claim", !mismatch.mutations[0].exactCauseMatch);
+
             List<RoyalMutationFact> malformed = new List<RoyalMutationFact>
             {
                 null,
@@ -825,6 +891,113 @@ namespace RoyaltyContextTests
                 null, 499, false, true, false, policy);
             AssertTrue("future mutation timing fails closed",
                 !future.shouldEmitOwnerPage && !future.mutations[0].advanceObservation);
+        }
+
+        private static void TestPhase4RoutesThoughtsAndContext()
+        {
+            RoyaltyPolicySnapshot policy = RoyaltyPolicySnapshot.CreateDefault();
+            AssertEqual("bestowing exact string route", RoyalMutationCauseTokens.ImperialBestowing,
+                RoyalMutationRoutePolicy.RitualCause("BestowingCeremony", policy));
+            AssertEqual("anima exact string route", RoyalMutationCauseTokens.AnimaLinking,
+                RoyalMutationRoutePolicy.RitualCause("AnimaTreeLinking", policy));
+            AssertEqual("unknown ritual stays unknown", RoyalMutationCauseTokens.Unknown,
+                RoyalMutationRoutePolicy.RitualCause("ModdedBestowingLabel", policy));
+            AssertTrue("neuroformer exact parent string", RoyalMutationRoutePolicy.IsNeuroformer(
+                "PsychicAmplifier", policy));
+            AssertTrue("localized item label cannot route", !RoyalMutationRoutePolicy.IsNeuroformer(
+                "psychic neuroformer", policy));
+
+            RoyalTitleThoughtSnapshot award = new RoyalTitleThoughtSnapshot
+            {
+                pawnId = "Pawn_A",
+                titleDefName = "Acolyte",
+                relationshipToken = RoyalTitleThoughtRelationshipTokens.Award,
+                tick = 100
+            };
+            AssertTrue("exact award thought claimed", RoyalTitleThoughtOwnershipPolicy.Matches(
+                award, "Pawn_A", "Yeoman", "Acolyte"));
+            AssertTrue("award wrong pawn releases", !RoyalTitleThoughtOwnershipPolicy.Matches(
+                award, "Pawn_B", "Yeoman", "Acolyte"));
+            AssertTrue("award wrong new title releases", !RoyalTitleThoughtOwnershipPolicy.Matches(
+                award, "Pawn_A", "Yeoman", "Knight"));
+            RoyalTitleThoughtSnapshot loss = new RoyalTitleThoughtSnapshot
+            {
+                pawnId = "Pawn_A",
+                titleDefName = "Yeoman",
+                relationshipToken = RoyalTitleThoughtRelationshipTokens.Loss,
+                tick = 100
+            };
+            AssertTrue("exact loss thought claimed", RoyalTitleThoughtOwnershipPolicy.Matches(
+                loss, "Pawn_A", "Yeoman", "Acolyte"));
+            AssertTrue("title thought window inclusive",
+                !RoyalTitleThoughtOwnershipPolicy.IsExpired(100, 2600, 2500));
+            AssertTrue("title thought expires after window",
+                RoyalTitleThoughtOwnershipPolicy.IsExpired(100, 2601, 2500));
+            loss.relationshipToken = "localized loss";
+            AssertTrue("malformed thought relationship releases",
+                !RoyalTitleThoughtOwnershipPolicy.Matches(
+                    loss, "Pawn_A", "Yeoman", "Acolyte"));
+
+            RoyalTitleSnapshot before = Title("Pawn_A", "Empire", "Yeoman", 1, "throne_room");
+            RoyalTitleSnapshot after = Title(
+                "Pawn_A", "Empire", "Acolyte", 2, "speech", "apparel", "bedroom");
+            before.titleLabel = "Yeoman";
+            after.titleLabel = "Acolyte";
+            RoyalMutationBatchSnapshot batch = new RoyalMutationBatchSnapshot
+            {
+                pawnId = "Pawn_A",
+                pawnName = "Ari; the First",
+                causeToken = RoyalMutationCauseTokens.ImperialBestowing,
+                titleMutation = new RoyalTitleMutationSnapshot
+                {
+                    pawnId = "Pawn_A",
+                    factionId = "Empire",
+                    previousTitle = before,
+                    newTitle = after,
+                    tick = 100
+                },
+                psylinkMutation = new RoyalPsychicMutationSnapshot
+                {
+                    pawnId = "Pawn_A",
+                    previousPsylinkLevel = 1,
+                    newPsylinkLevel = 2,
+                    tick = 100
+                }
+            };
+            string full = RoyalMutationContextFormatter.Format(
+                batch, RoyalTitleTransitionTokens.Promotion, 120, 2, true);
+            AssertTrue("mutation context sanitizes pawn prose",
+                full.Contains("royal_mutation_pawn=Ari, the First"));
+            AssertTrue("mutation context preserves cause",
+                full.Contains("royal_cause=imperial_bestowing"));
+            AssertTrue("mutation context preserves exact faction",
+                full.Contains("royal_faction_id=Empire") && full.Contains("royal_faction=Empire Name"));
+            AssertTrue("mutation context preserves title before/after",
+                full.Contains("previous_title=Yeoman") && full.Contains("title=Acolyte"));
+            AssertTrue("mutation context preserves psylink before/after",
+                full.Contains("previous_psylink_level=1") && full.Contains("psylink_level=2"));
+            AssertTrue("duty additions are bounded and stable",
+                full.Contains("royal_duty_changes=apparel, bedroom") && !full.Contains("speech"));
+            string compact = RoyalMutationContextFormatter.Format(
+                batch, RoyalTitleTransitionTokens.Promotion, 120, 2, false);
+            AssertTrue("compact removes optional duty prose first",
+                !compact.Contains("royal_duty_changes="));
+            AssertTrue("compact keeps exact title and psylink edges",
+                compact.Contains("previous_title=Yeoman") && compact.Contains("title=Acolyte")
+                && compact.Contains("previous_psylink_level=1") && compact.Contains("psylink_level=2"));
+
+            batch.pawnName = new string('x', 800) + ";tail";
+            string bounded = RoyalMutationContextFormatter.Format(
+                batch, RoyalTitleTransitionTokens.Promotion, 20, 2, false);
+            string pawnField = bounded.Split(';')[0];
+            AssertTrue("oversized mutation prose is capped", pawnField.Length <= 20 + 20);
+            batch.pawnId = "bad|pawn";
+            AssertEqual("malformed mutation identity fails safely", string.Empty,
+                RoyalMutationContextFormatter.Format(
+                    batch, RoyalTitleTransitionTokens.Promotion, 120, 2, true));
+            AssertEqual("null mutation context fails safely", string.Empty,
+                RoyalMutationContextFormatter.Format(
+                    null, RoyalTitleTransitionTokens.Promotion, 120, 2, true));
         }
 
         private static RoyaltyPolicySnapshot Policy(int separationTicks)

@@ -282,7 +282,7 @@ Do not add seasonal flooding, life support, or Mechhive choices in this wave.
 
 ## 10. Wave 5 — Royalty persona and progression flagship
 
-> **Implementation status (2026-07-18): Royalty Phases 0–3 and Narrative N3-R core implemented;
+> **Implementation status (2026-07-19): Royalty Phases 0–4 and Narrative N3-R core implemented;
 > Wave 5 remains in progress.** By
 > explicit user scheduling exception, Phase 0 began while the five Biotech B1 manual acceptance rows
 > remain open; those earlier gates are neither passed nor removed. Phase 0 added plain
@@ -306,9 +306,14 @@ Do not add seasonal flooding, life support, or Mechhive choices in this wave.
 > automated loaded suite is user-confirmed green; its manual matrix remains open. The first Phase-3
 > loaded run reached 240/241 and exposed a pre-dead Tale timing gate. The expanded rerun reached
 > 242/244; its only failures were fixture queries that treated the `talecombat` group key as a flushed
-> event Def instead of reading the saved Tale-batch context. Those queries are fixed and await a
-> focused rerun. Royalty Phase 4 remains, so the R1
-> release gate and Wave 5 completion are not claimed.
+> event Def instead of reading the saved Tale-batch context. After those queries were fixed, the
+> focused loaded rerun passed 244/244 on 2026-07-19. Phase 3 automated loaded coverage is green, but
+> its hands-on matrix remains open. Phase 4 now adds defensive exact faction-title/bestowing/anima/
+> neuroformer registration, immediate per-faction observations, loss-aware fallback scanning, bounded
+> ritual/progression ownership, exact title-memory arbitration, XML-owned prompt context, and focused
+> loaded fixtures. Pure suites pass 283 Royalty, 2,437 pipeline, 665 capture-policy, and 125 Narrative
+> Continuity assertions, and both assemblies build. Phase-4 loaded execution and all Phase-2/3/4
+> hands-on matrices remain open, so the R1 release gate and Wave 5 completion are not claimed.
 
 ### Implement in this exact order
 
@@ -316,8 +321,8 @@ Do not add seasonal flooding, life support, or Mechhive choices in this wave.
 2. **Royalty 1 (implemented; structural, page-silent)** — guarded collection, persistence, and silent baseline.
 3. **Narrative N3-R core (implemented; provider/evidence only)** — persona/title provider plus required bond/identity evidence.
 4. **Royalty 2 (implemented; automated green, manual acceptance pending)** — persona lifecycle pages.
-5. **Royalty 3 (implemented; loaded/manual acceptance pending)** — first consequential kill and death integration through existing owners.
-6. **Royalty 4** — immediate title/psylink cause correctness and scanner fallback.
+5. **Royalty 3 (implemented; automated loaded green, manual acceptance pending)** — first consequential kill and death integration through existing owners.
+6. **Royalty 4 (implemented; pure/build green, loaded/manual acceptance pending)** — immediate title/psylink cause correctness and scanner fallback.
 
 ### Exit gate
 

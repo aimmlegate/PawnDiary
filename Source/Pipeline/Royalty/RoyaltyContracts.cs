@@ -173,6 +173,18 @@ namespace PawnDiary
         public const string FallbackProgression = "fallback_progression";
     }
 
+    /// <summary>Exact award/loss relationship carried by Thought_MemoryRoyalTitle.</summary>
+    internal static class RoyalTitleThoughtRelationshipTokens
+    {
+        public const string Award = "award";
+        public const string Loss = "loss";
+
+        public static bool IsKnown(string value)
+        {
+            return value == Award || value == Loss;
+        }
+    }
+
     /// <summary>One persona trait copied and localized on the main thread.</summary>
     internal sealed class PersonaTraitFact
     {
@@ -326,7 +338,11 @@ namespace PawnDiary
         public int maximumDutyCategoryTokens = 2;
         public int titleCorrelationTicks = 2500;
         public int psylinkCorrelationTicks = 2500;
+        public int titleThoughtCorrelationTicks = 2500;
         public int killThoughtCorrelationTicks = 60;
+        public int maximumPendingRoyalMutations = 64;
+        public int maximumPendingTitleThoughts = 128;
+        public int maximumRoyaltyContextCharacters = 120;
         public int killThoughtWeight = 100;
         public int bondedThoughtWeight = 70;
         public int bondedHediffWeight = 60;
@@ -345,6 +361,9 @@ namespace PawnDiary
             new List<RoyaltyTraitWorkerRule>();
         public List<RoyaltyTraitOverrideRule> traitOverrides =
             new List<RoyaltyTraitOverrideRule>();
+        public List<string> bestowingRitualDefNames = new List<string>();
+        public List<string> animaRitualDefNames = new List<string>();
+        public List<string> neuroformerThingDefNames = new List<string>();
 
         /// <summary>Creates safe deterministic fallbacks when the Royalty XML Def is absent or bad.</summary>
         public static RoyaltyPolicySnapshot CreateDefault()
@@ -366,6 +385,9 @@ namespace PawnDiary
             AddCompanionTale(policy, "KilledMelee");
             AddCompanionTale(policy, "DefeatedHostileFactionLeader");
             AddCompanionTale(policy, "KilledCapacity");
+            policy.bestowingRitualDefNames.Add("BestowingCeremony");
+            policy.animaRitualDefNames.Add("AnimaTreeLinking");
+            policy.neuroformerThingDefNames.Add("PsychicAmplifier");
             return policy;
         }
 
@@ -483,6 +505,43 @@ namespace PawnDiary
         public bool shouldEmitOwnerPage;
         public bool shouldEmitFallbackPage;
         public bool fallbackConsumed;
+    }
+
+    /// <summary>
+    /// Detached event-time title/psylink facts for one bounded cause action. Runtime correlation may
+    /// retain this DTO briefly, but it contains no Pawn, Def, ritual, item, or other game object.
+    /// </summary>
+    internal sealed class RoyalMutationBatchSnapshot
+    {
+        public string batchId = string.Empty;
+        public string pawnId = string.Empty;
+        public string pawnName = string.Empty;
+        public string causeToken = RoyalMutationCauseTokens.Unknown;
+        public int openedTick;
+        public RoyalMutationCauseScope scope;
+        public RoyalTitleMutationSnapshot titleMutation;
+        public RoyalPsychicMutationSnapshot psylinkMutation;
+        public bool claimed;
+        public bool fallbackConsumed;
+
+        public List<RoyalMutationFact> MutationFacts()
+        {
+            List<RoyalMutationFact> result = new List<RoyalMutationFact>();
+            RoyalMutationFact title = RoyalMutationOwnershipPolicy.FromTitle(titleMutation);
+            RoyalMutationFact psylink = RoyalMutationOwnershipPolicy.FromPsylink(psylinkMutation);
+            if (title != null) result.Add(title);
+            if (psylink != null) result.Add(psylink);
+            return result;
+        }
+    }
+
+    /// <summary>Plain title-memory fact staged before vanilla invokes the post-title callback.</summary>
+    internal sealed class RoyalTitleThoughtSnapshot
+    {
+        public string pawnId = string.Empty;
+        public string titleDefName = string.Empty;
+        public string relationshipToken = string.Empty;
+        public int tick;
     }
 
     /// <summary>

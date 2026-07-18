@@ -108,18 +108,8 @@ namespace PawnDiary
                 if (def == null || faction == null) continue;
                 string factionId = faction.GetUniqueLoadID() ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(factionId)) continue;
-                RoyalTitleSnapshot captured = new RoyalTitleSnapshot
-                {
-                    pawnId = pawn.GetUniqueLoadID(),
-                    factionId = factionId,
-                    factionName = CleanRoyaltyText(faction.Name, 120),
-                    titleDefName = def.defName ?? string.Empty,
-                    titleLabel = CleanRoyaltyText(def.GetLabelCapFor(pawn), 120),
-                    seniority = Math.Max(0, def.seniority),
-                    receivedTick = Math.Max(-1, title.receivedTick),
-                    wasInherited = title.wasInherited,
-                    dutyCategoryTokens = CaptureRoyalDutyCategories(pawn, def)
-                };
+                RoyalTitleSnapshot captured = CaptureRoyalTitleSnapshot(
+                    pawn, faction, def, title.receivedTick, title.wasInherited);
                 RoyalTitleSnapshot previous;
                 if (!byFaction.TryGetValue(factionId, out previous)
                     || captured.seniority > previous.seniority)
@@ -128,6 +118,107 @@ namespace PawnDiary
             result.AddRange(byFaction.Values);
             result.Sort((left, right) => string.CompareOrdinal(left.factionId, right.factionId));
             return result;
+        }
+
+        /// <summary>Copies the pawn's current highest title in one exact faction, or null when absent.</summary>
+        public static RoyalTitleSnapshot CaptureRoyalTitleForFaction(Pawn pawn, Faction faction)
+        {
+            if (!ModsConfig.RoyaltyActive || pawn?.royalty == null || faction == null) return null;
+            string factionId = faction.GetUniqueLoadID() ?? string.Empty;
+            List<RoyalTitleSnapshot> titles = CaptureRoyalTitles(pawn);
+            for (int i = 0; i < titles.Count; i++)
+                if (string.Equals(titles[i]?.factionId, factionId, StringComparison.Ordinal)) return titles[i];
+            return null;
+        }
+
+        /// <summary>
+        /// Projects the private post-title callback's live tracker/faction/Defs into exact detached
+        /// before/after facts. The previous Def may no longer exist in the tracker's live list.
+        /// </summary>
+        public static bool TryCaptureRoyalTitleTransition(
+            Pawn_RoyaltyTracker tracker,
+            Faction faction,
+            RoyalTitleDef previousDef,
+            RoyalTitleDef newDef,
+            out Pawn pawn,
+            out RoyalTitleSnapshot previous,
+            out RoyalTitleSnapshot current)
+        {
+            pawn = null;
+            previous = null;
+            current = null;
+            if (!ModsConfig.RoyaltyActive || tracker?.pawn == null || faction == null) return false;
+            pawn = tracker.pawn;
+            RoyalTitleSnapshot liveCurrent = CaptureRoyalTitleForFaction(pawn, faction);
+            if (previousDef != null)
+                previous = CaptureRoyalTitleSnapshot(pawn, faction, previousDef, -1, false);
+            if (newDef != null)
+            {
+                current = liveCurrent != null
+                    && string.Equals(liveCurrent.titleDefName, newDef.defName, StringComparison.Ordinal)
+                    ? liveCurrent
+                    : CaptureRoyalTitleSnapshot(pawn, faction, newDef, -1, false);
+            }
+            return previous != null || current != null;
+        }
+
+        /// <summary>Reads the exact bestowing target/bestower/faction only inside the guarded adapter.</summary>
+        public static bool TryCaptureBestowingActors(
+            LordJob_Ritual ritualJob,
+            out Pawn target,
+            out Pawn bestower,
+            out Faction faction)
+        {
+            target = null;
+            bestower = null;
+            faction = null;
+            if (!ModsConfig.RoyaltyActive || ritualJob == null) return false;
+            LordJob_BestowingCeremony bestowing = ritualJob as LordJob_BestowingCeremony;
+            if (bestowing?.target == null || bestowing.bestower == null) return false;
+            target = bestowing.target;
+            bestower = bestowing.bestower;
+            faction = bestowing.bestower.Faction;
+            return faction != null;
+        }
+
+        /// <summary>Matches the DLC-safe XML-owned parent item defName for a neuroformer use.</summary>
+        public static bool IsNeuroformerUse(CompUseEffect_InstallImplant comp)
+        {
+            if (!ModsConfig.RoyaltyActive || comp?.parent?.def == null) return false;
+            return RoyalMutationRoutePolicy.IsNeuroformer(
+                comp.parent.def.defName,
+                DiaryRoyaltyPolicy.Snapshot());
+        }
+
+        /// <summary>
+        /// Projects only exact Thought_MemoryRoyalTitle award/loss memories. Ordinary thoughts and
+        /// other memories using a similarly named Def remain untouched.
+        /// </summary>
+        public static bool TryCaptureRoyalTitleThought(
+            Pawn pawn,
+            Thought_Memory memory,
+            int tick,
+            out RoyalTitleThoughtSnapshot snapshot)
+        {
+            snapshot = null;
+            if (!ModsConfig.RoyaltyActive || pawn == null || memory?.def == null) return false;
+            Thought_MemoryRoyalTitle royalMemory = memory as Thought_MemoryRoyalTitle;
+            RoyalTitleDef titleDef = royalMemory?.titleDef;
+            if (titleDef == null || string.IsNullOrWhiteSpace(titleDef.defName)) return false;
+            string relationship = ReferenceEquals(memory.def, titleDef.awardThought)
+                ? RoyalTitleThoughtRelationshipTokens.Award
+                : ReferenceEquals(memory.def, titleDef.lostThought)
+                    ? RoyalTitleThoughtRelationshipTokens.Loss
+                    : string.Empty;
+            if (!RoyalTitleThoughtRelationshipTokens.IsKnown(relationship)) return false;
+            snapshot = new RoyalTitleThoughtSnapshot
+            {
+                pawnId = pawn.GetUniqueLoadID() ?? string.Empty,
+                titleDefName = titleDef.defName,
+                relationshipToken = relationship,
+                tick = Math.Max(0, tick)
+            };
+            return !string.IsNullOrWhiteSpace(snapshot.pawnId);
         }
 
         /// <summary>Returns the guarded current psylink level, clamped to vanilla's 0-6 range.</summary>
@@ -206,6 +297,28 @@ namespace PawnDiary
             return result;
         }
 
+        private static RoyalTitleSnapshot CaptureRoyalTitleSnapshot(
+            Pawn pawn,
+            Faction faction,
+            RoyalTitleDef def,
+            int receivedTick,
+            bool wasInherited)
+        {
+            if (!ModsConfig.RoyaltyActive || pawn == null || faction == null || def == null) return null;
+            return new RoyalTitleSnapshot
+            {
+                pawnId = pawn.GetUniqueLoadID() ?? string.Empty,
+                factionId = faction.GetUniqueLoadID() ?? string.Empty,
+                factionName = CleanRoyaltyText(faction.Name, 120),
+                titleDefName = def.defName ?? string.Empty,
+                titleLabel = CleanRoyaltyText(def.GetLabelCapFor(pawn), 120),
+                seniority = Math.Max(0, def.seniority),
+                receivedTick = Math.Max(-1, receivedTick),
+                wasInherited = wasInherited,
+                dutyCategoryTokens = CaptureRoyalDutyCategories(pawn, def)
+            };
+        }
+
         private static string CleanRoyaltyText(string value, int maximumCharacters)
         {
             string cleaned = PromptTextSanitizer.LocalizedPromptText(value).Replace(";", ",");
@@ -257,5 +370,6 @@ namespace PawnDiary
                 if (string.Equals(names[i], defName, StringComparison.OrdinalIgnoreCase)) return true;
             return false;
         }
+
     }
 }

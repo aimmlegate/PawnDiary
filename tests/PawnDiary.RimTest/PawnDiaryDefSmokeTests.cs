@@ -25,6 +25,7 @@ namespace PawnDiary.RimTests
             RequireDef<DiaryPromptDef>("Diary_Prompts");
             RequireDef<DiaryUiStyleDef>("Diary_UiStyle");
             RequireDef<DiaryContextDetailDef>("Diary_ContextDetail");
+            RequireDef<DiaryRoyaltyPolicyDef>("Diary_Royalty");
         }
 
         /// <summary>

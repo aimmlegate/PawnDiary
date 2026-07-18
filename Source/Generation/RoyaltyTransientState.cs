@@ -23,6 +23,8 @@ namespace PawnDiary
         public static void Reset()
         {
             PersonaKillThoughtCorrelation.Clear();
+            RoyalMutationCorrelation.Clear();
+            RoyalTitleThoughtCorrelation.Clear();
             activeCauseScopes.Clear();
             unclaimedMutations.Clear();
             permitOwners.Clear();

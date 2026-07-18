@@ -124,7 +124,10 @@ namespace PawnDiary.RimTests
                 "UnCode left a saved-only persona bond in current narrative context.");
         }
 
-        /// <summary>Audits all six exact RimWorld 1.6 methods and the fail-safe owner ID.</summary>
+        /// <summary>
+        /// Audits the six persona lifecycle seams plus the four exact title/cause seams and their
+        /// fail-safe owner ID. Private title registration is verified against its exact signature.
+        /// </summary>
         [Test]
         public static void ExactPersonaWeaponHooksAreRegistered()
         {
@@ -155,6 +158,28 @@ namespace PawnDiary.RimTests
             RequireOwnedPatch(
                 AccessTools.DeclaredMethod(type, nameof(CompBladelinkWeapon.UnCode), Type.EmptyTypes),
                 "UncodePrefix", null);
+
+            PawnDiaryRimTestScope.Require(DiaryRoyaltyPatches.TitleHookReady
+                    && DiaryRoyaltyPatches.BestowingHookReady
+                    && DiaryRoyaltyPatches.AnimaHookReady
+                    && DiaryRoyaltyPatches.NeuroformerHookReady,
+                "Pawn Diary reported an incomplete Royalty title/cause hook set.");
+            RequireOwnedPatch(
+                AccessTools.DeclaredMethod(typeof(Pawn_RoyaltyTracker), "OnPostTitleChanged",
+                    new[] { typeof(Faction), typeof(RoyalTitleDef), typeof(RoyalTitleDef) }),
+                null, "TitleChangedPostfix");
+            RequireOwnedPatch(
+                AccessTools.DeclaredMethod(typeof(RitualOutcomeEffectWorker_Bestowing), "Apply",
+                    new[] { typeof(float), typeof(Dictionary<Pawn, int>), typeof(LordJob_Ritual) }),
+                "BestowingPrefix", "BestowingPostfix", "BestowingFinalizer");
+            RequireOwnedPatch(
+                AccessTools.DeclaredMethod(typeof(CompPsylinkable), "FinishLinkingRitual",
+                    new[] { typeof(Pawn), typeof(int) }),
+                "AnimaPrefix", "AnimaPostfix", "AnimaFinalizer");
+            RequireOwnedPatch(
+                AccessTools.DeclaredMethod(typeof(CompUseEffect_InstallImplant), "DoEffect",
+                    new[] { typeof(Pawn) }),
+                "NeuroformerPrefix", "NeuroformerPostfix", "NeuroformerFinalizer");
         }
 
         /// <summary>
@@ -544,7 +569,8 @@ namespace PawnDiary.RimTests
         private static void RequireOwnedPatch(
             MethodBase target,
             string prefixName,
-            string postfixName)
+            string postfixName,
+            string finalizerName = null)
         {
             Patches patches = target == null ? null : Harmony.GetPatchInfo(target);
             PawnDiaryRimTestScope.Require(target != null && patches != null,
@@ -565,6 +591,14 @@ namespace PawnDiary.RimTests
                         && row.PatchMethod?.DeclaringType == typeof(DiaryRoyaltyPatches)
                         && row.PatchMethod.Name == postfixName),
                     "Expected Pawn Diary's " + postfixName + " on " + target + ".");
+            }
+            if (finalizerName != null)
+            {
+                PawnDiaryRimTestScope.Require(patches.Finalizers.Any(row =>
+                        row.owner == "aimml.pawndiary"
+                        && row.PatchMethod?.DeclaringType == typeof(DiaryRoyaltyPatches)
+                        && row.PatchMethod.Name == finalizerName),
+                    "Expected Pawn Diary's " + finalizerName + " on " + target + ".");
             }
         }
 

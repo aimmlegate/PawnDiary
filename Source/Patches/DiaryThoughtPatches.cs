@@ -69,6 +69,21 @@ namespace PawnDiary
                 DiaryGameComponent.Instance?.ObserveBiotechFamilyMemory(s.pawn, s.memory);
                 ThoughtSignal signal = new ThoughtSignal(s.pawn, s.memory);
                 int now = Find.TickManager?.TicksGame ?? 0;
+                RoyalTitleThoughtSnapshot royalTitleThought;
+                if (DlcContext.TryCaptureRoyalTitleThought(
+                        s.pawn, s.memory, now, out royalTitleThought))
+                {
+                    RoyaltyPolicySnapshot royaltyPolicy = DiaryRoyaltyPolicy.Snapshot();
+                    if (RoyalTitleThoughtCorrelation.TryStage(
+                        royalTitleThought,
+                        signal,
+                        now,
+                        royaltyPolicy.titleThoughtCorrelationTicks,
+                        royaltyPolicy.maximumPendingTitleThoughts))
+                    {
+                        return;
+                    }
+                }
                 if (PersonaKillThoughtCorrelation.TryStageOrSuppress(
                     s.pawn, s.memory.def.defName, signal, now))
                 {

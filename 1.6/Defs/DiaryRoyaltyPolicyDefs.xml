@@ -15,6 +15,10 @@
     <maximumDutyCategoryTokens>2</maximumDutyCategoryTokens>
     <titleCorrelationTicks>2500</titleCorrelationTicks>
     <psylinkCorrelationTicks>2500</psylinkCorrelationTicks>
+    <titleThoughtCorrelationTicks>2500</titleThoughtCorrelationTicks>
+    <maximumPendingRoyalMutations>64</maximumPendingRoyalMutations>
+    <maximumPendingTitleThoughts>128</maximumPendingTitleThoughts>
+    <maximumRoyaltyContextCharacters>120</maximumRoyaltyContextCharacters>
     <!-- Pawn.Kill emits a persona trait's kill memory and its Tale synchronously. Keep this small:
          it exists only to tolerate Harmony callback ordering, never to claim later ordinary thoughts. -->
     <killThoughtCorrelationTicks>60</killThoughtCorrelationTicks>
@@ -60,5 +64,17 @@
          installed structural worker or mod requires an explicit, reviewed mapping. -->
     <traitWorkerRules />
     <traitOverrides />
+
+    <!-- Exact DLC identifiers remain plain strings. Missing Royalty content simply never invokes
+         these matchers; there is no DefDatabase or XML Def cross-reference. -->
+    <bestowingRitualDefNames>
+      <li>BestowingCeremony</li>
+    </bestowingRitualDefNames>
+    <animaRitualDefNames>
+      <li>AnimaTreeLinking</li>
+    </animaRitualDefNames>
+    <neuroformerThingDefNames>
+      <li>PsychicAmplifier</li>
+    </neuroformerThingDefNames>
   </PawnDiary.DiaryRoyaltyPolicyDef>
 </Defs>

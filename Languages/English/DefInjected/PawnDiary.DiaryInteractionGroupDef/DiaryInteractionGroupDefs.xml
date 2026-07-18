@@ -173,7 +173,7 @@
   <raid.instructions.2>a raid that may not have reached the defenders yet — use smoke, blood, injuries, or aftermath only if supplied; otherwise keep it to preparation, dread, and first sight of danger</raid.instructions.2>
   <raid.tone>with tense, fight-anticipated urgency</raid.tone>
   <ritualRoyal.label>Royal rituals</ritualRoyal.label>
-  <ritualRoyal.instruction>a Royalty ritual completed—make the ceremony courtly, title-conscious, psychic, or anima-rooted as the ritual title suggests</ritualRoyal.instruction>
+  <ritualRoyal.instruction>a Royalty ritual completed; use any exact royal mutation pawn, faction, before/after title, psylink, and cause fields supplied, without explaining mechanics or inventing an effect</ritualRoyal.instruction>
   <ritualRoyal.tone>with formal rank and ritual authority</ritualRoyal.tone>
   <ritualRoyal.tones.0>courtly and charged with rank, title, witnesses, and public authority</ritualRoyal.tones.0>
   <ritualRoyal.tones.1>psyfocus-hushed and tradition-bound, the ceremony larger than one pawn&apos;s body</ritualRoyal.tones.1>
@@ -383,7 +383,7 @@
   <progressionSkillPassion.tones.0>proud but grounded, aware of the labor behind the milestone</progressionSkillPassion.tones.0>
   <progressionSkillPassion.tones.1>quietly intense, treating skill as part of who the pawn is becoming</progressionSkillPassion.tones.1>
   <progressionPsylink.label>Psylink gained</progressionPsylink.label>
-  <progressionPsylink.instruction>a psylink level gain; write the psychic change as lived sensation, responsibility, or unease, without inventing new powers</progressionPsylink.instruction>
+  <progressionPsylink.instruction>a psylink level gain; preserve the exact before/after level and supplied cause, writing the psychic change as lived sensation, responsibility, or unease without inventing powers</progressionPsylink.instruction>
   <progressionPsylink.tone>with strange inner pressure</progressionPsylink.tone>
   <progressionPsylink.tones.0>awed and uneasy, aware of power settling into the mind</progressionPsylink.tones.0>
   <progressionPsylink.tones.1>focused and intimate, describing the change from inside the body</progressionPsylink.tones.1>
@@ -393,7 +393,7 @@
   <progressionXenotype.tones.0>changed and watchful, noticing the self becoming unfamiliar</progressionXenotype.tones.0>
   <progressionXenotype.tones.1>visceral and private, focused on what the new body means tonight</progressionXenotype.tones.1>
   <progressionRoyalTitle.label>Royal title changed</progressionRoyalTitle.label>
-  <progressionRoyalTitle.instruction>a royal title change; write status, burden, pride, or distance through the new title without explaining faction mechanics</progressionRoyalTitle.instruction>
+  <progressionRoyalTitle.instruction>an exact faction-aware royal title transition; preserve the supplied faction and before/after titles, then write status, burden, pride, relief, or loss without explaining mechanics</progressionRoyalTitle.instruction>
   <progressionRoyalTitle.tone>with formal weight and personal cost</progressionRoyalTitle.tone>
   <progressionRoyalTitle.tones.0>measured and self-conscious, aware that a title changes how others look</progressionRoyalTitle.tones.0>
   <progressionRoyalTitle.tones.1>quietly burdened, treating rank as both honor and obligation</progressionRoyalTitle.tones.1>

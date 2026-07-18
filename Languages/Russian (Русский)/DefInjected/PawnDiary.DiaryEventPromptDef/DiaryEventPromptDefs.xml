@@ -75,6 +75,27 @@
   <DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.label>первое значимое убийство разумным оружием</DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.label>
   <DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.prompt>Опиши первое значимое убийство, совершённое точно связанным владельцем с этим разумным оружием.</DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.prompt>
   <DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.enhancement>Используй только переданные жертву, исходное сказание, оружие, состояние связи и выбранные факты о чертах. Оставь убийцу единственной точкой зрения; не выдумывай реплики, мотивы оружия, другую атаку или внутренний опыт жертвы.</DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.enhancement>
+  <DiaryEventPrompt_RoyalTitleGained.label>первый королевский титул</DiaryEventPrompt_RoyalTitleGained.label>
+  <DiaryEventPrompt_RoyalTitleGained.prompt>Опиши получение поселенцем первого точного титула в указанной королевской фракции.</DiaryEventPrompt_RoyalTitleGained.prompt>
+  <DiaryEventPrompt_RoyalTitleGained.enhancement>Точно сохрани фракцию, новый титул и причину. Передай признание, обязанность, гордость или тревогу; не выдумывай церемонию, обязанности и механики фракции.</DiaryEventPrompt_RoyalTitleGained.enhancement>
+  <DiaryEventPrompt_RoyalTitlePromoted.label>повышение королевского титула</DiaryEventPrompt_RoyalTitlePromoted.label>
+  <DiaryEventPrompt_RoyalTitlePromoted.prompt>Опиши точное повышение от прежнего титула к новому в одной фракции.</DiaryEventPrompt_RoyalTitlePromoted.prompt>
+  <DiaryEventPrompt_RoyalTitlePromoted.enhancement>Сохрани оба титула и фракцию. Переданные новые обязанности могут окрашивать реакцию, но не перечисляй механики и не выдумывай церемонию пожалования.</DiaryEventPrompt_RoyalTitlePromoted.enhancement>
+  <DiaryEventPrompt_RoyalTitleDemoted.label>понижение королевского титула</DiaryEventPrompt_RoyalTitleDemoted.label>
+  <DiaryEventPrompt_RoyalTitleDemoted.prompt>Опиши точное понижение от прежнего титула к более низкому в одной фракции.</DiaryEventPrompt_RoyalTitleDemoted.prompt>
+  <DiaryEventPrompt_RoyalTitleDemoted.enhancement>Сохрани оба титула и фракцию. Сосредоточься на утрате положения, облегчении, стыде, гневе или смене ответственности, не выдумывая виновных и политические события.</DiaryEventPrompt_RoyalTitleDemoted.enhancement>
+  <DiaryEventPrompt_RoyalTitleLost.label>королевский титул утрачен</DiaryEventPrompt_RoyalTitleLost.label>
+  <DiaryEventPrompt_RoyalTitleLost.prompt>Опиши полную утрату указанного прежнего титула в его точной фракции.</DiaryEventPrompt_RoyalTitleLost.prompt>
+  <DiaryEventPrompt_RoyalTitleLost.enhancement>Значение нового титула none означает полную утрату, а не повышение или переход. Используй только переданную причину; не выдумывай смерть, наследование, наказание и новый титул.</DiaryEventPrompt_RoyalTitleLost.enhancement>
+  <DiaryEventPrompt_PsylinkLevel.label>рост пси-связи</DiaryEventPrompt_PsylinkLevel.label>
+  <DiaryEventPrompt_PsylinkLevel.prompt>Опиши точный рост уровня пси-связи и его известную или неизвестную причину.</DiaryEventPrompt_PsylinkLevel.prompt>
+  <DiaryEventPrompt_PsylinkLevel.enhancement>Сохрани прежний и новый уровни и причину. Передай ощущение псионической перемены, ответственность или тревогу без выдуманных способностей и объяснения механик импланта или ритуала.</DiaryEventPrompt_PsylinkLevel.enhancement>
+  <DiaryEventPrompt_BestowingCeremony.label>церемония имперского пожалования</DiaryEventPrompt_BestowingCeremony.label>
+  <DiaryEventPrompt_BestowingCeremony.prompt>Опиши завершённую церемонию имперского пожалования с точки зрения переданной ритуальной роли.</DiaryEventPrompt_BestowingCeremony.prompt>
+  <DiaryEventPrompt_BestowingCeremony.enhancement>Используй точные поля поселенца, фракции, прежнего и нового титула и уровня пси-связи с причиной imperial_bestowing. Оставь все перемены на этой странице ритуала; не выдумывай почести, речи, способности и отдельную сцену прогресса.</DiaryEventPrompt_BestowingCeremony.enhancement>
+  <DiaryEventPrompt_AnimaTreeLinking.label>церемония связи с древом анима</DiaryEventPrompt_AnimaTreeLinking.label>
+  <DiaryEventPrompt_AnimaTreeLinking.prompt>Опиши завершённую церемонию связи с древом анима с точки зрения переданной ритуальной роли.</DiaryEventPrompt_AnimaTreeLinking.prompt>
+  <DiaryEventPrompt_AnimaTreeLinking.enhancement>Используй точные прежний и новый уровни пси-связи и причину anima_linking. Оставь псионическую перемену на этой странице ритуала; не выдумывай способности, имперский ранг и лишние эффекты.</DiaryEventPrompt_AnimaTreeLinking.enhancement>
   <DiaryEventPrompt_External.label>событие другого мода</DiaryEventPrompt_External.label>
   <DiaryEventPrompt_External.prompt>Опиши момент, переданный другим модом, как то, что поселенец только что пережил.</DiaryEventPrompt_External.prompt>
   <DiaryEventPrompt_External.enhancement>Держись строго переданной строки события и фактов контекста; не выдумывай механики, системы или неупомянутых участников.</DiaryEventPrompt_External.enhancement>

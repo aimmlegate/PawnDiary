@@ -58,6 +58,7 @@
     <Compile Include="..\..\Source\Capture\Events\PersonaWeaponEventData.cs" Link="Capture\Events\PersonaWeaponEventData.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContracts.cs" Link="Pipeline\NarrativeContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyaltyContracts.cs" Link="Pipeline\RoyaltyContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\RoyalMutationOwnershipPolicy.cs" Link="Pipeline\RoyalMutationOwnershipPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\OdysseyJourneyContracts.cs" Link="Pipeline\OdysseyJourneyContracts.cs" />
     <!-- Pure, System-only game-context field parser — links here so the external game-context
          security tests can assert a smuggled key cannot be resolved back out. -->

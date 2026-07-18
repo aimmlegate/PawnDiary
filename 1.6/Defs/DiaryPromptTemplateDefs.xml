@@ -441,6 +441,15 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>source tale name</label><source>GameContext</source><contextKey>tale_source_label</contextKey></li>
       <li><label>killer tale role</label><source>GameContext</source><contextKey>tale_killer_role</contextKey></li>
       <li><label>victim tale role</label><source>GameContext</source><contextKey>tale_victim_role</contextKey></li>
+      <!-- Royalty R4 exact title/psylink ownership. Append-only: earlier DefInjected field indexes
+           are frozen. Internal faction/title Def IDs remain saved context but are intentionally not
+           projected to prose; localized names plus structural transition/cause tokens are enough. -->
+      <li><label>royal mutation pawn</label><source>GameContext</source><contextKey>royal_mutation_pawn</contextKey></li>
+      <li><label>royal cause</label><source>GameContext</source><contextKey>royal_cause</contextKey></li>
+      <li><label>royal transition</label><source>GameContext</source><contextKey>royal_transition</contextKey></li>
+      <li><label>royal faction</label><source>GameContext</source><contextKey>royal_faction</contextKey></li>
+      <li><label>psylink cause</label><source>GameContext</source><contextKey>psylink_cause</contextKey></li>
+      <li><label>new royal duties</label><source>GameContext</source><contextKey>royal_duty_changes</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

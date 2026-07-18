@@ -49,7 +49,7 @@ repo for development, but the Workshop payload omits source code and other devel
 | `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
 | `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
 | `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts and Royalty persona-weapon lifecycle identity/dedup plus forced first-kill POV decisions. |
-| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including the solo Royalty persona lifecycle emitter and Tale-owned persona milestone enrichment. |
+| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including Royalty persona lifecycle/Tale enrichment and ritual-owned title/psylink mutation context. |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Odyssey location/mobile-home/lifecycle and Royalty persona/title/psylink snapshots. |
@@ -228,9 +228,10 @@ Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned gra
 additive save-key suffixes under each POV/archive row; it performs no retroactive inference or
 catch-up on older pages.
 
-**Royalty Phases 0–3 plus Narrative N3-R core (Master Wave 5; Phase-2 automated loaded suite green,
-manual Phase-2 and loaded/manual Phase-3 acceptance pending)**
-freeze the detached R1 boundary and now own persona-weapon lifecycle, first-kill, and death enrichment.
+**Royalty Phases 0–4 plus Narrative N3-R core (Master Wave 5; Phase-2 and Phase-3 automated loaded
+suites green; Phase-4 loaded execution and all hands-on matrices pending)**
+freeze the detached R1 boundary and now own persona-weapon lifecycle, first-kill/death enrichment,
+and exact title/psylink correctness.
 `RoyaltyContracts`
 represents persona weapon/trait/bond state, faction-specific title before/after facts, and
 psylink/title mutation cause scopes using primitives and copied lists.
@@ -329,11 +330,46 @@ longer primary; primary status is a kill-milestone rule, not a death-ending rule
 produces no standalone `PersonaWeaponBondEnded` page. All live Royalty reads remain double-guarded in
 `DlcContext`, and the kill hot path gates Royalty before allocating its Thought-name list. Policy XML
 contains only string Def names/primitive roles, so a no-Royalty game follows the unchanged
-Tale/Thought/death paths. Pure suites pass 245 Royalty and 2,290 pipeline assertions; the expanded
-RimTests compile. The first loaded run's 240/241 timing failure is fixed. The expanded rerun reached
-242/244: both remaining failures were fixture-only combat-batch queries that searched for the group
-Def as an event Def instead of reading the saved `group=talecombat; batch=tale` fields. Those queries
-are corrected; a focused loaded rerun and the Phase-3 manual matrix remain pending.
+Tale/Thought/death paths. Pure suites pass 245 Royalty, 2,290 pipeline, 665 capture-policy, and 125
+Narrative Continuity assertions. The first loaded run's 240/241 timing failure is fixed. The expanded
+rerun reached 242/244: both remaining failures were fixture-only combat-batch queries that searched
+for the group Def as an event Def instead of reading the saved `group=talecombat; batch=tale` fields.
+After those queries were corrected, the focused loaded rerun passed 244/244 on 2026-07-19. This marks
+Phase 3 automated loaded coverage green only; its hands-on matrix remains open. That historical
+Phase-3 result did not close R1; Phase-4 acceptance status is recorded below.
+
+Phase 4 defensively registers RimWorld 1.6's private
+`Pawn_RoyaltyTracker.OnPostTitleChanged(Faction, RoyalTitleDef, RoyalTitleDef)` through the existing
+registrar, plus the exact bestowing worker, anima-link completion, and implant-use boundaries. Each
+target is resolved by exact signature; a missing/changed method warns once and leaves the independent
+scanner active. Live title, faction, duty, actor, item-defName, memory, and psylink reads remain in
+double-guarded `DlcContext.Royalty`. Detached policies classify first title, promotion, demotion,
+complete loss, and no-op from faction identity and numeric seniority—never localized labels. The exact
+callback advances its faction row before optional dispatch, and the fallback scanner diffs removed
+faction rows into truthful loss events. Observation also advances while Progression is disabled. If
+Royalty is inactive, saved observations are preserved and marked unavailable; the next available pass
+silently baselines before recognizing new edges.
+
+Bestowing, anima linking, and neuroformer hooks open bounded, resettable before/after scopes. The
+existing bestowing/anima `RitualFanoutSignal` is canonical: it appends the matching title and/or
+psylink mutation, claims only after a child page is stored, and prevents separate progression pages.
+If that ritual route never arrives, the pending batch expires into at most one ordinary truthful
+fallback. Neuroformer use is matched by the XML-owned parent-item `defName` string and owns one
+cause-aware `PsylinkLevel` page; unknown/modded changes remain scanner fallbacks. Exact
+`Thought_MemoryRoyalTitle` award/loss signals stage briefly and are claimed only by matching pawn and
+title edges. Unmatched/expired signals return unchanged to ordinary Thought capture, so no ThoughtDef
+is suppressed globally. All transient scopes are plain DTOs and reset through `FinalizeInit`.
+
+Saved Phase-4 mutation context may contain `royal_mutation_pawn`, `royal_cause`,
+`royal_transition`, `royal_faction_id`, `royal_faction`, `previous_title`, `previous_title_def`,
+`title`, `title_def`, `royal_duty_changes`, `previous_psylink_level`, `psylink_level`, and
+`psylink_cause`. The formatter sanitizes/caps all text and drops optional duty prose before required
+before/after facts. SoloImportant's append-only indices 107–112 project mutation pawn, cause,
+transition, faction, psylink cause, and duty changes; required title/psylink facts reuse earlier stable
+fields. Exact English/Russian prompts cover four title transitions, psylink/neuroformer, bestowing,
+and anima linking. Pure suites pass 283 Royalty, 2,437 pipeline, 665 capture-policy, and 125 Narrative
+Continuity assertions; the runtime and RimTest assemblies build. Focused loaded execution and every
+Phase-2/3/4 hands-on row remain explicit R1 acceptance work.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13
@@ -1300,7 +1336,7 @@ it onto the bus.
 | Mood events | `GameConditionManager.RegisterCondition` | One entry per eligible colonist on affected maps. |
 | Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. Memories vanilla rejects (accept-gates fire before `thought.pawn` is assigned) are ignored — never gained, so never recorded. If a malformed/modded `ThoughtDef` throws while resolving its localized label, capture continues with the stable `defName` as a technical fallback. |
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
-| Pawn progression | Periodic scan | Passion-only skill milestones, psylink level gains, xenotype changes, royal-title changes, and newly gained personality traits. Trait gains feed the trait's own character-card description (no stat/mechanic lines) into the prompt so any trait — vanilla or modded — is voiced as a felt personality shift without a hardcoded per-trait table. The first scan baselines existing saves to avoid retroactive spam (a pawn's starting traits never record); major psylink/xenotype changes can request a rare arc reflection after the normal page records. |
+| Pawn progression | Periodic scan plus defensive Royalty exact hooks | Passion-only skill milestones, cause-aware psylink gains, xenotype changes, faction-aware royal-title gained/promoted/demoted/lost transitions, and newly gained personality traits. Exact Royalty hooks advance saved truth immediately; the scanner remains a loss-aware fallback and observes while output is disabled. Bestowing/anima ritual owners suppress matching progression, while neuroformer owns one progression page. Trait gains feed the trait's own character-card description (no stat/mechanic lines) into the prompt so any trait — vanilla or modded — is voiced as a felt personality shift without a hardcoded per-trait table. First observation baselines existing saves to avoid retroactive spam; major psylink/xenotype changes can request a rare arc reflection after the normal page records. |
 | Royalty persona weapons | Defensive `CompBladelinkWeapon` coding, equip/loss, destruction, map-removal, and `UnCode` hooks plus an independent elapsed scan | Exact coding/transfer creates one formation epoch; a short weapon swap is silent; one meaningful separation appears only after the XML threshold and only its accepted page authorizes recovery; destruction creates one standalone ending. State advances even when output is disabled, and late-visible old bonds baseline silently. Current narrative context requires the exact live coded weapon rather than saved state alone. Pawn death/map removal remain page-silent here, and all live reads no-op without Royalty. |
 | Biotech growth moments | `Pawn_AgeTracker.BirthdayBiological`, `ChoiceLetter_GrowthMoment.ConfigureGrowthLetter` / `MakeChoices` | Age-7/10/13 before/after ownership. A committed verified mutation becomes one child-solo, supporter-solo, or child/supporter page; postponed letters survive save/load, and pending ownership never tick-expires while the pawn's growth letter is still open (vanilla growth letters have no timeout) — even past the pawn's next birthday, where the answered letter still attaches to its original claim via a whole-pawn fallback lookup; auto-resolved growth completes immediately; stable child-ID/age checks across hot and archived events prevent replay regardless of which diary owns the page. N2-B can enrich that same page with exact saved family continuity and a visible current non-Baseliner identity, selected through the shared bounded provider policy. Unsupported/failed/disabled ownership releases the existing Birthday route and consumes trait/skill baselines. Entire path is inert without Biotech. |
 | Biotech family birth | `PregnancyUtility.ApplyBirthOutcome`, nested Tale/Thought/Ritual correlation, naming poll | One exact healthy/ill/stillborn canonical birth, written by at most two unique eligible adults in role-certainty order. XML owns mature-birth/loss classifier names. Unresolved naming survives save/load with frozen event-time prompt/display context and chronological insertion before a same-call death boundary; writer/child resolution covers maps, caravans, and travelling transporters, so a family that leaves the map during the naming window keeps its page; hot/archive family+child ownership prevents replay; disabled/invalid/thrown ownership releases staged mature routes. Exact miscarriage closes/enriches the existing thought path without inventing an extra event. Capture is inert without Biotech, but saved pending/arc state keeps maintaining itself when the DLC is later disabled: the naming poll finds nothing, so a pending birth flushes its canonical page from the frozen event-time facts with the birth-time child name after the normal grace (or prunes when every writer is gone), and family arcs keep compacting/pruning instead of freezing. |
@@ -2335,10 +2371,16 @@ of known trait keys (`<defName>|<degree>`) used to detect newly gained traits, a
 Phase-5 nested `geneIdentityObservationState` stores an explicit baseline version, bounded sorted
 installed Def names, and current xenotype identity. The retained scalar xenotype fields are migration/
 downgrade compatibility only; the nested row is authoritative for fallback diffing. The progression
-row also owns additive `royaltyObservationState`: an explicit version and a bounded, sorted list of
+row also owns additive `royaltyObservationState`: an explicit version,
+`royaltyObservationAvailable` flag, and a bounded, sorted list of
 plain highest-title observations keyed by faction ID. The older scalar Royalty title fields remain for
 migration/downgrade compatibility and are not converted into an invented faction. Persona bonds live
 once at component scope because weapon Thing ID plus bond epoch—not a pawn row—is their identity.
+Phase 4 advances this existing row immediately for exact title hooks and scanner observations; schema
+version 2 distinguishes a readable empty title set from temporarily unavailable Royalty data. The
+existing `highestPsylinkLevelRecorded` scalar remains the psylink baseline. Cause scopes, pending
+ritual mutations, and title-memory ownership are intentionally not Scribed and are cleared on
+`FinalizeInit`, so save/load cannot resurrect an expired owner or emit a stale fallback.
 Phase 2 uses that same normalized deep-scribed ledger transactionally: lifecycle truth is committed
 before optional page dispatch, and saved pending/separated state resumes through the independent
 reconciliation deadline after load without inventing an old bond or a catch-up page. Bonds missed by
@@ -2686,9 +2728,12 @@ runtime skips without Pawn Diary Odyssey patch/XML/type-initializer errors. The 
 Odyssey-enabled main-menu rerun also produced all five intended no-host skips with no Odyssey suite
 error, closing the runtime-suite live gap.
 
-The DLC-focused generic flows now include installed-Royalty positive scanner fixtures for a real
-`PsychicAmplifier` hediff and a disposable real `RoyalTitle`, each asserting exact context and repeat
-suppression. Ideology and Anomaly ritual tests use internal copied-fact fixture seams because safely
+The DLC-focused flows include installed-Royalty positive scanner fixtures for a real
+`PsychicAmplifier` hediff and disposable real titles, plus Phase-4 loaded fixtures for exact hook
+registration, real `SetTitle` promotion/loss, per-faction scanner loss, disabled/re-enabled
+observation, bestowing/anima ritual ownership, cause-aware neuroformer progression, delayed
+title-memory release, transient load reset, and clean no-Royalty skips. These new fixtures compile but
+have not yet been executed in a loaded game. Ideology and Anomaly ritual tests use internal copied-fact fixture seams because safely
 constructing their live ritual job objects would start a real colony ritual; only that reflective
 object extraction is bypassed. The fixtures still execute production fan-out ordering, pawn-ID
 uniqueness, colony dedup, child capture decisions, persisted solo pages, diary references, and prompt

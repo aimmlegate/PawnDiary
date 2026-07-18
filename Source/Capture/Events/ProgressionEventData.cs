@@ -16,6 +16,10 @@ namespace PawnDiary.Capture
         public const string XenotypeChangedDefName = "XenotypeChanged";
         public const string GeneIdentityChangedDefName = "GeneIdentityChanged";
         public const string RoyalTitleChangedDefName = "RoyalTitleChanged";
+        public const string RoyalTitleGainedDefName = "RoyalTitleGained";
+        public const string RoyalTitlePromotedDefName = "RoyalTitlePromoted";
+        public const string RoyalTitleDemotedDefName = "RoyalTitleDemoted";
+        public const string RoyalTitleLostDefName = "RoyalTitleLost";
         public const string TraitGainedDefName = "TraitGained";
         public const string OtherDefName = "ProgressionOther";
 

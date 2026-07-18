@@ -41,6 +41,8 @@ namespace PawnDiary.Ingestion
         private readonly List<Pawn> fixtureSpectators;
         private readonly bool odysseyLaunchAuthorized;
         private readonly int odysseyLaunchTick = -1;
+        private RoyalMutationBatchSnapshot royaltyMutationBatch;
+        private string royaltyMutationContext = string.Empty;
         // Ordinary rituals keep their unlimited existing fanout. Only the exact Odyssey launch
         // group replaces this with the XML-owned cap after passing its Odyssey cooldown.
         private readonly int maximumWriters = int.MaxValue;
@@ -120,7 +122,46 @@ namespace PawnDiary.Ingestion
             Title = RitualTitle(ritualJob, ritual);
             Label = Title;
             Quality = RitualEventData.QualityLabel(progress, DiaryTuning.Current.ritualQualityBands);
+            AttachRoyalMutationOwner(
+                RoyalMutationRoutePolicy.RitualCause(DefName, DiaryRoyaltyPolicy.Snapshot()),
+                CandidatePawnIds(organizer, targetPawn, Assignments?.Participants));
             valid = true;
+        }
+
+        /// <summary>
+        /// Builds the canonical bestowing ritual fanout. Vanilla's bestowing LordJob invokes its
+        /// outcome worker directly rather than LordJob_Ritual.ApplyOutcome, so the exact worker hook
+        /// forwards the completed ceremony here after its title/psylink mutations finish.
+        /// </summary>
+        internal static RitualFanoutSignal CreateRoyalBestowing(
+            Pawn bestower,
+            Pawn target,
+            List<Pawn> participants,
+            float progress)
+        {
+            if (!DiaryGameComponent.GamePlaying || !ModsConfig.RoyaltyActive
+                || bestower == null || target == null || PawnDiaryMod.Settings == null) return null;
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            string defName = policy.bestowingRitualDefNames != null
+                && policy.bestowingRitualDefNames.Count > 0
+                ? policy.bestowingRitualDefNames[0]
+                : "BestowingCeremony";
+            string behavior = "RitualOutcomeEffectWorker_Bestowing";
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyRitual(
+                RitualClassifierKey(defName, behavior));
+            if (group == null || !PawnDiaryMod.Settings.IsGroupEnabled(group.defName)) return null;
+            int tick = Find.TickManager?.TicksGame ?? 0;
+            string instruction = PromptVariants.Pick(
+                group.instructions, group.instruction,
+                PromptVariants.HashSeed(defName + "|" + tick));
+            string title = DiaryLineCleaner.CleanLine("BestowingCeremonyLabel".Translate().Resolve());
+            RitualFanoutSignal signal = new RitualFanoutSignal(
+                bestower, target, participants, new List<Pawn>(), defName, title,
+                behavior, progress, instruction);
+            signal.AttachRoyalMutationOwner(
+                RoyalMutationCauseTokens.ImperialBestowing,
+                CandidatePawnIds(bestower, target, participants));
+            return signal.valid ? signal : null;
         }
 
         /// <summary>
@@ -140,7 +181,7 @@ namespace PawnDiary.Ingestion
             float progress,
             string groupInstruction)
         {
-            return new RitualFanoutSignal(
+            RitualFanoutSignal signal = new RitualFanoutSignal(
                 organizer,
                 targetPawn,
                 participants,
@@ -150,6 +191,13 @@ namespace PawnDiary.Ingestion
                 behaviorClass,
                 progress,
                 groupInstruction);
+            // Keep this loaded-game seam on the production ownership path. A matching bestowing or
+            // anima fixture must claim the same completed mutation batch that a live ritual would;
+            // unrelated ritual fixtures simply resolve to the "unknown" route and attach nothing.
+            signal.AttachRoyalMutationOwner(
+                RoyalMutationRoutePolicy.RitualCause(defName, DiaryRoyaltyPolicy.Snapshot()),
+                CandidatePawnIds(organizer, targetPawn, participants));
+            return signal;
         }
 
         private RitualFanoutSignal(
@@ -266,6 +314,61 @@ namespace PawnDiary.Ingestion
             {
                 sink?.MarkOdysseyLaunchPageAt(odysseyLaunchTick);
             }
+            if (royaltyMutationBatch != null
+                && RoyalMutationCorrelation.ClaimRitual(royaltyMutationBatch))
+            {
+                RoyalTitleMutationSnapshot title = royaltyMutationBatch.titleMutation;
+                if (title != null)
+                {
+                    RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+                    RoyalTitleThoughtCorrelation.Claim(
+                        royaltyMutationBatch.pawnId,
+                        title.previousTitle?.titleDefName,
+                        title.newTitle?.titleDefName,
+                        Find.TickManager?.TicksGame ?? 0,
+                        policy.titleThoughtCorrelationTicks);
+                }
+            }
+        }
+
+        internal string RoyaltyMutationContext => royaltyMutationContext;
+
+        private void AttachRoyalMutationOwner(string causeToken, IList<string> candidatePawnIds)
+        {
+            if (!ModsConfig.RoyaltyActive || causeToken == RoyalMutationCauseTokens.Unknown) return;
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            RoyalMutationBatchSnapshot batch = RoyalMutationCorrelation.PrepareRitualOwner(
+                causeToken, candidatePawnIds, Find.TickManager?.TicksGame ?? 0, policy);
+            if (batch == null) return;
+            royaltyMutationBatch = batch;
+            RoyalTitleMutationSnapshot title = batch.titleMutation;
+            string transition = title == null
+                ? RoyalTitleTransitionTokens.Invalid
+                : RoyalTitleTransitionPolicy.Classify(
+                    title.previousTitle, title.newTitle, true, true, policy).transitionToken;
+            royaltyMutationContext = RoyalMutationContextFormatter.Format(
+                batch, transition, policy.maximumRoyaltyContextCharacters,
+                policy.maximumDutyCategoryTokens, includeOptionalDuties: true);
+        }
+
+        private static List<string> CandidatePawnIds(
+            Pawn first,
+            Pawn second,
+            IEnumerable<Pawn> additional)
+        {
+            List<string> result = new List<string>();
+            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+            AddCandidate(result, seen, first);
+            AddCandidate(result, seen, second);
+            if (additional != null)
+                foreach (Pawn pawn in additional) AddCandidate(result, seen, pawn);
+            return result;
+        }
+
+        private static void AddCandidate(List<string> result, HashSet<string> seen, Pawn pawn)
+        {
+            string id = pawn?.GetUniqueLoadID() ?? string.Empty;
+            if (id.Length > 0 && seen.Add(id)) result.Add(id);
         }
 
         // ── Helpers moved verbatim from the old DiaryGameComponent.Rituals.cs ──
@@ -452,6 +555,8 @@ namespace PawnDiary.Ingestion
                 source.DefName, source.Title, source.BehaviorClass, perspective, ritualRole,
                 DlcContext.RoyalTitle(pawn), DlcContext.IdeologicalRole(pawn),
                 RitualFanoutSignal.RitualOutcomeFinished, source.Quality);
+            if (!string.IsNullOrWhiteSpace(source.RoyaltyMutationContext))
+                context += "; " + source.RoyaltyMutationContext;
             string text = "PawnDiary.Event.RitualFinished"
                 .Translate(pawn.LabelShortCap, source.Title, RitualFanoutSignal.RitualPerspectiveLabel(perspective), ritualRole)
                 .Resolve();

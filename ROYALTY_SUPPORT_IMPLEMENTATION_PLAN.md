@@ -6,9 +6,11 @@ transfer lifecycle pages with guarded Harmony collection, saved state, late-visi
 package-gated settings/prompts, English/Russian localization, prompt fixtures, and N3-R evidence.
 Its automated loaded suite is user-confirmed green, while the hands-on Phase-2 matrix remains open.
 Phase 3 now owns the first qualifying persona kill through the existing Tale page and enriches the
-existing wielder-death page with pre-`UnCode` context. Its first loaded run reached 240/241 and exposed
-a pre-dead Tale timing gate that is now fixed; a clean rerun and the manual matrix remain pending.
-Phases 4–8 remain. This status does not pass, waive, or remove any earlier Biotech B1 manual
+existing wielder-death page with pre-`UnCode` context. After the pre-dead timing fix and two
+fixture-only Tale-batch query corrections, its focused loaded rerun passed 244/244 on 2026-07-19.
+Its automated loaded coverage is green while the hands-on matrix remains open.
+Phase 4 is now code-complete with pure/build coverage; its focused loaded and hands-on acceptance
+remain open. Phases 5–8 remain. This status does not pass, waive, or remove any earlier Biotech B1 manual
 acceptance row.
 
 Scheduling authority: implement Royalty phases only in the waves assigned by
@@ -1422,8 +1424,8 @@ acceptance scenarios pass.
 
 ### Phase 3 — Persona combat and death integration
 
-> **Implementation status (2026-07-19): code-complete; expanded loaded run 242/244; focused rerun and
-> manual acceptance pending.** A qualifying Tale is resolved only from exact XML killer/victim roles
+> **Implementation status (2026-07-19): code-complete; focused loaded rerun 244/244; automated loaded
+> coverage green and manual acceptance pending.** A qualifying Tale is resolved only from exact XML killer/victim roles
 > inside the matching active `Pawn.Kill` scope while the exact coded weapon is still the killer's
 > primary. The saved first-kill truth advances even when its Royalty-gated group is disabled or page
 > creation fails; only a durable accepted page sets the separate recorded flag. The canonical page is
@@ -1439,8 +1441,10 @@ acceptance scenarios pass.
 > RimTests compile. The first loaded run exposed that `KilledMajorThreat` precedes `health.SetDead()`;
 > the balanced exact kill scope now supplies death proof at that callback. The expanded rerun's two
 > remaining failures were fixture-only combat-batch queries: `talecombat` is a saved `group=` value,
-> while the event Def is the source Tale or `TaleCombatBatch`. The corrected focused rerun and Phase-3
-> manual matrix remain unchecked.
+> while the event Def is the source Tale or `TaleCombatBatch`. The corrected focused rerun passed all
+> 244/244 loaded tests. Pure baselines are 245 Royalty, 2,290 pipeline, 665 capture-policy, and 125
+> Narrative Continuity assertions. The Phase-3 hands-on matrix remains unchecked, and R1 still waits
+> on Phase 4.
 
 1. Project persona context into `TaleSignal` at capture time.
 2. Add pure qualifying-milestone and trait selection.
@@ -1455,6 +1459,20 @@ Exit gate: first qualifying kill and wielder death each produce one canonical pa
 not flood; R1 persona scope is complete.
 
 ### Phase 4 — Title and psylink correctness
+
+> **Implementation status (2026-07-19): code-complete; pure/build green; loaded execution and manual
+> acceptance pending.** The exact private `OnPostTitleChanged(Faction, RoyalTitleDef, RoyalTitleDef)`
+> callback and three cause boundaries register defensively through `DiaryRoyaltyPatches`; changed
+> targets warn once and retain the scanner. Exact gained/promoted/demoted/lost decisions use faction ID
+> and structural seniority, advance the per-faction baseline before optional dispatch, and include
+> disappeared-faction loss in scanner fallback. Bestowing/anima stage bounded detached mutations for
+> the existing ritual owner, neuroformer owns one cause-aware progression page, unknown/expired owners
+> fail open at most once, and exact `Thought_MemoryRoyalTitle` signals stage/claim/release unchanged.
+> Observation continues while output is disabled; inactive Royalty marks observation unavailable but
+> preserves saved truth for a later silent baseline. XML owns matching, windows, caps, prose, and prompt
+> projection; English/Russian data and append-only SoloImportant fields 107–112 are covered. Pure suites
+> pass 283 Royalty, 2,437 pipeline, 665 capture-policy, and 125 Narrative Continuity assertions. Runtime
+> and RimTest assemblies build; the focused loaded suite and hands-on matrix still must run before R1.
 
 1. Register the private post-title hook defensively.
 2. Emit faction-aware gain/promotion/demotion/loss and update the scanner baseline.

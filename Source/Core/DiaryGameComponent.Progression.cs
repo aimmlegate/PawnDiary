@@ -28,6 +28,7 @@ namespace PawnDiary
                 && DiarySignalPolicies.Enabled(DiarySignalPolicies.Progression);
             bool observeBiotech = ModsConfig.BiotechActive;
             bool observeRoyalty = ModsConfig.RoyaltyActive;
+            if (!observeRoyalty) MarkRoyaltyObservationUnavailable();
             if (!progressionEnabled && !observeBiotech && !observeRoyalty)
             {
                 return;
@@ -69,11 +70,15 @@ namespace PawnDiary
                 // significant fallback, but every path advances before returning.
                 ObserveGeneIdentity(pawn, state, progressionEnabled && !baseline);
             }
+            if (ModsConfig.RoyaltyActive)
+            {
+                // Royalty Phase 4 owns its own versioned baseline. Observe even while Progression
+                // output is disabled so title/psylink truth cannot bank a later catch-up page.
+                ObserveRoyaltyProgression(pawn, state, progressionEnabled);
+            }
             if (!progressionEnabled) return;
 
             ScanPassionSkillMilestones(pawn, state, baseline);
-            ScanPsylinkLevel(pawn, state, baseline);
-            ScanRoyalTitleChange(pawn, state, baseline);
             ScanTraitGain(pawn, state);
             if (baseline) state.baselineProgressionOnNextScan = false;
         }

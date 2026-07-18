@@ -126,7 +126,7 @@ bounded source evidence. The EVT-22 RimTest fixture exercises the live package-g
 path when Anomaly is active and the no-op branch otherwise.
 
 Master Wave 5 / Royalty Phases 0–3 plus N3-R evidence use `RoyaltyContextTests`, now a
-226-assertion assembly-free suite. It
+245-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing
 Narrative Continuity `bond_lifecycle`/`weapon` contract; formation/load-baseline/re-equip,
 pending/threshold/unobservable separation, recorded/unrecorded recovery, destruction/death/transfer,
@@ -143,9 +143,11 @@ baselines, malformed phase/tick/cause repair, duplicate weapon ownership, trait/
 dedup, highest-seniority selection, stable ordering, missing rows, corruption ceilings, exact live
 weapon validation for provider facts, and persistence of steady-primary observation ticks. The new
 N3-R adds exact pawn title-transition evidence, authority/status/duty/death topic boundaries, major
-loss salience, and rejection of no-change/malformed rows. `PawnDiaryRoyaltyStateFixtureTests` compiles against RimTest Redux and exercises deep persona Scribe
+loss salience, and rejection of no-change/malformed rows. `PawnDiaryRoyaltyStateFixtureTests` compiles
+against RimTest Redux and exercises deep persona Scribe
 round-trip, per-pawn faction-title/psylink preservation, old-save version-zero versus initialized-empty
-markers, and guarded no-Royalty persona/title/psylink collection. Building that fixture is not a claim
+markers, observation availability, transient ownership reset, and guarded no-Royalty
+persona/title/psylink collection. Building that fixture is not a claim
 that it was executed inside a loaded game; that acceptance remains explicit.
 
 Phases 2–3 add pure ownership and shipped-contract coverage across the other suites. Capture tests
@@ -156,7 +158,7 @@ dedicated lifecycle domain, the Royalty-package-gated no-catch-all lifecycle and
 groups, five exact event-prompt rows, append-only `SoloImportant` lifecycle fields `90–101` and
 milestone fields `102–106`, enriched `DeathDescription` fields, English/Russian DefInjected and Keyed
 coverage, all prompt fixtures, required compact facts, optional trait behavior, and exclusion of
-internal IDs, epoch, ticks, and correlation keys; the suite now passes 2,265 assertions.
+internal IDs, epoch, ticks, and correlation keys; the suite now passes 2,290 assertions.
 
 Runtime Phase 2 commits saved lifecycle state before optional dispatch and registers defensive
 Royalty-only seams. Vanilla `bondedThought` remains situational and outside the memory hook. The user
@@ -183,8 +185,23 @@ tests and exposed that production read `victim.Dead` before vanilla's later `hea
 exact active scope fixes that timing. The expanded run reached 242/244; its two failures were
 false-negative fixture queries that searched for `interactionDefName=talecombat`, even though a
 flushed batch stores either its source/synthetic Def there and identifies the group through exact
-`group=talecombat; batch=tale` context fields. The corrected focused loaded rerun and all manual rows
-remain required; neither Phase 2 nor Phase 3 is manually acceptance-complete.
+`group=talecombat; batch=tale` context fields. After those queries were corrected, the focused loaded
+rerun passed 244/244 on 2026-07-19. Phase 3 automated loaded coverage is therefore green. All manual
+rows remain required; neither Phase 2 nor Phase 3 is manually acceptance-complete, and R1 remains
+open until Phase 4 passes.
+
+Phase 4 expands the pure Royalty matrix to 283 passing assertions: exact gained/promoted/demoted/lost/
+no-op classification, same-label faction distinction, hook/scanner observation advancement, vanished-
+faction loss, disabled-output no replay, bestowing/anima/neuroformer/unknown routing, wrong-owner
+rejection, one-shot expiry, title-thought ownership, and compact/malformed/oversized context. Pipeline
+coverage passes 2,437 assertions and pins exact groups/prompts, append-only SoloImportant fields
+107–112, English/Russian labels and fixtures, required/optional context-detail routing, and compact
+projection. Capture-policy and Narrative Continuity remain green at 665 and 125 assertions.
+`PawnDiaryRoyaltyProgressionFlowTests` now compiles loaded fixtures for real `SetTitle` promotion/loss,
+scanner loss/no-catch-up, bestowing/anima ritual ownership, neuroformer cause, unmatched title-memory
+release, and no-Royalty silence; `PawnDiaryRoyaltyFlowTests` audits all four exact new Harmony seams.
+These Phase-4 loaded fixtures have not yet run in RimWorld, and every Phase-2/3/4 hands-on row remains
+open. R1 is therefore code-complete but not acceptance-complete.
 
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,
@@ -356,8 +373,9 @@ assumption: `ritualRoyal` intentionally classifies throne-speech and anima-linki
 narrow runtime tokens rather than exact def-name keys. Its token-only contract is now asserted beside
 the equivalent Odyssey and Anomaly exceptions. The user subsequently confirmed the Phase-2 automated
 loaded suite green. No Biotech B1 or Royalty Phase-2 manual acceptance row is closed by that result.
-The first Phase-3 in-game run reached 240/241 and exposed the pre-dead Tale timing gate; its focused
-fix now needs a fresh loaded rerun.
+The first Phase-3 in-game run reached 240/241 and exposed the pre-dead Tale timing gate. After the
+timing fix and two fixture-only Tale-batch query corrections, the focused rerun passed 244/244 on
+2026-07-19. This closes automated loaded coverage, not the Phase-3 hands-on matrix.
 
 Narrative N2-B extends `NarrativeContinuityTests` with assembly-free checks for family-continuity
 classification, exact arc/subject candidate construction, fixed provider ordering, inactive-DLC and

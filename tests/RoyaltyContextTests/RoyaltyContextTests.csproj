@@ -19,7 +19,11 @@
     <Compile Include="..\..\Source\Pipeline\Royalty\PersonaTraitPolicy.cs" Link="PersonaTraitPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\PersonaMilestonePolicy.cs" Link="PersonaMilestonePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyalTitleTransitionPolicy.cs" Link="RoyalTitleTransitionPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\RoyalTitleObservationPolicy.cs" Link="RoyalTitleObservationPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyalMutationOwnershipPolicy.cs" Link="RoyalMutationOwnershipPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\RoyalMutationContextFormatter.cs" Link="RoyalMutationContextFormatter.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\RoyalTitleThoughtOwnershipPolicy.cs" Link="RoyalTitleThoughtOwnershipPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\RoyalMutationRoutePolicy.cs" Link="RoyalMutationRoutePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyaltyStatePersistence.cs" Link="RoyaltyStatePersistence.cs" />
   </ItemGroup>
 </Project>

@@ -242,7 +242,7 @@
   <raid.instructions.2>налёт мог ещё не дойти до защитников: упоминай дым, кровь, раны и последствия только когда они переданы; иначе держись подготовки, страха и первого взгляда на опасность</raid.instructions.2>
   <raid.tone>с напряжённым ожиданием боя</raid.tone>
   <ritualRoyal.label>Имперские ритуалы</ritualRoyal.label>
-  <ritualRoyal.instruction>завершён ритуал Royalty; передай придворный, титульный, псионический или связанный с древом души характер церемонии, если на него указывает название</ritualRoyal.instruction>
+  <ritualRoyal.instruction>завершён ритуал Royalty; используй переданные точные поля поселенца, фракции, прежнего и нового титула, уровня пси-связи и причины, не объясняя механики и не выдумывая эффект</ritualRoyal.instruction>
   <ritualRoyal.tone>с формальным рангом и ритуальной властью</ritualRoyal.tone>
   <ritualRoyal.tones.0>придворно и заряжено рангом, титулом, свидетелями и публичной властью</ritualRoyal.tones.0>
   <ritualRoyal.tones.1>тихо, с пси-фокусом и опорой на традицию; церемония больше тела одного поселенца</ritualRoyal.tones.1>
@@ -452,7 +452,7 @@
   <progressionSkillPassion.tones.0>гордо, но без пафоса, помня о труде за этой отметкой</progressionSkillPassion.tones.0>
   <progressionSkillPassion.tones.1>тихо напряжённо, будто навык становится частью самого поселенца</progressionSkillPassion.tones.1>
   <progressionPsylink.label>Рост пси-связи</progressionPsylink.label>
-  <progressionPsylink.instruction>пси-связь стала сильнее; пиши это как прожитое ощущение, ответственность или тревогу, не придумывая новых способностей</progressionPsylink.instruction>
+  <progressionPsylink.instruction>пси-связь стала сильнее; сохрани точные прежний и новый уровни и переданную причину, описывая перемену как ощущение, ответственность или тревогу без выдуманных способностей</progressionPsylink.instruction>
   <progressionPsylink.tone>со странным внутренним давлением</progressionPsylink.tone>
   <progressionPsylink.tones.0>заворожённо и тревожно, новая сила укореняется прямо в сознании</progressionPsylink.tones.0>
   <progressionPsylink.tones.1>сосредоточенно и близко к телу, перемена описана изнутри</progressionPsylink.tones.1>
@@ -462,7 +462,7 @@
   <progressionXenotype.tones.0>настороженно и изменённо, прежнее «я» становится незнакомым</progressionXenotype.tones.0>
   <progressionXenotype.tones.1>телесно и наедине с собой, с упором на то, что новое тело значит сегодня ночью</progressionXenotype.tones.1>
   <progressionRoyalTitle.label>Смена королевского титула</progressionRoyalTitle.label>
-  <progressionRoyalTitle.instruction>королевский титул изменился; пиши о статусе, ответственности, гордости или отдалении от других, опираясь на новый титул и не объясняя механику фракций</progressionRoyalTitle.instruction>
+  <progressionRoyalTitle.instruction>точный переход королевского титула в указанной фракции; сохрани прежний и новый титулы и фракцию, затем пиши о статусе, бремени, гордости, облегчении или потере без объяснения механик</progressionRoyalTitle.instruction>
   <progressionRoyalTitle.tone>с официальной тяжестью и личной ценой</progressionRoyalTitle.tone>
   <progressionRoyalTitle.tones.0>размеренно и неловко, с пониманием, что титул меняет чужие взгляды</progressionRoyalTitle.tones.0>
   <progressionRoyalTitle.tones.1>тихо и с чувством бремени, воспринимая ранг одновременно как честь и обязанность</progressionRoyalTitle.tones.1>

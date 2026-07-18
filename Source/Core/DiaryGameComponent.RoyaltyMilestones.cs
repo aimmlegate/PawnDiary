@@ -35,7 +35,7 @@ namespace PawnDiary
             // SnapshotFreeColonists allocates a fresh list. The version gate is checked here as
             // well as inside the baseline routine because qualifying Tales are frequent after the
             // first observation and do not need to rebuild an already-established baseline.
-            if (royaltyPersonaObservationVersion < RoyaltyStatePersistence.CurrentObservationVersion)
+            if (royaltyPersonaObservationVersion < RoyaltyStatePersistence.CurrentPersonaObservationVersion)
                 BaselineRoyaltyStateIfNeeded(SnapshotFreeColonists());
 
             List<PersonaWeaponSnapshot> visible = DlcContext.CapturePersonaWeapons(killer);
@@ -81,7 +81,7 @@ namespace PawnDiary
             if (decision.markObserved)
             {
                 state.firstConsequentialKillObserved = true;
-                royaltyPersonaObservationVersion = RoyaltyStatePersistence.CurrentObservationVersion;
+                royaltyPersonaObservationVersion = RoyaltyStatePersistence.CurrentPersonaObservationVersion;
             }
 
             weapon = current;
@@ -98,7 +98,7 @@ namespace PawnDiary
             if (state == null || state.bondEpoch != bondEpoch
                 || !state.firstConsequentialKillObserved) return;
             state.firstConsequentialKillEventRecorded = true;
-            royaltyPersonaObservationVersion = RoyaltyStatePersistence.CurrentObservationVersion;
+            royaltyPersonaObservationVersion = RoyaltyStatePersistence.CurrentPersonaObservationVersion;
         }
 
         /// <summary>

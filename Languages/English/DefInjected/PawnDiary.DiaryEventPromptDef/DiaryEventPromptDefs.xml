@@ -75,6 +75,27 @@
   <DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.label>first consequential persona-weapon kill</DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.label>
   <DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.prompt>Write the exact bonded wielder&apos;s first consequential kill with this persona weapon.</DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.prompt>
   <DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.enhancement>Use only the supplied victim, source Tale, weapon, bond state, and selected trait facts. Keep the killer as the sole point of view; do not invent dialogue, motives for the weapon, another attack, or the victim&apos;s inner experience.</DiaryEventPrompt_PersonaWeaponFirstConsequentialKill.enhancement>
+  <DiaryEventPrompt_RoyalTitleGained.label>first royal title</DiaryEventPrompt_RoyalTitleGained.label>
+  <DiaryEventPrompt_RoyalTitleGained.prompt>Write the pawn receiving their first exact title in the supplied royal faction.</DiaryEventPrompt_RoyalTitleGained.prompt>
+  <DiaryEventPrompt_RoyalTitleGained.enhancement>Preserve the faction, new title, and cause exactly. Show first rank as recognition, obligation, pride, or unease; do not invent a ceremony, duties, or faction mechanics.</DiaryEventPrompt_RoyalTitleGained.enhancement>
+  <DiaryEventPrompt_RoyalTitlePromoted.label>royal promotion</DiaryEventPrompt_RoyalTitlePromoted.label>
+  <DiaryEventPrompt_RoyalTitlePromoted.prompt>Write an exact promotion from the supplied previous title to the new title in one faction.</DiaryEventPrompt_RoyalTitlePromoted.prompt>
+  <DiaryEventPrompt_RoyalTitlePromoted.enhancement>Keep both titles and the faction correct. Optional supplied duty changes may color the reaction, but do not list mechanics or invent a bestowing ceremony.</DiaryEventPrompt_RoyalTitlePromoted.enhancement>
+  <DiaryEventPrompt_RoyalTitleDemoted.label>royal demotion</DiaryEventPrompt_RoyalTitleDemoted.label>
+  <DiaryEventPrompt_RoyalTitleDemoted.prompt>Write an exact demotion from the supplied previous title to the lower title in one faction.</DiaryEventPrompt_RoyalTitleDemoted.prompt>
+  <DiaryEventPrompt_RoyalTitleDemoted.enhancement>Keep both titles and the faction correct. Center loss of standing, relief, shame, anger, or changed responsibility without inventing blame or political events.</DiaryEventPrompt_RoyalTitleDemoted.enhancement>
+  <DiaryEventPrompt_RoyalTitleLost.label>royal title lost</DiaryEventPrompt_RoyalTitleLost.label>
+  <DiaryEventPrompt_RoyalTitleLost.prompt>Write the complete loss of the supplied previous royal title in its exact faction.</DiaryEventPrompt_RoyalTitleLost.prompt>
+  <DiaryEventPrompt_RoyalTitleLost.enhancement>Treat the new title value none as complete loss, not promotion or transfer. Use only the supplied cause; do not invent death, succession, punishment, or a replacement title.</DiaryEventPrompt_RoyalTitleLost.enhancement>
+  <DiaryEventPrompt_PsylinkLevel.label>psylink gain</DiaryEventPrompt_PsylinkLevel.label>
+  <DiaryEventPrompt_PsylinkLevel.prompt>Write the exact supplied psylink level increase and its known or unknown cause.</DiaryEventPrompt_PsylinkLevel.prompt>
+  <DiaryEventPrompt_PsylinkLevel.enhancement>Preserve the before/after levels and cause. Write lived psychic sensation, responsibility, or unease without naming unprovided powers or explaining implant and ritual mechanics.</DiaryEventPrompt_PsylinkLevel.enhancement>
+  <DiaryEventPrompt_BestowingCeremony.label>royal bestowing ceremony</DiaryEventPrompt_BestowingCeremony.label>
+  <DiaryEventPrompt_BestowingCeremony.prompt>Write the completed imperial bestowing ceremony from the supplied ritual role.</DiaryEventPrompt_BestowingCeremony.prompt>
+  <DiaryEventPrompt_BestowingCeremony.enhancement>Use the exact mutation pawn, faction, title before/after, psylink before/after, and imperial_bestowing cause when present. Keep all changes in this ritual page; do not invent honors, speeches, powers, or another progression scene.</DiaryEventPrompt_BestowingCeremony.enhancement>
+  <DiaryEventPrompt_AnimaTreeLinking.label>anima linking ceremony</DiaryEventPrompt_AnimaTreeLinking.label>
+  <DiaryEventPrompt_AnimaTreeLinking.prompt>Write the completed anima linking ceremony from the supplied ritual role.</DiaryEventPrompt_AnimaTreeLinking.prompt>
+  <DiaryEventPrompt_AnimaTreeLinking.enhancement>Use the exact psylink before/after and anima_linking cause when present. Keep the psychic change in this ritual page and do not invent powers, imperial rank, or extra ritual effects.</DiaryEventPrompt_AnimaTreeLinking.enhancement>
   <DiaryEventPrompt_External.label>external mod event</DiaryEventPrompt_External.label>
   <DiaryEventPrompt_External.prompt>Write a moment reported by another mod as something the pawn just lived through.</DiaryEventPrompt_External.prompt>
   <DiaryEventPrompt_External.enhancement>Stay strictly inside the supplied event line and context facts; do not invent mechanics, systems, or unstated participants.</DiaryEventPrompt_External.enhancement>

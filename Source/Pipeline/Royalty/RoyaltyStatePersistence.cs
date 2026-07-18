@@ -8,7 +8,10 @@ namespace PawnDiary
     /// <summary>Repairs Royalty state deterministically without reading live game objects.</summary>
     internal static class RoyaltyStatePersistence
     {
-        internal const int CurrentObservationVersion = 1;
+        internal const int CurrentPersonaObservationVersion = 1;
+        // Version 2 adds exact Phase-4 faction transitions and the availability marker. Version-1
+        // pawn observations silently baseline once, so old scalar/scanner facts never become pages.
+        internal const int CurrentObservationVersion = 2;
         internal const int HardMaximumPersonaStates = 2048;
         internal const int HardMaximumTitleObservations = 32;
 

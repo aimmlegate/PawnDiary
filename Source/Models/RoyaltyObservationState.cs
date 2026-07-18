@@ -15,6 +15,7 @@ namespace PawnDiary
         public const string PersonaBonds = "royaltyPersonaBonds";
         public const string PawnObservationState = "royaltyObservationState";
         public const string PawnObservationVersion = "royaltyObservationVersion";
+        public const string ObservationAvailable = "royaltyObservationAvailable";
         public const string TitleObservations = "royaltyTitleObservations";
     }
 
@@ -261,11 +262,15 @@ namespace PawnDiary
     public sealed class RoyaltyPawnProgressionState : IExposable
     {
         public int observationVersion;
+        // False means the last observer pass could not read Royalty state. On later reactivation the
+        // component silently rebaselines current truth before allowing new edges.
+        public bool observationAvailable;
         public List<RoyalTitleObservationState> titleObservations = new List<RoyalTitleObservationState>();
 
         public void ExposeData()
         {
             Scribe_Values.Look(ref observationVersion, RoyaltySaveKeys.PawnObservationVersion, 0);
+            Scribe_Values.Look(ref observationAvailable, RoyaltySaveKeys.ObservationAvailable, false);
             Scribe_Collections.Look(ref titleObservations, RoyaltySaveKeys.TitleObservations, LookMode.Deep);
             if (Scribe.mode == LoadSaveMode.PostLoadInit) Normalize();
         }
@@ -300,6 +305,7 @@ namespace PawnDiary
                     parent.highestPsylinkLevelRecorded,
                     Math.Max(0, currentPsylinkLevel));
             observationVersion = RoyaltyStatePersistence.CurrentObservationVersion;
+            observationAvailable = true;
         }
     }
 }

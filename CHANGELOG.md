@@ -1,12 +1,32 @@
 # Changelog
 
+- **2026-07-19 — Implemented Royalty Phase 4 title and psylink correctness.** Defensively registered
+  the exact private faction-title callback plus bestowing, anima-linking, and neuroformer cause
+  boundaries; added exact gained/promoted/demoted/lost pages, per-faction immediate observation,
+  title-loss scanner fallback, disabled-output advancement, and Royalty-inactive preservation.
+  Bestowing/anima rituals now claim bounded before/after mutations and suppress matching progression
+  duplicates; neuroformers own one cause-aware progression page; expired owners fail open once; and
+  exact royal-title memories stage/claim/release without global ThoughtDef suppression. Added XML-owned
+  tuning and prompt policy, append-only SoloImportant fields 107–112, English/Russian localization,
+  prompt fixtures, Def/save smoke coverage, and focused loaded fixtures. Pure suites pass 283 Royalty,
+  2,437 pipeline, 665 capture-policy, and 125 Narrative Continuity assertions; both runtime and
+  RimTest assemblies build cleanly and were rebuilt. Phase-4 loaded execution and all hands-on
+  matrices remain open, so R1 is code-complete but not yet acceptance-complete.
+
+- **2026-07-19 — Confirmed the Royalty Phase-3 loaded suite fully green.** The corrected focused
+  rerun passed all 244/244 loaded RimTests, including the real first-kill owner, delayed companion
+  Tale release, disabled-output fallback, bonded-wielder death enrichment, and saved milestone flags.
+  Pure baselines remain green at 245 Royalty, 2,290 pipeline, 665 capture-policy, and 125 Narrative
+  Continuity assertions. This closes Phase 3's automated loaded coverage only: its hands-on acceptance
+  matrix remains open, and Royalty R1 is not complete until Phase 4 passes.
+
 - **2026-07-19 — Fixed two false-negative Royalty Phase-3 loaded assertions.** The expanded loaded
   run reached 242/244: milestone ownership, Thought fallback, save flags, and death enrichment all
   passed, while two combat-batch checks incorrectly searched `interactionDefName=talecombat`.
   Flushed Tale batches actually keep either the one source Tale Def or the XML `syntheticDefName` in
   that field and store `group=talecombat; batch=tale` in saved context. The fixture now queries those
   exact context fields, so it verifies the production batch contract without depending on batch size.
-  Runtime behavior is unchanged; a focused loaded rerun remains pending.
+  Runtime behavior is unchanged; the subsequent focused loaded rerun passed 244/244.
 
 - **2026-07-18 — Hardened Royalty Phase 3 after a consolidated adversarial review.** Vanilla's real
   `KilledMajorThreat` path can also record an ordinary melee/ranged/capacity combat Tale in the same

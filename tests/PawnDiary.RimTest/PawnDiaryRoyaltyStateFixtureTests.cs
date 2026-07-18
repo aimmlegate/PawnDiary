@@ -1,5 +1,5 @@
-// Royalty Phase-1 loaded-game fixtures. These tests exercise the real Scribe models and guarded live
-// collectors only; they create no Royalty event, page, prompt, hook, setting, or player-visible state.
+// Royalty loaded-game state fixtures. These tests exercise the real Scribe models, Phase-4
+// per-faction observation availability, transient ownership reset, and guarded live collectors.
 using System;
 using System.Collections.Generic;
 using RimTestRedux;
@@ -25,7 +25,12 @@ namespace PawnDiary.RimTests
         public static void TearDown()
         {
             try { scope?.TearDown(); }
-            finally { scope = null; pawn = null; }
+            finally
+            {
+                RoyaltyTransientState.Reset();
+                scope = null;
+                pawn = null;
+            }
         }
 
         /// <summary>Deep-scribed persona identity, lifecycle flags, and bounded trait facts survive.</summary>
@@ -100,6 +105,7 @@ namespace PawnDiary.RimTests
                     royaltyObservationState = new RoyaltyPawnProgressionState
                     {
                         observationVersion = RoyaltyStatePersistence.CurrentObservationVersion,
+                        observationAvailable = true,
                         titleObservations = new List<RoyalTitleObservationState>
                         {
                             new RoyalTitleObservationState
@@ -117,6 +123,7 @@ namespace PawnDiary.RimTests
             });
             RoyaltyPawnProgressionState royalty = loaded.progressionState.EnsureRoyaltyState();
             Require(royalty.observationVersion == RoyaltyStatePersistence.CurrentObservationVersion
+                    && royalty.observationAvailable
                     && royalty.titleObservations.Count == 1,
                 "current Royalty per-pawn observation did not survive Scribe.");
             Require(loaded.progressionState.highestPsylinkLevelRecorded == 3,
@@ -146,10 +153,10 @@ namespace PawnDiary.RimTests
         {
             RoyaltyComponentStateMirror initialized = ScribeRoundTrip(new RoyaltyComponentStateMirror
             {
-                observationVersion = RoyaltyStatePersistence.CurrentObservationVersion,
+                observationVersion = RoyaltyStatePersistence.CurrentPersonaObservationVersion,
                 bonds = new List<PersonaBondState>()
             });
-            Require(initialized.observationVersion == RoyaltyStatePersistence.CurrentObservationVersion
+            Require(initialized.observationVersion == RoyaltyStatePersistence.CurrentPersonaObservationVersion
                     && initialized.bonds != null && initialized.bonds.Count == 0,
                 "initialized-empty persona ledger lost its explicit version marker.");
 
@@ -160,6 +167,49 @@ namespace PawnDiary.RimTests
             });
             Require(legacy.observationVersion == 0 && legacy.bonds != null && legacy.bonds.Count == 0,
                 "missing old-save persona keys did not normalize to version-zero empty state.");
+        }
+
+        /// <summary>
+        /// Completed ritual ownership is deliberately transient: it may wait briefly for a ritual in
+        /// one live session, but FinalizeInit/load reset must discard it instead of inventing a stale
+        /// post-load fallback page. Persisted faction observations are covered by the round-trip above.
+        /// </summary>
+        [Test]
+        public static void PendingRoyalMutationOwnershipResetsSafelyAcrossLoadBoundary()
+        {
+            RoyalMutationCorrelation.Clear();
+            RoyalMutationBatchSnapshot batch = RoyalMutationCorrelation.Open(
+                "Pawn_LoadBoundary",
+                "Load Boundary",
+                string.Empty,
+                RoyalMutationCauseTokens.AnimaLinking,
+                100,
+                null,
+                0,
+                16);
+            bool completed = RoyalMutationCorrelation.Complete(
+                batch,
+                null,
+                new RoyalPsychicMutationSnapshot
+                {
+                    pawnId = "Pawn_LoadBoundary",
+                    previousPsylinkLevel = 0,
+                    newPsylinkLevel = 1,
+                    causeToken = RoyalMutationCauseTokens.AnimaLinking,
+                    tick = 100,
+                    correlationId = batch?.scope?.correlationId
+                },
+                64);
+            Require(completed && RoyalMutationCorrelation.PendingCountForTests == 1,
+                "the ritual mutation fixture did not enter the bounded pending queue.");
+
+            // FinalizeInit calls this same reset after a save finishes loading. No transient owner is
+            // serialized; only the normalized per-pawn observation baseline survives Scribe.
+            RoyaltyTransientState.Reset();
+            Require(RoyalMutationCorrelation.ActiveCountForTests == 0
+                    && RoyalMutationCorrelation.PendingCountForTests == 0
+                    && RoyalTitleThoughtCorrelation.PendingCountForTests == 0,
+                "Royalty transient ownership survived the load-boundary reset.");
         }
 
         /// <summary>All new live collectors short-circuit cleanly when Royalty is inactive.</summary>
@@ -195,7 +245,7 @@ namespace PawnDiary.RimTests
                 if (Scribe.mode == LoadSaveMode.PostLoadInit)
                 {
                     observationVersion = Math.Max(0, Math.Min(
-                        RoyaltyStatePersistence.CurrentObservationVersion,
+                        RoyaltyStatePersistence.CurrentPersonaObservationVersion,
                         observationVersion));
                     if (bonds == null) bonds = new List<PersonaBondState>();
                 }

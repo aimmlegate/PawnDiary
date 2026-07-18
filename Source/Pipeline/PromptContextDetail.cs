@@ -393,7 +393,18 @@ namespace PawnDiary
                 || Eq(contextKey, "bond_separation_duration")
                 || Eq(contextKey, "bond_duration")
                 || Eq(contextKey, "bond_previous_pawn")
-                || Eq(contextKey, "bond_end_cause");
+                || Eq(contextKey, "bond_end_cause")
+                // R4 mutation identity and exact before/after truth stay visible in Compact. The
+                // optional royal_duty_changes field is deliberately absent and gets budgeted first.
+                || Eq(contextKey, "royal_mutation_pawn")
+                || Eq(contextKey, "royal_cause")
+                || Eq(contextKey, "royal_transition")
+                || Eq(contextKey, "royal_faction")
+                || Eq(contextKey, "previous_title")
+                || Eq(contextKey, "title")
+                || Eq(contextKey, "previous_psylink_level")
+                || Eq(contextKey, "psylink_level")
+                || Eq(contextKey, "psylink_cause");
         }
 
         private static int Score(
@@ -496,6 +507,12 @@ namespace PawnDiary
             {
                 reason = persona ? "persona lifecycle context" : "persona context";
                 return persona ? 86 : 48;
+            }
+
+            if (Eq(contextKey, "royal_duty_changes"))
+            {
+                reason = "optional royal duty color";
+                return level == PromptContextDetailLevel.Compact ? 6 : 24;
             }
 
             if (StartsWithAny(contextKey, "quest_"))

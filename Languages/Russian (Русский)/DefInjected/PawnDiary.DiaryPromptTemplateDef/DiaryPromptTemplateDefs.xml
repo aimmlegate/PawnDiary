@@ -534,4 +534,10 @@
   <DiaryPromptTemplate_SoloImportant.fields.104.label>название исходного сказания</DiaryPromptTemplate_SoloImportant.fields.104.label>
   <DiaryPromptTemplate_SoloImportant.fields.105.label>роль убийцы в сказании</DiaryPromptTemplate_SoloImportant.fields.105.label>
   <DiaryPromptTemplate_SoloImportant.fields.106.label>роль жертвы в сказании</DiaryPromptTemplate_SoloImportant.fields.106.label>
+  <DiaryPromptTemplate_SoloImportant.fields.107.label>поселенец с королевской переменой</DiaryPromptTemplate_SoloImportant.fields.107.label>
+  <DiaryPromptTemplate_SoloImportant.fields.108.label>причина королевской перемены</DiaryPromptTemplate_SoloImportant.fields.108.label>
+  <DiaryPromptTemplate_SoloImportant.fields.109.label>переход титула</DiaryPromptTemplate_SoloImportant.fields.109.label>
+  <DiaryPromptTemplate_SoloImportant.fields.110.label>королевская фракция</DiaryPromptTemplate_SoloImportant.fields.110.label>
+  <DiaryPromptTemplate_SoloImportant.fields.111.label>причина роста пси-связи</DiaryPromptTemplate_SoloImportant.fields.111.label>
+  <DiaryPromptTemplate_SoloImportant.fields.112.label>новые королевские обязанности</DiaryPromptTemplate_SoloImportant.fields.112.label>
 </LanguageData>
