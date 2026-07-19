@@ -257,6 +257,22 @@
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalSuccession</defName>
+    <label>royal succession</label>
+    <eventType>RoyalSuccession</eventType>
+    <prompt>Write the heir inheriting the supplied exact royal title after the named title holder&apos;s death.</prompt>
+    <enhancement>Keep the heir as the sole point of view and preserve the deceased holder, title, and faction exactly. Treat this as succession, not an ordinary promotion or bestowing ceremony; do not invent last words, politics, rival claimants, or ceremony details.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalHeirAppointed</defName>
+    <label>royal heir appointed</label>
+    <eventType>RoyalHeirAppointed</eventType>
+    <prompt>Write the named heir&apos;s explicit appointment to inherit the supplied title.</prompt>
+    <enhancement>Keep the appointed heir as the sole point of view and preserve the title holder, title, and faction exactly. This is an appointment, not a death or completed inheritance; do not invent a ceremony, succession, or political dispute.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_PsylinkLevel</defName>
     <label>psylink gain</label>
     <eventType>PsylinkLevel</eventType>

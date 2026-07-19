@@ -115,6 +115,12 @@
   <PawnDiary.Dev.PromptSuite.RoyalTitleLost.Label>Королевский титул утрачен</PawnDiary.Dev.PromptSuite.RoyalTitleLost.Label>
   <PawnDiary.Dev.PromptSuite.RoyalTitleLost.Markers>progression=RoyalTitleLost; progression_kind=royal_title; previous_value=йомен; new_value=none; royal_mutation_pawn={0}; royal_cause=unknown; royal_transition=loss; royal_faction_id=Faction_Empire; royal_faction=Империя; previous_title=йомен; previous_title_def=Yeoman; title=none; title_def=none</PawnDiary.Dev.PromptSuite.RoyalTitleLost.Markers>
   <PawnDiary.Dev.PromptSuite.RoyalTitleLost.Text>{0} полностью утратил имперский титул йомена.</PawnDiary.Dev.PromptSuite.RoyalTitleLost.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalSuccession.Label>Наследование титула</PawnDiary.Dev.PromptSuite.RoyalSuccession.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalSuccession.Markers>progression=RoyalSuccession; progression_kind=royal_succession; previous_value=йомен; new_value=аколит; succession_deceased=Прежний граф; succession_heir={0}; succession_title=аколит; succession_faction=Империя</PawnDiary.Dev.PromptSuite.RoyalSuccession.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalSuccession.Text>{0} наследует титул аколита после смерти прежнего носителя.</PawnDiary.Dev.PromptSuite.RoyalSuccession.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Label>Назначение наследника</PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Markers>progression=RoyalHeirAppointed; progression_kind=royal_heir; previous_value=Прежний наследник; new_value={0}; succession_heir={0}; succession_title=граф; succession_faction=Империя</PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Text>{0} явно назначен наследником титула графа.</PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>Получена новая черта</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>В характере {0} произошёл надлом: теперь это нервный человек.</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>
   <PawnDiary.Dev.PromptSuite.BiotechGrowth.Label>Момент взросления (Biotech)</PawnDiary.Dev.PromptSuite.BiotechGrowth.Label>
@@ -1479,6 +1485,10 @@
   <PawnDiary.Event.Persona.EndCause.Destroyed>оружие было уничтожено</PawnDiary.Event.Persona.EndCause.Destroyed>
   <PawnDiary.Event.Persona.EndCause.Transfer>оружие установило точную новую связь</PawnDiary.Event.Persona.EndCause.Transfer>
   <PawnDiary.Event.Persona.EndCause.Other>связь достигла подтверждённого конца</PawnDiary.Event.Persona.EndCause.Other>
+  <PawnDiary.Event.RoyalSuccession.Label>Наследование титула: {0} — {1}</PawnDiary.Event.RoyalSuccession.Label>
+  <PawnDiary.Event.RoyalSuccession.Text>{0} наследует титул «{2}» во фракции «{3}» после смерти {1}.</PawnDiary.Event.RoyalSuccession.Text>
+  <PawnDiary.Event.RoyalHeirAppointed.Label>Назначен наследник: {0} — {1}</PawnDiary.Event.RoyalHeirAppointed.Label>
+  <PawnDiary.Event.RoyalHeirAppointed.Text>{0} явно назначен наследником {1} на титул «{2}» во фракции «{3}».</PawnDiary.Event.RoyalHeirAppointed.Text>
   <PawnDiary.Dev.PromptSuite.PersonaBondFormed.Markers>persona_weapon=bond_formed; persona_weapon_id=Weapon_Test; persona_weapon_def=PersonaMonosword; persona_weapon_name=Тихая грань; bond_epoch=1; bond_previous_state=untracked; bond_new_state=active; persona_trait_1=Ревность; persona_trait_description_1=Оружие не терпит, когда его откладывают ради другого.</PawnDiary.Dev.PromptSuite.PersonaBondFormed.Markers>
   <PawnDiary.Dev.PromptSuite.PersonaBondFormed.Text>Между {0} и разумным оружием «Тихая грань» возникла точная связь.</PawnDiary.Dev.PromptSuite.PersonaBondFormed.Text>
   <PawnDiary.Dev.PromptSuite.PersonaBondSeparated.Markers>persona_weapon=bond_separated; persona_weapon_id=Weapon_Test; persona_weapon_def=PersonaMonosword; persona_weapon_name=Тихая грань; bond_epoch=1; bond_previous_state=separation_pending; bond_new_state=separated; bond_separation_duration=один день; persona_trait_1=Ревность; persona_trait_description_1=Оружие не терпит, когда его откладывают ради другого.</PawnDiary.Dev.PromptSuite.PersonaBondSeparated.Markers>

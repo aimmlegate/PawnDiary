@@ -87,6 +87,12 @@
   <DiaryEventPrompt_RoyalTitleLost.label>королевский титул утрачен</DiaryEventPrompt_RoyalTitleLost.label>
   <DiaryEventPrompt_RoyalTitleLost.prompt>Опиши полную утрату указанного прежнего титула в его точной фракции.</DiaryEventPrompt_RoyalTitleLost.prompt>
   <DiaryEventPrompt_RoyalTitleLost.enhancement>Значение нового титула none означает полную утрату, а не повышение или переход. Используй только переданную причину; не выдумывай смерть, наследование, наказание и новый титул.</DiaryEventPrompt_RoyalTitleLost.enhancement>
+  <DiaryEventPrompt_RoyalSuccession.label>наследование титула</DiaryEventPrompt_RoyalSuccession.label>
+  <DiaryEventPrompt_RoyalSuccession.prompt>Опиши, как наследник получает указанный точный титул после смерти названного носителя титула.</DiaryEventPrompt_RoyalSuccession.prompt>
+  <DiaryEventPrompt_RoyalSuccession.enhancement>Оставь наследника единственной точкой зрения и точно сохрани умершего носителя, титул и фракцию. Это наследование, а не обычное повышение или церемония присвоения титула; не выдумывай последние слова, политику, соперников и подробности церемонии.</DiaryEventPrompt_RoyalSuccession.enhancement>
+  <DiaryEventPrompt_RoyalHeirAppointed.label>назначение наследника</DiaryEventPrompt_RoyalHeirAppointed.label>
+  <DiaryEventPrompt_RoyalHeirAppointed.prompt>Опиши явное назначение названного наследника на указанный титул.</DiaryEventPrompt_RoyalHeirAppointed.prompt>
+  <DiaryEventPrompt_RoyalHeirAppointed.enhancement>Оставь назначенного наследника единственной точкой зрения и точно сохрани носителя титула, титул и фракцию. Это назначение, а не смерть или завершённое наследование; не выдумывай церемонию, переход титула и политический спор.</DiaryEventPrompt_RoyalHeirAppointed.enhancement>
   <DiaryEventPrompt_PsylinkLevel.label>рост пси-связи</DiaryEventPrompt_PsylinkLevel.label>
   <DiaryEventPrompt_PsylinkLevel.prompt>Опиши точный рост уровня пси-связи и его известную или неизвестную причину.</DiaryEventPrompt_PsylinkLevel.prompt>
   <DiaryEventPrompt_PsylinkLevel.enhancement>Сохрани прежний и новый уровни и причину. Передай ощущение псионической перемены, ответственность или тревогу без выдуманных способностей и объяснения механик импланта или ритуала.</DiaryEventPrompt_PsylinkLevel.enhancement>

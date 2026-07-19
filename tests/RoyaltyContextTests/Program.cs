@@ -29,6 +29,8 @@ namespace RoyaltyContextTests
             TestMutationOutputSelectionAndMasterGate();
             TestMutationRuntimeCorrelationStore();
             TestPhase4RoutesThoughtsAndContext();
+            TestSuccessionCommitMatchingAndContext();
+            TestSuccessionCorrelationNormalizationAndAppointment();
             TestPersonaPersistenceBaselinesAndNormalization();
             TestTitleObservationNormalizationAndOrdering();
             Console.WriteLine("RoyaltyContextTests passed " + assertions + " assertions.");
@@ -1188,6 +1190,165 @@ namespace RoyaltyContextTests
             AssertEqual("null mutation context fails safely", string.Empty,
                 RoyalMutationContextFormatter.Format(
                     null, RoyalTitleTransitionTokens.Promotion, 120, 2, true));
+        }
+
+        private static void TestSuccessionCommitMatchingAndContext()
+        {
+            RoyalSuccessionCandidateSnapshot candidate = SuccessionCandidate("Pawn_Dead", "Pawn_Heir", 100);
+            AssertTrue("candidate alone never authorizes succession",
+                RoyalSuccessionPolicy.Commit(candidate, null, 2500) == null);
+
+            RoyalSuccessionCommitObservation commit = new RoyalSuccessionCommitObservation
+            {
+                correlationId = candidate.correlationId,
+                deceasedPawnId = candidate.deceasedPawnId,
+                factionId = candidate.factionId,
+                inheritedTitleDefName = candidate.inheritedTitleDefName,
+                wasInherited = true,
+                commitTick = 110
+            };
+            RoyalSuccessionFact fact = RoyalSuccessionPolicy.Commit(candidate, commit, 2500);
+            AssertNotNull("exact candidate plus outer wasInherited commit authorizes", fact);
+            AssertEqual("succession expiry is XML-window bounded", 2610, fact.expiresTick);
+            AssertEqual("succession keeps exact deceased identity", "Pawn_Dead", fact.deceasedPawnId);
+            AssertEqual("succession keeps exact heir identity", "Pawn_Heir", fact.heirPawnId);
+
+            RoyalTitleMutationSnapshot mutation = new RoyalTitleMutationSnapshot
+            {
+                pawnId = "Pawn_Heir",
+                factionId = "Faction_Empire",
+                previousTitle = new RoyalTitleSnapshot
+                {
+                    pawnId = "Pawn_Heir", factionId = "Faction_Empire", titleDefName = "Yeoman",
+                    titleLabel = "Yeoman", seniority = 1
+                },
+                newTitle = new RoyalTitleSnapshot
+                {
+                    pawnId = "Pawn_Heir", factionId = "Faction_Empire", titleDefName = "Acolyte",
+                    titleLabel = "Acolyte", seniority = 2
+                },
+                tick = 110
+            };
+            AssertTrue("immediate exact title callback belongs to succession",
+                RoyalSuccessionPolicy.MatchesMutation(fact, mutation, fact.correlationId, 110));
+            AssertTrue("delayed callback matches through inclusive expiry",
+                RoyalSuccessionPolicy.MatchesMutation(fact, mutation, fact.correlationId, 2610));
+            AssertTrue("callback after expiry is released",
+                !RoyalSuccessionPolicy.MatchesMutation(fact, mutation, fact.correlationId, 2611));
+            mutation.factionId = "Faction_Other";
+            AssertTrue("wrong faction cannot be claimed",
+                !RoyalSuccessionPolicy.MatchesMutation(fact, mutation, fact.correlationId, 110));
+            mutation.factionId = "Faction_Empire";
+            AssertTrue("wrong correlation cannot be claimed",
+                !RoyalSuccessionPolicy.MatchesMutation(fact, mutation, "other", 110));
+            mutation.newTitle.titleDefName = "Knight";
+            AssertTrue("wrong inherited rank cannot be claimed",
+                !RoyalSuccessionPolicy.MatchesMutation(fact, mutation, fact.correlationId, 110));
+
+            candidate.heirAlreadyHeldEqualOrHigherTitle = true;
+            AssertTrue("equal-or-higher heir is not a succession page",
+                RoyalSuccessionPolicy.Commit(candidate, commit, 2500) == null);
+            candidate.heirAlreadyHeldEqualOrHigherTitle = false;
+            commit.wasInherited = false;
+            AssertTrue("uncommitted outcome is rejected",
+                RoyalSuccessionPolicy.Commit(candidate, commit, 2500) == null);
+            commit.wasInherited = true;
+            commit.factionId = "Faction_Other";
+            AssertTrue("commit faction mismatch is rejected",
+                RoyalSuccessionPolicy.Commit(candidate, commit, 2500) == null);
+
+            string context = RoyalSuccessionContextFormatter.Format(fact, 120);
+            AssertTrue("succession context exposes four truthful bounded facts",
+                context.Contains("succession_deceased=Former Count")
+                && context.Contains("succession_heir=New Heir")
+                && context.Contains("succession_title=Acolyte")
+                && context.Contains("succession_faction=Shattered Empire"));
+            AssertTrue("succession context omits internal proof metadata",
+                !context.Contains("Pawn_Dead") && !context.Contains("correlation")
+                && !context.Contains("commitTick") && !context.Contains("wasInherited"));
+        }
+
+        private static void TestSuccessionCorrelationNormalizationAndAppointment()
+        {
+            RoyalSuccessionCorrelation.Clear();
+            RoyalSuccessionDeathScope scope = RoyalSuccessionCorrelation.Open("Pawn_Dead", 100, 4);
+            RoyalSuccessionCandidateSnapshot candidate = SuccessionCandidate("Pawn_Dead", "Pawn_Heir", 100);
+            AssertTrue("candidate enters exact active death scope",
+                RoyalSuccessionCorrelation.AddCandidate(candidate, 4));
+            AssertTrue("candidate receives distinct edge correlation", candidate.correlationId.Contains("|edge|0"));
+            RoyalTitleMutationSnapshot mutation = new RoyalTitleMutationSnapshot
+            {
+                pawnId = "Pawn_Heir", factionId = "Faction_Empire",
+                previousTitle = new RoyalTitleSnapshot { titleDefName = "Yeoman" },
+                newTitle = new RoyalTitleSnapshot { titleDefName = "Acolyte" }, tick = 101
+            };
+            AssertTrue("title callback can precede outer commit",
+                RoyalSuccessionCorrelation.StageTitle(mutation, 4));
+            RoyalSuccessionDeathScope closed = RoyalSuccessionCorrelation.Close(scope);
+            AssertEqual("closed scope keeps one candidate", 1, closed.candidates.Count);
+            AssertEqual("closed scope keeps one staged callback", 1, closed.stagedTitleMutations.Count);
+            AssertEqual("staged callback carries candidate correlation", candidate.correlationId,
+                closed.stagedTitleMutations[0].correlationId);
+            AssertTrue("closed scope cannot close twice", RoyalSuccessionCorrelation.Close(scope) == null);
+
+            RoyalSuccessionFact first = RoyalSuccessionPolicy.Commit(candidate,
+                new RoyalSuccessionCommitObservation
+                {
+                    correlationId = candidate.correlationId, deceasedPawnId = "Pawn_Dead",
+                    factionId = "Faction_Empire", inheritedTitleDefName = "Acolyte",
+                    wasInherited = true, commitTick = 110
+                }, 2500);
+            RoyalSuccessionCandidateSnapshot secondCandidate =
+                SuccessionCandidate("Pawn_Dead_2", "Pawn_Heir_2", 100);
+            RoyalSuccessionCommitObservation secondCommit = new RoyalSuccessionCommitObservation
+            {
+                correlationId = secondCandidate.correlationId, deceasedPawnId = secondCandidate.deceasedPawnId,
+                factionId = secondCandidate.factionId,
+                inheritedTitleDefName = secondCandidate.inheritedTitleDefName,
+                wasInherited = true, commitTick = 110
+            };
+            RoyalSuccessionFact distinctSameTick =
+                RoyalSuccessionPolicy.Commit(secondCandidate, secondCommit, 2500);
+            List<RoyalSuccessionFact> normalized = RoyalSuccessionPolicy.Normalize(
+                new List<RoyalSuccessionFact> { first, first, distinctSameTick }, 110, 4);
+            AssertEqual("exact duplicate removed but distinct same-tick edges preserved", 2, normalized.Count);
+            normalized = RoyalSuccessionPolicy.Normalize(normalized, 3000, 4);
+            AssertEqual("expired succession facts are pruned", 0, normalized.Count);
+
+            RoyalHeirAppointmentSnapshot appointment = new RoyalHeirAppointmentSnapshot
+            {
+                sourceToken = "change_royal_heir_quest", titleHolderPawnId = "Pawn_Holder",
+                previousHeirPawnId = "Pawn_Old", heirPawnId = "Pawn_New",
+                heirPawnName = "Named Heir", factionId = "Faction_Empire",
+                factionName = "Shattered Empire", titleDefName = "Count",
+                titleLabel = "Count", observedTick = 500
+            };
+            AssertTrue("explicit ChangeRoyalHeir quest appointment is valid",
+                RoyalSuccessionPolicy.ValidAppointment(appointment));
+            AssertTrue("appointment context omits a nonexistent deceased holder",
+                !RoyalSuccessionContextFormatter.FormatAppointment(appointment, 120)
+                    .Contains("succession_deceased="));
+            appointment.sourceToken = "automatic_set_heir";
+            AssertTrue("automatic heir assignment remains silent",
+                !RoyalSuccessionPolicy.ValidAppointment(appointment));
+            RoyalSuccessionCorrelation.Clear();
+        }
+
+        private static RoyalSuccessionCandidateSnapshot SuccessionCandidate(
+            string deceasedPawnId,
+            string heirPawnId,
+            int tick)
+        {
+            return new RoyalSuccessionCandidateSnapshot
+            {
+                correlationId = "succession-test", deceasedPawnId = deceasedPawnId,
+                deceasedPawnName = "Former Count", heirPawnId = heirPawnId,
+                heirPawnName = "New Heir", factionId = "Faction_Empire",
+                factionName = "Shattered Empire", inheritedTitleDefName = "Acolyte",
+                inheritedTitleLabel = "Acolyte", inheritedTitleSeniority = 2,
+                previousHeirTitleDefName = "Yeoman", previousHeirTitleLabel = "Yeoman",
+                previousHeirTitleSeniority = 1, candidateTick = tick
+            };
         }
 
         private static RoyaltyPolicySnapshot Policy(int separationTicks)

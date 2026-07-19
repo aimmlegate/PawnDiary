@@ -179,6 +179,18 @@ namespace PawnDiary
                 ProgressionEventData.RoyalTitleLostDefName,
                 "PawnDiary.Dev.PromptSuite.RoyalTitleLost.Markers",
                 "PawnDiary.Dev.PromptSuite.RoyalTitleLost.Text"),
+            SoloWithLocalizedMarkers(
+                "RoyalSuccession",
+                "PawnDiary.Dev.PromptSuite.RoyalSuccession.Label",
+                ProgressionEventData.RoyalSuccessionDefName,
+                "PawnDiary.Dev.PromptSuite.RoyalSuccession.Markers",
+                "PawnDiary.Dev.PromptSuite.RoyalSuccession.Text"),
+            SoloWithLocalizedMarkers(
+                "RoyalHeirAppointed",
+                "PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Label",
+                ProgressionEventData.RoyalHeirAppointedDefName,
+                "PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Markers",
+                "PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Text"),
             Solo("ProgressionTraitGained", "PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label", ProgressionEventData.TraitGainedDefName,
                 "progression=TraitGained; progression_kind=trait; new_value=Nervous; trait=Nervous; trait_def=Nerves; trait_description=Some people are just high-strung, prone to worry and quicker to break under strain. This one is one of them.",
                 null, "PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text"),

@@ -121,6 +121,12 @@
   <PawnDiary.Dev.PromptSuite.RoyalTitleLost.Label>Royal title lost</PawnDiary.Dev.PromptSuite.RoyalTitleLost.Label>
   <PawnDiary.Dev.PromptSuite.RoyalTitleLost.Markers>progression=RoyalTitleLost; progression_kind=royal_title; previous_value=Yeoman; new_value=none; royal_mutation_pawn={0}; royal_cause=unknown; royal_transition=loss; royal_faction_id=Faction_Empire; royal_faction=Empire; previous_title=Yeoman; previous_title_def=Yeoman; title=none; title_def=none</PawnDiary.Dev.PromptSuite.RoyalTitleLost.Markers>
   <PawnDiary.Dev.PromptSuite.RoyalTitleLost.Text>{0} completely lost the imperial title of Yeoman.</PawnDiary.Dev.PromptSuite.RoyalTitleLost.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalSuccession.Label>Royal succession</PawnDiary.Dev.PromptSuite.RoyalSuccession.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalSuccession.Markers>progression=RoyalSuccession; progression_kind=royal_succession; previous_value=Yeoman; new_value=Acolyte; succession_deceased=Former Count; succession_heir={0}; succession_title=Acolyte; succession_faction=Shattered Empire</PawnDiary.Dev.PromptSuite.RoyalSuccession.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalSuccession.Text>{0} inherited the title of Acolyte after the former holder died.</PawnDiary.Dev.PromptSuite.RoyalSuccession.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Label>Royal heir appointed</PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Markers>progression=RoyalHeirAppointed; progression_kind=royal_heir; previous_value=Previous Heir; new_value={0}; succession_heir={0}; succession_title=Count; succession_faction=Shattered Empire</PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Text>{0} was explicitly appointed as heir to the Count's title.</PawnDiary.Dev.PromptSuite.RoyalHeirAppointed.Text>
   <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>New trait gained</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Label>
   <PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>{0}'s character took a lasting turn: they became nervous.</PawnDiary.Dev.PromptSuite.ProgressionTraitGained.Text>
   <PawnDiary.Dev.PromptSuite.BiotechGrowth.Label>Biotech growth moment</PawnDiary.Dev.PromptSuite.BiotechGrowth.Label>
@@ -1333,6 +1339,10 @@
   <PawnDiary.Event.RoyalTitle.Demoted.Text>{0}'s title in {3} fell from {1} to {2}.</PawnDiary.Event.RoyalTitle.Demoted.Text>
   <PawnDiary.Event.RoyalTitle.Lost.Label>Royal title lost: {0} — {1}</PawnDiary.Event.RoyalTitle.Lost.Label>
   <PawnDiary.Event.RoyalTitle.Lost.Text>{0} completely lost the title {1} in {3}.</PawnDiary.Event.RoyalTitle.Lost.Text>
+  <PawnDiary.Event.RoyalSuccession.Label>Royal succession: {0} — {1}</PawnDiary.Event.RoyalSuccession.Label>
+  <PawnDiary.Event.RoyalSuccession.Text>{0} inherited the title {2} in {3} after {1}'s death.</PawnDiary.Event.RoyalSuccession.Text>
+  <PawnDiary.Event.RoyalHeirAppointed.Label>Royal heir appointed: {0} — {1}</PawnDiary.Event.RoyalHeirAppointed.Label>
+  <PawnDiary.Event.RoyalHeirAppointed.Text>{0} was explicitly appointed as {1}'s heir to the title {2} in {3}.</PawnDiary.Event.RoyalHeirAppointed.Text>
   <PawnDiary.Event.ProgressionTraitLabel>New trait: {0}</PawnDiary.Event.ProgressionTraitLabel>
   <PawnDiary.Event.ProgressionTraitText>{0}'s character took a lasting turn: they became {1}.</PawnDiary.Event.ProgressionTraitText>
   <PawnDiary.Event.ArcReflectionLabel>Year {0} reflection</PawnDiary.Event.ArcReflectionLabel>

@@ -16,9 +16,11 @@ namespace PawnDiary
         // real baseline found no coded persona weapons. Never infer initialization from Count alone.
         private int royaltyPersonaObservationVersion;
         private List<PersonaBondState> royaltyPersonaBonds = new List<PersonaBondState>();
+        private List<RoyalSuccessionState> royaltyPendingSuccessions = new List<RoyalSuccessionState>();
 
         private void ExposeRoyaltyData()
         {
+            if (Scribe.mode == LoadSaveMode.Saving) NormalizeRoyalSuccessionFacts();
             Scribe_Values.Look(
                 ref royaltyPersonaObservationVersion,
                 RoyaltySaveKeys.PersonaObservationVersion,
@@ -27,7 +29,15 @@ namespace PawnDiary
                 ref royaltyPersonaBonds,
                 RoyaltySaveKeys.PersonaBonds,
                 LookMode.Deep);
-            if (Scribe.mode == LoadSaveMode.PostLoadInit) NormalizeRoyaltyPersonaBonds();
+            Scribe_Collections.Look(
+                ref royaltyPendingSuccessions,
+                RoyaltySaveKeys.PendingSuccessions,
+                LookMode.Deep);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                NormalizeRoyaltyPersonaBonds();
+                NormalizeRoyalSuccessionFacts();
+            }
         }
 
         /// <summary>
@@ -107,6 +117,21 @@ namespace PawnDiary
             royaltyPersonaBonds = new List<PersonaBondState>();
             for (int i = 0; i < normalized.Count; i++)
                 royaltyPersonaBonds.Add(PersonaBondState.FromSnapshot(normalized[i]));
+        }
+
+        /// <summary>Drops malformed/expired old rows and applies the XML-owned succession cap.</summary>
+        private void NormalizeRoyalSuccessionFacts()
+        {
+            List<RoyalSuccessionFact> source = new List<RoyalSuccessionFact>();
+            for (int i = 0; i < (royaltyPendingSuccessions?.Count ?? 0); i++)
+                if (royaltyPendingSuccessions[i] != null)
+                    source.Add(royaltyPendingSuccessions[i].ToSnapshot());
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            List<RoyalSuccessionFact> normalized = RoyalSuccessionPolicy.Normalize(
+                source, Find.TickManager?.TicksGame ?? 0, policy.maximumPendingSuccessions);
+            royaltyPendingSuccessions = new List<RoyalSuccessionState>();
+            for (int i = 0; i < normalized.Count; i++)
+                royaltyPendingSuccessions.Add(RoyalSuccessionState.FromSnapshot(normalized[i]));
         }
 
         /// <summary>

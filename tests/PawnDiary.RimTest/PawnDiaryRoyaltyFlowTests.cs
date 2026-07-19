@@ -125,7 +125,7 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// Audits the six persona lifecycle seams plus the four exact title/cause seams and their
+        /// Audits the six persona lifecycle seams plus the seven exact title/cause/succession seams and their
         /// fail-safe owner ID. Private title registration is verified against its exact signature.
         /// </summary>
         [Test]
@@ -180,6 +180,26 @@ namespace PawnDiary.RimTests
                 AccessTools.DeclaredMethod(typeof(CompUseEffect_InstallImplant), "DoEffect",
                     new[] { typeof(Pawn) }),
                 "NeuroformerPrefix", "NeuroformerPostfix", "NeuroformerFinalizer");
+
+            PawnDiaryRimTestScope.Require(DiaryRoyaltyPatches.SuccessionCandidateHookReady
+                    && DiaryRoyaltyPatches.SuccessionCommitHookReady
+                    && DiaryRoyaltyPatches.HeirAppointmentHookReady,
+                "Pawn Diary reported an incomplete Royalty succession/appointment hook set.");
+            RequireOwnedPatch(
+                AccessTools.DeclaredMethod(typeof(RoyalTitleDefExt), "TryInherit", new[]
+                {
+                    typeof(RoyalTitleDef), typeof(Pawn), typeof(Faction),
+                    typeof(RoyalTitleInheritanceOutcome).MakeByRefType()
+                }),
+                null, "SuccessionCandidatePostfix");
+            RequireOwnedPatch(
+                AccessTools.DeclaredMethod(typeof(Pawn_RoyaltyTracker), "Notify_PawnKilled",
+                    Type.EmptyTypes),
+                "SuccessionDeathPrefix", "SuccessionDeathPostfix", "SuccessionDeathFinalizer");
+            RequireOwnedPatch(
+                AccessTools.DeclaredMethod(typeof(QuestPart_ChangeHeir),
+                    "Notify_QuestSignalReceived", new[] { typeof(Signal) }),
+                "HeirAppointmentPrefix", "HeirAppointmentPostfix", "HeirAppointmentFinalizer");
         }
 
         /// <summary>

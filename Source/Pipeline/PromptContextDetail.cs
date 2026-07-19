@@ -404,7 +404,12 @@ namespace PawnDiary
                 || Eq(contextKey, "title")
                 || Eq(contextKey, "previous_psylink_level")
                 || Eq(contextKey, "psylink_level")
-                || Eq(contextKey, "psylink_cause");
+                || Eq(contextKey, "psylink_cause")
+                // R5 succession pages are unintelligible if any supplied identity/title edge is cut.
+                || Eq(contextKey, "succession_deceased")
+                || Eq(contextKey, "succession_heir")
+                || Eq(contextKey, "succession_title")
+                || Eq(contextKey, "succession_faction");
         }
 
         private static int Score(
@@ -513,6 +518,12 @@ namespace PawnDiary
             {
                 reason = "optional royal duty color";
                 return level == PromptContextDetailLevel.Compact ? 6 : 24;
+            }
+
+            if (StartsWithAny(contextKey, "succession_"))
+            {
+                reason = "exact royal succession fact";
+                return 92;
             }
 
             if (StartsWithAny(contextKey, "quest_"))

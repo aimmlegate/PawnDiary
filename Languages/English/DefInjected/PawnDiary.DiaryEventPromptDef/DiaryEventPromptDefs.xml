@@ -87,6 +87,12 @@
   <DiaryEventPrompt_RoyalTitleLost.label>royal title lost</DiaryEventPrompt_RoyalTitleLost.label>
   <DiaryEventPrompt_RoyalTitleLost.prompt>Write the complete loss of the supplied previous royal title in its exact faction.</DiaryEventPrompt_RoyalTitleLost.prompt>
   <DiaryEventPrompt_RoyalTitleLost.enhancement>Treat the new title value none as complete loss, not promotion or transfer. Use only the supplied cause; do not invent death, succession, punishment, or a replacement title.</DiaryEventPrompt_RoyalTitleLost.enhancement>
+  <DiaryEventPrompt_RoyalSuccession.label>royal succession</DiaryEventPrompt_RoyalSuccession.label>
+  <DiaryEventPrompt_RoyalSuccession.prompt>Write the heir inheriting the supplied exact royal title after the named title holder&apos;s death.</DiaryEventPrompt_RoyalSuccession.prompt>
+  <DiaryEventPrompt_RoyalSuccession.enhancement>Keep the heir as the sole point of view and preserve the deceased holder, title, and faction exactly. Treat this as succession, not an ordinary promotion or bestowing ceremony; do not invent last words, politics, rival claimants, or ceremony details.</DiaryEventPrompt_RoyalSuccession.enhancement>
+  <DiaryEventPrompt_RoyalHeirAppointed.label>royal heir appointed</DiaryEventPrompt_RoyalHeirAppointed.label>
+  <DiaryEventPrompt_RoyalHeirAppointed.prompt>Write the named heir&apos;s explicit appointment to inherit the supplied title.</DiaryEventPrompt_RoyalHeirAppointed.prompt>
+  <DiaryEventPrompt_RoyalHeirAppointed.enhancement>Keep the appointed heir as the sole point of view and preserve the title holder, title, and faction exactly. This is an appointment, not a death or completed inheritance; do not invent a ceremony, succession, or political dispute.</DiaryEventPrompt_RoyalHeirAppointed.enhancement>
   <DiaryEventPrompt_PsylinkLevel.label>psylink gain</DiaryEventPrompt_PsylinkLevel.label>
   <DiaryEventPrompt_PsylinkLevel.prompt>Write the exact supplied psylink level increase and its known or unknown cause.</DiaryEventPrompt_PsylinkLevel.prompt>
   <DiaryEventPrompt_PsylinkLevel.enhancement>Preserve the before/after levels and cause. Write lived psychic sensation, responsibility, or unease without naming unprovided powers or explaining implant and ritual mechanics.</DiaryEventPrompt_PsylinkLevel.enhancement>

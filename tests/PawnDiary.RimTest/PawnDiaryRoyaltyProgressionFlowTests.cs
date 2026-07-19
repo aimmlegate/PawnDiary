@@ -1,6 +1,7 @@
-// Loaded-game acceptance for Royalty Phase 4 title/psylink correctness. These fixtures mutate only
-// disposable pawns and drive the exact hook coordinator, faction-aware fallback scanner, ritual
-// ownership bridge, neuroformer owner, and delayed title-thought release through production code.
+// Loaded-game acceptance for Royalty Phase 4 title/psylink correctness and Phase 5 succession.
+// These fixtures mutate only disposable pawns and drive the exact hook coordinator, faction-aware
+// fallback scanner, ritual ownership bridge, neuroformer owner, delayed title-thought release, and
+// succession/heir-appointment paths through production code.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -99,6 +100,118 @@ namespace PawnDiary.RimTests
                     + lostTitle + "'.");
             scope.RequireNoNewEvent(() =>
                 scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
+        }
+
+        /// <summary>
+        /// Drives vanilla Notify_PawnKilled with a real inheritable Empire title. The committed edge
+        /// must become one heir-POV succession page, and a surrounding bestowing owner cannot restate
+        /// the title mutation as Progression or leave a pending ritual fallback.
+        /// </summary>
+        [Test]
+        public static void RealInheritanceCommitOwnsTitleAndBestowingDuplicates()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(RealInheritanceCommitOwnsTitleAndBestowingDuplicates))) return;
+            Faction faction = RequireEmpire();
+            RoyalTitleDef inherited = RequireInheritableTitle(faction);
+            Pawn deceased = scope.CreateAdultColonist();
+            RegisterRoyalCleanup(deceased, faction);
+            RegisterRoyalCleanup(pawn, faction);
+
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", false);
+            deceased.royalty.SetTitle(faction, inherited, false, false, false);
+            deceased.royalty.SetHeir(pawn, faction);
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", true);
+
+            RoyalMutationBatchSnapshot bestowing = scope.Component.BeginRoyalMutationCause(
+                pawn, faction, RoyalMutationCauseTokens.ImperialBestowing);
+            PawnDiaryRimTestScope.Require(bestowing != null,
+                "The succession/bestowing duplicate fixture could not open its mutation boundary.");
+            DiaryEvent succession = scope.FireAndRequireEvent(
+                () => deceased.royalty.Notify_PawnKilled(),
+                ProgressionEventData.RoyalSuccessionDefName,
+                pawn,
+                null);
+            scope.RequireSoloRef(succession, pawn);
+            RequireContext(succession, "succession_deceased=");
+            RequireContext(succession, "succession_heir=");
+            RequireContext(succession, "succession_title=");
+            RequireContext(succession, "succession_faction=");
+            PawnDiaryRimTestScope.Require(
+                succession.gameContext.IndexOf("correlation", StringComparison.Ordinal) < 0
+                    && succession.gameContext.IndexOf("wasInherited", StringComparison.Ordinal) < 0,
+                "Internal succession proof metadata leaked into the prompt context.");
+
+            scope.RequireNoNewEvent(() =>
+                scope.Component.CompleteRoyalMutationCause(bestowing, pawn, faction));
+            PawnDiaryRimTestScope.Require(RoyalMutationCorrelation.PendingCountForTests == 0,
+                "A bestowing batch retained the succession-owned title as a duplicate fallback.");
+            scope.RequireNoNewEvent(() =>
+                scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
+        }
+
+        /// <summary>
+        /// Vanilla's equal-or-higher outcome is not a transfer: no succession page or delayed title
+        /// page may appear when the named heir already outranks the deceased holder.
+        /// </summary>
+        [Test]
+        public static void EqualOrHigherHeirDoesNotCreateSuccession()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(EqualOrHigherHeirDoesNotCreateSuccession))) return;
+            Faction faction = RequireEmpire();
+            RoyalTitleDef lower;
+            RoyalTitleDef higher;
+            RequireInheritableTitlePair(faction, out lower, out higher);
+            Pawn deceased = scope.CreateAdultColonist();
+            RegisterRoyalCleanup(deceased, faction);
+            RegisterRoyalCleanup(pawn, faction);
+
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", false);
+            deceased.royalty.SetTitle(faction, lower, false, false, false);
+            pawn.royalty.SetTitle(faction, higher, false, false, false);
+            deceased.royalty.SetHeir(pawn, faction);
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", true);
+            scope.RequireNoNewEvent(() => deceased.royalty.Notify_PawnKilled());
+            scope.RequireNoNewEvent(() =>
+                scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
+        }
+
+        /// <summary>Direct SetHeir stays silent; the proven ChangeRoyalHeir quest signal emits once.</summary>
+        [Test]
+        public static void ExplicitChangeRoyalHeirQuestEmitsWhileAutomaticAssignmentStaysSilent()
+        {
+            if (!RequireRoyaltyOrSkip(
+                nameof(ExplicitChangeRoyalHeirQuestEmitsWhileAutomaticAssignmentStaysSilent))) return;
+            Faction faction = RequireEmpire();
+            RoyalTitleDef title = RequireInheritableTitle(faction);
+            Pawn holder = scope.CreateAdultColonist();
+            Pawn previous = scope.CreateAdultColonist();
+            RegisterRoyalCleanup(holder, faction);
+
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", false);
+            holder.royalty.SetTitle(faction, title, false, false, false);
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", true);
+            scope.RequireNoNewEvent(() => holder.royalty.SetHeir(previous, faction));
+
+            QuestPart_ChangeHeir questPart = new QuestPart_ChangeHeir
+            {
+                holder = holder,
+                heir = pawn,
+                faction = faction,
+                inSignal = "PawnDiary_RoyalHeirFixture"
+            };
+            DiaryEvent appointment = scope.FireAndRequireEvent(
+                () => questPart.Notify_QuestSignalReceived(
+                    new Signal("PawnDiary_RoyalHeirFixture")),
+                ProgressionEventData.RoyalHeirAppointedDefName,
+                pawn,
+                null);
+            scope.RequireSoloRef(appointment, pawn);
+            RequireContext(appointment, "succession_heir=");
+            RequireContext(appointment, "succession_title=");
+            RequireContext(appointment, "succession_faction=");
+            PawnDiaryRimTestScope.Require(
+                appointment.gameContext.IndexOf("succession_deceased=", StringComparison.Ordinal) < 0,
+                "An heir appointment invented a deceased title holder.");
         }
 
         /// <summary>
@@ -732,6 +845,43 @@ namespace PawnDiary.RimTests
             }
             PawnDiaryRimTestScope.Require(lower != null && higher != null,
                 "Royalty loaded no two title Defs with increasing seniority.");
+        }
+
+        private static RoyalTitleDef RequireInheritableTitle(Faction faction)
+        {
+            FieldInfo worker = typeof(RoyalTitleDef).GetField(
+                "inheritanceWorker", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            RoyalTitleDef title = (faction?.def?.RoyalTitlesAwardableInSeniorityOrderForReading
+                    ?? new List<RoyalTitleDef>())
+                .FirstOrDefault(row => row != null && worker?.GetValue(row) != null);
+            PawnDiaryRimTestScope.Require(title != null,
+                "Royalty loaded no Empire title with a configured inheritance worker.");
+            return title;
+        }
+
+        private static void RequireInheritableTitlePair(
+            Faction faction,
+            out RoyalTitleDef lower,
+            out RoyalTitleDef higher)
+        {
+            FieldInfo worker = typeof(RoyalTitleDef).GetField(
+                "inheritanceWorker", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            List<RoyalTitleDef> titles = (faction?.def?.RoyalTitlesAwardableInSeniorityOrderForReading
+                    ?? new List<RoyalTitleDef>())
+                .Where(row => row != null && !string.IsNullOrWhiteSpace(row.defName))
+                .OrderBy(row => row.seniority)
+                .ToList();
+            lower = null;
+            higher = null;
+            for (int i = 0; i < titles.Count && higher == null; i++)
+            {
+                if (worker?.GetValue(titles[i]) == null) continue;
+                higher = titles.FirstOrDefault(row => row.seniority >= titles[i].seniority
+                    && !ReferenceEquals(row, titles[i]));
+                if (higher != null) lower = titles[i];
+            }
+            PawnDiaryRimTestScope.Require(lower != null && higher != null,
+                "Royalty loaded no inheritable Empire title with an equal-or-higher heir fixture rank.");
         }
 
         private static RoyalTitle AddRoyalTitleDirectly(Pawn owner, Faction faction, RoyalTitleDef def)

@@ -450,6 +450,11 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>royal faction</label><source>GameContext</source><contextKey>royal_faction</contextKey></li>
       <li><label>psylink cause</label><source>GameContext</source><contextKey>psylink_cause</contextKey></li>
       <li><label>new royal duties</label><source>GameContext</source><contextKey>royal_duty_changes</contextKey></li>
+      <!-- Royalty R5 succession. Append-only: correlation IDs/ticks and commit flags stay out. -->
+      <li><label>deceased title holder</label><source>GameContext</source><contextKey>succession_deceased</contextKey></li>
+      <li><label>royal heir</label><source>GameContext</source><contextKey>succession_heir</contextKey></li>
+      <li><label>inherited title</label><source>GameContext</source><contextKey>succession_title</contextKey></li>
+      <li><label>succession faction</label><source>GameContext</source><contextKey>succession_faction</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

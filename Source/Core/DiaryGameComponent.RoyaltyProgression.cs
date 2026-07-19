@@ -1,6 +1,7 @@
-// Royalty Phase-4 title/psylink orchestration. Guarded adapters supply detached snapshots; this
-// component advances saved truth before optional dispatch, arbitrates exact cause owners, and keeps
-// the slow per-faction scanner as the missing-hook/modded fallback.
+// Royalty Phase-4 title/psylink orchestration and Phase-5 succession arbitration. Guarded adapters
+// supply detached snapshots; this component advances saved truth before optional dispatch,
+// arbitrates exact cause owners, and keeps the slow per-faction scanner as the missing-hook/modded
+// fallback.
 using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
@@ -94,6 +95,11 @@ namespace PawnDiary
                     correlationId = correlationId
                 };
 
+                // Inheritance may run inside vanilla's instant bestowing/title award callback. Once
+                // the exact committed succession owns that title edge, keep the ceremony's psylink
+                // side effect but remove the title from the competing ritual/progression batch.
+                if (title != null && TryClaimRoyalSuccessionTitle(title, Math.Max(0, now))) title = null;
+
                 RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
                 bool ritualCause = batch.causeToken == RoyalMutationCauseTokens.ImperialBestowing
                     || batch.causeToken == RoyalMutationCauseTokens.AnimaLinking;
@@ -161,6 +167,16 @@ namespace PawnDiary
             RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
             RoyalTitleSnapshot identity = current ?? previous;
             if (identity == null) return;
+            RoyalTitleMutationSnapshot mutation = new RoyalTitleMutationSnapshot
+            {
+                pawnId = pawn.GetUniqueLoadID() ?? string.Empty,
+                factionId = identity.factionId,
+                previousTitle = previous,
+                newTitle = current,
+                causeToken = RoyalMutationCauseTokens.Unknown,
+                tick = Math.Max(0, now)
+            };
+            bool successionOwner = TryClaimRoyalSuccessionTitle(mutation, Math.Max(0, now));
             bool richerOwner = RoyalMutationCorrelation.HasRicherTitleOwner(
                 pawn.GetUniqueLoadID(), identity.factionId, now, policy.titleCorrelationTicks);
             string defName = RoyalTitleDefNameForTransition(
@@ -171,6 +187,7 @@ namespace PawnDiary
 
             // The callback is authoritative even when output is disabled or a ritual owns the page.
             AdvanceRoyalTitleObservation(progression, current, previous, now);
+            if (successionOwner) return;
             if (!decision.shouldEmit) return;
             RoyalMutationBatchSnapshot batch = TitleBatch(
                 pawn, previous, current, RoyalMutationCauseTokens.Unknown, now);
@@ -222,6 +239,7 @@ namespace PawnDiary
             for (int i = 0; i < changes.Count; i++)
             {
                 RoyalTitleMutationSnapshot mutation = changes[i];
+                if (TryClaimRoyalSuccessionTitle(mutation, Math.Max(0, now))) continue;
                 RoyalTitleTransitionDecision decision = RoyalTitleTransitionPolicy.Classify(
                     mutation.previousTitle,
                     mutation.newTitle,
@@ -257,9 +275,11 @@ namespace PawnDiary
         /// </summary>
         private void MaintainRoyaltyTransientProgression()
         {
-            if (!ModsConfig.RoyaltyActive || !RoyalMutationCorrelation.HasPending) return;
+            if (!ModsConfig.RoyaltyActive) return;
             RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
             int now = Find.TickManager?.TicksGame ?? 0;
+            if ((royaltyPendingSuccessions?.Count ?? 0) > 0) NormalizeRoyalSuccessionFacts();
+            if (!RoyalMutationCorrelation.HasPending) return;
             List<Pawn> liveColonists = SnapshotLiveRoyaltyColonists();
             HashSet<string> livePawnIds = new HashSet<string>(StringComparer.Ordinal);
             for (int i = 0; i < liveColonists.Count; i++)

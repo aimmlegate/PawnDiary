@@ -125,8 +125,8 @@ one window, `Gleaming` maps to none, localized fallbacks exist, and the three ex
 bounded source evidence. The EVT-22 RimTest fixture exercises the live package-gated page/evidence
 path when Anomaly is active and the no-op branch otherwise.
 
-Master Wave 5 / Royalty Phases 0–4 plus N3-R evidence use `RoyaltyContextTests`, now a
-316-assertion assembly-free suite. It
+Master Waves 5 and 9 / Royalty Phases 0–5 plus N3-R evidence use `RoyaltyContextTests`, now a
+346-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing
 Narrative Continuity `bond_lifecycle`/`weapon` contract; formation/load-baseline/re-equip,
 pending/threshold/unobservable separation, recorded/unrecorded recovery, destruction/death/transfer,
@@ -216,6 +216,24 @@ The subsequent user-confirmed loaded rerun passed 252/252. Adversarial hardening
 existing fixtures and expanded the suite; the user-confirmed loaded rerun passed 256/256. Every
 Phase-2/3/4 hands-on row remains open; R1 is
 therefore code-complete but not yet acceptance-complete.
+
+Phase 5 adds 28 pure Royalty assertions for exact candidate+outer-commit authorization,
+candidate-only/equal-or-higher silence, deceased/heir/faction/title/correlation mismatches, inclusive
+expiry, callback-before-commit staging, delayed matching, deterministic normalization/dedup/caps,
+distinct same-tick edges, malformed rows, prompt-context redaction, and explicit-quest versus
+automatic heir assignment. Pipeline coverage now passes 2,493 assertions and pins the two exact event
+prompts, Royalty-gated group classification, XML window/cap, SoloImportant fields 113–116,
+English/Russian labels/UI/dev fixtures, Compact-required succession facts, and the omission of internal
+IDs/ticks/correlation/commit flags. The runtime and 264-test RimTest assemblies build.
+
+`PawnDiaryRoyaltyProgressionFlowTests` adds real `Notify_PawnKilled` inheritance, a surrounding
+bestowing/title duplicate owner, equal-or-higher silence, and a real
+`QuestPart_ChangeHeir.Notify_QuestSignalReceived` appointment after proving direct `SetHeir` is silent.
+`PawnDiaryRoyaltyFlowTests` audits all three exact new Harmony targets.
+`PawnDiaryRoyaltyStateFixtureTests` adds detached committed-fact Scribe, the actual component's missing
+and initialized-empty `royaltyPendingSuccessions` key, and transient-scope reset. These four new loaded
+tests compile but have not yet executed in RimWorld; 256/256 remains the last confirmed loaded result,
+and the Phase-5 hands-on matrix remains open.
 
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,

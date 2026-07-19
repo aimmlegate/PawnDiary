@@ -1,6 +1,6 @@
 # Pawn Diary — Royalty Support Implementation Plan
 
-Status: Phases 0–3 and the Narrative N3-R core dependency are implemented as of 2026-07-18.
+Status: Phases 0–5 and the Narrative N3-R core dependency are implemented as of 2026-07-19.
 Phase 2 now ships exact persona-weapon formation, meaningful separation/recovery, destruction, and
 transfer lifecycle pages with guarded Harmony collection, saved state, late-visible recovery,
 package-gated settings/prompts, English/Russian localization, prompt fixtures, and N3-R evidence.
@@ -14,7 +14,8 @@ second reached 250/252 and confirmed the title-postfix and ritual-token fixes be
 same-tick title-edge dedup defect plus one Phase-3 mod-profile-sensitive fixture. After those were
  corrected, the user-confirmed loaded rerun passed 252/252. Consolidated adversarial hardening then
 expanded the suite; its user-confirmed loaded rerun passed 256/256. Hands-on acceptance remains
-pending. Phases 5–8 remain. This status does not pass,
+pending. Phase 5 succession is code-complete with pure/build coverage and compiled loaded fixtures;
+its in-game execution and hands-on matrix remain pending. Phases 6–8 remain. This status does not pass,
 waive, or remove any earlier Biotech B1 manual
 acceptance row.
 
@@ -1498,6 +1499,22 @@ not flood; R1 persona scope is complete.
 Exit gate: R1 is releasable.
 
 ### Phase 5 — Succession
+
+> **Implementation status (2026-07-19): code-complete; pure/build green, loaded execution and
+> hands-on acceptance pending.** Exact `RoyalTitleDefExt.TryInherit` candidates are nested inside the
+> outer `Pawn_RoyaltyTracker.Notify_PawnKilled` scope and authorize a fact only after the matching
+> deceased title row commits `wasInherited`. Equal-or-higher heirs and candidate-only outcomes stay
+> silent. Title callbacks that arrive before the outer commit are staged; exact later title,
+> bestowing, title-memory, and scanner edges are claimed by heir/faction/title/correlation while
+> unrelated or uncommitted edges return to ordinary title flow. Only committed detached facts are
+> deep-scribed under `royaltyPendingSuccessions`, normalized, expired, deduplicated, and capped by
+> XML. `QuestPart_ChangeHeir.Notify_QuestSignalReceived(Signal)` is the proven explicit appointment
+> source; direct/automatic `SetHeir` calls remain unpatched and silent. One heir-POV Progression page
+> uses only `succession_deceased`, `succession_heir`, `succession_title`, and
+> `succession_faction`, with identity-transition authority/status/duty/death evidence. English and
+> Russian prompts/UI/fixtures and append-only SoloImportant fields 113–116 ship. Pure suites pass
+> 346 Royalty and 2,493 pipeline assertions; the runtime and expanded 264-test RimTest assemblies
+> build, but the four new loaded fixtures have not yet executed in game.
 
 1. Add the pure succession policy and its deterministic tests.
 2. Register the nested `TryInherit` candidate hook plus the outer `Notify_PawnKilled` commit scope.

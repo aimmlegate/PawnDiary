@@ -11,7 +11,7 @@ using Verse;
 
 namespace PawnDiary
 {
-    /// <summary>Defensively registers the exact Phase-2 persona and Phase-4 progression seams.</summary>
+    /// <summary>Defensively registers the exact Phase-2 persona and Phase-4/5 progression seams.</summary>
     internal static class DiaryRoyaltyPatches
     {
         private sealed class CodingPatchState
@@ -31,12 +31,27 @@ namespace PawnDiary
             public bool completed;
         }
 
+        private sealed class RoyalSuccessionPatchState
+        {
+            public Pawn deceased;
+            public RoyalSuccessionDeathScope scope;
+            public bool completed;
+        }
+
+        private sealed class RoyalHeirAppointmentPatchState
+        {
+            public RoyalHeirAppointmentSnapshot snapshot;
+        }
+
         /// <summary>True when every required persona lifecycle seam was registered.</summary>
         public static bool HooksReady { get; private set; }
         public static bool TitleHookReady { get; private set; }
         public static bool BestowingHookReady { get; private set; }
         public static bool AnimaHookReady { get; private set; }
         public static bool NeuroformerHookReady { get; private set; }
+        public static bool SuccessionCandidateHookReady { get; private set; }
+        public static bool SuccessionCommitHookReady { get; private set; }
+        public static bool HeirAppointmentHookReady { get; private set; }
 
         public static void TryRegister(Harmony harmony)
         {
@@ -45,6 +60,9 @@ namespace PawnDiary
             BestowingHookReady = false;
             AnimaHookReady = false;
             NeuroformerHookReady = false;
+            SuccessionCandidateHookReady = false;
+            SuccessionCommitHookReady = false;
+            HeirAppointmentHookReady = false;
             if (harmony == null || !ModsConfig.RoyaltyActive) return;
             Type type = typeof(CompBladelinkWeapon);
             bool ready = true;
@@ -104,6 +122,32 @@ namespace PawnDiary
                 nameof(NeuroformerPrefix), nameof(NeuroformerPostfix), nameof(NeuroformerFinalizer));
             WarnMissingOnce(NeuroformerHookReady, "CompUseEffect_InstallImplant.DoEffect(Pawn)",
                 "matching neuroformer changes use the unknown-source scanner fallback");
+
+            SuccessionCandidateHookReady = Patch(harmony,
+                AccessTools.DeclaredMethod(typeof(RoyalTitleDefExt), "TryInherit", new[]
+                {
+                    typeof(RoyalTitleDef), typeof(Pawn), typeof(Faction),
+                    typeof(RoyalTitleInheritanceOutcome).MakeByRefType()
+                }),
+                null, nameof(SuccessionCandidatePostfix));
+            WarnMissingOnce(SuccessionCandidateHookReady, "RoyalTitleDefExt.TryInherit",
+                "succession pages are disabled because candidate evidence cannot be proven");
+
+            SuccessionCommitHookReady = Patch(harmony,
+                AccessTools.DeclaredMethod(typeof(Pawn_RoyaltyTracker), "Notify_PawnKilled", Type.EmptyTypes),
+                nameof(SuccessionDeathPrefix), nameof(SuccessionDeathPostfix),
+                nameof(SuccessionDeathFinalizer));
+            WarnMissingOnce(SuccessionCommitHookReady, "Pawn_RoyaltyTracker.Notify_PawnKilled",
+                "succession pages are disabled because the outer commit cannot be proven");
+
+            HeirAppointmentHookReady = Patch(harmony,
+                AccessTools.DeclaredMethod(typeof(QuestPart_ChangeHeir), "Notify_QuestSignalReceived",
+                    new[] { typeof(Signal) }),
+                nameof(HeirAppointmentPrefix), nameof(HeirAppointmentPostfix),
+                nameof(HeirAppointmentFinalizer));
+            WarnMissingOnce(HeirAppointmentHookReady,
+                "QuestPart_ChangeHeir.Notify_QuestSignalReceived(Signal)",
+                "explicit heir-appointment pages are disabled; automatic heir assignment remains silent");
         }
 
         private static bool Patch(
@@ -339,6 +383,105 @@ namespace PawnDiary
         private static Exception NeuroformerFinalizer(Exception __exception, RoyalMutationPatchState __state)
         {
             CompleteInterruptedMutation(__state, "Royalty.Neuroformer.Finalizer");
+            return __exception;
+        }
+
+        private static void SuccessionDeathPrefix(
+            Pawn_RoyaltyTracker __instance,
+            ref RoyalSuccessionPatchState __state)
+        {
+            __state = null;
+            if (!RuntimeReady() || __instance?.pawn == null) return;
+            RoyalSuccessionPatchState captured = null;
+            DiaryPatchSafety.Run("Royalty.Succession.NotifyPawnKilled.Prefix", () =>
+            {
+                captured = new RoyalSuccessionPatchState
+                {
+                    deceased = __instance.pawn,
+                    scope = DiaryGameComponent.Instance?.BeginRoyalSuccessionDeath(__instance.pawn)
+                };
+            });
+            __state = captured;
+        }
+
+        private static void SuccessionCandidatePostfix(
+            RoyalTitleDef title,
+            Pawn from,
+            Faction faction,
+            RoyalTitleInheritanceOutcome outcome,
+            bool __result)
+        {
+            if (!__result || !RuntimeReady()) return;
+            DiaryPatchSafety.Run("Royalty.Succession.TryInherit.Postfix", () =>
+            {
+                RoyalSuccessionCandidateSnapshot candidate;
+                if (DlcContext.TryCaptureSuccessionCandidate(
+                    title, from, faction, outcome, Find.TickManager?.TicksGame ?? 0, out candidate))
+                    DiaryGameComponent.Instance?.ObserveRoyalSuccessionCandidate(candidate);
+            });
+        }
+
+        private static void SuccessionDeathPostfix(RoyalSuccessionPatchState __state)
+        {
+            if (__state == null || __state.completed || !RuntimeReady()) return;
+            DiaryPatchSafety.Run("Royalty.Succession.NotifyPawnKilled.Postfix", () =>
+            {
+                __state.completed = true;
+                DiaryGameComponent.Instance?.CompleteRoyalSuccessionDeath(
+                    __state.deceased, __state.scope);
+            });
+        }
+
+        private static Exception SuccessionDeathFinalizer(
+            Exception __exception,
+            RoyalSuccessionPatchState __state)
+        {
+            if (__state != null && !__state.completed)
+            {
+                __state.completed = true;
+                DiaryPatchSafety.Run("Royalty.Succession.NotifyPawnKilled.Finalizer", () =>
+                    DiaryGameComponent.Instance?.CancelRoyalSuccessionDeath(__state.scope));
+            }
+            return __exception;
+        }
+
+        private static void HeirAppointmentPrefix(
+            QuestPart_ChangeHeir __instance,
+            Signal signal,
+            ref RoyalHeirAppointmentPatchState __state)
+        {
+            __state = null;
+            if (!RuntimeReady() || __instance == null || signal.tag != __instance.inSignal) return;
+            RoyalHeirAppointmentPatchState captured = null;
+            DiaryPatchSafety.Run("Royalty.HeirAppointment.Prefix", () =>
+            {
+                RoyalHeirAppointmentSnapshot snapshot;
+                if (DlcContext.TryCaptureHeirAppointment(
+                    __instance, Find.TickManager?.TicksGame ?? 0, out snapshot))
+                    captured = new RoyalHeirAppointmentPatchState { snapshot = snapshot };
+            });
+            __state = captured;
+        }
+
+        private static void HeirAppointmentPostfix(
+            QuestPart_ChangeHeir __instance,
+            RoyalHeirAppointmentPatchState __state)
+        {
+            if (__state?.snapshot == null || !RuntimeReady()) return;
+            DiaryPatchSafety.Run("Royalty.HeirAppointment.Postfix", () =>
+            {
+                if (DlcContext.HeirAppointmentCommitted(__instance, __state.snapshot))
+                    DiaryGameComponent.Instance?.ObserveRoyalHeirAppointment(
+                        __instance.heir, __state.snapshot);
+            });
+        }
+
+        private static Exception HeirAppointmentFinalizer(
+            Exception __exception,
+            RoyalHeirAppointmentPatchState __state)
+        {
+            // The state contains detached facts only and is not queued. Returning the original
+            // exception preserves vanilla/mod behavior while guaranteeing no false page is emitted.
             return __exception;
         }
 

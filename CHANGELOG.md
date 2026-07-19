@@ -1,5 +1,29 @@
 # Changelog
 
+- **2026-07-19 — Implemented Royalty Phase 5 succession under the explicit Master-Wave-9 scheduling
+  exception.** Added pure detached candidate/commit/fact/appointment contracts and
+  `RoyalSuccessionPolicy`: only an exact `TryInherit` candidate plus the matching outer deceased
+  title's `wasInherited` commit authorizes a succession; equal-or-higher heirs, candidate-only,
+  mismatched, malformed, interrupted, and expired edges stay silent. Defensively registered the exact
+  installed RimWorld 1.6 `RoyalTitleDefExt.TryInherit`,
+  `Pawn_RoyaltyTracker.Notify_PawnKilled`, and
+  `QuestPart_ChangeHeir.Notify_QuestSignalReceived(Signal)` seams with balanced prefix/postfix/finalizer
+  failure isolation. Title callbacks that vanilla fires before its outer commit are staged and either
+  claimed by the committed heir/faction/title edge or released to ordinary title flow; committed
+  facts also suppress exact delayed title, bestowing, scanner, and title-memory duplicates without
+  swallowing independent ritual/psylink truth. Direct and automatic `SetHeir` calls remain unpatched
+  and silent; the proven explicit quest edge emits one heir-POV appointment. Only committed detached
+  facts are deep-scribed under additive `royaltyPendingSuccessions`, with XML-owned 2,500-tick expiry,
+  64-row cap, normalization/dedup, old-save empty baseline, pre-save pruning, and load-reset transient
+  scopes. Added exact `RoyalSuccession`/`RoyalHeirAppointed` prompts, the four truthful context keys,
+  SoloImportant fields 113–116, identity-transition evidence, and English/Russian UI, DefInjected,
+  and prompt-test fixtures. Pure suites pass 346 Royalty and 2,493 pipeline assertions; the runtime
+  and expanded 264-test RimTest assemblies build cleanly. New loaded fixtures drive real inheritance,
+  equal-or-higher silence, title/bestowing dedup, explicit appointment, exact hook audit, Scribe/old
+  save, and transient reset, but have not yet executed in game; the last confirmed loaded baseline
+  remains 256/256 and Phase-5 hands-on acceptance remains open. Phase 6 permits, Phase 7 ascent, and
+  unrelated work were not started.
+
 - **2026-07-19 — Hardened and documented the still-inert pawn memory layer after adversarial
   review.** Player-visible behavior remains unchanged because capture/prompt/eviction/settings
   wiring still has no production caller. Blank-text fragments are now excluded before the recall

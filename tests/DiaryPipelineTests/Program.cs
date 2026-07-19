@@ -3741,6 +3741,10 @@ namespace DiaryPipelineTests
                 "64", ChildValue(policy, "maximumPendingRoyalMutations"));
             AssertEqual("Royalty R4 thought queue cap is XML-owned",
                 "128", ChildValue(policy, "maximumPendingTitleThoughts"));
+            AssertEqual("Royalty R5 succession correlation is XML-owned",
+                "2500", ChildValue(policy, "successionCorrelationTicks"));
+            AssertEqual("Royalty R5 committed succession cap is XML-owned",
+                "64", ChildValue(policy, "maximumPendingSuccessions"));
             AssertTrue("bestowing route is an exact plain string",
                 HasListValue(policy, "bestowingRitualDefNames", "BestowingCeremony"));
             AssertTrue("anima route is an exact plain string",
@@ -3752,7 +3756,8 @@ namespace DiaryPipelineTests
                 groups, "PawnDiary.DiaryInteractionGroupDef", "progressionRoyalTitle");
             string[] titleEdges =
             {
-                "RoyalTitleGained", "RoyalTitlePromoted", "RoyalTitleDemoted", "RoyalTitleLost"
+                "RoyalTitleGained", "RoyalTitlePromoted", "RoyalTitleDemoted", "RoyalTitleLost",
+                "RoyalSuccession", "RoyalHeirAppointed"
             };
             for (int i = 0; i < titleEdges.Length; i++)
                 AssertTrue("title group owns exact R4 edge: " + titleEdges[i],
@@ -3812,8 +3817,8 @@ namespace DiaryPipelineTests
                 "persona_trait_description_2", "persona_milestone", "tale_source_def",
                 "tale_source_label", "tale_killer_role", "tale_victim_role"
             };
-            AssertEqual("SoloImportant Royalty R4 projection remains append-only at 113 fields",
-                113, new List<XElement>(solo.Element("fields").Elements("li")).Count);
+            AssertEqual("SoloImportant Royalty R5 projection remains append-only at 117 fields",
+                117, new List<XElement>(solo.Element("fields").Elements("li")).Count);
             for (int i = 0; i < contextKeys.Length; i++)
             {
                 AssertTrue("SoloImportant persona prompt field exists: " + contextKeys[i],
@@ -3842,6 +3847,21 @@ namespace DiaryPipelineTests
                 AssertTrue("English Royalty R4 prompt label exists: " + key,
                     !string.IsNullOrWhiteSpace(englishLabels.Root?.Element(key)?.Value));
                 AssertTrue("Russian Royalty R4 prompt label exists: " + key,
+                    !string.IsNullOrWhiteSpace(russianLabels.Root?.Element(key)?.Value));
+            }
+
+            string[] phase5ContextKeys =
+            {
+                "succession_deceased", "succession_heir", "succession_title", "succession_faction"
+            };
+            for (int i = 0; i < phase5ContextKeys.Length; i++)
+            {
+                AssertTrue("SoloImportant Royalty R5 prompt field exists: " + phase5ContextKeys[i],
+                    HasPromptContextField(solo, phase5ContextKeys[i]));
+                string key = "DiaryPromptTemplate_SoloImportant.fields." + (113 + i) + ".label";
+                AssertTrue("English Royalty R5 prompt label exists: " + key,
+                    !string.IsNullOrWhiteSpace(englishLabels.Root?.Element(key)?.Value));
+                AssertTrue("Russian Royalty R5 prompt label exists: " + key,
                     !string.IsNullOrWhiteSpace(russianLabels.Root?.Element(key)?.Value));
             }
 
@@ -3911,6 +3931,20 @@ namespace DiaryPipelineTests
                     !string.IsNullOrWhiteSpace(russianPrompts.Root?.Element(defName + ".prompt")?.Value));
             }
 
+            string[] phase5PromptSuffixes = { "RoyalSuccession", "RoyalHeirAppointed" };
+            for (int i = 0; i < phase5PromptSuffixes.Length; i++)
+            {
+                string defName = "DiaryEventPrompt_" + phase5PromptSuffixes[i];
+                XElement prompt = FindDef(prompts, "PawnDiary.DiaryEventPromptDef", defName);
+                AssertTrue("Royalty R5 event prompt exists: " + defName, prompt != null);
+                AssertEqual("Royalty R5 prompt key is exact: " + defName,
+                    phase5PromptSuffixes[i], ChildValue(prompt, "eventType"));
+                AssertTrue("English Royalty R5 event prompt localized: " + defName,
+                    !string.IsNullOrWhiteSpace(englishPrompts.Root?.Element(defName + ".prompt")?.Value));
+                AssertTrue("Russian Royalty R5 event prompt localized: " + defName,
+                    !string.IsNullOrWhiteSpace(russianPrompts.Root?.Element(defName + ".prompt")?.Value));
+            }
+
             XDocument englishKeyed = XDocument.Load(
                 RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
             XDocument russianKeyed = XDocument.Load(
@@ -3948,6 +3982,20 @@ namespace DiaryPipelineTests
                         !string.IsNullOrWhiteSpace(KeyedValue(russianKeyed, key)));
                 }
             }
+            string[] phase5FixturePrefixes = { "RoyalSuccession", "RoyalHeirAppointed" };
+            for (int i = 0; i < phase5FixturePrefixes.Length; i++)
+            {
+                string prefix = "PawnDiary.Dev.PromptSuite." + phase5FixturePrefixes[i];
+                string[] suffixes = { ".Label", ".Markers", ".Text" };
+                for (int j = 0; j < suffixes.Length; j++)
+                {
+                    string key = prefix + suffixes[j];
+                    AssertTrue("English Royalty R5 fixture text exists: " + key,
+                        !string.IsNullOrWhiteSpace(KeyedValue(englishKeyed, key)));
+                    AssertTrue("Russian Royalty R5 fixture text exists: " + key,
+                        !string.IsNullOrWhiteSpace(KeyedValue(russianKeyed, key)));
+                }
+            }
             string[] phase4UiKeys =
             {
                 "PawnDiary.Event.RoyalTitle.None", "PawnDiary.Event.RoyalTitle.UnknownFaction",
@@ -3962,6 +4010,18 @@ namespace DiaryPipelineTests
                     !string.IsNullOrWhiteSpace(KeyedValue(englishKeyed, phase4UiKeys[i])));
                 AssertTrue("Russian Royalty R4 UI text exists: " + phase4UiKeys[i],
                     !string.IsNullOrWhiteSpace(KeyedValue(russianKeyed, phase4UiKeys[i])));
+            }
+            string[] phase5UiKeys =
+            {
+                "PawnDiary.Event.RoyalSuccession.Label", "PawnDiary.Event.RoyalSuccession.Text",
+                "PawnDiary.Event.RoyalHeirAppointed.Label", "PawnDiary.Event.RoyalHeirAppointed.Text"
+            };
+            for (int i = 0; i < phase5UiKeys.Length; i++)
+            {
+                AssertTrue("English Royalty R5 UI text exists: " + phase5UiKeys[i],
+                    !string.IsNullOrWhiteSpace(KeyedValue(englishKeyed, phase5UiKeys[i])));
+                AssertTrue("Russian Royalty R5 UI text exists: " + phase5UiKeys[i],
+                    !string.IsNullOrWhiteSpace(KeyedValue(russianKeyed, phase5UiKeys[i])));
             }
         }
 
@@ -5239,6 +5299,10 @@ namespace DiaryPipelineTests
                     ContextField("royal faction", "royal_faction"),
                     ContextField("psylink cause", "psylink_cause"),
                     ContextField("new royal duties", "royal_duty_changes"),
+                    ContextField("deceased title holder", "succession_deceased"),
+                    ContextField("royal heir", "succession_heir"),
+                    ContextField("inherited title", "succession_title"),
+                    ContextField("succession faction", "succession_faction"),
                     Field("weapon", "Weapon"),
                     Field("important context", "PromptEnchantment"),
                     Field("previous diary ending (continue from this)", "PreviousEntryEnding"),

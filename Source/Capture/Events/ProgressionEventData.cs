@@ -20,6 +20,8 @@ namespace PawnDiary.Capture
         public const string RoyalTitlePromotedDefName = "RoyalTitlePromoted";
         public const string RoyalTitleDemotedDefName = "RoyalTitleDemoted";
         public const string RoyalTitleLostDefName = "RoyalTitleLost";
+        public const string RoyalSuccessionDefName = "RoyalSuccession";
+        public const string RoyalHeirAppointedDefName = "RoyalHeirAppointed";
         public const string TraitGainedDefName = "TraitGained";
         public const string OtherDefName = "ProgressionOther";
 

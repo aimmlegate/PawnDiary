@@ -461,8 +461,8 @@
   <progressionXenotype.tone>с интимным телесным последствием</progressionXenotype.tone>
   <progressionXenotype.tones.0>настороженно и изменённо, прежнее «я» становится незнакомым</progressionXenotype.tones.0>
   <progressionXenotype.tones.1>телесно и наедине с собой, с упором на то, что новое тело значит сегодня ночью</progressionXenotype.tones.1>
-  <progressionRoyalTitle.label>Смена королевского титула</progressionRoyalTitle.label>
-  <progressionRoyalTitle.instruction>точный переход королевского титула в указанной фракции; сохрани прежний и новый титулы и фракцию, затем пиши о статусе, бремени, гордости, облегчении или потере без объяснения механик</progressionRoyalTitle.instruction>
+  <progressionRoyalTitle.label>Королевский ранг и наследование</progressionRoyalTitle.label>
+  <progressionRoyalTitle.instruction>точная смена титула, наследование или назначение наследника в указанной фракции; сохрани всех переданных людей, фракцию и титул, затем пиши о статусе, бремени, горе, гордости, облегчении или потере без объяснения механик</progressionRoyalTitle.instruction>
   <progressionRoyalTitle.tone>с официальной тяжестью и личной ценой</progressionRoyalTitle.tone>
   <progressionRoyalTitle.tones.0>размеренно и неловко, с пониманием, что титул меняет чужие взгляды</progressionRoyalTitle.tones.0>
   <progressionRoyalTitle.tones.1>тихо и с чувством бремени, воспринимая ранг одновременно как честь и обязанность</progressionRoyalTitle.tones.1>

@@ -487,6 +487,38 @@ four loaded fixtures and strengthened several existing ones; the expanded user-c
 
 ---
 
+## Royalty Phase 5 succession acceptance
+
+Phase 5 correlates an exact inheritance candidate with the outer `wasInherited` commit and owns only
+that edge. Run on a disposable Royalty colony with prompt-test mode enabled. The runtime and expanded
+264-test RimTest assemblies build; the four new loaded fixtures have not yet executed in game, so the
+last confirmed loaded baseline remains 256/256.
+
+- [x] **ASSEMBLY-FREE/BUILD:** `RoyaltyContextTests` passes 346 assertions,
+  `DiaryPipelineTests` passes 2,493, and the runtime plus 264-test RimTest assemblies build.
+- [ ] **AUTOMATED LOADED:** Run all 264 tests, including real inheritance, equal-or-higher silence,
+  bestowing/title dedup, explicit `ChangeRoyalHeir`, committed-fact Scribe, missing-key normalization,
+  and load-reset fixtures.
+- [ ] **MANUAL LATER:** Perform every row below before calling Phase 5 acceptance-complete.
+
+| # | Scenario | Expected result | Regression signal |
+|---:|---|---|---|
+| 1 | Kill one titled pawn after assigning an eligible lower-ranked/no-title colonist as exact heir. | One heir-POV `RoyalSuccession` page names the exact deceased holder, heir, inherited title, and faction. The same title edge creates no ordinary title/Thought page. | Candidate-only page, deceased POV, wrong faction/rank, or duplicate promotion/Thought. |
+| 2 | In one outer death action, exercise multiple inheritable title edges if the active mod profile supplies multiple royal factions/titles. | One page per distinct exact deceased/heir/faction/title edge, including distinct edges in the same tick; no merge by labels/tick alone. | Missing edge, same-tick merge, or one edge borrowing another faction/title. |
+| 3 | Exercise no successor, failed inheritance, malformed/missing relation, and an heir already holding an equal or higher title. | No succession page, no invented promotion/demotion/claim, and unrelated title callbacks remain on ordinary routes. | Any page authorized by `TryInherit` candidate alone or by death/rank change inference. |
+| 4 | Observe callback orders where title change occurs before outer commit, immediately after, and later within/after the XML correlation window. | Before/within-window exact callbacks are claimed by the committed succession; after expiry or mismatched callbacks remain ordinary. No title event is lost when the outer commit fails. | Duplicate title/bestowing page, swallowed unrelated mutation, or expired fact relabeling a later promotion. |
+| 5 | Allow vanilla's instant award/bestowing path to overlap inheritance, including a title-plus-psylink action if reachable. | Succession owns the inheritance statement; the ceremony/ritual may retain independent truthful psylink/ceremony facts but does not restate inheritance as progression. | Missing psylink/ritual truth or two pages claiming the same inherited title. |
+| 6 | Call automatic/direct `SetHeir`, then complete the explicit `ChangeRoyalHeir` quest signal with a different chosen heir. | Automatic/direct assignment is silent. The explicit quest creates one heir-POV `RoyalHeirAppointed` page with heir/title/faction and no deceased marker. | Automatic bookkeeping page, appointment presented as death/completed inheritance, or wrong POV. |
+| 7 | Save/reload inside a committed fact's correlation window, after expiry, and from a pre-Phase-5 save missing `royaltyPendingSuccessions`. | Committed detached facts round-trip and can claim only their exact delayed callback. Expired/malformed rows prune; a missing old key becomes an empty ledger with no catch-up page. Active candidates never survive load. | Load exception, candidate serialized as fact, stale post-load page, unbounded list, or lost exact within-window claim. |
+| 8 | Inspect Full/Balanced/Compact English and Russian succession/appointment prompt previews. | Required supplied identities/title/faction remain. Appointment omits deceased. No pawn/faction/title IDs, ticks, correlation IDs, commit flags, or `wasInherited` appear. | Missing central fact, untranslated key, invented death, or internal proof metadata in prose. |
+| 9 | Run Base + Harmony + Pawn Diary without Royalty; load/save a Royalty-authored Phase-5 save and continue ordinary title-independent play. | All three Phase-5 hooks/readers are inert, saved detached rows normalize safely, and no missing Def/type/patch warning, page, or DLC dependency appears. | Startup/load exception, warning spam, Royalty-only output, or paid-DLC requirement. |
+
+- [ ] **TODO:** Record exact RimWorld assembly/build, language, active mod lists, all rows above,
+  prompt captures, save excerpts, Royalty-on/off logs, and the 264-test loaded result. Phase 5 is
+  code-complete but acceptance-open until these are recorded.
+
+---
+
 ## Mod-compatibility adapters (1-2-3 Personalities / VSIE)
 
 These separate adapter mods live under `integrations/` and are inert without their target mod. Run

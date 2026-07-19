@@ -25,7 +25,10 @@
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyalMutationContextFormatter.cs" Link="RoyalMutationContextFormatter.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyalTitleThoughtOwnershipPolicy.cs" Link="RoyalTitleThoughtOwnershipPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyalMutationRoutePolicy.cs" Link="RoyalMutationRoutePolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\RoyalSuccessionPolicy.cs" Link="RoyalSuccessionPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\RoyalSuccessionContextFormatter.cs" Link="RoyalSuccessionContextFormatter.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyaltyStatePersistence.cs" Link="RoyaltyStatePersistence.cs" />
     <Compile Include="..\..\Source\Generation\RoyalMutationCorrelation.cs" Link="RoyalMutationCorrelation.cs" />
+    <Compile Include="..\..\Source\Generation\RoyalSuccessionCorrelation.cs" Link="RoyalSuccessionCorrelation.cs" />
   </ItemGroup>
 </Project>

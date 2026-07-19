@@ -16,8 +16,10 @@
     <titleCorrelationTicks>2500</titleCorrelationTicks>
     <psylinkCorrelationTicks>2500</psylinkCorrelationTicks>
     <titleThoughtCorrelationTicks>2500</titleThoughtCorrelationTicks>
+    <successionCorrelationTicks>2500</successionCorrelationTicks>
     <maximumPendingRoyalMutations>64</maximumPendingRoyalMutations>
     <maximumPendingTitleThoughts>128</maximumPendingTitleThoughts>
+    <maximumPendingSuccessions>64</maximumPendingSuccessions>
     <maximumRoyaltyContextCharacters>120</maximumRoyaltyContextCharacters>
     <!-- Pawn.Kill emits a persona trait's kill memory and its Tale synchronously. Keep this small:
          it exists only to tolerate Harmony callback ordering, never to claim later ordinary thoughts. -->

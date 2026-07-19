@@ -13,6 +13,7 @@ namespace PawnDiary
     {
         public const string PersonaObservationVersion = "royaltyPersonaObservationVersion";
         public const string PersonaBonds = "royaltyPersonaBonds";
+        public const string PendingSuccessions = "royaltyPendingSuccessions";
         public const string PawnObservationState = "royaltyObservationState";
         public const string PawnObservationVersion = "royaltyObservationVersion";
         public const string ObservationAvailable = "royaltyObservationAvailable";

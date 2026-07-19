@@ -1,5 +1,6 @@
 // Royalty loaded-game state fixtures. These tests exercise the real Scribe models, Phase-4
-// per-faction observation availability, transient ownership reset, and guarded live collectors.
+// per-faction observation availability, Phase-5 committed succession facts, transient ownership
+// reset, and guarded live collectors.
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -21,6 +22,8 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetField("royaltyPersonaObservationVersion", PrivateInstance);
         private static readonly FieldInfo PersonaBondsField =
             typeof(DiaryGameComponent).GetField("royaltyPersonaBonds", PrivateInstance);
+        private static readonly FieldInfo PendingSuccessionsField =
+            typeof(DiaryGameComponent).GetField("royaltyPendingSuccessions", PrivateInstance);
         private static DiaryGameComponent royaltyScribeTarget;
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
@@ -102,6 +105,28 @@ namespace PawnDiary.RimTests
                 "Scribe collapsed the observed-without-page milestone distinction.");
         }
 
+        /// <summary>Committed succession proof survives Scribe without any live Royalty object.</summary>
+        [Test]
+        public static void CommittedSuccessionStateRoundTripsDetachedFacts()
+        {
+            RoyalSuccessionState loaded = ScribeRoundTrip(new RoyalSuccessionState
+            {
+                correlationId = "succession|Pawn_Dead|100|1|edge|0",
+                deceasedPawnId = "Pawn_Dead", deceasedPawnName = "Former Count",
+                heirPawnId = "Pawn_Heir", heirPawnName = "New Heir",
+                factionId = "Faction_Empire", factionName = "Shattered Empire",
+                inheritedTitleDefName = "Acolyte", inheritedTitleLabel = "Acolyte",
+                inheritedTitleSeniority = 2, previousHeirTitleDefName = "Yeoman",
+                previousHeirTitleLabel = "Yeoman", previousHeirTitleSeniority = 1,
+                candidateTick = 100, commitTick = 110, expiresTick = 2610,
+                pageClaimed = true, titleMutationClaimed = true
+            });
+            Require(loaded.deceasedPawnId == "Pawn_Dead" && loaded.heirPawnId == "Pawn_Heir"
+                    && loaded.inheritedTitleDefName == "Acolyte" && loaded.commitTick == 110
+                    && loaded.pageClaimed && loaded.titleMutationClaimed,
+                "committed succession detached facts did not survive Scribe.");
+        }
+
         /// <summary>Per-pawn title rows are additive; a missing old-save row remains version zero.</summary>
         [Test]
         public static void PawnRoyaltyObservationRoundTripsAndLegacyStaysUninitialized()
@@ -175,23 +200,27 @@ namespace PawnDiary.RimTests
         {
             Require(ExposeRoyaltyDataMethod != null
                     && PersonaObservationVersionField != null
-                    && PersonaBondsField != null,
+                    && PersonaBondsField != null && PendingSuccessionsField != null,
                 "Could not resolve the component's actual Royalty Scribe wiring.");
             int originalVersion = (int)PersonaObservationVersionField.GetValue(scope.Component);
             List<PersonaBondState> originalBonds =
                 PersonaBondsField.GetValue(scope.Component) as List<PersonaBondState>;
+            List<RoyalSuccessionState> originalSuccessions =
+                PendingSuccessionsField.GetValue(scope.Component) as List<RoyalSuccessionState>;
             royaltyScribeTarget = scope.Component;
             try
             {
                 PersonaObservationVersionField.SetValue(
                     scope.Component, RoyaltyStatePersistence.CurrentPersonaObservationVersion);
                 PersonaBondsField.SetValue(scope.Component, new List<PersonaBondState>());
+                PendingSuccessionsField.SetValue(scope.Component, new List<RoyalSuccessionState>());
                 ScribeRoundTripWithAfterSave(
                     new ActualRoyaltyComponentStateAdapter(),
                     () =>
                     {
                         PersonaObservationVersionField.SetValue(scope.Component, 0);
                         PersonaBondsField.SetValue(scope.Component, null);
+                        PendingSuccessionsField.SetValue(scope.Component, null);
                     });
                 List<PersonaBondState> initializedBonds =
                     PersonaBondsField.GetValue(scope.Component) as List<PersonaBondState>;
@@ -199,6 +228,9 @@ namespace PawnDiary.RimTests
                             == RoyaltyStatePersistence.CurrentPersonaObservationVersion
                         && initializedBonds != null && initializedBonds.Count == 0,
                     "the actual component wiring lost its initialized-empty persona marker.");
+                Require((PendingSuccessionsField.GetValue(scope.Component)
+                            as List<RoyalSuccessionState>)?.Count == 0,
+                    "the actual component wiring lost its initialized-empty succession ledger.");
 
                 // This adapter deliberately writes no Royalty keys, then invokes the actual component
                 // wiring during load/PostLoadInit to model a pre-Phase-2 save.
@@ -208,17 +240,22 @@ namespace PawnDiary.RimTests
                     {
                         PersonaObservationVersionField.SetValue(scope.Component, -1);
                         PersonaBondsField.SetValue(scope.Component, null);
+                        PendingSuccessionsField.SetValue(scope.Component, null);
                     });
                 List<PersonaBondState> legacyBonds =
                     PersonaBondsField.GetValue(scope.Component) as List<PersonaBondState>;
                 Require((int)PersonaObservationVersionField.GetValue(scope.Component) == 0
                         && legacyBonds != null && legacyBonds.Count == 0,
                     "missing old-save persona keys did not normalize through actual component wiring.");
+                Require((PendingSuccessionsField.GetValue(scope.Component)
+                            as List<RoyalSuccessionState>)?.Count == 0,
+                    "missing old-save succession key did not normalize to an empty ledger.");
             }
             finally
             {
                 PersonaObservationVersionField.SetValue(scope.Component, originalVersion);
                 PersonaBondsField.SetValue(scope.Component, originalBonds);
+                PendingSuccessionsField.SetValue(scope.Component, originalSuccessions);
                 royaltyScribeTarget = null;
             }
         }
@@ -232,6 +269,8 @@ namespace PawnDiary.RimTests
         public static void PendingRoyalMutationOwnershipResetsSafelyAcrossLoadBoundary()
         {
             RoyalMutationCorrelation.Clear();
+            RoyalSuccessionDeathScope succession = RoyalSuccessionCorrelation.Open(
+                "Pawn_Dead", 100, 16);
             RoyalMutationBatchSnapshot batch = RoyalMutationCorrelation.Open(
                 "Pawn_LoadBoundary",
                 "Load Boundary",
@@ -264,6 +303,8 @@ namespace PawnDiary.RimTests
                     && RoyalMutationCorrelation.PendingCountForTests == 0
                     && RoyalTitleThoughtCorrelation.PendingCountForTests == 0,
                 "Royalty transient ownership survived the load-boundary reset.");
+            Require(succession != null && RoyalSuccessionCorrelation.ActiveCountForTests == 0,
+                "an active succession candidate scope survived the load-boundary reset.");
         }
 
         /// <summary>All new live collectors short-circuit cleanly when Royalty is inactive.</summary>

@@ -495,4 +495,8 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_SoloImportant.fields.110.label>royal faction</DiaryPromptTemplate_SoloImportant.fields.110.label>
   <DiaryPromptTemplate_SoloImportant.fields.111.label>psylink cause</DiaryPromptTemplate_SoloImportant.fields.111.label>
   <DiaryPromptTemplate_SoloImportant.fields.112.label>new royal duties</DiaryPromptTemplate_SoloImportant.fields.112.label>
+  <DiaryPromptTemplate_SoloImportant.fields.113.label>deceased title holder</DiaryPromptTemplate_SoloImportant.fields.113.label>
+  <DiaryPromptTemplate_SoloImportant.fields.114.label>royal heir</DiaryPromptTemplate_SoloImportant.fields.114.label>
+  <DiaryPromptTemplate_SoloImportant.fields.115.label>inherited title</DiaryPromptTemplate_SoloImportant.fields.115.label>
+  <DiaryPromptTemplate_SoloImportant.fields.116.label>succession faction</DiaryPromptTemplate_SoloImportant.fields.116.label>
 </LanguageData>

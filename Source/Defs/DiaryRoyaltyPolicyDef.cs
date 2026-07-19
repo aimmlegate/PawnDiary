@@ -55,9 +55,11 @@ namespace PawnDiary
         public int titleCorrelationTicks = 2500;
         public int psylinkCorrelationTicks = 2500;
         public int titleThoughtCorrelationTicks = 2500;
+        public int successionCorrelationTicks = 2500;
         public int killThoughtCorrelationTicks = 60;
         public int maximumPendingRoyalMutations = 64;
         public int maximumPendingTitleThoughts = 128;
+        public int maximumPendingSuccessions = 64;
         public int maximumRoyaltyContextCharacters = 120;
         public int killThoughtWeight = 100;
         public int bondedThoughtWeight = 70;
@@ -95,10 +97,12 @@ namespace PawnDiary
             if (maximumDutyCategoryTokens < 1 || maximumDutyCategoryTokens > 8)
                 yield return "maximumDutyCategoryTokens must be between 1 and 8.";
             if (titleCorrelationTicks <= 0 || psylinkCorrelationTicks <= 0
-                || titleThoughtCorrelationTicks <= 0 || killThoughtCorrelationTicks <= 0)
+                || titleThoughtCorrelationTicks <= 0 || successionCorrelationTicks <= 0
+                || killThoughtCorrelationTicks <= 0)
                 yield return "Royal mutation correlation windows must be positive.";
             if (maximumPendingRoyalMutations < 1 || maximumPendingRoyalMutations > 256
-                || maximumPendingTitleThoughts < 1 || maximumPendingTitleThoughts > 512)
+                || maximumPendingTitleThoughts < 1 || maximumPendingTitleThoughts > 512
+                || maximumPendingSuccessions < 1 || maximumPendingSuccessions > 256)
                 yield return "Royal transient admission caps are outside their safe ranges.";
             if (maximumRoyaltyContextCharacters < 20 || maximumRoyaltyContextCharacters > 512)
                 yield return "maximumRoyaltyContextCharacters must be between 20 and 512.";
@@ -256,12 +260,16 @@ namespace PawnDiary
             result.psylinkCorrelationTicks = Positive(source.psylinkCorrelationTicks, result.psylinkCorrelationTicks);
             result.titleThoughtCorrelationTicks = Positive(
                 source.titleThoughtCorrelationTicks, result.titleThoughtCorrelationTicks);
+            result.successionCorrelationTicks = Positive(
+                source.successionCorrelationTicks, result.successionCorrelationTicks);
             result.killThoughtCorrelationTicks = Positive(
                 source.killThoughtCorrelationTicks, result.killThoughtCorrelationTicks);
             result.maximumPendingRoyalMutations = Between(
                 source.maximumPendingRoyalMutations, 1, 256, result.maximumPendingRoyalMutations);
             result.maximumPendingTitleThoughts = Between(
                 source.maximumPendingTitleThoughts, 1, 512, result.maximumPendingTitleThoughts);
+            result.maximumPendingSuccessions = Between(
+                source.maximumPendingSuccessions, 1, 256, result.maximumPendingSuccessions);
             result.maximumRoyaltyContextCharacters = Between(
                 source.maximumRoyaltyContextCharacters, 20, 512, result.maximumRoyaltyContextCharacters);
             result.killThoughtWeight = Positive(source.killThoughtWeight, result.killThoughtWeight);

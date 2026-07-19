@@ -392,8 +392,8 @@
   <progressionXenotype.tone>with intimate bodily consequence</progressionXenotype.tone>
   <progressionXenotype.tones.0>changed and watchful, noticing the self becoming unfamiliar</progressionXenotype.tones.0>
   <progressionXenotype.tones.1>visceral and private, focused on what the new body means tonight</progressionXenotype.tones.1>
-  <progressionRoyalTitle.label>Royal title changed</progressionRoyalTitle.label>
-  <progressionRoyalTitle.instruction>an exact faction-aware royal title transition; preserve the supplied faction and before/after titles, then write status, burden, pride, relief, or loss without explaining mechanics</progressionRoyalTitle.instruction>
+  <progressionRoyalTitle.label>Royal rank and succession</progressionRoyalTitle.label>
+  <progressionRoyalTitle.instruction>an exact faction-aware royal title, succession, or heir-appointment transition; preserve every supplied person, faction, and title, then write status, burden, grief, pride, relief, or loss without explaining mechanics</progressionRoyalTitle.instruction>
   <progressionRoyalTitle.tone>with formal weight and personal cost</progressionRoyalTitle.tone>
   <progressionRoyalTitle.tones.0>measured and self-conscious, aware that a title changes how others look</progressionRoyalTitle.tones.0>
   <progressionRoyalTitle.tones.1>quietly burdened, treating rank as both honor and obligation</progressionRoyalTitle.tones.1>

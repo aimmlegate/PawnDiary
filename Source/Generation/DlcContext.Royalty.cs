@@ -162,6 +162,122 @@ namespace PawnDiary
             return previous != null || current != null;
         }
 
+        /// <summary>
+        /// Copies vanilla's inheritance-worker result immediately. This is candidate evidence only;
+        /// callers must still observe the enclosing death tracker's wasInherited commit.
+        /// </summary>
+        public static bool TryCaptureSuccessionCandidate(
+            RoyalTitleDef title,
+            Pawn deceased,
+            Faction faction,
+            RoyalTitleInheritanceOutcome outcome,
+            int tick,
+            out RoyalSuccessionCandidateSnapshot snapshot)
+        {
+            snapshot = null;
+            Pawn heir = outcome.heir;
+            if (!ModsConfig.RoyaltyActive || title == null || deceased == null || faction == null
+                || heir == null || deceased.royalty == null || heir.royalty == null) return false;
+            RoyalTitleSnapshot previous = CaptureRoyalTitleForFaction(heir, faction);
+            RoyalTitleSnapshot inherited = CaptureRoyalTitleSnapshot(heir, faction, title, -1, false);
+            if (inherited == null) return false;
+            snapshot = new RoyalSuccessionCandidateSnapshot
+            {
+                deceasedPawnId = deceased.GetUniqueLoadID() ?? string.Empty,
+                deceasedPawnName = CleanRoyaltyText(deceased.LabelShortCap, 120),
+                heirPawnId = heir.GetUniqueLoadID() ?? string.Empty,
+                heirPawnName = CleanRoyaltyText(heir.LabelShortCap, 120),
+                factionId = faction.GetUniqueLoadID() ?? string.Empty,
+                factionName = CleanRoyaltyText(faction.Name, 120),
+                inheritedTitleDefName = title.defName ?? string.Empty,
+                inheritedTitleLabel = inherited.titleLabel,
+                inheritedTitleSeniority = Math.Max(0, title.seniority),
+                previousHeirTitleDefName = previous?.titleDefName ?? string.Empty,
+                previousHeirTitleLabel = previous?.titleLabel ?? string.Empty,
+                previousHeirTitleSeniority = previous?.seniority ?? -1,
+                heirAlreadyHeldEqualOrHigherTitle = outcome.heirTitleHigher,
+                candidateTick = Math.Max(0, tick)
+            };
+            return !string.IsNullOrWhiteSpace(snapshot.deceasedPawnId)
+                && !string.IsNullOrWhiteSpace(snapshot.heirPawnId)
+                && !string.IsNullOrWhiteSpace(snapshot.factionId)
+                && !string.IsNullOrWhiteSpace(snapshot.inheritedTitleDefName);
+        }
+
+        /// <summary>Proves the exact deceased title row was marked inherited by vanilla.</summary>
+        public static RoyalSuccessionCommitObservation CaptureSuccessionCommit(
+            Pawn deceased,
+            RoyalSuccessionCandidateSnapshot candidate,
+            int tick)
+        {
+            if (!ModsConfig.RoyaltyActive || deceased?.royalty == null || candidate == null) return null;
+            List<RoyalTitle> titles = deceased.royalty.AllTitlesForReading;
+            for (int i = 0; i < (titles?.Count ?? 0); i++)
+            {
+                RoyalTitle row = titles[i];
+                if (!string.Equals(row?.def?.defName, candidate.inheritedTitleDefName,
+                        StringComparison.Ordinal)
+                    || !string.Equals(row?.faction?.GetUniqueLoadID(), candidate.factionId,
+                        StringComparison.Ordinal)) continue;
+                return new RoyalSuccessionCommitObservation
+                {
+                    correlationId = candidate.correlationId,
+                    deceasedPawnId = deceased.GetUniqueLoadID() ?? string.Empty,
+                    factionId = candidate.factionId,
+                    inheritedTitleDefName = candidate.inheritedTitleDefName,
+                    wasInherited = row.wasInherited,
+                    commitTick = Math.Max(0, tick)
+                };
+            }
+            return null;
+        }
+
+        /// <summary>Copies an explicit ChangeRoyalHeir quest edge before vanilla changes the heir.</summary>
+        public static bool TryCaptureHeirAppointment(
+            QuestPart_ChangeHeir questPart,
+            int tick,
+            out RoyalHeirAppointmentSnapshot snapshot)
+        {
+            snapshot = null;
+            Pawn holder = questPart?.holder;
+            Pawn heir = questPart?.heir;
+            Faction faction = questPart?.faction;
+            if (!ModsConfig.RoyaltyActive || questPart == null || questPart.done
+                || holder?.royalty == null || heir == null || faction == null) return false;
+            Pawn previousHeir = holder.royalty.GetHeir(faction);
+            RoyalTitleSnapshot title = CaptureRoyalTitleForFaction(holder, faction);
+            if (title == null) return false;
+            snapshot = new RoyalHeirAppointmentSnapshot
+            {
+                correlationId = "heir-appointment|" + (holder.GetUniqueLoadID() ?? string.Empty)
+                    + "|" + (faction.GetUniqueLoadID() ?? string.Empty) + "|" + Math.Max(0, tick),
+                sourceToken = "change_royal_heir_quest",
+                titleHolderPawnId = holder.GetUniqueLoadID() ?? string.Empty,
+                titleHolderPawnName = CleanRoyaltyText(holder.LabelShortCap, 120),
+                previousHeirPawnId = previousHeir?.GetUniqueLoadID() ?? string.Empty,
+                previousHeirPawnName = CleanRoyaltyText(previousHeir?.LabelShortCap, 120),
+                heirPawnId = heir.GetUniqueLoadID() ?? string.Empty,
+                heirPawnName = CleanRoyaltyText(heir.LabelShortCap, 120),
+                factionId = faction.GetUniqueLoadID() ?? string.Empty,
+                factionName = CleanRoyaltyText(faction.Name, 120),
+                titleDefName = title.titleDefName,
+                titleLabel = title.titleLabel,
+                observedTick = Math.Max(0, tick)
+            };
+            return RoyalSuccessionPolicy.ValidAppointment(snapshot);
+        }
+
+        /// <summary>Verifies the explicit quest actually committed its promised heir.</summary>
+        public static bool HeirAppointmentCommitted(
+            QuestPart_ChangeHeir questPart,
+            RoyalHeirAppointmentSnapshot snapshot)
+        {
+            if (!ModsConfig.RoyaltyActive || questPart == null || snapshot == null || !questPart.done
+                || questPart.holder?.royalty == null || questPart.faction == null) return false;
+            Pawn current = questPart.holder.royalty.GetHeir(questPart.faction);
+            return string.Equals(current?.GetUniqueLoadID(), snapshot.heirPawnId, StringComparison.Ordinal);
+        }
+
         /// <summary>Reads the exact bestowing target/bestower/faction only inside the guarded adapter.</summary>
         public static bool TryCaptureBestowingActors(
             LordJob_Ritual ritualJob,

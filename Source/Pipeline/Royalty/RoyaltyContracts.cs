@@ -339,9 +339,11 @@ namespace PawnDiary
         public int titleCorrelationTicks = 2500;
         public int psylinkCorrelationTicks = 2500;
         public int titleThoughtCorrelationTicks = 2500;
+        public int successionCorrelationTicks = 2500;
         public int killThoughtCorrelationTicks = 60;
         public int maximumPendingRoyalMutations = 64;
         public int maximumPendingTitleThoughts = 128;
+        public int maximumPendingSuccessions = 64;
         public int maximumRoyaltyContextCharacters = 120;
         public int killThoughtWeight = 100;
         public int bondedThoughtWeight = 70;
@@ -437,6 +439,99 @@ namespace PawnDiary
         public string causeToken = RoyalMutationCauseTokens.Unknown;
         public int tick;
         public string correlationId = string.Empty;
+    }
+
+    /// <summary>Detached candidate returned by vanilla's title-inheritance worker.</summary>
+    internal sealed class RoyalSuccessionCandidateSnapshot
+    {
+        public string correlationId = string.Empty;
+        public string deceasedPawnId = string.Empty;
+        public string deceasedPawnName = string.Empty;
+        public string heirPawnId = string.Empty;
+        public string heirPawnName = string.Empty;
+        public string factionId = string.Empty;
+        public string factionName = string.Empty;
+        public string inheritedTitleDefName = string.Empty;
+        public string inheritedTitleLabel = string.Empty;
+        public int inheritedTitleSeniority;
+        public string previousHeirTitleDefName = string.Empty;
+        public string previousHeirTitleLabel = string.Empty;
+        public int previousHeirTitleSeniority = -1;
+        // Vanilla names this outcome "higher", but its comparison is equal-or-higher (>=).
+        public bool heirAlreadyHeldEqualOrHigherTitle;
+        public int candidateTick;
+    }
+
+    /// <summary>Authoritative outer commit copied after Pawn_RoyaltyTracker.Notify_PawnKilled.</summary>
+    internal sealed class RoyalSuccessionCommitObservation
+    {
+        public string correlationId = string.Empty;
+        public string deceasedPawnId = string.Empty;
+        public string factionId = string.Empty;
+        public string inheritedTitleDefName = string.Empty;
+        public bool wasInherited;
+        public int commitTick;
+    }
+
+    /// <summary>Committed, bounded succession fact safe to retain across delayed callbacks and saves.</summary>
+    internal sealed class RoyalSuccessionFact
+    {
+        public string correlationId = string.Empty;
+        public string deceasedPawnId = string.Empty;
+        public string deceasedPawnName = string.Empty;
+        public string heirPawnId = string.Empty;
+        public string heirPawnName = string.Empty;
+        public string factionId = string.Empty;
+        public string factionName = string.Empty;
+        public string inheritedTitleDefName = string.Empty;
+        public string inheritedTitleLabel = string.Empty;
+        public int inheritedTitleSeniority;
+        public string previousHeirTitleDefName = string.Empty;
+        public string previousHeirTitleLabel = string.Empty;
+        public int previousHeirTitleSeniority = -1;
+        public int candidateTick;
+        public int commitTick;
+        public int expiresTick;
+        public bool pageClaimed;
+        public bool titleMutationClaimed;
+    }
+
+    /// <summary>One title callback staged while the enclosing death commit is still unresolved.</summary>
+    internal sealed class RoyalSuccessionStagedTitleMutation
+    {
+        public string correlationId = string.Empty;
+        public RoyalTitleMutationSnapshot mutation;
+    }
+
+    /// <summary>Process-local death boundary containing only detached inheritance observations.</summary>
+    internal sealed class RoyalSuccessionDeathScope
+    {
+        public string scopeId = string.Empty;
+        public string deceasedPawnId = string.Empty;
+        public int openedTick;
+        public bool completed;
+        public List<RoyalSuccessionCandidateSnapshot> candidates =
+            new List<RoyalSuccessionCandidateSnapshot>();
+        public List<RoyalSuccessionStagedTitleMutation> stagedTitleMutations =
+            new List<RoyalSuccessionStagedTitleMutation>();
+    }
+
+    /// <summary>Exact explicit ChangeRoyalHeir quest observation; automatic SetHeir calls never create it.</summary>
+    internal sealed class RoyalHeirAppointmentSnapshot
+    {
+        public string correlationId = string.Empty;
+        public string sourceToken = string.Empty;
+        public string titleHolderPawnId = string.Empty;
+        public string titleHolderPawnName = string.Empty;
+        public string previousHeirPawnId = string.Empty;
+        public string previousHeirPawnName = string.Empty;
+        public string heirPawnId = string.Empty;
+        public string heirPawnName = string.Empty;
+        public string factionId = string.Empty;
+        public string factionName = string.Empty;
+        public string titleDefName = string.Empty;
+        public string titleLabel = string.Empty;
+        public int observedTick;
     }
 
     /// <summary>Plain immediate before/after psylink mutation.</summary>

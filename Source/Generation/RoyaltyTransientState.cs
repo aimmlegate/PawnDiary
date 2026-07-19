@@ -24,6 +24,7 @@ namespace PawnDiary
         {
             PersonaKillThoughtCorrelation.Clear();
             RoyalMutationCorrelation.Clear();
+            RoyalSuccessionCorrelation.Clear();
             RoyalTitleThoughtCorrelation.Clear();
             activeCauseScopes.Clear();
             unclaimedMutations.Clear();

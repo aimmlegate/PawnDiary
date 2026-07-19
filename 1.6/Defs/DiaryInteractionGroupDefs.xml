@@ -3002,7 +3002,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionRoyalTitle</defName>
-    <label>Royal title changed</label>
+    <label>Royal rank and succession</label>
     <order>820</order>
     <domain>Progression</domain>
     <defaultEnabled>true</defaultEnabled>
@@ -3010,7 +3010,7 @@
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Royalty</li>
     </enableWhenPackageIdsLoaded>
-    <instruction>an exact faction-aware royal title transition; preserve the supplied faction and before/after titles, then write status, burden, pride, relief, or loss without explaining mechanics</instruction>
+    <instruction>an exact faction-aware royal title, succession, or heir-appointment transition; preserve every supplied person, faction, and title, then write status, burden, grief, pride, relief, or loss without explaining mechanics</instruction>
     <tone>with formal weight and personal cost</tone>
     <tones>
       <li>measured and self-conscious, aware that a title changes how others look</li>
@@ -3023,6 +3023,8 @@
       <li>RoyalTitlePromoted</li>
       <li>RoyalTitleDemoted</li>
       <li>RoyalTitleLost</li>
+      <li>RoyalSuccession</li>
+      <li>RoyalHeirAppointed</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
