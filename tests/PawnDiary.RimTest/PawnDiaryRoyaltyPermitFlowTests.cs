@@ -1,5 +1,5 @@
-// Loaded-game acceptance for Royalty Phase 6 dramatic permits. These fixtures use real installed
-// RoyalTitlePermitDefs, real Pawn_RoyaltyTracker.GetPermit calls, and vanilla FactionPermit.Notify_Used;
+// Loaded-game acceptance for Royalty Phase 6 permits and Phase 8 compatibility. These fixtures use
+// real or synthetic RoyalTitlePermitDefs, real tracker GetPermit calls, and FactionPermit.Notify_Used;
 // no UI selection or targeting intent is treated as success. Quick-aid fallback dispatch is observed
 // through the production correlation owner's test seam so a developer's real colonists never receive
 // test raid pages.
@@ -169,6 +169,51 @@ namespace PawnDiary.RimTests
                     pawn.royalty.GetPermit(def, faction);
                     permit.Notify_Used();
                 });
+            }
+        }
+
+        /// <summary>
+        /// Synthetic modded permits remain fail-closed unless their Def identity is on the reviewed
+        /// XML allowlist. Familiar English wording and malformed IDs cannot imitate a dramatic family.
+        /// </summary>
+        [Test]
+        public static void SyntheticModdedPermitsRequireExactReviewedDefIdentity()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(SyntheticModdedPermitsRequireExactReviewedDefIdentity))) return;
+            Faction faction = RequireEmpire();
+            RoyalTitleDef title = RequirePermit("CallOrbitalStrike").minTitle;
+            AddRoyalTitleFixture(faction, title);
+            RoyalTitlePermitDef[] syntheticDefs =
+            {
+                new RoyalTitlePermitDef
+                {
+                    defName = "Phase8_ModOrbitalLookingPermit",
+                    label = "call orbital strike",
+                    description = "Display wording deliberately resembles a reviewed permit.",
+                    minTitle = title
+                },
+                new RoyalTitlePermitDef
+                {
+                    defName = "Phase8;MalformedPermit",
+                    label = "military aid",
+                    description = "An unsafe identity must fail closed.",
+                    minTitle = title
+                }
+            };
+
+            for (int i = 0; i < syntheticDefs.Length; i++)
+            {
+                RoyalTitlePermitDef def = syntheticDefs[i];
+                FactionPermit permit = AddPermitFixture(def, faction);
+                scope.RequireNoNewEvent(() =>
+                {
+                    PawnDiaryRimTestScope.Require(
+                        ReferenceEquals(pawn.royalty.GetPermit(def, faction), permit),
+                        "The live tracker did not return synthetic permit " + def.defName + ".");
+                    permit.Notify_Used();
+                });
+                PawnDiaryRimTestScope.Require(RoyalPermitOwnerCache.SessionCountForTests == 0,
+                    "An unreviewed synthetic permit entered the transient owner cache.");
             }
         }
 

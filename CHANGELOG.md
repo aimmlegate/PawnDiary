@@ -1,5 +1,32 @@
 # Changelog
 
+- **2026-07-19 — Implemented Master Wave 13 / Royalty Phase 8 compatibility and release
+  hardening.** Coverage-first review confirmed the existing pure Royalty matrix already owns
+  localized-wording independence, structural/override persona-trait ranking, unsafe/malformed rows,
+  deterministic caps, exact permit allowlists, routine/unknown exclusions, and fallback decisions;
+  no duplicate policy or XML rule was added. Hook-registration exceptions now defer to one bounded
+  feature-specific warning instead of emitting an unbounded duplicate, while each optional seam keeps
+  its documented scanner fallback or feature-local fail-closed behavior. Persona reconciliation now
+  names and enforces its time-skip contract: at most one current-state catch-up, then an elapsed
+  deadline rebased from the current tick rather than a loop over every missed cadence.
+
+  Four reversible loaded fixtures raise the RimTest assembly to 291 tests. Synthetic modded persona
+  traits pass through the real `DlcContext` adapter and prove structural facts—not localized labels—
+  control selection; synthetic unknown/malformed permit Defs pass through the real tracker and
+  `Notify_Used` while remaining silent; a real persona-kill scope is cleared by `FinalizeInit`; and a
+  long game-time skip proves one reconciliation/page with global tick/deadline restoration. The
+  direct-mutation title-loss fallback now also asserts a repeated scan is silent. The cache audit
+  records process-static Royalty owners cleared by `RoyaltyTransientState.Reset`, general death
+  context cleared by the component constructor, and component Quest/source/window dedup cleared by
+  `StartedNewGame` / `LoadedGame`. No prompt field, XML, Scribe key, DLC dependency, or gameplay Def
+  reference changed.
+
+  Runtime and RimTest DLLs rebuild. Focused suites pass 463 Royalty, 680 capture, 2,734 pipeline, 22
+  prompt-variant, and 46 save-normalization assertions. The new 291-test loaded run, actual exit-to-
+  menu/second-colony boundary, corrected Phase-7 loaded rows, Royalty-off profile, localization, and
+  all hands-on release matrices remain explicitly pending; 278/278 is still the last fully green
+  loaded baseline.
+
 - **2026-07-19 — Hardened Royalty Phase 7 after consolidated adversarial review.** Saved Quest
   display and arc-reflection recovery now use the exact root before lifecycle fallback, so Royal
   Ascent keeps its own label, royalty color/tone, and reflection diversity bucket after save/load.

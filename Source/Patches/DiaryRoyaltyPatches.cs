@@ -98,8 +98,10 @@ namespace PawnDiary
             HooksReady = ready;
             if (!ready)
             {
-                Log.Warning("[Pawn Diary] One or more Royalty persona-weapon lifecycle methods changed; "
-                    + "the affected diary observation is disabled while vanilla behavior remains untouched.");
+                Log.WarningOnce(
+                    "[Pawn Diary] One or more Royalty persona-weapon lifecycle methods changed; "
+                        + "the affected diary observation is disabled while vanilla behavior remains untouched.",
+                    "PawnDiary.Royalty.MissingHook.PersonaLifecycle".GetHashCode());
             }
 
             MethodBase titleTarget = AccessTools.DeclaredMethod(
@@ -194,10 +196,11 @@ namespace PawnDiary
                         : new HarmonyMethod(typeof(DiaryRoyaltyPatches), finalizerName));
                 return true;
             }
-            catch (Exception exception)
+            catch (Exception)
             {
-                Log.Warning("[Pawn Diary] Could not register Royalty hook for " + target.Name
-                    + ": " + exception.Message);
+                // The owning registration row emits one bounded, feature-specific warning below.
+                // Logging here as well would produce duplicate errors for the same missing seam and
+                // could repeat if another compatibility layer retries registration.
                 return false;
             }
         }

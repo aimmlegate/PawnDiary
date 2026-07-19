@@ -181,12 +181,60 @@ only proves the fixture compiles; it does not count as executing either Odyssey 
 
 ---
 
+## Royalty Phase 8 — compatibility and release hardening
+
+Phase 8 adds no prompt field, XML policy, Scribe key, or DLC dependency. The focused pure suites pass
+463 Royalty, 680 capture, 2,734 pipeline, 22 prompt-variant, and 46 save-normalization assertions.
+Four reversible loaded fixtures raise the RimTest assembly from 287 to **291 compiled tests**:
+synthetic persona-trait adapter compatibility, synthetic unknown/malformed permit silence, real
+persona-kill cache clearing, and a long skipped reconciliation deadline. The direct-mutation
+title-loss fixture also now asserts the fallback scanner cannot repeat its page. Both assemblies
+build, but the 291-test DLL has not been executed inside RimWorld. The last fully green loaded
+baseline remains 278/278; neither Phase 7 nor Phase 8 loaded/manual acceptance is closed.
+
+- [x] **ASSEMBLY-FREE/BUILD:** Run the five focused pure suites and build both Debug assemblies.
+  Confirm no prompt/XML/save-key change and count exactly 291 `[Test]` methods.
+- [ ] **FULL LOADED RUN:** With Royalty active, run all 291 tests from a loaded disposable colony.
+  Record total/pass/fail/skip counts and the exact RimWorld build/mod list. This run must include the
+  corrected Phase-7 fixtures; compilation is not execution.
+- [ ] **Modded Def boundary:** Run
+  `SyntheticModdedPersonaTraitsUseOnlyStructuralFacts` and
+  `SyntheticModdedPermitsRequireExactReviewedDefIdentity`. Confirm localized/English-looking labels
+  do not classify behavior, structural kill-thought evidence is retained, and unknown/malformed
+  permits remain silent without populating owner state.
+- [ ] **Missing/private-hook fallback:** With a disposable compatibility build that withholds one
+  optional hook target, confirm exactly one feature-specific warning, unchanged vanilla behavior,
+  and either the documented title scanner fallback or feature-local fail-closed behavior. Run
+  `FactionScannerFallsBackToExactTitleLoss` and confirm the second scan is silent.
+- [ ] **Elapsed-time skip:** Run `LongTimeSkipRunsOneBoundedPersonaReconciliation`, then manually
+  cross a large dev-mode time jump with a pending non-primary bond. Confirm one separation at most,
+  the next deadline is rebased from current time, no cadence replay loop occurs, and normal tick time
+  is restored by the fixture.
+- [ ] **Exit-to-menu / second colony:** Populate persona-kill, mutation/title-memory/succession,
+  permit-owner, quick-aid, Quest admission, and event dedup state; return to menu and load another
+  colony. Confirm no stale claim, suppression, page, Pawn/Thing weak reference, or active pressure.
+  The automated `FinalizeInit` fixtures cover process-static stores only; this row owns the real
+  component replacement and `StartedNewGame` / `LoadedGame` boundary.
+- [ ] **Royalty-off and no-DLC:** Run Base + Harmony + RimTest Redux + Pawn Diary without Royalty.
+  Confirm all Royalty hooks/collectors remain inert, no package-gated UI appears, ordinary event paths
+  continue, and `Player.log` has no DLC Def/type/patch warning spam.
+- [ ] **Release/manual matrix:** Complete every still-open Phase-2–7 hands-on row, English/Russian
+  prompt review, save/load compatibility row, speed-4 performance/cap row, and cleanup/log audit.
+  Phase 8 hardening does not waive R1, R2, or R3 acceptance.
+
+Record RimWorld build, languages, active mods, 291-test results, Royalty-on/off profiles, time-skip
+and cross-colony evidence, prompt screenshots, save fixtures, cleanup result, and relevant
+`Player.log` lines. Until this record exists, Phase 8 and the Royalty release remain acceptance-open.
+
+---
+
 ## Royalty Phase 7 — Royal Ascent acceptance matrix
 
 The user-confirmed pre-Phase-7 loaded baseline passed **278/278** on 2026-07-19. That result includes
 Royalty Phase 6 and the earlier regression suite only; it does not establish a separate Royalty-off
 profile and does not close any hands-on Royalty row below. Phase 7 adds eight flow fixtures plus one
-loaded Def smoke check, so the current RimTest assembly contains **287 compiled tests**. The first
+loaded Def smoke check, so its Phase-7 assembly slice contains **287 compiled tests**; Phase 8 raises
+the current assembly to **291**. The first
 full run passed **284/287**. Its three failures were test-fixture defects: stale official-DLC group/
 window expectations, an invalid lifecycle signal in the fanout assertion, and an unisolated existing
 generic Quest dedup entry for the stable witness. The corrected fixture DLL builds; its loaded rerun
@@ -205,7 +253,8 @@ so `restartOnStart=false` cannot make the synthetic lifecycle depend on the load
 eight tests also assert that first acceptance creates no second Quest-domain page, saved display and
 reflection recover the exact group, master-off/identity-less active rows add no prompt pressure, an
 empty terminal identity cannot close an identified row, and a future Quest catch-all cannot steal
-root-first classification. These are compiled assertions only until the pending 287-test loaded rerun.
+root-first classification. These are compiled assertions only until the pending full 291-test loaded
+run exercises the corrected Phase-7 rows as well as Phase 8.
 
 - [ ] **Royalty-on lifecycle.** Accept the vanilla `EndGame_RoyalAscent` quest. Confirm exactly one
   stable-witness preparation page, no generic accepted fanout, and no wording that says the Stellarch
@@ -236,7 +285,7 @@ root-first classification. These are compiled assertions only until the pending 
   per-tick polling/log spam or allocation hitch, the active row closes on the matching terminal edge
   or expires silently, and an unrelated quest instance cannot close it.
 
-Record RimWorld build, language, active mod list, save fixture, 287-test result, Royalty-on/off
+Record RimWorld build, language, active mod list, save fixture, current 291-test result, Royalty-on/off
 profiles, prompt screenshots, cleanup result, and relevant `Player.log` lines. Until this record
 exists, Phase 7/R3 remains acceptance-pending.
 

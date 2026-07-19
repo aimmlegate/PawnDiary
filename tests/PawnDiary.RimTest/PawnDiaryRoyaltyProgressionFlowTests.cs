@@ -1,4 +1,5 @@
-// Loaded-game acceptance for Royalty Phase 4 title/psylink correctness and Phase 5 succession.
+// Loaded-game acceptance for Royalty Phase 4 title/psylink correctness, Phase 5 succession, and the
+// Phase 8 repeat-safe scanner fallback.
 // These fixtures mutate only disposable pawns and drive the exact hook coordinator, faction-aware
 // fallback scanner, ritual ownership bridge, neuroformer owner, delayed title-thought release, and
 // succession/heir-appointment paths through production code.
@@ -384,6 +385,8 @@ namespace PawnDiary.RimTests
                 null);
             RequireContext(loss, "royal_faction_id=" + faction.GetUniqueLoadID());
             RequireContext(loss, "previous_title_def=" + lower.defName);
+            scope.RequireNoNewEvent(() =>
+                scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
         }
 
         /// <summary>Observation while output is disabled advances truth and cannot replay on re-enable.</summary>

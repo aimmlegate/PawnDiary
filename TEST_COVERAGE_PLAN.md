@@ -301,6 +301,18 @@ edge, isolate/restore only exact Quest keys, suppress witness transport reversib
 Their loaded rerun is pending. The last fully green baseline remains 278/278; the separate Royalty-
 inactive profile and every Royalty hands-on row remain open.
 
+Phase 8 leaves the already-complete pure policy matrix unchanged: `RoyaltyContextTests` still passes
+463 assertions for structural trait rank/override/caps/malformed rows, exact permit allowlists and
+unknown/routine silence, fallback decisions, and state normalization. The focused capture, pipeline,
+prompt-variant, and save-normalization suites pass 680, 2,734, 22, and 46 assertions. Four reversible
+loaded fixtures raise the RimTest assembly from 287 to 291 tests. They send synthetic modded
+`WeaponTraitDef` rows through the real adapter, send unknown/malformed synthetic permit Defs through
+the real tracker/success callback, clear a real persona-kill correlation via `FinalizeInit`, and model
+a long overdue reconciliation deadline with global tick/deadline restoration. The existing direct-
+mutation title-loss fallback additionally asserts a repeated scan emits nothing. Both assemblies
+build. The 291-test loaded run, actual exit-to-menu/second-colony reset, Royalty-off profile, and all
+manual matrices are pending; 278/278 remains the last fully green loaded baseline.
+
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,
 and saved landing context recovers the new domain. `OrbitalDebris`/`VacuumExposureRevealed`, weather,

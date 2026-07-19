@@ -1,7 +1,7 @@
-// Loaded-game acceptance for Royalty Phases 2 and 3. The suite drives vanilla
+// Loaded-game acceptance for Royalty Phases 2, 3, and 8. The suite drives vanilla
 // CompBladelinkWeapon/Pawn.Kill/Tale methods, proves late-visible historical bonds are adopted
-// silently, verifies current narrative context against live coded-weapon truth, and audits every
-// exact Harmony seam used by the lifecycle and its first-kill/death enrichment.
+// silently, verifies structural modded-trait compatibility and bounded elapsed reconciliation,
+// checks game-boundary cache reset, and audits every exact lifecycle/first-kill Harmony seam.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,12 +29,25 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetField("events", PrivateInstance);
         private static readonly MethodInfo ReconcileMethod =
             typeof(DiaryGameComponent).GetMethod("ReconcileRoyaltyPersonaBonds", PrivateInstance);
+        private static readonly MethodInfo RunReconciliationIfDueMethod =
+            typeof(DiaryGameComponent).GetMethod(
+                "RunRoyaltyPersonaReconciliationIfDue", PrivateInstance);
+        private static readonly FieldInfo NextReconciliationTickField =
+            typeof(DiaryGameComponent).GetField(
+                "nextRoyaltyPersonaReconciliationTick", PrivateInstance);
         private static readonly MethodInfo ResetFreeColonistSnapshotMethod =
             typeof(DiaryGameComponent).GetMethod("ResetFreeColonistSnapshot", PrivateStatic);
         private static readonly MethodInfo FlushAllTaleBatchesMethod =
             typeof(DiaryGameComponent).GetMethod("FlushAllTaleBatches", PrivateInstance);
         private static readonly FieldInfo PersonaWeaponTraitsField =
             typeof(CompBladelinkWeapon).GetField("traits", PrivateInstance);
+        private static readonly MethodInfo DebugSetTicksGameMethod =
+            typeof(TickManager).GetMethod(
+                "DebugSetTicksGame",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null,
+                new[] { typeof(int) },
+                null);
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
@@ -122,6 +135,135 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 scope.Component.RoyaltyNarrativeSnapshotFor(pawn, formed.tick).personaBonds.Count == 0,
                 "UnCode left a saved-only persona bond in current narrative context.");
+        }
+
+        /// <summary>
+        /// Sends synthetic modded WeaponTraitDefs through the real main-thread adapter. Structural
+        /// kill-thought evidence is accepted regardless of localized wording, while a persuasive
+        /// label and an unsafe Def identity remain unable to opt themselves into a prompt.
+        /// </summary>
+        [Test]
+        public static void SyntheticModdedPersonaTraitsUseOnlyStructuralFacts()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(SyntheticModdedPersonaTraitsUseOnlyStructuralFacts))) return;
+            ThingWithComps weapon;
+            CompBladelinkWeapon comp;
+            CreatePersonaWeapon(out weapon, out comp);
+            ThoughtDef killThought = DefDatabase<ThoughtDef>.GetNamedSilentFail(KillThoughtDefName);
+            PawnDiaryRimTestScope.Require(PersonaWeaponTraitsField != null && killThought != null,
+                "Could not resolve the persona trait adapter fixture seams.");
+
+            List<WeaponTraitDef> original = PersonaWeaponTraitsField.GetValue(comp)
+                as List<WeaponTraitDef>;
+            try
+            {
+                WeaponTraitDef structural = new WeaponTraitDef
+                {
+                    defName = "Phase8_ModPersonaKillSignal",
+                    label = "quietly reflective",
+                    description = "Localized display text deliberately unrelated to killing.",
+                    killThought = killThought
+                };
+                WeaponTraitDef wordingOnly = new WeaponTraitDef
+                {
+                    defName = "Phase8_ModPersonaWordingOnly",
+                    label = "bloodthirsty killer bond",
+                    description = "English-looking words are display data, not policy evidence."
+                };
+                WeaponTraitDef malformed = new WeaponTraitDef
+                {
+                    defName = "Phase8|MalformedPersonaTrait",
+                    label = "structural but unsafe",
+                    killThought = killThought
+                };
+                PersonaWeaponTraitsField.SetValue(comp, new List<WeaponTraitDef>
+                {
+                    wordingOnly, malformed, structural
+                });
+
+                PersonaWeaponSnapshot captured;
+                PawnDiaryRimTestScope.Require(
+                    DlcContext.TryCapturePersonaWeapon(weapon, pawn, out captured)
+                        && captured?.traits?.Count == 3,
+                    "The live Royalty adapter did not copy all three synthetic trait candidates.");
+                List<PersonaTraitFact> selected = PersonaTraitPolicy.Select(
+                    captured.traits,
+                    PersonaTraitEventTokens.Kill,
+                    "phase8-loaded-modded-traits",
+                    DiaryRoyaltyPolicy.Snapshot());
+                PawnDiaryRimTestScope.Require(selected.Count == 1
+                        && selected[0].traitDefName == structural.defName,
+                    "Persona trait selection used localized wording, retained an unsafe identity, "
+                        + "or lost structural kill-thought evidence.");
+            }
+            finally
+            {
+                PersonaWeaponTraitsField.SetValue(comp, original);
+            }
+        }
+
+        /// <summary>
+        /// Models an arbitrarily overdue reconciliation deadline with a real pending persona bond.
+        /// One current-state pass consumes the elapsed separation, rebases from now, and a second
+        /// call at the same game time cannot poll or duplicate the page.
+        /// </summary>
+        [Test]
+        public static void LongTimeSkipRunsOneBoundedPersonaReconciliation()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(LongTimeSkipRunsOneBoundedPersonaReconciliation))) return;
+            PawnDiaryRimTestScope.Require(RunReconciliationIfDueMethod != null
+                    && NextReconciliationTickField != null
+                    && DebugSetTicksGameMethod != null
+                    && Find.TickManager != null,
+                "Could not resolve the elapsed-time reconciliation fixture seams.");
+            ThingWithComps weapon;
+            CompBladelinkWeapon comp;
+            CreatePersonaWeapon(out weapon, out comp);
+            scope.FireAndRequireEvent(
+                () => comp.CodeFor(pawn),
+                PersonaWeaponEventData.BondFormedDefName,
+                pawn,
+                null);
+            scope.RequireNoNewEvent(() => scope.Component.ObserveRoyaltyPersonaEquipment(weapon, pawn));
+            PersonaBondState pending = PersonaRows().SingleOrDefault(row => row != null
+                && row.weaponThingId == weapon.GetUniqueLoadID());
+            PawnDiaryRimTestScope.Require(pending != null
+                    && pending.phaseToken == PersonaBondPhaseTokens.SeparationPending,
+                "The time-skip fixture did not establish a pending non-primary persona bond.");
+
+            int originalTick = Find.TickManager.TicksGame;
+            int originalDeadline = (int)NextReconciliationTickField.GetValue(scope.Component);
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            int cadence = Math.Max(250, policy.reconciliationCadenceTicks);
+            long futureLong = (long)originalTick
+                + Math.Max(1, policy.separationThresholdTicks)
+                + ((long)cadence * 20L);
+            PawnDiaryRimTestScope.Require(futureLong < int.MaxValue - cadence,
+                "The loaded game's tick counter is too near Int32.MaxValue for this reversible fixture.");
+            int future = (int)futureLong;
+            try
+            {
+                // Backdating the deadline models every skipped cadence without asking the game loop
+                // to run thousands of synthetic ticks. The global tick is restored in finally.
+                NextReconciliationTickField.SetValue(scope.Component, Math.Max(0, originalTick - cadence));
+                DebugSetTicksGameMethod.Invoke(Find.TickManager, new object[] { future });
+                scope.FireAndRequireEvent(
+                    () => RunReconciliationIfDueMethod.Invoke(
+                        scope.Component, new object[] { future }),
+                    PersonaWeaponEventData.BondSeparatedDefName,
+                    pawn,
+                    null);
+                PawnDiaryRimTestScope.Require(
+                    (int)NextReconciliationTickField.GetValue(scope.Component) == future + cadence,
+                    "The overdue reconciliation deadline was not rebased from current game time.");
+                scope.RequireNoNewEvent(() => RunReconciliationIfDueMethod.Invoke(
+                    scope.Component, new object[] { future }));
+            }
+            finally
+            {
+                DebugSetTicksGameMethod.Invoke(Find.TickManager, new object[] { originalTick });
+                NextReconciliationTickField.SetValue(scope.Component, originalDeadline);
+            }
         }
 
         /// <summary>
@@ -300,6 +442,28 @@ namespace PawnDiary.RimTests
                 pawn, KillThoughtDefName, signal: null, tick: tick + 1);
             PawnDiaryRimTestScope.Require(!suppressed,
                 "A post-scope kill-thought was suppressed without victim identity; it must fail open.");
+        }
+
+        /// <summary>FinalizeInit clears the real unsaved persona-kill scope before another game runs.</summary>
+        [Test]
+        public static void FinalizeInitClearsPersonaKillScopeAcrossGameBoundary()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(FinalizeInitClearsPersonaKillScopeAcrossGameBoundary))) return;
+            Pawn victim = scope.CreateAdultColonist();
+            PersonaKillCorrelationScope killScope = PersonaKillThoughtCorrelation.Begin(
+                victim,
+                pawn,
+                new List<string> { KillThoughtDefName },
+                Find.TickManager?.TicksGame ?? 0,
+                correlationTicks: 60);
+            PawnDiaryRimTestScope.Require(killScope != null
+                    && PersonaKillThoughtCorrelation.ActiveCountForTests == 1,
+                "The game-boundary fixture did not populate the real persona-kill cache.");
+
+            scope.Component.FinalizeInit();
+
+            PawnDiaryRimTestScope.Require(PersonaKillThoughtCorrelation.ActiveCountForTests == 0,
+                "FinalizeInit left a persona-kill ownership scope available to the next game.");
         }
 
         /// <summary>

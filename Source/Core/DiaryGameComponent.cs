@@ -709,13 +709,7 @@ namespace PawnDiary
                 ScanPawnProgressionsForDiaryEvents();
             }
 
-            if (!initialArrivalScanPending && ModsConfig.RoyaltyActive
-                && now >= nextRoyaltyPersonaReconciliationTick)
-            {
-                nextRoyaltyPersonaReconciliationTick = now + Math.Max(
-                    250, DiaryRoyaltyPolicy.Snapshot().reconciliationCadenceTicks);
-                ReconcileRoyaltyPersonaBonds();
-            }
+            RunRoyaltyPersonaReconciliationIfDue(now);
 
             if (now >= nextOrphanRecoveryScanTick)
             {
@@ -730,6 +724,24 @@ namespace PawnDiary
             }
 
             DrainCompletedLlmWork();
+        }
+
+        /// <summary>
+        /// Runs at most one Royalty live-state reconciliation when its elapsed-time deadline is due.
+        /// </summary>
+        private void RunRoyaltyPersonaReconciliationIfDue(int now)
+        {
+            if (initialArrivalScanPending || !ModsConfig.RoyaltyActive
+                || now < nextRoyaltyPersonaReconciliationTick) return;
+
+            // A time skip can pass many nominal cadence boundaries. Reconciliation reads only the
+            // current live state, so replaying every missed interval could invent transitions from
+            // repeated observations of the same moment. One pass is the bounded catch-up; rebasing
+            // from 'now' prevents a hot loop while the saved pending timestamp still preserves real
+            // elapsed separation time.
+            nextRoyaltyPersonaReconciliationTick = now + Math.Max(
+                250, DiaryRoyaltyPolicy.Snapshot().reconciliationCadenceTicks);
+            ReconcileRoyaltyPersonaBonds();
         }
 
         private void RequestGenerationScan()

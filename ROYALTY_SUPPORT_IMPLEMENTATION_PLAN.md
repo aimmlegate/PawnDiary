@@ -1,6 +1,6 @@
 # Pawn Diary — Royalty Support Implementation Plan
 
-Status: Phases 0–7 and the Narrative N3-R Royal Ascent extension are implemented as of 2026-07-19.
+Status: Phases 0–8 and the Narrative N3-R Royal Ascent extension are implemented as of 2026-07-19.
 Phase 2 now ships exact persona-weapon formation, meaningful separation/recovery, destruction, and
 transfer lifecycle pages with guarded Harmony collection, saved state, late-visible recovery,
 package-gated settings/prompts, English/Russian localization, prompt fixtures, and N3-R evidence.
@@ -26,8 +26,12 @@ code-complete with pure/build coverage and nine newly compiled loaded checks, br
 to 287 tests. Its first full loaded run reached 284/287 and exposed three fixture-only defects: two
 omitted official-DLC matrix rows, an unsupported `unknown` signal in the fanout fixture, and missing
 isolation for the real stable witness's pre-existing generic Quest dedup entry. The corrected fixture
-assembly builds and awaits a loaded rerun, so Phase 7 hands-on and loaded acceptance, R2/R3 release
-acceptance, and Phase 8 remain open. This status does not pass,
+assembly builds and awaits a loaded rerun. Phase 8 compatibility hardening adds bounded one-warning
+hook failure handling, one-pass elapsed reconciliation after time skips, synthetic modded persona/
+permit adapter fixtures, repeat-safe scanner fallback, and real transient-cache reset coverage. The
+runtime and 291-test RimTest assemblies build; the focused pure suites pass, but the 291-test loaded
+run and real exit-to-menu/second-colony, Royalty-off, localization, and hands-on matrices remain open.
+Therefore Phase 7 hands-on/loaded acceptance and R2/R3 release acceptance remain open. This status does not pass,
 waive, or remove any earlier Biotech B1 manual
 acceptance row.
 
@@ -1650,6 +1654,26 @@ Exit gate: R2 is releasable.
 Exit gate: R3 is releasable.
 
 ### Phase 8 — Compatibility and release hardening
+
+> **Implementation status (2026-07-19): automated code/build slice complete; loaded and manual
+> release evidence pending.** The existing 463-assertion pure Royalty suite already covers localized
+> wording independence, structural/override trait ranking, malformed IDs, caps, exact permit-family
+> allowlists, routine/unknown exclusions, and fallback decisions. Phase 8 therefore adds no duplicate
+> pure policy and no prompt/XML/save-schema change. The impure loaded boundary gains four reversible
+> fixtures: synthetic modded persona traits, synthetic unknown/malformed permit Defs, the real
+> persona-kill cache through `FinalizeInit`, and a long skipped reconciliation deadline. The existing
+> direct-title-list fallback now asserts a repeated scan is silent. Missing hook exceptions no longer
+> emit an unbounded duplicate before the existing feature-specific `WarningOnce`; each optional seam
+> either retains its documented scanner fallback or fails closed locally.
+>
+> The audited game-boundary inventory covers every process-static Royalty owner cleared by
+> `RoyaltyTransientState.Reset`, the general `DeathContextCache` cleared in the component constructor,
+> and component Quest/source/event-window dedup cleared in `StartedNewGame` / `LoadedGame`. Overdue
+> persona reconciliation is bounded to one live observation and rebases from current time, while the
+> saved pending timestamp retains genuine elapsed truth. Runtime and 291-test RimTest assemblies
+> compile; Royalty (463), capture (680), pipeline (2,734), prompt-variant (22), and save-normalization
+> (46) focused suites pass. No Phase-7 corrected loaded rerun, new 291-test loaded execution, actual
+> cross-colony boundary, Royalty-off profile, localization review, or hands-on acceptance is claimed.
 
 1. Test representative modded persona traits and permit Defs.
 2. Exercise missing/private-hook fallback behavior.

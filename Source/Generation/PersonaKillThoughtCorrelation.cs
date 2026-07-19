@@ -216,6 +216,9 @@ namespace PawnDiary
             Active.Clear();
         }
 
+        /// <summary>Number of live scopes exposed only for loaded boundary-reset assertions.</summary>
+        internal static int ActiveCountForTests => Active.Count;
+
         private static void PruneActive(int tick)
         {
             for (int i = Active.Count - 1; i >= 0; i--)
