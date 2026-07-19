@@ -509,6 +509,11 @@
   <personaWeaponMilestone.tones.0>immediate and consequential, grounded in the exact death and the weapon&apos;s established traits without invented speech</personaWeaponMilestone.tones.0>
   <personaWeaponMilestone.tones.1>close and uneasy, weighing what changed between wielder and weapon after this exact first kill</personaWeaponMilestone.tones.1>
   <royalPermitDramatic.label>Dramatic royal permits</royalPermitDramatic.label>
+  <questRoyalAscent.label>Royal Ascent</questRoyalAscent.label>
+  <questRoyalAscent.instruction>the exact Royal Ascent quest lifecycle chapter; branch only on quest_signal: accepted means the colony committed to preparation and does not prove the Stellarch arrived, completed means vanilla ended the hosting quest successfully but does not prove who boarded or escaped, and failed means vanilla ended it in failure without proving the exact cause; write the colony-wide duty and pressure from this one witness without inventing arrival, dialogue, boarding, escape, rewards, or blame</questRoyalAscent.instruction>
+  <questRoyalAscent.tone>with ceremonial pressure, collective duty, and consequences larger than one pawn</questRoyalAscent.tone>
+  <questRoyalAscent.tones.0>formal but personal, the colony's shared obligation felt through one witness</questRoyalAscent.tones.0>
+  <questRoyalAscent.tones.1>tense and status-aware, keeping every unobserved imperial detail uncertain</questRoyalAscent.tones.1>
   <royalPermitDramatic.instruction>a successful dramatic royal-permit use; preserve the exact permit family, faction, title, and setting supplied, describe only the pawn calling in or exercising the permit, and never claim that aid arrived, a shuttle completed its trip, an orbital attack hit a target, or a particular favor amount was spent</royalPermitDramatic.instruction>
   <royalPermitDramatic.tone>with the weight of authority being turned into immediate action</royalPermitDramatic.tone>
   <royalPermitDramatic.tones.0>decisive and personal, grounded in what it felt like to invoke hard-won authority</royalPermitDramatic.tones.0>

@@ -2461,6 +2461,32 @@
        eligible colonists, so prompt wording must not imply the POV pawn was the sole actor.
        Accepted quests are disabled and blocked by pure policy; completed/failed are generated. -->
 
+  <!-- Exact Royalty R3 colony chapter. Root-first classification claims accepted/completed/failed
+       before the generic signal groups. Acceptance is emitted only by the start window; terminal
+       Quest pages use one deterministic witness instead of an all-colonist fanout. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>questRoyalAscent</defName>
+    <label>Royal Ascent</label>
+    <order>745</order>
+    <domain>Quest</domain>
+    <questFanoutScope>MapWitness</questFanoutScope>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>the exact Royal Ascent quest lifecycle chapter; branch only on quest_signal: accepted means the colony committed to preparation and does not prove the Stellarch arrived, completed means vanilla ended the hosting quest successfully but does not prove who boarded or escaped, and failed means vanilla ended it in failure without proving the exact cause; write the colony-wide duty and pressure from this one witness without inventing arrival, dialogue, boarding, escape, rewards, or blame</instruction>
+    <tone>with ceremonial pressure, collective duty, and consequences larger than one pawn</tone>
+    <tones>
+      <li>formal but personal, the colony's shared obligation felt through one witness</li>
+      <li>tense and status-aware, keeping every unobserved imperial detail uncertain</li>
+    </tones>
+    <colorCue>royalty</colorCue>
+    <matchDefNames>
+      <li>EndGame_RoyalAscent</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>questAccepted</defName>
     <label>Quest accepted</label>

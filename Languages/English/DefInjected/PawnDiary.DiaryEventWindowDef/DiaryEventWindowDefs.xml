@@ -27,6 +27,8 @@
 
 
   <MechClusterLanded.label>mech cluster</MechClusterLanded.label>
+  <RoyalAscent.label>Royal Ascent</RoyalAscent.label>
+  <RoyalAscent.instruction>write the colony's exact decision to undertake the Royal Ascent and the pressure of preparing for imperial hospitality; this accepted quest proves commitment only, so never claim that the Stellarch has arrived, that hosting has begun, or that anyone will escape</RoyalAscent.instruction>
   <MechClusterLanded.instruction>write the pawn seeing dormant war machines assembled on the colony's horizon; cold, patient, and mechanical danger that has not moved yet — write the waiting and the planning, never an invented battle</MechClusterLanded.instruction>
 
   <ShortCircuitAftermath.label>short circuit</ShortCircuitAftermath.label>

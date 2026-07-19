@@ -125,8 +125,8 @@ one window, `Gleaming` maps to none, localized fallbacks exist, and the three ex
 bounded source evidence. The EVT-22 RimTest fixture exercises the live package-gated page/evidence
 path when Anomaly is active and the no-op branch otherwise.
 
-Master Waves 5 and 9 / Royalty Phases 0–6 plus N3-R evidence use `RoyaltyContextTests`, now a
-421-assertion assembly-free suite. It
+Master Waves 5 and 9 / Royalty Phases 0–7 plus N3-R evidence use `RoyaltyContextTests`, now a
+463-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing
 Narrative Continuity `bond_lifecycle`/`weapon` contract; formation/load-baseline/re-equip,
 pending/threshold/unobservable separation, recorded/unrecorded recovery, destruction/death/transfer,
@@ -272,9 +272,26 @@ the capped fallback owner scan neither re-enters the patch nor accepts a truncat
 return cap overflow, expiry, and pre-save signals unchanged to the raid owner; check Phase-6 Prompt
 Studio rows against Royalty activity; clear weak/static state on `FinalizeInit`; and assert
 Royalty-inactive hooks, collectors, pages, and queues are silent. The official DLC group matrix now
-includes `royalPermitDramatic`. Both runtime assemblies build, but these eleven fixtures have not yet
-been run in a loaded game. The executed loaded baseline remains 267/267, Phase 6 manual/loaded
-acceptance remains open, and no Phase-2–5 hands-on row is closed.
+includes `royalPermitDramatic`. Both runtime assemblies build, and the user-confirmed full loaded run
+passed 278/278. That records Phase-6 loaded-suite execution only: the separate Royalty-inactive profile
+and every Phase-2–6 hands-on row remain open.
+
+Phase 7 adds exact Royal Ascent lifecycle, ownership, malformed-input, cap, expiry-boundary,
+migration, and Royalty-off decisions to `RoyaltyContextTests`; exact-root saved routing,
+Full/Balanced/Compact redaction, XML tuning/ownership/truth constraints, bilingual DefInjected/Keyed
+and three Prompt Studio fixtures to `DiaryPipelineTests`; and exact-arc/direct-authority/empty/
+malformed court-pressure selection to `NarrativeContinuityTests`. Those suites pass 463, 2,734, and
+132 assertions respectively.
+
+`PawnDiaryRoyalAscentFlowTests` contributes eight compiled loaded fixtures and the Def smoke suite
+adds one exact-root check, raising the RimTest assembly from 278 to 287 tests. They drive the real
+installed `Quest.Accept(Pawn)` and `Quest.End(QuestEndOutcome,bool,bool)` hooks; prove one stable-
+witness start and terminal page, repeated-call suppression, matching quest-instance closure, ordinary
+Quest all-eligible fanout, exact journey/pressure context, terminal truth, real Scribe round-trip plus
+legacy empty defaults, `FinalizeInit` transient reset, package/Prompt Studio visibility, and a real
+exact-root no-op branch when either the XML master or Royalty is inactive. Runtime and RimTest assemblies build, but the new
+287-test assembly has not yet been executed in a loaded game. The confirmed executed baseline remains
+278/278; the separate Royalty-inactive profile and every Royalty hands-on row remain open.
 
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,

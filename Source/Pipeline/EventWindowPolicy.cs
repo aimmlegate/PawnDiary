@@ -16,6 +16,9 @@ namespace PawnDiary
         public string label;
         public string subjectPawnId;
         public string subjectLabel;
+        // Opaque source-instance identity and continuity arc. Neither field reaches prompt context.
+        public string correlationId;
+        public string narrativeArcKey;
     }
 
     /// <summary>

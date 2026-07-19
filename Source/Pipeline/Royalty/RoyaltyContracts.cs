@@ -433,6 +433,10 @@ namespace PawnDiary
         public int maximumPermitLabelCharacters = 120;
         public int maximumPermitSettingCharacters = 120;
         public int maximumRoyaltyContextCharacters = 120;
+        public string royalAscentQuestDefName = "EndGame_RoyalAscent";
+        public string royalAscentArcPrefix = "royalty-ascent";
+        public int maximumRoyalAscentCorrelationCharacters = 96;
+        public int maximumRoyalAscentArcCharacters = 128;
         public int killThoughtWeight = 100;
         public int bondedThoughtWeight = 70;
         public int bondedHediffWeight = 60;
@@ -443,6 +447,7 @@ namespace PawnDiary
         public string personaNarrativeFormat = string.Empty;
         public string titleNarrativeFormat = string.Empty;
         public string titleWithDutiesNarrativeFormat = string.Empty;
+        public string royalAscentPressureNarrativeFormat = string.Empty;
         public List<RoyaltyTaleQualificationRule> qualifyingTales =
             new List<RoyaltyTaleQualificationRule>();
         public List<RoyaltyTaleRoleRule> personaKillCompanionTales =

@@ -34,10 +34,115 @@ namespace RoyaltyContextTests
             TestPermitAllowlistMappingsAndExclusions();
             TestPermitMalformedOrderingDedupAndCaps();
             TestPermitOwnerDecisionAndQuickAidArbitration();
+            TestRoyalAscentLifecycleOwnershipExpiryAndMigration();
             TestPersonaPersistenceBaselinesAndNormalization();
             TestTitleObservationNormalizationAndOrdering();
             Console.WriteLine("RoyaltyContextTests passed " + assertions + " assertions.");
             return 0;
+        }
+
+        private static void TestRoyalAscentLifecycleOwnershipExpiryAndMigration()
+        {
+            RoyaltyPolicySnapshot policy = RoyaltyPolicySnapshot.CreateDefault();
+            AssertEqual("ascent fallback root", "EndGame_RoyalAscent", policy.royalAscentQuestDefName);
+            AssertEqual("ascent fallback arc prefix", "royalty-ascent", policy.royalAscentArcPrefix);
+
+            RoyalAscentLifecycleDecision started = RoyalAscentPolicy.Evaluate(
+                AscentFacts("accepted", "Quest_41", 100), policy, true);
+            AssertTrue("ascent accepted recognized", started.recognized);
+            AssertTrue("ascent accepted opens only", started.opensWindow && !started.closesWindow
+                && !started.emitsTerminalPage);
+            AssertEqual("ascent accepted journey phase", RoyalAscentPhaseTokens.Started, started.phase);
+            AssertEqual("ascent accepted shared arc", "royalty-ascent|Quest_41", started.arcKey);
+
+            RoyalAscentLifecycleDecision completed = RoyalAscentPolicy.Evaluate(
+                AscentFacts("completed", "Quest_41", 200), policy, true);
+            AssertTrue("ascent completion is the terminal Quest owner", completed.recognized
+                && !completed.opensWindow && completed.closesWindow && completed.emitsTerminalPage);
+            AssertEqual("ascent completed phase", RoyalAscentPhaseTokens.Completed, completed.phase);
+            AssertEqual("ascent completion shares start arc", started.arcKey, completed.arcKey);
+
+            RoyalAscentLifecycleDecision failed = RoyalAscentPolicy.Evaluate(
+                AscentFacts("failed", "Quest_41", 200), policy, true);
+            AssertTrue("ascent failure is the terminal Quest owner", failed.recognized
+                && failed.closesWindow && failed.emitsTerminalPage);
+            AssertEqual("ascent failed phase", RoyalAscentPhaseTokens.Failed, failed.phase);
+
+            AssertTrue("ordinary quest not claimed", !RoyalAscentPolicy.Evaluate(
+                new RoyalAscentLifecycleFacts
+                {
+                    questRootDefName = "SomeOtherQuest",
+                    lifecycleSignal = "completed",
+                    correlationId = "Quest_42"
+                }, policy, true).recognized);
+            AssertTrue("unknown ascent signal fails closed", !RoyalAscentPolicy.Evaluate(
+                AscentFacts("arrived", "Quest_41", 150), policy, true).recognized);
+            AssertTrue("null ascent facts fail closed", !RoyalAscentPolicy.Evaluate(null, policy, true).recognized);
+            AssertTrue("Royalty-off ascent is inert", !RoyalAscentPolicy.Evaluate(
+                AscentFacts("accepted", "Quest_41", 100), policy, false).recognized);
+            policy.enabled = false;
+            AssertTrue("disabled master policy is inert", !RoyalAscentPolicy.Evaluate(
+                AscentFacts("accepted", "Quest_41", 100), policy, true).recognized);
+            policy.enabled = true;
+
+            string exactBoundary = new string('q', policy.maximumRoyalAscentCorrelationCharacters);
+            AssertEqual("ascent correlation exact boundary retained", exactBoundary,
+                RoyalAscentPolicy.NormalizeCorrelationId(
+                    exactBoundary, policy.maximumRoyalAscentCorrelationCharacters));
+            AssertEqual("ascent correlation overflow rejected", string.Empty,
+                RoyalAscentPolicy.NormalizeCorrelationId(
+                    exactBoundary + "q", policy.maximumRoyalAscentCorrelationCharacters));
+            AssertEqual("ascent delimiter rejected", string.Empty,
+                RoyalAscentPolicy.NormalizeCorrelationId(
+                    "Quest|41", policy.maximumRoyalAscentCorrelationCharacters));
+            AssertEqual("ascent malformed arc cap rejected", string.Empty,
+                RoyalAscentPolicy.BuildArcKey("Quest_41", new RoyaltyPolicySnapshot
+                {
+                    royalAscentArcPrefix = "royalty-ascent",
+                    maximumRoyalAscentCorrelationCharacters = 96,
+                    maximumRoyalAscentArcCharacters = 8
+                }));
+
+            AssertTrue("active ascent pressure begins inclusively", RoyalAscentPolicy.ActivePressureApplies(
+                policy.royalAscentQuestDefName, "Quest_41", started.arcKey, 100, 300, 100, policy, true));
+            AssertTrue("active ascent pressure remains before expiry", RoyalAscentPolicy.ActivePressureApplies(
+                policy.royalAscentQuestDefName, "Quest_41", started.arcKey, 100, 300, 299, policy, true));
+            AssertTrue("active ascent pressure expires at boundary", !RoyalAscentPolicy.ActivePressureApplies(
+                policy.royalAscentQuestDefName, "Quest_41", started.arcKey, 100, 300, 300, policy, true));
+            AssertTrue("old-save missing arc never infers pressure", !RoyalAscentPolicy.ActivePressureApplies(
+                policy.royalAscentQuestDefName, string.Empty, string.Empty, 100, 300, 150, policy, true));
+            AssertTrue("mismatched saved arc never applies", !RoyalAscentPolicy.ActivePressureApplies(
+                policy.royalAscentQuestDefName, "Quest_41", "royalty-ascent|Quest_99",
+                100, 300, 150, policy, true));
+            AssertTrue("Royalty-off pressure is inert", !RoyalAscentPolicy.ActivePressureApplies(
+                policy.royalAscentQuestDefName, "Quest_41", started.arcKey, 100, 300, 150, policy, false));
+
+            List<NarrativeEvidence> terminalEvidence = RoyalAscentPolicy.JourneyEvidence(
+                "event-1", 200, "Pawn_1", "initiator", completed, "quest", policy.royalAscentQuestDefName);
+            AssertEqual("terminal journey evidence count", 1, terminalEvidence.Count);
+            AssertEqual("terminal journey evidence facet", NarrativeFacetTokens.JourneyChapter,
+                terminalEvidence[0].facet);
+            AssertEqual("terminal journey evidence phase", RoyalAscentPhaseTokens.Completed,
+                terminalEvidence[0].phase);
+            AssertEqual("terminal journey evidence shared arc", started.arcKey, terminalEvidence[0].arcKey);
+            AssertEqual("terminal journey evidence salience", NarrativeSalienceTokens.Terminal,
+                terminalEvidence[0].salience);
+            AssertEqual("malformed continuity identity emits no evidence", 0,
+                RoyalAscentPolicy.JourneyEvidence(
+                    "event-2", 200, "Pawn_1", "initiator",
+                    RoyalAscentPolicy.Evaluate(AscentFacts("completed", "Quest|bad", 200), policy, true),
+                    "quest", policy.royalAscentQuestDefName).Count);
+        }
+
+        private static RoyalAscentLifecycleFacts AscentFacts(string signal, string correlationId, int tick)
+        {
+            return new RoyalAscentLifecycleFacts
+            {
+                questRootDefName = "EndGame_RoyalAscent",
+                lifecycleSignal = signal,
+                correlationId = correlationId,
+                tick = tick
+            };
         }
 
         private static void TestPermitAllowlistMappingsAndExclusions()

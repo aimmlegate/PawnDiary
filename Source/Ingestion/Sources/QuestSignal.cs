@@ -1,6 +1,7 @@
 // Quest ingestion signal — the impure capture+emit half of the "quest lifecycle" source (accepted /
-// completed / failed). Replaces the shared DiaryGameComponent.RecordQuestSignal fan-out core. Quests
-// are colony-wide: one solo entry per eligible colonist, with a single quest+signal dedup window.
+// completed / failed). Replaces the shared DiaryGameComponent.RecordQuestSignal fan-out core. The
+// root-first XML group chooses either the legacy all-eligible fan-out or one stable map witness, while
+// a single quest+signal dedup window prevents competing pages for the same lifecycle edge.
 //
 // The thin RecordQuestAccepted/RecordQuestEnded methods stay on the component (they update the
 // accept-scanner baseline and map outcomes), and submit this fan-out. The quest lifecycle ALSO emits a
@@ -18,7 +19,8 @@ using Verse;
 namespace PawnDiary.Ingestion
 {
     /// <summary>
-    /// Colony-wide quest fan-out. Built by <see cref="DiaryGameComponent.RecordQuestAccepted"/> /
+    /// Quest lifecycle fan-out with XML-owned audience scope. Built by
+    /// <see cref="DiaryGameComponent.RecordQuestAccepted"/> /
     /// <see cref="DiaryGameComponent.RecordQuestEnded"/> and submitted via
     /// <see cref="DiaryEvents.Submit(DiaryFanoutSignal)"/>.
     /// </summary>
@@ -40,6 +42,8 @@ namespace PawnDiary.Ingestion
         internal string Description { get; }
         internal string Instruction { get; }
         internal string TextKey { get; }
+        internal DiaryInteractionGroupDef Group { get; }
+        internal RoyalAscentLifecycleDecision AscentDecision { get; }
 
         public QuestFanoutSignal(Quest quest, string signal, string textKey)
         {
@@ -52,6 +56,26 @@ namespace PawnDiary.Ingestion
             TextKey = textKey;
             QuestDefName = string.IsNullOrEmpty(quest.root?.defName) ? "unknown" : quest.root.defName;
             CleanedLabel = BuildQuestLabel(quest);
+            RoyaltyPolicySnapshot royaltyPolicy = DiaryRoyaltyPolicy.Snapshot();
+            AscentDecision = RoyalAscentPolicy.Evaluate(
+                new RoyalAscentLifecycleFacts
+                {
+                    questRootDefName = QuestDefName,
+                    lifecycleSignal = signal,
+                    correlationId = quest.GetUniqueLoadID(),
+                    tick = Find.TickManager.TicksGame
+                },
+                royaltyPolicy,
+                ModsConfig.RoyaltyActive);
+            bool exactAscentRoot = RoyalAscentPolicy.IsExactQuestRoot(QuestDefName, royaltyPolicy);
+
+            // The exact DLC route is all-or-nothing at this adapter boundary. Without Royalty, or
+            // when the XML master policy is disabled, it must not leak into the package-gated window
+            // or group. Ordinary Quest roots continue through their mature generic path below.
+            if (exactAscentRoot && !AscentDecision.recognized)
+            {
+                return;
+            }
 
             // Event windows are generic XML policy, not the Quest-domain diary group. Emit the lifecycle
             // signal before group gating so XML can watch a quest without forcing all quest diary
@@ -59,7 +83,14 @@ namespace PawnDiary.Ingestion
             try
             {
                 DiaryGameComponent.Instance?.RecordEventWindowSignal(
-                    DiaryGameComponent.EventWindowSourceQuest, QuestDefName, signal, CleanedLabel, null);
+                    DiaryGameComponent.EventWindowSourceQuest,
+                    QuestDefName,
+                    signal,
+                    CleanedLabel,
+                    null,
+                    null,
+                    AscentDecision?.correlationId,
+                    AscentDecision?.arcKey);
             }
             catch (Exception e)
             {
@@ -67,9 +98,10 @@ namespace PawnDiary.Ingestion
                     "QuestFanoutSignal.EventWindow".GetHashCode());
             }
 
-            // XML owns which lifecycle signals count as diary-worthy. The signal IS the classifier key.
-            DiaryInteractionGroupDef group = InteractionGroups.ClassifyQuest(signal);
-            if (group == null || !PawnDiaryMod.Settings.IsQuestEnabled(signal))
+            // Resolve once, root first. The same exact group owns settings, instruction, and fanout;
+            // reclassifying by signal here would silently restore the generic Quest policy.
+            Group = InteractionGroups.ClassifyQuest(QuestDefName, signal);
+            if (Group == null || !PawnDiaryMod.Settings.IsGroupEnabled(Group.defName))
             {
                 return;
             }
@@ -86,7 +118,7 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
-            Instruction = InteractionGroups.InstructionForQuest(signal);
+            Instruction = InteractionGroups.InstructionForGroup(Group);
             colonyDedupKey = "quest|" + quest.id + "|" + signal;
             valid = true;
         }
@@ -99,6 +131,16 @@ namespace PawnDiary.Ingestion
         {
             if (!valid)
             {
+                yield break;
+            }
+
+            if (Group != null && Group.questFanoutScope == QuestFanoutScope.MapWitness)
+            {
+                Pawn witness = DiaryGameComponent.StableLoadedMapWitness();
+                if (witness != null)
+                {
+                    yield return new QuestPawnSignal(this, witness, witness.GetUniqueLoadID());
+                }
                 yield break;
             }
 
@@ -315,7 +357,58 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
+            ApplyRoyalAscentNarrativeEvidence(sink, questEvent);
+
             sink.QueueSolo(questEvent, DiaryEvent.InitiatorRole);
+        }
+
+        /// <summary>
+        /// Attaches terminal journey evidence to the already-authorized Quest page. Failure here can
+        /// never cancel or duplicate the canonical page.
+        /// </summary>
+        private void ApplyRoyalAscentNarrativeEvidence(DiaryGameComponent sink, DiaryEvent diaryEvent)
+        {
+            if (source.AscentDecision == null || !source.AscentDecision.emitsTerminalPage
+                || sink == null || diaryEvent == null || pawn == null)
+            {
+                return;
+            }
+
+            try
+            {
+                string pawnId = pawn.GetUniqueLoadID();
+                NarrativeContextBuildResult result = NarrativeContextBuilder.Build(
+                    new NarrativeContextBuildRequest
+                    {
+                        eventId = diaryEvent.eventId,
+                        eventTick = diaryEvent.tick,
+                        povPawnId = pawnId,
+                        povRole = DiaryEvent.InitiatorRole,
+                        royalty = sink.RoyaltyNarrativeSnapshotFor(pawn, diaryEvent.tick),
+                        recentSelectedCandidateKeys = sink.RecentNarrativeSelectedCandidateKeys(pawnId),
+                        contextDetailLevel = PawnDiarySettings.NormalizeContextDetailLevel(
+                            PawnDiaryMod.Settings?.contextDetailLevel ?? PromptContextDetailLevel.Full),
+                        evidence = RoyalAscentPolicy.JourneyEvidence(
+                            diaryEvent.eventId,
+                            diaryEvent.tick,
+                            pawnId,
+                            DiaryEvent.InitiatorRole,
+                            source.AscentDecision,
+                            "quest",
+                            source.QuestDefName)
+                    });
+                if (result.evidence.Count > 0)
+                {
+                    diaryEvent.ApplyNarrativeContext(DiaryEvent.InitiatorRole, result);
+                }
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Royal Ascent terminal continuity failed; the canonical Quest page remains: "
+                    + exception,
+                    "PawnDiary.RoyalAscent.TerminalNarrative".GetHashCode());
+            }
         }
     }
 }

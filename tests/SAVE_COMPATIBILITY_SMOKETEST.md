@@ -181,6 +181,57 @@ only proves the fixture compiles; it does not count as executing either Odyssey 
 
 ---
 
+## Royalty Phase 7 — Royal Ascent acceptance matrix
+
+The user-confirmed pre-Phase-7 loaded baseline passed **278/278** on 2026-07-19. That result includes
+Royalty Phase 6 and the earlier regression suite only; it does not establish a separate Royalty-off
+profile and does not close any hands-on Royalty row below. Phase 7 adds eight flow fixtures plus one
+loaded Def smoke check, so the current RimTest assembly contains **287 compiled tests**. Those new
+tests have not yet been executed in RimWorld.
+
+Phase 7 adds no component-level Scribe key. It appends two primitive strings to each
+`ActiveEventWindowState`: `startCorrelationId` and `startNarrativeArcKey`. A pre-Phase-7 save loads
+both as empty, preserves the existing window row, and deliberately receives no retroactively inferred
+Royal Ascent pressure. New rows are mapless, bounded by the XML timeout, retain at most one normalized
+Royal Ascent chapter, and save no live Quest, Pawn, Map, or Def reference. The loaded fixture uses
+real Scribe for populated and missing-field rows; the checks below still own cross-session behavior
+and presentation.
+
+- [ ] **Royalty-on lifecycle.** Accept the vanilla `EndGame_RoyalAscent` quest. Confirm exactly one
+  stable-witness preparation page, no generic accepted fanout, and no wording that says the Stellarch
+  arrived. During the active window, inspect relevant ordinary pages: court pressure may shade them,
+  but no periodic Royal Ascent page may appear.
+- [ ] **Truthful terminal ownership.** Complete and separately fail the hosting quest in disposable
+  saves. Confirm one stable-witness terminal page, no window-end duplicate/all-colonist fanout, and no
+  claim about exact failure cause, boarding, escape, rewards, dialogue, or unseen ceremony. Repeated
+  terminal calls must stay silent.
+- [ ] **Save/load and migration.** Save with one active Royal Ascent, return to the main menu, reload,
+  and confirm the same bounded quest-instance/arc window resumes once. Also load a pre-Phase-7 save
+  with no new fields: it must load cleanly, create no catch-up page/pressure, and save again with
+  conservative empty defaults.
+- [ ] **Exit-to-menu reset.** Accept/end a disposable synthetic or real ascent, return to the main
+  menu, load another colony, and confirm no accepted-quest admission, dedup token, correlation, or
+  active pressure leaks across games. Run `FinalizeInitResetsRoyaltyTransientState` in the Phase-7
+  loaded suite; it covers the process-static reset, while this manual row still owns the real
+  cross-colony component-state boundary.
+- [ ] **Royalty-off profile.** Load Base + Harmony + RimTest Redux + Pawn Diary without Royalty. Run
+  `RoyaltyPackageAndPromptStudioAvailabilityMatch`; its real synthetic exact-root Accept/End branch
+  must create no page/window. Confirm the group and Prompt Studio row are hidden and `Player.log`
+  contains no Royalty patch/XML/type-initializer error.
+- [ ] **Prompt Studio/localization.** With Royalty active, inspect the commitment, completed, and
+  failed Royal Ascent fixtures in English and Russian under Full, Balanced, and Compact. Required
+  quest label/signal must remain visible; root Def name, quest-instance ID, shared arc key, and ticks
+  must remain absent. With Royalty inactive, the package-gated Royal Ascent prompt row must be hidden.
+- [ ] **Performance/caps.** Run speed 4 through the active twenty-day XML bound. Confirm there is no
+  per-tick polling/log spam or allocation hitch, the active row closes on the matching terminal edge
+  or expires silently, and an unrelated quest instance cannot close it.
+
+Record RimWorld build, language, active mod list, save fixture, 287-test result, Royalty-on/off
+profiles, prompt screenshots, cleanup result, and relevant `Player.log` lines. Until this record
+exists, Phase 7/R3 remains acceptance-pending.
+
+---
+
 ## Biotech B1 Phase 4 acceptance matrix
 
 Run this matrix before marking Biotech Phase 4 complete. Keep prompt-test mode on for prompt review so
@@ -525,14 +576,14 @@ those disposable heir/writer pawns, the user-confirmed corrected run passed 267/
 
 Phase 6 owns only successful uses of the six reviewed story-sized permits and the matching generic
 quick military-aid raid. Pure tests and both assemblies build; eleven new compiled fixtures bring the
-RimTest source count to 278. They have not yet run in a loaded game, so the last executed loaded
-baseline remains Phase 5's 267/267 and no Phase-2–5 hands-on row is changed.
+RimTest source count to 278. The user-confirmed full loaded run passed 278/278. This does not record a
+separate Royalty-inactive profile and does not change any Phase-2–6 hands-on row.
 
 - [x] **ASSEMBLY-FREE/BUILD:** `RoyaltyContextTests` passes 431 assertions,
   `DiaryPipelineTests` passes 2,650, `DiaryCapturePolicyTests` passes 680, and the runtime plus
   278-test RimTest assemblies build.
-- [ ] **AUTOMATED LOADED:** Run all 278 tests in a loaded Royalty profile and the Royalty-inactive
-  profile. Do not infer a pass from compilation.
+- [ ] **AUTOMATED LOADED:** The full loaded Royalty-profile run passed 278/278. A separately recorded
+  Royalty-inactive profile is still required; do not infer that branch from compilation or skips.
 - [ ] **MANUAL LATER:** Perform every row below before calling Phase 6 or R2 acceptance-complete.
 
 | # | Scenario | Expected result | Regression signal |
@@ -547,8 +598,8 @@ baseline remains Phase 5's 267/267 and no Phase-2–5 hands-on row is changed.
 | 8 | Inspect Full/Balanced/Compact English and Russian previews for all four families, with and without cooldown use and setting. | Permit label/family/faction/title/cooldown truth remains; optional setting is dropped first under tighter budgets. Permit Def IDs, map IDs, ticks, correlation IDs, target/outcome claims, and favor amounts are absent. | Untranslated key, missing required fact, internal proof metadata, or invented outcome/cost. |
 | 9 | Run Base + Harmony + Pawn Diary without Royalty, including a save previously written with Phase 6 installed; inspect Prompt Studio before and after enabling Royalty. | Permit hooks report inactive, collectors and transient owners remain empty, ordinary raids follow their unchanged route, and no DLC Def/type/dependency error or warning spam appears. The five Phase-6 prompt rows are hidden without Royalty and visible with it, while their Defs remain loadable for pending-event recovery. | Startup/load exception, Royalty-only setting/page, swallowed raid, stale/missing Prompt Studio rows, failed pending-event recovery, or paid-DLC dependency. |
 
-- [ ] **TODO:** Record exact RimWorld assembly/build, language, active mod lists, the 278-test loaded
-  result in Royalty-on/off profiles, all manual rows above, prompt captures, save excerpts, and
+- [ ] **TODO:** Record exact RimWorld assembly/build, language, active mod lists, the separate
+  Royalty-inactive loaded result, all manual rows above, prompt captures, save excerpts, and
   relevant `Player.log` lines. Phase 6 and R2 remain acceptance-open until that evidence is recorded.
 
 ---

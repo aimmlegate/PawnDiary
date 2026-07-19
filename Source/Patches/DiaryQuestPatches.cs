@@ -9,24 +9,31 @@ using Verse;
 
 namespace PawnDiary
 {
-    // Fires when the player accepts a quest (Quest.Accept). Accepted quests are tracked for
-    // bookkeeping and generic event-window policy only; diary pages are written when the quest later
-    // completes or fails.
+    // Fires when the player accepts a quest (Quest.Accept). Ordinary acceptances remain bookkeeping
+    // and generic event-window signals; an exact XML window such as Royal Ascent may truthfully own a
+    // start page at this transition. Quest completion/failure still owns the terminal quest page.
     /// <summary>
     /// Captures accepted quests through the canonical Quest.Accept lifecycle hook.
     /// </summary>
     [HarmonyPatch(typeof(Quest), nameof(Quest.Accept), new[] { typeof(Pawn) })]
     internal static class QuestAcceptPatch
     {
+        /// <summary>Remembers whether vanilla can perform an acceptance transition in this call.</summary>
+        public static void Prefix(Quest __instance, out bool __state)
+        {
+            __state = __instance != null && __instance.State == QuestState.NotYetAccepted;
+        }
+
         /// <summary>
         /// Harmony Postfix for Quest.Accept. Forwards the freshly accepted quest to
-        /// DiaryGameComponent.RecordQuestAccepted, which marks it seen without generating a page.
+        /// DiaryGameComponent.RecordQuestAccepted, which deduplicates the canonical acceptance and
+        /// lets root-first event-window policy decide whether that proven transition owns a page.
         /// </summary>
-        public static void Postfix(Quest __instance)
+        public static void Postfix(Quest __instance, bool __state)
         {
             DiaryPatchSafety.Run("QuestAcceptPatch", () =>
             {
-                if (__instance == null)
+                if (!__state || __instance == null || !__instance.EverAccepted)
                 {
                     return;
                 }
@@ -111,23 +118,32 @@ namespace PawnDiary
     }
 
     // Fires when a quest ends (Quest.End). Only Success ("completed") and Fail ("failed") outcomes
-    // are recorded; Unknown and InvalidPreAcceptance are skipped. Each outcome fans out to every
-    // eligible colonist with its own prompt group and emotional register.
+    // are recorded; Unknown and InvalidPreAcceptance are skipped. The root-first XML group chooses
+    // the audience (all eligible colonists by default, or one stable witness for Royal Ascent).
     /// <summary>
     /// Captures completed and failed quest endings from Quest.End.
     /// </summary>
-    [HarmonyPatch(typeof(Quest), nameof(Quest.End))]
+    [HarmonyPatch(typeof(Quest), nameof(Quest.End), new[]
+    {
+        typeof(QuestEndOutcome), typeof(bool), typeof(bool)
+    })]
     internal static class QuestEndPatch
     {
+        /// <summary>Remembers whether vanilla can perform a terminal transition in this call.</summary>
+        public static void Prefix(Quest __instance, out bool __state)
+        {
+            __state = __instance != null && !__instance.Historical;
+        }
+
         /// <summary>
         /// Harmony Postfix for Quest.End. Forwards Success/Fail outcomes to
         /// DiaryGameComponent.RecordQuestEnded, which maps them to the completed/failed signals.
         /// </summary>
-        public static void Postfix(Quest __instance, QuestEndOutcome outcome)
+        public static void Postfix(Quest __instance, QuestEndOutcome outcome, bool __state)
         {
             DiaryPatchSafety.Run("QuestEndPatch", () =>
             {
-                if (__instance == null)
+                if (!__state || __instance == null || !__instance.Historical)
                 {
                     return;
                 }

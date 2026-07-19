@@ -116,6 +116,21 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns the exact saved Quest root used by root-first group recovery. Event-window start
+        /// pages persist it in <c>quest=</c>; ordinary Quest pages also keep the root as their defName.
+        /// </summary>
+        public static string QuestRootClassifierKey(string domain, string context, string savedDefName)
+        {
+            if (!string.Equals(domain, Quest, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            string root = DiaryContextFields.Value(context, "quest");
+            return string.IsNullOrWhiteSpace(root) ? savedDefName : root;
+        }
+
+        /// <summary>
         /// True when a context marker identifies a source that is not a normal social InteractionDef.
         /// Used to avoid adding direct-speech prompt instructions to non-social-log events.
         /// </summary>

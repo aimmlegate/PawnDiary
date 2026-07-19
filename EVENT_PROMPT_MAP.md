@@ -23,7 +23,7 @@ Authoritative sources:
 - `1.6/Defs/DiaryPromptEnchantmentDefs.xml`, `DiaryHediffPersonaOverrideDefs.xml`,
   `DiaryEventWindowDefs.xml`, `DiaryObservedConditionDefs.xml`, `DiaryHumorCueDefs.xml`,
   `DiaryTuningDef.xml`, `DiarySignalPolicyDefs.xml`, and `DiaryRoyaltyPolicyDefs.xml`: side-channel
-  prompt context, weights, and exact Royalty permit mappings/windows/caps.
+  prompt context, weights, exact Royalty permit mappings/windows/caps, and Royal Ascent identity.
 
 ## 1. End-To-End Diary Item Flow
 
@@ -49,7 +49,7 @@ flowchart TD
         WO["Periodic current-job scan<br/>WorkSignal<br/>chance-gated solo work page"]
         RA["IncidentWorker.TryExecute<br/>RaidFanoutSignal<br/>one solo page per eligible map colonist"]
         MO["GameConditionManager.RegisterCondition<br/>MoodEventFanoutSignal<br/>one solo page per eligible map colonist"]
-        QU["Quest.Accept, Quest.End, quest-state scan<br/>QuestFanoutSignal<br/>accepted bookkeeping; completed/failed pages"]
+        QU["Quest.Accept, Quest.End, quest-state scan<br/>QuestFanoutSignal<br/>ordinary fanout; exact Royal Ascent stable witness"]
         RI["Ideology and psychic ritual completion hooks<br/>RitualFanoutSignal or PsychicRitualFanoutSignal<br/>role fan-out solo pages"]
         AR["Starting-colonist scan and Pawn.SetFaction<br/>ArrivalSignal<br/>neutral arrival page"]
         DR["Sleep/rest day flush<br/>DayReflectionSignal<br/>ordinary day reflection or rare quadrum reflection"]
@@ -154,10 +154,12 @@ Important boundaries in the diagram:
   does not authorize another page or select prompt context without a later provider.
 - Event-window pages save `event_window=` context. Observed-condition pages save
   `observed_condition=` context. Those markers are not separate prompt domains today, so generated
-  pages from those systems use the saved defName plus the normal Interaction fallback unless a more
-  specific group or event-prompt row is added.
-- Accepted quest signals are listened to and stored for bookkeeping/event-window policy, but current
-  capture policy does not generate accepted quest diary pages. Completed and failed quest signals do.
+  pages use the saved defName plus the normal Interaction fallback unless a more specific source
+  marker/group exists. Royal Ascent's start window deliberately also saves `quest=` and
+  `quest_signal=`, so it recovers the exact Quest group without exposing private correlation/arc IDs.
+- Ordinary accepted quest signals are bookkeeping/event-window inputs and do not generate accepted
+  pages. Exact Royal Ascent acceptance is the one XML-owned start-window exception; completed/failed
+  Royal Ascent outcomes and ordinary Quest outcomes still use the canonical Quest page owner.
 - Exact persona-trait `killThought` side effects are staged across the active Royalty death/Tale scope
   and its 60-tick inverse-order window, then claimed only if the first-kill milestone page persists.
   Disabled/rejected milestones release each signal once to ordinary Thought capture. This arbitration
@@ -179,6 +181,11 @@ Important boundaries in the diagram:
   Vanilla quick military aid reports its exact successful `RaidFriendly` first, so that fan-out waits
   briefly for a same-faction/map permit claim. Unmatched, expired, overflowed, or pre-save signals
   return unchanged to the existing raid owner; disabled permit output still owns its source raid.
+- Royal Ascent uses the same Quest hooks with real transition guards. Exact root-first classification
+  routes `EndGame_RoyalAscent` acceptance to one start-only mapless window and stable witness;
+  completion/failure closes only the matching quest instance and creates one exact terminal page.
+  Active court pressure requires the saved shared arc or same-POV authority evidence, shades only an
+  already-authorized page, and never proves Stellarch arrival, boarding, or escape.
 
 ## 2. Prompt Policy And Template Selection
 
@@ -188,13 +195,13 @@ flowchart TD
     Payload --> Domain["DiaryEventDomainClassifier.DomainForContext"]
     Domain --> Markers["Markers:<br/>tale, mood_event, thought, inspiration, romance,<br/>work, hediff, mental_state, raid, quest,<br/>ritual, psychic_ritual, ability, progression,<br/>persona_weapon, royal_permit<br/>else Interaction"]
     Markers --> Classifier["GroupClassifierKey"]
-    Classifier --> QuestKey["Quest uses signal=accepted/completed/failed"]
+    Classifier --> QuestKey["Quest preserves root + signal<br/>exact non-catch-all root first, then lifecycle fallback"]
     Classifier --> RitualKey["Ritual uses defName plus ritual_behavior<br/>or PsychicRitual plus defName"]
     Classifier --> AbilityKey["Ability uses defName plus ability_category"]
     Classifier --> HediffKey["Hediff body-part pages use defName plus part_kind<br/>addedpart, organicpart, or missingpart"]
     Classifier --> DefaultKey["All other domains use saved defName"]
 
-    QuestKey --> Group["InteractionGroups.ClassifyDefName(domain, classifierKey)"]
+    QuestKey --> Group["InteractionGroups.ClassifyQuest(root, signal)"]
     RitualKey --> Group
     AbilityKey --> Group
     HediffKey --> Group
@@ -248,6 +255,7 @@ Current shipped event-prompt rows in `DiaryEventPromptDefs.xml`:
 | `DiaryEventPrompt_Hediff` | `Hediff` | yes | yes | blank |
 | `DiaryEventPrompt_Raid` | `Raid` | yes | yes | blank |
 | `DiaryEventPrompt_Quest` | `Quest` | yes | yes | blank |
+| `DiaryEventPrompt_RoyalAscent` | `questRoyalAscent` | yes | yes | blank |
 | `DiaryEventPrompt_Ritual` | `Ritual` | yes | yes | blank |
 | `DiaryEventPrompt_Ability` | `Ability` | yes | yes | blank |
 | `DiaryEventPrompt_DayReflection` | `DayReflection` | yes | yes | blank |
@@ -281,7 +289,8 @@ The resolver supports exact defName and group rows. Royalty Phase 2 ships the fo
 lifecycle rows above in addition to its broad domain fallback; Phase 3 adds the exact Tale-owned
 first-kill row; Phase 4 adds the four exact title edges, psylink, bestowing, and anima-linking rows;
 Phase 5 adds exact succession and explicit-heir-appointment rows. Phase 6 adds the broad
-`RoyalPermit` fallback plus four exact allowlisted-family rows.
+`RoyalPermit` fallback plus four exact allowlisted-family rows. Phase 7 adds the package-gated exact
+Royal Ascent root group/prompt and three bilingual start/completion/failure Prompt Studio fixtures.
 All other rows in this table are broad domain/reflection/boundary fallbacks. Prompt
 Studio can still override prompt, enhancement, and forced model for resolved keys.
 
@@ -302,7 +311,7 @@ flowchart TD
     TemplateFlag -- Yes --> Collect["PromptEnchantmentRuleFor"]
 
     Collect --> WindowCandidates["ActiveEventWindowPromptCandidates<br/>code-supported"]
-    WindowCandidates --> WindowCurrent["Current XML: MechClusterLanded,<br/>ShortCircuitAftermath, SelfTameJoined<br/>keepActive tone windows"]
+    WindowCandidates --> WindowCurrent["Current XML: RoyalAscent, MechClusterLanded,<br/>ShortCircuitAftermath, SelfTameJoined<br/>keepActive tone windows"]
     Collect --> ObservedCandidates["ActiveObservedConditionPromptCandidates<br/>active saved state only"]
     ObservedCandidates --> ObservedWeights["Extra candidates:<br/>core lasting-state weights<br/>plus package-safe XML compat tints"]
     Collect --> NormalCandidates["PromptEnchantmentCollector.Collect<br/>live hediff, capacity, RoyalTitle, IdeologyRole"]
@@ -364,6 +373,7 @@ flowchart LR
     end
 
     subgraph QuestGroups["Quest lifecycle groups"]
+        Q0["questRoyalAscent / order 745<br/>Royalty-gated important MapWitness<br/>exact root across all phases"]
         Q1["questAccepted<br/>defaultEnabled=false<br/>bookkeeping only, no pages"]
         Q2["questCompleted<br/>enabled important fan-out pages"]
         Q3["questFailed<br/>enabled important fan-out pages"]
@@ -420,6 +430,13 @@ only `RoyalPermitMilitaryAid`, `RoyalPermitTransportShuttle`, `RoyalPermitOrbita
 routine and unknown permits cannot fall through into this group. The page records invocation only,
 never an arrival, target hit, transport completion, or favor amount that the success edge did not
 prove.
+
+Quest classification is root-first only for exact non-catch-all groups. `questRoyalAscent` matches
+the plain string `EndGame_RoyalAscent` before lifecycle-signal groups, uses `MapWitness`, and owns the
+same settings/instruction/prompt route for accepted/completed/failed. Acceptance itself is emitted by
+the start window; terminal Quest capture emits one witness page and disables the second window-end
+page. Ordinary Quest roots fall back to `questAccepted`/`questCompleted`/`questFailed` and preserve
+their prior all-eligible fanout.
 
 Ritual fan-out keeps both layers of guidance: the matched XML group's instruction establishes the
 specific rite, then the localized participant-role instruction establishes what this pawn did. This
@@ -496,6 +513,7 @@ Source recording weights:
 | Pawn progression | Scan every `2500` ticks. Passion skills emit only when reaching configured milestones `8/12/16/20`; first scan baselines. Psylink hediff defNames are XML string matchers; xenotype and royal-title reads go through DLC-safe `DlcContext`. Only psylink level gains and configured major xenotype defNames can currently request a major arc follow-up: default threshold `90`, psylink severity `level / 6 * 100`, and `Sanguophage` as the default major xenotype defName. |
 | Royalty persona/title/psylink/succession | Reconcile every `2500` ticks on an independent elapsed deadline. Continuous observable not-primary evidence reaches meaningful separation at `60000` ticks; recovery is page-eligible only after that separation page recorded. Exact first-kill `killThought` correlation uses `60` ticks. Title/psylink cause and title-memory windows use `2500` ticks; succession uses that value only to clean its transient same-action exact-edge cache, while a saved committed title chain persists until target or contradiction. Pending mutation/title-memory/succession caps are `64`/`128`/`64`, context text is capped at `120` characters per field, and at most `2` duty categories project. Exact hooks advance truth before optional dispatch; succession requires both candidate and outer `wasInherited` commit. Coding, transfer, destruction, milestone/succession consumption, and state-only cleanup are deterministic rather than chance-weighted. |
 | Royalty dramatic permits | Exact string allowlist of six permits. Owner evidence lives for `2500` ticks with caps of `64` permit sessions, `4` owners per session, and `256` fallback pawns. Quick-aid correlation lasts `60` ticks with `32` pending raids and `32` reverse-order owners; overflow and expiry fail open to the ordinary raid route. Immediate repeat suppression is `60` ticks. Permit/setting text caps are `120` characters. All values are XML-owned with defensive fallbacks. |
+| Royal Ascent | Exact plain-string root `EndGame_RoyalAscent`; one mapless active row and one deterministic stable witness. The start window silently expires after `1200000` ticks, event dedup is `2500`, correlation/arc caps are `96`/`128` characters, and active prompt weight is `9` with normal-candidate multiplier `0.8`. Completion/failure closes only matching correlation; no polling or timeout page. |
 | Biotech growth ownership | Ages `7/10/13` only. A real configured letter saves detached ownership until choice or `180000`-tick expiry; a provably mismatched pawn age may release after the `60000`-tick grace. Auto-resolved growth diffs immediately. Canonical disable/failure releases Birthday once, while trait/skill baselines and the consumed age advance regardless of page settings. |
 | Ability sampling | `min 0.03`, `max 0.75`, reference cooldown `60000` ticks. `CooldownWeightedChance = min + (max - min) * cooldown / (cooldown + reference)`, then shared generation chance and clamp. Dedup `300` ticks. |
 | Ordinary raid generation delay | `2500` ticks. Drop-pod raids and infestations bypass the delay. |

@@ -27,6 +27,8 @@
 
 
   <MechClusterLanded.label>кластер механоидов</MechClusterLanded.label>
+  <RoyalAscent.label>Королевское вознесение</RoyalAscent.label>
+  <RoyalAscent.instruction>опиши точное решение поселения совершить Королевское вознесение и давление подготовки к имперскому гостеприимству; принятие задания доказывает только обязательство, поэтому не утверждай, что стелларх прибыл, приём начался или кто-либо покинет планету</RoyalAscent.instruction>
   <MechClusterLanded.instruction>напиши, как поселенец видит собранные на горизонте спящие боевые машины; холодная, терпеливая, механическая опасность, которая пока не сдвинулась с места — пиши ожидание и планы, но никогда не выдуманный бой</MechClusterLanded.instruction>
 
   <ShortCircuitAftermath.label>короткое замыкание</ShortCircuitAftermath.label>

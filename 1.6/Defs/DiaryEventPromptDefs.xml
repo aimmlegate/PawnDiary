@@ -182,6 +182,17 @@
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalAscent</defName>
+    <label>Royal Ascent chapter</label>
+    <eventType>questRoyalAscent</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the exact Royal Ascent lifecycle edge as one colony chapter witnessed by this pawn.</prompt>
+    <enhancement>Use quest_signal as the ownership boundary. Accepted proves commitment and preparation only; completed or failed proves only the hosting quest&apos;s terminal outcome. Never claim that the Stellarch arrived, name an exact failure cause, say who boarded, say the colony escaped, or invent dialogue, rewards, blame, or unseen ceremony.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_PersonaWeaponBondFormed</defName>
     <label>persona weapon bond formed</label>
     <eventType>PersonaWeaponBondFormed</eventType>

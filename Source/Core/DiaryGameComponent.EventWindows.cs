@@ -40,7 +40,8 @@ namespace PawnDiary
         /// Generic signal entry point used by Harmony patches and existing recorders.
         /// </summary>
         internal void RecordEventWindowSignal(string source, string defName, string signal, string label,
-            Map map = null, Pawn subjectPawn = null)
+            Map map = null, Pawn subjectPawn = null, string correlationId = null,
+            string narrativeArcKey = null)
         {
             if (!CanRecordGameplayEventNow() || string.IsNullOrWhiteSpace(source))
             {
@@ -62,7 +63,9 @@ namespace PawnDiary
                 signal = signal ?? string.Empty,
                 label = DiaryLineCleaner.CleanLine(label),
                 subjectPawnId = subjectPawn == null ? string.Empty : subjectPawn.GetUniqueLoadID(),
-                subjectLabel = subjectLabel ?? string.Empty
+                subjectLabel = subjectLabel ?? string.Empty,
+                correlationId = correlationId ?? string.Empty,
+                narrativeArcKey = narrativeArcKey ?? string.Empty
             };
 
             for (int i = 0; i < defs.Count; i++)
@@ -339,6 +342,16 @@ namespace PawnDiary
                 return;
             }
 
+            // When both sides carry an exact source-instance identity, an unrelated terminal signal
+            // cannot close this saved window. Empty old-save identity remains migration-compatible.
+            if (active != null && !string.IsNullOrWhiteSpace(active.startCorrelationId)
+                && !string.IsNullOrWhiteSpace(facts.correlationId)
+                && !string.Equals(
+                    active.startCorrelationId, facts.correlationId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
             string dedupKey = EventWindowDedupKey(def, EventWindowPhaseEnd, facts, mapUniqueId);
             if (IsRecentlyRecorded(recentEventWindowEvents, dedupKey, def.EffectiveDedupTicks()))
             {
@@ -415,7 +428,9 @@ namespace PawnDiary
                     defName = active.startDefName,
                     label = active.startLabel,
                     subjectPawnId = active.startSubjectPawnId,
-                    subjectLabel = active.startSubjectLabel
+                    subjectLabel = active.startSubjectLabel,
+                    correlationId = active.startCorrelationId,
+                    narrativeArcKey = active.startNarrativeArcKey
                 };
                 RecordEventWindowPhase(def, active, EventWindowPhaseTimeout, facts,
                     MapForUniqueId(active.mapUniqueId), null);
@@ -583,8 +598,17 @@ namespace PawnDiary
             // a disabled row stops the page while window state, dedup, and prompt coloring keep
             // working. This is also the contract the Biotech growth fallback relies on: with the row
             // disabled, ReleaseBiotechGrowthToOrdinaryBirthday consumes baselines without a page.
-            DiaryInteractionGroupDef group = InteractionGroups.ClassifyDefName(
-                GroupDomain.Interaction, def.defName);
+            bool questSource = string.Equals(
+                facts?.source ?? active?.startSource,
+                EventWindowSourceQuest,
+                StringComparison.OrdinalIgnoreCase);
+            string questRoot = facts?.defName;
+            if (string.IsNullOrWhiteSpace(questRoot)) questRoot = active?.startDefName;
+            string questSignal = facts?.signal;
+            if (string.IsNullOrWhiteSpace(questSignal)) questSignal = active?.startSignal;
+            DiaryInteractionGroupDef group = questSource
+                ? InteractionGroups.ClassifyQuest(questRoot, questSignal)
+                : InteractionGroups.ClassifyDefName(GroupDomain.Interaction, def.defName);
             // Null settings (mod-ctor failure, corrupt settings file) fails open like every other
             // gate, so a settings problem degrades to extra pages instead of a per-tick NRE here.
             if (group != null && PawnDiaryMod.Settings != null
@@ -624,7 +648,7 @@ namespace PawnDiary
                     diaryEvent.colorCue = def.colorCue;
                 }
 
-                ApplyEventWindowNarrativeEvidence(diaryEvent, def, facts, pawn);
+                ApplyEventWindowNarrativeEvidence(diaryEvent, def, active, facts, pawn);
 
                 QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
             }
@@ -638,6 +662,7 @@ namespace PawnDiary
         private void ApplyEventWindowNarrativeEvidence(
             DiaryEvent diaryEvent,
             DiaryEventWindowDef def,
+            ActiveEventWindowState active,
             EventWindowSignalFacts facts,
             Pawn pawn)
         {
@@ -674,7 +699,11 @@ namespace PawnDiary
                                 phase = template.phase,
                                 subjectKind = template.subjectKind,
                                 subjectId = template.subjectId,
-                                arcKey = template.arcKey,
+                                arcKey = !string.IsNullOrWhiteSpace(active?.startNarrativeArcKey)
+                                    ? active.startNarrativeArcKey
+                                    : (!string.IsNullOrWhiteSpace(facts?.narrativeArcKey)
+                                        ? facts.narrativeArcKey
+                                        : template.arcKey),
                                 beliefTopics = template.beliefTopics == null
                                     ? new List<string>()
                                     : new List<string>(template.beliefTopics),
@@ -728,11 +757,7 @@ namespace PawnDiary
                 {
                     // A mapless signal has no natural target. Search loaded maps only in that rare
                     // fallback case; never redirect an incident from a known empty map to another map.
-                    List<Map> loadedMaps = Find.Maps;
-                    for (int i = 0; i < loadedMaps.Count && witness == null; i++)
-                    {
-                        witness = EventWindowMapWitness(loadedMaps[i]);
-                    }
+                    witness = StableLoadedMapWitness();
                 }
 
                 if (witness != null)
@@ -824,6 +849,30 @@ namespace PawnDiary
                 {
                     selected = pawn;
                     selectedId = pawnId;
+                }
+            }
+
+            return selected;
+        }
+
+        /// <summary>
+        /// Returns one deterministic owner across all loaded colony maps. Used only by rare mapless
+        /// chapter signals, so it performs no polling and allocates no per-tick collections.
+        /// </summary>
+        internal static Pawn StableLoadedMapWitness()
+        {
+            Pawn selected = null;
+            string selectedId = null;
+            List<Map> maps = Find.Maps;
+            for (int i = 0; i < maps.Count; i++)
+            {
+                Pawn candidate = EventWindowMapWitness(maps[i]);
+                if (candidate == null) continue;
+                string candidateId = candidate.GetUniqueLoadID();
+                if (selected == null || string.CompareOrdinal(candidateId, selectedId) < 0)
+                {
+                    selected = candidate;
+                    selectedId = candidateId;
                 }
             }
 
@@ -1048,6 +1097,15 @@ namespace PawnDiary
             AddContextPart(parts, "label", facts == null ? null : facts.label);
             AddContextPart(parts, "subject", facts == null ? null : facts.subjectLabel);
             AddContextPart(parts, "subject_id", facts == null ? null : facts.subjectPawnId);
+            bool questSource = string.Equals(
+                facts?.source ?? active?.startSource,
+                EventWindowSourceQuest,
+                StringComparison.OrdinalIgnoreCase);
+            if (questSource)
+            {
+                AddContextPart(parts, "quest", facts?.defName ?? active?.startDefName);
+                AddContextPart(parts, "quest_signal", facts?.signal ?? active?.startSignal);
+            }
             if (active != null)
             {
                 AddContextPart(parts, "startSource", active.startSource);
@@ -1126,6 +1184,8 @@ namespace PawnDiary
             active.startLabel = facts.label ?? string.Empty;
             active.startSubjectPawnId = facts.subjectPawnId ?? string.Empty;
             active.startSubjectLabel = facts.subjectLabel ?? string.Empty;
+            active.startCorrelationId = facts.correlationId ?? string.Empty;
+            active.startNarrativeArcKey = facts.narrativeArcKey ?? string.Empty;
         }
 
         private ActiveEventWindowState ActiveEventWindowFor(DiaryEventWindowDef def, int mapUniqueId)
@@ -1193,6 +1253,8 @@ namespace PawnDiary
                 return;
             }
 
+            bool retainedRoyalAscent = false;
+            RoyaltyPolicySnapshot royaltyPolicy = DiaryRoyaltyPolicy.Snapshot();
             for (int i = activeEventWindows.Count - 1; i >= 0; i--)
             {
                 ActiveEventWindowState active = activeEventWindows[i];
@@ -1218,6 +1280,35 @@ namespace PawnDiary
 
                 active.startSubjectPawnId = active.startSubjectPawnId ?? string.Empty;
                 active.startSubjectLabel = active.startSubjectLabel ?? string.Empty;
+                active.startCorrelationId = active.startCorrelationId ?? string.Empty;
+                active.startNarrativeArcKey = active.startNarrativeArcKey ?? string.Empty;
+
+                if (string.Equals(
+                    active.startDefName,
+                    royaltyPolicy.royalAscentQuestDefName,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    // Royal Ascent is intentionally one colony-wide mapless chapter. Keep only the
+                    // newest well-shaped row if a malformed save contains duplicates or map-scoped rows.
+                    if (active.mapUniqueId != -1 || retainedRoyalAscent)
+                    {
+                        activeEventWindows.RemoveAt(i);
+                        continue;
+                    }
+
+                    retainedRoyalAscent = true;
+                    active.startCorrelationId = RoyalAscentPolicy.NormalizeCorrelationId(
+                        active.startCorrelationId,
+                        royaltyPolicy.maximumRoyalAscentCorrelationCharacters);
+                    string expectedArc = RoyalAscentPolicy.BuildArcKey(
+                        active.startCorrelationId, royaltyPolicy);
+                    if (!string.Equals(
+                        active.startNarrativeArcKey, expectedArc, StringComparison.Ordinal))
+                    {
+                        // Phase-6/older saves had no shared identity. Do not invent one retroactively.
+                        active.startNarrativeArcKey = string.Empty;
+                    }
+                }
             }
         }
 
@@ -1277,7 +1368,8 @@ namespace PawnDiary
                 + (facts == null ? string.Empty : facts.source) + "|"
                 + (facts == null ? string.Empty : facts.signal) + "|"
                 + (facts == null ? string.Empty : facts.defName) + "|"
-                + (facts == null ? string.Empty : facts.subjectPawnId);
+                + (facts == null ? string.Empty : facts.subjectPawnId) + "|"
+                + (facts == null ? string.Empty : facts.correlationId);
         }
 
         private static float SafePromptWeight(float value)

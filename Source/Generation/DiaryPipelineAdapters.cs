@@ -409,6 +409,13 @@ namespace PawnDiary
                 domain = GroupDomain.Interaction;
             }
 
+            if (domain == GroupDomain.Quest)
+            {
+                string questRoot = DiaryEventDomainClassifier.QuestRootClassifierKey(
+                    payload.domain, payload.gameContext, payload.defName);
+                return InteractionGroups.ClassifyQuest(questRoot, classifierKey);
+            }
+
             return InteractionGroups.ClassifyDefName(domain, classifierKey);
         }
 

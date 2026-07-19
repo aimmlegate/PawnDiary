@@ -430,16 +430,26 @@ Complete **Odyssey O2** and extend **N3-O**:
 ### Implement in this exact order
 
 1. **Royalty 5 (implemented; automated loaded green at 267/267, manual acceptance pending)** — exact inheritance correlation and succession evidence.
-2. **Royalty 6 (code-complete; pure/runtime/RimTest builds green, loaded/manual acceptance pending)**
+2. **Royalty 6 (code-complete; pure/runtime/RimTest builds green; loaded suite green at 278/278;
+   manual acceptance and a separately recorded Royalty-inactive run pending)**
    — successful dramatic permit families and friendly-raid ownership. Installed RimWorld 1.6 audit
    confirms `FactionPermit.Notify_Used()` as the post-success edge and quick `RaidFriendly` as the
    earlier same-action signal; the implementation uses exact allowlisted families plus lossless
    bounded faction/map stage/claim/expiry ownership. Adversarial hardening distinguishes master-off
    generic ownership from group-off source consumption, makes fallback lookup non-reentrant and
-   cap-safe, and hides package-specific Prompt Studio rows without unloading their Defs. The compiled
-   suite is 278 tests, but the last
-   executed loaded baseline remains Phase 5's 267/267.
-3. **Royalty 7** — Royal Ascent start, bounded pressure, and terminal chapter.
+   cap-safe, and hides package-specific Prompt Studio rows without unloading their Defs. The full
+   278-test suite is user-confirmed green in a loaded game; that result does not close the manual
+   matrix or establish a separate Royalty-inactive profile run.
+3. **Royalty 7 (code-complete; pure/runtime/287-test RimTest builds green; loaded/manual acceptance
+   pending)** — Royal Ascent start, bounded pressure, and terminal chapter. Installed lifecycle audit
+   proves acceptance is commitment only, `Quest.End(Success|Fail)` owns the hosting-quest outcome,
+   and later `SentWithExtraColonists`—not Quest success—owns escape/credits. Exact root-first routing,
+   one stable witness, append-only bounded quest-instance/arc identity, start-only window, active
+   pressure context, and one truthful terminal page are implemented without polling or a paid-DLC
+   dependency. The XML master and live DLC gate fail closed before the exact adapter emits anything.
+   Pure suites pass 463 Royalty, 2,734 pipeline, and 132 Narrative assertions. The nine
+   new loaded checks are compiled but unexecuted, so no hands-on row or separate Royalty-inactive
+   profile is recorded as passed.
 4. Extend **N3-R** with succession identity, permit authority, Ascent journey, and court-pressure
    candidates.
 

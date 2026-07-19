@@ -267,6 +267,50 @@ namespace NarrativeContinuityTests
             AssertEqual("generic Biotech identity cannot pull unrelated Royalty title context", 0,
                 RoyaltyNarrativeProvider.Build(new List<NarrativeEvidence> { biotechIdentity }, snapshot).Count);
 
+            RoyaltyNarrativeSnapshot pressureSnapshot = new RoyaltyNarrativeSnapshot
+            {
+                providerAvailable = true,
+                povPawnId = "pawn-1",
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true,
+                courtPressure = new RoyaltyCourtPressureNarrativeFact
+                {
+                    arcPrefix = "court-ascent",
+                    arcKey = "court-ascent|Quest_41",
+                    text = "Exact active court pressure.",
+                    sourceTick = 900
+                }
+            };
+            AssertEqual("active pressure without exact Ascent or authority context stays silent", 0,
+                RoyaltyNarrativeProvider.Build(
+                    new List<NarrativeEvidence> { biotechIdentity }, pressureSnapshot).Count);
+            NarrativeEvidence ascentEvidence = Evidence();
+            ascentEvidence.povPawnId = "pawn-1";
+            ascentEvidence.facet = NarrativeFacetTokens.JourneyChapter;
+            ascentEvidence.subjectKind = NarrativeSubjectKindTokens.Colony;
+            ascentEvidence.subjectId = "royal_ascent";
+            ascentEvidence.arcKey = "court-ascent|Quest_41";
+            ascentEvidence.beliefTopics = new List<string> { "authority", "duty", "hospitality" };
+            List<NarrativeLensCandidate> exactPressure = RoyaltyNarrativeProvider.Build(
+                new List<NarrativeEvidence> { ascentEvidence }, pressureSnapshot);
+            AssertEqual("matching Ascent arc admits one bounded pressure lens", 1, exactPressure.Count);
+            AssertEqual("Ascent pressure candidate category", NarrativeCategoryTokens.Pressure,
+                exactPressure[0].category);
+            AssertEqual("Ascent pressure exact-arc relationship", NarrativeRelationshipTokens.ExactArc,
+                exactPressure[0].relationship);
+            NarrativeEvidence authorityEvidence = Evidence();
+            authorityEvidence.povPawnId = "pawn-1";
+            authorityEvidence.beliefTopics = new List<string> { "authority" };
+            List<NarrativeLensCandidate> authorityPressure = RoyaltyNarrativeProvider.Build(
+                new List<NarrativeEvidence> { authorityEvidence }, pressureSnapshot);
+            AssertEqual("authority-relevant page admits current court pressure", 1, authorityPressure.Count);
+            AssertEqual("authority pressure uses direct-topic relationship",
+                NarrativeRelationshipTokens.DirectTopic, authorityPressure[0].relationship);
+            pressureSnapshot.courtPressure.arcKey = "court-ascent|unsafe|extra";
+            AssertEqual("malformed pressure arc fails closed", 0,
+                RoyaltyNarrativeProvider.Build(
+                    new List<NarrativeEvidence> { authorityEvidence }, pressureSnapshot).Count);
+
             personaEvidence.povPawnId = "other-pawn";
             AssertEqual("different POV cannot receive a persona bond", 0,
                 RoyaltyNarrativeProvider.Build(new List<NarrativeEvidence> { personaEvidence }, snapshot).Count);

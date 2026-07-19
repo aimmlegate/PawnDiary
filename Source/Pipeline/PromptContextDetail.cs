@@ -316,6 +316,7 @@ namespace PawnDiary
                     || Eq(contextKey, "quadrum")
                     || Eq(contextKey, "quadrum_dates")
                     || Eq(contextKey, "arc_year")
+                    || IsRequiredQuestContextKey(contextKey)
                     || IsRequiredBiotechContextKey(contextKey)
                     || IsRequiredRoyaltyContextKey(contextKey)
                     || IsRequiredOdysseyContextKey(contextKey)))
@@ -324,6 +325,16 @@ namespace PawnDiary
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Keeps the exact quest lifecycle edge intelligible in every detail preset. The root Def,
+        /// quest-instance ID, and continuity arc are deliberately not prompt fields; only the visible
+        /// quest label and proven accepted/completed/failed signal survive Compact budgeting.
+        /// </summary>
+        private static bool IsRequiredQuestContextKey(string contextKey)
+        {
+            return Eq(contextKey, "quest_label") || Eq(contextKey, "quest_signal");
         }
 
         /// <summary>

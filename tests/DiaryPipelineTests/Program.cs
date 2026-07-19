@@ -61,6 +61,7 @@ namespace DiaryPipelineTests
             TestRoyaltyNarrativeProviderXmlContract();
             TestRoyaltyPersonaLifecycleXmlContract();
             TestRoyaltyPermitXmlContract();
+            TestRoyaltyAscentXmlContract();
             TestProgressionMilestonePolicy();
             TestPsylinkProgressionLevelPolicy();
             TestArcReflectionSchedulePolicy();
@@ -826,6 +827,46 @@ namespace DiaryPipelineTests
             AssertContains("quest prompt faction field", plan.userPrompt, "quest faction: Outlander");
             AssertContains("quest prompt rewards field", plan.userPrompt, "quest rewards: Silver x100");
             AssertTrue("quest raw defName is not rendered", !plan.userPrompt.Contains("OpportunityQuest_Friendlies"));
+
+            PromptContextDetailLevel[] levels =
+            {
+                PromptContextDetailLevel.Full,
+                PromptContextDetailLevel.Balanced,
+                PromptContextDetailLevel.Compact
+            };
+            for (int i = 0; i < levels.Length; i++)
+            {
+                DiaryEventPayload ascent = SoloPayload(
+                    "e-ascent-" + i,
+                    "Royal Ascent",
+                    "Alice felt the colony's Royal Ascent chapter reach its proven outcome.");
+                ascent.defName = "EndGame_RoyalAscent";
+                ascent.domain = DiaryEventDomainClassifier.Quest;
+                ascent.gameContext = "quest=EndGame_RoyalAscent; signal=completed; "
+                    + "quest_label=Royal Ascent; quest_signal=completed; quest_faction=Empire; "
+                    + "quest_rewards=none";
+                DiaryPromptPlan ascentPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = ascent,
+                    policy = Policy(combat: false, important: true),
+                    povRole = DiaryPipelineRoles.Initiator,
+                    contextDetailLevel = levels[i],
+                    contextBudgets = new PromptContextBudgets
+                    {
+                        balancedDefault = 1,
+                        compactDefault = 1
+                    }
+                });
+                string suffix = " (" + levels[i] + ")";
+                AssertContains("ascent prompt retains lifecycle" + suffix,
+                    ascentPlan.userPrompt, "quest lifecycle: completed");
+                AssertContains("ascent prompt retains visible quest label" + suffix,
+                    ascentPlan.userPrompt, "quest name: Royal Ascent");
+                AssertTrue("ascent prompt redacts root/correlation/arc" + suffix,
+                    !ascentPlan.userPrompt.Contains("EndGame_RoyalAscent")
+                    && !ascentPlan.userPrompt.Contains("Quest_41")
+                    && !ascentPlan.userPrompt.Contains("royalty-ascent|"));
+            }
         }
 
         private static void TestProgressionPromptPlanFields()
@@ -4237,6 +4278,172 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.DomainForContext("royal_permit=military_aid"));
         }
 
+        private static void TestRoyaltyAscentXmlContract()
+        {
+            const string royaltyPackage = "Ludeon.RimWorld.Royalty";
+            const string rootDefName = "EndGame_RoyalAscent";
+            XDocument groups = XDocument.Load(RepoPath("1.6", "Defs", "DiaryInteractionGroupDefs.xml"));
+            XElement group = FindDef(groups, "PawnDiary.DiaryInteractionGroupDef", "questRoyalAscent");
+            XElement acceptedGroup = FindDef(groups, "PawnDiary.DiaryInteractionGroupDef", "questAccepted");
+            AssertTrue("Royal Ascent exact Quest group exists", group != null);
+            AssertEqual("Royal Ascent group domain", "Quest", ChildValue(group, "domain"));
+            AssertEqual("Royal Ascent fanout uses one stable witness", "MapWitness",
+                ChildValue(group, "questFanoutScope"));
+            AssertTrue("Royal Ascent group is exact non-catch-all",
+                HasListValue(group, "matchDefNames", rootDefName)
+                && !string.Equals(ChildValue(group, "catchAll"), "true", StringComparison.OrdinalIgnoreCase));
+            AssertTrue("Royal Ascent root wins before generic accepted signal",
+                InteractionGroupOrder(group) < InteractionGroupOrder(acceptedGroup));
+            AssertTrue("Royal Ascent group is package-gated",
+                HasListValue(group, "enableWhenPackageIdsLoaded", royaltyPackage));
+            string groupInstruction = ChildValue(group, "instruction").ToLowerInvariant();
+            AssertTrue("Royal Ascent instruction branches on saved signal",
+                groupInstruction.Contains("quest_signal") && groupInstruction.Contains("completed")
+                && groupInstruction.Contains("failed"));
+            AssertTrue("Royal Ascent instruction forbids guessed arrival/escape",
+                groupInstruction.Contains("does not prove the stellarch arrived")
+                && groupInstruction.Contains("does not prove who boarded or escaped"));
+
+            XDocument windows = XDocument.Load(RepoPath("1.6", "Defs", "DiaryEventWindowDefs.xml"));
+            XElement window = FindDef(windows, "PawnDiary.DiaryEventWindowDef", "RoyalAscent");
+            AssertTrue("Royal Ascent start window exists", window != null);
+            AssertTrue("Royal Ascent window is package-gated",
+                HasListValue(window, "enableWhenPackageIdsLoaded", royaltyPackage));
+            AssertEqual("Royal Ascent window timeout is bounded", "1200000",
+                ChildValue(window, "timeoutTicks"));
+            AssertEqual("Royal Ascent start page enabled", "true", ChildValue(window, "recordStartEvent"));
+            AssertEqual("Royal Ascent window-end duplicate disabled", "false", ChildValue(window, "recordEndEvent"));
+            AssertEqual("Royal Ascent orphan terminal window page disabled", "false",
+                ChildValue(window, "recordEndWithoutActive"));
+            AssertEqual("Royal Ascent timeout page disabled", "false", ChildValue(window, "recordTimeoutEvent"));
+            AssertEqual("Royal Ascent active pressure retained", "true", ChildValue(window, "keepActive"));
+            AssertEqual("Royal Ascent start owner uses stable witness", "MapWitness",
+                ChildValue(window, "recordScope"));
+            XElement start = window.Element("startSignals")?.Element("li");
+            AssertTrue("Royal Ascent exact accepted start trigger",
+                ChildValue(start, "source") == "Quest" && ChildValue(start, "signal") == "accepted"
+                && HasListValue(start, "matchDefNames", rootDefName));
+            List<XElement> ends = new List<XElement>(window.Element("endSignals").Elements("li"));
+            AssertEqual("Royal Ascent has exactly completion/failure closure", 2, ends.Count);
+            AssertTrue("Royal Ascent completion closure is exact",
+                ChildValue(ends[0], "signal") == "completed"
+                && HasListValue(ends[0], "matchDefNames", rootDefName));
+            AssertTrue("Royal Ascent failure closure is exact",
+                ChildValue(ends[1], "signal") == "failed"
+                && HasListValue(ends[1], "matchDefNames", rootDefName));
+            XElement evidence = window.Element("narrativeEvidence");
+            AssertEqual("Royal Ascent start evidence facet", "journey_chapter", ChildValue(evidence, "facet"));
+            AssertEqual("Royal Ascent start evidence phase", "started", ChildValue(evidence, "phase"));
+            AssertEqual("Royal Ascent evidence subject", "royal_ascent", ChildValue(evidence, "subjectId"));
+            AssertTrue("Royal Ascent pressure owns prompt shading",
+                ChildValue(window, "promptEnabled") == "true"
+                && int.Parse(ChildValue(window, "promptWeight")) > 0);
+
+            XDocument policyDoc = XDocument.Load(RepoPath("1.6", "Defs", "DiaryRoyaltyPolicyDefs.xml"));
+            XElement policy = FindDef(policyDoc, "PawnDiary.DiaryRoyaltyPolicyDef", "Diary_Royalty");
+            AssertEqual("Royal Ascent root mapping is XML-owned", rootDefName,
+                ChildValue(policy, "royalAscentQuestDefName"));
+            AssertEqual("Royal Ascent arc grammar is XML-owned", "royalty-ascent",
+                ChildValue(policy, "royalAscentArcPrefix"));
+            AssertTrue("Royal Ascent correlation cap is XML-owned",
+                !string.IsNullOrWhiteSpace(ChildValue(policy, "maximumRoyalAscentCorrelationCharacters")));
+            AssertTrue("Royal Ascent arc cap is XML-owned",
+                !string.IsNullOrWhiteSpace(ChildValue(policy, "maximumRoyalAscentArcCharacters")));
+            AssertTrue("Royal Ascent pressure prose is XML-owned",
+                !string.IsNullOrWhiteSpace(ChildValue(policy, "royalAscentPressureNarrativeFormat")));
+
+            XDocument prompts = XDocument.Load(RepoPath("1.6", "Defs", "DiaryEventPromptDefs.xml"));
+            XElement prompt = FindDef(prompts, "PawnDiary.DiaryEventPromptDef", "DiaryEventPrompt_RoyalAscent");
+            AssertTrue("Royal Ascent Prompt Studio policy exists", prompt != null);
+            AssertEqual("Royal Ascent prompt resolves through exact group", "questRoyalAscent",
+                ChildValue(prompt, "eventType"));
+            AssertTrue("Royal Ascent Prompt Studio row is package-gated",
+                HasListValue(prompt, "enableWhenPackageIdsLoaded", royaltyPackage));
+            string enhancement = ChildValue(prompt, "enhancement").ToLowerInvariant();
+            AssertTrue("Royal Ascent prompt forbids unproved terminal semantics",
+                enhancement.Contains("never claim that the stellarch arrived")
+                && enhancement.Contains("exact failure cause") && enhancement.Contains("who boarded")
+                && enhancement.Contains("colony escaped"));
+
+            XDocument englishPrompt = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryEventPromptDef",
+                "DiaryEventPromptDefs.xml"));
+            XDocument englishGroup = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryInteractionGroupDef",
+                "DiaryInteractionGroupDefs.xml"));
+            XDocument englishWindow = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryEventWindowDef",
+                "DiaryEventWindowDefs.xml"));
+            XDocument englishPolicy = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryRoyaltyPolicyDef",
+                "DiaryRoyaltyPolicyDefs.xml"));
+            XDocument englishKeyed = XDocument.Load(
+                RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
+            XDocument russianPrompt = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryEventPromptDef",
+                "DiaryEventPromptDefs.xml"));
+            XDocument russianGroup = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryInteractionGroupDef", "DiaryInteractionGroupDefs.xml"));
+            XDocument russianWindow = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryEventWindowDef",
+                "DiaryEventWindowDefs.xml"));
+            XDocument russianPolicy = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryRoyaltyPolicyDef",
+                "DiaryRoyaltyPolicyDefs.xml"));
+            XDocument russianKeyed = XDocument.Load(
+                RepoPath("Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
+            AssertTrue("Royal Ascent exact prompt is DefInjected",
+                !string.IsNullOrWhiteSpace(
+                    englishPrompt.Root?.Element("DiaryEventPrompt_RoyalAscent.prompt")?.Value));
+            AssertTrue("Royal Ascent group instruction is DefInjected",
+                !string.IsNullOrWhiteSpace(
+                    englishGroup.Root?.Element("questRoyalAscent.instruction")?.Value));
+            AssertTrue("Royal Ascent window instruction is DefInjected",
+                !string.IsNullOrWhiteSpace(englishWindow.Root?.Element("RoyalAscent.instruction")?.Value));
+            AssertTrue("Royal Ascent pressure prose is DefInjected",
+                !string.IsNullOrWhiteSpace(
+                    englishPolicy.Root?.Element("Diary_Royalty.royalAscentPressureNarrativeFormat")?.Value));
+            AssertTrue("Royal Ascent Russian exact prompt is DefInjected",
+                !string.IsNullOrWhiteSpace(
+                    russianPrompt.Root?.Element("DiaryEventPrompt_RoyalAscent.prompt")?.Value));
+            AssertTrue("Royal Ascent Russian group instruction is DefInjected",
+                !string.IsNullOrWhiteSpace(
+                    russianGroup.Root?.Element("questRoyalAscent.instruction")?.Value));
+            AssertTrue("Royal Ascent Russian window instruction is DefInjected",
+                !string.IsNullOrWhiteSpace(russianWindow.Root?.Element("RoyalAscent.instruction")?.Value));
+            AssertTrue("Royal Ascent Russian pressure prose is DefInjected",
+                !string.IsNullOrWhiteSpace(
+                    russianPolicy.Root?.Element("Diary_Royalty.royalAscentPressureNarrativeFormat")?.Value));
+            string[] keyed =
+            {
+                "PawnDiary.Event.EventWindow.RoyalAscent.Start",
+                "PawnDiary.Prompt.EventWindow.RoyalAscent.Priority",
+                "PawnDiary.Prompt.EventWindow.RoyalAscent.Condition",
+                "PawnDiary.Prompt.EventWindow.RoyalAscent.Description",
+                "PawnDiary.Prompt.EventWindow.RoyalAscent.Cue.Duty",
+                "PawnDiary.Dev.PromptSuite.RoyalAscentStarted.Label",
+                "PawnDiary.Dev.PromptSuite.RoyalAscentStarted.Markers",
+                "PawnDiary.Dev.PromptSuite.RoyalAscentStarted.Text",
+                "PawnDiary.Dev.PromptSuite.RoyalAscentCompleted.Label",
+                "PawnDiary.Dev.PromptSuite.RoyalAscentCompleted.Markers",
+                "PawnDiary.Dev.PromptSuite.RoyalAscentCompleted.Text",
+                "PawnDiary.Dev.PromptSuite.RoyalAscentFailed.Label",
+                "PawnDiary.Dev.PromptSuite.RoyalAscentFailed.Markers",
+                "PawnDiary.Dev.PromptSuite.RoyalAscentFailed.Text"
+            };
+            for (int i = 0; i < keyed.Length; i++)
+            {
+                AssertTrue("Royal Ascent English keyed text exists: " + keyed[i],
+                    !string.IsNullOrWhiteSpace(KeyedValue(englishKeyed, keyed[i])));
+                AssertTrue("Royal Ascent Russian keyed text exists: " + keyed[i],
+                    !string.IsNullOrWhiteSpace(KeyedValue(russianKeyed, keyed[i])));
+            }
+
+            string about = File.ReadAllText(RepoPath("About", "About.xml"));
+            AssertTrue("Royalty remains optional in About.xml", !about.Contains(royaltyPackage));
+        }
+
         private static void TestProgressionMilestonePolicy()
         {
             List<int> milestones = new List<int> { 20, 8, 12, 12, -1, 16 };
@@ -4957,6 +5164,18 @@ namespace DiaryPipelineTests
                     "Quest",
                     "quest=OpportunityQuest; label=cache; faction=Outlander; rewards=Silver x100",
                     "OpportunityQuest"));
+            AssertEqual("quest root classifier preserves exact saved root", "EndGame_RoyalAscent",
+                DiaryEventDomainClassifier.QuestRootClassifierKey(
+                    "Quest",
+                    "quest=EndGame_RoyalAscent; signal=completed; label=Royal Ascent",
+                    "RoyalAscent"));
+            AssertEqual("quest root classifier migrates to saved defName when marker is missing",
+                "EndGame_RoyalAscent",
+                DiaryEventDomainClassifier.QuestRootClassifierKey(
+                    "Quest", "signal=failed; label=Royal Ascent", "EndGame_RoyalAscent"));
+            AssertEqual("non-Quest domain has no quest root classifier", string.Empty,
+                DiaryEventDomainClassifier.QuestRootClassifierKey(
+                    "Raid", "quest=EndGame_RoyalAscent; signal=completed", "RaidEnemy"));
             AssertEqual("ritual marker domain", "Ritual",
                 DiaryEventDomainClassifier.DomainForContext("ritual=Ritual_Speech; ritual_title=Leader's address; ritual_role=author"));
             AssertEqual("psychic ritual marker domain", "Ritual",

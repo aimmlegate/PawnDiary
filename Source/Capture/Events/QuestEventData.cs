@@ -1,14 +1,14 @@
-// Payload + pure decision for a quest outcome event (Quest.End hook). Quests are colony-wide: when
-// an accepted quest ends in success or failure, every eligible colonist gets their own solo diary
-// entry so each survivor can react to the shared outcome.
+// Payload + pure decision for a quest lifecycle event (Quest.Accept/Quest.End hooks). Ordinary quest
+// outcomes fan out to every eligible colonist. An exact XML group may instead choose one stable map
+// witness for a colony chapter, as Royal Ascent does; the payload remains identical and detached.
 //
 // One DiaryEventType.Quest value covers all three signals; the Signal field ("accepted",
-// "completed", "failed") routes the event to the right XML group via ClassifyQuest(signal), which
-// is exactly how ArrivalEventData carries a synthetic defName so one Decide can route many cases.
+// "completed", "failed") plus the saved root Def name route through ClassifyQuest(root, signal):
+// exact non-catch-all roots win first, then the historical lifecycle-signal groups remain fallback.
 //
-// Accepted quests are only marked as seen / offered to generic event-window policy. They do not
-// generate diary pages because the mod cannot reliably know which pawn actually worked the quest.
-// Only completed and failed outcomes become diary entries, framed as colony effort.
+// Ordinary accepted quests are marked seen / offered to event-window policy and do not create pages.
+// An exact start-window policy may own one preparation page without claiming a personal quest actor.
+// Completed and failed signals remain the only terminal Quest pages.
 //
 // Rich context (quest description, issuer faction defName, rewards summary) is captured upstream
 // and embedded in the localized event text (description) and the game-context marker (rewards +
@@ -39,8 +39,8 @@ namespace PawnDiary.Capture
 
         public override DiaryEventType EventType => DiaryEventType.Quest;
 
-        /// <summary>The lifecycle signal: "accepted", "completed", or "failed". Also the key passed
-        /// to InteractionGroups.ClassifyQuest so the right prompt group is selected.</summary>
+        /// <summary>The lifecycle signal: "accepted", "completed", or "failed". Combined with
+        /// <see cref="DefName"/> for exact-root-first Quest group selection.</summary>
         public string Signal;
 
         /// <summary>The quest's defName (QuestScriptDef.defName).</summary>

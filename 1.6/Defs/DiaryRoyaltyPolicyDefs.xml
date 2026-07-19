@@ -36,6 +36,11 @@
     <maximumPermitLabelCharacters>120</maximumPermitLabelCharacters>
     <maximumPermitSettingCharacters>120</maximumPermitSettingCharacters>
     <maximumRoyaltyContextCharacters>120</maximumRoyaltyContextCharacters>
+    <!-- Exact Royal Ascent identity stays plain text: no Royalty QuestScriptDef reference is made. -->
+    <royalAscentQuestDefName>EndGame_RoyalAscent</royalAscentQuestDefName>
+    <royalAscentArcPrefix>royalty-ascent</royalAscentArcPrefix>
+    <maximumRoyalAscentCorrelationCharacters>96</maximumRoyalAscentCorrelationCharacters>
+    <maximumRoyalAscentArcCharacters>128</maximumRoyalAscentArcCharacters>
     <!-- Pawn.Kill emits a persona trait's kill memory and its Tale synchronously. Keep this small:
          it exists only to tolerate Harmony callback ordering, never to claim later ordinary thoughts. -->
     <killThoughtCorrelationTicks>60</killThoughtCorrelationTicks>
@@ -50,6 +55,7 @@
     <personaNarrativeFormat>{0}&apos;s exact persona-weapon bond with {1} remains part of this moment.</personaNarrativeFormat>
     <titleNarrativeFormat>{0} currently holds the exact royal title {1} of {2}.</titleNarrativeFormat>
     <titleWithDutiesNarrativeFormat>{0} currently holds the exact royal title {1} of {2}; that rank also carries active court duties.</titleWithDutiesNarrativeFormat>
+    <royalAscentPressureNarrativeFormat>The colony is still carrying the exact pressure of its accepted Royal Ascent: preparing to host imperial authority without assuming the Stellarch has arrived.</royalAscentPressureNarrativeFormat>
 
     <!-- Exact Tale defName strings only. The later adapter must still prove the killer/victim roles
          through Tale death metadata; these rows never infer a role from list position. -->

@@ -354,6 +354,77 @@
     <promptWeight>0</promptWeight>
   </PawnDiary.DiaryEventWindowDef>
 
+  <!-- Royalty R3: Quest.Accept proves commitment, not imperial arrival. The mapless Quest bridge
+       owns one colony-wide window, closes on the matching quest instance's terminal signal, and
+       silently times out after twenty days if a mod swallows Quest.End. -->
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>RoyalAscent</defName>
+    <label>Royal Ascent</label>
+    <windowKey>RoyalAscent</windowKey>
+    <enabled>true</enabled>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <timeoutTicks>1200000</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>true</keepActive>
+    <recordScope>MapWitness</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <startTextKey>PawnDiary.Event.EventWindow.RoyalAscent.Start</startTextKey>
+    <instruction>write the colony's exact decision to undertake the Royal Ascent and the pressure of preparing for imperial hospitality; this accepted quest proves commitment only, so never claim that the Stellarch has arrived, that hosting has begun, or that anyone will escape</instruction>
+    <colorCue>royalty</colorCue>
+
+    <startSignals>
+      <li>
+        <source>Quest</source>
+        <signal>accepted</signal>
+        <matchDefNames><li>EndGame_RoyalAscent</li></matchDefNames>
+      </li>
+    </startSignals>
+    <endSignals>
+      <li>
+        <source>Quest</source>
+        <signal>completed</signal>
+        <matchDefNames><li>EndGame_RoyalAscent</li></matchDefNames>
+      </li>
+      <li>
+        <source>Quest</source>
+        <signal>failed</signal>
+        <matchDefNames><li>EndGame_RoyalAscent</li></matchDefNames>
+      </li>
+    </endSignals>
+
+    <narrativeEvidence>
+      <facet>journey_chapter</facet>
+      <phase>started</phase>
+      <subjectKind>colony</subjectKind>
+      <subjectId>royal_ascent</subjectId>
+      <salience>major</salience>
+      <beliefTopics>
+        <li>authority</li>
+        <li>status</li>
+        <li>duty</li>
+        <li>hospitality</li>
+      </beliefTopics>
+    </narrativeEvidence>
+
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>9</promptWeight>
+    <normalPromptWeightMultiplier>0.8</normalPromptWeightMultiplier>
+    <promptDecayTicks>0</promptDecayTicks>
+    <promptDecayMinMultiplier>1</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.EventWindow.RoyalAscent.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.EventWindow.RoyalAscent.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.EventWindow.RoyalAscent.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.EventWindow.RoyalAscent.Cue.Duty</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryEventWindowDef>
+
   <!-- ===== Event-coverage pass (see EVENT_COVERAGE_PLAN.md): incident-driven windows. =====
        The two light ones (Zzzt, self-tame) record NO pages: they only join the weighted
        prompt-candidate pool for a while, so the moment sometimes flavors whatever a pawn writes

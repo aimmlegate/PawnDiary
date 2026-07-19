@@ -61,6 +61,15 @@ namespace PawnDiary
         public int sourceTick;
     }
 
+    /// <summary>One bounded, exact active Royal Ascent pressure fact detached from saved window state.</summary>
+    internal sealed class RoyaltyCourtPressureNarrativeFact
+    {
+        public string arcPrefix = string.Empty;
+        public string arcKey = string.Empty;
+        public string text = string.Empty;
+        public int sourceTick;
+    }
+
     /// <summary>
     /// Plain event-time Royalty facts. The main-thread adapter proves that every row belongs to the
     /// exact POV; pure policy still requires source-owned evidence before proposing any lens.
@@ -73,6 +82,7 @@ namespace PawnDiary
             new List<RoyaltyPersonaNarrativeFact>();
         public List<RoyaltyTitleNarrativeFact> titles =
             new List<RoyaltyTitleNarrativeFact>();
+        public RoyaltyCourtPressureNarrativeFact courtPressure;
         public bool pawnCanKnow;
         public bool hasVerifiedPovConnection;
     }
@@ -96,6 +106,7 @@ namespace PawnDiary
         {
             List<NarrativeLensCandidate> persona = new List<NarrativeLensCandidate>();
             List<NarrativeLensCandidate> titles = new List<NarrativeLensCandidate>();
+            List<NarrativeLensCandidate> pressure = new List<NarrativeLensCandidate>();
             if (!Usable(snapshot) || evidence == null) return persona;
 
             List<RoyaltyPersonaNarrativeFact> personaFacts = snapshot.personaBonds
@@ -120,6 +131,33 @@ namespace PawnDiary
                     sourceTick = fact.sourceTick,
                     salience = NarrativeSalienceTokens.Meaningful,
                     relationship = NarrativeRelationshipTokens.ExactArc,
+                    pawnCanKnow = true,
+                    providerAvailable = true,
+                    hasVerifiedPovConnection = true
+                });
+            }
+
+            RoyaltyCourtPressureNarrativeFact court = snapshot.courtPressure;
+            bool exactPressureArc;
+            if (ValidPressure(court)
+                && PressureApplies(evidence, snapshot.povPawnId, court.arcKey, out exactPressureArc))
+            {
+                pressure.Add(new NarrativeLensCandidate
+                {
+                    candidateKey = "royalty|ascent-pressure|" + court.arcKey.Trim(),
+                    provider = NarrativeProviderTokens.Royalty,
+                    category = NarrativeCategoryTokens.Pressure,
+                    text = court.text.Trim(),
+                    facet = NarrativeFacetTokens.AmbientPressure,
+                    subjectKind = NarrativeSubjectKindTokens.Colony,
+                    subjectId = "royal_ascent",
+                    arcKey = court.arcKey.Trim(),
+                    topicTokens = new List<string> { "authority", "status", "duty", "hospitality" },
+                    sourceTick = court.sourceTick,
+                    salience = NarrativeSalienceTokens.Meaningful,
+                    relationship = exactPressureArc
+                        ? NarrativeRelationshipTokens.ExactArc
+                        : NarrativeRelationshipTokens.DirectTopic,
                     pawnCanKnow = true,
                     providerAvailable = true,
                     hasVerifiedPovConnection = true
@@ -159,6 +197,7 @@ namespace PawnDiary
             List<NarrativeLensCandidate> result = new List<NarrativeLensCandidate>();
             AddBounded(result, persona, MaximumPersonaCandidates);
             AddBounded(result, titles, MaximumTitleCandidates);
+            AddBounded(result, pressure, 1);
             return result;
         }
 
@@ -185,6 +224,25 @@ namespace PawnDiary
             return fact != null && SafeKeyPart(fact.factionId)
                 && SafeKeyPart(fact.titleDefName)
                 && !string.IsNullOrWhiteSpace(fact.text);
+        }
+
+        private static bool ValidPressure(RoyaltyCourtPressureNarrativeFact fact)
+        {
+            if (fact == null || string.IsNullOrWhiteSpace(fact.text)) return false;
+
+            string prefix = (fact.arcPrefix ?? string.Empty).Trim();
+            string arcKey = (fact.arcKey ?? string.Empty).Trim();
+            if (!SafePressureToken(prefix) || !arcKey.StartsWith(prefix + "|", StringComparison.Ordinal))
+                return false;
+            return SafePressureToken(arcKey.Substring(prefix.Length + 1));
+        }
+
+        private static bool SafePressureToken(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            string cleaned = value.Trim();
+            return cleaned.IndexOf('|') < 0 && cleaned.IndexOf(';') < 0
+                && cleaned.IndexOf('\r') < 0 && cleaned.IndexOf('\n') < 0;
         }
 
         private static bool SafeKeyPart(string value)
@@ -225,6 +283,27 @@ namespace PawnDiary
             return false;
         }
 
+        private static bool PressureApplies(
+            List<NarrativeEvidence> evidence,
+            string povPawnId,
+            string arcKey,
+            out bool exactArc)
+        {
+            exactArc = false;
+            for (int i = 0; i < evidence.Count; i++)
+            {
+                NarrativeEvidence row = evidence[i];
+                if (!SameKnownPov(row, povPawnId)) continue;
+                if (string.Equals(row.arcKey, arcKey, StringComparison.Ordinal))
+                {
+                    exactArc = true;
+                    return true;
+                }
+                if (HasRoyalAuthorityTopic(row.beliefTopics)) return true;
+            }
+            return false;
+        }
+
         private static bool SameKnownPov(NarrativeEvidence row, string povPawnId)
         {
             return row != null && row.pawnCanKnow == true
@@ -236,6 +315,18 @@ namespace PawnDiary
             if (topics == null) return false;
             for (int i = 0; i < topics.Count; i++)
                 if (topics[i] == "authority" || topics[i] == "status" || topics[i] == "duty") return true;
+            return false;
+        }
+
+        private static bool HasRoyalAuthorityTopic(List<string> topics)
+        {
+            if (topics == null) return false;
+            for (int i = 0; i < topics.Count; i++)
+            {
+                string topic = topics[i];
+                if (topic == "authority" || topic == "status" || topic == "duty"
+                    || topic == "hospitality") return true;
+            }
             return false;
         }
 

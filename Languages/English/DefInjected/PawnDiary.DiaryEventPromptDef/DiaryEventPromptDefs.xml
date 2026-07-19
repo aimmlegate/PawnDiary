@@ -106,6 +106,9 @@
   <DiaryEventPrompt_External.prompt>Write a moment reported by another mod as something the pawn just lived through.</DiaryEventPrompt_External.prompt>
   <DiaryEventPrompt_External.enhancement>Stay strictly inside the supplied event line and context facts; do not invent mechanics, systems, or unstated participants.</DiaryEventPrompt_External.enhancement>
   <DiaryEventPrompt_RoyalPermit.label>dramatic royal permit</DiaryEventPrompt_RoyalPermit.label>
+  <DiaryEventPrompt_RoyalAscent.label>Royal Ascent chapter</DiaryEventPrompt_RoyalAscent.label>
+  <DiaryEventPrompt_RoyalAscent.prompt>Write the exact Royal Ascent lifecycle edge as one colony chapter witnessed by this pawn.</DiaryEventPrompt_RoyalAscent.prompt>
+  <DiaryEventPrompt_RoyalAscent.enhancement>Use quest_signal as the ownership boundary. Accepted proves commitment and preparation only; completed or failed proves only the hosting quest&apos;s terminal outcome. Never claim that the Stellarch arrived, name an exact failure cause, say who boarded, say the colony escaped, or invent dialogue, rewards, blame, or unseen ceremony.</DiaryEventPrompt_RoyalAscent.enhancement>
   <DiaryEventPrompt_RoyalPermit.prompt>Write an exact successful dramatic royal-permit use from the permit owner&apos;s point of view.</DiaryEventPrompt_RoyalPermit.prompt>
   <DiaryEventPrompt_RoyalPermit.enhancement>Preserve the supplied permit, family, faction, title, setting, and cooldown-use fact. Describe invoking authority, not an unobserved result; invent no target, arrival, impact, completion, dialogue, or favor amount.</DiaryEventPrompt_RoyalPermit.enhancement>
   <DiaryEventPrompt_RoyalPermitMilitaryAid.label>royal military aid called</DiaryEventPrompt_RoyalPermitMilitaryAid.label>

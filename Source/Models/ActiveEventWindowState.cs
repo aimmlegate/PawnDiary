@@ -20,6 +20,9 @@ namespace PawnDiary
         public string startLabel;
         public string startSubjectPawnId;
         public string startSubjectLabel;
+        // Phase-7 append-only identity. Old saves load both as empty and never infer continuity.
+        public string startCorrelationId;
+        public string startNarrativeArcKey;
 
         public void ExposeData()
         {
@@ -34,6 +37,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref startLabel, "startLabel");
             Scribe_Values.Look(ref startSubjectPawnId, "startSubjectPawnId");
             Scribe_Values.Look(ref startSubjectLabel, "startSubjectLabel");
+            Scribe_Values.Look(ref startCorrelationId, "startCorrelationId");
+            Scribe_Values.Look(ref startNarrativeArcKey, "startNarrativeArcKey");
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -45,6 +50,8 @@ namespace PawnDiary
                 startLabel = startLabel ?? string.Empty;
                 startSubjectPawnId = startSubjectPawnId ?? string.Empty;
                 startSubjectLabel = startSubjectLabel ?? string.Empty;
+                startCorrelationId = startCorrelationId ?? string.Empty;
+                startNarrativeArcKey = startNarrativeArcKey ?? string.Empty;
             }
         }
     }

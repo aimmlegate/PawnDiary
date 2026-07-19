@@ -81,6 +81,11 @@ namespace PawnDiary
         public int maximumPermitLabelCharacters = 120;
         public int maximumPermitSettingCharacters = 120;
         public int maximumRoyaltyContextCharacters = 120;
+        // Plain quest/root and arc tokens only. These are never resolved as Royalty Def references.
+        public string royalAscentQuestDefName = "EndGame_RoyalAscent";
+        public string royalAscentArcPrefix = "royalty-ascent";
+        public int maximumRoyalAscentCorrelationCharacters = 96;
+        public int maximumRoyalAscentArcCharacters = 128;
         public int killThoughtWeight = 100;
         public int bondedThoughtWeight = 70;
         public int bondedHediffWeight = 60;
@@ -89,6 +94,7 @@ namespace PawnDiary
         public string personaNarrativeFormat = string.Empty;
         public string titleNarrativeFormat = string.Empty;
         public string titleWithDutiesNarrativeFormat = string.Empty;
+        public string royalAscentPressureNarrativeFormat = string.Empty;
         public List<DiaryRoyaltyTaleRuleDef> qualifyingTales = new List<DiaryRoyaltyTaleRuleDef>();
         public List<DiaryRoyaltyTaleRoleDef> personaKillCompanionTales =
             new List<DiaryRoyaltyTaleRoleDef>();
@@ -141,6 +147,14 @@ namespace PawnDiary
                 yield return "Royal permit prompt text caps must be between 20 and 512.";
             if (maximumRoyaltyContextCharacters < 20 || maximumRoyaltyContextCharacters > 512)
                 yield return "maximumRoyaltyContextCharacters must be between 20 and 512.";
+            if (!SafeToken(royalAscentQuestDefName) || !SafeToken(royalAscentArcPrefix))
+                yield return "Royal Ascent quest/arc identifiers must be safe non-empty tokens.";
+            if (maximumRoyalAscentCorrelationCharacters < 16
+                || maximumRoyalAscentCorrelationCharacters > 256
+                || maximumRoyalAscentArcCharacters < 32 || maximumRoyalAscentArcCharacters > 512
+                || maximumRoyalAscentArcCharacters
+                    < maximumRoyalAscentCorrelationCharacters + Clean(royalAscentArcPrefix).Length + 1)
+                yield return "Royal Ascent identity caps are outside their safe ranges.";
             if (killThoughtWeight <= 0 || bondedThoughtWeight <= 0 || bondedHediffWeight <= 0
                 || equippedHediffWeight <= 0 || exactOverrideMaximumWeight <= 0)
                 yield return "persona trait relevance weights must be positive.";
@@ -150,6 +164,8 @@ namespace PawnDiary
                 yield return "titleNarrativeFormat must contain DefInjected prompt prose.";
             if (string.IsNullOrWhiteSpace(titleWithDutiesNarrativeFormat))
                 yield return "titleWithDutiesNarrativeFormat must contain DefInjected prompt prose.";
+            if (string.IsNullOrWhiteSpace(royalAscentPressureNarrativeFormat))
+                yield return "royalAscentPressureNarrativeFormat must contain DefInjected prompt prose.";
 
             HashSet<string> tales = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (qualifyingTales == null || qualifyingTales.Count == 0)
@@ -272,7 +288,8 @@ namespace PawnDiary
         private static bool SafeToken(string value)
         {
             string cleaned = Clean(value);
-            return cleaned.Length > 0 && cleaned.IndexOf('|') < 0 && cleaned.IndexOf(';') < 0;
+            return cleaned.Length > 0 && cleaned.IndexOf('|') < 0 && cleaned.IndexOf(';') < 0
+                && cleaned.IndexOf('\r') < 0 && cleaned.IndexOf('\n') < 0;
         }
 
         private static string Clean(string value)
@@ -350,6 +367,16 @@ namespace PawnDiary
                 source.maximumPermitSettingCharacters, 20, 512, result.maximumPermitSettingCharacters);
             result.maximumRoyaltyContextCharacters = Between(
                 source.maximumRoyaltyContextCharacters, 20, 512, result.maximumRoyaltyContextCharacters);
+            string ascentQuestDefName = Safe(source.royalAscentQuestDefName);
+            if (ascentQuestDefName.Length > 0) result.royalAscentQuestDefName = ascentQuestDefName;
+            string ascentArcPrefix = Safe(source.royalAscentArcPrefix);
+            if (ascentArcPrefix.Length > 0) result.royalAscentArcPrefix = ascentArcPrefix;
+            result.maximumRoyalAscentCorrelationCharacters = Between(
+                source.maximumRoyalAscentCorrelationCharacters, 16, 256,
+                result.maximumRoyalAscentCorrelationCharacters);
+            result.maximumRoyalAscentArcCharacters = Between(
+                source.maximumRoyalAscentArcCharacters, 32, 512,
+                result.maximumRoyalAscentArcCharacters);
             result.killThoughtWeight = Positive(source.killThoughtWeight, result.killThoughtWeight);
             result.bondedThoughtWeight = Positive(source.bondedThoughtWeight, result.bondedThoughtWeight);
             result.bondedHediffWeight = Positive(source.bondedHediffWeight, result.bondedHediffWeight);
@@ -359,6 +386,8 @@ namespace PawnDiary
             result.personaNarrativeFormat = source.personaNarrativeFormat ?? string.Empty;
             result.titleNarrativeFormat = source.titleNarrativeFormat ?? string.Empty;
             result.titleWithDutiesNarrativeFormat = source.titleWithDutiesNarrativeFormat ?? string.Empty;
+            result.royalAscentPressureNarrativeFormat =
+                source.royalAscentPressureNarrativeFormat ?? string.Empty;
 
             List<RoyaltyTaleQualificationRule> tales = CopyTales(source.qualifyingTales);
             if (tales.Count > 0) result.qualifyingTales = tales;
@@ -504,7 +533,10 @@ namespace PawnDiary
         private static string Safe(string value)
         {
             string cleaned = (value ?? string.Empty).Trim();
-            return cleaned.IndexOf('|') >= 0 || cleaned.IndexOf(';') >= 0 ? string.Empty : cleaned;
+            return cleaned.IndexOf('|') >= 0 || cleaned.IndexOf(';') >= 0
+                || cleaned.IndexOf('\r') >= 0 || cleaned.IndexOf('\n') >= 0
+                ? string.Empty
+                : cleaned;
         }
 
         private static int Positive(int value, int fallback)

@@ -475,6 +475,37 @@ namespace PawnDiary
             result.povPawnId = pawnId;
             result.pawnCanKnow = true;
             result.hasVerifiedPovConnection = true;
+            if (pawn.Spawned && pawn.Map != null && activeEventWindows != null)
+            {
+                int now = Find.TickManager.TicksGame;
+                for (int i = 0; i < activeEventWindows.Count; i++)
+                {
+                    ActiveEventWindowState active = activeEventWindows[i];
+                    if (active == null || !RoyalAscentPolicy.ActivePressureApplies(
+                        active.startDefName,
+                        active.startCorrelationId,
+                        active.startNarrativeArcKey,
+                        active.startedTick,
+                        active.expiresTick,
+                        now,
+                        policy,
+                        ModsConfig.RoyaltyActive)) continue;
+
+                    string pressureText = FormatRoyaltyNarrative(
+                        policy.royalAscentPressureNarrativeFormat);
+                    if (pressureText.Length > 0)
+                    {
+                        result.courtPressure = new RoyaltyCourtPressureNarrativeFact
+                        {
+                            arcPrefix = policy.royalAscentArcPrefix,
+                            arcKey = active.startNarrativeArcKey,
+                            text = pressureText,
+                            sourceTick = active.startedTick
+                        };
+                    }
+                    break;
+                }
+            }
             List<PersonaWeaponSnapshot> visiblePersonaWeapons =
                 DlcContext.CapturePersonaWeapons(pawn);
 

@@ -29,6 +29,7 @@
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyalSuccessionContextFormatter.cs" Link="RoyalSuccessionContextFormatter.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyalPermitPolicy.cs" Link="RoyalPermitPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyalPermitContextFormatter.cs" Link="RoyalPermitContextFormatter.cs" />
+    <Compile Include="..\..\Source\Pipeline\Royalty\RoyalAscentPolicy.cs" Link="RoyalAscentPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyaltyStatePersistence.cs" Link="RoyaltyStatePersistence.cs" />
     <Compile Include="..\..\Source\Generation\RoyalMutationCorrelation.cs" Link="RoyalMutationCorrelation.cs" />
     <Compile Include="..\..\Source\Generation\RoyalSuccessionCorrelation.cs" Link="RoyalSuccessionCorrelation.cs" />

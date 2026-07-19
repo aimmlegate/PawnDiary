@@ -22,8 +22,9 @@ namespace PawnDiary
     // the synthetic work diary events emitted by the periodic work scanner; Hediff groups match
     // HediffDefs when a health condition appears or worsens; Raid groups match raid incident plus
     // optional arrival/strategy tokens (RaidEnemy/RaidFriendly/Infestation/drop pods); Quest groups
-    // match the quest lifecycle signal ("accepted"/"completed"/"failed") so one DiaryEventType.Quest
-    // fans out to three groups; Ritual groups match Precept_Ritual defNames from finished Ideology rituals.
+    // first allow an exact non-catch-all root and then fall back to the lifecycle signal
+    // ("accepted"/"completed"/"failed"); Ritual groups match Precept_Ritual defNames from finished
+    // Ideology rituals.
     // Ability groups match AbilityDef defNames/category tokens from successful Ability.Activate.
     // Progression groups match synthetic source tokens from the pawn progression scanner.
     // Reflection groups match synthetic day/quadrum/arc reflection source tokens. GravshipJourney
@@ -114,6 +115,16 @@ namespace PawnDiary
         // talking to a Hospitality guest): that batcher writes only the eligible pawn's solo note.
         // PairEvent does not support this flag. Default false preserves every shipped group's routing.
         public bool allowSingleEligiblePawn = false;
+    }
+
+    /// <summary>
+    /// Which eligible colonists receive a Quest-domain fanout. The default preserves the historical
+    /// all-colonist behavior; MapWitness selects one deterministic owner for a colony chapter.
+    /// </summary>
+    public enum QuestFanoutScope
+    {
+        AllEligible,
+        MapWitness
     }
 
     // Optional "promotion" policy embedded in a DiaryInteractionGroupDef. A batched (low-value)
@@ -302,6 +313,10 @@ namespace PawnDiary
         // Which event source this group classifies. Classification is scoped to a domain so
         // unrelated Def types with the same defName never cross-match.
         public GroupDomain domain = GroupDomain.Interaction;
+
+        // Quest-only ownership policy. Non-Quest groups ignore it; omitting the XML field preserves
+        // the current all-eligible fanout for every existing quest group and old compatibility Def.
+        public QuestFanoutScope questFanoutScope = QuestFanoutScope.AllEligible;
 
         // Exact defName matches (case-insensitive). Optional in XML.
         public List<string> matchDefNames;
@@ -654,13 +669,21 @@ namespace PawnDiary
             return ClassifyIn(GroupDomain.Raid, incidentDefName);
         }
 
-        // First Quest-domain group that matches the lifecycle signal. The signal IS the classifier
-        // key: "accepted" -> questAccepted, "completed" -> questCompleted, "failed" -> questFailed.
-        // There is intentionally no catch-all: an unknown signal returns the last Quest group
-        // (ClassifyIn fallback), but the hook layer only ever passes one of the three known signals.
+        // Legacy signal-only Quest classifier retained for callers that have no saved root identity.
         public static DiaryInteractionGroupDef ClassifyQuest(string signal)
         {
             return ClassifyIn(GroupDomain.Quest, signal);
+        }
+
+        /// <summary>
+        /// Resolves an exact, non-catch-all Quest root first, then preserves the historical lifecycle-
+        /// signal fallback. This lets one reviewed quest own all its phases without catching unrelated
+        /// quests or changing their all-colonist behavior.
+        /// </summary>
+        public static DiaryInteractionGroupDef ClassifyQuest(string questRootDefName, string signal)
+        {
+            DiaryInteractionGroupDef exact = ClassifyRequiredMatch(GroupDomain.Quest, questRootDefName);
+            return exact ?? ClassifyQuest(signal);
         }
 
         // First Ritual-domain group that matches the Precept_Ritual defName plus optional behavior

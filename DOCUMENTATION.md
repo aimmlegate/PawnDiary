@@ -49,14 +49,14 @@ repo for development, but the Workshop payload omits source code and other devel
 | `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
 | `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
 | `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts and Royalty persona-weapon lifecycle, forced first-kill POV, and exact dramatic-permit decisions. |
-| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, and lossless quick-aid raid ownership. |
+| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, lossless quick-aid raid ownership, and exact-root Royal Ascent quest fanout. |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. Also `PawnMemoryRepository` (per-pawn memory store; inert until the memory wiring lands). |
-| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Odyssey location/mobile-home/lifecycle and Royalty persona/title/psylink/succession/permit snapshots and transient correlation. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/` (inert until wired). |
+| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Odyssey location/mobile-home/lifecycle and Royalty persona/title/psylink/succession/permit/court-pressure snapshots and transient correlation. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/` (inert until wired). |
 | `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including `DiaryOdysseyPolicyDef` and the Royalty policy plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, and the `MemoryFragment` pawn-memory row. |
-| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment/permit seams. |
+| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment/permit seams and state-transition-guarded Quest lifecycle hooks. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper projects plus the optional in-game `PawnDiary.RimTest` smoke suite. |
@@ -224,9 +224,11 @@ evidence. A Biotech gene/body identity event therefore cannot pull generic rank 
 evidence uses the shared `identity_transition` facet and keeps title/faction as event facts rather than
 inventing a localized title arc. Phase 2 persona lifecycle pages now attach exact `bond_lifecycle`
 evidence after their canonical `DiaryEvent` exists, so those pages can select the saved bond lens.
-Title identity remains inert until its Phase-4 owner attaches exact title evidence. Ideology and
-Anomaly provider slots remain empty until their source waves;
-Royalty court pressure remains deferred to the later N3-R extension. Provider absence, no relevant DLC, unconnected POVs, child-only
+Title identity remains inert until its Phase-4 owner attaches exact title evidence. Phase 7 extends
+N3-R with one exact active Royal Ascent court-pressure candidate. It requires the saved shared Ascent
+arc or source-owned authority/status/duty/hospitality evidence for the same POV; it shades an existing
+page and never authorizes one. Ideology and Anomaly provider slots remain empty until their source
+waves. Provider absence, no relevant DLC, unconnected POVs, child-only
 arcs, unknown locations/knowledge, or malformed translated format strings preserve the ordinary prompt
 with no narrative-context field.
 
@@ -251,8 +253,8 @@ Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned gra
 additive save-key suffixes under each POV/archive row; it performs no retroactive inference or
 catch-up on older pages.
 
-**Royalty Phases 0–6 plus Narrative N3-R core (Master Waves 5 and 9; Phase 5 automated loaded suite
-green at 267/267; Phase 6 loaded execution and all hands-on matrices pending)**
+**Royalty Phases 0–7 plus Narrative N3-R (Master Waves 5 and 9; Phase 6 automated loaded suite green
+at 278/278; Phase 7 loaded execution and all hands-on matrices pending)**
 freeze the detached R1 boundary and now own persona-weapon lifecycle, first-kill/death enrichment,
 and exact title/psylink correctness.
 `RoyaltyContracts`
@@ -534,8 +536,55 @@ four families, installed shuttle target rejection plus cancelled selection inten
 routine exclusions, repeat suppression, both quick-aid callback orders through the production raid
 postfix, master/group-disabled ownership, non-reentrant fallback owner lookup with cap-safe failure,
 cap/expiry fallback, pre-save flush/load reset, Prompt Studio package visibility, and Royalty-inactive
-silence. They have not yet been executed in a loaded game, so
-Phase 6 and R2 are not acceptance-complete; every Phase-2–5 hands-on matrix also remains open.
+silence. The user-confirmed full loaded run passed 278/278. The separate Royalty-inactive profile and
+all Phase-2–6 hands-on rows remain unrecorded, so Phase 6 and R2 are not acceptance-complete.
+
+Phase 7 treats Royal Ascent as one source-owned colony chapter. Installed RimWorld 1.6 and Royalty
+XML establish the lifecycle boundary: `Quest.Accept(Pawn)` changes an offered quest to ongoing, but
+the quest setup schedules the Stellarch shuttle/drop pods asynchronously and therefore acceptance
+proves only commitment. `Quest.End(Success|Fail)` proves the hosting quest's terminal outcome but
+does not reveal a failure cause, boarded pawns, or escape. The later
+`pickupShipThing.SentWithExtraColonists` signal drives the endgame/credits path and is deliberately
+not claimed by Phase 7.
+
+The guarded Quest patches now snapshot whether vanilla can actually transition (`NotYetAccepted` for
+Accept; non-historical for End) and emit only after the transition is visible. The direct acceptance
+hook and defensive UI fallback share the bounded `knownAcceptedQuestIds` admission set, so one click
+cannot produce competing lifecycle signals. The legacy periodic state scanner explicitly excludes
+Royal Ascent: a missed exact callback is not reinterpreted later as a proven start. A root-first Quest classifier first matches the
+exact non-catch-all `EndGame_RoyalAscent` group, then preserves the previous accepted/completed/failed
+fallback for every ordinary quest. That resolved group is reused for settings, instruction, saved-
+payload regeneration, and fanout. Its new XML `MapWitness` scope chooses the lexicographically stable
+eligible pawn across loaded colony maps; ordinary Quest groups keep their default `AllEligible`
+behavior.
+
+Acceptance starts one mapless `RoyalAscent` event window and one stable-witness preparation page.
+The page says only that the colony committed to preparation. The window persists a sanitized exact
+quest-instance ID and shared `royalty-ascent|<questId>` arc, is bounded by the XML twenty-day timeout,
+and silently expires if a mod swallows `Quest.End`. While active, it supplies one bounded
+DefInjected court-pressure fact and XML prompt-window candidate to already-authorized relevant pages;
+neither mechanism polls or creates a page. Completion or failure closes only the matching quest
+instance, emits one exact-root Quest page, suppresses the window-end duplicate, and freezes terminal
+`journey_chapter` evidence on the same arc. Prompt context keeps localized quest label and lifecycle
+signal but redacts the root Def name, correlation ID, arc key, and ticks under Full, Balanced, and
+Compact.
+
+Save compatibility is append-only inside `ActiveEventWindowState`: `startCorrelationId` and
+`startNarrativeArcKey` are primitive strings, with no live Quest/Pawn/Map/Def. Missing pre-Phase-7
+fields normalize to empty and cannot infer retroactive court pressure. Malformed/oversized identity
+fails closed, and a corrupted save retains at most the newest mapless exact-root row. New-game/load
+callbacks clear the component-owned Quest admission and event-window dedup stores; `FinalizeInit`
+clears process-static Royalty correlation stores. All exact behavior is guarded by both the XML
+Royalty master and `ModsConfig.RoyaltyActive`; master-off and no-Royalty callbacks create no Phase-7
+page/window, package-gated groups/windows/prompts stay inert and hidden without Royalty, and
+`About.xml` still has no paid-DLC dependency.
+
+Pure Phase-7 coverage passes 463 Royalty, 2,734 pipeline, and 132 Narrative Continuity assertions.
+The runtime and 287-test RimTest assemblies build. Eight Royal Ascent flow fixtures plus one loaded
+Def smoke check compile real Accept/End hooks, start/terminal cardinality, stable/default fanout,
+active pressure/journey evidence, correlation mismatch, Scribe migration, `FinalizeInit`, package/
+Prompt Studio visibility, and master-off/Royalty-off no-op behavior. They have not yet run in a loaded game, so
+the executed baseline remains the user-confirmed 278/278 and no Phase-7 manual row is closed.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13
@@ -1485,7 +1534,7 @@ it onto the bus.
 | PersonaWeapon | `CompBladelinkWeapon` coding/equipment/destruction/cleanup hooks + elapsed reconciliation | `PersonaWeaponSignal` | solo important lifecycle page |
 | DayReflection | Sleep/rest flush | `DayReflectionSignal` (aggregation flush) | solo day/quadrum reflection |
 | ArcReflection | Sleep/rest flush + major psylink/xenotype progression trigger | `ArcReflectionSignal` (memory aggregation flush) | solo yearly arc reflection |
-| Quest | `Quest.Accept`/`End` + state scan | `QuestFanoutSignal` | fan-out |
+| Quest | transition-guarded `Quest.Accept`/`End` + state scan | `QuestFanoutSignal` | ordinary completion/failure fan-out; exact Royal Ascent uses one stable witness and a start window |
 | Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out; XML group guidance plus role/perspective instruction. Anomaly's 16 installed psychic rituals route exactly into invitation, flesh/weather, predation, mind, abduction, or death-refusal guidance before the generic modded fallback. |
 | Death | `Pawn.Kill` + death TaleDefs | `DeathFallbackSignal` (+ Tale death routes) | neutral description |
 | Arrival | Starting scan + `Pawn.SetFaction` | `ArrivalSignal` | neutral description |
@@ -1511,7 +1560,7 @@ it onto the bus.
 | Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions, artificial/anomalous body-part gains, and living-pawn natural body-part losses. |
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns and the shared random-generation setting. |
 | Raids and infestations | `IncidentWorker.TryExecute` | Fan-out to eligible colonists; ordinary raids can delay generation. |
-| Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Accepted quests are bookkeeping/event-window signals only. Completed and failed quest outcomes create shared-effort entries; prompt labels reject placeholder names and humanize code-like quest defNames. |
+| Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Ordinary accepted quests are bookkeeping/event-window signals only; completed and failed outcomes create shared-effort entries. The exact Royal Ascent root instead owns one stable-witness preparation page, bounded active court pressure, and one matching-instance terminal page without claiming arrival/escape. Prompt labels reject placeholder names and humanize code-like quest defNames. |
 | Event windows | `IncidentWorker.TryExecute`, `Quest` lifecycle, `Thing.SpawnSetup`, `SignalAction_Letter`, `CompProximityLetter`, `Building_VoidMonolith.Activate`, `Pawn_AgeTracker.BirthdayBiological`, `Pawn_HealthTracker.AddHediff`, `PrisonBreakUtility.StartPrisonBreak` | XML starts/ends narrative windows or one-shot events, writes phase entries, and can bias prompts while active. A Def may also attach an optional plain `narrativeEvidence` template after a page exists; exact deliberate monolith levels use this without authorizing extra pages, while timer-driven activation stays silent because vanilla supplies a random colonist rather than a truthful actor. |
 | Observed conditions | Periodic live-state scan (map danger, active game conditions, evidence things, pawn hediffs) | Lasting states read from live state, not a guessed duration: bias prompts while present, optionally record start/end pages, and end after a debounce when live state stops showing them (Plan 12; see §5.1). |
 | Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
@@ -2558,6 +2607,14 @@ staged quick-aid `RaidFanoutSignal` is synchronously returned to the ordinary ev
 serialization; `FinalizeInit` drops the remaining permit/recent-owner state. Old saves therefore need
 no migration and cannot manufacture a permit page, while save-and-continue cannot lose a quick-aid
 raid merely because its short correlation window overlapped the save.
+Phase 7 adds no component-level Scribe key. `ActiveEventWindowState` appends
+`startCorrelationId` and `startNarrativeArcKey`; both are bounded primitive strings copied from the
+exact Quest instance and pure arc policy. Missing fields load as empty, so an old active window can
+still close through the migration-compatible source/root route but cannot invent exact pressure or a
+shared arc. Normalization keeps at most the newest mapless exact Royal Ascent row, rejects malformed
+identity/arc pairs, and never resolves a saved Quest, Pawn, Map, or Def. The XML timeout bounds new
+state, while terminal correlation prevents another quest instance from stealing it. Quest acceptance
+admission remains transient and resets in `FinalizeInit`.
 Phase 4 advances this existing row immediately for exact title hooks and scanner observations; schema
 version 2 distinguishes a readable empty title set from temporarily unavailable Royalty data. A
 Royalty-off `LoadedGame` invalidates availability immediately while retaining the saved rows and
@@ -2939,9 +2996,14 @@ four families, prove a real installed invalid shuttle target plus cancelled look
 exercise all reviewed routine permits, repeat suppression, quick-aid ownership in both callback
 orders through the production raid branch, master/group-disabled ownership, non-reentrant cap-safe
 fallback owner lookup, lossless cap/expiry/pre-save fallback, Prompt Studio package visibility,
-`FinalizeInit` reset, and Royalty-inactive behavior.
-This expanded assembly builds but has not yet had a loaded run; the last executed loaded baseline
-remains Phase 5's 267/267. Ideology and Anomaly ritual tests use
+`FinalizeInit` reset, and Royalty-inactive behavior. The user-confirmed full loaded run passed all
+278/278 tests; a separately recorded Royalty-inactive run and every hands-on Royalty matrix remain
+open. Phase 7 adds eight Royal Ascent flow fixtures plus one loaded Def smoke check, bringing the
+compiled assembly to 287 tests. They drive the real Quest Accept/End hooks, exact start/terminal
+cardinality and truth, stable-witness/default fanout, active pressure and shared journey evidence,
+quest-instance mismatch, Scribe populated/missing-field migration, `FinalizeInit`, package/Prompt
+Studio visibility, and a Royalty-inactive real-hook no-op branch. The 287-test assembly builds but has
+not yet run in game; 278/278 remains the executed baseline and Phase-7 acceptance is open. Ideology and Anomaly ritual tests use
 internal copied-fact fixture seams because safely
 constructing their live ritual job objects would start a real colony ritual; only that reflective
 object extraction is bypassed. The fixtures still execute production fan-out ordering, pawn-ID

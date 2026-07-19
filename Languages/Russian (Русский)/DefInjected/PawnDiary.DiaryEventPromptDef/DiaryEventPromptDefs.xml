@@ -106,6 +106,9 @@
   <DiaryEventPrompt_External.prompt>Опиши момент, переданный другим модом, как то, что поселенец только что пережил.</DiaryEventPrompt_External.prompt>
   <DiaryEventPrompt_External.enhancement>Держись строго переданной строки события и фактов контекста; не выдумывай механики, системы или неупомянутых участников.</DiaryEventPrompt_External.enhancement>
   <DiaryEventPrompt_RoyalPermit.label>значимое королевское разрешение</DiaryEventPrompt_RoyalPermit.label>
+  <DiaryEventPrompt_RoyalAscent.label>глава Королевского вознесения</DiaryEventPrompt_RoyalAscent.label>
+  <DiaryEventPrompt_RoyalAscent.prompt>Опиши точный этап Королевского вознесения как одну главу поселения, увиденную этим поселенцем.</DiaryEventPrompt_RoyalAscent.prompt>
+  <DiaryEventPrompt_RoyalAscent.enhancement>Считай quest_signal границей ответственности. accepted доказывает только обязательство и подготовку; completed или failed доказывает лишь конечный исход задания по приёму. Не утверждай, что стелларх прибыл, не называй точную причину провала, не говори, кто поднялся на борт или покинул планету, и не выдумывай реплики, награды, вину или невидимую церемонию.</DiaryEventPrompt_RoyalAscent.enhancement>
   <DiaryEventPrompt_RoyalPermit.prompt>Опиши точное успешное применение значимого королевского разрешения с точки зрения его владельца.</DiaryEventPrompt_RoyalPermit.prompt>
   <DiaryEventPrompt_RoyalPermit.enhancement>Сохрани переданные разрешение, семейство, фракцию, титул, место и факт применения во время перезарядки. Опиши применение власти, а не ненаблюдавшийся результат; не выдумывай цель, прибытие, попадание, завершение, реплики или сумму благосклонности.</DiaryEventPrompt_RoyalPermit.enhancement>
   <DiaryEventPrompt_RoyalPermitMilitaryAid.label>вызвана королевская военная помощь</DiaryEventPrompt_RoyalPermitMilitaryAid.label>

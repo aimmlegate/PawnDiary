@@ -1,5 +1,39 @@
 # Changelog
 
+- **2026-07-19 — Implemented Master Wave 9 / Royalty Phase 7 Royal Ascent.** Adversarial inspection
+  of installed RimWorld 1.6 code and Royalty XML established the truthful lifecycle: accepting
+  `EndGame_RoyalAscent` proves the colony's commitment but not the asynchronously scheduled Stellarch
+  arrival; `Quest.End(Success|Fail)` proves only the hosting quest's terminal outcome; the later
+  `SentWithExtraColonists` signal owns escape/credits. The existing exact Accept/End hooks now require
+  real state transitions, direct/UI acceptance paths share one admission owner, and the legacy
+  acceptance scanner explicitly excludes Ascent rather than inferring a missed start from later state.
+
+  Added pure exact-root/correlation/arc/expiry/migration policy; root-first Quest routing at live and
+  saved-payload boundaries; XML-owned one-witness fanout, start-only twenty-day event window, prompt
+  pressure, exact group/prompt, bounds, and truth rules; and one stable eligible witness across loaded
+  colony maps. Acceptance creates one preparation page/window, active pressure can enrich only a
+  relevant already-authorized page, and matching completion/failure closes silently before one exact
+  terminal Quest page. Shared journey evidence never exposes quest IDs/arcs to prompts or claims
+  arrival, exact failure cause, boarding, or escape. XML-master-off and Royalty-off behavior fail
+  closed, and package rows stay hidden without adding a paid-DLC dependency.
+
+  Save schema changes are append-only primitive strings on `ActiveEventWindowState`
+  (`startCorrelationId`, `startNarrativeArcKey`); missing old-save fields remain empty and cannot infer
+  pressure and malformed rows fail closed. New-game/load callbacks reset component Quest/window
+  transients, while `FinalizeInit` resets process-static Royalty ownership. English/
+  Russian DefInjected and Keyed text plus three Prompt Studio fixtures ship. Pure suites pass 463
+  Royalty, 2,734 pipeline, and 132 Narrative assertions; runtime and 287-test RimTest assemblies
+  build. Eight flow fixtures plus one Def smoke check compile real-hook start/terminal/cardinality,
+  fanout, pressure/evidence, Scribe migration, reset, package/Prompt Studio, master-off, and no-DLC coverage. The
+  new 287-test suite has not yet run in game: 278/278 remains the confirmed executed baseline, and no
+  manual or separate Royalty-inactive acceptance row is closed.
+
+- **2026-07-19 — Confirmed Royalty Phase 6 automated loaded coverage green at 278/278.** The full
+  compiled RimTest suite is now user-confirmed passing in a loaded game, including the eleven Phase-6
+  dramatic-permit fixtures and the prior runtime regression matrix. This records automated execution
+  only: no Phase-2–6 hands-on acceptance row is closed, and a separately recorded Royalty-inactive
+  profile remains pending.
+
 - **2026-07-19 — Hardened Royalty Phase 6 after combined adversarial review.** The quick-aid raid
   branch now stages only while the Royalty policy master is enabled: master-off preserves the mature
   generic raid route, while group-off deliberately consumes the matched source without producing

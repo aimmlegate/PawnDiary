@@ -43,6 +43,25 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Verifies that Phase 7's Royal Ascent Def family loaded and root-first Quest routing owns
+        /// only the exact Royalty quest. Package gates decide runtime availability separately.
+        /// </summary>
+        [Test]
+        public static void RoyalAscentDefsAndExactQuestRouteAreLoaded()
+        {
+            DiaryInteractionGroupDef ascent =
+                RequireDef<DiaryInteractionGroupDef>("questRoyalAscent");
+            RequireDef<DiaryEventWindowDef>("RoyalAscent");
+            RequireDef<DiaryEventPromptDef>("DiaryEventPrompt_RoyalAscent");
+
+            Assert.That(
+                InteractionGroups.ClassifyQuest("EndGame_RoyalAscent", "completed") == ascent);
+            Assert.That(
+                InteractionGroups.ClassifyQuest("PawnDiaryTest_OrdinaryQuest", "completed")
+                != ascent);
+        }
+
+        /// <summary>
         /// Verifies that every loaded prompt template has a stable unique key and usable fields.
         /// </summary>
         [Test]
@@ -84,13 +103,16 @@ namespace PawnDiary.RimTests
 
         // GetNamedSilentFail keeps the test failure inside RimTest's result view instead of asking
         // RimWorld's DefDatabase to throw its own less-focused startup exception.
-        private static void RequireDef<TDef>(string defName) where TDef : Def
+        private static TDef RequireDef<TDef>(string defName) where TDef : Def
         {
-            if (DefDatabase<TDef>.GetNamedSilentFail(defName) == null)
+            TDef def = DefDatabase<TDef>.GetNamedSilentFail(defName);
+            if (def == null)
             {
                 throw new AssertionException(
                     "Required " + typeof(TDef).Name + " '" + defName + "' was not loaded.");
             }
+
+            return def;
         }
     }
 }

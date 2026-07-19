@@ -78,6 +78,15 @@
   <PawnDiary.Dev.PromptSuite.Raid.Text>Тревога для {0}: к поселению приближались налётчики.</PawnDiary.Dev.PromptSuite.Raid.Text>
   <PawnDiary.Dev.PromptSuite.Quest.Label>Задание принято</PawnDiary.Dev.PromptSuite.Quest.Label>
   <PawnDiary.Dev.PromptSuite.Quest.Text>Новость для {0}: поселение приняло тестовое задание.</PawnDiary.Dev.PromptSuite.Quest.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalAscentStarted.Label>Королевское вознесение — обязательство</PawnDiary.Dev.PromptSuite.RoyalAscentStarted.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalAscentStarted.Markers>event_window=RoyalAscent; phase=start; source=Quest; signal=accepted; def=EndGame_RoyalAscent; quest=EndGame_RoyalAscent; quest_signal=accepted; quest_label=Королевское вознесение</PawnDiary.Dev.PromptSuite.RoyalAscentStarted.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalAscentStarted.Text>Для {0} стало ясно: поселение обязалось подготовиться к Королевскому вознесению.</PawnDiary.Dev.PromptSuite.RoyalAscentStarted.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalAscentCompleted.Label>Королевское вознесение — задание по приёму выполнено</PawnDiary.Dev.PromptSuite.RoyalAscentCompleted.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalAscentCompleted.Markers>quest=EndGame_RoyalAscent; signal=completed; quest_label=Королевское вознесение; quest_signal=completed; quest_faction=Империя; quest_rewards=none</PawnDiary.Dev.PromptSuite.RoyalAscentCompleted.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalAscentCompleted.Text>{0} узнал(а), что задание поселения по приёму для Королевского вознесения успешно завершилось.</PawnDiary.Dev.PromptSuite.RoyalAscentCompleted.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalAscentFailed.Label>Королевское вознесение — задание по приёму провалено</PawnDiary.Dev.PromptSuite.RoyalAscentFailed.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalAscentFailed.Markers>quest=EndGame_RoyalAscent; signal=failed; quest_label=Королевское вознесение; quest_signal=failed; quest_faction=Империя; quest_rewards=none</PawnDiary.Dev.PromptSuite.RoyalAscentFailed.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalAscentFailed.Text>{0} узнал(а), что задание поселения по приёму для Королевского вознесения завершилось провалом.</PawnDiary.Dev.PromptSuite.RoyalAscentFailed.Text>
   <PawnDiary.Dev.PromptSuite.Ritual.Label>Ритуал завершён</PawnDiary.Dev.PromptSuite.Ritual.Label>
   <PawnDiary.Dev.PromptSuite.Ritual.Text>{0}: тестовый ритуал завершился среди собравшихся поселенцев.</PawnDiary.Dev.PromptSuite.Ritual.Text>
   <PawnDiary.Dev.PromptSuite.RoyalBestowing.Label>Королевское пожалование с точными переменами</PawnDiary.Dev.PromptSuite.RoyalBestowing.Label>
@@ -1313,6 +1322,11 @@
   <PawnDiary.Event.ObservedCondition.PitGatePresence.Start>{0}: в земле поселения разверзся провал.</PawnDiary.Event.ObservedCondition.PitGatePresence.Start>
   <PawnDiary.Event.ObservedCondition.FleshmassHeartPresence.Start>{0}: сердце плоти прорвалось из-под земли и начало расползаться.</PawnDiary.Event.ObservedCondition.FleshmassHeartPresence.Start>
   <PawnDiary.Event.EventWindow.MechClusterLanded.Start>{0}: на горизонте собрались спящие боевые машины: {1}.</PawnDiary.Event.EventWindow.MechClusterLanded.Start>
+  <PawnDiary.Event.EventWindow.RoyalAscent.Start>Для {0} стало ясно: поселение обязалось совершить Королевское вознесение и теперь должно подготовиться к исполнению этого обещания: {1}.</PawnDiary.Event.EventWindow.RoyalAscent.Start>
+  <PawnDiary.Prompt.EventWindow.RoyalAscent.Priority>сохраняй ограниченное фоновое давление принятого Королевского вознесения</PawnDiary.Prompt.EventWindow.RoyalAscent.Priority>
+  <PawnDiary.Prompt.EventWindow.RoyalAscent.Condition>поселение готовится к принятому Королевскому вознесению</PawnDiary.Prompt.EventWindow.RoyalAscent.Condition>
+  <PawnDiary.Prompt.EventWindow.RoyalAscent.Description>имперское гостеприимство и будущее поселения давят на обычную работу, но принятие задания не доказывает, что стелларх прибыл; пиши о подготовке и долге, не выдумывая присутствие или церемонию</PawnDiary.Prompt.EventWindow.RoyalAscent.Description>
+  <PawnDiary.Prompt.EventWindow.RoyalAscent.Cue.Duty>придворные ожидания давят на повседневную жизнь поселения</PawnDiary.Prompt.EventWindow.RoyalAscent.Cue.Duty>
   <PawnDiary.Prompt.EventWindow.MechClusterLanded.Priority>пусть спящий кластер механоидов остаётся холодной угрозой на заднем плане</PawnDiary.Prompt.EventWindow.MechClusterLanded.Priority>
   <PawnDiary.Prompt.EventWindow.MechClusterLanded.Condition>спящий кластер механоидов на горизонте</PawnDiary.Prompt.EventWindow.MechClusterLanded.Condition>
   <PawnDiary.Prompt.EventWindow.MechClusterLanded.Description>в пределах видимости стоят собранные боевые машины — терпеливые и неподвижные; теперь все планы зависят от того, когда и как они проснутся; пиши ожидание, а не выдуманный бой</PawnDiary.Prompt.EventWindow.MechClusterLanded.Description>

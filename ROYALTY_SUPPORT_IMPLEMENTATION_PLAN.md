@@ -1,6 +1,6 @@
 # Pawn Diary — Royalty Support Implementation Plan
 
-Status: Phases 0–6 and the Narrative N3-R core dependency are implemented as of 2026-07-19.
+Status: Phases 0–7 and the Narrative N3-R Royal Ascent extension are implemented as of 2026-07-19.
 Phase 2 now ships exact persona-weapon formation, meaningful separation/recovery, destruction, and
 transfer lifecycle pages with guarded Harmony collection, saved state, late-visible recovery,
 package-gated settings/prompts, English/Russian localization, prompt fixtures, and N3-R evidence.
@@ -16,12 +16,15 @@ same-tick title-edge dedup defect plus one Phase-3 mod-profile-sensitive fixture
 expanded the suite; its user-confirmed loaded rerun passed 256/256. Hands-on acceptance remains
 pending. Phase 5 succession is code-complete with pure/build coverage and compiled loaded fixtures;
 after correcting three disposable-pawn liveness gaps, its user-confirmed loaded rerun passed 267/267.
-   Its hands-on matrix remains pending. Phase 6 dramatic permits are code-complete with pure tests,
-   runtime/RimTest builds, XML/prompts/localization, and eleven compiled loaded fixtures. The installed
+Its hands-on matrix remains pending. Phase 6 dramatic permits are code-complete with pure tests,
+runtime/RimTest builds, XML/prompts/localization, and eleven compiled loaded fixtures. The installed
 1.6 audit confirms `FactionPermit.Notify_Used()` is the successful-use edge and quick military aid's
 successful `RaidFriendly` precedes it; exact faction+map stage/claim/expiry arbitration preserves the
-   existing raid fallback. The 278-test loaded assembly has not yet been run, so Phase 6 loaded/manual
-acceptance and R2 remain open. Phases 7–8 remain. This status does not pass,
+existing raid fallback. The full 278/278 loaded suite is user-confirmed green; this does not close
+Phase 2–6 hands-on rows or prove the separate Royalty-inactive profile. Phase 7 Royal Ascent is
+code-complete with pure/build coverage and nine newly compiled loaded checks, bringing the assembly
+to 287 tests; those new tests have not yet run in game, so Phase 7 hands-on and loaded acceptance,
+R2/R3 release acceptance, and Phase 8 remain open. This status does not pass,
 waive, or remove any earlier Biotech B1 manual
 acceptance row.
 
@@ -1260,6 +1263,7 @@ Exact filenames may be adjusted to existing conventions, but responsibilities mu
 - `Source/Pipeline/Royalty/RoyalMutationOwnershipPolicy.cs`
 - `Source/Pipeline/Royalty/RoyalMutationPageSelectionPolicy.cs`
 - `Source/Pipeline/Royalty/RoyalPermitPolicy.cs`
+- `Source/Pipeline/Royalty/RoyalAscentPolicy.cs`
 - `Source/Pipeline/Royalty/RoyaltyContextText.cs`
 - `Source/Models/PersonaBondState.cs`
 - `Source/Models/RoyalTitleObservationState.cs`
@@ -1276,6 +1280,7 @@ Exact filenames may be adjusted to existing conventions, but responsibilities mu
 - `tests/RoyaltyContextTests/RoyaltyContextTests.csproj`
 - `tests/RoyaltyContextTests/Program.cs`
 - `tests/PawnDiary.RimTest/PawnDiaryRoyaltyFlowTests.cs`
+- `tests/PawnDiary.RimTest/PawnDiaryRoyalAscentFlowTests.cs`
 
 If the Ideology work has already made `DlcContext` partial, use
 `Source/Generation/DlcContext.Royalty.cs`. Otherwise, making it partial is an acceptable small
@@ -1552,8 +1557,9 @@ Exit gate: all succession claims name only relationships vanilla reported exactl
 
 ### Phase 6 — Dramatic permits
 
-> **Implementation status (2026-07-19): code-complete; pure/runtime/RimTest builds green; loaded and
-> manual acceptance pending.** Installed RimWorld 1.6 assembly/XML inspection confirms the six exact
+> **Implementation status (2026-07-19): code-complete; pure/runtime/RimTest builds green; the full
+> loaded suite is user-confirmed green at 278/278; manual acceptance and a separately recorded
+> Royalty-inactive run remain pending.** Installed RimWorld 1.6 assembly/XML inspection confirms the six exact
 > vanilla allowlisted permits and nine routine exclusions, `FactionPermit.Notify_Used()` as the only
 > shared successful-use callback, `Pawn_RoyaltyTracker.GetPermit(RoyalTitlePermitDef, Faction)` as the
 > exact permit-instance owner seam, and military aid's successful quick `RaidFriendly.TryExecute`
@@ -1571,8 +1577,9 @@ Exit gate: all succession claims name only relationships vanilla reported exactl
 > and 680 capture assertions; runtime and 278-test RimTest assemblies build. Eleven loaded fixtures
 > cover exact hooks, all four families, real rejected targeting, cancelled intent, all exclusions,
 > repeats, production raid ownership/fallback, master/group policy, cap-safe non-reentrant fallback
-> lookup, Prompt Studio package visibility, save/load reset, and no-Royalty
-> silence, but they have not yet run in game. Phase-2–5 hands-on matrices remain open.
+> lookup, Prompt Studio package visibility, save/load reset, and guarded no-Royalty silence. The full
+> 278/278 suite passed in a loaded game. That automated result does not close any Phase-2–6 hands-on
+> matrix or prove the still-unrecorded separate Royalty-inactive profile.
 
 1. Add the pure permit policy and its deterministic tests.
 2. Populate/reset the permit-owner cache.
@@ -1585,6 +1592,34 @@ Exit gate: all succession claims name only relationships vanilla reported exactl
 Exit gate: R2 is releasable.
 
 ### Phase 7 — Royal Ascent and ambient pressure
+
+> **Implementation status (2026-07-19): code-complete; pure/runtime/RimTest builds green; loaded and
+> hands-on acceptance pending.** Adversarial inspection of installed RimWorld 1.6 and Royalty XML
+> proves that accepting `EndGame_RoyalAscent` commits the colony but does not prove the asynchronous
+> Stellarch arrival. `Quest.End(Success|Fail)` is the truthful hosting-quest terminal edge, while
+> `SentWithExtraColonists` drives later escape/credits and therefore is not owned here. The existing
+> exact `Quest.Accept(Pawn)` and `Quest.End(QuestEndOutcome,bool,bool)` hooks now require real state
+> transitions, acceptance/UI fallback share one admission set, and the legacy acceptance scanner
+> explicitly excludes Ascent so a missed callback cannot be inferred later from polled state.
+>
+> Pure `RoyalAscentPolicy` owns exact root/signal/correlation decisions, safe arc grammar, half-open
+> expiry, conservative old-save defaults, and prose-free journey evidence. XML owns the exact root,
+> identity caps, twenty-day timeout, one-witness fanout, start-only window, prompt pressure, group,
+> prompt, and truthful wording. Root-first Quest classification is used consistently at live capture
+> and saved-payload regeneration; ordinary Quest groups retain all-eligible fanout. The start window
+> deep-scribes only two append-only bounded strings (`startCorrelationId`,
+> `startNarrativeArcKey`), never a live Quest/Pawn/Map/Def; older saves default both empty and cannot
+> infer pressure retroactively. Completion/failure closes only the matching quest instance, emits one
+> exact stable-witness Quest page, and never claims arrival, failure cause, boarding, or escape.
+> Active pressure can shade an already-authorized relevant page but cannot create one. The XML master
+> and `ModsConfig.RoyaltyActive` are both fail-closed page/window gates.
+>
+> `RoyaltyContextTests` passes 463 assertions, `DiaryPipelineTests` 2,734, and Narrative Continuity
+> 132. Runtime and 287-test RimTest assemblies build. Eight Phase-7 flow fixtures plus one Def smoke
+> check compile real Accept/End lifecycle, one-page start/terminal ownership, stable witness/default
+> fanout, exact pressure/journey evidence, correlation mismatch, Scribe migration, `FinalizeInit`
+> reset, package/Prompt Studio on/off, and master-off/Royalty-inactive no-op behavior. These 287 tests have not
+> been executed in a loaded game; no manual row is closed by compilation.
 
 1. Add exact quest-root/ownership policy tests.
 2. Add exact non-catch-all quest-root-first classification and use the resolved group consistently
