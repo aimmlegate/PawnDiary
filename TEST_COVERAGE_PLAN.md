@@ -50,6 +50,8 @@ internal test-assembly harness. Each test scope should own and restore:
 - isolated adult/child test pawns, optionally spawned on a disposable map;
 - per-pawn generation gates and all mutated settings dictionaries/fields;
 - the pre-test event/archive/diary/PlayLog snapshots;
+- exact new event ids assigned to real colony witnesses, when a lifecycle hook cannot safely use an
+  isolated pawn, plus their archive/diary references;
 - relations, mental states, inspirations, hediffs, jobs, conditions, tales, quests, and spawned things;
 - event-window/observed-condition rows, pending batches, delayed generation, dedup keys, command caches,
   LLM queues, lane cooldowns, listener registrations, and any world-pawn membership;
@@ -57,8 +59,9 @@ internal test-assembly harness. Each test scope should own and restore:
 - a failure accumulator so every cleanup step runs before teardown reports an error.
 
 The harness exposes helpers such as `FireAndRequireEvent`, `RequireNoNewEvent`,
-`CapturePromptOnly`, `RequirePairRefs`, and `RequireSoloRef`. Test code should assert outcomes, not
-repeat reflection-based cleanup.
+`OwnDiaryEventsCreatedAfterThisPoint`, `SuppressDiaryGenerationForTest`, `CapturePromptOnly`,
+`RequirePairRefs`, and `RequireSoloRef`.
+Test code should assert outcomes, not repeat reflection-based cleanup.
 
 ### 2.2 Deterministic LLM substitute
 
@@ -289,9 +292,14 @@ installed `Quest.Accept(Pawn)` and `Quest.End(QuestEndOutcome,bool,bool)` hooks;
 witness start and terminal page, repeated-call suppression, matching quest-instance closure, ordinary
 Quest all-eligible fanout, exact journey/pressure context, terminal truth, real Scribe round-trip plus
 legacy empty defaults, `FinalizeInit` transient reset, package/Prompt Studio visibility, and a real
-exact-root no-op branch when either the XML master or Royalty is inactive. Runtime and RimTest assemblies build, but the new
-287-test assembly has not yet been executed in a loaded game. The confirmed executed baseline remains
-278/278; the separate Royalty-inactive profile and every Royalty hands-on row remain open.
+exact-root no-op branch when either the XML master or Royalty is inactive. Runtime and RimTest
+assemblies build. The first 287-test loaded run passed 284 and failed three fixture assertions: the
+official-DLC expected set omitted `questRoyalAscent`/`RoyalAscent`, the stable-fanout case used the
+pure policy's deliberately unsupported `unknown` signal, and the real-hook case inherited a loaded
+witness's pre-existing generic Quest dedup entry. The corrected fixtures now use the proven completed
+edge, isolate/restore only exact Quest keys, suppress witness transport reversibly, and remove/audit stable-witness pages.
+Their loaded rerun is pending. The last fully green baseline remains 278/278; the separate Royalty-
+inactive profile and every Royalty hands-on row remain open.
 
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,

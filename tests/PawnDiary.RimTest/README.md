@@ -187,6 +187,8 @@ Two guarantees make this safe:
 | `CreateAdultColonist()` | Isolated, non-generating, diary-eligible adult colonist. |
 | `FireAndRequireEvent(fire, defName, initiator, recipient)` | Run a real trigger; assert exactly one matching new event; return it. |
 | `RequireNoNewEvent(fire)` | Negative gate: assert the trigger produced no new event for a test pawn. |
+| `OwnDiaryEventsCreatedAfterThisPoint()` | Before a synchronous colony-witness trigger, make the scope remove and audit every exact new event even when a real loaded pawn owns it. |
+| `SuppressDiaryGenerationForTest(pawn)` | Temporarily gate transport for a real loaded witness and restore the exact prior diary-row/flag state without queueing work. |
 | `RequirePairRefs(event, a, b)` / `RequireSoloRef(event, a)` | Assert shape, participant ids, and per-pawn diary refs. |
 | `TrackPlayLogEntry(entry)` | Mark a Social-log row the test added for removal + audit. |
 | `RegisterCleanup(action)` | Register extra per-test cleanup (spawned thing, job, hediff) run failure-isolated before the core steps. |

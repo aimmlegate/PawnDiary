@@ -1,5 +1,19 @@
 # Changelog
 
+- **2026-07-19 — Corrected three fixture defects exposed by the first Royalty Phase-7 loaded run.**
+  The expanded suite executed 287 tests: 284 passed and three failed across two suites. The official-
+  DLC catalog fixture had not added the intentionally Royalty-gated `questRoyalAscent` group and
+  `RoyalAscent` event window; the stable-witness fanout fixture supplied the deliberately rejected
+  `unknown` lifecycle signal; and the real Accept/End fixture did not isolate a loaded witness's
+  pre-existing generic Quest dedup entry. The matrices now include both Phase-7 rows, fanout uses the
+  proven `completed` edge, and the real-hook fixture snapshots/restores only its exact generic and
+  colony Quest dedup keys. It also temporarily suppresses generation for the selected witness without
+  queueing on restore, and makes the shared scope remove/audit every exact page assigned there, so no
+  network request or test page survives teardown. No
+  production behavior, save schema, DLC dependency, Def policy, or manual acceptance row changed.
+  Runtime and 287-test RimTest assemblies rebuild cleanly; a corrected loaded rerun is pending, so the
+  last fully green executed baseline remains 278/278.
+
 - **2026-07-19 — Implemented Master Wave 9 / Royalty Phase 7 Royal Ascent.** Adversarial inspection
   of installed RimWorld 1.6 code and Royalty XML established the truthful lifecycle: accepting
   `EndGame_RoyalAscent` proves the colony's commitment but not the asynchronously scheduled Stellarch
@@ -25,8 +39,9 @@
   Royalty, 2,734 pipeline, and 132 Narrative assertions; runtime and 287-test RimTest assemblies
   build. Eight flow fixtures plus one Def smoke check compile real-hook start/terminal/cardinality,
   fanout, pressure/evidence, Scribe migration, reset, package/Prompt Studio, master-off, and no-DLC coverage. The
-  new 287-test suite has not yet run in game: 278/278 remains the confirmed executed baseline, and no
-  manual or separate Royalty-inactive acceptance row is closed.
+  first expanded loaded run subsequently reached 284/287; the fixture-only corrections are recorded
+  above. Until their rerun, 278/278 remains the last fully green baseline, and no manual or separate
+  Royalty-inactive acceptance row is closed.
 
 - **2026-07-19 — Confirmed Royalty Phase 6 automated loaded coverage green at 278/278.** The full
   compiled RimTest suite is now user-confirmed passing in a loaded game, including the eleven Phase-6

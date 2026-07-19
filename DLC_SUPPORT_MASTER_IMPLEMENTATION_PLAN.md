@@ -440,16 +440,18 @@ Complete **Odyssey O2** and extend **N3-O**:
    cap-safe, and hides package-specific Prompt Studio rows without unloading their Defs. The full
    278-test suite is user-confirmed green in a loaded game; that result does not close the manual
    matrix or establish a separate Royalty-inactive profile run.
-3. **Royalty 7 (code-complete; pure/runtime/287-test RimTest builds green; loaded/manual acceptance
-   pending)** — Royal Ascent start, bounded pressure, and terminal chapter. Installed lifecycle audit
+3. **Royalty 7 (code-complete; pure/runtime/287-test RimTest builds green; corrected loaded rerun and
+   manual acceptance pending)** — Royal Ascent start, bounded pressure, and terminal chapter. Installed lifecycle audit
    proves acceptance is commitment only, `Quest.End(Success|Fail)` owns the hosting-quest outcome,
    and later `SentWithExtraColonists`—not Quest success—owns escape/credits. Exact root-first routing,
    one stable witness, append-only bounded quest-instance/arc identity, start-only window, active
    pressure context, and one truthful terminal page are implemented without polling or a paid-DLC
    dependency. The XML master and live DLC gate fail closed before the exact adapter emits anything.
-   Pure suites pass 463 Royalty, 2,734 pipeline, and 132 Narrative assertions. The nine
-   new loaded checks are compiled but unexecuted, so no hands-on row or separate Royalty-inactive
-   profile is recorded as passed.
+   Pure suites pass 463 Royalty, 2,734 pipeline, and 132 Narrative assertions. The first expanded
+   loaded run passed 284/287 and exposed three fixture-only gaps: stale official-DLC group/window
+   expectations, an intentionally invalid signal used by the fanout assertion, and a pre-existing
+   generic Quest dedup entry on the stable witness. Corrected fixtures build and await a rerun; no
+   hands-on row or separate Royalty-inactive profile is recorded as passed.
 4. Extend **N3-R** with succession identity, permit authority, Ascent journey, and court-pressure
    candidates.
 

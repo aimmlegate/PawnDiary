@@ -677,6 +677,7 @@ namespace PawnDiary.RimTests
                 { "personaWeaponLifecycle", RoyaltyPackageId },
                 { "personaWeaponMilestone", RoyaltyPackageId },
                 { "royalPermitDramatic", RoyaltyPackageId },
+                { "questRoyalAscent", RoyaltyPackageId },
                 { "eventWindowVoidMonolith", AnomalyPackageId },
                 { "biotechFamilyBirth", BiotechPackageId },
                 { "ritualAnomalyInvitation", AnomalyPackageId },
@@ -695,7 +696,8 @@ namespace PawnDiary.RimTests
                 { "VoidMonolithDiscovery", AnomalyPackageId },
                 { "VoidMonolithActivation", AnomalyPackageId },
                 { "VoidMonolithWaking", AnomalyPackageId },
-                { "VoidMonolithVoidAwakened", AnomalyPackageId }
+                { "VoidMonolithVoidAwakened", AnomalyPackageId },
+                { "RoyalAscent", RoyaltyPackageId }
             };
 
             RequireOfficialPackageFlagAgreement();

@@ -186,8 +186,11 @@ only proves the fixture compiles; it does not count as executing either Odyssey 
 The user-confirmed pre-Phase-7 loaded baseline passed **278/278** on 2026-07-19. That result includes
 Royalty Phase 6 and the earlier regression suite only; it does not establish a separate Royalty-off
 profile and does not close any hands-on Royalty row below. Phase 7 adds eight flow fixtures plus one
-loaded Def smoke check, so the current RimTest assembly contains **287 compiled tests**. Those new
-tests have not yet been executed in RimWorld.
+loaded Def smoke check, so the current RimTest assembly contains **287 compiled tests**. The first
+full run passed **284/287**. Its three failures were test-fixture defects: stale official-DLC group/
+window expectations, an invalid lifecycle signal in the fanout assertion, and an unisolated existing
+generic Quest dedup entry for the stable witness. The corrected fixture DLL builds; its loaded rerun
+is pending. Therefore 278/278 remains the last fully green baseline and every manual row stays open.
 
 Phase 7 adds no component-level Scribe key. It appends two primitive strings to each
 `ActiveEventWindowState`: `startCorrelationId` and `startNarrativeArcKey`. A pre-Phase-7 save loads

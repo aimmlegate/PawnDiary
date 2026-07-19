@@ -87,6 +87,8 @@ namespace PawnDiary.RimTests
         private readonly List<Pawn> testPawns = new List<Pawn>();
         private readonly List<string> testPawnIds = new List<string>();
         private readonly HashSet<LogEntry> addedPlayLogEntries = new HashSet<LogEntry>();
+        private readonly HashSet<string> additionallyOwnedEventIds =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly List<Action> customCleanups = new List<Action>();
         private Dictionary<string, bool> originalGroupEnabled;
         private bool randPushed;
@@ -470,6 +472,76 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Makes this scope own every diary event created after this call, even when production policy
+        /// assigns the page to a real loaded-map witness instead of one of the isolated test pawns.
+        /// The baseline is captured now; teardown discovers the exact new ids before removing events,
+        /// archive rows, and diary-index references. Call this immediately before a synchronous trigger.
+        /// </summary>
+        public void OwnDiaryEventsCreatedAfterThisPoint()
+        {
+            HashSet<string> baseline = SnapshotEventIds();
+            RegisterCleanup(() =>
+            {
+                IReadOnlyList<DiaryEvent> allEvents = EventRepository().AllEvents;
+                for (int i = 0; i < allEvents.Count; i++)
+                {
+                    DiaryEvent diaryEvent = allEvents[i];
+                    if (diaryEvent != null && !string.IsNullOrWhiteSpace(diaryEvent.eventId)
+                        && !baseline.Contains(diaryEvent.eventId))
+                    {
+                        additionallyOwnedEventIds.Add(diaryEvent.eventId);
+                    }
+                }
+            });
+        }
+
+        /// <summary>
+        /// Temporarily disables generation for a real eligible colony pawn without queueing work when
+        /// the original value is restored. This is the safe transport gate for a production hook whose
+        /// policy must select a loaded-map witness rather than an isolated test pawn. If the pawn had no
+        /// diary row, the temporary row is removed exactly; otherwise its original flag is restored.
+        /// </summary>
+        public void SuppressDiaryGenerationForTest(Pawn pawn)
+        {
+            if (Component == null || pawn == null || !DiaryGameComponent.IsDiaryEligible(pawn))
+            {
+                throw new AssertionException(
+                    "SuppressDiaryGenerationForTest requires one eligible loaded colony pawn.");
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            Dictionary<string, PawnDiaryRecord> diariesById =
+                DiariesByIdField?.GetValue(Component) as Dictionary<string, PawnDiaryRecord>;
+            List<PawnDiaryRecord> diaries = DiariesField?.GetValue(Component) as List<PawnDiaryRecord>;
+            PawnDiaryRecord diary = null;
+            bool existed = diariesById != null && diariesById.TryGetValue(pawnId, out diary);
+            bool originalEnabled = diary == null || diary.diaryGenerationEnabled;
+
+            Component.SetDiaryGenerationEnabled(pawn, false);
+            if (diariesById == null || !diariesById.TryGetValue(pawnId, out diary) || diary == null
+                || diary.diaryGenerationEnabled)
+            {
+                throw new AssertionException(
+                    "The test harness could not suppress generation for the loaded colony witness.");
+            }
+
+            PawnDiaryRecord exactDiary = diary;
+            RegisterCleanup(() =>
+            {
+                if (existed)
+                {
+                    exactDiary.diaryGenerationEnabled = originalEnabled;
+                }
+                else
+                {
+                    diariesById.Remove(pawnId);
+                    diaries?.Remove(exactDiary);
+                    DiaryStateVersion.Bump();
+                }
+            });
+        }
+
+        /// <summary>
         /// Tracks a PlayLog row the test added so teardown removes exactly it (and the audit can confirm
         /// it is gone). Vanilla PlayLog rows the test did not add are never touched.
         /// </summary>
@@ -669,6 +741,7 @@ namespace PawnDiary.RimTests
             testPawns.Clear();
             testPawnIds.Clear();
             addedPlayLogEntries.Clear();
+            additionallyOwnedEventIds.Clear();
             customCleanups.Clear();
             Component = null;
 
@@ -746,7 +819,8 @@ namespace PawnDiary.RimTests
             }
 
             HashSet<string> pawnIds = TestPawnIdSet();
-            HashSet<string> eventIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            HashSet<string> eventIds = new HashSet<string>(
+                additionallyOwnedEventIds, StringComparer.OrdinalIgnoreCase);
             DiaryEventRepository repository = EventRepository();
             IReadOnlyList<DiaryEvent> allEvents = repository.AllEvents;
             for (int i = 0; i < allEvents.Count; i++)
@@ -886,12 +960,27 @@ namespace PawnDiary.RimTests
             for (int i = 0; i < allEvents.Count; i++)
             {
                 DiaryEvent diaryEvent = allEvents[i];
-                if (diaryEvent != null
-                    && (pawnIds.Contains(diaryEvent.initiatorPawnId)
+                if (diaryEvent != null && (additionallyOwnedEventIds.Contains(diaryEvent.eventId)
+                    || pawnIds.Contains(diaryEvent.initiatorPawnId)
                         || pawnIds.Contains(diaryEvent.recipientPawnId)))
                 {
                     throw new AssertionException(
-                        "Leak audit: a diary event referencing a test pawn survived cleanup.");
+                        "Leak audit: a test-owned diary event survived cleanup.");
+                }
+            }
+
+            List<PawnDiaryRecord> diaries = DiariesField?.GetValue(Component) as List<PawnDiaryRecord>;
+            if (diaries != null && additionallyOwnedEventIds.Count > 0)
+            {
+                for (int i = 0; i < diaries.Count; i++)
+                {
+                    PawnDiaryRecord diary = diaries[i];
+                    if (diary?.eventIds != null
+                        && diary.eventIds.Exists(id => additionallyOwnedEventIds.Contains(id)))
+                    {
+                        throw new AssertionException(
+                            "Leak audit: a diary index still referenced a test-owned event.");
+                    }
                 }
             }
 

@@ -23,8 +23,11 @@ successful `RaidFriendly` precedes it; exact faction+map stage/claim/expiry arbi
 existing raid fallback. The full 278/278 loaded suite is user-confirmed green; this does not close
 Phase 2–6 hands-on rows or prove the separate Royalty-inactive profile. Phase 7 Royal Ascent is
 code-complete with pure/build coverage and nine newly compiled loaded checks, bringing the assembly
-to 287 tests; those new tests have not yet run in game, so Phase 7 hands-on and loaded acceptance,
-R2/R3 release acceptance, and Phase 8 remain open. This status does not pass,
+to 287 tests. Its first full loaded run reached 284/287 and exposed three fixture-only defects: two
+omitted official-DLC matrix rows, an unsupported `unknown` signal in the fanout fixture, and missing
+isolation for the real stable witness's pre-existing generic Quest dedup entry. The corrected fixture
+assembly builds and awaits a loaded rerun, so Phase 7 hands-on and loaded acceptance, R2/R3 release
+acceptance, and Phase 8 remain open. This status does not pass,
 waive, or remove any earlier Biotech B1 manual
 acceptance row.
 
@@ -1593,8 +1596,8 @@ Exit gate: R2 is releasable.
 
 ### Phase 7 — Royal Ascent and ambient pressure
 
-> **Implementation status (2026-07-19): code-complete; pure/runtime/RimTest builds green; loaded and
-> hands-on acceptance pending.** Adversarial inspection of installed RimWorld 1.6 and Royalty XML
+> **Implementation status (2026-07-19): code-complete; pure/runtime/RimTest builds green; corrected
+> loaded rerun and hands-on acceptance pending.** Adversarial inspection of installed RimWorld 1.6 and Royalty XML
 > proves that accepting `EndGame_RoyalAscent` commits the colony but does not prove the asynchronous
 > Stellarch arrival. `Quest.End(Success|Fail)` is the truthful hosting-quest terminal edge, while
 > `SentWithExtraColonists` drives later escape/credits and therefore is not owned here. The existing
@@ -1618,8 +1621,12 @@ Exit gate: R2 is releasable.
 > 132. Runtime and 287-test RimTest assemblies build. Eight Phase-7 flow fixtures plus one Def smoke
 > check compile real Accept/End lifecycle, one-page start/terminal ownership, stable witness/default
 > fanout, exact pressure/journey evidence, correlation mismatch, Scribe migration, `FinalizeInit`
-> reset, package/Prompt Studio on/off, and master-off/Royalty-inactive no-op behavior. These 287 tests have not
-> been executed in a loaded game; no manual row is closed by compilation.
+> reset, package/Prompt Studio on/off, and master-off/Royalty-inactive no-op behavior. The first full
+> loaded execution passed 284/287. Its three failures were fixture-only: the official-DLC matrix
+> omitted the new group/window, one fanout assertion used a deliberately invalid signal, and the
+> real-hook case inherited a prior generic Quest dedup entry for the loaded witness. The corrected
+> fixtures now own/restore exact witness pages and dedup keys under a reversible generation gate; their rerun is
+> pending. No manual row is closed by this partial run or by compilation.
 
 1. Add exact quest-root/ownership policy tests.
 2. Add exact non-catch-all quest-root-first classification and use the resolved group consistently

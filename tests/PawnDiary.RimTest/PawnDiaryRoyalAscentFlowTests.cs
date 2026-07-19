@@ -1,7 +1,7 @@
 // Loaded-game acceptance for Royalty Phase 7 Royal Ascent. The canonical Quest.Accept/Quest.End
 // callbacks are driven on controlled, unregistered quests; mapless stable-witness fanout is observed
-// without writing to a developer pawn; and the append-only active-window identity is round-tripped
-// through RimWorld's real Scribe. No fixture changes a live quest or sends an LLM request.
+// with exact event/dedup ownership restored afterward; and append-only active-window identity is
+// round-tripped through RimWorld's real Scribe. A restored per-pawn generation gate prevents requests.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -27,6 +27,8 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetField("activeEventWindows", PrivateInstance);
         private static readonly FieldInfo RecentWindowEventsField =
             typeof(DiaryGameComponent).GetField("recentEventWindowEvents", PrivateInstance);
+        private static readonly FieldInfo RecentEventsField =
+            typeof(DiaryGameComponent).GetField("recentEvents", PrivateInstance);
         private static readonly FieldInfo KnownAcceptedQuestIdsField =
             typeof(DiaryGameComponent).GetField("knownAcceptedQuestIds", PrivateInstance);
         private static readonly FieldInfo EventsField =
@@ -140,6 +142,18 @@ namespace PawnDiary.RimTests
             Pawn expectedWitness = DiaryGameComponent.StableLoadedMapWitness();
             PawnDiaryRimTestScope.Require(expectedWitness != null,
                 "Royal Ascent start acceptance requires one eligible stable witness.");
+            // This real hook assigns its page to a player's loaded-map colonist. Suppress transport,
+            // own every exact page for teardown, and isolate only the dedup entries this synthetic
+            // quest can touch. A recent real Quest page for the same witness must not make the fixture
+            // order/environment-dependent, and the original entry is restored byte-for-byte afterward.
+            scope.SuppressDiaryGenerationForTest(expectedWitness);
+            scope.OwnDiaryEventsCreatedAfterThisPoint();
+            IsolateRecentEventKey(GenericEventTypeDedup.KeyFor(
+                DiaryEventType.Quest,
+                CaptureDecision.GenerateSolo,
+                expectedWitness.GetUniqueLoadID()));
+            IsolateRecentEventKey("quest|" + quest.id + "|accepted");
+            IsolateRecentEventKey("quest|" + quest.id + "|completed");
             HashSet<ActiveEventWindowState> before = new HashSet<ActiveEventWindowState>(ActiveWindows());
 
             DiaryEvent startPage = scope.FireAndRequireEvent(
@@ -218,7 +232,8 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(expectedWitness != null,
                 "Stable-witness acceptance requires an eligible colonist on a loaded colony map.");
             QuestFanoutSignal ascent = new QuestFanoutSignal(
-                BuildAscentQuest("One exact witness"), "unknown", "PawnDiary.Event.QuestCompleted");
+                BuildAscentQuest("One exact witness"), QuestEventData.SignalCompleted,
+                "PawnDiary.Event.QuestCompleted");
             List<DiarySignal> ascentChildren = ascent.PerPawnSignals().ToList();
             PawnDiaryRimTestScope.Require(ascentChildren.Count == 1
                     && ascentChildren[0].Payload.PawnId == expectedWitness.GetUniqueLoadID(),
@@ -359,9 +374,28 @@ namespace PawnDiary.RimTests
         private static void RequireReflectionState()
         {
             PawnDiaryRimTestScope.Require(ActiveWindowsField != null && RecentWindowEventsField != null
-                    && KnownAcceptedQuestIdsField != null && EventsField != null
+                    && RecentEventsField != null && KnownAcceptedQuestIdsField != null && EventsField != null
                     && UnclaimedRoyalMutationsField != null,
                 "Royal Ascent fixtures could not locate component lifecycle stores.");
+        }
+
+        /// <summary>
+        /// Temporarily removes one exact dispatcher-dedup entry and restores the player's prior value
+        /// after the fixture. Any replacement written by the synthetic quest is removed first.
+        /// </summary>
+        private static void IsolateRecentEventKey(string key)
+        {
+            IDictionary recent = RecentEventsField.GetValue(scope.Component) as IDictionary;
+            PawnDiaryRimTestScope.Require(recent != null && !string.IsNullOrEmpty(key),
+                "Royal Ascent fixture could not isolate its exact dispatcher dedup key.");
+            bool existed = recent.Contains(key);
+            object original = existed ? recent[key] : null;
+            recent.Remove(key);
+            scope.RegisterCleanup(() =>
+            {
+                recent.Remove(key);
+                if (existed) recent[key] = original;
+            });
         }
 
         private static List<ActiveEventWindowState> ActiveWindows()

@@ -254,7 +254,7 @@ additive save-key suffixes under each POV/archive row; it performs no retroactiv
 catch-up on older pages.
 
 **Royalty Phases 0–7 plus Narrative N3-R (Master Waves 5 and 9; Phase 6 automated loaded suite green
-at 278/278; Phase 7 loaded execution and all hands-on matrices pending)**
+at 278/278; Phase 7 corrected loaded rerun and all hands-on matrices pending)**
 freeze the detached R1 boundary and now own persona-weapon lifecycle, first-kill/death enrichment,
 and exact title/psylink correctness.
 `RoyaltyContracts`
@@ -583,8 +583,12 @@ Pure Phase-7 coverage passes 463 Royalty, 2,734 pipeline, and 132 Narrative Cont
 The runtime and 287-test RimTest assemblies build. Eight Royal Ascent flow fixtures plus one loaded
 Def smoke check compile real Accept/End hooks, start/terminal cardinality, stable/default fanout,
 active pressure/journey evidence, correlation mismatch, Scribe migration, `FinalizeInit`, package/
-Prompt Studio visibility, and master-off/Royalty-off no-op behavior. They have not yet run in a loaded game, so
-the executed baseline remains the user-confirmed 278/278 and no Phase-7 manual row is closed.
+Prompt Studio visibility, and master-off/Royalty-off no-op behavior. The first expanded loaded run
+passed 284/287. The three failures were fixture-only: stale official-DLC group/window expectations,
+an invalid signal in the fanout fixture, and a pre-existing generic Quest dedup entry on the real
+stable witness. Corrected fixtures use the proven completed edge, snapshot/restore the exact dedup
+entries, reversibly suppress witness transport, and remove/audit their exact stable-witness pages. Their rerun is pending;
+278/278 remains the last fully green baseline and no Phase-7 manual row is closed.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13
@@ -2877,7 +2881,11 @@ which owns all of the fragile setup/teardown so a test body only fires a trigger
 outcome. Each scope generates isolated adult colonists whose diary generation is disabled before they
 become eligible (so no LLM request is possible), snapshots the settings and RNG state it touches, and
 in `[AfterEach]` restores every mutation — events, diary indexes, `diariesById`, Social-log rows,
-relation/mental state, transient dedup/command keys, and the pawns themselves. Two properties make it
+relation/mental state, transient dedup/command keys, and the pawns themselves. A real colony-witness
+fixture can additionally claim every exact event created after a synchronous baseline; teardown then
+removes and audits those event/archive/diary references even though the owner is not a test pawn. A
+temporary per-pawn generation gate protects that route from network requests and restores the exact
+prior diary-row/flag state without queueing work. Two properties make the harness
 trustworthy: teardown runs every cleanup step through a failure accumulator (so a broken assertion
 never skips cleanup), and a final no-leak audit fails the test if any state referencing a test pawn
 survived. The suite README (`tests/PawnDiary.RimTest/README.md`) documents the harness helpers and how
@@ -3002,8 +3010,10 @@ open. Phase 7 adds eight Royal Ascent flow fixtures plus one loaded Def smoke ch
 compiled assembly to 287 tests. They drive the real Quest Accept/End hooks, exact start/terminal
 cardinality and truth, stable-witness/default fanout, active pressure and shared journey evidence,
 quest-instance mismatch, Scribe populated/missing-field migration, `FinalizeInit`, package/Prompt
-Studio visibility, and a Royalty-inactive real-hook no-op branch. The 287-test assembly builds but has
-not yet run in game; 278/278 remains the executed baseline and Phase-7 acceptance is open. Ideology and Anomaly ritual tests use
+Studio visibility, and a Royalty-inactive real-hook no-op branch. The first 287-test loaded run reached
+284/287 and exposed only the three corrected fixture gaps described in the Phase-7 section above.
+The corrected rerun is pending; 278/278 remains the last fully green baseline and Phase-7 acceptance
+is open. Ideology and Anomaly ritual tests use
 internal copied-fact fixture seams because safely
 constructing their live ritual job objects would start a real colony ritual; only that reflective
 object extraction is bypassed. The fixtures still execute production fan-out ordering, pawn-ID
