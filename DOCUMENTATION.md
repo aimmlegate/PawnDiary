@@ -1644,8 +1644,11 @@ localized fallback text. Their optional `narrativeEvidence` blocks save visible 
 **Anomaly policy foundation (Master Wave 7 / A1.0).** `DiaryAnomalyPolicyDef` freezes primitive
 study, containment, later visible-arc, and Tale-ownership switches/thresholds with conservative code
 fallbacks. Its XML contains only Pawn Diary types and primitive values—no Anomaly Def reference—so
-the singleton loads safely and remains inert in a no-DLC game. The detached snapshot and all new DTOs
-contain only strings, integers, booleans, and lists. Stable synthetic event names and structured
+the singleton loads safely and remains inert in a no-DLC game. The Def adapter returns a freshly
+normalized snapshot on every call: numeric values receive conservative fallbacks, promotion rows are
+trimmed/de-duplicated and capped at 128, and callers cannot leak mutations into later consumers. The
+detached snapshot and all new DTOs contain only strings, integers, booleans, and lists. Stable
+synthetic event names and structured
 prompt tokens are frozen now, but A1.0 does not register them with the Event Catalog or add interaction
 groups, prompts, settings rows, or fallback prose; `EVENT_PROMPT_MAP.md` therefore remains unchanged.
 
@@ -1653,19 +1656,22 @@ The pure study planner separates observation from generation: first-note, first 
 completion, and exact XML promotion crossings update additive history even when output is disabled or
 the exact studier is ineligible. One progress jump observes every crossed promotion but authorizes at
 most one deterministic semantic stage. Monolith study is state-only and preserves only the verified
-false-to-true activatable fact for later A1 enrichment. The containment planner removes unverified and
-duplicate entity identities, bounds visible-entity rows, ranks exact nearby/recent-studier/colony
-witness evidence without `Verse.Rand`, and requires an exact outer/map dedup identity. Tale ownership
-suppresses only the matching studier plus stable entity-ID (or defName fallback) inside the configured
-window, consumes once, and otherwise fails open.
+false-to-true activatable fact for later A1 enrichment, including a same-call transition with no note
+progress. The containment planner removes unverified and duplicate entity identities, bounds visible-
+entity rows, ranks exact nearby/recent-studier/colony witness evidence without `Verse.Rand`, and
+requires an exact outer/map/tick dedup identity. Tale ownership suppresses only the matching studier
+plus stable entity ID; defName fallback is permitted only when both claim and Tale lack an ID. It
+consumes once inside the configured window and otherwise fails open.
 
 This phase adds no Harmony target, live Anomaly read, tick/update work, static colony state, Scribe
 key, migration, page, or duplicate-suppression cache. A1.1 remains responsible for catalog routing,
-persistence, normalization, old-save baselining, and lifecycle cleanup; A1.2/A1.3 remain responsible
-for the exact live study/containment adapters. `DiaryAnomalyPolicyTests` passes 167 standalone
-assertions without RimWorld assemblies. The existing read-only `PawnDiaryDefSmokeTests` singleton
-check now also requires `Diary_AnomalyPolicy`; that loaded assertion is compiled but has not yet been
-executed in RimWorld, and the full 291-test loaded run remains pending.
+persistence, saved-state normalization, old-save baselining, and lifecycle cleanup; A1.2/A1.3 remain
+responsible for the exact live study/containment adapters. `DiaryAnomalyPolicyTests` passes 211
+standalone assertions without RimWorld assemblies. The existing read-only
+`PawnDiaryDefSmokeTests` singleton check now also requires `Diary_AnomalyPolicy`, verifies its
+normalized defaults, and verifies that snapshots are independent. A manual main-menu RimTest run
+passed that read-only fixture as part of 46/46 tests which do not require a colony; 245 loaded-game
+fixtures correctly rejected the absent game, so the full 291-test loaded-colony run remains pending.
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,

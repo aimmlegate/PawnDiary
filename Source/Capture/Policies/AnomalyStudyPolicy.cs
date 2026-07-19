@@ -19,12 +19,16 @@ namespace PawnDiary.Capture
                 disposition = AnomalyStudyDisposition.DropInvalid
             };
             if (facts == null || string.IsNullOrWhiteSpace(facts.studiedDefName)
-                || facts.oldProgress < 0 || facts.newProgress < 0 || facts.noteCount < 0)
+                || facts.oldProgress < 0 || facts.newProgress < 0
+                || facts.noteThresholdsCrossed < 0)
             {
                 return plan;
             }
 
             plan.disposition = AnomalyStudyDisposition.StateOnly;
+            plan.monolithBecameActivatable = facts.isMonolith
+                && !facts.monolithActivatableBefore
+                && facts.monolithActivatableAfter;
             if (facts.newProgress <= facts.oldProgress)
             {
                 return plan;
@@ -33,7 +37,7 @@ namespace PawnDiary.Capture
             history = history ?? new AnomalyStudyHistorySnapshot();
             policy = policy ?? AnomalyPolicySnapshot.CreateDefault();
             string studiedDefName = facts.studiedDefName.Trim();
-            bool crossedNote = facts.noteCount > 0;
+            bool crossedNote = facts.noteThresholdsCrossed > 0;
             bool first = crossedNote && !history.firstBreakthroughObserved;
             if (first)
             {
@@ -56,7 +60,6 @@ namespace PawnDiary.Capture
             AnomalyStudyMilestoneRule promotion = promotions.Count == 0 ? null : promotions[0];
             if (promotion != null)
             {
-                plan.promotionToken = promotion.token.Trim();
                 // Observe every threshold crossed by this one committed jump. Only the earliest is
                 // the page's semantic promotion; marking all prevents a retry from replaying a
                 // second page for the same before/after transition.
@@ -65,10 +68,6 @@ namespace PawnDiary.Capture
                     plan.historyMutation.observedPromotionKeys.Add(PromotionKey(promotions[i]));
                 }
             }
-
-            plan.monolithBecameActivatable = facts.isMonolith
-                && !facts.monolithActivatableBefore
-                && facts.monolithActivatableAfter;
 
             // A plain progress increase which crossed no observed/promoted threshold is useful only
             // to the later adapter's baseline state; it is never itself a narrative milestone.
@@ -96,6 +95,7 @@ namespace PawnDiary.Capture
             else if (promotion != null)
             {
                 plan.stageToken = AnomalyStudyStageTokens.Promoted;
+                plan.promotionToken = promotion.token.Trim();
             }
 
             if (plan.stageToken.Length > 0)
@@ -109,12 +109,7 @@ namespace PawnDiary.Capture
         /// <summary>Builds the stable key persisted when an exact XML promotion is observed.</summary>
         public static string PromotionKey(AnomalyStudyMilestoneRule rule)
         {
-            if (!ValidPromotion(rule))
-            {
-                return string.Empty;
-            }
-
-            return rule.studiedDefName.Trim() + "|" + rule.minimumProgress + "|" + rule.token.Trim();
+            return AnomalyPolicyNormalization.PromotionKey(rule);
         }
 
         private static List<AnomalyStudyMilestoneRule> FindPromotions(
@@ -159,12 +154,7 @@ namespace PawnDiary.Capture
 
         private static bool ValidPromotion(AnomalyStudyMilestoneRule rule)
         {
-            return rule != null
-                && rule.minimumProgress > 0
-                && !string.IsNullOrWhiteSpace(rule.studiedDefName)
-                && rule.studiedDefName.IndexOf('|') < 0
-                && !string.IsNullOrWhiteSpace(rule.token)
-                && rule.token.IndexOf('|') < 0;
+            return AnomalyPolicyNormalization.ValidPromotion(rule);
         }
 
         private static bool Contains(List<string> values, string value)

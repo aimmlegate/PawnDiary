@@ -8,7 +8,7 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>XML row promoting one exact studied defName/progress threshold.</summary>
-    public sealed class DiaryAnomalyStudyMilestoneDef
+    public sealed class DiaryAnomalyStudyMilestoneRow
     {
         public string studiedDefName = string.Empty;
         public int minimumProgress;
@@ -21,10 +21,10 @@ namespace PawnDiary
         public bool studyEnabled = true;
         public bool recordFirstStudyBreakthrough = true;
         public bool recordCompletedEntityKind = true;
-        public List<DiaryAnomalyStudyMilestoneDef> promotedStudyMilestones =
-            new List<DiaryAnomalyStudyMilestoneDef>();
+        public List<DiaryAnomalyStudyMilestoneRow> promotedStudyMilestones =
+            new List<DiaryAnomalyStudyMilestoneRow>();
         public int monolithKnowledgeMaxAgeTicks = 60000;
-        public int studyTaleSuppressionTicks = 2500;
+        public int studyTaleSuppressionTicks = AnomalyPolicyLimits.DefaultStudyTaleSuppressionTicks;
 
         public bool containmentEnabled = true;
         public int containmentWitnessRadius = AnomalyPolicyLimits.DefaultWitnessRadius;
@@ -38,11 +38,11 @@ namespace PawnDiary
         public bool creepJoinerEnabled = true;
         public int creepJoinerOutcomeDedupTicks = 2500;
         public int creepJoinerArcRetentionTicks = 3600000;
-        public int creepJoinerMaxWitnesses = 2;
+        public int creepJoinerMaxWitnesses = AnomalyPolicyLimits.MaximumCreepJoinerWitnesses;
         public bool ghoulTransformationEnabled = true;
         public bool voidOutcomeEnabled = true;
         public int taleOwnershipMaxDepth = AnomalyPolicyLimits.DefaultTaleOwnershipDepth;
-        public int taleOwnershipExpiryTicks = 2500;
+        public int taleOwnershipExpiryTicks = AnomalyPolicyLimits.DefaultTaleOwnershipExpiryTicks;
 
         /// <summary>Reports malformed XML while snapshot consumers continue with safe fallbacks.</summary>
         public override IEnumerable<string> ConfigErrors()
@@ -67,7 +67,8 @@ namespace PawnDiary
             if (recentStudierMaxAgeTicks < 0) yield return "recentStudierMaxAgeTicks cannot be negative.";
             if (creepJoinerOutcomeDedupTicks < 0) yield return "creepJoinerOutcomeDedupTicks cannot be negative.";
             if (creepJoinerArcRetentionTicks < 0) yield return "creepJoinerArcRetentionTicks cannot be negative.";
-            if (creepJoinerMaxWitnesses < 1 || creepJoinerMaxWitnesses > 2)
+            if (creepJoinerMaxWitnesses < 1
+                || creepJoinerMaxWitnesses > AnomalyPolicyLimits.MaximumCreepJoinerWitnesses)
                 yield return "creepJoinerMaxWitnesses must be one or two.";
             if (taleOwnershipMaxDepth < 1
                 || taleOwnershipMaxDepth > AnomalyPolicyLimits.MaximumTaleOwnershipDepth)
@@ -80,19 +81,21 @@ namespace PawnDiary
                 yield return "promotedStudyMilestones cannot be null.";
                 yield break;
             }
+            if (promotedStudyMilestones.Count > AnomalyPolicyLimits.MaximumStudyMilestones)
+                yield return "promotedStudyMilestones exceeds the defensive supported row count.";
 
             for (int i = 0; i < promotedStudyMilestones.Count; i++)
             {
-                DiaryAnomalyStudyMilestoneDef row = promotedStudyMilestones[i];
-                if (row == null || string.IsNullOrWhiteSpace(row.studiedDefName)
-                    || row.studiedDefName.IndexOf('|') >= 0 || row.minimumProgress <= 0
-                    || string.IsNullOrWhiteSpace(row.token) || row.token.IndexOf('|') >= 0)
+                DiaryAnomalyStudyMilestoneRow row = promotedStudyMilestones[i];
+                if (row == null || !AnomalyPolicyNormalization.ValidPromotion(
+                        row.studiedDefName, row.minimumProgress, row.token))
                 {
                     yield return "promotedStudyMilestones rows require a plain studiedDefName, positive progress, and plain token.";
                     continue;
                 }
 
-                string key = row.studiedDefName.Trim() + "|" + row.minimumProgress + "|" + row.token.Trim();
+                string key = AnomalyPolicyNormalization.PromotionKey(
+                    row.studiedDefName, row.minimumProgress, row.token);
                 if (!keys.Add(key)) yield return "promotedStudyMilestones rows must be unique.";
             }
         }
@@ -106,96 +109,48 @@ namespace PawnDiary
         /// <summary>Returns normalized policy and never resolves an optional Anomaly Def object.</summary>
         public static AnomalyPolicySnapshot Snapshot()
         {
-            AnomalyPolicySnapshot result = AnomalyPolicySnapshot.CreateDefault();
             DiaryAnomalyPolicyDef source =
                 DefDatabase<DiaryAnomalyPolicyDef>.GetNamedSilentFail(DefName);
-            if (source == null)
-            {
-                return result;
-            }
+            if (source == null) return AnomalyPolicySnapshot.CreateDefault();
 
-            result.studyEnabled = source.studyEnabled;
-            result.recordFirstStudyBreakthrough = source.recordFirstStudyBreakthrough;
-            result.recordCompletedEntityKind = source.recordCompletedEntityKind;
-            result.monolithKnowledgeMaxAgeTicks = NonNegative(
-                source.monolithKnowledgeMaxAgeTicks, result.monolithKnowledgeMaxAgeTicks);
-            result.studyTaleSuppressionTicks = NonNegative(
-                source.studyTaleSuppressionTicks, result.studyTaleSuppressionTicks);
-            result.containmentEnabled = source.containmentEnabled;
-            result.containmentWitnessRadius = InRange(
-                source.containmentWitnessRadius, 1, AnomalyPolicyLimits.MaximumWitnessRadius,
-                result.containmentWitnessRadius);
-            result.containmentMaxWriters = InRange(
-                source.containmentMaxWriters, 1, AnomalyPolicyLimits.MaximumContainmentWriters,
-                result.containmentMaxWriters);
-            result.containmentMaxEntityLabelsInContext = InRange(
-                source.containmentMaxEntityLabelsInContext, 1, AnomalyPolicyLimits.MaximumEntityLabels,
-                result.containmentMaxEntityLabelsInContext);
-            result.containmentDedupTicks = NonNegative(
-                source.containmentDedupTicks, result.containmentDedupTicks);
-            result.recentStudierMaxAgeTicks = NonNegative(
-                source.recentStudierMaxAgeTicks, result.recentStudierMaxAgeTicks);
-            result.creepJoinerEnabled = source.creepJoinerEnabled;
-            result.creepJoinerOutcomeDedupTicks = NonNegative(
-                source.creepJoinerOutcomeDedupTicks, result.creepJoinerOutcomeDedupTicks);
-            result.creepJoinerArcRetentionTicks = NonNegative(
-                source.creepJoinerArcRetentionTicks, result.creepJoinerArcRetentionTicks);
-            result.creepJoinerMaxWitnesses = InRange(source.creepJoinerMaxWitnesses, 1, 2,
-                result.creepJoinerMaxWitnesses);
-            result.ghoulTransformationEnabled = source.ghoulTransformationEnabled;
-            result.voidOutcomeEnabled = source.voidOutcomeEnabled;
-            result.taleOwnershipMaxDepth = InRange(
-                source.taleOwnershipMaxDepth, 1, AnomalyPolicyLimits.MaximumTaleOwnershipDepth,
-                result.taleOwnershipMaxDepth);
-            result.taleOwnershipExpiryTicks = NonNegative(
-                source.taleOwnershipExpiryTicks, result.taleOwnershipExpiryTicks);
-            CopyPromotions(source.promotedStudyMilestones, result.promotedStudyMilestones);
-            return result;
-        }
-
-        private static void CopyPromotions(
-            List<DiaryAnomalyStudyMilestoneDef> source,
-            List<AnomalyStudyMilestoneRule> destination)
-        {
-            if (source == null)
+            // Deliberately return a fresh detached snapshot. These DTOs are mutable for simple pure
+            // tests, so caching one instance would let one consumer's mutation leak into later events.
+            AnomalyPolicySnapshot raw = new AnomalyPolicySnapshot
             {
-                return;
-            }
-
-            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
-            for (int i = 0; i < source.Count; i++)
+                studyEnabled = source.studyEnabled,
+                recordFirstStudyBreakthrough = source.recordFirstStudyBreakthrough,
+                recordCompletedEntityKind = source.recordCompletedEntityKind,
+                monolithKnowledgeMaxAgeTicks = source.monolithKnowledgeMaxAgeTicks,
+                studyTaleSuppressionTicks = source.studyTaleSuppressionTicks,
+                containmentEnabled = source.containmentEnabled,
+                containmentWitnessRadius = source.containmentWitnessRadius,
+                containmentMaxWriters = source.containmentMaxWriters,
+                containmentMaxEntityLabelsInContext = source.containmentMaxEntityLabelsInContext,
+                containmentDedupTicks = source.containmentDedupTicks,
+                recentStudierMaxAgeTicks = source.recentStudierMaxAgeTicks,
+                creepJoinerEnabled = source.creepJoinerEnabled,
+                creepJoinerOutcomeDedupTicks = source.creepJoinerOutcomeDedupTicks,
+                creepJoinerArcRetentionTicks = source.creepJoinerArcRetentionTicks,
+                creepJoinerMaxWitnesses = source.creepJoinerMaxWitnesses,
+                ghoulTransformationEnabled = source.ghoulTransformationEnabled,
+                voidOutcomeEnabled = source.voidOutcomeEnabled,
+                taleOwnershipMaxDepth = source.taleOwnershipMaxDepth,
+                taleOwnershipExpiryTicks = source.taleOwnershipExpiryTicks
+            };
+            int count = Math.Min(source.promotedStudyMilestones == null
+                    ? 0 : source.promotedStudyMilestones.Count,
+                AnomalyPolicyLimits.MaximumStudyMilestones);
+            for (int i = 0; i < count; i++)
             {
-                DiaryAnomalyStudyMilestoneDef row = source[i];
-                if (row == null || string.IsNullOrWhiteSpace(row.studiedDefName)
-                    || row.studiedDefName.IndexOf('|') >= 0 || row.minimumProgress <= 0
-                    || string.IsNullOrWhiteSpace(row.token) || row.token.IndexOf('|') >= 0)
+                DiaryAnomalyStudyMilestoneRow row = source.promotedStudyMilestones[i];
+                raw.promotedStudyMilestones.Add(row == null ? null : new AnomalyStudyMilestoneRule
                 {
-                    continue;
-                }
-
-                string studiedDefName = row.studiedDefName.Trim();
-                string token = row.token.Trim();
-                string key = studiedDefName + "|" + row.minimumProgress + "|" + token;
-                if (seen.Add(key))
-                {
-                    destination.Add(new AnomalyStudyMilestoneRule
-                    {
-                        studiedDefName = studiedDefName,
-                        minimumProgress = row.minimumProgress,
-                        token = token
-                    });
-                }
+                    studiedDefName = row.studiedDefName,
+                    minimumProgress = row.minimumProgress,
+                    token = row.token
+                });
             }
-        }
-
-        private static int NonNegative(int value, int fallback)
-        {
-            return value < 0 ? fallback : value;
-        }
-
-        private static int InRange(int value, int minimum, int maximum, int fallback)
-        {
-            return value < minimum || value > maximum ? fallback : value;
+            return AnomalyPolicyNormalization.Normalize(raw);
         }
     }
 }

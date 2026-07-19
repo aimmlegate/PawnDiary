@@ -3,6 +3,7 @@
 // read-only Def data: they need no colony, create no pawns, and leave the current save untouched.
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using RimTestRedux;
 using Verse;
 
@@ -39,6 +40,12 @@ namespace PawnDiary.RimTests
                 && anomaly.containmentMaxEntityLabelsInContext == 3);
             Assert.That(anomaly.studyTaleSuppressionTicks == 2500
                 && anomaly.taleOwnershipMaxDepth == 8);
+            AnomalyPolicySnapshot anomalySnapshot = DiaryAnomalyPolicy.Snapshot();
+            Assert.That(anomalySnapshot.studyEnabled
+                && anomalySnapshot.containmentWitnessRadius == 12
+                && anomalySnapshot.containmentMaxWriters == 2
+                && anomalySnapshot.promotedStudyMilestones.Count == 0);
+            Assert.That(!ReferenceEquals(anomalySnapshot, DiaryAnomalyPolicy.Snapshot()));
             RequireDef<DiaryMemoryTuningDef>("Diary_Memory");
         }
 

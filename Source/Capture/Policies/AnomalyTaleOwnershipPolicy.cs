@@ -24,7 +24,9 @@ namespace PawnDiary.Capture
             }
 
             // Zero is a valid same-tick-only window; only malformed negative input uses fallback.
-            int expiry = maximumAgeTicks < 0 ? 2500 : maximumAgeTicks;
+            int expiry = maximumAgeTicks < 0
+                ? AnomalyPolicyLimits.DefaultStudyTaleSuppressionTicks
+                : maximumAgeTicks;
             if (tale == null || tale.tick < 0)
             {
                 return result;
@@ -42,9 +44,20 @@ namespace PawnDiary.Capture
             }
 
             string claimedEntityId = (claim.studiedEntityId ?? string.Empty).Trim();
-            bool entityMatches = claimedEntityId.Length > 0
-                ? Same(claimedEntityId, tale.studiedEntityId)
-                : Same((claim.studiedDefName ?? string.Empty).Trim(), tale.studiedDefName);
+            string taleEntityId = (tale.studiedEntityId ?? string.Empty).Trim();
+            bool entityMatches;
+            if (claimedEntityId.Length > 0 || taleEntityId.Length > 0)
+            {
+                // A stable ID on only one side is incomplete correlation, not permission to weaken
+                // ownership to a defName shared by many entities. Preserve the generic Tale.
+                entityMatches = claimedEntityId.Length > 0 && taleEntityId.Length > 0
+                    && Same(claimedEntityId, taleEntityId);
+            }
+            else
+            {
+                entityMatches = Same(
+                    (claim.studiedDefName ?? string.Empty).Trim(), tale.studiedDefName);
+            }
             if (!entityMatches)
             {
                 return result;

@@ -67,7 +67,10 @@ namespace PawnDiary.Capture
                 return string.Empty;
             }
 
-            return "anomaly-breach|" + facts.mapId + "|" + escapeId;
+            // Include the exact start tick as well as the adapter's outer-call ID. This keeps the
+            // call-tree identity useful for later cross-source arbitration without letting a reused
+            // or mod-supplied escape ID collapse a genuinely later breach on the same map.
+            return "anomaly-breach|" + facts.mapId + "|" + facts.tick + "|" + escapeId;
         }
 
         /// <summary>Normalizes an XML writer cap to the supported one-or-two-author contract.</summary>

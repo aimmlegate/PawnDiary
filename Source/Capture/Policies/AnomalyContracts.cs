@@ -3,6 +3,7 @@
 // into these DTOs before invoking the pure policies beside it.
 //
 // New to C#/RimWorld? See AGENTS.md ("architecture barriers" and "DLC-safety").
+using System;
 using System.Collections.Generic;
 
 namespace PawnDiary.Capture
@@ -85,8 +86,12 @@ namespace PawnDiary.Capture
         public const int MaximumEntityLabels = 8;
         public const int DefaultWitnessRadius = 12;
         public const int MaximumWitnessRadius = 100;
+        public const int MaximumStudyMilestones = 128;
+        public const int DefaultStudyTaleSuppressionTicks = 2500;
         public const int DefaultTaleOwnershipDepth = 8;
         public const int MaximumTaleOwnershipDepth = 32;
+        public const int DefaultTaleOwnershipExpiryTicks = 2500;
+        public const int MaximumCreepJoinerWitnesses = 2;
     }
 
     /// <summary>Pure result category for one observed study transition.</summary>
@@ -109,7 +114,9 @@ namespace PawnDiary.Capture
         public bool studierEligible;
         public int oldProgress;
         public int newProgress;
-        public int noteCount;
+        // Number of study-note thresholds crossed by this exact call, not the subject's lifetime
+        // total. The later live adapter must calculate this delta before invoking the pure policy.
+        public int noteThresholdsCrossed;
         public bool completedBefore;
         public bool completedAfter;
         public bool isContainedEntity;
@@ -147,6 +154,8 @@ namespace PawnDiary.Capture
     {
         public AnomalyStudyDisposition disposition;
         public string stageToken = string.Empty;
+        // Non-empty only when stageToken is Promoted. Crossed-but-lower-priority promotions still
+        // enter historyMutation so one transition cannot replay as several pages.
         public string promotionToken = string.Empty;
         public bool monolithBecameActivatable;
         public readonly AnomalyStudyHistoryMutation historyMutation = new AnomalyStudyHistoryMutation();
@@ -233,6 +242,7 @@ namespace PawnDiary.Capture
     {
         public bool suppress;
         public bool removeClaim;
+        // The caller replaces its live claim with this detached clone when retaining the claim.
         public AnomalyStudyTaleClaim nextClaim;
     }
 
@@ -270,7 +280,7 @@ namespace PawnDiary.Capture
                 recordFirstStudyBreakthrough = true,
                 recordCompletedEntityKind = true,
                 monolithKnowledgeMaxAgeTicks = 60000,
-                studyTaleSuppressionTicks = 2500,
+                studyTaleSuppressionTicks = AnomalyPolicyLimits.DefaultStudyTaleSuppressionTicks,
                 containmentEnabled = true,
                 containmentWitnessRadius = AnomalyPolicyLimits.DefaultWitnessRadius,
                 containmentMaxWriters = AnomalyPolicyLimits.DefaultContainmentWriters,
@@ -280,12 +290,132 @@ namespace PawnDiary.Capture
                 creepJoinerEnabled = true,
                 creepJoinerOutcomeDedupTicks = 2500,
                 creepJoinerArcRetentionTicks = 3600000,
-                creepJoinerMaxWitnesses = 2,
+                creepJoinerMaxWitnesses = AnomalyPolicyLimits.MaximumCreepJoinerWitnesses,
                 ghoulTransformationEnabled = true,
                 voidOutcomeEnabled = true,
                 taleOwnershipMaxDepth = AnomalyPolicyLimits.DefaultTaleOwnershipDepth,
-                taleOwnershipExpiryTicks = 2500
+                taleOwnershipExpiryTicks = AnomalyPolicyLimits.DefaultTaleOwnershipExpiryTicks
             };
+        }
+    }
+
+    /// <summary>
+    /// Pure normalization for the mutable XML policy copy. Keeping every clamp and promotion-row
+    /// predicate here lets the standalone suite exercise malformed Def input without loading Verse.
+    /// </summary>
+    internal static class AnomalyPolicyNormalization
+    {
+        /// <summary>Returns a detached, bounded policy with conservative defaults for invalid values.</summary>
+        public static AnomalyPolicySnapshot Normalize(AnomalyPolicySnapshot source)
+        {
+            AnomalyPolicySnapshot result = AnomalyPolicySnapshot.CreateDefault();
+            if (source == null) return result;
+
+            result.studyEnabled = source.studyEnabled;
+            result.recordFirstStudyBreakthrough = source.recordFirstStudyBreakthrough;
+            result.recordCompletedEntityKind = source.recordCompletedEntityKind;
+            result.monolithKnowledgeMaxAgeTicks = NonNegative(
+                source.monolithKnowledgeMaxAgeTicks, result.monolithKnowledgeMaxAgeTicks);
+            result.studyTaleSuppressionTicks = NonNegative(
+                source.studyTaleSuppressionTicks, result.studyTaleSuppressionTicks);
+            result.containmentEnabled = source.containmentEnabled;
+            result.containmentWitnessRadius = InRange(
+                source.containmentWitnessRadius, 1, AnomalyPolicyLimits.MaximumWitnessRadius,
+                result.containmentWitnessRadius);
+            result.containmentMaxWriters = InRange(
+                source.containmentMaxWriters, 1, AnomalyPolicyLimits.MaximumContainmentWriters,
+                result.containmentMaxWriters);
+            result.containmentMaxEntityLabelsInContext = InRange(
+                source.containmentMaxEntityLabelsInContext, 1,
+                AnomalyPolicyLimits.MaximumEntityLabels,
+                result.containmentMaxEntityLabelsInContext);
+            result.containmentDedupTicks = NonNegative(
+                source.containmentDedupTicks, result.containmentDedupTicks);
+            result.recentStudierMaxAgeTicks = NonNegative(
+                source.recentStudierMaxAgeTicks, result.recentStudierMaxAgeTicks);
+            result.creepJoinerEnabled = source.creepJoinerEnabled;
+            result.creepJoinerOutcomeDedupTicks = NonNegative(
+                source.creepJoinerOutcomeDedupTicks, result.creepJoinerOutcomeDedupTicks);
+            result.creepJoinerArcRetentionTicks = NonNegative(
+                source.creepJoinerArcRetentionTicks, result.creepJoinerArcRetentionTicks);
+            result.creepJoinerMaxWitnesses = InRange(
+                source.creepJoinerMaxWitnesses, 1,
+                AnomalyPolicyLimits.MaximumCreepJoinerWitnesses,
+                result.creepJoinerMaxWitnesses);
+            result.ghoulTransformationEnabled = source.ghoulTransformationEnabled;
+            result.voidOutcomeEnabled = source.voidOutcomeEnabled;
+            result.taleOwnershipMaxDepth = InRange(
+                source.taleOwnershipMaxDepth, 1,
+                AnomalyPolicyLimits.MaximumTaleOwnershipDepth,
+                result.taleOwnershipMaxDepth);
+            result.taleOwnershipExpiryTicks = NonNegative(
+                source.taleOwnershipExpiryTicks, result.taleOwnershipExpiryTicks);
+            CopyPromotions(source.promotedStudyMilestones, result.promotedStudyMilestones);
+            return result;
+        }
+
+        /// <summary>Returns whether one raw XML promotion has safe, stable key parts.</summary>
+        public static bool ValidPromotion(string studiedDefName, int minimumProgress, string token)
+        {
+            return minimumProgress > 0
+                && !string.IsNullOrWhiteSpace(studiedDefName)
+                && studiedDefName.IndexOf('|') < 0
+                && !string.IsNullOrWhiteSpace(token)
+                && token.IndexOf('|') < 0;
+        }
+
+        /// <summary>Returns whether one detached promotion rule has safe, stable key parts.</summary>
+        public static bool ValidPromotion(AnomalyStudyMilestoneRule rule)
+        {
+            return rule != null
+                && ValidPromotion(rule.studiedDefName, rule.minimumProgress, rule.token);
+        }
+
+        /// <summary>Builds the stable persisted identity for one valid promotion rule.</summary>
+        public static string PromotionKey(AnomalyStudyMilestoneRule rule)
+        {
+            return rule == null
+                ? string.Empty
+                : PromotionKey(rule.studiedDefName, rule.minimumProgress, rule.token);
+        }
+
+        /// <summary>Builds the stable persisted identity for validated raw promotion parts.</summary>
+        public static string PromotionKey(string studiedDefName, int minimumProgress, string token)
+        {
+            if (!ValidPromotion(studiedDefName, minimumProgress, token)) return string.Empty;
+            return studiedDefName.Trim() + "|" + minimumProgress + "|" + token.Trim();
+        }
+
+        private static void CopyPromotions(
+            List<AnomalyStudyMilestoneRule> source,
+            List<AnomalyStudyMilestoneRule> destination)
+        {
+            if (source == null) return;
+
+            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+            int count = Math.Min(source.Count, AnomalyPolicyLimits.MaximumStudyMilestones);
+            for (int i = 0; i < count; i++)
+            {
+                AnomalyStudyMilestoneRule row = source[i];
+                string key = PromotionKey(row);
+                if (key.Length == 0 || !seen.Add(key)) continue;
+                destination.Add(new AnomalyStudyMilestoneRule
+                {
+                    studiedDefName = row.studiedDefName.Trim(),
+                    minimumProgress = row.minimumProgress,
+                    token = row.token.Trim()
+                });
+            }
+        }
+
+        private static int NonNegative(int value, int fallback)
+        {
+            return value < 0 ? fallback : value;
+        }
+
+        private static int InRange(int value, int minimum, int maximum, int fallback)
+        {
+            return value < minimum || value > maximum ? fallback : value;
         }
     }
 }

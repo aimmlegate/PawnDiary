@@ -1,5 +1,26 @@
 # Changelog
 
+- **2026-07-20 — Hardened Anomaly Phase A1.0 after adversarial review.** Centralized policy-Def
+  normalization in an assembly-free boundary that preserves switches, applies conservative numeric
+  fallbacks, trims/de-duplicates promotion rows, and caps them at 128. The loaded adapter deliberately
+  returns a fresh mutable snapshot on every call, preventing one consumer from leaking mutations into
+  another. Study planning now preserves a same-call monolith false-to-true activatable transition even
+  when note progress is unchanged, emits a promotion token only when promotion is the selected semantic
+  reason, and names the note field as the exact per-call threshold delta. Tale ownership now uses the
+  defName fallback only when both sides lack stable entity IDs, so partial identity evidence fails open
+  instead of suppressing an unrelated Tale. Containment breach de-duplication now includes the source
+  tick as well as escape and map identity.
+
+  `DiaryAnomalyPolicyTests` now passes 211 assertions, adding equality-boundary, simultaneous-stage,
+  no-progress monolith, asymmetric Tale-ID, malformed-policy normalization/cap, negative-window, and
+  tick-aware breach-key regressions. The RimTest singleton smoke fixture now also exercises normalized
+  defaults and the fresh-snapshot contract. A manual main-menu RimTest run passed all 46 tests that do
+  not require a loaded colony, including that singleton fixture; the other 245 fixtures rejected the
+  missing loaded game as designed, so the full 291-test loaded-colony run remains pending. The hook-
+  equivalent verifier, runtime DLL, and RimTest assembly rebuild are clean. Runtime behavior and save
+  format remain unchanged: A1.0 still adds no live hook, page, static state, Scribe key, migration, or
+  paid-DLC dependency.
+
 - **2026-07-20 — Implemented Master Wave 7 / Anomaly Phase A1.0 pure policy foundation.** Added the
   primitive-only `DiaryAnomalyPolicyDef`/XML defaults, detached study/containment/Tale DTOs, pure
   milestone and witness planners, exact fail-open `StudiedEntity` ownership, and the planned stable

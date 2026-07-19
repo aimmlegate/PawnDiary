@@ -375,7 +375,9 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 
 > **Progress (2026-07-20): A1.0 complete; A1.1–A2.2 remain.** The primitive-only policy Def,
 > detached DTOs, pure study/containment/Tale-ownership planners, stable event/prompt tokens, and
-> 167-assertion standalone suite are implemented. No catalog route, save key, live hook, prompt group,
+> 211-assertion standalone suite are implemented. Adversarial hardening also centralized policy
+> normalization, preserved no-progress monolith transitions, made partial Tale identity fail open, and
+> included source ticks in breach de-duplication. No catalog route, save key, live hook, prompt group,
 > or Anomaly state read has moved forward from its scheduled phase.
 
 ### Implement in this exact order

@@ -17,6 +17,7 @@ namespace DiaryAnomalyPolicyTests
         {
             TestFrozenEventAndPromptSchema();
             TestPolicyDefaults();
+            TestPolicyNormalization();
             TestShippedPolicyAndLocalization();
             TestInvalidAndNonProgressingStudy();
             TestFirstBreakthroughAndEligibility();
@@ -112,6 +113,91 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("ownership expiry", 2500, policy.taleOwnershipExpiryTicks);
         }
 
+        private static void TestPolicyNormalization()
+        {
+            AnomalyPolicySnapshot raw = new AnomalyPolicySnapshot
+            {
+                studyEnabled = false,
+                recordFirstStudyBreakthrough = false,
+                recordCompletedEntityKind = false,
+                monolithKnowledgeMaxAgeTicks = -1,
+                studyTaleSuppressionTicks = -1,
+                containmentEnabled = false,
+                containmentWitnessRadius = 0,
+                containmentMaxWriters = 99,
+                containmentMaxEntityLabelsInContext = 99,
+                containmentDedupTicks = -1,
+                recentStudierMaxAgeTicks = -1,
+                creepJoinerEnabled = false,
+                creepJoinerOutcomeDedupTicks = -1,
+                creepJoinerArcRetentionTicks = -1,
+                creepJoinerMaxWitnesses = 99,
+                ghoulTransformationEnabled = false,
+                voidOutcomeEnabled = false,
+                taleOwnershipMaxDepth = 0,
+                taleOwnershipExpiryTicks = -1
+            };
+            raw.promotedStudyMilestones.Add(Promotion(" Entity_Fleshbeast ", 40, " early_notes "));
+            raw.promotedStudyMilestones.Add(Promotion("Entity_Fleshbeast", 40, "early_notes"));
+            raw.promotedStudyMilestones.Add(null);
+            raw.promotedStudyMilestones.Add(Promotion("bad|def", 10, "bad"));
+            raw.promotedStudyMilestones.Add(Promotion("Entity_Fleshbeast", 0, "zero"));
+
+            AnomalyPolicySnapshot normalized = AnomalyPolicyNormalization.Normalize(raw);
+            AssertTrue("normalization returns detached snapshot", !object.ReferenceEquals(raw, normalized));
+            AssertTrue("normalization preserves disabled study", !normalized.studyEnabled);
+            AssertTrue("normalization preserves disabled first", !normalized.recordFirstStudyBreakthrough);
+            AssertTrue("normalization preserves disabled completion", !normalized.recordCompletedEntityKind);
+            AssertEqual("negative monolith age falls back", 60000,
+                normalized.monolithKnowledgeMaxAgeTicks);
+            AssertEqual("negative study Tale window falls back",
+                AnomalyPolicyLimits.DefaultStudyTaleSuppressionTicks,
+                normalized.studyTaleSuppressionTicks);
+            AssertTrue("normalization preserves disabled containment", !normalized.containmentEnabled);
+            AssertEqual("invalid radius falls back", AnomalyPolicyLimits.DefaultWitnessRadius,
+                normalized.containmentWitnessRadius);
+            AssertEqual("invalid writer cap falls back", AnomalyPolicyLimits.DefaultContainmentWriters,
+                normalized.containmentMaxWriters);
+            AssertEqual("invalid label cap falls back", AnomalyPolicyLimits.DefaultEntityLabels,
+                normalized.containmentMaxEntityLabelsInContext);
+            AssertEqual("negative breach dedup falls back", 2500, normalized.containmentDedupTicks);
+            AssertEqual("negative recent studier age falls back", 60000,
+                normalized.recentStudierMaxAgeTicks);
+            AssertTrue("normalization preserves disabled creepjoiner", !normalized.creepJoinerEnabled);
+            AssertEqual("negative creepjoiner dedup falls back", 2500,
+                normalized.creepJoinerOutcomeDedupTicks);
+            AssertEqual("negative creepjoiner retention falls back", 3600000,
+                normalized.creepJoinerArcRetentionTicks);
+            AssertEqual("invalid creepjoiner witness cap falls back",
+                AnomalyPolicyLimits.MaximumCreepJoinerWitnesses,
+                normalized.creepJoinerMaxWitnesses);
+            AssertTrue("normalization preserves disabled ghoul", !normalized.ghoulTransformationEnabled);
+            AssertTrue("normalization preserves disabled void", !normalized.voidOutcomeEnabled);
+            AssertEqual("invalid ownership depth falls back",
+                AnomalyPolicyLimits.DefaultTaleOwnershipDepth,
+                normalized.taleOwnershipMaxDepth);
+            AssertEqual("negative ownership expiry falls back",
+                AnomalyPolicyLimits.DefaultTaleOwnershipExpiryTicks,
+                normalized.taleOwnershipExpiryTicks);
+            AssertEqual("normalization filters and deduplicates promotions", 1,
+                normalized.promotedStudyMilestones.Count);
+            AssertEqual("normalization trims promotion defName", "Entity_Fleshbeast",
+                normalized.promotedStudyMilestones[0].studiedDefName);
+            AssertEqual("normalization trims promotion token", "early_notes",
+                normalized.promotedStudyMilestones[0].token);
+            AssertTrue("normalization clones promotion row", !object.ReferenceEquals(
+                raw.promotedStudyMilestones[0], normalized.promotedStudyMilestones[0]));
+
+            AnomalyPolicySnapshot oversized = new AnomalyPolicySnapshot();
+            for (int i = 0; i < AnomalyPolicyLimits.MaximumStudyMilestones + 1; i++)
+                oversized.promotedStudyMilestones.Add(Promotion("Entity_" + i, i + 1, "stage_" + i));
+            AssertEqual("promotion normalization enforces defensive row cap",
+                AnomalyPolicyLimits.MaximumStudyMilestones,
+                AnomalyPolicyNormalization.Normalize(oversized).promotedStudyMilestones.Count);
+            AssertTrue("null policy normalizes to defaults",
+                AnomalyPolicyNormalization.Normalize(null).studyEnabled);
+        }
+
         private static void TestShippedPolicyAndLocalization()
         {
             string root = RepositoryRoot();
@@ -165,7 +251,7 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("negative progress drops", AnomalyStudyDisposition.DropInvalid, plan.disposition);
 
             facts = Study();
-            facts.noteCount = -1;
+            facts.noteThresholdsCrossed = -1;
             plan = AnomalyStudyPolicy.Plan(facts, null, null);
             AssertEqual("negative note count drops", AnomalyStudyDisposition.DropInvalid,
                 plan.disposition);
@@ -181,7 +267,7 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("backward progress is state-only", AnomalyStudyDisposition.StateOnly, plan.disposition);
 
             facts = Study();
-            facts.noteCount = 0;
+            facts.noteThresholdsCrossed = 0;
             plan = AnomalyStudyPolicy.Plan(facts, null, null);
             AssertEqual("ordinary point increase is state-only", AnomalyStudyDisposition.StateOnly,
                 plan.disposition);
@@ -228,7 +314,7 @@ namespace DiaryAnomalyPolicyTests
         private static void TestCompletionHistory()
         {
             AnomalyStudyFacts facts = Study();
-            facts.noteCount = 0;
+            facts.noteThresholdsCrossed = 0;
             facts.completedAfter = true;
             AnomalyStudyHistorySnapshot history = new AnomalyStudyHistorySnapshot();
             history.firstBreakthroughObserved = true;
@@ -258,6 +344,9 @@ namespace DiaryAnomalyPolicyTests
             plan = AnomalyStudyPolicy.Plan(facts, history, null);
             AssertEqual("already-completed facts do not replay", AnomalyStudyDisposition.StateOnly,
                 plan.disposition);
+            plan = AnomalyStudyPolicy.Plan(facts, history, noCompletion);
+            AssertEqual("disabled completion toggle cannot revive an already-completed fact",
+                string.Empty, plan.historyMutation.completedStudyDefName);
         }
 
         private static void TestPromotionsAndMultiNoteJump()
@@ -272,7 +361,7 @@ namespace DiaryAnomalyPolicyTests
             AnomalyStudyFacts facts = Study();
             facts.oldProgress = 10;
             facts.newProgress = 100;
-            facts.noteCount = 3;
+            facts.noteThresholdsCrossed = 3;
             AnomalyStudyHistorySnapshot history = new AnomalyStudyHistorySnapshot();
             history.firstBreakthroughObserved = true;
             AnomalyStudyPlan plan = AnomalyStudyPolicy.Plan(facts, history, policy);
@@ -293,6 +382,47 @@ namespace DiaryAnomalyPolicyTests
                 AnomalyStudyPolicy.PromotionKey(Promotion("bad|def", 1, "x")));
             AssertEqual("zero threshold has no key", string.Empty,
                 AnomalyStudyPolicy.PromotionKey(Promotion("Entity_Fleshbeast", 0, "x")));
+
+            AnomalyPolicySnapshot exactPolicy = AnomalyPolicySnapshot.CreateDefault();
+            exactPolicy.promotedStudyMilestones.Add(
+                Promotion("Entity_Fleshbeast", 40, "exact_threshold"));
+            AnomalyStudyHistorySnapshot exactHistory = new AnomalyStudyHistorySnapshot();
+            exactHistory.firstBreakthroughObserved = true;
+            AnomalyStudyFacts exactFacts = Study();
+            exactFacts.noteThresholdsCrossed = 0;
+            exactFacts.oldProgress = 39;
+            exactFacts.newProgress = 40;
+            plan = AnomalyStudyPolicy.Plan(exactFacts, exactHistory, exactPolicy);
+            AssertEqual("new progress equal to threshold crosses", AnomalyStudyDisposition.Generate,
+                plan.disposition);
+            AssertEqual("equal-threshold promotion selected", "exact_threshold", plan.promotionToken);
+
+            exactFacts.oldProgress = 40;
+            exactFacts.newProgress = 41;
+            plan = AnomalyStudyPolicy.Plan(exactFacts, exactHistory, exactPolicy);
+            AssertEqual("old progress equal to threshold is already crossed",
+                AnomalyStudyDisposition.StateOnly, plan.disposition);
+
+            exactHistory.observedPromotionKeys.Add(" Entity_Fleshbeast|40|exact_threshold ");
+            exactFacts.oldProgress = 39;
+            exactFacts.newProgress = 40;
+            plan = AnomalyStudyPolicy.Plan(exactFacts, exactHistory, exactPolicy);
+            AssertEqual("trimmed saved promotion key prevents replay",
+                AnomalyStudyDisposition.StateOnly, plan.disposition);
+
+            AnomalyStudyFacts simultaneous = Study();
+            simultaneous.oldProgress = 10;
+            simultaneous.newProgress = 100;
+            simultaneous.noteThresholdsCrossed = 3;
+            simultaneous.completedAfter = true;
+            plan = AnomalyStudyPolicy.Plan(simultaneous, null, policy);
+            AssertEqual("coincident milestone emits one first stage",
+                AnomalyStudyStageTokens.FirstBreakthrough, plan.stageToken);
+            AssertEqual("unselected promotion token stays hidden", string.Empty, plan.promotionToken);
+            AssertEqual("coincident completion still enters history", "Entity_Fleshbeast",
+                plan.historyMutation.completedStudyDefName);
+            AssertEqual("coincident promotions still enter history", 2,
+                plan.historyMutation.observedPromotionKeys.Count);
         }
 
         private static void TestMonolithStateOnlyEnrichment()
@@ -310,6 +440,14 @@ namespace DiaryAnomalyPolicyTests
             facts.monolithActivatableBefore = true;
             plan = AnomalyStudyPolicy.Plan(facts, null, null);
             AssertTrue("already-activatable does not claim transition", !plan.monolithBecameActivatable);
+
+            facts.monolithActivatableBefore = false;
+            facts.newProgress = facts.oldProgress;
+            plan = AnomalyStudyPolicy.Plan(facts, null, null);
+            AssertEqual("no-progress monolith transition remains state-only",
+                AnomalyStudyDisposition.StateOnly, plan.disposition);
+            AssertTrue("no-progress activation-ready transition preserved",
+                plan.monolithBecameActivatable);
         }
 
         private static void TestTaleOwnershipExactness()
@@ -340,6 +478,20 @@ namespace DiaryAnomalyPolicyTests
             tale.studiedEntityId = string.Empty;
             decision = AnomalyTaleOwnershipPolicy.Decide(claim, tale, 60);
             AssertTrue("defName fallback matches when both lack entity id", decision.suppress);
+
+            claim = Claim();
+            claim.studiedEntityId = string.Empty;
+            tale = Tale();
+            decision = AnomalyTaleOwnershipPolicy.Decide(claim, tale, 60);
+            AssertTrue("claim missing id cannot suppress a Tale with a stable id",
+                !decision.suppress && !decision.removeClaim);
+
+            claim = Claim();
+            tale = Tale();
+            tale.studiedEntityId = string.Empty;
+            decision = AnomalyTaleOwnershipPolicy.Decide(claim, tale, 60);
+            AssertTrue("Tale missing id cannot satisfy a stable-id claim",
+                !decision.suppress && !decision.removeClaim);
         }
 
         private static void TestTaleOwnershipExpiryAndConsumeOnce()
@@ -363,6 +515,13 @@ namespace DiaryAnomalyPolicyTests
             tale.tick = 101;
             decision = AnomalyTaleOwnershipPolicy.Decide(claim, tale, 0);
             AssertTrue("zero window expires next tick", !decision.suppress && decision.removeClaim);
+            tale.tick = 100 + AnomalyPolicyLimits.DefaultStudyTaleSuppressionTicks;
+            decision = AnomalyTaleOwnershipPolicy.Decide(claim, tale, -1);
+            AssertTrue("negative window uses the default inclusive boundary", decision.suppress);
+            tale.tick++;
+            decision = AnomalyTaleOwnershipPolicy.Decide(claim, tale, -1);
+            AssertTrue("negative window fallback expires after its default",
+                !decision.suppress && decision.removeClaim);
             tale.tick = 99;
             decision = AnomalyTaleOwnershipPolicy.Decide(claim, tale, 60);
             AssertTrue("Tale before claim fails open without consuming", !decision.suppress
@@ -393,6 +552,12 @@ namespace DiaryAnomalyPolicyTests
             facts = Breach();
             facts.escapeId = "bad|id";
             AssertTrue("separator injection invalid", !ContainmentBreachPolicy.Plan(facts, null).valid);
+            facts = Breach();
+            facts.tick = -1;
+            AssertTrue("negative breach tick invalid", !ContainmentBreachPolicy.Plan(facts, null).valid);
+            facts = Breach();
+            facts.mapId = -1;
+            AssertTrue("negative breach map invalid", !ContainmentBreachPolicy.Plan(facts, null).valid);
         }
 
         private static void TestContainmentAggregationAndBounds()
@@ -487,7 +652,7 @@ namespace DiaryAnomalyPolicyTests
             facts.witnesses.Add(Writer("Pawn_B", true, false, true, 4, "Pawn_B"));
             ContainmentBreachPlan first = ContainmentBreachPolicy.Plan(facts, null);
             ContainmentBreachPlan second = ContainmentBreachPolicy.Plan(facts, null);
-            AssertEqual("dedup key", "anomaly-breach|7|escape-a", first.dedupKey);
+            AssertEqual("dedup key", "anomaly-breach|7|100|escape-a", first.dedupKey);
             AssertEqual("same input same key", first.dedupKey, second.dedupKey);
             AssertEqual("same input same author", first.selectedWriters[0].pawnId,
                 second.selectedWriters[0].pawnId);
@@ -508,6 +673,10 @@ namespace DiaryAnomalyPolicyTests
             otherOuter.escapeId = "escape-b";
             AssertTrue("different outer escape changes dedup",
                 ContainmentBreachPolicy.DedupKey(facts) != ContainmentBreachPolicy.DedupKey(otherOuter));
+            ContainmentEscapeFacts otherTick = Breach();
+            otherTick.tick++;
+            AssertTrue("different start tick changes dedup",
+                ContainmentBreachPolicy.DedupKey(facts) != ContainmentBreachPolicy.DedupKey(otherTick));
         }
 
         private static AnomalyStudyFacts Study()
@@ -521,7 +690,7 @@ namespace DiaryAnomalyPolicyTests
                 studierEligible = true,
                 oldProgress = 10,
                 newProgress = 20,
-                noteCount = 1
+                noteThresholdsCrossed = 1
             };
         }
 
