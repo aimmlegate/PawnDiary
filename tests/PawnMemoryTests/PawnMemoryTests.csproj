@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <!-- Link only plain source. This project must compile with no RimWorld, Verse, Unity, or DLC assembly. -->
+  <ItemGroup>
+    <Compile Include="..\..\Source\Pipeline\Memory\MemoryContracts.cs" Link="MemoryContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\Memory\MemoryExtraction.cs" Link="MemoryExtraction.cs" />
+    <Compile Include="..\..\Source\Pipeline\Memory\MemoryRecallSelector.cs" Link="MemoryRecallSelector.cs" />
+    <Compile Include="..\..\Source\Pipeline\Memory\MemoryEvictionPlanner.cs" Link="MemoryEvictionPlanner.cs" />
+    <Compile Include="..\..\Source\Pipeline\Memory\MemoryContextPrompt.cs" Link="MemoryContextPrompt.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiarySentenceExcerpt.cs" Link="DiarySentenceExcerpt.cs" />
+    <Compile Include="..\..\Source\Pipeline\TextTruncation.cs" Link="TextTruncation.cs" />
+    <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" Link="DiaryContextFields.cs" />
+  </ItemGroup>
+</Project>

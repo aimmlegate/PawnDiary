@@ -1,5 +1,33 @@
 # Changelog
 
+- **2026-07-19 — Implemented the pawn memory subsystem from `design/MEMORY_SYSTEM_DESIGN.md` as an
+  inert, unwired layer.** Player-visible behavior is unchanged: nothing calls the new code yet
+  (capture hooks, prompt plumbing, eviction scheduling, and the settings toggle are design §14
+  steps 4–7 and land separately). Added the pure `Source/Pipeline/Memory/` layer — `MemoryContracts`
+  (18-token closed tag vocabulary, query/result/snapshot DTOs, `MemoryPolicySnapshot` whose
+  `CreateDefault()` matches the shipped XML), `MemoryExtraction` (the single tag/keyword/importance/
+  excerpt mechanism shared by deposit and recall, with ~60-word stopword filtering and
+  none/n/a/unknown sentinel handling so `royal_title=none` never tags or keywords a memory),
+  `MemoryRecallSelector` (seeded recall gate, saturated tag/keyword similarity with half-life decay
+  and a floor, same-day and self-event guards, quarter-strength anti-repetition cooldown, 1-hop
+  spreading activation that excludes direct matches and same-source fragments, age-band rendering
+  that drops whole picks rather than truncating them), `MemoryEvictionPlanner` (stale rule, core
+  exemption plus core cap, per-pawn and colony-wide caps with deterministic retention/createdTick/
+  recallCount/id ordering, never mutating input), and `MemoryContextPrompt` (`MemoryContext` source
+  token + Compose mirroring the narrative field). Added the persistence building blocks — the
+  saved `MemoryFragment` model (additive Scribe keys, PostLoadInit repair) and
+  `PawnMemoryRepository` (saved master list plus rebuilt per-pawn/deposit-key indexes, idempotent
+  per pawn+source-event deposit) — and the tuning surface: `DiaryMemoryTuningDef` +
+  `1.6/Defs/DiaryMemoryTuningDef.xml` with `DiaryMemoryPolicy.Snapshot()` copying it into the pure
+  snapshot, plus English and Russian DefInjected files for the label, age bands, and prompt
+  instruction. New `tests/PawnMemoryTests` pure suite (264 assertions, no RimWorld/Verse/Unity/DLC
+  assemblies) covers the extraction tables and keyword normalization, golden scoring math,
+  saturation/decay/floor, min-age and cooldown boundaries, tie-breaks and self-recall, the Yorick
+  spreading-activation bridge with hop exclusions, seeded gate flips, rendering age bands and
+  character-budget drop order, determinism/no-mutation, every eviction rule, the prompt composer,
+  and the default policy surface; the suite is registered in `.githooks/verify.ps1`. Debug rebuild
+  is clean and the committed DLL carries the new (unused) types.
+
 - **2026-07-19 — Closed the remaining Royalty Phase-4 correlation lifecycle defects found in review.**
   Title-memory release is now an ordered second phase after map and exact off-map mutation/title
   observers, so equal expiry windows cannot publish an ordinary Thought immediately before a richer

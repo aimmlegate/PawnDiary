@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <Diary_Memory.label>pawn memory policy</Diary_Memory.label>
+  <Diary_Memory.ageBands.0.label>a few days ago</Diary_Memory.ageBands.0.label>
+  <Diary_Memory.ageBands.1.label>a couple of weeks ago</Diary_Memory.ageBands.1.label>
+  <Diary_Memory.ageBands.2.label>a few quadrums ago</Diary_Memory.ageBands.2.label>
+  <Diary_Memory.ageBands.3.label>a long time ago</Diary_Memory.ageBands.3.label>
+  <Diary_Memory.memoryContextInstruction>Long-standing memories that drift into mind while writing. Weave in at most one, briefly and only if it feels natural; these are the past, not today's events.</Diary_Memory.memoryContextInstruction>
+</LanguageData>

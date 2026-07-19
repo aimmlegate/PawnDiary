@@ -51,11 +51,11 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts and Royalty persona-weapon lifecycle identity/dedup plus forced first-kill POV decisions. |
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including Royalty persona lifecycle/Tale enrichment and ritual-owned title/psylink mutation context. |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
-| `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
+| `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. Also `PawnMemoryRepository` (per-pawn memory store; inert until the memory wiring lands). |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Odyssey location/mobile-home/lifecycle and Royalty persona/title/psylink snapshots. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, Odyssey lifecycle/journey/location/history/writer/context policy, and Royalty persona/title/psylink decisions plus save normalization. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/` (inert until wired). |
 | `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including `DiaryOdysseyPolicyDef` and the Royalty policy plus DefInjected provider prose. |
-| `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history and Royalty persona/faction-title observation state. |
+| `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history, Royalty persona/faction-title observation state, and the `MemoryFragment` pawn-memory row. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death correlation seams. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
@@ -155,6 +155,20 @@ references and selected-candidate keys on archived rows, then rebuilds pawn-scop
 for a later source-owned provider; the archive itself does not create prompt context. Yearly arc
 reflections deliberately sample both hot and archived diary pages as memory candidates, then
 de-duplicate by event ID so a shared hot/archive page appears once.
+
+**Pawn memory (`design/MEMORY_SYSTEM_DESIGN.md`, implemented but deliberately not wired in).** The
+building blocks for a per-pawn associative memory layer exist: the saved `MemoryFragment` model
+(tagged, keyworded, importance-weighted text fragments), the `PawnMemoryRepository` store (saved
+master list plus per-pawn/deposit-key indexes rebuilt on load, idempotent per pawn+event deposit),
+the pure `Pipeline/Memory/` layer (one shared tag/keyword/importance extraction mechanism, a
+deterministic similarity selector with seeded gates and a 1-hop spreading-activation pick, and an
+importance x recall-recency eviction planner), the `MemoryContextPrompt` field composer, and the
+`DiaryMemoryTuningDef` (`Diary_Memory`) tuning surface mirrored by `MemoryPolicySnapshot`. Nothing
+references them yet: no capture hook deposits fragments, no prompt template requests the
+`MemoryContext` source, `DiaryMemoryPolicy.Snapshot()` has no caller, and no settings checkbox
+exists. Player-visible behavior is unchanged; the layer is covered by `tests/PawnMemoryTests` and
+goes live only when design §14 steps 4–7 (capture hooks, prompt plumbing, eviction scheduling,
+settings toggle) are implemented.
 
 ### 3.4 Generation
 
@@ -2637,6 +2651,7 @@ dotnet run --project tests/PromptVariantsTests/PromptVariantsTests.csproj
 dotnet run --project tests/DiarySaveNormalizationTests/DiarySaveNormalizationTests.csproj
 dotnet run --project tests/DiaryObservedConditionTests/DiaryObservedConditionTests.csproj
 dotnet run --project tests/NarrativeContinuityTests/NarrativeContinuityTests.csproj
+dotnet run --project tests/PawnMemoryTests/PawnMemoryTests.csproj
 dotnet run --project tests/DiaryBiotechPolicyTests/DiaryBiotechPolicyTests.csproj
 dotnet run --project tests/DiaryOdysseyPolicyTests/DiaryOdysseyPolicyTests.csproj
 dotnet run --project tests/RoyaltyContextTests/RoyaltyContextTests.csproj
