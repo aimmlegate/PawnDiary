@@ -16,6 +16,8 @@
     <titleCorrelationTicks>2500</titleCorrelationTicks>
     <psylinkCorrelationTicks>2500</psylinkCorrelationTicks>
     <titleThoughtCorrelationTicks>2500</titleThoughtCorrelationTicks>
+    <!-- Cleanup lifetime for same-action exact-edge duplicates. A committed succession itself stays
+         pending until its title chain reaches the target or contradictory title evidence retires it. -->
     <successionCorrelationTicks>2500</successionCorrelationTicks>
     <maximumPendingRoyalMutations>64</maximumPendingRoyalMutations>
     <maximumPendingTitleThoughts>128</maximumPendingTitleThoughts>

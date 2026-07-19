@@ -5,13 +5,12 @@ using System.Collections.Generic;
 
 namespace PawnDiary
 {
-    /// <summary>Validates, commits, matches, expires, deduplicates, and caps succession facts.</summary>
+    /// <summary>Validates, commits, advances, invalidates, deduplicates, and caps succession facts.</summary>
     internal static class RoyalSuccessionPolicy
     {
         public static RoyalSuccessionFact Commit(
             RoyalSuccessionCandidateSnapshot candidate,
-            RoyalSuccessionCommitObservation observation,
-            int lifetimeTicks)
+            RoyalSuccessionCommitObservation observation)
         {
             if (!ValidCandidate(candidate) || observation == null
                 || candidate.heirAlreadyHeldEqualOrHigherTitle || !observation.wasInherited
@@ -21,7 +20,6 @@ namespace PawnDiary
                 || !Eq(candidate.inheritedTitleDefName, observation.inheritedTitleDefName)
                 || observation.commitTick < candidate.candidateTick) return null;
 
-            int lifetime = lifetimeTicks > 0 ? lifetimeTicks : 2500;
             return new RoyalSuccessionFact
             {
                 correlationId = Clean(candidate.correlationId),
@@ -37,10 +35,54 @@ namespace PawnDiary
                 previousHeirTitleDefName = CleanId(candidate.previousHeirTitleDefName),
                 previousHeirTitleLabel = CleanText(candidate.previousHeirTitleLabel),
                 previousHeirTitleSeniority = Math.Max(-1, candidate.previousHeirTitleSeniority),
+                currentHeirTitleDefName = CleanId(candidate.previousHeirTitleDefName),
+                currentHeirTitleLabel = CleanText(candidate.previousHeirTitleLabel),
+                currentHeirTitleSeniority = Math.Max(-1, candidate.previousHeirTitleSeniority),
                 candidateTick = candidate.candidateTick,
                 commitTick = observation.commitTick,
-                expiresTick = SafeAdd(observation.commitTick, lifetime)
+                // Bestowing offers have no vanilla acceptance deadline. Keep the bounded proof until
+                // its monotonic title chain reaches the exact target or a contradictory edge retires it.
+                expiresTick = int.MaxValue
             };
+        }
+
+        /// <summary>Returns whether an in-flight title callback is compatible with this candidate's chain.</summary>
+        public static bool MatchesCandidateMutation(
+            RoyalSuccessionCandidateSnapshot candidate,
+            RoyalTitleMutationSnapshot mutation)
+        {
+            if (!ValidCandidate(candidate) || mutation == null
+                || !Eq(candidate.heirPawnId, mutation.pawnId)
+                || !Eq(candidate.factionId, mutation.factionId)) return false;
+            RoyalSuccessionMutationDisposition disposition = ClassifyTitleStep(
+                candidate.previousHeirTitleDefName,
+                candidate.previousHeirTitleSeniority,
+                candidate.inheritedTitleDefName,
+                candidate.inheritedTitleSeniority,
+                mutation);
+            return IsClaim(disposition);
+        }
+
+        /// <summary>
+        /// Classifies one same-pawn/faction mutation against the saved monotonic inheritance chain.
+        /// A mismatched predecessor retires the proof instead of letting an old death claim a later,
+        /// independent promotion that merely happens to end at the same title.
+        /// </summary>
+        public static RoyalSuccessionMutationDisposition ClassifyMutation(
+            RoyalSuccessionFact fact,
+            RoyalTitleMutationSnapshot mutation,
+            string correlationId,
+            int now)
+        {
+            if (!ValidFact(fact, now) || mutation == null
+                || !Eq(fact.correlationId, correlationId)
+                || !Eq(fact.heirPawnId, mutation.pawnId)
+                || !Eq(fact.factionId, mutation.factionId))
+                return RoyalSuccessionMutationDisposition.Unrelated;
+            return ClassifyTitleStep(
+                CursorDefName(fact), CursorSeniority(fact),
+                fact.inheritedTitleDefName, fact.inheritedTitleSeniority,
+                mutation);
         }
 
         public static bool MatchesMutation(
@@ -49,15 +91,36 @@ namespace PawnDiary
             string correlationId,
             int now)
         {
-            if (!ValidFact(fact, now) || mutation == null || mutation.newTitle == null
-                || !Eq(fact.correlationId, correlationId)
-                || !Eq(fact.heirPawnId, mutation.pawnId)
-                || !Eq(fact.factionId, mutation.factionId)
-                || !Eq(fact.inheritedTitleDefName, mutation.newTitle.titleDefName)) return false;
-            string previous = mutation.previousTitle?.titleDefName ?? string.Empty;
-            return string.IsNullOrEmpty(fact.previousHeirTitleDefName)
-                ? string.IsNullOrEmpty(previous)
-                : Eq(fact.previousHeirTitleDefName, previous);
+            return IsClaim(ClassifyMutation(fact, mutation, correlationId, now));
+        }
+
+        /// <summary>Returns a detached copy whose chain cursor has consumed one compatible mutation.</summary>
+        public static RoyalSuccessionFact AdvanceMutation(
+            RoyalSuccessionFact fact,
+            RoyalTitleMutationSnapshot mutation,
+            int now)
+        {
+            RoyalSuccessionMutationDisposition disposition = ClassifyMutation(
+                fact, mutation, fact?.correlationId, now);
+            if (!IsClaim(disposition)) return null;
+            RoyalSuccessionFact advanced = Copy(fact);
+            advanced.currentHeirTitleDefName = CleanId(mutation.newTitle?.titleDefName);
+            advanced.currentHeirTitleLabel = CleanText(mutation.newTitle?.titleLabel);
+            advanced.currentHeirTitleSeniority = Math.Max(-1, mutation.newTitle?.seniority ?? -1);
+            advanced.titleMutationClaimed = disposition == RoyalSuccessionMutationDisposition.ClaimTarget;
+            advanced.expiresTick = int.MaxValue;
+            return advanced;
+        }
+
+        /// <summary>Compares the exact detached edge identity used by the transient duplicate cache.</summary>
+        public static bool SameMutation(RoyalTitleMutationSnapshot left, RoyalTitleMutationSnapshot right)
+        {
+            return left != null && right != null
+                && left.tick == right.tick
+                && Eq(left.pawnId, right.pawnId)
+                && Eq(left.factionId, right.factionId)
+                && Eq(left.previousTitle?.titleDefName, right.previousTitle?.titleDefName)
+                && Eq(left.newTitle?.titleDefName, right.newTitle?.titleDefName);
         }
 
         public static bool ValidAppointment(RoyalHeirAppointmentSnapshot appointment)
@@ -80,7 +143,9 @@ namespace PawnDiary
             for (int i = 0; i < (source?.Count ?? 0); i++)
             {
                 RoyalSuccessionFact row = source[i];
-                if (!ValidFact(row, now)) continue;
+                // titleMutationClaimed was scribed by the first Phase-5 implementation. Treat such
+                // legacy rows as terminal and remove them; pending rows migrate to chain persistence.
+                if (!ValidFact(row, now) || row.titleMutationClaimed) continue;
                 string key = EdgeKey(row);
                 if (key.Length == 0 || !seen.Add(key)) continue;
                 rows.Add(Copy(row));
@@ -111,6 +176,7 @@ namespace PawnDiary
         {
             return value != null && SafeCorrelation(value.correlationId)
                 && SafeId(value.deceasedPawnId) && SafeId(value.heirPawnId)
+                && !Eq(value.deceasedPawnId, value.heirPawnId)
                 && SafeId(value.factionId) && SafeId(value.inheritedTitleDefName)
                 && value.candidateTick >= 0 && value.inheritedTitleSeniority >= 0;
         }
@@ -119,10 +185,13 @@ namespace PawnDiary
         {
             return value != null && SafeCorrelation(value.correlationId)
                 && SafeId(value.deceasedPawnId) && SafeId(value.heirPawnId)
+                && !Eq(value.deceasedPawnId, value.heirPawnId)
                 && SafeId(value.factionId) && SafeId(value.inheritedTitleDefName)
                 && value.candidateTick >= 0 && value.commitTick >= value.candidateTick
                 && value.expiresTick >= value.commitTick
-                && now >= value.commitTick && now <= value.expiresTick;
+                // Old Phase-5 rows used expiresTick as a one-hour deadline. It is retained only as
+                // additive save-schema data; pending chain ownership now ends by evidence, not time.
+                && now >= value.commitTick;
         }
 
         private static RoyalSuccessionFact Copy(RoyalSuccessionFact value)
@@ -138,16 +207,66 @@ namespace PawnDiary
                 previousHeirTitleDefName = CleanId(value.previousHeirTitleDefName),
                 previousHeirTitleLabel = CleanText(value.previousHeirTitleLabel),
                 previousHeirTitleSeniority = Math.Max(-1, value.previousHeirTitleSeniority),
+                currentHeirTitleDefName = CursorDefName(value),
+                currentHeirTitleLabel = CursorLabel(value),
+                currentHeirTitleSeniority = CursorSeniority(value),
                 candidateTick = value.candidateTick, commitTick = value.commitTick,
-                expiresTick = value.expiresTick, pageClaimed = value.pageClaimed,
+                expiresTick = int.MaxValue, pageClaimed = value.pageClaimed,
                 titleMutationClaimed = value.titleMutationClaimed
             };
         }
 
-        private static int SafeAdd(int value, int amount)
+        private static RoyalSuccessionMutationDisposition ClassifyTitleStep(
+            string cursorDefName,
+            int cursorSeniority,
+            string targetDefName,
+            int targetSeniority,
+            RoyalTitleMutationSnapshot mutation)
         {
-            long result = (long)value + amount;
-            return result > int.MaxValue ? int.MaxValue : (int)result;
+            if (mutation?.newTitle == null || !SafeId(mutation.newTitle.titleDefName))
+                return RoyalSuccessionMutationDisposition.Invalidate;
+            string previousDefName = mutation.previousTitle?.titleDefName ?? string.Empty;
+            if (!Eq(cursorDefName, previousDefName))
+                return RoyalSuccessionMutationDisposition.Invalidate;
+
+            string newDefName = mutation.newTitle.titleDefName;
+            if (Eq(newDefName, targetDefName) && !Eq(newDefName, previousDefName))
+                return RoyalSuccessionMutationDisposition.ClaimTarget;
+
+            int previousSeniority = mutation.previousTitle?.seniority ?? Math.Max(-1, cursorSeniority);
+            int nextSeniority = mutation.newTitle.seniority;
+            if (nextSeniority <= previousSeniority || nextSeniority >= targetSeniority)
+                return RoyalSuccessionMutationDisposition.Invalidate;
+            return RoyalSuccessionMutationDisposition.ClaimIntermediate;
+        }
+
+        private static bool IsClaim(RoyalSuccessionMutationDisposition disposition)
+        {
+            return disposition == RoyalSuccessionMutationDisposition.ClaimIntermediate
+                || disposition == RoyalSuccessionMutationDisposition.ClaimTarget;
+        }
+
+        private static string CursorDefName(RoyalSuccessionFact value)
+        {
+            string current = CleanId(value?.currentHeirTitleDefName);
+            if (current.Length > 0 || string.IsNullOrWhiteSpace(value?.previousHeirTitleDefName)) return current;
+            return CleanId(value.previousHeirTitleDefName);
+        }
+
+        private static string CursorLabel(RoyalSuccessionFact value)
+        {
+            string current = CleanText(value?.currentHeirTitleLabel);
+            if (current.Length > 0 || string.IsNullOrWhiteSpace(value?.previousHeirTitleLabel)) return current;
+            return CleanText(value.previousHeirTitleLabel);
+        }
+
+        private static int CursorSeniority(RoyalSuccessionFact value)
+        {
+            if (value == null) return -1;
+            if (!string.IsNullOrWhiteSpace(value.currentHeirTitleDefName)
+                || string.IsNullOrWhiteSpace(value.previousHeirTitleDefName))
+                return Math.Max(-1, value.currentHeirTitleSeniority);
+            return Math.Max(-1, value.previousHeirTitleSeniority);
         }
 
         private static bool Eq(string left, string right)

@@ -275,7 +275,9 @@ namespace PawnDiary.RimTests
         /// fails) and Pawn Diary's own <see cref="DiaryGameComponent.IsDiaryEligible"/> gate stops treating
         /// it as eligible, so SetPersona returns false and an ArrivalSignal is dropped. A map pawn is found
         /// by the same lookup AND stays a real colonist, so inspiration/arrival/persona behave as in play.
-        /// Only prompt-capture suites that assert on live-pawn layers need it.
+        /// Prompt-capture suites that assert on live-pawn layers need it, as do fixtures exercising
+        /// component-wide live-colonist scans or detached-ID resolution (for example pre-save title
+        /// reconciliation and royal succession).
         ///
         /// Requires a loaded map (like the §4.2 death capture). Idempotent; teardown despawns and destroys
         /// the pawn (<see cref="DestroyTestPawns"/>).
@@ -482,13 +484,15 @@ namespace PawnDiary.RimTests
         /// <summary>
         /// Runs <paramref name="fire"/> (a real vanilla API call the production Harmony hooks observe)
         /// and asserts it produced exactly one new <see cref="DiaryEvent"/> matching the given
-        /// interaction/participants. Returns that event for further field assertions.
+        /// interaction/participants. The optional strict flag also rejects every unexpected event type
+        /// involving a test pawn. Returns the matching event for further field assertions.
         /// </summary>
         public DiaryEvent FireAndRequireEvent(
             Action fire,
             string interactionDefName,
             Pawn expectedInitiator,
-            Pawn expectedRecipient)
+            Pawn expectedRecipient,
+            bool rejectOtherTestPawnEvents = false)
         {
             if (fire == null)
             {
@@ -501,13 +505,18 @@ namespace PawnDiary.RimTests
             string initiatorId = expectedInitiator?.GetUniqueLoadID() ?? string.Empty;
             string recipientId = expectedRecipient?.GetUniqueLoadID() ?? string.Empty;
             List<DiaryEvent> matches = new List<DiaryEvent>();
+            List<DiaryEvent> allNewTestPawnEvents = new List<DiaryEvent>();
+            HashSet<string> testPawnIds = rejectOtherTestPawnEvents ? TestPawnIdSet() : null;
             IReadOnlyList<DiaryEvent> allEvents = EventRepository().AllEvents;
             for (int i = 0; i < allEvents.Count; i++)
             {
                 DiaryEvent diaryEvent = allEvents[i];
-                if (diaryEvent == null
-                    || before.Contains(diaryEvent.eventId)
-                    || !string.Equals(diaryEvent.interactionDefName, interactionDefName, StringComparison.OrdinalIgnoreCase)
+                if (diaryEvent == null || before.Contains(diaryEvent.eventId)) continue;
+                if (rejectOtherTestPawnEvents
+                    && (testPawnIds.Contains(diaryEvent.initiatorPawnId)
+                        || testPawnIds.Contains(diaryEvent.recipientPawnId)))
+                    allNewTestPawnEvents.Add(diaryEvent);
+                if (!string.Equals(diaryEvent.interactionDefName, interactionDefName, StringComparison.OrdinalIgnoreCase)
                     || !string.Equals(diaryEvent.initiatorPawnId, initiatorId, StringComparison.Ordinal))
                 {
                     continue;
@@ -520,6 +529,14 @@ namespace PawnDiary.RimTests
                 }
 
                 matches.Add(diaryEvent);
+            }
+
+            if (rejectOtherTestPawnEvents && allNewTestPawnEvents.Count != 1)
+            {
+                throw new AssertionException(
+                    "Expected exactly one total new diary event for the test pawn(s), but found "
+                    + allNewTestPawnEvents.Count + ": "
+                    + string.Join(", ", allNewTestPawnEvents.ConvertAll(row => row.interactionDefName)) + ".");
             }
 
             if (matches.Count != 1)

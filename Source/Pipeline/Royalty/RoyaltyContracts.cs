@@ -339,6 +339,7 @@ namespace PawnDiary
         public int titleCorrelationTicks = 2500;
         public int psylinkCorrelationTicks = 2500;
         public int titleThoughtCorrelationTicks = 2500;
+        // Transient same-action duplicate cleanup only; saved succession chains are terminal-driven.
         public int successionCorrelationTicks = 2500;
         public int killThoughtCorrelationTicks = 60;
         public int maximumPendingRoyalMutations = 64;
@@ -489,11 +490,26 @@ namespace PawnDiary
         public string previousHeirTitleDefName = string.Empty;
         public string previousHeirTitleLabel = string.Empty;
         public int previousHeirTitleSeniority = -1;
+        // This cursor advances only through compatible title steps after the inheritance commit.
+        // It lets the ordinary vanilla chain (no title -> Freeholder -> inherited title) survive
+        // an arbitrarily delayed bestowing ceremony without treating rank alone as succession proof.
+        public string currentHeirTitleDefName = string.Empty;
+        public string currentHeirTitleLabel = string.Empty;
+        public int currentHeirTitleSeniority = -1;
         public int candidateTick;
         public int commitTick;
         public int expiresTick;
         public bool pageClaimed;
         public bool titleMutationClaimed;
+    }
+
+    /// <summary>Pure ownership result for one title mutation observed after a committed succession.</summary>
+    internal enum RoyalSuccessionMutationDisposition
+    {
+        Unrelated,
+        ClaimIntermediate,
+        ClaimTarget,
+        Invalidate
     }
 
     /// <summary>One title callback staged while the enclosing death commit is still unresolved.</summary>

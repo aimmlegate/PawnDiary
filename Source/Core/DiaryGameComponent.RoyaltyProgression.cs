@@ -114,7 +114,10 @@ namespace PawnDiary
                     // the versioned scanner can still observe the live change truthfully.
                     observationCheckpoint = RoyaltyObservationCheckpoint.Capture(progression);
                     EnsureRoyaltyObservationReady(pawn, progression);
-                    if (title != null && TitleChanged(beforeTitle, afterTitle))
+                    // Ownership can remove the title from the competing ritual batch, but the live
+                    // before/after edge is still authoritative saved truth. Advance it even when the
+                    // private title hook is unavailable and succession claimed the mutation here.
+                    if (TitleChanged(beforeTitle, afterTitle))
                         AdvanceRoyalTitleObservation(progression, afterTitle, beforeTitle, Math.Max(0, now));
                     progression.highestPsylinkLevelRecorded = Math.Max(
                         progression.highestPsylinkLevelRecorded, afterPsylink);

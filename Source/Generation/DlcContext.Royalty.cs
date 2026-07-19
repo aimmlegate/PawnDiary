@@ -177,8 +177,14 @@ namespace PawnDiary
             snapshot = null;
             Pawn heir = outcome.heir;
             if (!ModsConfig.RoyaltyActive || title == null || deceased == null || faction == null
-                || heir == null || deceased.royalty == null || heir.royalty == null) return false;
-            RoyalTitleSnapshot previous = CaptureRoyalTitleForFaction(heir, faction);
+                || heir == null || ReferenceEquals(heir, deceased)
+                || deceased.royalty == null || heir.royalty == null) return false;
+            // The outcome is vanilla's exact pre-inheritance result. Prefer it to a second live read,
+            // which another Harmony postfix could already have changed before this postfix executes.
+            RoyalTitleSnapshot previous = outcome.heirCurrentTitle == null
+                ? null
+                : CaptureRoyalTitleSnapshot(
+                    heir, faction, outcome.heirCurrentTitle, -1, false);
             RoyalTitleSnapshot inherited = CaptureRoyalTitleSnapshot(heir, faction, title, -1, false);
             if (inherited == null) return false;
             snapshot = new RoyalSuccessionCandidateSnapshot

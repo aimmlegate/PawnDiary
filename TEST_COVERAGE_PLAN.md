@@ -126,7 +126,7 @@ bounded source evidence. The EVT-22 RimTest fixture exercises the live package-g
 path when Anomaly is active and the no-op branch otherwise.
 
 Master Waves 5 and 9 / Royalty Phases 0–5 plus N3-R evidence use `RoyaltyContextTests`, now a
-346-assertion assembly-free suite. It
+358-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing
 Narrative Continuity `bond_lifecycle`/`weapon` contract; formation/load-baseline/re-equip,
 pending/threshold/unobservable separation, recorded/unrecorded recovery, destruction/death/transfer,
@@ -137,7 +137,10 @@ context ownership, disabled/rejected consumption, solo-killer ownership, and vic
 first title/promotion/demotion/loss/no-op, faction identity, seniority, bounded duty deltas, claimed and
 disabled observation advancement; and exact bestowing/anima/neuroformer/succession title/psylink
 matching, inclusive correlation boundaries, pending/claim/expiry, one-fallback dedup, mismatched pawn/
-level/correlation, and malformed/null behavior. The shipped policy XML is parsed separately and its
+level/correlation, and malformed/null behavior. Succession specifically pins the titleless
+none-to-Freeholder-to-target chain, terminal persistence beyond the former short expiry, exact
+predecessor invalidation, transient exact-edge ownership, self-heir rejection, and deterministic saved
+cap/migration behavior. The shipped policy XML is parsed separately and its
 detached `CreateDefault` path is exercised. Phase 1 additionally covers conservative persona
 baselines, malformed phase/tick/cause repair, duplicate weapon ownership, trait/row caps, faction-title
 dedup, highest-seniority selection, stable ordering, missing rows, corruption ceilings, exact live
@@ -217,23 +220,29 @@ existing fixtures and expanded the suite; the user-confirmed loaded rerun passed
 Phase-2/3/4 hands-on row remains open; R1 is
 therefore code-complete but not yet acceptance-complete.
 
-Phase 5 adds 28 pure Royalty assertions for exact candidate+outer-commit authorization,
-candidate-only/equal-or-higher silence, deceased/heir/faction/title/correlation mismatches, inclusive
-expiry, callback-before-commit staging, delayed matching, deterministic normalization/dedup/caps,
-distinct same-tick edges, malformed rows, prompt-context redaction, and explicit-quest versus
+Phase 5 adds 40 pure Royalty assertions for exact candidate+outer-commit authorization,
+candidate-only/equal-or-higher silence, deceased/heir/faction/title/correlation mismatches,
+callback-before-commit staging, titleless instant-intermediate advancement, delayed terminal matching,
+contradictory predecessor invalidation, transient exact-edge dedup, deterministic normalization/
+migration/dedup/caps, distinct same-tick edges, malformed/self-heir rows, prompt-context redaction, and explicit-quest versus
 automatic heir assignment. Pipeline coverage now passes 2,493 assertions and pins the two exact event
-prompts, Royalty-gated group classification, XML window/cap, SoloImportant fields 113–116,
+prompts, Royalty-gated group classification, XML transient-cache lifetime/save-ledger cap, SoloImportant fields 113–116,
 English/Russian labels/UI/dev fixtures, Compact-required succession facts, and the omission of internal
-IDs/ticks/correlation/commit flags. The runtime and 264-test RimTest assemblies build.
+IDs/ticks/correlation/commit flags. The runtime and 267-test RimTest assemblies build.
 
-`PawnDiaryRoyaltyProgressionFlowTests` adds real `Notify_PawnKilled` inheritance, a surrounding
-bestowing/title duplicate owner, equal-or-higher silence, and a real
+`PawnDiaryRoyaltyProgressionFlowTests` includes real `Notify_PawnKilled` inheritance with strict total
+event cardinality, the synchronous titleless Freeholder step, delayed target claim and terminal
+retirement, a surrounding bestowing/title duplicate owner, equal-or-higher silence, and a real
 `QuestPart_ChangeHeir.Notify_QuestSignalReceived` appointment after proving direct `SetHeir` is silent.
 `PawnDiaryRoyaltyFlowTests` audits all three exact new Harmony targets.
-`PawnDiaryRoyaltyStateFixtureTests` adds detached committed-fact Scribe, the actual component's missing
-and initialized-empty `royaltyPendingSuccessions` key, and transient-scope reset. These four new loaded
-tests compile but have not yet executed in RimWorld; 256/256 remains the last confirmed loaded result,
-and the Phase-5 hands-on matrix remains open.
+`PawnDiaryRoyaltyStateFixtureTests` adds detached committed-fact Scribe, a nonempty actual component
+ledger round-trip with old-expiry migration, the component's missing and initialized-empty
+`royaltyPendingSuccessions` key, Royalty-inactive hook/scope assertions, and transient-scope reset.
+The first expanded loaded run reached 264/267. Its three failures all came from generated fixture pawns
+remaining unspawned while succession ID resolution and the component-wide pre-save scanner correctly
+consulted only RimWorld's live-colonist roster; the affected fixtures now spawn their disposable
+heir/writer. The user-confirmed corrected loaded rerun passed 267/267. Phase 5 automated coverage is
+green, while its hands-on matrix remains open.
 
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,

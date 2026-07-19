@@ -15,7 +15,8 @@ same-tick title-edge dedup defect plus one Phase-3 mod-profile-sensitive fixture
  corrected, the user-confirmed loaded rerun passed 252/252. Consolidated adversarial hardening then
 expanded the suite; its user-confirmed loaded rerun passed 256/256. Hands-on acceptance remains
 pending. Phase 5 succession is code-complete with pure/build coverage and compiled loaded fixtures;
-its in-game execution and hands-on matrix remain pending. Phases 6–8 remain. This status does not pass,
+after correcting three disposable-pawn liveness gaps, its user-confirmed loaded rerun passed 267/267.
+Its hands-on matrix remains pending. Phases 6–8 remain. This status does not pass,
 waive, or remove any earlier Biotech B1 manual
 acceptance row.
 
@@ -435,6 +436,7 @@ permits and maximum psylink level are not duty tokens.
 
 #### `RoyalSuccessionFact`
 
+- `correlationId`
 - `deceasedPawnId`
 - `deceasedPawnName`
 - `heirPawnId`
@@ -443,10 +445,18 @@ permits and maximum psylink level are not duty tokens.
 - `factionName`
 - `inheritedTitleDefName`
 - `inheritedTitleLabel`
-- `heirAlreadyHeldHigherTitle`
-- `createdTick`
-- `expiresTick`
-- `claimed`
+- `inheritedTitleSeniority`
+- `previousHeirTitleDefName`
+- `previousHeirTitleLabel`
+- `previousHeirTitleSeniority`
+- `currentHeirTitleDefName`
+- `currentHeirTitleLabel`
+- `currentHeirTitleSeniority`
+- `candidateTick`
+- `commitTick`
+- `expiresTick` (legacy additive field; normalized to terminal persistence)
+- `pageClaimed`
+- `titleMutationClaimed`
 
 #### `RoyalPermitUseSnapshot`
 
@@ -879,17 +889,24 @@ did not already hold an equal/higher title and the matching deceased `RoyalTitle
 - a later bestowing ceremony with no pending matching fact.
 
 `GainFavor` runs before the outer method marks/commits inheritance and may itself trigger a title
-change. Any title hook reached inside the active succession scope is staged against the candidate
-rather than dispatched immediately. The outer postfix either commits and claims that mutation as
-part of succession or releases it to the normal fallback if vanilla did not mark the inheritance.
+change. For a titleless heir, the instant Freeholder award is a normal intermediate callback before
+the eventual inherited title. Compatible title hooks reached inside the active succession scope are
+staged against the candidate rather than dispatched immediately. The outer postfix either commits and
+advances through those exact predecessor-linked mutations as part of succession or releases every
+unclaimed mutation to the normal richer-owner-aware fallback if vanilla did not mark the inheritance,
+the scope was interrupted, or candidate processing failed.
 
 The succession page may be emitted at that committed outer edge if the heir is an eligible diary
 pawn. Its wording must distinguish “inherited the late titleholder's claim/title” from “was formally
 bestowed a new rank” when vanilla delays the visible rank.
 
-A later title/bestowing mutation claims the pending fact by heir, faction, and compatible title within
-the XML correlation lifetime. It may add ceremony detail but must not repeat the inheritance claim as
-a second progression page.
+A later title/bestowing mutation claims the pending fact only when heir, faction, exact predecessor,
+and a monotonically advancing title step match. The saved cursor persists until the exact inherited
+target terminates it or contradictory same-pawn/faction title evidence invalidates it; there is no
+finite bestowing deadline because vanilla's ceremony quest can be postponed indefinitely. The XML
+correlation ticks clean up only a transient exact-edge cache used when two adapters report the same
+physical mutation. Ceremony detail may remain truthful but must not repeat the inheritance claim as a
+second progression page.
 
 If the heir already holds an equal/higher title, vanilla applies no inheritance effect. Record no
 succession page and never invent a promotion, demotion, inherited claim, or new rank.
@@ -1154,7 +1171,7 @@ Add one policy Def with safe C# fallbacks for:
 - trait structural weights and worker-category mappings;
 - maximum selected persona traits;
 - title/psylink cause correlation lifetimes;
-- succession correlation lifetime;
+- succession same-action duplicate-cache lifetime and saved-ledger cap;
 - dramatic permit defName -> family mappings;
 - prompt text caps for weapon, trait, title, faction, and permit facts;
 - optional exact compatibility corrections/exclusions.
@@ -1500,25 +1517,27 @@ Exit gate: R1 is releasable.
 
 ### Phase 5 — Succession
 
-> **Implementation status (2026-07-19): code-complete; pure/build green, loaded execution and
+> **Implementation status (2026-07-19): code-complete; pure/build/automated loaded green at 267/267;
 > hands-on acceptance pending.** Exact `RoyalTitleDefExt.TryInherit` candidates are nested inside the
 > outer `Pawn_RoyaltyTracker.Notify_PawnKilled` scope and authorize a fact only after the matching
 > deceased title row commits `wasInherited`. Equal-or-higher heirs and candidate-only outcomes stay
-> silent. Title callbacks that arrive before the outer commit are staged; exact later title,
-> bestowing, title-memory, and scanner edges are claimed by heir/faction/title/correlation while
-> unrelated or uncommitted edges return to ordinary title flow. Only committed detached facts are
-> deep-scribed under `royaltyPendingSuccessions`, normalized, expired, deduplicated, and capped by
-> XML. `QuestPart_ChangeHeir.Notify_QuestSignalReceived(Signal)` is the proven explicit appointment
+> silent. Title callbacks that arrive before the outer commit are staged; this includes vanilla's
+> synchronous no-title-to-Freeholder step before an inherited Acolyte-or-higher ceremony. Exact later
+> title, bestowing, title-memory, and scanner edges advance a predecessor-linked monotonic cursor,
+> while unrelated or uncommitted edges return to ordinary title flow and contradictory edges retire
+> stale ownership. Only committed detached facts are deep-scribed under `royaltyPendingSuccessions`,
+> migrated, deduplicated, and capped by XML; they persist until target or contradiction because vanilla
+> bestowing has no deadline. `QuestPart_ChangeHeir.Notify_QuestSignalReceived(Signal)` is the proven explicit appointment
 > source; direct/automatic `SetHeir` calls remain unpatched and silent. One heir-POV Progression page
 > uses only `succession_deceased`, `succession_heir`, `succession_title`, and
 > `succession_faction`, with identity-transition authority/status/duty/death evidence. English and
 > Russian prompts/UI/fixtures and append-only SoloImportant fields 113–116 ship. Pure suites pass
-> 346 Royalty and 2,493 pipeline assertions; the runtime and expanded 264-test RimTest assemblies
-> build, but the four new loaded fixtures have not yet executed in game.
+> 358 Royalty and 2,493 pipeline assertions; the runtime and expanded 267-test RimTest assemblies
+> build, and the user-confirmed corrected loaded run passes all 267 tests.
 
 1. Add the pure succession policy and its deterministic tests.
 2. Register the nested `TryInherit` candidate hook plus the outer `Notify_PawnKilled` commit scope.
-3. Persist only committed pending succession facts and correlation expiry.
+3. Persist only committed pending succession facts and their terminal title-chain cursor.
 4. Add succession progression context and later title/bestowing claiming.
 5. Spike the exact explicit-heir source; ship appointment only if it is distinguishable from
    automatic assignment.
@@ -1625,7 +1644,9 @@ Succession/permits/ascent:
 - exact candidate plus outer `wasInherited` commit creates one fact;
 - candidate without outer commit creates none;
 - unrelated death/title change cannot claim it;
-- expired succession cannot relabel a later promotion;
+- a titleless heir's instant Freeholder award advances the chain without ending it;
+- an arbitrarily delayed exact target can claim the saved chain, then terminally removes it;
+- a mismatched predecessor invalidates stale succession ownership before ordinary routing;
 - equal/higher-title heir produces no succession page or false promotion;
 - automatic heir assignment is silent;
 - each allowed permit maps to the expected family;
@@ -1777,7 +1798,7 @@ Harmony target warnings, XML/config errors, duplicate pages, and no-DLC null err
 | `UnCode` conflates death, destruction, and map removal. | Capture caller cause before cleanup; apply explicit precedence; map removal stays silent. |
 | A persona weapon is transferred after being destroyed/recreated by a mod. | Stable Thing ID + epoch when exact; otherwise begin a new bond without an invented prior owner. |
 | Bestowing creates ritual, title, and psylink pages. | Hold mutations for ritual claiming, then expire to one fallback only if unclaimed. |
-| Inheritance rank is delayed. | Persist exact pending succession; never infer from later rank alone. |
+| Inheritance rank is delayed indefinitely and may first grant Freeholder synchronously. | Persist an XML-capped exact predecessor-linked title cursor until target or contradiction; never infer from rank alone or impose an invented ceremony deadline. |
 | `SetHeir` includes automatic assignments. | Require exact explicit-source scope or defer appointment pages. |
 | Permit callback lacks owner. | Small `GetPermit` session cache; ambiguous owner fails closed. |
 | Military aid is also a friendly raid, and the raid postfix runs before permit `Notify_Used`. | Stage exact quick-aid raid signals briefly; the later permit callback claims them, while unmatched signals expire into the current fallback. |

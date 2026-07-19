@@ -327,7 +327,7 @@ Do not add seasonal flooding, life support, or Mechhive choices in this wave.
 4. **Royalty 2 (implemented; automated green, manual acceptance pending)** — persona lifecycle pages.
 5. **Royalty 3 (implemented; automated loaded green, manual acceptance pending)** — first consequential kill and death integration through existing owners.
 6. **Royalty 4 (implemented; pure/build/expanded loaded green, manual acceptance pending)** — immediate title/psylink cause correctness and scanner fallback.
-7. **Royalty 5 (implemented; pure/build green, loaded/manual acceptance pending)** — exact inheritance correlation, explicit heir appointment, and succession evidence.
+7. **Royalty 5 (implemented; pure/build/automated loaded green at 267/267, manual acceptance pending)** — exact inheritance correlation, explicit heir appointment, and succession evidence.
 
 ### Exit gate
 
@@ -429,7 +429,7 @@ Complete **Odyssey O2** and extend **N3-O**:
 
 ### Implement in this exact order
 
-1. **Royalty 5 (implemented; loaded/manual acceptance pending)** — exact inheritance correlation and succession evidence.
+1. **Royalty 5 (implemented; automated loaded green at 267/267, manual acceptance pending)** — exact inheritance correlation and succession evidence.
 2. **Royalty 6** — successful dramatic permit families and friendly-raid ownership.
 3. **Royalty 7** — Royal Ascent start, bounded pressure, and terminal chapter.
 4. Extend **N3-R** with succession identity, permit authority, Ascent journey, and court-pressure

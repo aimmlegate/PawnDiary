@@ -118,11 +118,14 @@ namespace PawnDiary.RimTests
                 inheritedTitleDefName = "Acolyte", inheritedTitleLabel = "Acolyte",
                 inheritedTitleSeniority = 2, previousHeirTitleDefName = "Yeoman",
                 previousHeirTitleLabel = "Yeoman", previousHeirTitleSeniority = 1,
+                currentHeirTitleDefName = "Freeholder", currentHeirTitleLabel = "Freeholder",
+                currentHeirTitleSeniority = 0,
                 candidateTick = 100, commitTick = 110, expiresTick = 2610,
                 pageClaimed = true, titleMutationClaimed = true
             });
             Require(loaded.deceasedPawnId == "Pawn_Dead" && loaded.heirPawnId == "Pawn_Heir"
                     && loaded.inheritedTitleDefName == "Acolyte" && loaded.commitTick == 110
+                    && loaded.currentHeirTitleDefName == "Freeholder"
                     && loaded.pageClaimed && loaded.titleMutationClaimed,
                 "committed succession detached facts did not survive Scribe.");
         }
@@ -261,6 +264,68 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// The actual component Scribe wiring retains a non-empty unresolved succession chain and
+        /// migrates the first implementation's short expiry to evidence-driven terminal persistence.
+        /// </summary>
+        [Test]
+        public static void ComponentSuccessionLedgerRoundTripsCommittedChain()
+        {
+            Require(ExposeRoyaltyDataMethod != null && PendingSuccessionsField != null,
+                "Could not resolve the component's actual succession Scribe wiring.");
+            List<RoyalSuccessionState> original =
+                PendingSuccessionsField.GetValue(scope.Component) as List<RoyalSuccessionState>;
+            royaltyScribeTarget = scope.Component;
+            try
+            {
+                int now = Find.TickManager?.TicksGame ?? 0;
+                PendingSuccessionsField.SetValue(scope.Component, new List<RoyalSuccessionState>
+                {
+                    new RoyalSuccessionState
+                    {
+                        correlationId = "succession|component|edge|0",
+                        deceasedPawnId = "Pawn_ComponentDead",
+                        deceasedPawnName = "Former holder",
+                        heirPawnId = "Pawn_ComponentHeir",
+                        heirPawnName = "Named heir",
+                        factionId = "Faction_ComponentEmpire",
+                        factionName = "Empire",
+                        inheritedTitleDefName = "Acolyte",
+                        inheritedTitleLabel = "Acolyte",
+                        inheritedTitleSeniority = 2,
+                        previousHeirTitleDefName = string.Empty,
+                        previousHeirTitleSeniority = -1,
+                        currentHeirTitleDefName = "Freeholder",
+                        currentHeirTitleLabel = "Freeholder",
+                        currentHeirTitleSeniority = 0,
+                        candidateTick = 0,
+                        commitTick = 0,
+                        // This row would have expired under the first one-hour implementation.
+                        expiresTick = Math.Max(0, now - 1),
+                        pageClaimed = true
+                    }
+                });
+                ScribeRoundTripWithAfterSave(
+                    new ActualRoyaltyComponentStateAdapter(),
+                    () => PendingSuccessionsField.SetValue(scope.Component, null));
+                List<RoyalSuccessionState> loaded =
+                    PendingSuccessionsField.GetValue(scope.Component) as List<RoyalSuccessionState>;
+                Require(loaded != null && loaded.Count == 1,
+                    "the actual component wiring lost a non-empty committed succession chain.");
+                RoyalSuccessionState row = loaded[0];
+                Require(row.inheritedTitleDefName == "Acolyte"
+                        && row.currentHeirTitleDefName == "Freeholder"
+                        && row.currentHeirTitleSeniority == 0
+                        && row.expiresTick == int.MaxValue,
+                    "the actual component wiring changed or failed to migrate the pending title chain.");
+            }
+            finally
+            {
+                PendingSuccessionsField.SetValue(scope.Component, original);
+                royaltyScribeTarget = null;
+            }
+        }
+
+        /// <summary>
         /// Completed ritual ownership is deliberately transient: it may wait briefly for a ritual in
         /// one live session, but FinalizeInit/load reset must discard it instead of inventing a stale
         /// post-load fallback page. Persisted faction observations are covered by the round-trip above.
@@ -320,6 +385,12 @@ namespace PawnDiary.RimTests
             {
                 Require(weapons.Count == 0 && titles.Count == 0 && psylink == 0,
                     "Royalty-inactive collectors must return only empty/zero snapshots.");
+                Require(!DiaryRoyaltyPatches.SuccessionCandidateHookReady
+                        && !DiaryRoyaltyPatches.SuccessionCommitHookReady
+                        && !DiaryRoyaltyPatches.HeirAppointmentHookReady,
+                    "Royalty-inactive Phase-5 hooks reported themselves ready.");
+                Require(scope.Component.BeginRoyalSuccessionDeath(pawn) == null,
+                    "Royalty-inactive component opened a succession scope.");
                 Log.Message("[PawnDiary RimTest Royalty P1] Royalty inactive: all guarded collectors returned empty.");
             }
             else

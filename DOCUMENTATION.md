@@ -251,8 +251,8 @@ Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned gra
 additive save-key suffixes under each POV/archive row; it performs no retroactive inference or
 catch-up on older pages.
 
-**Royalty Phases 0–5 plus Narrative N3-R core (Master Waves 5 and 9; last executed loaded run remains
-Phase 4 at 256/256, expanded 264-test build awaiting execution; hands-on matrices pending)**
+**Royalty Phases 0–5 plus Narrative N3-R core (Master Waves 5 and 9; automated loaded suite green at
+267/267; hands-on matrices pending)**
 freeze the detached R1 boundary and now own persona-weapon lifecycle, first-kill/death enrichment,
 and exact title/psylink correctness.
 `RoyaltyContracts`
@@ -426,8 +426,8 @@ run reached 250/252, confirming both fixes, then exposed a distinct same-tick ti
 a Phase-3 death-fixture collision with other loaded equipment-removal patches. After the dedup identity
  and fixture setup were corrected, the user-confirmed loaded rerun passed 252/252. The adversarial
  hardening expanded and strengthened the loaded suite; its user-confirmed rerun passed 256/256. The two
-new save/expiry ownership regressions compile but have not yet had a loaded execution, so 256/256 remains
-the last confirmed runtime result. Every Phase-2/3/4 hands-on row remains explicit R1 acceptance work.
+new save/expiry ownership regressions are included in the later user-confirmed 267/267 loaded run.
+Every Phase-2/3/4 hands-on row remains explicit R1 acceptance work.
 
 Phase 5 adds exact succession without inferring from rank changes. A defensive postfix on
 `RoyalTitleDefExt.TryInherit` copies only a candidate while the exact outer
@@ -435,16 +435,27 @@ Phase 5 adds exact succession without inferring from rank changes. A defensive p
 commits a `RoyalSuccessionFact` only when deceased pawn, heir, faction, exact inherited title, and
 candidate correlation still match and vanilla has marked that deceased `RoyalTitle.wasInherited`.
 Vanilla's equal-or-higher outcome (`seniority >=`) is explicitly non-narrative. Candidate-only,
-wrong-faction/rank/pawn, malformed, expired, and interrupted scopes authorize nothing.
+wrong-faction/rank/pawn, malformed, contradictory, and interrupted scopes authorize nothing.
 
 Vanilla can call `OnPostTitleChanged` from `GainFavor` before `Notify_PawnKilled` writes
 `wasInherited`. Those title callbacks are therefore staged as detached mutations inside the active
-death scope. A proven outer commit claims the exact staged title and matching title memory; no commit
-releases the callback through ordinary title progression. A committed fact remains briefly available
-to claim a delayed exact title, bestowing batch, or scanner diff, preventing a second promotion or
-ceremony-owned title statement while leaving independent psylink/ritual facts untouched. The XML
-policy owns the `2500`-tick lifetime and `64`-row cap. Expired/malformed rows are pruned during
-maintenance, before save, and after load; transient candidate scopes reset at `FinalizeInit`.
+death scope. In the ordinary titleless-heir path, vanilla synchronously grants the instant Freeholder
+title before the outer method records `wasInherited`; the committed fact therefore advances through
+that compatible intermediate edge instead of requiring the first callback to be the final inherited
+title. A proven outer commit claims compatible staged edges and matching title memories; no commit, or
+an exception while closing the scope, releases every unclaimed callback through ordinary title
+progression with the same richer-owner arbitration used by the normal route.
+
+A committed fact then follows an exact monotonic cursor (`previous -> current -> inherited target`).
+It may claim a delayed exact title hook, bestowing batch, or scanner diff without restating the
+succession page, while independent psylink/ritual facts remain eligible. Vanilla bestowing quests have
+no acceptance deadline, so the saved proof is not time-expired: reaching the exact target retires it,
+and a same-pawn/faction mutation that does not start at the cursor invalidates it before that later
+ordinary mutation is processed. The XML `successionCorrelationTicks` value bounds cleanup of only a
+transient exact-edge duplicate cache; `maximumPendingSuccessions` caps the saved ledger at `64` newest
+facts. First-version Phase-5 rows with a short `expiresTick` migrate to terminal persistence, while
+already title-claimed or malformed rows prune. Transient death scopes and duplicate claims reset at
+`FinalizeInit`.
 
 The explicit heir appointment source is the exact
 `QuestPart_ChangeHeir.Notify_QuestSignalReceived(Signal)` quest edge. Its prefix copies holder,
@@ -458,11 +469,17 @@ project. Succession attaches `identity_transition` evidence with authority/statu
 appointment uses authority/status/duty without inventing a death. SoloImportant fields 113–116,
 exact event prompts, UI text, and dev fixtures are localized in English and Russian.
 
-Pure Phase-5 coverage brings `RoyaltyContextTests` to 346 assertions and `DiaryPipelineTests` to
-2,493. The runtime and 264-test RimTest assemblies build. New loaded fixtures drive real
-`Notify_PawnKilled`, equal-or-higher silence, bestowing/title dedup, explicit `ChangeRoyalHeir`, exact
-hook registration, detached Scribe, legacy missing-key normalization, and load reset, but have not yet
-been executed in RimWorld; 256/256 remains the last confirmed loaded result.
+Pure Phase-5 coverage brings `RoyaltyContextTests` to 358 assertions and `DiaryPipelineTests` to
+2,493. It now pins the titleless `none -> Freeholder -> inherited title` chain, delayed terminal claim
+beyond the former timeout, contradictory invalidation, exact-edge cache scope, cap behavior, and old-row
+migration. The runtime and 267-test RimTest assemblies build. New loaded fixtures drive strict one-page
+real `Notify_PawnKilled` inheritance, equal-title as well as higher-title silence, delayed target claim
+and retirement, explicit `ChangeRoyalHeir`, nonempty production-component Scribe, legacy missing-key
+normalization, no-Royalty hook/scope silence, and load reset. Their first loaded run reached 264/267;
+all three failures were fixture-liveness gaps because generated pawns were not in the live-colonist
+roster required by succession ID lookup and the component-wide pre-save scanner. The affected fixtures
+now spawn only their disposable heir/writer. The user-confirmed corrected rerun passed 267/267, closing
+Phase 5 automated loaded coverage while leaving its hands-on matrix open.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13
@@ -2470,9 +2487,12 @@ plain highest-title observations keyed by faction ID. The older scalar Royalty t
 migration/downgrade compatibility and are not converted into an invented faction. Persona bonds live
 once at component scope because weapon Thing ID plus bond epoch—not a pawn row—is their identity.
 Phase 5 adds component-scoped `royaltyPendingSuccessions`, a deep list of committed detached
-deceased/heir/faction/title facts with candidate/commit/expiry ticks and page/title-claim flags. A
-missing pre-Phase-5 key normalizes to an empty list and emits no catch-up page. Active death scopes and
-candidate observations are never Scribed.
+deceased/heir/faction/target-title facts with candidate/commit ticks, the previous-title and additive
+current-title cursor, a retained legacy `expiresTick`, and page/title-claim flags. Pending first-version
+rows migrate their old short expiry to terminal persistence; already title-claimed rows retire. A
+missing pre-Phase-5 key normalizes to an empty list and emits no catch-up page. The ledger keeps only
+the newest XML-capped rows. Active death scopes, candidate observations, and the same-action exact-edge
+duplicate cache are never Scribed.
 Phase 4 advances this existing row immediately for exact title hooks and scanner observations; schema
 version 2 distinguishes a readable empty title set from temporarily unavailable Royalty data. A
 Royalty-off `LoadedGame` invalidates availability immediately while retaining the saved rows and
@@ -2840,7 +2860,15 @@ hook, disabled-ritual non-transfer, both title-memory callback orders, real `Fin
  Royalty-off immediate-load invalidation. The earlier suite passed 252/252; the expanded suite's last
 loaded run passed 256/256 in game. Two additional compiled fixtures cover attendee-first non-claim,
 combined psylink/title-memory expiry, and scanner-title reconciliation across a production pre-save
-Scribe round-trip; they bring the assembly to 258 tests and still require loaded execution. Ideology and Anomaly ritual tests use
+ Scribe round-trip; they bring the pre-Phase-5 assembly to 258 tests and are included in the current
+user-confirmed loaded result.
+Phase 5 and its adversarial hardening bring the current assembly to 267 tests, adding strict real
+inheritance cardinality, the instant titleless Freeholder step, equal-title silence, delayed terminal
+claim/retirement, a nonempty actual component-ledger Scribe round-trip, old-expiry migration, and
+Royalty-inactive hook/scope assertions. The first loaded run reached 264/267; its three failures shared
+an unspawned-fixture liveness gap, now corrected by spawning only the disposable pawns whose production
+paths consult the live-colonist roster. The corrected rerun passed all 267/267 loaded tests. Ideology
+and Anomaly ritual tests use
 internal copied-fact fixture seams because safely
 constructing their live ritual job objects would start a real colony ritual; only that reflective
 object extraction is bypassed. The fixtures still execute production fan-out ordering, pawn-ID

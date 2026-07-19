@@ -4,7 +4,10 @@ using Verse;
 
 namespace PawnDiary
 {
-    /// <summary>Deep-scribed committed succession row retained only through its bounded claim window.</summary>
+    /// <summary>
+    /// Deep-scribed committed succession row retained until its exact title chain finishes or is
+    /// contradicted. Normalization bounds the component-wide list even when a ceremony is postponed.
+    /// </summary>
     public sealed class RoyalSuccessionState : IExposable
     {
         public string correlationId = string.Empty;
@@ -20,6 +23,11 @@ namespace PawnDiary
         public string previousHeirTitleDefName = string.Empty;
         public string previousHeirTitleLabel = string.Empty;
         public int previousHeirTitleSeniority = -1;
+        // Additive Phase-5 hardening fields. Older saves omit them and normalize the cursor from the
+        // previous-title fields; newer saves advance them through compatible intermediate awards.
+        public string currentHeirTitleDefName = string.Empty;
+        public string currentHeirTitleLabel = string.Empty;
+        public int currentHeirTitleSeniority = -1;
         public int candidateTick;
         public int commitTick;
         public int expiresTick;
@@ -41,6 +49,9 @@ namespace PawnDiary
             Scribe_Values.Look(ref previousHeirTitleDefName, "previousHeirTitleDefName");
             Scribe_Values.Look(ref previousHeirTitleLabel, "previousHeirTitleLabel");
             Scribe_Values.Look(ref previousHeirTitleSeniority, "previousHeirTitleSeniority", -1);
+            Scribe_Values.Look(ref currentHeirTitleDefName, "currentHeirTitleDefName");
+            Scribe_Values.Look(ref currentHeirTitleLabel, "currentHeirTitleLabel");
+            Scribe_Values.Look(ref currentHeirTitleSeniority, "currentHeirTitleSeniority", -1);
             Scribe_Values.Look(ref candidateTick, "candidateTick", 0);
             Scribe_Values.Look(ref commitTick, "commitTick", 0);
             Scribe_Values.Look(ref expiresTick, "expiresTick", 0);
@@ -60,6 +71,9 @@ namespace PawnDiary
                 previousHeirTitleDefName = previousHeirTitleDefName,
                 previousHeirTitleLabel = previousHeirTitleLabel,
                 previousHeirTitleSeniority = previousHeirTitleSeniority,
+                currentHeirTitleDefName = currentHeirTitleDefName,
+                currentHeirTitleLabel = currentHeirTitleLabel,
+                currentHeirTitleSeniority = currentHeirTitleSeniority,
                 candidateTick = candidateTick, commitTick = commitTick, expiresTick = expiresTick,
                 pageClaimed = pageClaimed, titleMutationClaimed = titleMutationClaimed
             };
@@ -78,6 +92,9 @@ namespace PawnDiary
                 previousHeirTitleDefName = value.previousHeirTitleDefName,
                 previousHeirTitleLabel = value.previousHeirTitleLabel,
                 previousHeirTitleSeniority = value.previousHeirTitleSeniority,
+                currentHeirTitleDefName = value.currentHeirTitleDefName,
+                currentHeirTitleLabel = value.currentHeirTitleLabel,
+                currentHeirTitleSeniority = value.currentHeirTitleSeniority,
                 candidateTick = value.candidateTick, commitTick = value.commitTick,
                 expiresTick = value.expiresTick, pageClaimed = value.pageClaimed,
                 titleMutationClaimed = value.titleMutationClaimed

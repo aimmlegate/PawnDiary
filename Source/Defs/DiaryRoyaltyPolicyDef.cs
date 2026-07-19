@@ -55,6 +55,8 @@ namespace PawnDiary
         public int titleCorrelationTicks = 2500;
         public int psylinkCorrelationTicks = 2500;
         public int titleThoughtCorrelationTicks = 2500;
+        // Cleanup lifetime for the transient exact-edge duplicate cache. Committed succession facts
+        // have no time deadline because vanilla bestowing quests can be postponed indefinitely.
         public int successionCorrelationTicks = 2500;
         public int killThoughtCorrelationTicks = 60;
         public int maximumPendingRoyalMutations = 64;

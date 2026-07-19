@@ -119,7 +119,9 @@ namespace PawnDiary
                 royaltyPersonaBonds.Add(PersonaBondState.FromSnapshot(normalized[i]));
         }
 
-        /// <summary>Drops malformed/expired old rows and applies the XML-owned succession cap.</summary>
+        /// <summary>
+        /// Drops malformed/terminal rows, migrates first-version expiry, and applies the XML-owned cap.
+        /// </summary>
         private void NormalizeRoyalSuccessionFacts()
         {
             List<RoyalSuccessionFact> source = new List<RoyalSuccessionFact>();

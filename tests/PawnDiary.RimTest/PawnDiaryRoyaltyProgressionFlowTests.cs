@@ -21,6 +21,8 @@ namespace PawnDiary.RimTests
         private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
         private static readonly FieldInfo EventsField =
             typeof(DiaryGameComponent).GetField("events", PrivateInstance);
+        private static readonly FieldInfo PendingSuccessionsField =
+            typeof(DiaryGameComponent).GetField("royaltyPendingSuccessions", PrivateInstance);
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
@@ -103,6 +105,45 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Vanilla Acolyte inheritance first gives a titleless heir the instant Freeholder rank. That
+        /// compatible intermediate callback must be owned by succession, not emitted as a second page.
+        /// </summary>
+        [Test]
+        public static void TitlelessInheritanceOwnsInstantIntermediateTitle()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(TitlelessInheritanceOwnsInstantIntermediateTitle))) return;
+            Faction faction = RequireEmpire();
+            RoyalTitleDef inherited = RequireInheritableTitle(faction);
+            Pawn deceased = scope.CreateAdultColonist();
+            RegisterRoyalCleanup(deceased, faction);
+            RegisterRoyalCleanup(pawn, faction);
+
+            // Succession stores detached heir identity and deliberately resolves it back through the
+            // production live-colonist roster before writing a page. Generated harness pawns are otherwise
+            // unspawned, so make the heir discoverable exactly as it would be in a real colony.
+            scope.SpawnAsLiveColonist(pawn);
+
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", false);
+            deceased.royalty.SetTitle(faction, inherited, false, false, false);
+            deceased.royalty.SetHeir(pawn, faction);
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", true);
+
+            DiaryEvent succession = scope.FireAndRequireEvent(
+                () => deceased.royalty.Notify_PawnKilled(),
+                ProgressionEventData.RoyalSuccessionDefName,
+                pawn,
+                null,
+                rejectOtherTestPawnEvents: true);
+            scope.RequireSoloRef(succession, pawn);
+            RoyalTitleDef intermediate = pawn.royalty.GetCurrentTitle(faction);
+            PawnDiaryRimTestScope.Require(intermediate != null
+                    && intermediate.seniority < inherited.seniority,
+                "Vanilla titleless inheritance did not expose the expected instant intermediate rank.");
+            scope.RequireNoNewEvent(() =>
+                scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
+        }
+
+        /// <summary>
         /// Drives vanilla Notify_PawnKilled with a real inheritable Empire title. The committed edge
         /// must become one heir-POV succession page, and a surrounding bestowing owner cannot restate
         /// the title mutation as Progression or leave a pending ritual fallback.
@@ -117,6 +158,10 @@ namespace PawnDiary.RimTests
             RegisterRoyalCleanup(deceased, faction);
             RegisterRoyalCleanup(pawn, faction);
 
+            // The committed succession path must find the detached heir through the live-pawn roster.
+            // Spawning only the heir keeps this fixture faithful without involving the deceased test pawn.
+            scope.SpawnAsLiveColonist(pawn);
+
             PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", false);
             deceased.royalty.SetTitle(faction, inherited, false, false, false);
             deceased.royalty.SetHeir(pawn, faction);
@@ -130,7 +175,8 @@ namespace PawnDiary.RimTests
                 () => deceased.royalty.Notify_PawnKilled(),
                 ProgressionEventData.RoyalSuccessionDefName,
                 pawn,
-                null);
+                null,
+                rejectOtherTestPawnEvents: true);
             scope.RequireSoloRef(succession, pawn);
             RequireContext(succession, "succession_deceased=");
             RequireContext(succession, "succession_heir=");
@@ -147,6 +193,93 @@ namespace PawnDiary.RimTests
                 "A bestowing batch retained the succession-owned title as a duplicate fallback.");
             scope.RequireNoNewEvent(() =>
                 scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
+        }
+
+        /// <summary>
+        /// A saved succession claim survives beyond the old one-hour deadline, owns the eventual
+        /// bestowing title exactly once, then retires so a later independent promotion stays ordinary.
+        /// </summary>
+        [Test]
+        public static void PendingSuccessionClaimsDelayedTargetThenRetires()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(PendingSuccessionClaimsDelayedTargetThenRetires))) return;
+            PawnDiaryRimTestScope.Require(PendingSuccessionsField != null,
+                "Could not resolve the component's pending-succession ledger.");
+            Faction faction = RequireEmpire();
+            RoyalTitleDef inherited = RequireInheritableTitle(faction);
+            RoyalTitleDef intermediate = (faction.def.RoyalTitlesAwardableInSeniorityOrderForReading
+                    ?? new List<RoyalTitleDef>())
+                .Where(row => row != null && row.seniority < inherited.seniority)
+                .OrderByDescending(row => row.seniority)
+                .FirstOrDefault();
+            PawnDiaryRimTestScope.Require(intermediate != null,
+                "The delayed succession fixture needs a real predecessor title.");
+            RegisterRoyalCleanup(pawn, faction);
+
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", false);
+            pawn.royalty.SetTitle(faction, intermediate, false, false, false);
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", true);
+
+            List<RoyalSuccessionState> original =
+                PendingSuccessionsField.GetValue(scope.Component) as List<RoyalSuccessionState>;
+            scope.RegisterCleanup(() => PendingSuccessionsField.SetValue(scope.Component, original));
+            int now = Find.TickManager?.TicksGame ?? 0;
+            int commitTick = Math.Max(0, now - 300000);
+            PendingSuccessionsField.SetValue(scope.Component, new List<RoyalSuccessionState>
+            {
+                new RoyalSuccessionState
+                {
+                    correlationId = "succession|delayed|edge|0",
+                    deceasedPawnId = "Pawn_DelayedFormerHolder",
+                    deceasedPawnName = "Former holder",
+                    heirPawnId = pawn.GetUniqueLoadID(),
+                    heirPawnName = DiaryLineCleaner.CleanLine(pawn.LabelShortCap),
+                    factionId = faction.GetUniqueLoadID(),
+                    factionName = DiaryLineCleaner.CleanLine(faction.Name),
+                    inheritedTitleDefName = inherited.defName,
+                    inheritedTitleLabel = DiaryLineCleaner.CleanLine(inherited.LabelCap.Resolve()),
+                    inheritedTitleSeniority = inherited.seniority,
+                    previousHeirTitleDefName = string.Empty,
+                    previousHeirTitleLabel = string.Empty,
+                    previousHeirTitleSeniority = -1,
+                    currentHeirTitleDefName = intermediate.defName,
+                    currentHeirTitleLabel = DiaryLineCleaner.CleanLine(intermediate.LabelCap.Resolve()),
+                    currentHeirTitleSeniority = intermediate.seniority,
+                    candidateTick = commitTick,
+                    commitTick = commitTick,
+                    // Deliberately model the old additive save row after its former one-hour expiry.
+                    expiresTick = commitTick,
+                    pageClaimed = true
+                }
+            });
+
+            RoyalMutationBatchSnapshot bestowing = scope.Component.BeginRoyalMutationCause(
+                pawn, faction, RoyalMutationCauseTokens.ImperialBestowing);
+            PawnDiaryRimTestScope.Require(bestowing != null,
+                "The delayed succession fixture could not open its bestowing boundary.");
+            scope.RequireNoNewEvent(() =>
+            {
+                pawn.royalty.SetTitle(faction, inherited, false, false, false);
+                scope.Component.CompleteRoyalMutationCause(bestowing, pawn, faction);
+            });
+            PawnDiaryRimTestScope.Require(
+                (PendingSuccessionsField.GetValue(scope.Component) as List<RoyalSuccessionState>)?.Count == 0,
+                "The exact inherited target did not retire its saved succession fact.");
+            PawnDiaryRimTestScope.Require(RoyalMutationCorrelation.PendingCountForTests == 0,
+                "The duplicate bestowing adapter retained a succession-owned title fallback.");
+
+            // Reset only transient same-action ownership, then repeat the same title edge as a genuinely
+            // later action. With the saved fact terminally removed, ordinary progression must own it.
+            RoyalSuccessionCorrelation.Clear();
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", false);
+            pawn.royalty.SetTitle(faction, intermediate, false, false, false);
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", true);
+            scope.FireAndRequireEvent(
+                () => pawn.royalty.SetTitle(faction, inherited, false, false, false),
+                ProgressionEventData.RoyalTitlePromotedDefName,
+                pawn,
+                null,
+                rejectOtherTestPawnEvents: true);
         }
 
         /// <summary>
@@ -171,6 +304,17 @@ namespace PawnDiary.RimTests
             deceased.royalty.SetHeir(pawn, faction);
             PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", true);
             scope.RequireNoNewEvent(() => deceased.royalty.Notify_PawnKilled());
+            scope.RequireNoNewEvent(() =>
+                scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
+
+            Pawn equalDeceased = scope.CreateAdultColonist();
+            RegisterRoyalCleanup(equalDeceased, faction);
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", false);
+            pawn.royalty.SetTitle(faction, lower, false, false, false);
+            equalDeceased.royalty.SetTitle(faction, lower, false, false, false);
+            equalDeceased.royalty.SetHeir(pawn, faction);
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", true);
+            scope.RequireNoNewEvent(() => equalDeceased.royalty.Notify_PawnKilled());
             scope.RequireNoNewEvent(() =>
                 scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
         }
@@ -712,6 +856,10 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(title?.awardThought != null,
                 "Royalty loaded no scanner/save title with an award memory.");
             RegisterRoyalCleanup(pawn, faction);
+
+            // The production pre-save reconciliation scans live map/caravan colonists rather than arbitrary
+            // generated objects. Put this fixture pawn on the map so that narrow save seam sees it.
+            scope.SpawnAsLiveColonist(pawn);
             PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", true);
             scope.RequireNoNewEvent(() =>
                 scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
@@ -849,11 +997,10 @@ namespace PawnDiary.RimTests
 
         private static RoyalTitleDef RequireInheritableTitle(Faction faction)
         {
-            FieldInfo worker = typeof(RoyalTitleDef).GetField(
-                "inheritanceWorker", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             RoyalTitleDef title = (faction?.def?.RoyalTitlesAwardableInSeniorityOrderForReading
                     ?? new List<RoyalTitleDef>())
-                .FirstOrDefault(row => row != null && worker?.GetValue(row) != null);
+                .FirstOrDefault(row => row?.canBeInherited == true
+                    && row.GetInheritanceWorker(faction) != null);
             PawnDiaryRimTestScope.Require(title != null,
                 "Royalty loaded no Empire title with a configured inheritance worker.");
             return title;
@@ -864,8 +1011,6 @@ namespace PawnDiary.RimTests
             out RoyalTitleDef lower,
             out RoyalTitleDef higher)
         {
-            FieldInfo worker = typeof(RoyalTitleDef).GetField(
-                "inheritanceWorker", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             List<RoyalTitleDef> titles = (faction?.def?.RoyalTitlesAwardableInSeniorityOrderForReading
                     ?? new List<RoyalTitleDef>())
                 .Where(row => row != null && !string.IsNullOrWhiteSpace(row.defName))
@@ -875,7 +1020,7 @@ namespace PawnDiary.RimTests
             higher = null;
             for (int i = 0; i < titles.Count && higher == null; i++)
             {
-                if (worker?.GetValue(titles[i]) == null) continue;
+                if (!titles[i].canBeInherited || titles[i].GetInheritanceWorker(faction) == null) continue;
                 higher = titles.FirstOrDefault(row => row.seniority >= titles[i].seniority
                     && !ReferenceEquals(row, titles[i]));
                 if (higher != null) lower = titles[i];

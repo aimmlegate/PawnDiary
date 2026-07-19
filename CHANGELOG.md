@@ -1,5 +1,43 @@
 # Changelog
 
+- **2026-07-19 — Confirmed Royalty Phase 5 automated loaded coverage fully green.** The corrected
+  disposable-pawn fixtures passed the complete loaded suite at 267/267, confirming strict inheritance
+  cardinality, titleless instant-intermediate ownership, delayed succession retirement, pre-save title
+  reconciliation, nonempty component-ledger migration, Royalty-off silence, and the existing DLC/runtime
+  regression matrix together. Pure baselines remain green at 358 Royalty and 2,493 pipeline assertions,
+  and repository verification passes. This closes Phase 5's automated loaded gate only; the recorded
+  Phase 2–5 hands-on acceptance matrices remain open.
+
+- **2026-07-19 — Repaired the first Royalty Phase-5 loaded-run fixture failures.** The loaded run
+  reached 264/267; all three failures shared one harness precondition rather than three runtime
+  defects. Generated test colonists are normally unspawned, but committed succession and pre-save
+  title reconciliation intentionally resolve detached pawn IDs through RimWorld's live map/caravan
+  roster. The two inheritance fixtures now spawn their disposable heir and the scanner/save fixture
+  spawns its disposable writer before driving those production paths. The main-menu 222-failure block
+  in the same log is the suite's expected loaded-game precondition when startup execution runs before
+  a save is loaded. The corrected loaded rerun subsequently passed 267/267.
+
+- **2026-07-19 — Adversarially hardened Royalty Phase 5 succession and save compatibility.** Verified
+  vanilla's titleless inheritance order against the installed RimWorld assembly/XML: positive inherited
+  favor synchronously awards instant Freeholder before the outer death tracker records `wasInherited`,
+  while the offered bestowing quest has no acceptance deadline. Replaced the incorrect one-hour saved
+  succession timeout with an XML-capped terminal state machine that advances only through exact-
+  predecessor monotonic title steps, persists across arbitrarily delayed ceremonies, retires at the
+  inherited target, and invalidates on contradictory same-pawn/faction title evidence. The existing
+  2,500-tick XML value now cleans only a bounded transient same-action exact-edge duplicate cache;
+  first-version pending rows migrate, already claimed rows prune, and additive current-title cursor
+  fields round-trip through the actual component ledger. Titleless candidate capture now uses vanilla's
+  authoritative pre-inheritance title snapshot, rejects a self-heir, and accepts the instant intermediate
+  callback. Scope completion/cancellation releases every unclaimed staged mutation through isolated
+  patch safety, preserves richer title owners, and advances saved title observation even after
+  succession removes a competing cause-owned title. Fixed loaded inheritance helpers to use RimWorld
+  1.6's real `canBeInherited`/`GetInheritanceWorker` API. Pure Royalty coverage passes 358 assertions;
+  strict loaded fixtures now cover total event cardinality, titleless inheritance, equal-title silence,
+  delayed terminal claim/retirement, nonempty production-component Scribe/old-expiry migration, and
+  Royalty-inactive hook/scope silence. The runtime and 267-test RimTest assemblies build cleanly; the
+  first expanded loaded run reached 264/267 and exposed three corrected live-pawn fixture setup gaps;
+  the user-confirmed corrected rerun passed 267/267.
+
 - **2026-07-19 — Implemented Royalty Phase 5 succession under the explicit Master-Wave-9 scheduling
   exception.** Added pure detached candidate/commit/fact/appointment contracts and
   `RoyalSuccessionPolicy`: only an exact `TryInherit` candidate plus the matching outer deceased
