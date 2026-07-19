@@ -27,6 +27,7 @@ namespace DiaryPipelineTests
             TestBiotechPromptTemplateXmlContract();
             TestOdysseyPromptPlanFields();
             TestRoyaltyPersonaPromptPlanFields();
+            TestRoyaltyPermitPromptPlanFields();
             TestDualPovPromptPlans();
             TestRecipientFollowupPlan();
             TestNeutralGenerationPlans();
@@ -59,6 +60,7 @@ namespace DiaryPipelineTests
             TestOdysseyJourneyFoundationXmlContract();
             TestRoyaltyNarrativeProviderXmlContract();
             TestRoyaltyPersonaLifecycleXmlContract();
+            TestRoyaltyPermitXmlContract();
             TestProgressionMilestonePolicy();
             TestPsylinkProgressionLevelPolicy();
             TestArcReflectionSchedulePolicy();
@@ -1329,6 +1331,65 @@ namespace DiaryPipelineTests
                 "persona milestone: wielder_death");
             AssertContains("wielder death keeps ending cause", deathPlan.userPrompt,
                 "bond ending cause: pawn_death");
+        }
+
+        private static void TestRoyaltyPermitPromptPlanFields()
+        {
+            DiaryEventPayload payload = SoloPayload(
+                "e-royal-permit",
+                "royal military aid called",
+                "Alice called in military aid from the Empire through a royal permit.");
+            payload.domain = "RoyalPermit";
+            payload.gameContext = "royal_permit=military_aid; permit_def=CallMilitaryAidLarge; "
+                + "permit_label=Military aid; permit_family=military_aid; permit_faction=Empire; "
+                + "permit_title=Knight; permit_setting=Home; used_during_cooldown=true; "
+                + "permit_map_id=Map_1; permit_tick=500";
+            PromptContextDetailLevel[] levels =
+            {
+                PromptContextDetailLevel.Full,
+                PromptContextDetailLevel.Balanced,
+                PromptContextDetailLevel.Compact
+            };
+            PromptContextBudgets tiny = new PromptContextBudgets
+            {
+                balancedDefault = 1,
+                compactDefault = 1
+            };
+            for (int i = 0; i < levels.Length; i++)
+            {
+                PromptContextDetailLevel level = levels[i];
+                DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = payload,
+                    policy = Policy(combat: false, important: true),
+                    povRole = DiaryPipelineRoles.Initiator,
+                    contextDetailLevel = level,
+                    contextBudgets = tiny
+                });
+                string suffix = " (" + level + ")";
+                AssertEqual("permit uses solo-important template" + suffix,
+                    DiaryPipelineTemplates.SoloImportant, plan.templateKey);
+                AssertContains("permit label survives detail budget" + suffix,
+                    plan.userPrompt, "permit: Military aid");
+                AssertContains("permit family survives detail budget" + suffix,
+                    plan.userPrompt, "permit family: military_aid");
+                AssertContains("permit faction survives detail budget" + suffix,
+                    plan.userPrompt, "permit faction: Empire");
+                AssertContains("permit title survives detail budget" + suffix,
+                    plan.userPrompt, "permit title: Knight");
+                AssertContains("permit cooldown truth survives detail budget" + suffix,
+                    plan.userPrompt, "used during cooldown: true");
+                AssertTrue("permit Def ID is redacted from prompt" + suffix,
+                    !plan.userPrompt.Contains("CallMilitaryAidLarge"));
+                AssertTrue("permit map ID/tick are redacted from prompt" + suffix,
+                    !plan.userPrompt.Contains("Map_1") && !plan.userPrompt.Contains("permit_tick"));
+                if (level == PromptContextDetailLevel.Full)
+                    AssertContains("Full permit prompt keeps optional setting", plan.userPrompt,
+                        "permit setting: Home");
+                else
+                    AssertTrue("budgeted permit prompt trims optional setting first" + suffix,
+                        !plan.userPrompt.Contains("permit setting:"));
+            }
         }
 
         private static void TestDualPovPromptPlans()
@@ -3817,8 +3878,8 @@ namespace DiaryPipelineTests
                 "persona_trait_description_2", "persona_milestone", "tale_source_def",
                 "tale_source_label", "tale_killer_role", "tale_victim_role"
             };
-            AssertEqual("SoloImportant Royalty R5 projection remains append-only at 117 fields",
-                117, new List<XElement>(solo.Element("fields").Elements("li")).Count);
+            AssertEqual("SoloImportant Royalty R6 projection remains append-only at 123 fields",
+                123, new List<XElement>(solo.Element("fields").Elements("li")).Count);
             for (int i = 0; i < contextKeys.Length; i++)
             {
                 AssertTrue("SoloImportant persona prompt field exists: " + contextKeys[i],
@@ -4023,6 +4084,155 @@ namespace DiaryPipelineTests
                 AssertTrue("Russian Royalty R5 UI text exists: " + phase5UiKeys[i],
                     !string.IsNullOrWhiteSpace(KeyedValue(russianKeyed, phase5UiKeys[i])));
             }
+        }
+
+        private static void TestRoyaltyPermitXmlContract()
+        {
+            const string royaltyPackage = "Ludeon.RimWorld.Royalty";
+            XDocument groups = XDocument.Load(RepoPath("1.6", "Defs", "DiaryInteractionGroupDefs.xml"));
+            XElement group = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "royalPermitDramatic");
+            AssertTrue("Royalty dramatic-permit group exists", group != null);
+            AssertEqual("Royalty dramatic-permit domain", "RoyalPermit", ChildValue(group, "domain"));
+            AssertEqual("Royalty dramatic-permit group is important", "true", ChildValue(group, "important"));
+            AssertTrue("Royalty dramatic-permit settings are package-gated",
+                HasListValue(group, "enableWhenPackageIdsLoaded", royaltyPackage));
+            string[] events =
+            {
+                "RoyalPermitMilitaryAid", "RoyalPermitTransportShuttle",
+                "RoyalPermitOrbitalStrike", "RoyalPermitOrbitalSalvo"
+            };
+            for (int i = 0; i < events.Length; i++)
+                AssertTrue("permit group exact match exists: " + events[i],
+                    HasListValue(group, "matchDefNames", events[i]));
+            string[] excluded =
+            {
+                "TradeSettlement", "TradeOrbital", "TradeCaravan", "SteelDrop", "FoodDrop",
+                "SilverDrop", "GlitterMedDrop", "CallLaborerTeam", "CallLaborerGang"
+            };
+            for (int i = 0; i < excluded.Length; i++)
+                AssertTrue("routine permit has no group fallback: " + excluded[i],
+                    !InteractionGroupMatches(group, excluded[i]));
+
+            XDocument policyDocument = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryRoyaltyPolicyDefs.xml"));
+            XElement policy = FindDef(
+                policyDocument, "PawnDiary.DiaryRoyaltyPolicyDef", "Diary_Royalty");
+            string[] numericKeys =
+            {
+                "permitOwnerCacheTicks", "quickAidCorrelationTicks", "permitRepeatSuppressionTicks",
+                "maximumPermitMappings", "maximumPermitOwnerSessions", "maximumPermitOwnersPerSession",
+                "maximumPermitFallbackPawns", "maximumPendingQuickAid", "maximumRecentQuickAidOwners",
+                "maximumPermitLabelCharacters", "maximumPermitSettingCharacters"
+            };
+            for (int i = 0; i < numericKeys.Length; i++)
+                AssertTrue("permit threshold/cap is XML-owned: " + numericKeys[i],
+                    !string.IsNullOrWhiteSpace(ChildValue(policy, numericKeys[i])));
+            List<XElement> rows = new List<XElement>(policy.Element("permitFamilyRules").Elements("li"));
+            AssertEqual("Royalty permit XML has six exact reviewed mappings", 6, rows.Count);
+            string[] permitDefs =
+            {
+                "CallMilitaryAidSmall", "CallMilitaryAidLarge", "CallMilitaryAidGrand",
+                "CallTransportShuttle", "CallOrbitalStrike", "CallOrbitalSalvo"
+            };
+            string[] families =
+            {
+                "military_aid", "military_aid", "military_aid",
+                "transport_shuttle", "orbital_strike", "orbital_salvo"
+            };
+            for (int i = 0; i < rows.Count; i++)
+            {
+                AssertEqual("permit mapping order/def " + i, permitDefs[i],
+                    ChildValue(rows[i], "permitDefName"));
+                AssertEqual("permit mapping order/family " + i, families[i],
+                    ChildValue(rows[i], "familyToken"));
+            }
+
+            XDocument templates = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
+            XElement solo = FindDef(
+                templates, "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplate_SoloImportant");
+            string[] contextKeys =
+            {
+                "permit_label", "permit_family", "permit_faction", "permit_title",
+                "permit_setting", "used_during_cooldown"
+            };
+            XDocument englishLabels = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryPromptTemplateDef",
+                "DiaryPromptTemplateDefs.xml"));
+            XDocument russianLabels = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryPromptTemplateDef",
+                "DiaryPromptTemplateDefs.xml"));
+            for (int i = 0; i < contextKeys.Length; i++)
+            {
+                AssertTrue("SoloImportant permit prompt field exists: " + contextKeys[i],
+                    HasPromptContextField(solo, contextKeys[i]));
+                string labelKey = "DiaryPromptTemplate_SoloImportant.fields." + (117 + i) + ".label";
+                AssertTrue("English permit prompt label exists: " + labelKey,
+                    !string.IsNullOrWhiteSpace(englishLabels.Root?.Element(labelKey)?.Value));
+                AssertTrue("Russian permit prompt label exists: " + labelKey,
+                    !string.IsNullOrWhiteSpace(russianLabels.Root?.Element(labelKey)?.Value));
+            }
+            AssertTrue("permit Def ID is not projected", !HasPromptContextField(solo, "permit_def"));
+            AssertTrue("permit map ID is not projected", !HasPromptContextField(solo, "permit_map_id"));
+
+            XDocument prompts = XDocument.Load(RepoPath("1.6", "Defs", "DiaryEventPromptDefs.xml"));
+            XDocument englishPrompts = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryEventPromptDef",
+                "DiaryEventPromptDefs.xml"));
+            XDocument russianPrompts = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected", "PawnDiary.DiaryEventPromptDef",
+                "DiaryEventPromptDefs.xml"));
+            string[] promptSuffixes =
+            {
+                "RoyalPermit", "RoyalPermitMilitaryAid", "RoyalPermitTransportShuttle",
+                "RoyalPermitOrbitalStrike", "RoyalPermitOrbitalSalvo"
+            };
+            for (int i = 0; i < promptSuffixes.Length; i++)
+            {
+                string defName = "DiaryEventPrompt_" + promptSuffixes[i];
+                XElement prompt = FindDef(prompts, "PawnDiary.DiaryEventPromptDef", defName);
+                AssertTrue("Royalty permit event prompt exists: " + defName, prompt != null);
+                AssertEqual("Royalty permit prompt key is exact: " + defName,
+                    promptSuffixes[i], ChildValue(prompt, "eventType"));
+                AssertTrue("English Royalty permit prompt localized: " + defName,
+                    !string.IsNullOrWhiteSpace(englishPrompts.Root?.Element(defName + ".prompt")?.Value));
+                AssertTrue("Russian Royalty permit prompt localized: " + defName,
+                    !string.IsNullOrWhiteSpace(russianPrompts.Root?.Element(defName + ".prompt")?.Value));
+            }
+
+            XDocument englishKeyed = XDocument.Load(
+                RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
+            XDocument russianKeyed = XDocument.Load(
+                RepoPath("Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
+            string[] fixturePrefixes =
+            {
+                "RoyalPermitMilitaryAid", "RoyalPermitTransportShuttle",
+                "RoyalPermitOrbitalStrike", "RoyalPermitOrbitalSalvo"
+            };
+            for (int i = 0; i < fixturePrefixes.Length; i++)
+            {
+                string prefix = "PawnDiary.Dev.PromptSuite." + fixturePrefixes[i];
+                string[] suffixes = { ".Label", ".Markers", ".Text" };
+                for (int j = 0; j < suffixes.Length; j++)
+                {
+                    string key = prefix + suffixes[j];
+                    AssertTrue("English Royalty permit fixture exists: " + key,
+                        !string.IsNullOrWhiteSpace(KeyedValue(englishKeyed, key)));
+                    AssertTrue("Russian Royalty permit fixture exists: " + key,
+                        !string.IsNullOrWhiteSpace(KeyedValue(russianKeyed, key)));
+                }
+            }
+
+            XDocument windows = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryEventWindowDefs.xml"));
+            bool raidFriendlyWindow = false;
+            foreach (XElement item in windows.Descendants("li"))
+                if (string.Equals((item.Value ?? string.Empty).Trim(), "RaidFriendly",
+                    StringComparison.OrdinalIgnoreCase)) raidFriendlyWindow = true;
+            AssertTrue("RaidFriendly has no competing generic event-window page", !raidFriendlyWindow);
+            AssertEqual("permit marker recovers RoyalPermit domain", "RoyalPermit",
+                DiaryEventDomainClassifier.DomainForContext("royal_permit=military_aid"));
         }
 
         private static void TestProgressionMilestonePolicy()
@@ -5303,6 +5513,12 @@ namespace DiaryPipelineTests
                     ContextField("royal heir", "succession_heir"),
                     ContextField("inherited title", "succession_title"),
                     ContextField("succession faction", "succession_faction"),
+                    ContextField("permit", "permit_label"),
+                    ContextField("permit family", "permit_family"),
+                    ContextField("permit faction", "permit_faction"),
+                    ContextField("permit title", "permit_title"),
+                    ContextField("permit setting", "permit_setting"),
+                    ContextField("used during cooldown", "used_during_cooldown"),
                     Field("weapon", "Weapon"),
                     Field("important context", "PromptEnchantment"),
                     Field("previous diary ending (continue from this)", "PreviousEntryEnding"),

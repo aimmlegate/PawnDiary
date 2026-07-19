@@ -193,7 +193,15 @@ namespace PawnDiary
                     () => component.RecordEventWindowIncident(__instance.def, parms));
                 if (IsRaidLikeIncident(__instance))
                 {
-                    DiaryEvents.Submit(new RaidFanoutSignal(parms, __instance.def));
+                    RaidFanoutSignal raid = new RaidFanoutSignal(parms, __instance.def);
+                    bool staged = ModsConfig.RoyaltyActive
+                        && __instance is IncidentWorker_RaidFriendly
+                        && parms.raidArrivalModeForQuickMilitaryAid
+                        && QuickMilitaryAidRaidCorrelation.TryStageOrSuppress(
+                            raid,
+                            Find.TickManager?.TicksGame ?? 0,
+                            DiaryRoyaltyPolicy.Snapshot());
+                    if (!staged) DiaryEvents.Submit(raid);
                 }
             });
         }

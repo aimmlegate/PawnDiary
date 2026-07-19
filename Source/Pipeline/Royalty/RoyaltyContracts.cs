@@ -185,6 +185,21 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>Stable dramatic-permit families. Unknown families never authorize a page.</summary>
+    internal static class RoyalPermitFamilyTokens
+    {
+        public const string MilitaryAid = "military_aid";
+        public const string TransportShuttle = "transport_shuttle";
+        public const string OrbitalStrike = "orbital_strike";
+        public const string OrbitalSalvo = "orbital_salvo";
+
+        public static bool IsKnown(string value)
+        {
+            return value == MilitaryAid || value == TransportShuttle
+                || value == OrbitalStrike || value == OrbitalSalvo;
+        }
+    }
+
     /// <summary>One persona trait copied and localized on the main thread.</summary>
     internal sealed class PersonaTraitFact
     {
@@ -325,6 +340,67 @@ namespace PawnDiary
         public bool excluded;
     }
 
+    /// <summary>One exact XML-owned permit defName to dramatic-family mapping.</summary>
+    internal sealed class RoyalPermitFamilyRule
+    {
+        public string permitDefName = string.Empty;
+        public string familyToken = string.Empty;
+    }
+
+    /// <summary>
+    /// Detached owner candidate observed when one tracker returned one exact permit instance. Runtime
+    /// caches may retain this value briefly; it contains no Pawn, permit, Def, Faction, or Map object.
+    /// </summary>
+    internal sealed class RoyalPermitOwnerCandidate
+    {
+        public string ownerPawnId = string.Empty;
+        public string ownerPawnName = string.Empty;
+        public string permitDefName = string.Empty;
+        public string factionId = string.Empty;
+        public string factionName = string.Empty;
+        public string titleDefName = string.Empty;
+        public string titleLabel = string.Empty;
+        public string mapId = string.Empty;
+        public string mapLabel = string.Empty;
+        public int observedTick;
+    }
+
+    /// <summary>Exact event-time facts copied at the successful FactionPermit.Notify_Used edge.</summary>
+    internal sealed class RoyalPermitUseSnapshot
+    {
+        public string ownerPawnId = string.Empty;
+        public string ownerPawnName = string.Empty;
+        public string permitDefName = string.Empty;
+        public string permitLabel = string.Empty;
+        public string permitFamilyToken = string.Empty;
+        public string factionId = string.Empty;
+        public string factionName = string.Empty;
+        public string titleDefName = string.Empty;
+        public string titleLabel = string.Empty;
+        public string mapId = string.Empty;
+        public string mapLabel = string.Empty;
+        public bool usedDuringCooldown;
+        public int tick;
+    }
+
+    /// <summary>Pure page decision for one exact successful dramatic permit use.</summary>
+    internal sealed class RoyalPermitDecision
+    {
+        public bool recognized;
+        public bool shouldEmit;
+        public string familyToken = string.Empty;
+        public string eventDefName = string.Empty;
+    }
+
+    /// <summary>Detached quick-aid raid identity used by bounded stage/claim/expiry arbitration.</summary>
+    internal sealed class RoyalQuickAidSnapshot
+    {
+        public string correlationId = string.Empty;
+        public string factionId = string.Empty;
+        public string mapId = string.Empty;
+        public int tick;
+    }
+
     /// <summary>Detached Royalty tuning consumed by every pure Phase-0 decision.</summary>
     internal sealed class RoyaltyPolicySnapshot
     {
@@ -345,6 +421,17 @@ namespace PawnDiary
         public int maximumPendingRoyalMutations = 64;
         public int maximumPendingTitleThoughts = 128;
         public int maximumPendingSuccessions = 64;
+        public int permitOwnerCacheTicks = 2500;
+        public int quickAidCorrelationTicks = 60;
+        public int permitRepeatSuppressionTicks = 60;
+        public int maximumPermitMappings = 32;
+        public int maximumPermitOwnerSessions = 64;
+        public int maximumPermitOwnersPerSession = 4;
+        public int maximumPermitFallbackPawns = 256;
+        public int maximumPendingQuickAid = 32;
+        public int maximumRecentQuickAidOwners = 32;
+        public int maximumPermitLabelCharacters = 120;
+        public int maximumPermitSettingCharacters = 120;
         public int maximumRoyaltyContextCharacters = 120;
         public int killThoughtWeight = 100;
         public int bondedThoughtWeight = 70;
@@ -367,6 +454,7 @@ namespace PawnDiary
         public List<string> bestowingRitualDefNames = new List<string>();
         public List<string> animaRitualDefNames = new List<string>();
         public List<string> neuroformerThingDefNames = new List<string>();
+        public List<RoyalPermitFamilyRule> permitFamilyRules = new List<RoyalPermitFamilyRule>();
 
         /// <summary>Creates safe deterministic fallbacks when the Royalty XML Def is absent or bad.</summary>
         public static RoyaltyPolicySnapshot CreateDefault()
@@ -391,7 +479,18 @@ namespace PawnDiary
             policy.bestowingRitualDefNames.Add("BestowingCeremony");
             policy.animaRitualDefNames.Add("AnimaTreeLinking");
             policy.neuroformerThingDefNames.Add("PsychicAmplifier");
+            policy.permitFamilyRules.Add(PermitRule("CallMilitaryAidSmall", RoyalPermitFamilyTokens.MilitaryAid));
+            policy.permitFamilyRules.Add(PermitRule("CallMilitaryAidLarge", RoyalPermitFamilyTokens.MilitaryAid));
+            policy.permitFamilyRules.Add(PermitRule("CallMilitaryAidGrand", RoyalPermitFamilyTokens.MilitaryAid));
+            policy.permitFamilyRules.Add(PermitRule("CallTransportShuttle", RoyalPermitFamilyTokens.TransportShuttle));
+            policy.permitFamilyRules.Add(PermitRule("CallOrbitalStrike", RoyalPermitFamilyTokens.OrbitalStrike));
+            policy.permitFamilyRules.Add(PermitRule("CallOrbitalSalvo", RoyalPermitFamilyTokens.OrbitalSalvo));
             return policy;
+        }
+
+        private static RoyalPermitFamilyRule PermitRule(string defName, string family)
+        {
+            return new RoyalPermitFamilyRule { permitDefName = defName, familyToken = family };
         }
 
         private static void AddCompanionTale(RoyaltyPolicySnapshot policy, string taleDefName)

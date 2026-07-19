@@ -296,6 +296,48 @@
     <enhancement>Use the exact psylink before/after and anima_linking cause when present. Keep the psychic change in this ritual page and do not invent powers, imperial rank, or extra ritual effects.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
+  <!-- Royalty R2 dramatic permits. The broad row is a safe domain fallback; exact family rows own
+       their framing. All describe invocation only, because Notify_Used does not prove later impact. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalPermit</defName>
+    <label>dramatic royal permit</label>
+    <eventType>RoyalPermit</eventType>
+    <prompt>Write an exact successful dramatic royal-permit use from the permit owner&apos;s point of view.</prompt>
+    <enhancement>Preserve the supplied permit, family, faction, title, setting, and cooldown-use fact. Describe invoking authority, not an unobserved result; invent no target, arrival, impact, completion, dialogue, or favor amount.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalPermitMilitaryAid</defName>
+    <label>royal military aid called</label>
+    <eventType>RoyalPermitMilitaryAid</eventType>
+    <prompt>Write the permit owner calling in military aid from the supplied royal faction.</prompt>
+    <enhancement>Center the decision to invoke aid and the weight of rank behind it. The successful permit use proves the call, not that troops arrived or won; invent no force size, route, target, battle, or favor amount.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalPermitTransportShuttle</defName>
+    <label>royal transport shuttle called</label>
+    <eventType>RoyalPermitTransportShuttle</eventType>
+    <prompt>Write the permit owner calling for a royal transport shuttle.</prompt>
+    <enhancement>Use only the supplied permit, faction, title, and setting. Do not invent passengers, cargo, destination, flight events, arrival, completion, dialogue, or a favor amount.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalPermitOrbitalStrike</defName>
+    <label>royal orbital strike invoked</label>
+    <eventType>RoyalPermitOrbitalStrike</eventType>
+    <prompt>Write the permit owner exercising an orbital-strike permit.</prompt>
+    <enhancement>Center the decision, authority, and anticipation at the supplied setting. Do not invent a target, impact, casualties, damage, accuracy, completion, dialogue, or a favor amount.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RoyalPermitOrbitalSalvo</defName>
+    <label>royal orbital salvo invoked</label>
+    <eventType>RoyalPermitOrbitalSalvo</eventType>
+    <prompt>Write the permit owner exercising an orbital-salvo permit.</prompt>
+    <enhancement>Center the decision, authority, and anticipation at the supplied setting. Do not invent a target, impacts, casualties, damage, accuracy, completion, dialogue, or a favor amount.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
   <!-- Broad-domain fallback for integration-API events (see INTEGRATIONS.md). Adapter mods can
        ship a narrower DiaryEventPromptDef keyed by their eventKey or group defName; this row only
        catches External events with no more specific policy loaded. -->

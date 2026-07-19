@@ -125,8 +125,8 @@ one window, `Gleaming` maps to none, localized fallbacks exist, and the three ex
 bounded source evidence. The EVT-22 RimTest fixture exercises the live package-gated page/evidence
 path when Anomaly is active and the no-op branch otherwise.
 
-Master Waves 5 and 9 / Royalty Phases 0–5 plus N3-R evidence use `RoyaltyContextTests`, now a
-358-assertion assembly-free suite. It
+Master Waves 5 and 9 / Royalty Phases 0–6 plus N3-R evidence use `RoyaltyContextTests`, now a
+421-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing
 Narrative Continuity `bond_lifecycle`/`weapon` contract; formation/load-baseline/re-equip,
 pending/threshold/unobservable separation, recorded/unrecorded recovery, destruction/death/transfer,
@@ -140,7 +140,12 @@ matching, inclusive correlation boundaries, pending/claim/expiry, one-fallback d
 level/correlation, and malformed/null behavior. Succession specifically pins the titleless
 none-to-Freeholder-to-target chain, terminal persistence beyond the former short expiry, exact
 predecessor invalidation, transient exact-edge ownership, self-heir rejection, and deterministic saved
-cap/migration behavior. The shipped policy XML is parsed separately and its
+cap/migration behavior. Phase 6 additionally pins six exact allowlisted permits, nine reviewed routine
+exclusions plus an unknown modded Def, four family/event mappings, malformed/duplicate/order/cap
+normalization, deterministic single-owner selection and ambiguity, disabled/master-disabled/no-op
+decisions, prompt-safe formatting and omission, same-faction/map quick-aid matching in both callback
+orders, exact expiry boundaries, backwards clocks, and nonmilitary rejection. The shipped policy XML
+is parsed separately and its
 detached `CreateDefault` path is exercised. Phase 1 additionally covers conservative persona
 baselines, malformed phase/tick/cause repair, duplicate weapon ownership, trait/row caps, faction-title
 dedup, highest-seniority selection, stable ordering, missing rows, corruption ceilings, exact live
@@ -243,6 +248,30 @@ remaining unspawned while succession ID resolution and the component-wide pre-sa
 consulted only RimWorld's live-colonist roster; the affected fixtures now spawn their disposable
 heir/writer. The user-confirmed corrected loaded rerun passed 267/267. Phase 5 automated coverage is
 green, while its hands-on matrix remains open.
+
+Phase 6 raises `RoyaltyContextTests` to 421 assertions, `DiaryPipelineTests` to 2,645, and
+`DiaryCapturePolicyTests` to 680. Pipeline coverage parses the XML-owned allowlist/caps/windows, the
+Royalty-gated exact no-catch-all group, all broad/exact permit prompt Defs, English/Russian
+DefInjected and Keyed strings, four bilingual prompt fixtures, `RoyalPermit` domain recovery, and
+append-only `SoloImportant` fields 117–122. Full/Balanced/Compact plans must keep permit label,
+family, faction, title, and cooldown truth, drop optional setting under tighter budgets, and redact
+permit/map IDs, ticks, and correlation proof. Capture coverage registers the new catalog Spec and pins
+exact success, eligibility, family/event identity, malformed IDs, dedup, disabled output,
+intent-only, and null/no-op decisions. The existing event-window regression confirms `RaidFriendly`
+does not gain a second hardcoded window page.
+
+`PawnDiaryRoyaltyPermitFlowTests` adds eight compiled loaded fixtures, bringing the RimTest assembly
+from 267 to 275 tests. They audit the exact `Pawn_RoyaltyTracker.GetPermit(RoyalTitlePermitDef,
+Faction)` postfix, `FactionPermit.Notify_Used()` prefix/postfix, and existing
+`IncidentWorker.TryExecute(IncidentParms)` postfix; invoke the real successful-use callback for every
+dramatic family; exercise the installed shuttle worker's real invalid-target rejection and a cancelled
+selection/lookup; prove all nine reviewed routine permits are silent; pin repeat suppression; claim
+quick aid by exact faction+map in vanilla and reverse callback order; return cap overflow, expiry, and
+pre-save signals unchanged to the raid owner; clear weak/static state on `FinalizeInit`; and assert
+Royalty-inactive hooks, collectors, pages, and queues are silent. The official DLC group matrix now
+includes `royalPermitDramatic`. Both runtime assemblies build, but these eight fixtures have not yet
+been run in a loaded game. The executed loaded baseline remains 267/267, Phase 6 manual/loaded
+acceptance remains open, and no Phase-2–5 hands-on row is closed.
 
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,

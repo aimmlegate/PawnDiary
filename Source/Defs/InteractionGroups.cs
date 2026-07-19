@@ -28,7 +28,8 @@ namespace PawnDiary
     // Progression groups match synthetic source tokens from the pawn progression scanner.
     // Reflection groups match synthetic day/quadrum/arc reflection source tokens. GravshipJourney
     // matches the one synthetic Odyssey successful-landing Def name. PersonaWeapon matches exact
-    // Royalty persona-bond lifecycle page names and has no catch-all.
+    // Royalty persona-bond lifecycle page names and has no catch-all. RoyalPermit likewise matches
+    // only the reviewed synthetic dramatic-family page names.
     // External groups match the eventKey strings other mods submit through the public
     // integration API (PawnDiary.Integration.PawnDiaryApi); adapter mods usually ship them.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
@@ -51,7 +52,8 @@ namespace PawnDiary
         Reflection,
         GravshipJourney,
         External,
-        PersonaWeapon
+        PersonaWeapon,
+        RoyalPermit
     }
 
     // How an XML batch is keyed. Pair means "one group-level batch" (per pawn pair for
@@ -697,6 +699,13 @@ namespace PawnDiary
             return ClassifyRequiredMatch(GroupDomain.PersonaWeapon, eventDefName);
         }
 
+        // Successful dramatic permits use exact synthetic family names and no catch-all. The shipped
+        // row is package-gated, so it is inert and hidden without Royalty.
+        public static DiaryInteractionGroupDef ClassifyRoyalPermit(string eventDefName)
+        {
+            return ClassifyRequiredMatch(GroupDomain.RoyalPermit, eventDefName);
+        }
+
         // First External-domain group that explicitly matches an integration-API eventKey. Like
         // Romance, live capture must NOT fall back to a catch-all here: only eventKeys some XML
         // group claims may create diary entries, so an unclaimed submission from another mod is
@@ -937,6 +946,12 @@ namespace PawnDiary
 
         // PersonaWeapon-domain instruction. The lifecycle adapter already resolved the exact group.
         public static string InstructionForPersonaWeapon(DiaryInteractionGroupDef group)
+        {
+            return InstructionForGroup(group);
+        }
+
+        // RoyalPermit-domain instruction. The success adapter already resolved the exact group.
+        public static string InstructionForRoyalPermit(DiaryInteractionGroupDef group)
         {
             return InstructionForGroup(group);
         }

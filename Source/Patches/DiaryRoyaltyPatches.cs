@@ -43,6 +43,12 @@ namespace PawnDiary
             public RoyalHeirAppointmentSnapshot snapshot;
         }
 
+        private sealed class RoyalPermitUsePatchState
+        {
+            public bool usedDuringCooldown;
+            public int tick;
+        }
+
         /// <summary>True when every required persona lifecycle seam was registered.</summary>
         public static bool HooksReady { get; private set; }
         public static bool TitleHookReady { get; private set; }
@@ -52,6 +58,8 @@ namespace PawnDiary
         public static bool SuccessionCandidateHookReady { get; private set; }
         public static bool SuccessionCommitHookReady { get; private set; }
         public static bool HeirAppointmentHookReady { get; private set; }
+        public static bool PermitOwnerHookReady { get; private set; }
+        public static bool PermitUseHookReady { get; private set; }
 
         public static void TryRegister(Harmony harmony)
         {
@@ -63,6 +71,8 @@ namespace PawnDiary
             SuccessionCandidateHookReady = false;
             SuccessionCommitHookReady = false;
             HeirAppointmentHookReady = false;
+            PermitOwnerHookReady = false;
+            PermitUseHookReady = false;
             if (harmony == null || !ModsConfig.RoyaltyActive) return;
             Type type = typeof(CompBladelinkWeapon);
             bool ready = true;
@@ -148,6 +158,21 @@ namespace PawnDiary
             WarnMissingOnce(HeirAppointmentHookReady,
                 "QuestPart_ChangeHeir.Notify_QuestSignalReceived(Signal)",
                 "explicit heir-appointment pages are disabled; automatic heir assignment remains silent");
+
+            PermitOwnerHookReady = Patch(harmony,
+                AccessTools.DeclaredMethod(typeof(Pawn_RoyaltyTracker), nameof(Pawn_RoyaltyTracker.GetPermit),
+                    new[] { typeof(RoyalTitlePermitDef), typeof(Faction) }),
+                null, nameof(PermitGetPostfix));
+            WarnMissingOnce(PermitOwnerHookReady,
+                "Pawn_RoyaltyTracker.GetPermit(RoyalTitlePermitDef, Faction)",
+                "dramatic permit pages fail closed because their owner cannot be proven");
+
+            PermitUseHookReady = Patch(harmony,
+                AccessTools.DeclaredMethod(typeof(FactionPermit), nameof(FactionPermit.Notify_Used),
+                    Type.EmptyTypes),
+                nameof(PermitUsedPrefix), nameof(PermitUsedPostfix));
+            WarnMissingOnce(PermitUseHookReady, "FactionPermit.Notify_Used()",
+                "dramatic permit pages are disabled because successful use cannot be proven");
         }
 
         private static bool Patch(
@@ -183,6 +208,58 @@ namespace PawnDiary
             Log.WarningOnce(
                 "[Pawn Diary] Could not register Royalty hook " + target + "; " + fallback + ".",
                 ("PawnDiary.Royalty.MissingHook." + target).GetHashCode());
+        }
+
+        private static void PermitGetPostfix(Pawn_RoyaltyTracker __instance, FactionPermit __result)
+        {
+            if (!RuntimeReady() || __instance?.pawn == null || __result?.Permit == null) return;
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            if (RoyalPermitPolicy.FamilyFor(__result.Permit.defName, policy).Length == 0) return;
+            DiaryPatchSafety.Run("Royalty.Permit.GetPermit.Postfix", () =>
+            {
+                RoyalPermitOwnerCache.Observe(
+                    __result,
+                    __instance.pawn,
+                    Find.TickManager?.TicksGame ?? 0,
+                    policy);
+            });
+        }
+
+        private static void PermitUsedPrefix(
+            FactionPermit __instance,
+            ref RoyalPermitUsePatchState __state)
+        {
+            __state = null;
+            if (!RuntimeReady() || __instance?.Permit == null) return;
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            if (RoyalPermitPolicy.FamilyFor(__instance.Permit.defName, policy).Length == 0) return;
+            __state = new RoyalPermitUsePatchState
+            {
+                usedDuringCooldown = __instance.OnCooldown,
+                tick = Math.Max(0, Find.TickManager?.TicksGame ?? 0)
+            };
+        }
+
+        private static void PermitUsedPostfix(
+            FactionPermit __instance,
+            RoyalPermitUsePatchState __state)
+        {
+            if (__state == null || !RuntimeReady() || __instance == null) return;
+            DiaryPatchSafety.Run("Royalty.Permit.NotifyUsed.Postfix", () =>
+            {
+                RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+                RoyalPermitOwnerResolution owner = RoyalPermitOwnerCache.Resolve(
+                    __instance, __state.tick, policy);
+                if (owner == null) return;
+                RoyalPermitUseSnapshot use;
+                if (DlcContext.TryCaptureRoyalPermitUse(
+                    __instance,
+                    owner.candidate,
+                    __state.usedDuringCooldown,
+                    __state.tick,
+                    out use))
+                    DiaryGameComponent.Instance?.ObserveRoyalPermitUse(owner.pawn, use);
+            });
         }
 
         private static void CodeForPrefix(

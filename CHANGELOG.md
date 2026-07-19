@@ -1,5 +1,28 @@
 # Changelog
 
+- **2026-07-19 — Implemented Master Wave 9 / Royalty Phase 6 dramatic permits.** Adversarial
+  inspection of RimWorld 1.6's installed assembly and Royalty XML confirmed the exact six dramatic
+  permits, nine routine exclusions, `Pawn_RoyaltyTracker.GetPermit(RoyalTitlePermitDef, Faction)` as
+  the exact-instance owner seam, and `FactionPermit.Notify_Used()` as the shared post-success edge;
+  targeting/cancellation and failed military aid never reach it. Vanilla quick military aid completes
+  its flagged `RaidFriendly` before notifying the permit, so the existing raid owner now stages that
+  exact successful faction+map signal briefly and losslessly returns unmatched, expired, overflowed,
+  backwards-clock, or pre-save signals to the ordinary fan-out route. Matching permit success claims
+  the raid in vanilla or reverse callback order even when visible permit output is disabled.
+  Bounded weak owner/correlation state resets at `FinalizeInit`; no save key, unsafe DLC Def lookup,
+  direct XML DLC reference, paid-DLC dependency, or hot-path polling was added.
+
+  Pure permit contracts/policy, XML allowlist/mappings/windows/caps, guarded main-thread collection,
+  exact manual Harmony registration, the `RoyalPermit` catalog/signal/domain/group, four invocation-
+  only prompts, append-only SoloImportant fields 117–122, and English/Russian UI/prompt/fixture text
+  now ship. `RoyaltyContextTests` passes 421 assertions, `DiaryPipelineTests` 2,645, and
+  `DiaryCapturePolicyTests` 680; runtime and 275-test RimTest assemblies build. Eight compiled loaded
+  fixtures cover exact targets, all four families, real invalid-target/cancelled intent, every
+  reviewed exclusion, repeats, quick-aid ownership/expiry/overflow, pre-save/load reset, and
+  Royalty-inactive silence. They have not yet had a loaded run: Phase 5's confirmed 267/267 remains
+  the executed baseline, Phase 6/R2 acceptance remains open, and Phase 2–5 hands-on matrices remain
+  unchanged and open.
+
 - **2026-07-19 — Confirmed Royalty Phase 5 automated loaded coverage fully green.** The corrected
   disposable-pawn fixtures passed the complete loaded suite at 267/267, confirming strict inheritance
   cardinality, titleless instant-intermediate ownership, delayed succession retirement, pre-save title

@@ -521,6 +521,38 @@ those disposable heir/writer pawns, the user-confirmed corrected run passed 267/
 
 ---
 
+## Royalty Phase 6 dramatic-permit acceptance
+
+Phase 6 owns only successful uses of the six reviewed story-sized permits and the matching generic
+quick military-aid raid. Pure tests and both assemblies build; eight new compiled fixtures bring the
+RimTest source count to 275. They have not yet run in a loaded game, so the last executed loaded
+baseline remains Phase 5's 267/267 and no Phase-2–5 hands-on row is changed.
+
+- [x] **ASSEMBLY-FREE/BUILD:** `RoyaltyContextTests` passes 421 assertions,
+  `DiaryPipelineTests` passes 2,645, `DiaryCapturePolicyTests` passes 680, and the runtime plus
+  275-test RimTest assemblies build.
+- [ ] **AUTOMATED LOADED:** Run all 275 tests in a loaded Royalty profile and the Royalty-inactive
+  profile. Do not infer a pass from compilation.
+- [ ] **MANUAL LATER:** Perform every row below before calling Phase 6 or R2 acceptance-complete.
+
+| # | Scenario | Expected result | Regression signal |
+|---:|---|---|---|
+| 1 | Successfully use each of `CallMilitaryAidSmall`, `CallMilitaryAidLarge`, `CallMilitaryAidGrand`, `CallTransportShuttle`, `CallOrbitalStrike`, and `CallOrbitalSalvo` with eligible titled pawns. | Exactly one owner-POV permit page per real success, mapped to the correct family. It names only supplied permit/faction/title/setting facts and describes invocation rather than outcome. | Page at selection time, missing/wrong owner/family, duplicate page, or claimed arrival/hit/completion. |
+| 2 | Open/select then cancel an allowlisted permit; reject an invalid shuttle/orbital target; force military aid's `RaidFriendly.TryExecute` to fail where safely reproducible. | No permit page and no cooldown/use-state mutation. Any staged generic raid is absent for pre-incident cancellation or returns normally after an unclaimed successful quick-flag signal. | Intent/failure creates a page or loses an unrelated raid. |
+| 3 | Exercise `TradeSettlement`, `TradeOrbital`, `TradeCaravan`, `SteelDrop`, `FoodDrop`, `SilverDrop`, `GlitterMedDrop`, `CallLaborerTeam`, `CallLaborerGang`, and one unknown modded permit. | Every routine/unknown permit remains silent unless the modded Def is explicitly mapped in XML. | Catch-all permit page or unsafe missing-Def warning. |
+| 4 | Use the same exact permit twice inside the 60-tick repeat window, then again after the window/cooldown conditions allow. | The immediate repeat is suppressed by owner+permit+faction identity; a later real use is independently eligible. | Same-action duplicate or permanent suppression. |
+| 5 | Successfully call vanilla quick military aid on a map with several eligible colonists. Repeat with a compatibility fixture that reports the permit before the raid. | One caller permit page owns the exact same-faction/map action in either callback order; no colony-wide `raidFriendly` pages are added. Disabling the permit group still consumes the source raid without writing a permit page. | Permit plus raid duplicate, wrong-map/faction claim, or disabled output leaking the generic raid. |
+| 6 | Stage a quick-flag friendly raid without a matching successful permit, cross the XML expiry, overflow the pending cap, and save while one is pending. | Every unclaimed signal returns once and unchanged through the existing `RaidFanoutSignal` route in deterministic order. Save-and-continue and save/reload lose no raid and create no permit page. | Lost, duplicated, reordered, or permit-relabeled generic raid. |
+| 7 | Save/load, exit to menu, and load a second colony after populating permit-owner, pending-raid, and reverse-order state. | No weak permit/Pawn reference or pending/recent raid owner crosses `FinalizeInit`; the second colony starts empty and produces no stale page. No new Scribe key appears. | Cross-colony claim, post-load stale suppression, serialized live object, or load error. |
+| 8 | Inspect Full/Balanced/Compact English and Russian previews for all four families, with and without cooldown use and setting. | Permit label/family/faction/title/cooldown truth remains; optional setting is dropped first under tighter budgets. Permit Def IDs, map IDs, ticks, correlation IDs, target/outcome claims, and favor amounts are absent. | Untranslated key, missing required fact, internal proof metadata, or invented outcome/cost. |
+| 9 | Run Base + Harmony + Pawn Diary without Royalty, including a save previously written with Phase 6 installed. | Permit hooks report inactive, collectors and transient owners remain empty, ordinary raids follow their unchanged route, and no DLC Def/type/dependency error or warning spam appears. | Startup/load exception, Royalty-only setting/page, swallowed raid, or paid-DLC dependency. |
+
+- [ ] **TODO:** Record exact RimWorld assembly/build, language, active mod lists, the 275-test loaded
+  result in Royalty-on/off profiles, all manual rows above, prompt captures, save excerpts, and
+  relevant `Player.log` lines. Phase 6 and R2 remain acceptance-open until that evidence is recorded.
+
+---
+
 ## Mod-compatibility adapters (1-2-3 Personalities / VSIE)
 
 These separate adapter mods live under `integrations/` and are inert without their target mod. Run

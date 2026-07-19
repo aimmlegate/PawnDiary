@@ -10,6 +10,76 @@ namespace PawnDiary
 {
     internal static partial class DlcContext
     {
+        /// <summary>
+        /// Proves that this pawn's tracker owns the exact permit instance and copies only stable
+        /// identity, title, faction, and current setting strings on the main thread.
+        /// </summary>
+        public static bool TryCaptureRoyalPermitOwnerCandidate(
+            Pawn pawn,
+            FactionPermit permit,
+            int tick,
+            out RoyalPermitOwnerCandidate candidate)
+        {
+            candidate = null;
+            if (!ModsConfig.RoyaltyActive || pawn?.royalty == null || permit?.Permit == null
+                || permit.Faction == null) return false;
+            FactionPermit owned = pawn.royalty.GetPermit(permit.Permit, permit.Faction);
+            if (!ReferenceEquals(owned, permit)) return false;
+
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            Map map = pawn.MapHeld;
+            string settingLabel = map?.Parent == null
+                ? string.Empty
+                : map.Parent.LabelCap;
+            RoyalTitleDef title = permit.Title;
+            candidate = new RoyalPermitOwnerCandidate
+            {
+                ownerPawnId = pawn.GetUniqueLoadID() ?? string.Empty,
+                ownerPawnName = CleanRoyaltyText(
+                    pawn.LabelShortCap, policy.maximumPermitLabelCharacters),
+                permitDefName = permit.Permit.defName ?? string.Empty,
+                factionId = permit.Faction.GetUniqueLoadID() ?? string.Empty,
+                factionName = CleanRoyaltyText(
+                    permit.Faction.Name, policy.maximumPermitLabelCharacters),
+                titleDefName = title?.defName ?? string.Empty,
+                titleLabel = CleanRoyaltyText(
+                    title == null ? string.Empty : title.GetLabelCapFor(pawn),
+                    policy.maximumPermitLabelCharacters),
+                mapId = map?.GetUniqueLoadID() ?? string.Empty,
+                mapLabel = CleanRoyaltyText(settingLabel, policy.maximumPermitSettingCharacters),
+                observedTick = Math.Max(0, tick)
+            };
+            return !string.IsNullOrWhiteSpace(candidate.ownerPawnId)
+                && !string.IsNullOrWhiteSpace(candidate.permitDefName)
+                && !string.IsNullOrWhiteSpace(candidate.factionId);
+        }
+
+        /// <summary>Builds the detached exact-use DTO after vanilla successfully consumed a permit.</summary>
+        public static bool TryCaptureRoyalPermitUse(
+            FactionPermit permit,
+            RoyalPermitOwnerCandidate owner,
+            bool usedDuringCooldown,
+            int tick,
+            out RoyalPermitUseSnapshot snapshot)
+        {
+            snapshot = null;
+            if (!ModsConfig.RoyaltyActive || permit?.Permit == null || permit.Faction == null
+                || owner == null) return false;
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            if (!string.Equals(owner.factionId, permit.Faction.GetUniqueLoadID(), StringComparison.Ordinal))
+                return false;
+            string label = CleanRoyaltyText(
+                permit.Permit.LabelCap, policy.maximumPermitLabelCharacters);
+            snapshot = RoyalPermitPolicy.BuildUse(
+                owner,
+                permit.Permit.defName,
+                label,
+                usedDuringCooldown,
+                tick,
+                policy);
+            return snapshot != null;
+        }
+
         /// <summary>Copies one possible persona weapon into a plain snapshot.</summary>
         public static bool TryCapturePersonaWeapon(
             ThingWithComps weapon,

@@ -676,6 +676,7 @@ namespace PawnDiary.RimTests
                 { "progressionPsylink", RoyaltyPackageId },
                 { "personaWeaponLifecycle", RoyaltyPackageId },
                 { "personaWeaponMilestone", RoyaltyPackageId },
+                { "royalPermitDramatic", RoyaltyPackageId },
                 { "eventWindowVoidMonolith", AnomalyPackageId },
                 { "biotechFamilyBirth", BiotechPackageId },
                 { "ritualAnomalyInvitation", AnomalyPackageId },

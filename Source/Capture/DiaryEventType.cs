@@ -64,6 +64,8 @@ namespace PawnDiary.Capture
         // Royalty persona-weapon formation, meaningful separation/recovery, and standalone ending.
         // Combat/death enrichment remains a later Royalty phase and does not use this source yet.
         PersonaWeapon,
+        // Successful allowlisted Royalty permit uses; routine permits are deliberately absent.
+        RoyalPermit,
 
         // ── Planned future sources (placeholders only — NOT implemented yet) ──
         // No known live RecordX source remains to migrate; batch/ambient flushers are route sinks.

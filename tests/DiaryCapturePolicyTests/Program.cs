@@ -85,6 +85,7 @@ namespace DiaryCapturePolicyTests
             TestBiotechCatalogDecisions();
             TestGravshipJourneyCatalogDecisions();
             TestPersonaWeaponCatalogDecisions();
+            TestRoyalPermitCatalogDecisions();
             TestMonolithActivationProvenance();
             TestCatalogDispatch();
             TestCatalogContract();
@@ -1724,6 +1725,54 @@ namespace DiaryCapturePolicyTests
                 !MonolithActivationProvenancePolicy.IsAutomatic(99, 100));
             AssertTrue("cleared monolith timer is deliberate provenance",
                 !MonolithActivationProvenancePolicy.IsAutomatic(100, -99999));
+        }
+
+        private static void TestRoyalPermitCatalogDecisions()
+        {
+            RoyalPermitEventData data = new RoyalPermitEventData
+            {
+                PawnId = "Pawn_A",
+                Tick = 100,
+                DefName = RoyalPermitPolicy.MilitaryAidEventDefName,
+                PermitDefName = "CallMilitaryAidSmall",
+                PermitFamily = RoyalPermitFamilyTokens.MilitaryAid,
+                FactionId = "Faction_Empire",
+                PawnEligible = true,
+                HasExactSuccessfulUse = true
+            };
+            AssertEqual("exact successful permit emits", CaptureDecision.GenerateSolo,
+                RoyalPermitEventData.Decide(data, Ctx()));
+            AssertEqual("permit catalog route matches pure decision", CaptureDecision.GenerateSolo,
+                DiaryEventCatalog.Get(DiaryEventType.RoyalPermit).Decide(data, Ctx()));
+            AssertTrue("catalog registers RoyalPermit spec",
+                DiaryEventCatalog.Get(DiaryEventType.RoyalPermit) is RoyalPermitEventSpec);
+            AssertEqual("permit dedup key is owner/permit/faction",
+                "royal-permit|Pawn_A|CallMilitaryAidSmall|Faction_Empire", data.DedupKey());
+
+            data.HasExactSuccessfulUse = false;
+            AssertEqual("permit intent without success drops", CaptureDecision.Drop,
+                RoyalPermitEventData.Decide(data, Ctx()));
+            data.HasExactSuccessfulUse = true;
+            data.PawnEligible = false;
+            AssertEqual("ineligible permit owner drops", CaptureDecision.Drop,
+                RoyalPermitEventData.Decide(data, Ctx()));
+            data.PawnEligible = true;
+            data.DefName = RoyalPermitPolicy.OrbitalStrikeEventDefName;
+            AssertEqual("mismatched permit family/event drops", CaptureDecision.Drop,
+                RoyalPermitEventData.Decide(data, Ctx()));
+            data.DefName = RoyalPermitPolicy.MilitaryAidEventDefName;
+            data.PermitFamily = "resource_drop";
+            AssertEqual("unknown permit family drops", CaptureDecision.Drop,
+                RoyalPermitEventData.Decide(data, Ctx()));
+            data.PermitFamily = RoyalPermitFamilyTokens.MilitaryAid;
+            AssertEqual("disabled permit output drops", CaptureDecision.Drop,
+                RoyalPermitEventData.Decide(data, Ctx(user: false)));
+            data.PermitDefName = "bad|permit";
+            AssertEqual("malformed permit identity drops", CaptureDecision.Drop,
+                RoyalPermitEventData.Decide(data, Ctx()));
+            AssertEqual("malformed permit has no dedup key", string.Empty, data.DedupKey());
+            AssertEqual("null permit payload drops", CaptureDecision.Drop,
+                RoyalPermitEventData.Decide(null, Ctx()));
         }
 
         // ── Catalog dispatch ──

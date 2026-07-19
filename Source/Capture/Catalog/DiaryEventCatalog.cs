@@ -86,6 +86,7 @@ namespace PawnDiary.Capture
             Register(new FamilyBirthEventSpec());
             Register(new GravshipJourneyEventSpec());
             Register(new PersonaWeaponEventSpec());
+            Register(new RoyalPermitEventSpec());
         }
     }
 }

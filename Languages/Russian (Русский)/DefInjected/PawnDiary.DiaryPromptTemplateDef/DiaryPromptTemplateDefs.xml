@@ -544,4 +544,10 @@
   <DiaryPromptTemplate_SoloImportant.fields.114.label>наследник</DiaryPromptTemplate_SoloImportant.fields.114.label>
   <DiaryPromptTemplate_SoloImportant.fields.115.label>унаследованный титул</DiaryPromptTemplate_SoloImportant.fields.115.label>
   <DiaryPromptTemplate_SoloImportant.fields.116.label>фракция наследования</DiaryPromptTemplate_SoloImportant.fields.116.label>
+  <DiaryPromptTemplate_SoloImportant.fields.117.label>разрешение</DiaryPromptTemplate_SoloImportant.fields.117.label>
+  <DiaryPromptTemplate_SoloImportant.fields.118.label>семейство разрешения</DiaryPromptTemplate_SoloImportant.fields.118.label>
+  <DiaryPromptTemplate_SoloImportant.fields.119.label>фракция разрешения</DiaryPromptTemplate_SoloImportant.fields.119.label>
+  <DiaryPromptTemplate_SoloImportant.fields.120.label>титул разрешения</DiaryPromptTemplate_SoloImportant.fields.120.label>
+  <DiaryPromptTemplate_SoloImportant.fields.121.label>место применения разрешения</DiaryPromptTemplate_SoloImportant.fields.121.label>
+  <DiaryPromptTemplate_SoloImportant.fields.122.label>применено во время перезарядки</DiaryPromptTemplate_SoloImportant.fields.122.label>
 </LanguageData>

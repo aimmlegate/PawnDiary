@@ -354,6 +354,7 @@ namespace PawnDiary
                     // This must remain before events.ExposeEvents below: reconciliation and any
                     // unmatched Thought release are synchronous and belong in this same save.
                     FlushRoyalTitleThoughtsBeforeSave();
+                    FlushRoyalPermitRaidsBeforeSave();
                     FlushAllInteractionBatches();
                     FlushAllTaleBatches();
                     FlushAllAmbientThoughtNotes();
@@ -466,6 +467,12 @@ namespace PawnDiary
         {
             ReconcileRoyaltyOwnersBeforeSave();
             RoyalTitleThoughtCorrelation.FlushPending();
+        }
+
+        /// <summary>Returns transient unclaimed quick-aid raids to normal capture before saving.</summary>
+        internal void FlushRoyalPermitRaidsBeforeSave()
+        {
+            PawnDiary.Ingestion.QuickMilitaryAidRaidCorrelation.FlushAll();
         }
 
         /// <summary>Clears plain static correlation state after every new-game or load boundary.</summary>
@@ -625,6 +632,10 @@ namespace PawnDiary
         private void GameComponentTickInner()
         {
             int now = Find.TickManager.TicksGame;
+            if (ModsConfig.RoyaltyActive
+                && PawnDiary.Ingestion.QuickMilitaryAidRaidCorrelation.HasState)
+                PawnDiary.Ingestion.QuickMilitaryAidRaidCorrelation.FlushExpired(
+                    now, DiaryRoyaltyPolicy.Snapshot());
             if (initialArrivalScanPending && TryRecordStartingColonistArrivals())
             {
                 initialArrivalScanPending = false;

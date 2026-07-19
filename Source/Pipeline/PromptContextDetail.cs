@@ -409,7 +409,14 @@ namespace PawnDiary
                 || Eq(contextKey, "succession_deceased")
                 || Eq(contextKey, "succession_heir")
                 || Eq(contextKey, "succession_title")
-                || Eq(contextKey, "succession_faction");
+                || Eq(contextKey, "succession_faction")
+                // R6 permit identity and authority stay exact in every detail preset. Setting is
+                // useful color but remains optional; cooldown use becomes required only when present.
+                || Eq(contextKey, "permit_label")
+                || Eq(contextKey, "permit_family")
+                || Eq(contextKey, "permit_faction")
+                || Eq(contextKey, "permit_title")
+                || Eq(contextKey, "used_during_cooldown");
         }
 
         private static int Score(
@@ -508,6 +515,14 @@ namespace PawnDiary
         private static int ScoreContextKey(string contextKey, bool quest, bool progression, bool ability,
             bool ritual, bool combat, bool persona, PromptContextDetailLevel level, out string reason)
         {
+            if (StartsWithAny(contextKey, "permit_") || Eq(contextKey, "used_during_cooldown"))
+            {
+                reason = Eq(contextKey, "permit_setting")
+                    ? "optional permit setting"
+                    : "exact dramatic permit fact";
+                return Eq(contextKey, "permit_setting") ? 64 : 92;
+            }
+
             if (StartsWithAny(contextKey, "persona_", "bond_"))
             {
                 reason = persona ? "persona lifecycle context" : "persona context";

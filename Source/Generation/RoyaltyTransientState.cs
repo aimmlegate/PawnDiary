@@ -1,5 +1,5 @@
-// Resettable Royalty correlation state. Most caches remain reserved Phase-1 shells for later
-// title, mutation, permit, and combat/death ownership phases.
+// Resettable Royalty correlation state. These short-lived ownership caches bridge exact same-action
+// title, mutation, persona, succession, permit, and raid callbacks without becoming saved truth.
 using System.Collections.Generic;
 
 namespace PawnDiary
@@ -10,8 +10,6 @@ namespace PawnDiary
         private static readonly Dictionary<string, RoyalMutationCauseScope> activeCauseScopes =
             new Dictionary<string, RoyalMutationCauseScope>();
         private static readonly List<RoyalMutationFact> unclaimedMutations = new List<RoyalMutationFact>();
-        private static readonly Dictionary<string, string> permitOwners = new Dictionary<string, string>();
-        private static readonly Dictionary<string, string> quickAidOwners = new Dictionary<string, string>();
         private static readonly Dictionary<string, string> personaEndCauses = new Dictionary<string, string>();
         private static readonly HashSet<string> talePersonaOwners = new HashSet<string>();
         private static readonly Dictionary<string, string> personaTraitThoughtOwners =
@@ -26,10 +24,10 @@ namespace PawnDiary
             RoyalMutationCorrelation.Clear();
             RoyalSuccessionCorrelation.Clear();
             RoyalTitleThoughtCorrelation.Clear();
+            RoyalPermitOwnerCache.Reset();
+            PawnDiary.Ingestion.QuickMilitaryAidRaidCorrelation.Reset();
             activeCauseScopes.Clear();
             unclaimedMutations.Clear();
-            permitOwners.Clear();
-            quickAidOwners.Clear();
             personaEndCauses.Clear();
             talePersonaOwners.Clear();
             personaTraitThoughtOwners.Clear();

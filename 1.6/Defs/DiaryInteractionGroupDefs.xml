@@ -2616,6 +2616,33 @@
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
+  <!-- Royalty R2 dramatic permits. Exact synthetic family identities only: routine resource,
+       labor, trade, aerodrone, and unknown modded permits cannot fall through to this group. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>royalPermitDramatic</defName>
+    <label>Dramatic royal permits</label>
+    <order>769</order>
+    <domain>RoyalPermit</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a successful dramatic royal-permit use; preserve the exact permit family, faction, title, and setting supplied, describe only the pawn calling in or exercising the permit, and never claim that aid arrived, a shuttle completed its trip, an orbital attack hit a target, or a particular favor amount was spent</instruction>
+    <tone>with the weight of authority being turned into immediate action</tone>
+    <tones>
+      <li>decisive and personal, grounded in what it felt like to invoke hard-won authority</li>
+      <li>tense and status-aware, preserving uncertainty about every effect not yet observed</li>
+    </tones>
+    <colorCue>royalty</colorCue>
+    <matchDefNames>
+      <li>RoyalPermitMilitaryAid</li>
+      <li>RoyalPermitTransportShuttle</li>
+      <li>RoyalPermitOrbitalStrike</li>
+      <li>RoyalPermitOrbitalSalvo</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <!-- Odyssey O1.4 canonical successful landing. TravelTo and landing start remain state-only;
        this exact synthetic Def is emitted once after vanilla LandingEnded returns successfully. -->
   <PawnDiary.DiaryInteractionGroupDef>

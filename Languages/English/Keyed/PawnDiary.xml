@@ -1520,6 +1520,31 @@
   <PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Markers>tale=PersonaWeaponFirstConsequentialKill; taleClass=Tale_DoublePawnAndDef; persona_milestone=first_consequential_kill; tale_source_def=KilledMajorThreat; tale_source_label=Killed major threat; tale_killer_role=initiator; tale_victim_role=recipient; persona_weapon_id=Weapon_Test; persona_weapon_def=PersonaMonosword; persona_weapon_name=Quiet Edge; bond_epoch=1; bond_previous_state=active; bond_new_state=active; persona_trait_1=Kill-focused; persona_trait_description_1=Reacts strongly when the wielder kills.</PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Markers>
   <PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Text>{0} made their first consequential kill with Quiet Edge.</PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Text>
 
+  <!-- Royalty R2 successful dramatic permit pages. -->
+  <PawnDiary.Event.RoyalPermit.Label>Dramatic royal permit</PawnDiary.Event.RoyalPermit.Label>
+  <PawnDiary.Event.RoyalPermit.FactionFallback>the royal faction</PawnDiary.Event.RoyalPermit.FactionFallback>
+  <PawnDiary.Event.RoyalPermit.MilitaryAid.PermitFallback>military aid</PawnDiary.Event.RoyalPermit.MilitaryAid.PermitFallback>
+  <PawnDiary.Event.RoyalPermit.TransportShuttle.PermitFallback>a transport shuttle</PawnDiary.Event.RoyalPermit.TransportShuttle.PermitFallback>
+  <PawnDiary.Event.RoyalPermit.OrbitalStrike.PermitFallback>an orbital strike</PawnDiary.Event.RoyalPermit.OrbitalStrike.PermitFallback>
+  <PawnDiary.Event.RoyalPermit.OrbitalSalvo.PermitFallback>an orbital salvo</PawnDiary.Event.RoyalPermit.OrbitalSalvo.PermitFallback>
+  <PawnDiary.Event.RoyalPermit.MilitaryAid.Fallback>{0} called in {1} from {2} through a royal permit.</PawnDiary.Event.RoyalPermit.MilitaryAid.Fallback>
+  <PawnDiary.Event.RoyalPermit.TransportShuttle.Fallback>{0} called for {1} from {2} through a royal permit.</PawnDiary.Event.RoyalPermit.TransportShuttle.Fallback>
+  <PawnDiary.Event.RoyalPermit.OrbitalStrike.Fallback>{0} exercised {1} granted by {2}.</PawnDiary.Event.RoyalPermit.OrbitalStrike.Fallback>
+  <PawnDiary.Event.RoyalPermit.OrbitalSalvo.Fallback>{0} exercised {1} granted by {2}.</PawnDiary.Event.RoyalPermit.OrbitalSalvo.Fallback>
+  <PawnDiary.Event.RoyalPermit.CooldownSuffix>The permit was invoked while still on cooldown, without specifying the favor cost.</PawnDiary.Event.RoyalPermit.CooldownSuffix>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitMilitaryAid.Label>Royal permit — military aid</PawnDiary.Dev.PromptSuite.RoyalPermitMilitaryAid.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitMilitaryAid.Markers>royal_permit=military_aid; permit_def=CallMilitaryAidLarge; permit_label=Military aid; permit_family=military_aid; permit_faction=Empire; permit_title=Knight; permit_setting=Home; used_during_cooldown=true</PawnDiary.Dev.PromptSuite.RoyalPermitMilitaryAid.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitMilitaryAid.Text>{0} called in military aid from the Empire through a royal permit while it was still on cooldown.</PawnDiary.Dev.PromptSuite.RoyalPermitMilitaryAid.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitTransportShuttle.Label>Royal permit — transport shuttle</PawnDiary.Dev.PromptSuite.RoyalPermitTransportShuttle.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitTransportShuttle.Markers>royal_permit=transport_shuttle; permit_def=CallTransportShuttle; permit_label=Transport shuttle; permit_family=transport_shuttle; permit_faction=Empire; permit_title=Knight; permit_setting=Home</PawnDiary.Dev.PromptSuite.RoyalPermitTransportShuttle.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitTransportShuttle.Text>{0} called for an imperial transport shuttle through a royal permit.</PawnDiary.Dev.PromptSuite.RoyalPermitTransportShuttle.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalStrike.Label>Royal permit — orbital strike</PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalStrike.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalStrike.Markers>royal_permit=orbital_strike; permit_def=CallOrbitalStrike; permit_label=Orbital strike; permit_family=orbital_strike; permit_faction=Empire; permit_title=Knight; permit_setting=Home</PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalStrike.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalStrike.Text>{0} exercised an imperial orbital-strike permit at Home.</PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalStrike.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalSalvo.Label>Royal permit — orbital salvo</PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalSalvo.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalSalvo.Markers>royal_permit=orbital_salvo; permit_def=CallOrbitalSalvo; permit_label=Orbital salvo; permit_family=orbital_salvo; permit_faction=Empire; permit_title=Knight; permit_setting=Home</PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalSalvo.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalSalvo.Text>{0} exercised an imperial orbital-salvo permit at Home.</PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalSalvo.Text>
+
   <!-- Odyssey O1.2 mobile-home surroundings. -->
   <PawnDiary.Ctx.GravshipHome>aboard the gravship {0}</PawnDiary.Ctx.GravshipHome>
   <PawnDiary.Ctx.GravshipHomeAt>aboard the gravship {0} at {1}</PawnDiary.Ctx.GravshipHomeAt>

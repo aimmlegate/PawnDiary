@@ -1,6 +1,6 @@
 # Pawn Diary - Maintainer Guide
 
-Last updated: 2026-07-15
+Last updated: 2026-07-19
 
 Related files:
 
@@ -48,15 +48,15 @@ repo for development, but the Workshop payload omits source code and other devel
 | `LoadFolders.xml` | Normal 1.6 load roots plus the RimTest-only development test assembly gate. |
 | `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
 | `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
-| `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts and Royalty persona-weapon lifecycle identity/dedup plus forced first-kill POV decisions. |
-| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including Royalty persona lifecycle/Tale enrichment and ritual-owned title/psylink mutation context. |
+| `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts and Royalty persona-weapon lifecycle, forced first-kill POV, and exact dramatic-permit decisions. |
+| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, and lossless quick-aid raid ownership. |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. Also `PawnMemoryRepository` (per-pawn memory store; inert until the memory wiring lands). |
-| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Odyssey location/mobile-home/lifecycle and Royalty persona/title/psylink/succession snapshots and transient correlation. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/` (inert until wired). |
+| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Odyssey location/mobile-home/lifecycle and Royalty persona/title/psylink/succession/permit snapshots and transient correlation. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/` (inert until wired). |
 | `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including `DiaryOdysseyPolicyDef` and the Royalty policy plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, and the `MemoryFragment` pawn-memory row. |
-| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment seams. |
+| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment/permit seams. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper projects plus the optional in-game `PawnDiary.RimTest` smoke suite. |
@@ -251,8 +251,8 @@ Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned gra
 additive save-key suffixes under each POV/archive row; it performs no retroactive inference or
 catch-up on older pages.
 
-**Royalty Phases 0–5 plus Narrative N3-R core (Master Waves 5 and 9; automated loaded suite green at
-267/267; hands-on matrices pending)**
+**Royalty Phases 0–6 plus Narrative N3-R core (Master Waves 5 and 9; Phase 5 automated loaded suite
+green at 267/267; Phase 6 loaded execution and all hands-on matrices pending)**
 freeze the detached R1 boundary and now own persona-weapon lifecycle, first-kill/death enrichment,
 and exact title/psylink correctness.
 `RoyaltyContracts`
@@ -480,6 +480,53 @@ all three failures were fixture-liveness gaps because generated pawns were not i
 roster required by succession ID lookup and the component-wide pre-save scanner. The affected fixtures
 now spawn only their disposable heir/writer. The user-confirmed corrected rerun passed 267/267, closing
 Phase 5 automated loaded coverage while leaving its hands-on matrix open.
+
+Phase 6 adds only the reviewed story-sized permit families. `DiaryRoyaltyPolicyDef` owns the exact
+plain-string allowlist and maps `CallMilitaryAidSmall`/`Large`/`Grand`,
+`CallTransportShuttle`, `CallOrbitalStrike`, and `CallOrbitalSalvo` to four stable family tokens.
+Trade, resource-drop, medicine, and labor permits—and every unknown/modded permit—remain silent unless
+XML explicitly opts them in. Safe code fallbacks contain the same six mappings, and malformed,
+duplicate, unknown-family, or over-cap rows fail closed without a throwing DLC Def lookup.
+
+Installed RimWorld 1.6 inspection establishes `FactionPermit.Notify_Used()` as the exact successful-
+use edge: it writes `lastUsedTick`, while the reviewed military-aid, shuttle, strike, and salvo workers
+call it only after their incident/transport/bombardment setup succeeds. UI lookup, targeting,
+cancellation, invalid targets, failed `RaidFriendly.TryExecute`, and other intent paths do not reach
+that method. Because the callback carries no pawn, a Royalty-only postfix on the exact
+`Pawn_RoyaltyTracker.GetPermit(RoyalTitlePermitDef, Faction)` overload briefly records weak references
+to the returned permit and tracker pawn. The successful-use postfix accepts only one exact eligible
+owner; ambiguous/capped ownership fails closed, and a bounded live-pawn scan is used only when a
+compatibility mod bypasses the normal lookup. All faction, title, permit, pawn, and map labels are
+localized, sanitized, bounded, and detached by `DlcContext.Royalty` on RimWorld's main thread before
+pure `RoyalPermitPolicy` decides the family and output.
+
+Vanilla quick military aid completes `RaidFriendly.TryExecute` before it calls `Notify_Used`. The
+existing raid listener therefore stages only a successful `IncidentWorker_RaidFriendly` whose
+`raidArrivalModeForQuickMilitaryAid` flag is true. A later military-aid success claims the exact
+faction+map raid inside the XML window; a short bounded recent-owner list also covers compatibility
+mods that reverse callback order. An unmatched, expired, backwards-clock, save-boundary, or pending-
+cap-overflow raid is returned unchanged and deterministically to the existing `RaidFanoutSignal`
+owner. Permit ownership is source truth rather than output truth, so disabling the permit group still
+prevents the same action becoming generic friendly-raid pages. Per-tick maintenance does no work while
+both bounded lists are empty. Pre-save flush is lossless, and `FinalizeInit` clears both raid and weak
+permit state so it cannot cross exit-to-menu plus load.
+
+`RoyalPermitSignal` creates one solo important invocation page only after that exact callback. Saved
+context contains the reviewed family, localized permit/faction/title/setting facts, and the pre-use
+cooldown boolean; it does not claim arrival, impact, shuttle completion, target identity, favor amount,
+or any other outcome not proved at this edge. The `RoyalPermit` domain has one Royalty-package-gated,
+no-catch-all group and exact prompts for military aid, transport shuttle, orbital strike, and orbital
+salvo. Append-only `SoloImportant` fields 117–122 project permit label/family/faction/title, optional
+setting, and cooldown truth while omitting permit Def IDs, map IDs, ticks, and correlation data.
+English and Russian Keyed/DefInjected text and four prompt fixtures cover every family.
+
+Phase-6 pure coverage raises `RoyaltyContextTests` to 421 assertions, `DiaryPipelineTests` to 2,645,
+and `DiaryCapturePolicyTests` to 680. The runtime and 275-test RimTest assemblies build. Eight new
+loaded fixtures compile exact Harmony target audits, the real vanilla successful-use callback for all
+four families, installed shuttle target rejection plus cancelled selection intent, all nine reviewed
+routine exclusions, repeat suppression, both quick-aid callback orders, cap/expiry fallback, pre-save
+flush/load reset, and Royalty-inactive silence. They have not yet been executed in a loaded game, so
+Phase 6 and R2 are not acceptance-complete; every Phase-2–5 hands-on matrix also remains open.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13
@@ -1448,6 +1495,7 @@ it onto the bus.
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
 | Pawn progression | Periodic scan plus defensive Royalty exact hooks | Passion-only skill milestones, cause-aware psylink gains, xenotype changes, faction-aware royal-title gained/promoted/demoted/lost transitions, exact royal succession/explicit heir appointment, and newly gained personality traits. Exact Royalty hooks advance saved truth immediately; the scanner remains a loss-aware fallback and observes while output is disabled. Succession, bestowing, and anima owners suppress matching title progression, while neuroformer owns one progression page. Trait gains feed the trait's own character-card description (no stat/mechanic lines) into the prompt so any trait — vanilla or modded — is voiced as a felt personality shift without a hardcoded per-trait table. First observation baselines existing saves to avoid retroactive spam; major psylink/xenotype changes can request a rare arc reflection after the normal page records. |
 | Royalty persona weapons | Defensive `CompBladelinkWeapon` coding, equip/loss, destruction, map-removal, and `UnCode` hooks plus an independent elapsed scan | Exact coding/transfer creates one formation epoch; a short weapon swap is silent; one meaningful separation appears only after the XML threshold and only its accepted page authorizes recovery; destruction creates one standalone ending. State advances even when output is disabled, and late-visible old bonds baseline silently. Current narrative context requires the exact live coded weapon rather than saved state alone. Pawn death/map removal remain page-silent here, and all live reads no-op without Royalty. |
+| Royalty dramatic permits | Exact `Pawn_RoyaltyTracker.GetPermit(RoyalTitlePermitDef, Faction)` owner observation plus successful `FactionPermit.Notify_Used()` | One owner-POV invocation page for the six XML-allowlisted military-aid/shuttle/orbital permits. Routine/unknown permits and UI/failed/cancelled intent are silent. Exact quick military aid owns the matching faction+map `RaidFriendly`; unmatched staged raids expire unchanged into the existing fan-out route. All hooks/collectors are inert without Royalty. |
 | Biotech growth moments | `Pawn_AgeTracker.BirthdayBiological`, `ChoiceLetter_GrowthMoment.ConfigureGrowthLetter` / `MakeChoices` | Age-7/10/13 before/after ownership. A committed verified mutation becomes one child-solo, supporter-solo, or child/supporter page; postponed letters survive save/load, and pending ownership never tick-expires while the pawn's growth letter is still open (vanilla growth letters have no timeout) — even past the pawn's next birthday, where the answered letter still attaches to its original claim via a whole-pawn fallback lookup; auto-resolved growth completes immediately; stable child-ID/age checks across hot and archived events prevent replay regardless of which diary owns the page. N2-B can enrich that same page with exact saved family continuity and a visible current non-Baseliner identity, selected through the shared bounded provider policy. Unsupported/failed/disabled ownership releases the existing Birthday route and consumes trait/skill baselines. Entire path is inert without Biotech. |
 | Biotech family birth | `PregnancyUtility.ApplyBirthOutcome`, nested Tale/Thought/Ritual correlation, naming poll | One exact healthy/ill/stillborn canonical birth, written by at most two unique eligible adults in role-certainty order. XML owns mature-birth/loss classifier names. Unresolved naming survives save/load with frozen event-time prompt/display context and chronological insertion before a same-call death boundary; writer/child resolution covers maps, caravans, and travelling transporters, so a family that leaves the map during the naming window keeps its page; hot/archive family+child ownership prevents replay; disabled/invalid/thrown ownership releases staged mature routes. Exact miscarriage closes/enriches the existing thought path without inventing an extra event. Capture is inert without Biotech, but saved pending/arc state keeps maintaining itself when the DLC is later disabled: the naming poll finds nothing, so a pending birth flushes its canonical page from the frozen event-time facts with the birth-time child name after the normal grace (or prunes when every writer is gone), and family arcs keep compacting/pruning instead of freezing. |
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |
@@ -2493,6 +2541,12 @@ rows migrate their old short expiry to terminal persistence; already title-claim
 missing pre-Phase-5 key normalizes to an empty list and emits no catch-up page. The ledger keeps only
 the newest XML-capped rows. Active death scopes, candidate observations, and the same-action exact-edge
 duplicate cache are never Scribed.
+Phase 6 adds no Scribe key. Permit owners, recent repeat keys, pending/reverse-order quick-aid
+ownership, and their weak live references are process-local only. Before saving, every unclaimed
+staged quick-aid `RaidFanoutSignal` is synchronously returned to the ordinary event owner before event
+serialization; `FinalizeInit` drops the remaining permit/recent-owner state. Old saves therefore need
+no migration and cannot manufacture a permit page, while save-and-continue cannot lose a quick-aid
+raid merely because its short correlation window overlapped the save.
 Phase 4 advances this existing row immediately for exact title hooks and scanner observations; schema
 version 2 distinguishes a readable empty title set from temporarily unavailable Royalty data. A
 Royalty-off `LoadedGame` invalidates availability immediately while retaining the saved rows and
@@ -2868,7 +2922,13 @@ claim/retirement, a nonempty actual component-ledger Scribe round-trip, old-expi
 Royalty-inactive hook/scope assertions. The first loaded run reached 264/267; its three failures shared
 an unspawned-fixture liveness gap, now corrected by spawning only the disposable pawns whose production
 paths consult the live-colonist roster. The corrected rerun passed all 267/267 loaded tests. Ideology
-and Anomaly ritual tests use
+Phase 6 expands the compiled loaded suite to 275 tests. Its eight new permit fixtures audit both exact
+permit patches and the existing exact incident postfix, call real `FactionPermit.Notify_Used` for all
+four families, prove a real installed invalid shuttle target plus cancelled lookup intent are silent,
+exercise all reviewed routine permits, repeat suppression, quick-aid ownership in both callback
+orders, lossless cap/expiry/pre-save fallback, `FinalizeInit` reset, and Royalty-inactive behavior.
+This expanded assembly builds but has not yet had a loaded run; the last executed loaded baseline
+remains Phase 5's 267/267. Ideology and Anomaly ritual tests use
 internal copied-fact fixture seams because safely
 constructing their live ritual job objects would start a real colony ritual; only that reflective
 object extraction is bypassed. The fixtures still execute production fan-out ordering, pawn-ID

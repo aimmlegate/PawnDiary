@@ -22,7 +22,8 @@ Authoritative sources:
 - `1.6/Defs/DiaryPromptTemplateDefs.xml`: rendered prompt templates and fields.
 - `1.6/Defs/DiaryPromptEnchantmentDefs.xml`, `DiaryHediffPersonaOverrideDefs.xml`,
   `DiaryEventWindowDefs.xml`, `DiaryObservedConditionDefs.xml`, `DiaryHumorCueDefs.xml`,
-  `DiaryTuningDef.xml`, and `DiarySignalPolicyDefs.xml`: side-channel prompt context and weights.
+  `DiaryTuningDef.xml`, `DiarySignalPolicyDefs.xml`, and `DiaryRoyaltyPolicyDefs.xml`: side-channel
+  prompt context, weights, and exact Royalty permit mappings/windows/caps.
 
 ## 1. End-To-End Diary Item Flow
 
@@ -36,6 +37,7 @@ flowchart TD
         BG["Biotech birthday + growth letter lifecycle<br/>GrowthMomentSignal<br/>verified age-7/10/13 child solo"]
         PW["Royalty persona coding/equipment/destruction hooks<br/>plus elapsed reconciliation<br/>PersonaWeaponSignal solo lifecycle"]
         RP["Royalty exact title/bestowing/anima/neuroformer hooks<br/>plus succession death and explicit-heir hooks<br/>plus per-faction fallback scan<br/>ProgressionSignal or enriched RitualFanoutSignal"]
+        PE["Royalty exact permit owner + successful-use hooks<br/>RoyalPermitSignal solo invocation<br/>quick-aid RaidSignal arbitration"]
         IN["InspirationHandler.TryStartInspiration<br/>InspirationSignal<br/>solo"]
         AB["Ability.Activate overloads<br/>AbilitySignal<br/>cooldown-sampled solo"]
         RO["Pawn_RelationsTracker.AddDirectRelation<br/>RomanceSignal<br/>pair"]
@@ -67,6 +69,7 @@ flowchart TD
     BG --> Submit
     PW --> Submit
     RP --> Submit
+    PE --> Submit
     IN --> Submit
     AB --> Submit
     RO --> Submit
@@ -170,6 +173,12 @@ Important boundaries in the diagram:
   bestowing, scanner, and title-memory edges are claimed by the committed heir/faction/title fact.
   Direct/automatic `SetHeir` is silent; only the explicit `ChangeRoyalHeir` quest signal emits an
   appointment page.
+- Royalty permit UI lookup records only bounded weak owner evidence. Only the exact successful
+  `FactionPermit.Notify_Used()` callback authorizes an allowlisted permit page; invalid targeting,
+  cancellation, failed incident execution, routine permits, and unknown mappings remain silent.
+  Vanilla quick military aid reports its exact successful `RaidFriendly` first, so that fan-out waits
+  briefly for a same-faction/map permit claim. Unmatched, expired, overflowed, or pre-save signals
+  return unchanged to the existing raid owner; disabled permit output still owns its source raid.
 
 ## 2. Prompt Policy And Template Selection
 
@@ -177,7 +186,7 @@ Important boundaries in the diagram:
 flowchart TD
     Event["Saved DiaryEvent"] --> Payload["DiaryPipelineAdapters.ToPayload"]
     Payload --> Domain["DiaryEventDomainClassifier.DomainForContext"]
-    Domain --> Markers["Markers:<br/>tale, mood_event, thought, inspiration, romance,<br/>work, hediff, mental_state, raid, quest,<br/>ritual, psychic_ritual, ability, progression,<br/>persona_weapon<br/>else Interaction"]
+    Domain --> Markers["Markers:<br/>tale, mood_event, thought, inspiration, romance,<br/>work, hediff, mental_state, raid, quest,<br/>ritual, psychic_ritual, ability, progression,<br/>persona_weapon, royal_permit<br/>else Interaction"]
     Markers --> Classifier["GroupClassifierKey"]
     Classifier --> QuestKey["Quest uses signal=accepted/completed/failed"]
     Classifier --> RitualKey["Ritual uses defName plus ritual_behavior<br/>or PsychicRitual plus defName"]
@@ -256,6 +265,11 @@ Current shipped event-prompt rows in `DiaryEventPromptDefs.xml`:
 | `DiaryEventPrompt_RoyalTitleLost` | `RoyalTitleLost` | yes | yes | blank |
 | `DiaryEventPrompt_RoyalSuccession` | `RoyalSuccession` | yes | yes | blank |
 | `DiaryEventPrompt_RoyalHeirAppointed` | `RoyalHeirAppointed` | yes | yes | blank |
+| `DiaryEventPrompt_RoyalPermit` | `RoyalPermit` | yes | yes | blank |
+| `DiaryEventPrompt_RoyalPermitMilitaryAid` | `RoyalPermitMilitaryAid` | yes | yes | blank |
+| `DiaryEventPrompt_RoyalPermitTransportShuttle` | `RoyalPermitTransportShuttle` | yes | yes | blank |
+| `DiaryEventPrompt_RoyalPermitOrbitalStrike` | `RoyalPermitOrbitalStrike` | yes | yes | blank |
+| `DiaryEventPrompt_RoyalPermitOrbitalSalvo` | `RoyalPermitOrbitalSalvo` | yes | yes | blank |
 | `DiaryEventPrompt_PsylinkLevel` | `PsylinkLevel` | yes | yes | blank |
 | `DiaryEventPrompt_BestowingCeremony` | `BestowingCeremony` | yes | yes | blank |
 | `DiaryEventPrompt_AnimaTreeLinking` | `AnimaTreeLinking` | yes | yes | blank |
@@ -266,7 +280,8 @@ Current shipped event-prompt rows in `DiaryEventPromptDefs.xml`:
 The resolver supports exact defName and group rows. Royalty Phase 2 ships the four exact persona
 lifecycle rows above in addition to its broad domain fallback; Phase 3 adds the exact Tale-owned
 first-kill row; Phase 4 adds the four exact title edges, psylink, bestowing, and anima-linking rows;
-Phase 5 adds exact succession and explicit-heir-appointment rows.
+Phase 5 adds exact succession and explicit-heir-appointment rows. Phase 6 adds the broad
+`RoyalPermit` fallback plus four exact allowlisted-family rows.
 All other rows in this table are broad domain/reflection/boundary fallbacks. Prompt
 Studio can still override prompt, enhancement, and forced model for resolved keys.
 
@@ -375,6 +390,10 @@ flowchart LR
         RP1["personaWeaponLifecycle / order 768<br/>Royalty-gated important SoloImportant<br/>four exact lifecycle Def names; no catch-all"]
         RP2["personaWeaponMilestone / Tale order 299<br/>Royalty-gated important combat SoloImportant<br/>one synthetic first-kill Def; no catch-all"]
     end
+
+    subgraph PermitGroups["Royalty dramatic permits"]
+        RP3["royalPermitDramatic / order 769<br/>Royalty-gated important SoloImportant<br/>four exact family event names; no catch-all"]
+    end
 ```
 
 Group matching is domain-specific and first-match-wins by ascending `order`. Within a group, exact
@@ -394,6 +413,13 @@ exact active kill scope is relabeled as `PersonaWeaponFirstConsequentialKill`, f
 and keeps `tale=`, source Def/label, and killer/victim role facts. It never emits `persona_weapon=`, so
 ordinary Tale/death ownership and victim dedup remain authoritative. Observed truth advances even when
 the group is disabled; durable-page truth advances only after the event repository accepts the page.
+
+`RoyalPermit` is also its own domain. The Royalty-package-gated `royalPermitDramatic` group matches
+only `RoyalPermitMilitaryAid`, `RoyalPermitTransportShuttle`, `RoyalPermitOrbitalStrike`, and
+`RoyalPermitOrbitalSalvo`. The allowlist itself remains XML-owned by exact permit Def-name strings;
+routine and unknown permits cannot fall through into this group. The page records invocation only,
+never an arrival, target hit, transport completion, or favor amount that the success edge did not
+prove.
 
 Ritual fan-out keeps both layers of guidance: the matched XML group's instruction establishes the
 specific rite, then the localized participant-role instruction establishes what this pawn did. This
@@ -469,6 +495,7 @@ Source recording weights:
 | Work sampling | Scan every `2500` ticks. Chance starts at `0.08`; passion multiplier `1.4`; negative chore/low skill multiplier `1.2`; dark study multiplier `1.5`; recent different work multiplier `0.5`; same work cooldown `180000` ticks; then shared generation chance and clamp. Social/violent work types are ignored. |
 | Pawn progression | Scan every `2500` ticks. Passion skills emit only when reaching configured milestones `8/12/16/20`; first scan baselines. Psylink hediff defNames are XML string matchers; xenotype and royal-title reads go through DLC-safe `DlcContext`. Only psylink level gains and configured major xenotype defNames can currently request a major arc follow-up: default threshold `90`, psylink severity `level / 6 * 100`, and `Sanguophage` as the default major xenotype defName. |
 | Royalty persona/title/psylink/succession | Reconcile every `2500` ticks on an independent elapsed deadline. Continuous observable not-primary evidence reaches meaningful separation at `60000` ticks; recovery is page-eligible only after that separation page recorded. Exact first-kill `killThought` correlation uses `60` ticks. Title/psylink cause and title-memory windows use `2500` ticks; succession uses that value only to clean its transient same-action exact-edge cache, while a saved committed title chain persists until target or contradiction. Pending mutation/title-memory/succession caps are `64`/`128`/`64`, context text is capped at `120` characters per field, and at most `2` duty categories project. Exact hooks advance truth before optional dispatch; succession requires both candidate and outer `wasInherited` commit. Coding, transfer, destruction, milestone/succession consumption, and state-only cleanup are deterministic rather than chance-weighted. |
+| Royalty dramatic permits | Exact string allowlist of six permits. Owner evidence lives for `2500` ticks with caps of `64` permit sessions, `4` owners per session, and `256` fallback pawns. Quick-aid correlation lasts `60` ticks with `32` pending raids and `32` reverse-order owners; overflow and expiry fail open to the ordinary raid route. Immediate repeat suppression is `60` ticks. Permit/setting text caps are `120` characters. All values are XML-owned with defensive fallbacks. |
 | Biotech growth ownership | Ages `7/10/13` only. A real configured letter saves detached ownership until choice or `180000`-tick expiry; a provably mismatched pawn age may release after the `60000`-tick grace. Auto-resolved growth diffs immediately. Canonical disable/failure releases Birthday once, while trait/skill baselines and the consumed age advance regardless of page settings. |
 | Ability sampling | `min 0.03`, `max 0.75`, reference cooldown `60000` ticks. `CooldownWeightedChance = min + (max - min) * cooldown / (cooldown + reference)`, then shared generation chance and clamp. Dedup `300` ticks. |
 | Ordinary raid generation delay | `2500` ticks. Drop-pod raids and infestations bypass the delay. |
@@ -653,7 +680,7 @@ flowchart TD
     Fields --> Common["Common first-person fields:<br/>event, pov, raw evidence, instruction,<br/>event prompt, event enhancement,<br/>important context, setting, tone, last opening line"]
     Fields --> PairFields["Pair extras:<br/>role, with, relationship,<br/>hidden initiator diary for PairImportant and PairCombat"]
     Fields --> CombatFields["Combat extras:<br/>you, weapon"]
-    Fields --> SourceFacts["Context facts:<br/>quest, ritual, ability, raid,<br/>progression skill/psylink/xenotype/title/growth,<br/>persona lifecycle and Tale milestone,<br/>Royalty mutation pawn/cause/faction/duties,<br/>succession deceased/heir/title/faction,<br/>royal title, ideoligion role"]
+    Fields --> SourceFacts["Context facts:<br/>quest, ritual, ability, raid,<br/>progression skill/psylink/xenotype/title/growth,<br/>persona lifecycle and Tale milestone,<br/>Royalty mutation pawn/cause/faction/duties,<br/>succession deceased/heir/title/faction,<br/>permit label/family/faction/title/setting/cooldown,<br/>royal title, ideoligion role"]
     Fields --> Boundary["Neutral arrival/death:<br/>event prompt, enhancement, neutral facts,<br/>pawn summary, setting; no persona/enchantment"]
     Fields --> Reflection["Reflections:<br/>day selected highlights and pawn summary<br/>quadrum date range and important count<br/>arc selected year memories and cadence fields"]
     Fields --> Title["Title:<br/>entry text only"]
@@ -668,7 +695,7 @@ Current template keys:
 | `PairCombat` | Pair and combat group, including MentalState domain | Pawn summary, weapon, hidden initiator field; style/enchantment allowed; 2-5 sentence system/final/recipient instructions; `maxTokens=200`. |
 | `PairBatched` | Pair and `batch=` marker, unless combat | No relationship or hidden initiator field; style/enchantment allowed. |
 | `SoloDefault` | Solo, non-batched, non-internal, non-important group | Style/enchantment allowed. |
-| `SoloImportant` | Solo important or solo batched combat | Pawn summary; style/enchantment allowed; 2-5 sentence system/final instructions; `maxTokens=200`. Royalty persona pages append lifecycle projection fields at stable indices `90–101`, Tale-milestone/source-role fields at `102–106`, Phase-4 mutation pawn/cause/transition/faction/psylink-cause/duty fields at `107–112`, and Phase-5 succession deceased/heir/title/faction fields at `113–116`; required title/psylink before/after facts reuse earlier stable fields, and internal IDs/epoch/ticks/correlation/commit tokens are not projected. |
+| `SoloImportant` | Solo important or solo batched combat | Pawn summary; style/enchantment allowed; 2-5 sentence system/final instructions; `maxTokens=200`. Royalty persona pages append lifecycle projection fields at stable indices `90–101`, Tale-milestone/source-role fields at `102–106`, Phase-4 mutation pawn/cause/transition/faction/psylink-cause/duty fields at `107–112`, Phase-5 succession deceased/heir/title/faction fields at `113–116`, and Phase-6 permit label/family/faction/title/setting/cooldown fields at `117–122`; required title/psylink before/after facts reuse earlier stable fields, and internal IDs/epoch/ticks/correlation/commit tokens are not projected. |
 | `SoloInternalState` | Solo with `mood_event=`, `thought=`, `inspiration=`, `work=`, or `hediff=` | Internal-state facts; style/enchantment allowed. |
 | `SoloBatched` | Solo with `batch=`, non-combat | Batched evidence; style/enchantment allowed. |
 | `SoloDayReflection` | `day_reflection=true` | Direct speech disabled; style/enchantment allowed. |

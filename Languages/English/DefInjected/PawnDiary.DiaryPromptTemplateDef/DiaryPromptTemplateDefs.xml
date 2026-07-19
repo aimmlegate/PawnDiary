@@ -499,4 +499,10 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_SoloImportant.fields.114.label>royal heir</DiaryPromptTemplate_SoloImportant.fields.114.label>
   <DiaryPromptTemplate_SoloImportant.fields.115.label>inherited title</DiaryPromptTemplate_SoloImportant.fields.115.label>
   <DiaryPromptTemplate_SoloImportant.fields.116.label>succession faction</DiaryPromptTemplate_SoloImportant.fields.116.label>
+  <DiaryPromptTemplate_SoloImportant.fields.117.label>permit</DiaryPromptTemplate_SoloImportant.fields.117.label>
+  <DiaryPromptTemplate_SoloImportant.fields.118.label>permit family</DiaryPromptTemplate_SoloImportant.fields.118.label>
+  <DiaryPromptTemplate_SoloImportant.fields.119.label>permit faction</DiaryPromptTemplate_SoloImportant.fields.119.label>
+  <DiaryPromptTemplate_SoloImportant.fields.120.label>permit title</DiaryPromptTemplate_SoloImportant.fields.120.label>
+  <DiaryPromptTemplate_SoloImportant.fields.121.label>permit setting</DiaryPromptTemplate_SoloImportant.fields.121.label>
+  <DiaryPromptTemplate_SoloImportant.fields.122.label>used during cooldown</DiaryPromptTemplate_SoloImportant.fields.122.label>
 </LanguageData>

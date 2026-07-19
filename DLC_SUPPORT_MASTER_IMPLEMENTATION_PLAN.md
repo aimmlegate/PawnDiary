@@ -430,7 +430,12 @@ Complete **Odyssey O2** and extend **N3-O**:
 ### Implement in this exact order
 
 1. **Royalty 5 (implemented; automated loaded green at 267/267, manual acceptance pending)** — exact inheritance correlation and succession evidence.
-2. **Royalty 6** — successful dramatic permit families and friendly-raid ownership.
+2. **Royalty 6 (code-complete; pure/runtime/RimTest builds green, loaded/manual acceptance pending)**
+   — successful dramatic permit families and friendly-raid ownership. Installed RimWorld 1.6 audit
+   confirms `FactionPermit.Notify_Used()` as the post-success edge and quick `RaidFriendly` as the
+   earlier same-action signal; the implementation uses exact allowlisted families plus lossless
+   bounded faction/map stage/claim/expiry ownership. The compiled suite is 275 tests, but the last
+   executed loaded baseline remains Phase 5's 267/267.
 3. **Royalty 7** — Royal Ascent start, bounded pressure, and terminal chapter.
 4. Extend **N3-R** with succession identity, permit authority, Ascent journey, and court-pressure
    candidates.

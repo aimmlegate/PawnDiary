@@ -22,6 +22,19 @@
     <maximumPendingRoyalMutations>64</maximumPendingRoyalMutations>
     <maximumPendingTitleThoughts>128</maximumPendingTitleThoughts>
     <maximumPendingSuccessions>64</maximumPendingSuccessions>
+    <!-- GetPermit is UI-adjacent, so observations are bounded/elapsed and unchanged mappings allocate
+         nothing. Quick aid needs only a same-call-sized window, plus bounded reverse-order ownership. -->
+    <permitOwnerCacheTicks>2500</permitOwnerCacheTicks>
+    <quickAidCorrelationTicks>60</quickAidCorrelationTicks>
+    <permitRepeatSuppressionTicks>60</permitRepeatSuppressionTicks>
+    <maximumPermitMappings>32</maximumPermitMappings>
+    <maximumPermitOwnerSessions>64</maximumPermitOwnerSessions>
+    <maximumPermitOwnersPerSession>4</maximumPermitOwnersPerSession>
+    <maximumPermitFallbackPawns>256</maximumPermitFallbackPawns>
+    <maximumPendingQuickAid>32</maximumPendingQuickAid>
+    <maximumRecentQuickAidOwners>32</maximumRecentQuickAidOwners>
+    <maximumPermitLabelCharacters>120</maximumPermitLabelCharacters>
+    <maximumPermitSettingCharacters>120</maximumPermitSettingCharacters>
     <maximumRoyaltyContextCharacters>120</maximumRoyaltyContextCharacters>
     <!-- Pawn.Kill emits a persona trait's kill memory and its Tale synchronously. Keep this small:
          it exists only to tolerate Harmony callback ordering, never to claim later ordinary thoughts. -->
@@ -80,5 +93,16 @@
     <neuroformerThingDefNames>
       <li>PsychicAmplifier</li>
     </neuroformerThingDefNames>
+
+    <!-- Reviewed RimWorld 1.6 dramatic permits. Resource, trade, and labor permits are intentionally
+         absent. These are plain matcher strings, never DLC Def cross-references. -->
+    <permitFamilyRules>
+      <li><permitDefName>CallMilitaryAidSmall</permitDefName><familyToken>military_aid</familyToken></li>
+      <li><permitDefName>CallMilitaryAidLarge</permitDefName><familyToken>military_aid</familyToken></li>
+      <li><permitDefName>CallMilitaryAidGrand</permitDefName><familyToken>military_aid</familyToken></li>
+      <li><permitDefName>CallTransportShuttle</permitDefName><familyToken>transport_shuttle</familyToken></li>
+      <li><permitDefName>CallOrbitalStrike</permitDefName><familyToken>orbital_strike</familyToken></li>
+      <li><permitDefName>CallOrbitalSalvo</permitDefName><familyToken>orbital_salvo</familyToken></li>
+    </permitFamilyRules>
   </PawnDiary.DiaryRoyaltyPolicyDef>
 </Defs>

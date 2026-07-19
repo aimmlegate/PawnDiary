@@ -455,6 +455,14 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>royal heir</label><source>GameContext</source><contextKey>succession_heir</contextKey></li>
       <li><label>inherited title</label><source>GameContext</source><contextKey>succession_title</contextKey></li>
       <li><label>succession faction</label><source>GameContext</source><contextKey>succession_faction</contextKey></li>
+      <!-- Royalty R6 dramatic permits. Append-only: permit Def/map IDs and ticks remain saved-only;
+           model-visible rows use localized event-time strings plus stable family/cooldown truth. -->
+      <li><label>permit</label><source>GameContext</source><contextKey>permit_label</contextKey></li>
+      <li><label>permit family</label><source>GameContext</source><contextKey>permit_family</contextKey></li>
+      <li><label>permit faction</label><source>GameContext</source><contextKey>permit_faction</contextKey></li>
+      <li><label>permit title</label><source>GameContext</source><contextKey>permit_title</contextKey></li>
+      <li><label>permit setting</label><source>GameContext</source><contextKey>permit_setting</contextKey></li>
+      <li><label>used during cooldown</label><source>GameContext</source><contextKey>used_during_cooldown</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

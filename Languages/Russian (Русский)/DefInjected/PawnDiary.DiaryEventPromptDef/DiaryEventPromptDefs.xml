@@ -105,4 +105,19 @@
   <DiaryEventPrompt_External.label>событие другого мода</DiaryEventPrompt_External.label>
   <DiaryEventPrompt_External.prompt>Опиши момент, переданный другим модом, как то, что поселенец только что пережил.</DiaryEventPrompt_External.prompt>
   <DiaryEventPrompt_External.enhancement>Держись строго переданной строки события и фактов контекста; не выдумывай механики, системы или неупомянутых участников.</DiaryEventPrompt_External.enhancement>
+  <DiaryEventPrompt_RoyalPermit.label>значимое королевское разрешение</DiaryEventPrompt_RoyalPermit.label>
+  <DiaryEventPrompt_RoyalPermit.prompt>Опиши точное успешное применение значимого королевского разрешения с точки зрения его владельца.</DiaryEventPrompt_RoyalPermit.prompt>
+  <DiaryEventPrompt_RoyalPermit.enhancement>Сохрани переданные разрешение, семейство, фракцию, титул, место и факт применения во время перезарядки. Опиши применение власти, а не ненаблюдавшийся результат; не выдумывай цель, прибытие, попадание, завершение, реплики или сумму благосклонности.</DiaryEventPrompt_RoyalPermit.enhancement>
+  <DiaryEventPrompt_RoyalPermitMilitaryAid.label>вызвана королевская военная помощь</DiaryEventPrompt_RoyalPermitMilitaryAid.label>
+  <DiaryEventPrompt_RoyalPermitMilitaryAid.prompt>Опиши, как владелец разрешения вызывает военную помощь переданной королевской фракции.</DiaryEventPrompt_RoyalPermitMilitaryAid.prompt>
+  <DiaryEventPrompt_RoyalPermitMilitaryAid.enhancement>Сосредоточься на решении призвать помощь и весе титула. Успешное применение разрешения подтверждает вызов, но не прибытие или победу войск; не выдумывай их размер, путь, цель, бой или сумму благосклонности.</DiaryEventPrompt_RoyalPermitMilitaryAid.enhancement>
+  <DiaryEventPrompt_RoyalPermitTransportShuttle.label>вызван королевский транспортный шаттл</DiaryEventPrompt_RoyalPermitTransportShuttle.label>
+  <DiaryEventPrompt_RoyalPermitTransportShuttle.prompt>Опиши, как владелец разрешения вызывает королевский транспортный шаттл.</DiaryEventPrompt_RoyalPermitTransportShuttle.prompt>
+  <DiaryEventPrompt_RoyalPermitTransportShuttle.enhancement>Используй только переданные разрешение, фракцию, титул и место. Не выдумывай пассажиров, груз, пункт назначения, полёт, прибытие, завершение, реплики или сумму благосклонности.</DiaryEventPrompt_RoyalPermitTransportShuttle.enhancement>
+  <DiaryEventPrompt_RoyalPermitOrbitalStrike.label>запрошен королевский орбитальный удар</DiaryEventPrompt_RoyalPermitOrbitalStrike.label>
+  <DiaryEventPrompt_RoyalPermitOrbitalStrike.prompt>Опиши, как владелец применяет разрешение на орбитальный удар.</DiaryEventPrompt_RoyalPermitOrbitalStrike.prompt>
+  <DiaryEventPrompt_RoyalPermitOrbitalStrike.enhancement>Сосредоточься на решении, власти и ожидании в переданном месте. Не выдумывай цель, попадание, жертвы, урон, точность, завершение, реплики или сумму благосклонности.</DiaryEventPrompt_RoyalPermitOrbitalStrike.enhancement>
+  <DiaryEventPrompt_RoyalPermitOrbitalSalvo.label>запрошен королевский орбитальный залп</DiaryEventPrompt_RoyalPermitOrbitalSalvo.label>
+  <DiaryEventPrompt_RoyalPermitOrbitalSalvo.prompt>Опиши, как владелец применяет разрешение на орбитальный залп.</DiaryEventPrompt_RoyalPermitOrbitalSalvo.prompt>
+  <DiaryEventPrompt_RoyalPermitOrbitalSalvo.enhancement>Сосредоточься на решении, власти и ожидании в переданном месте. Не выдумывай цель, попадания, жертвы, урон, точность, завершение, реплики или сумму благосклонности.</DiaryEventPrompt_RoyalPermitOrbitalSalvo.enhancement>
 </LanguageData>

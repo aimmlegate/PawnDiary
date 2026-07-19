@@ -1500,6 +1500,31 @@
   <PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Markers>tale=PersonaWeaponFirstConsequentialKill; taleClass=Tale_DoublePawnAndDef; persona_milestone=first_consequential_kill; tale_source_def=KilledMajorThreat; tale_source_label=Убита крупная угроза; tale_killer_role=initiator; tale_victim_role=recipient; persona_weapon_id=Weapon_Test; persona_weapon_def=PersonaMonosword; persona_weapon_name=Тихая грань; bond_epoch=1; bond_previous_state=active; bond_new_state=active; persona_trait_1=Тяга к убийству; persona_trait_description_1=Остро реагирует, когда владелец убивает.</PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Markers>
   <PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Text>{0} совершает первое значимое убийство вместе с «Тихой гранью».</PawnDiary.Dev.PromptSuite.PersonaFirstConsequentialKill.Text>
 
+  <!-- Успешные значимые королевские разрешения R2. -->
+  <PawnDiary.Event.RoyalPermit.Label>Значимое королевское разрешение</PawnDiary.Event.RoyalPermit.Label>
+  <PawnDiary.Event.RoyalPermit.FactionFallback>королевской фракции</PawnDiary.Event.RoyalPermit.FactionFallback>
+  <PawnDiary.Event.RoyalPermit.MilitaryAid.PermitFallback>военную помощь</PawnDiary.Event.RoyalPermit.MilitaryAid.PermitFallback>
+  <PawnDiary.Event.RoyalPermit.TransportShuttle.PermitFallback>транспортный шаттл</PawnDiary.Event.RoyalPermit.TransportShuttle.PermitFallback>
+  <PawnDiary.Event.RoyalPermit.OrbitalStrike.PermitFallback>орбитальный удар</PawnDiary.Event.RoyalPermit.OrbitalStrike.PermitFallback>
+  <PawnDiary.Event.RoyalPermit.OrbitalSalvo.PermitFallback>орбитальный залп</PawnDiary.Event.RoyalPermit.OrbitalSalvo.PermitFallback>
+  <PawnDiary.Event.RoyalPermit.MilitaryAid.Fallback>{0} вызывает {1} у фракции «{2}» через королевское разрешение.</PawnDiary.Event.RoyalPermit.MilitaryAid.Fallback>
+  <PawnDiary.Event.RoyalPermit.TransportShuttle.Fallback>{0} вызывает {1} у фракции «{2}» через королевское разрешение.</PawnDiary.Event.RoyalPermit.TransportShuttle.Fallback>
+  <PawnDiary.Event.RoyalPermit.OrbitalStrike.Fallback>{0} применяет разрешение «{1}», выданное фракцией «{2}».</PawnDiary.Event.RoyalPermit.OrbitalStrike.Fallback>
+  <PawnDiary.Event.RoyalPermit.OrbitalSalvo.Fallback>{0} применяет разрешение «{1}», выданное фракцией «{2}».</PawnDiary.Event.RoyalPermit.OrbitalSalvo.Fallback>
+  <PawnDiary.Event.RoyalPermit.CooldownSuffix>Разрешение применено во время перезарядки; сумма благосклонности не указана.</PawnDiary.Event.RoyalPermit.CooldownSuffix>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitMilitaryAid.Label>Королевское разрешение — военная помощь</PawnDiary.Dev.PromptSuite.RoyalPermitMilitaryAid.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitMilitaryAid.Markers>royal_permit=military_aid; permit_def=CallMilitaryAidLarge; permit_label=Военная помощь; permit_family=military_aid; permit_faction=Империя; permit_title=Рыцарь; permit_setting=Дом; used_during_cooldown=true</PawnDiary.Dev.PromptSuite.RoyalPermitMilitaryAid.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitMilitaryAid.Text>{0} вызывает военную помощь Империи через королевское разрешение во время перезарядки.</PawnDiary.Dev.PromptSuite.RoyalPermitMilitaryAid.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitTransportShuttle.Label>Королевское разрешение — транспортный шаттл</PawnDiary.Dev.PromptSuite.RoyalPermitTransportShuttle.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitTransportShuttle.Markers>royal_permit=transport_shuttle; permit_def=CallTransportShuttle; permit_label=Транспортный шаттл; permit_family=transport_shuttle; permit_faction=Империя; permit_title=Рыцарь; permit_setting=Дом</PawnDiary.Dev.PromptSuite.RoyalPermitTransportShuttle.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitTransportShuttle.Text>{0} вызывает имперский транспортный шаттл через королевское разрешение.</PawnDiary.Dev.PromptSuite.RoyalPermitTransportShuttle.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalStrike.Label>Королевское разрешение — орбитальный удар</PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalStrike.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalStrike.Markers>royal_permit=orbital_strike; permit_def=CallOrbitalStrike; permit_label=Орбитальный удар; permit_family=orbital_strike; permit_faction=Империя; permit_title=Рыцарь; permit_setting=Дом</PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalStrike.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalStrike.Text>{0} применяет имперское разрешение на орбитальный удар в поселении «Дом».</PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalStrike.Text>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalSalvo.Label>Королевское разрешение — орбитальный залп</PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalSalvo.Label>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalSalvo.Markers>royal_permit=orbital_salvo; permit_def=CallOrbitalSalvo; permit_label=Орбитальный залп; permit_family=orbital_salvo; permit_faction=Империя; permit_title=Рыцарь; permit_setting=Дом</PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalSalvo.Markers>
+  <PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalSalvo.Text>{0} применяет имперское разрешение на орбитальный залп в поселении «Дом».</PawnDiary.Dev.PromptSuite.RoyalPermitOrbitalSalvo.Text>
+
   <!-- Контекст мобильного дома Odyssey O1.2. -->
   <PawnDiary.Ctx.GravshipHome>на борту гравикорабля {0}</PawnDiary.Ctx.GravshipHome>
   <PawnDiary.Ctx.GravshipHomeAt>на борту гравикорабля {0} у места {1}</PawnDiary.Ctx.GravshipHomeAt>

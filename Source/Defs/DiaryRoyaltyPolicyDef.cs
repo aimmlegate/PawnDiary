@@ -41,7 +41,14 @@ namespace PawnDiary
         public bool excluded;
     }
 
-    /// <summary>Singleton XML-owned policy for pure R1 persona, title, and psylink decisions.</summary>
+    /// <summary>XML exact permit defName to reviewed dramatic-family mapping.</summary>
+    public sealed class DiaryRoyalPermitFamilyRuleDef
+    {
+        public string permitDefName = string.Empty;
+        public string familyToken = string.Empty;
+    }
+
+    /// <summary>Singleton XML-owned policy for pure Royalty persona, title, psylink, and permit decisions.</summary>
     public sealed class DiaryRoyaltyPolicyDef : Def
     {
         public bool enabled = true;
@@ -62,6 +69,17 @@ namespace PawnDiary
         public int maximumPendingRoyalMutations = 64;
         public int maximumPendingTitleThoughts = 128;
         public int maximumPendingSuccessions = 64;
+        public int permitOwnerCacheTicks = 2500;
+        public int quickAidCorrelationTicks = 60;
+        public int permitRepeatSuppressionTicks = 60;
+        public int maximumPermitMappings = 32;
+        public int maximumPermitOwnerSessions = 64;
+        public int maximumPermitOwnersPerSession = 4;
+        public int maximumPermitFallbackPawns = 256;
+        public int maximumPendingQuickAid = 32;
+        public int maximumRecentQuickAidOwners = 32;
+        public int maximumPermitLabelCharacters = 120;
+        public int maximumPermitSettingCharacters = 120;
         public int maximumRoyaltyContextCharacters = 120;
         public int killThoughtWeight = 100;
         public int bondedThoughtWeight = 70;
@@ -83,6 +101,8 @@ namespace PawnDiary
         public List<string> bestowingRitualDefNames = new List<string>();
         public List<string> animaRitualDefNames = new List<string>();
         public List<string> neuroformerThingDefNames = new List<string>();
+        public List<DiaryRoyalPermitFamilyRuleDef> permitFamilyRules =
+            new List<DiaryRoyalPermitFamilyRuleDef>();
 
         /// <summary>Reports malformed tunable policy during Def loading.</summary>
         public override IEnumerable<string> ConfigErrors()
@@ -106,6 +126,19 @@ namespace PawnDiary
                 || maximumPendingTitleThoughts < 1 || maximumPendingTitleThoughts > 512
                 || maximumPendingSuccessions < 1 || maximumPendingSuccessions > 256)
                 yield return "Royal transient admission caps are outside their safe ranges.";
+            if (permitOwnerCacheTicks <= 0 || quickAidCorrelationTicks <= 0
+                || permitRepeatSuppressionTicks <= 0)
+                yield return "Royal permit correlation windows must be positive.";
+            if (maximumPermitMappings < 1 || maximumPermitMappings > 128
+                || maximumPermitOwnerSessions < 1 || maximumPermitOwnerSessions > 256
+                || maximumPermitOwnersPerSession < 1 || maximumPermitOwnersPerSession > 16
+                || maximumPermitFallbackPawns < 1 || maximumPermitFallbackPawns > 2048
+                || maximumPendingQuickAid < 1 || maximumPendingQuickAid > 128
+                || maximumRecentQuickAidOwners < 1 || maximumRecentQuickAidOwners > 128)
+                yield return "Royal permit caps are outside their safe ranges.";
+            if (maximumPermitLabelCharacters < 20 || maximumPermitLabelCharacters > 512
+                || maximumPermitSettingCharacters < 20 || maximumPermitSettingCharacters > 512)
+                yield return "Royal permit prompt text caps must be between 20 and 512.";
             if (maximumRoyaltyContextCharacters < 20 || maximumRoyaltyContextCharacters > 512)
                 yield return "maximumRoyaltyContextCharacters must be between 20 and 512.";
             if (killThoughtWeight <= 0 || bondedThoughtWeight <= 0 || bondedHediffWeight <= 0
@@ -197,6 +230,27 @@ namespace PawnDiary
                 yield return error;
             foreach (string error in TokenListErrors(neuroformerThingDefNames, "neuroformerThingDefNames"))
                 yield return error;
+
+            HashSet<string> permits = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (permitFamilyRules == null || permitFamilyRules.Count == 0)
+            {
+                yield return "permitFamilyRules must contain at least one dramatic permit mapping.";
+            }
+            else
+            {
+                if (permitFamilyRules.Count > maximumPermitMappings)
+                    yield return "permitFamilyRules exceeds maximumPermitMappings.";
+                for (int i = 0; i < permitFamilyRules.Count; i++)
+                {
+                    DiaryRoyalPermitFamilyRuleDef row = permitFamilyRules[i];
+                    string defName = Clean(row == null ? null : row.permitDefName);
+                    string family = Clean(row == null ? null : row.familyToken).ToLowerInvariant();
+                    if (!SafeToken(defName) || !RoyalPermitFamilyTokens.IsKnown(family))
+                        yield return "permitFamilyRules row " + i + " needs a safe defName and known family.";
+                    else if (!permits.Add(defName))
+                        yield return "permitFamilyRules repeats '" + defName + "'.";
+                }
+            }
         }
 
         private static IEnumerable<string> TokenListErrors(List<string> values, string fieldName)
@@ -272,6 +326,28 @@ namespace PawnDiary
                 source.maximumPendingTitleThoughts, 1, 512, result.maximumPendingTitleThoughts);
             result.maximumPendingSuccessions = Between(
                 source.maximumPendingSuccessions, 1, 256, result.maximumPendingSuccessions);
+            result.permitOwnerCacheTicks = Positive(
+                source.permitOwnerCacheTicks, result.permitOwnerCacheTicks);
+            result.quickAidCorrelationTicks = Positive(
+                source.quickAidCorrelationTicks, result.quickAidCorrelationTicks);
+            result.permitRepeatSuppressionTicks = Positive(
+                source.permitRepeatSuppressionTicks, result.permitRepeatSuppressionTicks);
+            result.maximumPermitMappings = Between(
+                source.maximumPermitMappings, 1, 128, result.maximumPermitMappings);
+            result.maximumPermitOwnerSessions = Between(
+                source.maximumPermitOwnerSessions, 1, 256, result.maximumPermitOwnerSessions);
+            result.maximumPermitOwnersPerSession = Between(
+                source.maximumPermitOwnersPerSession, 1, 16, result.maximumPermitOwnersPerSession);
+            result.maximumPermitFallbackPawns = Between(
+                source.maximumPermitFallbackPawns, 1, 2048, result.maximumPermitFallbackPawns);
+            result.maximumPendingQuickAid = Between(
+                source.maximumPendingQuickAid, 1, 128, result.maximumPendingQuickAid);
+            result.maximumRecentQuickAidOwners = Between(
+                source.maximumRecentQuickAidOwners, 1, 128, result.maximumRecentQuickAidOwners);
+            result.maximumPermitLabelCharacters = Between(
+                source.maximumPermitLabelCharacters, 20, 512, result.maximumPermitLabelCharacters);
+            result.maximumPermitSettingCharacters = Between(
+                source.maximumPermitSettingCharacters, 20, 512, result.maximumPermitSettingCharacters);
             result.maximumRoyaltyContextCharacters = Between(
                 source.maximumRoyaltyContextCharacters, 20, 512, result.maximumRoyaltyContextCharacters);
             result.killThoughtWeight = Positive(source.killThoughtWeight, result.killThoughtWeight);
@@ -293,6 +369,10 @@ namespace PawnDiary
             CopyTokens(source.bestowingRitualDefNames, result.bestowingRitualDefNames);
             CopyTokens(source.animaRitualDefNames, result.animaRitualDefNames);
             CopyTokens(source.neuroformerThingDefNames, result.neuroformerThingDefNames);
+            List<RoyalPermitFamilyRule> permitMappings = CopyPermitMappings(source.permitFamilyRules);
+            permitMappings = RoyalPermitPolicy.NormalizeMappings(
+                permitMappings, result.maximumPermitMappings);
+            if (permitMappings.Count > 0) result.permitFamilyRules = permitMappings;
             cached = result;
             cachedLanguage = LanguageDatabase.activeLanguage;
             return result;
@@ -403,6 +483,22 @@ namespace PawnDiary
             if (result.Count == 0) return;
             destination.Clear();
             destination.AddRange(result);
+        }
+
+        private static List<RoyalPermitFamilyRule> CopyPermitMappings(
+            List<DiaryRoyalPermitFamilyRuleDef> source)
+        {
+            List<RoyalPermitFamilyRule> result = new List<RoyalPermitFamilyRule>();
+            for (int i = 0; i < (source == null ? 0 : source.Count); i++)
+            {
+                DiaryRoyalPermitFamilyRuleDef row = source[i];
+                result.Add(row == null ? null : new RoyalPermitFamilyRule
+                {
+                    permitDefName = row.permitDefName,
+                    familyToken = row.familyToken
+                });
+            }
+            return result;
         }
 
         private static string Safe(string value)

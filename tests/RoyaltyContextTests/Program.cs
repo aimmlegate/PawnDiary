@@ -31,10 +31,165 @@ namespace RoyaltyContextTests
             TestPhase4RoutesThoughtsAndContext();
             TestSuccessionCommitMatchingAndContext();
             TestSuccessionCorrelationNormalizationAndAppointment();
+            TestPermitAllowlistMappingsAndExclusions();
+            TestPermitMalformedOrderingDedupAndCaps();
+            TestPermitOwnerDecisionAndQuickAidArbitration();
             TestPersonaPersistenceBaselinesAndNormalization();
             TestTitleObservationNormalizationAndOrdering();
             Console.WriteLine("RoyaltyContextTests passed " + assertions + " assertions.");
             return 0;
+        }
+
+        private static void TestPermitAllowlistMappingsAndExclusions()
+        {
+            RoyaltyPolicySnapshot policy = RoyaltyPolicySnapshot.CreateDefault();
+            AssertEqual("permit fallback mapping count", 6, policy.permitFamilyRules.Count);
+            string[] military = { "CallMilitaryAidSmall", "CallMilitaryAidLarge", "CallMilitaryAidGrand" };
+            for (int i = 0; i < military.Length; i++)
+                AssertEqual("military permit mapping " + military[i], RoyalPermitFamilyTokens.MilitaryAid,
+                    RoyalPermitPolicy.FamilyFor(military[i], policy));
+            AssertEqual("shuttle permit mapping", RoyalPermitFamilyTokens.TransportShuttle,
+                RoyalPermitPolicy.FamilyFor("CallTransportShuttle", policy));
+            AssertEqual("strike permit mapping", RoyalPermitFamilyTokens.OrbitalStrike,
+                RoyalPermitPolicy.FamilyFor("CallOrbitalStrike", policy));
+            AssertEqual("salvo permit mapping", RoyalPermitFamilyTokens.OrbitalSalvo,
+                RoyalPermitPolicy.FamilyFor("CallOrbitalSalvo", policy));
+
+            string[] excluded =
+            {
+                "TradeSettlement", "TradeOrbital", "TradeCaravan", "SteelDrop", "FoodDrop",
+                "SilverDrop", "GlitterMedDrop", "CallLaborerTeam", "CallLaborerGang", "UnknownModPermit"
+            };
+            for (int i = 0; i < excluded.Length; i++)
+                AssertEqual("routine/unknown permit excluded " + excluded[i], string.Empty,
+                    RoyalPermitPolicy.FamilyFor(excluded[i], policy));
+            AssertEqual("family military event key", RoyalPermitPolicy.MilitaryAidEventDefName,
+                RoyalPermitPolicy.EventDefNameForFamily(RoyalPermitFamilyTokens.MilitaryAid));
+            AssertEqual("family shuttle event key", RoyalPermitPolicy.TransportShuttleEventDefName,
+                RoyalPermitPolicy.EventDefNameForFamily(RoyalPermitFamilyTokens.TransportShuttle));
+            AssertEqual("family strike event key", RoyalPermitPolicy.OrbitalStrikeEventDefName,
+                RoyalPermitPolicy.EventDefNameForFamily(RoyalPermitFamilyTokens.OrbitalStrike));
+            AssertEqual("family salvo event key", RoyalPermitPolicy.OrbitalSalvoEventDefName,
+                RoyalPermitPolicy.EventDefNameForFamily(RoyalPermitFamilyTokens.OrbitalSalvo));
+            AssertEqual("unknown family fails closed", string.Empty,
+                RoyalPermitPolicy.EventDefNameForFamily("resource_drop"));
+        }
+
+        private static void TestPermitMalformedOrderingDedupAndCaps()
+        {
+            List<RoyalPermitFamilyRule> rows = new List<RoyalPermitFamilyRule>
+            {
+                null,
+                new RoyalPermitFamilyRule { permitDefName = "", familyToken = RoyalPermitFamilyTokens.MilitaryAid },
+                new RoyalPermitFamilyRule { permitDefName = "Unsafe;Permit", familyToken = RoyalPermitFamilyTokens.MilitaryAid },
+                new RoyalPermitFamilyRule { permitDefName = "First", familyToken = "unknown" },
+                new RoyalPermitFamilyRule { permitDefName = "First", familyToken = RoyalPermitFamilyTokens.OrbitalStrike },
+                new RoyalPermitFamilyRule { permitDefName = "first", familyToken = RoyalPermitFamilyTokens.OrbitalSalvo },
+                new RoyalPermitFamilyRule { permitDefName = "Second", familyToken = RoyalPermitFamilyTokens.TransportShuttle },
+                new RoyalPermitFamilyRule { permitDefName = "Third", familyToken = RoyalPermitFamilyTokens.MilitaryAid }
+            };
+            List<RoyalPermitFamilyRule> normalized = RoyalPermitPolicy.NormalizeMappings(rows, 2);
+            AssertEqual("malformed mapping cap", 2, normalized.Count);
+            AssertEqual("mapping preserves first valid order", "First", normalized[0].permitDefName);
+            AssertEqual("mapping duplicate keeps first family", RoyalPermitFamilyTokens.OrbitalStrike,
+                normalized[0].familyToken);
+            AssertEqual("mapping second order", "Second", normalized[1].permitDefName);
+            AssertEqual("null mappings no-op", 0, RoyalPermitPolicy.NormalizeMappings(null, 2).Count);
+
+            RoyalPermitOwnerCandidate oldOwner = PermitOwner("Pawn_A", 10);
+            oldOwner.ownerPawnName = "Zed";
+            RoyalPermitOwnerCandidate newOwner = PermitOwner("Pawn_A", 20);
+            newOwner.ownerPawnName = "Ada";
+            AssertEqual("repeated owner chooses newest", "Ada", RoyalPermitPolicy.SelectOwner(
+                new List<RoyalPermitOwnerCandidate> { oldOwner, newOwner }, 4).ownerPawnName);
+            AssertTrue("owner ordering is stable", RoyalPermitPolicy.SelectOwner(
+                new List<RoyalPermitOwnerCandidate> { newOwner, oldOwner }, 4).ownerPawnName == "Ada");
+            AssertTrue("two distinct owners are ambiguous", RoyalPermitPolicy.SelectOwner(
+                new List<RoyalPermitOwnerCandidate> { oldOwner, PermitOwner("Pawn_B", 30) }, 4) == null);
+            AssertTrue("distinct-owner cap overflow fails closed", RoyalPermitPolicy.SelectOwner(
+                new List<RoyalPermitOwnerCandidate> { oldOwner, PermitOwner("Pawn_B", 30) }, 1) == null);
+            AssertTrue("malformed owner no-op", RoyalPermitPolicy.SelectOwner(
+                new List<RoyalPermitOwnerCandidate> { new RoyalPermitOwnerCandidate() }, 4) == null);
+        }
+
+        private static void TestPermitOwnerDecisionAndQuickAidArbitration()
+        {
+            RoyaltyPolicySnapshot policy = RoyaltyPolicySnapshot.CreateDefault();
+            RoyalPermitOwnerCandidate owner = PermitOwner("Pawn_A", 100);
+            RoyalPermitUseSnapshot use = RoyalPermitPolicy.BuildUse(
+                owner, "CallMilitaryAidSmall", "call trooper squad", true, 101, policy);
+            AssertNotNull("allowed permit builds exact use", use);
+            AssertEqual("permit owner copied", "Pawn_A", use.ownerPawnId);
+            AssertTrue("cooldown fact copied", use.usedDuringCooldown);
+            AssertTrue("excluded permit builds no use", RoyalPermitPolicy.BuildUse(
+                owner, "SteelDrop", "steel drop", false, 101, policy) == null);
+            AssertTrue("mismatched cached permit builds no use", RoyalPermitPolicy.BuildUse(
+                owner, "CallMilitaryAidLarge", "call squad", false, 101, policy) == null);
+
+            RoyalPermitDecision enabled = RoyalPermitPolicy.Decide(use, true, true);
+            AssertTrue("enabled permit recognized and emitted", enabled.recognized && enabled.shouldEmit);
+            AssertEqual("enabled permit event", RoyalPermitPolicy.MilitaryAidEventDefName, enabled.eventDefName);
+            RoyalPermitDecision disabled = RoyalPermitPolicy.Decide(use, true, false);
+            AssertTrue("disabled output keeps ownership without page", disabled.recognized && !disabled.shouldEmit);
+            RoyalPermitDecision masterDisabled = RoyalPermitPolicy.Decide(use, false, true);
+            AssertTrue("master-disabled output keeps ownership without page",
+                masterDisabled.recognized && !masterDisabled.shouldEmit);
+            AssertTrue("null permit decision is no-op", !RoyalPermitPolicy.Decide(null, true, true).recognized);
+
+            string context = RoyalPermitContextFormatter.Format(use, policy);
+            AssertTrue("permit marker formatted", context.Contains("royal_permit=military_aid"));
+            AssertTrue("permit exact def formatted", context.Contains("permit_def=CallMilitaryAidSmall"));
+            AssertTrue("permit localized label formatted", context.Contains("permit_label=call trooper squad"));
+            AssertTrue("permit family formatted", context.Contains("permit_family=military_aid"));
+            AssertTrue("permit faction formatted", context.Contains("permit_faction=Shattered Empire"));
+            AssertTrue("permit title formatted", context.Contains("permit_title=Acolyte"));
+            AssertTrue("permit setting formatted", context.Contains("permit_setting=Home"));
+            AssertTrue("permit cooldown truth formatted", context.Contains("used_during_cooldown=true"));
+            use.usedDuringCooldown = false;
+            use.titleLabel = string.Empty;
+            AssertTrue("false cooldown omitted", !RoyalPermitContextFormatter.Format(use, policy)
+                .Contains("used_during_cooldown="));
+            AssertTrue("blank optional title omitted", !RoyalPermitContextFormatter.Format(use, policy)
+                .Contains("permit_title="));
+            use.permitLabel = "line one;\r\nline two";
+            policy.maximumPermitLabelCharacters = 12;
+            string sanitized = RoyalPermitContextFormatter.Format(use, policy);
+            AssertTrue("permit formatter sanitizes delimiters/newlines", !sanitized.Contains("\r")
+                && !sanitized.Contains("\n") && sanitized.Contains("permit_label=line one,"));
+            AssertEqual("null permit context no-op", string.Empty,
+                RoyalPermitContextFormatter.Format(null, policy));
+
+            RoyalQuickAidSnapshot raid = new RoyalQuickAidSnapshot
+            {
+                correlationId = "raid-1", factionId = "Faction_Empire", mapId = "Map_1", tick = 100
+            };
+            AssertTrue("later permit claims exact quick aid",
+                RoyalPermitPolicy.MatchesQuickAid(raid, use, 101, 60));
+            RoyalQuickAidSnapshot wrongMap = new RoyalQuickAidSnapshot
+            {
+                correlationId = "raid-2", factionId = "Faction_Empire", mapId = "Map_2", tick = 100
+            };
+            AssertTrue("wrong-map quick aid not claimed",
+                !RoyalPermitPolicy.MatchesQuickAid(wrongMap, use, 101, 60));
+            RoyalQuickAidSnapshot wrongFaction = new RoyalQuickAidSnapshot
+            {
+                correlationId = "raid-3", factionId = "Faction_Other", mapId = "Map_1", tick = 100
+            };
+            AssertTrue("wrong-faction quick aid not claimed",
+                !RoyalPermitPolicy.MatchesQuickAid(wrongFaction, use, 101, 60));
+            AssertTrue("expired quick aid not claimed",
+                !RoyalPermitPolicy.MatchesQuickAid(raid, use, 161, 60));
+            AssertTrue("expiry boundary flushes", RoyalPermitPolicy.QuickAidExpired(100, 160, 60));
+            AssertTrue("inside expiry window stays pending", !RoyalPermitPolicy.QuickAidExpired(100, 159, 60));
+            AssertTrue("backwards clock expires transient", RoyalPermitPolicy.QuickAidExpired(100, 99, 60));
+
+            use.tick = 100;
+            raid.tick = 101;
+            AssertTrue("reverse callback order suppresses same quick aid",
+                RoyalPermitPolicy.MatchesRecentOwner(use, raid, 60));
+            use.permitFamilyToken = RoyalPermitFamilyTokens.TransportShuttle;
+            AssertTrue("nonmilitary permit cannot claim quick aid",
+                !RoyalPermitPolicy.MatchesRecentOwner(use, raid, 60));
         }
 
         private static void TestFrozenTokensArcAndContinuityMapping()
@@ -1576,6 +1731,23 @@ namespace RoyaltyContextTests
                 titleLabel = "Same localized title",
                 seniority = seniority,
                 dutyCategoryTokens = new List<string>(duties ?? new string[0])
+            };
+        }
+
+        private static RoyalPermitOwnerCandidate PermitOwner(string pawnId, int observedTick)
+        {
+            return new RoyalPermitOwnerCandidate
+            {
+                ownerPawnId = pawnId,
+                ownerPawnName = pawnId,
+                permitDefName = "CallMilitaryAidSmall",
+                factionId = "Faction_Empire",
+                factionName = "Shattered Empire",
+                titleDefName = "Acolyte",
+                titleLabel = "Acolyte",
+                mapId = "Map_1",
+                mapLabel = "Home",
+                observedTick = observedTick
             };
         }
 

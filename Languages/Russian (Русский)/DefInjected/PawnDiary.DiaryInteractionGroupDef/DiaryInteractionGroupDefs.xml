@@ -619,4 +619,9 @@
   <personaWeaponMilestone.tone>с телесными последствиями и тревожной близостью оружия, разделившего этот момент</personaWeaponMilestone.tone>
   <personaWeaponMilestone.tones.0>непосредственно и весомо, опираясь на точную смерть и установленные черты оружия без выдуманной речи</personaWeaponMilestone.tones.0>
   <personaWeaponMilestone.tones.1>близко и тревожно, взвешивая перемену между владельцем и оружием после этого точного первого убийства</personaWeaponMilestone.tones.1>
+  <royalPermitDramatic.label>Значимые королевские разрешения</royalPermitDramatic.label>
+  <royalPermitDramatic.instruction>успешное применение значимого королевского разрешения; точно сохрани переданные семейство разрешения, фракцию, титул и место, опиши лишь вызов помощи или применение полномочия и не утверждай, что помощь прибыла, шаттл завершил путь, орбитальная атака поразила цель или была потрачена определённая сумма благосклонности</royalPermitDramatic.instruction>
+  <royalPermitDramatic.tone>с весом власти, превращённой в немедленное действие</royalPermitDramatic.tone>
+  <royalPermitDramatic.tones.0>решительно и лично, опираясь на ощущение применения заслуженной власти</royalPermitDramatic.tones.0>
+  <royalPermitDramatic.tones.1>напряжённо и с чувством статуса, сохраняя неизвестность всех ещё не наблюдавшихся последствий</royalPermitDramatic.tones.1>
 </LanguageData>
