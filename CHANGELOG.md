@@ -1,5 +1,17 @@
 # Changelog
 
+- **2026-07-19 — Fixed the two blockers from Royalty Phase 4's second loaded run.** The rerun reached
+  250/252 and confirmed the title-hook signature plus six-token ritual-catalog fixes. Its remaining
+  title loss was a real same-tick dedup defect: promotion and loss used only pawn/faction/opened-tick,
+  so the accepted promotion suppressed the distinct loss. Title keys now include transition and exact
+  before/after Def names, preserving duplicate suppression for one repeated edge without merging two
+  real mutations in a paused tick; pure Royalty coverage is 287 assertions. The other failure was a
+  Phase-3 fixture collision with the loaded mod profile's equipment-removal patches, not a runtime
+  Pawn Diary failure. That death-enrichment fixture now establishes its non-primary pending bond
+  through Pawn Diary's exact observer and reports tracker/row diagnostics. Automated build verification
+  is green, and the subsequent user-confirmed loaded rerun passed 252/252. Phase 4's automated loaded
+  coverage is therefore green; the hands-on Phase-2/3/4 rows remain before R1 acceptance is complete.
+
 - **2026-07-19 — Fixed the two blockers from Royalty Phase 4's first loaded run.** The loaded-game
   suite reached 249/252: Harmony rejected the private title postfix because its previous-title
   argument was named `currentTitle` instead of RimWorld 1.6's exact `prevTitle`, which also caused

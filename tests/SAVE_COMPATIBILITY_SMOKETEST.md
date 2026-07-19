@@ -439,18 +439,22 @@ as well as the visible page. The first qualifying kill is a vanilla qualifying T
 
 Phase 4 owns exact faction-title edges and title/psylink cause arbitration. Use a fresh eligible pawn
 for each destructive branch. Keep prompt-test mode enabled while inspecting prompts; no model request
-is required. The focused fixture source and rebuilt RimTest DLL are present, but the loaded rerun and
-all manual rows below remain open.
+is required. The focused automated loaded suite is green; all manual rows below remain open.
 
 The first loaded-game run on RimWorld 1.6.4871 reached 249/252. Two failures shared one runtime cause:
 Harmony rejected the title postfix's non-vanilla `currentTitle` argument name, so the hook audit and
 real promotion fixture both failed. The third was an outdated four-token ritual-catalog fixture after
-Phase 4 added two narrow bestowing tokens. Both fixes are applied; keep the automated row open until a
-fresh loaded rerun records the new total.
+Phase 4 added two narrow bestowing tokens. The second run reached 250/252 and confirmed both fixes.
+Its title loss shared the promotion's old pawn/faction/tick dedup key because the paused runner kept
+both real edges in one tick; the key now includes transition and exact before/after title Def names.
+The other failure was the older non-primary death fixture colliding with another loaded mod's
+equipment-removal patch, so that fixture now establishes the pending state through Pawn Diary's exact
+observer. The subsequent user-confirmed loaded rerun passed 252/252.
 
-- [x] **ASSEMBLY-FREE/BUILD:** Pure suites pass 283 Royalty, 2,437 pipeline, 665 capture-policy, and
+- [x] **ASSEMBLY-FREE/BUILD:** Pure suites pass 287 Royalty, 2,437 pipeline, 665 capture-policy, and
   125 Narrative Continuity assertions; runtime and RimTest assemblies build.
-- [ ] **AUTOMATED LOADED:** Run `PawnDiaryRoyaltyProgressionFlowTests`, the exact Royalty hook audit in
+- [x] **AUTOMATED LOADED:** The 252/252 user-confirmed run covered
+  `PawnDiaryRoyaltyProgressionFlowTests`, the exact Royalty hook audit in
   `PawnDiaryRoyaltyFlowTests`, `PawnDiaryRoyaltyStateFixtureTests`, and Royalty Def/prompt smoke tests.
 - [ ] **MANUAL LATER:** Perform and record every row below before marking R1 acceptance-complete.
 
@@ -467,8 +471,8 @@ fresh loaded rerun records the new total.
 | 9 | Run Base + Harmony + Pawn Diary with Royalty absent, including save/reload and ordinary Thought/Tale/progression play. | Royalty settings/content remain unavailable or inert; saved Royalty observation is preserved; no missing Def/type/patch error, page, or warning spam. | DLC dependency/XML error, empty snapshot interpreted as title loss, startup exception, or Royalty-only output. |
 | 10 | Inspect Full/Balanced/Compact English and Russian prompt previews for all four title edges, bestowing, anima linking, and neuroformer. | Required pawn/cause/faction/title/psylink facts remain; Compact removes optional duty prose first; no IDs/ticks/correlation tokens leak. | Missing central fact, untranslated key, internal identifier, or duty prose displacing before/after truth. |
 
-- [ ] **TODO:** Record exact RimWorld version/build, languages, active mod lists, focused loaded result,
-  rows 1–10, prompt previews, save excerpts, both DLC branches, and relevant `Player.log` lines. Until
+- [ ] **TODO:** Record exact RimWorld version/build, languages, active mod lists, rows 1–10, prompt
+  previews, save excerpts, both DLC branches, and relevant `Player.log` lines. Until
   recorded, Phase 4 and R1 remain acceptance-open.
 
 ---

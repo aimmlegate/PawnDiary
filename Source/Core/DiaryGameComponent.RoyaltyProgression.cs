@@ -393,8 +393,8 @@ namespace PawnDiary
             return DispatchProgression(
                 pawn, data, label, text,
                 majorArcCandidate: decision.transitionToken == RoyalTitleTransitionTokens.Loss,
-                dedupKey: "royalty-title|" + pawn.GetUniqueLoadID() + "|" + identity?.factionId
-                    + "|" + batch.openedTick,
+                dedupKey: RoyalTitleTransitionPolicy.BuildEventDedupKey(
+                    before, after, decision.transitionToken, batch.openedTick),
                 dedupWindowTicks: DiaryTuning.Current.genericEventTypeDedupTicks,
                 narrativeEvidence: RoyalTitleNarrativeEvidence(pawn, decision.transitionToken, identity));
         }

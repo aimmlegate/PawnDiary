@@ -190,7 +190,7 @@ rerun passed 244/244 on 2026-07-19. Phase 3 automated loaded coverage is therefo
 rows remain required; neither Phase 2 nor Phase 3 is manually acceptance-complete, and R1 remains
 open until Phase 4 passes.
 
-Phase 4 expands the pure Royalty matrix to 283 passing assertions: exact gained/promoted/demoted/lost/
+Phase 4 expands the pure Royalty matrix to 287 passing assertions: exact gained/promoted/demoted/lost/
 no-op classification, same-label faction distinction, hook/scanner observation advancement, vanished-
 faction loss, disabled-output no replay, bestowing/anima/neuroformer/unknown routing, wrong-owner
 rejection, one-shot expiry, title-thought ownership, and compact/malformed/oversized context. Pipeline
@@ -203,8 +203,14 @@ release, and no-Royalty silence; `PawnDiaryRoyaltyFlowTests` audits all four exa
 The first Phase-4 loaded-game run reached 249/252. One exact Harmony postfix parameter-name mismatch
 disabled the title callback and caused both the hook-audit and real-promotion failures; the remaining
 failure was an outdated four-token ritual-catalog expectation after Phase 4 added two bestowing tokens.
-Both defects are corrected, but the loaded rerun and every Phase-2/3/4 hands-on row remain open. R1 is
-therefore code-complete but not acceptance-complete.
+The second run reached 250/252 and confirmed those corrections. It exposed one production regression:
+promotion and loss in the fixture's same paused tick shared the old pawn/faction/tick dedup key, so
+loss was suppressed. Pure tests now pin stable identical-edge keys and distinct same-tick edge keys.
+The other failure was the Phase-3 non-primary death fixture depending on a loaded profile's patched
+equipment-removal semantics; it now arranges the pending bond through the exact Pawn Diary observer.
+The subsequent user-confirmed loaded rerun passed 252/252, so Phase 4 automated loaded coverage is
+green. Every Phase-2/3/4 hands-on row remains open; R1 is therefore code-complete but not yet
+acceptance-complete.
 
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,

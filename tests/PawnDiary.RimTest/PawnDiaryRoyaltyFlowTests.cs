@@ -381,8 +381,13 @@ namespace PawnDiary.RimTests
             CompBladelinkWeapon comp;
             CreatePersonaWeapon(out weapon, out comp);
             comp.CodeFor(pawn);
-            pawn.equipment.AddEquipment(weapon);
-            scope.RequireNoNewEvent(() => pawn.equipment.Remove(weapon));
+            scope.RequireNoNewEvent(() =>
+            {
+                // CodeFor establishes the vanilla bondedWeapon reference without requiring the weapon
+                // to be primary. Drive Pawn Diary's exact equipment observer directly so this death-
+                // enrichment fixture does not also depend on other loaded mods' ThingOwner.Remove patches.
+                scope.Component.ObserveRoyaltyPersonaEquipment(weapon, pawn);
+            });
 
             List<PersonaWeaponSnapshot> visible = DlcContext.CapturePersonaWeapons(pawn);
             PersonaBondState beforeDeath = PersonaRows().SingleOrDefault(row => row != null
@@ -391,8 +396,11 @@ namespace PawnDiary.RimTests
                     && !visible[0].isCurrentlyPrimary
                     && string.Equals(visible[0].codedPawnId, pawn.GetUniqueLoadID(), StringComparison.Ordinal)
                     && beforeDeath != null
-                    && PersonaBondPhaseTokens.IsLive(beforeDeath.phaseToken),
-                "Fixture did not establish one non-primary, still-coded live persona bond.");
+                    && beforeDeath.phaseToken == PersonaBondPhaseTokens.SeparationPending,
+                "Fixture did not establish one non-primary, still-coded pending persona bond: visible="
+                    + visible.Count
+                    + ", trackerMatches=" + ReferenceEquals(pawn.equipment?.bondedWeapon, weapon)
+                    + ", " + Describe(beforeDeath) + ".");
 
             DiaryEvent death = scope.FireAndRequireEvent(
                 () => pawn.Kill(null),

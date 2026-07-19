@@ -672,6 +672,18 @@ namespace RoyaltyContextTests
                 RoyalTitleTransitionPolicy.Classify(acolyte, yeoman, false, true, policy).transitionToken);
             AssertEqual("loss", RoyalTitleTransitionTokens.Loss,
                 RoyalTitleTransitionPolicy.Classify(yeoman, null, false, true, policy).transitionToken);
+            string promotionKey = RoyalTitleTransitionPolicy.BuildEventDedupKey(
+                yeoman, acolyte, RoyalTitleTransitionTokens.Promotion, 700);
+            AssertTrue("valid title edge has stable dedup key", promotionKey.Length > 0);
+            AssertEqual("identical title edge keeps identical dedup key", promotionKey,
+                RoyalTitleTransitionPolicy.BuildEventDedupKey(
+                    yeoman, acolyte, RoyalTitleTransitionTokens.Promotion, 700));
+            AssertTrue("different same-tick title edge keeps distinct dedup key",
+                promotionKey != RoyalTitleTransitionPolicy.BuildEventDedupKey(
+                    acolyte, null, RoyalTitleTransitionTokens.Loss, 700));
+            AssertEqual("malformed title edge has no dedup key", string.Empty,
+                RoyalTitleTransitionPolicy.BuildEventDedupKey(
+                    null, null, RoyalTitleTransitionTokens.Invalid, -1));
             RoyalTitleSnapshot renamed = Title("Pawn_A", "Empire", "Yeoman", 1);
             renamed.titleLabel = "Localized title changed";
             AssertEqual("same stable title no-op", RoyalTitleTransitionTokens.NoChange,

@@ -8,6 +8,39 @@ namespace PawnDiary
     /// <summary>Classifies an exact before/after title edge and a bounded structural duty delta.</summary>
     internal static class RoyalTitleTransitionPolicy
     {
+        /// <summary>
+        /// Builds the stable duplicate-suppression identity for one exact title edge. The transition
+        /// and both title Def names are part of the key so two different mutations in one paused game
+        /// tick (for example, promotion followed by loss) remain two legitimate diary events.
+        /// </summary>
+        public static string BuildEventDedupKey(
+            RoyalTitleSnapshot previous,
+            RoyalTitleSnapshot current,
+            string transitionToken,
+            int tick)
+        {
+            bool hasPrevious = Valid(previous);
+            bool hasCurrent = Valid(current);
+            if (tick < 0 || !RoyalTitleTransitionTokens.IsNarrative(transitionToken)
+                || (!hasPrevious && !hasCurrent)) return string.Empty;
+
+            RoyalTitleSnapshot identity = hasCurrent ? current : previous;
+            if (hasPrevious && hasCurrent
+                && (!Same(previous.pawnId, current.pawnId)
+                    || !Same(previous.factionId, current.factionId))) return string.Empty;
+
+            // "none" is a stable internal absence token, not player-facing text. Keeping it explicit
+            // makes first-title and title-loss keys readable while avoiding ambiguous empty segments.
+            string beforeDefName = hasPrevious ? previous.titleDefName.Trim() : "none";
+            string afterDefName = hasCurrent ? current.titleDefName.Trim() : "none";
+            return "royalty-title|" + identity.pawnId.Trim()
+                + "|" + identity.factionId.Trim()
+                + "|" + transitionToken
+                + "|" + beforeDefName
+                + "|" + afterDefName
+                + "|" + tick;
+        }
+
         public static RoyalTitleTransitionDecision Classify(
             RoyalTitleSnapshot previous,
             RoyalTitleSnapshot current,

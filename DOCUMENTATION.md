@@ -228,8 +228,8 @@ Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned gra
 additive save-key suffixes under each POV/archive row; it performs no retroactive inference or
 catch-up on older pages.
 
-**Royalty Phases 0–4 plus Narrative N3-R core (Master Wave 5; Phase-2 and Phase-3 automated loaded
-suites green; Phase-4 first loaded run 249/252, fixes applied, rerun and all hands-on matrices pending)**
+**Royalty Phases 0–4 plus Narrative N3-R core (Master Wave 5; Phase-2, Phase-3, and Phase-4 automated
+loaded suites green at 252/252; hands-on matrices pending)**
 freeze the detached R1 boundary and now own persona-weapon lifecycle, first-kill/death enrichment,
 and exact title/psylink correctness.
 `RoyaltyContracts`
@@ -347,7 +347,9 @@ scanner active. Live title, faction, duty, actor, item-defName, memory, and psyl
 double-guarded `DlcContext.Royalty`. Detached policies classify first title, promotion, demotion,
 complete loss, and no-op from faction identity and numeric seniority—never localized labels. The exact
 callback advances its faction row before optional dispatch, and the fallback scanner diffs removed
-faction rows into truthful loss events. Observation also advances while Progression is disabled. If
+faction rows into truthful loss events. Exact title-event dedup keys include transition plus stable
+before/after title Def names, so a repeated callback is suppressed without merging two different
+same-tick edges such as promotion followed by loss. Observation also advances while Progression is disabled. If
 Royalty is inactive, saved observations are preserved and marked unavailable; the next available pass
 silently baselines before recognizing new edges.
 
@@ -368,11 +370,13 @@ Saved Phase-4 mutation context may contain `royal_mutation_pawn`, `royal_cause`,
 before/after facts. SoloImportant's append-only indices 107–112 project mutation pawn, cause,
 transition, faction, psylink cause, and duty changes; required title/psylink facts reuse earlier stable
 fields. Exact English/Russian prompts cover four title transitions, psylink/neuroformer, bestowing,
-and anima linking. Pure suites pass 283 Royalty, 2,437 pipeline, 665 capture-policy, and 125 Narrative
+and anima linking. Pure suites pass 287 Royalty, 2,437 pipeline, 665 capture-policy, and 125 Narrative
 Continuity assertions; the runtime and RimTest assemblies build. The first loaded-game run reached
-249/252: an exact Harmony argument-name mismatch disabled the title hook and caused the promotion
-failure, while an outdated ritual-token fixture caused the third failure. Both defects are corrected;
-the loaded rerun and every Phase-2/3/4 hands-on row remain explicit R1 acceptance work.
+249/252 and exposed the corrected title-postfix argument name plus ritual-token fixture. The second
+run reached 250/252, confirming both fixes, then exposed a distinct same-tick title-edge dedup bug and
+a Phase-3 death-fixture collision with other loaded equipment-removal patches. After the dedup identity
+and fixture setup were corrected, the user-confirmed loaded rerun passed 252/252. Phase 4 automated
+loaded coverage is green; every Phase-2/3/4 hands-on row remains explicit R1 acceptance work.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13

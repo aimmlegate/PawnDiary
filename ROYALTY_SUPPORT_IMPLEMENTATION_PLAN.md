@@ -10,8 +10,10 @@ existing wielder-death page with pre-`UnCode` context. After the pre-dead timing
 fixture-only Tale-batch query corrections, its focused loaded rerun passed 244/244 on 2026-07-19.
 Its automated loaded coverage is green while the hands-on matrix remains open.
 Phase 4 is now code-complete with pure/build coverage. Its first loaded-game run reached 249/252; the
-exact title-postfix argument-name defect and outdated ritual-token fixture are corrected, while the
-focused loaded rerun and hands-on acceptance remain open. Phases 5–8 remain. This status does not pass,
+second reached 250/252 and confirmed the title-postfix and ritual-token fixes before exposing a
+same-tick title-edge dedup defect plus one Phase-3 mod-profile-sensitive fixture. After those were
+corrected, the user-confirmed loaded rerun passed 252/252. Automated coverage is green while hands-on
+acceptance remains open. Phases 5–8 remain. This status does not pass,
 waive, or remove any earlier Biotech B1 manual
 acceptance row.
 
@@ -1462,8 +1464,8 @@ not flood; R1 persona scope is complete.
 
 ### Phase 4 — Title and psylink correctness
 
-> **Implementation status (2026-07-19): code-complete; pure/build green; first loaded run 249/252,
-> fixes applied; loaded rerun and manual acceptance pending.** The exact private
+> **Implementation status (2026-07-19): code-complete; pure/build and automated loaded coverage green
+> at 252/252; manual acceptance pending.** The exact private
 > `OnPostTitleChanged(Faction faction, RoyalTitleDef prevTitle, RoyalTitleDef newTitle)`
 > callback and three cause boundaries register defensively through `DiaryRoyaltyPatches`; changed
 > targets warn once and retain the scanner. Exact gained/promoted/demoted/lost decisions use faction ID
@@ -1474,10 +1476,11 @@ not flood; R1 persona scope is complete.
 > Observation continues while output is disabled; inactive Royalty marks observation unavailable but
 > preserves saved truth for a later silent baseline. XML owns matching, windows, caps, prose, and prompt
 > projection; English/Russian data and append-only SoloImportant fields 107–112 are covered. Pure suites
-> pass 283 Royalty, 2,437 pipeline, 665 capture-policy, and 125 Narrative Continuity assertions. Runtime
-> and RimTest assemblies build. The first loaded run exposed and now has fixes for the exact postfix
-> argument-name mismatch and an outdated ritual-token fixture; the focused rerun and hands-on matrix
-> still must run before R1.
+> pass 287 Royalty, 2,437 pipeline, 665 capture-policy, and 125 Narrative Continuity assertions. Runtime
+> and RimTest assemblies build. The second loaded run confirmed the exact postfix and ritual-catalog
+> fixes, then exposed a same-tick title-edge dedup collision and one Phase-3 fixture dependency on other
+> mods' equipment-removal patches. Both were corrected, and the subsequent user-confirmed loaded rerun
+> passed 252/252. The hands-on matrix still must run before R1.
 
 1. Register the private post-title hook defensively.
 2. Emit faction-aware gain/promotion/demotion/loss and update the scanner baseline.
