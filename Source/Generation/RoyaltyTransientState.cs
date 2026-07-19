@@ -26,6 +26,7 @@ namespace PawnDiary
             RoyalTitleThoughtCorrelation.Clear();
             RoyalPermitOwnerCache.Reset();
             PawnDiary.Ingestion.QuickMilitaryAidRaidCorrelation.Reset();
+            RaidExecutePatch.SetRaidSubmitOverrideForTests(null);
             activeCauseScopes.Clear();
             unclaimedMutations.Clear();
             personaEndCauses.Clear();

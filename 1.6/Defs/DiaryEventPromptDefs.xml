@@ -302,6 +302,9 @@
     <defName>DiaryEventPrompt_RoyalPermit</defName>
     <label>dramatic royal permit</label>
     <eventType>RoyalPermit</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
     <prompt>Write an exact successful dramatic royal-permit use from the permit owner&apos;s point of view.</prompt>
     <enhancement>Preserve the supplied permit, family, faction, title, setting, and cooldown-use fact. Describe invoking authority, not an unobserved result; invent no target, arrival, impact, completion, dialogue, or favor amount.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
@@ -310,6 +313,9 @@
     <defName>DiaryEventPrompt_RoyalPermitMilitaryAid</defName>
     <label>royal military aid called</label>
     <eventType>RoyalPermitMilitaryAid</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
     <prompt>Write the permit owner calling in military aid from the supplied royal faction.</prompt>
     <enhancement>Center the decision to invoke aid and the weight of rank behind it. The successful permit use proves the call, not that troops arrived or won; invent no force size, route, target, battle, or favor amount.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
@@ -318,6 +324,9 @@
     <defName>DiaryEventPrompt_RoyalPermitTransportShuttle</defName>
     <label>royal transport shuttle called</label>
     <eventType>RoyalPermitTransportShuttle</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
     <prompt>Write the permit owner calling for a royal transport shuttle.</prompt>
     <enhancement>Use only the supplied permit, faction, title, and setting. Do not invent passengers, cargo, destination, flight events, arrival, completion, dialogue, or a favor amount.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
@@ -326,6 +335,9 @@
     <defName>DiaryEventPrompt_RoyalPermitOrbitalStrike</defName>
     <label>royal orbital strike invoked</label>
     <eventType>RoyalPermitOrbitalStrike</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
     <prompt>Write the permit owner exercising an orbital-strike permit.</prompt>
     <enhancement>Center the decision, authority, and anticipation at the supplied setting. Do not invent a target, impact, casualties, damage, accuracy, completion, dialogue, or a favor amount.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
@@ -334,6 +346,9 @@
     <defName>DiaryEventPrompt_RoyalPermitOrbitalSalvo</defName>
     <label>royal orbital salvo invoked</label>
     <eventType>RoyalPermitOrbitalSalvo</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Royalty</li>
+    </enableWhenPackageIdsLoaded>
     <prompt>Write the permit owner exercising an orbital-salvo permit.</prompt>
     <enhancement>Center the decision, authority, and anticipation at the supplied setting. Do not invent a target, impacts, casualties, damage, accuracy, completion, dialogue, or a favor amount.</enhancement>
   </PawnDiary.DiaryEventPromptDef>

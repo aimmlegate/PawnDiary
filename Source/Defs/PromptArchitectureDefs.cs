@@ -52,9 +52,20 @@ namespace PawnDiary
         public string eventType;
         public string prompt;
         public string enhancement;
+        // Optional settings-only availability. The Def stays loaded so an old pending event still
+        // has its prompt after a DLC is removed, but Prompt Studio hides rows whose package is absent.
+        public List<string> enableWhenPackageIdsLoaded = new List<string>();
         // Optional raw API model id. When it matches an active configured API row, entries using this
         // prompt policy try that model first; blank or unknown values are ignored.
         public string forcedModel;
+
+        /// <summary>True when Prompt Studio should hide this policy for the current mod list.</summary>
+        public bool MissingRequiredPackage()
+        {
+            return enableWhenPackageIdsLoaded != null
+                && enableWhenPackageIdsLoaded.Count > 0
+                && !InteractionGroups.AnyPackageLoaded(enableWhenPackageIdsLoaded);
+        }
     }
 
     /// <summary>

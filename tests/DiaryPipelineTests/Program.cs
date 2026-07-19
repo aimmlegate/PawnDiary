@@ -4195,6 +4195,8 @@ namespace DiaryPipelineTests
                 AssertTrue("Royalty permit event prompt exists: " + defName, prompt != null);
                 AssertEqual("Royalty permit prompt key is exact: " + defName,
                     promptSuffixes[i], ChildValue(prompt, "eventType"));
+                AssertTrue("Royalty permit Prompt Studio row is package-gated: " + defName,
+                    HasListValue(prompt, "enableWhenPackageIdsLoaded", royaltyPackage));
                 AssertTrue("English Royalty permit prompt localized: " + defName,
                     !string.IsNullOrWhiteSpace(englishPrompts.Root?.Element(defName + ".prompt")?.Value));
                 AssertTrue("Russian Royalty permit prompt localized: " + defName,

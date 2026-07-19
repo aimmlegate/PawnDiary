@@ -63,8 +63,14 @@ namespace PawnDiary.Ingestion
         {
             if (sink == null || pawn == null || use == null || group == null
                 || decision != CaptureDecision.GenerateSolo) return;
+            string familyFallbackKey = FamilyFallbackKey(use.permitFamilyToken);
+            string eventFallbackKey = FallbackKey(use.permitFamilyToken);
+            // Unknown families should be unreachable through the reviewed allowlist. Fail closed if
+            // a future family is added without its localized wording instead of silently calling it
+            // an orbital salvo.
+            if (familyFallbackKey.Length == 0 || eventFallbackKey.Length == 0) return;
             string permit = string.IsNullOrWhiteSpace(use.permitLabel)
-                ? FamilyFallbackKey(use.permitFamilyToken).Translate().Resolve()
+                ? familyFallbackKey.Translate().Resolve()
                 : use.permitLabel;
             string faction = string.IsNullOrWhiteSpace(use.factionName)
                 ? "PawnDiary.Event.RoyalPermit.FactionFallback".Translate().Resolve()
@@ -72,7 +78,7 @@ namespace PawnDiary.Ingestion
             string label = string.IsNullOrWhiteSpace(group.label)
                 ? "PawnDiary.Event.RoyalPermit.Label".Translate().Resolve()
                 : group.LabelCap.Resolve();
-            string text = FallbackKey(use.permitFamilyToken)
+            string text = eventFallbackKey
                 .Translate(pawn.LabelShortCap, permit, faction).Resolve();
             if (use.usedDuringCooldown)
                 text += " " + "PawnDiary.Event.RoyalPermit.CooldownSuffix".Translate().Resolve();
@@ -96,7 +102,9 @@ namespace PawnDiary.Ingestion
                 return "PawnDiary.Event.RoyalPermit.TransportShuttle.Fallback";
             if (family == RoyalPermitFamilyTokens.OrbitalStrike)
                 return "PawnDiary.Event.RoyalPermit.OrbitalStrike.Fallback";
-            return "PawnDiary.Event.RoyalPermit.OrbitalSalvo.Fallback";
+            if (family == RoyalPermitFamilyTokens.OrbitalSalvo)
+                return "PawnDiary.Event.RoyalPermit.OrbitalSalvo.Fallback";
+            return string.Empty;
         }
 
         private static string FamilyFallbackKey(string family)
@@ -107,7 +115,9 @@ namespace PawnDiary.Ingestion
                 return "PawnDiary.Event.RoyalPermit.TransportShuttle.PermitFallback";
             if (family == RoyalPermitFamilyTokens.OrbitalStrike)
                 return "PawnDiary.Event.RoyalPermit.OrbitalStrike.PermitFallback";
-            return "PawnDiary.Event.RoyalPermit.OrbitalSalvo.PermitFallback";
+            if (family == RoyalPermitFamilyTokens.OrbitalSalvo)
+                return "PawnDiary.Event.RoyalPermit.OrbitalSalvo.PermitFallback";
+            return string.Empty;
         }
     }
 }

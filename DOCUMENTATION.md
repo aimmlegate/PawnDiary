@@ -489,25 +489,30 @@ XML explicitly opts them in. Safe code fallbacks contain the same six mappings, 
 duplicate, unknown-family, or over-cap rows fail closed without a throwing DLC Def lookup.
 
 Installed RimWorld 1.6 inspection establishes `FactionPermit.Notify_Used()` as the exact successful-
-use edge: it writes `lastUsedTick`, while the reviewed military-aid, shuttle, strike, and salvo workers
-call it only after their incident/transport/bombardment setup succeeds. UI lookup, targeting,
+use edge: it writes `lastUsedTick`. Military aid reaches it only after `RaidFriendly.TryExecute`
+succeeds; shuttle, strike, and salvo reach it after their transport/bombardment setup calls complete.
+UI lookup, targeting,
 cancellation, invalid targets, failed `RaidFriendly.TryExecute`, and other intent paths do not reach
 that method. Because the callback carries no pawn, a Royalty-only postfix on the exact
 `Pawn_RoyaltyTracker.GetPermit(RoyalTitlePermitDef, Faction)` overload briefly records weak references
 to the returned permit and tracker pawn. The successful-use postfix accepts only one exact eligible
-owner; ambiguous/capped ownership fails closed, and a bounded live-pawn scan is used only when a
-compatibility mod bypasses the normal lookup. All faction, title, permit, pawn, and map labels are
+owner; ambiguous ownership and a fallback scan that reaches its cap fail closed. The bounded live-pawn
+scan is used only when a compatibility mod bypasses the normal lookup, and checks the tracker's exact
+`AllFactionPermits` references directly so it cannot re-enter Pawn Diary's `GetPermit` postfix. All
+faction, title, permit, pawn, and map labels are
 localized, sanitized, bounded, and detached by `DlcContext.Royalty` on RimWorld's main thread before
 pure `RoyalPermitPolicy` decides the family and output.
 
 Vanilla quick military aid completes `RaidFriendly.TryExecute` before it calls `Notify_Used`. The
 existing raid listener therefore stages only a successful `IncidentWorker_RaidFriendly` whose
-`raidArrivalModeForQuickMilitaryAid` flag is true. A later military-aid success claims the exact
-faction+map raid inside the XML window; a short bounded recent-owner list also covers compatibility
+`raidArrivalModeForQuickMilitaryAid` flag is true while the Royalty XML master is enabled. A later
+military-aid success claims the exact faction+map raid inside the half-open XML window
+`[0, quickAidCorrelationTicks)`; a short bounded recent-owner list also covers compatibility
 mods that reverse callback order. An unmatched, expired, backwards-clock, save-boundary, or pending-
 cap-overflow raid is returned unchanged and deterministically to the existing `RaidFanoutSignal`
-owner. Permit ownership is source truth rather than output truth, so disabling the permit group still
-prevents the same action becoming generic friendly-raid pages. Per-tick maintenance does no work while
+owner. Permit ownership is source truth rather than group-output truth, so disabling the permit group
+still prevents the same action becoming generic friendly-raid pages. Disabling the XML Royalty master
+instead bypasses staging and leaves the mature generic raid owner unchanged. Per-tick maintenance does no work while
 both bounded lists are empty. Pre-save flush is lossless, and `FinalizeInit` clears both raid and weak
 permit state so it cannot cross exit-to-menu plus load.
 
@@ -518,14 +523,18 @@ or any other outcome not proved at this edge. The `RoyalPermit` domain has one R
 no-catch-all group and exact prompts for military aid, transport shuttle, orbital strike, and orbital
 salvo. Append-only `SoloImportant` fields 117–122 project permit label/family/faction/title, optional
 setting, and cooldown truth while omitting permit Def IDs, map IDs, ticks, and correlation data.
-English and Russian Keyed/DefInjected text and four prompt fixtures cover every family.
+English and Russian Keyed/DefInjected text and four prompt fixtures cover every family. Those five
+Phase-6 prompt Defs remain loaded for pending-event/save compatibility, but package metadata hides
+their editor rows from Prompt Studio when Royalty is inactive.
 
-Phase-6 pure coverage raises `RoyaltyContextTests` to 421 assertions, `DiaryPipelineTests` to 2,645,
-and `DiaryCapturePolicyTests` to 680. The runtime and 275-test RimTest assemblies build. Eight new
+Phase-6 pure coverage raises `RoyaltyContextTests` to 431 assertions, `DiaryPipelineTests` to 2,650,
+and `DiaryCapturePolicyTests` to 680. The runtime and 278-test RimTest assemblies build. Eleven new
 loaded fixtures compile exact Harmony target audits, the real vanilla successful-use callback for all
 four families, installed shuttle target rejection plus cancelled selection intent, all nine reviewed
-routine exclusions, repeat suppression, both quick-aid callback orders, cap/expiry fallback, pre-save
-flush/load reset, and Royalty-inactive silence. They have not yet been executed in a loaded game, so
+routine exclusions, repeat suppression, both quick-aid callback orders through the production raid
+postfix, master/group-disabled ownership, non-reentrant fallback owner lookup with cap-safe failure,
+cap/expiry fallback, pre-save flush/load reset, Prompt Studio package visibility, and Royalty-inactive
+silence. They have not yet been executed in a loaded game, so
 Phase 6 and R2 are not acceptance-complete; every Phase-2–5 hands-on matrix also remains open.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
@@ -1547,7 +1556,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryInteractionGroupDefs.xml` / `Defs/Compat/*.xml` | event classification, group instructions/tones, batching, hediff modes, colors, default enablement, optional-mod compat groups |
 | `DiaryEventWindowDefs.xml` | one-shot or timed story windows from game signals |
 | `DiaryObservedConditionDefs.xml` | live-state conditions such as map danger, game conditions, evidence things, and visible hediffs |
-| `DiaryEventPromptDefs.xml` | event prompt text, enhancements, and optional forced model names |
+| `DiaryEventPromptDefs.xml` | event prompt text, enhancements, optional forced model names, and optional package metadata used to hide irrelevant Prompt Studio rows without unloading save-recovery Defs |
 | `DiaryPromptTemplateDefs.xml` / `DiaryPromptDef.xml` | prompt field shapes and shared system/final instructions |
 | `DiaryPersonaDefs.xml` / `DiaryHediffPersonaOverrideDefs.xml` | writing styles (incl. child styles) and temporary hediff-driven style overrides |
 | `DiaryPsychotypeDefs.xml` | pawn psychotypes (outlook layer): Neutral + 17 adult + 3 trait-gated + 5 child types, families, skill affinities, trait gates |
@@ -1825,7 +1834,9 @@ Prompt policy layers:
    override it with a 2-5 sentence variant, matching 2-5 final instructions, and a 200-token
    response cap so high-stakes moments get more page weight than small talk.
 2. Structured fields from `DiaryPromptTemplateDef`.
-3. Event prompt/enhancement/forced-model rows from `DiaryEventPromptDef`.
+3. Event prompt/enhancement/forced-model rows from `DiaryEventPromptDef`. Optional package metadata
+   affects only Prompt Studio visibility; the Def remains loaded so old pending events can still
+   recover their prompt policy when a DLC is absent.
 4. Interaction-group instructions and tones. Groups may carry `instructions`/`tones` variant pools
    next to the legacy singular fields; a non-empty pool fully replaces the singular value and one
    variant is picked per entry by a stable hash, so repeated events of the same kind rotate their
@@ -2921,12 +2932,14 @@ inheritance cardinality, the instant titleless Freeholder step, equal-title sile
 claim/retirement, a nonempty actual component-ledger Scribe round-trip, old-expiry migration, and
 Royalty-inactive hook/scope assertions. The first loaded run reached 264/267; its three failures shared
 an unspawned-fixture liveness gap, now corrected by spawning only the disposable pawns whose production
-paths consult the live-colonist roster. The corrected rerun passed all 267/267 loaded tests. Ideology
-Phase 6 expands the compiled loaded suite to 275 tests. Its eight new permit fixtures audit both exact
+paths consult the live-colonist roster. The corrected rerun passed all 267/267 loaded tests. Royalty
+Phase 6 expands the compiled loaded suite to 278 tests. Its eleven new permit fixtures audit both exact
 permit patches and the existing exact incident postfix, call real `FactionPermit.Notify_Used` for all
 four families, prove a real installed invalid shuttle target plus cancelled lookup intent are silent,
 exercise all reviewed routine permits, repeat suppression, quick-aid ownership in both callback
-orders, lossless cap/expiry/pre-save fallback, `FinalizeInit` reset, and Royalty-inactive behavior.
+orders through the production raid branch, master/group-disabled ownership, non-reentrant cap-safe
+fallback owner lookup, lossless cap/expiry/pre-save fallback, Prompt Studio package visibility,
+`FinalizeInit` reset, and Royalty-inactive behavior.
 This expanded assembly builds but has not yet had a loaded run; the last executed loaded baseline
 remains Phase 5's 267/267. Ideology and Anomaly ritual tests use
 internal copied-fact fixture seams because safely

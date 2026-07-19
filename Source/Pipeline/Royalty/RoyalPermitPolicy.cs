@@ -163,7 +163,7 @@ namespace PawnDiary
             int window = Math.Max(1, correlationTicks);
             long useDistance = (long)use.tick - raid.tick;
             long nowDistance = (long)currentTick - raid.tick;
-            return useDistance >= 0 && useDistance <= window && nowDistance >= 0 && nowDistance <= window;
+            return useDistance >= 0 && useDistance < window && nowDistance >= 0 && nowDistance < window;
         }
 
         /// <summary>Reverse-order matcher for a modded permit owner observed just before its raid.</summary>
@@ -177,7 +177,7 @@ namespace PawnDiary
                 || !string.Equals(raid.factionId, use.factionId, StringComparison.Ordinal)
                 || !string.Equals(raid.mapId, use.mapId, StringComparison.Ordinal)) return false;
             long distance = (long)raid.tick - use.tick;
-            return distance >= 0 && distance <= Math.Max(1, correlationTicks);
+            return distance >= 0 && distance < Math.Max(1, correlationTicks);
         }
 
         /// <summary>Elapsed expiry tolerates a reset/backwards game clock by expiring stale state.</summary>

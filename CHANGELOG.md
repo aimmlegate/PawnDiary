@@ -1,5 +1,21 @@
 # Changelog
 
+- **2026-07-19 — Hardened Royalty Phase 6 after combined adversarial review.** The quick-aid raid
+  branch now stages only while the Royalty policy master is enabled: master-off preserves the mature
+  generic raid route, while group-off deliberately consumes the matched source without producing
+  duplicate pages. Compatibility fallback ownership reads exact `AllFactionPermits` references
+  without re-entering the patched lookup and fails closed if the bounded scan is truncated. The
+  successful-use patch is fail-soft, its hot lookup postfix avoids captured closures, the correlation
+  window is consistently half-open, and unknown family tokens can no longer fall through as orbital
+  salvo.
+
+  All five Phase-6 prompt Defs now carry Royalty package metadata. They stay loaded for pending-event
+  and old-save recovery but are hidden from Prompt Studio when Royalty is inactive. Pure coverage now
+  passes 431 Royalty, 2,650 pipeline, and 680 capture assertions; the runtime and 278-test RimTest
+  assemblies build. The eleven compiled Phase-6 fixtures now drive the production raid postfix and
+  cover master/group switching, non-reentrant cap-safe fallback lookup, and Prompt Studio package
+  visibility. Loaded execution remains pending, so the confirmed in-game baseline is still 267/267.
+
 - **2026-07-19 — Implemented Master Wave 9 / Royalty Phase 6 dramatic permits.** Adversarial
   inspection of RimWorld 1.6's installed assembly and Royalty XML confirmed the exact six dramatic
   permits, nine routine exclusions, `Pawn_RoyaltyTracker.GetPermit(RoyalTitlePermitDef, Faction)` as

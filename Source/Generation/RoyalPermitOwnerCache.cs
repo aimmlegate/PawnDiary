@@ -1,8 +1,9 @@
 // Transient ownership bridge for Royalty permits. Vanilla's successful-use callback carries the
 // FactionPermit instance but not its pawn, while Pawn_RoyaltyTracker.GetPermit carries both. This
-// bounded cache joins those exact references without retaining a Pawn, permit, Def, Faction, or Map
-// strongly across play. A rare bounded live-pawn scan recovers when another mod bypassed the normal
-// lookup path; ambiguous ownership fails closed.
+// owner cache joins those exact references without retaining a Pawn, permit, Def, Faction, or Map
+// strongly. A rare bounded live-pawn scan recovers when another mod bypassed the normal lookup path;
+// ambiguous or scan-capped ownership fails closed. Quick-aid raid staging is a separate, one-second
+// bounded owner that deliberately retains the original RaidFanoutSignal for lossless fallback.
 using System;
 using System.Collections.Generic;
 using RimWorld;
@@ -36,6 +37,7 @@ namespace PawnDiary
         }
 
         private static readonly List<PermitSession> sessions = new List<PermitSession>();
+        private static IEnumerable<Pawn> fallbackPawnsOverrideForTests;
 
         /// <summary>
         /// Remembers that one tracker returned this exact permit. Repeated UI reads for the same
@@ -102,15 +104,26 @@ namespace PawnDiary
             {
                 int scanned = 0;
                 int scanCap = Clamp(policy.maximumPermitFallbackPawns, 1, 2048, 256);
-                IEnumerable<Pawn> pawns = PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive;
+                bool scanTruncated = false;
+                IEnumerable<Pawn> pawns = fallbackPawnsOverrideForTests
+                    ?? PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive;
                 if (pawns != null)
                 {
                     foreach (Pawn pawn in pawns)
                     {
-                        if (scanned++ >= scanCap) break;
+                        if (scanned >= scanCap)
+                        {
+                            scanTruncated = true;
+                            break;
+                        }
+                        scanned++;
                         AddExactCandidate(permit, pawn, now, candidates, liveById);
                     }
                 }
+                // A candidate found in a partial prefix is not proven unique: an unscanned pawn can
+                // expose the same mod-shared permit instance. The cap is therefore ambiguity, not a
+                // license to select from incomplete evidence.
+                if (scanTruncated) return null;
             }
 
             RoyalPermitOwnerCandidate selected = RoyalPermitPolicy.SelectOwner(
@@ -126,9 +139,16 @@ namespace PawnDiary
         public static void Reset()
         {
             sessions.Clear();
+            fallbackPawnsOverrideForTests = null;
         }
 
         internal static int SessionCountForTests => sessions.Count;
+
+        /// <summary>Loaded-test seam for deterministic fallback-scan ordering and cap coverage.</summary>
+        internal static void SetFallbackPawnsOverrideForTests(IEnumerable<Pawn> pawns)
+        {
+            fallbackPawnsOverrideForTests = pawns;
+        }
 
         private static void AddExactCandidate(
             FactionPermit permit,

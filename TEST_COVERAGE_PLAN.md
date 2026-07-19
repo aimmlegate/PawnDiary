@@ -249,7 +249,7 @@ consulted only RimWorld's live-colonist roster; the affected fixtures now spawn 
 heir/writer. The user-confirmed corrected loaded rerun passed 267/267. Phase 5 automated coverage is
 green, while its hands-on matrix remains open.
 
-Phase 6 raises `RoyaltyContextTests` to 421 assertions, `DiaryPipelineTests` to 2,645, and
+Phase 6 raises `RoyaltyContextTests` to 431 assertions, `DiaryPipelineTests` to 2,650, and
 `DiaryCapturePolicyTests` to 680. Pipeline coverage parses the XML-owned allowlist/caps/windows, the
 Royalty-gated exact no-catch-all group, all broad/exact permit prompt Defs, English/Russian
 DefInjected and Keyed strings, four bilingual prompt fixtures, `RoyalPermit` domain recovery, and
@@ -260,16 +260,19 @@ exact success, eligibility, family/event identity, malformed IDs, dedup, disable
 intent-only, and null/no-op decisions. The existing event-window regression confirms `RaidFriendly`
 does not gain a second hardcoded window page.
 
-`PawnDiaryRoyaltyPermitFlowTests` adds eight compiled loaded fixtures, bringing the RimTest assembly
-from 267 to 275 tests. They audit the exact `Pawn_RoyaltyTracker.GetPermit(RoyalTitlePermitDef,
+`PawnDiaryRoyaltyPermitFlowTests` adds eleven compiled loaded fixtures, bringing the RimTest assembly
+from 267 to 278 tests. They audit the exact `Pawn_RoyaltyTracker.GetPermit(RoyalTitlePermitDef,
 Faction)` postfix, `FactionPermit.Notify_Used()` prefix/postfix, and existing
 `IncidentWorker.TryExecute(IncidentParms)` postfix; invoke the real successful-use callback for every
 dramatic family; exercise the installed shuttle worker's real invalid-target rejection and a cancelled
 selection/lookup; prove all nine reviewed routine permits are silent; pin repeat suppression; claim
-quick aid by exact faction+map in vanilla and reverse callback order; return cap overflow, expiry, and
-pre-save signals unchanged to the raid owner; clear weak/static state on `FinalizeInit`; and assert
+quick aid by exact faction+map in vanilla and reverse callback order through the production raid
+postfix; distinguish master-disabled generic ownership from group-disabled source consumption; prove
+the capped fallback owner scan neither re-enters the patch nor accepts a truncated candidate set;
+return cap overflow, expiry, and pre-save signals unchanged to the raid owner; check Phase-6 Prompt
+Studio rows against Royalty activity; clear weak/static state on `FinalizeInit`; and assert
 Royalty-inactive hooks, collectors, pages, and queues are silent. The official DLC group matrix now
-includes `royalPermitDramatic`. Both runtime assemblies build, but these eight fixtures have not yet
+includes `royalPermitDramatic`. Both runtime assemblies build, but these eleven fixtures have not yet
 been run in a loaded game. The executed loaded baseline remains 267/267, Phase 6 manual/loaded
 acceptance remains open, and no Phase-2–5 hands-on row is closed.
 

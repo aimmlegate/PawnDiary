@@ -434,7 +434,10 @@ Complete **Odyssey O2** and extend **N3-O**:
    — successful dramatic permit families and friendly-raid ownership. Installed RimWorld 1.6 audit
    confirms `FactionPermit.Notify_Used()` as the post-success edge and quick `RaidFriendly` as the
    earlier same-action signal; the implementation uses exact allowlisted families plus lossless
-   bounded faction/map stage/claim/expiry ownership. The compiled suite is 275 tests, but the last
+   bounded faction/map stage/claim/expiry ownership. Adversarial hardening distinguishes master-off
+   generic ownership from group-off source consumption, makes fallback lookup non-reentrant and
+   cap-safe, and hides package-specific Prompt Studio rows without unloading their Defs. The compiled
+   suite is 278 tests, but the last
    executed loaded baseline remains Phase 5's 267/267.
 3. **Royalty 7** — Royal Ascent start, bounded pressure, and terminal chapter.
 4. Extend **N3-R** with succession identity, permit authority, Ascent journey, and court-pressure

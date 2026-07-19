@@ -166,6 +166,8 @@ namespace PawnDiary
     [HarmonyPatch(typeof(IncidentWorker), nameof(IncidentWorker.TryExecute))]
     internal static class RaidExecutePatch
     {
+        private static Action<RaidFanoutSignal> raidSubmitOverrideForTests;
+
         /// <summary>
         /// Harmony Postfix for IncidentWorker.TryExecute. Submits a
         /// <see cref="RaidFanoutSignal"/> for successful raid-like incidents, which fans out to
@@ -194,16 +196,40 @@ namespace PawnDiary
                 if (IsRaidLikeIncident(__instance))
                 {
                     RaidFanoutSignal raid = new RaidFanoutSignal(parms, __instance.def);
-                    bool staged = ModsConfig.RoyaltyActive
+                    bool quickAid = ModsConfig.RoyaltyActive
                         && __instance is IncidentWorker_RaidFriendly
-                        && parms.raidArrivalModeForQuickMilitaryAid
+                        && parms.raidArrivalModeForQuickMilitaryAid;
+                    RoyaltyPolicySnapshot royaltyPolicy = quickAid
+                        ? DiaryRoyaltyPolicy.Snapshot()
+                        : null;
+                    // The XML master disables the integration, so it must leave the mature generic
+                    // RaidFriendly owner untouched. A disabled permit *group* is different: the
+                    // integration is healthy and still owns/deduplicates its exact source action.
+                    bool staged = quickAid
+                        && royaltyPolicy.enabled
                         && QuickMilitaryAidRaidCorrelation.TryStageOrSuppress(
                             raid,
                             Find.TickManager?.TicksGame ?? 0,
-                            DiaryRoyaltyPolicy.Snapshot());
-                    if (!staged) DiaryEvents.Submit(raid);
+                            royaltyPolicy);
+                    if (!staged) SubmitRaid(raid);
                 }
             });
+        }
+
+        /// <summary>
+        /// Loaded-test seam that observes whether the production patch released a raid to the generic
+        /// fan-out without writing test pages into a developer's real colonists.
+        /// </summary>
+        internal static void SetRaidSubmitOverrideForTests(Action<RaidFanoutSignal> callback)
+        {
+            raidSubmitOverrideForTests = callback;
+        }
+
+        private static void SubmitRaid(RaidFanoutSignal raid)
+        {
+            Action<RaidFanoutSignal> callback = raidSubmitOverrideForTests;
+            if (callback != null) callback(raid);
+            else DiaryEvents.Submit(raid);
         }
 
         private static bool IsRaidLikeIncident(IncidentWorker worker)

@@ -22,12 +22,17 @@ namespace PawnDiary.RimTests
     {
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
+        private static RoyaltyPolicySnapshot livePolicy;
+        private static bool originalPolicyEnabled;
 
         [BeforeEach]
         public static void SetUp()
         {
             scope = PawnDiaryRimTestScope.Begin("royalPermitDramatic", "raidFriendly");
             RoyaltyTransientState.Reset();
+            livePolicy = DiaryRoyaltyPolicy.Snapshot();
+            originalPolicyEnabled = livePolicy.enabled;
+            livePolicy.enabled = true;
             pawn = scope.CreateAdultColonist();
         }
 
@@ -37,9 +42,12 @@ namespace PawnDiary.RimTests
             try { scope?.TearDown(); }
             finally
             {
+                if (livePolicy != null) livePolicy.enabled = originalPolicyEnabled;
                 RoyaltyTransientState.Reset();
+                RaidExecutePatch.SetRaidSubmitOverrideForTests(null);
                 scope = null;
                 pawn = null;
+                livePolicy = null;
             }
         }
 
@@ -191,19 +199,21 @@ namespace PawnDiary.RimTests
             scope.SpawnAsLiveColonist(pawn);
             pawn.royalty.GetPermit(def, faction);
             int fallbacks = 0;
+            int genericSubmissions = 0;
             QuickMilitaryAidRaidCorrelation.SetDispatchOverrideForTests(_ => fallbacks++);
+            RaidExecutePatch.SetRaidSubmitOverrideForTests(_ => genericSubmissions++);
 
-            RaidFanoutSignal raid = BuildFriendlyRaid(faction);
-            PawnDiaryRimTestScope.Require(QuickMilitaryAidRaidCorrelation.TryStageOrSuppress(
-                    raid, Find.TickManager.TicksGame, DiaryRoyaltyPolicy.Snapshot()),
-                "The exact quick-aid RaidSignal was not staged.");
+            FireFriendlyRaidProductionPostfix(faction);
             PawnDiaryRimTestScope.Require(QuickMilitaryAidRaidCorrelation.PendingCountForTests == 1,
-                "The quick-aid raid did not enter the bounded pending owner.");
+                "The production RaidExecutePatch did not stage the quick-aid raid.");
+            PawnDiaryRimTestScope.Require(genericSubmissions == 0,
+                "The production RaidExecutePatch leaked the staged raid into generic fan-out.");
             DiaryEvent permitEvent = scope.FireAndRequireEvent(
                 () => permit.Notify_Used(), RoyalPermitPolicy.MilitaryAidEventDefName, pawn, null, true);
             scope.RequireSoloRef(permitEvent, pawn);
             PawnDiaryRimTestScope.Require(
-                QuickMilitaryAidRaidCorrelation.PendingCountForTests == 0 && fallbacks == 0,
+                QuickMilitaryAidRaidCorrelation.PendingCountForTests == 0
+                    && fallbacks == 0 && genericSubmissions == 0,
                 "The successful permit did not consume its staged generic friendly raid.");
 
             // Modded reverse order: a second exact success is page-deduped but still owns its source;
@@ -211,12 +221,86 @@ namespace PawnDiary.RimTests
             scope.RequireNoNewEvent(() => permit.Notify_Used());
             PawnDiaryRimTestScope.Require(QuickMilitaryAidRaidCorrelation.RecentOwnerCountForTests == 1,
                 "The reverse-order permit owner was not retained briefly.");
-            PawnDiaryRimTestScope.Require(QuickMilitaryAidRaidCorrelation.TryStageOrSuppress(
-                    BuildFriendlyRaid(faction), Find.TickManager.TicksGame, DiaryRoyaltyPolicy.Snapshot())
-                    && QuickMilitaryAidRaidCorrelation.PendingCountForTests == 0
+            FireFriendlyRaidProductionPostfix(faction);
+            PawnDiaryRimTestScope.Require(QuickMilitaryAidRaidCorrelation.PendingCountForTests == 0
                     && QuickMilitaryAidRaidCorrelation.RecentOwnerCountForTests == 0
-                    && fallbacks == 0,
+                    && fallbacks == 0 && genericSubmissions == 0,
                 "A reverse-order quick-aid raid escaped its exact permit owner.");
+        }
+
+        /// <summary>The XML master leaves quick aid with the existing generic raid owner.</summary>
+        [Test]
+        public static void MasterPolicyDisabledLeavesQuickAidWithGenericRaidOwner()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(MasterPolicyDisabledLeavesQuickAidWithGenericRaidOwner))) return;
+            int genericSubmissions = 0;
+            RaidExecutePatch.SetRaidSubmitOverrideForTests(_ => genericSubmissions++);
+            livePolicy.enabled = false;
+
+            FireFriendlyRaidProductionPostfix(RequireEmpire());
+
+            PawnDiaryRimTestScope.Require(genericSubmissions == 1
+                    && QuickMilitaryAidRaidCorrelation.PendingCountForTests == 0,
+                "A master-disabled Royalty policy swallowed or staged the mature RaidFriendly story.");
+        }
+
+        /// <summary>A disabled permit output group still owns its exact source and prevents a duplicate raid.</summary>
+        [Test]
+        public static void DisabledPermitGroupStillClaimsQuickAidSource()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(DisabledPermitGroupStillClaimsQuickAidSource))) return;
+            Faction faction = RequireEmpire();
+            RoyalTitlePermitDef def = RequirePermit("CallMilitaryAidSmall");
+            AddRoyalTitleFixture(faction, def.minTitle);
+            FactionPermit permit = AddPermitFixture(def, faction);
+            scope.SpawnAsLiveColonist(pawn);
+            pawn.royalty.GetPermit(def, faction);
+            PawnDiaryMod.Settings.SetGroupEnabled("royalPermitDramatic", false);
+            int genericSubmissions = 0;
+            RaidExecutePatch.SetRaidSubmitOverrideForTests(_ => genericSubmissions++);
+
+            FireFriendlyRaidProductionPostfix(faction);
+            PawnDiaryRimTestScope.Require(QuickMilitaryAidRaidCorrelation.PendingCountForTests == 1
+                    && genericSubmissions == 0,
+                "The disabled output group prevented its healthy source owner from staging quick aid.");
+            scope.RequireNoNewEvent(() => permit.Notify_Used());
+            PawnDiaryRimTestScope.Require(QuickMilitaryAidRaidCorrelation.PendingCountForTests == 0
+                    && genericSubmissions == 0,
+                "A disabled permit page leaked the same action into the generic friendly-raid owner.");
+        }
+
+        /// <summary>The compatibility fallback is non-reentrant and treats scan truncation as ambiguity.</summary>
+        [Test]
+        public static void FallbackOwnerScanIsNonReentrantAndCapSafe()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(FallbackOwnerScanIsNonReentrantAndCapSafe))) return;
+            Faction faction = RequireEmpire();
+            RoyalTitlePermitDef def = RequirePermit("CallOrbitalStrike");
+            AddRoyalTitleFixture(faction, def.minTitle);
+            FactionPermit permit = AddPermitFixture(def, faction);
+            scope.SpawnAsLiveColonist(pawn);
+            Pawn extra = scope.CreateAdultColonist();
+            scope.SpawnAsLiveColonist(extra);
+            RoyaltyPolicySnapshot policy = CopyPolicyForRuntimeTest(DiaryRoyaltyPolicy.Snapshot());
+            policy.maximumPermitFallbackPawns = 2;
+            policy.maximumPermitOwnersPerSession = 4;
+            policy.permitOwnerCacheTicks = 2500;
+
+            RoyalPermitOwnerCache.Reset();
+            RoyalPermitOwnerCache.SetFallbackPawnsOverrideForTests(new[] { pawn });
+            RoyalPermitOwnerResolution exact = RoyalPermitOwnerCache.Resolve(
+                permit, Find.TickManager.TicksGame, policy);
+            PawnDiaryRimTestScope.Require(exact != null && ReferenceEquals(exact.pawn, pawn),
+                "The compatibility fallback could not prove the exact list-owned permit.");
+            PawnDiaryRimTestScope.Require(RoyalPermitOwnerCache.SessionCountForTests == 0,
+                "Fallback ownership re-entered the patched GetPermit observer and mutated its cache.");
+
+            RoyalPermitOwnerCache.Reset();
+            policy.maximumPermitFallbackPawns = 1;
+            RoyalPermitOwnerCache.SetFallbackPawnsOverrideForTests(new[] { pawn, extra });
+            PawnDiaryRimTestScope.Require(RoyalPermitOwnerCache.Resolve(
+                    permit, Find.TickManager.TicksGame, policy) == null,
+                "A truncated fallback scan selected from partial evidence instead of failing closed.");
         }
 
         /// <summary>Expiry and cap overflow return every unclaimed raid to the original owner in order.</summary>
@@ -284,6 +368,7 @@ namespace PawnDiary.RimTests
         [Test]
         public static void RoyaltyInactivePathIsSilent()
         {
+            RequirePermitPromptStudioAvailability();
             if (ModsConfig.RoyaltyActive)
             {
                 Log.Message("[Pawn Diary RimTest] SKIP RoyaltyInactivePathIsSilent: Royalty is active.");
@@ -381,6 +466,45 @@ namespace PawnDiary.RimTests
             return signal;
         }
 
+        private static void FireFriendlyRaidProductionPostfix(Faction faction)
+        {
+            IncidentDef def = DefDatabase<IncidentDef>.GetNamedSilentFail("RaidFriendly");
+            IncidentWorker worker = def?.Worker;
+            PawnDiaryRimTestScope.Require(worker is IncidentWorker_RaidFriendly,
+                "RaidFriendly did not expose the exact production IncidentWorker_RaidFriendly.");
+            RaidExecutePatch.Postfix(
+                worker,
+                new IncidentParms
+                {
+                    target = Find.CurrentMap,
+                    faction = faction,
+                    points = 100f,
+                    raidArrivalModeForQuickMilitaryAid = true
+                },
+                true);
+        }
+
+        private static void RequirePermitPromptStudioAvailability()
+        {
+            MethodInfo method = typeof(PawnDiaryMod).GetMethod(
+                "EventPromptDefsForSettings", BindingFlags.Static | BindingFlags.NonPublic);
+            List<DiaryEventPromptDef> visible = method?.Invoke(null, null) as List<DiaryEventPromptDef>;
+            PawnDiaryRimTestScope.Require(visible != null,
+                "The Prompt Studio event-policy availability seam was unavailable.");
+            string[] defNames =
+            {
+                "DiaryEventPrompt_RoyalPermit", "DiaryEventPrompt_RoyalPermitMilitaryAid",
+                "DiaryEventPrompt_RoyalPermitTransportShuttle", "DiaryEventPrompt_RoyalPermitOrbitalStrike",
+                "DiaryEventPrompt_RoyalPermitOrbitalSalvo"
+            };
+            for (int i = 0; i < defNames.Length; i++)
+            {
+                bool shown = visible.Any(def => def != null && def.defName == defNames[i]);
+                PawnDiaryRimTestScope.Require(shown == ModsConfig.RoyaltyActive,
+                    defNames[i] + " Prompt Studio availability did not match the active Royalty package.");
+            }
+        }
+
         private static RoyaltyPolicySnapshot CopyPolicyForRuntimeTest(RoyaltyPolicySnapshot source)
         {
             // Only arbitration windows/caps are read by this fixture; do not mutate the cached Def snapshot.
@@ -388,7 +512,10 @@ namespace PawnDiary.RimTests
             {
                 quickAidCorrelationTicks = source.quickAidCorrelationTicks,
                 maximumPendingQuickAid = source.maximumPendingQuickAid,
-                maximumRecentQuickAidOwners = source.maximumRecentQuickAidOwners
+                maximumRecentQuickAidOwners = source.maximumRecentQuickAidOwners,
+                maximumPermitFallbackPawns = source.maximumPermitFallbackPawns,
+                maximumPermitOwnersPerSession = source.maximumPermitOwnersPerSession,
+                permitOwnerCacheTicks = source.permitOwnerCacheTicks
             };
         }
 

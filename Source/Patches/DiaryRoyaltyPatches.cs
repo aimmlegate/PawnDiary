@@ -213,13 +213,16 @@ namespace PawnDiary
         private static void PermitGetPostfix(Pawn_RoyaltyTracker __instance, FactionPermit __result)
         {
             if (!RuntimeReady() || __instance?.pawn == null || __result?.Permit == null) return;
-            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
-            if (RoyalPermitPolicy.FamilyFor(__result.Permit.defName, policy).Length == 0) return;
-            DiaryPatchSafety.Run("Royalty.Permit.GetPermit.Postfix", () =>
+            // GetPermit is UI-adjacent. Pass the live inputs as value-tuple state so the defensive
+            // wrapper's non-capturing lambda is cached instead of allocating a closure per lookup.
+            DiaryPatchSafety.Run("Royalty.Permit.GetPermit.Postfix",
+                (tracker: __instance, permit: __result), s =>
             {
+                RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+                if (RoyalPermitPolicy.FamilyFor(s.permit.Permit.defName, policy).Length == 0) return;
                 RoyalPermitOwnerCache.Observe(
-                    __result,
-                    __instance.pawn,
+                    s.permit,
+                    s.tracker.pawn,
                     Find.TickManager?.TicksGame ?? 0,
                     policy);
             });
@@ -231,13 +234,16 @@ namespace PawnDiary
         {
             __state = null;
             if (!RuntimeReady() || __instance?.Permit == null) return;
-            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
-            if (RoyalPermitPolicy.FamilyFor(__instance.Permit.defName, policy).Length == 0) return;
-            __state = new RoyalPermitUsePatchState
+            RoyalPermitUsePatchState captured = new RoyalPermitUsePatchState { tick = -1 };
+            DiaryPatchSafety.Run("Royalty.Permit.NotifyUsed.Prefix",
+                (permit: __instance, captured: captured), s =>
             {
-                usedDuringCooldown = __instance.OnCooldown,
-                tick = Math.Max(0, Find.TickManager?.TicksGame ?? 0)
-            };
+                RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+                if (RoyalPermitPolicy.FamilyFor(s.permit.Permit.defName, policy).Length == 0) return;
+                s.captured.usedDuringCooldown = s.permit.OnCooldown;
+                s.captured.tick = Math.Max(0, Find.TickManager?.TicksGame ?? 0);
+            });
+            if (captured.tick >= 0) __state = captured;
         }
 
         private static void PermitUsedPostfix(
@@ -245,18 +251,19 @@ namespace PawnDiary
             RoyalPermitUsePatchState __state)
         {
             if (__state == null || !RuntimeReady() || __instance == null) return;
-            DiaryPatchSafety.Run("Royalty.Permit.NotifyUsed.Postfix", () =>
+            DiaryPatchSafety.Run("Royalty.Permit.NotifyUsed.Postfix",
+                (permit: __instance, state: __state), s =>
             {
                 RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
                 RoyalPermitOwnerResolution owner = RoyalPermitOwnerCache.Resolve(
-                    __instance, __state.tick, policy);
+                    s.permit, s.state.tick, policy);
                 if (owner == null) return;
                 RoyalPermitUseSnapshot use;
                 if (DlcContext.TryCaptureRoyalPermitUse(
-                    __instance,
+                    s.permit,
                     owner.candidate,
-                    __state.usedDuringCooldown,
-                    __state.tick,
+                    s.state.usedDuringCooldown,
+                    s.state.tick,
                     out use))
                     DiaryGameComponent.Instance?.ObserveRoyalPermitUse(owner.pawn, use);
             });

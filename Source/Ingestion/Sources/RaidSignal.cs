@@ -166,6 +166,9 @@ namespace PawnDiary.Ingestion
     {
         private sealed class PendingRaid
         {
+            // Retaining the original signal also retains its live Map. This is intentional and
+            // tightly bounded: the XML window defaults to one second, caps bound the list, pre-save
+            // returns every signal, and FinalizeInit resets cross-game state.
             public RoyalQuickAidSnapshot snapshot;
             public RaidFanoutSignal signal;
         }
@@ -220,6 +223,9 @@ namespace PawnDiary.Ingestion
             if (use == null || policy == null
                 || use.permitFamilyToken != RoyalPermitFamilyTokens.MilitaryAid) return false;
             int now = Math.Max(0, tick);
+            // This can synchronously return older expired signals through DiaryEvents.Submit while
+            // inside the permit postfix. FlushExpired removes each row before dispatch, so re-entry
+            // cannot observe or release the same pending raid twice.
             FlushExpired(now, policy);
             for (int i = pending.Count - 1; i >= 0; i--)
             {

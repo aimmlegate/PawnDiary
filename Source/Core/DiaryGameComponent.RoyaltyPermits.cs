@@ -23,9 +23,12 @@ namespace PawnDiary
                 use, policy.enabled, outputEnabled);
             if (!decision.recognized) return;
 
-            // Ownership is source truth, not output truth. A disabled permit group must not leak a
-            // second generic RaidFriendly story for the same action.
-            if (decision.familyToken == RoyalPermitFamilyTokens.MilitaryAid)
+            // Ownership is source truth, not group-output truth. A disabled permit group must not
+            // leak a second generic RaidFriendly story for the same action. The XML master is an
+            // integration-health gate, however: when it is off, leave any already-staged raid to
+            // expire back to the mature generic owner instead of silently consuming both stories.
+            // Claim's bool reports whether a raid was found; it never controls the permit page.
+            if (policy.enabled && decision.familyToken == RoyalPermitFamilyTokens.MilitaryAid)
                 QuickMilitaryAidRaidCorrelation.Claim(use, use.tick, policy);
             DiaryEvents.Submit(new RoyalPermitSignal(pawn, use, policy, group));
         }

@@ -336,7 +336,7 @@ namespace PawnDiary
             }
 
             return defs
-                .Where(def => def != null)
+                .Where(def => def != null && !def.MissingRequiredPackage())
                 .OrderBy(EventPromptLabelForUi)
                 .ToList();
         }

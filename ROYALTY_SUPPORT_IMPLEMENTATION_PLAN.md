@@ -16,11 +16,11 @@ same-tick title-edge dedup defect plus one Phase-3 mod-profile-sensitive fixture
 expanded the suite; its user-confirmed loaded rerun passed 256/256. Hands-on acceptance remains
 pending. Phase 5 succession is code-complete with pure/build coverage and compiled loaded fixtures;
 after correcting three disposable-pawn liveness gaps, its user-confirmed loaded rerun passed 267/267.
-Its hands-on matrix remains pending. Phase 6 dramatic permits are code-complete with pure tests,
-runtime/RimTest builds, XML/prompts/localization, and eight compiled loaded fixtures. The installed
+   Its hands-on matrix remains pending. Phase 6 dramatic permits are code-complete with pure tests,
+   runtime/RimTest builds, XML/prompts/localization, and eleven compiled loaded fixtures. The installed
 1.6 audit confirms `FactionPermit.Notify_Used()` is the successful-use edge and quick military aid's
 successful `RaidFriendly` precedes it; exact faction+map stage/claim/expiry arbitration preserves the
-existing raid fallback. The 275-test loaded assembly has not yet been run, so Phase 6 loaded/manual
+   existing raid fallback. The 278-test loaded assembly has not yet been run, so Phase 6 loaded/manual
 acceptance and R2 remain open. Phases 7–8 remain. This status does not pass,
 waive, or remove any earlier Biotech B1 manual
 acceptance row.
@@ -1560,13 +1560,18 @@ Exit gate: all succession claims name only relationships vanilla reported exactl
 > before `Notify_Used`. The implementation adds detached permit contracts, deterministic allowlist/
 > owner/family/quick-aid policy, XML windows/caps/mappings, guarded main-thread collection, exact
 > manually registered Royalty hooks, one `RoyalPermit` catalog/signal/domain/group, four invocation-
-> only prompt policies, append-only SoloImportant fields 117–122, and English/Russian localization.
+> only prompt policies, package-aware Prompt Studio visibility, append-only SoloImportant fields
+> 117–122, and English/Russian localization.
 > Bounded weak owner state and faction+map quick-aid stage/claim/reverse-order/expiry arbitration reset
 > at `FinalizeInit`; overflow, expiry, backwards clocks, and pre-save return the original
-> `RaidFanoutSignal` to its existing owner. No Scribe key or DLC dependency was added. Pure suites pass
-> 421 Royalty, 2,645 pipeline, and 680 capture assertions; runtime and 275-test RimTest assemblies
-> build. Eight loaded fixtures cover exact hooks, all four families, real rejected targeting,
-> cancelled intent, all exclusions, repeats, raid ownership/fallback, save/load reset, and no-Royalty
+> `RaidFanoutSignal` to its existing owner. Master-disabled policy leaves quick aid with that generic
+> owner; group-disabled output still consumes a matched permit source. Fallback ownership reads exact
+> permit references without re-entering the patched lookup and fails closed when its scan cap is
+> reached. No Scribe key or DLC dependency was added. Pure suites pass 431 Royalty, 2,650 pipeline,
+> and 680 capture assertions; runtime and 278-test RimTest assemblies build. Eleven loaded fixtures
+> cover exact hooks, all four families, real rejected targeting, cancelled intent, all exclusions,
+> repeats, production raid ownership/fallback, master/group policy, cap-safe non-reentrant fallback
+> lookup, Prompt Studio package visibility, save/load reset, and no-Royalty
 > silence, but they have not yet run in game. Phase-2–5 hands-on matrices remain open.
 
 1. Add the pure permit policy and its deterministic tests.

@@ -23,8 +23,19 @@ namespace PawnDiary
             candidate = null;
             if (!ModsConfig.RoyaltyActive || pawn?.royalty == null || permit?.Permit == null
                 || permit.Faction == null) return false;
-            FactionPermit owned = pawn.royalty.GetPermit(permit.Permit, permit.Faction);
-            if (!ReferenceEquals(owned, permit)) return false;
+            // Do not call Pawn_RoyaltyTracker.GetPermit here. Pawn Diary patches that method to
+            // observe ownership, so using it while resolving a cache miss would re-enter and mutate
+            // the same owner cache. The tracker's public list is the underlying source GetPermit
+            // searches; an exact reference match proves the same ownership without another callback.
+            List<FactionPermit> ownedPermits = pawn.royalty.AllFactionPermits;
+            bool ownsExactPermit = false;
+            for (int i = 0; i < (ownedPermits == null ? 0 : ownedPermits.Count); i++)
+            {
+                if (!ReferenceEquals(ownedPermits[i], permit)) continue;
+                ownsExactPermit = true;
+                break;
+            }
+            if (!ownsExactPermit) return false;
 
             RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
             Map map = pawn.MapHeld;

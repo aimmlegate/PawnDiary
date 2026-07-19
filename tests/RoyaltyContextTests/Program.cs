@@ -95,6 +95,10 @@ namespace RoyaltyContextTests
                 normalized[0].familyToken);
             AssertEqual("mapping second order", "Second", normalized[1].permitDefName);
             AssertEqual("null mappings no-op", 0, RoyalPermitPolicy.NormalizeMappings(null, 2).Count);
+            AssertEqual("invalid zero mapping cap uses safe fallback", 3,
+                RoyalPermitPolicy.NormalizeMappings(rows, 0).Count);
+            AssertEqual("oversized mapping cap uses safe fallback", 3,
+                RoyalPermitPolicy.NormalizeMappings(rows, 129).Count);
 
             RoyalPermitOwnerCandidate oldOwner = PermitOwner("Pawn_A", 10);
             oldOwner.ownerPawnName = "Zed";
@@ -104,6 +108,10 @@ namespace RoyaltyContextTests
                 new List<RoyalPermitOwnerCandidate> { oldOwner, newOwner }, 4).ownerPawnName);
             AssertTrue("owner ordering is stable", RoyalPermitPolicy.SelectOwner(
                 new List<RoyalPermitOwnerCandidate> { newOwner, oldOwner }, 4).ownerPawnName == "Ada");
+            RoyalPermitOwnerCandidate sameTickZed = PermitOwner("Pawn_A", 20);
+            sameTickZed.ownerPawnName = "Zed";
+            AssertEqual("same-tick owner tie-break is ordinal", "Ada", RoyalPermitPolicy.SelectOwner(
+                new List<RoyalPermitOwnerCandidate> { sameTickZed, newOwner }, 4).ownerPawnName);
             AssertTrue("two distinct owners are ambiguous", RoyalPermitPolicy.SelectOwner(
                 new List<RoyalPermitOwnerCandidate> { oldOwner, PermitOwner("Pawn_B", 30) }, 4) == null);
             AssertTrue("distinct-owner cap overflow fails closed", RoyalPermitPolicy.SelectOwner(
@@ -121,6 +129,11 @@ namespace RoyaltyContextTests
             AssertNotNull("allowed permit builds exact use", use);
             AssertEqual("permit owner copied", "Pawn_A", use.ownerPawnId);
             AssertTrue("cooldown fact copied", use.usedDuringCooldown);
+            owner.ownerPawnName = "Ada;\r\nNorth";
+            RoyalPermitUseSnapshot sanitizedOwnerUse = RoyalPermitPolicy.BuildUse(
+                owner, "CallMilitaryAidSmall", "call trooper squad", false, 101, policy);
+            AssertEqual("permit owner name sanitizes delimiters and newlines", "Ada,  North",
+                sanitizedOwnerUse.ownerPawnName);
             AssertTrue("excluded permit builds no use", RoyalPermitPolicy.BuildUse(
                 owner, "SteelDrop", "steel drop", false, 101, policy) == null);
             AssertTrue("mismatched cached permit builds no use", RoyalPermitPolicy.BuildUse(
@@ -179,6 +192,12 @@ namespace RoyaltyContextTests
                 !RoyalPermitPolicy.MatchesQuickAid(wrongFaction, use, 101, 60));
             AssertTrue("expired quick aid not claimed",
                 !RoyalPermitPolicy.MatchesQuickAid(raid, use, 161, 60));
+            use.tick = 159;
+            AssertTrue("last tick inside quick-aid window matches",
+                RoyalPermitPolicy.MatchesQuickAid(raid, use, 159, 60));
+            use.tick = 160;
+            AssertTrue("quick-aid expiry boundary does not match",
+                !RoyalPermitPolicy.MatchesQuickAid(raid, use, 160, 60));
             AssertTrue("expiry boundary flushes", RoyalPermitPolicy.QuickAidExpired(100, 160, 60));
             AssertTrue("inside expiry window stays pending", !RoyalPermitPolicy.QuickAidExpired(100, 159, 60));
             AssertTrue("backwards clock expires transient", RoyalPermitPolicy.QuickAidExpired(100, 99, 60));
@@ -187,6 +206,18 @@ namespace RoyaltyContextTests
             raid.tick = 101;
             AssertTrue("reverse callback order suppresses same quick aid",
                 RoyalPermitPolicy.MatchesRecentOwner(use, raid, 60));
+            raid.tick = 159;
+            AssertTrue("reverse callback last tick inside window matches",
+                RoyalPermitPolicy.MatchesRecentOwner(use, raid, 60));
+            raid.tick = 160;
+            AssertTrue("reverse callback expiry boundary does not match",
+                !RoyalPermitPolicy.MatchesRecentOwner(use, raid, 60));
+            raid.tick = 100;
+            AssertTrue("nonpositive correlation window safely allows same tick",
+                RoyalPermitPolicy.MatchesRecentOwner(use, raid, 0));
+            raid.tick = 101;
+            AssertTrue("nonpositive correlation window expires next tick",
+                !RoyalPermitPolicy.MatchesRecentOwner(use, raid, 0));
             use.permitFamilyToken = RoyalPermitFamilyTokens.TransportShuttle;
             AssertTrue("nonmilitary permit cannot claim quick aid",
                 !RoyalPermitPolicy.MatchesRecentOwner(use, raid, 60));
