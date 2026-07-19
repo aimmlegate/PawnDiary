@@ -84,14 +84,19 @@ namespace PawnDiary
 
         public static void Maintain(int nowTick, int correlationTicks)
         {
-            List<ThoughtSignal> released = new List<ThoughtSignal>();
+            if (Pending.Count == 0 && Recent.Count == 0) return;
+            List<ThoughtSignal> released = null;
             for (int i = Pending.Count - 1; i >= 0; i--)
             {
                 PendingThought row = Pending[i];
                 if (row?.fact != null && !RoyalTitleThoughtOwnershipPolicy.IsExpired(
                     row.fact.tick, nowTick, correlationTicks)) continue;
                 Pending.RemoveAt(i);
-                if (row?.signal != null) released.Add(row.signal);
+                if (row?.signal != null)
+                {
+                    if (released == null) released = new List<ThoughtSignal>();
+                    released.Add(row.signal);
+                }
             }
             for (int i = Recent.Count - 1; i >= 0; i--)
             {
@@ -99,11 +104,32 @@ namespace PawnDiary
                 if (row == null || RoyalTitleThoughtOwnershipPolicy.IsExpired(
                     row.tick, nowTick, correlationTicks)) Recent.RemoveAt(i);
             }
+            if (released == null) return;
             released.Reverse();
             for (int i = 0; i < released.Count; i++)
             {
                 ThoughtSignal captured = released[i];
                 DiaryPatchSafety.Run("RoyalTitleThoughtCorrelation.Release",
+                    () => DiaryEvents.Submit(captured));
+            }
+        }
+
+        /// <summary>
+        /// Releases every unmatched live signal before a save. The ownership cache stays transient,
+        /// but an ordinary Thought page must not disappear merely because the player saved during its
+        /// short correlation window.
+        /// </summary>
+        public static void FlushPending()
+        {
+            if (Pending.Count == 0) return;
+            List<ThoughtSignal> released = new List<ThoughtSignal>();
+            for (int i = 0; i < Pending.Count; i++)
+                if (Pending[i]?.signal != null) released.Add(Pending[i].signal);
+            Pending.Clear();
+            for (int i = 0; i < released.Count; i++)
+            {
+                ThoughtSignal captured = released[i];
+                DiaryPatchSafety.Run("RoyalTitleThoughtCorrelation.FlushPending",
                     () => DiaryEvents.Submit(captured));
             }
         }

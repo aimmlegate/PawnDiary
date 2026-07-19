@@ -125,8 +125,8 @@ one window, `Gleaming` maps to none, localized fallbacks exist, and the three ex
 bounded source evidence. The EVT-22 RimTest fixture exercises the live package-gated page/evidence
 path when Anomaly is active and the no-op branch otherwise.
 
-Master Wave 5 / Royalty Phases 0–3 plus N3-R evidence use `RoyaltyContextTests`, now a
-245-assertion assembly-free suite. It
+Master Wave 5 / Royalty Phases 0–4 plus N3-R evidence use `RoyaltyContextTests`, now a
+316-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing
 Narrative Continuity `bond_lifecycle`/`weapon` contract; formation/load-baseline/re-equip,
 pending/threshold/unobservable separation, recorded/unrecorded recovery, destruction/death/transfer,
@@ -145,8 +145,9 @@ weapon validation for provider facts, and persistence of steady-primary observat
 N3-R adds exact pawn title-transition evidence, authority/status/duty/death topic boundaries, major
 loss salience, and rejection of no-change/malformed rows. `PawnDiaryRoyaltyStateFixtureTests` compiles
 against RimTest Redux and exercises deep persona Scribe
-round-trip, per-pawn faction-title/psylink preservation, old-save version-zero versus initialized-empty
-markers, observation availability, transient ownership reset, and guarded no-Royalty
+round-trip, every nested per-pawn faction/title/label/seniority/tick field plus psylink preservation,
+the component's actual persona-ledger keys for old-save version-zero versus initialized-empty markers,
+observation availability, transient ownership reset, and guarded no-Royalty
 persona/title/psylink collection. Building that fixture is not a claim
 that it was executed inside a loaded game; that acceptance remains explicit.
 
@@ -190,16 +191,19 @@ rerun passed 244/244 on 2026-07-19. Phase 3 automated loaded coverage is therefo
 rows remain required; neither Phase 2 nor Phase 3 is manually acceptance-complete, and R1 remains
 open until Phase 4 passes.
 
-Phase 4 expands the pure Royalty matrix to 287 passing assertions: exact gained/promoted/demoted/lost/
+Phase 4 expands the pure Royalty matrix to 316 passing assertions: exact gained/promoted/demoted/lost/
 no-op classification, same-label faction distinction, hook/scanner observation advancement, vanished-
 faction loss, disabled-output no replay, bestowing/anima/neuroformer/unknown routing, wrong-owner
-rejection, one-shot expiry, title-thought ownership, and compact/malformed/oversized context. Pipeline
+rejection, bounded active/pending admission, missing-pawn expiry, master/group-disabled consumption,
+one-shot expiry, title-thought ownership, combined title/psylink selection, and compact/malformed/
+oversized context. Pipeline
 coverage passes 2,437 assertions and pins exact groups/prompts, append-only SoloImportant fields
 107–112, English/Russian labels and fixtures, required/optional context-detail routing, and compact
 projection. Capture-policy and Narrative Continuity remain green at 665 and 125 assertions.
 `PawnDiaryRoyaltyProgressionFlowTests` now compiles loaded fixtures for real `SetTitle` promotion/loss,
-scanner loss/no-catch-up, bestowing/anima ritual ownership, neuroformer cause, unmatched title-memory
-release, and no-Royalty silence; `PawnDiaryRoyaltyFlowTests` audits all four exact new Harmony seams.
+scanner loss/no-catch-up, target-only bestowing/anima ritual ownership, real neuroformer-comp use,
+group/policy-master suppression, unmatched title-memory expiry and production pre-save Scribe reload,
+and no-Royalty silence; `PawnDiaryRoyaltyFlowTests` audits all four exact new Harmony seams.
 The first Phase-4 loaded-game run reached 249/252. One exact Harmony postfix parameter-name mismatch
 disabled the title callback and caused both the hook-audit and real-promotion failures; the remaining
 failure was an outdated four-token ritual-catalog expectation after Phase 4 added two bestowing tokens.
@@ -208,9 +212,10 @@ promotion and loss in the fixture's same paused tick shared the old pawn/faction
 loss was suppressed. Pure tests now pin stable identical-edge keys and distinct same-tick edge keys.
 The other failure was the Phase-3 non-primary death fixture depending on a loaded profile's patched
 equipment-removal semantics; it now arranges the pending bond through the exact Pawn Diary observer.
-The subsequent user-confirmed loaded rerun passed 252/252, so Phase 4 automated loaded coverage is
-green. Every Phase-2/3/4 hands-on row remains open; R1 is therefore code-complete but not yet
-acceptance-complete.
+The subsequent user-confirmed loaded rerun passed 252/252. Adversarial hardening then strengthened
+existing fixtures and expanded the suite; the user-confirmed loaded rerun passed 256/256. Every
+Phase-2/3/4 hands-on row remains open; R1 is
+therefore code-complete but not yet acceptance-complete.
 
 Odyssey has a focused shipped-XML contract in `DiaryPipelineTests`: the departure-only launch ritual
 and exact `GravshipJourney` landing group are Odyssey-package-gated, landing pages are novelty-enabled,

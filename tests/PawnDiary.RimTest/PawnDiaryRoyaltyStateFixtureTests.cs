@@ -2,6 +2,7 @@
 // per-faction observation availability, transient ownership reset, and guarded live collectors.
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using RimTestRedux;
 using Verse;
 
@@ -11,6 +12,16 @@ namespace PawnDiary.RimTests
     [TestSuite]
     public static class PawnDiaryRoyaltyStateFixtureTests
     {
+        private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+        private static readonly MethodInfo FindDiaryMethod =
+            typeof(DiaryGameComponent).GetMethod("FindDiary", PrivateInstance);
+        private static readonly MethodInfo ExposeRoyaltyDataMethod =
+            typeof(DiaryGameComponent).GetMethod("ExposeRoyaltyData", PrivateInstance);
+        private static readonly FieldInfo PersonaObservationVersionField =
+            typeof(DiaryGameComponent).GetField("royaltyPersonaObservationVersion", PrivateInstance);
+        private static readonly FieldInfo PersonaBondsField =
+            typeof(DiaryGameComponent).GetField("royaltyPersonaBonds", PrivateInstance);
+        private static DiaryGameComponent royaltyScribeTarget;
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
 
@@ -126,6 +137,14 @@ namespace PawnDiary.RimTests
                     && royalty.observationAvailable
                     && royalty.titleObservations.Count == 1,
                 "current Royalty per-pawn observation did not survive Scribe.");
+            RoyalTitleObservationState title = royalty.titleObservations[0];
+            Require(title.factionId == "Faction_12"
+                    && title.factionName == "Empire"
+                    && title.titleDefName == "Knight"
+                    && title.titleLabel == "Knight"
+                    && title.seniority == 4
+                    && title.lastObservedTick == 900,
+                "the nested faction/title/label/seniority/tick observation fields changed across Scribe.");
             Require(loaded.progressionState.highestPsylinkLevelRecorded == 3,
                 "Royalty nesting changed the existing psylink scalar.");
 
@@ -147,26 +166,61 @@ namespace PawnDiary.RimTests
                 "legacy scalar title data was not retained for migration compatibility.");
         }
 
-        /// <summary>Global component save keys distinguish missing from initialized-empty persona state.</summary>
+        /// <summary>
+        /// The component's actual ExposeRoyaltyData wiring distinguishes missing from initialized-empty
+        /// persona state; this is not a mirror of the production keys.
+        /// </summary>
         [Test]
         public static void ComponentPersonaMarkerRoundTripsInitializedEmptyAndLegacyMissing()
         {
-            RoyaltyComponentStateMirror initialized = ScribeRoundTrip(new RoyaltyComponentStateMirror
+            Require(ExposeRoyaltyDataMethod != null
+                    && PersonaObservationVersionField != null
+                    && PersonaBondsField != null,
+                "Could not resolve the component's actual Royalty Scribe wiring.");
+            int originalVersion = (int)PersonaObservationVersionField.GetValue(scope.Component);
+            List<PersonaBondState> originalBonds =
+                PersonaBondsField.GetValue(scope.Component) as List<PersonaBondState>;
+            royaltyScribeTarget = scope.Component;
+            try
             {
-                observationVersion = RoyaltyStatePersistence.CurrentPersonaObservationVersion,
-                bonds = new List<PersonaBondState>()
-            });
-            Require(initialized.observationVersion == RoyaltyStatePersistence.CurrentPersonaObservationVersion
-                    && initialized.bonds != null && initialized.bonds.Count == 0,
-                "initialized-empty persona ledger lost its explicit version marker.");
+                PersonaObservationVersionField.SetValue(
+                    scope.Component, RoyaltyStatePersistence.CurrentPersonaObservationVersion);
+                PersonaBondsField.SetValue(scope.Component, new List<PersonaBondState>());
+                ScribeRoundTripWithAfterSave(
+                    new ActualRoyaltyComponentStateAdapter(),
+                    () =>
+                    {
+                        PersonaObservationVersionField.SetValue(scope.Component, 0);
+                        PersonaBondsField.SetValue(scope.Component, null);
+                    });
+                List<PersonaBondState> initializedBonds =
+                    PersonaBondsField.GetValue(scope.Component) as List<PersonaBondState>;
+                Require((int)PersonaObservationVersionField.GetValue(scope.Component)
+                            == RoyaltyStatePersistence.CurrentPersonaObservationVersion
+                        && initializedBonds != null && initializedBonds.Count == 0,
+                    "the actual component wiring lost its initialized-empty persona marker.");
 
-            RoyaltyComponentStateMirror legacy = ScribeRoundTrip(new RoyaltyComponentStateMirror
+                // This adapter deliberately writes no Royalty keys, then invokes the actual component
+                // wiring during load/PostLoadInit to model a pre-Phase-2 save.
+                ScribeRoundTripWithAfterSave(
+                    new LegacyMissingRoyaltyComponentStateAdapter(),
+                    () =>
+                    {
+                        PersonaObservationVersionField.SetValue(scope.Component, -1);
+                        PersonaBondsField.SetValue(scope.Component, null);
+                    });
+                List<PersonaBondState> legacyBonds =
+                    PersonaBondsField.GetValue(scope.Component) as List<PersonaBondState>;
+                Require((int)PersonaObservationVersionField.GetValue(scope.Component) == 0
+                        && legacyBonds != null && legacyBonds.Count == 0,
+                    "missing old-save persona keys did not normalize through actual component wiring.");
+            }
+            finally
             {
-                observationVersion = 0,
-                bonds = null
-            });
-            Require(legacy.observationVersion == 0 && legacy.bonds != null && legacy.bonds.Count == 0,
-                "missing old-save persona keys did not normalize to version-zero empty state.");
+                PersonaObservationVersionField.SetValue(scope.Component, originalVersion);
+                PersonaBondsField.SetValue(scope.Component, originalBonds);
+                royaltyScribeTarget = null;
+            }
         }
 
         /// <summary>
@@ -203,9 +257,9 @@ namespace PawnDiary.RimTests
             Require(completed && RoyalMutationCorrelation.PendingCountForTests == 1,
                 "the ritual mutation fixture did not enter the bounded pending queue.");
 
-            // FinalizeInit calls this same reset after a save finishes loading. No transient owner is
-            // serialized; only the normalized per-pawn observation baseline survives Scribe.
-            RoyaltyTransientState.Reset();
+            // Exercise the real GameComponent lifecycle boundary, not only the underlying reset helper.
+            // No transient owner is serialized; only normalized per-pawn observation truth survives.
+            scope.Component.FinalizeInit();
             Require(RoyalMutationCorrelation.ActiveCountForTests == 0
                     && RoyalMutationCorrelation.PendingCountForTests == 0
                     && RoyalTitleThoughtCorrelation.PendingCountForTests == 0,
@@ -233,23 +287,101 @@ namespace PawnDiary.RimTests
             }
         }
 
-        private sealed class RoyaltyComponentStateMirror : IExposable
+        /// <summary>
+        /// A Royalty-authored save loaded without the DLC uses the narrow LoadedGame lifecycle seam to
+        /// invalidate availability before a paused player can immediately resave without advancing a tick.
+        /// </summary>
+        [Test]
+        public static void RoyaltyOffLoadedGameInvalidatesObservationBeforeFirstTick()
         {
-            public int observationVersion;
-            public List<PersonaBondState> bonds;
+            if (ModsConfig.RoyaltyActive)
+            {
+                Log.Message("[Pawn Diary RimTest] SKIP RoyaltyOffLoadedGameInvalidatesObservationBeforeFirstTick: Royalty is active.");
+                return;
+            }
+            Require(FindDiaryMethod != null, "Could not resolve the private FindDiary test seam.");
+            PawnDiaryRecord diary = FindDiaryMethod.Invoke(
+                scope.Component, new object[] { pawn, true }) as PawnDiaryRecord;
+            Require(diary != null, "Could not seed a Royalty observation on the disposable pawn.");
+            RoyaltyPawnProgressionState royalty = diary.EnsureProgressionState().EnsureRoyaltyState();
+            royalty.observationVersion = RoyaltyStatePersistence.CurrentObservationVersion;
+            royalty.observationAvailable = true;
+            royalty.titleObservations = new List<RoyalTitleObservationState>
+            {
+                new RoyalTitleObservationState
+                {
+                    factionId = "Faction_FormerEmpire",
+                    titleDefName = "FormerTitle",
+                    titleLabel = "Former title",
+                    lastObservedTick = 100
+                }
+            };
 
+            // Calling the whole LoadedGame lifecycle on the developer's live component would clear
+            // unrelated transient queues. Exercise the exact narrow seam that LoadedGame invokes.
+            scope.Component.MarkRoyaltyObservationUnavailable();
+            Require(!royalty.observationAvailable && royalty.titleObservations.Count == 1,
+                "The load-time seam did not invalidate availability while preserving saved title truth.");
+        }
+
+        private sealed class ActualRoyaltyComponentStateAdapter : IExposable
+        {
             public void ExposeData()
             {
-                Scribe_Values.Look(ref observationVersion, RoyaltySaveKeys.PersonaObservationVersion, 0);
-                Scribe_Collections.Look(ref bonds, RoyaltySaveKeys.PersonaBonds, LookMode.Deep);
-                if (Scribe.mode == LoadSaveMode.PostLoadInit)
+                InvokeActualRoyaltyComponentExposeData();
+            }
+        }
+
+        private sealed class LegacyMissingRoyaltyComponentStateAdapter : IExposable
+        {
+            public void ExposeData()
+            {
+                if (Scribe.mode != LoadSaveMode.Saving)
+                    InvokeActualRoyaltyComponentExposeData();
+            }
+        }
+
+        private static void InvokeActualRoyaltyComponentExposeData()
+        {
+            Require(royaltyScribeTarget != null && ExposeRoyaltyDataMethod != null,
+                "The actual Royalty component Scribe adapter has no target.");
+            ExposeRoyaltyDataMethod.Invoke(royaltyScribeTarget, null);
+        }
+
+        private static T ScribeRoundTripWithAfterSave<T>(T original, Action afterSave)
+            where T : class, IExposable
+        {
+            string path = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(),
+                "pawndiary_royalty_component_" + Guid.NewGuid().ToString("N") + ".xml");
+            T loaded = null;
+            try
+            {
+                Scribe.saver.InitSaving(path, "root");
+                T saveRef = original;
+                Scribe_Deep.Look(ref saveRef, "obj");
+                Scribe.saver.FinalizeSaving();
+                afterSave?.Invoke();
+
+                Scribe.loader.InitLoading(path);
+                Scribe.mode = LoadSaveMode.LoadingVars;
+                Scribe_Deep.Look(ref loaded, "obj");
+                Scribe.loader.FinalizeLoading();
+            }
+            finally
+            {
+                if (Scribe.mode != LoadSaveMode.Inactive) Scribe.ForceStop();
+                try
                 {
-                    observationVersion = Math.Max(0, Math.Min(
-                        RoyaltyStatePersistence.CurrentPersonaObservationVersion,
-                        observationVersion));
-                    if (bonds == null) bonds = new List<PersonaBondState>();
+                    if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+                }
+                catch
+                {
+                    // Best-effort temp cleanup must not hide the actual Scribe assertion.
                 }
             }
+            Require(loaded != null, "The component Royalty Scribe adapter loaded null.");
+            return loaded;
         }
 
         private static T ScribeRoundTrip<T>(T original) where T : class, IExposable

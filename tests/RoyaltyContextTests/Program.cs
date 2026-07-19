@@ -26,6 +26,8 @@ namespace RoyaltyContextTests
             TestPhase4FactionObservationEdges();
             TestMutationExactOwnersAndDedup();
             TestMutationExpiryMismatchAndFallback();
+            TestMutationOutputSelectionAndMasterGate();
+            TestMutationRuntimeCorrelationStore();
             TestPhase4RoutesThoughtsAndContext();
             TestPersonaPersistenceBaselinesAndNormalization();
             TestTitleObservationNormalizationAndOrdering();
@@ -905,6 +907,163 @@ namespace RoyaltyContextTests
                 !future.shouldEmitOwnerPage && !future.mutations[0].advanceObservation);
         }
 
+        private static void TestMutationOutputSelectionAndMasterGate()
+        {
+            AssertEqual("title is richer when both mutation routes are enabled",
+                RoyalMutationKindTokens.Title,
+                RoyalMutationPageSelectionPolicy.Select(true, true, true, true, true));
+            AssertEqual("disabled title route preserves enabled psylink route",
+                RoyalMutationKindTokens.Psylink,
+                RoyalMutationPageSelectionPolicy.Select(true, true, false, true, true));
+            AssertEqual("unchanged title preserves enabled psylink route",
+                RoyalMutationKindTokens.Psylink,
+                RoyalMutationPageSelectionPolicy.Select(true, false, true, true, true));
+            AssertEqual("all filtered routes produce no page", string.Empty,
+                RoyalMutationPageSelectionPolicy.Select(true, true, false, true, false));
+            AssertEqual("Royalty master switch suppresses every mutation route", string.Empty,
+                RoyalMutationPageSelectionPolicy.Select(false, true, true, true, true));
+
+            RoyaltyPolicySnapshot policy = Policy(1000);
+            policy.enabled = false;
+            List<RoyalMutationFact> mutations = new List<RoyalMutationFact>
+            {
+                TitleMutation("Pawn_A", "Empire", "Yeoman", "Acolyte", 105, "disabled"),
+                PsylinkMutation("Pawn_A", 1, 2, 106, "disabled")
+            };
+            RoyalMutationCauseScope scope = Scope(
+                RoyalMutationCauseTokens.ImperialBestowing, "Pawn_A", 100, "disabled");
+            scope.factionId = "Empire";
+            scope.previousTitleDefName = "Yeoman";
+            scope.newTitleDefName = "Acolyte";
+            scope.previousPsylinkLevel = 1;
+            scope.newPsylinkLevel = 2;
+            RoyalMutationBatchPlan expired = RoyalMutationOwnershipPolicy.Plan(
+                mutations, scope, 1107, false, true, false, policy);
+            AssertTrue("disabled master still consumes expired truth",
+                expired.fallbackConsumed && expired.mutations.Count == 2);
+            AssertTrue("disabled master never creates an expiry page",
+                !expired.shouldEmitOwnerPage && !expired.shouldEmitFallbackPage);
+        }
+
+        private static void TestMutationRuntimeCorrelationStore()
+        {
+            RoyalMutationCorrelation.Clear();
+            RoyaltyPolicySnapshot policy = Policy(1000);
+            RoyalTitleSnapshot before = Title("Pawn_A", "Empire", "Yeoman", 1);
+            RoyalTitleSnapshot after = Title("Pawn_A", "Empire", "Acolyte", 2);
+
+            RoyalMutationBatchSnapshot batch = RoyalMutationCorrelation.Open(
+                "Pawn_A", "Ari", "Empire", RoyalMutationCauseTokens.ImperialBestowing,
+                100, before, 1, 1);
+            AssertNotNull("exact correlation scope opens", batch);
+            AssertTrue("active cap rejects overflow", RoyalMutationCorrelation.Open(
+                "Pawn_B", "Bea", "Empire", RoyalMutationCauseTokens.ImperialBestowing,
+                100, before, 1, 1) == null);
+            AssertTrue("bestowing title owner matches exact pawn/faction",
+                RoyalMutationCorrelation.HasRicherTitleOwner("Pawn_A", "Empire", 100, 1000));
+            AssertTrue("bestowing title owner includes the expiry boundary",
+                RoyalMutationCorrelation.HasRicherTitleOwner("Pawn_A", "Empire", 1100, 1000));
+            AssertTrue("bestowing title owner rejects wrong pawn and faction",
+                !RoyalMutationCorrelation.HasRicherTitleOwner("Pawn_B", "Empire", 100, 1000)
+                && !RoyalMutationCorrelation.HasRicherTitleOwner("Pawn_A", "Deserters", 100, 1000));
+            AssertTrue("bestowing title owner expires after its window",
+                !RoyalMutationCorrelation.HasRicherTitleOwner("Pawn_A", "Empire", 1101, 1000));
+
+            AssertTrue("completed ritual mutation enters pending ownership",
+                RoyalMutationCorrelation.Complete(
+                    batch,
+                    TitleMutationSnapshot(batch, before, after, 105),
+                    PsylinkMutationSnapshot(batch, 1, 2, 106),
+                    64));
+            AssertTrue("completion moves active to pending",
+                RoyalMutationCorrelation.ActiveCountForTests == 0
+                && RoyalMutationCorrelation.PendingCountForTests == 1);
+            AssertTrue("wrong ritual cause cannot prepare owner",
+                RoyalMutationCorrelation.PrepareRitualOwner(
+                    RoyalMutationCauseTokens.AnimaLinking,
+                    new List<string> { "Pawn_A" }, 110, policy) == null);
+            AssertTrue("wrong ritual candidate cannot prepare owner",
+                RoyalMutationCorrelation.PrepareRitualOwner(
+                    RoyalMutationCauseTokens.ImperialBestowing,
+                    new List<string> { "Pawn_B" }, 110, policy) == null);
+            RoyalMutationBatchSnapshot prepared = RoyalMutationCorrelation.PrepareRitualOwner(
+                RoyalMutationCauseTokens.ImperialBestowing,
+                new List<string> { "Pawn_A" }, 110, policy);
+            AssertTrue("exact ritual owner prepares and claims once",
+                prepared == batch && RoyalMutationCorrelation.ClaimRitual(prepared)
+                && !RoyalMutationCorrelation.ClaimRitual(prepared));
+
+            batch = RoyalMutationCorrelation.Open(
+                "Pawn_A", "Ari", "Empire", RoyalMutationCauseTokens.ImperialBestowing,
+                200, before, 1, 16);
+            AssertTrue("disabled canonical ritual consumes without staging",
+                RoyalMutationCorrelation.Complete(
+                    batch, TitleMutationSnapshot(batch, before, after, 200), null, 64, false)
+                && RoyalMutationCorrelation.PendingCountForTests == 0);
+
+            RoyalTitleSnapshot capBeforeA = Title("Pawn_CapA", "Empire", "Yeoman", 1);
+            RoyalTitleSnapshot capAfterA = Title("Pawn_CapA", "Empire", "Acolyte", 2);
+            RoyalMutationBatchSnapshot capFirst = OpenCompletedTitleBatch(
+                "Pawn_CapA", "Empire", 250, capBeforeA, capAfterA, 1);
+            RoyalTitleSnapshot capBeforeB = Title("Pawn_CapB", "Empire", "Yeoman", 1);
+            RoyalTitleSnapshot capAfterB = Title("Pawn_CapB", "Empire", "Acolyte", 2);
+            RoyalMutationBatchSnapshot capSecond = RoyalMutationCorrelation.Open(
+                "Pawn_CapB", "Cap B", "Empire", RoyalMutationCauseTokens.ImperialBestowing,
+                251, capBeforeB, 0, 16);
+            AssertTrue("pending cap fixture fills its one allowed slot",
+                capFirst != null && capSecond != null
+                && RoyalMutationCorrelation.PendingCountForTests == 1);
+            AssertTrue("pending cap fails closed without retaining overflow",
+                !RoyalMutationCorrelation.Complete(
+                    capSecond, TitleMutationSnapshot(capSecond, capBeforeB, capAfterB, 251), null, 1)
+                && RoyalMutationCorrelation.ActiveCountForTests == 0
+                && RoyalMutationCorrelation.PendingCountForTests == 1);
+            AssertTrue("pending cap fixture claims cleanly",
+                RoyalMutationCorrelation.ClaimRitual(capFirst)
+                && RoyalMutationCorrelation.PendingCountForTests == 0);
+
+            batch = RoyalMutationCorrelation.Open(
+                "Pawn_A", "Ari", "Empire", RoyalMutationCauseTokens.ImperialBestowing,
+                300, before, 1, 16);
+            AssertTrue("enabled ritual stages before master switch",
+                RoyalMutationCorrelation.Complete(
+                    batch, TitleMutationSnapshot(batch, before, after, 300), null, 64));
+            policy.enabled = false;
+            AssertTrue("disabled master refuses ritual attachment",
+                RoyalMutationCorrelation.PrepareRitualOwner(
+                    RoyalMutationCauseTokens.ImperialBestowing,
+                    new List<string> { "Pawn_A" }, 301, policy) == null);
+            AssertTrue("disabled master consumes expired pending mutation without replay",
+                RoyalMutationCorrelation.TakeExpiredFallback("Pawn_A", 1301, true, policy) == null
+                && RoyalMutationCorrelation.PendingCountForTests == 0);
+
+            policy.enabled = true;
+            RoyalMutationBatchSnapshot missing = OpenCompletedTitleBatch(
+                "Pawn_A", "Empire", 400, before, after, 64);
+            RoyalMutationBatchSnapshot eligible = OpenCompletedTitleBatch(
+                "Pawn_B", "Empire", 400,
+                Title("Pawn_B", "Empire", "Yeoman", 1),
+                Title("Pawn_B", "Empire", "Acolyte", 2), 64);
+            RoyalMutationBatchSnapshot youngMissing = OpenCompletedTitleBatch(
+                "Pawn_C", "Empire", 1000,
+                Title("Pawn_C", "Empire", "Yeoman", 1),
+                Title("Pawn_C", "Empire", "Acolyte", 2), 64);
+            AssertTrue("global prune fixtures staged", missing != null && eligible != null
+                && youngMissing != null && RoyalMutationCorrelation.PendingCountForTests == 3);
+            int pruned = RoyalMutationCorrelation.PruneExpiredMissingOwners(
+                new HashSet<string>(StringComparer.Ordinal) { "Pawn_B" }, 1401, policy);
+            AssertTrue("global prune removes only expired missing pawn",
+                pruned == 1 && RoyalMutationCorrelation.PendingCountForTests == 2);
+            AssertTrue("eligible pawn still receives its one expired fallback",
+                RoyalMutationCorrelation.TakeExpiredFallback("Pawn_B", 1401, true, policy) == eligible
+                && RoyalMutationCorrelation.PendingCountForTests == 1);
+            AssertTrue("later global pass removes newly expired missing pawn",
+                RoyalMutationCorrelation.PruneExpiredMissingOwners(
+                    new HashSet<string>(StringComparer.Ordinal), 2001, policy) == 1
+                && RoyalMutationCorrelation.PendingCountForTests == 0);
+            RoyalMutationCorrelation.Clear();
+        }
+
         private static void TestPhase4RoutesThoughtsAndContext()
         {
             RoyaltyPolicySnapshot policy = RoyaltyPolicySnapshot.CreateDefault();
@@ -1152,6 +1311,58 @@ namespace RoyaltyContextTests
                 tick = tick,
                 correlationId = correlation
             };
+        }
+
+        private static RoyalTitleMutationSnapshot TitleMutationSnapshot(
+            RoyalMutationBatchSnapshot batch,
+            RoyalTitleSnapshot before,
+            RoyalTitleSnapshot after,
+            int tick)
+        {
+            return new RoyalTitleMutationSnapshot
+            {
+                pawnId = batch.pawnId,
+                factionId = after?.factionId ?? before?.factionId ?? string.Empty,
+                previousTitle = before,
+                newTitle = after,
+                causeToken = batch.causeToken,
+                tick = tick,
+                correlationId = batch.scope?.correlationId
+            };
+        }
+
+        private static RoyalPsychicMutationSnapshot PsylinkMutationSnapshot(
+            RoyalMutationBatchSnapshot batch,
+            int before,
+            int after,
+            int tick)
+        {
+            return new RoyalPsychicMutationSnapshot
+            {
+                pawnId = batch.pawnId,
+                previousPsylinkLevel = before,
+                newPsylinkLevel = after,
+                causeToken = batch.causeToken,
+                tick = tick,
+                correlationId = batch.scope?.correlationId
+            };
+        }
+
+        private static RoyalMutationBatchSnapshot OpenCompletedTitleBatch(
+            string pawnId,
+            string factionId,
+            int tick,
+            RoyalTitleSnapshot before,
+            RoyalTitleSnapshot after,
+            int maximumPending)
+        {
+            RoyalMutationBatchSnapshot batch = RoyalMutationCorrelation.Open(
+                pawnId, pawnId, factionId, RoyalMutationCauseTokens.ImperialBestowing,
+                tick, before, 0, 16);
+            if (batch == null || !RoyalMutationCorrelation.Complete(
+                batch, TitleMutationSnapshot(batch, before, after, tick), null, maximumPending))
+                return null;
+            return batch;
         }
 
         private static RoyalMutationCauseScope Scope(string cause, string pawnId, int tick, string correlation)

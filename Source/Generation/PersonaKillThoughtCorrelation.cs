@@ -104,6 +104,7 @@ namespace PawnDiary
             // check before touching either correlation list.
             if (!ModsConfig.RoyaltyActive) return false;
             PruneActive(tick);
+            if (Active.Count == 0) return false;
             string pawnId = pawn?.GetUniqueLoadID() ?? string.Empty;
             for (int i = Active.Count - 1; i >= 0; i--)
             {

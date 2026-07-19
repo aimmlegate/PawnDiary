@@ -311,9 +311,13 @@ Do not add seasonal flooding, life support, or Mechhive choices in this wave.
 > its hands-on matrix remains open. Phase 4 now adds defensive exact faction-title/bestowing/anima/
 > neuroformer registration, immediate per-faction observations, loss-aware fallback scanning, bounded
 > ritual/progression ownership, exact title-memory arbitration, XML-owned prompt context, and focused
-> loaded fixtures. Pure suites pass 283 Royalty, 2,437 pipeline, 665 capture-policy, and 125 Narrative
-> Continuity assertions, and both assemblies build. Phase-4 loaded execution and all Phase-2/3/4
-> hands-on matrices remain open, so the R1 release gate and Wave 5 completion are not claimed.
+> loaded fixtures. The initial Phase-4 suite ultimately passed 252/252. Consolidated adversarial
+> hardening then added immediate DLC-off load invalidation, master/group-consistent consumption,
+> per-route combined fallback selection, missing-pawn expiry pruning, retry-safe hook completion, and
+> stronger pure/loaded fixtures. Pure suites pass 316 Royalty, 2,437 pipeline, 665 capture-policy, and
+> 125 Narrative Continuity assertions, and both assemblies build. The user-confirmed expanded loaded
+> suite passes 256/256; all Phase-2/3/4 hands-on matrices remain open, so the R1 release
+> gate and Wave 5 completion are not claimed.
 
 ### Implement in this exact order
 
@@ -322,7 +326,7 @@ Do not add seasonal flooding, life support, or Mechhive choices in this wave.
 3. **Narrative N3-R core (implemented; provider/evidence only)** — persona/title provider plus required bond/identity evidence.
 4. **Royalty 2 (implemented; automated green, manual acceptance pending)** — persona lifecycle pages.
 5. **Royalty 3 (implemented; automated loaded green, manual acceptance pending)** — first consequential kill and death integration through existing owners.
-6. **Royalty 4 (implemented; pure/build green, loaded/manual acceptance pending)** — immediate title/psylink cause correctness and scanner fallback.
+6. **Royalty 4 (implemented; pure/build/expanded loaded green, manual acceptance pending)** — immediate title/psylink cause correctness and scanner fallback.
 
 ### Exit gate
 

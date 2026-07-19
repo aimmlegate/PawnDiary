@@ -439,7 +439,8 @@ as well as the visible page. The first qualifying kill is a vanilla qualifying T
 
 Phase 4 owns exact faction-title edges and title/psylink cause arbitration. Use a fresh eligible pawn
 for each destructive branch. Keep prompt-test mode enabled while inspecting prompts; no model request
-is required. The focused automated loaded suite is green; all manual rows below remain open.
+is required. The expanded automated loaded suite is green at 256/256; all manual rows below remain
+open.
 
 The first loaded-game run on RimWorld 1.6.4871 reached 249/252. Two failures shared one runtime cause:
 Harmony rejected the title postfix's non-vanilla `currentTitle` argument name, so the hook audit and
@@ -449,26 +450,31 @@ Its title loss shared the promotion's old pawn/faction/tick dedup key because th
 both real edges in one tick; the key now includes transition and exact before/after title Def names.
 The other failure was the older non-primary death fixture colliding with another loaded mod's
 equipment-removal patch, so that fixture now establishes the pending state through Pawn Diary's exact
-observer. The subsequent user-confirmed loaded rerun passed 252/252.
+observer. The subsequent user-confirmed loaded rerun passed 252/252. Adversarial hardening then added
+four loaded fixtures and strengthened several existing ones; the expanded user-confirmed rerun passed
+256/256.
 
-- [x] **ASSEMBLY-FREE/BUILD:** Pure suites pass 287 Royalty, 2,437 pipeline, 665 capture-policy, and
+- [x] **ASSEMBLY-FREE/BUILD:** Pure suites pass 316 Royalty, 2,437 pipeline, 665 capture-policy, and
   125 Narrative Continuity assertions; runtime and RimTest assemblies build.
-- [x] **AUTOMATED LOADED:** The 252/252 user-confirmed run covered
+- [x] **PRIOR AUTOMATED LOADED BASELINE:** The 252/252 user-confirmed run covered
   `PawnDiaryRoyaltyProgressionFlowTests`, the exact Royalty hook audit in
   `PawnDiaryRoyaltyFlowTests`, `PawnDiaryRoyaltyStateFixtureTests`, and Royalty Def/prompt smoke tests.
+- [x] **EXPANDED AUTOMATED LOADED RERUN:** All 256 tests passed, including the real neuroformer comp,
+  disabled ritual non-transfer, reverse-order title memory, real lifecycle reset, same-tick loss label,
+  and no-Royalty immediate-load invalidation additions.
 - [ ] **MANUAL LATER:** Perform and record every row below before marking R1 acceptance-complete.
 
 | # | Scenario | Expected result | Regression signal |
 |---:|---|---|---|
 | 1 | Grant a first Empire title, promote it, reduce/demote it, then remove it completely. Include a second faction or same-looking localized title if available. | One exact `RoyalTitleGained`, `RoyalTitlePromoted`, `RoyalTitleDemoted`, and `RoyalTitleLost` page per real edge. Each names the correct faction and exact before/after title; unchanged callbacks are silent. | Generic `RoyalTitleChanged`, label-based rank, wrong faction, missing loss, or repeated scanner page. |
 | 2 | Disable `progressionRoyalTitle`/Progression, change a title, re-enable, and wait through a scanner cadence. | Saved per-faction truth advances while disabled and no catch-up page appears. | Re-enable invents a historical promotion/loss or the saved baseline remains stale. |
-| 3 | Complete an imperial bestowing that grants both title and psylink. | One existing bestowing ritual page carries cause, faction, title before/after, and psylink before/after; no separate title, psylink, or matching title-Thought page. | Missing ritual facts, separate progression/Thought page, or duplicate ritual. |
+| 3 | Complete an imperial bestowing that grants both title and psylink with another eligible attendee present. Repeat once with `ritualRoyal` disabled. | Enabled: the target's one ritual perspective carries cause, faction, title before/after, and psylink before/after; ordinary attendee perspectives remain but do not claim the target mutation; no separate title, psylink, or matching title-Thought page. Disabled: no page and no later Progression/Thought fallback. | Missing target facts, attendee page copying target mutation context, separate progression/Thought page, or a disabled ceremony leaking through another group. |
 | 4 | Complete anima-tree linking. | One existing anima ritual page carries the exact psylink change; no separate `PsylinkLevel` page. | Missing psylink facts or a duplicate progression page. |
 | 5 | Use a neuroformer. | One cause-aware `PsylinkLevel` page with `psylink_cause=neuroformer`; the later scanner is silent. | Unknown cause, no page, or a scanner duplicate. |
-| 6 | Exercise a modded/direct title or psylink mutation that bypasses an exact hook, and separately prevent the expected ritual route from arriving until expiry. | The scanner detects a disappeared faction as exact loss; an expired unclaimed mutation fails open into at most one truthful progression fallback. | Silent title loss, repeated fallback, or a stale pending owner. |
-| 7 | Gain an exact royal-title award/loss memory without a matching title/ritual owner. | After the short correlation window it follows ordinary Thought capture once, unchanged. | Globally suppressed ThoughtDef, permanent pending row, or duplicate Thought. |
+| 6 | Exercise a modded/direct title or psylink mutation that bypasses an exact hook, and separately prevent the expected ritual route from arriving until expiry. Let another pending target die/leave before expiry. | The scanner detects a disappeared faction as exact loss; an eligible expired mutation fails open into at most one truthful enabled progression route; an expired missing-pawn owner is pruned silently. | Silent title loss, repeated/dropped enabled fallback, or a stale missing-pawn owner occupying the cap. |
+| 7 | Gain an exact royal-title award/loss memory without a matching title/ritual owner. Test both correlation expiry and saving inside the window. | After expiry it follows ordinary Thought capture once, unchanged; a pre-expiry save flushes the same ordinary page before serialization. | Globally suppressed ThoughtDef, save/load loss, permanent pending row, or duplicate Thought. |
 | 8 | Save/reload with several faction observations and while a ritual mutation is briefly pending. Also load an old pre-Phase-4 save. | Faction observations/psylink baseline survive. Transient ownership resets at load and never emits a stale fallback; old saves silently baseline without retroactive pages. | Missing faction row, invented loss/gain, stale post-load fallback, or load exception. |
-| 9 | Run Base + Harmony + Pawn Diary with Royalty absent, including save/reload and ordinary Thought/Tale/progression play. | Royalty settings/content remain unavailable or inert; saved Royalty observation is preserved; no missing Def/type/patch error, page, or warning spam. | DLC dependency/XML error, empty snapshot interpreted as title loss, startup exception, or Royalty-only output. |
+| 9 | Run Base + Harmony + Pawn Diary with Royalty absent, including loading a Royalty-authored save, pausing, and immediately resaving before the first tick. Continue ordinary Thought/Tale/progression play. | Royalty settings/content remain unavailable or inert; saved Royalty title/psylink truth is preserved but availability is invalidated during `LoadedGame`; no missing Def/type/patch error, page, or warning spam. | Stale `royaltyObservationAvailable=true` in the immediate resave, empty snapshot interpreted as title loss, startup exception, or Royalty-only output. |
 | 10 | Inspect Full/Balanced/Compact English and Russian prompt previews for all four title edges, bestowing, anima linking, and neuroformer. | Required pawn/cause/faction/title/psylink facts remain; Compact removes optional duty prose first; no IDs/ticks/correlation tokens leak. | Missing central fact, untranslated key, internal identifier, or duty prose displacing before/after truth. |
 
 - [ ] **TODO:** Record exact RimWorld version/build, languages, active mod lists, rows 1–10, prompt

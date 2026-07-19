@@ -282,10 +282,12 @@ namespace PawnDiary
             if (__state == null || !RuntimeReady()) return;
             DiaryPatchSafety.Run("Royalty.Bestowing.Postfix", () =>
             {
+                // Mark closed before any downstream dispatch. If dispatch throws after consuming the
+                // batch, the Harmony finalizer must not retry the same exact mutation boundary.
+                __state.completed = true;
                 if (__state.batch != null)
                     DiaryGameComponent.Instance?.CompleteRoyalMutationCause(
                         __state.batch, __state.pawn, __state.faction);
-                __state.completed = true;
                 PawnDiary.Ingestion.RitualFanoutSignal ritual =
                     PawnDiary.Ingestion.RitualFanoutSignal.CreateRoyalBestowing(
                         __state.bestower, __state.pawn, __state.participants, progress);
@@ -367,10 +369,11 @@ namespace PawnDiary
             if (state == null || state.completed || !RuntimeReady()) return;
             DiaryPatchSafety.Run(patchName, () =>
             {
+                // See BestowingPostfix: completion consumes the active scope, so retries are unsafe.
+                state.completed = true;
                 if (state.batch != null)
                     DiaryGameComponent.Instance?.CompleteRoyalMutationCause(
                         state.batch, state.pawn, state.faction);
-                state.completed = true;
             });
         }
 

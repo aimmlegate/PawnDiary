@@ -105,7 +105,8 @@ namespace PawnDiary
             RoyalMutationBatchSnapshot batch,
             RoyalTitleMutationSnapshot title,
             RoyalPsychicMutationSnapshot psylink,
-            int maximumPending)
+            int maximumPending,
+            bool allowRitualOwner = true)
         {
             if (batch == null || !Active.Remove(batch)) return false;
             batch.titleMutation = Meaningful(title) ? title : null;
@@ -122,6 +123,10 @@ namespace PawnDiary
             bool ritualCause = batch.causeToken == RoyalMutationCauseTokens.ImperialBestowing
                 || batch.causeToken == RoyalMutationCauseTokens.AnimaLinking;
             if (!ritualCause) return true;
+            // When the canonical ritual route (or the Royalty policy as a whole) is disabled, consume
+            // the exact mutation without staging a later Progression fallback. Group settings must not
+            // silently transfer ownership to a different page source.
+            if (!allowRitualOwner) return true;
             int cap = Clamp(maximumPending, 1, 256, 64);
             if (Pending.Count >= cap) return false;
             Pending.Add(batch);
@@ -145,7 +150,7 @@ namespace PawnDiary
             RoyaltyPolicySnapshot effective = policy ?? RoyaltyPolicySnapshot.CreateDefault();
             if ((cause != RoyalMutationCauseTokens.ImperialBestowing
                     && cause != RoyalMutationCauseTokens.AnimaLinking)
-                || candidatePawnIds == null) return null;
+                || candidatePawnIds == null || !effective.enabled) return null;
 
             for (int i = Pending.Count - 1; i >= 0; i--)
             {
@@ -195,6 +200,40 @@ namespace PawnDiary
                 return plan.shouldEmitFallbackPage ? batch : null;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Silently consumes expired ritual batches whose pawn is no longer in the eligible scanner
+        /// set. Without this global pass, dead or departed pawns can retain transient rows forever and
+        /// eventually occupy the whole bounded pending queue.
+        /// </summary>
+        public static int PruneExpiredMissingOwners(
+            ISet<string> eligiblePawnIds,
+            int nowTick,
+            RoyaltyPolicySnapshot policy)
+        {
+            RoyaltyPolicySnapshot effective = policy ?? RoyaltyPolicySnapshot.CreateDefault();
+            int removed = 0;
+            for (int i = Pending.Count - 1; i >= 0; i--)
+            {
+                RoyalMutationBatchSnapshot batch = Pending[i];
+                if (batch == null || batch.claimed)
+                {
+                    Pending.RemoveAt(i);
+                    removed++;
+                    continue;
+                }
+                if (eligiblePawnIds != null && eligiblePawnIds.Contains(batch.pawnId)) continue;
+
+                RoyalMutationBatchPlan plan = RoyalMutationOwnershipPolicy.Plan(
+                    batch.MutationFacts(), batch.scope, nowTick, false, false,
+                    batch.fallbackConsumed, effective);
+                if (!plan.fallbackConsumed) continue;
+                batch.fallbackConsumed = true;
+                Pending.RemoveAt(i);
+                removed++;
+            }
+            return removed;
         }
 
         public static int PendingCountForTests => Pending.Count;

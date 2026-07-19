@@ -35,6 +35,7 @@ namespace PawnDiary
             }
 
             List<Pawn> colonists = SnapshotFreeColonists();
+            MaintainRoyaltyTransientProgression(colonists);
             BaselineRoyaltyStateIfNeeded(colonists);
             for (int i = 0; i < colonists.Count; i++)
             {
@@ -435,96 +436,11 @@ namespace PawnDiary
             }
         }
 
-        private void ScanPsylinkLevel(Pawn pawn, PawnProgressionState state, bool baseline)
-        {
-            // An absent DLC tracker means unavailable data, not a level loss. Preserve the saved
-            // scalar so re-enabling Royalty cannot create a synthetic catch-up increase.
-            if (!ModsConfig.RoyaltyActive) return;
-            int currentLevel = DlcContext.CurrentPsylinkLevel(pawn);
-            int previousLevel = state.highestPsylinkLevelRecorded;
-            ProgressionLevelDecision decision = ProgressionMilestonePolicy.EvaluateLevelIncrease(
-                currentLevel,
-                previousLevel,
-                baseline,
-                1,
-                6);
-            state.highestPsylinkLevelRecorded = decision.newHighestLevel;
-            if (!decision.shouldEmit)
-            {
-                return;
-            }
-
-            string extraContext = "psylink_level=" + decision.levelToEmit
-                + "; previous_psylink_level=" + previousLevel;
-            string psylinkLabel = "PawnDiary.Event.ProgressionPsylinkLabel"
-                .Translate(decision.levelToEmit).Resolve();
-            ProgressionEventData data = ProgressionData(
-                pawn,
-                ProgressionEventData.PsylinkLevelDefName,
-                "psylink",
-                psylinkLabel,
-                previousLevel.ToString(),
-                decision.levelToEmit.ToString(),
-                extraContext);
-            string label = psylinkLabel;
-            string text = "PawnDiary.Event.ProgressionPsylinkText"
-                .Translate(pawn.LabelShortCap, decision.levelToEmit).Resolve();
-            DispatchProgression(pawn, data, label, text, majorArcCandidate: IsMajorArcPsylinkLevel(decision.levelToEmit));
-        }
-
         private void ScanXenotypeChange(Pawn pawn, PawnProgressionState state, bool baseline)
         {
             // Retained as a narrow reflection-compatible wrapper for the existing RimTest fixture.
             // The top-level scanner calls ObserveGeneIdentity directly so disabled output still advances.
             ObserveGeneIdentity(pawn, state, !baseline);
-        }
-
-        private void ScanRoyalTitleChange(Pawn pawn, PawnProgressionState state, bool baseline)
-        {
-            // Empty guarded data while Royalty is inactive is not evidence that a faction title was
-            // lost. The faction-aware observation row remains untouched until Royalty is available.
-            if (!ModsConfig.RoyaltyActive) return;
-            string currentDef = DlcContext.RoyalTitleDefName(pawn);
-            string currentLabel = DlcContext.RoyalTitleLabel(pawn);
-            if (baseline)
-            {
-                state.lastObservedRoyalTitleDefName = currentDef;
-                state.lastObservedRoyalTitleLabel = currentLabel;
-                return;
-            }
-
-            if (!Changed(state.lastObservedRoyalTitleDefName, state.lastObservedRoyalTitleLabel, currentDef, currentLabel))
-            {
-                return;
-            }
-
-            string previousLabel = string.IsNullOrWhiteSpace(state.lastObservedRoyalTitleLabel)
-                ? "none"
-                : state.lastObservedRoyalTitleLabel;
-            state.lastObservedRoyalTitleDefName = currentDef;
-            state.lastObservedRoyalTitleLabel = currentLabel;
-
-            if (string.IsNullOrWhiteSpace(currentLabel))
-            {
-                return;
-            }
-
-            string extraContext = "previous_title=" + previousLabel
-                + "; title=" + currentLabel
-                + "; title_def=" + currentDef;
-            ProgressionEventData data = ProgressionData(
-                pawn,
-                ProgressionEventData.RoyalTitleChangedDefName,
-                "royal_title",
-                currentLabel,
-                previousLabel,
-                currentLabel,
-                extraContext);
-            string label = "PawnDiary.Event.ProgressionRoyalTitleLabel"
-                .Translate(currentLabel).Resolve();
-            string text = "PawnDiary.Event.ProgressionRoyalTitleText"
-                .Translate(pawn.LabelShortCap, previousLabel, currentLabel).Resolve();
-            DispatchProgression(pawn, data, label, text, majorArcCandidate: false);
         }
 
         // Watches the pawn's trait set for newly gained traits. Traits rarely change through a clean
@@ -750,18 +666,6 @@ namespace PawnDiary
             }
 
             return level > 6 ? 6 : level;
-        }
-
-        private static bool Changed(string previousDef, string previousLabel, string currentDef, string currentLabel)
-        {
-            if (!string.IsNullOrWhiteSpace(previousDef) || !string.IsNullOrWhiteSpace(currentDef))
-            {
-                return !string.Equals(previousDef ?? string.Empty, currentDef ?? string.Empty,
-                    StringComparison.OrdinalIgnoreCase);
-            }
-
-            return !string.Equals(previousLabel ?? string.Empty, currentLabel ?? string.Empty,
-                StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool MatchesDefName(List<string> defNames, string defName)

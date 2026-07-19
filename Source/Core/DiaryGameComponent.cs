@@ -305,6 +305,9 @@ namespace PawnDiary
             nextBiotechBirthNamingPollTick = 0;
             BootstrapBiotechFamilyArcsForLoadedSave();
             InvalidateBiotechGeneObservationsWithoutDlc();
+            // Do this synchronously at load, not only on the periodic scanner: a paused game may be
+            // saved again before any tick runs, and must not persist stale "available" DLC state.
+            MarkRoyaltyObservationUnavailable();
             BootstrapOdysseyForLoadedSave();
             // Do NOT BeginSession here: the constructor already started this Game's session and
             // cancelled any requests left over from a previous Game. Loaded events have had their
@@ -348,6 +351,7 @@ namespace PawnDiary
                 // save (the Scribe.Look calls below) — a partial flush is far better than a lost save.
                 try
                 {
+                    FlushRoyalTitleThoughtsBeforeSave();
                     FlushAllInteractionBatches();
                     FlushAllTaleBatches();
                     FlushAllAmbientThoughtNotes();
@@ -449,6 +453,16 @@ namespace PawnDiary
                         "DiaryGameComponent.ExposeData.PostLoad".GetHashCode());
                 }
             }
+        }
+
+        /// <summary>
+        /// Releases title memories whose short ownership window overlaps a save. Kept as a narrow
+        /// component seam so loaded tests can exercise the exact pre-save behavior without invoking
+        /// the rest of LoadedGame/ExposeData against the developer's live transient queues.
+        /// </summary>
+        internal void FlushRoyalTitleThoughtsBeforeSave()
+        {
+            RoyalTitleThoughtCorrelation.FlushPending();
         }
 
         /// <summary>Clears plain static correlation state after every new-game or load boundary.</summary>

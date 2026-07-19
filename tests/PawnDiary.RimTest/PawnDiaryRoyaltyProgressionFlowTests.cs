@@ -65,7 +65,8 @@ namespace PawnDiary.RimTests
             RegisterRoyalCleanup(pawn, faction);
 
             PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", false);
-            pawn.royalty.SetTitle(faction, lower, false, false, false);
+            scope.RequireNoNewEvent(() =>
+                pawn.royalty.SetTitle(faction, lower, false, false, false));
             PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", true);
 
             DiaryEvent promotion = scope.FireAndRequireEvent(
@@ -89,6 +90,13 @@ namespace PawnDiary.RimTests
             RequireContext(loss, "royal_faction_id=" + faction.GetUniqueLoadID());
             RequireContext(loss, "previous_title_def=" + higher.defName);
             RequireContext(loss, "title_def=none");
+            PawnDiaryRimTestScope.Require(promotion.tick == loss.tick,
+                "The same-tick promotion/loss fixture did not preserve distinct transition events.");
+            string lostTitle = DiaryLineCleaner.CleanLine(higher.LabelCap.Resolve());
+            PawnDiaryRimTestScope.Require(loss.interactionLabel != null
+                    && loss.interactionLabel.IndexOf(lostTitle, StringComparison.OrdinalIgnoreCase) >= 0,
+                "The loss header named the absent 'none' title instead of the lost title '"
+                    + lostTitle + "'.");
             scope.RequireNoNewEvent(() =>
                 scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
         }
@@ -156,6 +164,8 @@ namespace PawnDiary.RimTests
             RequireTitlePair(faction, out title, out ignored);
             RegisterRoyalCleanup(pawn, faction);
             Pawn bestower = scope.CreateTrackedPawn(PawnKindDefOf.Colonist, faction);
+            Pawn participant = scope.CreateAdultColonist();
+            HashSet<string> before = SnapshotEventIds();
 
             RoyalMutationBatchSnapshot batch = scope.Component.BeginRoyalMutationCause(
                 pawn, faction, RoyalMutationCauseTokens.ImperialBestowing);
@@ -167,23 +177,94 @@ namespace PawnDiary.RimTests
                 scope.Component.CompleteRoyalMutationCause(batch, pawn, faction));
 
             RitualFanoutSignal signal = RitualFanoutSignal.CreateRoyalBestowing(
-                bestower, pawn, new List<Pawn>(), 1f);
+                bestower, pawn, new List<Pawn> { participant }, 1f);
             PawnDiaryRimTestScope.Require(signal != null,
                 "The loaded bestowing facts did not create the canonical ritual fanout.");
-            HashSet<string> before = SnapshotEventIds();
             scope.Component.Dispatch(signal);
             List<DiaryEvent> emitted = NewEventsSince(before);
-            PawnDiaryRimTestScope.Require(emitted.Count == 1,
-                "Bestowing should create one eligible target page, got " + emitted.Count + ".");
-            DiaryEvent ritual = emitted[0];
+            PawnDiaryRimTestScope.Require(emitted.Count == 2,
+                "Bestowing should retain target/participant ritual perspectives, got "
+                    + emitted.Count + ".");
+            DiaryEvent ritual = emitted.FirstOrDefault(row =>
+                row.initiatorPawnId == pawn.GetUniqueLoadID());
+            DiaryEvent participantRitual = emitted.FirstOrDefault(row =>
+                row.initiatorPawnId == participant.GetUniqueLoadID());
+            PawnDiaryRimTestScope.Require(ritual != null && participantRitual != null,
+                "Bestowing did not preserve distinct target and participant perspectives.");
             PawnDiaryRimTestScope.Require(ritual.interactionDefName == "BestowingCeremony",
                 "Bestowing emitted a non-canonical ritual Def name.");
             RequireContext(ritual, "royal_cause=" + RoyalMutationCauseTokens.ImperialBestowing);
             RequireContext(ritual, "title_def=" + title.defName);
             RequireContext(ritual, "psylink_cause=" + RoyalMutationCauseTokens.ImperialBestowing);
+            PawnDiaryRimTestScope.Require(participantRitual.gameContext == null
+                    || participantRitual.gameContext.IndexOf("royal_cause=", StringComparison.Ordinal) < 0,
+                "An attendee page incorrectly claimed the target's Royalty mutation context.");
             RequireNoProgressionEvents(emitted);
+            PawnDiaryRimTestScope.Require(RoyalTitleThoughtCorrelation.PendingCountForTests == 0,
+                "The enriched bestowing owner left a duplicate title memory pending.");
             scope.RequireNoNewEvent(() =>
                 scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
+        }
+
+        /// <summary>
+        /// Disabling the canonical Royal ritual group consumes an exact bestowing action silently.
+        /// The Royalty policy master also suppresses the canonical bestowing/anima pages themselves.
+        /// Neither path may leave a pending batch, delayed title thought, or later scanner page.
+        /// </summary>
+        [Test]
+        public static void DisabledRoyalRitualDoesNotLeakIntoProgressionOrThoughtFallback()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(DisabledRoyalRitualDoesNotLeakIntoProgressionOrThoughtFallback)))
+                return;
+            Faction faction = RequireEmpire();
+            RoyalTitleDef title;
+            RoyalTitleDef ignored;
+            RequireTitlePair(faction, out title, out ignored);
+            RegisterRoyalCleanup(pawn, faction);
+            PawnDiaryMod.Settings.SetGroupEnabled("ritualRoyal", false);
+
+            scope.RequireNoNewEvent(() =>
+            {
+                RoyalMutationBatchSnapshot batch = scope.Component.BeginRoyalMutationCause(
+                    pawn, faction, RoyalMutationCauseTokens.ImperialBestowing);
+                PawnDiaryRimTestScope.Require(batch != null,
+                    "The disabled-group fixture could not open its exact mutation boundary.");
+                pawn.royalty.SetTitle(faction, title, false, false, false);
+                AddFirstPsylink(pawn);
+                scope.Component.CompleteRoyalMutationCause(batch, pawn, faction);
+            });
+            PawnDiaryRimTestScope.Require(RoyalMutationCorrelation.PendingCountForTests == 0
+                    && RoyalTitleThoughtCorrelation.PendingCountForTests == 0,
+                "A disabled Royal ritual left delayed mutation/thought ownership behind.");
+            PawnDiaryMod.Settings.SetGroupEnabled("ritualRoyal", true);
+            scope.RequireNoNewEvent(() =>
+                scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
+
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            bool originalPolicyEnabled = policy.enabled;
+            policy.enabled = false;
+            try
+            {
+                scope.RequireNoNewEvent(() =>
+                {
+                    RitualFanoutSignal bestowing = RitualFanoutSignal.CreateRoyalBestowing(
+                        pawn, pawn, new List<Pawn>(), 1f);
+                    PawnDiaryRimTestScope.Require(bestowing == null,
+                        "The Royalty policy master left the canonical bestowing page enabled.");
+
+                    RitualFanoutSignal anima = RitualFanoutSignal.CreateTestFixture(
+                        pawn, null, new List<Pawn>(), new List<Pawn>(),
+                        "AnimaTreeLinking", "Anima tree linking", "CompPsylinkable", 1f,
+                        "fixture policy-master anima linking");
+                    PawnDiaryRimTestScope.Require(string.IsNullOrEmpty(anima?.ColonyDedupKey),
+                        "The Royalty policy master left the canonical anima page enabled.");
+                    scope.Component.Dispatch(anima);
+                });
+            }
+            finally
+            {
+                policy.enabled = originalPolicyEnabled;
+            }
         }
 
         /// <summary>Anima linking's psylink change is claimed by its enriched ritual exactly once.</summary>
@@ -214,25 +295,76 @@ namespace PawnDiary.RimTests
                 scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
         }
 
-        /// <summary>A neuroformer owns one immediate, source-aware PsylinkLevel progression page.</summary>
+        /// <summary>The real neuroformer Comp hook owns one immediate source-aware Psylink page.</summary>
         [Test]
-        public static void NeuroformerCreatesOneCauseAwarePsylinkProgression()
+        public static void RealNeuroformerHookCreatesOneCauseAwarePsylinkProgression()
         {
-            if (!RequireRoyaltyOrSkip(nameof(NeuroformerCreatesOneCauseAwarePsylinkProgression))) return;
-            DiaryEvent progression = scope.FireAndRequireEvent(() =>
+            if (!RequireRoyaltyOrSkip(nameof(RealNeuroformerHookCreatesOneCauseAwarePsylinkProgression)))
+                return;
+            PawnDiaryRimTestScope.Require(DiaryRoyaltyPatches.NeuroformerHookReady,
+                "The neuroformer Harmony seam was not registered in the loaded game.");
+            ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail("PsychicAmplifier");
+            Thing neuroformer = def == null ? null : ThingMaker.MakeThing(def);
+            CompUseEffect_InstallImplant comp = neuroformer?.TryGetComp<CompUseEffect_InstallImplant>();
+            PawnDiaryRimTestScope.Require(comp != null,
+                "The real PsychicAmplifier item did not expose CompUseEffect_InstallImplant.");
+            List<Hediff> previousHediffs = new List<Hediff>(pawn.health.hediffSet.hediffs);
+            scope.RegisterCleanup(() =>
             {
-                RoyalMutationBatchSnapshot batch = scope.Component.BeginRoyalMutationCause(
-                    pawn, null, RoyalMutationCauseTokens.Neuroformer);
-                PawnDiaryRimTestScope.Require(batch != null,
-                    "The exact neuroformer coordinator did not open for an eligible user.");
-                AddFirstPsylink(pawn);
-                scope.Component.CompleteRoyalMutationCause(batch, pawn, null);
-            }, ProgressionEventData.PsylinkLevelDefName, pawn, null);
+                if (pawn?.health?.hediffSet?.hediffs == null) return;
+                List<Hediff> added = pawn.health.hediffSet.hediffs
+                    .Where(row => row != null && !previousHediffs.Contains(row)).ToList();
+                for (int i = 0; i < added.Count; i++) pawn.health.RemoveHediff(added[i]);
+            });
+
+            DiaryEvent progression = scope.FireAndRequireEvent(
+                () => comp.DoEffect(pawn),
+                ProgressionEventData.PsylinkLevelDefName, pawn, null);
             RequireContext(progression, "psylink_cause=" + RoyalMutationCauseTokens.Neuroformer);
             RequireContext(progression, "previous_psylink_level=0");
             RequireContext(progression, "psylink_level=1");
+            PawnDiaryRimTestScope.Require(DlcContext.CurrentPsylinkLevel(pawn) == 1,
+                "The real neuroformer call did not install psylink level 1.");
             scope.RequireNoNewEvent(() =>
                 scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
+        }
+
+        /// <summary>A title owner arriving before its memory still suppresses that exact memory.</summary>
+        [Test]
+        public static void ReverseOrderTitleOwnerSuppressesExactLaterMemory()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(ReverseOrderTitleOwnerSuppressesExactLaterMemory))) return;
+            RoyalTitleDef title = DefDatabase<RoyalTitleDef>.AllDefsListForReading.FirstOrDefault(row =>
+                row?.awardThought != null
+                && typeof(Thought_MemoryRoyalTitle).IsAssignableFrom(row.awardThought.thoughtClass));
+            PawnDiaryRimTestScope.Require(title?.awardThought != null,
+                "Royalty loaded no award Thought_MemoryRoyalTitle fixture.");
+            Thought_MemoryRoyalTitle memory = ThoughtMaker.MakeThought(title.awardThought)
+                as Thought_MemoryRoyalTitle;
+            PawnDiaryRimTestScope.Require(memory != null,
+                "The reverse-order title memory did not construct.");
+            memory.titleDef = title;
+            memory.pawn = pawn;
+            int now = Find.TickManager?.TicksGame ?? 0;
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            RoyalTitleThoughtCorrelation.Claim(
+                pawn.GetUniqueLoadID(), string.Empty, title.defName,
+                now, policy.titleThoughtCorrelationTicks);
+            bool suppressed = RoyalTitleThoughtCorrelation.TryStage(
+                new RoyalTitleThoughtSnapshot
+                {
+                    pawnId = pawn.GetUniqueLoadID(),
+                    titleDefName = title.defName,
+                    relationshipToken = RoyalTitleThoughtRelationshipTokens.Award,
+                    tick = now
+                },
+                new ThoughtSignal(pawn, memory),
+                now,
+                policy.titleThoughtCorrelationTicks,
+                policy.maximumPendingTitleThoughts);
+            PawnDiaryRimTestScope.Require(suppressed
+                    && RoyalTitleThoughtCorrelation.PendingCountForTests == 0,
+                "The recent exact title owner did not suppress the later matching memory.");
         }
 
         /// <summary>An unmatched exact royal-title memory is delayed, then released unchanged.</summary>
@@ -286,6 +418,104 @@ namespace PawnDiary.RimTests
             RequireContext(released, "thought=" + title.awardThought.defName);
             PawnDiaryRimTestScope.Require(RoyalTitleThoughtCorrelation.PendingCountForTests == 0,
                 "The released title memory remained pending.");
+        }
+
+        /// <summary>
+        /// An unmatched title memory is released by the component's real pre-save pass, serialized in
+        /// that same Scribe document, and reloadable from the production diaryEvents key.
+        /// </summary>
+        [Test]
+        public static void PendingRoyalTitleMemoryFlushesToOrdinaryThoughtBeforeSave()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(PendingRoyalTitleMemoryFlushesToOrdinaryThoughtBeforeSave))) return;
+            Pawn memoryPawn = scope.CreateAdultColonist();
+            RoyalTitleDef title = DefDatabase<RoyalTitleDef>.AllDefsListForReading.FirstOrDefault(row =>
+                row?.awardThought != null
+                && typeof(Thought_MemoryRoyalTitle).IsAssignableFrom(row.awardThought.thoughtClass));
+            PawnDiaryRimTestScope.Require(title?.awardThought != null,
+                "Royalty loaded no award Thought_MemoryRoyalTitle save-flush fixture.");
+            Thought_MemoryRoyalTitle memory = ThoughtMaker.MakeThought(title.awardThought)
+                as Thought_MemoryRoyalTitle;
+            PawnDiaryRimTestScope.Require(memory != null,
+                "The save-flush royal-title memory did not construct.");
+            memory.titleDef = title;
+            memory.pawn = memoryPawn;
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyThought(memory.def);
+            PawnDiaryRimTestScope.Require(group != null,
+                "The save-flush title memory did not classify into ordinary Thought capture.");
+            PawnDiaryMod.Settings.SetGroupEnabled(group.defName, true);
+            DiarySignalPolicyDef thoughtPolicy = DiarySignalPolicies.ForKey(DiarySignalPolicies.Thought);
+            float originalThreshold = thoughtPolicy.minMoodOffset;
+            thoughtPolicy.minMoodOffset = 0f;
+            scope.RegisterCleanup(() => thoughtPolicy.minMoodOffset = originalThreshold);
+            int now = Find.TickManager?.TicksGame ?? 0;
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            bool staged = RoyalTitleThoughtCorrelation.TryStage(
+                new RoyalTitleThoughtSnapshot
+                {
+                    pawnId = memoryPawn.GetUniqueLoadID(),
+                    titleDefName = title.defName,
+                    relationshipToken = RoyalTitleThoughtRelationshipTokens.Award,
+                    tick = now
+                },
+                new ThoughtSignal(memoryPawn, memory),
+                now,
+                policy.titleThoughtCorrelationTicks,
+                policy.maximumPendingTitleThoughts);
+            PawnDiaryRimTestScope.Require(staged,
+                "The title memory did not enter the pre-save ownership window.");
+
+            DiaryEventRepository reloadedEvents = null;
+            DiaryEvent released = scope.FireAndRequireEvent(
+                () => reloadedEvents = SaveComponentAndReloadEvents(),
+                title.awardThought.defName,
+                memoryPawn,
+                null);
+            RequireContext(released, "thought=" + title.awardThought.defName);
+            PawnDiaryRimTestScope.Require(RoyalTitleThoughtCorrelation.PendingCountForTests == 0,
+                "The pre-save title-memory flush left a pending row.");
+            DiaryEvent reloaded = reloadedEvents?.FindEvent(released.eventId);
+            PawnDiaryRimTestScope.Require(reloaded != null
+                    && reloaded.interactionDefName == title.awardThought.defName
+                    && reloaded.initiatorPawnId == memoryPawn.GetUniqueLoadID(),
+                "The pre-save title-memory page was not serialized/reloaded from diaryEvents.");
+        }
+
+        private static DiaryEventRepository SaveComponentAndReloadEvents()
+        {
+            string path = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(),
+                "pawndiary_royalty_presave_" + Guid.NewGuid().ToString("N") + ".xml");
+            DiaryEventRepository loaded = new DiaryEventRepository();
+            try
+            {
+                Scribe.saver.InitSaving(path, "root");
+                // Exercise the exact narrow pre-save component seam used by ExposeData, then serialize
+                // the production repository key in the same Scribe document. Calling the whole live
+                // component ExposeData here would flush unrelated developer-save transient queues.
+                scope.Component.FlushRoyalTitleThoughtsBeforeSave();
+                EventRepository().ExposeEvents("diaryEvents");
+                Scribe.saver.FinalizeSaving();
+
+                Scribe.loader.InitLoading(path);
+                Scribe.mode = LoadSaveMode.LoadingVars;
+                loaded.ExposeEvents("diaryEvents");
+                Scribe.loader.FinalizeLoading();
+                loaded.RebuildIndex();
+            }
+            finally
+            {
+                if (Scribe.mode != LoadSaveMode.Inactive) Scribe.ForceStop();
+                try
+                {
+                    if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+                }
+                catch
+                {
+                    // Temp cleanup is best-effort; Scribe/event assertions remain authoritative.
+                }
+            }
+            return loaded;
         }
 
         private static void ForceSignalEnabled(string key)

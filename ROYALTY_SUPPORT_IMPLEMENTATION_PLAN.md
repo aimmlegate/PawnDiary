@@ -12,8 +12,9 @@ Its automated loaded coverage is green while the hands-on matrix remains open.
 Phase 4 is now code-complete with pure/build coverage. Its first loaded-game run reached 249/252; the
 second reached 250/252 and confirmed the title-postfix and ritual-token fixes before exposing a
 same-tick title-edge dedup defect plus one Phase-3 mod-profile-sensitive fixture. After those were
-corrected, the user-confirmed loaded rerun passed 252/252. Automated coverage is green while hands-on
-acceptance remains open. Phases 5–8 remain. This status does not pass,
+ corrected, the user-confirmed loaded rerun passed 252/252. Consolidated adversarial hardening then
+expanded the suite; its user-confirmed loaded rerun passed 256/256. Hands-on acceptance remains
+pending. Phases 5–8 remain. This status does not pass,
 waive, or remove any earlier Biotech B1 manual
 acceptance row.
 
@@ -605,7 +606,7 @@ saves, and tests do not depend on localized labels:
 |---|---|
 | Persona lifecycle | `PersonaWeaponBondFormed`, `PersonaWeaponBondSeparated`, `PersonaWeaponBondRecovered`, `PersonaWeaponBondEnded` |
 | Persona tale milestone | `PersonaWeaponFirstConsequentialKill` while `tale_source_def` preserves the actual TaleDef |
-| Title progression | `RoyalTitleGained`, `RoyalTitleReduced`, `RoyalTitleLost`; retain `RoyalTitleChanged` for old saves/fallback compatibility |
+| Title progression | `RoyalTitleGained`, `RoyalTitlePromoted`, `RoyalTitleDemoted`, `RoyalTitleLost`; retain `RoyalTitleChanged` for old saves/fallback compatibility |
 | Succession | `RoyalSuccession`, `RoyalHeirAppointed` |
 | Permits | `RoyalPermitMilitaryAid`, `RoyalPermitTransportShuttle`, `RoyalPermitOrbitalStrike`, `RoyalPermitOrbitalSalvo` |
 | Royal Ascent | keep the actual quest root `EndGame_RoyalAscent` |
@@ -1166,7 +1167,7 @@ Add or refine groups for:
 
 - one `PersonaWeapon`-domain lifecycle group matching the four bond synthetic keys;
 - one Tale-domain persona-combat group matching `PersonaWeaponFirstConsequentialKill`;
-- the existing `progressionRoyalTitle` group expanded to the new gain/reduced/lost/succession/heir
+- the existing `progressionRoyalTitle` group expanded to the new gained/promoted/demoted/lost/succession/heir
   synthetic keys while retaining `RoyalTitleChanged` for old saves;
 - one `RoyalPermit`-domain group matching the four dramatic family keys;
 - one exact Quest-domain Royal Ascent group matching `EndGame_RoyalAscent` and branching on the saved
@@ -1234,6 +1235,7 @@ Exact filenames may be adjusted to existing conventions, but responsibilities mu
 - `Source/Pipeline/Royalty/RoyalTitleTransitionPolicy.cs`
 - `Source/Pipeline/Royalty/RoyalSuccessionPolicy.cs`
 - `Source/Pipeline/Royalty/RoyalMutationOwnershipPolicy.cs`
+- `Source/Pipeline/Royalty/RoyalMutationPageSelectionPolicy.cs`
 - `Source/Pipeline/Royalty/RoyalPermitPolicy.cs`
 - `Source/Pipeline/Royalty/RoyaltyContextText.cs`
 - `Source/Models/PersonaBondState.cs`
@@ -1464,8 +1466,8 @@ not flood; R1 persona scope is complete.
 
 ### Phase 4 — Title and psylink correctness
 
-> **Implementation status (2026-07-19): code-complete; pure/build and automated loaded coverage green
-> at 252/252; manual acceptance pending.** The exact private
+> **Implementation status (2026-07-19): code-complete; pure/build/expanded loaded green at 256/256;
+> manual acceptance pending.** The exact private
 > `OnPostTitleChanged(Faction faction, RoyalTitleDef prevTitle, RoyalTitleDef newTitle)`
 > callback and three cause boundaries register defensively through `DiaryRoyaltyPatches`; changed
 > targets warn once and retain the scanner. Exact gained/promoted/demoted/lost decisions use faction ID
@@ -1473,14 +1475,18 @@ not flood; R1 persona scope is complete.
 > disappeared-faction loss in scanner fallback. Bestowing/anima stage bounded detached mutations for
 > the existing ritual owner, neuroformer owns one cause-aware progression page, unknown/expired owners
 > fail open at most once, and exact `Thought_MemoryRoyalTitle` signals stage/claim/release unchanged.
-> Observation continues while output is disabled; inactive Royalty marks observation unavailable but
-> preserves saved truth for a later silent baseline. XML owns matching, windows, caps, prose, and prompt
+> The policy master and canonical ritual-group toggle suppress pages without freezing or transferring
+> truth; combined fallbacks keep an independently enabled psylink route, and expired missing-pawn rows
+> are pruned globally. Observation continues while output is disabled; inactive Royalty marks
+> observation unavailable synchronously during load but preserves saved truth for a later silent
+> baseline. XML owns matching, windows, caps, prose, and prompt
 > projection; English/Russian data and append-only SoloImportant fields 107–112 are covered. Pure suites
-> pass 287 Royalty, 2,437 pipeline, 665 capture-policy, and 125 Narrative Continuity assertions. Runtime
+> pass 316 Royalty, 2,437 pipeline, 665 capture-policy, and 125 Narrative Continuity assertions. Runtime
 > and RimTest assemblies build. The second loaded run confirmed the exact postfix and ritual-catalog
 > fixes, then exposed a same-tick title-edge dedup collision and one Phase-3 fixture dependency on other
 > mods' equipment-removal patches. Both were corrected, and the subsequent user-confirmed loaded rerun
-> passed 252/252. The hands-on matrix still must run before R1.
+> passed 252/252. Adversarial fixes expanded and strengthened the loaded suite; its user-confirmed
+> rerun passed 256/256. The hands-on matrix still must run before R1.
 
 1. Register the private post-title hook defensively.
 2. Emit faction-aware gain/promotion/demotion/loss and update the scanner baseline.

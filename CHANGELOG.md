@@ -1,5 +1,28 @@
 # Changelog
 
+- **2026-07-19 — Hardened Royalty Phase 4 after the consolidated adversarial review.** Royalty-off
+  loads now invalidate the saved availability marker synchronously, so a paused immediate resave
+  cannot preserve stale DLC-readable state. The Royalty policy master switch and the canonical
+  `ritualRoyal` setting now suppress the canonical ceremony page and mutation output without freezing,
+  transferring, or replaying truth; combined title+psylink fallbacks choose the first independently
+  enabled route, and disabled
+  rituals also consume their matching delayed title memory. Unmatched title memories flush to the
+  ordinary Thought pipeline before save instead of disappearing at the transient load reset. Ritual
+  fanout still writes intended attendee perspectives, but only the mutated pawn's page receives the
+  personal title/psylink context. Title-loss headers name the title that was lost. Expired ritual
+  batches for dead/departed pawns are globally pruned on the coarse scanner
+  cadence, while eligible pawns retain their one fallback. Harmony completion is retry-safe after
+  partial downstream failure, pre-consumption exceptions cancel their active scope for scanner
+  recovery, and empty Royalty thought-correlation hot paths avoid unnecessary ID work/list
+  allocation. No save key or schema changed; transient mutation/thought owners remain
+  deliberately unscribed and reset at `FinalizeInit`. `RoyaltyContextTests` now passes 316 assertions,
+  and the expanded 256-test RimTest suite passes in game with real neuroformer-comp, disabled-ritual,
+  reverse-order and production pre-save/Scribe-reload title-memory, actual component-key/nested-title,
+  lifecycle-reset, corrected pre-mutation psylink baseline, same-tick loss-label, and safe DLC-off
+  immediate-load-seam fixtures. Legacy test-only title/psylink scanners
+  were removed; their loaded fixtures now drive the versioned production observer. The user-confirmed
+  expanded loaded rerun passed 256/256; hands-on Phase-2/3/4 matrices remain pending.
+
 - **2026-07-19 — Fixed the two blockers from Royalty Phase 4's second loaded run.** The rerun reached
   250/252 and confirmed the title-hook signature plus six-token ritual-catalog fixes. Its remaining
   title loss was a real same-tick dedup defect: promotion and loss used only pawn/faction/opened-tick,

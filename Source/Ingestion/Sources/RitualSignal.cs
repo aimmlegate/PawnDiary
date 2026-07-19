@@ -76,6 +76,13 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
+            // The Royalty policy master owns the canonical DLC ceremony pages as well as their
+            // attached mutation context. Leaving the ordinary ritual page alive while the master is
+            // disabled would make the switch only half-effective and transfer the same action to an
+            // un-enriched route.
+            if (ModsConfig.RoyaltyActive
+                && !RoyaltyPolicyAllowsRitual(defName, DiaryRoyaltyPolicy.Snapshot())) return;
+
             BehaviorClass = RitualBehaviorClass(ritual);
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyRitual(RitualClassifierKey(defName, BehaviorClass));
             if (group == null || !PawnDiaryMod.Settings.IsGroupEnabled(group.defName))
@@ -142,6 +149,7 @@ namespace PawnDiary.Ingestion
             if (!DiaryGameComponent.GamePlaying || !ModsConfig.RoyaltyActive
                 || bestower == null || target == null || PawnDiaryMod.Settings == null) return null;
             RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            if (!policy.enabled) return null;
             string defName = policy.bestowingRitualDefNames != null
                 && policy.bestowingRitualDefNames.Count > 0
                 ? policy.bestowingRitualDefNames[0]
@@ -162,6 +170,40 @@ namespace PawnDiary.Ingestion
                 RoyalMutationCauseTokens.ImperialBestowing,
                 CandidatePawnIds(bestower, target, participants));
             return signal.valid ? signal : null;
+        }
+
+        /// <summary>
+        /// Reports whether the canonical ritual group can own an exact bestowing/anima mutation.
+        /// The mutation adapter calls this before staging a delayed owner so disabling Royal rituals
+        /// consumes the action silently instead of leaking it into a later Progression fallback.
+        /// </summary>
+        internal static bool RoyalMutationOwnerEnabled(
+            string causeToken,
+            RoyaltyPolicySnapshot policy)
+        {
+            RoyaltyPolicySnapshot effective = policy ?? RoyaltyPolicySnapshot.CreateDefault();
+            if (!effective.enabled || PawnDiaryMod.Settings == null) return false;
+
+            string defName;
+            string behavior;
+            if (causeToken == RoyalMutationCauseTokens.ImperialBestowing)
+            {
+                defName = FirstOrFallback(effective.bestowingRitualDefNames, "BestowingCeremony");
+                behavior = "RitualOutcomeEffectWorker_Bestowing";
+            }
+            else if (causeToken == RoyalMutationCauseTokens.AnimaLinking)
+            {
+                defName = FirstOrFallback(effective.animaRitualDefNames, "AnimaTreeLinking");
+                behavior = "RitualBehaviorWorker_AnimaLinking";
+            }
+            else
+            {
+                return false;
+            }
+
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyRitual(
+                RitualClassifierKey(defName, behavior));
+            return group != null && PawnDiaryMod.Settings.IsGroupEnabled(group.defName);
         }
 
         /// <summary>
@@ -215,6 +257,8 @@ namespace PawnDiary.Ingestion
             {
                 return;
             }
+            if (ModsConfig.RoyaltyActive
+                && !RoyaltyPolicyAllowsRitual(defName, DiaryRoyaltyPolicy.Snapshot())) return;
 
             this.organizer = organizer;
             this.targetPawn = targetPawn;
@@ -331,7 +375,18 @@ namespace PawnDiary.Ingestion
             }
         }
 
-        internal string RoyaltyMutationContext => royaltyMutationContext;
+        /// <summary>
+        /// Returns enriched title/psylink facts only for the pawn whose mutation was captured. Ritual
+        /// fanout remains one normal perspective page per eligible attendee, but their pages must not
+        /// all claim the target's personal title/psylink transition.
+        /// </summary>
+        internal string RoyaltyMutationContextFor(string pawnId)
+        {
+            return royaltyMutationBatch != null
+                && string.Equals(royaltyMutationBatch.pawnId, pawnId, StringComparison.Ordinal)
+                ? royaltyMutationContext
+                : string.Empty;
+        }
 
         private void AttachRoyalMutationOwner(string causeToken, IList<string> candidatePawnIds)
         {
@@ -425,6 +480,27 @@ namespace PawnDiary.Ingestion
             }
 
             return defName + ";" + behaviorClass;
+        }
+
+        private static string FirstOrFallback(IList<string> values, string fallback)
+        {
+            if (values != null)
+            {
+                for (int i = 0; i < values.Count; i++)
+                    if (!string.IsNullOrWhiteSpace(values[i])) return values[i].Trim();
+            }
+            return fallback;
+        }
+
+        private static bool RoyaltyPolicyAllowsRitual(
+            string ritualDefName,
+            RoyaltyPolicySnapshot policy)
+        {
+            if (!ModsConfig.RoyaltyActive) return true;
+            RoyaltyPolicySnapshot effective = policy ?? RoyaltyPolicySnapshot.CreateDefault();
+            return effective.enabled
+                || RoyalMutationRoutePolicy.RitualCause(ritualDefName, effective)
+                    == RoyalMutationCauseTokens.Unknown;
         }
 
         private static string RitualRoleLabel(
@@ -555,8 +631,9 @@ namespace PawnDiary.Ingestion
                 source.DefName, source.Title, source.BehaviorClass, perspective, ritualRole,
                 DlcContext.RoyalTitle(pawn), DlcContext.IdeologicalRole(pawn),
                 RitualFanoutSignal.RitualOutcomeFinished, source.Quality);
-            if (!string.IsNullOrWhiteSpace(source.RoyaltyMutationContext))
-                context += "; " + source.RoyaltyMutationContext;
+            string royaltyMutationContext = source.RoyaltyMutationContextFor(payload.PawnId);
+            if (!string.IsNullOrWhiteSpace(royaltyMutationContext))
+                context += "; " + royaltyMutationContext;
             string text = "PawnDiary.Event.RitualFinished"
                 .Translate(pawn.LabelShortCap, source.Title, RitualFanoutSignal.RitualPerspectiveLabel(perspective), ritualRole)
                 .Resolve();

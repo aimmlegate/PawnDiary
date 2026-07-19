@@ -55,7 +55,12 @@ namespace PawnDiary
                 fallbackConsumed = fallbackAlreadyConsumed
             };
             RoyaltyPolicySnapshot effective = policy ?? RoyaltyPolicySnapshot.CreateDefault();
-            if (!effective.enabled || mutations == null || nowTick < 0) return plan;
+            if (mutations == null || nowTick < 0) return plan;
+
+            // The policy switch controls page creation, not observation/ownership bookkeeping. An
+            // expired batch must still become consumed while disabled or it can remain pending forever
+            // and replay after a later settings change.
+            bool outputEnabled = effective.enabled && groupEnabled;
 
             bool ownerEmissionAssigned = false;
             bool fallbackEmissionAssigned = false;
@@ -83,7 +88,7 @@ namespace PawnDiary
                 if (!exact)
                 {
                     decision.ownerToken = RoyalMutationOwnerTokens.Progression;
-                    if (!ownerEmissionAssigned && groupEnabled)
+                    if (!ownerEmissionAssigned && outputEnabled)
                     {
                         plan.shouldEmitOwnerPage = true;
                         plan.ownerToken = decision.ownerToken;
@@ -97,7 +102,7 @@ namespace PawnDiary
                 if (exactOwner == RoyalMutationOwnerTokens.Progression)
                 {
                     decision.ownerToken = exactOwner;
-                    if (!ownerEmissionAssigned && groupEnabled)
+                    if (!ownerEmissionAssigned && outputEnabled)
                     {
                         plan.shouldEmitOwnerPage = true;
                         plan.ownerToken = exactOwner;
@@ -111,7 +116,7 @@ namespace PawnDiary
                 {
                     decision.ownerToken = exactOwner;
                     decision.suppressProgressionDuplicate = true;
-                    if (!ownerEmissionAssigned && groupEnabled)
+                    if (!ownerEmissionAssigned && outputEnabled)
                     {
                         plan.shouldEmitOwnerPage = true;
                         plan.ownerToken = exactOwner;
@@ -139,7 +144,7 @@ namespace PawnDiary
                     decision.ownerToken = RoyalMutationOwnerTokens.FallbackProgression;
                     plan.fallbackConsumed = true;
                     plan.ownerToken = decision.ownerToken;
-                    if (!fallbackEmissionAssigned && groupEnabled)
+                    if (!fallbackEmissionAssigned && outputEnabled)
                     {
                         plan.shouldEmitFallbackPage = true;
                         fallbackEmissionAssigned = true;
