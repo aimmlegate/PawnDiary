@@ -351,6 +351,8 @@ namespace PawnDiary
                 // save (the Scribe.Look calls below) — a partial flush is far better than a lost save.
                 try
                 {
+                    // This must remain before events.ExposeEvents below: reconciliation and any
+                    // unmatched Thought release are synchronous and belong in this same save.
                     FlushRoyalTitleThoughtsBeforeSave();
                     FlushAllInteractionBatches();
                     FlushAllTaleBatches();
@@ -456,12 +458,13 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Releases title memories whose short ownership window overlaps a save. Kept as a narrow
-        /// component seam so loaded tests can exercise the exact pre-save behavior without invoking
-        /// the rest of LoadedGame/ExposeData against the developer's live transient queues.
+        /// Reconciles live title changes, then releases memories whose short ownership window overlaps
+        /// a save. Kept as a narrow component seam so loaded tests can exercise the exact pre-save
+        /// behavior without invoking unrelated developer-save transient queues.
         /// </summary>
         internal void FlushRoyalTitleThoughtsBeforeSave()
         {
+            ReconcileRoyaltyOwnersBeforeSave();
             RoyalTitleThoughtCorrelation.FlushPending();
         }
 

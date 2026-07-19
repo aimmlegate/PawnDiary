@@ -6,6 +6,10 @@ namespace PawnDiary
     /// <summary>Selects the single enabled Progression page kind for a Royalty mutation batch.</summary>
     internal static class RoyalMutationPageSelectionPolicy
     {
+        /// <summary>
+        /// Chooses the one enabled output route for a completed mutation. A meaningful title wins;
+        /// otherwise an enabled psylink change may own the page.
+        /// </summary>
         public static string Select(
             bool policyEnabled,
             bool titleChanged,

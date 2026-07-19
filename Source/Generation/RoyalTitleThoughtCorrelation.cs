@@ -34,7 +34,9 @@ namespace PawnDiary
             int correlationTicks,
             int maximumPending)
         {
-            Maintain(nowTick, correlationTicks);
+            // Capture paths never release other pawns' rows. The component's ordered maintenance pass
+            // owns publication after mutation/title observers have all had a chance to claim.
+            PruneRecentOwners(nowTick, correlationTicks);
             if (fact == null || signal == null) return false;
             for (int i = Recent.Count - 1; i >= 0; i--)
             {
@@ -61,7 +63,10 @@ namespace PawnDiary
             int tick,
             int correlationTicks)
         {
-            Maintain(tick, correlationTicks);
+            // Claim the exact row without releasing unrelated expired rows. Title-mutation and title-
+            // thought windows intentionally share the same XML duration, so several richer owners can
+            // arrive on the expiry tick. The component performs one global release only after every
+            // pawn observer has had its chance to claim.
             int claimed = 0;
             for (int i = Pending.Count - 1; i >= 0; i--)
             {
@@ -79,6 +84,7 @@ namespace PawnDiary
                 tick = Math.Max(0, tick)
             });
             while (Recent.Count > 64) Recent.RemoveAt(0);
+            PruneRecentOwners(tick, correlationTicks);
             return claimed;
         }
 
@@ -98,12 +104,7 @@ namespace PawnDiary
                     released.Add(row.signal);
                 }
             }
-            for (int i = Recent.Count - 1; i >= 0; i--)
-            {
-                RecentOwner row = Recent[i];
-                if (row == null || RoyalTitleThoughtOwnershipPolicy.IsExpired(
-                    row.tick, nowTick, correlationTicks)) Recent.RemoveAt(i);
-            }
+            PruneRecentOwners(nowTick, correlationTicks);
             if (released == null) return;
             released.Reverse();
             for (int i = 0; i < released.Count; i++)
@@ -134,12 +135,34 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>True when at least one title memory still awaits an exact richer owner.</summary>
+        public static bool HasPending => Pending.Count > 0;
+
+        /// <summary>Checks whether one pawn has a title memory that should be reconciled before save.</summary>
+        public static bool HasPendingForPawn(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId)) return false;
+            for (int i = 0; i < Pending.Count; i++)
+                if (string.Equals(Pending[i]?.fact?.pawnId, pawnId, StringComparison.Ordinal)) return true;
+            return false;
+        }
+
         public static int PendingCountForTests => Pending.Count;
 
         public static void Clear()
         {
             Pending.Clear();
             Recent.Clear();
+        }
+
+        private static void PruneRecentOwners(int nowTick, int correlationTicks)
+        {
+            for (int i = Recent.Count - 1; i >= 0; i--)
+            {
+                RecentOwner row = Recent[i];
+                if (row == null || RoyalTitleThoughtOwnershipPolicy.IsExpired(
+                    row.tick, nowTick, correlationTicks)) Recent.RemoveAt(i);
+            }
         }
     }
 }

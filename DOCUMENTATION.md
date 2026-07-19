@@ -228,8 +228,8 @@ Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned gra
 additive save-key suffixes under each POV/archive row; it performs no retroactive inference or
 catch-up on older pages.
 
-**Royalty Phases 0–4 plus Narrative N3-R core (Master Wave 5; expanded Phase-4 loaded suite green at
-256/256; hands-on matrices pending)**
+**Royalty Phases 0–4 plus Narrative N3-R core (Master Wave 5; last Phase-4 loaded run green at
+256/256, expanded 258-test build awaiting execution; hands-on matrices pending)**
 freeze the detached R1 boundary and now own persona-weapon lifecycle, first-kill/death enrichment,
 and exact title/psylink correctness.
 `RoyaltyContracts`
@@ -362,25 +362,32 @@ Bestowing, anima linking, and neuroformer hooks open bounded, resettable before/
 existing bestowing/anima `RitualFanoutSignal` is canonical: it appends the matching title and/or
 psylink mutation to the mutated pawn's perspective only, claims only after that child page is stored,
 and prevents separate progression pages. Other eligible attendees retain their ordinary ritual
-perspective pages without claiming the target's personal mutation context.
+perspective pages without claiming the target's personal mutation context; an attendee page that is
+stored first cannot consume the target's pending batch.
 If that enabled ritual route never arrives, the pending batch expires into at most one ordinary
 truthful fallback. Disabling the Royalty policy master suppresses the canonical bestowing/anima ritual
 page itself; disabling either that master or the canonical `ritualRoyal` group consumes the exact
 mutation and matching delayed title memory without transferring the ceremony into a Progression/
 Thought page. Disabled output still advances observations and expiry. When an expired
 combined fallback contains title plus psylink, the title route wins only if enabled; otherwise the
-enabled psylink route remains eligible. A once-per-colony maintenance pass silently prunes expired
-pending batches for dead/departed pawns so they cannot occupy the bounded queue forever. Neuroformer
+enabled psylink route remains eligible and claims the same batch's title memory. Maintenance is
+two-phase: map observers plus exact pending owners in caravans/travelling transporters reconcile
+mutation/title truth first, then unmatched title memories release. The live-owner roster also keeps
+temporarily off-map colonists out of the dead/departed prune; only expired owners absent from that
+roster are silently removed so they cannot occupy the bounded queue forever. Neuroformer
 use is matched by the XML-owned parent-item `defName` string and owns one
 cause-aware `PsylinkLevel` page; unknown/modded changes remain scanner fallbacks. Exact
-hook adapters close at most once before downstream dispatch; if after-state capture/bookkeeping fails
-before ownership is consumed, the active transient scope is cancelled so the scanner can recover it
-instead of poisoning the bounded cache. Exact
+hook adapters close at most once before downstream dispatch. Saved title/psylink observation fields are
+checkpointed while the boundary closes; if after-state capture/bookkeeping fails before ownership is
+consumed, those fields are restored and the active transient scope is cancelled so the scanner can
+recover the live change instead of being blinded or poisoning the bounded cache. Exact
 `Thought_MemoryRoyalTitle` award/loss signals stage briefly and are claimed only by matching pawn and
-title edges. Unmatched/expired signals return unchanged to ordinary Thought capture, so no ThoughtDef
-is suppressed globally; an unmatched pending signal is also flushed before save so the later
-`FinalizeInit` reset cannot lose it. All transient scopes are plain DTOs and reset through
-`FinalizeInit`.
+title edges. Capture/claim paths never publish unrelated expired rows; the ordered component pass owns
+release. Unmatched/expired signals return unchanged to ordinary Thought capture, so no ThoughtDef is
+suppressed globally. Before save, live pending mutations become their one truthful fallback, live
+scanner-owned title changes reconcile and claim their exact memory, and only the remaining unmatched
+memories flush to Thought capture. This keeps both save-and-continue and save/reload single-owner while
+still allowing all plain transient scopes to reset through `FinalizeInit`.
 
 Saved Phase-4 mutation context may contain `royal_mutation_pawn`, `royal_cause`,
 `royal_transition`, `royal_faction_id`, `royal_faction`, `previous_title`, `previous_title_def`,
@@ -389,14 +396,15 @@ Saved Phase-4 mutation context may contain `royal_mutation_pawn`, `royal_cause`,
 before/after facts. SoloImportant's append-only indices 107–112 project mutation pawn, cause,
 transition, faction, psylink cause, and duty changes; required title/psylink facts reuse earlier stable
 fields. Exact English/Russian prompts cover four title transitions, psylink/neuroformer, bestowing,
-and anima linking. Pure suites pass 316 Royalty, 2,437 pipeline, 665 capture-policy, and 125 Narrative
-Continuity assertions; the runtime and RimTest assemblies build. The first loaded-game run reached
+and anima linking. Pure suites pass 318 Royalty, 2,437 pipeline, 665 capture-policy, and 125 Narrative
+Continuity assertions; the runtime and 258-test RimTest assemblies build. The first loaded-game run reached
 249/252 and exposed the corrected title-postfix argument name plus ritual-token fixture. The second
 run reached 250/252, confirming both fixes, then exposed a distinct same-tick title-edge dedup bug and
 a Phase-3 death-fixture collision with other loaded equipment-removal patches. After the dedup identity
  and fixture setup were corrected, the user-confirmed loaded rerun passed 252/252. The adversarial
-hardening expanded and strengthened the loaded suite; its user-confirmed rerun passed 256/256. Every
-Phase-2/3/4 hands-on row remains explicit R1 acceptance work.
+ hardening expanded and strengthened the loaded suite; its user-confirmed rerun passed 256/256. The two
+new save/expiry ownership regressions compile but have not yet had a loaded execution, so 256/256 remains
+the last confirmed runtime result. Every Phase-2/3/4 hands-on row remains explicit R1 acceptance work.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13
@@ -2407,11 +2415,13 @@ Phase 4 advances this existing row immediately for exact title hooks and scanner
 version 2 distinguishes a readable empty title set from temporarily unavailable Royalty data. A
 Royalty-off `LoadedGame` invalidates availability immediately while retaining the saved rows and
 psylink scalar, including when the player resaves before the first tick. The existing
-`highestPsylinkLevelRecorded` scalar remains the psylink baseline. Cause scopes, pending
-ritual mutations, and title-memory ownership are intentionally not Scribed. Unmatched pending title
-memories first flush through ordinary Thought capture during the pre-save pass; the remaining owner
-caches clear on `FinalizeInit`, so save/load cannot resurrect an expired owner or emit a stale
-fallback.
+`highestPsylinkLevelRecorded` scalar remains the psylink baseline. Cause scopes, pending ritual
+mutations, and title-memory ownership are intentionally not Scribed. The pre-save pass consumes live
+pending mutations into their selected fallback, reconciles live pending-memory pawns through the same
+versioned observer, then flushes only unmatched title memories through ordinary Thought capture before
+`events.ExposeEvents`. Remaining owner caches clear on `FinalizeInit`, so save/load cannot resurrect an
+expired owner, lose a transient psylink-only batch, or serialize both Thought and rich title pages for
+one scanner edge.
 Phase 2 uses that same normalized deep-scribed ledger transactionally: lifecycle truth is committed
 before optional page dispatch, and saved pending/separated state resumes through the independent
 reconciliation deadline after load without inventing an old bond or a catch-up page. Bonds missed by
@@ -2764,8 +2774,10 @@ The DLC-focused flows include installed-Royalty positive scanner fixtures for a 
 registration, real `SetTitle` promotion/loss and loss-label identity, per-faction scanner loss,
 disabled/re-enabled observation, bestowing/anima ritual ownership, the real neuroformer item-comp
 hook, disabled-ritual non-transfer, both title-memory callback orders, real `FinalizeInit` reset, and
- Royalty-off immediate-load invalidation. The earlier suite passed 252/252; the expanded suite now
-passes 256/256 in game. Ideology and Anomaly ritual tests use
+ Royalty-off immediate-load invalidation. The earlier suite passed 252/252; the expanded suite's last
+loaded run passed 256/256 in game. Two additional compiled fixtures cover attendee-first non-claim,
+combined psylink/title-memory expiry, and scanner-title reconciliation across a production pre-save
+Scribe round-trip; they bring the assembly to 258 tests and still require loaded execution. Ideology and Anomaly ritual tests use
 internal copied-fact fixture seams because safely
 constructing their live ritual job objects would start a real colony ritual; only that reflective
 object extraction is bypassed. The fixtures still execute production fan-out ordering, pawn-ID

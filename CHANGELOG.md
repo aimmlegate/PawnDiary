@@ -1,5 +1,21 @@
 # Changelog
 
+- **2026-07-19 — Closed the remaining Royalty Phase-4 correlation lifecycle defects found in review.**
+  Title-memory release is now an ordered second phase after map and exact off-map mutation/title
+  observers, so equal expiry windows cannot publish an ordinary Thought immediately before a richer
+  fallback claims it. Pre-save handling consumes live unscribed mutation batches into their selected
+  fallback, reconciles scanner-owned title changes before flushing unmatched memories, and remains
+  before `diaryEvents` serialization; this prevents both save-and-continue duplicates and save/reload
+  loss, including psylink-only owners. Combined psylink fallbacks claim their batch's title memory.
+  Live-owner pruning now includes eligible pawns in caravans and travelling transporters. Ritual
+  attendees cannot claim target-only mutation context, duplicate boundary completion is rejected, and
+  saved observation fields roll back if bookkeeping fails before the active owner is consumed. The
+  canonical bestowing token uses the shared sanitized selector and redundant mutation-kind work was
+  removed. `RoyaltyContextTests` passes 318 assertions; the main and expanded 258-test RimTest
+  assemblies build with zero warnings. The last executed loaded result remains 256/256; the two new
+  save/expiry fixtures still require an in-game run. No save key, schema, DLC dependency, or localized
+  player-facing string changed.
+
 - **2026-07-19 — Hardened Royalty Phase 4 after the consolidated adversarial review.** Royalty-off
   loads now invalidate the saved availability marker synchronously, so a paused immediate resave
   cannot preserve stale DLC-readable state. The Royalty policy master switch and the canonical

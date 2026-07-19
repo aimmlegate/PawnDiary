@@ -977,7 +977,15 @@ namespace RoyaltyContextTests
                     64));
             AssertTrue("completion moves active to pending",
                 RoyalMutationCorrelation.ActiveCountForTests == 0
-                && RoyalMutationCorrelation.PendingCountForTests == 1);
+                && RoyalMutationCorrelation.PendingCountForTests == 1
+                && RoyalMutationCorrelation.HasPending);
+            AssertTrue("completed boundary cannot be closed a second time",
+                !RoyalMutationCorrelation.IsActive(batch)
+                && !RoyalMutationCorrelation.Complete(
+                    batch,
+                    TitleMutationSnapshot(batch, before, after, 105),
+                    PsylinkMutationSnapshot(batch, 1, 2, 106),
+                    64));
             AssertTrue("wrong ritual cause cannot prepare owner",
                 RoyalMutationCorrelation.PrepareRitualOwner(
                     RoyalMutationCauseTokens.AnimaLinking,
@@ -1020,6 +1028,17 @@ namespace RoyaltyContextTests
                 && RoyalMutationCorrelation.PendingCountForTests == 1);
             AssertTrue("pending cap fixture claims cleanly",
                 RoyalMutationCorrelation.ClaimRitual(capFirst)
+                && RoyalMutationCorrelation.PendingCountForTests == 0);
+
+            RoyalMutationBatchSnapshot saveBatch = OpenCompletedTitleBatch(
+                "Pawn_Save", "Empire", 275,
+                Title("Pawn_Save", "Empire", "Yeoman", 1),
+                Title("Pawn_Save", "Empire", "Acolyte", 2), 64);
+            AssertTrue("pre-save fallback consumes only the exact live pawn batch",
+                saveBatch != null
+                && RoyalMutationCorrelation.TakePendingForSave("Pawn_Other") == null
+                && RoyalMutationCorrelation.TakePendingForSave("Pawn_Save") == saveBatch
+                && saveBatch.fallbackConsumed
                 && RoyalMutationCorrelation.PendingCountForTests == 0);
 
             batch = RoyalMutationCorrelation.Open(

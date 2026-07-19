@@ -139,6 +139,12 @@ namespace PawnDiary
             Active.Remove(batch);
         }
 
+        /// <summary>True only while this exact batch still owns its open mutation boundary.</summary>
+        public static bool IsActive(RoyalMutationBatchSnapshot batch)
+        {
+            return batch != null && Active.Contains(batch);
+        }
+
         /// <summary>Finds, but does not yet claim, the exact mutation batch for a completed ritual.</summary>
         public static RoyalMutationBatchSnapshot PrepareRitualOwner(
             string expectedCauseToken,
@@ -203,6 +209,26 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Consumes one pending batch for a pawn before a save. Transient correlation rows are not
+        /// scribed, so the component must turn an unclaimed owner into its truthful fallback before
+        /// serializing events rather than letting its paired title memory become a duplicate page.
+        /// </summary>
+        public static RoyalMutationBatchSnapshot TakePendingForSave(string pawnId)
+        {
+            string pawn = CleanId(pawnId);
+            for (int i = 0; i < Pending.Count; i++)
+            {
+                RoyalMutationBatchSnapshot batch = Pending[i];
+                if (batch == null || batch.claimed
+                    || !string.Equals(batch.pawnId, pawn, StringComparison.Ordinal)) continue;
+                batch.fallbackConsumed = true;
+                Pending.RemoveAt(i);
+                return batch;
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Silently consumes expired ritual batches whose pawn is no longer in the eligible scanner
         /// set. Without this global pass, dead or departed pawns can retain transient rows forever and
         /// eventually occupy the whole bounded pending queue.
@@ -234,6 +260,23 @@ namespace PawnDiary
                 removed++;
             }
             return removed;
+        }
+
+        /// <summary>True when at least one ritual mutation still awaits its canonical page or fallback.</summary>
+        public static bool HasPending => Pending.Count > 0;
+
+        /// <summary>Checks whether one pawn still has an unclaimed ritual mutation.</summary>
+        public static bool HasPendingForPawn(string pawnId)
+        {
+            string pawn = CleanId(pawnId);
+            if (pawn.Length == 0) return false;
+            for (int i = 0; i < Pending.Count; i++)
+            {
+                RoyalMutationBatchSnapshot batch = Pending[i];
+                if (batch != null && !batch.claimed
+                    && string.Equals(batch.pawnId, pawn, StringComparison.Ordinal)) return true;
+            }
+            return false;
         }
 
         public static int PendingCountForTests => Pending.Count;

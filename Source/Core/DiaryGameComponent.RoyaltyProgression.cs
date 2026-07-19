@@ -56,8 +56,14 @@ namespace PawnDiary
                 RoyalMutationCorrelation.Cancel(batch);
                 return null;
             }
+            // Harmony already guards the normal path, but this component seam is also used by loaded
+            // tests and defensive finalizers. A second close must not reinterpret "not active" as a
+            // bounded-queue overflow and create another Progression page.
+            if (!RoyalMutationCorrelation.IsActive(batch)) return null;
 
             bool correlationClosed = false;
+            PawnProgressionState progression = null;
+            RoyaltyObservationCheckpoint observationCheckpoint = null;
             try
             {
                 RoyalTitleSnapshot beforeTitle = batch.titleMutation?.previousTitle;
@@ -88,9 +94,19 @@ namespace PawnDiary
                     correlationId = correlationId
                 };
 
-                PawnProgressionState progression = FindDiary(pawn, true)?.EnsureProgressionState();
+                RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+                bool ritualCause = batch.causeToken == RoyalMutationCauseTokens.ImperialBestowing
+                    || batch.causeToken == RoyalMutationCauseTokens.AnimaLinking;
+                bool allowRitualOwner = !ritualCause
+                    || RitualFanoutSignal.RoyalMutationOwnerEnabled(batch.causeToken, policy);
+
+                progression = FindDiary(pawn, true)?.EnsureProgressionState();
                 if (progression != null)
                 {
+                    // Capture every Royalty-owned saved scalar/list before advancing it. If any later
+                    // correlation bookkeeping throws, the finally block restores this checkpoint so
+                    // the versioned scanner can still observe the live change truthfully.
+                    observationCheckpoint = RoyaltyObservationCheckpoint.Capture(progression);
                     EnsureRoyaltyObservationReady(pawn, progression);
                     if (title != null && TitleChanged(beforeTitle, afterTitle))
                         AdvanceRoyalTitleObservation(progression, afterTitle, beforeTitle, Math.Max(0, now));
@@ -98,11 +114,6 @@ namespace PawnDiary
                         progression.highestPsylinkLevelRecorded, afterPsylink);
                 }
 
-                RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
-                bool ritualCause = batch.causeToken == RoyalMutationCauseTokens.ImperialBestowing
-                    || batch.causeToken == RoyalMutationCauseTokens.AnimaLinking;
-                bool allowRitualOwner = !ritualCause
-                    || RitualFanoutSignal.RoyalMutationOwnerEnabled(batch.causeToken, policy);
                 bool mutationHandled = RoyalMutationCorrelation.Complete(
                     batch, title, psylink, policy.maximumPendingRoyalMutations, allowRitualOwner);
                 correlationClosed = true;
@@ -116,8 +127,9 @@ namespace PawnDiary
                 bool neuroformer = batch.causeToken == RoyalMutationCauseTokens.Neuroformer;
                 if (neuroformer || !mutationHandled)
                 {
-                    if (RoyalMutationProgressionEnabled(batch))
-                        EmitRoyalMutationProgression(pawn, batch);
+                    // Emit performs the one selection pass and quietly returns false when every
+                    // possible route is disabled. This avoids deriving the same kind twice.
+                    EmitRoyalMutationProgression(pawn, batch, policy);
                 }
                 return batch;
             }
@@ -125,8 +137,13 @@ namespace PawnDiary
             {
                 // Harmony marks the patch scope completed before calling here so a finalizer cannot
                 // retry after partial dispatch. If capture/bookkeeping throws before Complete consumes
-                // the active row, cancel it now; the versioned scanner remains the truthful fallback.
-                if (!correlationClosed) RoyalMutationCorrelation.Cancel(batch);
+                // the active row, restore the saved observation first and cancel the transient scope;
+                // the versioned scanner then remains the truthful fallback.
+                if (!correlationClosed)
+                {
+                    try { observationCheckpoint?.Restore(progression); }
+                    finally { RoyalMutationCorrelation.Cancel(batch); }
+                }
             }
         }
 
@@ -176,7 +193,7 @@ namespace PawnDiary
             int now = Find.TickManager?.TicksGame ?? 0;
             RoyalMutationBatchSnapshot expired = RoyalMutationCorrelation.TakeExpiredFallback(
                 pawn.GetUniqueLoadID(), now, outputEnabled, policy);
-            if (expired != null) EmitRoyalMutationProgression(pawn, expired);
+            if (expired != null) EmitRoyalMutationProgression(pawn, expired, policy);
 
             int currentPsylink = DlcContext.CurrentPsylinkLevel(pawn);
             int previousPsylink = progression.highestPsylinkLevelRecorded;
@@ -188,7 +205,8 @@ namespace PawnDiary
                     EmitRoyalMutationProgression(
                         pawn,
                         PsylinkBatch(pawn, previousPsylink, currentPsylink,
-                            RoyalMutationCauseTokens.Unknown, now));
+                            RoyalMutationCauseTokens.Unknown, now),
+                        policy);
                 }
             }
 
@@ -234,22 +252,115 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Performs once-per-colony maintenance for transient Royalty owners. Per-pawn observation
-        /// remains below; global queues must also age when a pawn dies or leaves the eligible set.
+        /// Prunes expired mutation owners whose pawn is genuinely absent from the live eligible roster.
+        /// Per-pawn observation and title-memory release run later in a deliberate two-phase order.
         /// </summary>
-        private void MaintainRoyaltyTransientProgression(IList<Pawn> colonists)
+        private void MaintainRoyaltyTransientProgression()
+        {
+            if (!ModsConfig.RoyaltyActive || !RoyalMutationCorrelation.HasPending) return;
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            int now = Find.TickManager?.TicksGame ?? 0;
+            List<Pawn> liveColonists = SnapshotLiveRoyaltyColonists();
+            HashSet<string> livePawnIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < liveColonists.Count; i++)
+                livePawnIds.Add(liveColonists[i].GetUniqueLoadID());
+            RoyalMutationCorrelation.PruneExpiredMissingOwners(livePawnIds, now, policy);
+        }
+
+        /// <summary>
+        /// Releases unmatched title memories only after mutation fallbacks and title observers have
+        /// had their chance to claim the same exact action during this scanner pass.
+        /// </summary>
+        private void MaintainRoyalTitleThoughtsAfterRoyaltyObservation()
         {
             if (!ModsConfig.RoyaltyActive) return;
             RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
-            int now = Find.TickManager?.TicksGame ?? 0;
-            RoyalTitleThoughtCorrelation.Maintain(now, policy.titleThoughtCorrelationTicks);
-            HashSet<string> eligiblePawnIds = new HashSet<string>(StringComparer.Ordinal);
-            for (int i = 0; i < (colonists?.Count ?? 0); i++)
+            RoyalTitleThoughtCorrelation.Maintain(
+                Find.TickManager?.TicksGame ?? 0, policy.titleThoughtCorrelationTicks);
+        }
+
+        /// <summary>
+        /// Reconciles live pawns with staged title memories before the transient queue is flushed into
+        /// a save. A scanner-owned title change becomes its rich page now; a genuinely unmatched memory
+        /// remains pending and is released unchanged by <see cref="RoyalTitleThoughtCorrelation"/>.
+        /// </summary>
+        private void ReconcileRoyaltyOwnersBeforeSave()
+        {
+            if (!ModsConfig.RoyaltyActive
+                || (!RoyalMutationCorrelation.HasPending && !RoyalTitleThoughtCorrelation.HasPending)) return;
+            bool progressionEnabled = PawnDiaryMod.Settings != null
+                && DiarySignalPolicies.Enabled(DiarySignalPolicies.Progression);
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            List<Pawn> liveColonists = SnapshotLiveRoyaltyColonists();
+            for (int i = 0; i < liveColonists.Count; i++)
             {
-                string pawnId = colonists[i]?.GetUniqueLoadID();
-                if (!string.IsNullOrWhiteSpace(pawnId)) eligiblePawnIds.Add(pawnId);
+                Pawn pawn = liveColonists[i];
+                string pawnId = pawn.GetUniqueLoadID();
+                bool pendingMutationOwner = RoyalMutationCorrelation.HasPendingForPawn(pawnId);
+                bool pendingTitleMemory = RoyalTitleThoughtCorrelation.HasPendingForPawn(pawnId);
+                if (!pendingMutationOwner && !pendingTitleMemory) continue;
+                RoyalMutationBatchSnapshot pendingMutation;
+                while ((pendingMutation = RoyalMutationCorrelation.TakePendingForSave(
+                    pawnId)) != null)
+                {
+                    EmitRoyalMutationProgression(pawn, pendingMutation, policy);
+                }
+                if (!pendingTitleMemory) continue;
+                PawnProgressionState progression = FindDiary(pawn, true)?.EnsureProgressionState();
+                if (progression != null)
+                    ObserveRoyaltyProgression(pawn, progression, progressionEnabled);
             }
-            RoyalMutationCorrelation.PruneExpiredMissingOwners(eligiblePawnIds, now, policy);
+        }
+
+        /// <summary>
+        /// Gives live caravan/travelling owners the same expiry reconciliation as map colonists before
+        /// global title-memory release. Ordinary progression scanning remains map-scoped; this narrow
+        /// pass runs only while one of the exact Royalty queues names the off-map pawn.
+        /// </summary>
+        private void ReconcileOffMapRoyaltyOwners(IList<Pawn> mapColonists, bool outputEnabled)
+        {
+            if (!ModsConfig.RoyaltyActive
+                || (!RoyalMutationCorrelation.HasPending && !RoyalTitleThoughtCorrelation.HasPending)) return;
+            HashSet<string> scannedPawnIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < (mapColonists?.Count ?? 0); i++)
+            {
+                string pawnId = mapColonists[i]?.GetUniqueLoadID();
+                if (!string.IsNullOrWhiteSpace(pawnId)) scannedPawnIds.Add(pawnId);
+            }
+
+            List<Pawn> liveColonists = SnapshotLiveRoyaltyColonists();
+            for (int i = 0; i < liveColonists.Count; i++)
+            {
+                Pawn pawn = liveColonists[i];
+                string pawnId = pawn.GetUniqueLoadID();
+                if (scannedPawnIds.Contains(pawnId)
+                    || (!RoyalMutationCorrelation.HasPendingForPawn(pawnId)
+                        && !RoyalTitleThoughtCorrelation.HasPendingForPawn(pawnId))) continue;
+                PawnProgressionState progression = FindDiary(pawn, true)?.EnsureProgressionState();
+                if (progression != null)
+                    ObserveRoyaltyProgression(pawn, progression, outputEnabled);
+            }
+        }
+
+        /// <summary>
+        /// Snapshots eligible colonists across maps, caravans, and travelling transporters. Map-only
+        /// free-colonist lists are not a liveness test: a ritual target can leave in a caravan while
+        /// its short mutation-ownership window is still open.
+        /// </summary>
+        private List<Pawn> SnapshotLiveRoyaltyColonists()
+        {
+            List<Pawn> result = new List<Pawn>();
+            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+            IEnumerable<Pawn> candidates = PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive;
+            if (candidates == null) return result;
+            foreach (Pawn pawn in candidates)
+            {
+                if (!IsDiaryEligible(pawn)) continue;
+                string pawnId = pawn.GetUniqueLoadID();
+                if (string.IsNullOrWhiteSpace(pawnId) || !seen.Add(pawnId)) continue;
+                result.Add(pawn);
+            }
+            return result;
         }
 
         private void EnsureRoyaltyObservationReady(Pawn pawn, PawnProgressionState progression)
@@ -363,26 +474,29 @@ namespace PawnDiary
             progression.lastObservedRoyalTitleLabel = mostSenior?.titleLabel ?? string.Empty;
         }
 
-        private bool EmitRoyalMutationProgression(Pawn pawn, RoyalMutationBatchSnapshot batch)
+        private bool EmitRoyalMutationProgression(
+            Pawn pawn,
+            RoyalMutationBatchSnapshot batch,
+            RoyaltyPolicySnapshot policy = null)
         {
             if (pawn == null || batch == null) return false;
-            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
-            string selectedKind = RoyalMutationProgressionKind(batch, policy);
+            RoyaltyPolicySnapshot effective = policy ?? DiaryRoyaltyPolicy.Snapshot();
+            string selectedKind = RoyalMutationProgressionKind(batch, effective);
             RoyalTitleMutationSnapshot title = batch.titleMutation;
             if (selectedKind == RoyalMutationKindTokens.Title)
             {
                 RoyalTitleTransitionDecision decision = RoyalTitleTransitionPolicy.Classify(
-                    title.previousTitle, title.newTitle, false, true, policy);
+                    title.previousTitle, title.newTitle, false, true, effective);
                 bool emitted = EmitRoyalTitleTransition(pawn, batch, decision);
                 if (emitted) ClaimRoyalTitleThoughts(batch, Find.TickManager?.TicksGame ?? 0,
-                    policy);
+                    effective);
                 return emitted;
             }
             if (selectedKind != RoyalMutationKindTokens.Psylink) return false;
             RoyalPsychicMutationSnapshot psylink = batch.psylinkMutation;
             string context = RoyalMutationContextFormatter.Format(
                 batch, RoyalTitleTransitionTokens.Invalid,
-                policy.maximumRoyaltyContextCharacters, policy.maximumDutyCategoryTokens,
+                effective.maximumRoyaltyContextCharacters, effective.maximumDutyCategoryTokens,
                 includeOptionalDuties: false);
             string label = "PawnDiary.Event.ProgressionPsylinkLabel"
                 .Translate(psylink.newPsylinkLevel).Resolve();
@@ -396,11 +510,19 @@ namespace PawnDiary
                 context);
             string text = "PawnDiary.Event.ProgressionPsylinkText"
                 .Translate(pawn.LabelShortCap, psylink.newPsylinkLevel).Resolve();
-            return DispatchProgression(
+            bool emittedPsylink = DispatchProgression(
                 pawn, data, label, text,
                 majorArcCandidate: IsMajorArcPsylinkLevel(psylink.newPsylinkLevel),
                 dedupKey: "royalty-psylink|" + pawn.GetUniqueLoadID() + "|" + batch.openedTick,
                 dedupWindowTicks: DiaryTuning.Current.genericEventTypeDedupTicks);
+            if (emittedPsylink && title != null)
+            {
+                // A combined batch can legitimately select psylink when its title route is disabled.
+                // The page still owns the whole exact action, so consume the title memory too.
+                ClaimRoyalTitleThoughts(
+                    batch, Find.TickManager?.TicksGame ?? 0, effective);
+            }
+            return emittedPsylink;
         }
 
         private bool EmitRoyalTitleTransition(
@@ -590,11 +712,6 @@ namespace PawnDiary
                 && DiarySignalPolicies.Enabled(DiarySignalPolicies.Progression);
         }
 
-        private static bool RoyalMutationProgressionEnabled(RoyalMutationBatchSnapshot batch)
-        {
-            return RoyalMutationProgressionKind(batch, DiaryRoyaltyPolicy.Snapshot()).Length > 0;
-        }
-
         private static string RoyalMutationProgressionKind(
             RoyalMutationBatchSnapshot batch,
             RoyaltyPolicySnapshot policy)
@@ -620,6 +737,80 @@ namespace PawnDiary
                 && RoyalProgressionGroupEnabled(ProgressionEventData.PsylinkLevelDefName);
             return RoyalMutationPageSelectionPolicy.Select(
                 effective.enabled, titleChanged, titleEnabled, psylinkChanged, psylinkEnabled);
+        }
+
+        /// <summary>
+        /// Detached rollback copy of the saved Royalty fields touched while a mutation boundary closes.
+        /// This is intentionally component-side: it snapshots persistence models, never live DLC data.
+        /// </summary>
+        private sealed class RoyaltyObservationCheckpoint
+        {
+            private int highestPsylinkLevelRecorded;
+            private string lastObservedRoyalTitleDefName;
+            private string lastObservedRoyalTitleLabel;
+            private bool hadRoyaltyState;
+            private RoyaltyPawnProgressionState originalRoyaltyState;
+            private int observationVersion;
+            private bool observationAvailable;
+            private List<RoyalTitleObservationState> titleObservations;
+
+            /// <summary>Copies the current Royalty-owned progression fields without normalizing them.</summary>
+            public static RoyaltyObservationCheckpoint Capture(PawnProgressionState progression)
+            {
+                if (progression == null) return null;
+                RoyaltyPawnProgressionState royalty = progression.royaltyObservationState;
+                return new RoyaltyObservationCheckpoint
+                {
+                    highestPsylinkLevelRecorded = progression.highestPsylinkLevelRecorded,
+                    lastObservedRoyalTitleDefName = progression.lastObservedRoyalTitleDefName,
+                    lastObservedRoyalTitleLabel = progression.lastObservedRoyalTitleLabel,
+                    hadRoyaltyState = royalty != null,
+                    originalRoyaltyState = royalty,
+                    observationVersion = royalty?.observationVersion ?? 0,
+                    observationAvailable = royalty?.observationAvailable ?? false,
+                    titleObservations = CloneTitleObservations(royalty?.titleObservations)
+                };
+            }
+
+            /// <summary>Restores the exact fields copied before mutation bookkeeping began.</summary>
+            public void Restore(PawnProgressionState progression)
+            {
+                if (progression == null) return;
+                progression.highestPsylinkLevelRecorded = highestPsylinkLevelRecorded;
+                progression.lastObservedRoyalTitleDefName = lastObservedRoyalTitleDefName;
+                progression.lastObservedRoyalTitleLabel = lastObservedRoyalTitleLabel;
+                if (!hadRoyaltyState)
+                {
+                    progression.royaltyObservationState = null;
+                    return;
+                }
+
+                originalRoyaltyState.observationVersion = observationVersion;
+                originalRoyaltyState.observationAvailable = observationAvailable;
+                originalRoyaltyState.titleObservations = CloneTitleObservations(titleObservations);
+                progression.royaltyObservationState = originalRoyaltyState;
+            }
+
+            private static List<RoyalTitleObservationState> CloneTitleObservations(
+                IList<RoyalTitleObservationState> source)
+            {
+                if (source == null) return null;
+                List<RoyalTitleObservationState> copy = new List<RoyalTitleObservationState>();
+                for (int i = 0; i < source.Count; i++)
+                {
+                    RoyalTitleObservationState row = source[i];
+                    copy.Add(row == null ? null : new RoyalTitleObservationState
+                    {
+                        factionId = row.factionId,
+                        factionName = row.factionName,
+                        titleDefName = row.titleDefName,
+                        titleLabel = row.titleLabel,
+                        seniority = row.seniority,
+                        lastObservedTick = row.lastObservedTick
+                    });
+                }
+                return copy;
+            }
         }
 
         private static bool RoyaltyProgressionRuntimeReady()

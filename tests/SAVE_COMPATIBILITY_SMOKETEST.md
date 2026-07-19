@@ -439,8 +439,9 @@ as well as the visible page. The first qualifying kill is a vanilla qualifying T
 
 Phase 4 owns exact faction-title edges and title/psylink cause arbitration. Use a fresh eligible pawn
 for each destructive branch. Keep prompt-test mode enabled while inspecting prompts; no model request
-is required. The expanded automated loaded suite is green at 256/256; all manual rows below remain
-open.
+is required. The last automated loaded run is green at 256/256. Post-review coverage expands the
+compiled suite to 258 tests; those two new save/expiry fixtures still require a loaded execution, and
+all manual rows below remain open.
 
 The first loaded-game run on RimWorld 1.6.4871 reached 249/252. Two failures shared one runtime cause:
 Harmony rejected the title postfix's non-vanilla `currentTitle` argument name, so the hook audit and
@@ -454,14 +455,17 @@ observer. The subsequent user-confirmed loaded rerun passed 252/252. Adversarial
 four loaded fixtures and strengthened several existing ones; the expanded user-confirmed rerun passed
 256/256.
 
-- [x] **ASSEMBLY-FREE/BUILD:** Pure suites pass 316 Royalty, 2,437 pipeline, 665 capture-policy, and
-  125 Narrative Continuity assertions; runtime and RimTest assemblies build.
+- [x] **ASSEMBLY-FREE/BUILD:** Pure suites pass 318 Royalty, 2,437 pipeline, 665 capture-policy, and
+  125 Narrative Continuity assertions; runtime and 258-test RimTest assemblies build.
 - [x] **PRIOR AUTOMATED LOADED BASELINE:** The 252/252 user-confirmed run covered
   `PawnDiaryRoyaltyProgressionFlowTests`, the exact Royalty hook audit in
   `PawnDiaryRoyaltyFlowTests`, `PawnDiaryRoyaltyStateFixtureTests`, and Royalty Def/prompt smoke tests.
 - [x] **EXPANDED AUTOMATED LOADED RERUN:** All 256 tests passed, including the real neuroformer comp,
   disabled ritual non-transfer, reverse-order title memory, real lifecycle reset, same-tick loss label,
   and no-Royalty immediate-load invalidation additions.
+- [ ] **POST-REVIEW LOADED RERUN:** Run all 258 tests, including save-time scanner-title reconciliation
+  and the equal-expiry combined psylink/title-memory owner. The attendee-first non-claim assertion is
+  folded into the existing bestowing fixture.
 - [ ] **MANUAL LATER:** Perform and record every row below before marking R1 acceptance-complete.
 
 | # | Scenario | Expected result | Regression signal |

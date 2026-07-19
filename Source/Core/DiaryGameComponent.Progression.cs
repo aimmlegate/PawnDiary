@@ -35,7 +35,7 @@ namespace PawnDiary
             }
 
             List<Pawn> colonists = SnapshotFreeColonists();
-            MaintainRoyaltyTransientProgression(colonists);
+            MaintainRoyaltyTransientProgression();
             BaselineRoyaltyStateIfNeeded(colonists);
             for (int i = 0; i < colonists.Count; i++)
             {
@@ -44,6 +44,11 @@ namespace PawnDiary
                     progressionEnabled,
                     observeBiotech);
             }
+            ReconcileOffMapRoyaltyOwners(colonists, progressionEnabled);
+            // Exact title/psylink owners must reconcile first. Releasing expired title memories
+            // before the pawn observers run can create an ordinary Thought page immediately before
+            // the richer mutation fallback claims the same action.
+            MaintainRoyalTitleThoughtsAfterRoyaltyObservation();
         }
 
         /// <summary>

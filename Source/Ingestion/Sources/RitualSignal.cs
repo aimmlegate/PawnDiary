@@ -80,8 +80,7 @@ namespace PawnDiary.Ingestion
             // attached mutation context. Leaving the ordinary ritual page alive while the master is
             // disabled would make the switch only half-effective and transfer the same action to an
             // un-enriched route.
-            if (ModsConfig.RoyaltyActive
-                && !RoyaltyPolicyAllowsRitual(defName, DiaryRoyaltyPolicy.Snapshot())) return;
+            if (!RoyaltyPolicyAllowsRitual(defName, DiaryRoyaltyPolicy.Snapshot())) return;
 
             BehaviorClass = RitualBehaviorClass(ritual);
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyRitual(RitualClassifierKey(defName, BehaviorClass));
@@ -150,10 +149,8 @@ namespace PawnDiary.Ingestion
                 || bestower == null || target == null || PawnDiaryMod.Settings == null) return null;
             RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
             if (!policy.enabled) return null;
-            string defName = policy.bestowingRitualDefNames != null
-                && policy.bestowingRitualDefNames.Count > 0
-                ? policy.bestowingRitualDefNames[0]
-                : "BestowingCeremony";
+            string defName = FirstOrFallback(
+                policy.bestowingRitualDefNames, "BestowingCeremony");
             string behavior = "RitualOutcomeEffectWorker_Bestowing";
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyRitual(
                 RitualClassifierKey(defName, behavior));
@@ -257,8 +254,7 @@ namespace PawnDiary.Ingestion
             {
                 return;
             }
-            if (ModsConfig.RoyaltyActive
-                && !RoyaltyPolicyAllowsRitual(defName, DiaryRoyaltyPolicy.Snapshot())) return;
+            if (!RoyaltyPolicyAllowsRitual(defName, DiaryRoyaltyPolicy.Snapshot())) return;
 
             this.organizer = organizer;
             this.targetPawn = targetPawn;
@@ -351,14 +347,18 @@ namespace PawnDiary.Ingestion
             return RitualRoleLabel(RitualJob, Assignments, pawn, perspective);
         }
 
-        /// <summary>Marks cooldown state only after one child successfully creates its saved page.</summary>
-        internal void NotifyPageCreated(DiaryGameComponent sink)
+        /// <summary>
+        /// Marks cooldown state after any saved child page, but claims a personal Royalty mutation
+        /// only when the saved page belongs to the pawn whose title/psylink facts it carries.
+        /// </summary>
+        internal void NotifyPageCreated(DiaryGameComponent sink, string pagePawnId)
         {
             if (odysseyLaunchAuthorized)
             {
                 sink?.MarkOdysseyLaunchPageAt(odysseyLaunchTick);
             }
             if (royaltyMutationBatch != null
+                && string.Equals(royaltyMutationBatch.pawnId, pagePawnId, StringComparison.Ordinal)
                 && RoyalMutationCorrelation.ClaimRitual(royaltyMutationBatch))
             {
                 RoyalTitleMutationSnapshot title = royaltyMutationBatch.titleMutation;
@@ -647,7 +647,7 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
-            source.NotifyPageCreated(sink);
+            source.NotifyPageCreated(sink, payload.PawnId);
             sink.QueueSolo(ritualEvent, DiaryEvent.InitiatorRole);
         }
     }

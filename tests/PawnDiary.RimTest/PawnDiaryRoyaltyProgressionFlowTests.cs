@@ -180,6 +180,11 @@ namespace PawnDiary.RimTests
                 bestower, pawn, new List<Pawn> { participant }, 1f);
             PawnDiaryRimTestScope.Require(signal != null,
                 "The loaded bestowing facts did not create the canonical ritual fanout.");
+            PawnDiaryRimTestScope.Require(RoyalMutationCorrelation.PendingCountForTests == 1,
+                "The bestowing fixture lost its pending Royalty owner before fanout.");
+            signal.NotifyPageCreated(scope.Component, participant.GetUniqueLoadID());
+            PawnDiaryRimTestScope.Require(RoyalMutationCorrelation.PendingCountForTests == 1,
+                "An attendee page claimed the target-only Royalty mutation.");
             scope.Component.Dispatch(signal);
             List<DiaryEvent> emitted = NewEventsSince(before);
             PawnDiaryRimTestScope.Require(emitted.Count == 2,
@@ -293,6 +298,103 @@ namespace PawnDiary.RimTests
             RequireNoProgressionEvents(emitted);
             scope.RequireNoNewEvent(() =>
                 scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
+        }
+
+        /// <summary>
+        /// When a combined ritual batch expires while title pages are disabled, its enabled psylink
+        /// fallback owns the whole action and must claim the exact title memory before that memory's
+        /// equally-sized expiry window releases an ordinary Thought page.
+        /// </summary>
+        [Test]
+        public static void CombinedPsylinkFallbackClaimsExpiredTitleMemory()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(CombinedPsylinkFallbackClaimsExpiredTitleMemory))) return;
+            Faction faction = RequireEmpire();
+            RoyalTitleDef title = faction.def.RoyalTitlesAwardableInSeniorityOrderForReading
+                .FirstOrDefault(row => row?.awardThought != null
+                    && typeof(Thought_MemoryRoyalTitle).IsAssignableFrom(row.awardThought.thoughtClass));
+            PawnDiaryRimTestScope.Require(title?.awardThought != null,
+                "Royalty loaded no combined-fallback title with an award memory.");
+            RegisterRoyalCleanup(pawn, faction);
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", false);
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionPsylink", true);
+            scope.RequireNoNewEvent(() =>
+                scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
+
+            RoyalMutationBatchSnapshot batch = scope.Component.BeginRoyalMutationCause(
+                pawn, faction, RoyalMutationCauseTokens.ImperialBestowing);
+            PawnDiaryRimTestScope.Require(batch != null,
+                "The combined fallback fixture could not open its exact mutation boundary.");
+            AddRoyalTitleDirectly(pawn, faction, title);
+            AddFirstPsylink(pawn);
+
+            Thought_MemoryRoyalTitle memory = ThoughtMaker.MakeThought(title.awardThought)
+                as Thought_MemoryRoyalTitle;
+            PawnDiaryRimTestScope.Require(memory != null,
+                "The combined fallback title memory did not construct.");
+            memory.titleDef = title;
+            memory.pawn = pawn;
+            DiaryInteractionGroupDef thoughtGroup = InteractionGroups.ClassifyThought(memory.def);
+            PawnDiaryRimTestScope.Require(thoughtGroup != null,
+                "The combined fallback title memory did not classify as an ordinary Thought.");
+            PawnDiaryMod.Settings.SetGroupEnabled(thoughtGroup.defName, true);
+            DiarySignalPolicyDef thoughtPolicy = DiarySignalPolicies.ForKey(DiarySignalPolicies.Thought);
+            float originalThreshold = thoughtPolicy.minMoodOffset;
+            thoughtPolicy.minMoodOffset = 0f;
+            scope.RegisterCleanup(() => thoughtPolicy.minMoodOffset = originalThreshold);
+
+            int now = Find.TickManager?.TicksGame ?? 0;
+            PawnDiaryRimTestScope.Require(now > 1,
+                "The loaded game needs at least two ticks for an expired ownership fixture.");
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            int originalMutationWindow = policy.titleCorrelationTicks;
+            int originalThoughtWindow = policy.titleThoughtCorrelationTicks;
+            policy.titleCorrelationTicks = 1;
+            policy.titleThoughtCorrelationTicks = 1;
+            scope.RegisterCleanup(() =>
+            {
+                policy.titleCorrelationTicks = originalMutationWindow;
+                policy.titleThoughtCorrelationTicks = originalThoughtWindow;
+            });
+            RoyalTitleThoughtSnapshot fact = new RoyalTitleThoughtSnapshot
+            {
+                pawnId = pawn.GetUniqueLoadID(),
+                titleDefName = title.defName,
+                relationshipToken = RoyalTitleThoughtRelationshipTokens.Award,
+                tick = now
+            };
+            bool staged = RoyalTitleThoughtCorrelation.TryStage(
+                fact,
+                new ThoughtSignal(pawn, memory),
+                now,
+                policy.titleThoughtCorrelationTicks,
+                policy.maximumPendingTitleThoughts);
+            PawnDiaryRimTestScope.Require(staged,
+                "The combined fallback title memory did not enter its exact ownership window.");
+            scope.RequireNoNewEvent(() =>
+                scope.Component.CompleteRoyalMutationCause(batch, pawn, faction));
+            PawnDiaryRimTestScope.Require(batch.titleMutation != null && batch.psylinkMutation != null
+                    && RoyalMutationCorrelation.PendingCountForTests == 1,
+                "The combined title/psylink mutation did not enter pending ritual ownership.");
+
+            int expiredTick = now - 2;
+            batch.openedTick = expiredTick;
+            if (batch.scope != null) batch.scope.openedTick = expiredTick;
+            batch.titleMutation.tick = expiredTick;
+            batch.psylinkMutation.tick = expiredTick;
+            fact.tick = expiredTick;
+            HashSet<string> before = SnapshotEventIds();
+            scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false);
+            List<DiaryEvent> emitted = NewEventsSince(before);
+            PawnDiaryRimTestScope.Require(emitted.Count == 1
+                    && emitted[0].interactionDefName == ProgressionEventData.PsylinkLevelDefName,
+                "The expired combined batch should create one psylink page, got "
+                    + string.Join(", ", emitted.Select(row => row.interactionDefName).ToArray()) + ".");
+            PawnDiaryRimTestScope.Require(RoyalMutationCorrelation.PendingCountForTests == 0
+                    && RoyalTitleThoughtCorrelation.PendingCountForTests == 0,
+                "The psylink fallback left duplicate mutation/title-memory ownership pending.");
+            scope.RequireNoNewEvent(() => RoyalTitleThoughtCorrelation.Maintain(
+                now, policy.titleThoughtCorrelationTicks));
         }
 
         /// <summary>The real neuroformer Comp hook owns one immediate source-aware Psylink page.</summary>
@@ -479,6 +581,79 @@ namespace PawnDiary.RimTests
                     && reloaded.interactionDefName == title.awardThought.defName
                     && reloaded.initiatorPawnId == memoryPawn.GetUniqueLoadID(),
                 "The pre-save title-memory page was not serialized/reloaded from diaryEvents.");
+        }
+
+        /// <summary>
+        /// A direct/modded title mutation can leave its exact award memory pending until the scanner
+        /// runs. Saving in that window must reconcile the rich title page before flushing unmatched
+        /// memories, and continuing after the save must not add either page again.
+        /// </summary>
+        [Test]
+        public static void ScannerTitleMemoryReconcilesBeforeSaveWithoutDuplicate()
+        {
+            if (!RequireRoyaltyOrSkip(nameof(ScannerTitleMemoryReconcilesBeforeSaveWithoutDuplicate))) return;
+            Faction faction = RequireEmpire();
+            RoyalTitleDef title = faction.def.RoyalTitlesAwardableInSeniorityOrderForReading
+                .FirstOrDefault(row => row?.awardThought != null
+                    && typeof(Thought_MemoryRoyalTitle).IsAssignableFrom(row.awardThought.thoughtClass));
+            PawnDiaryRimTestScope.Require(title?.awardThought != null,
+                "Royalty loaded no scanner/save title with an award memory.");
+            RegisterRoyalCleanup(pawn, faction);
+            PawnDiaryMod.Settings.SetGroupEnabled("progressionRoyalTitle", true);
+            scope.RequireNoNewEvent(() =>
+                scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
+
+            AddRoyalTitleDirectly(pawn, faction, title);
+            Thought_MemoryRoyalTitle memory = ThoughtMaker.MakeThought(title.awardThought)
+                as Thought_MemoryRoyalTitle;
+            PawnDiaryRimTestScope.Require(memory != null,
+                "The scanner/save royal-title memory did not construct.");
+            memory.titleDef = title;
+            memory.pawn = pawn;
+            DiaryInteractionGroupDef thoughtGroup = InteractionGroups.ClassifyThought(memory.def);
+            PawnDiaryRimTestScope.Require(thoughtGroup != null,
+                "The scanner/save title memory did not classify into ordinary Thought capture.");
+            PawnDiaryMod.Settings.SetGroupEnabled(thoughtGroup.defName, true);
+            DiarySignalPolicyDef thoughtPolicy = DiarySignalPolicies.ForKey(DiarySignalPolicies.Thought);
+            float originalThreshold = thoughtPolicy.minMoodOffset;
+            thoughtPolicy.minMoodOffset = 0f;
+            scope.RegisterCleanup(() => thoughtPolicy.minMoodOffset = originalThreshold);
+
+            int now = Find.TickManager?.TicksGame ?? 0;
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            bool staged = RoyalTitleThoughtCorrelation.TryStage(
+                new RoyalTitleThoughtSnapshot
+                {
+                    pawnId = pawn.GetUniqueLoadID(),
+                    titleDefName = title.defName,
+                    relationshipToken = RoyalTitleThoughtRelationshipTokens.Award,
+                    tick = now
+                },
+                new ThoughtSignal(pawn, memory),
+                now,
+                policy.titleThoughtCorrelationTicks,
+                policy.maximumPendingTitleThoughts);
+            PawnDiaryRimTestScope.Require(staged,
+                "The scanner/save title memory did not enter its exact ownership window.");
+
+            HashSet<string> before = SnapshotEventIds();
+            DiaryEventRepository reloadedEvents = SaveComponentAndReloadEvents();
+            List<DiaryEvent> emitted = NewEventsSince(before);
+            PawnDiaryRimTestScope.Require(emitted.Count == 1,
+                "Pre-save title reconciliation should create exactly one page, got "
+                    + emitted.Count + ".");
+            DiaryEvent gained = emitted[0];
+            PawnDiaryRimTestScope.Require(
+                gained.interactionDefName == ProgressionEventData.RoyalTitleGainedDefName,
+                "Pre-save reconciliation released an ordinary Thought instead of the rich title page.");
+            PawnDiaryRimTestScope.Require(
+                reloadedEvents?.FindEvent(gained.eventId)?.interactionDefName
+                    == ProgressionEventData.RoyalTitleGainedDefName,
+                "The reconciled title page was not serialized in the same save.");
+            PawnDiaryRimTestScope.Require(RoyalTitleThoughtCorrelation.PendingCountForTests == 0,
+                "The reconciled title page left its exact award memory pending.");
+            scope.RequireNoNewEvent(() =>
+                scope.Component.ScanPawnProgressionForDiaryEvents(pawn, true, false));
         }
 
         private static DiaryEventRepository SaveComponentAndReloadEvents()
