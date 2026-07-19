@@ -70,7 +70,7 @@ namespace PawnDiary
                     context.hediffs.Add(new DiaryTextDecorationHediffFact
                     {
                         defName = hediff.def?.defName ?? string.Empty,
-                        label = hediff.Label ?? string.Empty,
+                        label = TryReadHediffLabel(hediff),
                         severity = hediff.Severity,
                         visible = hediff.Visible
                     });
@@ -171,11 +171,28 @@ namespace PawnDiary
             DiaryTextDecorationHediffFact fact = new DiaryTextDecorationHediffFact
             {
                 defName = hediff.def?.defName ?? string.Empty,
-                label = hediff.Label ?? string.Empty,
+                label = TryReadHediffLabel(hediff),
                 severity = hediff.Severity,
                 visible = hediff.Visible
             };
             return DiaryTextDecorations.HediffMatchesStaggeredRules(DiaryTextDecorationDefs.CurrentRules, fact);
+        }
+
+        // Hediff.Label looks like a simple getter, but RimWorld composes it through virtual members
+        // (LabelInBrackets/LabelBase) that other mods override, and a broken override can throw on a
+        // hediff whose modded state is not fully initialized. The label only feeds optional display
+        // decoration, so a throwing hediff degrades to "no label" instead of aborting the diary event.
+        // Do not log here: the same broken hediff is re-read by every event while it persists.
+        private static string TryReadHediffLabel(Hediff hediff)
+        {
+            try
+            {
+                return hediff?.Label ?? string.Empty;
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
         }
 
         private static int IntoxicationSeverityToIntensity(float severity)

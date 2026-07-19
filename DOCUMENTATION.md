@@ -817,6 +817,17 @@ patch throws during that recalculation, Pawn Diary omits only the room-role labe
 recording the event and collecting the remaining context. The frequently sampled fallback is silent
 so one unstable room cannot flood the log.
 
+The same fail-soft rule covers the other composed vanilla getters we sample. `Hediff.Label` is built
+through virtual members another mod can override (`VPE-Veincaster`'s bloodlink hediff threw inside
+`get_LabelInBrackets`), so both text-decoration fact capture and intoxication detection read it
+through a guarded helper that degrades to "no label" for that hediff. `ThoughtHandler.
+GetAllMoodThoughts` calls `MoodOffset()` on every thought during enumeration, so a modded thought
+that throws there (`InspirationTweaks`' soothe thought) escapes the per-thought guards; the
+enumeration call itself is therefore wrapped in the thought-progression scan, the top-thoughts
+summary, and the game-condition mood classifier, degrading to an empty scan/summary or a zero mood
+offset for that pass. All of these fallbacks stay silent because the broken state rethrows on every
+sample while it persists.
+
 `LlmClient` owns the background HTTP work for OpenAI-compatible API lanes. It handles retries,
 failover, cooldowns, timeouts, and session cancellation. Finished results return to the main thread,
 where the matching `DiaryEvent` is updated with text, status, model metadata, titles, and unread

@@ -1,5 +1,19 @@
 # Changelog
 
+- **2026-07-19 — Hardened pawn-fact and mood-thought reads against modded getter crashes.**
+  Player logs showed three third-party NREs escaping through Pawn Diary call sites:
+  `VPE-Veincaster`'s bloodlink hediff throwing inside `Hediff.Label` (via `get_LabelInBrackets`),
+  `InspirationTweaks`' soothe thought throwing inside `ThoughtHandler.GetAllMoodThoughts`, and a
+  room-stat recalculation throwing inside `Room.GetRoomRoleLabel` (already guarded by an earlier
+  commit). `PawnFactCapture` now reads hediff labels through a guarded helper used by both
+  text-decoration fact capture and intoxication detection, so a broken modded hediff degrades to
+  "no label" instead of aborting the diary event. The `GetAllMoodThoughts` enumeration call —
+  which itself invokes every thought's `MoodOffset()` before the existing per-thought guards can
+  run — is now wrapped in the thought-progression scan, the top-thoughts summary, and the
+  game-condition mood classifier, degrading to an empty scan/summary or zero offset for that pass.
+  All fallbacks stay silent because the broken modded state rethrows on every sample while it
+  persists. No prompt field, XML, Scribe key, or gameplay behavior changed.
+
 - **2026-07-19 — Implemented Master Wave 13 / Royalty Phase 8 compatibility and release
   hardening.** Coverage-first review confirmed the existing pure Royalty matrix already owns
   localized-wording independence, structural/override persona-trait ranking, unsafe/malformed rows,

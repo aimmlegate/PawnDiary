@@ -999,7 +999,18 @@ namespace PawnDiary
             }
 
             List<Thought> thoughts = new List<Thought>();
-            pawn.needs.mood.thoughts.GetAllMoodThoughts(thoughts);
+            try
+            {
+                // GetAllMoodThoughts itself calls MoodOffset() on every thought, so a modded thought
+                // whose MoodOffset throws escapes the per-thought guard below. Losing the whole
+                // summary beats losing the diary entry being built. Do not log: the broken thought
+                // rethrows on every entry while it persists.
+                pawn.needs.mood.thoughts.GetAllMoodThoughts(thoughts);
+            }
+            catch (Exception)
+            {
+                return parts;
+            }
 
             // Snapshot each thought's mood offset exactly once, skipping any thought whose getters
             // throw. Vanilla relation thoughts are fragile here — Thought_OpinionOfMyLover.MoodOffset

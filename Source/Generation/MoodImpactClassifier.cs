@@ -185,7 +185,18 @@ namespace PawnDiary
 
             float totalOffset = 0f;
             List<Thought> thoughts = new List<Thought>();
-            pawn.needs.mood.thoughts.GetAllMoodThoughts(thoughts);
+            try
+            {
+                // GetAllMoodThoughts calls MoodOffset() on every thought; a modded thought class can
+                // throw inside that enumeration. Treat an unreadable mood state as "no offset" rather
+                // than aborting the game-condition diary event. Do not log: it rethrows while the
+                // broken thought persists.
+                pawn.needs.mood.thoughts.GetAllMoodThoughts(thoughts);
+            }
+            catch (Exception)
+            {
+                return 0f;
+            }
 
             for (int i = 0; i < thoughts.Count; i++)
             {

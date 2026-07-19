@@ -64,7 +64,20 @@ namespace PawnDiary
 
                 thoughts.Clear();
                 activeByStateKey.Clear();
-                pawn.needs.mood.thoughts.GetAllMoodThoughts(thoughts);
+
+                // GetAllMoodThoughts itself calls MoodOffset() on every thought, and a modded thought
+                // class can throw inside its own MoodOffset override before the per-thought guard below
+                // ever runs. A pawn with such a thought costs only their own scan pass, not the whole
+                // colony tick. Do not log: the broken thought rethrows every scan while it persists.
+                try
+                {
+                    pawn.needs.mood.thoughts.GetAllMoodThoughts(thoughts);
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
                 string pawnId = pawn.GetUniqueLoadID();
 
                 for (int j = 0; j < thoughts.Count; j++)
