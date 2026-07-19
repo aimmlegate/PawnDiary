@@ -1,6 +1,7 @@
 # Pawn Diary — Anomaly Support Implementation Plan
 
-Status: A0 implemented as Master Wave 2, 2026-07-15; A1–A3 remain implementation-ready plans. The
+Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0 implemented as the first Master Wave 7
+slice, 2026-07-20; A1.1–A3 remain implementation-ready plans. The
 RimWorld 1.6 feasibility spike is complete for study-note milestones, containment escapes, visible
 creepjoiner outcomes, ghoul infusion, and both terminal void choices. Production now includes the A0
 exact psychic-ritual routing and monolith activation chapters described below.
@@ -1447,6 +1448,14 @@ tokens.
 page.
 
 ### Phase A1.0 — Pure contracts, policy Def, and tests
+
+> **Implementation status (2026-07-20): complete.** `DiaryAnomalyPolicyDef` and its primitive-only
+> XML row copy into a detached snapshot with conservative fallbacks; plain study/containment/Tale
+> DTOs and pure planners freeze observation-versus-generation, deterministic writer, bounded entity,
+> exact fail-open ownership, synthetic event, and prompt-token contracts. The new assembly-free suite
+> passes 167 assertions. The existing 291-test RimTest assembly adds only a read-only singleton-Def
+> assertion; it has been compiled but not executed in game. A1.0 adds no catalog route, Scribe key,
+> runtime hook, signal, page, group, setting, or live Anomaly read.
 
 - Add policy schema/defaults.
 - Add plain DTOs and pure study/breach/Tale-ownership policies.

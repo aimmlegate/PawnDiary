@@ -26,6 +26,19 @@ namespace PawnDiary.RimTests
             RequireDef<DiaryUiStyleDef>("Diary_UiStyle");
             RequireDef<DiaryContextDetailDef>("Diary_ContextDetail");
             RequireDef<DiaryRoyaltyPolicyDef>("Diary_Royalty");
+            DiaryAnomalyPolicyDef anomaly =
+                RequireDef<DiaryAnomalyPolicyDef>("Diary_AnomalyPolicy");
+            // A1.0 deliberately ships this policy in every profile. These read-only assertions prove
+            // the real RimWorld XML loader retained its conservative primitive-only defaults.
+            Assert.That(anomaly.studyEnabled && anomaly.recordFirstStudyBreakthrough
+                && anomaly.recordCompletedEntityKind);
+            Assert.That(anomaly.promotedStudyMilestones != null
+                && anomaly.promotedStudyMilestones.Count == 0);
+            Assert.That(anomaly.containmentEnabled && anomaly.containmentWitnessRadius == 12
+                && anomaly.containmentMaxWriters == 2
+                && anomaly.containmentMaxEntityLabelsInContext == 3);
+            Assert.That(anomaly.studyTaleSuppressionTicks == 2500
+                && anomaly.taleOwnershipMaxDepth == 8);
             RequireDef<DiaryMemoryTuningDef>("Diary_Memory");
         }
 

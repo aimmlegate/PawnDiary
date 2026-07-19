@@ -1,5 +1,24 @@
 # Changelog
 
+- **2026-07-20 — Implemented Master Wave 7 / Anomaly Phase A1.0 pure policy foundation.** Added the
+  primitive-only `DiaryAnomalyPolicyDef`/XML defaults, detached study/containment/Tale DTOs, pure
+  milestone and witness planners, exact fail-open `StudiedEntity` ownership, and the planned stable
+  synthetic event/prompt token vocabulary. Study observation advances independently from output,
+  monolith study remains state-only, one multi-threshold jump observes every crossed promotion while
+  authorizing at most one semantic reason, containment keeps only verified unique escapes and ranks
+  truthful nearby/recent-studier/colony witnesses deterministically, and Tale suppression requires one
+  exact researcher/entity pair inside its configured consume-once window. No planner consumes
+  `Verse.Rand` or holds a live Pawn/Thing/Def/Map/settings object.
+
+  The policy XML makes no paid-DLC Def reference and its loaded singleton smoke check is read-only, so
+  a no-Anomaly game can load it inertly without a new dependency. This slice adds no catalog route,
+  Harmony hook, live DLC read, tick work, signal/page/prompt group, static colony state, Scribe key, or
+  migration; A1.1–A1.3 retain those scheduled responsibilities. The new assembly-free
+  `DiaryAnomalyPolicyTests` passes 167 assertions; the focused capture, pipeline, save-normalization,
+  observed-condition, and text-decoration suites pass 680, 2,734, 46, 68, and 67 assertions. Runtime
+  and the unchanged 291-test RimTest assemblies rebuild cleanly. The new loaded-Def assertion and the
+  full 291-test in-game run have not been executed and remain pending.
+
 - **2026-07-20 — Closed adversarial-review gaps in Royalty Phase 8 hardening.** Royalty persona
   reconciliation now calculates due/next deadlines through a pure scheduling boundary and stores its
   unscribed deadline as `long`, so even an `Int32.MaxValue` compatibility cadence cannot wrap negative

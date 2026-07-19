@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Phase A1.0 freezes policy only. All identifiers are our own primitive strings; there are no
+       Anomaly Def references, so this row safely loads and remains inert when the DLC is absent. -->
+  <PawnDiary.DiaryAnomalyPolicyDef>
+    <defName>Diary_AnomalyPolicy</defName>
+    <label>Anomaly narrative policy</label>
+
+    <studyEnabled>true</studyEnabled>
+    <recordFirstStudyBreakthrough>true</recordFirstStudyBreakthrough>
+    <recordCompletedEntityKind>true</recordCompletedEntityKind>
+    <promotedStudyMilestones />
+    <monolithKnowledgeMaxAgeTicks>60000</monolithKnowledgeMaxAgeTicks>
+    <studyTaleSuppressionTicks>2500</studyTaleSuppressionTicks>
+
+    <containmentEnabled>true</containmentEnabled>
+    <containmentWitnessRadius>12</containmentWitnessRadius>
+    <containmentMaxWriters>2</containmentMaxWriters>
+    <containmentMaxEntityLabelsInContext>3</containmentMaxEntityLabelsInContext>
+    <containmentDedupTicks>2500</containmentDedupTicks>
+    <recentStudierMaxAgeTicks>60000</recentStudierMaxAgeTicks>
+
+    <!-- Later Anomaly phases consume these frozen defaults. A1.0 registers no corresponding hook. -->
+    <creepJoinerEnabled>true</creepJoinerEnabled>
+    <creepJoinerOutcomeDedupTicks>2500</creepJoinerOutcomeDedupTicks>
+    <creepJoinerArcRetentionTicks>3600000</creepJoinerArcRetentionTicks>
+    <creepJoinerMaxWitnesses>2</creepJoinerMaxWitnesses>
+    <ghoulTransformationEnabled>true</ghoulTransformationEnabled>
+    <voidOutcomeEnabled>true</voidOutcomeEnabled>
+    <taleOwnershipMaxDepth>8</taleOwnershipMaxDepth>
+    <taleOwnershipExpiryTicks>2500</taleOwnershipExpiryTicks>
+  </PawnDiary.DiaryAnomalyPolicyDef>
+</Defs>

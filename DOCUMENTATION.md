@@ -48,13 +48,13 @@ repo for development, but the Workshop payload omits source code and other devel
 | `LoadFolders.xml` | Normal 1.6 load roots plus the RimTest-only development test assembly gate. |
 | `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
 | `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
-| `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts and Royalty persona-weapon lifecycle, forced first-kill POV, and exact dramatic-permit decisions. |
+| `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts, Royalty persona/permit policy, and the inert Anomaly A1.0 study/containment/Tale-ownership contracts and planners under `Policies/`. |
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, lossless quick-aid raid ownership, and exact-root Royal Ascent quest fanout. |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. Also `PawnMemoryRepository` (per-pawn memory store; inert until the memory wiring lands). |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Odyssey location/mobile-home/lifecycle and Royalty persona/title/psylink/succession/permit/court-pressure snapshots and transient correlation. |
 | `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy, Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/` (inert until wired). |
-| `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including `DiaryOdysseyPolicyDef` and the Royalty policy plus DefInjected provider prose. |
+| `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, and the `MemoryFragment` pawn-memory row. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment/permit seams and state-transition-guarded Quest lifecycle hooks. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
@@ -1641,6 +1641,32 @@ localized fallback text. Their optional `narrativeEvidence` blocks save visible 
 `stirring`/`waking`/`void_awakened`, major salience, and the primary per-save arc key
 `anomaly-monolith|0`. No hidden entity, host, downside, terminal choice, or terminal outcome is saved.
 
+**Anomaly policy foundation (Master Wave 7 / A1.0).** `DiaryAnomalyPolicyDef` freezes primitive
+study, containment, later visible-arc, and Tale-ownership switches/thresholds with conservative code
+fallbacks. Its XML contains only Pawn Diary types and primitive values—no Anomaly Def reference—so
+the singleton loads safely and remains inert in a no-DLC game. The detached snapshot and all new DTOs
+contain only strings, integers, booleans, and lists. Stable synthetic event names and structured
+prompt tokens are frozen now, but A1.0 does not register them with the Event Catalog or add interaction
+groups, prompts, settings rows, or fallback prose; `EVENT_PROMPT_MAP.md` therefore remains unchanged.
+
+The pure study planner separates observation from generation: first-note, first entity-kind
+completion, and exact XML promotion crossings update additive history even when output is disabled or
+the exact studier is ineligible. One progress jump observes every crossed promotion but authorizes at
+most one deterministic semantic stage. Monolith study is state-only and preserves only the verified
+false-to-true activatable fact for later A1 enrichment. The containment planner removes unverified and
+duplicate entity identities, bounds visible-entity rows, ranks exact nearby/recent-studier/colony
+witness evidence without `Verse.Rand`, and requires an exact outer/map dedup identity. Tale ownership
+suppresses only the matching studier plus stable entity-ID (or defName fallback) inside the configured
+window, consumes once, and otherwise fails open.
+
+This phase adds no Harmony target, live Anomaly read, tick/update work, static colony state, Scribe
+key, migration, page, or duplicate-suppression cache. A1.1 remains responsible for catalog routing,
+persistence, normalization, old-save baselining, and lifecycle cleanup; A1.2/A1.3 remain responsible
+for the exact live study/containment adapters. `DiaryAnomalyPolicyTests` passes 167 standalone
+assertions without RimWorld assemblies. The existing read-only `PawnDiaryDefSmokeTests` singleton
+check now also requires `Diary_AnomalyPolicy`; that loaded assertion is compiled but has not yet been
+executed in RimWorld, and the full 291-test loaded run remains pending.
+
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,
 per-tick work, save/load bookkeeping, startup registration, and vanilla UI overlays isolate failures
@@ -2906,6 +2932,7 @@ dotnet run --project tests/DiaryObservedConditionTests/DiaryObservedConditionTes
 dotnet run --project tests/NarrativeContinuityTests/NarrativeContinuityTests.csproj
 dotnet run --project tests/PawnMemoryTests/PawnMemoryTests.csproj
 dotnet run --project tests/DiaryBiotechPolicyTests/DiaryBiotechPolicyTests.csproj
+dotnet run --project tests/DiaryAnomalyPolicyTests/DiaryAnomalyPolicyTests.csproj
 dotnet run --project tests/DiaryOdysseyPolicyTests/DiaryOdysseyPolicyTests.csproj
 dotnet run --project tests/RoyaltyContextTests/RoyaltyContextTests.csproj
 dotnet run --project tests/SpeakUpBridgeLogicTests/SpeakUpBridgeLogicTests.csproj

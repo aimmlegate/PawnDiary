@@ -128,6 +128,18 @@ one window, `Gleaming` maps to none, localized fallbacks exist, and the three ex
 bounded source evidence. The EVT-22 RimTest fixture exercises the live package-gated page/evidence
 path when Anomaly is active and the no-op branch otherwise.
 
+Master Wave 7 / Anomaly A1.0 adds `DiaryAnomalyPolicyTests`, a 167-assertion assembly-free suite.
+It freezes all planned synthetic event names and structured prompt vocabulary; conservative policy
+defaults; invalid/no-progress, first, completion, promotion, multi-note, disabled, ineligible, and
+monolith state-only study decisions; exact/expired/mismatched/consume-once `StudiedEntity` ownership;
+and verified containment aggregation, entity de-duplication, context caps, radius boundaries,
+one/two/malformed writer caps, deterministic role ranking, no-writer silence, and outer/map dedup
+identity. The test project links only plain contracts and policies, so any Verse/Unity/Harmony/DLC
+dependency fails compilation. `PawnDiaryDefSmokeTests.CoreSingletonDefsAreLoaded` now also requires
+the primitive-only `Diary_AnomalyPolicy` row without adding a test, leaving the loaded assembly at 291
+tests. That assertion and the full 291-test in-game run remain pending; A1.0 adds no hook, catalog
+route, page, save field, or live Anomaly state to exercise.
+
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing
