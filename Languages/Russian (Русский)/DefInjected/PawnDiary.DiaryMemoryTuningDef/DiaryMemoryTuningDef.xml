@@ -3,7 +3,7 @@
   <Diary_Memory.label>политика памяти пешек</Diary_Memory.label>
   <Diary_Memory.ageBands.0.label>несколько дней назад</Diary_Memory.ageBands.0.label>
   <Diary_Memory.ageBands.1.label>пару недель назад</Diary_Memory.ageBands.1.label>
-  <Diary_Memory.ageBands.2.label>несколько квадрум назад</Diary_Memory.ageBands.2.label>
+  <Diary_Memory.ageBands.2.label>несколько квадрумов назад</Diary_Memory.ageBands.2.label>
   <Diary_Memory.ageBands.3.label>очень давно</Diary_Memory.ageBands.3.label>
   <Diary_Memory.memoryContextInstruction>Давние воспоминания, которые приходят на ум во время записи. Вплети не больше одного, кратко и только если это звучит естественно; это прошлое, а не сегодняшние события.</Diary_Memory.memoryContextInstruction>
 </LanguageData>

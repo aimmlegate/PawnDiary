@@ -102,6 +102,8 @@ namespace PawnDiary
         /// Colony-wide safety pass (design §10.1): when the WHOLE store exceeds maxTotalFragments,
         /// evict the lowest-retention fragments regardless of owner or core status until under.
         /// Importance already dominates the retention score, so core memories are the last to go.
+        /// Future integration must call this AFTER applying every per-pawn Plan; per-pawn planning
+        /// deliberately cannot enforce a colony-wide count by itself.
         /// </summary>
         public static List<string> PlanGlobalCap(
             List<MemoryFragmentSnapshot> all,

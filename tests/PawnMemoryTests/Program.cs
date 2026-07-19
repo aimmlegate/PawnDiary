@@ -1,10 +1,14 @@
 // Standalone, no-RimWorld checks for the pawn memory subsystem (design/MEMORY_SYSTEM_DESIGN.md):
 // extraction (tags/keywords/importance/excerpt), direct similarity scoring, seeded gates, the
 // 1-hop spreading-activation bridge, rendering + character budget, eviction planning, the prompt
-// composer, and the default policy surface. The project file links only pure source, making any
-// accidental Verse/Unity/DLC dependency a compile-time failure.
+// composer, the default policy surface, and behavioral-default parity with the shipped XML. The
+// project file links only pure source, making any accidental Verse/Unity/DLC dependency a
+// compile-time failure.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Xml.Linq;
 using PawnDiary;
 
 namespace PawnMemoryTests
@@ -16,10 +20,12 @@ namespace PawnMemoryTests
         private static int Main()
         {
             TestPolicyDefaultsAndTokens();
+            TestPolicyXmlParity();
             TestExtractionTagMapping();
             TestExtractionKeywords();
             TestExtractionImportanceAndFragmentText();
             TestRecallGates();
+            TestBlankFragmentsNeverShadowRecall();
             TestDirectScoringGolden();
             TestDirectScoringSaturationAndOverlap();
             TestDirectScoringMinAgeAndCooldown();
@@ -110,6 +116,101 @@ namespace PawnMemoryTests
             }
         }
 
+        /// <summary>
+        /// Pins the inert layer's missing-Def guarantee: every BEHAVIORAL default in code must match
+        /// the shipped XML. Natural-language memoryContextInstruction is intentionally XML-only and
+        /// is asserted as the one explicit exception, so this test never encourages hardcoded prompt
+        /// prose in the pure fallback.
+        /// </summary>
+        private static void TestPolicyXmlParity()
+        {
+            MemoryPolicySnapshot policy = MemoryPolicySnapshot.CreateDefault();
+            string path = FindRepositoryFile(Path.Combine("1.6", "Defs", "DiaryMemoryTuningDef.xml"));
+            XDocument document = XDocument.Load(path);
+            XElement def = document.Root?.Element("PawnDiary.DiaryMemoryTuningDef");
+            AssertTrue("memory tuning XML contains its Def", def != null);
+
+            AssertXmlBool(def, "enabled", policy.enabled);
+            AssertXmlFloat(def, "minDepositImportance", policy.minDepositImportance);
+            AssertXmlInt(def, "fragmentTextMaxChars", policy.fragmentTextMaxChars);
+            AssertXmlInt(def, "maxKeywordsPerFragment", policy.maxKeywordsPerFragment);
+            AssertXmlFloat(def, "fallbackCueImportance", policy.fallbackCueImportance);
+            AssertXmlFloat(def, "importantGroupBonus", policy.importantGroupBonus);
+            AssertXmlFloat(def, "negativeMoodBonus", policy.negativeMoodBonus);
+            AssertXmlFloat(def, "positiveMoodBonus", policy.positiveMoodBonus);
+            AssertXmlInt(def, "minFragmentsForRecall", policy.minFragmentsForRecall);
+            AssertXmlFloat(def, "recallGateChance", policy.recallGateChance);
+            AssertXmlFloat(def, "tagWeight", policy.tagWeight);
+            AssertXmlFloat(def, "keywordWeight", policy.keywordWeight);
+            AssertXmlInt(def, "tagSaturationCount", policy.tagSaturationCount);
+            AssertXmlInt(def, "keywordSaturationCount", policy.keywordSaturationCount);
+            AssertXmlInt(def, "recencyHalfLifeTicks", policy.recencyHalfLifeTicks);
+            AssertXmlFloat(def, "recencyFloor", policy.recencyFloor);
+            AssertXmlInt(def, "minRecallAgeTicks", policy.minRecallAgeTicks);
+            AssertXmlFloat(def, "minDirectScore", policy.minDirectScore);
+            AssertXmlFloat(def, "spreadGateChance", policy.spreadGateChance);
+            AssertXmlFloat(def, "spreadDamping", policy.spreadDamping);
+            AssertXmlFloat(def, "minSpreadScore", policy.minSpreadScore);
+            AssertXmlInt(def, "recallCooldownTicks", policy.recallCooldownTicks);
+            AssertXmlFloat(def, "repetitionPenaltyFactor", policy.repetitionPenaltyFactor);
+            AssertXmlInt(def, "memoryContextMaxChars", policy.memoryContextMaxChars);
+            AssertXmlInt(def, "maxFragmentsPerPawn", policy.maxFragmentsPerPawn);
+            AssertXmlFloat(def, "coreImportanceThreshold", policy.coreImportanceThreshold);
+            AssertXmlInt(def, "maxCoreFragmentsPerPawn", policy.maxCoreFragmentsPerPawn);
+            AssertXmlInt(def, "retentionHalfLifeTicks", policy.retentionHalfLifeTicks);
+            AssertXmlInt(def, "staleEvictTicks", policy.staleEvictTicks);
+            AssertXmlInt(def, "maxTotalFragments", policy.maxTotalFragments);
+            AssertXmlInt(def, "deadOwnerGraceTicks", policy.deadOwnerGraceTicks);
+            AssertXmlInt(def, "memoryEvictionScanIntervalTicks", policy.memoryEvictionScanIntervalTicks);
+
+            List<XElement> cueImportanceRows = XmlRows(def, "cueImportance");
+            AssertEqual("XML cue importance row count", policy.cueImportance.Count, cueImportanceRows.Count);
+            for (int i = 0; i < policy.cueImportance.Count; i++)
+            {
+                AssertEqual("XML cue importance token " + i, policy.cueImportance[i].cue,
+                    XmlValue(cueImportanceRows[i], "cue"));
+                AssertNear("XML cue importance value " + i, policy.cueImportance[i].importance,
+                    XmlFloat(cueImportanceRows[i], "importance"), 0.0001f);
+            }
+
+            List<XElement> cueTagRows = XmlRows(def, "cueTags");
+            AssertEqual("XML cue tag row count", policy.cueTags.Count, cueTagRows.Count);
+            for (int i = 0; i < policy.cueTags.Count; i++)
+            {
+                AssertEqual("XML cue tag token " + i, policy.cueTags[i].cue, XmlValue(cueTagRows[i], "cue"));
+                AssertSequence("XML cue tags " + i, policy.cueTags[i].tags.ToArray(),
+                    XmlStringList(cueTagRows[i].Element("tags")));
+            }
+
+            List<XElement> markerRows = XmlRows(def, "contextMarkerTags");
+            AssertEqual("XML context marker row count", policy.contextMarkerTags.Count, markerRows.Count);
+            for (int i = 0; i < policy.contextMarkerTags.Count; i++)
+            {
+                AssertEqual("XML context marker " + i, policy.contextMarkerTags[i].marker,
+                    XmlValue(markerRows[i], "marker"));
+                AssertSequence("XML context marker tags " + i, policy.contextMarkerTags[i].tags.ToArray(),
+                    XmlStringList(markerRows[i].Element("tags")));
+            }
+
+            AssertSequence("XML context keyword keys", policy.contextKeywordKeys.ToArray(),
+                XmlStringList(def.Element("contextKeywordKeys")));
+
+            List<XElement> ageRows = XmlRows(def, "ageBands");
+            AssertEqual("XML age band row count", policy.ageBands.Count, ageRows.Count);
+            for (int i = 0; i < policy.ageBands.Count; i++)
+            {
+                AssertEqual("XML age band max " + i, policy.ageBands[i].maxAgeTicks,
+                    XmlInt(ageRows[i], "maxAgeTicks"));
+                AssertEqual("XML age band label " + i, policy.ageBands[i].label,
+                    XmlValue(ageRows[i], "label"));
+            }
+
+            AssertEqual("code prompt instruction fallback remains blank", string.Empty,
+                policy.memoryContextInstruction);
+            AssertTrue("XML supplies the localized prompt instruction",
+                !string.IsNullOrWhiteSpace(XmlValue(def, "memoryContextInstruction")));
+        }
+
         // ---------------------------------------------------------------------------------------------
         // Extraction
         // ---------------------------------------------------------------------------------------------
@@ -194,13 +295,30 @@ namespace PawnMemoryTests
             }, policy);
             AssertSequence("punctuation splits keywords", new[] { "mary", "anne" }, hyphenated.keywords);
 
-            MemoryExtractionResult tooShort = MemoryExtraction.Extract(new MemoryExtractionInput
+            MemoryExtractionResult shortIdentity = MemoryExtraction.Extract(new MemoryExtractionInput
             {
                 povName = "Daisy",
                 otherName = "Bo",
                 solo = false
             }, policy);
-            AssertEqual("tokens shorter than three chars dropped", 0, tooShort.keywords.Count);
+            AssertSequence("short pawn names remain identity keywords", new[] { "bo" }, shortIdentity.keywords);
+
+            MemoryExtractionResult stopwordIdentity = MemoryExtraction.Extract(new MemoryExtractionInput
+            {
+                povName = "Daisy",
+                otherName = "Will",
+                solo = false
+            }, policy);
+            AssertSequence("pawn names are not prose stopwords", new[] { "will" }, stopwordIdentity.keywords);
+
+            MemoryExtractionResult cjkIdentity = MemoryExtraction.Extract(new MemoryExtractionInput
+            {
+                povName = "Daisy",
+                otherName = "李",
+                solo = false
+            }, policy);
+            AssertSequence("one-character CJK pawn names remain identity keywords",
+                new[] { "李" }, cjkIdentity.keywords);
 
             MemoryExtractionResult stopwords = MemoryExtraction.Extract(new MemoryExtractionInput
             {
@@ -397,6 +515,34 @@ namespace PawnMemoryTests
                 Query(Tags("combat"), Tags(), 2060000), store, neverRecall);
             AssertEqual("zero recall chance always gates out", 0, gated.picks.Count);
             AssertContains("recall gate diagnostic", gated.diagnostics, MemoryDiagnosticTokens.RecallGateMiss);
+        }
+
+        private static void TestBlankFragmentsNeverShadowRecall()
+        {
+            MemoryPolicySnapshot policy = RecallPolicy();
+            policy.minFragmentsForRecall = 1;
+            List<MemoryFragmentSnapshot> store = new List<MemoryFragmentSnapshot>
+            {
+                // This row would win on score/recency if blank text were allowed to compete.
+                Frag("blank-winner", 1000, Tags("combat", "danger"), Tags("yorick", "rifle", "fire"),
+                    1.0f, "   "),
+                Frag("renderable-runner-up", 900, Tags("combat", "danger"), Tags("yorick", "rifle"),
+                    0.8f, "A renderable memory.")
+            };
+
+            MemoryRecallResult recalled = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags("yorick", "rifle", "fire"), 70000), store, policy);
+            AssertEqual("blank fragments cannot occupy the direct slot", 1, recalled.picks.Count);
+            AssertEqual("the best renderable fragment wins instead", "renderable-runner-up",
+                recalled.picks[0].memoryId);
+            AssertTrue("the surviving direct pick renders",
+                recalled.memoryContext.Contains("A renderable memory."));
+
+            policy.minFragmentsForRecall = 2;
+            MemoryRecallResult tooSmall = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags("yorick"), 70000), store, policy);
+            AssertContains("blank fragments do not satisfy the store-size gate",
+                tooSmall.diagnostics, MemoryDiagnosticTokens.StoreTooSmall);
         }
 
         // ---------------------------------------------------------------------------------------------
@@ -1082,6 +1228,86 @@ namespace PawnMemoryTests
             }
 
             throw new InvalidOperationException("missing cue row " + cue);
+        }
+
+        private static string FindRepositoryFile(string relativePath)
+        {
+            string[] starts = { Environment.CurrentDirectory, AppContext.BaseDirectory };
+            for (int start = 0; start < starts.Length; start++)
+            {
+                DirectoryInfo directory = new DirectoryInfo(starts[start]);
+                while (directory != null)
+                {
+                    string candidate = Path.Combine(directory.FullName, relativePath);
+                    if (File.Exists(candidate))
+                    {
+                        return candidate;
+                    }
+
+                    directory = directory.Parent;
+                }
+            }
+
+            throw new InvalidOperationException("could not locate repository file " + relativePath);
+        }
+
+        private static List<XElement> XmlRows(XElement def, string tableName)
+        {
+            XElement table = def?.Element(tableName);
+            return table == null ? new List<XElement>() : new List<XElement>(table.Elements("li"));
+        }
+
+        private static List<string> XmlStringList(XElement list)
+        {
+            List<string> values = new List<string>();
+            if (list == null)
+            {
+                return values;
+            }
+
+            foreach (XElement row in list.Elements("li"))
+            {
+                values.Add(row.Value.Trim());
+            }
+
+            return values;
+        }
+
+        private static string XmlValue(XElement parent, string name)
+        {
+            XElement value = parent?.Element(name);
+            if (value == null)
+            {
+                throw new InvalidOperationException("memory tuning XML is missing " + name);
+            }
+
+            return value.Value.Trim();
+        }
+
+        private static int XmlInt(XElement parent, string name)
+        {
+            return int.Parse(XmlValue(parent, name), NumberStyles.Integer, CultureInfo.InvariantCulture);
+        }
+
+        private static float XmlFloat(XElement parent, string name)
+        {
+            return float.Parse(XmlValue(parent, name), NumberStyles.Float, CultureInfo.InvariantCulture);
+        }
+
+        private static void AssertXmlInt(XElement def, string name, int expected)
+        {
+            AssertEqual("XML default " + name, expected, XmlInt(def, name));
+        }
+
+        private static void AssertXmlFloat(XElement def, string name, float expected)
+        {
+            AssertNear("XML default " + name, expected, XmlFloat(def, name), 0.0001f);
+        }
+
+        private static void AssertXmlBool(XElement def, string name, bool expected)
+        {
+            AssertEqual("XML default " + name, expected,
+                bool.Parse(XmlValue(def, name)));
         }
 
         private static int CountKnownTokens(string[] candidates)

@@ -170,6 +170,15 @@ exists. Player-visible behavior is unchanged; the layer is covered by `tests/Paw
 goes live only when design §14 steps 4–7 (capture hooks, prompt plumbing, eviction scheduling,
 settings toggle) are implemented.
 
+Future wiring must preserve this order and ownership contract: snapshot settings/`Diary_Memory` on
+the main thread; after registering a `DiaryEvent`, recall from copied `MemoryFragmentSnapshot` rows
+**before** depositing the current event; freeze the result on the first-person POV and update only
+the selected live rows' recall bookkeeping; never deposit blank fragment text; then apply per-pawn
+eviction followed by the colony-wide cap. `DiaryGameComponent` must scribe the repository under
+`pawnMemoryFragments`, rebuild its transient indexes in `PostLoadInit`, and schedule periodic
+eviction by elapsed deadlines rather than tick modulo. The detailed source-side checklist lives at
+the top of `Source/Pipeline/Memory/MemoryContracts.cs` so the future adapter is hard to wire backward.
+
 ### 3.4 Generation
 
 Generation starts only after an event exists in the saved hot store.

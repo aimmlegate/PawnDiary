@@ -1,8 +1,8 @@
 // XML boundary for the pawn memory subsystem (design/MEMORY_SYSTEM_DESIGN.md §11). RimWorld loads
 // this singleton Def at startup, while the pure extraction/selector/planner stay pure by receiving
-// a copied MemoryPolicySnapshot instead of this live Verse Def. Every field initializer matches
-// the shipped DiaryMemoryTuningDef.xml, and MemoryPolicySnapshot.CreateDefault matches both, so a
-// missing or malformed Def changes nothing.
+// a copied MemoryPolicySnapshot instead of this live Verse Def. Numeric/table defaults match the
+// shipped DiaryMemoryTuningDef.xml. Natural-language memoryContextInstruction intentionally falls
+// back to blank in code, so a missing Def omits optional guidance instead of hardcoding English.
 //
 // STATUS: nothing calls DiaryMemoryPolicy.Snapshot() yet — the capture/recall appliers that would
 // snapshot it are deliberately not wired in.
@@ -99,9 +99,11 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Copies the live Def into a fresh plain snapshot on the main thread. A missing/partial Def
-    /// cannot crash a capture path: valid code defaults remain in force, malformed rows are
-    /// ignored, and list tables are replaced only when XML supplies at least one valid row.
+    /// Copies the live Def into a fresh plain snapshot on the main thread. Future integration must
+    /// call this only at the impure main-thread edge, never from the pure memory pipeline. A
+    /// missing/partial Def cannot crash capture: behavioral code defaults remain in force, optional
+    /// prompt guidance stays blank, malformed rows are ignored, and tables are replaced only when
+    /// XML supplies at least one valid row.
     /// </summary>
     internal static class DiaryMemoryPolicy
     {
@@ -257,6 +259,8 @@ namespace PawnDiary
                 return;
             }
 
+            // Order is authored policy: MemoryRecallSelector takes the first covering row. Do not
+            // silently sort here; an editor that reorders bands is intentionally changing policy.
             List<MemoryAgeBand> copied = new List<MemoryAgeBand>();
             for (int i = 0; i < source.Count; i++)
             {

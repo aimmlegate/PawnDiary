@@ -44,9 +44,11 @@ namespace PawnDiary
         // They are never meaningful association keys and never trigger presence markers.
         private static readonly string[] SentinelValues = { "none", "n/a", "unknown" };
 
-        // Small embedded English stopword list (~60 words) — enough to keep a shared person or
-        // place name signal-clean without NLP. Keywords are schema tokens, not player-facing
-        // prose, so the list intentionally stays English across locales (DOCUMENTATION.md §12).
+        // Small embedded English stopword list (~60 words) for PROSE only. Identity fields use
+        // TokenizeIdentity instead: a pawn may legitimately be named "Will", "Bo", or a one-character
+        // CJK name, and dropping that name would destroy the strongest cross-memory association key.
+        // The prose list intentionally stays English because these are internal matching tokens, not
+        // player-facing text; other locales still retain their localized prose tokens.
         private static readonly string[] Stopwords =
         {
             "the", "and", "that", "this", "with", "from", "for", "was", "were", "are",
@@ -149,11 +151,11 @@ namespace PawnDiary
 
             // The writer's own name would appear on every one of their fragments and match
             // everything, so it is excluded from the keyword stream entirely.
-            List<string> povTokens = Tokenize(input.povName);
+            List<string> povTokens = TokenizeIdentity(input.povName);
 
             // Priority order (design §7.3): the other participant, whitelisted context values,
             // the interaction label, then the first raw-text tokens for any remaining slots.
-            AddKeywordTokens(keywords, Tokenize(input.otherName), povTokens, cap);
+            AddKeywordTokens(keywords, TokenizeIdentity(input.otherName), povTokens, cap);
             if (policy.contextKeywordKeys != null)
             {
                 for (int i = 0; i < policy.contextKeywordKeys.Count && keywords.Count < cap; i++)
@@ -269,6 +271,21 @@ namespace PawnDiary
         /// </summary>
         private static List<string> Tokenize(string text)
         {
+            return Tokenize(text, false);
+        }
+
+        /// <summary>
+        /// Normalizes a pawn's visible short name without applying prose noise filters. Future
+        /// integration must pass Pawn.LabelShort/Name.ToStringShort here (never NameTriple.First):
+        /// even a one-character name or a name equal to an English stopword is an identity, not noise.
+        /// </summary>
+        private static List<string> TokenizeIdentity(string text)
+        {
+            return Tokenize(text, true);
+        }
+
+        private static List<string> Tokenize(string text, bool identity)
+        {
             List<string> tokens = new List<string>();
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -286,7 +303,7 @@ namespace PawnDiary
                 }
                 else if (!isTokenChar && start >= 0)
                 {
-                    AddToken(tokens, lowered.Substring(start, i - start));
+                    AddToken(tokens, lowered.Substring(start, i - start), identity);
                     start = -1;
                 }
             }
@@ -294,9 +311,9 @@ namespace PawnDiary
             return tokens;
         }
 
-        private static void AddToken(List<string> tokens, string token)
+        private static void AddToken(List<string> tokens, string token, bool identity)
         {
-            if (token.Length < 3 || IsStopword(token) || ContainsOrdinal(tokens, token))
+            if ((!identity && (token.Length < 3 || IsStopword(token))) || ContainsOrdinal(tokens, token))
             {
                 return;
             }

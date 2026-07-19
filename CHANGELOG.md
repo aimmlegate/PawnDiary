@@ -1,11 +1,26 @@
 # Changelog
 
+- **2026-07-19 — Hardened and documented the still-inert pawn memory layer after adversarial
+  review.** Player-visible behavior remains unchanged because capture/prompt/eviction/settings
+  wiring still has no production caller. Blank-text fragments are now excluded before the recall
+  store-size gate and scoring, so they cannot hide a renderable direct memory or leave an unanchored
+  associative pick. Pawn identity tokens now bypass prose-only stopword/minimum-length filters, so
+  names such as `Will`, `Bo`, and one-character CJK names remain association handles. Fixed
+  `PawnMemoryRepository.Register` to initialize its lazy indexes before enforcing deposit
+  idempotency, corrected the Russian quadrum age phrase, clarified the XML-only localized prompt
+  instruction fallback, and added an explicit future-integration contract covering main-thread
+  policy snapshots, recall-before-deposit, snapshot/live-row ownership, blank deposit rejection,
+  save/load rebuilds, elapsed eviction scheduling, and per-pawn-then-global cap order. Expanded
+  `PawnMemoryTests` with XML/default parity and regression coverage, and added real-Scribe RimTest
+  fixtures for memory row repair, index rebuild/removal, and first-post-load replay idempotency.
+
 - **2026-07-19 — Implemented the pawn memory subsystem from `design/MEMORY_SYSTEM_DESIGN.md` as an
   inert, unwired layer.** Player-visible behavior is unchanged: nothing calls the new code yet
   (capture hooks, prompt plumbing, eviction scheduling, and the settings toggle are design §14
   steps 4–7 and land separately). Added the pure `Source/Pipeline/Memory/` layer — `MemoryContracts`
   (18-token closed tag vocabulary, query/result/snapshot DTOs, `MemoryPolicySnapshot` whose
-  `CreateDefault()` matches the shipped XML), `MemoryExtraction` (the single tag/keyword/importance/
+  behavioral defaults match the shipped XML while prompt guidance stays XML-only), `MemoryExtraction`
+  (the single tag/keyword/importance/
   excerpt mechanism shared by deposit and recall, with ~60-word stopword filtering and
   none/n/a/unknown sentinel handling so `royal_title=none` never tags or keywords a memory),
   `MemoryRecallSelector` (seeded recall gate, saturated tag/keyword similarity with half-life decay

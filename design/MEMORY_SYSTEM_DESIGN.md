@@ -102,10 +102,12 @@ Decisions and rationale:
   `Source/Pipeline/Narrative/NarrativeContracts.cs`), not a `[Flags]` enum: string tokens are
   the established save-safe, append-only pattern in this codebase, and unknown tags loaded from
   a newer mod version degrade to "no match" instead of corrupting a bitfield.
-- **Keywords are free-form normalized strings, max 8 per fragment**: lowercase-invariant,
-  alphanumerics only, length ≥ 3, light stopword filter — enough to catch a shared person or
-  place without NLP. **Persons and places live in keywords, not tags** — this is what lets a
-  shared person bridge two otherwise unrelated memories in the 1-hop spread (§8).
+- **Keywords are free-form normalized strings, max 8 per fragment**: lowercase-invariant and
+  alphanumerics only. Prose/context tokens use length ≥ 3 plus a light stopword filter; pawn-name
+  identity tokens deliberately bypass both filters so valid names such as `Will`, `Bo`, or a
+  one-character CJK name remain usable association handles. **Persons and places live in keywords,
+  not tags** — this is what lets a shared person bridge two otherwise unrelated memories in the
+  1-hop spread (§8).
 - **Importance is a float 0..1**: it multiplies directly into the retrieval and retention
   formulas, matching how the mod treats continuous weights (weather chances, humor multipliers).
 - **`recallCount` is kept** (one int): free eviction tie-breaks and dev diagnostics.
@@ -235,8 +237,9 @@ already a frozen string; no `Pawn` or Def access is needed.
   a small fixed marker→tag list, policy-owned
 - Pairwise (non-solo) events always add `social`
 
-**Keywords** — normalization: lowercase invariant → strip non-alphanumerics → drop length < 3 →
-drop ~60-word embedded English stopword list → dedupe ordinal → cap at 8. Priority order:
+**Keywords** — normalization: lowercase invariant → strip non-alphanumerics → dedupe ordinal →
+cap at 8. Prose/context/label tokens additionally drop length < 3 and a ~60-word embedded English
+stopword list. Pawn names are identity tokens and bypass those prose-only filters. Priority order:
 
 1. `otherName` — the single most valuable association key. The writer's own name is **excluded**:
    it would appear on every one of their fragments and match everything.
@@ -262,8 +265,10 @@ same knowledge boundary narrative continuity uses):
    staged replays.
 3. Run `MemoryExtraction.Extract`; skip if `importance < minDepositImportance` (0.3) — the
    noise gate that keeps ambient chat and quiet pages out of the store.
-4. `Register` a fragment with `createdTick = lastRecalledTick = diaryEvent.tick`.
-5. If the pawn's list now exceeds `maxFragmentsPerPawn`, run the eviction planner for that pawn
+4. Skip if `fragmentText` is blank. The pure selector also rejects blank loaded rows defensively,
+   but the live deposit seam should never spend save/cap space on an unrenderable memory.
+5. `Register` a fragment with `createdTick = lastRecalledTick = diaryEvent.tick`.
+6. If the pawn's list now exceeds `maxFragmentsPerPawn`, run the eviction planner for that pawn
    immediately (mirrors `ApplyDiaryEventLimits()` on registration).
 
 ## 8. Retrieval — similarity scoring + 1-hop spreading activation
@@ -539,8 +544,8 @@ read through `DiaryMemoryPolicy.Snapshot()` into the pure `MemoryPolicySnapshot`
 **New pure test project `tests/PawnMemoryTests`** (mirror of `tests/NarrativeContinuityTests`,
 no RimWorld reference), covering `Source/Pipeline/Memory/*`:
 
-- Extraction: normalization (case, punctuation, stopwords, length), keyword priority order and
-  cap, tag mapping tables, importance table + clamps — golden expectations.
+- Extraction: normalization (case, punctuation, prose stopwords/length, identity-name exceptions),
+  keyword priority order and cap, tag mapping tables, importance table + clamps — golden expectations.
 - Direct scoring: formula math, saturation, decay at age 0 / one half-life / floor, min-age
   zeroing, cooldown penalty, zero-overlap early-out.
 - Determinism: identical query+fragments+policy → byte-identical `memoryContext` and identical
@@ -549,7 +554,8 @@ no RimWorld reference), covering `Source/Pipeline/Memory/*`:
   damping/threshold, and the "shared person bridges unrelated memories" scenario (raid query
   recalls a combat memory keyworded `yorick`; the hop surfaces a cooking memory sharing only
   `yorick`).
-- Rendering: age bands, char budget dropping associative-then-direct, empty result → empty string.
+- Rendering: age bands, char budget dropping associative-then-direct, blank fragments excluded
+  before scoring/store-size gating, empty result → empty string.
 - Eviction planner: stale rule, core exemption + core cap, per-pawn cap ordering, tie-breaks,
   global cap, plan never mutates input.
 

@@ -57,7 +57,10 @@ namespace PawnDiary
             }
 
             // One seeded Random per recall: the FIRST draw is the recall gate, the SECOND the
-            // spread gate (consumed only when a direct pick exists). Same seed, same outcome.
+            // spread gate (consumed only when a direct pick exists). Same seed, same RimWorld-runtime
+            // outcome. Tests discover gate seeds at runtime instead of pinning a framework-specific
+            // sequence. If exact sequences must ever survive a runtime change, replace this with a
+            // tiny pinned PURE PRNG; do not introduce Verse.Rand into this pure selector.
             Random rng = new Random(query.seed);
             if (rng.NextDouble() >= Clamp01(safePolicy.recallGateChance))
             {
@@ -223,8 +226,8 @@ namespace PawnDiary
         /// <summary>
         /// Renders picks as "- (age label) text" lines and enforces the character budget by
         /// DROPPING whole picks — associative first, then direct — never truncating a fragment
-        /// mid-text (the FitsCharacterBudget convention). Blank-text picks are dropped here so
-        /// the frozen picks list always matches what was rendered.
+        /// mid-text (the FitsCharacterBudget convention). UsableFragments already excludes blank
+        /// text before scoring; the defensive check here protects against future lookup changes.
         /// </summary>
         private static void RenderAndFitBudget(
             MemoryRecallResult result,
@@ -348,7 +351,12 @@ namespace PawnDiary
 
             for (int i = 0; i < fragments.Count; i++)
             {
-                if (fragments[i] != null && !string.IsNullOrWhiteSpace(fragments[i].memoryId))
+                // A memory that cannot render must never compete for the one direct slot. If a
+                // blank-text row won scoring and were dropped only later, it could hide a valid
+                // runner-up or leave an associative pick with no direct anchor.
+                if (fragments[i] != null
+                    && !string.IsNullOrWhiteSpace(fragments[i].memoryId)
+                    && !string.IsNullOrWhiteSpace(fragments[i].text))
                 {
                     usable.Add(fragments[i]);
                 }

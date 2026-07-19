@@ -81,6 +81,7 @@ owners. Both use the shared harness:
 | `PawnDiaryExternalApiFlowTests` | 21 | `PawnDiaryApi` submit solo/pair, group gate, budget, listener notify. |
 | `PawnDiaryEventWindowFlowTests` | 22 | Event-window start/end/one-shot/timeout + prompt-bias state; exact monolith ownership when Anomaly is active and inert loaded Defs when it is absent. |
 | `PawnDiaryObservedConditionFlowTests` | 23 | Observed-condition start/end debounce + scope identity + restart cooldown. |
+| `PawnDiaryRepositoryRebuildFixtureTests` | save/index | Real-Scribe event/archive/memory round trips, transient-index rebuilds, memory-row repair/removal, and first-post-load replay idempotency. |
 
 The reimplant replay fixture deliberately completes vanilla's temporary loss-shock, gene-regrowth,
 and recipient-coma cooldowns before calling the real public method again. An immediate raw replay is

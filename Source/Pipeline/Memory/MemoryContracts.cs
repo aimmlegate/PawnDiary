@@ -8,6 +8,19 @@
 // STATUS: the memory layer is implemented but deliberately NOT wired into capture, prompts, or
 // the game component yet. Only the pure helpers and the pure test project reference these types.
 //
+// FUTURE INTEGRATION CONTRACT (design §14 steps 4-7 — keep this order and boundary):
+// 1. On the main thread, require both settings.enableMemorySystem and DiaryMemoryPolicy.Snapshot().enabled.
+// 2. After a DiaryEvent is registered/referenced, RECALL BEFORE DEPOSIT for each first-person POV.
+// 3. Build query/deposit inputs only from frozen DiaryEvent strings. Use Pawn.LabelShort only at the
+//    adapter edge; never pass Pawn, Def, settings, Verse, or Unity objects into this folder.
+// 4. Copy PawnMemoryRepository.ForPawn's live rows through MemoryFragment.ToSnapshot, call Recall,
+//    freeze result.memoryContext onto the POV, then bump each selected live row exactly once.
+// 5. Deposit only a nonblank fragmentText above the noise gate. HasDeposit is a cheap preflight;
+//    PawnMemoryRepository.Register remains the final idempotency guard.
+// 6. Apply per-pawn eviction after overflow, then ALWAYS apply PlanGlobalCap after all pawn plans.
+// 7. Scribe the repository on DiaryGameComponent, RebuildIndex in PostLoadInit, and schedule eviction
+//    by an elapsed deadline (never TicksGame modulo). Empty recall stays an absent prompt field.
+//
 // New to C#/RimWorld? See AGENTS.md ("architecture barriers" and "DLC-safety").
 using System;
 using System.Collections.Generic;
@@ -105,9 +118,10 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Pure copy of the memory tuning Def (design §11). CreateDefault matches every shipped XML
-    /// value, so a missing or malformed Def changes nothing. All consumers receive an already
-    /// copied snapshot; no pure code ever touches the live Def.
+    /// Pure copy of the memory tuning Def (design §11). CreateDefault matches every shipped scoring,
+    /// table, cap, and age-band value. The natural-language memoryContextInstruction deliberately
+    /// stays blank in code and is supplied only by localized XML; a missing Def therefore omits that
+    /// optional guidance line without changing selection behavior. Pure code never touches the Def.
     /// </summary>
     internal sealed class MemoryPolicySnapshot
     {
@@ -157,10 +171,11 @@ namespace PawnDiary
         public int memoryEvictionScanIntervalTicks = 150000;
 
         /// <summary>
-        /// Returns a fresh policy matching 1.6/Defs/DiaryMemoryTuningDef.xml value for value.
-        /// Callers may safely adjust a test snapshot in place. The age-band labels are prompt
-        /// prose; the English strings here are only the missing-XML fallback — the shipped Def
-        /// supplies the real text and DefInjected localizes it.
+        /// Returns a fresh policy matching 1.6/Defs/DiaryMemoryTuningDef.xml for all behavioral
+        /// values; memoryContextInstruction is the intentional exception and stays blank so code
+        /// never hardcodes its natural-language prompt guidance. Callers may safely adjust a test
+        /// snapshot in place. Age labels retain English missing-XML fallbacks, while the shipped Def
+        /// and DefInjected files supply/localize the normal runtime text.
         /// </summary>
         public static MemoryPolicySnapshot CreateDefault()
         {

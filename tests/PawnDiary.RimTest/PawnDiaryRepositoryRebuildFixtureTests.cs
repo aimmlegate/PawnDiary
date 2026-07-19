@@ -1,9 +1,9 @@
 // In-game save/load fixture for Pawn Diary's repository index rebuilds and retention
 // (TEST_COVERAGE_PLAN.md §6.4, "repository/diary/archive index rebuilds ... retention"). This suite
-// needs NO colony and creates NO pawns: it builds DiaryEventRepository / DiaryArchiveRepository model
-// objects directly, round-trips their SAVED lists through RimWorld's real Scribe to a temp file, and
-// proves the transient id/pawn/role lookup indexes (which are never serialized) rebuild correctly and
-// that retention drops the right rows.
+// needs NO colony and creates NO pawns: it builds DiaryEventRepository / DiaryArchiveRepository /
+// PawnMemoryRepository model objects directly, round-trips their SAVED lists through RimWorld's real
+// Scribe to a temp file, and proves transient indexes rebuild correctly, memory registration remains
+// idempotent across the lazy post-load path, loaded rows repair, and retention drops the right rows.
 //
 // Why a real Scribe round-trip and not a whole-game save: the two repositories serialize only their
 // master list (events.ExposeEvents "diaryEvents" / archive.ExposeArchive "diaryArchiveEntries"); the
@@ -35,16 +35,17 @@ using Verse;
 namespace PawnDiary.RimTests
 {
     /// <summary>
-    /// Proves the never-serialized lookup indexes of <see cref="DiaryEventRepository"/> and
-    /// <see cref="DiaryArchiveRepository"/> rebuild after a real Scribe load, that retention
-    /// (RetainOnly / RemoveForEventIds / TrimPerPawnLimit) prunes and re-indexes correctly, and that a
-    /// reload drops duplicate archive rows.
+    /// Proves the never-serialized indexes of <see cref="DiaryEventRepository"/>,
+    /// <see cref="DiaryArchiveRepository"/>, and <see cref="PawnMemoryRepository"/> rebuild after a
+    /// real Scribe load, that memory replay stays idempotent, that retention prunes and re-indexes
+    /// correctly, and that a reload drops duplicate archive rows.
     /// </summary>
     [TestSuite]
     public static class PawnDiaryRepositoryRebuildFixtureTests
     {
         private const string EventsLabel = "diaryEvents";
         private const string ArchiveLabel = "diaryArchiveEntries";
+        private const string MemoryLabel = "pawnMemoryFragments";
 
         /// <summary>
         /// The event repository's id index is not saved: after a Scribe round-trip every id is unknown
@@ -124,6 +125,91 @@ namespace PawnDiary.RimTests
                     Require(loaded.FindEvent(ids[i]) != null && loaded.ContainsEvent(ids[i]),
                         "EnsureIndexReady should have rebuilt the lookup for '" + ids[i] + "'.");
                 }
+            });
+        }
+
+        /// <summary>
+        /// The inert memory repository persists only its master list. A real Scribe load must run
+        /// MemoryFragment.PostLoadInit repair, while the first ForPawn read lazily reconstructs the
+        /// unsaved pawn/deposit indexes. RemoveByIds must then keep those indexes synchronized.
+        /// </summary>
+        [Test]
+        public static void MemoryRepositoryRoundTripsRepairsAndReindexes()
+        {
+            PawnMemoryRepository source = new PawnMemoryRepository();
+            MemoryFragment repairMe = NewMemory("pd-memory-1", "PawnA", "pd-source-1", 200);
+            repairMe.tags = null;
+            repairMe.keywords = null;
+            repairMe.importance = 2f;
+            repairMe.lastRecalledTick = 100;
+            source.Register(repairMe);
+            source.Register(NewMemory("pd-memory-2", "PawnB", "pd-source-2", 300));
+
+            RunWithTempFile(path =>
+            {
+                SaveWithScribe(path, () => source.ExposeMemories(MemoryLabel));
+
+                PawnMemoryRepository loaded = new PawnMemoryRepository();
+                LoadVarsWithScribe(path, () => loaded.ExposeMemories(MemoryLabel));
+
+                Require(loaded.Count == 2,
+                    "Loaded memory count " + loaded.Count + " did not match the saved 2.");
+                IReadOnlyList<MemoryFragment> pawnA = loaded.ForPawn("PawnA");
+                IReadOnlyList<MemoryFragment> pawnB = loaded.ForPawn("PawnB");
+                Require(pawnA.Count == 1 && pawnB.Count == 1,
+                    "The lazy memory index rebuild must restore one row for each owner.");
+                Require(pawnA[0].tags != null && pawnA[0].tags.Count == 0
+                        && pawnA[0].keywords != null && pawnA[0].keywords.Count == 0,
+                    "MemoryFragment PostLoadInit must repair null tag/keyword lists.");
+                Require(Math.Abs(pawnA[0].importance - 1f) < 0.0001f,
+                    "MemoryFragment PostLoadInit must clamp importance to 1.");
+                Require(pawnA[0].lastRecalledTick == pawnA[0].createdTick,
+                    "MemoryFragment PostLoadInit must repair a recall tick older than creation.");
+                Require(loaded.HasDeposit("PawnA", "pd-source-1")
+                        && loaded.HasDeposit("PawnB", "pd-source-2"),
+                    "The rebuilt deposit-key index must contain both saved deposits.");
+
+                int removed = loaded.RemoveByIds(new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "pd-memory-1",
+                });
+                Require(removed == 1 && loaded.Count == 1 && loaded.ForPawn("PawnA").Count == 0,
+                    "RemoveByIds must remove the row and rebuild the owner index.");
+                Require(!loaded.HasDeposit("PawnA", "pd-source-1")
+                        && loaded.HasDeposit("PawnB", "pd-source-2"),
+                    "RemoveByIds must rebuild deposit keys without disturbing surviving owners.");
+            });
+        }
+
+        /// <summary>
+        /// Register owns the final pawn+source-event idempotency guarantee even if future wiring calls
+        /// it before DiaryGameComponent's normal PostLoadInit RebuildIndex. This pins the defensive
+        /// lazy-order contract that protects staged/replayed signals.
+        /// </summary>
+        [Test]
+        public static void MemoryRegisterIsIdempotentBeforeExplicitPostLoadRebuild()
+        {
+            PawnMemoryRepository source = new PawnMemoryRepository();
+            source.Register(NewMemory("pd-memory-original", "PawnA", "pd-source-same", 100));
+
+            RunWithTempFile(path =>
+            {
+                SaveWithScribe(path, () => source.ExposeMemories(MemoryLabel));
+
+                PawnMemoryRepository loaded = new PawnMemoryRepository();
+                LoadVarsWithScribe(path, () => loaded.ExposeMemories(MemoryLabel));
+
+                // Do NOT call RebuildIndex/ForPawn/HasDeposit first: Register itself must initialize
+                // the lazy indexes before it checks whether this deposit already exists.
+                loaded.Register(NewMemory("pd-memory-duplicate", "PawnA", "pd-source-same", 200));
+
+                IReadOnlyList<MemoryFragment> owned = loaded.ForPawn("PawnA");
+                Require(loaded.Count == 1 && owned.Count == 1,
+                    "A duplicate first registration after load must not append a second fragment.");
+                Require(string.Equals(owned[0].memoryId, "pd-memory-original", StringComparison.Ordinal),
+                    "The original loaded deposit must win over its replay.");
+                Require(loaded.HasDeposit("PawnA", "pd-source-same"),
+                    "The lazy rebuild must retain the original deposit key.");
             });
         }
 
@@ -394,6 +480,26 @@ namespace PawnDiary.RimTests
                 gameContext = "rimtest_rebuild=1",
                 colorCue = DiaryEvent.QuietColorCue,
                 initiatorPawnId = initiatorPawnId,
+            };
+        }
+
+        private static MemoryFragment NewMemory(
+            string memoryId,
+            string pawnId,
+            string sourceEventId,
+            int createdTick)
+        {
+            return new MemoryFragment
+            {
+                memoryId = memoryId,
+                pawnId = pawnId,
+                sourceEventId = sourceEventId,
+                text = "memory text for " + memoryId,
+                tags = new List<string> { MemoryTagTokens.Social },
+                keywords = new List<string> { "fixture" },
+                importance = 0.5f,
+                createdTick = createdTick,
+                lastRecalledTick = createdTick,
             };
         }
 

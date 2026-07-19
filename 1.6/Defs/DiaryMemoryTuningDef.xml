@@ -3,8 +3,10 @@
   Tuning surface for the pawn memory subsystem (design/MEMORY_SYSTEM_DESIGN.md §11): deposit,
   associative recall, and eviction knobs for per-pawn tagged/keyworded memory fragments. The pure
   extraction/selector/planner receive a copied MemoryPolicySnapshot, so editing this Def changes
-  policy without letting Verse/Defs leak into the pure layer or its tests. All values mirror
-  MemoryPolicySnapshot.CreateDefault exactly — deleting this file changes nothing.
+  policy without letting Verse/Defs leak into the pure layer or its tests. Behavioral values mirror
+  MemoryPolicySnapshot.CreateDefault exactly. The natural-language memoryContextInstruction is the
+  intentional exception: its code fallback is blank, so deleting this file omits optional prompt
+  guidance without changing selection/scoring behavior or hardcoding English in the fallback.
 
   STATUS: the memory layer ships INERT. Nothing snapshots this Def yet; it only becomes live when
   the capture/recall wiring (design §14 steps 4-7) lands.

@@ -43,8 +43,11 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Read-only view of one pawn's fragments in insertion order. Unknown or blank pawn ids
-        /// yield a shared empty list — never null — so callers need no guard.
+        /// Read-only interface over one pawn's LIVE repository-owned rows in insertion order.
+        /// Future recall wiring must copy each row through MemoryFragment.ToSnapshot before calling
+        /// pure code, then use the original rows only to apply lastRecalledTick/recallCount on the
+        /// main thread. Do not retain this view across Register/Remove calls. Unknown or blank pawn
+        /// ids yield a shared empty list — never null — so callers need no guard.
         /// </summary>
         public IReadOnlyList<MemoryFragment> ForPawn(string pawnId)
         {
@@ -92,13 +95,18 @@ namespace PawnDiary
                 return;
             }
 
+            // Normally DiaryGameComponent calls RebuildIndex during PostLoadInit and the deposit
+            // seam calls HasDeposit first. Register still owns the final idempotency guarantee, so
+            // make the lazy defensive path ready BEFORE probing depositKeys. Otherwise the first
+            // replay registered against a just-loaded repository could slip through once.
+            EnsureIndexReady();
+
             if (!string.IsNullOrWhiteSpace(fragment.sourceEventId)
                 && depositKeys.Contains(DepositKey(fragment.pawnId, fragment.sourceEventId)))
             {
                 return;
             }
 
-            EnsureIndexReady();
             fragments.Add(fragment);
             List<MemoryFragment> owned;
             if (!fragmentsByPawnId.TryGetValue(fragment.pawnId, out owned) || owned == null)
