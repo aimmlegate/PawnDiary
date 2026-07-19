@@ -1,6 +1,8 @@
 // Resettable Royalty correlation state. These short-lived ownership caches bridge exact same-action
 // title, mutation, persona, succession, permit, and raid callbacks without becoming saved truth.
+using System;
 using System.Collections.Generic;
+using Verse;
 
 namespace PawnDiary
 {
@@ -20,19 +22,38 @@ namespace PawnDiary
         /// <summary>Drops every process-local correlation so one colony can never leak into another.</summary>
         public static void Reset()
         {
-            PersonaKillThoughtCorrelation.Clear();
-            RoyalMutationCorrelation.Clear();
-            RoyalSuccessionCorrelation.Clear();
-            RoyalTitleThoughtCorrelation.Clear();
-            RoyalPermitOwnerCache.Reset();
-            PawnDiary.Ingestion.QuickMilitaryAidRaidCorrelation.Reset();
-            RaidExecutePatch.SetRaidSubmitOverrideForTests(null);
-            activeCauseScopes.Clear();
-            unclaimedMutations.Clear();
-            personaEndCauses.Clear();
-            talePersonaOwners.Clear();
-            personaTraitThoughtOwners.Clear();
-            royalTitleThoughtOwners.Clear();
+            // Each owner is isolated deliberately: a broken mod interaction in one cleanup must not
+            // prevent later caches from clearing and leaking the previous colony into the next one.
+            ResetOne("PersonaKillThoughtCorrelation", PersonaKillThoughtCorrelation.Clear);
+            ResetOne("RoyalMutationCorrelation", RoyalMutationCorrelation.Clear);
+            ResetOne("RoyalSuccessionCorrelation", RoyalSuccessionCorrelation.Clear);
+            ResetOne("RoyalTitleThoughtCorrelation", RoyalTitleThoughtCorrelation.Clear);
+            ResetOne("RoyalPermitOwnerCache", RoyalPermitOwnerCache.Reset);
+            ResetOne("QuickMilitaryAidRaidCorrelation",
+                PawnDiary.Ingestion.QuickMilitaryAidRaidCorrelation.Reset);
+            ResetOne("RaidExecutePatchTestOverride",
+                () => RaidExecutePatch.SetRaidSubmitOverrideForTests(null));
+            ResetOne("activeCauseScopes", activeCauseScopes.Clear);
+            ResetOne("unclaimedMutations", unclaimedMutations.Clear);
+            ResetOne("personaEndCauses", personaEndCauses.Clear);
+            ResetOne("talePersonaOwners", talePersonaOwners.Clear);
+            ResetOne("personaTraitThoughtOwners", personaTraitThoughtOwners.Clear);
+            ResetOne("royalTitleThoughtOwners", royalTitleThoughtOwners.Clear);
+        }
+
+        private static void ResetOne(string owner, Action reset)
+        {
+            try
+            {
+                reset();
+            }
+            catch (Exception ex)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Could not clear Royalty transient owner " + owner
+                        + "; later owners were still cleared. " + ex,
+                    ("PawnDiary.Royalty.TransientReset." + owner).GetHashCode());
+            }
         }
     }
 }

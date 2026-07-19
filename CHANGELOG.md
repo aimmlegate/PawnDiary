@@ -1,5 +1,23 @@
 # Changelog
 
+- **2026-07-20 — Closed adversarial-review gaps in Royalty Phase 8 hardening.** Royalty persona
+  reconciliation now calculates due/next deadlines through a pure scheduling boundary and stores its
+  unscribed deadline as `long`, so even an `Int32.MaxValue` compatibility cadence cannot wrap negative
+  and turn the collector into a per-tick scan. Eight standalone assertions cover the cadence floor,
+  due boundary, current-time rebase, malformed inputs, and maximum-tick overflow, raising
+  `RoyaltyContextTests` from 463 to 471 assertions. This preserves the existing one-current-state-pass
+  time-skip contract; it does not introduce historical cadence replay.
+
+  Caught Harmony registration failures still emit only their bounded feature-specific `WarningOnce`,
+  but now retain the exception type/message (or exact missing-target reason) needed to diagnose a
+  compatibility break. The loaded hook audit exercises that caught-exception branch without installing
+  a patch. `RoyaltyTransientState.Reset()` isolates every cache owner so one failed cleanup cannot stop
+  later cross-colony state from clearing. Phase-8 loaded fixtures now pin and restore the mutable cached
+  Royalty master/caps/cadence/threshold plus the initial-arrival gate, eliminating dependence on the
+  active compatibility profile or suite order. Runtime and the unchanged 291-test RimTest assemblies
+  rebuild with no warnings. No prompt/XML/Scribe key or DLC dependency changed; the deadline remains
+  unscribed, so old saves require no migration. The 291-test loaded run remains pending.
+
 - **2026-07-19 — Hardened pawn-fact and mood-thought reads against modded getter crashes.**
   Player logs showed three third-party NREs escaping through Pawn Diary call sites:
   `VPE-Veincaster`'s bloodlink hediff throwing inside `Hediff.Label` (via `get_LabelInBrackets`),
@@ -20,9 +38,9 @@
   deterministic caps, exact permit allowlists, routine/unknown exclusions, and fallback decisions;
   no duplicate policy or XML rule was added. Hook-registration exceptions now defer to one bounded
   feature-specific warning instead of emitting an unbounded duplicate, while each optional seam keeps
-  its documented scanner fallback or feature-local fail-closed behavior. Persona reconciliation now
-  names and enforces its time-skip contract: at most one current-state catch-up, then an elapsed
-  deadline rebased from the current tick rather than a loop over every missed cadence.
+  its documented scanner fallback or feature-local fail-closed behavior. Phase 8 documents and pins
+  the existing persona time-skip contract: at most one current-state catch-up, then an elapsed deadline
+  rebased from the current tick rather than a loop over every missed cadence.
 
   Four reversible loaded fixtures raise the RimTest assembly to 291 tests. Synthetic modded persona
   traits pass through the real `DlcContext` adapter and prove structural facts—not localized labels—

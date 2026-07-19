@@ -184,12 +184,15 @@ only proves the fixture compiles; it does not count as executing either Odyssey 
 ## Royalty Phase 8 — compatibility and release hardening
 
 Phase 8 adds no prompt field, XML policy, Scribe key, or DLC dependency. The focused pure suites pass
-463 Royalty, 680 capture, 2,734 pipeline, 22 prompt-variant, and 46 save-normalization assertions.
+471 Royalty, 680 capture, 2,734 pipeline, 22 prompt-variant, and 46 save-normalization assertions.
 Four reversible loaded fixtures raise the RimTest assembly from 287 to **291 compiled tests**:
 synthetic persona-trait adapter compatibility, synthetic unknown/malformed permit silence, real
 persona-kill cache clearing, and a long skipped reconciliation deadline. The direct-mutation
-title-loss fixture also now asserts the fallback scanner cannot repeat its page. Both assemblies
-build, but the 291-test DLL has not been executed inside RimWorld. The last fully green loaded
+title-loss fixture also now asserts the fallback scanner cannot repeat its page. The Royalty suite's
+eight scheduling assertions cover due/rebase/floor/overflow boundaries without game assemblies; the
+loaded fixtures isolate/restore cached policy, arrival gate, tick, and deadline state, and the hook
+audit exercises the caught-failure diagnostic branch. Both assemblies build, but the 291-test DLL has
+not been executed inside RimWorld. The last fully green loaded
 baseline remains 278/278; neither Phase 7 nor Phase 8 loaded/manual acceptance is closed.
 
 - [x] **ASSEMBLY-FREE/BUILD:** Run the five focused pure suites and build both Debug assemblies.
@@ -203,7 +206,8 @@ baseline remains 278/278; neither Phase 7 nor Phase 8 loaded/manual acceptance i
   do not classify behavior, structural kill-thought evidence is retained, and unknown/malformed
   permits remain silent without populating owner state.
 - [ ] **Missing/private-hook fallback:** With a disposable compatibility build that withholds one
-  optional hook target, confirm exactly one feature-specific warning, unchanged vanilla behavior,
+  optional hook target, confirm exactly one feature-specific warning containing a bounded exception
+  type/message or missing-target reason, unchanged vanilla behavior,
   and either the documented title scanner fallback or feature-local fail-closed behavior. Run
   `FactionScannerFallsBackToExactTitleLoss` and confirm the second scan is silent.
 - [ ] **Elapsed-time skip:** Run `LongTimeSkipRunsOneBoundedPersonaReconciliation`, then manually

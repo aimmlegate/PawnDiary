@@ -35,6 +35,8 @@ namespace PawnDiary.RimTests
         private static readonly FieldInfo NextReconciliationTickField =
             typeof(DiaryGameComponent).GetField(
                 "nextRoyaltyPersonaReconciliationTick", PrivateInstance);
+        private static readonly FieldInfo InitialArrivalScanPendingField =
+            typeof(DiaryGameComponent).GetField("initialArrivalScanPending", PrivateInstance);
         private static readonly MethodInfo ResetFreeColonistSnapshotMethod =
             typeof(DiaryGameComponent).GetMethod("ResetFreeColonistSnapshot", PrivateStatic);
         private static readonly MethodInfo FlushAllTaleBatchesMethod =
@@ -155,8 +157,16 @@ namespace PawnDiary.RimTests
 
             List<WeaponTraitDef> original = PersonaWeaponTraitsField.GetValue(comp)
                 as List<WeaponTraitDef>;
+            RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
+            bool originalEnabled = policy.enabled;
+            int originalCandidateCap = policy.maximumTraitCandidates;
             try
             {
+                // Cached XML policy is mutable process state. Pin only the two values this fixture
+                // needs, then restore them so a local compatibility profile cannot make the test
+                // order-dependent or leak into the next loaded fixture.
+                policy.enabled = true;
+                policy.maximumTraitCandidates = Math.Max(3, originalCandidateCap);
                 WeaponTraitDef structural = new WeaponTraitDef
                 {
                     defName = "Phase8_ModPersonaKillSignal",
@@ -190,7 +200,7 @@ namespace PawnDiary.RimTests
                     captured.traits,
                     PersonaTraitEventTokens.Kill,
                     "phase8-loaded-modded-traits",
-                    DiaryRoyaltyPolicy.Snapshot());
+                    policy);
                 PawnDiaryRimTestScope.Require(selected.Count == 1
                         && selected[0].traitDefName == structural.defName,
                     "Persona trait selection used localized wording, retained an unsafe identity, "
@@ -199,6 +209,8 @@ namespace PawnDiary.RimTests
             finally
             {
                 PersonaWeaponTraitsField.SetValue(comp, original);
+                policy.maximumTraitCandidates = originalCandidateCap;
+                policy.enabled = originalEnabled;
             }
         }
 
@@ -213,39 +225,54 @@ namespace PawnDiary.RimTests
             if (!RequireRoyaltyOrSkip(nameof(LongTimeSkipRunsOneBoundedPersonaReconciliation))) return;
             PawnDiaryRimTestScope.Require(RunReconciliationIfDueMethod != null
                     && NextReconciliationTickField != null
+                    && InitialArrivalScanPendingField != null
                     && DebugSetTicksGameMethod != null
                     && Find.TickManager != null,
                 "Could not resolve the elapsed-time reconciliation fixture seams.");
-            ThingWithComps weapon;
-            CompBladelinkWeapon comp;
-            CreatePersonaWeapon(out weapon, out comp);
-            scope.FireAndRequireEvent(
-                () => comp.CodeFor(pawn),
-                PersonaWeaponEventData.BondFormedDefName,
-                pawn,
-                null);
-            scope.RequireNoNewEvent(() => scope.Component.ObserveRoyaltyPersonaEquipment(weapon, pawn));
-            PersonaBondState pending = PersonaRows().SingleOrDefault(row => row != null
-                && row.weaponThingId == weapon.GetUniqueLoadID());
-            PawnDiaryRimTestScope.Require(pending != null
-                    && pending.phaseToken == PersonaBondPhaseTokens.SeparationPending,
-                "The time-skip fixture did not establish a pending non-primary persona bond.");
-
             int originalTick = Find.TickManager.TicksGame;
-            int originalDeadline = (int)NextReconciliationTickField.GetValue(scope.Component);
+            long originalDeadline = (long)NextReconciliationTickField.GetValue(scope.Component);
+            bool originalArrivalPending =
+                (bool)InitialArrivalScanPendingField.GetValue(scope.Component);
             RoyaltyPolicySnapshot policy = DiaryRoyaltyPolicy.Snapshot();
-            int cadence = Math.Max(250, policy.reconciliationCadenceTicks);
-            long futureLong = (long)originalTick
-                + Math.Max(1, policy.separationThresholdTicks)
-                + ((long)cadence * 20L);
-            PawnDiaryRimTestScope.Require(futureLong < int.MaxValue - cadence,
-                "The loaded game's tick counter is too near Int32.MaxValue for this reversible fixture.");
-            int future = (int)futureLong;
+            bool originalEnabled = policy.enabled;
+            int originalThreshold = policy.separationThresholdTicks;
+            int originalCadence = policy.reconciliationCadenceTicks;
             try
             {
+                const int testSeparationTicks = 1000;
+                const int testCadenceTicks = 2500;
+                policy.enabled = true;
+                policy.separationThresholdTicks = testSeparationTicks;
+                policy.reconciliationCadenceTicks = testCadenceTicks;
+                InitialArrivalScanPendingField.SetValue(scope.Component, false);
+
+                ThingWithComps weapon;
+                CompBladelinkWeapon comp;
+                CreatePersonaWeapon(out weapon, out comp);
+                scope.FireAndRequireEvent(
+                    () => comp.CodeFor(pawn),
+                    PersonaWeaponEventData.BondFormedDefName,
+                    pawn,
+                    null);
+                scope.RequireNoNewEvent(() =>
+                    scope.Component.ObserveRoyaltyPersonaEquipment(weapon, pawn));
+                PersonaBondState pending = PersonaRows().SingleOrDefault(row => row != null
+                    && row.weaponThingId == weapon.GetUniqueLoadID());
+                PawnDiaryRimTestScope.Require(pending != null
+                        && pending.phaseToken == PersonaBondPhaseTokens.SeparationPending,
+                    "The time-skip fixture did not establish a pending non-primary persona bond.");
+
+                long futureLong = (long)originalTick
+                    + testSeparationTicks
+                    + ((long)testCadenceTicks * 20L);
+                PawnDiaryRimTestScope.Require(futureLong <= int.MaxValue,
+                    "The loaded game's tick counter is too near Int32.MaxValue for this reversible fixture.");
+                int future = (int)futureLong;
                 // Backdating the deadline models every skipped cadence without asking the game loop
-                // to run thousands of synthetic ticks. The global tick is restored in finally.
-                NextReconciliationTickField.SetValue(scope.Component, Math.Max(0, originalTick - cadence));
+                // to run thousands of synthetic ticks. DebugSetTicksGame is synchronous, so the
+                // global tick cannot advance a storyteller/gameplay tick before finally restores it.
+                NextReconciliationTickField.SetValue(
+                    scope.Component, Math.Max(0L, (long)originalTick - testCadenceTicks));
                 DebugSetTicksGameMethod.Invoke(Find.TickManager, new object[] { future });
                 scope.FireAndRequireEvent(
                     () => RunReconciliationIfDueMethod.Invoke(
@@ -254,7 +281,8 @@ namespace PawnDiary.RimTests
                     pawn,
                     null);
                 PawnDiaryRimTestScope.Require(
-                    (int)NextReconciliationTickField.GetValue(scope.Component) == future + cadence,
+                    (long)NextReconciliationTickField.GetValue(scope.Component)
+                        == RoyaltyReconciliationSchedule.NextDeadline(future, testCadenceTicks),
                     "The overdue reconciliation deadline was not rebased from current game time.");
                 scope.RequireNoNewEvent(() => RunReconciliationIfDueMethod.Invoke(
                     scope.Component, new object[] { future }));
@@ -263,7 +291,13 @@ namespace PawnDiary.RimTests
             {
                 DebugSetTicksGameMethod.Invoke(Find.TickManager, new object[] { originalTick });
                 NextReconciliationTickField.SetValue(scope.Component, originalDeadline);
+                InitialArrivalScanPendingField.SetValue(scope.Component, originalArrivalPending);
+                policy.reconciliationCadenceTicks = originalCadence;
+                policy.separationThresholdTicks = originalThreshold;
+                policy.enabled = originalEnabled;
             }
+            PawnDiaryRimTestScope.Require(Find.TickManager.TicksGame == originalTick,
+                "The elapsed-time fixture did not restore the global game tick.");
         }
 
         /// <summary>
@@ -277,10 +311,17 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(DiaryRoyaltyPatches.HooksReady,
                 "Pawn Diary reported an incomplete Royalty persona hook set.");
             Type type = typeof(CompBladelinkWeapon);
+            MethodBase codeForTarget = AccessTools.DeclaredMethod(
+                type, nameof(CompBladelinkWeapon.CodeFor), new[] { typeof(Pawn) });
             RequireOwnedPatch(
-                AccessTools.DeclaredMethod(type, nameof(CompBladelinkWeapon.CodeFor),
-                    new[] { typeof(Pawn) }),
+                codeForTarget,
                 "CodeForPrefix", "CodeForPostfix");
+            string caughtFailureDetail;
+            PawnDiaryRimTestScope.Require(
+                !DiaryRoyaltyPatches.ProbePatchFailureForTests(
+                    codeForTarget, out caughtFailureDetail)
+                    && caughtFailureDetail.Contains("NullReferenceException"),
+                "The caught Royalty patch-failure path discarded its exception type/message detail.");
             RequireOwnedPatch(
                 AccessTools.DeclaredMethod(type, nameof(CompBladelinkWeapon.Notify_Equipped),
                     new[] { typeof(Pawn) }),

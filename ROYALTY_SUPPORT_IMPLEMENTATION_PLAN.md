@@ -26,9 +26,10 @@ code-complete with pure/build coverage and nine newly compiled loaded checks, br
 to 287 tests. Its first full loaded run reached 284/287 and exposed three fixture-only defects: two
 omitted official-DLC matrix rows, an unsupported `unknown` signal in the fanout fixture, and missing
 isolation for the real stable witness's pre-existing generic Quest dedup entry. The corrected fixture
-assembly builds and awaits a loaded rerun. Phase 8 compatibility hardening adds bounded one-warning
-hook failure handling, one-pass elapsed reconciliation after time skips, synthetic modded persona/
-permit adapter fixtures, repeat-safe scanner fallback, and real transient-cache reset coverage. The
+assembly builds and awaits a loaded rerun. Phase 8 compatibility hardening adds bounded diagnostic
+one-warning hook failure handling, overflow-safe one-pass elapsed reconciliation after time skips,
+synthetic modded persona and permit adapter fixtures, repeat-safe scanner fallback, and real
+transient-cache reset coverage. The
 runtime and 291-test RimTest assemblies build; the focused pure suites pass, but the 291-test loaded
 run and real exit-to-menu/second-colony, Royalty-off, localization, and hands-on matrices remain open.
 Therefore Phase 7 hands-on/loaded acceptance and R2/R3 release acceptance remain open. This status does not pass,
@@ -1271,6 +1272,7 @@ Exact filenames may be adjusted to existing conventions, but responsibilities mu
 - `Source/Pipeline/Royalty/RoyalMutationPageSelectionPolicy.cs`
 - `Source/Pipeline/Royalty/RoyalPermitPolicy.cs`
 - `Source/Pipeline/Royalty/RoyalAscentPolicy.cs`
+- `Source/Pipeline/Royalty/RoyaltyReconciliationSchedule.cs`
 - `Source/Pipeline/Royalty/RoyaltyContextText.cs`
 - `Source/Models/PersonaBondState.cs`
 - `Source/Models/RoyalTitleObservationState.cs`
@@ -1655,23 +1657,27 @@ Exit gate: R3 is releasable.
 
 ### Phase 8 — Compatibility and release hardening
 
-> **Implementation status (2026-07-19): automated code/build slice complete; loaded and manual
-> release evidence pending.** The existing 463-assertion pure Royalty suite already covers localized
+> **Implementation status (2026-07-20): adversarially hardened automated code/build slice complete;
+> loaded and manual release evidence pending.** The existing pure Royalty suite covers localized
 > wording independence, structural/override trait ranking, malformed IDs, caps, exact permit-family
-> allowlists, routine/unknown exclusions, and fallback decisions. Phase 8 therefore adds no duplicate
-> pure policy and no prompt/XML/save-schema change. The impure loaded boundary gains four reversible
+> allowlists, routine/unknown exclusions, and fallback decisions. Phase 8 adds eight focused pure
+> scheduling assertions for due/rebase/floor/overflow boundaries, but no duplicate story policy and no
+> prompt/XML/save-schema change. The impure loaded boundary gains four reversible
 > fixtures: synthetic modded persona traits, synthetic unknown/malformed permit Defs, the real
 > persona-kill cache through `FinalizeInit`, and a long skipped reconciliation deadline. The existing
-> direct-title-list fallback now asserts a repeated scan is silent. Missing hook exceptions no longer
-> emit an unbounded duplicate before the existing feature-specific `WarningOnce`; each optional seam
-> either retains its documented scanner fallback or fails closed locally.
+> direct-title-list fallback now asserts a repeated scan is silent. Missing/caught hook failures no
+> longer emit an unbounded duplicate before the feature-specific `WarningOnce`, and that one warning
+> retains a bounded exception type/message or missing-target reason; each optional seam either retains
+> its documented scanner fallback or fails closed locally.
 >
 > The audited game-boundary inventory covers every process-static Royalty owner cleared by
-> `RoyaltyTransientState.Reset`, the general `DeathContextCache` cleared in the component constructor,
+> `RoyaltyTransientState.Reset`, with each owner independently guarded so one failure cannot block the
+> rest; the general `DeathContextCache` cleared in the component constructor,
 > and component Quest/source/event-window dedup cleared in `StartedNewGame` / `LoadedGame`. Overdue
 > persona reconciliation is bounded to one live observation and rebases from current time, while the
-> saved pending timestamp retains genuine elapsed truth. Runtime and 291-test RimTest assemblies
-> compile; Royalty (463), capture (680), pipeline (2,734), prompt-variant (22), and save-normalization
+> saved pending timestamp retains genuine elapsed truth. Its unscribed `long` deadline and pure helper
+> make maximum-size compatibility cadences overflow-safe. Runtime and 291-test RimTest assemblies
+> compile; Royalty (471), capture (680), pipeline (2,734), prompt-variant (22), and save-normalization
 > (46) focused suites pass. No Phase-7 corrected loaded rerun, new 291-test loaded execution, actual
 > cross-colony boundary, Royalty-off profile, localization review, or hands-on acceptance is claimed.
 

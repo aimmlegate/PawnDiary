@@ -300,7 +300,9 @@ transfer start a new bond epoch and one formation page. A short primary-weapon s
 and silent; an independent XML-cadenced reconciliation deadline emits one separation only after
 `60000` observable not-primary ticks, and emits recovery only when that separation page was accepted.
 An overdue deadline performs at most one current-state reconciliation and then rebases from the
-current tick; it never loops through every missed cadence after a time skip.
+current tick; it never loops through every missed cadence after a time skip. The deadline is an
+unscribed `long`, and pure `RoyaltyReconciliationSchedule` arithmetic prevents a large modded cadence
+near `Int32.MaxValue` from wrapping negative into per-tick work.
 Unavailable/off-map evidence cancels or pauses the inference instead of proving separation.
 Destruction owns one standalone ending. Pawn death ends lifecycle state without a Phase-2 page, map
 removal is silent, and unknown cleanup remains live for reconciliation. The user confirmed the
@@ -609,16 +611,18 @@ fixtures instead exercise the impure boundary: synthetic `WeaponTraitDef` rows t
 `DlcContext.Royalty`, synthetic unknown/malformed `RoyalTitlePermitDef` rows through the real tracker
 and `Notify_Used`, the real persona-kill ownership cache across `FinalizeInit`, and a long skipped
 reconciliation deadline. The title-loss direct-mutation fallback now also proves a second scan is
-silent. Hook registration failures have one bounded feature-specific warning; the fallback route or
-feature-local fail-closed behavior remains unchanged and vanilla execution is never blocked.
+silent. Hook registration failures have one bounded feature-specific warning that includes the caught
+exception type/message or missing-target reason; the fallback route or feature-local fail-closed
+behavior remains unchanged and vanilla execution is never blocked.
 
 The compatibility cache inventory is explicit. `RoyaltyTransientState.Reset()` clears persona-kill,
 mutation, succession, title-memory, permit-owner, quick-aid, and test-only raid-dispatch ownership at
-`FinalizeInit`; the general `DeathContextCache` clears in each `DiaryGameComponent` constructor.
+`FinalizeInit`. Each reset owner is failure-isolated so one throwing cleanup cannot prevent later
+owners from clearing; the general `DeathContextCache` clears in each `DiaryGameComponent` constructor.
 Component-owned Quest admission plus source/generic event dedup clear in `StartedNewGame` and
 `LoadedGame`. Cached policy snapshots and hook-ready flags contain configuration/registration status,
 not colony ownership, and deliberately are not treated as cross-game narrative state. Runtime and the
-291-test RimTest assemblies build, and the five focused pure suites remain green at 463 Royalty, 680
+291-test RimTest assemblies build, and the five focused pure suites remain green at 471 Royalty, 680
 capture, 2,734 pipeline, 22 prompt-variant, and 46 save-normalization assertions. The 291-test loaded
 execution, true exit-to-menu/second-colony boundary, Royalty-off profile, and all hands-on matrices
 remain pending; 278/278 is still the last fully green loaded baseline.
@@ -2666,12 +2670,14 @@ admission remains transient and clears in `StartedNewGame` / `LoadedGame`; `Fina
 clears the process-static Royalty correlation stores that can otherwise cross a game boundary.
 Phase 8 adds no Scribe key. Its audited process-static ownership consists of persona-kill scopes,
 royal mutation/title-memory/succession correlations, permit-owner sessions, and quick-aid pending/
-recent ownership; `RoyaltyTransientState.Reset()` clears each at `FinalizeInit`. General pre-death
+recent ownership; `RoyaltyTransientState.Reset()` clears each through an independent guarded reset at
+`FinalizeInit`, so one failed owner cannot block the rest. General pre-death
 context is also process-static but clears in the `DiaryGameComponent` constructor. The component's
 Quest admission, recent source keys, and event-window dedup stores clear in both `StartedNewGame` and
 `LoadedGame`. The persona reconciliation deadline is unscribed scheduling state: a load resets it to
 zero, the first eligible pass observes current live truth once, and an overdue pass rebases from now
-instead of replaying every missed cadence.
+instead of replaying every missed cadence. Its `long` representation and pure scheduling helper keep
+maximum-size XML compatibility cadences overflow-safe without changing any saved field.
 Phase 4 advances this existing row immediately for exact title hooks and scanner observations; schema
 version 2 distinguishes a readable empty title set from temporarily unavailable Royalty data. A
 Royalty-off `LoadedGame` invalidates availability immediately while retaining the saved rows and
@@ -2950,7 +2956,10 @@ Twenty EVT event-flow suites (`PawnDiary*FlowTests.cs`) now sit on this harness,
 `PawnDiaryBiotechMechanitorFlowTests`, and `PawnDiaryRoyaltyFlowTests` DLC suites. The Royalty fixture
 drives a real `CompBladelinkWeapon.CodeFor`, silently recreates a missing historical row through
 reconciliation, proves `UnCode` removes it from live narrative context, and audits all six exact
-persona-hook signatures. The mechanitor fixture distinguishes silent unspawned starting-state callbacks
+persona-hook signatures, including the caught-registration diagnostic branch. Its modded-trait and
+elapsed-time cases snapshot/restore cached policy and component gates so local XML overrides and test
+order cannot change their result. The mechanitor fixture distinguishes silent unspawned starting-state
+callbacks
 from real spawned install/removal pages and uses vanilla's mech-side Overseer relation direction. The B1
 suites verify growth
 once-only emission, progression consumption, ordinary fallback, both-groups-disabled observation,
@@ -3070,7 +3079,9 @@ is open. Phase 8 adds four loaded fixtures, raising the compiled assembly to 291
 modded persona-trait adapter behavior, exact-fail-closed synthetic permit Defs, real persona-kill
 cache reset, and a reversible long-time-skip reconciliation. The title-loss fallback fixture also
 pins repeat-scan silence. These fixtures compile but have not run inside RimWorld; the true second-
-colony boundary, Royalty-off profile, and manual matrices therefore remain open. Ideology and Anomaly ritual tests use
+colony boundary, Royalty-off profile, and manual matrices therefore remain open. The pure Royalty
+schedule suite separately covers maximum-tick/cadence overflow without loading the game. Ideology and
+Anomaly ritual tests use
 internal copied-fact fixture seams because safely
 constructing their live ritual job objects would start a real colony ritual; only that reflective
 object extraction is bypassed. The fixtures still execute production fan-out ordering, pawn-ID

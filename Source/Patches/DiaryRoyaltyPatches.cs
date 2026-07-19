@@ -14,6 +14,12 @@ namespace PawnDiary
     /// <summary>Defensively registers the exact Phase-2 persona and Phase-4/5 progression seams.</summary>
     internal static class DiaryRoyaltyPatches
     {
+        // Patch failures are startup diagnostics, not player text. Keep enough exception detail to
+        // identify an incompatible method/patcher while preventing a pathological exception message
+        // from producing an unbounded log entry.
+        private const int MaximumPatchFailureDetailCharacters = 240;
+        private const int MaximumPersonaFailureSummaryCharacters = 1200;
+
         private sealed class CodingPatchState
         {
             public ThingWithComps weapon;
@@ -76,31 +82,40 @@ namespace PawnDiary
             if (harmony == null || !ModsConfig.RoyaltyActive) return;
             Type type = typeof(CompBladelinkWeapon);
             bool ready = true;
-            ready &= Patch(harmony,
+            List<string> personaFailures = new List<string>();
+            ready &= PatchRequired(harmony,
                 AccessTools.DeclaredMethod(type, nameof(CompBladelinkWeapon.CodeFor), new[] { typeof(Pawn) }),
-                nameof(CodeForPrefix), nameof(CodeForPostfix));
-            ready &= Patch(harmony,
+                "CompBladelinkWeapon.CodeFor(Pawn)",
+                nameof(CodeForPrefix), nameof(CodeForPostfix), personaFailures);
+            ready &= PatchRequired(harmony,
                 AccessTools.DeclaredMethod(type, nameof(CompBladelinkWeapon.Notify_Equipped), new[] { typeof(Pawn) }),
-                null, nameof(EquippedPostfix));
-            ready &= Patch(harmony,
+                "CompBladelinkWeapon.Notify_Equipped(Pawn)",
+                null, nameof(EquippedPostfix), personaFailures);
+            ready &= PatchRequired(harmony,
                 AccessTools.DeclaredMethod(type, nameof(CompBladelinkWeapon.Notify_EquipmentLost), new[] { typeof(Pawn) }),
-                null, nameof(EquipmentLostPostfix));
-            ready &= Patch(harmony,
+                "CompBladelinkWeapon.Notify_EquipmentLost(Pawn)",
+                null, nameof(EquipmentLostPostfix), personaFailures);
+            ready &= PatchRequired(harmony,
                 AccessTools.DeclaredMethod(type, nameof(CompBladelinkWeapon.PostDestroy),
                     new[] { typeof(DestroyMode), typeof(Map) }),
-                nameof(DestroyPrefix), null);
-            ready &= Patch(harmony,
+                "CompBladelinkWeapon.PostDestroy(DestroyMode, Map)",
+                nameof(DestroyPrefix), null, personaFailures);
+            ready &= PatchRequired(harmony,
                 AccessTools.DeclaredMethod(type, nameof(CompBladelinkWeapon.Notify_MapRemoved), Type.EmptyTypes),
-                nameof(MapRemovedPrefix), null);
-            ready &= Patch(harmony,
+                "CompBladelinkWeapon.Notify_MapRemoved()",
+                nameof(MapRemovedPrefix), null, personaFailures);
+            ready &= PatchRequired(harmony,
                 AccessTools.DeclaredMethod(type, nameof(CompBladelinkWeapon.UnCode), Type.EmptyTypes),
-                nameof(UncodePrefix), null);
+                "CompBladelinkWeapon.UnCode()",
+                nameof(UncodePrefix), null, personaFailures);
             HooksReady = ready;
             if (!ready)
             {
                 Log.WarningOnce(
                     "[Pawn Diary] One or more Royalty persona-weapon lifecycle methods changed; "
-                        + "the affected diary observation is disabled while vanilla behavior remains untouched.",
+                        + "the affected diary observation is disabled while vanilla behavior remains untouched. "
+                        + "Failures: " + LimitFailureDetail(string.Join("; ", personaFailures.ToArray()),
+                            MaximumPersonaFailureSummaryCharacters) + ".",
                     "PawnDiary.Royalty.MissingHook.PersonaLifecycle".GetHashCode());
             }
 
@@ -108,73 +123,72 @@ namespace PawnDiary
                 typeof(Pawn_RoyaltyTracker),
                 "OnPostTitleChanged",
                 new[] { typeof(Faction), typeof(RoyalTitleDef), typeof(RoyalTitleDef) });
-            TitleHookReady = Patch(harmony, titleTarget, null, nameof(TitleChangedPostfix));
-            WarnMissingOnce(TitleHookReady, "Pawn_RoyaltyTracker.OnPostTitleChanged(Faction, RoyalTitleDef, RoyalTitleDef)",
-                "the faction-aware progression scanner remains active as fallback");
+            TitleHookReady = PatchAndWarn(harmony, titleTarget,
+                "Pawn_RoyaltyTracker.OnPostTitleChanged(Faction, RoyalTitleDef, RoyalTitleDef)",
+                "the faction-aware progression scanner remains active as fallback",
+                null, nameof(TitleChangedPostfix));
 
-            BestowingHookReady = Patch(harmony,
+            BestowingHookReady = PatchAndWarn(harmony,
                 AccessTools.DeclaredMethod(typeof(RitualOutcomeEffectWorker_Bestowing), "Apply", new[]
                 {
                     typeof(float), typeof(Dictionary<Pawn, int>), typeof(LordJob_Ritual)
                 }),
+                "RitualOutcomeEffectWorker_Bestowing.Apply",
+                "title and psylink scanners remain active as fallback",
                 nameof(BestowingPrefix), nameof(BestowingPostfix), nameof(BestowingFinalizer));
-            WarnMissingOnce(BestowingHookReady, "RitualOutcomeEffectWorker_Bestowing.Apply",
-                "title and psylink scanners remain active as fallback");
 
-            AnimaHookReady = Patch(harmony,
+            AnimaHookReady = PatchAndWarn(harmony,
                 AccessTools.DeclaredMethod(typeof(CompPsylinkable), "FinishLinkingRitual",
                     new[] { typeof(Pawn), typeof(int) }),
+                "CompPsylinkable.FinishLinkingRitual(Pawn, int)",
+                "the psylink scanner remains active as fallback",
                 nameof(AnimaPrefix), nameof(AnimaPostfix), nameof(AnimaFinalizer));
-            WarnMissingOnce(AnimaHookReady, "CompPsylinkable.FinishLinkingRitual(Pawn, int)",
-                "the psylink scanner remains active as fallback");
 
-            NeuroformerHookReady = Patch(harmony,
+            NeuroformerHookReady = PatchAndWarn(harmony,
                 AccessTools.DeclaredMethod(typeof(CompUseEffect_InstallImplant), "DoEffect",
                     new[] { typeof(Pawn) }),
+                "CompUseEffect_InstallImplant.DoEffect(Pawn)",
+                "matching neuroformer changes use the unknown-source scanner fallback",
                 nameof(NeuroformerPrefix), nameof(NeuroformerPostfix), nameof(NeuroformerFinalizer));
-            WarnMissingOnce(NeuroformerHookReady, "CompUseEffect_InstallImplant.DoEffect(Pawn)",
-                "matching neuroformer changes use the unknown-source scanner fallback");
 
-            SuccessionCandidateHookReady = Patch(harmony,
+            SuccessionCandidateHookReady = PatchAndWarn(harmony,
                 AccessTools.DeclaredMethod(typeof(RoyalTitleDefExt), "TryInherit", new[]
                 {
                     typeof(RoyalTitleDef), typeof(Pawn), typeof(Faction),
                     typeof(RoyalTitleInheritanceOutcome).MakeByRefType()
                 }),
+                "RoyalTitleDefExt.TryInherit",
+                "succession pages are disabled because candidate evidence cannot be proven",
                 null, nameof(SuccessionCandidatePostfix));
-            WarnMissingOnce(SuccessionCandidateHookReady, "RoyalTitleDefExt.TryInherit",
-                "succession pages are disabled because candidate evidence cannot be proven");
 
-            SuccessionCommitHookReady = Patch(harmony,
+            SuccessionCommitHookReady = PatchAndWarn(harmony,
                 AccessTools.DeclaredMethod(typeof(Pawn_RoyaltyTracker), "Notify_PawnKilled", Type.EmptyTypes),
+                "Pawn_RoyaltyTracker.Notify_PawnKilled",
+                "succession pages are disabled because the outer commit cannot be proven",
                 nameof(SuccessionDeathPrefix), nameof(SuccessionDeathPostfix),
                 nameof(SuccessionDeathFinalizer));
-            WarnMissingOnce(SuccessionCommitHookReady, "Pawn_RoyaltyTracker.Notify_PawnKilled",
-                "succession pages are disabled because the outer commit cannot be proven");
 
-            HeirAppointmentHookReady = Patch(harmony,
+            HeirAppointmentHookReady = PatchAndWarn(harmony,
                 AccessTools.DeclaredMethod(typeof(QuestPart_ChangeHeir), "Notify_QuestSignalReceived",
                     new[] { typeof(Signal) }),
+                "QuestPart_ChangeHeir.Notify_QuestSignalReceived(Signal)",
+                "explicit heir-appointment pages are disabled; automatic heir assignment remains silent",
                 nameof(HeirAppointmentPrefix), nameof(HeirAppointmentPostfix),
                 nameof(HeirAppointmentFinalizer));
-            WarnMissingOnce(HeirAppointmentHookReady,
-                "QuestPart_ChangeHeir.Notify_QuestSignalReceived(Signal)",
-                "explicit heir-appointment pages are disabled; automatic heir assignment remains silent");
 
-            PermitOwnerHookReady = Patch(harmony,
+            PermitOwnerHookReady = PatchAndWarn(harmony,
                 AccessTools.DeclaredMethod(typeof(Pawn_RoyaltyTracker), nameof(Pawn_RoyaltyTracker.GetPermit),
                     new[] { typeof(RoyalTitlePermitDef), typeof(Faction) }),
-                null, nameof(PermitGetPostfix));
-            WarnMissingOnce(PermitOwnerHookReady,
                 "Pawn_RoyaltyTracker.GetPermit(RoyalTitlePermitDef, Faction)",
-                "dramatic permit pages fail closed because their owner cannot be proven");
+                "dramatic permit pages fail closed because their owner cannot be proven",
+                null, nameof(PermitGetPostfix));
 
-            PermitUseHookReady = Patch(harmony,
+            PermitUseHookReady = PatchAndWarn(harmony,
                 AccessTools.DeclaredMethod(typeof(FactionPermit), nameof(FactionPermit.Notify_Used),
                     Type.EmptyTypes),
+                "FactionPermit.Notify_Used()",
+                "dramatic permit pages are disabled because successful use cannot be proven",
                 nameof(PermitUsedPrefix), nameof(PermitUsedPostfix));
-            WarnMissingOnce(PermitUseHookReady, "FactionPermit.Notify_Used()",
-                "dramatic permit pages are disabled because successful use cannot be proven");
         }
 
         private static bool Patch(
@@ -182,9 +196,15 @@ namespace PawnDiary
             MethodBase target,
             string prefixName,
             string postfixName,
-            string finalizerName = null)
+            string finalizerName,
+            out string failureDetail)
         {
-            if (target == null) return false;
+            failureDetail = string.Empty;
+            if (target == null)
+            {
+                failureDetail = "target method was not found";
+                return false;
+            }
             try
             {
                 harmony.Patch(
@@ -196,21 +216,87 @@ namespace PawnDiary
                         : new HarmonyMethod(typeof(DiaryRoyaltyPatches), finalizerName));
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // The owning registration row emits one bounded, feature-specific warning below.
                 // Logging here as well would produce duplicate errors for the same missing seam and
                 // could repeat if another compatibility layer retries registration.
+                failureDetail = DescribePatchFailure(ex);
                 return false;
             }
         }
 
-        private static void WarnMissingOnce(bool ready, string target, string fallback)
+        private static bool PatchRequired(
+            Harmony harmony,
+            MethodBase target,
+            string targetLabel,
+            string prefixName,
+            string postfixName,
+            List<string> failures,
+            string finalizerName = null)
+        {
+            string failureDetail;
+            bool ready = Patch(
+                harmony, target, prefixName, postfixName, finalizerName, out failureDetail);
+            if (!ready && failures != null)
+                failures.Add(targetLabel + " [" + failureDetail + "]");
+            return ready;
+        }
+
+        private static bool PatchAndWarn(
+            Harmony harmony,
+            MethodBase target,
+            string targetLabel,
+            string fallback,
+            string prefixName,
+            string postfixName,
+            string finalizerName = null)
+        {
+            string failureDetail;
+            bool ready = Patch(
+                harmony, target, prefixName, postfixName, finalizerName, out failureDetail);
+            WarnMissingOnce(ready, targetLabel, fallback, failureDetail);
+            return ready;
+        }
+
+        private static void WarnMissingOnce(
+            bool ready,
+            string target,
+            string fallback,
+            string failureDetail)
         {
             if (ready) return;
             Log.WarningOnce(
-                "[Pawn Diary] Could not register Royalty hook " + target + "; " + fallback + ".",
+                "[Pawn Diary] Could not register Royalty hook " + target + " [" + failureDetail
+                    + "]; " + fallback + ".",
                 ("PawnDiary.Royalty.MissingHook." + target).GetHashCode());
+        }
+
+        private static string DescribePatchFailure(Exception exception)
+        {
+            if (exception == null) return "unknown patch failure";
+            string message = (exception.Message ?? string.Empty)
+                .Replace('\r', ' ')
+                .Replace('\n', ' ')
+                .Trim();
+            string detail = exception.GetType().Name;
+            if (message.Length > 0) detail += ": " + message;
+            return LimitFailureDetail(detail, MaximumPatchFailureDetailCharacters);
+        }
+
+        private static string LimitFailureDetail(string value, int maximumCharacters)
+        {
+            string clean = (value ?? string.Empty).Trim();
+            if (maximumCharacters <= 0 || clean.Length <= maximumCharacters) return clean;
+            return clean.Substring(0, maximumCharacters - 3) + "...";
+        }
+
+        /// <summary>Exercises the caught patch-failure path without changing an installed hook.</summary>
+        internal static bool ProbePatchFailureForTests(MethodBase target, out string failureDetail)
+        {
+            // A known target plus a deliberately absent Harmony instance enters the exact exception
+            // branch. No patch can be installed, and the caller can assert that diagnostics survive.
+            return Patch(null, target, null, null, null, out failureDetail);
         }
 
         private static void PermitGetPostfix(Pawn_RoyaltyTracker __instance, FactionPermit __result)

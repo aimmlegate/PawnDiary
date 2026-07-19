@@ -35,10 +35,33 @@ namespace RoyaltyContextTests
             TestPermitMalformedOrderingDedupAndCaps();
             TestPermitOwnerDecisionAndQuickAidArbitration();
             TestRoyalAscentLifecycleOwnershipExpiryAndMigration();
+            TestReconciliationScheduleBounds();
             TestPersonaPersistenceBaselinesAndNormalization();
             TestTitleObservationNormalizationAndOrdering();
             Console.WriteLine("RoyaltyContextTests passed " + assertions + " assertions.");
             return 0;
+        }
+
+        private static void TestReconciliationScheduleBounds()
+        {
+            AssertTrue("uninitialized reconciliation deadline is due",
+                RoyaltyReconciliationSchedule.IsDue(400, 0L));
+            AssertTrue("future reconciliation deadline is not due",
+                !RoyaltyReconciliationSchedule.IsDue(399, 400L));
+            AssertTrue("exact reconciliation deadline is due",
+                RoyaltyReconciliationSchedule.IsDue(400, 400L));
+            AssertEqual("reconciliation cadence has defensive floor", 650L,
+                RoyaltyReconciliationSchedule.NextDeadline(400, 1));
+            AssertEqual("reconciliation deadline rebases from current time", 2900L,
+                RoyaltyReconciliationSchedule.NextDeadline(400, 2500));
+            AssertEqual("negative reconciliation inputs normalize safely", 250L,
+                RoyaltyReconciliationSchedule.NextDeadline(-10, -10));
+            AssertEqual("maximum cadence cannot wrap a maximum game tick", 4294967294L,
+                RoyaltyReconciliationSchedule.NextDeadline(int.MaxValue, int.MaxValue));
+            AssertTrue("overflow-safe future deadline remains pending",
+                !RoyaltyReconciliationSchedule.IsDue(
+                    int.MaxValue,
+                    RoyaltyReconciliationSchedule.NextDeadline(int.MaxValue, int.MaxValue)));
         }
 
         private static void TestRoyalAscentLifecycleOwnershipExpiryAndMigration()

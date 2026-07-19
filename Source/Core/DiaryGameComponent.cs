@@ -173,8 +173,9 @@ namespace PawnDiary
         // state where baseline suppression is more important than catching every internal setter.
         private int nextProgressionScanTick;
         // Persona bonds use their own XML cadence so disabling progression pages never freezes
-        // separation/recovery truth. This is a deadline, not a modulo check, for stable save timing.
-        private int nextRoyaltyPersonaReconciliationTick;
+        // separation/recovery truth. This unscribed long deadline prevents a large compatibility
+        // override near Int32.MaxValue from wrapping negative and turning the scan into per-tick work.
+        private long nextRoyaltyPersonaReconciliationTick;
 
         // Current absolute in-game day. Uses TicksAbs so day-note batching follows the world calendar.
         private static int CurrentDayIndex
@@ -732,15 +733,16 @@ namespace PawnDiary
         private void RunRoyaltyPersonaReconciliationIfDue(int now)
         {
             if (initialArrivalScanPending || !ModsConfig.RoyaltyActive
-                || now < nextRoyaltyPersonaReconciliationTick) return;
+                || !RoyaltyReconciliationSchedule.IsDue(
+                    now, nextRoyaltyPersonaReconciliationTick)) return;
 
             // A time skip can pass many nominal cadence boundaries. Reconciliation reads only the
             // current live state, so replaying every missed interval could invent transitions from
             // repeated observations of the same moment. One pass is the bounded catch-up; rebasing
             // from 'now' prevents a hot loop while the saved pending timestamp still preserves real
             // elapsed separation time.
-            nextRoyaltyPersonaReconciliationTick = now + Math.Max(
-                250, DiaryRoyaltyPolicy.Snapshot().reconciliationCadenceTicks);
+            nextRoyaltyPersonaReconciliationTick = RoyaltyReconciliationSchedule.NextDeadline(
+                now, DiaryRoyaltyPolicy.Snapshot().reconciliationCadenceTicks);
             ReconcileRoyaltyPersonaBonds();
         }
 
