@@ -1537,6 +1537,16 @@ namespace PawnDiary
             }
 
             string classifierKey = DiaryEventDomainClassifier.GroupClassifierKey(domainName, context, defName);
+            if (domain == GroupDomain.Quest)
+            {
+                // Quest lifecycle groups historically classify by signal, but reviewed roots such as
+                // Royal Ascent own all phases. Recover the saved root before falling back to that signal
+                // so UI labels, semantic colors, importance, and tone match generation policy.
+                string questRoot = DiaryEventDomainClassifier.QuestRootClassifierKey(
+                    domainName, context, defName);
+                return InteractionGroups.ClassifyQuest(questRoot, classifierKey);
+            }
+
             return InteractionGroups.ClassifyDefName(domain, classifierKey);
         }
 

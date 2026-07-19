@@ -35,6 +35,10 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetField("events", PrivateInstance);
         private static readonly FieldInfo UnclaimedRoyalMutationsField =
             typeof(RoyaltyTransientState).GetField("unclaimedMutations", PrivateStatic);
+        private static readonly MethodInfo ActivePromptCandidatesMethod =
+            typeof(DiaryGameComponent).GetMethod("ActiveEventWindowPromptCandidates", PrivateInstance);
+        private static readonly MethodInfo ArcCandidateFromEventMethod =
+            typeof(DiaryGameComponent).GetMethod("ArcCandidateFromEvent", PrivateInstance);
 
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawn;
@@ -155,6 +159,7 @@ namespace PawnDiary.RimTests
             IsolateRecentEventKey("quest|" + quest.id + "|accepted");
             IsolateRecentEventKey("quest|" + quest.id + "|completed");
             HashSet<ActiveEventWindowState> before = new HashSet<ActiveEventWindowState>(ActiveWindows());
+            int exactQuestPagesBeforeAccept = EventCount("EndGame_RoyalAscent");
 
             DiaryEvent startPage = scope.FireAndRequireEvent(
                 () => quest.Accept(null), "RoyalAscent", expectedWitness, null);
@@ -167,6 +172,14 @@ namespace PawnDiary.RimTests
                     && active.startNarrativeArcKey == "royalty-ascent|" + quest.GetUniqueLoadID()
                     && active.expiresTick > active.startedTick,
                 "The Royal Ascent start window did not persist bounded mapless identity.");
+            PawnDiaryRimTestScope.Require(EventCount("EndGame_RoyalAscent") == exactQuestPagesBeforeAccept,
+                "Quest.Accept created a second Quest-domain Royal Ascent page beside the start window.");
+            DiaryInteractionGroupDef ascentGroup = DefDatabase<DiaryInteractionGroupDef>
+                .GetNamedSilentFail("questRoyalAscent");
+            DiaryEntryView startView = startPage.ToViewFor(expectedWitness.GetUniqueLoadID());
+            PawnDiaryRimTestScope.Require(ascentGroup != null && startView != null
+                    && startView.GroupLabel == ascentGroup.label && startView.ColorCue == "royalty",
+                "The saved Royal Ascent start page did not recover its exact group for display.");
             List<NarrativeEvidence> startEvidence =
                 startPage.NarrativeEvidenceForRole(DiaryEvent.InitiatorRole);
             PawnDiaryRimTestScope.Require(startEvidence.Count == 1
@@ -182,6 +195,28 @@ namespace PawnDiary.RimTests
                     row.category == NarrativeCategoryTokens.Pressure
                     && row.arcKey == active.startNarrativeArcKey) == 1,
                 "The active window did not expose one exact-arc court-pressure candidate.");
+
+            RequirePromptContribution(active, expectedWitness, true,
+                "A valid active Royal Ascent did not contribute its XML prompt-pressure candidate.");
+            string savedCorrelationId = active.startCorrelationId;
+            string savedArcKey = active.startNarrativeArcKey;
+            active.startCorrelationId = string.Empty;
+            active.startNarrativeArcKey = string.Empty;
+            RequirePromptContribution(active, expectedWitness, false,
+                "An identity-less Royal Ascent window still altered prompt selection.");
+            active.startCorrelationId = savedCorrelationId;
+            active.startNarrativeArcKey = savedArcKey;
+            livePolicy.enabled = false;
+            try
+            {
+                RequirePromptContribution(active, expectedWitness, false,
+                    "A Royal Ascent window still altered prompts while the Royalty master was disabled.");
+            }
+            finally
+            {
+                livePolicy.enabled = true;
+            }
+
             int afterStartCount = EventCount();
             quest.Accept(null);
             PawnDiaryRimTestScope.Require(EventCount() == afterStartCount,
@@ -218,6 +253,10 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(ActiveWindows().Contains(active),
                 "A mismatched quest instance incorrectly closed the active Royal Ascent.");
             scope.Component.RecordEventWindowSignal("Quest", "EndGame_RoyalAscent", "failed",
+                "Royal Ascent", null, null, string.Empty, string.Empty);
+            PawnDiaryRimTestScope.Require(ActiveWindows().Contains(active),
+                "An empty terminal correlation incorrectly closed an identified Royal Ascent.");
+            scope.Component.RecordEventWindowSignal("Quest", "EndGame_RoyalAscent", "failed",
                 "Royal Ascent", null, null, "Quest_7001", arc);
             PawnDiaryRimTestScope.Require(!ActiveWindows().Contains(active),
                 "The matching quest instance did not close the active Royal Ascent.");
@@ -228,6 +267,24 @@ namespace PawnDiary.RimTests
         public static void ExactFanoutUsesOneStableWitnessAndOrdinaryQuestUsesAllEligible()
         {
             if (!RequireRoyaltyOrSkip(nameof(ExactFanoutUsesOneStableWitnessAndOrdinaryQuestUsesAllEligible))) return;
+            DiaryInteractionGroupDef acceptedGroup = DefDatabase<DiaryInteractionGroupDef>
+                .GetNamedSilentFail("questAccepted");
+            PawnDiaryRimTestScope.Require(acceptedGroup != null,
+                "The exact-classifier fixture could not find the generic accepted Quest group.");
+            bool originalCatchAll = acceptedGroup.catchAll;
+            try
+            {
+                acceptedGroup.catchAll = true;
+                DiaryInteractionGroupDef completed = InteractionGroups.ClassifyQuest(
+                    "PawnDiaryTest_OrdinaryQuest", QuestEventData.SignalCompleted);
+                PawnDiaryRimTestScope.Require(completed?.defName == "questCompleted",
+                    "An unrelated Quest catch-all stole exact-root classification before signal fallback.");
+            }
+            finally
+            {
+                acceptedGroup.catchAll = originalCatchAll;
+            }
+
             Pawn expectedWitness = DiaryGameComponent.StableLoadedMapWitness();
             PawnDiaryRimTestScope.Require(expectedWitness != null,
                 "Stable-witness acceptance requires an eligible colonist on a loaded colony map.");
@@ -252,6 +309,10 @@ namespace PawnDiary.RimTests
         public static void TerminalPagesCarryTruthfulOutcomeAndJourneyEvidence()
         {
             if (!RequireRoyaltyOrSkip(nameof(TerminalPagesCarryTruthfulOutcomeAndJourneyEvidence))) return;
+            DiaryInteractionGroupDef ascentGroup = DefDatabase<DiaryInteractionGroupDef>
+                .GetNamedSilentFail("questRoyalAscent");
+            PawnDiaryRimTestScope.Require(ascentGroup != null,
+                "The terminal display fixture could not find the exact Royal Ascent group.");
             string[] signals = { QuestEventData.SignalCompleted, QuestEventData.SignalFailed };
             string[] textKeys = { "PawnDiary.Event.QuestCompleted", "PawnDiary.Event.QuestFailed" };
             for (int i = 0; i < signals.Length; i++)
@@ -279,6 +340,15 @@ namespace PawnDiary.RimTests
                         && evidence[0].arcKey == "royalty-ascent|" + quest.GetUniqueLoadID()
                         && evidence[0].salience == NarrativeSalienceTokens.Terminal,
                     "Royal Ascent terminal page did not freeze its exact shared journey evidence.");
+                DiaryEntryView view = diaryEvent.ToViewFor(writer.GetUniqueLoadID());
+                ArcMemoryCandidate arcCandidate = ArcCandidateFromEvent(diaryEvent, writer);
+                PawnDiaryRimTestScope.Require(view != null
+                        && view.GroupLabel == ascentGroup.label
+                        && view.ColorCue == "royalty"
+                        && diaryEvent.ToneDirective() == ascentGroup.tone,
+                    "A saved Royal Ascent terminal page fell back to generic Quest display policy.");
+                PawnDiaryRimTestScope.Require(arcCandidate?.groupKey == "questRoyalAscent",
+                    "Royal Ascent reflection memory was bucketed with generic Quest outcomes.");
             }
         }
 
@@ -375,7 +445,8 @@ namespace PawnDiary.RimTests
         {
             PawnDiaryRimTestScope.Require(ActiveWindowsField != null && RecentWindowEventsField != null
                     && RecentEventsField != null && KnownAcceptedQuestIdsField != null && EventsField != null
-                    && UnclaimedRoyalMutationsField != null,
+                    && UnclaimedRoyalMutationsField != null && ActivePromptCandidatesMethod != null
+                    && ArcCandidateFromEventMethod != null,
                 "Royal Ascent fixtures could not locate component lifecycle stores.");
         }
 
@@ -415,19 +486,99 @@ namespace PawnDiary.RimTests
             return repository?.AllEvents.Count ?? -1;
         }
 
+        private static int EventCount(string defName)
+        {
+            DiaryEventRepository repository =
+                EventsField.GetValue(scope.Component) as DiaryEventRepository;
+            return repository?.AllEvents.Count(row => row != null
+                && string.Equals(row.interactionDefName, defName, StringComparison.Ordinal)) ?? -1;
+        }
+
+        private static ArcMemoryCandidate ArcCandidateFromEvent(DiaryEvent diaryEvent, Pawn writer)
+        {
+            return ArcCandidateFromEventMethod.Invoke(
+                scope.Component,
+                new object[]
+                {
+                    diaryEvent,
+                    writer.GetUniqueLoadID(),
+                    DiaryEvent.InitiatorRole,
+                    0,
+                    0
+                }) as ArcMemoryCandidate;
+        }
+
+        private static List<PromptEnchantmentCandidate> ActivePromptCandidates(
+            Pawn subject, out float normalWeightMultiplier)
+        {
+            object[] arguments = { subject, 1f };
+            List<PromptEnchantmentCandidate> result = ActivePromptCandidatesMethod.Invoke(
+                scope.Component, arguments) as List<PromptEnchantmentCandidate>;
+            normalWeightMultiplier = arguments[1] is float ? (float)arguments[1] : 1f;
+            PawnDiaryRimTestScope.Require(result != null,
+                "Royal Ascent fixture could not collect active event-window prompt candidates.");
+            return result;
+        }
+
+        /// <summary>
+        /// Compares prompt selection with and without one exact active row, leaving unrelated loaded
+        /// windows untouched. Both candidate count and the normal-candidate weight must move together.
+        /// </summary>
+        private static void RequirePromptContribution(
+            ActiveEventWindowState active, Pawn subject, bool expected, string message)
+        {
+            List<ActiveEventWindowState> windows = ActiveWindows();
+            int index = windows.IndexOf(active);
+            PawnDiaryRimTestScope.Require(index >= 0,
+                "Royal Ascent prompt fixture lost its controlled active window.");
+
+            List<PromptEnchantmentCandidate> baseline;
+            float baselineMultiplier;
+            windows.RemoveAt(index);
+            try
+            {
+                baseline = ActivePromptCandidates(subject, out baselineMultiplier);
+            }
+            finally
+            {
+                windows.Insert(index, active);
+            }
+
+            float activeMultiplier;
+            List<PromptEnchantmentCandidate> withActive =
+                ActivePromptCandidates(subject, out activeMultiplier);
+            bool candidateMatches = expected
+                ? withActive.Count == baseline.Count + 1
+                : withActive.Count == baseline.Count;
+            bool multiplierMatches = expected
+                ? Math.Abs(activeMultiplier - baselineMultiplier) > 0.0001f
+                : Math.Abs(activeMultiplier - baselineMultiplier) <= 0.0001f;
+            PawnDiaryRimTestScope.Require(candidateMatches && multiplierMatches, message);
+        }
+
         private static void RegisterTransientStoreCleanup()
         {
             List<ActiveEventWindowState> windows = ActiveWindows();
-            HashSet<ActiveEventWindowState> baselineWindows = windows == null
-                ? new HashSet<ActiveEventWindowState>()
-                : new HashSet<ActiveEventWindowState>(windows);
+            List<ActiveEventWindowState> baselineWindows = windows == null
+                ? new List<ActiveEventWindowState>()
+                : new List<ActiveEventWindowState>(windows);
+            // A legitimate loaded save may already be inside Royal Ascent. Temporarily remove that row
+            // so restartOnStart=false cannot make this synthetic fixture environment-dependent; the exact
+            // original list and object identities are restored in teardown.
+            windows?.RemoveAll(row => row != null && string.Equals(
+                row.windowDefName, RoyalAscentPolicy.WindowDefName, StringComparison.OrdinalIgnoreCase));
             IDictionary recent = RecentWindowEventsField.GetValue(scope.Component) as IDictionary;
             HashSet<object> baselineKeys = new HashSet<object>();
             if (recent != null) foreach (object key in recent.Keys) baselineKeys.Add(key);
             HashSet<int> baselineAccepted = new HashSet<int>(KnownAcceptedQuestIds());
             scope.RegisterCleanup(() =>
             {
-                ActiveWindows()?.RemoveAll(row => !baselineWindows.Contains(row));
+                List<ActiveEventWindowState> liveWindows = ActiveWindows();
+                if (liveWindows != null)
+                {
+                    liveWindows.Clear();
+                    liveWindows.AddRange(baselineWindows);
+                }
                 IDictionary liveRecent = RecentWindowEventsField.GetValue(scope.Component) as IDictionary;
                 if (liveRecent != null)
                 {

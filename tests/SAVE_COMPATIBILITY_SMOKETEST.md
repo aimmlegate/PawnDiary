@@ -200,6 +200,13 @@ Royal Ascent chapter, and save no live Quest, Pawn, Map, or Def reference. The l
 real Scribe for populated and missing-field rows; the checks below still own cross-session behavior
 and presentation.
 
+The post-review fixture now temporarily removes and later restores any real active Royal Ascent row,
+so `restartOnStart=false` cannot make the synthetic lifecycle depend on the loaded colony. Its existing
+eight tests also assert that first acceptance creates no second Quest-domain page, saved display and
+reflection recover the exact group, master-off/identity-less active rows add no prompt pressure, an
+empty terminal identity cannot close an identified row, and a future Quest catch-all cannot steal
+root-first classification. These are compiled assertions only until the pending 287-test loaded rerun.
+
 - [ ] **Royalty-on lifecycle.** Accept the vanilla `EndGame_RoyalAscent` quest. Confirm exactly one
   stable-witness preparation page, no generic accepted fanout, and no wording that says the Stellarch
   arrived. During the active window, inspect relevant ordinary pages: court pressure may shade them,

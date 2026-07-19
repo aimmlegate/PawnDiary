@@ -1,5 +1,21 @@
 # Changelog
 
+- **2026-07-19 — Hardened Royalty Phase 7 after consolidated adversarial review.** Saved Quest
+  display and arc-reflection recovery now use the exact root before lifecycle fallback, so Royal
+  Ascent keeps its own label, royalty color/tone, and reflection diversity bucket after save/load.
+  The generic event-window prompt path now reuses `RoyalAscentPolicy.ActivePressureApplies`, making
+  the Royalty master and the bounded saved correlation/arc mandatory before Ascent can alter prompt
+  candidates or normal weighting. An identified active window now rejects both mismatched and empty
+  terminal identities; only identity-less legacy rows retain the conservative root-based close path.
+  Exact-only group lookup explicitly excludes catch-alls, and the Quest adapter now stops after the
+  accepted start-window edge instead of relying solely on the downstream pure accepted-signal drop.
+  Loaded fixtures isolate and restore any real active Ascent row and now pin first-accept cardinality,
+  exact display/reflection recovery, prompt master/identity gating, empty-correlation rejection, and
+  future Quest catch-all behavior. A conflicting review claim that acceptance currently created two
+  pages was disproved by tracing `DiaryGameComponent.Dispatch` through `QuestEventData.Decide`; the
+  new assertion preserves that already-correct behavior. Runtime and the unchanged 287-test RimTest
+  assembly rebuild cleanly; the corrected loaded rerun and hands-on matrix remain pending.
+
 - **2026-07-19 — Corrected three fixture defects exposed by the first Royalty Phase-7 loaded run.**
   The expanded suite executed 287 tests: 284 passed and three failed across two suites. The official-
   DLC catalog fixture had not added the intentionally Royalty-gated `questRoyalAscent` group and

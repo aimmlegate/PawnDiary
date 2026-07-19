@@ -195,7 +195,7 @@ namespace PawnDiary
             int currentYear, int currentDay)
         {
             string domain = DiaryEventDomainClassifier.DomainForContext(ev.gameContext);
-            string classifierKey = DiaryEventDomainClassifier.GroupClassifierKey(domain, ev.gameContext, ev.interactionDefName);
+            string groupKey = ArcGroupKeyForSavedEvent(domain, ev.gameContext, ev.interactionDefName);
             int eventYear = YearForGameTick(ev.tick);
             return new ArcMemoryCandidate
             {
@@ -207,7 +207,7 @@ namespace PawnDiary
                 date = ev.date,
                 defName = ev.interactionDefName,
                 domain = domain,
-                groupKey = classifierKey,
+                groupKey = groupKey,
                 label = ev.interactionLabel,
                 text = ev.TextForRole(role),
                 generatedText = ev.HasGeneratedTextForRole(role) ? ev.DisplayTextForRole(role) : string.Empty,
@@ -230,7 +230,7 @@ namespace PawnDiary
 
             string context = entry.decorationGameContext ?? string.Empty;
             string domain = DiaryEventDomainClassifier.DomainForContext(context);
-            string classifierKey = DiaryEventDomainClassifier.GroupClassifierKey(domain, context, entry.interactionDefName);
+            string groupKey = ArcGroupKeyForSavedEvent(domain, context, entry.interactionDefName);
             int year = entry.year > 0 ? entry.year : YearForGameTick(entry.tick);
             return new ArcMemoryCandidate
             {
@@ -242,7 +242,7 @@ namespace PawnDiary
                 date = entry.date,
                 defName = entry.interactionDefName,
                 domain = domain,
-                groupKey = classifierKey,
+                groupKey = groupKey,
                 label = entry.interactionLabel,
                 text = entry.text,
                 generatedText = entry.generatedText,
@@ -254,6 +254,24 @@ namespace PawnDiary
                 progression = DiaryContextFields.HasMarker(context, "progression="),
                 highStakes = IsHighStakesArcMemory(domain, entry.interactionDefName, context)
             };
+        }
+
+        /// <summary>
+        /// Recovers the diversity-bucket key for a saved memory. Ordinary Quest memories preserve their
+        /// historical signal bucket, while an explicit reviewed root uses its exact group so Royal
+        /// Ascent is not capped together with every generic completed/failed quest.
+        /// </summary>
+        private static string ArcGroupKeyForSavedEvent(string domain, string context, string defName)
+        {
+            string classifierKey = DiaryEventDomainClassifier.GroupClassifierKey(domain, context, defName);
+            if (!string.Equals(domain, DiaryEventDomainClassifier.Quest, StringComparison.OrdinalIgnoreCase))
+            {
+                return classifierKey;
+            }
+
+            string questRoot = DiaryEventDomainClassifier.QuestRootClassifierKey(domain, context, defName);
+            DiaryInteractionGroupDef exact = InteractionGroups.ClassifyQuestRoot(questRoot);
+            return exact != null ? exact.defName : classifierKey;
         }
 
         private static string BuildArcReflectionText(Pawn pawn, int arcYear, List<ArcMemoryCandidate> memories)

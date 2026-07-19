@@ -682,8 +682,17 @@ namespace PawnDiary
         /// </summary>
         public static DiaryInteractionGroupDef ClassifyQuest(string questRootDefName, string signal)
         {
-            DiaryInteractionGroupDef exact = ClassifyRequiredMatch(GroupDomain.Quest, questRootDefName);
+            DiaryInteractionGroupDef exact = ClassifyQuestRoot(questRootDefName);
             return exact ?? ClassifyQuest(signal);
+        }
+
+        /// <summary>
+        /// Returns only an explicit Quest-root match. Catch-all rows are deliberately ignored so a
+        /// future generic Quest group cannot steal every root before lifecycle-signal fallback runs.
+        /// </summary>
+        internal static DiaryInteractionGroupDef ClassifyQuestRoot(string questRootDefName)
+        {
+            return ClassifyRequiredMatch(GroupDomain.Quest, questRootDefName);
         }
 
         // First Ritual-domain group that matches the Precept_Ritual defName plus optional behavior
@@ -757,7 +766,10 @@ namespace PawnDiary
             for (int i = 0; i < all.Count; i++)
             {
                 DiaryInteractionGroupDef group = all[i];
-                if (group.domain == domain && group.Matches(defName))
+                // This helper exists for callers whose contract explicitly forbids fallback. Matches()
+                // normally includes catch-all rows, so exclude them here rather than relying on every
+                // exact-only domain to happen to ship without one.
+                if (group.domain == domain && !group.catchAll && group.Matches(defName))
                 {
                     return group;
                 }

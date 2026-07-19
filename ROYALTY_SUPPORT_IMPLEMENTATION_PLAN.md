@@ -1627,6 +1627,15 @@ Exit gate: R2 is releasable.
 > real-hook case inherited a prior generic Quest dedup entry for the loaded witness. The corrected
 > fixtures now own/restore exact witness pages and dedup keys under a reversible generation gate; their rerun is
 > pending. No manual row is closed by this partial run or by compilation.
+>
+> A consolidated post-implementation adversarial pass additionally hardened the saved/display edge:
+> exact Quest-root recovery now covers UI color/label/tone and arc-reflection diversity, exact-only
+> classifiers reject catch-alls, active XML prompt pressure reuses the master/identity/expiry policy,
+> and identified windows reject empty as well as mismatched terminal correlations. The accepted
+> adapter now stops after its start-window signal; dispatch tracing confirmed the prior pure
+> `QuestEventData.Decide` already prevented the duplicate page alleged by one review, and RimTest now
+> pins that first-accept cardinality explicitly. These changes do not close the pending loaded/manual
+> acceptance rows.
 
 1. Add exact quest-root/ownership policy tests.
 2. Add exact non-catch-all quest-root-first classification and use the resolved group consistently

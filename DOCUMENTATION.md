@@ -579,6 +579,14 @@ Royalty master and `ModsConfig.RoyaltyActive`; master-off and no-Royalty callbac
 page/window, package-gated groups/windows/prompts stay inert and hidden without Royalty, and
 `About.xml` still has no paid-DLC dependency.
 
+Post-review hardening applies the same root-first rule to saved-event display and arc-reflection
+memory buckets, not only prompt regeneration: start and terminal pages therefore retain the exact
+Royal Ascent label, royalty color/tone, and diversity key. The generic active-window prompt path also
+revalidates Ascent through `RoyalAscentPolicy.ActivePressureApplies`, so disabling the Royalty master
+or loading an empty/malformed correlation/arc row removes both its candidate and its normal-candidate
+weight effect. Once a saved window has a nonempty correlation ID, an empty terminal ID is a mismatch;
+the source/root migration close path remains only for legacy rows whose saved identity was empty.
+
 Pure Phase-7 coverage passes 463 Royalty, 2,734 pipeline, and 132 Narrative Continuity assertions.
 The runtime and 287-test RimTest assemblies build. Eight Royal Ascent flow fixtures plus one loaded
 Def smoke check compile real Accept/End hooks, start/terminal cardinality, stable/default fanout,
@@ -1930,7 +1938,7 @@ Context detail presets:
 |---|---:|---|---|
 | `Full` | unlimited | Passes through every renderable template field. | Compatibility and larger models. |
 | `Balanced` | 650 chars default; 1,000 reflection; 600 neutral death/arrival | Keeps required fields, then preserves high-signal optional context such as severe pawn state, combat tools, event guidance, domain-specific quest/ritual/ability/progression facts, and threatening surroundings. On ordinary events it also drops the weakest optional fields (routine continuity hints, low-signal tone/setting). | General small models where the strongest flavor should survive. |
-| `Compact` | 350 chars default; 600 reflection; 400 neutral death/arrival | Keeps the same required fields but cuts aggressively, usually dropping weaker continuity, numeric metadata, ordinary tone/setting, and broad low-signal context first. | Very small or local fallback models. |
+| `Compact` | 350 chars default; 600 reflection; 400 neutral death/arrival | Keeps the same required fields—including the visible quest label and proven lifecycle signal for every Quest event—but cuts aggressively, usually dropping weaker continuity, numeric metadata, ordinary tone/setting, and broad low-signal context first. | Very small or local fallback models. |
 
 The selector never rewrites, compresses, or summarizes a field value. It either keeps the complete
 `label: value` line or cuts that entire field. This is deliberate: prompt previews and saved debug
@@ -2618,7 +2626,8 @@ still close through the migration-compatible source/root route but cannot invent
 shared arc. Normalization keeps at most the newest mapless exact Royal Ascent row, rejects malformed
 identity/arc pairs, and never resolves a saved Quest, Pawn, Map, or Def. The XML timeout bounds new
 state, while terminal correlation prevents another quest instance from stealing it. Quest acceptance
-admission remains transient and resets in `FinalizeInit`.
+admission remains transient and clears in `StartedNewGame` / `LoadedGame`; `FinalizeInit` separately
+clears the process-static Royalty correlation stores that can otherwise cross a game boundary.
 Phase 4 advances this existing row immediately for exact title hooks and scanner observations; schema
 version 2 distinguishes a readable empty title set from temporarily unavailable Royalty data. A
 Royalty-off `LoadedGame` invalidates availability immediately while retaining the saved rows and

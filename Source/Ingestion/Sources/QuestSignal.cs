@@ -72,7 +72,8 @@ namespace PawnDiary.Ingestion
             // The exact DLC route is all-or-nothing at this adapter boundary. Without Royalty, or
             // when the XML master policy is disabled, it must not leak into the package-gated window
             // or group. Ordinary Quest roots continue through their mature generic path below.
-            if (exactAscentRoot && !AscentDecision.recognized)
+            if (exactAscentRoot && (!AscentDecision.recognized
+                || (!AscentDecision.opensWindow && !AscentDecision.closesWindow)))
             {
                 return;
             }
@@ -96,6 +97,15 @@ namespace PawnDiary.Ingestion
             {
                 Log.ErrorOnce("[Pawn Diary] Quest event-window signal failed and was skipped: " + e,
                     "QuestFanoutSignal.EventWindow".GetHashCode());
+            }
+
+            // The start window already owns the one accepted page. QuestEventData.Decide also drops
+            // accepted signals, but stop here explicitly so this adapter cannot waste work or drift into
+            // a second page if generic Quest capture policy changes later. Terminal phases continue to
+            // the exact one-witness Quest page below.
+            if (exactAscentRoot && !AscentDecision.emitsTerminalPage)
+            {
+                return;
             }
 
             // Resolve once, root first. The same exact group owns settings, instruction, and fanout;

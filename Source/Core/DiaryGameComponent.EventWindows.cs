@@ -342,10 +342,10 @@ namespace PawnDiary
                 return;
             }
 
-            // When both sides carry an exact source-instance identity, an unrelated terminal signal
-            // cannot close this saved window. Empty old-save identity remains migration-compatible.
+            // Once a saved window has exact identity, every terminal signal must carry the same exact
+            // identity. Only an old-save window whose saved identity is empty may use the conservative
+            // migration-compatible source/root route.
             if (active != null && !string.IsNullOrWhiteSpace(active.startCorrelationId)
-                && !string.IsNullOrWhiteSpace(facts.correlationId)
                 && !string.Equals(
                     active.startCorrelationId, facts.correlationId, StringComparison.Ordinal))
             {
@@ -526,6 +526,7 @@ namespace PawnDiary
 
             int pawnMapUniqueId = MapUniqueId(pawn.Map);
             int now = Find.TickManager.TicksGame;
+            RoyaltyPolicySnapshot royaltyPolicy = null;
             for (int i = 0; i < activeEventWindows.Count; i++)
             {
                 ActiveEventWindowState active = activeEventWindows[i];
@@ -538,6 +539,26 @@ namespace PawnDiary
                 if (def == null || !def.enabled || def.MissingRequiredPackage() || !def.promptEnabled)
                 {
                     continue;
+                }
+
+                if (string.Equals(def.defName, RoyalAscentPolicy.WindowDefName, StringComparison.OrdinalIgnoreCase))
+                {
+                    royaltyPolicy = royaltyPolicy ?? DiaryRoyaltyPolicy.Snapshot();
+                    if (!RoyalAscentPolicy.ActivePressureApplies(
+                        active.startDefName,
+                        active.startCorrelationId,
+                        active.startNarrativeArcKey,
+                        active.startedTick,
+                        active.expiresTick,
+                        now,
+                        royaltyPolicy,
+                        ModsConfig.RoyaltyActive))
+                    {
+                        // Generic windows need only their Def/package gates. Royal Ascent additionally
+                        // requires the exact saved quest identity and live policy master, otherwise a
+                        // legacy/malformed/master-disabled row would still alter unrelated prompts.
+                        continue;
+                    }
                 }
 
                 if (def.recordScope == EventWindowRecordScope.SubjectPawn
@@ -1284,8 +1305,8 @@ namespace PawnDiary
                 active.startNarrativeArcKey = active.startNarrativeArcKey ?? string.Empty;
 
                 if (string.Equals(
-                    active.startDefName,
-                    royaltyPolicy.royalAscentQuestDefName,
+                    def.defName,
+                    RoyalAscentPolicy.WindowDefName,
                     StringComparison.OrdinalIgnoreCase))
                 {
                     // Royal Ascent is intentionally one colony-wide mapless chapter. Keep only the
@@ -1305,7 +1326,8 @@ namespace PawnDiary
                     if (!string.Equals(
                         active.startNarrativeArcKey, expectedArc, StringComparison.Ordinal))
                     {
-                        // Phase-6/older saves had no shared identity. Do not invent one retroactively.
+                        // Legacy/malformed saves with no valid shared identity stay conservative. Do
+                        // not invent an arc retroactively.
                         active.startNarrativeArcKey = string.Empty;
                     }
                 }

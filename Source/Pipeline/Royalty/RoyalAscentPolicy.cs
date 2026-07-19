@@ -47,6 +47,10 @@ namespace PawnDiary
     /// </summary>
     internal static class RoyalAscentPolicy
     {
+        // Stable Def identity used to distinguish this saved event-window schema from generic windows.
+        // Tunable behavior remains XML-owned; the Def name itself is a persistence/classification token.
+        public const string WindowDefName = "RoyalAscent";
+
         /// <summary>True only when a detached Quest root matches the XML-owned Royal Ascent root.</summary>
         public static bool IsExactQuestRoot(string questRootDefName, RoyaltyPolicySnapshot policy)
         {
