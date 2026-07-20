@@ -1794,8 +1794,8 @@ form. Load normalization inspects at most 4,096 inputs, retains at most 512 dete
 rows, drops null/blank/malformed/negative-tick records, merges duplicate pawn IDs with a stable phase
 rank, rewrites nonterminal unknown phases to state-only `joined`, and treats unknown future row schemas
 as terminal replay barriers without interpreting their phase/event ID. Terminal rows are not pruned
-merely because the XML retention interval elapsed: A2.0 prefers replay safety until exact event-
-reference/liveness evidence can prove a row disposable.
+merely because the reserved XML retention interval elapsed: A2.0 does not consume that age value and
+prefers replay safety until exact event-reference/liveness evidence can prove a row disposable.
 
 An active pre-A2 loaded save performs one guarded scan of alive map/caravan/travelling-transport pawns.
 Only current player-colonist creepjoiners become state-only `joined` rows; the baseline imports no
@@ -1811,29 +1811,38 @@ nor creates a second acceptance page.
 methods `Pawn_CreepJoinerTracker.DoRejection()`, `DoAggressive()`, and `DoLeave()` while Anomaly is
 active. Cached private markers verify false-to-true rejection/aggression/departure commits after vanilla
 returns. Missing signatures/fields, exceptions, forbidden/no-op/repeated transitions, or unverifiable
-post-state warn once where appropriate, preserve vanilla behavior, and create no page. `DoDownside()`
-is deliberately unpatched. Its nested exact aggressive/departure call owns the visible page naturally;
-the one special synchronous `DoRejection()` owner suppresses its nested exact response so rejection
-emits once and always unwinds in the postfix/finalizer.
+post-state warn once where appropriate, preserve vanilla behavior, and create no page. A changed
+private marker without enough trusted visible/post-state evidence still closes continuity as a blank-
+phase terminal replay barrier. `DoDownside()` is deliberately unpatched. Its nested exact aggressive/
+departure call owns the visible page naturally. A letterless modded rejection likewise releases its
+nested visible owner; a visible outer `DoRejection()` owns and suppresses the nested call so exactly one
+page emits and the scope always unwinds in the postfix/finalizer. Vanilla `AggressiveRejection` is the
+visible special case: its one outer-owned page saves phase `aggressive`, result `hostile`, and safe
+`rejection_response=true` provenance instead of leaving an attacking pawn terminally `rejected`.
 
-The pure A2.0 policy commits terminal visible history before considering settings or generation, then
-selects at most one event-time POV without RNG. A pre-join rejection/departure prefers the exact eligible
-speaker and otherwise the closest eligible witness within the XML radius; a joined departure may use
+The pure A2.0 policy commits terminal history before considering settings or generation, then selects
+at most one event-time POV without RNG. A pre-join rejection/departure prefers the exact eligible
+speaker only while that speaker remains on the subject's map, and otherwise uses the closest eligible
+witness within the XML radius; an aggressive rejection follows the same truthful speaker rule while
+persisting hostility as its strongest visible phase. A joined departure may use
 only the subject's eligible pre-transition snapshot before falling back to a nearby witness; aggression
 uses only a nearby eligible witness and never the now-hostile subject. Candidate inspection stops at
 4,096, retains at most 512 strongest exact/nearby rows before stable ordering, and emits one writer even
-though the frozen XML maximum remains defensively clamped to two. Prompt/event context is limited to
-the generic visible phase/result, stable subject ID and captured visible label, truthful writer role,
-and terminal marker. Localized fallback likewise describes only rejection, open hostility, or leaving;
+though the frozen XML maximum remains defensively clamped to two (values above one are inert in A2.0).
+Prompt/event context is limited to the generic visible phase/result, optional visible rejection-
+response marker, stable subject ID and captured visible label, truthful writer role, and terminal
+marker. Localized fallback likewise describes only rejection, open hostility, their visible composite,
+or leaving;
 it cannot expose motives, future outcomes, hidden mechanics, or raw private state.
 
-The A2.0 delivery raises focused coverage to 472
-Anomaly-policy/XML/cache/context and 115 save-normalization assertions. The A1.4 cases still pin batched recent-
+The A2.0 delivery and adversarial hardening raise focused coverage to 481
+Anomaly-policy/XML/cache/context and 122 save-normalization assertions. The A1.4 cases still pin batched recent-
 studier matching, ordering equivalence when a large eligible roster is capped, and a strict input-
 inspection bound for malformed saved histories; A2.0 adds all three visible phases, arrival continuity,
 terminal/settings behavior, role/cap ordering, spoiler-firewall formatting, malformed/duplicate/future
-arc normalization, and active/inactive old-save baselines. The 708 catalog and 135 Narrative suites
-remain green. The runtime DLL and 323-test RimTest assembly build against the installed 1.6 API.
+arc normalization, exact/future upserts, future-duplicate barriers, and ordered active/inactive old-save
+baselines. The 708 catalog and 135 Narrative suites remain green. The runtime DLL and 327-test RimTest
+assembly build against the installed 1.6 API.
 Compiled smoke coverage pins the five Def/package/classifier rows plus exact study, containment, and
 creepjoiner method/signature ownership. Three loaded state fixtures additionally drive the actual
 seven-key component Scribe contract, missing-key defaults, deep monolith/creepjoiner rows, DLC-off deferred migration,

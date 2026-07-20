@@ -1554,6 +1554,7 @@
   <PawnDiary.Event.Anomaly.CreepJoiner.Fallback>{0} наблюдает видимый исход для {1}: {2}.</PawnDiary.Event.Anomaly.CreepJoiner.Fallback>
   <PawnDiary.Event.Anomaly.CreepJoiner.SubjectDeparted>{0} начинает покидать колонию.</PawnDiary.Event.Anomaly.CreepJoiner.SubjectDeparted>
   <PawnDiary.Event.Anomaly.CreepJoiner.Result.Rejected>отказ от предложения присоединиться</PawnDiary.Event.Anomaly.CreepJoiner.Result.Rejected>
+  <PawnDiary.Event.Anomaly.CreepJoiner.Result.RejectedAggressive>отказ от предложения присоединиться и переход к открытой враждебности</PawnDiary.Event.Anomaly.CreepJoiner.Result.RejectedAggressive>
   <PawnDiary.Event.Anomaly.CreepJoiner.Result.Aggressive>переход к открытой враждебности</PawnDiary.Event.Anomaly.CreepJoiner.Result.Aggressive>
   <PawnDiary.Event.Anomaly.CreepJoiner.Result.Departed>начало ухода</PawnDiary.Event.Anomaly.CreepJoiner.Result.Departed>
   <PawnDiary.Event.Anomaly.Ghoul.Label>Превращение в гуля</PawnDiary.Event.Anomaly.Ghoul.Label>

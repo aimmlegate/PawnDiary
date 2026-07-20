@@ -1574,6 +1574,7 @@
   <PawnDiary.Event.Anomaly.CreepJoiner.Fallback>{0} witnessed the visible outcome for {1}: {2}.</PawnDiary.Event.Anomaly.CreepJoiner.Fallback>
   <PawnDiary.Event.Anomaly.CreepJoiner.SubjectDeparted>{0} began leaving the colony.</PawnDiary.Event.Anomaly.CreepJoiner.SubjectDeparted>
   <PawnDiary.Event.Anomaly.CreepJoiner.Result.Rejected>rejected the offer to join</PawnDiary.Event.Anomaly.CreepJoiner.Result.Rejected>
+  <PawnDiary.Event.Anomaly.CreepJoiner.Result.RejectedAggressive>rejected the offer to join and became openly hostile</PawnDiary.Event.Anomaly.CreepJoiner.Result.RejectedAggressive>
   <PawnDiary.Event.Anomaly.CreepJoiner.Result.Aggressive>became openly hostile</PawnDiary.Event.Anomaly.CreepJoiner.Result.Aggressive>
   <PawnDiary.Event.Anomaly.CreepJoiner.Result.Departed>began leaving</PawnDiary.Event.Anomaly.CreepJoiner.Result.Departed>
   <PawnDiary.Event.Anomaly.Ghoul.Label>Ghoul transformation</PawnDiary.Event.Anomaly.Ghoul.Label>

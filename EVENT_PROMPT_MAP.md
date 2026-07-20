@@ -466,7 +466,9 @@ cannot use any broader Interaction matcher (including the ordinary catch-all and
 A1.2 study, A1.3 containment breach, and A2.0 visible creepjoiner outcomes now submit through this
 envelope after their source-specific before/after policies prove the exact visible transition. The
 creepjoiner route accepts only generic `rejected`/`aggressive`/`departed` phase truth and one exact
-speaker, pre-departure subject, or nearby-witness POV; no hidden tracker configuration reaches context.
+same-map speaker, pre-departure subject, or nearby-witness POV. Vanilla aggressive rejection is one
+outer-owned `aggressive`/`hostile` page with `rejection_response=true`; letterless modded rejection
+releases any nested visible outcome owner, and no hidden tracker configuration reaches context.
 Ghoul and terminal-void groups remain settings/localization reservations with zero live producers until
 A2.2/A3. N3-A remains an explicit zero-candidate provider.
 

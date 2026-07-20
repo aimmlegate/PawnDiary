@@ -303,7 +303,7 @@ namespace PawnDiary
             return __exception;
         }
 
-        /// <summary>Captures rejection before-state and opens the one bounded nested-call owner.</summary>
+        /// <summary>Captures rejection before-state and owns nested calls only for a visible outer response.</summary>
         private static void CreepJoinerRejectionPrefix(
             object __instance,
             ref CreepJoinerOutcomeCapture __state)
@@ -319,6 +319,10 @@ namespace PawnDiary
                     AnomalyOutcomeTokens.Rejected,
                     policy.creepJoinerWitnessRadius,
                     out captured)) return;
+                // A letterless modded rejection must not suppress a nested visible DoAggressive or
+                // DoLeave page. The outer callback remains captured so its committed marker can still
+                // become a silent replay barrier when no nested visible response owns the transition.
+                if (!captured.visibleResponseExpected) return;
                 if (!CreepJoinerOutcomeScope.BeginRejection(captured.SubjectPawnId))
                 {
                     captured = null;

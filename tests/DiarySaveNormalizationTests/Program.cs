@@ -653,6 +653,38 @@ namespace DiarySaveNormalizationTests
             AssertEqual("future record phase is not interpreted by old code", string.Empty,
                 future.lastVisiblePhase);
 
+            List<CreepJoinerArcSnapshot> futureDuplicate =
+                AnomalyPersistencePolicy.NormalizeCreepJoinerArcs(
+                    new List<CreepJoinerArcSnapshot>
+                    {
+                        new CreepJoinerArcSnapshot
+                        {
+                            pawnId = "Pawn_FutureDuplicate",
+                            joinedTick = 20,
+                            lastVisiblePhase = AnomalyOutcomeTokens.Departed,
+                            lastVisibleEventId = "CurrentEvent",
+                            terminal = true,
+                            schemaVersion = 1
+                        },
+                        new CreepJoinerArcSnapshot
+                        {
+                            pawnId = "Pawn_FutureDuplicate",
+                            joinedTick = 10,
+                            lastVisiblePhase = "future_phase",
+                            lastVisibleEventId = "FutureEvent",
+                            terminal = true,
+                            schemaVersion = 9
+                        }
+                    });
+            AssertEqual("future duplicate rows collapse to one barrier", 1, futureDuplicate.Count);
+            AssertEqual("future duplicate preserves the newest schema", 9,
+                futureDuplicate[0].schemaVersion);
+            AssertTrue("future duplicate remains terminal", futureDuplicate[0].terminal);
+            AssertEqual("future duplicate does not reuse a current phase", string.Empty,
+                futureDuplicate[0].lastVisiblePhase);
+            AssertEqual("future duplicate does not reuse a visible event", string.Empty,
+                futureDuplicate[0].lastVisibleEventId);
+
             List<CreepJoinerArcSnapshot> many = new List<CreepJoinerArcSnapshot>();
             for (int i = 0; i < AnomalyPolicyLimits.MaximumCreepJoinerArcs + 1; i++)
             {
@@ -724,6 +756,14 @@ namespace DiarySaveNormalizationTests
                 AnomalyPersistencePolicy.StudySchemaVersion, inactive.schemaVersion);
             AssertEqual("Anomaly-inactive A2 baseline invents no rows", 0,
                 inactive.creepJoinerArcs.Count);
+
+            AnomalyPersistentStateSnapshot schemaZero =
+                AnomalyPersistencePolicy.BaselineCreepJoiners(
+                    new AnomalyPersistentStateSnapshot { schemaVersion = 0 }, facts);
+            AssertEqual("A2 baseline cannot skip the required study baseline", 0,
+                schemaZero.schemaVersion);
+            AssertEqual("schema-zero direct A2 baseline invents no rows", 0,
+                schemaZero.creepJoinerArcs.Count);
 
             AnomalyPersistentStateSnapshot current = new AnomalyPersistentStateSnapshot
             {

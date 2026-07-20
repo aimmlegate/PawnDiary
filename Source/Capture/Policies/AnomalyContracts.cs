@@ -63,6 +63,7 @@ namespace PawnDiary.Capture
         public const string CreepJoinerPhase = "creepjoiner_phase";
         public const string CreepJoinerSubjectId = "creepjoiner_subject_id";
         public const string CreepJoinerSubjectLabel = "creepjoiner_subject_label";
+        public const string RejectionResponse = "rejection_response";
         public const string VisibleResult = "visible_result";
         public const string Transformation = "transformation";
         public const string VoidOutcome = "void_outcome";
@@ -313,6 +314,9 @@ namespace PawnDiary.Capture
         public bool joinedBefore;
         public bool subjectEligibleBefore;
         public bool nestedOutcomeOwnedByRejection;
+        // True only when the public rejection callback visibly nested an aggressive transition. It
+        // preserves visible rejection provenance while the saved terminal phase reports hostility.
+        public bool aggressionFollowedRejection;
         public readonly List<CreepJoinerWriterCandidate> writers =
             new List<CreepJoinerWriterCandidate>();
     }

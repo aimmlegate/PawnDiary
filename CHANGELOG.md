@@ -1,5 +1,26 @@
 # Changelog
 
+- **2026-07-20 — Hardened A2.0 creepjoiner truth, compatibility, and loaded coverage after
+  adversarial review.** Vanilla `AggressiveRejection` still owns exactly one outer page, but that
+  page and its saved terminal arc now report the pawn's visible `aggressive`/`hostile` state and carry
+  prompt-safe `rejection_response=true` provenance instead of permanently understating an attacker as
+  merely rejected. Exact-speaker POV now requires the speaker to remain on the subject's map. A
+  letterless modded rejection no longer suppresses a nested visible aggression/departure owner, while
+  any committed private marker that lacks enough evidence for a page becomes a blank-phase terminal
+  replay barrier rather than a stranded joined arc. Phase-specific reflection reads fail closed when
+  their required fields are absent without coupling rejection to departure-field health, disallowed/
+  no-op captures skip the bounded map-writer scan, and later arrival observations cannot rewrite a
+  terminal tick-zero sentinel.
+
+  The A2 baseline helper now accepts only study-schema-1 input, preventing a direct call from skipping
+  the required A1 baseline. XML/code comments mark age-only creepjoiner retention as reserved and
+  witness values above one as inert under A2.0's single-POV contract. English/Russian composite
+  fallback text and docs are synchronized; the seven-field save schema remains unchanged. Focused
+  suites pass 481 Anomaly and 122 save-normalization assertions. Four loaded fixtures cover vanilla
+  aggressive rejection, letterless nested ownership, disabled-output state consumption, and the real
+  live joined-pawn old-save scan, bringing RimTest to 327 compiled tests. Both assemblies rebuild;
+  the new 327-test in-game run remains pending and is not claimed as executed.
+
 - **2026-07-20 — Corrected two false-negative A2.0 loaded creepjoiner fixtures.** The first
   user-provided active 323-test run passed 321 and failed the rejection/aggression assertions after
   each test had already verified that exactly one new test-pawn event existed. Those outcomes are

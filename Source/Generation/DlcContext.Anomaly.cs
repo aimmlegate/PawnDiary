@@ -83,8 +83,9 @@ namespace PawnDiary
         private static FieldInfo creepJoinerHasLeftField;
 
         /// <summary>
-        /// Resolves the three private committed-transition markers once. Each hook consumes only its
-        /// own health bit, so a renamed field disables that outcome without disabling the other two.
+        /// Resolves the three private committed-transition markers once. Rejection also needs the
+        /// aggression marker to recognize vanilla's nested AggressiveRejection truth; it does not
+        /// depend on the unrelated departure marker.
         /// </summary>
         internal static CreepJoinerReflectionHealth ResolveCreepJoinerReflection(Type trackerType)
         {
@@ -104,7 +105,7 @@ namespace PawnDiary
             return new CreepJoinerReflectionHealth
             {
                 rejectionReady = sameType && creepJoinerTriggeredRejectionField != null
-                    && creepJoinerTriggeredAggressiveField != null && creepJoinerHasLeftField != null,
+                    && creepJoinerTriggeredAggressiveField != null,
                 aggressionReady = sameType && creepJoinerTriggeredAggressiveField != null,
                 departureReady = sameType && creepJoinerHasLeftField != null
             };
@@ -128,7 +129,8 @@ namespace PawnDiary
             bool aggressionBefore;
             bool departureBefore;
             if (!TryReadCreepJoinerFlags(
-                tracker, out rejectionBefore, out aggressionBefore, out departureBefore)) return false;
+                tracker, phase, out rejectionBefore, out aggressionBefore, out departureBefore))
+                return false;
 
             string subjectId = subject.GetUniqueLoadID();
             if (string.IsNullOrWhiteSpace(subjectId)) return false;
@@ -170,6 +172,15 @@ namespace PawnDiary
             {
                 result.methodAllowedBefore = !tracker.Disabled && !departureBefore;
                 result.visibleResponseExpected = true;
+            }
+
+            // A disallowed/no-op call can still be compared after vanilla returns so an unexpected
+            // private-marker commit becomes a silent replay barrier. It can never emit a page, so do
+            // not pay for the event-time map scan or retain writer references.
+            if (!result.methodAllowedBefore)
+            {
+                capture = result;
+                return true;
             }
 
             Dictionary<string, Pawn> pawnsById = new Dictionary<string, Pawn>(StringComparer.Ordinal);
@@ -232,7 +243,8 @@ namespace PawnDiary
             bool aggressionAfter;
             bool departureAfter;
             if (!TryReadCreepJoinerFlags(
-                tracker, out rejectionAfter, out aggressionAfter, out departureAfter)) return false;
+                tracker, capture.facts.phase,
+                out rejectionAfter, out aggressionAfter, out departureAfter)) return false;
 
             CreepJoinerOutcomeFacts committed = capture.facts;
             committed.nestedOutcomeOwnedByRejection = !capture.ownsRejectionScope
@@ -241,6 +253,16 @@ namespace PawnDiary
             {
                 committed.transitioned = !capture.rejectionCommittedBefore && rejectionAfter;
                 committed.transitionVerified = capture.methodAllowedBefore && committed.transitioned;
+                if (committed.transitionVerified
+                    && !capture.aggressionCommittedBefore && aggressionAfter)
+                {
+                    // Vanilla AggressiveRejection visibly performs DoAggressive inside DoRejection.
+                    // Keep one outer-owned page, but save and narrate the strongest visible terminal
+                    // state instead of permanently describing an attacking pawn as merely rejected.
+                    committed.phase = AnomalyOutcomeTokens.Aggressive;
+                    committed.visibleResultToken = CreepJoinerVisibleResultTokens.Hostile;
+                    committed.aggressionFollowedRejection = true;
+                }
             }
             else if (committed.phase == AnomalyOutcomeTokens.Aggressive)
             {
@@ -311,6 +333,7 @@ namespace PawnDiary
 
         private static bool TryReadCreepJoinerFlags(
             Pawn_CreepJoinerTracker tracker,
+            string phase,
             out bool rejected,
             out bool aggressive,
             out bool left)
@@ -318,14 +341,23 @@ namespace PawnDiary
             rejected = false;
             aggressive = false;
             left = false;
-            if (tracker == null) return false;
+            if (tracker == null
+                || phase == AnomalyOutcomeTokens.Rejected
+                    && (creepJoinerTriggeredRejectionField == null
+                        || creepJoinerTriggeredAggressiveField == null)
+                || phase == AnomalyOutcomeTokens.Aggressive
+                    && creepJoinerTriggeredAggressiveField == null
+                || phase == AnomalyOutcomeTokens.Departed && creepJoinerHasLeftField == null)
+            {
+                return false;
+            }
             if (creepJoinerTriggeredRejectionField != null)
                 rejected = (bool)creepJoinerTriggeredRejectionField.GetValue(tracker);
             if (creepJoinerTriggeredAggressiveField != null)
                 aggressive = (bool)creepJoinerTriggeredAggressiveField.GetValue(tracker);
             if (creepJoinerHasLeftField != null)
                 left = (bool)creepJoinerHasLeftField.GetValue(tracker);
-            return true;
+            return CreepJoinerPhaseTokens.IsOutcome(phase);
         }
 
         private static void AddCreepJoinerWriter(

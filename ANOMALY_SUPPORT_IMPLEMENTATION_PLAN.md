@@ -983,10 +983,13 @@ Patch public methods defensively and compare before/after state:
 If a downside worker calls one of those methods, the nested exact outcome owns the page. A separate
 `DoDownside` postfix must not emit another.
 
-`DoRejection` is the one nested semantic exception: vanilla rejection workers currently call either
-`DoLeave` or `DoAggressive`, but the player-visible decision is rejection. A tiny bounded synchronous
-owner therefore suppresses that nested page and lets the outer verified rejection emit once. The
-postfix/finalizer always unwinds it. `DoDownside` itself remains unpatched, so its nested exact method
+`DoRejection` is the one nested semantic exception: visible vanilla rejection workers currently call
+either `DoLeave` or `DoAggressive`, so a tiny bounded synchronous owner suppresses that nested page and
+lets the outer verified rejection emit once. `AggressiveRejection` persists/narrates the strongest
+visible `aggressive`/`hostile` state while retaining safe rejection-response provenance. A letterless
+modded rejection does not open the owner, allowing its nested visible method to own naturally; a
+committed outer marker with no page becomes a blank terminal replay barrier. The postfix/finalizer
+always unwinds visible ownership. `DoDownside` itself remains unpatched, so its nested exact method
 still owns naturally.
 
 ### 12.4 Writer policy
@@ -1327,6 +1330,7 @@ escaped_entities=...
 witness_role=nearby|recent_studier|colony_witness
 creepjoiner_phase=surgical_reveal|rejected|aggressive|departed
 visible_result=...
+rejection_response=true
 transformation=ghoul
 void_outcome=embraced|disrupted
 terminal=true|false
@@ -1633,7 +1637,7 @@ profile remains in the manual in-game matrix.
 
 ### Phase A2.0 — Visible creepjoiner state
 
-> **Status (2026-07-20): implemented; first active loaded run 321/323, corrected rerun pending.**
+> **Status (2026-07-20): implemented and adversarially hardened; current 327-fixture rerun pending.**
 > The canonical arrival now upserts one visible joined arc and attaches its event ID only after the
 > existing arrival page is created. Schema 2 deep-scribes only pawn/arrival/joined/visible-phase/
 > visible-event/terminal/version primitives; pure normalization covers malformed, duplicate, oversized,
@@ -1644,17 +1648,21 @@ profile remains in the manual in-game matrix.
 > `DoAggressive`, and `DoLeave` methods and cache their required private transition fields once.
 > Detached before/after verification commits terminal visible history independently of settings. Pure
 > selection uses exact speaker, eligible pre-departure subject, or one closest nearby witness as the
-> phase permits; no RNG or now-hostile first-person POV is used. Rejection owns its nested exact response,
-> while unpatched `DoDownside` lets its nested exact method own naturally. Context/fallback expose only
-> generic visible phase/result, subject identity/label, role, and terminal state.
+> phase permits; exact speaker requires same-map presence, and no RNG or now-hostile first-person POV
+> is used. Visible rejection owns its nested exact response; aggressive rejection records the strongest
+> visible hostile phase, letterless modded rejection releases a nested visible owner, and unpatched
+> `DoDownside` lets its nested exact method own naturally. Committed but unverified/invisible markers
+> close as blank terminal barriers. Context/fallback expose only generic visible phase/result, optional
+> visible rejection provenance, subject identity/label, role, and terminal state.
 >
-> Focused suites pass 472 Anomaly and 115 save-normalization assertions. Seven new loaded A2.0 fixtures
-> bring the RimTest assembly to 323 compiled tests and cover exact registration/no-`DoDownside`, one
+> Focused suites pass 481 Anomaly and 122 save-normalization assertions. Eleven loaded A2.0 fixtures
+> bring the RimTest assembly to 327 compiled tests and cover exact registration/no-`DoDownside`, one
 > canonical/repeated arrival, rejection-with-nested-departure once, aggression, joined departure,
+> aggressive rejection, letterless nested ownership, disabled-output state, live legacy baselining,
 > disabled/no-op silence, role context, repeat suppression, and lifecycle cleanup. The first active run
 > passed 321/323 overall; its two failures were test-only recipient mismatches after each solo page had
 > already been counted. Rejection/aggression now assert a blank recipient role and the subject ID in
-> captured context; the corrected rerun is not yet claimed. The user-confirmed A1.4 active 316 run is
+> captured context; the expanded 327-fixture rerun is not yet claimed. The user-confirmed A1.4 active 316 run is
 > green aggregate evidence; the separate Anomaly-inactive profile, missing study/containment-hook
 > compatibility profiles, and real
 > process-boundary save/reload remain deferred.
