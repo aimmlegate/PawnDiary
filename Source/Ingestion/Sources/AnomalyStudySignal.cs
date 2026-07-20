@@ -71,8 +71,11 @@ namespace PawnDiary.Ingestion
             if (sink == null || studier == null || facts == null || plan == null || group == null
                 || decision != CaptureDecision.GenerateSolo) return;
 
+            // Stable Def names remain useful structured prompt evidence, but player-facing fallback
+            // prose must use only a visible label or a localized neutral subject.
             string studiedLabel = string.IsNullOrWhiteSpace(facts.studiedLabel)
-                ? facts.studiedDefName : facts.studiedLabel;
+                ? "PawnDiary.Event.Anomaly.Study.UnknownSubject".Translate().Resolve()
+                : facts.studiedLabel;
             string label = string.IsNullOrWhiteSpace(group.label)
                 ? "PawnDiary.Event.Anomaly.Study.Label".Translate().Resolve()
                 : group.LabelCap.Resolve();

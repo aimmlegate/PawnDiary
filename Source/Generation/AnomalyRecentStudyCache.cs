@@ -65,6 +65,30 @@ namespace PawnDiary
             return false;
         }
 
+        /// <summary>
+        /// Returns the bounded set of recent researchers for one entity after one expiry pass. Live
+        /// containment capture uses this batch form so a large map does not rescan the cache once per pawn.
+        /// </summary>
+        internal static HashSet<string> MatchingStudierPawnIds(
+            string studiedEntityId,
+            int nowTick,
+            int maximumAgeTicks)
+        {
+            HashSet<string> result = new HashSet<string>(StringComparer.Ordinal);
+            string entityId = (studiedEntityId ?? string.Empty).Trim();
+            if (entityId.Length == 0 || nowTick < 0) return result;
+
+            Prune(nowTick, Window(maximumAgeTicks));
+            for (int i = 0; i < Studies.Count; i++)
+            {
+                AnomalyRecentStudyFact row = Studies[i];
+                if (string.Equals(row.studiedEntityId, entityId, StringComparison.Ordinal))
+                    result.Add(row.studierPawnId);
+            }
+
+            return result;
+        }
+
         /// <summary>Clears all relationships at a game/new-game/load boundary.</summary>
         internal static void Clear()
         {

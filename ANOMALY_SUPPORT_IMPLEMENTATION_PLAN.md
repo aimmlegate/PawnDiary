@@ -1,7 +1,7 @@
 # Pawn Diary — Anomaly Support Implementation Plan
 
-Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.3 implemented as the first four Master
-Wave 7 slices, 2026-07-20; A1.4–A3 remain implementation-ready plans. The
+Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.4 implemented as Master Wave 7,
+2026-07-20; A2–A3 remain implementation-ready plans. The
 RimWorld 1.6 feasibility spike is complete for study-note milestones, containment escapes, visible
 creepjoiner outcomes, ghoul infusion, and both terminal void choices. Production now includes the A0
 exact psychic-ritual routing and monolith activation chapters described below.
@@ -10,8 +10,8 @@ Scheduling authority: implement Anomaly phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Anomaly.
 
 Anomaly was the final standalone DLC planning artifact. Its small A0 semantic-precision release has
-now shipped independently; A1 study capture and containment breach capture have reached A1.3, while
-A1.4 and A2–A3 remain scheduled in the master plan.
+now shipped independently; A1 study capture, containment breach capture, and A1 hardening/delivery
+are implemented, while A2–A3 remain scheduled in the master plan.
 
 The plan turns Anomaly's already broad atmospheric coverage into a coherent human story:
 curiosity becomes knowledge, knowledge enables a choice, containment can fail, apparently human
@@ -1517,7 +1517,8 @@ pass.
 
 ### Phase A1.2 — Study capture
 
-> **Implementation status (2026-07-20): code-complete; focused in-game execution pending.** The
+> **Implementation status (2026-07-20): code-complete; focused in-game execution evidenced by the
+> later full active-suite run.** The
 > exact public study overload registers defensively only with Anomaly active. Prefix/postfix live
 > reads are centralized in `DlcContext` and converted into detached facts; pure policy owns semantic
 > stages and history. `AnomalyStudySignal` writes only for the exact eligible studier, while the
@@ -1533,8 +1534,9 @@ pass.
 > 305 compiled tests and cover hook registration/inertness, no threshold, one threshold, multi-note
 > jump, completion, disabled group, real Scribe/no replay, exact consume-once Tale ownership, delayed
 > exact-job ownership, and fail-closed missing monolith-level state.
-> Core and RimTest assemblies build; none of these new A1.2 in-game fixtures has yet been executed,
-> so no runtime A1.2 profile is claimed.
+> Core and RimTest assemblies built at that boundary. The later user-confirmed corrected 315/315
+> Anomaly-active run was the full compiled suite and therefore directly executed all ten A1.2 fixtures;
+> it closes this execution row without treating compilation as execution.
 
 - Register exact public study hook defensively.
 - Capture before/after facts and run pure policy.
@@ -1575,11 +1577,29 @@ profile remains in the manual in-game matrix.
 
 ### Phase A1.4 — A1 hardening and delivery
 
-- Run no-DLC and missing-hook scenarios.
-- Profile hot paths/cache bounds.
-- Review prompts for spoilers and invented causality.
-- Complete docs/changelog/localization.
-- Run full verification and stage rebuilt DLL when committing.
+> **Status (2026-07-20): implementation and automated delivery complete; manual profiles remain
+> explicit.** Adversarial review found three bounded defects: blank study labels could reach player-
+> facing fallback as raw Def names; corrupt saved histories could inspect more than 4,096 invalid or
+> duplicate rows; and outer containment capture rescanned the recent-study cache per eligible pawn and
+> sorted the full eligible roster twice. The fallback now uses a localized neutral subject, history
+> input inspection is capped at 4,096, recent-studier IDs are resolved in one bounded batch, and the
+> full roster is ranked once before the writer derivative is sorted from at most 512 rows. Focused pure
+> coverage passes 404 Anomaly and 84 save-normalization assertions. Runtime and 316-fixture RimTest
+> assemblies build with 0 warnings and 0 errors. The full repository verifier passes whitespace/XML,
+> all 14 pure projects, the runtime rebuild, and committed-DLL freshness. No A2 behavior or hidden-state
+> projection was introduced.
+>
+> The previous corrected 315/315 Anomaly-active run remains evidence for all prior A1.2/A1.3 fixtures.
+> It cannot evidence the one new A1.4 fallback fixture. A new active 316 run, the separate Anomaly-
+> inactive profile, disposable missing-hook compatibility builds, and a real process-boundary save/
+> reload remain manual rows; no pass is claimed for them. The exact procedure is recorded in
+> `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
+
+- [x] Audit no-DLC gates, independent missing-hook failure, and generic fallback preservation.
+- [x] Profile hot paths/cache bounds and add focused bound/equivalence tests.
+- [x] Review prompts/fallback for spoilers, invented causality, role truth, localization, and raw Defs.
+- [x] Complete docs/changelog/localization and rebuild both assemblies.
+- [ ] Execute the active 316, Anomaly-inactive, missing-hook, and process-boundary manual profiles.
 
 ### Phase A2.0 — Visible creepjoiner state
 
@@ -1818,10 +1838,15 @@ errors, no Anomaly state reads, no new Anomaly settings rows, and unchanged diar
 - Containment work runs only on actual `Escape`, not each `CompTick` interval.
 - Creepjoiner, ghoul, and terminal work runs only on exact public lifecycle methods.
 - No new every-tick or every-pawn scanner is required.
-- Candidate collection is bounded to one affected map and XML radius/caps.
+- The outer containment call enumerates the affected map's spawned pawns once, scans the at-most-512
+  recent-study cache once, ranks the eligible roster once, and caps retained cascade candidates at
+  512; writer derivation sorts only that retained pool. Nested calls reuse it. Final output retains at
+  most 64 escaped entities, 8 visible labels, and 2 writers.
 - Reflection metadata is resolved once at registration and cached; never look up private fields per
   event.
-- Transient caches have hard caps/expiry and compact without unbounded queues.
+- Transient caches have hard caps/expiry and compact without unbounded queues. Saved Anomaly history
+  normalization inspects and retains no more than 4,096 rows per list, even when every row is malformed
+  or duplicated.
 - Pure selection uses stable sorting/hashing and does not consume simulation RNG.
 
 ### 22.2 DLC safety checklist

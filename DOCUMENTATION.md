@@ -1672,7 +1672,7 @@ normalized defaults, and verifies that snapshots are independent. A manual main-
 passed that read-only fixture as part of 46/46 tests which do not require a colony; 245 loaded-game
 fixtures correctly rejected the absent game, so the full 291-test loaded-colony run remains pending.
 
-**Anomaly catalog, persistence, study, and containment capture (Master Wave 7 / A1.1–A1.3).** `DiaryEventType.AnomalyEvent`
+**Anomaly catalog, persistence, study, and containment capture (Master Wave 7 / A1.1–A1.4).** `DiaryEventType.AnomalyEvent`
 now has one registered `AnomalyEventSpec` and detached common envelope. It is not a generic truth
 policy: source-specific planners must still prove the exact kind. Final dispatch accepts only one of
 the five frozen kind/Def pairs, a verified and player-visible source, a safe stable source key, a
@@ -1683,8 +1683,10 @@ producers for this route; the other three source kinds remain unregistered until
 `DiaryGameComponent.Anomaly.cs` adds the six frozen Scribe keys for schema version, first-study
 observation, completed studied Def names, promoted milestone keys, the monolith baseline level, and
 one optional deep-scribed monolith knowledge snapshot. Pure normalization removes malformed rows,
-sorts/de-duplicates and caps both histories at 4,096, rejects oversized stable identities atomically
-instead of truncating them into collision-prone save keys, validates promotion grammar/study stages,
+sorts/de-duplicates and caps both histories at 4,096, inspects at most the first 4,096 input rows even
+when a corrupt save contains only duplicates or invalid values, rejects oversized stable identities
+atomically instead of truncating them into collision-prone save keys, validates promotion grammar/
+study stages,
 and never downgrades a future schema. New colonies receive trustworthy empty history. Loading a pre-A1
 save with Anomaly active performs one DLC-gated scan of loaded-map `CompStudyUnlocks` components through
 `DlcContext.Anomaly.cs`, the single guarded adapter for live Anomaly reads;
@@ -1704,7 +1706,8 @@ does not overload that consume-once ownership cache: `AnomalyRecentStudyCache` r
 non-consuming, bounded entity/studier/tick relationship after every exactly correlated study callback,
 including below-threshold work. It contains no live objects, expires by `recentStudierMaxAgeTicks`,
 normalizes its detached IDs once on insertion/restore, caps at 512 defensive rows (128 by default),
-and clears at the same new-game/load boundaries. Five exact
+answers containment lookup with one prune/scan and a bounded detached pawn-ID set rather than one
+cache scan per map pawn, and clears at the same new-game/load boundaries. Five exact
 package-gated Interaction groups at orders 61–65 expose settings
 and localized prompt/fallback policy for study breakthrough, containment breach, visible creepjoiner
 outcome, ghoul transformation, and terminal void outcome. `ClassifyAnomalyEvent` requires an exact
@@ -1732,7 +1735,9 @@ later retroactive first. Only a semantic milestone for the exact eligible studie
 Study prompt context includes stable/visible subject, discovered codex, knowledge category,
 containment/monolith flags, semantic stage, and a bounded event-time setting. It has no field for raw
 research points, private/random thresholds, letters, hidden abilities, containment chances, or
-undiscovered codex descriptions. Monolith study never creates its own page. Its small deep-scribed
+undiscovered codex descriptions. Player-facing fallback uses the visible subject label or the
+localized neutral “an anomalous subject” value; a blank label cannot expose the stable Def name.
+Monolith study never creates its own page. Its small deep-scribed
 snapshot may enrich only the next exact activation while the activator stays the author; the first
 later activation consumes it even when expired or page-disabled. Automatic activation advances the
 baseline and consumes the snapshot without attributing a page to vanilla's random signature pawn.
@@ -1742,10 +1747,12 @@ the monolith building's ThingDef.
 
 The outer containment prefix snapshots the exact held entity, platform, map/cell, visible
 label/defName, pre-ejection surroundings, and bounded eligible writer evidence before vanilla changes
-parentage. The live adapter filters eligible pawns before retaining them, asks the pure writer policy
-to rank nearby/recent/fallback candidates before applying the 512-row defensive cap, and gives the
-bounded roster to the outer scope. Nested same-room calls reuse that roster and skip the outer-only
-surroundings read instead of copying and sorting the whole spawned-pawn list for every cascade member.
+parentage. The live adapter enumerates the affected map's spawned-pawn roster once for the outer escape,
+filters eligible pawns before retaining them, resolves all recent-studier IDs with one bounded cache
+scan, and asks the pure writer policy to rank the full eligible roster once before applying the 512-row
+defensive cap. The writer-only derivative is therefore sorted from at most 512 rows. Nested same-room
+calls reuse that roster and skip the outer-only surroundings read instead of copying and sorting the
+whole spawned-pawn list for every cascade member.
 Surroundings are optional enrichment: a throwing modded room/weather/temperature/beauty/condition
 getter warns once and yields an empty setting without discarding the verified breach.
 `ContainmentEscapeScopeStack` gives every call its own frame: `Escape(true)` owns an outer scope,
@@ -1774,8 +1781,11 @@ future exact source may add narrow ownership only when it supplies both identiti
 and remain silent. No production UI trigger was added; vanilla's existing dev-only `DEV: Escape`
 gizmo continues to exercise the same seam.
 
-Focused suites now pass 398 Anomaly-policy/XML/cache/context, 708 catalog, 83 save-normalization, and 135
-Narrative assertions. The runtime DLL and 315-test RimTest assembly build against the installed 1.6
+The A1.4 adversarial delivery pass raises focused coverage to 404
+Anomaly-policy/XML/cache/context and 84 save-normalization assertions; the new cases pin batched recent-
+studier matching, ordering equivalence when a large eligible roster is capped, and a strict input-
+inspection bound for malformed saved histories. The 708 catalog and 135 Narrative suites remain green.
+The runtime DLL and 316-test RimTest assembly build against the installed 1.6
 API; compiled smoke coverage pins the five Def/package/classifier rows plus the exact study and
 containment target/platform signatures. Three loaded fixtures additionally drive the actual six-key
 component Scribe contract, missing-key defaults, deep snapshot, DLC-off deferred migration,
@@ -1783,9 +1793,10 @@ DLC-on one-time loaded-map baseline, and transient load reset. Those A1.1 fixtur
 1/1 passed, 0 failed in the no-Anomaly main-menu classifier profile; user-confirmed 3/3 passed,
 0 failed in a loaded no-Anomaly colony; and user-confirmed 3/3 passed, 0 failed in a loaded
 Anomaly-active colony. The 7/7 results cover exact classification, real six-key Scribe, missing
-defaults, deferred/off migration, one-time/on baseline, and transient reset. The ten A1.2 study
-fixtures—including delayed exact-job ownership and missing-level state preservation—are compiled but
-have not been executed in RimWorld, so compilation is not reported as an A1.2 runtime pass. Ten A1.3
+defaults, deferred/off migration, one-time/on baseline, and transient reset. The later user-confirmed
+full 315/315 Anomaly-active run directly executed all ten A1.2 study fixtures—including delayed exact-
+job ownership and missing-level state preservation—so their outstanding loaded execution row is
+covered by that recorded run rather than inferred from compilation. Ten A1.3
 containment fixtures compile against the installed API; nine invoke the real `Escape(bool)` seam and
 one directly pins idempotent abort plus unhealthy out-of-order scope closure.
 Their map setup accepts any clean vanilla `Room`, including open terrain, because the production seam
@@ -1800,8 +1811,10 @@ passed 314 fixtures, including the newly added direct scope-state fixture. Its s
 false-positive test assertion: a valid localized visible label happened to contain the entity's
 stable Def name. The fixture now requires exact equality with the localized visible-label-only
 fallback. The user-confirmed corrected Anomaly-active rerun passed all 315 compiled fixtures,
-including all ten containment fixtures. The separate Anomaly-inactive profile remains a manual
-in-game row.
+including all ten containment fixtures. A1.4 adds one blank-visible-label fallback fixture, so a new
+Anomaly-active 316-fixture run is still required for that case. The separate Anomaly-inactive profile
+and a real process-boundary save/reload remain manual in-game rows; neither is claimed from builds or
+pure tests. Exact operator steps live in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,

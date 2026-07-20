@@ -462,6 +462,18 @@ namespace DiarySaveNormalizationTests
                 oversized.monolithBaselineLevelDefName);
             AssertTrue("oversized researcher identity drops the knowledge snapshot",
                 oversized.lastMonolithKnowledgeSnapshot == null);
+
+            List<string> malformedHistory = new List<string>();
+            for (int i = 0; i < AnomalyPersistencePolicy.MaximumHistoryRows; i++)
+                malformedHistory.Add("bad|row");
+            malformedHistory.Add("Entity_AfterDefensiveCap");
+            AnomalyPersistentStateSnapshot boundedMalformed =
+                AnomalyPersistencePolicy.Normalize(new AnomalyPersistentStateSnapshot
+                {
+                    completedStudyDefNames = malformedHistory
+                });
+            AssertEqual("malformed Anomaly history inspection stops at the defensive input cap", 0,
+                boundedMalformed.completedStudyDefNames.Count);
         }
 
         private static void TestAnomalyLegacyBaseline()

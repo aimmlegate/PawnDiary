@@ -126,6 +126,75 @@ Use one pristine save from before A1.1 and keep a backup for both branches below
 
 ---
 
+## Anomaly A1.4 release profiles
+
+These rows are deliberately separate. A successful Anomaly-active run does not prove DLC-off startup,
+and an in-process Scribe fixture does not prove a real save/load process boundary. Record the RimWorld
+build, exact mod list, language, total/pass/fail/skip counts, and relevant `Player.log` lines for each.
+
+### Active 316-fixture profile
+
+1. Enable Harmony, base RimWorld, Laboratory, RimTest Redux, Pawn Diary, and Anomaly; use a disposable
+   loaded colony and disable external text generation so exact localized fallback is visible.
+2. Run the complete RimTest assembly and record the runner's exact counts. The assembly must report 316
+   discovered tests. In particular, confirm
+   `MissingVisibleStudyLabelUsesLocalizedNeutralSubject`, all ten other
+   `PawnDiaryAnomalyStudyFlowTests`, and all ten `PawnDiaryAnomalyContainmentFlowTests` pass.
+3. Inspect the development log for Pawn Diary exceptions, raw internal study Def names in fallback text,
+   repeated containment pages, or a nonzero scope/cache assertion. Do not carry forward the historical
+   315/315 result as evidence for the newly added fallback fixture.
+
+### Anomaly-inactive profile
+
+1. Remove Anomaly from the active mod list (do not merely avoid its content), keep Harmony, base
+   RimWorld, Laboratory, RimTest Redux, and Pawn Diary, then restart RimWorld and load a disposable
+   base-game-only colony.
+2. Run the complete 316-fixture assembly and record exact counts. Also run these focused rows by name:
+   `AnomalyEventGroupsAreLoadedAndRouteOnlyExactKinds`,
+   `StudyHookRegistrationMatchesAnomalyAvailability`,
+   `EscapeHookRegistrationMatchesAnomalyAvailability`, and
+   `LoadedGameBootstrapDefersOrBaselinesByAnomalyAvailability`.
+3. Confirm both Anomaly hook-health flags are false, the package-gated Anomaly settings rows are absent,
+   the legacy schema remains pending, and `Player.log` contains no missing-Def, type-initializer, patch-
+   registration, or repeated warning caused by Pawn Diary. Save, return to the main menu, reload once,
+   and repeat the focused state row. Compilation or the active profile does not close this row.
+
+### Missing-hook compatibility profiles
+
+Use a disposable copy of the mod and never commit its compatibility edit. Restart the game between
+profiles because Harmony patches and `WarningOnce` state are process-static.
+
+1. In the disposable copy, change only `StudyUnlocksTypeName` in
+   `Source/Patches/DiaryAnomalyPatches.cs` to a guaranteed-missing type name, rebuild, disable the normal
+   Pawn Diary copy, and launch the Anomaly-active profile. Confirm exactly one study-specific missing-
+   hook warning, no startup failure, ordinary vanilla study plus its generic `StudiedEntity` Tale still
+   work, and containment capture still works. Repeated study must not repeat the warning.
+2. Restore that constant, change only `HoldingPlatformTargetTypeName` to a guaranteed-missing type name,
+   rebuild, and restart. Confirm exactly one containment-specific warning, normal vanilla escape/ejection
+   behavior and letters, no dedicated containment-breach page, and a working study milestone. Repeated
+   escape must not repeat the warning.
+3. Delete the disposable DLL/copy or restore both constants, rebuild the clean main checkout, and verify
+   both hook-health fixtures again. A source audit or signature smoke test alone does not count as either
+   missing-target execution.
+
+### Immediate active save/reload
+
+1. In the active profile with generation disabled, trigger one genuine study milestone with its exact
+   researcher and one real `DEV: Escape` from a holding platform. Record event IDs, page count, author
+   roles, localized fallback text, and the absence of an intentional-release page.
+2. Save immediately after the callbacks finish, return to the main menu, and reload that save with the
+   game paused. Confirm neither event replays, the prior pages/text/roles are unchanged, and no transient
+   claim or containment scope produces a page during load.
+3. Run `ActualComponentRoundTripsAllSixAnomalyKeys` and
+   `AnomalyLifecycleResetClearsContainmentAndStudyCaches`, save again, return to the main menu, and reload
+   once more. Confirm no catch-up page, duplicate page, Scribe repair warning, or stale ownership appears.
+   Pair this with the pristine pre-A1 disable/re-enable fixture above for old-save default coverage.
+
+No A1.4 manual row was executed during the 2026-07-20 automated delivery pass; leave each unchecked in
+release reporting until its own log/count/save evidence exists.
+
+---
+
 ## Odyssey real-lifecycle and three-phase save/reload fixture
 
 RimTest Redux runs a test synchronously inside the current `Game`. Calling

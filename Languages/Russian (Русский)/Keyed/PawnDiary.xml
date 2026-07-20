@@ -1546,6 +1546,7 @@
   <!-- Резервный текст точных источников Anomaly A1-A3. A1.1 фиксирует локализацию; источники появятся позже. -->
   <PawnDiary.Event.Anomaly.Study.Label>Прорыв в изучении аномалии</PawnDiary.Event.Anomaly.Study.Label>
   <PawnDiary.Event.Anomaly.Study.Fallback>{0} совершает настоящий прорыв в изучении объекта «{1}».</PawnDiary.Event.Anomaly.Study.Fallback>
+  <PawnDiary.Event.Anomaly.Study.UnknownSubject>аномальный объект</PawnDiary.Event.Anomaly.Study.UnknownSubject>
   <PawnDiary.Event.Anomaly.Containment.Label>Прорыв содержания</PawnDiary.Event.Anomaly.Containment.Label>
   <PawnDiary.Event.Anomaly.Containment.Fallback>{0} отмечает прорыв содержания: {1}.</PawnDiary.Event.Anomaly.Containment.Fallback>
   <PawnDiary.Event.Anomaly.Containment.UnknownSubject>неизвестная сбежавшая сущность</PawnDiary.Event.Anomaly.Containment.UnknownSubject>

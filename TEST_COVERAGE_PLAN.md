@@ -185,9 +185,10 @@ focused in-game cases: Anomaly-off hook inertness/Anomaly-on exact patch ownersh
 threshold with exact researcher ownership, one-call multi-note jump, first completed kind, disabled
 group with history advancement and no Tale claim, actual component Scribe/no replay, and exact
 consume-once `StudiedEntity` suppression, delayed exact-job consumption, and missing-level monolith
-state preservation. The RimTest assembly now contains 305 compiled tests. The
-new A1.2 fixtures have not been executed in RimWorld and remain a manual runtime task; compilation is
-not recorded as an in-game pass.
+state preservation. The RimTest assembly now contains 305 compiled tests. The new A1.2 fixtures had
+not been executed at that boundary; compilation was not recorded as an in-game pass. The later
+corrected full 315/315 Anomaly-active run described below directly executed all ten and closes that
+historical execution row.
 
 Master Wave 7 / Anomaly A1.3 plus adversarial hardening raises `DiaryAnomalyPolicyTests` to 398
 assertions. The pure cases cover the separate non-consuming recent-study cache (exact matching,
@@ -223,6 +224,19 @@ contained the entity's stable Def name; the fixture now compares the complete lo
 for exact equality. The user-confirmed corrected Anomaly-active rerun passed all 315 compiled
 fixtures, including all ten containment fixtures. The separate Anomaly-inactive profile remains a
 manual DLC-off matrix row.
+
+Master Wave 7 / Anomaly A1.4 raises `DiaryAnomalyPolicyTests` to 404 assertions and
+`DiarySaveNormalizationTests` to 84. New pure cases prove one bounded/non-consuming recent-studier
+batch lookup, writer-order equivalence when a 600-row roster is reduced to the 512-row hard cap, and
+that malformed/duplicate history input cannot force inspection beyond the 4,096-row save bound. One
+loaded `MissingVisibleStudyLabelUsesLocalizedNeutralSubject` fixture verifies exact localized neutral
+fallback and rejects the raw Def name, bringing the assembly to 316 compiled tests. Core and RimTest
+assemblies build with 0 warnings and 0 errors; `.githooks/verify.ps1` passes whitespace/XML, all 14
+pure projects, runtime rebuild, and committed-DLL freshness. This new fixture has not run in RimWorld:
+the last evidenced active result remains 315/315 for the prior suite. The active 316 rerun, separate
+Anomaly-inactive profile, disposable
+missing-hook compatibility profiles, and real process-boundary save/reload remain manual and unclaimed;
+follow `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It

@@ -1566,6 +1566,7 @@
   <!-- Anomaly A1-A3 exact-source fallback prose. A1.1 freezes localization; live sources follow. -->
   <PawnDiary.Event.Anomaly.Study.Label>Anomaly study breakthrough</PawnDiary.Event.Anomaly.Study.Label>
   <PawnDiary.Event.Anomaly.Study.Fallback>{0} reached a genuine breakthrough while studying {1}.</PawnDiary.Event.Anomaly.Study.Fallback>
+  <PawnDiary.Event.Anomaly.Study.UnknownSubject>an anomalous subject</PawnDiary.Event.Anomaly.Study.UnknownSubject>
   <PawnDiary.Event.Anomaly.Containment.Label>Containment breach</PawnDiary.Event.Anomaly.Containment.Label>
   <PawnDiary.Event.Anomaly.Containment.Fallback>{0} recorded a containment breach involving {1}.</PawnDiary.Event.Anomaly.Containment.Fallback>
   <PawnDiary.Event.Anomaly.Containment.UnknownSubject>an escaped entity</PawnDiary.Event.Anomaly.Containment.UnknownSubject>

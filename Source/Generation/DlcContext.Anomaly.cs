@@ -150,6 +150,9 @@ namespace PawnDiary
                 new List<AnomalyWriterCandidate>();
             Dictionary<string, Pawn> pawnsById =
                 new Dictionary<string, Pawn>(StringComparer.Ordinal);
+            HashSet<string> recentStudierPawnIds =
+                AnomalyRecentStudyCache.MatchingStudierPawnIds(
+                    entityId, tick, recentStudierMaxAgeTicks);
             int candidateCount = candidates?.Count ?? 0;
             for (int i = 0; i < candidateCount; i++)
             {
@@ -169,8 +172,7 @@ namespace PawnDiary
                     eligible = true,
                     onAffectedMap = true,
                     nearbyCandidate = true,
-                    recentExactStudier = AnomalyRecentStudyCache.Matches(
-                        entityId, pawnId, tick, recentStudierMaxAgeTicks),
+                    recentExactStudier = recentStudierPawnIds.Contains(pawnId),
                     freeColonistOnHomeMap = map.IsPlayerHome && candidate.IsFreeColonist,
                     distanceSquared = distanceSquared,
                     distanceBucket = distanceSquared,
@@ -179,22 +181,9 @@ namespace PawnDiary
                 pawnsById.Add(pawnId, candidate);
             }
 
-            // The pure policy applies role, distance, and stable-ID ordering before the cap. This
-            // prevents a large modded colony's arbitrary map-pawn order from hiding the best writer.
-            List<AnomalyWriterCandidate> bounded =
-                ContainmentBreachPolicy.BoundWriterCandidates(
-                    detachedCandidates,
-                    witnessRadius,
-                    AnomalyPolicyLimits.MaximumContainmentCandidates);
-            for (int i = 0; i < bounded.Count; i++)
-            {
-                AnomalyWriterCandidate candidate = bounded[i];
-                Pawn pawn;
-                if (!pawnsById.TryGetValue(candidate.pawnId, out pawn)) continue;
-                result.writerFacts.Add(candidate);
-                result.writerPawns.Add(pawn);
-            }
-
+            // Rank the full affected-map roster once. The pool puts every qualified writer ahead of
+            // unqualified nested-cascade candidates, so deriving writers from the capped pool preserves
+            // the exact role/distance/ID order while bounding the second sort to at most 512 rows.
             List<AnomalyWriterCandidate> pooled =
                 ContainmentBreachPolicy.BoundCandidatePool(
                     detachedCandidates,
@@ -205,6 +194,20 @@ namespace PawnDiary
                 Pawn pawn;
                 if (pawnsById.TryGetValue(pooled[i].pawnId, out pawn))
                     result.candidatePawns.Add(pawn);
+            }
+
+            List<AnomalyWriterCandidate> bounded =
+                ContainmentBreachPolicy.BoundWriterCandidates(
+                    pooled,
+                    witnessRadius,
+                    AnomalyPolicyLimits.MaximumContainmentCandidates);
+            for (int i = 0; i < bounded.Count; i++)
+            {
+                AnomalyWriterCandidate candidate = bounded[i];
+                Pawn pawn;
+                if (!pawnsById.TryGetValue(candidate.pawnId, out pawn)) continue;
+                result.writerFacts.Add(candidate);
+                result.writerPawns.Add(pawn);
             }
 
             capture = result;

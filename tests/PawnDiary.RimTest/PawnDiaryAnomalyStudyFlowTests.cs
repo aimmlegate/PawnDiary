@@ -159,6 +159,49 @@ namespace PawnDiary.RimTests
                 "One threshold did not commit exactly one progress row and accepted Tale claim.");
         }
 
+        /// <summary>A missing visible subject label uses localized neutral prose, never its raw Def name.</summary>
+        [Test]
+        public static void MissingVisibleStudyLabelUsesLocalizedNeutralSubject()
+        {
+            if (!RequireAnomalyOrSkip(nameof(MissingVisibleStudyLabelUsesLocalizedNeutralSubject))) return;
+            const string rawDefName = "PawnDiary_RimTestInternalStudyDef";
+            AnomalyStudyFacts facts = new AnomalyStudyFacts
+            {
+                studiedEntityId = "Thing_PawnDiary_RimTestMissingStudyLabel",
+                studiedDefName = rawDefName,
+                studiedLabel = string.Empty,
+                studierPawnId = studier.GetUniqueLoadID(),
+                studierEligible = true,
+                tick = Find.TickManager?.TicksGame ?? 0,
+                noteThresholdsCrossed = 1
+            };
+            AnomalyStudyPlan plan = new AnomalyStudyPlan
+            {
+                disposition = AnomalyStudyDisposition.Generate,
+                stageToken = AnomalyStudyStageTokens.FirstBreakthrough
+            };
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyAnomalyEvent(
+                AnomalyEventDefNames.StudyBreakthrough);
+
+            DiaryEvent page = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(new AnomalyStudySignal(
+                    studier, facts, plan, DiaryAnomalyPolicy.Snapshot(), group)),
+                AnomalyEventDefNames.StudyBreakthrough,
+                studier,
+                null,
+                rejectOtherTestPawnEvents: true);
+            string neutralSubject = "PawnDiary.Event.Anomaly.Study.UnknownSubject"
+                .Translate().Resolve();
+            string expectedFallback = "PawnDiary.Event.Anomaly.Study.Fallback"
+                .Translate(studier.LabelShortCap, neutralSubject).Resolve();
+            PawnDiaryRimTestScope.Require(string.Equals(
+                    page.initiatorText,
+                    expectedFallback,
+                    StringComparison.Ordinal)
+                    && page.initiatorText.IndexOf(rawDefName, StringComparison.Ordinal) < 0,
+                "Localized study fallback exposed a raw Def name instead of the neutral subject.");
+        }
+
         /// <summary>A single vanilla call jumping across several notes still creates only one page.</summary>
         [Test]
         public static void MultiNoteJumpCreatesOneMilestonePage()

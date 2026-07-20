@@ -373,18 +373,20 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 
 ## 12. Wave 7 — Anomaly knowledge, containment, and reveal
 
-> **Progress (2026-07-20): A1.0–A1.3 implemented and adversarially hardened; A1.4–A2.2 remain.** The
+> **Progress (2026-07-20): A1.0–A1.4 implemented and adversarially hardened; A2.0–A2.2 remain.** The
 > primitive policy, detached DTOs, exact study/containment hooks, fail-closed catalog route, six-key
 > normalized save baseline, lifecycle-cleared bounded caches, and five package-gated prompt groups
-> are implemented. N3-A remains an explicit zero-candidate provider. Focused suites pass 398 Anomaly,
-> 708 catalog, 83 save-normalization, and 135 Narrative assertions; runtime and 315-test RimTest
+> are implemented. N3-A remains an explicit zero-candidate provider. Focused suites pass 404 Anomaly,
+> 708 catalog, 84 save-normalization, and 135 Narrative assertions; runtime and 316-test RimTest
 > assemblies build. The exact-only classifier and both hooks are Anomaly-gated. Loaded A1.1 state
 > coverage and the original nine A1.3 containment fixtures passed in their recorded profiles. A later
 > full run passed 314/315, including the new containment scope-state fixture; its sole failure was a
 > false-positive visible-label assertion, corrected to exact localized fallback equality. The
-> user-confirmed corrected rerun passed all 315 compiled fixtures. A1.2 execution and the separate
-> no-Anomaly A1.3 profile remain manual rows. No A2 source or hidden-state projection has moved ahead
-> of schedule.
+> user-confirmed corrected rerun passed all 315 compiled fixtures. Because that was the full compiled
+> suite, it directly covered all ten A1.2 fixtures; the old A1.2 execution row is closed by evidence,
+> not inference. A1.4 adds one localized blank-label fixture, so a 316-fixture active rerun, the separate
+> Anomaly-inactive profile, missing-hook compatibility runs, and real process-boundary save/reload remain
+> explicit manual rows. No A2 source or hidden-state projection has moved ahead of schedule.
 
 ### Implement in this exact order
 

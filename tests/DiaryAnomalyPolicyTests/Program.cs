@@ -879,6 +879,15 @@ namespace DiaryAnomalyPolicyTests
                 normalized[0].studiedEntityId);
             AssertEqual("recent cache normalizes optional Def identity once", "EntityDef_A",
                 normalized[0].studiedDefName);
+            HashSet<string> matchingStudierIds =
+                AnomalyRecentStudyCache.MatchingStudierPawnIds(" Entity_A ", 160, 60);
+            AssertEqual("batched recent lookup returns one exact researcher", 1,
+                matchingStudierIds.Count);
+            AssertTrue("batched recent lookup normalizes identity and remains non-consuming",
+                matchingStudierIds.Contains("Pawn_A")
+                    && AnomalyRecentStudyCache.CountForTests == 1);
+            AssertEqual("batched recent lookup rejects a different entity", 0,
+                AnomalyRecentStudyCache.MatchingStudierPawnIds("Entity_B", 160, 60).Count);
             AssertTrue("recent entity mismatch fails",
                 !AnomalyRecentStudyCache.Matches("Entity_B", "Pawn_A", 160, 60));
             AssertTrue("recent studier mismatch fails",
@@ -886,6 +895,8 @@ namespace DiaryAnomalyPolicyTests
             AssertTrue("recent study expires after exact boundary",
                 !AnomalyRecentStudyCache.Matches("Entity_A", "Pawn_A", 161, 60));
             AssertEqual("expired recent study pruned", 0, AnomalyRecentStudyCache.CountForTests);
+            AssertEqual("batched recent lookup rejects a malformed query", 0,
+                AnomalyRecentStudyCache.MatchingStudierPawnIds(" ", 161, 60).Count);
 
             for (int i = 0; i < 3; i++)
             {
@@ -1029,6 +1040,33 @@ namespace DiaryAnomalyPolicyTests
                 1, nonHomePool.Count);
             AssertEqual("nested pool uses distance before stable ID for unqualified pawns",
                 "Closer", nonHomePool[0].pawnId);
+
+            List<AnomalyWriterCandidate> largeRoster = new List<AnomalyWriterCandidate>();
+            for (int i = 0; i < 600; i++)
+            {
+                bool qualified = i % 10 != 0;
+                largeRoster.Add(Writer(
+                    "LargeRoster_" + i.ToString("D3"),
+                    qualified,
+                    false,
+                    false,
+                    qualified ? 4 : 400,
+                    i.ToString("D3")));
+            }
+            List<AnomalyWriterCandidate> directLargeWriters =
+                ContainmentBreachPolicy.BoundWriterCandidates(
+                    largeRoster, 12, AnomalyPolicyLimits.MaximumContainmentCandidates);
+            List<AnomalyWriterCandidate> largePool =
+                ContainmentBreachPolicy.BoundCandidatePool(
+                    largeRoster, 12, AnomalyPolicyLimits.MaximumContainmentCandidates);
+            List<AnomalyWriterCandidate> writersFromLargePool =
+                ContainmentBreachPolicy.BoundWriterCandidates(
+                    largePool, 12, AnomalyPolicyLimits.MaximumContainmentCandidates);
+            AssertEqual("large nested candidate pool obeys the hard cap",
+                AnomalyPolicyLimits.MaximumContainmentCandidates, largePool.Count);
+            AssertTrue("deriving writers from the capped ranked pool preserves direct ordering",
+                directLargeWriters.Select(row => row.pawnId).SequenceEqual(
+                    writersFromLargePool.Select(row => row.pawnId)));
 
             facts = Breach();
             facts.witnesses[0].eligible = false;

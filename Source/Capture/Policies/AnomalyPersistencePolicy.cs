@@ -121,7 +121,10 @@ namespace PawnDiary.Capture
             SortedSet<string> values = new SortedSet<string>(StringComparer.Ordinal);
             if (source != null)
             {
-                for (int i = 0; i < source.Count && values.Count < MaximumHistoryRows; i++)
+                // Bound input inspection as well as output size. A corrupt list containing only
+                // duplicates/invalid rows must not make load-time normalization scan without a ceiling.
+                int count = Math.Min(source.Count, MaximumHistoryRows);
+                for (int i = 0; i < count; i++)
                 {
                     string cleaned = promotionKeys
                         ? CleanPromotionKey(source[i])

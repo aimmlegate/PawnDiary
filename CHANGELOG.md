@@ -1,5 +1,23 @@
 # Changelog
 
+- **2026-07-20 — Completed the Anomaly A1.4 adversarial hardening and automated delivery pass.** Blank
+  study labels now use a localized neutral subject in player-facing fallback instead of exposing a raw
+  Def name. Containment capture resolves recent studiers with one bounded cache scan, ranks the full
+  eligible affected-map roster once, caps the retained cascade pool at 512, and derives writers from
+  that pool. Malformed saved Anomaly histories now inspect at most 4,096 source rows as well as retaining
+  at most 4,096 normalized rows.
+
+  Focused suites pass 404 Anomaly and 84 save-normalization assertions; new cases cover batched recent-
+  study matching, 600-row candidate ordering equivalence across the cap, and corrupt-history input
+  bounds. A loaded fallback fixture raises RimTest to 316 compiled tests. Runtime and RimTest assemblies
+  build with 0 warnings and 0 errors; the full verifier passes whitespace/XML, all 14 pure projects,
+  runtime rebuild, and committed-DLL freshness. The prior corrected Anomaly-active 315/315 full run
+  directly covered all ten A1.2 and all ten A1.3 fixtures, closing the old A1.2 execution row. It does
+  not cover the new fixture. The active 316 rerun, separate Anomaly-inactive profile, disposable
+  missing-hook profiles, and a real
+  process-boundary save/reload remain explicit manual rows; none is claimed from compilation. No A2
+  creepjoiner/ghoul behavior or DLC dependency was added.
+
 - **2026-07-20 — Confirmed the corrected A1.3 loaded suite all green.** The user-confirmed
   Anomaly-active rerun passed all 315 compiled RimTest fixtures, including all ten containment
   fixtures and the corrected exact localized visible-label fallback assertion. The separate
