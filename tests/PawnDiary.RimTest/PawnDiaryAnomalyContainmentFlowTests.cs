@@ -182,9 +182,16 @@ namespace PawnDiary.RimTests
                 !page.gameContext.Contains(held.platform.GetUniqueLoadID())
                     && !page.gameContext.Contains(held.platform.Position.ToString()),
                 "Bounded context leaked a platform identity or exact position.");
-            PawnDiaryRimTestScope.Require(
-                !page.initiatorText.Contains(held.entity.def.defName),
-                "Localized containment fallback leaked the escaped entity's raw Def name.");
+            string expectedFallback = "PawnDiary.Event.Anomaly.Containment.Fallback"
+                .Translate(
+                    writer.LabelShortCap,
+                    DiaryLineCleaner.CleanLine(held.entity.LabelShortCap))
+                .Resolve();
+            PawnDiaryRimTestScope.Require(string.Equals(
+                    page.initiatorText,
+                    expectedFallback,
+                    StringComparison.Ordinal),
+                "Localized containment fallback did not use the exact visible-label-only text.");
             RequireCleanScope();
         }
 

@@ -1559,8 +1559,11 @@ roofed structures. Their allocator validates the complete holding-platform footp
 non-overlapping margins, and rejects map-edge, pawn, edifice, destructive-wipe, and occupied-platform
 placements; failed setup cannot be masked by teardown. The first loaded attempts exposed the former
 indoor-room and center-only placement assumptions. The corrected user-confirmed Anomaly-active loaded
-rerun passed the original 9/9 with 0 failures; the new direct scope-state fixture and separate
-Anomaly-inactive profile remain in the manual in-game matrix.
+rerun passed the original 9/9 with 0 failures. A later full 315-fixture Anomaly-active run passed 314,
+including the new direct scope-state fixture; its sole failure was a false-positive fallback assertion
+when a valid visible label contained the stable Def name. The fixture now requires exact equality with
+the localized visible-label-only fallback. Its confirmation rerun and the separate Anomaly-inactive
+profile remain in the manual in-game matrix.
 
 - Add scoped aggregation around `Escape(bool)`.
 - Verify nested joins, intentional release silence, deterministic writers, and exception cleanup.

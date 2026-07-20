@@ -1,5 +1,14 @@
 # Changelog
 
+- **2026-07-20 — Corrected the A1.3 visible-label RimTest after its first full loaded run.** The
+  Anomaly-active run executed all 315 compiled fixtures: 314 passed, including the new direct
+  containment scope-state fixture, and one containment fallback assertion failed. Production had
+  emitted the intended localized visible label; the test incorrectly treated that label as leaked
+  whenever it happened to contain the entity's stable Def name. The fixture now requires exact
+  equality with the localized visible-label-only fallback instead. The RimTest assembly was rebuilt;
+  a confirmation loaded rerun and the separate Anomaly-inactive profile remain manual. No runtime,
+  save, schema, or DLC-dependency behavior changed.
+
 - **2026-07-20 — Hardened A1.3 after combined adversarial review.** Localized containment fallback
   text now says the selected pawn recorded the breach instead of claiming every nearby, recent
   studier, or colony fallback personally witnessed it; player-visible fallback uses bounded entity
@@ -19,7 +28,7 @@
   Pure coverage now passes 398 assertions, including priority-before-cap, cache normalization,
   visible/raw entity separation, and real truncation. A new compiled RimTest pins idempotent abort and
   unhealthy close cleanup; the exception fixture proves the subject remained held before retry, and
-  fallback rejects raw Def names. Core and the 315-test RimTest assemblies rebuild with no warnings.
+  fallback pins visible-label-only text. Core and the 315-test RimTest assemblies rebuild with no warnings.
   The original user-confirmed active-DLC run remains 9/9; the new tenth scope fixture and separate
   DLC-off profile still require in-game execution. No Scribe key, schema version, save migration, or
   paid-DLC dependency changed.

@@ -1795,9 +1795,12 @@ between simultaneous fixtures, and rejects placements that could cross the map e
 or edifice, or wipe an existing thing. A failed loaded-game precondition also leaves teardown inert so
 the original assertion remains visible. The first in-game attempts exposed the former indoor-room and
 center-only placement assumptions. The corrected user-confirmed Anomaly-active loaded rerun passed
-the original 9/9 containment fixtures with 0 failures. The newly added scope-state fixture and the
-separate Anomaly-inactive profile remain manual in-game rows rather than being inferred from that
-earlier active-DLC pass.
+the original 9/9 containment fixtures with 0 failures. A later full 315-fixture Anomaly-active run
+passed 314 fixtures, including the newly added direct scope-state fixture. Its sole failure was a
+false-positive test assertion: a valid localized visible label happened to contain the entity's
+stable Def name. The fixture now requires exact equality with the localized visible-label-only
+fallback; its confirmation rerun and the separate Anomaly-inactive profile remain manual in-game
+rows.
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,

@@ -379,9 +379,11 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > are implemented. N3-A remains an explicit zero-candidate provider. Focused suites pass 398 Anomaly,
 > 708 catalog, 83 save-normalization, and 135 Narrative assertions; runtime and 315-test RimTest
 > assemblies build. The exact-only classifier and both hooks are Anomaly-gated. Loaded A1.1 state
-> coverage and the original nine A1.3 containment fixtures have passed in their recorded profiles;
-> A1.2 execution, the new containment scope-state fixture, and the separate no-Anomaly A1.3 profile
-> remain manual rows. No A2 source or hidden-state projection has moved ahead of schedule.
+> coverage and the original nine A1.3 containment fixtures passed in their recorded profiles. A later
+> full run passed 314/315, including the new containment scope-state fixture; its sole failure was a
+> false-positive visible-label assertion, now corrected to exact localized fallback equality. A1.2
+> execution, the A1.3 confirmation rerun, and the separate no-Anomaly A1.3 profile remain manual rows.
+> No A2 source or hidden-state projection has moved ahead of schedule.
 
 ### Implement in this exact order
 
