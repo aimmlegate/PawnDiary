@@ -376,8 +376,8 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > **Progress (2026-07-20): A1.0–A1.4 and A2.0 implemented; A2.1–A2.2 remain.** The primitive policy,
 > detached DTOs, exact study/containment/visible-creepjoiner hooks, fail-closed catalog route, seven-key
 > normalized save baseline, lifecycle-cleared bounded caches/scopes, and five package-gated prompt
-> groups are implemented. N3-A remains an explicit zero-candidate provider. Focused suites pass 472
-> Anomaly, 708 catalog, 115 save-normalization, and 135 Narrative assertions; runtime and 323-test
+> groups are implemented. N3-A remains an explicit zero-candidate provider. Focused suites pass 481
+> Anomaly, 708 catalog, 122 save-normalization, and 135 Narrative assertions; runtime and 327-test
 > RimTest assemblies build. The exact-only classifier and all hooks are Anomaly-gated. Loaded A1.1 state
 > coverage and the original nine A1.3 containment fixtures passed in their recorded profiles. A later
 > full run passed 314/315, including the new containment scope-state fixture; its sole failure was a
@@ -390,7 +390,10 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > first 323-fixture A2.0 active run passed 321 and reported two false-negative creepjoiner assertions:
 > each solo event existed, but the fixture incorrectly matched the visible subject as a pairwise
 > recipient. The corrected fixtures assert solo writer ownership plus the captured subject ID and
-> compile in the rebuilt 323-test assembly; their in-game rerun is pending. The separate Anomaly-inactive
+> compile in the rebuilt 323-test assembly. Adversarial hardening now promotes vanilla aggressive
+> rejection to truthful hostile state, enforces same-map speaker POV, releases nested visible outcomes
+> from letterless rejection, closes unverifiable committed markers as terminal barriers, and adds four
+> loaded fixtures; the expanded 327-test in-game rerun is pending. The separate Anomaly-inactive
 > profile, disposable missing study/containment-hook compatibility profiles, and real process-boundary
 > save/reload remain explicit deferred rows. No A2.1/A2.2 source or hidden-state projection moved ahead.
 

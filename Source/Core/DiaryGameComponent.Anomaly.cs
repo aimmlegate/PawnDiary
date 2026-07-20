@@ -242,8 +242,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Verifies one exact public lifecycle transition, commits its terminal visible history first,
-        /// then optionally dispatches one page for the pure policy's event-time writer.
+        /// Verifies one exact public lifecycle transition, commits its terminal history first (using a
+        /// blank replay barrier when visibility is untrusted), then optionally dispatches one page.
         /// </summary>
         internal void CompleteCreepJoinerOutcome(
             object trackerObject,

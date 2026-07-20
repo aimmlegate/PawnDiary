@@ -1223,6 +1223,23 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("arrival never downgrades terminal phase", AnomalyOutcomeTokens.Departed,
                 enriched.lastVisiblePhase);
             AssertTrue("arrival never clears terminal marker", enriched.terminal);
+
+            CreepJoinerArcSnapshot preJoinTerminal = Arc(AnomalyOutcomeTokens.Rejected, true);
+            preJoinTerminal.joinedTick = 0;
+            CreepJoinerArcSnapshot laterJoined = CreepJoinerOutcomePolicy.UpsertArrival(
+                preJoinTerminal, "Pawn_Creep", 999, "Arrival_AfterRejection");
+            AssertEqual("later arrival preserves the pre-join terminal tick sentinel", 0,
+                laterJoined.joinedTick);
+            AssertTrue("verified later arrival still preserves the terminal replay barrier",
+                laterJoined.terminal);
+
+            CreepJoinerArcSnapshot future = Arc(AnomalyOutcomeTokens.Aggressive, true);
+            future.schemaVersion = 9;
+            CreepJoinerArcSnapshot futureEnriched = CreepJoinerOutcomePolicy.UpsertArrival(
+                future, "Pawn_Creep", 999, "Arrival_Future");
+            AssertEqual("arrival upsert never downgrades a future row schema", 9,
+                futureEnriched.schemaVersion);
+            AssertTrue("arrival upsert preserves a future terminal barrier", futureEnriched.terminal);
         }
 
         private static void TestCreepJoinerVisibleOutcomes()
@@ -1251,11 +1268,16 @@ namespace DiaryAnomalyPolicyTests
             AssertTrue("unchanged tracker flag drops", !CreepJoinerOutcomePolicy.Plan(invalid, null, null).valid);
             invalid = CreepOutcome(AnomalyOutcomeTokens.Aggressive);
             invalid.transitionVerified = false;
-            AssertTrue("unverified aggressive commit drops",
-                !CreepJoinerOutcomePolicy.Plan(invalid, null, null).valid);
+            CreepJoinerOutcomePlan barrier = CreepJoinerOutcomePolicy.Plan(invalid, null, null);
+            AssertTrue("unverified aggressive commit becomes a silent terminal barrier",
+                barrier.valid && barrier.advanceArc && barrier.nextArc.terminal
+                    && barrier.nextArc.lastVisiblePhase.Length == 0 && !barrier.writePage);
             invalid = CreepOutcome(AnomalyOutcomeTokens.Departed);
             invalid.playerVisible = false;
-            AssertTrue("invisible departure drops", !CreepJoinerOutcomePolicy.Plan(invalid, null, null).valid);
+            barrier = CreepJoinerOutcomePolicy.Plan(invalid, null, null);
+            AssertTrue("invisible committed departure becomes a silent terminal barrier",
+                barrier.valid && barrier.advanceArc && barrier.nextArc.terminal
+                    && barrier.nextArc.lastVisiblePhase.Length == 0 && !barrier.writePage);
             invalid = CreepOutcome(AnomalyOutcomeTokens.Aggressive);
             invalid.visibleResultToken = CreepJoinerVisibleResultTokens.Leaving;
             AssertTrue("phase/result mismatch drops", !CreepJoinerOutcomePolicy.Plan(invalid, null, null).valid);
@@ -1286,11 +1308,35 @@ namespace DiaryAnomalyPolicyTests
             CreepJoinerOutcomeFacts rejection = CreepOutcome(AnomalyOutcomeTokens.Rejected);
             rejection.joinedBefore = false;
             rejection.writers.Add(CreepWriter("Nearby", nearby: true, distanceSquared: 1));
-            rejection.writers.Add(CreepWriter("Speaker", exactSpeaker: true, distanceSquared: 400));
+            rejection.writers.Add(CreepWriter(
+                "Speaker", exactSpeaker: true, onSubjectMap: true, distanceSquared: 400));
             CreepJoinerOutcomePlan plan = CreepJoinerOutcomePolicy.Plan(rejection, null, null);
             AssertEqual("pre-join rejection uses exact speaker", "Speaker", plan.selectedWriter.pawnId);
             AssertEqual("pre-join rejection role is speaker", AnomalyWitnessRoleTokens.Speaker,
                 plan.selectedWriter.roleToken);
+
+            rejection.writers.Clear();
+            rejection.writers.Add(CreepWriter("OffMapSpeaker", exactSpeaker: true));
+            rejection.writers.Add(CreepWriter("TruthfulNearby", nearby: true, distanceSquared: 4));
+            plan = CreepJoinerOutcomePolicy.Plan(rejection, null, null);
+            AssertEqual("off-map speaker cannot claim witnessed POV", "TruthfulNearby",
+                plan.selectedWriter.pawnId);
+            rejection.writers.RemoveAt(1);
+            AssertTrue("off-map speaker without a nearby witness produces no page",
+                !CreepJoinerOutcomePolicy.Plan(rejection, null, null).writePage);
+
+            CreepJoinerOutcomeFacts aggressiveRejection = CreepOutcome(
+                AnomalyOutcomeTokens.Aggressive);
+            aggressiveRejection.aggressionFollowedRejection = true;
+            aggressiveRejection.writers.Add(CreepWriter(
+                "RejectionSpeaker", exactSpeaker: true, onSubjectMap: true));
+            aggressiveRejection.writers.Add(CreepWriter(
+                "NearbyAfterRejection", nearby: true, distanceSquared: 1));
+            plan = CreepJoinerOutcomePolicy.Plan(aggressiveRejection, null, null);
+            AssertEqual("aggressive rejection keeps the truthful same-map speaker", "RejectionSpeaker",
+                plan.selectedWriter.pawnId);
+            AssertEqual("aggressive rejection persists the strongest visible phase",
+                AnomalyOutcomeTokens.Aggressive, plan.nextArc.lastVisiblePhase);
 
             CreepJoinerOutcomeFacts departure = CreepOutcome(AnomalyOutcomeTokens.Departed);
             departure.joinedBefore = true;
@@ -1360,6 +1406,11 @@ namespace DiaryAnomalyPolicyTests
                     && context.IndexOf("infection=", StringComparison.OrdinalIgnoreCase) < 0);
             AssertEqual("invalid plan has no prompt context", string.Empty,
                 CreepJoinerOutcomeContextFormatter.Format(facts, new CreepJoinerOutcomePlan()));
+
+            facts.aggressionFollowedRejection = true;
+            context = CreepJoinerOutcomeContextFormatter.Format(facts, plan);
+            AssertTrue("aggressive rejection context preserves visible rejection provenance",
+                context.Contains("rejection_response=true"));
         }
 
         private static AnomalyStudyFacts Study()
@@ -1399,7 +1450,8 @@ namespace DiaryAnomalyPolicyTests
             int distanceSquared = -1,
             bool exactSpeaker = false,
             bool subject = false,
-            string tie = null)
+            string tie = null,
+            bool onSubjectMap = false)
         {
             return new CreepJoinerWriterCandidate
             {
@@ -1407,7 +1459,7 @@ namespace DiaryAnomalyPolicyTests
                 eligible = true,
                 exactSpeaker = exactSpeaker,
                 subject = subject,
-                onSubjectMap = nearby || subject,
+                onSubjectMap = onSubjectMap || nearby || subject,
                 nearby = nearby,
                 distanceSquared = distanceSquared,
                 tieBreakKey = tie ?? id

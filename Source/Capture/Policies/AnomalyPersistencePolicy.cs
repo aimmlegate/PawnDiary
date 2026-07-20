@@ -84,16 +84,15 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
-        /// Advances a pre-A2 save only while Anomaly is available. Current joined creepjoiners become
-        /// state-only rows; no arrival event, visible outcome, secret, or causality is manufactured.
+        /// Advances a study-schema-1 pre-A2 save only while Anomaly is available. Current joined
+        /// creepjoiners become state-only rows; no event, outcome, secret, or causality is manufactured.
         /// </summary>
         public static AnomalyPersistentStateSnapshot BaselineCreepJoiners(
             AnomalyPersistentStateSnapshot source,
             CreepJoinerLegacyBaselineFacts facts)
         {
             AnomalyPersistentStateSnapshot result = Normalize(source);
-            if (result.schemaVersion >= CurrentSchemaVersion
-                || result.schemaVersion > StudySchemaVersion
+            if (result.schemaVersion != StudySchemaVersion
                 || facts == null || !facts.anomalyAvailable)
             {
                 return result;
@@ -111,7 +110,8 @@ namespace PawnDiary.Capture
                 merged.Add(new CreepJoinerArcSnapshot
                 {
                     pawnId = row.pawnId,
-                    // These four values are intentionally not imported from a baseline scan.
+                    // Only identity and joinedTick are imported. Event IDs, a terminal outcome, and
+                    // any stronger phase are intentionally not manufactured by a baseline scan.
                     arrivalEventId = string.Empty,
                     joinedTick = row.joinedTick,
                     lastVisiblePhase = CreepJoinerPhaseTokens.Joined,

@@ -33,7 +33,9 @@ namespace PawnDiary
         public int containmentDedupTicks = 2500;
         public int recentStudierMaxAgeTicks = 60000;
 
-        // Phase A2.0 consumes the creepjoiner rows; ghoul/void remain frozen for later phases.
+        // Phase A2.0 consumes creepjoiner output/dedup/radius. Retention is reserved until liveness-
+        // aware pruning can preserve replay safety; values above one witness remain accepted for the
+        // frozen schema even though A2.0 deliberately emits at most one POV.
         public bool creepJoinerEnabled = true;
         public int creepJoinerOutcomeDedupTicks = 2500;
         public int creepJoinerArcRetentionTicks = 3600000;

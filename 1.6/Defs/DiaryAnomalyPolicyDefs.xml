@@ -20,11 +20,12 @@
     <containmentDedupTicks>2500</containmentDedupTicks>
     <recentStudierMaxAgeTicks>60000</recentStudierMaxAgeTicks>
 
-    <!-- A2.0 consumes the creepjoiner rows; ghoul/void remain frozen for later phases. -->
+    <!-- A2.0 emits at most one POV. Retention is reserved until liveness-aware pruning can preserve
+         replay safety; ghoul/void remain frozen for later phases. -->
     <creepJoinerEnabled>true</creepJoinerEnabled>
     <creepJoinerOutcomeDedupTicks>2500</creepJoinerOutcomeDedupTicks>
-    <creepJoinerArcRetentionTicks>3600000</creepJoinerArcRetentionTicks>
-    <creepJoinerMaxWitnesses>2</creepJoinerMaxWitnesses>
+    <creepJoinerArcRetentionTicks>3600000</creepJoinerArcRetentionTicks><!-- reserved; age-only pruning is inactive -->
+    <creepJoinerMaxWitnesses>2</creepJoinerMaxWitnesses><!-- values above one are inert in single-POV A2.0 -->
     <creepJoinerWitnessRadius>12</creepJoinerWitnessRadius>
     <ghoulTransformationEnabled>true</ghoulTransformationEnabled>
     <voidOutcomeEnabled>true</voidOutcomeEnabled>

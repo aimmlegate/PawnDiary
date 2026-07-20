@@ -25,6 +25,8 @@ namespace PawnDiary.RimTests
         private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
         private static readonly MethodInfo ApplyAnomalyStateMethod =
             typeof(DiaryGameComponent).GetMethod("ApplyAnomalyState", PrivateInstance);
+        private static readonly MethodInfo BootstrapAnomalyMethod =
+            typeof(DiaryGameComponent).GetMethod("BootstrapAnomalyForLoadedSave", PrivateInstance);
 
         private static PawnDiaryRimTestScope scope;
         private static DiaryAnomalyPolicyDef policyDef;
@@ -200,6 +202,66 @@ namespace PawnDiary.RimTests
                 "A repeated no-op rejection rewrote the terminal event identity.");
         }
 
+        /// <summary>An aggressive rejection writes once but records the pawn's strongest visible state.</summary>
+        [Test]
+        public static void AggressiveRejectionRecordsVisibleHostilityOnce()
+        {
+            if (!RequireAnomalyOrReport(nameof(AggressiveRejectionRecordsVisibleHostilityOnce))) return;
+            Pawn subject = CreateCreepJoiner("AggressiveRejection");
+            Pawn speaker = CreateWriterAt(subject.Position);
+            subject.creepjoiner.speaker = speaker;
+
+            DiaryEvent page = scope.FireAndRequireEvent(
+                () => subject.creepjoiner.DoRejection(),
+                AnomalyEventDefNames.CreepJoinerOutcome,
+                speaker,
+                null,
+                rejectOtherTestPawnEvents: true);
+            RequireContext(page, "creepjoiner_phase=aggressive");
+            RequireContext(page, "visible_result=hostile");
+            RequireContext(page, "rejection_response=true");
+            RequireContext(page, "witness_role=speaker");
+            CreepJoinerArcSnapshot arc = RequireOnlyArc(subject);
+            PawnDiaryRimTestScope.Require(subject.Faction?.IsPlayer != true
+                    && arc.terminal
+                    && arc.lastVisiblePhase == AnomalyOutcomeTokens.Aggressive
+                    && arc.lastVisibleEventId == page.eventId
+                    && CreepJoinerOutcomeScope.CountForTests == 0,
+                "Aggressive rejection did not persist its visible hostile terminal state exactly once.");
+        }
+
+        /// <summary>A letterless modded rejection cannot suppress its nested visible aggression owner.</summary>
+        [Test]
+        public static void LetterlessRejectionReleasesNestedVisibleAggression()
+        {
+            if (!RequireAnomalyOrReport(nameof(LetterlessRejectionReleasesNestedVisibleAggression))) return;
+            Pawn subject = CreateCreepJoiner("AggressiveRejection");
+            Pawn writer = CreateWriterAt(subject.Position);
+            CreepJoinerRejectionDef rejection = subject.creepjoiner.rejection;
+            bool originalHasLetter = rejection.hasLetter;
+            try
+            {
+                rejection.hasLetter = false;
+                DiaryEvent page = scope.FireAndRequireEvent(
+                    () => subject.creepjoiner.DoRejection(),
+                    AnomalyEventDefNames.CreepJoinerOutcome,
+                    writer,
+                    null,
+                    rejectOtherTestPawnEvents: true);
+                RequireContext(page, "creepjoiner_phase=aggressive");
+                RequireContext(page, "visible_result=hostile");
+                PawnDiaryRimTestScope.Require(
+                    !(page.gameContext ?? string.Empty).Contains("rejection_response=true")
+                        && RequireOnlyArc(subject).lastVisibleEventId == page.eventId
+                        && CreepJoinerOutcomeScope.CountForTests == 0,
+                    "A letterless outer rejection swallowed or mislabeled its nested visible owner.");
+            }
+            finally
+            {
+                rejection.hasLetter = originalHasLetter;
+            }
+        }
+
         /// <summary>A real hostile transition writes only from the exact nearby eligible witness.</summary>
         [Test]
         public static void VisibleAggressionUsesNearbyWitnessAndDoesNotReplay()
@@ -224,6 +286,23 @@ namespace PawnDiary.RimTests
                     && RequireOnlyArc(subject).lastVisiblePhase == AnomalyOutcomeTokens.Aggressive,
                 "The exact aggression method did not commit its visible hostile transition.");
             scope.RequireNoNewEvent(() => subject.creepjoiner.DoAggressive());
+        }
+
+        /// <summary>Disabling creepjoiner pages still consumes one committed visible terminal transition.</summary>
+        [Test]
+        public static void DisabledOutputStillCommitsTerminalHistory()
+        {
+            if (!RequireAnomalyOrReport(nameof(DisabledOutputStillCommitsTerminalHistory))) return;
+            Pawn subject = CreateJoinedCreepJoiner("Departure");
+            CreateWriterAt(subject.Position);
+            policyDef.creepJoinerEnabled = false;
+
+            scope.RequireNoNewEvent(() => subject.creepjoiner.DoAggressive());
+            CreepJoinerArcSnapshot arc = RequireOnlyArc(subject);
+            PawnDiaryRimTestScope.Require(arc.terminal
+                    && arc.lastVisiblePhase == AnomalyOutcomeTokens.Aggressive
+                    && arc.lastVisibleEventId.Length == 0,
+                "Disabled creepjoiner output did not consume the committed terminal transition.");
         }
 
         /// <summary>A joined pawn may narrate its own departure only from the eligible before snapshot.</summary>
@@ -260,6 +339,32 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 scope.Component.AnomalyStateSnapshotForTests().creepJoinerArcs.Count == 0,
                 "A disabled/no-op tracker call manufactured terminal continuity.");
+        }
+
+        /// <summary>The real loaded-save scan imports a joined pawn as state only, never as a page.</summary>
+        [Test]
+        public static void LegacyBootstrapImportsLiveJoinedCreepJoinerStateOnly()
+        {
+            if (!RequireAnomalyOrReport(nameof(LegacyBootstrapImportsLiveJoinedCreepJoinerStateOnly))) return;
+            PawnDiaryRimTestScope.Require(BootstrapAnomalyMethod != null,
+                "Could not resolve the real loaded-save Anomaly bootstrap method.");
+            Pawn subject = CreateJoinedCreepJoiner("Departure");
+            ApplyState(new AnomalyPersistentStateSnapshot
+            {
+                schemaVersion = AnomalyPersistencePolicy.StudySchemaVersion
+            });
+
+            scope.RequireNoNewEvent(() => BootstrapAnomalyMethod.Invoke(scope.Component, null));
+            AnomalyPersistentStateSnapshot state = scope.Component.AnomalyStateSnapshotForTests();
+            CreepJoinerArcSnapshot arc = FindArc(state.creepJoinerArcs, subject);
+            PawnDiaryRimTestScope.Require(
+                state.schemaVersion == AnomalyPersistencePolicy.CurrentSchemaVersion
+                    && arc != null
+                    && arc.lastVisiblePhase == CreepJoinerPhaseTokens.Joined
+                    && !arc.terminal
+                    && arc.arrivalEventId.Length == 0
+                    && arc.lastVisibleEventId.Length == 0,
+                "The real old-save scan failed to create one state-only joined creepjoiner baseline.");
         }
 
         /// <summary>Every existing Anomaly reset boundary clears the bounded rejection owner stack.</summary>
@@ -325,6 +430,14 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(arcs.Count == 1 && arcs[0].pawnId == pawnId,
                 "Expected exactly one creepjoiner arc for the disposable subject.");
             return arcs[0];
+        }
+
+        private static CreepJoinerArcSnapshot FindArc(
+            List<CreepJoinerArcSnapshot> arcs,
+            Pawn subject)
+        {
+            string pawnId = subject?.GetUniqueLoadID() ?? string.Empty;
+            return arcs?.FirstOrDefault(row => row != null && row.pawnId == pawnId);
         }
 
         private static void RequireExactPatch(string methodName, bool requireFinalizer)

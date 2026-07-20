@@ -239,27 +239,33 @@ runner log is claimed. The separate Anomaly-inactive profile, disposable missing
 compatibility profiles, and real process-boundary save/reload remain deferred and unclaimed; follow
 `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
-Master Wave 7 / Anomaly A2.0 raises `DiaryAnomalyPolicyTests` to 472 assertions and
-`DiarySaveNormalizationTests` to 115. Pure cases cover exact `creepjoiner=true` parsing and canonical
-arrival upsert, all three visible outcome/result mappings, no-transition/unverifiable/nested drops,
+Master Wave 7 / Anomaly A2.0 plus adversarial hardening raises `DiaryAnomalyPolicyTests` to 481
+assertions and `DiarySaveNormalizationTests` to 122. Pure cases cover exact `creepjoiner=true` parsing
+and canonical/future/tick-zero arrival upsert, all three visible outcome/result mappings, no-transition,
+unverifiable/invisible terminal barriers, nested drops,
 settings-independent terminal history, replay suppression, speaker/pre-departure-subject/nearby writer
-roles, deterministic ties/radius/input and retained-candidate caps, delimiter sanitization, and explicit
+roles, same-map speaker truth, aggressive-rejection provenance, deterministic ties/radius/input and
+retained-candidate caps, delimiter sanitization, and explicit
 absence of secret schema fields. Save cases cover the frozen list key and seven-field record,
-null/blank/malformed/negative/invalid/future rows, deterministic duplicate merge, 4,096-input/512-output
-bounds, active state-only old-save baselining, and inactive deferral.
+null/blank/malformed/negative/invalid/future rows, deterministic current/future duplicate merge,
+4,096-input/512-output bounds, ordered schema-0→1→2 migration, active state-only old-save baselining,
+and inactive deferral.
 
-`PawnDiaryCreepJoinerFlowTests` adds seven loaded fixtures, bringing the separate RimTest assembly to
-323 compiled tests. They pin three independent active/inactive hook-health flags, exact public
+`PawnDiaryCreepJoinerFlowTests` now has eleven loaded fixtures, bringing the separate RimTest assembly
+to 327 compiled tests. They pin three independent active/inactive hook-health flags, exact public
 parameterless registration, deliberate absence of a `DoDownside` patch, canonical and repeated arrival,
-real visible rejection with nested `DoLeave` ownership, real aggression and joined departure, speaker/
-nearby/subject roles, repeat/no-op silence, and lifecycle reset. The existing component-state fixture
+real visible rejection with nested `DoLeave` ownership, vanilla aggressive-rejection promotion,
+letterless rejection releasing nested visible aggression, real aggression and joined departure,
+disabled-output terminal history, the live joined-pawn old-save scan, speaker/nearby/subject roles,
+repeat/no-op silence, and lifecycle reset. The existing component-state fixture
 now round-trips and independently deep-loads the seventh `anomalyCreepJoinerArcs` key. These A2.0
 fixtures compile against installed RimWorld 1.6 and RimTest Redux. The first user-provided active run
 passed 321/323 overall. Its two failures were false-negative rejection/aggression assertions: the
 shared guard had found exactly one new event, but `FireAndRequireEvent` was incorrectly told to match
 the visible creepjoiner as `recipientPawnId` on a solo witness page. Both fixtures now match the solo
-writer and independently require `creepjoiner_subject_id` in captured context; the corrected loaded
-rerun remains open. The same three deferred external profiles remain: separate
+writer and independently require `creepjoiner_subject_id` in captured context. The source has since
+expanded to 327 fixtures; its new loaded rerun remains open and no 327 execution is claimed. The same
+three deferred external profiles remain: separate
 Anomaly-inactive, disposable missing study/containment-hook compatibility, and real process-boundary
 save/reload.
 
