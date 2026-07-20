@@ -232,7 +232,7 @@ namespace PawnDiary.RimTests
 
             DiaryEvent page = scope.FireAndRequireEvent(
                 () => RunSuccessfulSurgicalInspection(subject, surgeon),
-                CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName,
+                AnomalySurgeryTaleOwnershipPolicy.DidSurgeryDefName,
                 surgeon,
                 subject,
                 rejectOtherTestPawnEvents: true);
@@ -254,7 +254,7 @@ namespace PawnDiary.RimTests
 
             DiaryEvent page = scope.FireAndRequireEvent(
                 () => RunSuccessfulSurgicalInspection(subject, surgeon),
-                CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName,
+                AnomalySurgeryTaleOwnershipPolicy.DidSurgeryDefName,
                 surgeon,
                 subject,
                 rejectOtherTestPawnEvents: true);
@@ -305,7 +305,7 @@ namespace PawnDiary.RimTests
             Pawn subject = CreateCreepJoiner("Departure", "PsychicAgony");
             Pawn surgeon = CreateWriterAt(subject.Position);
             TaleDef didSurgery = DefDatabase<TaleDef>.GetNamedSilentFail(
-                CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName);
+                AnomalySurgeryTaleOwnershipPolicy.DidSurgeryDefName);
             PawnDiaryRimTestScope.Require(didSurgery != null,
                 "The vanilla DidSurgery Tale was unavailable.");
 
@@ -323,7 +323,7 @@ namespace PawnDiary.RimTests
             DiaryEvent fallback = scope.FireAndRequireEvent(
                 () => returned = SurgicalRecipeFinalizerMethod.Invoke(
                     null, new object[] { original, capture }) as Exception,
-                CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName,
+                AnomalySurgeryTaleOwnershipPolicy.DidSurgeryDefName,
                 surgeon,
                 null,
                 rejectOtherTestPawnEvents: true);
@@ -341,14 +341,14 @@ namespace PawnDiary.RimTests
             Pawn subject = CreateJoinedCreepJoiner("Departure", "PsychicAgony");
             Pawn surgeon = CreateWriterAt(subject.Position);
             TaleDef didSurgery = DefDatabase<TaleDef>.GetNamedSilentFail(
-                CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName);
+                AnomalySurgeryTaleOwnershipPolicy.DidSurgeryDefName);
             PawnDiaryRimTestScope.Require(didSurgery != null
                     && CreepJoinerSurgicalInspectionScope.CountForTests == 0,
                 "The unscoped Tale fixture lacked DidSurgery or started with stale ownership.");
 
             DiaryEvent fallback = scope.FireAndRequireEvent(
                 () => TaleRecorder.RecordTale(didSurgery, surgeon, subject),
-                CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName,
+                AnomalySurgeryTaleOwnershipPolicy.DidSurgeryDefName,
                 surgeon,
                 subject,
                 rejectOtherTestPawnEvents: true);

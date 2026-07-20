@@ -1,6 +1,6 @@
-// Anomaly persistence, silent phase baselining, and exact study/visible-creepjoiner transaction
-// ownership, including non-terminal surgical disclosure. Live DLC objects are read only by
-// DlcContext; this partial commits detached history before it optionally dispatches a page.
+// Anomaly persistence, silent phase baselining, and exact study/visible-creepjoiner/ghoul
+// transaction ownership. Live DLC objects are read only by DlcContext; this partial commits any
+// detached history before it optionally dispatches a page.
 using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
@@ -348,6 +348,42 @@ namespace PawnDiary
             arc.lastVisibleEventId = signal.CreatedEvent.eventId ?? string.Empty;
             ReplaceCreepJoinerArc(afterEvent.creepJoinerArcs, arc);
             ApplyAnomalyState(afterEvent);
+            return plan;
+        }
+
+        /// <summary>
+        /// Verifies one exact normally returned infusion and reports whether the dedicated event
+        /// really exists, so the patch can suppress or release DidSurgery without losing a page.
+        /// </summary>
+        internal GhoulTransformationPlan CompleteGhoulTransformation(
+            Pawn subject,
+            Pawn surgeon,
+            GhoulTransformationCapture capture,
+            out bool dedicatedEventCreated)
+        {
+            dedicatedEventCreated = false;
+            GhoulTransformationFacts facts;
+            if (!DlcContext.TryCompleteGhoulTransformation(
+                    subject, surgeon, capture, out facts)
+                || facts == null) return null;
+
+            AnomalyPolicySnapshot policy = DiaryAnomalyPolicy.Snapshot();
+            GhoulTransformationPlan plan = GhoulTransformationPolicy.Plan(facts, policy);
+            if (!plan.writePage || plan.selectedWriters.Count == 0) return plan;
+
+            List<Pawn> writers = new List<Pawn>();
+            for (int i = 0; i < plan.selectedWriters.Count; i++)
+            {
+                Pawn writer = capture.ResolveWriter(plan.selectedWriters[i].pawnId);
+                if (writer == null) return plan;
+                writers.Add(writer);
+            }
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyAnomalyEvent(
+                AnomalyEventDefNames.GhoulTransformation);
+            GhoulTransformationSignal signal = new GhoulTransformationSignal(
+                facts, plan, policy, group, writers, subject, surgeon);
+            Dispatch(signal);
+            dedicatedEventCreated = signal.CreatedEvent != null;
             return plan;
         }
 

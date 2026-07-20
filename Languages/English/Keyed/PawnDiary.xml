@@ -1596,7 +1596,7 @@
   <PawnDiary.Event.Anomaly.CreepJoiner.Surgical.SurgeonFallback>{0} found that the surgical inspection of {1} disclosed something abnormal.</PawnDiary.Event.Anomaly.CreepJoiner.Surgical.SurgeonFallback>
   <PawnDiary.Event.Anomaly.CreepJoiner.Surgical.SubjectFallback>{0} underwent an inspection by {1} that disclosed something abnormal.</PawnDiary.Event.Anomaly.CreepJoiner.Surgical.SubjectFallback>
   <PawnDiary.Event.Anomaly.Ghoul.Label>Ghoul transformation</PawnDiary.Event.Anomaly.Ghoul.Label>
-  <PawnDiary.Event.Anomaly.Ghoul.SubjectFallback>{0} underwent the completed infusion and became a ghoul.</PawnDiary.Event.Anomaly.Ghoul.SubjectFallback>
+  <PawnDiary.Event.Anomaly.Ghoul.SubjectFallback>{0} underwent the infusion performed by {1} and became a ghoul.</PawnDiary.Event.Anomaly.Ghoul.SubjectFallback>
   <PawnDiary.Event.Anomaly.Ghoul.SurgeonFallback>{0} completed the infusion that transformed {1} into a ghoul.</PawnDiary.Event.Anomaly.Ghoul.SurgeonFallback>
   <PawnDiary.Event.Anomaly.Void.Label>Answer to the void</PawnDiary.Event.Anomaly.Void.Label>
   <PawnDiary.Event.Anomaly.Void.EmbracedFallback>{0} chose to embrace the void.</PawnDiary.Event.Anomaly.Void.EmbracedFallback>

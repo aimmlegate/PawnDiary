@@ -84,6 +84,13 @@ namespace PawnDiary.Capture
             return plan;
         }
 
+        /// <summary>True only when this plan proves the dedicated event owns DidSurgery.</summary>
+        public static bool OwnsDidSurgery(CreepJoinerSurgicalDisclosurePlan plan)
+        {
+            return plan != null && plan.valid && plan.advanceArc && !plan.replaySuppressed
+                && plan.phase == AnomalyOutcomeTokens.SurgicalReveal;
+        }
+
         private static bool ValidDisclosure(CreepJoinerSurgicalDisclosureFacts facts)
         {
             return facts != null && facts.tick >= 0 && facts.surgeryCompleted

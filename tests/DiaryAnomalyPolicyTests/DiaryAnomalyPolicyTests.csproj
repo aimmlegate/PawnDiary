@@ -19,7 +19,9 @@
     <Compile Include="..\..\Source\Capture\Policies\CreepJoinerOutcomeContextFormatter.cs" Link="CreepJoinerOutcomeContextFormatter.cs" />
     <Compile Include="..\..\Source\Capture\Policies\CreepJoinerSurgicalDisclosurePolicy.cs" Link="CreepJoinerSurgicalDisclosurePolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\CreepJoinerSurgicalDisclosureContextFormatter.cs" Link="CreepJoinerSurgicalDisclosureContextFormatter.cs" />
-    <Compile Include="..\..\Source\Capture\Policies\CreepJoinerSurgeryTaleOwnershipPolicy.cs" Link="CreepJoinerSurgeryTaleOwnershipPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\AnomalySurgeryTaleOwnershipPolicy.cs" Link="AnomalySurgeryTaleOwnershipPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\GhoulTransformationPolicy.cs" Link="GhoulTransformationPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\GhoulTransformationContextFormatter.cs" Link="GhoulTransformationContextFormatter.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyTaleOwnershipPolicy.cs" Link="AnomalyTaleOwnershipPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyPersistencePolicy.cs" Link="AnomalyPersistencePolicy.cs" />
     <Compile Include="..\..\Source\Generation\AnomalyStudySuppressionCache.cs" Link="AnomalyStudySuppressionCache.cs" />

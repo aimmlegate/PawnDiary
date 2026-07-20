@@ -56,7 +56,7 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including the explicit zero-candidate N3-A provider seam), Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/` (inert until wired). |
 | `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, the optional Anomaly monolith-knowledge snapshot, visible-only creepjoiner arc rows, and the `MemoryFragment` pawn-memory row. |
-| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, defensive exact Anomaly study, containment-escape, creepjoiner rejection/aggression/departure, and surgical recipe/tracker/result seams, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment/permit seams and state-transition-guarded Quest lifecycle hooks. |
+| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, defensive exact Anomaly study, containment-escape, creepjoiner rejection/aggression/departure, surgical inspection, and ghoul-infusion seams, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment/permit seams and state-transition-guarded Quest lifecycle hooks. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper projects plus the optional in-game `PawnDiary.RimTest` smoke suite. |
@@ -1866,7 +1866,26 @@ English/Russian fallback expose only generic disclosure, visible subject/surgeon
 truthful `surgeon`/`subject` roles—never the disclosed downside/benefit, letter text, hidden host state,
 or a terminal claim.
 
-The A2.1 delivery raises focused coverage to 532
+For A2.2, an independent Anomaly-gated registration pins the installed public
+`Recipe_GhoulInfusion.ApplyOnPawn(Pawn,BodyPartRecord,Pawn,List<Thing>,Bill)` signature and parameter
+names. Vanilla's installed order is failure check → instant ghoul mutation → faction adjustment →
+surgeon-first/subject-second `DidSurgery`. The prefix therefore freezes exact subject/surgeon IDs,
+visible labels, eligibility, tick, and guarded `wasGhoul` through `DlcContext`; only after a normal
+return does `DlcContext` copy the guarded `isGhoul` post-state into detached facts. The pure policy
+accepts only `!wasGhoul && isGhoul`, selects the eligible surgeon first and eligible subject second
+under the XML one/two-writer cap, excludes a duplicate same-pawn role, and never invents a witness.
+
+The ghoul scope and A2.1 scope refuse to overlap. Only the exact active surgeon-first/subject-second
+`DidSurgery` may be parked, and it is discarded only after the dedicated transformation event really
+exists. Failed surgery, already-ghoul calls/upgrades, exceptions, missing authors, correlation or hook
+drift, disabled output, no eligible POV, and writer resolution failure release the unchanged generic
+signal. Lifecycle reset/finalizer cleanup removes all transient ownership. No ghoul marker is saved:
+current ghouls are baseline state, so resurrection, hunger, combat, injuries, body-part changes, and
+old-save loads create no transformation catch-up page. Prompt context contains only
+`ghoul_transformation`, `transformation=ghoul`, exact visible role identities/labels,
+`irreversible_choice=true`, and truthful writer roles.
+
+The A2.2 delivery raises focused coverage to 567
 Anomaly-policy/XML/cache/context and 135 save-normalization assertions. The A1.4 cases still pin batched recent-
 studier matching, ordering equivalence when a large eligible roster is capped, and a strict input-
 inspection bound for malformed saved histories; A2.0 adds all three visible phases, arrival continuity,
@@ -1875,8 +1894,10 @@ arc normalization, exact/future upserts, future-duplicate barriers, and ordered 
 baselines. A2.1 adds disclosure/no-disclosure, visibility, malformed/replay/terminal ordering,
 surgeon/subject/cap roles, same-pawn exclusion, mismatched-arc protection, expiry-boundary ownership,
 spoiler-firewall formatting, exact Tale ownership/fail-open behavior, blank-barrier event-ID clearing,
-and same-schema load/downgrade coverage. The 708 catalog and 135 Narrative suites remain green. The runtime
-DLL and 335-test RimTest assembly build against the installed 1.6 API. The first user-provided
+and same-schema load/downgrade coverage. A2.2 adds malformed/failure/already-ghoul transition rejection,
+exact writer order and caps, same-pawn exclusion, disabled output, spoiler-safe context, and every exact
+Tale fail-open boundary. The 708 catalog and 135 Narrative suites remain green. The runtime DLL and
+347-test RimTest assembly build against the installed 1.6 API. The first user-provided
 335-fixture run passed 333 tests and every embedded A2.0 fixture, closing the earlier expanded
 327-fixture acceptance debt. Its only failures were the two A2.1 joined-subject pair assertions: each
 strict guard had already counted exactly one dedicated event, but shared setup still forced A2.0's old
@@ -1884,8 +1905,13 @@ one-writer cap, so the policy truthfully emitted surgeon-only. Setup now uses th
 ceiling. The next user-provided run passed 334/335 and confirmed that correction; its sole failure came
 after finding the exact pair page, when the live fixture expected nonexistent `initiator_role` /
 `recipient_role` keys. The frozen schema and pure suite use `initiator_witness_role` /
-`recipient_witness_role`, which the fixture now asserts. The corrected 335-fixture rerun remains
-pending, and no production behavior changed.
+`recipient_witness_role`, which the fixture now asserts. The user-confirmed corrected rerun passed
+335/335, closing the A2.1 loaded acceptance debt; no production behavior changed.
+Twelve new A2.2 fixtures compile the real infusion success/failure paths, already-ghoul behavior,
+pair/solo role truth, disabled output, exceptional/unscoped Tale fallback, lifecycle/mutual-exclusion
+cleanup, exact registration/no-DLC gating, actual Scribe/no-replay behavior, and a later ordinary injury
+route. No loaded RimWorld process/profile was available for this change, so compilation is not reported
+as execution and the expanded 347-fixture in-game run remains open.
 Compiled smoke coverage pins the five Def/package/classifier rows plus exact study, containment, and
 creepjoiner method/signature ownership. Three loaded state fixtures additionally drive the actual
 seven-key component Scribe contract, missing-key defaults, deep monolith/creepjoiner rows, DLC-off deferred migration,
@@ -1928,7 +1954,7 @@ case, confirming capture rather than absence; setup now uses the supported two-w
 user-provided run passed 334/335, confirming that correction and every other fixture. Its sole failure
 was another test-only assertion after the exact pair page had been found: the fixture used shortened
 role-context keys instead of the frozen `initiator_witness_role` / `recipient_witness_role` schema.
-Those assertions now match the canonical keys; the corrected 335-fixture rerun remains pending. Three
+Those assertions now match the canonical keys; the user-confirmed corrected rerun passed 335/335. Three
 external/manual profiles remain explicitly
 deferred: a separate Anomaly-inactive run,
 disposable missing study/containment-hook compatibility profiles, and a real process-boundary save/

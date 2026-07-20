@@ -1,6 +1,6 @@
-// Defensive registration for exact Anomaly study, containment, and visible creepjoiner seams. The
-// paid DLC's C# types exist in every RimWorld installation, but these hooks register only when
-// Anomaly is active; live DLC reads are forwarded as objects to DlcContext and vanilla always continues.
+// Defensive registration for exact Anomaly study, containment, visible creepjoiner, and ghoul
+// transformation seams. The paid DLC's C# types exist in every RimWorld installation, but these
+// hooks register only when Anomaly is active; DlcContext owns live reads and vanilla always continues.
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -24,6 +24,8 @@ namespace PawnDiary
             "RimWorld.Pawn_CreepJoinerTracker";
         private const string SurgicalInspectionRecipeTypeName =
             "RimWorld.Recipe_SurgicalInspection";
+        private const string GhoulInfusionRecipeTypeName =
+            "RimWorld.Recipe_GhoulInfusion";
 
         /// <summary>True only when the exact A1.2 study method was found and patched.</summary>
         public static bool StudyHookReady { get; private set; }
@@ -43,6 +45,9 @@ namespace PawnDiary
         /// <summary>True only when the exact recipe, Pawn-result, and tracker disclosure seams are patched.</summary>
         public static bool CreepJoinerSurgicalHookReady { get; private set; }
 
+        /// <summary>True only when the exact ghoul infusion ApplyOnPawn signature was patched.</summary>
+        public static bool GhoulTransformationHookReady { get; private set; }
+
         /// <summary>
         /// Registers the exact signature defensively. A changed/missing target disables only study
         /// milestones and leaves vanilla study and the generic StudiedEntity Tale untouched.
@@ -55,12 +60,14 @@ namespace PawnDiary
             CreepJoinerAggressionHookReady = false;
             CreepJoinerDepartureHookReady = false;
             CreepJoinerSurgicalHookReady = false;
+            GhoulTransformationHookReady = false;
             if (harmony == null || !ModsConfig.AnomalyActive) return;
 
             TryRegisterStudy(harmony);
             TryRegisterContainment(harmony);
             TryRegisterCreepJoinerOutcomes(harmony);
             TryRegisterCreepJoinerSurgicalInspection(harmony);
+            TryRegisterGhoulTransformation(harmony);
         }
 
         private static void TryRegisterStudy(Harmony harmony)
@@ -268,6 +275,47 @@ namespace PawnDiary
                 // health flag, leaving the ordinary DidSurgery route untouched.
                 CreepJoinerSurgicalHookReady = false;
                 WarnMissingSurgical("registration failed: " + exception.GetType().Name + ": "
+                    + Limit(exception.Message));
+            }
+        }
+
+        private static void TryRegisterGhoulTransformation(Harmony harmony)
+        {
+            try
+            {
+                Type recipeType = AccessTools.TypeByName(GhoulInfusionRecipeTypeName);
+                MethodInfo recipe = recipeType == null ? null : AccessTools.DeclaredMethod(
+                    recipeType,
+                    "ApplyOnPawn",
+                    new[]
+                    {
+                        typeof(Pawn), typeof(BodyPartRecord), typeof(Pawn),
+                        typeof(List<Thing>), typeof(Bill)
+                    }) as MethodInfo;
+                if (recipe == null || !recipe.IsPublic || recipe.ReturnType != typeof(void)
+                    || !ParametersNamed(
+                        recipe, "pawn", "part", "billDoer", "ingredients", "bill"))
+                {
+                    WarnMissingGhoul(
+                        "the exact public Recipe_GhoulInfusion.ApplyOnPawn(Pawn, "
+                            + "BodyPartRecord, Pawn, List<Thing>, Bill) signature was not found");
+                    return;
+                }
+
+                harmony.Patch(
+                    recipe,
+                    prefix: new HarmonyMethod(
+                        typeof(DiaryAnomalyPatches), nameof(GhoulInfusionPrefix)),
+                    postfix: new HarmonyMethod(
+                        typeof(DiaryAnomalyPatches), nameof(GhoulInfusionPostfix)),
+                    finalizer: new HarmonyMethod(
+                        typeof(DiaryAnomalyPatches), nameof(GhoulInfusionFinalizer)));
+                GhoulTransformationHookReady = true;
+            }
+            catch (Exception exception)
+            {
+                GhoulTransformationHookReady = false;
+                WarnMissingGhoul("registration failed: " + exception.GetType().Name + ": "
                     + Limit(exception.Message));
             }
         }
@@ -486,8 +534,10 @@ namespace PawnDiary
                         pawn, billDoer, close.capture, out dedicatedEventCreated);
                 }
             });
-            bool suppress = CreepJoinerSurgeryTaleOwnershipPolicy.ShouldSuppress(
-                plan, dedicatedEventCreated, close.deferredTale != null);
+            bool suppress = AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                CreepJoinerSurgicalDisclosurePolicy.OwnsDidSurgery(plan),
+                dedicatedEventCreated,
+                close.deferredTale != null);
             if (!suppress) ReleaseSurgicalTale(close.deferredTale);
         }
 
@@ -501,6 +551,76 @@ namespace PawnDiary
             DiaryPatchSafety.Run("DiaryAnomalyPatches.SurgicalRecipeFinalizer", () =>
             {
                 close = CreepJoinerSurgicalInspectionScope.Abort(__state);
+            });
+            if (close != null) ReleaseSurgicalTales(close.releaseTales);
+            return __exception;
+        }
+
+        /// <summary>Freezes exact pre-state and opens Tale ownership before vanilla's failure check.</summary>
+        private static void GhoulInfusionPrefix(
+            Pawn pawn,
+            Pawn billDoer,
+            ref GhoulTransformationCapture __state)
+        {
+            __state = null;
+            if (!GhoulTransformationHookReady || !RuntimeReady()) return;
+            GhoulTransformationCapture captured = null;
+            DiaryPatchSafety.Run("DiaryAnomalyPatches.GhoulInfusionPrefix", () =>
+            {
+                AnomalyPolicySnapshot policy = DiaryAnomalyPolicy.Snapshot();
+                if (!DlcContext.TryCaptureGhoulTransformation(pawn, billDoer, out captured)
+                    || !GhoulInfusionScope.Begin(captured, policy.taleOwnershipMaxDepth))
+                {
+                    captured = null;
+                }
+            });
+            __state = captured;
+        }
+
+        /// <summary>Verifies post-state and consumes DidSurgery only after the dedicated page exists.</summary>
+        private static void GhoulInfusionPostfix(
+            Pawn pawn,
+            Pawn billDoer,
+            GhoulTransformationCapture __state)
+        {
+            if (__state == null) return;
+            GhoulInfusionClose close = null;
+            DiaryPatchSafety.Run("DiaryAnomalyPatches.GhoulInfusionPostfix.Close", () =>
+            {
+                close = GhoulInfusionScope.Complete(__state);
+            });
+            if (close == null) return;
+            ReleaseSurgicalTales(close.releaseTales);
+            if (!close.matched) return;
+
+            GhoulTransformationPlan plan = null;
+            bool dedicatedEventCreated = false;
+            DiaryPatchSafety.Run("DiaryAnomalyPatches.GhoulInfusionPostfix.Complete", () =>
+            {
+                DiaryGameComponent component = DiaryGameComponent.Instance;
+                if (component != null)
+                {
+                    plan = component.CompleteGhoulTransformation(
+                        pawn, billDoer, close.capture, out dedicatedEventCreated);
+                }
+            });
+            bool suppress = AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                GhoulTransformationPolicy.OwnsDidSurgery(plan),
+                dedicatedEventCreated,
+                close.deferredTale != null);
+            if (!suppress) ReleaseSurgicalTale(close.deferredTale);
+        }
+
+        /// <summary>Always aborts an unfinished ghoul scope and preserves vanilla's exception.</summary>
+        private static Exception GhoulInfusionFinalizer(
+            Exception __exception,
+            GhoulTransformationCapture __state)
+        {
+            if (__state == null || __state.scopeClosed) return __exception;
+            GhoulInfusionClose close = null;
+            DiaryPatchSafety.Run("DiaryAnomalyPatches.GhoulInfusionFinalizer", () =>
+            {
+                close = GhoulInfusionScope.Abort(__state);
             });
             if (close != null) ReleaseSurgicalTales(close.releaseTales);
             return __exception;
@@ -698,6 +818,14 @@ namespace PawnDiary
                     + detail
                     + "; vanilla surgery, letters, Tales, and the generic diary Tale route remain unchanged.",
                 "PawnDiary.Anomaly.MissingHook.CreepJoiner.Surgical".GetHashCode());
+        }
+
+        private static void WarnMissingGhoul(string detail)
+        {
+            Log.WarningOnce(
+                "[Pawn Diary] Anomaly ghoul transformation capture is disabled because " + detail
+                    + "; vanilla infusion, Tales, and the generic diary Tale route remain unchanged.",
+                "PawnDiary.Anomaly.MissingHook.GhoulTransformation".GetHashCode());
         }
     }
 }

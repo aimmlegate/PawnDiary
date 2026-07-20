@@ -1,4 +1,4 @@
-// Standalone no-RimWorld tests for Master Wave 7 / Anomaly Phases A1.0-A2.1. Linking only plain DTOs
+// Standalone no-RimWorld tests for Master Wave 7 / Anomaly Phases A1.0-A2.2. Linking only plain DTOs
 // and pure policies makes an accidental Verse, Unity, Harmony, DLC, or live-settings dependency a
 // compile-time failure.
 using System;
@@ -46,6 +46,9 @@ namespace DiaryAnomalyPolicyTests
             TestCreepJoinerSurgicalDisclosurePolicy();
             TestCreepJoinerSurgicalWriterAndContextFirewall();
             TestCreepJoinerSurgeryTaleOwnership();
+            TestGhoulTransformationPolicy();
+            TestGhoulWriterOrderAndContextFirewall();
+            TestGhoulTaleOwnershipBoundaries();
             Console.WriteLine("DiaryAnomalyPolicyTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -107,6 +110,16 @@ namespace DiaryAnomalyPolicyTests
                 AnomalyContextKeys.CreepJoinerPhase);
             AssertEqual("visible result key", "visible_result", AnomalyContextKeys.VisibleResult);
             AssertEqual("transformation key", "transformation", AnomalyContextKeys.Transformation);
+            AssertEqual("ghoul subject id key", "ghoul_subject_id",
+                AnomalyContextKeys.GhoulSubjectId);
+            AssertEqual("ghoul subject label key", "ghoul_subject_label",
+                AnomalyContextKeys.GhoulSubjectLabel);
+            AssertEqual("ghoul surgeon id key", "ghoul_surgeon_id",
+                AnomalyContextKeys.GhoulSurgeonId);
+            AssertEqual("ghoul surgeon label key", "ghoul_surgeon_label",
+                AnomalyContextKeys.GhoulSurgeonLabel);
+            AssertEqual("irreversible choice key", "irreversible_choice",
+                AnomalyContextKeys.IrreversibleChoice);
             AssertEqual("void outcome key", "void_outcome", AnomalyContextKeys.VoidOutcome);
             AssertEqual("terminal key", "terminal", AnomalyContextKeys.Terminal);
             AssertEqual("study kind", "study_breakthrough", AnomalyKindTokens.StudyBreakthrough);
@@ -164,6 +177,7 @@ namespace DiaryAnomalyPolicyTests
             AssertTrue("future creepjoiner enabled", policy.creepJoinerEnabled);
             AssertEqual("creepjoiner witness radius", 12, policy.creepJoinerWitnessRadius);
             AssertTrue("future ghoul enabled", policy.ghoulTransformationEnabled);
+            AssertEqual("ghoul writer default", 2, policy.ghoulTransformationMaxWriters);
             AssertTrue("future void enabled", policy.voidOutcomeEnabled);
             AssertEqual("ownership depth", 8, policy.taleOwnershipMaxDepth);
             AssertEqual("ownership expiry", 2500, policy.taleOwnershipExpiryTicks);
@@ -190,6 +204,7 @@ namespace DiaryAnomalyPolicyTests
                 creepJoinerMaxWitnesses = 99,
                 creepJoinerWitnessRadius = 0,
                 ghoulTransformationEnabled = false,
+                ghoulTransformationMaxWriters = 99,
                 voidOutcomeEnabled = false,
                 taleOwnershipMaxDepth = 0,
                 taleOwnershipExpiryTicks = -1
@@ -232,6 +247,9 @@ namespace DiaryAnomalyPolicyTests
                 AnomalyPolicyLimits.DefaultCreepJoinerWitnessRadius,
                 normalized.creepJoinerWitnessRadius);
             AssertTrue("normalization preserves disabled ghoul", !normalized.ghoulTransformationEnabled);
+            AssertEqual("invalid ghoul writer cap falls back",
+                AnomalyPolicyLimits.DefaultGhoulTransformationWriters,
+                normalized.ghoulTransformationMaxWriters);
             AssertTrue("normalization preserves disabled void", !normalized.voidOutcomeEnabled);
             AssertEqual("invalid ownership depth falls back",
                 AnomalyPolicyLimits.DefaultTaleOwnershipDepth,
@@ -279,6 +297,7 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("XML containment dedup", "2500", Value(def, "containmentDedupTicks"));
             AssertEqual("XML recent-studier age", "60000", Value(def, "recentStudierMaxAgeTicks"));
             AssertEqual("XML creepjoiner radius", "12", Value(def, "creepJoinerWitnessRadius"));
+            AssertEqual("XML ghoul writer cap", "2", Value(def, "ghoulTransformationMaxWriters"));
             AssertEqual("XML ownership depth", "8", Value(def, "taleOwnershipMaxDepth"));
             AssertEqual("XML ownership expiry", "2500", Value(def, "taleOwnershipExpiryTicks"));
             AssertTrue("policy makes no conditional DLC Def reference",
@@ -1581,53 +1600,192 @@ namespace DiaryAnomalyPolicyTests
 
         private static void TestCreepJoinerSurgeryTaleOwnership()
         {
-            CreepJoinerSurgeryTaleClaim claim = SurgeryClaim();
-            CreepJoinerSurgeryTaleFacts tale = SurgeryTale();
+            AnomalySurgeryTaleClaim claim = SurgeryClaim();
+            AnomalySurgeryTaleFacts tale = SurgeryTale();
             AssertTrue("exact active DidSurgery pair is deferred",
-                CreepJoinerSurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
+                AnomalySurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
 
             tale.firstPawnId = "Pawn_Other";
             AssertTrue("surgeon mismatch fails open",
-                !CreepJoinerSurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
+                !AnomalySurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
             tale = SurgeryTale();
             tale.secondPawnId = "Pawn_Other";
             AssertTrue("subject mismatch fails open",
-                !CreepJoinerSurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
+                !AnomalySurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
             tale = SurgeryTale();
             tale.taleDefName = "DidOperation";
             AssertTrue("non-DidSurgery Tale fails open",
-                !CreepJoinerSurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
+                !AnomalySurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
             tale = SurgeryTale();
             tale.tick = 110;
             AssertTrue("DidSurgery ownership includes the exact expiry boundary",
-                CreepJoinerSurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
+                AnomalySurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
             tale = SurgeryTale();
             tale.tick = 111;
             AssertTrue("expired DidSurgery ownership fails open",
-                !CreepJoinerSurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
+                !AnomalySurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
             tale.tick = 99;
             AssertTrue("pre-scope Tale fails open",
-                !CreepJoinerSurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
+                !AnomalySurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
             claim.active = false;
             AssertTrue("closed ownership cannot defer",
-                !CreepJoinerSurgeryTaleOwnershipPolicy.CanDefer(claim, SurgeryTale(), 10));
+                !AnomalySurgeryTaleOwnershipPolicy.CanDefer(claim, SurgeryTale(), 10));
 
             CreepJoinerSurgicalDisclosurePlan success =
                 CreepJoinerSurgicalDisclosurePolicy.Plan(SurgicalDisclosure(), null, null);
             AssertTrue("dedicated event success suppresses one deferred generic signal",
-                CreepJoinerSurgeryTaleOwnershipPolicy.ShouldSuppress(success, true, true));
+                AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                    CreepJoinerSurgicalDisclosurePolicy.OwnsDidSurgery(success), true, true));
             AssertTrue("failed dedicated event releases generic signal",
-                !CreepJoinerSurgeryTaleOwnershipPolicy.ShouldSuppress(success, false, true));
+                !AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                    CreepJoinerSurgicalDisclosurePolicy.OwnsDidSurgery(success), false, true));
             AssertTrue("unverified disclosure releases generic signal",
-                !CreepJoinerSurgeryTaleOwnershipPolicy.ShouldSuppress(
-                    new CreepJoinerSurgicalDisclosurePlan(), true, true));
+                !AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                    CreepJoinerSurgicalDisclosurePolicy.OwnsDidSurgery(
+                        new CreepJoinerSurgicalDisclosurePlan()), true, true));
             AssertTrue("missing deferred ownership cannot suppress",
-                !CreepJoinerSurgeryTaleOwnershipPolicy.ShouldSuppress(success, true, false));
+                !AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                    CreepJoinerSurgicalDisclosurePolicy.OwnsDidSurgery(success), true, false));
             CreepJoinerSurgicalDisclosurePlan replay =
                 CreepJoinerSurgicalDisclosurePolicy.Plan(
                     SurgicalDisclosure(), success.nextArc, null);
             AssertTrue("replayed reveal releases generic signal",
-                !CreepJoinerSurgeryTaleOwnershipPolicy.ShouldSuppress(replay, true, true));
+                !AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                    CreepJoinerSurgicalDisclosurePolicy.OwnsDidSurgery(replay), true, true));
+        }
+
+        private static void TestGhoulTransformationPolicy()
+        {
+            GhoulTransformationFacts facts = GhoulTransformation();
+            GhoulTransformationPlan plan = GhoulTransformationPolicy.Plan(facts, null);
+            AssertTrue("verified non-ghoul to ghoul transition is valid",
+                plan.valid && plan.transitionVerified && plan.writePage);
+            AssertEqual("ghoul transition has exact token", AnomalyOutcomeTokens.Ghoul,
+                plan.transformationToken);
+            AssertEqual("ghoul source key is subject/kind/tick",
+                "Pawn_Subject|ghoul_transformation|400", plan.sourceKey);
+
+            AssertTrue("null ghoul facts drop", !GhoulTransformationPolicy.Plan(null, null).valid);
+            foreach (Action<GhoulTransformationFacts> corrupt in new Action<GhoulTransformationFacts>[]
+            {
+                value => value.subjectPawnId = " ",
+                value => value.surgeonPawnId = "bad|surgeon",
+                value => value.tick = -1,
+                value => value.methodReturnedNormally = false,
+                value => value.wasGhoul = true,
+                value => value.isGhoul = false,
+                value => value.playerVisible = false
+            })
+            {
+                GhoulTransformationFacts malformed = GhoulTransformation();
+                corrupt(malformed);
+                AssertTrue("malformed/failed/unverified ghoul facts drop",
+                    !GhoulTransformationPolicy.Plan(malformed, null).valid);
+            }
+        }
+
+        private static void TestGhoulWriterOrderAndContextFirewall()
+        {
+            GhoulTransformationFacts facts = GhoulTransformation();
+            GhoulTransformationPlan plan = GhoulTransformationPolicy.Plan(facts, null);
+            AssertTrue("ghoul writers are exact surgeon first and subject second",
+                plan.selectedWriters.Count == 2
+                    && plan.selectedWriters[0].pawnId == "Pawn_Surgeon"
+                    && plan.selectedWriters[0].roleToken == AnomalyWitnessRoleTokens.Surgeon
+                    && plan.selectedWriters[1].pawnId == "Pawn_Subject"
+                    && plan.selectedWriters[1].roleToken == AnomalyWitnessRoleTokens.Subject);
+
+            AnomalyPolicySnapshot oneWriter = AnomalyPolicySnapshot.CreateDefault();
+            oneWriter.ghoulTransformationMaxWriters = 1;
+            plan = GhoulTransformationPolicy.Plan(facts, oneWriter);
+            AssertTrue("ghoul one-writer cap retains surgeon first",
+                plan.selectedWriters.Count == 1
+                    && plan.selectedWriters[0].roleToken == AnomalyWitnessRoleTokens.Surgeon);
+
+            facts = GhoulTransformation();
+            facts.subjectEligible = false;
+            plan = GhoulTransformationPolicy.Plan(facts, null);
+            AssertTrue("ghoul surgeon-only eligibility creates one exact POV",
+                plan.writePage && plan.selectedWriters.Count == 1
+                    && plan.selectedWriters[0].roleToken == AnomalyWitnessRoleTokens.Surgeon);
+
+            facts = GhoulTransformation();
+            facts.surgeonEligible = false;
+            plan = GhoulTransformationPolicy.Plan(facts, null);
+            AssertTrue("ghoul subject-only eligibility creates one exact POV",
+                plan.writePage && plan.selectedWriters.Count == 1
+                    && plan.selectedWriters[0].roleToken == AnomalyWitnessRoleTokens.Subject);
+
+            facts = GhoulTransformation();
+            facts.surgeonEligible = false;
+            facts.subjectEligible = false;
+            plan = GhoulTransformationPolicy.Plan(facts, null);
+            AssertTrue("ghoul transformation never invents a witness",
+                plan.valid && plan.transitionVerified && !plan.writePage
+                    && plan.selectedWriters.Count == 0);
+
+            facts = GhoulTransformation();
+            facts.subjectPawnId = facts.surgeonPawnId;
+            plan = GhoulTransformationPolicy.Plan(facts, null);
+            AssertTrue("same-pawn ghoul roles cannot duplicate a writer",
+                plan.writePage && plan.selectedWriters.Count == 1
+                    && plan.selectedWriters[0].roleToken == AnomalyWitnessRoleTokens.Surgeon);
+
+            AnomalyPolicySnapshot disabled = AnomalyPolicySnapshot.CreateDefault();
+            disabled.ghoulTransformationEnabled = false;
+            plan = GhoulTransformationPolicy.Plan(GhoulTransformation(), disabled);
+            AssertTrue("disabled ghoul output preserves truth without a page",
+                plan.valid && plan.transitionVerified && !plan.writePage);
+
+            facts = GhoulTransformation();
+            facts.subjectLabel = "Patient; hidden=blocked";
+            facts.surgeonLabel = "Doctor; hidden=blocked";
+            plan = GhoulTransformationPolicy.Plan(facts, null);
+            string context = GhoulTransformationContextFormatter.Format(facts, plan);
+            AssertTrue("ghoul context contains only visible transformation and exact roles",
+                context.Contains("anomaly_kind=ghoul_transformation")
+                    && context.Contains("transformation=ghoul")
+                    && context.Contains("ghoul_subject_id=Pawn_Subject")
+                    && context.Contains("ghoul_surgeon_id=Pawn_Surgeon")
+                    && context.Contains("irreversible_choice=true")
+                    && context.Contains("initiator_witness_role=surgeon")
+                    && context.Contains("recipient_witness_role=subject"));
+            AssertTrue("ghoul context sanitizes field injection",
+                !context.Contains("; hidden="));
+            AssertTrue("ghoul context excludes recipe and body mechanics",
+                context.IndexOf("ingredient", StringComparison.OrdinalIgnoreCase) < 0
+                    && context.IndexOf("bodypart", StringComparison.OrdinalIgnoreCase) < 0
+                    && context.IndexOf("surgeryOutcome", StringComparison.OrdinalIgnoreCase) < 0);
+            AssertEqual("invalid ghoul plan has no context", string.Empty,
+                GhoulTransformationContextFormatter.Format(facts, new GhoulTransformationPlan()));
+        }
+
+        private static void TestGhoulTaleOwnershipBoundaries()
+        {
+            GhoulTransformationPlan success =
+                GhoulTransformationPolicy.Plan(GhoulTransformation(), null);
+            AssertTrue("ghoul dedicated event owns one deferred generic Tale",
+                AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                    GhoulTransformationPolicy.OwnsDidSurgery(success), true, true));
+            AssertTrue("missing ghoul event releases generic Tale",
+                !AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                    GhoulTransformationPolicy.OwnsDidSurgery(success), false, true));
+            AssertTrue("missing ghoul Tale ownership cannot suppress",
+                !AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                    GhoulTransformationPolicy.OwnsDidSurgery(success), true, false));
+            AssertTrue("unverified ghoul transition releases generic Tale",
+                !AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                    GhoulTransformationPolicy.OwnsDidSurgery(new GhoulTransformationPlan()),
+                    true,
+                    true));
+
+            AnomalyPolicySnapshot disabled = AnomalyPolicySnapshot.CreateDefault();
+            disabled.ghoulTransformationEnabled = false;
+            GhoulTransformationPlan noOutput =
+                GhoulTransformationPolicy.Plan(GhoulTransformation(), disabled);
+            AssertTrue("disabled ghoul output cannot consume the generic Tale",
+                !noOutput.writePage && !AnomalySurgeryTaleOwnershipPolicy.ShouldSuppress(
+                    GhoulTransformationPolicy.OwnsDidSurgery(noOutput), false, true));
         }
 
         private static AnomalyStudyFacts Study()
@@ -1678,9 +1836,27 @@ namespace DiaryAnomalyPolicyTests
             };
         }
 
-        private static CreepJoinerSurgeryTaleClaim SurgeryClaim()
+        private static GhoulTransformationFacts GhoulTransformation()
         {
-            return new CreepJoinerSurgeryTaleClaim
+            return new GhoulTransformationFacts
+            {
+                subjectPawnId = "Pawn_Subject",
+                subjectLabel = "Aster",
+                surgeonPawnId = "Pawn_Surgeon",
+                surgeonLabel = "Mara",
+                tick = 400,
+                methodReturnedNormally = true,
+                wasGhoul = false,
+                isGhoul = true,
+                playerVisible = true,
+                surgeonEligible = true,
+                subjectEligible = true
+            };
+        }
+
+        private static AnomalySurgeryTaleClaim SurgeryClaim()
+        {
+            return new AnomalySurgeryTaleClaim
             {
                 subjectPawnId = "Pawn_Creep",
                 surgeonPawnId = "Pawn_Surgeon",
@@ -1689,11 +1865,11 @@ namespace DiaryAnomalyPolicyTests
             };
         }
 
-        private static CreepJoinerSurgeryTaleFacts SurgeryTale()
+        private static AnomalySurgeryTaleFacts SurgeryTale()
         {
-            return new CreepJoinerSurgeryTaleFacts
+            return new AnomalySurgeryTaleFacts
             {
-                taleDefName = CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName,
+                taleDefName = AnomalySurgeryTaleOwnershipPolicy.DidSurgeryDefName,
                 firstPawnId = "Pawn_Surgeon",
                 secondPawnId = "Pawn_Creep",
                 tick = 101
