@@ -399,8 +399,11 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > surgeon-first/subject-second POVs, and fail-open `DidSurgery` ownership. Eight focused loaded cases plus
 > expanded registration/lifecycle assertions compile in the 335-test assembly. Its first in-game run
 > passed 333/335: only the two joined-subject pair assertions failed because the shared test setup still
-> forced A2.0's one-writer cap. Setup now uses the supported two-writer ceiling, and the corrected
-> 335-fixture rerun remains pending. The separate Anomaly-inactive
+> forced A2.0's one-writer cap. Setup now uses the supported two-writer ceiling. The next user-provided
+> run passed 334/335 and confirmed that correction; its sole failure was the live fixture expecting
+> shortened role-context keys after it had already found the exact pair page. The fixture now asserts
+> the frozen `initiator_witness_role` / `recipient_witness_role` schema, and the corrected 335-fixture
+> rerun remains pending. The separate Anomaly-inactive
 > profile, disposable missing study/containment-hook compatibility profiles, and real process-boundary
 > save/reload remain explicit deferred rows. No A2.2 source or hidden-state projection moved ahead.
 

@@ -1678,8 +1678,8 @@ profile remains in the manual in-game matrix.
 
 ### Phase A2.1 — Surgical disclosure
 
-> **Status (2026-07-20): implemented; first expanded loaded run passed 333/335, with a corrected
-> test-only writer-cap rerun pending.** A composite
+> **Status (2026-07-20): implemented; latest expanded loaded run passed 334/335, with a corrected
+> test-only context-key rerun pending.** A composite
 > Anomaly-gated registration pins the exact installed public recipe, creepjoiner tracker, and Pawn
 > inspection-result signatures. The bounded recipe scope accepts disclosure only when the exact tracker
 > returns true and grows its builder, the overall Pawn result is letter-visible `Detected`, and the
@@ -1709,8 +1709,12 @@ profile remains in the manual in-game matrix.
 > cleanup. The first user-provided 335-fixture run passed 333 and failed only its two joined-subject
 > pair assertions after each strict guard had already counted exactly one dedicated event. The shared
 > fixture setup still forced A2.0's old one-writer cap, so A2.1 correctly produced a surgeon-only page;
-> setup now uses the supported two-writer ceiling. This closes the embedded A2.0 327-fixture debt, while
-> the corrected 335-fixture A2.1 rerun remains pending. No runtime behavior changed.
+> setup now uses the supported two-writer ceiling. This closes the embedded A2.0 327-fixture debt. The
+> next user-provided run passed 334/335 and confirmed that cap correction; its sole failure was a live
+> fixture expecting shortened `initiator_role` / `recipient_role` keys after the exact pair page had
+> already been found. The frozen schema and pure suite use `initiator_witness_role` /
+> `recipient_witness_role`, which the fixture now asserts. The corrected 335-fixture rerun remains
+> pending. No runtime behavior changed.
 
 - [x] Add recipe/tracker correlation and successful disclosure verification.
 - [x] Implement exact `DidSurgery` ownership with fail-open behavior.

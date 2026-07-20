@@ -175,8 +175,8 @@ namespace PawnDiary.RimTests
             scope.RequirePairRefs(page, surgeon, subject);
             RequireContext(page, "creepjoiner_phase=surgical_reveal");
             RequireContext(page, "visible_result=disclosed");
-            RequireContext(page, "initiator_role=surgeon");
-            RequireContext(page, "recipient_role=subject");
+            RequireContext(page, "initiator_witness_role=surgeon");
+            RequireContext(page, "recipient_witness_role=subject");
             RequireContext(page, "creepjoiner_surgeon_id=" + surgeon.GetUniqueLoadID());
             RequireContext(page, "creepjoiner_subject_id=" + subject.GetUniqueLoadID());
             PawnDiaryRimTestScope.Require(

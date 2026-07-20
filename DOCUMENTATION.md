@@ -1875,7 +1875,11 @@ DLL and 335-test RimTest assembly build against the installed 1.6 API. The first
 327-fixture acceptance debt. Its only failures were the two A2.1 joined-subject pair assertions: each
 strict guard had already counted exactly one dedicated event, but shared setup still forced A2.0's old
 one-writer cap, so the policy truthfully emitted surgeon-only. Setup now uses the supported two-writer
-ceiling; the corrected 335-fixture rerun remains pending, and no production behavior changed.
+ceiling. The next user-provided run passed 334/335 and confirmed that correction; its sole failure came
+after finding the exact pair page, when the live fixture expected nonexistent `initiator_role` /
+`recipient_role` keys. The frozen schema and pure suite use `initiator_witness_role` /
+`recipient_witness_role`, which the fixture now asserts. The corrected 335-fixture rerun remains
+pending, and no production behavior changed.
 Compiled smoke coverage pins the five Def/package/classifier rows plus exact study, containment, and
 creepjoiner method/signature ownership. Three loaded state fixtures additionally drive the actual
 seven-key component Scribe contract, missing-key defaults, deep monolith/creepjoiner rows, DLC-off deferred migration,
@@ -1914,8 +1918,12 @@ The later user-provided 335-fixture full run passed every embedded A2.0 fixture,
 327-fixture acceptance debt as aggregate evidence. The same run passed 333/335 overall and exposed two
 A2.1 test-only failures: shared setup limited creepjoiner writers to one while the joined disclosure
 fixtures required exact surgeon/subject pairs. The strict guards had already counted one event in each
-case, confirming capture rather than absence; setup now uses the supported two-writer ceiling. The
-corrected 335-fixture rerun remains pending. Three external/manual profiles remain explicitly
+case, confirming capture rather than absence; setup now uses the supported two-writer ceiling. The next
+user-provided run passed 334/335, confirming that correction and every other fixture. Its sole failure
+was another test-only assertion after the exact pair page had been found: the fixture used shortened
+role-context keys instead of the frozen `initiator_witness_role` / `recipient_witness_role` schema.
+Those assertions now match the canonical keys; the corrected 335-fixture rerun remains pending. Three
+external/manual profiles remain explicitly
 deferred: a separate Anomaly-inactive run,
 disposable missing study/containment-hook compatibility profiles, and a real process-boundary save/
 reload. Exact operator steps live in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.

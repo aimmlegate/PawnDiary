@@ -289,9 +289,12 @@ and surgery scopes. Teardown removes only fixture-created vanilla letters and Ta
 provided 335-fixture run passed 333 and failed only the two joined-subject pair assertions. Each strict
 fixture guard had already counted exactly one dedicated event; the shared setup still forced A2.0's
 old one-writer cap, so pure A2.1 correctly emitted a surgeon-only page before the pair matcher ran.
-The setup now uses the supported two-writer ceiling. A corrected 335-fixture rerun remains pending,
-alongside the Anomaly-inactive, missing-hook, and process-boundary save/reload profiles; no production
-behavior changed.
+The setup now uses the supported two-writer ceiling. The next user-provided run passed 334/335,
+confirming that correction and every other fixture. Its sole failure occurred after finding the exact
+pair page: the live assertion expected nonexistent `initiator_role` / `recipient_role` context keys,
+while the frozen schema and pure suite pin `initiator_witness_role` / `recipient_witness_role`. The
+fixture now asserts the canonical keys. A corrected 335-fixture rerun remains pending, alongside the
+Anomaly-inactive, missing-hook, and process-boundary save/reload profiles; no production behavior changed.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It

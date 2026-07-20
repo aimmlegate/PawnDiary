@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-07-20 — Corrected the remaining false-negative A2.1 pair-context fixture.** The second
+  user-provided 335-fixture Anomaly-active run passed 334 tests, confirming the writer-cap correction
+  and every other A2.1/A2.0 case. Its sole failure occurred after the exact surgeon/subject pair page
+  had already been found: the fixture expected nonexistent `initiator_role` / `recipient_role` keys,
+  while the frozen Anomaly schema and 529-assertion pure suite use `initiator_witness_role` /
+  `recipient_witness_role`. The live fixture now asserts those canonical keys. No production behavior,
+  save schema, prompt text, Def, or localization changed; the corrected 335-fixture rerun remains pending.
+
 - **2026-07-20 — Corrected two false-negative A2.1 joined-surgery fixtures after the first
   loaded run.** The user-provided 335-fixture Anomaly-active run passed 333 tests and failed only the
   two assertions expecting an exact surgeon/subject pair. Both strict guards had already counted one
