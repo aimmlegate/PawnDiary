@@ -107,6 +107,7 @@ namespace PawnDiary
             // main thread together with the existing template/group policy. The selected factual text
             // itself stays on DiaryEvent and is never rebuilt from live DLC state here.
             NarrativePolicySnapshot narrativePolicy = DiaryNarrativeContinuityPolicy.Snapshot();
+            MemoryPolicySnapshot memoryPolicy = DiaryMemoryPolicy.Snapshot();
             string classifierKey = ClassifierKeyForPayload(payload);
             DiaryInteractionGroupDef group = GroupForPayload(payload, classifierKey);
             List<string> eventPromptKeys = DiaryEventPromptKeys.CandidateKeys(
@@ -126,6 +127,7 @@ namespace PawnDiary
             {
                 narrativeContextFieldLabel = narrativePolicy.promptFieldLabel,
                 narrativeContextInstruction = narrativePolicy.promptFieldInstruction,
+                memoryContextInstruction = memoryPolicy.memoryContextInstruction,
                 group = new DiaryGroupPolicy
                 {
                     defName = group?.defName,
@@ -211,6 +213,7 @@ namespace PawnDiary
                 surroundings = diaryEvent.SurroundingsForRole(role),
                 continuity = diaryEvent.ContinuityForRole(role),
                 narrativeContext = diaryEvent.NarrativeContextForRole(role),
+                memoryContext = diaryEvent.MemoryContextForRole(role),
                 lastOpener = diaryEvent.LastOpenerForRole(role),
                 previousEntryEnding = diaryEvent.PreviousEntryEndingForRole(role),
                 weapon = recipient ? diaryEvent.recipientWeapon : diaryEvent.initiatorWeapon,

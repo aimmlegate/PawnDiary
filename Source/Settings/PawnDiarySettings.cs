@@ -152,6 +152,10 @@ namespace PawnDiary
         // is folded into first-person prompts alongside their writing style. When false, the block is
         // omitted and pending psychotype rolls stay deferred; existing pawns keep their saved psychotype.
         public bool enablePsychotypes = true;
+        // Master toggle for the associative memory system. When true, pawns accumulate small tagged
+        // memory fragments from significant events and related memories surface in later diary prompts.
+        // When false, no deposits or recalls occur; existing fragments stay saved but inert.
+        public bool enableMemorySystem = true;
         // Global prompt-context detail level. Full preserves the original prompt shape; smaller levels
         // dynamically choose the most relevant optional fields for small local models.
         public PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full;
@@ -268,6 +272,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref enableAtmosphericFormatting, "enableAtmosphericFormatting", true);
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
             Scribe_Values.Look(ref enablePsychotypes, "enablePsychotypes", true);
+            Scribe_Values.Look(ref enableMemorySystem, "enableMemorySystem", true);
             Scribe_Values.Look(ref contextDetailLevel, "contextDetailLevel", PromptContextDetailLevel.Full);
             Scribe_Values.Look(ref allowExternalIntegrations, "allowExternalIntegrations", true);
             Scribe_Values.Look(ref enableExternalKeySharing, "enableExternalKeySharing", false);

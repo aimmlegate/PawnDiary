@@ -102,6 +102,11 @@ namespace PawnDiary
             internal List<NarrativeReferenceState> narrativeReferences;
             internal List<string> narrativeSelectedCandidateKeys;
             internal string narrativeContext;
+            // Additive associative-memory state. Frozen recall result for this POV, rendered by
+            // MemoryRecallSelector and composed by MemoryContextPrompt at prompt time. Empty means
+            // no memory surfaced (the prompt field disappears entirely). Capped at 600 chars on
+            // save-normalization so a corrupt save cannot bloat the prompt.
+            internal string memoryContext;
         }
 
         // The three POV storage slots. Value-typed, so they live inline here and are mutated in
@@ -368,6 +373,8 @@ namespace PawnDiary
             Scribe_Collections.Look(ref slot.narrativeSelectedCandidateKeys,
                 NarrativeSlotKey(prefix, NarrativeSaveKeys.SelectedCandidateKeys), LookMode.Value);
             Scribe_Values.Look(ref slot.narrativeContext, NarrativeSlotKey(prefix, NarrativeSaveKeys.Context));
+            // Additive memory-context key. Old saves leave this null; NormalizeLoadedSlot coalesces it.
+            Scribe_Values.Look(ref slot.memoryContext, prefix + "MemoryContext");
         }
 
         // The base save tokens intentionally start lowercase for archive rows (`narrativeReferences`).
@@ -451,6 +458,13 @@ namespace PawnDiary
             slot.narrativeSelectedCandidateKeys = NarrativeStatePersistence.NormalizeSelectedCandidateKeys(
                 slot.narrativeSelectedCandidateKeys);
             slot.narrativeContext = NarrativeStatePersistence.NormalizeNarrativeContext(slot.narrativeContext);
+            // Memory context is additive; old saves leave it null. Cap at 600 chars so a corrupt
+            // save cannot bloat the prompt (the pure renderer already fits to 500 at recall time).
+            slot.memoryContext = DiarySaveNormalization.NormalizeString(slot.memoryContext);
+            if (slot.memoryContext != null && slot.memoryContext.Length > 600)
+            {
+                slot.memoryContext = slot.memoryContext.Substring(0, 600);
+            }
         }
 
         /// <summary>
@@ -1254,6 +1268,36 @@ namespace PawnDiary
             }
 
             return SlotFor(povRole).narrativeContext ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Returns the frozen associative-memory recall text for this first-person prompt. Neutral
+        /// pages deliberately return empty: memory recall is per-pawn, not colony-wide.
+        /// </summary>
+        public string MemoryContextForRole(string povRole)
+        {
+            if (!RoleIsInitiatorOrRecipient(povRole))
+            {
+                return string.Empty;
+            }
+
+            return SlotFor(povRole).memoryContext ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Freezes the recalled memory-context text onto one POV slot. Called by the memory applier
+        /// in DiaryGameComponent.Memory.cs immediately after recall, before deposit.
+        /// </summary>
+        internal void SetMemoryContext(string povRole, string memoryContext)
+        {
+            if (!RoleIsInitiatorOrRecipient(povRole))
+            {
+                return;
+            }
+
+            SlotFor(povRole).memoryContext = string.IsNullOrWhiteSpace(memoryContext)
+                ? string.Empty
+                : memoryContext.Trim();
         }
 
         /// <summary>Returns a defensive copy of this POV's compact continuity references.</summary>

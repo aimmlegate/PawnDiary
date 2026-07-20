@@ -4,9 +4,9 @@
 // staged replays can never duplicate a fragment) and every per-pawn read through ForPawn, so
 // lookups stay constant-time instead of linear-scanning the whole store on every recall.
 //
-// STATUS: constructed and driven by DiaryGameComponent memory appliers that do not exist yet —
-// this class is deliberately unused until the capture/recall wiring lands. All Scribe keys it
-// will use are additive, so old saves load with an empty store and no errors.
+// STATUS: constructed and driven by DiaryGameComponent.Memory.cs — the recall/deposit appliers
+// call ForPawn/Register/RemoveByIds/RemoveOwner, and ExposeData/PostLoadInit drive the Scribe
+// and RebuildIndex lifecycle. All Scribe keys are additive, so old saves load with an empty store.
 //
 // New to C#/RimWorld? See AGENTS.md ("IExposable" / Scribe). Scribe_Collections.Look is
 // RimWorld's save/load helper for collections; LookMode.Deep means "each element saves/loads

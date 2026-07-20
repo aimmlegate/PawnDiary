@@ -56,6 +56,9 @@ namespace PawnDiary
         // Optional cross-event facts selected and frozen at the source event time. Empty is the normal
         // pre-N1/no-provider path and causes the XML prompt field to disappear entirely.
         public string narrativeContext;
+        // Optional associative-memory recall frozen at event capture time. Empty means no memory
+        // surfaced; the prompt field disappears entirely (zero token cost).
+        public string memoryContext;
         public string lastOpener;
         public string previousEntryEnding;
         public string weapon;
@@ -194,6 +197,9 @@ namespace PawnDiary
         // strings only to render an already-frozen factual field; it never reads a live Def.
         public string narrativeContextFieldLabel = "narrative context";
         public string narrativeContextInstruction = string.Empty;
+        // Copied from DiaryMemoryTuningDef on the main thread. The pure planner uses this string
+        // only to prefix the already-frozen memory recall; it never reads a live Def.
+        public string memoryContextInstruction = string.Empty;
 
         public DiaryTemplatePolicy Template(string templateKey)
         {

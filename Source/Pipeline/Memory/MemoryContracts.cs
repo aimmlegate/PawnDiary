@@ -5,8 +5,9 @@
 // knows nothing about RimWorld, Verse, settings, Defs, saves, or prompt transport: the impure
 // capture/recall seams copy frozen DiaryEvent strings into these DTOs and copy results back out.
 //
-// STATUS: the memory layer is implemented but deliberately NOT wired into capture, prompts, or
-// the game component yet. Only the pure helpers and the pure test project reference these types.
+// STATUS: the memory layer is fully wired into the diary pipeline via
+// DiaryGameComponent.Memory.cs (recall/deposit appliers, eviction scan, prompt plumbing).
+// The pure helpers, the test project, and the impure seam all reference these types.
 //
 // FUTURE INTEGRATION CONTRACT (design §14 steps 4-7 — keep this order and boundary):
 // 1. On the main thread, require both settings.enableMemorySystem and DiaryMemoryPolicy.Snapshot().enabled.

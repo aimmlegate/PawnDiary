@@ -421,6 +421,16 @@
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.12.label>повествовательный контекст</DiaryPromptTemplate_SoloQuadrumReflection.fields.12.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.15.label>повествовательный контекст</DiaryPromptTemplate_SoloArcReflection.fields.15.label>
 
+  <!-- Associative memory appends one optional field to each first-person template. -->
+  <DiaryPromptTemplate_PairDefault.fields.28.label>воспоминания</DiaryPromptTemplate_PairDefault.fields.28.label>
+  <DiaryPromptTemplate_PairImportant.fields.75.label>воспоминания</DiaryPromptTemplate_PairImportant.fields.75.label>
+  <DiaryPromptTemplate_PairCombat.fields.31.label>воспоминания</DiaryPromptTemplate_PairCombat.fields.31.label>
+  <DiaryPromptTemplate_PairBatched.fields.27.label>воспоминания</DiaryPromptTemplate_PairBatched.fields.27.label>
+  <DiaryPromptTemplate_SoloDefault.fields.43.label>воспоминания</DiaryPromptTemplate_SoloDefault.fields.43.label>
+  <DiaryPromptTemplate_SoloImportant.fields.123.label>воспоминания</DiaryPromptTemplate_SoloImportant.fields.123.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.39.label>воспоминания</DiaryPromptTemplate_SoloInternalState.fields.39.label>
+  <DiaryPromptTemplate_SoloBatched.fields.39.label>воспоминания</DiaryPromptTemplate_SoloBatched.fields.39.label>
+
   <!-- Biotech Phase 4: model-facing B1 facts appended to important pair/solo templates. -->
   <DiaryPromptTemplate_PairImportant.fields.29.label>возраст на день рождения</DiaryPromptTemplate_PairImportant.fields.29.label>
   <DiaryPromptTemplate_PairImportant.fields.30.label>возможности в момент взросления</DiaryPromptTemplate_PairImportant.fields.30.label>
