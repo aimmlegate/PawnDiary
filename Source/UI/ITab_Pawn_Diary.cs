@@ -124,7 +124,11 @@ namespace PawnDiary
         private static float WritingStyleIconRightGap => UiStyle.writingStyleIconRightGap;
         private static float WritingStyleIconAlpha => UiStyle.writingStyleIconAlpha;
         private static float WritingStyleIconHoverAlpha => UiStyle.writingStyleIconHoverAlpha;
-        private const float DevControlsHeight = 240f;
+        // Stable display-only estimate of the dev block height (4 toggle rows + 3 full-width fixture
+        // buttons + the 3-column preview grid). It only needs to be an upper bound: the filter panel
+        // scrolls, so a little slack just adds scroll space, while under-reserving would clip the last
+        // preview row. Keep this in step with DrawPawnControls + DrawDevPreviewButtons if they change.
+        private const float DevControlsHeight = 360f;
         private static float YearButtonWidth => UiStyle.yearButtonWidth;
         private static float ModelNameTopPadding => UiStyle.modelNameTopPadding;
         private static float ModelNameHeight => UiStyle.modelNameHeight;
@@ -436,8 +440,10 @@ namespace PawnDiary
             // Two-column layout: the journal (virtualized cards) on the left, and an independent,
             // non-virtualized filter/controls panel on the right. The panel hosts the year selector,
             // filter stubs, and — in dev mode — the diary dev tools. The journal keeps its familiar
-            // width because tabWidth grew by the panel's width.
-            float panelWidth = ResolveFilterPanelWidth(rect.width);
+            // width because tabWidth grew by the panel's width. The header toggle can hide the panel,
+            // which widens the journal to the full tab width (the year pager falls back inline below).
+            bool filterPanelEnabled = PawnDiaryMod.Settings == null || PawnDiaryMod.Settings.showDiaryFilterPanel;
+            float panelWidth = filterPanelEnabled ? ResolveFilterPanelWidth(rect.width) : 0f;
             Rect filterPanelRect = new Rect(rect.xMax - panelWidth, rect.y, panelWidth, rect.height);
             Rect journalRect = panelWidth > 0f
                 ? new Rect(rect.x, rect.y, Mathf.Max(0f, rect.width - panelWidth - FilterPanelGap), rect.height)
@@ -466,6 +472,24 @@ namespace PawnDiary
                     iconSize);
                 DrawWritingStyleHeaderIcon(writingStyleIconRect, pawn, component);
                 headerRight = writingStyleIconRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
+            }
+
+            // Filter-panel toggle: a compact list icon that shows/hides the right-hand sidebar. It sits
+            // just left of the writing-style icon so the header controls stay grouped at the top-right
+            // of the journal column, clear of RimWorld's inspect-pane close button.
+            {
+                float toggleSize = Mathf.Max(1f, WritingStyleIconSize);
+                Rect toggleRect = new Rect(
+                    headerRight - toggleSize,
+                    journalRect.y + Mathf.Max(0f, (headerRect.height - toggleSize) * 0.5f),
+                    toggleSize,
+                    toggleSize);
+                if (DrawFilterPanelToggleIcon(toggleRect, filterPanelEnabled))
+                {
+                    ToggleFilterPanelVisible();
+                }
+
+                headerRight = toggleRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
             }
 
             headerRect.width = Mathf.Max(0f, headerRight - journalRect.x);

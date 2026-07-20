@@ -1,5 +1,24 @@
 # Changelog
 
+- **2026-07-20 — Diary filter-panel polish: toggle button, borderless panel, chip tag filters, bigger
+  divider/date, unclipped dev buttons.** Seven presentation-only follow-ups to the new Diary filter
+  panel; no change to saved history, sort order, save schema, prompts, or DLC independence. (1) A compact
+  list-glyph **toggle button** in the journal header shows/hides the right-hand panel, backed by a new
+  persisted `showDiaryFilterPanel` setting; hiding it widens the journal to the full tab and the year
+  pager falls back inline, so nothing is lost. (2) The panel's `DrawMenuSection` **background/border is
+  removed** — the inspect tab already paints a window background behind the whole tab, and the extra inset
+  box's border crowded RimWorld's inspect-pane close button at the top-right. (3) The season/quadrum
+  **divider** is drawn at `GameFont.Small` (up from Tiny) with a taller row and brighter label/line tones
+  so it reads clearly between month groups. (4) The **tag filters** now render as color-coded chips that
+  match the entry-card group chip (`DrawGroupLabel`) — each tinted by that group's color cue, flowing/
+  wrapping to the panel width, toggling on click and dimming when inactive — instead of a plain checkbox
+  list. (5) The cramped **dev-tools buttons** were relaid for the narrow panel: the three fixture buttons
+  are now full-width rows and the fourteen preview buttons a readable 3-column Tiny-font grid, so no label
+  is clipped. (6) The entry-header **date** is drawn at `GameFont.Small` with a brighter tone so it is
+  easy to read. New XML/style knobs reuse the existing `quadrumDivider*`/`entryDateColor` fields (values
+  retuned); new persisted setting `showDiaryFilterPanel`; new localized keys
+  `PawnDiary.Tab.ShowFilterPanel`/`HideFilterPanel` (English + Russian). Assembly rebuilds clean (0/0). In-game
+  visual confirmation is pending.
 - **2026-07-20 — Implemented Master Wave 7 / Anomaly Phase A2.2 ghoul transformation.** Pawn
   Diary now observes the exact installed public `Recipe_GhoulInfusion.ApplyOnPawn(Pawn,
   BodyPartRecord,Pawn,List<Thing>,Bill)` overload. Its prefix freezes guarded pre-state through
