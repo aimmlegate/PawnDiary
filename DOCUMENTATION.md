@@ -1907,7 +1907,9 @@ an absolute one: before every draw the tab clamps itself to the space actually a
 bottom anchor — inspect tabs hang above the inspect pane's tab strip, not the screen bottom — minus
 `<tabScreenHeightMargin>` of clear screen kept above the tab, while `<tabMinHeight>` keeps it usable
 on ordinary resolutions. If the screen is shorter than that minimum, the tab shrinks further rather
-than running off-screen.
+than running off-screen. `<tabWidth>` (default 992) now includes the right-hand filter/controls panel
+(`<filterPanelWidth>` + `<filterPanelGap>`) on top of the ~696px journal column; if the tab is ever
+too narrow to fit both, the panel hides and the journal takes the full width.
 
 Interaction groups match by domain, exact `defName`, optional package id, and ordered token matchers.
 Prefer exact names, `matchPrefixes`, `matchSuffixes`, and `matchSegments`; use legacy
@@ -2663,6 +2665,21 @@ with the model-name provenance and the rewrite icon. (3) **Header date font.** T
 the date in a smaller in-game font (`GameFont.Tiny`) and a muted tone (`entryDateColor`) ahead of the
 title, which keeps its font, fade, and pulse. The pending-title dots animation and the date-only case
 are preserved.
+
+**Filter/controls panel (right column).** The Diary tab is a two-column layout: the virtualized journal
+on the left and an independent, non-virtualized filter/controls panel on the right
+(`ITab_Pawn_Diary.FilterPanel.cs`). The panel has its own scroll offset (`filterPanelScrollPosition`,
+separate from the journal's) and is built only from existing RimWorld widgets — `Listing_Standard`,
+`Widgets.CheckboxLabeled`/`ButtonText`, the year FloatMenu, `DrawMenuSection` — inside a
+`Widgets.BeginScrollView`; its content height is measured (`listing.CurHeight`) and reused to size the
+scroll view next frame. It hosts the **year selector** (the pager `DrawYearFilter`, now responsive: a
+full pager when wide, a single dropdown in the narrow panel via the shared `ShowYearFloatMenu`), the
+**dev tools** (`DrawPawnControls`, moved out of the top of the journal column and now wrapped in its own
+try/finally so its nested `Listing` group can never leak), and — for now — **stub filter controls**
+(a favorites toggle and per-tag toggles derived from the visible year's group labels, plus Clear/Apply).
+The stub toggles render and toggle but are **not yet wired** to filter the journal. The journal column
+keeps its familiar width because `tabWidth` grew by the panel width; the panel hides on a tab too narrow
+to fit both. Panel sizes are XML-tunable via `DiaryUiStyleDef` (`filterPanelWidth`, `filterPanelGap`).
 
 `DiaryTextFormat` escapes raw model rich text before applying safe formatting. Display-only text
 decorations and pawn-name highlights happen at render time; generated text is not mutated on save.

@@ -243,6 +243,16 @@
   <PawnDiary.Tab.CopyEntry>Copy entry</PawnDiary.Tab.CopyEntry>
   <PawnDiary.Tab.CopyEntryTip>Copy this page's text to the clipboard.</PawnDiary.Tab.CopyEntryTip>
   <PawnDiary.Tab.CopyEntryCopied>Copied page text to clipboard.</PawnDiary.Tab.CopyEntryCopied>
+  <!-- Right-hand filter/controls panel. The filter toggles are placeholders until filtering is wired. -->
+  <PawnDiary.Tab.FilterYearHeader>Year</PawnDiary.Tab.FilterYearHeader>
+  <PawnDiary.Tab.FilterHeader>Filters</PawnDiary.Tab.FilterHeader>
+  <PawnDiary.Tab.FilterFavoritesOnly>Favorites only</PawnDiary.Tab.FilterFavoritesOnly>
+  <PawnDiary.Tab.FilterTagsHeader>Tags</PawnDiary.Tab.FilterTagsHeader>
+  <PawnDiary.Tab.FilterNoTags>No tags in this year.</PawnDiary.Tab.FilterNoTags>
+  <PawnDiary.Tab.FilterClear>Clear</PawnDiary.Tab.FilterClear>
+  <PawnDiary.Tab.FilterApply>Apply ({0})</PawnDiary.Tab.FilterApply>
+  <PawnDiary.Tab.FilterStubTip>Filtering is not wired up yet.</PawnDiary.Tab.FilterStubTip>
+  <PawnDiary.Tab.FilterDevHeader>Dev tools</PawnDiary.Tab.FilterDevHeader>
   <PawnDiary.Tab.RegenerateEntryTip>Rewrite this page with the current model routing. Paired pages regenerate both POVs when available.</PawnDiary.Tab.RegenerateEntryTip>
   <PawnDiary.Tab.RegenerateEntryQueued>Queued page regeneration.</PawnDiary.Tab.RegenerateEntryQueued>
   <PawnDiary.Tab.RegenerateEntryUnavailable>This page cannot be regenerated right now.</PawnDiary.Tab.RegenerateEntryUnavailable>

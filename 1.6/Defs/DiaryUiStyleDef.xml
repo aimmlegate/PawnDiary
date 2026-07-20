@@ -17,8 +17,9 @@
   <PawnDiary.DiaryUiStyleDef>
     <defName>Diary_UiStyle</defName>
 
-    <!-- Tab window -->
-    <tabWidth>720</tabWidth>
+    <!-- Tab window. Width includes the right-hand filter/controls panel (filterPanelWidth +
+         filterPanelGap) plus the ~696px journal column. -->
+    <tabWidth>992</tabWidth>
     <tabHeight>800</tabHeight>
     <!-- The tab treats tabHeight as a preferred height. It clamps to the space available above
          the inspect pane's tab strip (the tab hangs above the pane, not the screen bottom) minus
@@ -26,6 +27,10 @@
          when the screen itself is too short to leave that much room. -->
     <tabMinHeight>360</tabMinHeight>
     <tabScreenHeightMargin>72</tabScreenHeightMargin>
+
+    <!-- Right-hand filter/controls panel (independent, non-virtualized scroll column). -->
+    <filterPanelWidth>260</filterPanelWidth>
+    <filterPanelGap>12</filterPanelGap>
 
     <!-- Header/card dimensions -->
     <controlLineHeight>28</controlLineHeight>

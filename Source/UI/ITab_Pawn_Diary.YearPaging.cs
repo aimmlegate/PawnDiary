@@ -20,97 +20,74 @@ namespace PawnDiary
         /// </summary>
         private void DrawYearFilter(Rect rect, List<int> years, DiaryTabVisibleEntriesCache entriesCache)
         {
-
             if (years == null || years.Count <= 1)
             {
-
                 return;
-
             }
-
-
 
             Widgets.DrawMenuSection(rect);
-
             Rect inner = rect.ContractedBy(4f);
-
             int index = years.IndexOf(selectedYear);
-
             if (index < 0)
             {
-
                 index = 0;
-
                 selectedYear = years[0];
-
             }
 
-
-
-            Rect newerRect = new Rect(inner.x, inner.y, YearButtonWidth, inner.height);
-
-            Rect olderRect = new Rect(inner.xMax - YearButtonWidth, inner.y, YearButtonWidth, inner.height);
-
-            Rect labelRect = new Rect(newerRect.xMax + 8f, inner.y, olderRect.x - newerRect.xMax - 16f, inner.height);
-
-
-
-            if (DrawYearButton(newerRect, "PawnDiary.Tab.NewerYear", index > 0))
+            // Prev/next arrows appear only when the row is wide enough for them plus a readable center
+            // label. In the narrow filter panel the row collapses to a single full-width year dropdown.
+            bool showPager = inner.width >= (YearButtonWidth * 2f + 64f);
+            Rect labelRect = inner;
+            if (showPager)
             {
-
-                SelectYear(years[index - 1]);
-
-            }
-
-
-
-            if (DrawYearButton(olderRect, "PawnDiary.Tab.OlderYear", index < years.Count - 1))
-            {
-
-                SelectYear(years[index + 1]);
-
-            }
-
-
-
-            int entryCount = entriesCache == null ? 0 : entriesCache.CountForYear(selectedYear);
-
-            if (Widgets.ButtonText(labelRect, "PawnDiary.Tab.YearFilter".Translate(YearLabel(selectedYear), entryCount)))
-            {
-
-                List<FloatMenuOption> options = new List<FloatMenuOption>();
-
-                for (int i = 0; i < years.Count; i++)
+                Rect newerRect = new Rect(inner.x, inner.y, YearButtonWidth, inner.height);
+                Rect olderRect = new Rect(inner.xMax - YearButtonWidth, inner.y, YearButtonWidth, inner.height);
+                labelRect = new Rect(newerRect.xMax + 8f, inner.y, olderRect.x - newerRect.xMax - 16f, inner.height);
+                if (DrawYearButton(newerRect, "PawnDiary.Tab.NewerYear", index > 0))
                 {
-
-                    int optionYear = years[i];
-
-                    string label = "PawnDiary.Tab.YearFilter".Translate(
-
-                        YearLabel(optionYear),
-
-                        entriesCache == null ? 0 : entriesCache.CountForYear(optionYear)).ToString();
-
-                    options.Add(new FloatMenuOption(label, delegate
-
-                    {
-
-                        SelectYear(optionYear);
-
-                    }));
-
+                    SelectYear(years[index - 1]);
                 }
 
-
-
-                Find.WindowStack.Add(new FloatMenu(options));
-
+                if (DrawYearButton(olderRect, "PawnDiary.Tab.OlderYear", index < years.Count - 1))
+                {
+                    SelectYear(years[index + 1]);
+                }
             }
 
-
+            int entryCount = entriesCache == null ? 0 : entriesCache.CountForYear(selectedYear);
+            if (Widgets.ButtonText(labelRect, "PawnDiary.Tab.YearFilter".Translate(YearLabel(selectedYear), entryCount)))
+            {
+                ShowYearFloatMenu(years, entriesCache);
+            }
 
             TooltipHandler.TipRegion(labelRect, "PawnDiary.Tab.YearSelectorTip".Translate());
+        }
 
+        /// <summary>
+        /// Opens the year picker: a FloatMenu listing every year that has visible entries, newest
+        /// first, each with its page count. Shared by the pager and the filter panel's dropdown.
+        /// </summary>
+        private void ShowYearFloatMenu(List<int> years, DiaryTabVisibleEntriesCache entriesCache)
+        {
+            if (years == null || years.Count == 0)
+            {
+                return;
+            }
+
+            List<FloatMenuOption> options = new List<FloatMenuOption>();
+            for (int i = 0; i < years.Count; i++)
+            {
+                int optionYear = years[i];
+                string label = "PawnDiary.Tab.YearFilter".Translate(
+                    YearLabel(optionYear),
+                    entriesCache == null ? 0 : entriesCache.CountForYear(optionYear)).ToString();
+                options.Add(new FloatMenuOption(label, delegate
+                {
+                    SelectYear(optionYear);
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
         }
 
 

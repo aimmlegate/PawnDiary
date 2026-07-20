@@ -106,10 +106,18 @@ namespace PawnDiary
     public class DiaryUiStyleDef : Def
     {
         // ---- Tab window ----
-        public float tabWidth = 720f;
+        // Default width now includes the right-hand filter/controls panel (filterPanelWidth +
+        // filterPanelGap) on top of the ~696px journal column, so the journal keeps its familiar width.
+        public float tabWidth = 992f;
         public float tabHeight = 800f;
         public float tabMinHeight = 360f;
         public float tabScreenHeightMargin = 72f;
+
+        // ---- Right-hand filter/controls panel ----
+        // Independent, non-virtualized scroll column on the right of the Diary tab. Holds the year
+        // selector, filter controls, and (in dev mode) the diary dev tools.
+        public float filterPanelWidth = 260f;
+        public float filterPanelGap = 12f;
 
         // ---- Control/header/card dimensions ----
         public float controlLineHeight = 28f;
