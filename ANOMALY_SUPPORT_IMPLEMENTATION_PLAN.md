@@ -1,7 +1,7 @@
 # Pawn Diary — Anomaly Support Implementation Plan
 
-Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.4 and A2.0 implemented as Master Wave 7,
-2026-07-20; A2.1–A3 remain implementation-ready plans. The
+Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.4 and A2.0–A2.1 implemented as Master Wave 7,
+2026-07-20; A2.2–A3 remain implementation-ready plans. The
 RimWorld 1.6 feasibility spike is complete for study-note milestones, containment escapes, visible
 creepjoiner outcomes, ghoul infusion, and both terminal void choices. Production now includes the A0
 exact psychic-ritual routing and monolith activation chapters described below.
@@ -11,7 +11,7 @@ Scheduling authority: implement Anomaly phases only in the waves assigned by
 
 Anomaly was the final standalone DLC planning artifact. Its small A0 semantic-precision release has
 now shipped independently; A1 study capture, containment breach capture, and A1 hardening/delivery
-and visible creepjoiner state/outcomes are implemented, while A2.1–A3 remain scheduled in the master plan.
+and visible creepjoiner state/outcomes including surgical disclosure are implemented, while A2.2–A3 remain scheduled in the master plan.
 
 The plan turns Anomaly's already broad atmospheric coverage into a coherent human story:
 curiosity becomes knowledge, knowledge enables a choice, containment can fail, apparently human
@@ -49,7 +49,7 @@ standalone plans.
 | `ODYSSEY_SUPPORT_IMPLEMENTATION_PLAN.md` | Scope-review plan only; its saved journey and landing chapters are not production code. |
 | Current Anomaly ritual support | Successful psychic rituals fan out through `DiaryEventType.Ritual`, with exact ritual defName, perspective, quality, and exact-family Anomaly guidance plus a modded fallback. |
 | Current Anomaly atmosphere | Monolith discovery/activation, visible and hidden metalhorror pressure, pit gates, fleshmass, nociosphere, obelisks, unnatural corpses, major conditions, cube effects, void hediffs, thoughts, raids, and Tales already have useful generic coverage. |
-| Main Anomaly gap | Exact ritual meaning, researcher-owned study milestones, containment consequence, and visible creepjoiner outcomes are connected; surgical disclosure, ghoul identity, and exact terminal void chapters remain. |
+| Main Anomaly gap | Exact ritual meaning, researcher-owned study milestones, containment consequence, and visible creepjoiner outcomes including surgical disclosure are connected; ghoul identity and exact terminal void chapters remain. |
 
 This plan starts from that production baseline. A coding agent must not assume that a cross-DLC
 facet, event type, state model, or helper proposed by another plan already exists.
@@ -126,7 +126,7 @@ The creepjoiner and ghoul pieces may merge separately after their own acceptance
 - Optionally request one rare arc reflection after the canonical outcome page records; the
   reflection must not restate the event or become a second ending page.
 
-A0, A1, and A2.0 are implemented. A2.1–A2.2 remain implementation-ready for surgical disclosure and
+A0, A1, and A2.0–A2.1 are implemented. A2.2 remains implementation-ready for
 the ghoul recipe; general creepjoiner-downside classification stays deferred. A3 remains
 implementation-ready for both terminal choices.
 
@@ -983,10 +983,13 @@ Patch public methods defensively and compare before/after state:
 If a downside worker calls one of those methods, the nested exact outcome owns the page. A separate
 `DoDownside` postfix must not emit another.
 
-`DoRejection` is the one nested semantic exception: vanilla rejection workers currently call either
-`DoLeave` or `DoAggressive`, but the player-visible decision is rejection. A tiny bounded synchronous
-owner therefore suppresses that nested page and lets the outer verified rejection emit once. The
-postfix/finalizer always unwinds it. `DoDownside` itself remains unpatched, so its nested exact method
+`DoRejection` is the one nested semantic exception: visible vanilla rejection workers currently call
+either `DoLeave` or `DoAggressive`, so a tiny bounded synchronous owner suppresses that nested page and
+lets the outer verified rejection emit once. `AggressiveRejection` persists/narrates the strongest
+visible `aggressive`/`hostile` state while retaining safe rejection-response provenance. A letterless
+modded rejection does not open the owner, allowing its nested visible method to own naturally; a
+committed outer marker with no page becomes a blank terminal replay barrier. The postfix/finalizer
+always unwinds visible ownership. `DoDownside` itself remains unpatched, so its nested exact method
 still owns naturally.
 
 ### 12.4 Writer policy
@@ -1327,6 +1330,7 @@ escaped_entities=...
 witness_role=nearby|recent_studier|colony_witness
 creepjoiner_phase=surgical_reveal|rejected|aggressive|departed
 visible_result=...
+rejection_response=true
 transformation=ghoul
 void_outcome=embraced|disrupted
 terminal=true|false
@@ -1633,7 +1637,8 @@ profile remains in the manual in-game matrix.
 
 ### Phase A2.0 — Visible creepjoiner state
 
-> **Status (2026-07-20): implemented; first active loaded run 321/323, corrected rerun pending.**
+> **Status (2026-07-20): implemented, adversarially hardened, and loaded-accepted within the later
+> 335-fixture aggregate run.**
 > The canonical arrival now upserts one visible joined arc and attaches its event ID only after the
 > existing arrival page is created. Schema 2 deep-scribes only pawn/arrival/joined/visible-phase/
 > visible-event/terminal/version primitives; pure normalization covers malformed, duplicate, oversized,
@@ -1644,18 +1649,23 @@ profile remains in the manual in-game matrix.
 > `DoAggressive`, and `DoLeave` methods and cache their required private transition fields once.
 > Detached before/after verification commits terminal visible history independently of settings. Pure
 > selection uses exact speaker, eligible pre-departure subject, or one closest nearby witness as the
-> phase permits; no RNG or now-hostile first-person POV is used. Rejection owns its nested exact response,
-> while unpatched `DoDownside` lets its nested exact method own naturally. Context/fallback expose only
-> generic visible phase/result, subject identity/label, role, and terminal state.
+> phase permits; exact speaker requires same-map presence, and no RNG or now-hostile first-person POV
+> is used. Visible rejection owns its nested exact response; aggressive rejection records the strongest
+> visible hostile phase, letterless modded rejection releases a nested visible owner, and unpatched
+> `DoDownside` lets its nested exact method own naturally. Committed but unverified/invisible markers
+> close as blank terminal barriers. Context/fallback expose only generic visible phase/result, optional
+> visible rejection provenance, subject identity/label, role, and terminal state.
 >
-> Focused suites pass 472 Anomaly and 115 save-normalization assertions. Seven new loaded A2.0 fixtures
-> bring the RimTest assembly to 323 compiled tests and cover exact registration/no-`DoDownside`, one
+> Focused suites pass 481 Anomaly and 122 save-normalization assertions. Eleven loaded A2.0 fixtures
+> bring the RimTest assembly to 327 compiled tests and cover exact registration/no-`DoDownside`, one
 > canonical/repeated arrival, rejection-with-nested-departure once, aggression, joined departure,
+> aggressive rejection, letterless nested ownership, disabled-output state, live legacy baselining,
 > disabled/no-op silence, role context, repeat suppression, and lifecycle cleanup. The first active run
 > passed 321/323 overall; its two failures were test-only recipient mismatches after each solo page had
 > already been counted. Rejection/aggression now assert a blank recipient role and the subject ID in
-> captured context; the corrected rerun is not yet claimed. The user-confirmed A1.4 active 316 run is
-> green aggregate evidence; the separate Anomaly-inactive profile, missing study/containment-hook
+> captured context. The later user-provided 335-fixture full run passed every A2.0 fixture, closing the
+> expanded 327-fixture acceptance debt as aggregate evidence. The user-confirmed A1.4 active 316 run
+> is green aggregate evidence; the separate Anomaly-inactive profile, missing study/containment-hook
 > compatibility profiles, and real
 > process-boundary save/reload remain deferred.
 
@@ -1668,9 +1678,51 @@ profile remains in the manual in-game matrix.
 
 ### Phase A2.1 — Surgical disclosure
 
-- Add recipe/tracker correlation and successful disclosure verification.
-- Implement exact `DidSurgery` ownership with fail-open behavior.
-- Add surgeon/subject POV tests and “nothing/failure” silence tests.
+> **Status (2026-07-20): implemented; latest expanded loaded run passed 334/335, with a corrected
+> test-only context-key rerun pending.** A composite
+> Anomaly-gated registration pins the exact installed public recipe, creepjoiner tracker, and Pawn
+> inspection-result signatures. The bounded recipe scope accepts disclosure only when the exact tracker
+> returns true and grows its builder, the overall Pawn result is letter-visible `Detected`, and the
+> recipe returns normally. Only generic booleans and detached subject/surgeon identity, visible labels,
+> eligibility, and tick cross the DLC boundary; appended letter prose and hidden tracker configuration
+> are neither copied nor saved.
+>
+> Pure planning commits one nonterminal `surgical_reveal` / `disclosed` phase independently of output,
+> selects the exact eligible surgeon first and exact eligible subject second under the XML writer cap,
+> never selects a nearby witness, suppresses replay, and leaves later terminal outcomes available. The
+> existing seven-field creepjoiner row and per-row schema version remain unchanged. Current load
+> normalization preserves the new phase, while an A2.0 downgrade safely normalizes the then-unknown
+> nonterminal phase back to `joined`.
+>
+> `DidSurgery` is deferred only inside the exact active surgeon-first/subject-second recipe scope and
+> suppressed only after the dedicated page is actually created. “Nothing found”, `DetectedNoLetter`,
+> surgery failure, exceptions, signature/correlation mismatch, expired/closed ownership, disabled output,
+> and no-author cases release the ordinary `TaleSignal`; vanilla's historical Tale is untouched. Context
+> and English/Russian fallback reveal only the generic disclosure and exact visible roles, never the
+> benefit/downside identity, appended letter text, hidden host state, motive, or terminal outcome.
+>
+> Review hardening rejects unrelated Tales before taking the XML policy snapshot, treats a created
+> dedicated page as the owner even if defensive event-ID attachment cannot finish, fails open on a
+> mismatched existing arc identity, clears event IDs from merged blank replay barriers, and removes an
+> ambiguous pronoun from the Russian subject fallback. Focused pure suites pass 532 Anomaly and 135
+> save-normalization assertions. Eight new loaded fixtures,
+> plus expanded registration/lifecycle assertions, bring RimTest to 335 compiled tests. They cover a real
+> successful recipe, surgeon/subject pair and surgeon-only pre-join POVs, nothing-found and disabled-output
+> generic-Tale fallback, an early recipe exit without tracker evidence, exception-finalizer fail-open,
+> unscoped ownership fallback, later terminal continuity, exact composite patch ownership, and lifecycle
+> cleanup. The first user-provided 335-fixture run passed 333 and failed only its two joined-subject
+> pair assertions after each strict guard had already counted exactly one dedicated event. The shared
+> fixture setup still forced A2.0's old one-writer cap, so A2.1 correctly produced a surgeon-only page;
+> setup now uses the supported two-writer ceiling. This closes the embedded A2.0 327-fixture debt. The
+> next user-provided run passed 334/335 and confirmed that cap correction; its sole failure was a live
+> fixture expecting shortened `initiator_role` / `recipient_role` keys after the exact pair page had
+> already been found. The frozen schema and pure suite use `initiator_witness_role` /
+> `recipient_witness_role`, which the fixture now asserts. The corrected 335-fixture rerun remains
+> pending.
+
+- [x] Add recipe/tracker correlation and successful disclosure verification.
+- [x] Implement exact `DidSurgery` ownership with fail-open behavior.
+- [x] Add surgeon/subject POV tests and “nothing/failure” silence tests.
 
 ### Phase A2.2 — Ghoul transformation
 

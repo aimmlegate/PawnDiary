@@ -529,7 +529,7 @@
   <anomalyContainmentBreach.tones.0>urgent and grounded in what broke free, without assigning cause or fault</anomalyContainmentBreach.tones.0>
   <anomalyContainmentBreach.tones.1>watchful and bodily tense, holding to the writer&apos;s actual relationship to the breach</anomalyContainmentBreach.tones.1>
   <anomalyCreepJoinerOutcome.label>Visible strange-arrival outcomes</anomalyCreepJoinerOutcome.label>
-  <anomalyCreepJoinerOutcome.instruction>a strange arrival reached one exact player-visible outcome; describe only the supplied disclosure, rejection, aggression, or departure and the writer&apos;s verified role, never reveal a hidden downside, infection, host identity, timer, future transformation, or unobserved motive</anomalyCreepJoinerOutcome.instruction>
+  <anomalyCreepJoinerOutcome.instruction>a strange arrival reached one exact player-visible outcome; describe only the supplied generic disclosure, rejection, aggression, or departure and the writer&apos;s verified role; for surgical disclosure keep the surgeon as examiner and the subject as patient, never identify what secret was found, quote inspection text, or reveal a hidden downside, infection, host identity, timer, future transformation, or unobserved motive</anomalyCreepJoinerOutcome.instruction>
   <anomalyCreepJoinerOutcome.tone>with shaken recognition and strict uncertainty about everything still concealed</anomalyCreepJoinerOutcome.tone>
   <anomalyCreepJoinerOutcome.tones.0>intimate and unnerved, stopping exactly where visible knowledge ends</anomalyCreepJoinerOutcome.tones.0>
   <anomalyCreepJoinerOutcome.tones.1>tense and observant, refusing to turn suspicion into secret certainty</anomalyCreepJoinerOutcome.tones.1>

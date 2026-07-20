@@ -102,11 +102,13 @@ namespace PawnDiary.Ingestion
                     .Translate(writer.LabelShortCap).Resolve();
             }
 
-            string resultKey = plan.phase == AnomalyOutcomeTokens.Rejected
-                ? "PawnDiary.Event.Anomaly.CreepJoiner.Result.Rejected"
-                : plan.phase == AnomalyOutcomeTokens.Aggressive
-                    ? "PawnDiary.Event.Anomaly.CreepJoiner.Result.Aggressive"
-                    : "PawnDiary.Event.Anomaly.CreepJoiner.Result.Departed";
+            string resultKey = facts.aggressionFollowedRejection
+                ? "PawnDiary.Event.Anomaly.CreepJoiner.Result.RejectedAggressive"
+                : plan.phase == AnomalyOutcomeTokens.Rejected
+                    ? "PawnDiary.Event.Anomaly.CreepJoiner.Result.Rejected"
+                    : plan.phase == AnomalyOutcomeTokens.Aggressive
+                        ? "PawnDiary.Event.Anomaly.CreepJoiner.Result.Aggressive"
+                        : "PawnDiary.Event.Anomaly.CreepJoiner.Result.Departed";
             string result = resultKey.Translate().Resolve();
             return "PawnDiary.Event.Anomaly.CreepJoiner.Fallback"
                 .Translate(writer.LabelShortCap, subject.LabelShortCap, result).Resolve();

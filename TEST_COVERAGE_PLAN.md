@@ -239,29 +239,63 @@ runner log is claimed. The separate Anomaly-inactive profile, disposable missing
 compatibility profiles, and real process-boundary save/reload remain deferred and unclaimed; follow
 `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
-Master Wave 7 / Anomaly A2.0 raises `DiaryAnomalyPolicyTests` to 472 assertions and
-`DiarySaveNormalizationTests` to 115. Pure cases cover exact `creepjoiner=true` parsing and canonical
-arrival upsert, all three visible outcome/result mappings, no-transition/unverifiable/nested drops,
+Master Wave 7 / Anomaly A2.0 plus adversarial hardening raises `DiaryAnomalyPolicyTests` to 481
+assertions and `DiarySaveNormalizationTests` to 122. Pure cases cover exact `creepjoiner=true` parsing
+and canonical/future/tick-zero arrival upsert, all three visible outcome/result mappings, no-transition,
+unverifiable/invisible terminal barriers, nested drops,
 settings-independent terminal history, replay suppression, speaker/pre-departure-subject/nearby writer
-roles, deterministic ties/radius/input and retained-candidate caps, delimiter sanitization, and explicit
+roles, same-map speaker truth, aggressive-rejection provenance, deterministic ties/radius/input and
+retained-candidate caps, delimiter sanitization, and explicit
 absence of secret schema fields. Save cases cover the frozen list key and seven-field record,
-null/blank/malformed/negative/invalid/future rows, deterministic duplicate merge, 4,096-input/512-output
-bounds, active state-only old-save baselining, and inactive deferral.
+null/blank/malformed/negative/invalid/future rows, deterministic current/future duplicate merge,
+4,096-input/512-output bounds, ordered schema-0→1→2 migration, active state-only old-save baselining,
+and inactive deferral.
 
-`PawnDiaryCreepJoinerFlowTests` adds seven loaded fixtures, bringing the separate RimTest assembly to
-323 compiled tests. They pin three independent active/inactive hook-health flags, exact public
+`PawnDiaryCreepJoinerFlowTests` now has eleven loaded fixtures, bringing the separate RimTest assembly
+to 327 compiled tests. They pin three independent active/inactive hook-health flags, exact public
 parameterless registration, deliberate absence of a `DoDownside` patch, canonical and repeated arrival,
-real visible rejection with nested `DoLeave` ownership, real aggression and joined departure, speaker/
-nearby/subject roles, repeat/no-op silence, and lifecycle reset. The existing component-state fixture
+real visible rejection with nested `DoLeave` ownership, vanilla aggressive-rejection promotion,
+letterless rejection releasing nested visible aggression, real aggression and joined departure,
+disabled-output terminal history, the live joined-pawn old-save scan, speaker/nearby/subject roles,
+repeat/no-op silence, and lifecycle reset. The existing component-state fixture
 now round-trips and independently deep-loads the seventh `anomalyCreepJoinerArcs` key. These A2.0
 fixtures compile against installed RimWorld 1.6 and RimTest Redux. The first user-provided active run
 passed 321/323 overall. Its two failures were false-negative rejection/aggression assertions: the
 shared guard had found exactly one new event, but `FireAndRequireEvent` was incorrectly told to match
 the visible creepjoiner as `recipientPawnId` on a solo witness page. Both fixtures now match the solo
-writer and independently require `creepjoiner_subject_id` in captured context; the corrected loaded
-rerun remains open. The same three deferred external profiles remain: separate
+writer and independently require `creepjoiner_subject_id` in captured context. The later user-provided
+335-fixture full run passed every A2.0 fixture, closing the expanded 327-fixture acceptance debt as
+aggregate evidence. The same three deferred external profiles remain: separate
 Anomaly-inactive, disposable missing study/containment-hook compatibility, and real process-boundary
 save/reload.
+
+Master Wave 7 / Anomaly A2.1 raises `DiaryAnomalyPolicyTests` to 532 assertions and
+`DiarySaveNormalizationTests` to 135. Pure cases pin successful, false, unverified, invisible,
+malformed, replayed, disabled-output, and terminal-blocked disclosure planning; nonterminal reveal
+followed by a later terminal outcome; exact surgeon-first/subject-second selection at writer caps
+1/2; same-pawn exclusion; mismatched-arc protection; no nearby-witness fallback; role-truth and
+delimiter/spoiler sanitization; exact `DidSurgery` surgeon/subject ownership including the expiry
+boundary, mismatch/expired/pre-scope/closed-scope fail-open behavior; and same-schema preservation,
+duplicate ranking, contradictory-row barriers with cleared event IDs, future-row barriers, and A2.0
+downgrade behavior for `surgical_reveal`.
+
+`PawnDiaryCreepJoinerFlowTests` now has nineteen loaded fixtures, bringing the separate RimTest
+assembly to 335 compiled tests. Eight new cases exercise the real successful surgical-inspection recipe
+for exact surgeon/subject pair ownership, surgeon-only pre-join authorship, “nothing found” generic-Tale
+fallback, localized fallback role labels, disabled specialized output with committed nonterminal history,
+a simulated early recipe exit without tracker evidence, exception-finalizer release of a deferred Tale,
+an unscoped generic Tale, and a later real terminal departure. The existing registration fixture now
+pins the composite exact recipe/tracker/Pawn patch set and the lifecycle fixture clears both rejection
+and surgery scopes. Teardown removes only fixture-created vanilla letters and Tales. The first user-
+provided 335-fixture run passed 333 and failed only the two joined-subject pair assertions. Each strict
+fixture guard had already counted exactly one dedicated event; the shared setup still forced A2.0's
+old one-writer cap, so pure A2.1 correctly emitted a surgeon-only page before the pair matcher ran.
+The setup now uses the supported two-writer ceiling. The next user-provided run passed 334/335,
+confirming that correction and every other fixture. Its sole failure occurred after finding the exact
+pair page: the live assertion expected nonexistent `initiator_role` / `recipient_role` context keys,
+while the frozen schema and pure suite pin `initiator_witness_role` / `recipient_witness_role`. The
+fixture now asserts the canonical keys. A corrected 335-fixture rerun remains pending, alongside the
+Anomaly-inactive, missing-hook, and process-boundary save/reload profiles; no production behavior changed.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It

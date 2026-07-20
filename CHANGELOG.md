@@ -40,6 +40,82 @@
   `PawnDiary.Tab.CopyEntry` (English + Russian), and the copy tooltip is no longer marked dev-only. The
   mod assembly rebuilds clean (0 warnings, 0 errors); RimWorld API signatures were reconfirmed against
   the installed 1.6 `Assembly-CSharp.dll`. In-game visual confirmation of the redesigned tab is pending.
+- **2026-07-20 — Hardened A2.1 surgical disclosure after consolidated adversarial review.** The
+  shared `TaleRecorder.RecordTale` hook now rejects inactive scopes and non-`DidSurgery` Tales before
+  taking an Anomaly XML policy snapshot. Once a dedicated disclosure page exists it owns the source
+  even if the defensive arc re-read cannot attach its event ID, preventing a duplicate generic surgery
+  page. Pure planning fails open instead of mutating a mismatched pawn arc, and corrupt duplicate rows
+  that collapse to a blank terminal replay barrier now clear any visible-event ID immediately.
+
+  Focused coverage now pins the exact ownership-expiry boundary, same-pawn writer exclusion,
+  mismatched-arc protection, blank-barrier event-ID cleanup, and localized surgeon/subject fallback
+  labels. The Russian subject fallback no longer uses an ambiguous gendered pronoun. The documented
+  contract that verified visible history advances independently of optional output is unchanged; so
+  are the seven-field save schema, DLC gates, and spoiler firewall. Pure suites pass 532 Anomaly and
+  135 save-normalization assertions; runtime and the 335-test RimTest assembly rebuild successfully.
+
+- **2026-07-20 — Corrected the remaining false-negative A2.1 pair-context fixture.** The second
+  user-provided 335-fixture Anomaly-active run passed 334 tests, confirming the writer-cap correction
+  and every other A2.1/A2.0 case. Its sole failure occurred after the exact surgeon/subject pair page
+  had already been found: the fixture expected nonexistent `initiator_role` / `recipient_role` keys,
+  while the frozen Anomaly schema and 529-assertion pure suite use `initiator_witness_role` /
+  `recipient_witness_role`. The live fixture now asserts those canonical keys. No production behavior,
+  save schema, prompt text, Def, or localization changed; the corrected 335-fixture rerun remains pending.
+
+- **2026-07-20 — Corrected two false-negative A2.1 joined-surgery fixtures after the first
+  loaded run.** The user-provided 335-fixture Anomaly-active run passed 333 tests and failed only the
+  two assertions expecting an exact surgeon/subject pair. Both strict guards had already counted one
+  dedicated event, confirming capture; the shared creepjoiner setup still forced A2.0's old one-writer
+  cap, so the A2.1 policy correctly emitted a surgeon-only page before the pair matcher ran. The setup
+  now uses the supported two-writer ceiling. No production behavior, save schema, prompt text, Def, or
+  localization changed. The same run passed every embedded A2.0 fixture, closing the expanded
+  327-fixture acceptance debt as aggregate evidence; the corrected 335-fixture rerun remains pending.
+
+- **2026-07-20 — Implemented Master Wave 7 / Anomaly Phase A2.1 surgical creepjoiner
+  disclosure.** Pawn Diary now correlates the exact installed surgical-inspection recipe, creepjoiner
+  tracker callback, overall Pawn inspection result, and surgeon-first/subject-second `DidSurgery`
+  Tale. A visible tracker disclosure creates one nonterminal `surgical_reveal` / `disclosed` page;
+  the exact eligible surgeon writes first and the exact eligible subject may write second, with no
+  unrelated nearby witness. “Nothing found”, letter-suppressed inspection, failed/exceptional surgery,
+  correlation mismatch, missing author, and disabled specialized output fail open to the ordinary
+  Tale route. The vanilla historical Tale itself is never removed.
+
+  The bounded lifecycle-cleared scope copies only detached IDs, visible labels, eligibility, tick, and
+  generic disclosure booleans. Appended inspection prose, configured benefit/downside identity, hidden
+  host state, private tracker fields, motive, and future/terminal claims have no prompt or save path.
+  The seven-field creepjoiner row schema/version remains unchanged: current loads preserve the new
+  nonterminal phase, while A2.0 downgrade behavior safely treats it as state-only `joined`. Arrival
+  continuity and later rejection/aggression/departure remain available. XML prompt policy and localized
+  English/Russian fallback now describe only generic disclosure and truthful surgeon/subject roles.
+
+  Focused suites pass 529 Anomaly and 134 save-normalization assertions. Eight new loaded fixtures plus
+  expanded registration/lifecycle checks bring RimTest to 335 compiled tests and cover the real recipe,
+  pair/solo roles, no-disclosure and disabled-output Tale fallback, early exit, exception-finalizer and
+  unscoped fail-open behavior, later terminal outcome, exact composite patch ownership, and reset cleanup.
+  Runtime and RimTest assemblies rebuild against installed RimWorld 1.6. The earlier 327-test A2.0
+  rerun and the expanded 335-test A2.1 in-game run
+  remain pending; compilation is not claimed as execution.
+
+- **2026-07-20 — Hardened A2.0 creepjoiner truth, compatibility, and loaded coverage after
+  adversarial review.** Vanilla `AggressiveRejection` still owns exactly one outer page, but that
+  page and its saved terminal arc now report the pawn's visible `aggressive`/`hostile` state and carry
+  prompt-safe `rejection_response=true` provenance instead of permanently understating an attacker as
+  merely rejected. Exact-speaker POV now requires the speaker to remain on the subject's map. A
+  letterless modded rejection no longer suppresses a nested visible aggression/departure owner, while
+  any committed private marker that lacks enough evidence for a page becomes a blank-phase terminal
+  replay barrier rather than a stranded joined arc. Phase-specific reflection reads fail closed when
+  their required fields are absent without coupling rejection to departure-field health, disallowed/
+  no-op captures skip the bounded map-writer scan, and later arrival observations cannot rewrite a
+  terminal tick-zero sentinel.
+
+  The A2 baseline helper now accepts only study-schema-1 input, preventing a direct call from skipping
+  the required A1 baseline. XML/code comments mark age-only creepjoiner retention as reserved and
+  witness values above one as inert under A2.0's single-POV contract. English/Russian composite
+  fallback text and docs are synchronized; the seven-field save schema remains unchanged. Focused
+  suites pass 481 Anomaly and 122 save-normalization assertions. Four loaded fixtures cover vanilla
+  aggressive rejection, letterless nested ownership, disabled-output state consumption, and the real
+  live joined-pawn old-save scan, bringing RimTest to 327 compiled tests. Both assemblies rebuild;
+  the new 327-test in-game run remains pending and is not claimed as executed.
 
 - **2026-07-20 — Corrected two false-negative A2.0 loaded creepjoiner fixtures.** The first
   user-provided active 323-test run passed 321 and failed the rejection/aggression assertions after

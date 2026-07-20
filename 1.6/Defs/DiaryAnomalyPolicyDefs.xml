@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
-  <!-- A1-A2.0 policy. All identifiers are our own primitive strings; there are no Anomaly Def
+  <!-- A1-A2.1 policy. All identifiers are our own primitive strings; there are no Anomaly Def
        references, so this row safely loads and remains inert when the DLC is absent. -->
   <PawnDiary.DiaryAnomalyPolicyDef>
     <defName>Diary_AnomalyPolicy</defName>
@@ -20,10 +20,11 @@
     <containmentDedupTicks>2500</containmentDedupTicks>
     <recentStudierMaxAgeTicks>60000</recentStudierMaxAgeTicks>
 
-    <!-- A2.0 consumes the creepjoiner rows; ghoul/void remain frozen for later phases. -->
+    <!-- A2.0 terminal outcomes emit at most one POV; A2.1 surgical disclosure may pair the exact
+         surgeon and subject. Retention is reserved; ghoul/void remain frozen for later phases. -->
     <creepJoinerEnabled>true</creepJoinerEnabled>
     <creepJoinerOutcomeDedupTicks>2500</creepJoinerOutcomeDedupTicks>
-    <creepJoinerArcRetentionTicks>3600000</creepJoinerArcRetentionTicks>
+    <creepJoinerArcRetentionTicks>3600000</creepJoinerArcRetentionTicks><!-- reserved; age-only pruning is inactive -->
     <creepJoinerMaxWitnesses>2</creepJoinerMaxWitnesses>
     <creepJoinerWitnessRadius>12</creepJoinerWitnessRadius>
     <ghoulTransformationEnabled>true</ghoulTransformationEnabled>

@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 using PawnDiary.Capture;
 using RimWorld;
 using Verse;
@@ -73,6 +74,37 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>
+    /// Live references retained only across one synchronous surgical recipe. The pure facts contain
+    /// generic disclosure booleans and exact visible roles; no StringBuilder text or tracker Def state
+    /// is copied into this object.
+    /// </summary>
+    internal sealed class CreepJoinerSurgicalInspectionCapture
+    {
+        internal Pawn subject;
+        internal Pawn surgeon;
+        internal Pawn_CreepJoinerTracker tracker;
+        internal CreepJoinerSurgicalDisclosureFacts facts;
+        // CreepJoinerSurgicalInspectionScope owns this flag; the recipe finalizer reads it to avoid
+        // closing an already-completed frame a second time.
+        internal bool scopeClosed;
+
+        internal Pawn ResolveWriter(string pawnId)
+        {
+            if (string.Equals(
+                surgeon?.GetUniqueLoadID(), pawnId, StringComparison.Ordinal)) return surgeon;
+            return string.Equals(
+                subject?.GetUniqueLoadID(), pawnId, StringComparison.Ordinal) ? subject : null;
+        }
+    }
+
+    /// <summary>Exact tracker call plus only the pre-call builder length, never its text.</summary>
+    internal sealed class CreepJoinerSurgicalTrackerCallState
+    {
+        internal CreepJoinerSurgicalInspectionCapture capture;
+        internal int builderLengthBefore;
+    }
+
     /// <summary>Guarded Anomaly accessors for save baselines and exact study callbacks.</summary>
     internal static partial class DlcContext
     {
@@ -83,8 +115,9 @@ namespace PawnDiary
         private static FieldInfo creepJoinerHasLeftField;
 
         /// <summary>
-        /// Resolves the three private committed-transition markers once. Each hook consumes only its
-        /// own health bit, so a renamed field disables that outcome without disabling the other two.
+        /// Resolves the three private committed-transition markers once. Rejection also needs the
+        /// aggression marker to recognize vanilla's nested AggressiveRejection truth; it does not
+        /// depend on the unrelated departure marker.
         /// </summary>
         internal static CreepJoinerReflectionHealth ResolveCreepJoinerReflection(Type trackerType)
         {
@@ -104,10 +137,158 @@ namespace PawnDiary
             return new CreepJoinerReflectionHealth
             {
                 rejectionReady = sameType && creepJoinerTriggeredRejectionField != null
-                    && creepJoinerTriggeredAggressiveField != null && creepJoinerHasLeftField != null,
+                    && creepJoinerTriggeredAggressiveField != null,
                 aggressionReady = sameType && creepJoinerTriggeredAggressiveField != null,
                 departureReady = sameType && creepJoinerHasLeftField != null
             };
+        }
+
+        /// <summary>Captures the exact patient and surgeon at the outer recipe boundary.</summary>
+        internal static bool TryCaptureCreepJoinerSurgicalInspection(
+            Pawn subject,
+            Pawn surgeon,
+            out CreepJoinerSurgicalInspectionCapture capture)
+        {
+            capture = null;
+            Pawn_CreepJoinerTracker tracker = subject?.creepjoiner;
+            if (!ModsConfig.AnomalyActive || subject == null || surgeon == null || tracker == null
+                || tracker.GetType() != creepJoinerTrackerType
+                || !ReferenceEquals(tracker.Pawn, subject)) return false;
+            string subjectId = subject.GetUniqueLoadID();
+            string surgeonId = surgeon.GetUniqueLoadID();
+            if (string.IsNullOrWhiteSpace(subjectId) || string.IsNullOrWhiteSpace(surgeonId))
+                return false;
+
+            capture = new CreepJoinerSurgicalInspectionCapture
+            {
+                subject = subject,
+                surgeon = surgeon,
+                tracker = tracker,
+                facts = new CreepJoinerSurgicalDisclosureFacts
+                {
+                    subjectPawnId = subjectId,
+                    subjectLabel = DiaryLineCleaner.CleanLine(subject.LabelShortCap),
+                    surgeonPawnId = surgeonId,
+                    surgeonLabel = DiaryLineCleaner.CleanLine(surgeon.LabelShortCap),
+                    tick = Find.TickManager?.TicksGame ?? 0,
+                    surgeonEligible = DiaryGameComponent.IsDiaryEligible(surgeon),
+                    subjectEligible = DiaryGameComponent.IsDiaryEligible(subject)
+                }
+            };
+            return true;
+        }
+
+        /// <summary>
+        /// Correlates the tracker call to the active outer recipe and retains only builder length.
+        /// </summary>
+        internal static bool TryCaptureCreepJoinerSurgicalTrackerCall(
+            object trackerObject,
+            Pawn surgeon,
+            StringBuilder builder,
+            CreepJoinerSurgicalInspectionCapture capture,
+            out CreepJoinerSurgicalTrackerCallState state)
+        {
+            state = null;
+            Pawn_CreepJoinerTracker tracker = trackerObject as Pawn_CreepJoinerTracker;
+            if (!ModsConfig.AnomalyActive || capture?.facts == null || tracker == null
+                || builder == null || !ReferenceEquals(tracker, capture.tracker)
+                || !ReferenceEquals(tracker.Pawn, capture.subject)
+                || !ReferenceEquals(surgeon, capture.surgeon)) return false;
+            state = new CreepJoinerSurgicalTrackerCallState
+            {
+                capture = capture,
+                builderLengthBefore = builder.Length
+            };
+            return true;
+        }
+
+        /// <summary>Marks generic disclosure proof only when the exact tracker appended and returned true.</summary>
+        internal static void CompleteCreepJoinerSurgicalTrackerCall(
+            object trackerObject,
+            Pawn surgeon,
+            StringBuilder builder,
+            bool result,
+            CreepJoinerSurgicalTrackerCallState state)
+        {
+            CreepJoinerSurgicalInspectionCapture capture = state?.capture;
+            Pawn_CreepJoinerTracker tracker = trackerObject as Pawn_CreepJoinerTracker;
+            if (!ModsConfig.AnomalyActive || capture?.facts == null || tracker == null
+                || builder == null || !result || builder.Length <= state.builderLengthBefore
+                || !ReferenceEquals(tracker, capture.tracker)
+                || !ReferenceEquals(tracker.Pawn, capture.subject)
+                || !ReferenceEquals(surgeon, capture.surgeon)) return;
+            capture.facts.trackerDisclosureAppended = true;
+        }
+
+        /// <summary>
+        /// Records whether the whole Pawn inspection returned the letter-visible Detected result. A
+        /// different inspectable hediff may force DetectedNoLetter, which must not authorize a page.
+        /// </summary>
+        internal static void ObserveCreepJoinerSurgicalInspectionResult(
+            Pawn subject,
+            Pawn surgeon,
+            SurgicalInspectionOutcome outcome,
+            CreepJoinerSurgicalInspectionCapture capture)
+        {
+            if (!ModsConfig.AnomalyActive || capture?.facts == null
+                || !ReferenceEquals(subject, capture.subject)
+                || !ReferenceEquals(surgeon, capture.surgeon)) return;
+            // Vanilla calls this once. If a mod re-enters it, the most recent whole-Pawn result owns
+            // visibility because that is the result the outer recipe ultimately observes.
+            capture.facts.playerVisible = capture.facts.trackerDisclosureAppended
+                && outcome == SurgicalInspectionOutcome.Detected;
+        }
+
+        /// <summary>Clones detached facts after the exact recipe returns normally.</summary>
+        internal static bool TryCompleteCreepJoinerSurgicalInspection(
+            Pawn subject,
+            Pawn surgeon,
+            CreepJoinerSurgicalInspectionCapture capture,
+            out CreepJoinerSurgicalDisclosureFacts facts)
+        {
+            facts = null;
+            if (!ModsConfig.AnomalyActive || capture?.facts == null
+                || !ReferenceEquals(subject, capture.subject)
+                || !ReferenceEquals(surgeon, capture.surgeon)
+                || !ReferenceEquals(subject?.creepjoiner, capture.tracker)) return false;
+            CreepJoinerSurgicalDisclosureFacts source = capture.facts;
+            facts = new CreepJoinerSurgicalDisclosureFacts
+            {
+                subjectPawnId = source.subjectPawnId,
+                subjectLabel = source.subjectLabel,
+                surgeonPawnId = source.surgeonPawnId,
+                surgeonLabel = source.surgeonLabel,
+                tick = source.tick,
+                surgeryCompleted = true,
+                trackerDisclosureAppended = source.trackerDisclosureAppended,
+                playerVisible = source.playerVisible,
+                surgeonEligible = source.surgeonEligible,
+                subjectEligible = source.subjectEligible
+            };
+            return true;
+        }
+
+        /// <summary>Copies exact ordinary DidSurgery Tale role identities for pure ownership matching.</summary>
+        internal static bool TryCaptureCreepJoinerSurgeryTale(
+            TaleDef def,
+            object[] args,
+            int tick,
+            out CreepJoinerSurgeryTaleFacts facts)
+        {
+            facts = null;
+            if (!ModsConfig.AnomalyActive || def == null || args == null || args.Length != 2)
+                return false;
+            Pawn first = args[0] as Pawn;
+            Pawn second = args[1] as Pawn;
+            if (first == null || second == null) return false;
+            facts = new CreepJoinerSurgeryTaleFacts
+            {
+                taleDefName = def.defName ?? string.Empty,
+                firstPawnId = first.GetUniqueLoadID(),
+                secondPawnId = second.GetUniqueLoadID(),
+                tick = tick
+            };
+            return true;
         }
 
         /// <summary>Captures exact event-time facts and a bounded writer roster before vanilla mutates.</summary>
@@ -128,7 +309,8 @@ namespace PawnDiary
             bool aggressionBefore;
             bool departureBefore;
             if (!TryReadCreepJoinerFlags(
-                tracker, out rejectionBefore, out aggressionBefore, out departureBefore)) return false;
+                tracker, phase, out rejectionBefore, out aggressionBefore, out departureBefore))
+                return false;
 
             string subjectId = subject.GetUniqueLoadID();
             if (string.IsNullOrWhiteSpace(subjectId)) return false;
@@ -170,6 +352,15 @@ namespace PawnDiary
             {
                 result.methodAllowedBefore = !tracker.Disabled && !departureBefore;
                 result.visibleResponseExpected = true;
+            }
+
+            // A disallowed/no-op call can still be compared after vanilla returns so an unexpected
+            // private-marker commit becomes a silent replay barrier. It can never emit a page, so do
+            // not pay for the event-time map scan or retain writer references.
+            if (!result.methodAllowedBefore)
+            {
+                capture = result;
+                return true;
             }
 
             Dictionary<string, Pawn> pawnsById = new Dictionary<string, Pawn>(StringComparer.Ordinal);
@@ -232,7 +423,8 @@ namespace PawnDiary
             bool aggressionAfter;
             bool departureAfter;
             if (!TryReadCreepJoinerFlags(
-                tracker, out rejectionAfter, out aggressionAfter, out departureAfter)) return false;
+                tracker, capture.facts.phase,
+                out rejectionAfter, out aggressionAfter, out departureAfter)) return false;
 
             CreepJoinerOutcomeFacts committed = capture.facts;
             committed.nestedOutcomeOwnedByRejection = !capture.ownsRejectionScope
@@ -241,6 +433,16 @@ namespace PawnDiary
             {
                 committed.transitioned = !capture.rejectionCommittedBefore && rejectionAfter;
                 committed.transitionVerified = capture.methodAllowedBefore && committed.transitioned;
+                if (committed.transitionVerified
+                    && !capture.aggressionCommittedBefore && aggressionAfter)
+                {
+                    // Vanilla AggressiveRejection visibly performs DoAggressive inside DoRejection.
+                    // Keep one outer-owned page, but save and narrate the strongest visible terminal
+                    // state instead of permanently describing an attacking pawn as merely rejected.
+                    committed.phase = AnomalyOutcomeTokens.Aggressive;
+                    committed.visibleResultToken = CreepJoinerVisibleResultTokens.Hostile;
+                    committed.aggressionFollowedRejection = true;
+                }
             }
             else if (committed.phase == AnomalyOutcomeTokens.Aggressive)
             {
@@ -311,6 +513,7 @@ namespace PawnDiary
 
         private static bool TryReadCreepJoinerFlags(
             Pawn_CreepJoinerTracker tracker,
+            string phase,
             out bool rejected,
             out bool aggressive,
             out bool left)
@@ -318,14 +521,23 @@ namespace PawnDiary
             rejected = false;
             aggressive = false;
             left = false;
-            if (tracker == null) return false;
+            if (tracker == null
+                || phase == AnomalyOutcomeTokens.Rejected
+                    && (creepJoinerTriggeredRejectionField == null
+                        || creepJoinerTriggeredAggressiveField == null)
+                || phase == AnomalyOutcomeTokens.Aggressive
+                    && creepJoinerTriggeredAggressiveField == null
+                || phase == AnomalyOutcomeTokens.Departed && creepJoinerHasLeftField == null)
+            {
+                return false;
+            }
             if (creepJoinerTriggeredRejectionField != null)
                 rejected = (bool)creepJoinerTriggeredRejectionField.GetValue(tracker);
             if (creepJoinerTriggeredAggressiveField != null)
                 aggressive = (bool)creepJoinerTriggeredAggressiveField.GetValue(tracker);
             if (creepJoinerHasLeftField != null)
                 left = (bool)creepJoinerHasLeftField.GetValue(tracker);
-            return true;
+            return CreepJoinerPhaseTokens.IsOutcome(phase);
         }
 
         private static void AddCreepJoinerWriter(

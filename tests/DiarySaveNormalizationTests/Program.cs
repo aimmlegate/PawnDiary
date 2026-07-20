@@ -58,6 +58,7 @@ namespace DiarySaveNormalizationTests
             TestAnomalyLegacyBaseline();
             TestAnomalyCreepJoinerNormalization();
             TestAnomalyCreepJoinerLegacyBaseline();
+            TestAnomalyCreepJoinerSurgicalRevealCompatibility();
 
             Console.WriteLine("DiarySaveNormalizationTests passed " + assertions + " assertions.");
             return 0;
@@ -653,6 +654,38 @@ namespace DiarySaveNormalizationTests
             AssertEqual("future record phase is not interpreted by old code", string.Empty,
                 future.lastVisiblePhase);
 
+            List<CreepJoinerArcSnapshot> futureDuplicate =
+                AnomalyPersistencePolicy.NormalizeCreepJoinerArcs(
+                    new List<CreepJoinerArcSnapshot>
+                    {
+                        new CreepJoinerArcSnapshot
+                        {
+                            pawnId = "Pawn_FutureDuplicate",
+                            joinedTick = 20,
+                            lastVisiblePhase = AnomalyOutcomeTokens.Departed,
+                            lastVisibleEventId = "CurrentEvent",
+                            terminal = true,
+                            schemaVersion = 1
+                        },
+                        new CreepJoinerArcSnapshot
+                        {
+                            pawnId = "Pawn_FutureDuplicate",
+                            joinedTick = 10,
+                            lastVisiblePhase = "future_phase",
+                            lastVisibleEventId = "FutureEvent",
+                            terminal = true,
+                            schemaVersion = 9
+                        }
+                    });
+            AssertEqual("future duplicate rows collapse to one barrier", 1, futureDuplicate.Count);
+            AssertEqual("future duplicate preserves the newest schema", 9,
+                futureDuplicate[0].schemaVersion);
+            AssertTrue("future duplicate remains terminal", futureDuplicate[0].terminal);
+            AssertEqual("future duplicate does not reuse a current phase", string.Empty,
+                futureDuplicate[0].lastVisiblePhase);
+            AssertEqual("future duplicate does not reuse a visible event", string.Empty,
+                futureDuplicate[0].lastVisibleEventId);
+
             List<CreepJoinerArcSnapshot> many = new List<CreepJoinerArcSnapshot>();
             for (int i = 0; i < AnomalyPolicyLimits.MaximumCreepJoinerArcs + 1; i++)
             {
@@ -725,6 +758,14 @@ namespace DiarySaveNormalizationTests
             AssertEqual("Anomaly-inactive A2 baseline invents no rows", 0,
                 inactive.creepJoinerArcs.Count);
 
+            AnomalyPersistentStateSnapshot schemaZero =
+                AnomalyPersistencePolicy.BaselineCreepJoiners(
+                    new AnomalyPersistentStateSnapshot { schemaVersion = 0 }, facts);
+            AssertEqual("A2 baseline cannot skip the required study baseline", 0,
+                schemaZero.schemaVersion);
+            AssertEqual("schema-zero direct A2 baseline invents no rows", 0,
+                schemaZero.creepJoinerArcs.Count);
+
             AnomalyPersistentStateSnapshot current = new AnomalyPersistentStateSnapshot
             {
                 schemaVersion = AnomalyPersistencePolicy.CurrentSchemaVersion
@@ -733,6 +774,139 @@ namespace DiarySaveNormalizationTests
                 current, facts);
             AssertEqual("current A2 schema is not rebaselined", 0,
                 unchanged.creepJoinerArcs.Count);
+        }
+
+        private static void TestAnomalyCreepJoinerSurgicalRevealCompatibility()
+        {
+            // A2.1 deliberately keeps the seven-field row at schema 1. An A2.0 downgrade therefore
+            // treats its then-unknown non-terminal phase like any unknown joined-state row instead of
+            // converting it into a future-schema terminal barrier that could block a later outcome.
+            AssertEqual("A2.1 keeps downgrade-compatible creepjoiner row schema", 1,
+                AnomalyPersistencePolicy.CurrentCreepJoinerArcSchemaVersion);
+            CreepJoinerArcSnapshot reveal = AnomalyPersistencePolicy.NormalizeCreepJoinerArc(
+                new CreepJoinerArcSnapshot
+                {
+                    pawnId = "Pawn_Reveal",
+                    arrivalEventId = "Arrival_1",
+                    joinedTick = 10,
+                    lastVisiblePhase = AnomalyOutcomeTokens.SurgicalReveal,
+                    lastVisibleEventId = "Reveal_1",
+                    terminal = false,
+                    schemaVersion = 1
+                });
+            AssertEqual("non-terminal surgical phase survives normalization",
+                AnomalyOutcomeTokens.SurgicalReveal, reveal.lastVisiblePhase);
+            AssertEqual("non-terminal surgical event identity survives normalization",
+                "Reveal_1", reveal.lastVisibleEventId);
+            AssertTrue("surgical reveal normalization remains non-terminal", !reveal.terminal);
+
+            List<CreepJoinerArcSnapshot> duplicate = AnomalyPersistencePolicy.NormalizeCreepJoinerArcs(
+                new List<CreepJoinerArcSnapshot>
+                {
+                    new CreepJoinerArcSnapshot
+                    {
+                        pawnId = "Pawn_DuplicateReveal",
+                        joinedTick = 20,
+                        lastVisiblePhase = CreepJoinerPhaseTokens.Joined,
+                        schemaVersion = 1
+                    },
+                    new CreepJoinerArcSnapshot
+                    {
+                        pawnId = "Pawn_DuplicateReveal",
+                        joinedTick = 10,
+                        lastVisiblePhase = AnomalyOutcomeTokens.SurgicalReveal,
+                        lastVisibleEventId = "Reveal_A",
+                        schemaVersion = 1
+                    }
+                });
+            AssertEqual("duplicate joined/reveal rows collapse", 1, duplicate.Count);
+            AssertEqual("duplicate merge ranks reveal above joined",
+                AnomalyOutcomeTokens.SurgicalReveal, duplicate[0].lastVisiblePhase);
+            AssertEqual("duplicate reveal retains its event identity", "Reveal_A",
+                duplicate[0].lastVisibleEventId);
+            AssertTrue("duplicate reveal remains non-terminal", !duplicate[0].terminal);
+
+            duplicate.Add(new CreepJoinerArcSnapshot
+            {
+                pawnId = "Pawn_DuplicateReveal",
+                joinedTick = 30,
+                lastVisiblePhase = AnomalyOutcomeTokens.Rejected,
+                lastVisibleEventId = "Terminal_A",
+                terminal = true,
+                schemaVersion = 1
+            });
+            duplicate = AnomalyPersistencePolicy.NormalizeCreepJoinerArcs(duplicate);
+            AssertTrue("terminal duplicate ranks above earlier surgical reveal",
+                duplicate.Count == 1 && duplicate[0].terminal
+                    && duplicate[0].lastVisiblePhase == AnomalyOutcomeTokens.Rejected);
+
+            CreepJoinerArcSnapshot malformedTerminal =
+                AnomalyPersistencePolicy.NormalizeCreepJoinerArc(new CreepJoinerArcSnapshot
+                {
+                    pawnId = "Pawn_MalformedReveal",
+                    joinedTick = 1,
+                    lastVisiblePhase = AnomalyOutcomeTokens.SurgicalReveal,
+                    lastVisibleEventId = "UnsafeReveal",
+                    terminal = true,
+                    schemaVersion = 1
+                });
+            AssertTrue("contradictory terminal reveal becomes a blank replay barrier",
+                malformedTerminal.terminal && malformedTerminal.lastVisiblePhase.Length == 0
+                    && malformedTerminal.lastVisibleEventId.Length == 0);
+
+            List<CreepJoinerArcSnapshot> contradictoryDuplicate =
+                AnomalyPersistencePolicy.NormalizeCreepJoinerArcs(
+                    new List<CreepJoinerArcSnapshot>
+                    {
+                        new CreepJoinerArcSnapshot
+                        {
+                            pawnId = "Pawn_ContradictoryDuplicate",
+                            joinedTick = 1,
+                            lastVisiblePhase = CreepJoinerPhaseTokens.Joined,
+                            terminal = true,
+                            schemaVersion = 1
+                        },
+                        new CreepJoinerArcSnapshot
+                        {
+                            pawnId = "Pawn_ContradictoryDuplicate",
+                            joinedTick = 2,
+                            lastVisiblePhase = AnomalyOutcomeTokens.SurgicalReveal,
+                            lastVisibleEventId = "Reveal_MustNotLeak",
+                            terminal = false,
+                            schemaVersion = 1
+                        }
+                    });
+            AssertTrue("duplicate blank barrier cannot retain a visible event identity",
+                contradictoryDuplicate.Count == 1 && contradictoryDuplicate[0].terminal
+                    && contradictoryDuplicate[0].lastVisiblePhase.Length == 0
+                    && contradictoryDuplicate[0].lastVisibleEventId.Length == 0);
+
+            CreepJoinerArcSnapshot future = AnomalyPersistencePolicy.NormalizeCreepJoinerArc(
+                new CreepJoinerArcSnapshot
+                {
+                    pawnId = "Pawn_FutureReveal",
+                    joinedTick = 1,
+                    lastVisiblePhase = AnomalyOutcomeTokens.SurgicalReveal,
+                    lastVisibleEventId = "FutureReveal",
+                    terminal = false,
+                    schemaVersion = 9
+                });
+            AssertTrue("future reveal schema remains an uninterpreted terminal barrier",
+                future.terminal && future.schemaVersion == 9
+                    && future.lastVisiblePhase.Length == 0
+                    && future.lastVisibleEventId.Length == 0);
+
+            CreepJoinerArcSnapshot migratedJoined = AnomalyPersistencePolicy.NormalizeCreepJoinerArc(
+                new CreepJoinerArcSnapshot
+                {
+                    pawnId = "Pawn_A20",
+                    joinedTick = 2,
+                    lastVisiblePhase = CreepJoinerPhaseTokens.Joined,
+                    schemaVersion = 1
+                });
+            AssertTrue("existing A2.0 row migrates without a schema or terminal rewrite",
+                migratedJoined.schemaVersion == 1 && !migratedJoined.terminal
+                    && migratedJoined.lastVisiblePhase == CreepJoinerPhaseTokens.Joined);
         }
 
         // ------------------------------------------------------------------------------------------

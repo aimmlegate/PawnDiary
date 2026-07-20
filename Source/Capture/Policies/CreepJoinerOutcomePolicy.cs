@@ -55,12 +55,16 @@ namespace PawnDiary.Capture
                 return result;
 
             result.pawnId = id;
-            if (result.joinedTick < 0 || (result.joinedTick == 0 && joinedTick > 0))
+            // Tick zero is both a valid game-start join and the safe pre-join terminal sentinel. A
+            // later observation must not rewrite either historical claim; only repair corrupt negatives.
+            if (result.joinedTick < 0)
                 result.joinedTick = joinedTick;
             string eventId = CleanStable(createdArrivalEventId);
             if (result.arrivalEventId.Length == 0 && eventId.Length > 0)
                 result.arrivalEventId = eventId;
-            if (!result.terminal && !CreepJoinerPhaseTokens.IsOutcome(result.lastVisiblePhase))
+            if (!result.terminal
+                && result.lastVisiblePhase != AnomalyOutcomeTokens.SurgicalReveal
+                && !CreepJoinerPhaseTokens.IsOutcome(result.lastVisiblePhase))
                 result.lastVisiblePhase = CreepJoinerPhaseTokens.Joined;
             if (result.schemaVersion <= AnomalyPersistencePolicy.CurrentCreepJoinerArcSchemaVersion)
                 result.schemaVersion = AnomalyPersistencePolicy.CurrentCreepJoinerArcSchemaVersion;
@@ -68,8 +72,8 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
-        /// Accepts one verified transition, advances visible terminal history independently of output
-        /// settings, and selects at most one exact event-time writer without RNG.
+        /// Accepts one committed transition, advances terminal history independently of output settings,
+        /// and selects at most one exact event-time writer only when visibility is also verified.
         /// </summary>
         public static CreepJoinerOutcomePlan Plan(
             CreepJoinerOutcomeFacts facts,
@@ -77,7 +81,7 @@ namespace PawnDiary.Capture
             AnomalyPolicySnapshot policy)
         {
             CreepJoinerOutcomePlan plan = new CreepJoinerOutcomePlan();
-            if (!ValidFacts(facts) || facts.nestedOutcomeOwnedByRejection)
+            if (!ValidCommittedTransition(facts) || facts.nestedOutcomeOwnedByRejection)
                 return plan;
 
             plan.valid = true;
@@ -103,10 +107,16 @@ namespace PawnDiary.Capture
                 joinedTick = 0,
                 schemaVersion = AnomalyPersistencePolicy.CurrentCreepJoinerArcSchemaVersion
             };
-            plan.nextArc.lastVisiblePhase = plan.phase;
+            bool visibleOutcomeVerified = facts.transitionVerified && facts.playerVisible;
+            // The private marker is still a durable replay boundary when a modded response is silent
+            // or another mod changes vanilla's expected post-state. Do not claim a visible phase or
+            // page without the stronger evidence, but also do not leave a committed transition open.
+            plan.nextArc.lastVisiblePhase = visibleOutcomeVerified ? plan.phase : string.Empty;
             plan.nextArc.lastVisibleEventId = string.Empty;
             plan.nextArc.terminal = true;
             plan.nextArc.schemaVersion = AnomalyPersistencePolicy.CurrentCreepJoinerArcSchemaVersion;
+
+            if (!visibleOutcomeVerified) return plan;
 
             AnomalyPolicySnapshot effective = AnomalyPolicyNormalization.Normalize(policy);
             plan.selectedWriter = SelectWriter(facts, effective);
@@ -114,10 +124,9 @@ namespace PawnDiary.Capture
             return plan;
         }
 
-        private static bool ValidFacts(CreepJoinerOutcomeFacts facts)
+        private static bool ValidCommittedTransition(CreepJoinerOutcomeFacts facts)
         {
             if (facts == null || facts.tick < 0 || !facts.transitioned
-                || !facts.transitionVerified || !facts.playerVisible
                 || !CreepJoinerPhaseTokens.IsOutcome(facts.phase))
             {
                 return false;
@@ -136,9 +145,11 @@ namespace PawnDiary.Capture
             List<CreepJoinerWriterCandidate> candidates = NormalizeCandidates(facts.writers);
             bool beforeJoining = !facts.joinedBefore;
             if (beforeJoining && (facts.phase == AnomalyOutcomeTokens.Rejected
-                || facts.phase == AnomalyOutcomeTokens.Departed))
+                || facts.phase == AnomalyOutcomeTokens.Departed
+                || facts.aggressionFollowedRejection))
             {
-                CreepJoinerWriterCandidate speaker = First(candidates, row => row.exactSpeaker);
+                CreepJoinerWriterCandidate speaker = First(
+                    candidates, row => row.exactSpeaker && row.onSubjectMap);
                 if (speaker != null) return Selection(speaker, AnomalyWitnessRoleTokens.Speaker);
             }
 
@@ -221,7 +232,9 @@ namespace PawnDiary.Capture
             CreepJoinerWriterCandidate left,
             CreepJoinerWriterCandidate right)
         {
-            int speaker = right.exactSpeaker.CompareTo(left.exactSpeaker);
+            bool leftSpeaker = left.exactSpeaker && left.onSubjectMap;
+            bool rightSpeaker = right.exactSpeaker && right.onSubjectMap;
+            int speaker = rightSpeaker.CompareTo(leftSpeaker);
             if (speaker != 0) return speaker;
             int subject = right.subject.CompareTo(left.subject);
             if (subject != 0) return subject;

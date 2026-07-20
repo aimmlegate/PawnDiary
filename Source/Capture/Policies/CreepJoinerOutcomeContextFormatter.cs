@@ -1,6 +1,6 @@
 // Pure spoiler-firewall projection for Phase A2.0. The DTO has no secret fields, and this formatter
-// emits only the verified visible phase/result, stable subject identity/visible label, writer role,
-// and terminal marker captured at the callback boundary.
+// emits only the verified visible phase/result, optional visible rejection provenance, stable subject
+// identity/visible label, writer role, and terminal marker captured at the callback boundary.
 using System.Collections.Generic;
 
 namespace PawnDiary.Capture
@@ -18,6 +18,8 @@ namespace PawnDiary.Capture
             Add(parts, AnomalyContextKeys.Kind, AnomalyKindTokens.CreepJoinerOutcome);
             Add(parts, AnomalyContextKeys.CreepJoinerPhase, plan.phase);
             Add(parts, AnomalyContextKeys.VisibleResult, plan.visibleResultToken);
+            Add(parts, AnomalyContextKeys.RejectionResponse,
+                facts.aggressionFollowedRejection ? "true" : string.Empty);
             Add(parts, AnomalyContextKeys.CreepJoinerSubjectId, facts.pawnId);
             Add(parts, AnomalyContextKeys.CreepJoinerSubjectLabel, facts.subjectLabel);
             Add(parts, AnomalyContextKeys.WitnessRole, plan.selectedWriter?.roleToken);

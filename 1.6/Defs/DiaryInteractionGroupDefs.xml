@@ -2751,7 +2751,7 @@
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Anomaly</li>
     </enableWhenPackageIdsLoaded>
-    <instruction>a strange arrival reached one exact player-visible outcome; describe only the supplied disclosure, rejection, aggression, or departure and the writer&apos;s verified role, never reveal a hidden downside, infection, host identity, timer, future transformation, or unobserved motive</instruction>
+    <instruction>a strange arrival reached one exact player-visible outcome; describe only the supplied generic disclosure, rejection, aggression, or departure and the writer&apos;s verified role; for surgical disclosure keep the surgeon as examiner and the subject as patient, never identify what secret was found, quote inspection text, or reveal a hidden downside, infection, host identity, timer, future transformation, or unobserved motive</instruction>
     <tone>with shaken recognition and strict uncertainty about everything still concealed</tone>
     <tones>
       <li>intimate and unnerved, stopping exactly where visible knowledge ends</li>
