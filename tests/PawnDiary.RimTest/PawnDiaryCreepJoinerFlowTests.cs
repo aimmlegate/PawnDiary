@@ -71,7 +71,9 @@ namespace PawnDiary.RimTests
             policyDef.creepJoinerEnabled = true;
             policyDef.creepJoinerOutcomeDedupTicks = 2500;
             policyDef.creepJoinerArcRetentionTicks = 3600000;
-            policyDef.creepJoinerMaxWitnesses = 1;
+            // A2.0 terminal outcomes still select one POV, while A2.1 may truthfully select the exact
+            // surgeon and joined subject. Keep the shared fixture at the supported two-writer ceiling.
+            policyDef.creepJoinerMaxWitnesses = AnomalyPolicyLimits.MaximumCreepJoinerWitnesses;
             policyDef.creepJoinerWitnessRadius = 12;
             AnomalyPersistentStateSnapshot clean = scope.Component.AnomalyStateSnapshotForTests();
             clean.schemaVersion = AnomalyPersistencePolicy.CurrentSchemaVersion;

@@ -1870,8 +1870,12 @@ arc normalization, exact/future upserts, future-duplicate barriers, and ordered 
 baselines. A2.1 adds disclosure/no-disclosure, visibility, malformed/replay/terminal ordering,
 surgeon/subject/cap roles, spoiler-firewall formatting, exact Tale ownership/fail-open behavior, and
 same-schema load/downgrade coverage. The 708 catalog and 135 Narrative suites remain green. The runtime
-DLL and 335-test RimTest assembly build against the installed 1.6 API. The earlier expanded 327-test
-A2.0 in-game rerun and the new 335-test A2.1 run remain pending; compilation is not claimed as execution.
+DLL and 335-test RimTest assembly build against the installed 1.6 API. The first user-provided
+335-fixture run passed 333 tests and every embedded A2.0 fixture, closing the earlier expanded
+327-fixture acceptance debt. Its only failures were the two A2.1 joined-subject pair assertions: each
+strict guard had already counted exactly one dedicated event, but shared setup still forced A2.0's old
+one-writer cap, so the policy truthfully emitted surgeon-only. Setup now uses the supported two-writer
+ceiling; the corrected 335-fixture rerun remains pending, and no production behavior changed.
 Compiled smoke coverage pins the five Def/package/classifier rows plus exact study, containment, and
 creepjoiner method/signature ownership. Three loaded state fixtures additionally drive the actual
 seven-key component Scribe contract, missing-key defaults, deep monolith/creepjoiner rows, DLC-off deferred migration,
@@ -1905,8 +1909,13 @@ per-method runner log. The first user-provided 323-fixture Anomaly-active A2.0 r
 failed two assertions in the creepjoiner suite. Both failures occurred after the fixture had already
 verified that exactly one new test-pawn event existed: the matcher then incorrectly required the
 visible creepjoiner to occupy `recipientPawnId` on a deliberately solo speaker/witness page. The
-fixtures now match the solo writer and assert the subject's stable ID in spoiler-safe captured context;
-the corrected two-test in-game rerun remains pending. Three external/manual profiles remain explicitly
+fixtures now match the solo writer and assert the subject's stable ID in spoiler-safe captured context.
+The later user-provided 335-fixture full run passed every embedded A2.0 fixture, closing that corrected
+327-fixture acceptance debt as aggregate evidence. The same run passed 333/335 overall and exposed two
+A2.1 test-only failures: shared setup limited creepjoiner writers to one while the joined disclosure
+fixtures required exact surgeon/subject pairs. The strict guards had already counted one event in each
+case, confirming capture rather than absence; setup now uses the supported two-writer ceiling. The
+corrected 335-fixture rerun remains pending. Three external/manual profiles remain explicitly
 deferred: a separate Anomaly-inactive run,
 disposable missing study/containment-hook compatibility profiles, and a real process-boundary save/
 reload. Exact operator steps live in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.

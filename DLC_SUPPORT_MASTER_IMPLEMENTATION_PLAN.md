@@ -393,11 +393,14 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > compile in the rebuilt 323-test assembly. Adversarial hardening now promotes vanilla aggressive
 > rejection to truthful hostile state, enforces same-map speaker POV, releases nested visible outcomes
 > from letterless rejection, closes unverifiable committed markers as terminal barriers, and adds four
-> loaded fixtures; the expanded 327-test A2.0 in-game rerun is pending. A2.1 adds an exact composite
+> loaded fixtures. The later user-provided 335-fixture run passed every A2.0 case, closing that embedded
+> 327-fixture acceptance debt as aggregate evidence. A2.1 adds an exact composite
 > recipe/tracker/Pawn result correlation, nonterminal visible-only disclosure continuity, exact
 > surgeon-first/subject-second POVs, and fail-open `DidSurgery` ownership. Eight focused loaded cases plus
-> expanded registration/lifecycle assertions compile in the 335-test assembly; its in-game run is also
-> pending. The separate Anomaly-inactive
+> expanded registration/lifecycle assertions compile in the 335-test assembly. Its first in-game run
+> passed 333/335: only the two joined-subject pair assertions failed because the shared test setup still
+> forced A2.0's one-writer cap. Setup now uses the supported two-writer ceiling, and the corrected
+> 335-fixture rerun remains pending. The separate Anomaly-inactive
 > profile, disposable missing study/containment-hook compatibility profiles, and real process-boundary
 > save/reload remain explicit deferred rows. No A2.2 source or hidden-state projection moved ahead.
 
@@ -408,8 +411,8 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 3. **A1.2** — study/knowledge milestones.
 4. **A1.3** — exact containment breach ownership.
 5. **A1.4** — A1 hardening/delivery.
-6. **A2.0 (implemented; loaded acceptance pending)** — visible creepjoiner state and old-save baseline.
-7. **A2.1 (implemented; loaded acceptance pending)** — surgical visible disclosure/outcome ownership.
+6. **A2.0 (implemented; loaded acceptance green within the 335-fixture aggregate run)** — visible creepjoiner state and old-save baseline.
+7. **A2.1 (implemented; corrected loaded rerun pending)** — surgical visible disclosure/outcome ownership.
 8. **A2.2** — ghoul transformation.
 9. Extend **N3-A** only with visibly authorized chapter, pressure, and identity candidates.
 

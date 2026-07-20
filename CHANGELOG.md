@@ -1,5 +1,14 @@
 # Changelog
 
+- **2026-07-20 — Corrected two false-negative A2.1 joined-surgery fixtures after the first
+  loaded run.** The user-provided 335-fixture Anomaly-active run passed 333 tests and failed only the
+  two assertions expecting an exact surgeon/subject pair. Both strict guards had already counted one
+  dedicated event, confirming capture; the shared creepjoiner setup still forced A2.0's old one-writer
+  cap, so the A2.1 policy correctly emitted a surgeon-only page before the pair matcher ran. The setup
+  now uses the supported two-writer ceiling. No production behavior, save schema, prompt text, Def, or
+  localization changed. The same run passed every embedded A2.0 fixture, closing the expanded
+  327-fixture acceptance debt as aggregate evidence; the corrected 335-fixture rerun remains pending.
+
 - **2026-07-20 — Implemented Master Wave 7 / Anomaly Phase A2.1 surgical creepjoiner
   disclosure.** Pawn Diary now correlates the exact installed surgical-inspection recipe, creepjoiner
   tracker callback, overall Pawn inspection result, and surgeon-first/subject-second `DidSurgery`

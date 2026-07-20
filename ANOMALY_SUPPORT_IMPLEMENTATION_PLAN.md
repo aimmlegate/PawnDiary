@@ -1637,7 +1637,8 @@ profile remains in the manual in-game matrix.
 
 ### Phase A2.0 — Visible creepjoiner state
 
-> **Status (2026-07-20): implemented and adversarially hardened; current 327-fixture rerun pending.**
+> **Status (2026-07-20): implemented, adversarially hardened, and loaded-accepted within the later
+> 335-fixture aggregate run.**
 > The canonical arrival now upserts one visible joined arc and attaches its event ID only after the
 > existing arrival page is created. Schema 2 deep-scribes only pawn/arrival/joined/visible-phase/
 > visible-event/terminal/version primitives; pure normalization covers malformed, duplicate, oversized,
@@ -1662,8 +1663,9 @@ profile remains in the manual in-game matrix.
 > disabled/no-op silence, role context, repeat suppression, and lifecycle cleanup. The first active run
 > passed 321/323 overall; its two failures were test-only recipient mismatches after each solo page had
 > already been counted. Rejection/aggression now assert a blank recipient role and the subject ID in
-> captured context; the expanded 327-fixture rerun is not yet claimed. The user-confirmed A1.4 active 316 run is
-> green aggregate evidence; the separate Anomaly-inactive profile, missing study/containment-hook
+> captured context. The later user-provided 335-fixture full run passed every A2.0 fixture, closing the
+> expanded 327-fixture acceptance debt as aggregate evidence. The user-confirmed A1.4 active 316 run
+> is green aggregate evidence; the separate Anomaly-inactive profile, missing study/containment-hook
 > compatibility profiles, and real
 > process-boundary save/reload remain deferred.
 
@@ -1676,7 +1678,8 @@ profile remains in the manual in-game matrix.
 
 ### Phase A2.1 — Surgical disclosure
 
-> **Status (2026-07-20): implemented; expanded 335-fixture loaded run pending.** A composite
+> **Status (2026-07-20): implemented; first expanded loaded run passed 333/335, with a corrected
+> test-only writer-cap rerun pending.** A composite
 > Anomaly-gated registration pins the exact installed public recipe, creepjoiner tracker, and Pawn
 > inspection-result signatures. The bounded recipe scope accepts disclosure only when the exact tracker
 > returns true and grows its builder, the overall Pawn result is letter-visible `Detected`, and the
@@ -1703,8 +1706,11 @@ profile remains in the manual in-game matrix.
 > successful recipe, surgeon/subject pair and surgeon-only pre-join POVs, nothing-found and disabled-output
 > generic-Tale fallback, an early recipe exit without tracker evidence, exception-finalizer fail-open,
 > unscoped ownership fallback, later terminal continuity, exact composite patch ownership, and lifecycle
-> cleanup. The earlier 327-test A2.0 rerun and the expanded 335-test A2.1 run remain pending; no in-game
-> execution is claimed.
+> cleanup. The first user-provided 335-fixture run passed 333 and failed only its two joined-subject
+> pair assertions after each strict guard had already counted exactly one dedicated event. The shared
+> fixture setup still forced A2.0's old one-writer cap, so A2.1 correctly produced a surgeon-only page;
+> setup now uses the supported two-writer ceiling. This closes the embedded A2.0 327-fixture debt, while
+> the corrected 335-fixture A2.1 rerun remains pending. No runtime behavior changed.
 
 - [x] Add recipe/tracker correlation and successful disclosure verification.
 - [x] Implement exact `DidSurgery` ownership with fail-open behavior.

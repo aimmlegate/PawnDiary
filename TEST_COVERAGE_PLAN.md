@@ -263,9 +263,9 @@ fixtures compile against installed RimWorld 1.6 and RimTest Redux. The first use
 passed 321/323 overall. Its two failures were false-negative rejection/aggression assertions: the
 shared guard had found exactly one new event, but `FireAndRequireEvent` was incorrectly told to match
 the visible creepjoiner as `recipientPawnId` on a solo witness page. Both fixtures now match the solo
-writer and independently require `creepjoiner_subject_id` in captured context. The source has since
-expanded to 327 fixtures; its new loaded rerun remains open and no 327 execution is claimed. The same
-three deferred external profiles remain: separate
+writer and independently require `creepjoiner_subject_id` in captured context. The later user-provided
+335-fixture full run passed every A2.0 fixture, closing the expanded 327-fixture acceptance debt as
+aggregate evidence. The same three deferred external profiles remain: separate
 Anomaly-inactive, disposable missing study/containment-hook compatibility, and real process-boundary
 save/reload.
 
@@ -285,9 +285,13 @@ fallback, disabled specialized output with committed nonterminal history, a simu
 without tracker evidence, exception-finalizer release of a deferred Tale, an unscoped generic Tale, and
 a later real terminal departure. The existing registration fixture now
 pins the composite exact recipe/tracker/Pawn patch set and the lifecycle fixture clears both rejection
-and surgery scopes. Teardown removes only fixture-created vanilla letters and Tales. No 335-test
-in-game execution is claimed: the earlier expanded 327-test A2.0 rerun and the new A2.1 cases remain
-pending, alongside the Anomaly-inactive, missing-hook, and process-boundary save/reload profiles.
+and surgery scopes. Teardown removes only fixture-created vanilla letters and Tales. The first user-
+provided 335-fixture run passed 333 and failed only the two joined-subject pair assertions. Each strict
+fixture guard had already counted exactly one dedicated event; the shared setup still forced A2.0's
+old one-writer cap, so pure A2.1 correctly emitted a surgeon-only page before the pair matcher ran.
+The setup now uses the supported two-writer ceiling. A corrected 335-fixture rerun remains pending,
+alongside the Anomaly-inactive, missing-hook, and process-boundary save/reload profiles; no production
+behavior changed.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It
