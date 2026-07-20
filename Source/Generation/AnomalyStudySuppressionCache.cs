@@ -1,6 +1,6 @@
-// Bounded, unsaved ownership for a future dedicated Anomaly study page and its exact generic
-// StudiedEntity Tale. A1.1 installs the lifecycle-safe store only; A1.2 will register the live study
-// and Tale adapters which call it. Every entry is a detached ID/tick DTO, never a Pawn/Thing/Def.
+// Bounded, unsaved ownership for a dedicated Anomaly study page and its exact generic
+// StudiedEntity Tale. A1.2 registers only after page creation and lets TaleSignal consume a matching
+// claim once. Every entry is a detached pawn/entity/job ID plus tick, never a Pawn/Thing/Job/Def.
 using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
@@ -70,13 +70,37 @@ namespace PawnDiary
 
         internal static int CountForTests => Claims.Count;
 
+        /// <summary>Detached test seam so an in-game fixture can preserve a player's transient rows.</summary>
+        internal static List<AnomalyStudyTaleClaim> SnapshotForTests()
+        {
+            List<AnomalyStudyTaleClaim> result = new List<AnomalyStudyTaleClaim>();
+            for (int i = 0; i < Claims.Count; i++) result.Add(Clone(Claims[i]));
+            return result;
+        }
+
+        /// <summary>Restores only valid detached rows after an isolated in-game fixture.</summary>
+        internal static void RestoreForTests(List<AnomalyStudyTaleClaim> snapshot)
+        {
+            Claims.Clear();
+            if (snapshot == null) return;
+            for (int i = 0; i < snapshot.Count && Claims.Count < HardMaximumClaims; i++)
+            {
+                if (Valid(snapshot[i])) Claims.Add(Clone(snapshot[i]));
+            }
+        }
+
         private static void Prune(int nowTick, int maximumAgeTicks)
         {
             for (int i = Claims.Count - 1; i >= 0; i--)
             {
                 AnomalyStudyTaleClaim claim = Claims[i];
                 long age = claim == null ? long.MaxValue : (long)nowTick - claim.acceptedTick;
-                if (!Valid(claim) || age < 0 || age > maximumAgeTicks) Claims.RemoveAt(i);
+                // A known vanilla job is stronger correlation than elapsed ticks. Keep those rows
+                // until the exact job's Tale consumes them, the bounded cache evicts them, or colony
+                // lifecycle reset clears them. Job-less compatibility claims still use tick expiry.
+                bool hasExactJob = claim != null && !string.IsNullOrWhiteSpace(claim.studyJobId);
+                if (!Valid(claim) || age < 0 || (age > maximumAgeTicks && !hasExactJob))
+                    Claims.RemoveAt(i);
             }
         }
 
@@ -97,7 +121,8 @@ namespace PawnDiary
         {
             return (claim?.studierPawnId ?? string.Empty).Trim() + "|"
                 + (claim?.studiedEntityId ?? string.Empty).Trim() + "|"
-                + (claim?.studiedDefName ?? string.Empty).Trim();
+                + (claim?.studiedDefName ?? string.Empty).Trim() + "|"
+                + (claim?.studyJobId ?? string.Empty).Trim();
         }
 
         private static AnomalyStudyTaleClaim Clone(AnomalyStudyTaleClaim source)
@@ -108,6 +133,7 @@ namespace PawnDiary
                 studierPawnId = source.studierPawnId ?? string.Empty,
                 studiedEntityId = source.studiedEntityId ?? string.Empty,
                 studiedDefName = source.studiedDefName ?? string.Empty,
+                studyJobId = source.studyJobId ?? string.Empty,
                 acceptedTick = source.acceptedTick,
                 consumed = source.consumed
             };

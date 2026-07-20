@@ -48,15 +48,15 @@ repo for development, but the Workshop payload omits source code and other devel
 | `LoadFolders.xml` | Normal 1.6 load roots plus the RimTest-only development test assembly gate. |
 | `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
 | `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
-| `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts, Royalty persona/permit policy, and Anomaly study/containment/Tale-ownership policy plus the registered but live-source-free A1.1 catalog envelope. |
-| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, lossless quick-aid raid ownership, and exact-root Royal Ascent quest fanout. |
+| `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts, Royalty persona/permit policy, and Anomaly study/context/monolith/containment/Tale-ownership policy plus the A1 catalog envelope. |
+| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including the exact-author Anomaly study signal, Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, lossless quick-aid raid ownership, and exact-root Royal Ascent quest fanout. |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
-| `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue, and additive Anomaly study/monolith persistence with conservative pre-A1 baselining. Also `PawnMemoryRepository` (per-pawn memory store; inert until the memory wiring lands). |
-| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Odyssey location/mobile-home/lifecycle and Royalty persona/title/psylink/succession/permit/court-pressure snapshots, transient correlation, and the lifecycle-cleared Anomaly study/Tale claim cache. |
+| `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue, and additive Anomaly study/monolith persistence plus the detached study transaction owner and conservative pre-A1 baselining. Also `PawnMemoryRepository` (per-pawn memory store; inert until the memory wiring lands). |
+| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Anomaly study/codex/containment/monolith capture, Odyssey location/mobile-home/lifecycle and Royalty persona/title/psylink/succession/permit/court-pressure snapshots, transient correlation, and the lifecycle-cleared Anomaly study/Tale claim cache. |
 | `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including the explicit zero-candidate N3-A provider seam), Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/` (inert until wired). |
 | `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, the optional Anomaly monolith-knowledge snapshot, and the `MemoryFragment` pawn-memory row. |
-| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment/permit seams and state-transition-guarded Quest lifecycle hooks. |
+| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, the defensive exact Anomaly study seam, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment/permit seams and state-transition-guarded Quest lifecycle hooks. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper projects plus the optional in-game `PawnDiary.RimTest` smoke suite. |
@@ -1672,13 +1672,13 @@ normalized defaults, and verifies that snapshots are independent. A manual main-
 passed that read-only fixture as part of 46/46 tests which do not require a colony; 245 loaded-game
 fixtures correctly rejected the absent game, so the full 291-test loaded-colony run remains pending.
 
-**Anomaly catalog and persistence foundation (Master Wave 7 / A1.1).** `DiaryEventType.AnomalyEvent`
+**Anomaly catalog, persistence, and study capture (Master Wave 7 / A1.1–A1.2).** `DiaryEventType.AnomalyEvent`
 now has one registered `AnomalyEventSpec` and detached common envelope. It is not a generic truth
 policy: source-specific planners must still prove the exact kind. Final dispatch accepts only one of
 the five frozen kind/Def pairs, a verified and player-visible source, a safe stable source key, a
 non-replayed tick, enabled settings/signal policy, and one or two distinct eligible writer IDs. Its
-dedup key is shared by both POV writers. Because no live Anomaly signal is registered yet, this route
-cannot currently create a page.
+dedup key is shared by both POV writers. A1.2's study source is the first live producer for this
+route; the other four source kinds remain unregistered until their scheduled phases.
 
 `DiaryGameComponent.Anomaly.cs` adds the six frozen Scribe keys for schema version, first-study
 observation, completed studied Def names, promoted milestone keys, the monolith baseline level, and
@@ -1692,10 +1692,15 @@ completed kinds are retained, while the necessarily incomplete historical scan m
 breakthrough already observed so the next study cannot be falsely described as the colony's first.
 Without Anomaly the baseline no-ops and can run on a later load if the package becomes available.
 
-The unsaved `AnomalyStudySuppressionCache` holds only bounded detached pawn/entity/Def IDs and ticks,
-matches through the pure consume-once ownership policy, fails open on mismatch/expiry, and clears at
-constructor, new-game, loaded-game, and final-initialization boundaries. It is a dormant A1.2 seam:
-no Tale consults it yet. Five exact package-gated Interaction groups at orders 61–65 expose settings
+The unsaved `AnomalyStudySuppressionCache` holds only bounded detached pawn/entity/Def/job IDs and
+ticks, matches through the pure consume-once ownership policy, and clears at constructor, new-game,
+loaded-game, and final-initialization boundaries. A1.2 registers a claim only after a dedicated page
+was actually created. When both callbacks expose RimWorld's non-reused `Job_<id>`, `TaleSignal`
+requires that exact study job and may consume its later final-toil Tale even after the short fallback
+tick window; a different job remains generic. When either side lacks a job ID, the configured tick
+expiry and exact studier plus entity ID (or the policy's exact defName fallback) apply. The cache is
+still hard-capped at 64, so interrupted exact-job rows cannot grow without bound. Five exact
+package-gated Interaction groups at orders 61–65 expose settings
 and localized prompt/fallback policy for study breakthrough, containment breach, visible creepjoiner
 outcome, ghoul transformation, and terminal void outcome. `ClassifyAnomalyEvent` requires an exact
 `matchDefNames` row whose package gate is currently available; it cannot fall through to token,
@@ -1703,13 +1708,42 @@ prefix/suffix/segment, package, synthetic-batch, or catch-all Interaction groups
 returns zero candidates even when handed an authorized snapshot; persistence alone cannot add prompt
 context.
 
-Focused suites now pass 320 Anomaly-policy/XML/cache, 708 catalog, 83 save-normalization, and 135
-Narrative assertions. The runtime DLL and 295-test RimTest assembly build against the installed 1.6
+`DiaryAnomalyPatches.TryRegister` resolves the exact public
+`CompStudyUnlocks.OnStudied(Pawn,float,KnowledgeCategoryDef)` overload only while Anomaly is active.
+Missing/signature-drifted targets warn once and leave vanilla study plus the generic Tale unchanged.
+Both callbacks apply the gameplay/Scribe gates and `DiaryPatchSafety`; every live comp, codex,
+knowledge-category, containment, monolith, and surroundings read occurs inside `DlcContext.Anomaly`.
+The prefix copies only cheap identity/progress/job/activation state. The postfix builds visible labels,
+discovered codex/category context, eligibility, containment, and surroundings once, and only after a
+real progress or monolith-activation transition. The adapter supplies detached before/after facts,
+and `AnomalyStudyPolicy` first commits additive
+first/completed-kind/XML-promotion history. Output settings and author eligibility cannot cause a
+later retroactive first. Only a semantic milestone for the exact eligible studier submits
+`AnomalyStudySignal`; ordinary progress and no-threshold calls remain state-only.
+
+Study prompt context includes stable/visible subject, discovered codex, knowledge category,
+containment/monolith flags, semantic stage, and a bounded event-time setting. It has no field for raw
+research points, private/random thresholds, letters, hidden abilities, containment chances, or
+undiscovered codex descriptions. Monolith study never creates its own page. Its small deep-scribed
+snapshot may enrich only the next exact activation while the activator stays the author; the first
+later activation consumes it even when expired or page-disabled. Automatic activation advances the
+baseline and consumes the snapshot without attributing a page to vanilla's random signature pawn.
+Activation registration requires the exact `Find.Anomaly.LevelDef` getter, and an empty/unverified
+reached level leaves both baseline and remembered study context unchanged instead of falling back to
+the monolith building's ThingDef.
+
+Focused suites now pass 362 Anomaly-policy/XML/cache/context, 708 catalog, 83 save-normalization, and 135
+Narrative assertions. The runtime DLL and 305-test RimTest assembly build against the installed 1.6
 API; compiled smoke coverage pins the five Def/package/classifier rows plus
 `CompStudyUnlocks.Progress`/`Completed`. Three loaded fixtures additionally drive the actual six-key
 component Scribe contract, missing-key defaults, deep snapshot, DLC-off deferred migration,
-DLC-on one-time loaded-map baseline, and transient load reset. Those new main-menu/no-DLC and loaded
-fixtures have not yet been executed inside RimWorld, and no A1.2/A1.3 live-source claim is made.
+DLC-on one-time loaded-map baseline, and transient load reset. Those A1.1 fixtures executed green:
+1/1 passed, 0 failed in the no-Anomaly main-menu classifier profile; user-confirmed 3/3 passed,
+0 failed in a loaded no-Anomaly colony; and user-confirmed 3/3 passed, 0 failed in a loaded
+Anomaly-active colony. The 7/7 results cover exact classification, real six-key Scribe, missing
+defaults, deferred/off migration, one-time/on baseline, and transient reset. The ten A1.2 study
+fixtures—including delayed exact-job ownership and missing-level state preservation—are compiled but
+have not been executed in RimWorld, so compilation is not reported as an A1.2 runtime pass.
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,

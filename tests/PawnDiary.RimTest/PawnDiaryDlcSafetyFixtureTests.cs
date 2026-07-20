@@ -48,6 +48,7 @@ using RimTestRedux;
 using RimWorld;
 using RimWorld.Planet;
 using Verse;
+using Verse.AI;
 using Verse.AI.Group;
 
 namespace PawnDiary.RimTests
@@ -560,11 +561,18 @@ namespace PawnDiary.RimTests
 
             Type monolith = typeof(Building_VoidMonolith);
             RequireMethod(monolith, "Activate", typeof(void), new[] { typeof(Pawn) });
+            RequireMethod(monolith, "CanActivate", typeof(bool), new[]
+            {
+                typeof(string).MakeByRefType(), typeof(string).MakeByRefType()
+            });
             RequireField(monolith, "autoActivateTick", typeof(int));
             RequireProperty(typeof(Find), "Anomaly", typeof(GameComponent_Anomaly), AnyStatic);
             RequireProperty(typeof(GameComponent_Anomaly), "LevelDef", typeof(MonolithLevelDef), AnyInstance);
             RequireProperty(typeof(CompStudyUnlocks), "Progress", typeof(int), AnyInstance);
             RequireProperty(typeof(CompStudyUnlocks), "Completed", typeof(bool), AnyInstance);
+            RequireMethod(typeof(CompStudyUnlocks), "OnStudied", typeof(void),
+                new[] { typeof(Pawn), typeof(float), typeof(KnowledgeCategoryDef) });
+            RequireMethod(typeof(Job), "GetUniqueLoadID", typeof(string), Type.EmptyTypes);
             RequireField(typeof(MonolithLevelDef), "levelInspectText", typeof(string));
             RequireField(typeof(MonolithLevelDef), "monolithLabel", typeof(string));
             RequireMethod(typeof(GameComponent_Anomaly), "PawnHasUnnaturalCorpse", typeof(bool),

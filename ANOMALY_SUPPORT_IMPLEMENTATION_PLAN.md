@@ -1,7 +1,7 @@
 # Pawn Diary — Anomaly Support Implementation Plan
 
-Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.1 implemented as the first two Master
-Wave 7 slices, 2026-07-20; A1.2–A3 remain implementation-ready plans. The
+Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.2 implemented as the first three Master
+Wave 7 slices, 2026-07-20; A1.3–A3 remain implementation-ready plans. The
 RimWorld 1.6 feasibility spike is complete for study-note milestones, containment escapes, visible
 creepjoiner outcomes, ghoul infusion, and both terminal void choices. Production now includes the A0
 exact psychic-ritual routing and monolith activation chapters described below.
@@ -10,8 +10,8 @@ Scheduling authority: implement Anomaly phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Anomaly.
 
 Anomaly was the final standalone DLC planning artifact. Its small A0 semantic-precision release has
-now shipped independently; the deeper A1–A3 arc remains scheduled after the higher-priority Biotech
-growth/family and Odyssey journey waves in the master plan.
+now shipped independently; A1 study capture has since reached A1.2, while containment A1.3 and A2–A3
+remain scheduled in the master plan.
 
 The plan turns Anomaly's already broad atmospheric coverage into a coherent human story:
 curiosity becomes knowledge, knowledge enables a choice, containment can fail, apparently human
@@ -49,7 +49,7 @@ standalone plans.
 | `ODYSSEY_SUPPORT_IMPLEMENTATION_PLAN.md` | Scope-review plan only; its saved journey and landing chapters are not production code. |
 | Current Anomaly ritual support | Successful psychic rituals already fan out through `DiaryEventType.Ritual`, with exact ritual defName, perspective, quality, and generic Anomaly guidance. |
 | Current Anomaly atmosphere | Monolith discovery/activation, visible and hidden metalhorror pressure, pit gates, fleshmass, nociosphere, obelisks, unnatural corpses, major conditions, cube effects, void hediffs, thoughts, raids, and Tales already have useful generic coverage. |
-| Main Anomaly gap | Exact ritual meaning, researcher-owned knowledge milestones, containment consequence, spoiler-safe reveal/identity arcs, and an exact terminal void chapter are not connected. |
+| Main Anomaly gap | Exact ritual meaning and researcher-owned study milestones are connected; containment consequence, spoiler-safe reveal/identity arcs, and an exact terminal void chapter remain. |
 
 This plan starts from that production baseline. A coding agent must not assume that a cross-DLC
 facet, event type, state model, or helper proposed by another plan already exists.
@@ -1210,6 +1210,8 @@ Each must have:
 
 - a hard entry cap in XML or stable defensive code fallback;
 - a tick expiry where the call is not strictly nested;
+- an exact non-reused vanilla job identity may outlive that fallback expiry only while the cache stays
+  hard-capped/lifecycle-cleared and a different job is guaranteed to fail open;
 - consume-once semantics;
 - exact stable identity keys;
 - `Clear()` called during game initialization/load (`FinalizeInit` or the repository's current
@@ -1348,12 +1350,14 @@ The exact split may change during implementation, but responsibilities should re
 | `Source/Capture/Events/AnomalyEventData.cs` | Plain catalog envelope, kind normalization, dedup key, context projection |
 | `Source/Capture/Specs/AnomalyEventSpec.cs` | Catalog registration decision adapter |
 | `Source/Capture/Policies/AnomalyStudyPolicy.cs` | Pure milestone/history plan |
+| `Source/Capture/Policies/AnomalyStudyContextFormatter.cs` | Bounded semantic study/monolith prompt projection |
+| `Source/Capture/Policies/AnomalyMonolithKnowledgePolicy.cs` | Pure next-activation consume/attach ownership |
 | `Source/Capture/Policies/ContainmentBreachPolicy.cs` | Pure aggregation and witness ranking |
 | `Source/Capture/Policies/CreepJoinerOutcomePolicy.cs` | Pure visible-phase arbitration and writer plan |
 | `Source/Capture/Policies/AnomalyTaleOwnershipPolicy.cs` | Pure exact matching/fail-open ownership decisions |
-| `Source/Ingestion/Sources/AnomalySignals.cs` | Study, breach, creepjoiner, ghoul, and void signals |
-| `Source/Generation/AnomalyContext.cs` | Guarded live-to-plain collectors; raw pawn DLC reads delegate to `DlcContext` |
-| `Source/Generation/AnomalyTaleOwnershipCache.cs` | Bounded transient correlation/suppression state |
+| `Source/Ingestion/Sources/AnomalyStudySignal.cs` | Implemented A1.2 exact-researcher study page; later source signals remain separate |
+| `Source/Generation/DlcContext.Anomaly.cs` | Guarded live-to-plain study/monolith collectors |
+| `Source/Generation/AnomalyStudySuppressionCache.cs` | Bounded transient study/Tale ownership state |
 | `Source/Models/CreepJoinerArcState.cs` | Deep-scribed visible arc record |
 | `Source/Models/AnomalyMonolithKnowledgeState.cs` | Small saved monolith enrichment snapshot |
 | `Source/Defs/DiaryAnomalyPolicyDef.cs` | XML policy schema, fallback/default validation |
@@ -1474,7 +1478,7 @@ page.
 
 ### Phase A1.1 — Catalog route and persistence
 
-> **Implementation status (2026-07-20): code-complete; in-game no-DLC execution pending.** The
+> **Implementation status (2026-07-20): complete and green in-game.** The
 > shared `AnomalyEvent` envelope/spec is registered and rejects unknown kind/Def pairs, unverified
 > sources, hidden/replayed events, malformed identity, and missing eligible writers. Six additive
 > save keys own normalized study history and one optional monolith-knowledge snapshot. New games
@@ -1486,13 +1490,18 @@ page.
 > Five exact package-gated XML groups/settings plus English/Russian DefInjected and Keyed fallbacks
 > are present. Their dedicated classifier accepts only available exact-name rows and cannot fall
 > through to any Interaction token/prefix/suffix/segment/package/batch/catch-all matcher.
-> N3-A is wired as an explicit zero-candidate provider. There is still no Anomaly Harmony
-> registration, signal, page emission, tick work, or hidden-state projection. Focused suites pass
+> N3-A is wired as an explicit zero-candidate provider. At the A1.1 boundary there was still no
+> Anomaly Harmony registration, signal, page emission, tick work, or hidden-state projection.
+> Focused suites pass
 > 320 Anomaly, 708 catalog, 83 save-normalization, and 135 Narrative assertions; the runtime and
 > 295-test RimTest assemblies build. Three loaded fixtures now exercise actual component Scribe,
 > missing-key normalization, deep snapshot state, deferred no-DLC migration, one-time active-DLC
-> baseline, and transient reset. The compiled main-menu and loaded fixtures are ready, but have not
-> yet been executed in RimWorld.
+> baseline, and transient reset. Actual execution totals are 1/1 passed, 0 failed for the
+> no-Anomaly main-menu exact-classifier fixture; user-confirmed 3/3 passed, 0 failed for the loaded
+> no-Anomaly state fixtures; and user-confirmed 3/3 passed, 0 failed for the same loaded fixtures
+> with Anomaly active. These 7/7 executions cover the exact classifier, real six-key Scribe
+> round-trip, missing-key defaults, DLC-off deferred migration, DLC-on one-time baseline, and
+> transient reset.
 
 - Add/register `AnomalyEvent` catalog type.
 - Add saved study/monolith state and normalization.
@@ -1503,6 +1512,25 @@ page.
 pass.
 
 ### Phase A1.2 — Study capture
+
+> **Implementation status (2026-07-20): code-complete; focused in-game execution pending.** The
+> exact public study overload registers defensively only with Anomaly active. Prefix/postfix live
+> reads are centralized in `DlcContext` and converted into detached facts; pure policy owns semantic
+> stages and history. `AnomalyStudySignal` writes only for the exact eligible studier, while the
+> bounded consume-once cache suppresses only its matching `StudiedEntity` fallback after a dedicated
+> page was actually created. Exact vanilla job identity keeps a slow study job authoritative beyond
+> the fallback tick window without allowing a later job on the same pair to borrow ownership.
+> Monolith study remains state-only and its bounded snapshot is consumed
+> by the next exact activation; automatic activation advances state without a page. Prompt context
+> contains semantic/visible facts and excludes raw progress, private thresholds, hidden abilities,
+> containment chances, and undiscovered codex prose.
+>
+> `DiaryAnomalyPolicyTests` passes 362 assertions. Ten focused RimTests bring the assembly to
+> 305 compiled tests and cover hook registration/inertness, no threshold, one threshold, multi-note
+> jump, completion, disabled group, real Scribe/no replay, exact consume-once Tale ownership, delayed
+> exact-job ownership, and fail-closed missing monolith-level state.
+> Core and RimTest assemblies build; none of these new A1.2 in-game fixtures has yet been executed,
+> so no runtime A1.2 profile is claimed.
 
 - Register exact public study hook defensively.
 - Capture before/after facts and run pure policy.

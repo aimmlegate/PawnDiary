@@ -1,8 +1,9 @@
-// Anomaly A1.1 persistence and silent legacy baselining. This partial owns only stable study history,
-// one optional monolith knowledge snapshot, and lifecycle reset. It registers no Harmony source and
-// cannot create a diary page; A1.2/A1.3 will consume these contracts after their live hooks are tested.
+// Anomaly persistence, silent legacy baselining, and the A1.2 study transaction owner. Live DLC
+// objects are read only by DlcContext; this partial commits detached history before it optionally
+// dispatches one exact researcher-owned study page.
 using System.Collections.Generic;
 using PawnDiary.Capture;
+using PawnDiary.Ingestion;
 using Verse;
 
 namespace PawnDiary
@@ -105,6 +106,83 @@ namespace PawnDiary
         private static void ResetAnomalyTransientState()
         {
             AnomalyTransientState.Reset();
+        }
+
+        /// <summary>
+        /// Completes one exact study callback, always commits truthful milestone history, then creates
+        /// a page only for the exact eligible researcher and only after the catalog accepts the signal.
+        /// </summary>
+        internal void CompleteAnomalyStudy(
+            object studyObject,
+            Pawn studier,
+            object categoryObject,
+            AnomalyStudyFacts before)
+        {
+            AnomalyStudyFacts facts;
+            bool transitioned;
+            if (!DlcContext.TryCompleteAnomalyStudy(
+                studyObject, studier, categoryObject, before, out facts, out transitioned)) return;
+            if (!transitioned) return;
+
+            AnomalyPolicySnapshot policy = DiaryAnomalyPolicy.Snapshot();
+            AnomalyStudyHistorySnapshot history = new AnomalyStudyHistorySnapshot
+            {
+                firstBreakthroughObserved = anomalyFirstStudyBreakthroughObserved
+            };
+            history.completedStudyDefNames.AddRange(
+                anomalyCompletedStudyDefNames ?? new List<string>());
+            history.observedPromotionKeys.AddRange(
+                anomalyPromotedStudyMilestoneKeys ?? new List<string>());
+
+            AnomalyStudyPlan plan = AnomalyStudyPolicy.Plan(facts, history, policy);
+            if (plan.disposition == AnomalyStudyDisposition.DropInvalid) return;
+
+            // Observation owns history even when output is disabled, the exact author is ineligible,
+            // or the subject is the monolith. That prevents later retroactive "first" pages.
+            AnomalyPersistentStateSnapshot next = AnomalyStateSnapshot();
+            if (plan.historyMutation.observeFirstBreakthrough)
+                next.firstStudyBreakthroughObserved = true;
+            if (!string.IsNullOrWhiteSpace(plan.historyMutation.completedStudyDefName))
+                next.completedStudyDefNames.Add(plan.historyMutation.completedStudyDefName);
+            next.promotedStudyMilestoneKeys.AddRange(
+                plan.historyMutation.observedPromotionKeys);
+
+            if (facts.isMonolith
+                && (plan.stageToken.Length > 0 || plan.monolithBecameActivatable))
+            {
+                next.lastMonolithKnowledgeSnapshot = new AnomalyMonolithKnowledgeSnapshot
+                {
+                    researcherPawnId = facts.studierPawnId,
+                    studyStage = plan.stageToken,
+                    tick = facts.tick,
+                    reachedProgress = facts.newProgress,
+                    becameActivatable = plan.monolithBecameActivatable,
+                    consumed = false
+                };
+            }
+            ApplyAnomalyState(next);
+
+            if (plan.disposition != AnomalyStudyDisposition.Generate || studier == null) return;
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyAnomalyEvent(
+                AnomalyEventDefNames.StudyBreakthrough);
+            AnomalyStudySignal signal = new AnomalyStudySignal(
+                studier, facts, plan, policy, group);
+            Dispatch(signal);
+            if (signal.CreatedEvent == null) return;
+
+            // Ownership begins only after the dedicated page exists. A disabled/missing group or a
+            // failed dispatcher therefore leaves vanilla's generic StudiedEntity Tale available.
+            AnomalyStudySuppressionCache.Register(
+                new AnomalyStudyTaleClaim
+                {
+                    studierPawnId = facts.studierPawnId,
+                    studiedEntityId = facts.studiedEntityId,
+                    studiedDefName = facts.studiedDefName,
+                    studyJobId = facts.studyJobId,
+                    acceptedTick = facts.tick
+                },
+                facts.tick,
+                policy.studyTaleSuppressionTicks);
         }
 
         /// <summary>Detached read-only seam for focused loaded-game save/baseline fixtures.</summary>

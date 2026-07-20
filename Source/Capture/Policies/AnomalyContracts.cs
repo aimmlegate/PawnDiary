@@ -37,10 +37,20 @@ namespace PawnDiary.Capture
     {
         public const string Kind = "anomaly_kind";
         public const string StudyStage = "study_stage";
+        public const string StudyPromotion = "study_promotion";
         public const string StudiedDef = "studied_def";
+        public const string StudiedLabel = "studied_label";
+        public const string CodexEntry = "codex_entry";
+        public const string CodexEntryLabel = "codex_entry_label";
         public const string KnowledgeCategory = "knowledge_category";
+        public const string KnowledgeCategoryLabel = "knowledge_category_label";
+        public const string ContainedEntity = "contained_entity";
+        public const string Monolith = "monolith";
+        public const string Setting = "setting";
         public const string MonolithPreviousLevel = "monolith_previous_level";
         public const string MonolithReachedLevel = "monolith_reached_level";
+        public const string MonolithLastResearcher = "monolith_last_researcher";
+        public const string MonolithStudyStage = "monolith_study_stage";
         public const string MonolithBecameActivatable = "monolith_became_activatable";
         public const string EscapedCount = "escaped_count";
         public const string EscapedEntities = "escaped_entities";
@@ -123,9 +133,15 @@ namespace PawnDiary.Capture
         public string studiedDefName = string.Empty;
         public string studiedLabel = string.Empty;
         public string codexEntryDefName = string.Empty;
+        public string codexEntryLabel = string.Empty;
         public string knowledgeCategoryDefName = string.Empty;
+        public string knowledgeCategoryLabel = string.Empty;
         public string studierPawnId = string.Empty;
+        // Unsaved vanilla job identity lets the later generic Tale prove that it belongs to this
+        // exact study job even when a very slow work cycle lasts beyond the fallback tick window.
+        public string studyJobId = string.Empty;
         public bool studierEligible;
+        public int tick = -1;
         public int oldProgress;
         public int newProgress;
         // Number of study-note thresholds crossed by this exact call, not the subject's lifetime
@@ -137,6 +153,7 @@ namespace PawnDiary.Capture
         public bool isMonolith;
         public bool monolithActivatableBefore;
         public bool monolithActivatableAfter;
+        public string setting = string.Empty;
     }
 
     /// <summary>Detached study history used to prevent retroactive or repeated milestones.</summary>
@@ -214,6 +231,26 @@ namespace PawnDiary.Capture
         public readonly AnomalyStudyHistoryMutation historyMutation = new AnomalyStudyHistoryMutation();
     }
 
+    /// <summary>One exact monolith activation boundary copied without live game objects.</summary>
+    internal sealed class AnomalyMonolithActivationFacts
+    {
+        public int tick = -1;
+        public string previousLevelDefName = string.Empty;
+        public string reachedLevelDefName = string.Empty;
+    }
+
+    /// <summary>Pure decision for consuming and optionally attaching saved monolith-study context.</summary>
+    internal sealed class AnomalyMonolithKnowledgeDecision
+    {
+        public bool consume;
+        public bool attach;
+        public string previousLevelDefName = string.Empty;
+        public string reachedLevelDefName = string.Empty;
+        public string researcherPawnId = string.Empty;
+        public string studyStage = string.Empty;
+        public bool becameActivatable;
+    }
+
     /// <summary>One verified entity captured before and after an involuntary escape.</summary>
     internal sealed class ContainedEntityFact
     {
@@ -277,6 +314,7 @@ namespace PawnDiary.Capture
         public string studierPawnId = string.Empty;
         public string studiedEntityId = string.Empty;
         public string studiedDefName = string.Empty;
+        public string studyJobId = string.Empty;
         public int acceptedTick = -1;
         public bool consumed;
     }
@@ -287,6 +325,7 @@ namespace PawnDiary.Capture
         public string studierPawnId = string.Empty;
         public string studiedEntityId = string.Empty;
         public string studiedDefName = string.Empty;
+        public string studyJobId = string.Empty;
         public int tick = -1;
     }
 

@@ -1,10 +1,11 @@
 // Pure, fail-open ownership for the generic StudiedEntity Tale. A dedicated Anomaly page may claim
-// only its exact researcher/entity pair for a short window; mismatches always preserve fallback.
+// only its exact researcher/entity pair. The exact vanilla job identity remains authoritative for
+// slow work; the short tick window is the fallback when either callback lacks that identity.
 using System;
 
 namespace PawnDiary.Capture
 {
-    /// <summary>Compares one short-lived dedicated-page claim with one generic Tale.</summary>
+    /// <summary>Compares one bounded dedicated-page claim with one generic Tale.</summary>
     internal static class AnomalyTaleOwnershipPolicy
     {
         /// <summary>Returns a consume-once decision without mutating the supplied DTOs.</summary>
@@ -33,12 +34,23 @@ namespace PawnDiary.Capture
             }
 
             long age = (long)tale.tick - claim.acceptedTick;
-            if (age > expiry)
+            string claimedJobId = (claim.studyJobId ?? string.Empty).Trim();
+            string taleJobId = (tale.studyJobId ?? string.Empty).Trim();
+            bool bothJobsKnown = claimedJobId.Length > 0 && taleJobId.Length > 0;
+            bool sameJob = bothJobsKnown && Same(claimedJobId, taleJobId);
+            if (age > expiry && !sameJob)
             {
                 result.removeClaim = true;
                 return result;
             }
             if (age < 0 || !Same((claim.studierPawnId ?? string.Empty).Trim(), tale.studierPawnId))
+            {
+                return result;
+            }
+
+            // When both callbacks know their vanilla job, a different job is never allowed to borrow
+            // ownership merely because the same researcher studied the same entity again quickly.
+            if (bothJobsKnown && !sameJob)
             {
                 return result;
             }
@@ -95,6 +107,7 @@ namespace PawnDiary.Capture
                 studierPawnId = source.studierPawnId ?? string.Empty,
                 studiedEntityId = source.studiedEntityId ?? string.Empty,
                 studiedDefName = source.studiedDefName ?? string.Empty,
+                studyJobId = source.studyJobId ?? string.Empty,
                 acceptedTick = source.acceptedTick,
                 consumed = source.consumed
             };

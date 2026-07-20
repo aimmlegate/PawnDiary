@@ -165,8 +165,29 @@ the fragile-signature fixture pins `CompStudyUnlocks.Progress:int` and `Complete
 all six keys plus deep snapshot round-trip and normalize, missing keys become legacy-pending safe
 defaults, and the loaded-game bootstrap clears transient ownership while either deferring without
 Anomaly or baselining exactly once with it. The RimTest assembly therefore contains 295 tests. Core
-and RimTest builds pass; the new in-game no-DLC/loaded execution remains pending and must not be
-reported as a passed runtime profile until recorded.
+and RimTest builds passed at that boundary; the subsequently executed runtime matrix is recorded
+immediately below.
+
+The A1.1 runtime matrix is now recorded rather than inferred from compilation: the no-Anomaly
+main-menu `AnomalyEventGroupsAreLoadedAndRouteOnlyExactKinds` run passed 1/1 with 0 failures; the
+user-confirmed loaded no-Anomaly state run passed 3/3 with 0 failures; and the user-confirmed loaded
+Anomaly-active state run passed the same 3/3 with 0 failures. Total focused A1.1 execution is 7/7,
+covering exact classification, the real six-key Scribe round-trip, missing defaults, DLC-off deferred
+migration, DLC-on one-time baseline, and transient reset.
+
+Master Wave 7 / Anomaly A1.2 raises `DiaryAnomalyPolicyTests` to 362 assertions. New pure coverage
+pins bounded semantic context (including delimiter sanitization and exclusion of raw progress/private
+threshold fields), stable source identity, monolith next-activation consumption/expiry, and the
+state-only stage required for activation enrichment. It also pins completion-over-promotion
+precedence, exact slow-job ownership beyond the fallback window, different-job fail-open behavior,
+and bounded cache retention. `PawnDiaryAnomalyStudyFlowTests` adds ten
+focused in-game cases: Anomaly-off hook inertness/Anomaly-on exact patch ownership, no threshold, one
+threshold with exact researcher ownership, one-call multi-note jump, first completed kind, disabled
+group with history advancement and no Tale claim, actual component Scribe/no replay, and exact
+consume-once `StudiedEntity` suppression, delayed exact-job consumption, and missing-level monolith
+state preservation. The RimTest assembly now contains 305 compiled tests. The
+new A1.2 fixtures have not been executed in RimWorld and remain a manual runtime task; compilation is
+not recorded as an in-game pass.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It

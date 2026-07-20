@@ -18,6 +18,7 @@ namespace PawnDiary
         {
             ThoughtGainPatch.TryRegister(harmony);
             DiaryRoyaltyPatches.TryRegister(harmony);
+            DiaryAnomalyPatches.TryRegister(harmony);
             QuestUiAcceptPatch.TryRegister(harmony);
             ProximityLetterEventWindowPatch.TryRegister(harmony);
             VoidMonolithActivationEventWindowPatch.TryRegister(harmony);

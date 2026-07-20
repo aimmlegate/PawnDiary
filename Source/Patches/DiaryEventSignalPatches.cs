@@ -566,6 +566,12 @@ namespace PawnDiary
             LevelDefGetter = anomalyComponentType == null
                 ? null
                 : AccessTools.PropertyGetter(anomalyComponentType, LevelDefPropertyName);
+            if (AnomalyGetter == null || LevelDefGetter == null)
+            {
+                Log.Warning("[Pawn Diary] Could not resolve Find.Anomaly.LevelDef; void monolith "
+                    + "activation events are disabled rather than recording an unverified level.");
+                return;
+            }
             LevelInspectTextField = monolithLevelDefType == null
                 ? null
                 : AccessTools.Field(monolithLevelDefType, LevelInspectTextFieldName);
@@ -607,14 +613,6 @@ namespace PawnDiary
         /// </summary>
         private static void Postfix(object __instance, Pawn pawn, bool __state)
         {
-            // Vanilla's automatic timer chooses a random free colonist and passes it to Activate solely
-            // to satisfy the method signature. There is no truthful first-person actor for our current
-            // SubjectPawn event shape, so leave that automatic transition silent.
-            if (__state)
-            {
-                return;
-            }
-
             DiaryPatchSafety.Run("VoidMonolithActivationEventWindowPatch", () =>
             {
                 Thing thing = __instance as Thing;
@@ -628,7 +626,10 @@ namespace PawnDiary
                     thing,
                     facts.defName,
                     facts.label,
-                    pawn);
+                    pawn,
+                    // Vanilla's timer supplies a random pawn only to satisfy Activate(Pawn). The
+                    // component still consumes/baselines exact state, but never attributes a page.
+                    recordPage: !__state);
             });
         }
 

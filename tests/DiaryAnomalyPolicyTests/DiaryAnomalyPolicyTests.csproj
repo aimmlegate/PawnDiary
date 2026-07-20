@@ -11,6 +11,8 @@
   <ItemGroup>
     <Compile Include="..\..\Source\Capture\Policies\AnomalyContracts.cs" Link="AnomalyContracts.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyStudyPolicy.cs" Link="AnomalyStudyPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\AnomalyStudyContextFormatter.cs" Link="AnomalyStudyContextFormatter.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\AnomalyMonolithKnowledgePolicy.cs" Link="AnomalyMonolithKnowledgePolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\ContainmentBreachPolicy.cs" Link="ContainmentBreachPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyTaleOwnershipPolicy.cs" Link="AnomalyTaleOwnershipPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyPersistencePolicy.cs" Link="AnomalyPersistencePolicy.cs" />

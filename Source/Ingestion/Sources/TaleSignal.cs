@@ -56,6 +56,14 @@ namespace PawnDiary.Ingestion
 
             ExtractTalePawns(tale, out firstPawn, out secondPawn);
 
+            // Vanilla records StudiedEntity after the same study interaction. Suppress Pawn Diary's
+            // generic fallback only when an accepted dedicated page owns this exact studier plus
+            // entity identity; mismatches and expired claims continue through the ordinary Tale path.
+            if (ShouldSuppressOwnedAnomalyStudyTale(taleDef, firstPawn, secondPawn))
+            {
+                return;
+            }
+
             deathVictim = DeathVictimForTale(taleDef, firstPawn, secondPawn);
             deathDescription = DiaryGameComponent.IsDeathDescriptionEligible(deathVictim);
 
@@ -415,6 +423,20 @@ namespace PawnDiary.Ingestion
             }
 
             return null;
+        }
+
+        private static bool ShouldSuppressOwnedAnomalyStudyTale(
+            TaleDef def,
+            Pawn studier,
+            Pawn studied)
+        {
+            if (!ModsConfig.AnomalyActive || !string.Equals(
+                def?.defName, "StudiedEntity", StringComparison.Ordinal)) return false;
+
+            AnomalyStudiedTaleFacts facts;
+            return DlcContext.TryCaptureAnomalyStudiedTale(studier, studied, out facts)
+                && AnomalyStudySuppressionCache.TryConsume(
+                    facts, DiaryAnomalyPolicy.Snapshot().studyTaleSuppressionTicks);
         }
 
         private static Pawn PawnForRole(string role, Pawn firstPawn, Pawn secondPawn)

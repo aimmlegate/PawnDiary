@@ -19,6 +19,8 @@ namespace PawnDiary
         // Opaque source-instance identity and continuity arc. Neither field reaches prompt context.
         public string correlationId;
         public string narrativeArcKey;
+        // Optional adapter-owned, already-sanitized evidence. It never participates in matching.
+        public string additionalContext;
     }
 
     /// <summary>

@@ -76,14 +76,9 @@ namespace PawnDiary.Capture
                 return plan;
             }
 
-            // Monolith study deliberately enriches the next exact activation instead of competing
-            // with it for a second page. History still advances above, preventing retroactive firsts.
-            if (!policy.studyEnabled || facts.isMonolith || !facts.studierEligible
-                || string.IsNullOrWhiteSpace(facts.studierPawnId))
-            {
-                return plan;
-            }
-
+            // Select the semantic stage independently of page eligibility. Monolith study and an
+            // ineligible exact researcher remain page-silent, but their truthful observation still
+            // needs a compact stage for saved next-activation enrichment and anti-retroactivity.
             if (first && policy.recordFirstStudyBreakthrough)
             {
                 plan.stageToken = AnomalyStudyStageTokens.FirstBreakthrough;
@@ -98,7 +93,10 @@ namespace PawnDiary.Capture
                 plan.promotionToken = promotion.token.Trim();
             }
 
-            if (plan.stageToken.Length > 0)
+            // Monolith study deliberately enriches the next exact activation instead of competing
+            // with it for a second page. History still advances above, preventing retroactive firsts.
+            if (plan.stageToken.Length > 0 && policy.studyEnabled && !facts.isMonolith
+                && facts.studierEligible && !string.IsNullOrWhiteSpace(facts.studierPawnId))
             {
                 plan.disposition = AnomalyStudyDisposition.Generate;
             }

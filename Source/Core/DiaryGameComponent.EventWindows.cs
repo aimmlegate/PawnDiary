@@ -6,6 +6,7 @@
 // Continuity evidence after the canonical page exists; that optional metadata never authorizes a page.
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using RimWorld;
 using Verse;
 
@@ -41,7 +42,7 @@ namespace PawnDiary
         /// </summary>
         internal void RecordEventWindowSignal(string source, string defName, string signal, string label,
             Map map = null, Pawn subjectPawn = null, string correlationId = null,
-            string narrativeArcKey = null)
+            string narrativeArcKey = null, string additionalContext = null)
         {
             if (!CanRecordGameplayEventNow() || string.IsNullOrWhiteSpace(source))
             {
@@ -65,7 +66,8 @@ namespace PawnDiary
                 subjectPawnId = subjectPawn == null ? string.Empty : subjectPawn.GetUniqueLoadID(),
                 subjectLabel = subjectLabel ?? string.Empty,
                 correlationId = correlationId ?? string.Empty,
-                narrativeArcKey = narrativeArcKey ?? string.Empty
+                narrativeArcKey = narrativeArcKey ?? string.Empty,
+                additionalContext = additionalContext ?? string.Empty
             };
 
             for (int i = 0; i < defs.Count; i++)
@@ -262,13 +264,27 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Convenience wrapper for completed void monolith activations, keyed by the reached level defName.
+        /// Handles one completed void-monolith activation. Automatic activations consume/baseline
+        /// knowledge state but pass <paramref name="recordPage"/> false so no random pawn gains agency.
         /// </summary>
         internal void RecordEventWindowVoidMonolithActivation(Thing thing, string levelDefName, string label,
-            Pawn subjectPawn)
+            Pawn subjectPawn, bool recordPage)
         {
             if (thing == null || thing.def == null)
             {
+                return;
+            }
+
+            // The reached MonolithLevelDef is the exact event-window identity and saved baseline.
+            // Falling back to the building's ThingDef ("VoidMonolith") would consume remembered
+            // knowledge against a transition that was never actually observed.
+            string reachedLevel = (levelDefName ?? string.Empty).Trim();
+            if (reachedLevel.Length == 0)
+            {
+                Log.WarningOnce(
+                    "[Pawn Diary] Ignored a void monolith activation because the reached level "
+                        + "could not be verified; Anomaly baseline and study context were left unchanged.",
+                    "PawnDiary.Anomaly.VoidMonolith.MissingReachedLevel".GetHashCode());
                 return;
             }
 
@@ -283,13 +299,42 @@ namespace PawnDiary
                 cleanedLabel = DiaryLineCleaner.CleanLine(thing.def.LabelCap.Resolve());
             }
 
+            AnomalyPolicySnapshot policy = DiaryAnomalyPolicy.Snapshot();
+            AnomalyMonolithKnowledgeDecision knowledge =
+                AnomalyMonolithKnowledgePolicy.Decide(
+                    anomalyLastMonolithKnowledgeSnapshot?.ToSnapshot(),
+                    new AnomalyMonolithActivationFacts
+                    {
+                        tick = Find.TickManager?.TicksGame ?? 0,
+                        previousLevelDefName = anomalyMonolithBaselineLevelDefName,
+                        reachedLevelDefName = reachedLevel
+                    },
+                    policy.monolithKnowledgeMaxAgeTicks);
+
+            // The first later exact activation owns the remembered study even when its context has
+            // expired or the event-window row is disabled. Commit consumption and the new baseline
+            // before dispatch so an adapter failure cannot leak it into a later chapter.
+            AnomalyPersistentStateSnapshot next = AnomalyStateSnapshot();
+            next.monolithBaselineLevelDefName = reachedLevel;
+            if (knowledge.consume && next.lastMonolithKnowledgeSnapshot != null)
+                next.lastMonolithKnowledgeSnapshot.consumed = true;
+            ApplyAnomalyState(next);
+            if (!recordPage) return;
+
+            string researcherLabel = knowledge.attach
+                ? DlcContext.AnomalyResearcherLabel(knowledge.researcherPawnId)
+                : string.Empty;
+            if (knowledge.attach && string.IsNullOrWhiteSpace(researcherLabel))
+                knowledge.attach = false;
             RecordEventWindowSignal(
                 EventWindowSourceVoidMonolith,
-                string.IsNullOrWhiteSpace(levelDefName) ? thing.def.defName : levelDefName,
+                reachedLevel,
                 EventWindowSignalActivated,
                 cleanedLabel,
                 thing.Map,
-                subjectPawn);
+                subjectPawn,
+                additionalContext: AnomalyStudyContextFormatter.FormatMonolithActivation(
+                    knowledge, researcherLabel));
         }
 
         private void ProcessEventWindowStart(DiaryEventWindowDef def, EventWindowSignalFacts facts, Map map,
@@ -1118,6 +1163,15 @@ namespace PawnDiary
             AddContextPart(parts, "label", facts == null ? null : facts.label);
             AddContextPart(parts, "subject", facts == null ? null : facts.subjectLabel);
             AddContextPart(parts, "subject_id", facts == null ? null : facts.subjectPawnId);
+            if (facts != null
+                && string.Equals(facts.source, EventWindowSourceVoidMonolith,
+                    StringComparison.Ordinal)
+                && SafeAdditionalContext(facts.additionalContext))
+            {
+                // The Anomaly formatter owns the key/value schema. Add it as already-sanitized
+                // structured evidence instead of parsing and accidentally renaming stable keys.
+                parts.Add(facts.additionalContext.Trim());
+            }
             bool questSource = string.Equals(
                 facts?.source ?? active?.startSource,
                 EventWindowSourceQuest,
@@ -1138,6 +1192,13 @@ namespace PawnDiary
             }
 
             return string.Join("; ", parts.ToArray());
+        }
+
+        private static bool SafeAdditionalContext(string value)
+        {
+            string clean = (value ?? string.Empty).Trim();
+            return clean.Length > 0 && clean.Length <= 1200
+                && clean.IndexOf('\r') < 0 && clean.IndexOf('\n') < 0;
         }
 
         private static void AddContextPart(List<string> parts, string key, string value)

@@ -1,4 +1,4 @@
-// Standalone no-RimWorld tests for Master Wave 7 / Anomaly Phase A1.0. Linking only the plain DTOs
+// Standalone no-RimWorld tests for Master Wave 7 / Anomaly Phases A1.0-A1.2. Linking only plain DTOs
 // and pure policies makes an accidental Verse, Unity, Harmony, DLC, or live-settings dependency a
 // compile-time failure.
 using System;
@@ -26,6 +26,8 @@ namespace DiaryAnomalyPolicyTests
             TestCompletionHistory();
             TestPromotionsAndMultiNoteJump();
             TestMonolithStateOnlyEnrichment();
+            TestStudyContextProjection();
+            TestMonolithKnowledgeOwnership();
             TestTaleOwnershipExactness();
             TestTaleOwnershipExpiryAndConsumeOnce();
             TestBoundedStudySuppressionCache();
@@ -51,14 +53,27 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("void event", "PawnDiary_VoidOutcome", AnomalyEventDefNames.VoidOutcome);
             AssertEqual("kind key", "anomaly_kind", AnomalyContextKeys.Kind);
             AssertEqual("stage key", "study_stage", AnomalyContextKeys.StudyStage);
+            AssertEqual("promotion key", "study_promotion", AnomalyContextKeys.StudyPromotion);
             AssertEqual("studied def key", "studied_def", AnomalyContextKeys.StudiedDef);
+            AssertEqual("studied label key", "studied_label", AnomalyContextKeys.StudiedLabel);
+            AssertEqual("codex key", "codex_entry", AnomalyContextKeys.CodexEntry);
+            AssertEqual("codex label key", "codex_entry_label", AnomalyContextKeys.CodexEntryLabel);
             AssertEqual("category key", "knowledge_category", AnomalyContextKeys.KnowledgeCategory);
+            AssertEqual("category label key", "knowledge_category_label",
+                AnomalyContextKeys.KnowledgeCategoryLabel);
+            AssertEqual("contained key", "contained_entity", AnomalyContextKeys.ContainedEntity);
+            AssertEqual("monolith key", "monolith", AnomalyContextKeys.Monolith);
+            AssertEqual("setting key", "setting", AnomalyContextKeys.Setting);
             AssertEqual("previous monolith key", "monolith_previous_level",
                 AnomalyContextKeys.MonolithPreviousLevel);
             AssertEqual("reached monolith key", "monolith_reached_level",
                 AnomalyContextKeys.MonolithReachedLevel);
             AssertEqual("activatable monolith key", "monolith_became_activatable",
                 AnomalyContextKeys.MonolithBecameActivatable);
+            AssertEqual("researcher monolith key", "monolith_last_researcher",
+                AnomalyContextKeys.MonolithLastResearcher);
+            AssertEqual("study-stage monolith key", "monolith_study_stage",
+                AnomalyContextKeys.MonolithStudyStage);
             AssertEqual("escape count key", "escaped_count", AnomalyContextKeys.EscapedCount);
             AssertEqual("escaped entities key", "escaped_entities", AnomalyContextKeys.EscapedEntities);
             AssertEqual("additional escape key", "additional_escaped_count",
@@ -508,6 +523,18 @@ namespace DiaryAnomalyPolicyTests
                 plan.historyMutation.completedStudyDefName);
             AssertEqual("coincident promotions still enter history", 2,
                 plan.historyMutation.observedPromotionKeys.Count);
+
+            AnomalyStudyHistorySnapshot afterFirst = new AnomalyStudyHistorySnapshot
+            {
+                firstBreakthroughObserved = true
+            };
+            plan = AnomalyStudyPolicy.Plan(simultaneous, afterFirst, policy);
+            AssertEqual("completion outranks a coincident promotion after first history",
+                AnomalyStudyStageTokens.CompletedKind, plan.stageToken);
+            AssertEqual("completion precedence hides the unselected promotion token",
+                string.Empty, plan.promotionToken);
+            AssertEqual("completion precedence still observes every crossed promotion", 2,
+                plan.historyMutation.observedPromotionKeys.Count);
         }
 
         private static void TestMonolithStateOnlyEnrichment()
@@ -521,6 +548,8 @@ namespace DiaryAnomalyPolicyTests
                 plan.disposition);
             AssertTrue("monolith still advances first history", plan.historyMutation.observeFirstBreakthrough);
             AssertTrue("activation-ready transition preserved", plan.monolithBecameActivatable);
+            AssertEqual("monolith preserves semantic stage for activation",
+                AnomalyStudyStageTokens.FirstBreakthrough, plan.stageToken);
 
             facts.monolithActivatableBefore = true;
             plan = AnomalyStudyPolicy.Plan(facts, null, null);
@@ -533,6 +562,100 @@ namespace DiaryAnomalyPolicyTests
                 AnomalyStudyDisposition.StateOnly, plan.disposition);
             AssertTrue("no-progress activation-ready transition preserved",
                 plan.monolithBecameActivatable);
+        }
+
+        private static void TestStudyContextProjection()
+        {
+            AnomalyStudyFacts facts = Study();
+            facts.codexEntryDefName = "EntityCodex_Fleshbeast";
+            facts.codexEntryLabel = "Fleshbeast entry";
+            facts.knowledgeCategoryDefName = "Basic";
+            facts.knowledgeCategoryLabel = "Basic knowledge";
+            facts.isContainedEntity = true;
+            facts.setting = "laboratory; hidden=never";
+            AnomalyStudyPlan plan = AnomalyStudyPolicy.Plan(facts, null, null);
+
+            AssertEqual("stable study source key",
+                "Entity_Fleshbeast|Entity_1|first_breakthrough||100",
+                AnomalyStudyContextFormatter.SourceKey(facts, plan));
+            string context = AnomalyStudyContextFormatter.FormatStudy(facts, plan);
+            AssertTrue("study context has exact kind",
+                context.Contains("anomaly_kind=study_breakthrough"));
+            AssertTrue("study context has semantic stage",
+                context.Contains("study_stage=first_breakthrough"));
+            AssertTrue("study context has exact studied def",
+                context.Contains("studied_def=Entity_Fleshbeast"));
+            AssertTrue("study context has discovered codex identity",
+                context.Contains("codex_entry=EntityCodex_Fleshbeast"));
+            AssertTrue("study context has category",
+                context.Contains("knowledge_category=Basic"));
+            AssertTrue("study context has containment truth",
+                context.Contains("contained_entity=true"));
+            AssertTrue("context delimiters are sanitized",
+                context.Contains("setting=laboratory, hidden-never"));
+            AssertTrue("raw progress is absent",
+                !context.Contains("oldProgress") && !context.Contains("newProgress")
+                && !context.Contains("noteThresholdsCrossed"));
+
+            facts.studiedDefName = "bad|def";
+            AssertEqual("unsafe stable source identity fails closed", string.Empty,
+                AnomalyStudyContextFormatter.SourceKey(facts, plan));
+        }
+
+        private static void TestMonolithKnowledgeOwnership()
+        {
+            AnomalyMonolithKnowledgeSnapshot snapshot = new AnomalyMonolithKnowledgeSnapshot
+            {
+                researcherPawnId = "Pawn_A",
+                studyStage = AnomalyStudyStageTokens.Promoted,
+                tick = 100,
+                reachedProgress = 2
+            };
+            AnomalyMonolithActivationFacts activation = new AnomalyMonolithActivationFacts
+            {
+                tick = 150,
+                previousLevelDefName = "Awakened",
+                reachedLevelDefName = "Twisted"
+            };
+            AnomalyMonolithKnowledgeDecision decision = AnomalyMonolithKnowledgePolicy.Decide(
+                snapshot, activation, 100);
+            AssertTrue("next exact activation consumes current study", decision.consume);
+            AssertTrue("current study attaches", decision.attach);
+            AssertEqual("researcher identity survives", "Pawn_A", decision.researcherPawnId);
+            AssertEqual("study stage survives", AnomalyStudyStageTokens.Promoted,
+                decision.studyStage);
+            string context = AnomalyStudyContextFormatter.FormatMonolithActivation(
+                decision, "Ari; researcher=exact");
+            AssertTrue("monolith context has exact boundary",
+                context.Contains("monolith_previous_level=Awakened")
+                && context.Contains("monolith_reached_level=Twisted"));
+            AssertTrue("monolith researcher label is sanitized",
+                context.Contains("monolith_last_researcher=Ari, researcher-exact"));
+
+            decision = AnomalyMonolithKnowledgePolicy.Decide(snapshot, activation, 20);
+            AssertTrue("expired study is consumed", decision.consume);
+            AssertTrue("expired study does not attach", !decision.attach);
+
+            activation.tick = 90;
+            decision = AnomalyMonolithKnowledgePolicy.Decide(snapshot, activation, 100);
+            AssertTrue("future snapshot is not consumed", !decision.consume && !decision.attach);
+
+            activation.tick = 150;
+            activation.reachedLevelDefName = activation.previousLevelDefName;
+            decision = AnomalyMonolithKnowledgePolicy.Decide(snapshot, activation, 100);
+            AssertTrue("non-transition is ignored", !decision.consume && !decision.attach);
+
+            activation.reachedLevelDefName = "Twisted";
+            snapshot.consumed = true;
+            decision = AnomalyMonolithKnowledgePolicy.Decide(snapshot, activation, 100);
+            AssertTrue("consumed snapshot cannot replay", !decision.consume && !decision.attach);
+
+            snapshot.consumed = false;
+            snapshot.studyStage = string.Empty;
+            snapshot.becameActivatable = true;
+            decision = AnomalyMonolithKnowledgePolicy.Decide(snapshot, activation, 100);
+            AssertTrue("activation-ready fact attaches without a stage",
+                decision.consume && decision.attach && decision.becameActivatable);
         }
 
         private static void TestTaleOwnershipExactness()
@@ -594,6 +717,26 @@ namespace DiaryAnomalyPolicyTests
             tale.tick = 161;
             decision = AnomalyTaleOwnershipPolicy.Decide(claim, tale, 60);
             AssertTrue("expired claim releases fallback", !decision.suppress && decision.removeClaim);
+
+            claim.studyJobId = "Job_42";
+            tale.studyJobId = "Job_42";
+            tale.tick = 10000;
+            decision = AnomalyTaleOwnershipPolicy.Decide(claim, tale, 60);
+            AssertTrue("exact slow study job overrides tick expiry",
+                decision.suppress && decision.removeClaim);
+
+            tale.studyJobId = "Job_43";
+            tale.tick = 101;
+            decision = AnomalyTaleOwnershipPolicy.Decide(claim, tale, 60);
+            AssertTrue("different current job cannot borrow exact study ownership",
+                !decision.suppress && !decision.removeClaim);
+            tale.tick = 10000;
+            decision = AnomalyTaleOwnershipPolicy.Decide(claim, tale, 60);
+            AssertTrue("expired different-job claim is removed fail-open",
+                !decision.suppress && decision.removeClaim);
+
+            claim.studyJobId = string.Empty;
+            tale.studyJobId = string.Empty;
             tale.tick = 100;
             decision = AnomalyTaleOwnershipPolicy.Decide(claim, tale, 0);
             AssertTrue("zero window permits exact same tick", decision.suppress);
@@ -684,6 +827,21 @@ namespace DiaryAnomalyPolicyTests
                 AnomalyStudySuppressionCache.Register(fresh, 200, 10));
             AssertEqual("only fresh claim remains after expiry prune", 1,
                 AnomalyStudySuppressionCache.CountForTests);
+
+            AnomalyStudyTaleClaim slowJob = Claim();
+            slowJob.studyJobId = "Job_42";
+            AssertTrue("exact-job claim enters transient cache",
+                AnomalyStudySuppressionCache.Register(slowJob, 200, 10));
+            AnomalyStudyTaleClaim muchLater = Claim();
+            muchLater.studiedEntityId = "Entity_Later";
+            muchLater.acceptedTick = 10000;
+            AssertTrue("later registration preserves bounded exact-job ownership",
+                AnomalyStudySuppressionCache.Register(muchLater, 10000, 10));
+            AnomalyStudiedTaleFacts slowTale = Tale();
+            slowTale.studyJobId = "Job_42";
+            slowTale.tick = 10000;
+            AssertTrue("cache consumes a delayed Tale from the exact study job",
+                AnomalyStudySuppressionCache.TryConsume(slowTale, 10));
             AnomalyTransientState.Reset();
             AssertEqual("Anomaly lifecycle reset clears all transient claims", 0,
                 AnomalyStudySuppressionCache.CountForTests);
@@ -817,6 +975,7 @@ namespace DiaryAnomalyPolicyTests
                 studiedLabel = "fleshbeast",
                 studierPawnId = "Pawn_A",
                 studierEligible = true,
+                tick = 100,
                 oldProgress = 10,
                 newProgress = 20,
                 noteThresholdsCrossed = 1

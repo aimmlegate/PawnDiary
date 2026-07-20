@@ -1,5 +1,47 @@
 # Changelog
 
+- **2026-07-20 — Hardened Anomaly Phase A1.2 after combined adversarial review.** Correlated a
+  dedicated study page and its later `StudiedEntity` fallback with RimWorld's exact non-reused
+  `Job_<id>` as well as researcher/entity identity. A slow five-interaction study job can therefore
+  retain ownership beyond the short compatibility tick window, while another job on the same pair
+  remains fail-open. Exact-job rows stay unsaved, lifecycle-cleared, and bounded by the existing
+  64-row cache cap. The study prefix now captures only cheap identity/progress/activation facts;
+  visible labels, discovered codex/category data, eligibility, containment, and surroundings are read
+  once and only after a real transition. Removed the unused monolith-level read from every study call.
+
+  Void-monolith activation registration now requires the exact `Find.Anomaly.LevelDef` getter, and
+  the component refuses an empty reached level without advancing its baseline or consuming remembered
+  study context. Added runtime-signature pins for `Building_VoidMonolith.CanActivate(out,out)` and
+  `Job.GetUniqueLoadID()`, pure completion-vs-promotion and delayed/different-job ownership cases, and
+  loaded fixtures for slow-job consumption plus missing-level state preservation. The focused pure
+  suite passes 362 assertions; core and the 305-test RimTest assembly build cleanly. The two new
+  loaded fixtures, like the original eight A1.2 fixtures, are compiled but not yet executed in-game.
+  No Scribe key, schema version, DLC dependency, or localization string changed.
+
+- **2026-07-20 — Implemented Anomaly Phase A1.2 researcher-owned study capture.** Added one
+  defensive, Anomaly-active-only registration for the exact public
+  `CompStudyUnlocks.OnStudied(Pawn,float,KnowledgeCategoryDef)` seam. Guarded before/after reads now
+  stay in `DlcContext`, detach exact subject/studier/codex/category/containment/monolith/setting facts,
+  and commit pure first/completed-kind/XML-promotion history even when output is disabled or the
+  researcher is ineligible. Only an accepted exact-author study page claims the matching
+  `StudiedEntity` Tale; mismatches, expiry, disabled rows, rejected dispatch, and missing hooks retain
+  the generic fallback. Monolith study remains page-silent and can enrich only the next exact
+  activation; automatic activation consumes/baselines the snapshot without inventing pawn agency.
+
+  The assembly-free Anomaly suite passes 353 assertions (up from 320). Eight focused in-game tests
+  add hook-health/inertness, no-threshold, one-threshold, multi-note jump, completion, disabled-group,
+  real-Scribe/no-replay, and exact consume-once Tale cases, bringing the RimTest assembly to 303
+  compiled tests. Core and RimTest DLLs rebuild cleanly. These new A1.2 fixtures are compiled but
+  have not been executed inside RimWorld; manual execution remains pending.
+
+- **2026-07-20 — Recorded the completed Anomaly Phase A1.1 in-game matrix.** The no-Anomaly
+  main-menu exact-classifier fixture passed 1/1 with 0 failures. The user-confirmed manual loaded
+  no-Anomaly state run passed 3/3 with 0 failures, and the user-confirmed manual loaded
+  Anomaly-active state run passed 3/3 with 0 failures. The resulting 7/7 focused executions cover
+  exact classifier routing, the real six-key Scribe round-trip, missing-key defaults, DLC-off
+  deferred migration, DLC-on one-time baseline, and transient reset. This runtime result supersedes
+  the earlier A1.1 “compiled but pending” notes below; it does not count the new A1.2 fixtures.
+
 - **2026-07-20 — Hardened Anomaly Phase A1.1 after adversarial review.** Replaced the shared
   non-catch-all classifier path with an Anomaly-specific exact-name, runtime-available lookup, so the
   broad order-70 `Anomaly` token group cannot claim unknown synthetic names and package-gated rows
