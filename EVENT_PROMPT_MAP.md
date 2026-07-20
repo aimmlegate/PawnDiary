@@ -463,8 +463,9 @@ package-gated Interaction groups at orders `61..65`: `anomalyStudyBreakthrough`,
 `ClassifyAnomalyEvent`; this dedicated route accepts only an available exact `matchDefNames` row and
 cannot use any broader Interaction matcher (including the ordinary catch-all and the order-70
 `Anomaly` token group).
-A1.2 study, A1.3 containment breach, and A2.0/A2.1 visible creepjoiner outcomes now submit through this
-envelope after their source-specific before/after policies prove the exact visible transition. The
+A1.2 study, A1.3 containment breach, A2.0/A2.1 visible creepjoiner outcomes, and A2.2 ghoul
+transformation now submit through this envelope after their source-specific before/after policies prove
+the exact visible transition. The
 creepjoiner route accepts only generic `surgical_reveal`/`rejected`/`aggressive`/`departed` phase truth.
 A2.0 chooses one exact same-map speaker, pre-departure subject, or nearby-witness POV. A2.1 instead
 chooses the exact eligible surgeon first and the exact eligible subject second, with no nearby fallback;
@@ -473,8 +474,12 @@ when that dedicated disclosure page exists, otherwise the ordinary Tale route fa
 aggressive rejection is one outer-owned `aggressive`/`hostile` page with `rejection_response=true`;
 letterless modded rejection releases any nested visible outcome owner. No hidden tracker configuration,
 inspection prose, or disclosed benefit/downside identity reaches context.
-Ghoul and terminal-void groups remain settings/localization reservations with zero live producers until
-A2.2/A3. N3-A remains an explicit zero-candidate provider.
+A2.2's ghoul producer accepts only an exact normal-return non-ghoul → ghoul transition, selects the
+preverified surgeon and subject roles, and owns the correlated generic surgery page only after the
+dedicated page exists. Its replay window is independently XML-owned by
+`ghoulTransformationDedupTicks`; the Tale-correlation expiry has no effect on dedup behavior. The
+terminal-void group remains a settings/localization reservation with zero live producers until A3.
+N3-A remains an explicit zero-candidate provider.
 
 Biotech Phases 1–2 activate the exact `progressionGrowthMoment` / order `800` route for
 `BiotechGrowthMoment`; the Tale-domain `biotechFamilyBirth` / order `315` contract remains inactive

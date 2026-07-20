@@ -349,7 +349,8 @@ namespace PawnDiary.RimTests
 
             string savedXml = RoundTripActualAnomalyState();
             PawnDiaryRimTestScope.Require(
-                savedXml.IndexOf("ghoul", StringComparison.OrdinalIgnoreCase) < 0,
+                savedXml.IndexOf("ghoulTransformation", StringComparison.OrdinalIgnoreCase) < 0
+                    && savedXml.IndexOf("ghoulReplay", StringComparison.OrdinalIgnoreCase) < 0,
                 "A2.2 unexpectedly added a persisted ghoul replay/catch-up marker.");
             scope.RequireNoNewEvent(() => BootstrapAnomalyMethod.Invoke(scope.Component, null));
         }

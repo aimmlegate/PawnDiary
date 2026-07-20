@@ -49,7 +49,10 @@ namespace PawnDiary.Capture
             return plan;
         }
 
-        /// <summary>True only when this plan proves the dedicated event owns DidSurgery.</summary>
+        /// <summary>
+        /// True only when this plan proves source ownership of DidSurgery. Final suppression also
+        /// requires a deferred Tale and an actually created replacement event.
+        /// </summary>
         public static bool OwnsDidSurgery(GhoulTransformationPlan plan)
         {
             return plan != null && plan.valid && plan.transitionVerified

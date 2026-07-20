@@ -35,7 +35,7 @@ namespace PawnDiary
 
         // Phase A2.0 consumes creepjoiner output/dedup/radius; A2.1 uses the creepjoiner two-writer
         // ceiling for exact disclosure POVs. Retention remains reserved until liveness-aware pruning
-        // can preserve replay safety. A2.2 uses its independent one/two exact-role writer ceiling.
+        // can preserve replay safety. A2.2 owns independent writer and replay-dedup tuning.
         public bool creepJoinerEnabled = true;
         public int creepJoinerOutcomeDedupTicks = 2500;
         public int creepJoinerArcRetentionTicks = 3600000;
@@ -44,6 +44,8 @@ namespace PawnDiary
         public bool ghoulTransformationEnabled = true;
         public int ghoulTransformationMaxWriters =
             AnomalyPolicyLimits.DefaultGhoulTransformationWriters;
+        public int ghoulTransformationDedupTicks =
+            AnomalyPolicyLimits.DefaultGhoulTransformationDedupTicks;
         public bool voidOutcomeEnabled = true;
         public int taleOwnershipMaxDepth = AnomalyPolicyLimits.DefaultTaleOwnershipDepth;
         public int taleOwnershipExpiryTicks = AnomalyPolicyLimits.DefaultTaleOwnershipExpiryTicks;
@@ -80,6 +82,8 @@ namespace PawnDiary
             if (ghoulTransformationMaxWriters < 1
                 || ghoulTransformationMaxWriters > AnomalyPolicyLimits.MaximumGhoulTransformationWriters)
                 yield return "ghoulTransformationMaxWriters must be one or two.";
+            if (ghoulTransformationDedupTicks < 0)
+                yield return "ghoulTransformationDedupTicks cannot be negative.";
             if (taleOwnershipMaxDepth < 1
                 || taleOwnershipMaxDepth > AnomalyPolicyLimits.MaximumTaleOwnershipDepth)
                 yield return "taleOwnershipMaxDepth is outside the defensive supported range.";
@@ -145,6 +149,7 @@ namespace PawnDiary
                 creepJoinerWitnessRadius = source.creepJoinerWitnessRadius,
                 ghoulTransformationEnabled = source.ghoulTransformationEnabled,
                 ghoulTransformationMaxWriters = source.ghoulTransformationMaxWriters,
+                ghoulTransformationDedupTicks = source.ghoulTransformationDedupTicks,
                 voidOutcomeEnabled = source.voidOutcomeEnabled,
                 taleOwnershipMaxDepth = source.taleOwnershipMaxDepth,
                 taleOwnershipExpiryTicks = source.taleOwnershipExpiryTicks

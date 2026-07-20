@@ -4,7 +4,6 @@
 // ("DLC-safety") for why all optional-DLC reads are guarded.
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using PawnDiary.Capture;
 using RimWorld;
 using Verse;
@@ -16,9 +15,6 @@ namespace PawnDiary
     /// </summary>
     internal static class BodyModContext
     {
-        private static readonly PropertyInfo IsGhoulProperty = typeof(Pawn).GetProperty("IsGhoul");
-        private static readonly FieldInfo MutantField = typeof(Pawn).GetField("mutant");
-
         /// <summary>
         /// Returns plain stance facts for body-part event policy. Missing DLC/content simply produces
         /// false/none values, so a base-game-only player keeps the same safe runtime path.
@@ -32,7 +28,8 @@ namespace PawnDiary
                 HasDespisesTrait = HasTrait(pawn, tuning.bodyPartDespisesTraitDefNames),
                 IdeologyStance = IdeologyStance(pawn, tuning.bodyPartApprovePreceptDefNames, tuning.bodyPartDespisePreceptDefNames),
                 IsInhumanized = HasHediff(pawn, tuning.bodyPartInhumanizedHediffDefNames),
-                IsGhoul = IsGhoul(pawn)
+                // All ghoul-state reads deliberately route through the guarded DLC adapter.
+                IsGhoul = DlcContext.IsGhoul(pawn)
             };
         }
 
@@ -100,45 +97,6 @@ namespace PawnDiary
             }
 
             return false;
-        }
-
-        private static bool IsGhoul(Pawn pawn)
-        {
-            if (!ModsConfig.AnomalyActive || pawn == null)
-            {
-                return false;
-            }
-
-            if (IsGhoulProperty != null && IsGhoulProperty.PropertyType == typeof(bool))
-            {
-                object value = IsGhoulProperty.GetValue(pawn, null);
-                return value is bool && (bool)value;
-            }
-
-            // RimWorld versions can move this convenience property. Reflection keeps the code
-            // compiling against 1.6 while still supporting the older mutant tracker shape if present.
-            object mutant = MutantField != null ? MutantField.GetValue(pawn) : null;
-            object def = ReadPropertyOrField(mutant, "Def");
-            string defName = ReadPropertyOrField(def, "defName") as string;
-            return string.Equals(defName, "Ghoul", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static object ReadPropertyOrField(object target, string name)
-        {
-            if (target == null || string.IsNullOrEmpty(name))
-            {
-                return null;
-            }
-
-            Type type = target.GetType();
-            PropertyInfo property = type.GetProperty(name);
-            if (property != null)
-            {
-                return property.GetValue(target, null);
-            }
-
-            FieldInfo field = type.GetField(name);
-            return field != null ? field.GetValue(target) : null;
         }
 
         private static bool ContainsDefName(List<string> defNames, string defName)

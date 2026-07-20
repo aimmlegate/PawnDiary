@@ -134,7 +134,10 @@ namespace PawnDiary
         private static FieldInfo creepJoinerTriggeredAggressiveField;
         private static FieldInfo creepJoinerHasLeftField;
 
-        /// <summary>Returns guarded live ghoul state, or false when Anomaly is unavailable.</summary>
+        /// <summary>
+        /// Sole production accessor for live ghoul state; returns false when Anomaly is unavailable.
+        /// Other adapters route through this method so DLC gating cannot drift between features.
+        /// </summary>
         internal static bool IsGhoul(Pawn pawn)
         {
             return ModsConfig.AnomalyActive && pawn != null && pawn.IsGhoul;
@@ -164,6 +167,8 @@ namespace PawnDiary
                     surgeonLabel = DiaryLineCleaner.CleanLine(surgeon.LabelShortCap),
                     tick = Find.TickManager?.TicksGame ?? 0,
                     wasGhoul = IsGhoul(subject),
+                    // Ghoul infusion is a player-issued surgery bill, so committing it is inherently
+                    // player-visible. The pure policy still rejects false as a defensive adapter seam.
                     playerVisible = true,
                     surgeonEligible = DiaryGameComponent.IsDiaryEligible(surgeon),
                     subjectEligible = DiaryGameComponent.IsDiaryEligible(subject)

@@ -189,6 +189,7 @@ namespace PawnDiary.Capture
         public const int MaximumCreepJoinerArcInputs = 4096;
         public const int DefaultGhoulTransformationWriters = 2;
         public const int MaximumGhoulTransformationWriters = 2;
+        public const int DefaultGhoulTransformationDedupTicks = 2500;
     }
 
     /// <summary>Pure result category for one observed study transition.</summary>
@@ -605,6 +606,7 @@ namespace PawnDiary.Capture
         public int creepJoinerWitnessRadius;
         public bool ghoulTransformationEnabled;
         public int ghoulTransformationMaxWriters;
+        public int ghoulTransformationDedupTicks;
         public bool voidOutcomeEnabled;
         public int taleOwnershipMaxDepth;
         public int taleOwnershipExpiryTicks;
@@ -633,6 +635,8 @@ namespace PawnDiary.Capture
                 ghoulTransformationEnabled = true,
                 ghoulTransformationMaxWriters =
                     AnomalyPolicyLimits.DefaultGhoulTransformationWriters,
+                ghoulTransformationDedupTicks =
+                    AnomalyPolicyLimits.DefaultGhoulTransformationDedupTicks,
                 voidOutcomeEnabled = true,
                 taleOwnershipMaxDepth = AnomalyPolicyLimits.DefaultTaleOwnershipDepth,
                 taleOwnershipExpiryTicks = AnomalyPolicyLimits.DefaultTaleOwnershipExpiryTicks
@@ -692,6 +696,9 @@ namespace PawnDiary.Capture
                 source.ghoulTransformationMaxWriters, 1,
                 AnomalyPolicyLimits.MaximumGhoulTransformationWriters,
                 result.ghoulTransformationMaxWriters);
+            result.ghoulTransformationDedupTicks = NonNegative(
+                source.ghoulTransformationDedupTicks,
+                result.ghoulTransformationDedupTicks);
             result.voidOutcomeEnabled = source.voidOutcomeEnabled;
             result.taleOwnershipMaxDepth = InRange(
                 source.taleOwnershipMaxDepth, 1,

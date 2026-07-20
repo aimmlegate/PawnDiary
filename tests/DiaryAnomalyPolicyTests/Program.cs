@@ -178,6 +178,7 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("creepjoiner witness radius", 12, policy.creepJoinerWitnessRadius);
             AssertTrue("future ghoul enabled", policy.ghoulTransformationEnabled);
             AssertEqual("ghoul writer default", 2, policy.ghoulTransformationMaxWriters);
+            AssertEqual("ghoul dedup default", 2500, policy.ghoulTransformationDedupTicks);
             AssertTrue("future void enabled", policy.voidOutcomeEnabled);
             AssertEqual("ownership depth", 8, policy.taleOwnershipMaxDepth);
             AssertEqual("ownership expiry", 2500, policy.taleOwnershipExpiryTicks);
@@ -205,6 +206,7 @@ namespace DiaryAnomalyPolicyTests
                 creepJoinerWitnessRadius = 0,
                 ghoulTransformationEnabled = false,
                 ghoulTransformationMaxWriters = 99,
+                ghoulTransformationDedupTicks = -1,
                 voidOutcomeEnabled = false,
                 taleOwnershipMaxDepth = 0,
                 taleOwnershipExpiryTicks = -1
@@ -250,6 +252,9 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("invalid ghoul writer cap falls back",
                 AnomalyPolicyLimits.DefaultGhoulTransformationWriters,
                 normalized.ghoulTransformationMaxWriters);
+            AssertEqual("negative ghoul dedup falls back",
+                AnomalyPolicyLimits.DefaultGhoulTransformationDedupTicks,
+                normalized.ghoulTransformationDedupTicks);
             AssertTrue("normalization preserves disabled void", !normalized.voidOutcomeEnabled);
             AssertEqual("invalid ownership depth falls back",
                 AnomalyPolicyLimits.DefaultTaleOwnershipDepth,
@@ -298,6 +303,7 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("XML recent-studier age", "60000", Value(def, "recentStudierMaxAgeTicks"));
             AssertEqual("XML creepjoiner radius", "12", Value(def, "creepJoinerWitnessRadius"));
             AssertEqual("XML ghoul writer cap", "2", Value(def, "ghoulTransformationMaxWriters"));
+            AssertEqual("XML ghoul dedup", "2500", Value(def, "ghoulTransformationDedupTicks"));
             AssertEqual("XML ownership depth", "8", Value(def, "taleOwnershipMaxDepth"));
             AssertEqual("XML ownership expiry", "2500", Value(def, "taleOwnershipExpiryTicks"));
             AssertTrue("policy makes no conditional DLC Def reference",
@@ -1673,8 +1679,7 @@ namespace DiaryAnomalyPolicyTests
                 value => value.tick = -1,
                 value => value.methodReturnedNormally = false,
                 value => value.wasGhoul = true,
-                value => value.isGhoul = false,
-                value => value.playerVisible = false
+                value => value.isGhoul = false
             })
             {
                 GhoulTransformationFacts malformed = GhoulTransformation();
@@ -1682,6 +1687,11 @@ namespace DiaryAnomalyPolicyTests
                 AssertTrue("malformed/failed/unverified ghoul facts drop",
                     !GhoulTransformationPolicy.Plan(malformed, null).valid);
             }
+
+            GhoulTransformationFacts invisible = GhoulTransformation();
+            invisible.playerVisible = false;
+            AssertTrue("defensive invisible ghoul facts drop even though vanilla bills are visible",
+                !GhoulTransformationPolicy.Plan(invisible, null).valid);
         }
 
         private static void TestGhoulWriterOrderAndContextFirewall()
@@ -1701,6 +1711,13 @@ namespace DiaryAnomalyPolicyTests
             AssertTrue("ghoul one-writer cap retains surgeon first",
                 plan.selectedWriters.Count == 1
                     && plan.selectedWriters[0].roleToken == AnomalyWitnessRoleTokens.Surgeon);
+
+            facts = GhoulTransformation();
+            facts.surgeonEligible = false;
+            plan = GhoulTransformationPolicy.Plan(facts, oneWriter);
+            AssertTrue("ghoul one-writer cap still permits the eligible subject",
+                plan.writePage && plan.selectedWriters.Count == 1
+                    && plan.selectedWriters[0].roleToken == AnomalyWitnessRoleTokens.Subject);
 
             facts = GhoulTransformation();
             facts.subjectEligible = false;
@@ -1752,6 +1769,12 @@ namespace DiaryAnomalyPolicyTests
                     && context.Contains("recipient_witness_role=subject"));
             AssertTrue("ghoul context sanitizes field injection",
                 !context.Contains("; hidden="));
+            facts.subjectLabel = new string('S', 300);
+            plan = GhoulTransformationPolicy.Plan(facts, null);
+            context = GhoulTransformationContextFormatter.Format(facts, plan);
+            AssertTrue("ghoul context truncates each visible value to its defensive cap",
+                context.Contains("ghoul_subject_label=" + new string('S', 240) + ";")
+                    && !context.Contains(new string('S', 241)));
             AssertTrue("ghoul context excludes recipe and body mechanics",
                 context.IndexOf("ingredient", StringComparison.OrdinalIgnoreCase) < 0
                     && context.IndexOf("bodypart", StringComparison.OrdinalIgnoreCase) < 0

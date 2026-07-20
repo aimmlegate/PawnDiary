@@ -376,7 +376,7 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > **Progress (2026-07-21): A1.0–A1.4 and A2.0–A2.2 implemented.** The primitive policy,
 > detached DTOs, exact study/containment/visible-creepjoiner/surgical-disclosure/ghoul-infusion hooks, fail-closed catalog route, seven-key
 > normalized save baseline, lifecycle-cleared bounded caches/scopes, and five package-gated prompt
-> groups are implemented. N3-A remains an explicit zero-candidate provider. Focused suites pass 567
+> groups are implemented. N3-A remains an explicit zero-candidate provider. Focused suites pass 572
 > Anomaly, 708 catalog, 135 save-normalization, and 135 Narrative assertions; runtime and 347-test
 > RimTest assemblies build. The exact-only classifier and all hooks are Anomaly-gated. Loaded A1.1 state
 > coverage and the original nine A1.3 containment fixtures passed in their recorded profiles. A later
@@ -417,6 +417,9 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > preverified page reference was omitted—and three were fixture assumptions about surgeon-only
 > exceptional fallback, delayed `Wounded` batching, and Biotech's policy-selected salient gene. The
 > exact-writer reference path and fixtures are corrected; the user-confirmed rerun passed 347/347.
+> Follow-up adversarial review gives ghoul replay dedup its own XML knob, centralizes live ghoul reads
+> through `DlcContext`, narrows the no-save fixture to prospective A2.2 marker names, and keeps an
+> already-created dedicated page authoritative if its reference/generation handoff throws.
 
 ### Implement in this exact order
 

@@ -76,7 +76,7 @@ namespace PawnDiary.Ingestion
 
         public override string DedupKey => payload.DedupKey();
 
-        public override int DedupWindowTicks => Math.Max(1, policy.taleOwnershipExpiryTicks);
+        public override int DedupWindowTicks => Math.Max(1, policy.ghoulTransformationDedupTicks);
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {
@@ -104,12 +104,7 @@ namespace PawnDiary.Ingestion
                     context);
                 if (CreatedEvent != null)
                 {
-                    // The subject is no longer a normal colonist after vanilla returns. The pure plan
-                    // already froze both exact writers' eligibility before that irreversible change,
-                    // so restore the subject's reference without re-reading the new ghoul state.
-                    sink.AddPreverifiedEventRef(writers[0], CreatedEvent.eventId, true);
-                    sink.AddPreverifiedEventRef(writers[1], CreatedEvent.eventId, true);
-                    sink.QueuePair(CreatedEvent);
+                    FinishCreatedEvent(sink, writers[0], writers[1], pair: true);
                 }
                 return;
             }
@@ -129,8 +124,39 @@ namespace PawnDiary.Ingestion
                 context);
             if (CreatedEvent != null)
             {
-                sink.AddPreverifiedEventRef(writer, CreatedEvent.eventId, true);
-                sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
+                FinishCreatedEvent(sink, writer, null, pair: false);
+            }
+        }
+
+        /// <summary>
+        /// Restores exact preverified diary references and starts generation after the durable page
+        /// exists. A follow-up failure must not release a second generic surgery owner.
+        /// </summary>
+        private void FinishCreatedEvent(
+            DiaryGameComponent sink,
+            Pawn firstWriter,
+            Pawn secondWriter,
+            bool pair)
+        {
+            try
+            {
+                // The subject is no longer a normal colonist after vanilla returns. The pure plan
+                // already froze each exact writer's eligibility before that irreversible change.
+                sink.AddPreverifiedEventRef(firstWriter, CreatedEvent.eventId, true);
+                if (secondWriter != null)
+                    sink.AddPreverifiedEventRef(secondWriter, CreatedEvent.eventId, true);
+                if (pair) sink.QueuePair(CreatedEvent);
+                else sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
+            }
+            catch (Exception exception)
+            {
+                // The repository already owns the fallback-text page. Normal orphan recovery may
+                // retry generation; releasing DidSurgery here would create a duplicate diary owner.
+                Log.ErrorOnce(
+                    "[Pawn Diary] Ghoul transformation page was created but its exact reference or "
+                    + "initial generation handoff failed; the dedicated page remains authoritative: "
+                    + exception,
+                    "PawnDiary.GhoulTransformation.PostCreate".GetHashCode());
             }
         }
 

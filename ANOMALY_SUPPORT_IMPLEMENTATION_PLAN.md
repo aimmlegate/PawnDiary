@@ -49,7 +49,7 @@ standalone plans.
 | `ODYSSEY_SUPPORT_IMPLEMENTATION_PLAN.md` | Scope-review plan only; its saved journey and landing chapters are not production code. |
 | Current Anomaly ritual support | Successful psychic rituals fan out through `DiaryEventType.Ritual`, with exact ritual defName, perspective, quality, and exact-family Anomaly guidance plus a modded fallback. |
 | Current Anomaly atmosphere | Monolith discovery/activation, visible and hidden metalhorror pressure, pit gates, fleshmass, nociosphere, obelisks, unnatural corpses, major conditions, cube effects, void hediffs, thoughts, raids, and Tales already have useful generic coverage. |
-| Main Anomaly gap | Exact ritual meaning, researcher-owned study milestones, containment consequence, and visible creepjoiner outcomes including surgical disclosure are connected; ghoul identity and exact terminal void chapters remain. |
+| Main Anomaly gap | Exact ritual meaning, researcher-owned study milestones, containment consequence, visible creepjoiner outcomes including surgical disclosure, and ghoul identity are connected; exact terminal void chapters remain. |
 
 This plan starts from that production baseline. A coding agent must not assume that a cross-DLC
 facet, event type, state model, or helper proposed by another plan already exists.
@@ -1029,7 +1029,8 @@ by code even if XML is misconfigured.
 4. Recipe postfix reads `isGhoul` through `DlcContext`.
 5. Generate only when `!wasGhoul && isGhoul` and the method returned normally.
 6. Success discards the deferred generic Tale and emits the dedicated event; every failure path
-   clears ownership and flushes any deferred Tale unchanged.
+   clears ownership and flushes any deferred Tale unchanged. Vanilla surgery failure returns before
+   recording `DidSurgery`, so that path normally has no generic signal to flush.
 
 Do not infer success from recipe invocation, ingredients consumed, the bill disappearing, or the
 presence of a generic surgery Tale alone.
@@ -1063,6 +1064,10 @@ otherwise see the ghoul transition's side effects as unrelated later changes. Ex
 royal title/ideoligion/personality state only when those trackers exist and their owning feature is
 already implemented. This is a consistency handoff, not authorization to implement other DLC plans
 inside A2.
+
+The shipped A2.2 adapter intentionally consumes none of those other observers' baselines. A separately
+proven visible title, belief, or personality consequence remains eligible for its own existing event;
+the ghoul page does not silently claim or suppress it.
 
 ## 14. Terminal void policy (A3)
 
@@ -1733,13 +1738,15 @@ profile remains in the manual in-game matrix.
 > the XML-owned one/two-writer cap, with same-pawn exclusion and no invented witnesses.
 >
 > A bounded lifecycle-cleared scope uses the shared pure surgery-Tale matcher and cannot overlap A2.1.
-> `DidSurgery` is suppressed only after the dedicated event actually exists. Failure, exception,
-> already-ghoul calls, missing/ineligible authors, disabled output, hook/correlation drift, resolution
-> failure, and finalizer cleanup release the unchanged generic signal. No new save key exists; old-save
+> `DidSurgery` is suppressed only after the dedicated event actually exists. Vanilla failure exits
+> before recording that Tale; exception, already-ghoul calls, missing/ineligible authors, disabled
+> output, hook/correlation drift, resolution failure, and finalizer cleanup release any parked generic
+> signal unchanged. Post-create reference/queue failures keep the durable dedicated page authoritative.
+> No new save key exists; old-save
 > and current-ghoul state produce no catch-up page. Context/localized fallback contain only the visible
 > irreversible ghoul choice and exact roles. Production has no unsafe Anomaly Def lookup or dependency.
 >
-> Focused pure coverage passes 567 assertions. Twelve loaded fixtures raise RimTest to 347 compiled
+> Focused pure coverage passes 572 assertions. Twelve loaded fixtures raise RimTest to 347 compiled
 > tests and cover the real successful/failed worker, already-ghoul fallback, exact pair/solo POVs,
 > disabled output, exception/unscoped fallback, reset and A2.1 mutual exclusion, exact registration,
 > no-DLC gating, actual Scribe/no-replay behavior, and later ordinary injury routing. The first expanded

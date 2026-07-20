@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
-  <!-- A1-A2.1 policy. All identifiers are our own primitive strings; there are no Anomaly Def
+  <!-- A1-A2.2 policy. All identifiers are our own primitive strings; there are no Anomaly Def
        references, so this row safely loads and remains inert when the DLC is absent. -->
   <PawnDiary.DiaryAnomalyPolicyDef>
     <defName>Diary_AnomalyPolicy</defName>
@@ -20,8 +20,8 @@
     <containmentDedupTicks>2500</containmentDedupTicks>
     <recentStudierMaxAgeTicks>60000</recentStudierMaxAgeTicks>
 
-    <!-- A2.0 terminal outcomes emit at most one POV; A2.1 surgical disclosure may pair the exact
-         surgeon and subject. Retention is reserved; ghoul/void remain frozen for later phases. -->
+    <!-- A2.0 terminal outcomes emit at most one POV; A2.1 surgical disclosure and A2.2 ghoul
+         transformation may pair exact roles. Retention is reserved; void remains for A3. -->
     <creepJoinerEnabled>true</creepJoinerEnabled>
     <creepJoinerOutcomeDedupTicks>2500</creepJoinerOutcomeDedupTicks>
     <creepJoinerArcRetentionTicks>3600000</creepJoinerArcRetentionTicks><!-- reserved; age-only pruning is inactive -->
@@ -29,6 +29,7 @@
     <creepJoinerWitnessRadius>12</creepJoinerWitnessRadius>
     <ghoulTransformationEnabled>true</ghoulTransformationEnabled>
     <ghoulTransformationMaxWriters>2</ghoulTransformationMaxWriters>
+    <ghoulTransformationDedupTicks>2500</ghoulTransformationDedupTicks>
     <voidOutcomeEnabled>true</voidOutcomeEnabled>
     <taleOwnershipMaxDepth>8</taleOwnershipMaxDepth>
     <taleOwnershipExpiryTicks>2500</taleOwnershipExpiryTicks>

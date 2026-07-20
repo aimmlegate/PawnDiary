@@ -1674,14 +1674,14 @@ normalized defaults, and verifies that snapshots are independent. A manual main-
 passed that read-only fixture as part of 46/46 tests which do not require a colony; 245 loaded-game
 fixtures correctly rejected the absent game, so the full 291-test loaded-colony run remains pending.
 
-**Anomaly catalog, persistence, study, containment, and visible creepjoiner capture (Master Wave 7 / A1.1–A2.1).** `DiaryEventType.AnomalyEvent`
+**Anomaly catalog, persistence, study, containment, visible creepjoiner capture, and ghoul transformation (Master Wave 7 / A1.1–A2.2).** `DiaryEventType.AnomalyEvent`
 now has one registered `AnomalyEventSpec` and detached common envelope. It is not a generic truth
 policy: source-specific planners must still prove the exact kind. Final dispatch accepts only one of
 the five frozen kind/Def pairs, a verified and player-visible source, a safe stable source key, a
 non-replayed tick, enabled settings/signal policy, and one or two distinct eligible writer IDs. Its
-dedup key is shared by both POV writers. A1.2 study, A1.3 containment breach, and A2.0/A2.1 visible
-creepjoiner outcomes are the live producers for this route; ghoul and terminal-void sources remain
-unregistered until their scheduled phases.
+dedup key is shared by both POV writers. A1.2 study, A1.3 containment breach, A2.0/A2.1 visible
+creepjoiner outcomes, and A2.2 ghoul transformation are the live producers for this route;
+terminal-void remains unregistered until A3.
 
 `DiaryGameComponent.Anomaly.cs` owns seven frozen Scribe keys for schema version, first-study
 observation, completed studied Def names, promoted milestone keys, the monolith baseline level, and
@@ -1874,23 +1874,37 @@ visible labels, eligibility, tick, and guarded `wasGhoul` through `DlcContext`; 
 return does `DlcContext` copy the guarded `isGhoul` post-state into detached facts. The pure policy
 accepts only `!wasGhoul && isGhoul`, selects the eligible surgeon first and eligible subject second
 under the XML one/two-writer cap, excludes a duplicate same-pawn role, and never invents a witness.
+The player-issued surgery bill is the visibility proof; the detached policy keeps a defensive false
+guard for adapter tests. A separate XML `ghoulTransformationDedupTicks` value owns replay suppression,
+independent of the synchronous Tale-ownership expiry.
 Because vanilla's completed mutation removes the subject's normal colonist eligibility before event
 creation, the A2.2 adapter reattaches diary references only for those exact preverified writers after
 the dedicated event exists. This narrow path preserves chronological insertion and the ordinary diary
 bounds, and refuses to add a reference if event retention has already removed the page; all other
-event sources keep the normal live-eligibility check.
+event sources keep the normal live-eligibility check. Generation enablement reads the writer's saved
+diary record rather than post-ghoul eligibility. Persona/psychotype enrichment remains the ordinary
+best-effort queue-time read; if vanilla no longer exposes those traits, the frozen role labels, fallback
+text, visible context, and last-human-moment group instruction remain authoritative.
 
 The ghoul scope and A2.1 scope refuse to overlap. Only the exact active surgeon-first/subject-second
 `DidSurgery` may be parked, and it is discarded only after the dedicated transformation event really
-exists. Failed surgery, already-ghoul calls/upgrades, exceptions, missing authors, correlation or hook
-drift, disabled output, no eligible POV, and writer resolution failure release the unchanged generic
-signal. Lifecycle reset/finalizer cleanup removes all transient ownership. No ghoul marker is saved:
+exists. Vanilla failure returns before recording `DidSurgery`, so failed infusion has no generic signal
+to release. Already-ghoul calls/upgrades, exceptions, missing authors, correlation or hook drift,
+disabled output, no eligible POV, and writer resolution failure release any parked generic signal
+unchanged. Once the dedicated page exists, a later reference/queue handoff exception keeps that page
+authoritative instead of releasing a duplicate generic owner. Lifecycle reset/finalizer cleanup removes
+all transient ownership. No ghoul marker is saved:
 current ghouls are baseline state, so resurrection, hunger, combat, injuries, body-part changes, and
 old-save loads create no transformation catch-up page. Prompt context contains only
 `ghoul_transformation`, `transformation=ghoul`, exact visible role identities/labels,
 `irreversible_choice=true`, and truthful writer roles.
 
-The A2.2 delivery raises focused coverage to 567
+A2.2 does not consume Royalty, Ideology, or personality observer baselines. If another implemented
+observer later proves a separately visible title, belief, or personality consequence, that remains its
+own event rather than being silently attributed to the ghoul page. All live ghoul checks—including the
+body-modification stance adapter—route through `DlcContext.IsGhoul`, the sole guarded access path.
+
+The A2.2 delivery plus review hardening raises focused coverage to 572
 Anomaly-policy/XML/cache/context and 135 save-normalization assertions. The A1.4 cases still pin batched recent-
 studier matching, ordering equivalence when a large eligible roster is capped, and a strict input-
 inspection bound for malformed saved histories; A2.0 adds all three visible phases, arrival continuity,
@@ -1900,7 +1914,8 @@ baselines. A2.1 adds disclosure/no-disclosure, visibility, malformed/replay/term
 surgeon/subject/cap roles, same-pawn exclusion, mismatched-arc protection, expiry-boundary ownership,
 spoiler-firewall formatting, exact Tale ownership/fail-open behavior, blank-barrier event-ID clearing,
 and same-schema load/downgrade coverage. A2.2 adds malformed/failure/already-ghoul transition rejection,
-exact writer order and caps, same-pawn exclusion, disabled output, spoiler-safe context, and every exact
+exact writer order and caps (including subject fallback under the one-writer ceiling), same-pawn
+exclusion, disabled output, per-value context truncation, spoiler-safe context, and every exact
 Tale fail-open boundary. The 708 catalog and 135 Narrative suites remain green. The runtime DLL and
 347-test RimTest assembly build against the installed 1.6 API. The first user-provided
 335-fixture run passed 333 tests and every embedded A2.0 fixture, closing the earlier expanded

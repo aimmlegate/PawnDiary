@@ -298,10 +298,13 @@ fixture now asserts the canonical keys. The user-confirmed corrected rerun passe
 A2.1 loaded acceptance debt. The Anomaly-inactive, missing-hook, and process-boundary save/reload
 profiles remain deferred; no production behavior changed.
 
-Master Wave 7 / Anomaly A2.2 raises `DiaryAnomalyPolicyTests` to 567 assertions. New pure cases cover
+Master Wave 7 / Anomaly A2.2 plus adversarial-review hardening raises `DiaryAnomalyPolicyTests` to 572
+assertions. Pure cases cover
 verified success; null/malformed IDs; negative tick; abnormal return; already-ghoul, failed, invisible,
-and unverified transitions; exact surgeon-first/subject-second selection; XML caps 1/2; surgeon-only,
-subject-only, no-writer, and same-pawn shapes; disabled output; bounded delimiter-safe visible context;
+and unverified transitions; exact surgeon-first/subject-second selection; XML caps 1/2 plus the
+independent ghoul replay-dedup window; surgeon-only, subject-only (including the one-writer ceiling),
+no-writer, and same-pawn shapes; disabled output; bounded delimiter-safe visible context with an exact
+per-value truncation assertion;
 and exact generic-Tale suppression only when source truth, deferred ownership, and an actually created
 dedicated event all agree.
 

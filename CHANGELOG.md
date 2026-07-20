@@ -1,5 +1,20 @@
 # Changelog
 
+- **2026-07-21 — Hardened A2.2 after deduplicated adversarial review.** Ghoul transformation replay
+  dedup now has its own XML-owned `ghoulTransformationDedupTicks` policy instead of borrowing the
+  unrelated Tale-correlation expiry. All production ghoul-state reads now route through the guarded
+  `DlcContext.IsGhoul` seam. Once a dedicated ghoul page exists, an exceptional exact-reference or
+  initial-generation handoff keeps that durable page authoritative and logs once instead of releasing
+  a duplicate generic surgery owner.
+
+  Review cleanup also narrows the no-save fixture to prospective A2.2 marker names, fixes Russian
+  fallbacks so both pawn labels remain in nominative-safe sentence positions, updates stale A2.2
+  producer/status documentation, and clarifies that vanilla failure returns before `DidSurgery` while
+  downstream visible progression remains independently observable. Focused coverage now pins the
+  ghoul dedup default/XML/normalization contract, subject fallback under the one-writer ceiling, and
+  the 240-character context cap at 572 assertions. The 347 loaded fixtures remain unchanged; their
+  last user-confirmed run remains 347/347.
+
 - **2026-07-21 — Corrected the first loaded A2.2 acceptance failures.** The user-provided
   Anomaly-active run reached 342/347. Two failures exposed one production indexing defect: vanilla
   removes normal colonist eligibility when the subject becomes a ghoul, so the generic event factory
@@ -47,10 +62,11 @@
 
   A bounded lifecycle-cleared scope correlates only the surgeon-first/subject-second `DidSurgery`
   Tale and is mutually exclusive with A2.1 surgical-inspection ownership. The unchanged generic Tale
-  is suppressed only after the dedicated event actually exists; failed/exceptional surgery,
-  already-ghoul calls, disabled output, missing/ineligible authors, hook/correlation drift, and
-  finalizer cleanup all fail open. No ghoul state is saved, so current ghouls and old saves produce no
-  catch-up pages. The hook is `ModsConfig.AnomalyActive`-gated, adds no DLC dependency or unsafe Def
+  is suppressed only after the dedicated event actually exists; vanilla failure returns before
+  recording one, while exceptional surgery, already-ghoul calls, disabled output, missing/ineligible
+  authors, hook/correlation drift, and finalizer cleanup release any parked signal unchanged. No ghoul
+  state is saved, so current ghouls and old saves produce no catch-up pages. The hook is
+  `ModsConfig.AnomalyActive`-gated, adds no DLC dependency or unsafe Def
   lookup, and leaves later ordinary injury/death routing intact.
 
   Pure Anomaly coverage passes 567 assertions. Twelve loaded fixtures raise the RimTest assembly from
