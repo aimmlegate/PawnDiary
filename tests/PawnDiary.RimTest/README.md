@@ -74,7 +74,7 @@ owners. Both use the shared harness:
 | `PawnDiaryBiotechDlcOffMaintenanceTests` | B1 | Base-only loaded maintenance of frozen growth/birth owners, ordinary Birthday/canonical birth release, pruning, and replay silence. |
 | `PawnDiaryAnomalyStateFixtureTests` | A1.1/A2.0 save | Actual seven-key component Scribe round-trip, missing-key legacy defaults, independent deep monolith/creepjoiner rows, guarded active-DLC baselines, DLC-off deferral, and transient load reset. |
 | `PawnDiaryCreepJoinerFlowTests` | A2.0/A2.1 | Exact optional hook registration, canonical/repeated arrival continuity, real rejection/aggression/departure and surgical-inspection calls, exact Tale ownership, writer roles, repeat/no-op silence, and lifecycle reset. |
-| `PawnDiaryGhoulTransformationFlowTests` | A2.2 | Exact optional recipe registration/no-DLC gate, real successful/failed infusion, already-ghoul and disabled-output fallback, exact pair/solo POVs, exception/unscoped Tale release, A2.1 scope exclusion, save/no-replay, and later ordinary injury routing. |
+| `PawnDiaryGhoulTransformationFlowTests` | A2.2 | Exact optional recipe registration/no-DLC gate, real successful/failed infusion, already-ghoul and disabled-output fallback, exact pair/solo POVs and preverified diary refs, exception/unscoped Tale release, A2.1 scope exclusion, save/no-replay, and later ordinary injury batching. |
 | `PawnDiaryRimTalkBridgeRuntimeTests` | B1 adapter | Reflection-only smoke against the actually loaded RimTalk + bridge assemblies: registered context-variable resolution, active-preset auto-entry attachment, and pair-owned growth/birth-linked shared memory without duplicate or recursive Pawn Diary submission. |
 | `PawnDiaryDlcSafetyFixtureTests` | 7.3 | Null/base-only omission, installed-DLC positive pawn state (including a temporary vanilla CreepJoiner tracker with a real loaded form), exact specialized/generic-fallback classifier policy, official package/group/window/settings matrix, fragile hook signatures, and optional-adapter fail-open readiness. |
 | `PawnDiaryOdysseyJourneyFlowTests` | O1.2–O1.5/N2-O | Loaded Odyssey policy/context/Scribe repair, exact lifecycle hooks, idempotent intent→travel state, exact-onboard provider snapshots, writerless landing rollback, one canonical two-POV major landing, eligible-writer routine-hop suppression, `TileSettled` non-ownership, and Full/Balanced/Compact localized prompt fixtures. |
@@ -88,6 +88,12 @@ owners. Both use the shared harness:
 | `PawnDiaryEventWindowFlowTests` | 22 | Event-window start/end/one-shot/timeout + prompt-bias state; exact monolith ownership when Anomaly is active and inert loaded Defs when it is absent. |
 | `PawnDiaryObservedConditionFlowTests` | 23 | Observed-condition start/end debounce + scope identity + restart cooldown. |
 | `PawnDiaryRepositoryRebuildFixtureTests` | save/index | Real-Scribe event/archive/memory round trips, transient-index rebuilds, memory-row repair/removal, and first-post-load replay idempotency. |
+
+The first A2.2-expanded loaded run reached 342/347. Its two production failures shared the corrected
+post-transformation subject-indexing gap; the other ghoul failures expected a pair from surgeon-only
+exceptional fallback and an immediate page from delayed `Wounded` batching. The remaining Biotech
+failure assumed the implanted GeneDef must always be N3-B's leading salient changed gene. The fixtures
+now follow the actual production contracts; the user-confirmed corrected rerun passed 347/347.
 
 The reimplant replay fixture deliberately completes vanilla's temporary loss-shock, gene-regrowth,
 and recipient-coma cooldowns before calling the real public method again. An immediate raw replay is

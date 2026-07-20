@@ -373,7 +373,7 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 
 ## 12. Wave 7 — Anomaly knowledge, containment, and reveal
 
-> **Progress (2026-07-20): A1.0–A1.4 and A2.0–A2.2 implemented.** The primitive policy,
+> **Progress (2026-07-21): A1.0–A1.4 and A2.0–A2.2 implemented.** The primitive policy,
 > detached DTOs, exact study/containment/visible-creepjoiner/surgical-disclosure/ghoul-infusion hooks, fail-closed catalog route, seven-key
 > normalized save baseline, lifecycle-cleared bounded caches/scopes, and five package-gated prompt
 > groups are implemented. N3-A remains an explicit zero-candidate provider. Focused suites pass 567
@@ -412,8 +412,11 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > non-ghoul → ghoul post-state, owns an exact surgeon-first/subject-second `DidSurgery` in a bounded
 > scope that cannot overlap A2.1, emits only exact eligible POVs, and suppresses the generic signal only
 > after the dedicated event exists. It adds no save field, hidden-state projection, DLC dependency, or
-> N3-A candidate. Twelve new loaded fixtures compile in the 347-test assembly; no loaded RimWorld
-> process/profile was available, so their in-game run remains open and is not inferred from compilation.
+> N3-A candidate. The first expanded loaded run reached 342/347. Two failures exposed one production
+> defect—the completed ghoul no longer passed the event factory's live colonist check, so its exact
+> preverified page reference was omitted—and three were fixture assumptions about surgeon-only
+> exceptional fallback, delayed `Wounded` batching, and Biotech's policy-selected salient gene. The
+> exact-writer reference path and fixtures are corrected; the user-confirmed rerun passed 347/347.
 
 ### Implement in this exact order
 
@@ -424,7 +427,7 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 5. **A1.4** — A1 hardening/delivery.
 6. **A2.0 (implemented; loaded acceptance green within the 335-fixture aggregate run)** — visible creepjoiner state and old-save baseline.
 7. **A2.1 (implemented; loaded acceptance green at 335/335)** — surgical visible disclosure/outcome ownership.
-8. **A2.2 (implemented; expanded loaded run pending)** — ghoul transformation.
+8. **A2.2 (implemented; loaded acceptance green at 347/347)** — ghoul transformation.
 9. Extend **N3-A** only with visibly authorized chapter, pressure, and identity candidates.
 
 ### Exit gate

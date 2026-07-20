@@ -367,16 +367,29 @@ namespace PawnDiary.RimTests
                 "gene_change_cause=" + GeneChangeCauseTokens.XenogermImplant);
             RequireContextContains(diaryEvent, "gene_identity_transition=true");
             RequireContextContains(diaryEvent, "narrative_facets=identity_transition");
+            string leadingTheme = DiaryContextFields.Value(diaryEvent.gameContext, "gene_theme_1");
             string narrative = diaryEvent.NarrativeContextForRole(DiaryEvent.InitiatorRole);
             PawnDiaryRimTestScope.Require(
-                !string.IsNullOrWhiteSpace(narrative)
-                    && narrative.IndexOf(added.label, StringComparison.OrdinalIgnoreCase) >= 0,
+                !string.IsNullOrWhiteSpace(leadingTheme)
+                    && !string.IsNullOrWhiteSpace(narrative)
+                    && narrative.IndexOf(leadingTheme, StringComparison.OrdinalIgnoreCase) >= 0,
                 "The exact implant page did not freeze its selected salient gene identity lens.");
-            string expectedCandidateKey = "biotech|identity|" + pawn.GetUniqueLoadID()
-                + "|gene|" + added.defName;
+            string expectedCandidatePrefix = "biotech|identity|" + pawn.GetUniqueLoadID()
+                + "|gene|";
+            List<string> identityCandidateKeys = new List<string>();
+            List<string> selectedKeys =
+                diaryEvent.NarrativeSelectedCandidateKeysForRole(DiaryEvent.InitiatorRole);
+            for (int i = 0; i < selectedKeys.Count; i++)
+            {
+                string key = selectedKeys[i];
+                if (key != null && key.StartsWith(expectedCandidatePrefix, StringComparison.Ordinal))
+                {
+                    identityCandidateKeys.Add(key);
+                }
+            }
             PawnDiaryRimTestScope.Require(
-                diaryEvent.NarrativeSelectedCandidateKeysForRole(DiaryEvent.InitiatorRole)
-                    .Contains(expectedCandidateKey),
+                identityCandidateKeys.Count == 1
+                    && identityCandidateKeys[0].Length > expectedCandidatePrefix.Length,
                 "The exact implant page did not persist the stable N3-B repetition key.");
             PawnDiaryRimTestScope.Require(
                 diaryEvent.NarrativeEvidenceForRole(DiaryEvent.InitiatorRole).Exists(row => row != null

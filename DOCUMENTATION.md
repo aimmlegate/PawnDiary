@@ -1874,6 +1874,11 @@ visible labels, eligibility, tick, and guarded `wasGhoul` through `DlcContext`; 
 return does `DlcContext` copy the guarded `isGhoul` post-state into detached facts. The pure policy
 accepts only `!wasGhoul && isGhoul`, selects the eligible surgeon first and eligible subject second
 under the XML one/two-writer cap, excludes a duplicate same-pawn role, and never invents a witness.
+Because vanilla's completed mutation removes the subject's normal colonist eligibility before event
+creation, the A2.2 adapter reattaches diary references only for those exact preverified writers after
+the dedicated event exists. This narrow path preserves chronological insertion and the ordinary diary
+bounds, and refuses to add a reference if event retention has already removed the page; all other
+event sources keep the normal live-eligibility check.
 
 The ghoul scope and A2.1 scope refuse to overlap. Only the exact active surgeon-first/subject-second
 `DidSurgery` may be parked, and it is discarded only after the dedicated transformation event really
@@ -1910,8 +1915,12 @@ after finding the exact pair page, when the live fixture expected nonexistent `i
 Twelve new A2.2 fixtures compile the real infusion success/failure paths, already-ghoul behavior,
 pair/solo role truth, disabled output, exceptional/unscoped Tale fallback, lifecycle/mutual-exclusion
 cleanup, exact registration/no-DLC gating, actual Scribe/no-replay behavior, and a later ordinary injury
-route. No loaded RimWorld process/profile was available for this change, so compilation is not reported
-as execution and the expanded 347-fixture in-game run remains open.
+route. The first user-provided expanded run reached 342/347. Two missing diary-index assertions exposed
+the post-mutation live-eligibility leak corrected by the exact preverified-writer reference path. The
+remaining failures were fixture assumptions: exceptional generic fallback is surgeon-only after the
+subject becomes a ghoul, `Wounded` enters the delayed `talecombat` batch, and N3-B freezes the policy's
+leading salient changed gene rather than necessarily the implanted GeneDef when xenogenes are replaced.
+The user-confirmed corrected loaded rerun passed 347/347, closing A2.2 loaded acceptance.
 Compiled smoke coverage pins the five Def/package/classifier rows plus exact study, containment, and
 creepjoiner method/signature ownership. Three loaded state fixtures additionally drive the actual
 seven-key component Scribe contract, missing-key defaults, deep monolith/creepjoiner rows, DLC-off deferred migration,

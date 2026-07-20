@@ -102,7 +102,15 @@ namespace PawnDiary.Ingestion
                     FallbackFor(plan.selectedWriters[1]),
                     instruction,
                     context);
-                if (CreatedEvent != null) sink.QueuePair(CreatedEvent);
+                if (CreatedEvent != null)
+                {
+                    // The subject is no longer a normal colonist after vanilla returns. The pure plan
+                    // already froze both exact writers' eligibility before that irreversible change,
+                    // so restore the subject's reference without re-reading the new ghoul state.
+                    sink.AddPreverifiedEventRef(writers[0], CreatedEvent.eventId, true);
+                    sink.AddPreverifiedEventRef(writers[1], CreatedEvent.eventId, true);
+                    sink.QueuePair(CreatedEvent);
+                }
                 return;
             }
 
@@ -119,7 +127,11 @@ namespace PawnDiary.Ingestion
                 FallbackFor(selected),
                 instruction,
                 context);
-            if (CreatedEvent != null) sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
+            if (CreatedEvent != null)
+            {
+                sink.AddPreverifiedEventRef(writer, CreatedEvent.eventId, true);
+                sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
+            }
         }
 
         private string FallbackFor(AnomalyWriterSelection selected)

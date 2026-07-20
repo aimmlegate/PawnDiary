@@ -311,9 +311,13 @@ prefix/postfix/finalizer ownership, guarded no-DLC access, the real successful i
 real failure outcome, already-ghoul fallback, pair plus both exact solo POV shapes, disabled-output
 generic fallback, finalizer release, unscoped `DidSurgery`, lifecycle reset and A2.1/A2.2 scope mutual
 exclusion, actual Anomaly Scribe/no-catch-up behavior, and a later ordinary injury Tale. Existing death
-flow fixtures remain in the same loaded assembly. The core and RimTest assemblies compile; no loaded
-RimWorld process/profile was available during this change, so the twelve new fixtures and expanded
-347-fixture run are explicitly not claimed as executed.
+flow fixtures remain in the same loaded assembly. The first user-provided expanded run reached 342/347:
+two failures exposed the dedicated event's post-mutation subject-indexing defect; the finalizer fixture
+expected a pair instead of the ordinary surgeon-only fallback; the injury fixture expected an immediate
+page instead of the configured delayed `talecombat` batch; and the existing Biotech implant fixture
+assumed the implanted Def must outrank every removed xenogene as N3-B's salient lens. Production now
+reattaches only A2.2's exact preverified writers, and the three fixtures assert the real production
+contracts. The user-confirmed corrected loaded rerun passed 347/347, closing A2.2 loaded acceptance.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It

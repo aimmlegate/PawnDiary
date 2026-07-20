@@ -1,5 +1,22 @@
 # Changelog
 
+- **2026-07-21 — Corrected the first loaded A2.2 acceptance failures.** The user-provided
+  Anomaly-active run reached 342/347. Two failures exposed one production indexing defect: vanilla
+  removes normal colonist eligibility when the subject becomes a ghoul, so the generic event factory
+  created the verified transformation page but its post-mutation eligibility check omitted the
+  captured subject's diary reference. Dedicated A2.2 emission now reattaches only the pure plan's
+  exact preverified writers, preserves historical ordering and ordinary diary bounds, and refuses a
+  dangling reference if retention has already removed the event.
+
+  The other three failures were fixture-contract errors. Exceptional fail-open correctly releases a
+  surgeon-only generic `DidSurgery` page because that ordinary signal observes the already-mutated
+  subject; `Wounded` correctly enters the XML-configured delayed `talecombat` batch rather than making
+  an immediate pair page; and a one-gene xenogerm can remove existing xenogenes, so N3-B may truthfully
+  select a more salient removed gene instead of the arbitrary implanted Def. The fixtures now assert
+  those production contracts and clean only their exact batch keys. Counts remain 567 focused
+  Anomaly assertions and 347 loaded tests. Runtime and RimTest builds pass 0/0; the user-confirmed
+  corrected loaded rerun passed 347/347 and closes A2.2 acceptance.
+
 - **2026-07-20 — Diary filter-panel polish: toggle button, borderless panel, chip tag filters, bigger
   divider/date, unclipped dev buttons.** Seven presentation-only follow-ups to the new Diary filter
   panel; no change to saved history, sort order, save schema, prompts, or DLC independence. (1) A compact

@@ -28,6 +28,8 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetMethod("ExposeAnomalyData", PrivateInstance);
         private static readonly MethodInfo BootstrapAnomalyMethod =
             typeof(DiaryGameComponent).GetMethod("BootstrapAnomalyForLoadedSave", PrivateInstance);
+        private static readonly FieldInfo PendingTaleBatchesField =
+            typeof(DiaryGameComponent).GetField("pendingTaleBatches", PrivateInstance);
         private static readonly FieldInfo TalesListField = ResolveTalesListField();
 
         private static PawnDiaryRimTestScope scope;
@@ -41,7 +43,8 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin("anomalyGhoulTransformation", "talehealth");
+            scope = PawnDiaryRimTestScope.Begin(
+                "anomalyGhoulTransformation", "talehealth", "talecombat");
             scope.OwnDiaryEventsCreatedAfterThisPoint();
             policyDef = DefDatabase<DiaryAnomalyPolicyDef>.GetNamedSilentFail(
                 DiaryAnomalyPolicy.DefName);
@@ -281,8 +284,10 @@ namespace PawnDiary.RimTests
                 object returned = FinalizerMethod.Invoke(null, new object[] { original, capture });
                 PawnDiaryRimTestScope.Require(ReferenceEquals(returned, original),
                     "The finalizer did not preserve vanilla's original exception.");
-            }, AnomalySurgeryTaleOwnershipPolicy.DidSurgeryDefName, surgeon, subject, true);
-            scope.RequirePairRefs(page, surgeon, subject);
+            }, AnomalySurgeryTaleOwnershipPolicy.DidSurgeryDefName, surgeon, null, true);
+            // The deferred generic Tale was captured after vanilla changed the subject into a ghoul.
+            // Its unchanged ordinary eligibility rules therefore retain only the surgeon's POV.
+            scope.RequireSoloRef(page, surgeon);
             PawnDiaryRimTestScope.Require(GhoulInfusionScope.CountForTests == 0,
                 "The ghoul finalizer leaked a synchronous frame.");
         }
@@ -349,7 +354,7 @@ namespace PawnDiary.RimTests
             scope.RequireNoNewEvent(() => BootstrapAnomalyMethod.Invoke(scope.Component, null));
         }
 
-        /// <summary>A completed A2.2 scope cannot intercept an ordinary later injury Tale.</summary>
+        /// <summary>A completed A2.2 scope cannot intercept an ordinary later batched injury Tale.</summary>
         [Test]
         public static void LaterOrdinaryInjuryRouteRemainsUnaffected()
         {
@@ -365,15 +370,36 @@ namespace PawnDiary.RimTests
 
             Pawn victim = CreateEligiblePawn();
             Pawn attacker = CreateEligiblePawn();
-            DiaryEvent injury = scope.FireAndRequireEvent(
-                () => TaleRecorder.RecordTale(TaleDefOf.Wounded, victim, attacker, DamageDefOf.Cut),
-                TaleDefOf.Wounded.defName,
-                victim,
-                attacker,
-                rejectOtherTestPawnEvents: true);
-            scope.RequirePairRefs(injury, victim, attacker);
-            PawnDiaryRimTestScope.Require(GhoulInfusionScope.CountForTests == 0,
-                "The completed ghoul scope intercepted a later ordinary injury route.");
+            IDictionary batches = PendingTaleBatches();
+            string victimKey = TaleCombatBatchKey(victim);
+            string attackerKey = TaleCombatBatchKey(attacker);
+            scope.RegisterCleanup(() =>
+            {
+                batches?.Remove(victimKey);
+                batches?.Remove(attackerKey);
+            });
+
+            // Wounded belongs to the XML-configured delayed combat batch. It should create no
+            // immediate page, but both eligible POVs must enter their exact ordinary batch keys.
+            scope.RequireNoNewEvent(
+                () => TaleRecorder.RecordTale(TaleDefOf.Wounded, victim, attacker, DamageDefOf.Cut));
+            PawnDiaryRimTestScope.Require(
+                batches.Contains(victimKey) && batches.Contains(attackerKey)
+                    && GhoulInfusionScope.CountForTests == 0,
+                "The completed ghoul scope intercepted or dropped a later ordinary injury batch.");
+        }
+
+        private static IDictionary PendingTaleBatches()
+        {
+            IDictionary batches = PendingTaleBatchesField?.GetValue(scope.Component) as IDictionary;
+            PawnDiaryRimTestScope.Require(batches != null,
+                "Could not read the pending Tale batches for the injury-route assertion.");
+            return batches;
+        }
+
+        private static string TaleCombatBatchKey(Pawn pawn)
+        {
+            return "talecombat|tale|" + pawn.GetUniqueLoadID();
         }
 
         private static Pawn CreateEligiblePawn()

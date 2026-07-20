@@ -1724,7 +1724,7 @@ profile remains in the manual in-game matrix.
 
 ### Phase A2.2 — Ghoul transformation
 
-> **Status (2026-07-20): implemented; expanded loaded run pending.** Independent inspection of the
+> **Status (2026-07-21): implemented; loaded acceptance green at 347/347.** Independent inspection of the
 > installed 1.6 assembly confirms the exact public recipe signature and vanilla order: failure check,
 > ghoul mutation, faction adjustment, then surgeon-first/subject-second `DidSurgery`. The Anomaly-gated
 > prefix freezes detached subject/surgeon identity, visible labels, eligibility, tick, and guarded
@@ -1742,8 +1742,13 @@ profile remains in the manual in-game matrix.
 > Focused pure coverage passes 567 assertions. Twelve loaded fixtures raise RimTest to 347 compiled
 > tests and cover the real successful/failed worker, already-ghoul fallback, exact pair/solo POVs,
 > disabled output, exception/unscoped fallback, reset and A2.1 mutual exclusion, exact registration,
-> no-DLC gating, actual Scribe/no-replay behavior, and later ordinary injury routing. No loaded RimWorld
-> process/profile was available during implementation, so compilation is not claimed as execution.
+> no-DLC gating, actual Scribe/no-replay behavior, and later ordinary injury routing. The first expanded
+> loaded run reached 342/347. Two failures exposed one production defect: after vanilla's mutation the
+> subject no longer passed the generic live-colonist check, so the created page omitted its captured
+> diary reference. A2.2 now restores references only for the pure plan's exact preverified writers.
+> The other failures were corrected fixture assumptions: exceptional generic fallback is surgeon-only,
+> `Wounded` uses its delayed XML batch, and N3-B may select a removed xenogene as the leading salient
+> lens. The user-confirmed corrected loaded rerun passed 347/347, closing A2.2 loaded acceptance.
 
 - [x] Add recipe prefix/postfix transition capture through `DlcContext`.
 - [x] Emit one identity event and own the matching Tale only after success.

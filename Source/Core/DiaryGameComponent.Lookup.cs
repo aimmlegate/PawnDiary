@@ -288,7 +288,36 @@ namespace PawnDiary
         /// </summary>
         private void AddEventRef(Pawn pawn, string eventId, bool insertChronologically = false)
         {
-            if (!IsDiaryEligible(pawn) || string.IsNullOrWhiteSpace(eventId))
+            AddEventRef(pawn, eventId, insertChronologically, eligibilityAlreadyVerified: false);
+        }
+
+        /// <summary>
+        /// Adds a delayed event for a writer whose diary eligibility was frozen before an irreversible
+        /// vanilla state change. The caller must supply only an exact writer selected from that capture.
+        /// </summary>
+        internal void AddPreverifiedEventRef(
+            Pawn pawn,
+            string eventId,
+            bool insertChronologically = false)
+        {
+            // Event retention runs inside the factory before this delayed repair. Never create a
+            // dangling diary ID if an extreme retention boundary discarded the event first.
+            if (events.FindEvent(eventId) == null)
+            {
+                return;
+            }
+
+            AddEventRef(pawn, eventId, insertChronologically, eligibilityAlreadyVerified: true);
+        }
+
+        private void AddEventRef(
+            Pawn pawn,
+            string eventId,
+            bool insertChronologically,
+            bool eligibilityAlreadyVerified)
+        {
+            if (pawn == null || string.IsNullOrWhiteSpace(eventId)
+                || (!eligibilityAlreadyVerified && !IsDiaryEligible(pawn)))
             {
                 return;
             }
