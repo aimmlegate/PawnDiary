@@ -53,6 +53,8 @@
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <!-- Additive N1 field: PromptAssembler omits it entirely when no facts were selected. -->
       <li><label>narrative context</label><source>NarrativeContext</source></li>
+      <!-- Additive memory field: PromptAssembler omits it entirely when no memory surfaced. -->
+      <li><label>memory</label><source>MemoryContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -161,6 +163,8 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>rough landing</label><source>GameContext</source><contextKey>rough_landing</contextKey></li>
       <li><label>launch quality</label><source>GameContext</source><contextKey>launch_quality</contextKey></li>
       <li><label>landing outcome</label><source>GameContext</source><contextKey>landing_outcome</contextKey></li>
+      <!-- Additive memory field: PromptAssembler omits it entirely when no memory surfaced. -->
+      <li><label>memory</label><source>MemoryContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -214,6 +218,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>initiator's private entry (you never read it; keep continuity, never mention it)</label><source>HiddenInitiatorEntry</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
+      <li><label>memory</label><source>MemoryContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -251,6 +256,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
       <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
+      <li><label>memory</label><source>MemoryContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -304,6 +310,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
+      <li><label>memory</label><source>MemoryContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -463,6 +470,8 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>permit title</label><source>GameContext</source><contextKey>permit_title</contextKey></li>
       <li><label>permit setting</label><source>GameContext</source><contextKey>permit_setting</contextKey></li>
       <li><label>used during cooldown</label><source>GameContext</source><contextKey>used_during_cooldown</contextKey></li>
+      <!-- Additive memory field: PromptAssembler omits it entirely when no memory surfaced. -->
+      <li><label>memory</label><source>MemoryContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -512,6 +521,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
+      <li><label>memory</label><source>MemoryContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -561,6 +571,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>trait</label><source>GameContext</source><contextKey>trait</contextKey></li>
       <li><label>trait description</label><source>GameContext</source><contextKey>trait_description</contextKey></li>
       <li><label>narrative context</label><source>NarrativeContext</source></li>
+      <li><label>memory</label><source>MemoryContext</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

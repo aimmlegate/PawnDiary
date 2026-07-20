@@ -163,6 +163,9 @@ namespace PawnDiary
             AddEventRef(initiator, diaryEvent.eventId, historicalTick >= 0);
             AddEventRef(recipient, diaryEvent.eventId, historicalTick >= 0);
             ApplyDiaryEventLimits();
+            // Associative memory: recall BEFORE deposit so this event cannot recall its own fragment.
+            ApplyMemoryContextForEvent(diaryEvent);
+            DepositMemoryFragments(diaryEvent);
             if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
             {
                 NotifyEntryStatusChanged(diaryEvent, DiaryEvent.InitiatorRole);
@@ -285,6 +288,9 @@ namespace PawnDiary
             events.Register(diaryEvent);
             AddEventRef(pawn, diaryEvent.eventId, historicalTick >= 0);
             ApplyDiaryEventLimits();
+            // Associative memory: recall BEFORE deposit so this event cannot recall its own fragment.
+            ApplyMemoryContextForEvent(diaryEvent);
+            DepositMemoryFragments(diaryEvent);
             if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
             {
                 NotifyEntryStatusChanged(diaryEvent, DiaryEvent.InitiatorRole);

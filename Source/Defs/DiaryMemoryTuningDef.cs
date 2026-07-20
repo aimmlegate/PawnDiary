@@ -4,8 +4,8 @@
 // shipped DiaryMemoryTuningDef.xml. Natural-language memoryContextInstruction intentionally falls
 // back to blank in code, so a missing Def omits optional guidance instead of hardcoding English.
 //
-// STATUS: nothing calls DiaryMemoryPolicy.Snapshot() yet — the capture/recall appliers that would
-// snapshot it are deliberately not wired in.
+// STATUS: DiaryMemoryPolicy.Snapshot() is called by DiaryGameComponent.Memory.cs (recall/deposit/
+// eviction) and DiaryPipelineAdapters.PolicyFor (prompt plumbing) on the main thread.
 //
 // New to C#/RimWorld? See AGENTS.md ("XML Defs" and "DLC-safety"). All fields are plain tuning
 // data — no DLC Def references anywhere; DLC events flow through the same colorCue/gameContext

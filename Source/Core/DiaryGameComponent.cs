@@ -29,6 +29,7 @@
 //   DiaryGameComponent.Royalty.cs         — guarded Royalty state, baselines, persona reconciliation/pages
 //   ──
 //   DiaryGameComponent.EventFactory.cs   — AddPairwiseEvent/AddSoloEvent: build + register DiaryEvents
+//   DiaryGameComponent.Memory.cs         — associative-memory repository, recall/deposit appliers, eviction
 //   DiaryGameComponent.Generation.cs     — deciding what to (re)queue (scan + per-pawn re-enable)
 //   DiaryGameComponent.GenerationDispatch.cs — QueuePrompt choke point, LLM dispatch, apply results, titles
 //   DiaryGameComponent.ApiLanes.cs       — choose which configured API lane handles each request
@@ -261,6 +262,7 @@ namespace PawnDiary
             ResetBiotechFamilyForNewGame();
             ResetOdysseyForNewGame();
             ResetAnomalyForNewGame();
+            ResetMemoryForNewGame();
             // Do NOT BeginSession here: the constructor already started this Game's session, and the
             // starting-colonist thoughts (GiveAllStartingPlayerPawnsThought) were queued in it during
             // InitNewGame. Restarting the session now would cancel those in-flight requests and leave
@@ -363,6 +365,7 @@ namespace PawnDiary
                     FlushAllTaleBatches();
                     FlushAllAmbientThoughtNotes();
                     ApplyDiaryEventLimits();
+                    ApplyMemoryEviction();
                     PruneDiaryEventRefs();
                 }
                 catch (Exception e)
@@ -375,6 +378,7 @@ namespace PawnDiary
             Scribe_Collections.Look(ref diaries, "diaries", LookMode.Deep);
             events.ExposeEvents("diaryEvents");
             archive.ExposeArchive("diaryArchiveEntries");
+            ExposeMemoryData();
             Scribe_Collections.Look(ref activeEventWindows, "activeEventWindows", LookMode.Deep);
             // Plan 12: saved observed-condition runtime state. Additive key; old saves load an empty
             // list. See DiaryGameComponent.ObservedConditions.cs.
@@ -446,6 +450,7 @@ namespace PawnDiary
                     // works immediately (the first generation scan and any UI draw run before any new
                     // event is recorded this session).
                     events.RebuildIndex();
+                    PostLoadInitMemory();
                     NormalizeActiveEventWindows();
                     NormalizeActiveObservedConditions();
                     NormalizeObservedConditionCooldowns();
@@ -725,6 +730,8 @@ namespace PawnDiary
             }
 
             RunRoyaltyPersonaReconciliationIfDue(now);
+
+            MaybeRunMemoryEvictionScan(now);
 
             if (now >= nextOrphanRecoveryScanTick)
             {

@@ -3919,8 +3919,8 @@ namespace DiaryPipelineTests
                 "persona_trait_description_2", "persona_milestone", "tale_source_def",
                 "tale_source_label", "tale_killer_role", "tale_victim_role"
             };
-            AssertEqual("SoloImportant Royalty R6 projection remains append-only at 123 fields",
-                123, new List<XElement>(solo.Element("fields").Elements("li")).Count);
+            AssertEqual("SoloImportant Royalty R6 projection remains append-only at 124 fields",
+                124, new List<XElement>(solo.Element("fields").Elements("li")).Count);
             for (int i = 0; i < contextKeys.Length; i++)
             {
                 AssertTrue("SoloImportant persona prompt field exists: " + contextKeys[i],

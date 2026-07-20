@@ -51,9 +51,9 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts, Royalty persona/permit policy, and Anomaly study/context/monolith/containment/Tale-ownership plus visible creepjoiner continuity, surgical-disclosure, writer, and Tale-ownership policy and the shared catalog envelope. |
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including exact-author Anomaly study, containment-breach, visible creepjoiner-outcome, and surgical-disclosure signals, Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, lossless quick-aid raid ownership, and exact-root Royal Ascent quest fanout. |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
-| `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue, and additive Anomaly study/monolith/visible-creepjoiner persistence plus detached transaction owners and conservative pre-A1/pre-A2 baselining. Also `PawnMemoryRepository` (per-pawn memory store; inert until the memory wiring lands). |
+| `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue, associative-memory recall/deposit/eviction (`DiaryGameComponent.Memory.cs`), and additive Anomaly study/monolith/visible-creepjoiner persistence plus detached transaction owners and conservative pre-A1/pre-A2 baselining. Also `PawnMemoryRepository` (per-pawn memory store). |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Anomaly study/codex/containment/monolith/creepjoiner capture, scoped containment/rejection/surgical-Tale ownership, separate lifecycle-cleared study/Tale and recent-studier caches, Odyssey location/mobile-home/lifecycle, and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including the explicit zero-candidate N3-A provider seam), Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/` (inert until wired). |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including the explicit zero-candidate N3-A provider seam), Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/`. |
 | `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, the optional Anomaly monolith-knowledge snapshot, visible-only creepjoiner arc rows, and the `MemoryFragment` pawn-memory row. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, defensive exact Anomaly study, containment-escape, creepjoiner rejection/aggression/departure, surgical inspection, and ghoul-infusion seams, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment/permit seams and state-transition-guarded Quest lifecycle hooks. |
@@ -156,28 +156,28 @@ for a later source-owned provider; the archive itself does not create prompt con
 reflections deliberately sample both hot and archived diary pages as memory candidates, then
 de-duplicate by event ID so a shared hot/archive page appears once.
 
-**Pawn memory (`design/MEMORY_SYSTEM_DESIGN.md`, implemented but deliberately not wired in).** The
-building blocks for a per-pawn associative memory layer exist: the saved `MemoryFragment` model
-(tagged, keyworded, importance-weighted text fragments), the `PawnMemoryRepository` store (saved
-master list plus per-pawn/deposit-key indexes rebuilt on load, idempotent per pawn+event deposit),
-the pure `Pipeline/Memory/` layer (one shared tag/keyword/importance extraction mechanism, a
-deterministic similarity selector with seeded gates and a 1-hop spreading-activation pick, and an
-importance x recall-recency eviction planner), the `MemoryContextPrompt` field composer, and the
-`DiaryMemoryTuningDef` (`Diary_Memory`) tuning surface mirrored by `MemoryPolicySnapshot`. Nothing
-references them yet: no capture hook deposits fragments, no prompt template requests the
-`MemoryContext` source, `DiaryMemoryPolicy.Snapshot()` has no caller, and no settings checkbox
-exists. Player-visible behavior is unchanged; the layer is covered by `tests/PawnMemoryTests` and
-goes live only when design §14 steps 4–7 (capture hooks, prompt plumbing, eviction scheduling,
-settings toggle) are implemented.
+**Pawn memory (`design/MEMORY_SYSTEM_DESIGN.md`, wired and live since 2026-07-21).** The per-pawn
+associative memory layer is fully operational: the saved `MemoryFragment` model (tagged, keyworded,
+importance-weighted text fragments), the `PawnMemoryRepository` store (saved master list plus
+per-pawn/deposit-key indexes rebuilt on load, idempotent per pawn+event deposit), the pure
+`Pipeline/Memory/` layer (one shared tag/keyword/importance extraction mechanism, a deterministic
+similarity selector with seeded gates and a 1-hop spreading-activation pick, and an importance x
+recall-recency eviction planner), the `MemoryContextPrompt` field composer, and the
+`DiaryMemoryTuningDef` (`Diary_Memory`) tuning surface mirrored by `MemoryPolicySnapshot`.
 
-Future wiring must preserve this order and ownership contract: snapshot settings/`Diary_Memory` on
-the main thread; after registering a `DiaryEvent`, recall from copied `MemoryFragmentSnapshot` rows
-**before** depositing the current event; freeze the result on the first-person POV and update only
-the selected live rows' recall bookkeeping; never deposit blank fragment text; then apply per-pawn
-eviction followed by the colony-wide cap. `DiaryGameComponent` must scribe the repository under
-`pawnMemoryFragments`, rebuild its transient indexes in `PostLoadInit`, and schedule periodic
-eviction by elapsed deadlines rather than tick modulo. The detailed source-side checklist lives at
-the top of `Source/Pipeline/Memory/MemoryContracts.cs` so the future adapter is hard to wire backward.
+All impure wiring lives in `Source/Core/DiaryGameComponent.Memory.cs`: the `memories` repository
+field (scribed under additive `pawnMemoryFragments` key), a dead-owner tombstone map, recall/deposit
+appliers called from both EventFactory funnels (recall BEFORE deposit so an event cannot recall its
+own fragment), and the periodic eviction scan gated by `nextMemoryEvictionScanTick`. The frozen
+`PovSlot.memoryContext` flows through `DiaryPovPayload.memoryContext` → `PromptValues.memoryContext`
+→ `PromptAssembler.ResolveSource("MemoryContext")` → `DiaryPromptPlanner.ProjectValues` (composed
+via `MemoryContextPrompt.Compose`). The `MemoryContext` source line appears in exactly the 8
+first-person templates; reflection/death/arrival/title templates are untouched. Gated by
+`settings.enableMemorySystem` (default true) and `DiaryMemoryPolicy.Snapshot().enabled`.
+
+Eviction runs pre-save (beside `ApplyDiaryEventLimits`), in `PostLoadInit`, and behind a deadline
+gate in `GameComponentTickInner` at the XML-tuned `memoryEvictionScanIntervalTicks` cadence. The
+pass applies per-owner `Plan` → `RemoveByIds` → `PlanGlobalCap` → dead-owner grace cleanup.
 
 ### 3.4 Generation
 

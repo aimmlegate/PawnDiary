@@ -59,6 +59,7 @@ namespace PawnDiary
         public string tone;
         public string relationship;
         public string narrativeContext;
+        public string memoryContext;
         public string lastOpener;
         public string previousEntryEnding;
         public string weapon;
@@ -202,6 +203,7 @@ namespace PawnDiary
             if (Eq(source, "Tone")) return v.tone;
             if (Eq(source, "Relationship")) return v.relationship;
             if (Eq(source, NarrativeContextPrompt.Source)) return v.narrativeContext;
+            if (Eq(source, MemoryContextPrompt.Source)) return v.memoryContext;
             if (Eq(source, "LastOpener")) return v.lastOpener;
             if (Eq(source, "PreviousEntryEnding")) return v.previousEntryEnding;
             if (Eq(source, "Weapon")) return v.weapon;

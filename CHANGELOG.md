@@ -1,5 +1,27 @@
 # Changelog
 
+- **2026-07-21 — Wired the associative-memory subsystem into the diary pipeline (W1–W3).**
+  The inert pure memory layer (extraction, recall selector, eviction planner, context prompt)
+  is now live. New partial `DiaryGameComponent.Memory.cs` owns all impure state: the
+  `PawnMemoryRepository`, a dead-owner tombstone map, recall/deposit appliers called from both
+  EventFactory funnels (recall BEFORE deposit), and the periodic eviction scan.
+
+  **W1 — Persistence + capture hooks:** `memories` field scribed under additive
+  `pawnMemoryFragments` key; `PovSlot.memoryContext` frozen per-role at capture time;
+  `settings.enableMemorySystem` (default true) gates all deposit/recall/eviction.
+
+  **W2 — Prompt plumbing:** `DiaryPovPayload.memoryContext` → `PromptValues.memoryContext` →
+  `PromptAssembler.ResolveSource("MemoryContext")` → `DiaryPromptPlanner.ProjectValues` composes
+  via `MemoryContextPrompt.Compose`. The `MemoryContext` source line is appended to exactly the
+  8 first-person templates (PairDefault/Important/Combat/Batched, SoloDefault/Important/
+  InternalState/Batched); reflection/death/arrival/title templates are untouched. EN + RU
+  DefInjected labels added.
+
+  **W3 — Eviction + lifecycle:** `ApplyMemoryEviction()` runs per-owner Plan → RemoveByIds →
+  PlanGlobalCap → dead-owner grace cleanup. Triggered pre-save, in PostLoadInit, and behind a
+  `nextMemoryEvictionScanTick` deadline gate in `GameComponentTickInner` at the XML-tuned
+  `memoryEvictionScanIntervalTicks` cadence.
+
 - **2026-07-21 — Hardened A2.2 after deduplicated adversarial review.** Ghoul transformation replay
   dedup now has its own XML-owned `ghoulTransformationDedupTicks` policy instead of borrowing the
   unrelated Tale-correlation expiry. All production ghoul-state reads now route through the guarded

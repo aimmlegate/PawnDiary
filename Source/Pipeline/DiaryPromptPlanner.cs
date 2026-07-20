@@ -204,6 +204,9 @@ namespace PawnDiary
                 narrativeContext = NarrativeContextPrompt.Compose(
                     pov?.narrativeContext,
                     request.policy?.narrativeContextInstruction),
+                memoryContext = MemoryContextPrompt.Compose(
+                    pov?.memoryContext,
+                    request.policy?.memoryContextInstruction),
                 lastOpener = pov?.lastOpener,
                 previousEntryEnding = pov?.previousEntryEnding,
                 weapon = pov?.weapon,
