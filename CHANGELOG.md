@@ -1,5 +1,45 @@
 # Changelog
 
+- **2026-07-20 — Added a filter/controls panel to the Diary tab (year selector + dev tools moved in;
+  stub filters).** The Diary tab is now a two-column layout: the virtualized journal on the left and a
+  new independent, non-virtualized filter/controls panel on the right (`ITab_Pawn_Diary.FilterPanel.cs`)
+  with its own scroll offset. The panel is built only from existing RimWorld widgets (`Listing_Standard`,
+  `Widgets.CheckboxLabeled`/`ButtonText`, the year `FloatMenu`, `DrawMenuSection`) inside a
+  `BeginScrollView`; its measured content height sizes the scroll next frame. The **year selector** moved
+  into it — `DrawYearFilter` is now responsive (full prev/next pager when wide, a single dropdown in the
+  narrow panel, sharing a new `ShowYearFloatMenu`) — as did the dev-mode **diary dev tools**
+  (`DrawPawnControls`), which are now wrapped in their own try/finally so the nested `Listing` group
+  cannot leak and corrupt the frame. New **stub filter controls** (a favorites toggle and per-tag toggles
+  derived from the visible year's group labels, plus Clear/Apply) render and toggle but are intentionally
+  not yet wired to filter the journal. The journal column keeps its familiar ~696px width because
+  `tabWidth` grew (720 → 992) by the panel width, and the width is now clamped to the logical screen so
+  the wider tab can't run off-screen. On a tab too narrow to fit both columns (only reachable via
+  off-default XML), the panel hides and the year pager + dev tools fall back to the journal column, so
+  year navigation is never lost. New XML knobs `filterPanelWidth`/`filterPanelGap`; new localized keys
+  `PawnDiary.Tab.Filter*` (English + Russian). Builds clean (0/0); RimWorld widget APIs reconfirmed
+  against the installed 1.6 assembly. Adversarially reviewed (no critical/major findings). In-game
+  visual confirmation is pending.
+
+- **2026-07-20 — Added Wave C1 diary reading-quality treatments (season dividers, player-visible copy,
+  header date font).** Three presentation-only changes to the pawn Diary tab; no change to saved
+  history, sort order, save schema, prompts, or DLC independence. (1) A slim centered, icon-free
+  "Aprimay · Spring · 5500" divider is now drawn between the year's cards wherever the quadrum changes.
+  A new pure-ish `DiaryQuadrumDivider` helper derives the quadrum/year from each entry's saved tick
+  (`GenDate.TickGameToAbs` → `GenDate.Quadrum`/`Year` at longitude 0, matching each card's printed
+  date) and pairs it with the conventional temperate-northern season using RimWorld's own localized
+  `Season` labels; the Undated page shows none. The divider's reserved height is added to the virtual
+  row offsets in the same sliced layout pass that measures cards, so the reserved and drawn geometry
+  cannot desync, and it is skipped correctly by the viewport virtualization. (2) The formerly dev-only,
+  icon-only copy badge is now a labeled "Copy entry" action visible to all players, sharing one footer
+  line with the model-name provenance and the rewrite icon (the separate dev copy-footer reservation is
+  gone). (3) The card header now renders the date in a smaller in-game font (`GameFont.Tiny`) and a
+  muted tone ahead of the title, which keeps its font, first-seen fade, accent pulse, pending-title
+  dots, and date-only handling. New XML-tunable `DiaryUiStyleDef` knobs: `quadrumDividerHeight`,
+  `quadrumDividerTopGap`, `quadrumDividerLineGap`, `entryDateColor`, `quadrumDividerLabelColor`,
+  `quadrumDividerLineColor`. New localized keys `PawnDiary.Tab.QuadrumDivider` and
+  `PawnDiary.Tab.CopyEntry` (English + Russian), and the copy tooltip is no longer marked dev-only. The
+  mod assembly rebuilds clean (0 warnings, 0 errors); RimWorld API signatures were reconfirmed against
+  the installed 1.6 `Assembly-CSharp.dll`. In-game visual confirmation of the redesigned tab is pending.
 - **2026-07-20 — Hardened A2.1 surgical disclosure after consolidated adversarial review.** The
   shared `TaleRecorder.RecordTale` hook now rejects inactive scopes and non-`DidSurgery` Tales before
   taking an Anomaly XML policy snapshot. Once a dedicated disclosure page exists it owns the source

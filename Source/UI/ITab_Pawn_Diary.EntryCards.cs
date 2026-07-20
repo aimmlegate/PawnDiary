@@ -46,12 +46,10 @@ namespace PawnDiary
             return entry.GeneratedText;
         }
 
-        // Tiny footer action geometry. The production regenerate icon sits beside the model-name
-        // provenance line; the dev-only copy icon keeps its own bottom-left strip.
+        // Tiny footer action geometry. One footer line holds the player-visible "Copy entry" action
+        // on the left and the model-name provenance plus regenerate icon on the right.
         private const float EntryFooterActionButtonSize = 16f;
         private const float EntryFooterActionGap = 6f;
-        private const float DevCopyButtonFooter = 20f;
-        private static float DevCopyFooter => Prefs.DevMode ? DevCopyButtonFooter : 0f;
 
         /// <summary>
         /// Explicit inputs needed to draw one expanded diary entry card.
@@ -197,65 +195,85 @@ namespace PawnDiary
                     DrawDebugText(debugRect, debugText);
                 }
 
-                if (showModelName || showRegenerateButton)
+                bool showCopyButton = ShowCopyButton(entry);
+                if (showModelName || showRegenerateButton || showCopyButton)
                 {
-                    // Anchor above the dev-only copy footer (DevCopyFooter, 0 outside dev mode) so
-                    // the bottom-left copy badge never overlaps or clips the model/action line.
-                    Rect footerRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - DevCopyFooter - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
-                    DrawModelFooter(footerRect, footerNote, showRegenerateButton, entry, request.Pawn, request.Component);
+                    // One footer line: player-visible "Copy entry" on the left, provenance/model name
+                    // and the regenerate icon on the right. HasFooterLine reserves its height so the
+                    // measured and drawn card heights stay in sync.
+                    Rect footerRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
+                    DrawEntryFooter(footerRect, footerNote, showCopyButton, showRegenerateButton, entry, request.Pawn, request.Component);
                 }
-
-                // The dev-only copy icon sits in the reserved bottom-left footer, drawn last so it
-                // floats above the page wash/highlight without competing with body text or model name.
-                DrawDevFooterButtons(localEntryRect, entry);
 
                 return toggleExpansion;
             }
         }
 
         /// <summary>
-        /// Dev-only: draws the copy utility icon anchored to the bottom-left of an expanded card.
-        /// Drawn AFTER the body text and model/action line so it lives in its own reserved footer
-        /// strip (see DevCopyFooter) and never overlaps or clips them.
+        /// True when the expanded card should show the player-visible "Copy entry" action: any page
+        /// that has finished (has generated/fallback text, or a dev prompt-only card) can be copied.
+        /// Still-generating pages have nothing worth copying yet, so the button is hidden for them.
         /// </summary>
-        private static void DrawDevFooterButtons(Rect cardRect, DiaryEntryView entry)
+        private static bool ShowCopyButton(DiaryEntryView entry)
         {
-            if (!Prefs.DevMode || entry == null)
-            {
-                return;
-            }
-
-            Rect copyRect = new Rect(
-                cardRect.x + 6f,
-                cardRect.yMax - EntryFooterActionButtonSize - 5f,
-                EntryFooterActionButtonSize,
-                EntryFooterActionButtonSize);
-
-            DrawCopyButton(copyRect, entry);
+            return entry != null && !IsGenerating(entry) && !string.IsNullOrWhiteSpace(EntryCopyText(entry));
         }
 
         /// <summary>
-        /// Dev-only: copies the entry's prompt (for prompt-only cards) or generated/visible text to
-        /// the system clipboard.
+        /// Draws the "Copy entry" action (icon + label) at the left of the footer line and returns the
+        /// horizontal space it consumed. Clicking copies the page text (or the captured prompt for dev
+        /// prompt-only cards) to the system clipboard.
         /// </summary>
-        private static void DrawCopyButton(Rect copyRect, DiaryEntryView entry)
+        private static float DrawCopyAction(Rect rect, DiaryEntryView entry)
         {
-            if (entry == null)
+            if (entry == null || rect.width <= 0f)
             {
-                return;
+                return 0f;
             }
 
-            if (!DrawDevFooterIcon(copyRect, TexButton.Copy, "PawnDiary.Tab.CopyEntryTip".Translate()))
+            Rect iconRect = new Rect(
+                rect.x,
+                rect.y + (rect.height - EntryFooterActionButtonSize) * 0.5f,
+                EntryFooterActionButtonSize,
+                EntryFooterActionButtonSize);
+
+            string label = "PawnDiary.Tab.CopyEntry".Translate();
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            float labelWidth = Mathf.Min(Mathf.Max(0f, rect.width - EntryFooterActionButtonSize - 4f), Text.CalcSize(label).x);
+            Text.Font = oldFont;
+
+            float totalWidth = EntryFooterActionButtonSize + (labelWidth > 0f ? 4f + labelWidth : 0f);
+            Rect actionRect = new Rect(rect.x, rect.y, totalWidth, rect.height);
+            bool hover = Mouse.IsOver(actionRect);
+
+            Color oldColor = GUI.color;
+            GUI.color = new Color(1f, 1f, 1f, hover ? 0.85f : 0.5f);
+            GUI.DrawTexture(iconRect, TexButton.Copy);
+            if (labelWidth > 0f)
             {
-                return;
+                GameFont oldLabelFont = Text.Font;
+                TextAnchor oldAnchor = Text.Anchor;
+                Text.Font = GameFont.Tiny;
+                Text.Anchor = TextAnchor.MiddleLeft;
+                Widgets.Label(new Rect(iconRect.xMax + 4f, rect.y, labelWidth, rect.height), label);
+                Text.Anchor = oldAnchor;
+                Text.Font = oldLabelFont;
+            }
+            GUI.color = oldColor;
+
+            TooltipHandler.TipRegion(actionRect, "PawnDiary.Tab.CopyEntryTip".Translate());
+            if (Widgets.ButtonInvisible(actionRect, false))
+            {
+                string text = EntryCopyText(entry);
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    GUIUtility.systemCopyBuffer = text;
+                    Messages.Message("PawnDiary.Tab.CopyEntryCopied".Translate(), MessageTypeDefOf.NeutralEvent, false);
+                }
             }
 
-            string text = EntryCopyText(entry);
-            if (!string.IsNullOrWhiteSpace(text))
-            {
-                GUIUtility.systemCopyBuffer = text;
-                Messages.Message("PawnDiary.Tab.CopyEntryCopied".Translate(), MessageTypeDefOf.NeutralEvent, false);
-            }
+            return totalWidth;
         }
 
         /// <summary>
@@ -287,23 +305,6 @@ namespace PawnDiary
             {
                 Messages.Message("PawnDiary.Tab.RegenerateEntryUnavailable".Translate(), MessageTypeDefOf.RejectInput, false);
             }
-        }
-
-        private static bool DrawDevFooterIcon(Rect rect, Texture2D icon, string tooltip)
-        {
-            // CSS-opacity style: dim at rest, slight brighten on hover so it still reads as clickable.
-            bool hover = Mouse.IsOver(rect);
-            Color oldColor = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, hover ? 0.85f : 0.5f);
-            bool clicked = Widgets.ButtonImage(rect, icon);
-            GUI.color = oldColor;
-
-            if (!string.IsNullOrWhiteSpace(tooltip))
-            {
-                TooltipHandler.TipRegion(rect, tooltip);
-            }
-
-            return clicked;
         }
 
         private static bool DrawRegenerateFooterIcon(Rect rect, string tooltip)
@@ -403,11 +404,12 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// True when the expanded card should reserve the model/action footer line.
+        /// True when the expanded card should reserve the footer line: any of the provenance/model
+        /// note, the regenerate action, or the player-visible copy action needs it.
         /// </summary>
         private static bool HasFooterLine(DiaryEntryView entry)
         {
-            return HasModelName(entry) || CanShowRegenerateButton(entry);
+            return HasModelName(entry) || CanShowRegenerateButton(entry) || ShowCopyButton(entry);
         }
 
         private static bool CanShowRegenerateButton(DiaryEntryView entry)
@@ -418,26 +420,8 @@ namespace PawnDiary
                 && !IsPromptOnly(entry);
         }
 
-        /// <summary>
-        /// Produces the compact header shown on each entry card: the date, then a stored
-        /// LLM-generated subject ("date — title") when title display is enabled and one exists.
-        /// Otherwise entries show just the date — no dangling separator.
-        /// </summary>
-        private static string EntryHeader(DiaryEntryView entry)
-        {
-            if (entry == null)
-            {
-                return string.Empty;
-            }
-
-            string title = EntryDisplayTitle(entry);
-            if (string.IsNullOrWhiteSpace(title))
-            {
-                return entry.Date ?? string.Empty;
-            }
-
-            return (entry.Date ?? string.Empty) + " \u2014 " + title;
-        }
+        // Small gap between the muted date segment and the stronger title segment in a card header.
+        private const float HeaderDateTitleGap = 8f;
 
         private static string EntryDisplayTitle(DiaryEntryView entry)
         {
@@ -455,77 +439,129 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the date/title line. Finished titles get a short fade and a soft color pulse;
-        /// pending title follow-ups keep the date visible and animate a tiny placeholder where the
-        /// subject will appear.
+        /// Draws the card header as "date \u2014 title". The date is rendered in a smaller in-game font
+        /// (GameFont.Tiny) and a muted tone so it reads as a quiet label ahead of the stronger title,
+        /// matching the reference mockup. Finished titles keep the short fade + soft accent pulse;
+        /// pending title follow-ups keep the date visible and animate dots in the future title slot.
         /// </summary>
         private static void DrawEntryHeader(Rect rect, DiaryEntryView entry, Color accent)
         {
+            if (entry == null)
+            {
+                return;
+            }
+
+            float dateWidth = DrawHeaderDate(rect, entry.Date);
+            bool hasDate = dateWidth > 0f;
+            Rect titleRect = new Rect(rect.x + dateWidth, rect.y, Mathf.Max(0f, rect.width - dateWidth), rect.height);
+
             if (IsTitleGenerating(entry))
             {
-                DrawPendingTitleHeader(rect, entry, accent);
+                DrawPendingTitleDots(titleRect, accent, hasDate);
                 return;
             }
 
-            string header = EntryHeader(entry);
-            if (string.IsNullOrWhiteSpace(header))
+            string title = EntryDisplayTitle(entry);
+            if (string.IsNullOrWhiteSpace(title))
             {
                 return;
             }
 
-            bool hasTitle = !string.IsNullOrWhiteSpace(EntryDisplayTitle(entry));
-            Color oldColor = GUI.color;
-            if (hasTitle)
-            {
-                float age = Time.realtimeSinceStartup - TitleFirstSeenAt(entry);
-                float alpha = Mathf.Clamp01(age / TitleFadeDurationSeconds);
-                float pulse = Mathf.Lerp(0.22f, 0.38f, WritingPulse(1.4f));
-                Color titleColor = Color.Lerp(UiStyle.TitleTextColor, accent, pulse);
-                titleColor.a = alpha;
-                GUI.color = titleColor;
-            }
-            else
-            {
-                GUI.color = UiStyle.TitleTextColor;
-            }
-
-            Widgets.LabelFit(rect, header);
-            GUI.color = oldColor;
+            DrawHeaderTitle(titleRect, entry, title, accent, hasDate);
         }
 
         /// <summary>
-        /// Keeps the completed date readable while the cheaper title follow-up is still in flight.
-        /// The animated dots occupy the future title slot so the card still feels active.
+        /// Draws the entry date in the small header font and returns the horizontal space it consumed
+        /// (including a trailing gap when a title still fits after it). Returns 0 for a blank date.
         /// </summary>
-        private static void DrawPendingTitleHeader(Rect rect, DiaryEntryView entry, Color accent)
+        private static float DrawHeaderDate(Rect rect, string date)
+        {
+            if (string.IsNullOrWhiteSpace(date) || rect.width <= 0f)
+            {
+                return 0f;
+            }
+
+            GameFont oldFont = Text.Font;
+            TextAnchor oldAnchor = Text.Anchor;
+            Color oldColor = GUI.color;
+
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            float width = Mathf.Min(rect.width, Text.CalcSize(date).x);
+            GUI.color = UiStyle.EntryDateColor;
+            Widgets.Label(new Rect(rect.x, rect.y, width, rect.height), date);
+
+            GUI.color = oldColor;
+            Text.Anchor = oldAnchor;
+            Text.Font = oldFont;
+
+            float gap = width < rect.width ? HeaderDateTitleGap : 0f;
+            return Mathf.Min(rect.width, width + gap);
+        }
+
+        /// <summary>
+        /// Draws the title segment in the normal header font with the first-seen fade and accent pulse
+        /// the old single-label header used, now applied to just the title. A leading "\u2014 " separator is
+        /// drawn only when a date precedes it, so a rare date-less entry shows no dangling em-dash.
+        /// </summary>
+        private static void DrawHeaderTitle(Rect rect, DiaryEntryView entry, string title, Color accent, bool hasDate)
         {
             if (rect.width <= 0f)
             {
                 return;
             }
 
-            float dotsWidth = WritingDotSize * 3f + WritingDotGap * 2f;
-            string prefix = string.IsNullOrWhiteSpace(entry?.Date)
-                ? string.Empty
-                : (entry.Date + " \u2014 ");
-
+            GameFont oldFont = Text.Font;
+            TextAnchor oldAnchor = Text.Anchor;
             Color oldColor = GUI.color;
-            float dotsX = rect.x;
-            if (!string.IsNullOrWhiteSpace(prefix))
+
+            Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.MiddleLeft;
+
+            float age = Time.realtimeSinceStartup - TitleFirstSeenAt(entry);
+            float alpha = Mathf.Clamp01(age / TitleFadeDurationSeconds);
+            float pulse = Mathf.Lerp(0.22f, 0.38f, WritingPulse(1.4f));
+            Color titleColor = Color.Lerp(UiStyle.TitleTextColor, accent, pulse);
+            titleColor.a = alpha;
+            GUI.color = titleColor;
+
+            Widgets.LabelFit(rect, hasDate ? "\u2014 " + title : title);
+
+            GUI.color = oldColor;
+            Text.Anchor = oldAnchor;
+            Text.Font = oldFont;
+        }
+
+        /// <summary>
+        /// Keeps the header active while the cheaper title follow-up is still in flight: draws the
+        /// "\u2014 " separator (only when a date precedes it) and animates dots where the title will land.
+        /// </summary>
+        private static void DrawPendingTitleDots(Rect rect, Color accent, bool hasDate)
+        {
+            if (rect.width <= 0f)
             {
-                // Measure the date prefix itself so the dots sit at the title's future left edge,
-                // not at the far side of a mostly empty LabelFit rectangle.
-                float availablePrefixWidth = Mathf.Max(0f, rect.width - dotsWidth);
-                float prefixWidth = Mathf.Min(Text.CalcSize(prefix).x, availablePrefixWidth);
-                if (prefixWidth > 0f)
-                {
-                    Rect prefixRect = new Rect(rect.x, rect.y, prefixWidth, rect.height);
-                    GUI.color = UiStyle.PendingTitlePrefixColor;
-                    Widgets.LabelFit(prefixRect, prefix);
-                    dotsX = prefixRect.xMax;
-                }
+                return;
             }
 
+            GameFont oldFont = Text.Font;
+            TextAnchor oldAnchor = Text.Anchor;
+            Color oldColor = GUI.color;
+
+            Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.MiddleLeft;
+
+            float dotsWidth = WritingDotSize * 3f + WritingDotGap * 2f;
+            string separator = hasDate ? "\u2014 " : string.Empty;
+            float separatorWidth = separator.Length == 0
+                ? 0f
+                : Mathf.Min(Text.CalcSize(separator).x, Mathf.Max(0f, rect.width - dotsWidth));
+            if (separatorWidth > 0f)
+            {
+                GUI.color = UiStyle.PendingTitlePrefixColor;
+                Widgets.Label(new Rect(rect.x, rect.y, separatorWidth, rect.height), separator);
+            }
+
+            float dotsX = rect.x + separatorWidth;
             if (dotsX + dotsWidth > rect.xMax)
             {
                 dotsX = Mathf.Max(rect.x, rect.xMax - dotsWidth);
@@ -534,7 +570,54 @@ namespace PawnDiary
             Color dotColor = Color.Lerp(UiStyle.PendingTitleDotBaseColor, accent, 0.45f);
             Rect dotsRect = new Rect(dotsX, rect.y + rect.height * 0.5f - 3f, dotsWidth, 8f);
             DrawWritingDots(dotsRect, dotColor, 1.1f);
+
             GUI.color = oldColor;
+            Text.Anchor = oldAnchor;
+            Text.Font = oldFont;
+        }
+
+        /// <summary>
+        /// Draws a slim centered "Aprimay \u00b7 Spring \u00b7 5500" separator between the year's entry cards.
+        /// A hairline rule runs to each side of the centered label. Icon-free by design.
+        /// </summary>
+        private static void DrawQuadrumDivider(Rect rect, string label)
+        {
+            if (rect.width <= 0f || string.IsNullOrEmpty(label))
+            {
+                return;
+            }
+
+            GameFont oldFont = Text.Font;
+            TextAnchor oldAnchor = Text.Anchor;
+            Color oldColor = GUI.color;
+
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+
+            float labelWidth = Mathf.Min(rect.width, Text.CalcSize(label).x);
+            float labelLeft = rect.x + (rect.width - labelWidth) * 0.5f;
+            float labelRight = labelLeft + labelWidth;
+            float lineY = rect.y + rect.height * 0.5f - 0.5f;
+
+            Color lineColor = UiStyle.QuadrumDividerLineColor;
+            float leftLineEnd = labelLeft - QuadrumDividerLineGap;
+            if (leftLineEnd > rect.x)
+            {
+                Widgets.DrawBoxSolid(new Rect(rect.x, lineY, leftLineEnd - rect.x, 1f), lineColor);
+            }
+
+            float rightLineStart = labelRight + QuadrumDividerLineGap;
+            if (rect.xMax > rightLineStart)
+            {
+                Widgets.DrawBoxSolid(new Rect(rightLineStart, lineY, rect.xMax - rightLineStart, 1f), lineColor);
+            }
+
+            GUI.color = UiStyle.QuadrumDividerLabelColor;
+            Widgets.Label(new Rect(labelLeft, rect.y, labelWidth, rect.height), label);
+
+            GUI.color = oldColor;
+            Text.Anchor = oldAnchor;
+            Text.Font = oldFont;
         }
 
         /// <summary>
@@ -772,18 +855,28 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the quiet provenance footer and the normal-play rewrite action without letting the
-        /// action icon steal the model text's right edge.
+        /// Draws the single card footer line: the player-visible "Copy entry" action on the left, then
+        /// the quiet provenance/model note and the normal-play rewrite action on the right, without any
+        /// of the three stealing another's space.
         /// </summary>
-        private static void DrawModelFooter(
+        private static void DrawEntryFooter(
             Rect rect,
             string modelName,
+            bool showCopyButton,
             bool showRegenerateButton,
             DiaryEntryView entry,
             Pawn pawn,
             DiaryGameComponent component)
         {
-            Rect modelRect = rect;
+            // Left: copy action. Right edge of the remaining strip retreats as it consumes width.
+            float leftEdge = rect.x;
+            if (showCopyButton)
+            {
+                float copyWidth = DrawCopyAction(rect, entry);
+                leftEdge = rect.x + copyWidth + EntryFooterActionGap;
+            }
+
+            float rightEdge = rect.xMax;
             if (showRegenerateButton)
             {
                 Rect regenerateRect = new Rect(
@@ -791,13 +884,13 @@ namespace PawnDiary
                     rect.y + (rect.height - EntryFooterActionButtonSize) * 0.5f,
                     EntryFooterActionButtonSize,
                     EntryFooterActionButtonSize);
-                modelRect.width = Mathf.Max(0f, modelRect.width - EntryFooterActionButtonSize - EntryFooterActionGap);
+                rightEdge = regenerateRect.x - EntryFooterActionGap;
                 DrawRegenerateButton(regenerateRect, entry, pawn, component);
             }
 
-            if (!string.IsNullOrWhiteSpace(modelName) && modelRect.width > 0f)
+            if (!string.IsNullOrWhiteSpace(modelName) && rightEdge > leftEdge)
             {
-                DrawModelName(modelRect, modelName);
+                DrawModelName(new Rect(leftEdge, rect.y, rightEdge - leftEdge, rect.height), modelName);
             }
         }
 
@@ -1139,7 +1232,6 @@ namespace PawnDiary
                 ModelNameTopPadding = ModelNameTopPadding,
                 ModelNameHeight = ModelNameHeight,
                 DebugTextTopPadding = DebugTextTopPadding,
-                DevFooterHeight = DevCopyFooter,
                 RoleplayTextHeight = RoleplayTextHeight,
             };
         }

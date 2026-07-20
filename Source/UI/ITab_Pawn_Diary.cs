@@ -31,6 +31,10 @@ namespace PawnDiary
         private float[] fullHeightsBuffer = new float[0];
         private float[] heightsBuffer = new float[0];
         private float[] entryOffsetsBuffer = new float[0];
+        // Non-null for entries that open a new quadrum: the localized "Aprimay · Spring · 5500" header
+        // drawn just above the card. Filled during the same layout pass that computes row offsets so
+        // the reserved divider space and the drawn divider can never disagree.
+        private string[] dividerLabelsBuffer = new string[0];
 
         // Virtualized scroll layout for the selected year. The ordered entry List is reused by
         // DiaryTabVisibleEntriesCache, so the cache key includes its revision/year in addition to the
@@ -60,6 +64,9 @@ namespace PawnDiary
         private int layoutBuildIndex;
         private float layoutBuildCurY;
         private bool layoutBuildAnimationSettled = true;
+        // Quadrum key of the previously laid-out row, carried across sliced layout frames so a divider
+        // is placed exactly at each quadrum change even when the build spans several frames.
+        private int layoutBuildPrevQuadrumKey = DiaryQuadrumDivider.UndatedKey;
 
         // Cached full (expanded) card heights. The helper owns the measured-height dictionary, while
         // this tab still decides when rows exist, whether they are expanded, and where they sit in the
@@ -73,6 +80,11 @@ namespace PawnDiary
         private const float FallbackTabHeight = 800f;
         private const float FallbackTabMinHeight = 360f;
         private const float FallbackTabScreenHeightMargin = 72f;
+        // The tab hangs to the LEFT of the inspect pane, so a wide tab (now that it carries the filter
+        // panel) must not exceed the logical screen width or it runs off the left edge. Clamp the width
+        // like the height is clamped, keeping at least a usable minimum.
+        private const float FallbackTabMinWidth = 400f;
+        private const float FallbackTabScreenWidthMargin = 100f;
         // Vanilla inspect-tab geometry, not tunable style: InspectTabBase.TabRect hangs the tab's
         // bottom edge at PaneTopY minus the 30px tab-button strip, and MainTabWindow_Inspect puts
         // PaneTopY at UI.screenHeight - 165 (inspect pane) - 35 (bottom button bar). The height
@@ -119,6 +131,9 @@ namespace PawnDiary
         private static float DebugTextTopPadding => UiStyle.debugTextTopPadding;
         private static float EntryAccentWidth => UiStyle.entryAccentWidth;
         private static float EntryLabelMaxWidth => UiStyle.entryLabelMaxWidth;
+        private static float QuadrumDividerHeight => UiStyle.quadrumDividerHeight;
+        private static float QuadrumDividerTopGap => UiStyle.quadrumDividerTopGap;
+        private static float QuadrumDividerLineGap => UiStyle.quadrumDividerLineGap;
         private static float EntryFadeDurationSeconds => UiStyle.entryFadeDurationSeconds;
         private static float TitleFadeDurationSeconds => UiStyle.titleFadeDurationSeconds;
         private static float VirtualizedEntryOverscanHeight => UiStyle.VirtualizedEntryOverscanHeight;
@@ -220,8 +235,32 @@ namespace PawnDiary
         {
             DiaryUiStyleDef style = UiStyle;
             size = new Vector2(
-                PositiveFiniteOrFallback(style.tabWidth, FallbackTabWidth),
+                ResponsiveTabWidth(style),
                 ResponsiveTabHeight(style, tabBottomAnchorY));
+        }
+
+        /// <summary>
+        /// Clamps the preferred tab width to the logical screen so the panel-widened tab cannot extend
+        /// off the left edge on small resolutions or high UI scale. The panel itself hides gracefully
+        /// (see ResolveFilterPanelWidth) when the clamped width is too small to hold both columns.
+        /// </summary>
+        private static float ResponsiveTabWidth(DiaryUiStyleDef style)
+        {
+            float preferred = PositiveFiniteOrFallback(style.tabWidth, FallbackTabWidth);
+            float screenWidth = UI.screenWidth;
+            if (!IsPositiveFinite(screenWidth))
+            {
+                return preferred;
+            }
+
+            float maxWidth = screenWidth - FallbackTabScreenWidthMargin;
+            float minWidth = Mathf.Min(preferred, FallbackTabMinWidth);
+            if (maxWidth < minWidth)
+            {
+                return minWidth;
+            }
+
+            return Mathf.Clamp(preferred, minWidth, maxWidth);
         }
 
         private static float ResponsiveTabHeight(DiaryUiStyleDef style, float tabBottomAnchorY)
@@ -394,14 +433,24 @@ namespace PawnDiary
                 out token);
             int generatingCount = visibleEntriesCache.GeneratingCount;
 
-            Rect headerRect = new Rect(rect.x, rect.y, rect.width, 34f);
-            float headerRight = rect.xMax;
+            // Two-column layout: the journal (virtualized cards) on the left, and an independent,
+            // non-virtualized filter/controls panel on the right. The panel hosts the year selector,
+            // filter stubs, and — in dev mode — the diary dev tools. The journal keeps its familiar
+            // width because tabWidth grew by the panel's width.
+            float panelWidth = ResolveFilterPanelWidth(rect.width);
+            Rect filterPanelRect = new Rect(rect.xMax - panelWidth, rect.y, panelWidth, rect.height);
+            Rect journalRect = panelWidth > 0f
+                ? new Rect(rect.x, rect.y, Mathf.Max(0f, rect.width - panelWidth - FilterPanelGap), rect.height)
+                : rect;
+
+            Rect headerRect = new Rect(journalRect.x, journalRect.y, journalRect.width, 34f);
+            float headerRight = journalRect.xMax;
             Rect writingIndicatorRect = Rect.zero;
             if (generatingCount > 0)
             {
                 writingIndicatorRect = new Rect(
-                    rect.xMax - StatusBadgeRightPadding - StatusBadgeWidth,
-                    rect.y + 3f,
+                    journalRect.xMax - StatusBadgeRightPadding - StatusBadgeWidth,
+                    journalRect.y + 3f,
                     StatusBadgeWidth,
                     StatusBadgeHeight);
                 headerRight = writingIndicatorRect.x - 8f;
@@ -412,14 +461,14 @@ namespace PawnDiary
                 float iconSize = Mathf.Max(1f, WritingStyleIconSize);
                 Rect writingStyleIconRect = new Rect(
                     headerRight - iconSize,
-                    rect.y + Mathf.Max(0f, (headerRect.height - iconSize) * 0.5f),
+                    journalRect.y + Mathf.Max(0f, (headerRect.height - iconSize) * 0.5f),
                     iconSize,
                     iconSize);
                 DrawWritingStyleHeaderIcon(writingStyleIconRect, pawn, component);
                 headerRight = writingStyleIconRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
             }
 
-            headerRect.width = Mathf.Max(0f, headerRight - rect.x);
+            headerRect.width = Mathf.Max(0f, headerRight - journalRect.x);
             if (generatingCount > 0)
             {
                 DrawWritingIndicator(writingIndicatorRect);
@@ -429,56 +478,69 @@ namespace PawnDiary
             Widgets.Label(headerRect, "PawnDiary.Tab.DiaryHeader".Translate(pawn.LabelShortCap));
             Text.Font = GameFont.Small;
 
-            // In normal play the header stands alone; its tiny writing-style icon does not reserve a
-            // row. Dev-only controls (and the space they need) appear only when RimWorld dev mode is on.
-            // PawnControlsHeight() returns 0 outside dev mode, so entries sit directly under the header.
-            float controlsY = rect.y + 36f;
-            float controlsHeight = PawnControlsHeight();
-            if (controlsHeight > 0f)
+            // Dev tools and the year selector normally live in the right-hand panel, so the journal
+            // column opens directly under the header (a fixed 36px title row plus the usual gap).
+            bool panelVisible = panelWidth > 0f;
+            float entriesY = journalRect.y + 36f + EntryGap;
+
+            // Resolve the year list and the selected year's ordered cards up front so the filter panel
+            // (drawn once, in every state) can host the year selector and the stub tag list, and the
+            // journal column below can render or show its own loading/empty state.
+            bool indexLoading = visibleEntriesCache.IsIndexLoading;
+            List<int> years = indexLoading ? null : visibleEntriesCache.VisibleYears;
+            if (!indexLoading)
             {
-                Rect controlsRect = new Rect(rect.x, controlsY, rect.width, controlsHeight);
-                DrawPawnControls(pawn, component, controlsRect);
+                component?.AcknowledgeGeneratedEntriesFor(
+                    pawn,
+                    visibleEntriesCache.CompletedCount,
+                    visibleEntriesCache.PendingCount,
+                    token);
+                EnsureSelectedYear(pawn, years);
+                SelectYearForPendingScroll(pawn, visibleEntriesCache);
             }
 
-            // The controls and optional year pager are part of the diary tab, so reserve their
-            // space before the scroll view. The year pager is intentionally based on visible entries
-            // only: production view pages finished diary text, while dev mode can page raw/pending
-            // troubleshooting rows.
-            float entriesY = controlsY + controlsHeight + EntryGap;
-            Rect outRect = new Rect(rect.x, entriesY, rect.width, rect.yMax - entriesY);
+            List<DiaryEntryView> ordered = null;
+            bool haveOrdered = !indexLoading
+                && years.Count > 0
+                && visibleEntriesCache.TryGetOrderedEntriesForSelectedYear(pawn, selectedYear, out ordered);
 
-            if (visibleEntriesCache.IsIndexLoading)
+            DrawFilterPanel(filterPanelRect, pawn, component, years, visibleEntriesCache, haveOrdered ? ordered : null);
+
+            // Fallback for a tab too narrow to fit the panel (only reachable via off-default XML): the
+            // panel is hidden, so keep the dev tools and year pager reachable in the journal column,
+            // exactly as they were before the panel existed.
+            if (!panelVisible)
+            {
+                if (PawnControlsHeight() > 0f)
+                {
+                    Rect devRect = new Rect(journalRect.x, entriesY, journalRect.width, PawnControlsHeight());
+                    DrawPawnControls(pawn, component, devRect);
+                    entriesY = devRect.yMax + EntryGap;
+                }
+
+                if (!indexLoading && years != null && years.Count > 1)
+                {
+                    Rect yearRect = new Rect(journalRect.x, entriesY, journalRect.width, YearFilterHeight);
+                    DrawYearFilter(yearRect, years, visibleEntriesCache);
+                    entriesY = yearRect.yMax + YearFilterGap;
+                }
+            }
+
+            Rect outRect = new Rect(journalRect.x, entriesY, journalRect.width, journalRect.yMax - entriesY);
+
+            if (indexLoading)
             {
                 DrawDiaryLoading(outRect, visibleEntriesCache.LoadingProcessed, visibleEntriesCache.LoadingTotal);
                 return;
             }
 
-            component?.AcknowledgeGeneratedEntriesFor(
-                pawn,
-                visibleEntriesCache.CompletedCount,
-                visibleEntriesCache.PendingCount,
-                token);
-
-            List<int> years = visibleEntriesCache.VisibleYears;
             if (years.Count == 0)
             {
                 Widgets.Label(outRect, (showLlmDebugInfo ? "PawnDiary.Tab.NoEntries" : "PawnDiary.Tab.NoGeneratedEntries").Translate());
                 return;
             }
 
-            EnsureSelectedYear(pawn, years);
-            SelectYearForPendingScroll(pawn, visibleEntriesCache);
-
-            if (years.Count > 1)
-            {
-                Rect yearRect = new Rect(rect.x, entriesY, rect.width, YearFilterHeight);
-                DrawYearFilter(yearRect, years, visibleEntriesCache);
-                entriesY = yearRect.yMax + YearFilterGap;
-                outRect = new Rect(rect.x, entriesY, rect.width, rect.yMax - entriesY);
-            }
-
-            List<DiaryEntryView> ordered;
-            if (!visibleEntriesCache.TryGetOrderedEntriesForSelectedYear(pawn, selectedYear, out ordered))
+            if (!haveOrdered)
             {
                 DrawDiaryLoading(outRect, visibleEntriesCache.LoadingProcessed, visibleEntriesCache.LoadingTotal);
                 return;
@@ -558,6 +620,15 @@ namespace PawnDiary
                     if (curY > visibleBottom)
                     {
                         break;
+                    }
+
+                    // Season/quadrum divider sits in the reserved space just above this card. Drawn in
+                    // scroll-view coordinates (outside the per-card group) so it spans the full width.
+                    string dividerLabel = i < dividerLabelsBuffer.Length ? dividerLabelsBuffer[i] : null;
+                    if (!string.IsNullOrEmpty(dividerLabel))
+                    {
+                        Rect dividerRect = new Rect(0f, curY - QuadrumDividerHeight, viewRect.width, QuadrumDividerHeight);
+                        DrawQuadrumDivider(dividerRect, dividerLabel);
                     }
 
                     Rect entryRect = new Rect(0f, curY, viewRect.width, height);
@@ -653,6 +724,11 @@ namespace PawnDiary
             if (entryOffsetsBuffer.Length < count)
             {
                 Array.Resize(ref entryOffsetsBuffer, count);
+            }
+
+            if (dividerLabelsBuffer.Length < count)
+            {
+                Array.Resize(ref dividerLabelsBuffer, count);
             }
         }
 
@@ -777,6 +853,7 @@ namespace PawnDiary
             layoutBuildIndex = 0;
             layoutBuildCurY = 0f;
             layoutBuildAnimationSettled = true;
+            layoutBuildPrevQuadrumKey = DiaryQuadrumDivider.UndatedKey;
         }
 
         private void ProcessEntryLayoutSlice(
@@ -825,6 +902,22 @@ namespace PawnDiary
                 float fullHeight = (expanded || expansionBlend > 0f)
                     ? CachedEntryHeight(entry, entryKey, viewWidth, showLlmDebugInfo, token, nameHighlights)
                     : CollapsedEntryHeight;
+
+                // Reserve a quadrum/season divider above this card when it opens a new quadrum. The
+                // Undated page (no in-game year) skips dividers entirely. The reserved space here must
+                // match exactly what DrawQuadrumDivider paints in the draw loop, so both read the same
+                // stored label and geometry.
+                int quadrumKey = selectedYear == UnknownYear
+                    ? DiaryQuadrumDivider.UndatedKey
+                    : DiaryQuadrumDivider.QuadrumKey(entry);
+                bool dividerAbove = DiaryQuadrumDivider.HasDividerAbove(layoutBuildPrevQuadrumKey, quadrumKey, i == 0);
+                dividerLabelsBuffer[i] = dividerAbove ? DiaryQuadrumDivider.Label(entry) : null;
+                layoutBuildPrevQuadrumKey = quadrumKey;
+                if (!string.IsNullOrEmpty(dividerLabelsBuffer[i]))
+                {
+                    // The first divider hugs the top; later ones get a small gap above their card.
+                    layoutBuildCurY += QuadrumDividerHeight + (i == 0 ? 0f : QuadrumDividerTopGap);
+                }
 
                 entryKeysBuffer[i] = entryKey;
                 expandedTargetsBuffer[i] = expanded;

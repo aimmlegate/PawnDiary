@@ -803,8 +803,8 @@ namespace PawnDiary
 
             DiaryInteractionGroupDef group = GroupForDisplay();
 
-            // Title for this pawn's POV: stored LLM title only. When empty, EntryHeader renders
-            // the date alone with no separator.
+            // Title for this pawn's POV: stored LLM title only. When empty, the Diary card header
+            // renders the date alone with no separator.
             string titleForPov = TitleForRole(povRole);
             bool titlePendingForPov = !archivedForScans
                 && string.IsNullOrWhiteSpace(titleForPov)

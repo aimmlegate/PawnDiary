@@ -17,8 +17,9 @@
   <PawnDiary.DiaryUiStyleDef>
     <defName>Diary_UiStyle</defName>
 
-    <!-- Tab window -->
-    <tabWidth>720</tabWidth>
+    <!-- Tab window. Width includes the right-hand filter/controls panel (filterPanelWidth +
+         filterPanelGap) plus the ~696px journal column. -->
+    <tabWidth>992</tabWidth>
     <tabHeight>800</tabHeight>
     <!-- The tab treats tabHeight as a preferred height. It clamps to the space available above
          the inspect pane's tab strip (the tab hangs above the pane, not the screen bottom) minus
@@ -26,6 +27,10 @@
          when the screen itself is too short to leave that much room. -->
     <tabMinHeight>360</tabMinHeight>
     <tabScreenHeightMargin>72</tabScreenHeightMargin>
+
+    <!-- Right-hand filter/controls panel (independent, non-virtualized scroll column). -->
+    <filterPanelWidth>260</filterPanelWidth>
+    <filterPanelGap>12</filterPanelGap>
 
     <!-- Header/card dimensions -->
     <controlLineHeight>28</controlLineHeight>
@@ -47,6 +52,14 @@
     <entryLabelMaxWidth>148</entryLabelMaxWidth>
     <entryFadeDurationSeconds>0.55</entryFadeDurationSeconds>
     <titleFadeDurationSeconds>0.8</titleFadeDurationSeconds>
+
+    <!-- Quadrum/season dividers: a slim centered "Aprimay · Spring · 5500" header between the
+         year's entry cards. Height is the label row; the top gap separates it from the card above;
+         the line gap is the clear space between the centered label and each side rule. -->
+    <quadrumDividerHeight>24</quadrumDividerHeight>
+    <quadrumDividerTopGap>6</quadrumDividerTopGap>
+    <quadrumDividerLineGap>10</quadrumDividerLineGap>
+
     <!-- Linked-entry preview card -->
     <linkedEntryPadding>8</linkedEntryPadding>
     <linkedEntryLabelHeight>20</linkedEntryLabelHeight>
@@ -120,6 +133,10 @@
     <mentalBreakHeaderRuleColor><r>0.40</r><g>0.58</g><b>0.40</b><a>0.42</a></mentalBreakHeaderRuleColor>
     <accentHighlightColor><r>1</r><g>1</g><b>1</b><a>0.10</a></accentHighlightColor>
     <titleTextColor><r>0.88</r><g>0.86</g><b>0.79</b><a>1</a></titleTextColor>
+    <!-- Muted date tone (rendered smaller than the title) and the quadrum divider label/line tones. -->
+    <entryDateColor><r>0.64</r><g>0.64</g><b>0.60</b><a>0.92</a></entryDateColor>
+    <quadrumDividerLabelColor><r>0.72</r><g>0.70</g><b>0.63</b><a>0.90</a></quadrumDividerLabelColor>
+    <quadrumDividerLineColor><r>0.56</r><g>0.53</g><b>0.47</b><a>0.30</a></quadrumDividerLineColor>
     <pendingTitlePrefixColor><r>0.86</r><g>0.86</g><b>0.86</b><a>0.95</a></pendingTitlePrefixColor>
     <pendingTitleDotBaseColor><r>0.68</r><g>0.72</g><b>0.76</b><a>1</a></pendingTitleDotBaseColor>
     <writingPlaceholderLowColor><r>0.58</r><g>0.72</g><b>0.66</b><a>1</a></writingPlaceholderLowColor>

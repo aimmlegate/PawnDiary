@@ -40,9 +40,16 @@ namespace PawnDiary
 
 
 
+            bool writeGlobalSettings = false;
+
             Listing_Standard listing = new Listing_Standard();
 
             listing.Begin(rect);
+
+            // Balance the Listing's GUI group even if a control throws — this block is nested inside the
+            // filter panel's own scroll group, so a leak here would corrupt the whole frame's UI.
+            try
+            {
 
 
 
@@ -72,8 +79,6 @@ namespace PawnDiary
 
 
             PawnDiarySettings settings = PawnDiaryMod.Settings;
-
-            bool writeGlobalSettings = false;
 
             if (Prefs.DevMode && settings != null)
             {
@@ -258,9 +263,11 @@ namespace PawnDiary
 
             // prompt and override explanation, so this dev-only duplicate is gone.
 
-            listing.End();
-
-
+            }
+            finally
+            {
+                listing.End();
+            }
 
             if (writeGlobalSettings)
             {

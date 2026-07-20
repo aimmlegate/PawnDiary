@@ -1968,7 +1968,9 @@ an absolute one: before every draw the tab clamps itself to the space actually a
 bottom anchor — inspect tabs hang above the inspect pane's tab strip, not the screen bottom — minus
 `<tabScreenHeightMargin>` of clear screen kept above the tab, while `<tabMinHeight>` keeps it usable
 on ordinary resolutions. If the screen is shorter than that minimum, the tab shrinks further rather
-than running off-screen.
+than running off-screen. `<tabWidth>` (default 992) now includes the right-hand filter/controls panel
+(`<filterPanelWidth>` + `<filterPanelGap>`) on top of the ~696px journal column; if the tab is ever
+too narrow to fit both, the panel hides and the journal takes the full width.
 
 Interaction groups match by domain, exact `defName`, optional package id, and ordered token matchers.
 Prefer exact names, `matchPrefixes`, `matchSuffixes`, and `matchSegments`; use legacy
@@ -2636,10 +2638,11 @@ Inspect-tab mode intentionally does not draw unread-page badges on the tab butto
 hidden and the bottom command button is active instead, that command still shows its unread/writing
 status overlay.
 
-Production UI shows completed pages. Each expanded non-archived page has a muted rewrite icon beside
-the model/provenance footer, so players can regenerate that page with the current model routing;
-pairwise pages rewrite both POVs when both are still eligible. Dev mode also shows pending/failure
-rows, raw prompt/status data, and copy buttons. Bulk dev actions live under RimWorld's Debug Actions
+Production UI shows completed pages. Each expanded page has a player-visible "Copy entry" action at
+the left of the footer line, and each expanded non-archived page has a muted rewrite icon beside the
+model/provenance footer on the right, so players can regenerate that page with the current model
+routing; pairwise pages rewrite both POVs when both are still eligible. Dev mode also shows
+pending/failure rows and raw prompt/status data (prompt-only cards copy the captured prompt). Bulk dev actions live under RimWorld's Debug Actions
 menu as `Pawn Diary > Event test panel...`, which opens a non-pausing sectioned dev panel for
 selecting a test pawn and partner. The same debug category also exposes
 `Pawn Diary > Export all diary pages...` for full hot/archive text export and
@@ -2704,8 +2707,40 @@ do not touch saved diary records during pawn
 selection; they read a transient per-pawn status cache. The new-page badge is backed by a saved
 per-pawn unread flag that is set when main LLM text finishes and cleared when that pawn's Diary tab
 opens, while writing dots reuse cached pending counts after the Diary tab finishes its sliced load.
-Archived pages use the same cards and dev copy controls as hot pages, but the normal rewrite icon is
-hidden because compact archive rows intentionally discard prompt/raw-response/retry state.
+Archived pages use the same cards and the same player-visible copy control as hot pages, but the
+normal rewrite icon is hidden because compact archive rows intentionally discard
+prompt/raw-response/retry state.
+
+**Wave C1 reading-quality treatments.** Three presentation-only touches (no change to saved history,
+sort order, or DLC independence). (1) **Season/quadrum dividers.** A slim centered
+"Aprimay · Spring · 5500" separator (icon-free) is drawn between the year's cards wherever the quadrum
+changes, computed by the pure-ish `DiaryQuadrumDivider` helper. The quadrum/year come from the saved
+tick (`GenDate.TickGameToAbs` → `GenDate.Quadrum`/`Year` at longitude 0, so they always agree with each
+card's printed date); the season is the conventional temperate-northern pairing (Aprimay=spring, …)
+using RimWorld's own localized `Season` labels. The Undated page (old saves with no in-game year) shows
+no dividers. The divider's reserved height is added to the virtual row offsets in the same sliced
+layout pass that measures cards, so the reserved and drawn geometry never disagree; sizes/colors are
+XML-tunable via `DiaryUiStyleDef` (`quadrumDivider*`). (2) **Player-visible copy.** The old dev-only,
+icon-only copy badge is now a labeled "Copy entry" action for all players, sharing a single footer line
+with the model-name provenance and the rewrite icon. (3) **Header date font.** The card header renders
+the date in a smaller in-game font (`GameFont.Tiny`) and a muted tone (`entryDateColor`) ahead of the
+title, which keeps its font, fade, and pulse. The pending-title dots animation and the date-only case
+are preserved.
+
+**Filter/controls panel (right column).** The Diary tab is a two-column layout: the virtualized journal
+on the left and an independent, non-virtualized filter/controls panel on the right
+(`ITab_Pawn_Diary.FilterPanel.cs`). The panel has its own scroll offset (`filterPanelScrollPosition`,
+separate from the journal's) and is built only from existing RimWorld widgets — `Listing_Standard`,
+`Widgets.CheckboxLabeled`/`ButtonText`, the year FloatMenu, `DrawMenuSection` — inside a
+`Widgets.BeginScrollView`; its content height is measured (`listing.CurHeight`) and reused to size the
+scroll view next frame. It hosts the **year selector** (the pager `DrawYearFilter`, now responsive: a
+full pager when wide, a single dropdown in the narrow panel via the shared `ShowYearFloatMenu`), the
+**dev tools** (`DrawPawnControls`, moved out of the top of the journal column and now wrapped in its own
+try/finally so its nested `Listing` group can never leak), and — for now — **stub filter controls**
+(a favorites toggle and per-tag toggles derived from the visible year's group labels, plus Clear/Apply).
+The stub toggles render and toggle but are **not yet wired** to filter the journal. The journal column
+keeps its familiar width because `tabWidth` grew by the panel width; the panel hides on a tab too narrow
+to fit both. Panel sizes are XML-tunable via `DiaryUiStyleDef` (`filterPanelWidth`, `filterPanelGap`).
 
 `DiaryTextFormat` escapes raw model rich text before applying safe formatting. Display-only text
 decorations and pawn-name highlights happen at render time; generated text is not mutated on save.

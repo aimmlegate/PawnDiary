@@ -231,8 +231,21 @@
   <PawnDiary.Tab.YearLabel>Год {0}</PawnDiary.Tab.YearLabel>
   <PawnDiary.Tab.UnknownYear>Без даты</PawnDiary.Tab.UnknownYear>
   <PawnDiary.Tab.ExpandCollapseTip>Развернуть или свернуть страницу.</PawnDiary.Tab.ExpandCollapseTip>
-  <PawnDiary.Tab.CopyEntryTip>Только для разработки: скопировать текст страницы. Карточки с запросом копируют сам запрос, остальные — готовый текст.</PawnDiary.Tab.CopyEntryTip>
+  <!-- Разделитель квадрума/сезона между страницами года. {0} — квадрум, {1} — сезон, {2} — год. -->
+  <PawnDiary.Tab.QuadrumDivider>{0} · {1} · {2}</PawnDiary.Tab.QuadrumDivider>
+  <PawnDiary.Tab.CopyEntry>Копировать страницу</PawnDiary.Tab.CopyEntry>
+  <PawnDiary.Tab.CopyEntryTip>Скопировать текст страницы в буфер обмена.</PawnDiary.Tab.CopyEntryTip>
   <PawnDiary.Tab.CopyEntryCopied>Текст страницы скопирован.</PawnDiary.Tab.CopyEntryCopied>
+  <!-- Боковая панель фильтров и управления. Переключатели фильтров — заглушки, пока фильтрация не подключена. -->
+  <PawnDiary.Tab.FilterYearHeader>Год</PawnDiary.Tab.FilterYearHeader>
+  <PawnDiary.Tab.FilterHeader>Фильтры</PawnDiary.Tab.FilterHeader>
+  <PawnDiary.Tab.FilterFavoritesOnly>Только избранное</PawnDiary.Tab.FilterFavoritesOnly>
+  <PawnDiary.Tab.FilterTagsHeader>Метки</PawnDiary.Tab.FilterTagsHeader>
+  <PawnDiary.Tab.FilterNoTags>В этом году нет меток.</PawnDiary.Tab.FilterNoTags>
+  <PawnDiary.Tab.FilterClear>Сбросить</PawnDiary.Tab.FilterClear>
+  <PawnDiary.Tab.FilterApply>Применить ({0})</PawnDiary.Tab.FilterApply>
+  <PawnDiary.Tab.FilterStubTip>Фильтрация пока не подключена.</PawnDiary.Tab.FilterStubTip>
+  <PawnDiary.Tab.FilterDevHeader>Инструменты разработчика</PawnDiary.Tab.FilterDevHeader>
   <PawnDiary.Tab.RegenerateEntryTip>Написать страницу заново с текущими правилами выбора моделей. Парные страницы обновят оба взгляда, если они доступны.</PawnDiary.Tab.RegenerateEntryTip>
   <PawnDiary.Tab.RegenerateEntryQueued>Страница отправлена на повторное написание.</PawnDiary.Tab.RegenerateEntryQueued>
   <PawnDiary.Tab.RegenerateEntryUnavailable>Сейчас эту страницу нельзя написать заново.</PawnDiary.Tab.RegenerateEntryUnavailable>
