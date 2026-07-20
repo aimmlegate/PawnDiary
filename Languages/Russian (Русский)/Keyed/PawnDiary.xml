@@ -1542,4 +1542,18 @@
   <!-- Контекст мобильного дома Odyssey O1.2. -->
   <PawnDiary.Ctx.GravshipHome>на борту гравикорабля {0}</PawnDiary.Ctx.GravshipHome>
   <PawnDiary.Ctx.GravshipHomeAt>на борту гравикорабля {0} у места {1}</PawnDiary.Ctx.GravshipHomeAt>
+
+  <!-- Резервный текст точных источников Anomaly A1-A3. A1.1 фиксирует локализацию; источники появятся позже. -->
+  <PawnDiary.Event.Anomaly.Study.Label>Прорыв в изучении аномалии</PawnDiary.Event.Anomaly.Study.Label>
+  <PawnDiary.Event.Anomaly.Study.Fallback>{0} совершает настоящий прорыв в изучении объекта «{1}».</PawnDiary.Event.Anomaly.Study.Fallback>
+  <PawnDiary.Event.Anomaly.Containment.Label>Прорыв содержания</PawnDiary.Event.Anomaly.Containment.Label>
+  <PawnDiary.Event.Anomaly.Containment.Fallback>{0} видит, как {1} вырывается из содержания.</PawnDiary.Event.Anomaly.Containment.Fallback>
+  <PawnDiary.Event.Anomaly.CreepJoiner.Label>Видимый исход странного прибытия</PawnDiary.Event.Anomaly.CreepJoiner.Label>
+  <PawnDiary.Event.Anomaly.CreepJoiner.Fallback>{0} наблюдает видимый исход для {1}: {2}.</PawnDiary.Event.Anomaly.CreepJoiner.Fallback>
+  <PawnDiary.Event.Anomaly.Ghoul.Label>Превращение в гуля</PawnDiary.Event.Anomaly.Ghoul.Label>
+  <PawnDiary.Event.Anomaly.Ghoul.SubjectFallback>{0} проходит завершённую инфузию и становится гулем.</PawnDiary.Event.Anomaly.Ghoul.SubjectFallback>
+  <PawnDiary.Event.Anomaly.Ghoul.SurgeonFallback>{0} завершает инфузию, превратившую {1} в гуля.</PawnDiary.Event.Anomaly.Ghoul.SurgeonFallback>
+  <PawnDiary.Event.Anomaly.Void.Label>Ответ пустоте</PawnDiary.Event.Anomaly.Void.Label>
+  <PawnDiary.Event.Anomaly.Void.EmbracedFallback>{0} решает принять пустоту.</PawnDiary.Event.Anomaly.Void.EmbracedFallback>
+  <PawnDiary.Event.Anomaly.Void.DisruptedFallback>{0} решает разрушить связь с пустотой.</PawnDiary.Event.Anomaly.Void.DisruptedFallback>
 </LanguageData>

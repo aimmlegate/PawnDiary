@@ -82,6 +82,40 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Verifies that the Phase A1.1 Anomaly event families load behind the official package gate
+        /// and that their required-match classifier never falls through to a broad Interaction row.
+        /// </summary>
+        [Test]
+        public static void AnomalyEventGroupsAreLoadedAndRouteOnlyExactKinds()
+        {
+            string[,] expected =
+            {
+                { "anomalyStudyBreakthrough", "PawnDiary_AnomalyStudyBreakthrough" },
+                { "anomalyContainmentBreach", "PawnDiary_ContainmentBreach" },
+                { "anomalyCreepJoinerOutcome", "PawnDiary_CreepJoinerOutcome" },
+                { "anomalyGhoulTransformation", "PawnDiary_GhoulTransformation" },
+                { "anomalyVoidOutcome", "PawnDiary_VoidOutcome" }
+            };
+
+            for (int i = 0; i < expected.GetLength(0); i++)
+            {
+                DiaryInteractionGroupDef group =
+                    RequireDef<DiaryInteractionGroupDef>(expected[i, 0]);
+                Assert.That(group.enableWhenPackageIdsLoaded != null
+                    && group.enableWhenPackageIdsLoaded.Count == 1
+                    && group.enableWhenPackageIdsLoaded[0] == "Ludeon.RimWorld.Anomaly");
+                Assert.That(group.MissingRequiredPackage() == !ModsConfig.AnomalyActive);
+
+                DiaryInteractionGroupDef classified =
+                    InteractionGroups.ClassifyAnomalyEvent(expected[i, 1]);
+                Assert.That(ModsConfig.AnomalyActive ? classified == group : classified == null);
+            }
+
+            Assert.That(InteractionGroups.ClassifyAnomalyEvent(
+                "PawnDiary_UnknownAnomalyEvent") == null);
+        }
+
+        /// <summary>
         /// Verifies that every loaded prompt template has a stable unique key and usable fields.
         /// </summary>
         [Test]

@@ -456,6 +456,16 @@ order-`776` fallback and leave page count and role fan-out unchanged:
 | `ritualAnomalyDeathRefusal` / `775` | `ImbueDeathRefusal` | Establishing death refusal; never claims death or resurrection already occurred. |
 | `ritualAnomalyPsychic` / `776` | token fallback for unknown/modded `PsychicRitual;...` keys | Visible supplied facts only; downstream effect remains uncertain. |
 
+Anomaly Phase A1.1 also registers one common `AnomalyEvent` catalog envelope and five exact,
+package-gated Interaction groups at orders `61..65`: `anomalyStudyBreakthrough`,
+`anomalyContainmentBreach`, `anomalyCreepJoinerOutcome`, `anomalyGhoulTransformation`, and
+`anomalyVoidOutcome`. Each matches only its frozen `PawnDiary_*` synthetic Def name through
+`ClassifyAnomalyEvent`; the required-match route cannot use the ordinary Interaction catch-all.
+They expose settings and localized prompt/fallback policy now, but no hook or signal submits an
+`AnomalyEvent` in A1.1, so they are intentionally absent from the live-hook diagram above and create
+zero pages until the separately tested A1.2/A1.3/A2/A3 sources land. N3-A is similarly wired as an
+explicit zero-candidate provider.
+
 Biotech Phases 1–2 activate the exact `progressionGrowthMoment` / order `800` route for
 `BiotechGrowthMoment`; the Tale-domain `biotechFamilyBirth` / order `315` contract remains inactive
 until Phase 3. Birthday prefix/postfix capture plus the dynamically registered growth-letter hooks

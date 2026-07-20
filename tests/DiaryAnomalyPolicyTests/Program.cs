@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using PawnDiary;
 using PawnDiary.Capture;
 
 namespace DiaryAnomalyPolicyTests
@@ -19,6 +20,7 @@ namespace DiaryAnomalyPolicyTests
             TestPolicyDefaults();
             TestPolicyNormalization();
             TestShippedPolicyAndLocalization();
+            TestShippedCatalogGroupsAndFallbackLocalization();
             TestInvalidAndNonProgressingStudy();
             TestFirstBreakthroughAndEligibility();
             TestCompletionHistory();
@@ -26,6 +28,7 @@ namespace DiaryAnomalyPolicyTests
             TestMonolithStateOnlyEnrichment();
             TestTaleOwnershipExactness();
             TestTaleOwnershipExpiryAndConsumeOnce();
+            TestBoundedStudySuppressionCache();
             TestInvalidContainmentScopes();
             TestContainmentAggregationAndBounds();
             TestContainmentWriterRanking();
@@ -271,6 +274,88 @@ namespace DiaryAnomalyPolicyTests
             plan = AnomalyStudyPolicy.Plan(facts, null, null);
             AssertEqual("ordinary point increase is state-only", AnomalyStudyDisposition.StateOnly,
                 plan.disposition);
+        }
+
+        private static void TestShippedCatalogGroupsAndFallbackLocalization()
+        {
+            string root = RepositoryRoot();
+            XDocument groups = XDocument.Load(Path.Combine(
+                root, "1.6", "Defs", "DiaryInteractionGroupDefs.xml"));
+            string[] names =
+            {
+                "anomalyStudyBreakthrough",
+                "anomalyContainmentBreach",
+                "anomalyCreepJoinerOutcome",
+                "anomalyGhoulTransformation",
+                "anomalyVoidOutcome"
+            };
+            string[] defNames =
+            {
+                AnomalyEventDefNames.StudyBreakthrough,
+                AnomalyEventDefNames.ContainmentBreach,
+                AnomalyEventDefNames.CreepJoinerOutcome,
+                AnomalyEventDefNames.GhoulTransformation,
+                AnomalyEventDefNames.VoidOutcome
+            };
+            for (int i = 0; i < names.Length; i++)
+            {
+                XElement group = groups.Descendants("PawnDiary.DiaryInteractionGroupDef")
+                    .Single(row => Value(row, "defName") == names[i]);
+                AssertEqual("Anomaly group reuses Interaction domain: " + names[i],
+                    "Interaction", Value(group, "domain"));
+                AssertEqual("Anomaly group order is frozen: " + names[i],
+                    (61 + i).ToString(), Value(group, "order"));
+                AssertEqual("Anomaly group exact synthetic matcher: " + names[i], defNames[i],
+                    group.Element("matchDefNames").Elements("li").Single().Value.Trim());
+                AssertEqual("Anomaly group package gate: " + names[i],
+                    "Ludeon.RimWorld.Anomaly",
+                    group.Element("enableWhenPackageIdsLoaded").Elements("li").Single().Value.Trim());
+            }
+            XElement broad = groups.Descendants("PawnDiary.DiaryInteractionGroupDef")
+                .Single(row => Value(row, "defName") == "anomaly");
+            AssertTrue("exact Anomaly groups precede broad interaction matcher",
+                names.Select(name => groups.Descendants("PawnDiary.DiaryInteractionGroupDef")
+                    .Single(row => Value(row, "defName") == name))
+                    .All(row => int.Parse(Value(row, "order")) < int.Parse(Value(broad, "order"))));
+
+            foreach (string language in new[] { "English", "Russian (Русский)" })
+            {
+                XDocument injected = XDocument.Load(Path.Combine(root, "Languages", language,
+                    "DefInjected", "PawnDiary.DiaryInteractionGroupDef",
+                    "DiaryInteractionGroupDefs.xml"));
+                for (int i = 0; i < names.Length; i++)
+                {
+                    foreach (string suffix in new[]
+                        { ".label", ".instruction", ".tone", ".tones.0", ".tones.1" })
+                    {
+                        AssertTrue(language + " Anomaly DefInjected value exists: " + names[i] + suffix,
+                            !string.IsNullOrWhiteSpace(
+                                injected.Root.Element(names[i] + suffix)?.Value));
+                    }
+                }
+
+                XDocument keyed = XDocument.Load(Path.Combine(
+                    root, "Languages", language, "Keyed", "PawnDiary.xml"));
+                foreach (string key in new[]
+                {
+                    "PawnDiary.Event.Anomaly.Study.Label",
+                    "PawnDiary.Event.Anomaly.Study.Fallback",
+                    "PawnDiary.Event.Anomaly.Containment.Label",
+                    "PawnDiary.Event.Anomaly.Containment.Fallback",
+                    "PawnDiary.Event.Anomaly.CreepJoiner.Label",
+                    "PawnDiary.Event.Anomaly.CreepJoiner.Fallback",
+                    "PawnDiary.Event.Anomaly.Ghoul.Label",
+                    "PawnDiary.Event.Anomaly.Ghoul.SubjectFallback",
+                    "PawnDiary.Event.Anomaly.Ghoul.SurgeonFallback",
+                    "PawnDiary.Event.Anomaly.Void.Label",
+                    "PawnDiary.Event.Anomaly.Void.EmbracedFallback",
+                    "PawnDiary.Event.Anomaly.Void.DisruptedFallback"
+                })
+                {
+                    AssertTrue(language + " Anomaly Keyed fallback exists: " + key,
+                        !string.IsNullOrWhiteSpace(keyed.Root.Element(key)?.Value));
+                }
+            }
         }
 
         private static void TestFirstBreakthroughAndEligibility()
@@ -558,6 +643,50 @@ namespace DiaryAnomalyPolicyTests
             facts = Breach();
             facts.mapId = -1;
             AssertTrue("negative breach map invalid", !ContainmentBreachPolicy.Plan(facts, null).valid);
+        }
+
+        private static void TestBoundedStudySuppressionCache()
+        {
+            AnomalyStudySuppressionCache.Clear();
+            AssertTrue("valid study claim enters transient cache",
+                AnomalyStudySuppressionCache.Register(Claim(), 100, 60));
+            AssertEqual("one study claim cached", 1,
+                AnomalyStudySuppressionCache.CountForTests);
+
+            AnomalyStudiedTaleFacts mismatch = Tale();
+            mismatch.studiedEntityId = "Entity_Other";
+            AssertTrue("mismatched Tale remains unsuppressed",
+                !AnomalyStudySuppressionCache.TryConsume(mismatch, 60));
+            AssertEqual("mismatched Tale retains exact claim", 1,
+                AnomalyStudySuppressionCache.CountForTests);
+            AssertTrue("exact Tale consumes and suppresses once",
+                AnomalyStudySuppressionCache.TryConsume(Tale(), 60));
+            AssertEqual("consumed claim leaves cache", 0,
+                AnomalyStudySuppressionCache.CountForTests);
+            AssertTrue("same Tale cannot consume twice",
+                !AnomalyStudySuppressionCache.TryConsume(Tale(), 60));
+
+            for (int i = 0; i < 3; i++)
+            {
+                AnomalyStudyTaleClaim claim = Claim();
+                claim.studiedEntityId = "Entity_" + i;
+                claim.acceptedTick = 100 + i;
+                AssertTrue("bounded claim registers " + i,
+                    AnomalyStudySuppressionCache.Register(claim, 102, 60, 2));
+            }
+            AssertEqual("study cache evicts oldest above cap", 2,
+                AnomalyStudySuppressionCache.CountForTests);
+
+            AnomalyStudyTaleClaim fresh = Claim();
+            fresh.studiedEntityId = "Entity_Fresh";
+            fresh.acceptedTick = 200;
+            AssertTrue("new registration prunes expired claims",
+                AnomalyStudySuppressionCache.Register(fresh, 200, 10));
+            AssertEqual("only fresh claim remains after expiry prune", 1,
+                AnomalyStudySuppressionCache.CountForTests);
+            AnomalyTransientState.Reset();
+            AssertEqual("Anomaly lifecycle reset clears all transient claims", 0,
+                AnomalyStudySuppressionCache.CountForTests);
         }
 
         private static void TestContainmentAggregationAndBounds()

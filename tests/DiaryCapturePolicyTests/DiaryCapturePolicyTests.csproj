@@ -23,6 +23,7 @@
     <Compile Include="..\..\Source\Capture\GroupNameMatcher.cs" Link="Capture\GroupNameMatcher.cs" />
     <Compile Include="..\..\Source\Capture\BodyPartEventPolicy.cs" Link="Capture\BodyPartEventPolicy.cs" />
     <Compile Include="..\..\Source\Capture\TraitProgressionPolicy.cs" Link="Capture\TraitProgressionPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\AnomalyContracts.cs" Link="Capture\Policies\AnomalyContracts.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\BiotechContracts.cs" Link="Capture\Biotech\BiotechContracts.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\GeneIdentityContracts.cs" Link="Capture\Biotech\GeneIdentityContracts.cs" />
     <Compile Include="..\..\Source\Capture\Biotech\GeneIdentityObservationPolicy.cs" Link="Capture\Biotech\GeneIdentityObservationPolicy.cs" />
@@ -57,6 +58,7 @@
     <Compile Include="..\..\Source\Capture\Events\GravshipJourneyEventData.cs" Link="Capture\Events\GravshipJourneyEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\PersonaWeaponEventData.cs" Link="Capture\Events\PersonaWeaponEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\RoyalPermitEventData.cs" Link="Capture\Events\RoyalPermitEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\AnomalyEventData.cs" Link="Capture\Events\AnomalyEventData.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContracts.cs" Link="Pipeline\NarrativeContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyaltyContracts.cs" Link="Pipeline\RoyaltyContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Royalty\RoyalMutationOwnershipPolicy.cs" Link="Pipeline\RoyalMutationOwnershipPolicy.cs" />
@@ -92,5 +94,6 @@
     <Compile Include="..\..\Source\Capture\Specs\GravshipJourneyEventSpec.cs" Link="Capture\Specs\GravshipJourneyEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\PersonaWeaponEventSpec.cs" Link="Capture\Specs\PersonaWeaponEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\RoyalPermitEventSpec.cs" Link="Capture\Specs\RoyalPermitEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\AnomalyEventSpec.cs" Link="Capture\Specs\AnomalyEventSpec.cs" />
   </ItemGroup>
 </Project>

@@ -86,6 +86,7 @@ namespace DiaryCapturePolicyTests
             TestGravshipJourneyCatalogDecisions();
             TestPersonaWeaponCatalogDecisions();
             TestRoyalPermitCatalogDecisions();
+            TestAnomalyCatalogDecisions();
             TestMonolithActivationProvenance();
             TestCatalogDispatch();
             TestCatalogContract();
@@ -1775,6 +1776,91 @@ namespace DiaryCapturePolicyTests
                 RoyalPermitEventData.Decide(null, Ctx()));
         }
 
+        private static void TestAnomalyCatalogDecisions()
+        {
+            string[] kinds =
+            {
+                AnomalyKindTokens.StudyBreakthrough,
+                AnomalyKindTokens.ContainmentBreach,
+                AnomalyKindTokens.CreepJoinerOutcome,
+                AnomalyKindTokens.GhoulTransformation,
+                AnomalyKindTokens.VoidOutcome
+            };
+            string[] defNames =
+            {
+                AnomalyEventDefNames.StudyBreakthrough,
+                AnomalyEventDefNames.ContainmentBreach,
+                AnomalyEventDefNames.CreepJoinerOutcome,
+                AnomalyEventDefNames.GhoulTransformation,
+                AnomalyEventDefNames.VoidOutcome
+            };
+            for (int i = 0; i < kinds.Length; i++)
+            {
+                AnomalyEventData data = Anomaly(kinds[i], defNames[i]);
+                AssertEqual("Anomaly exact kind generates solo: " + kinds[i],
+                    CaptureDecision.GenerateSolo, AnomalyEventData.Decide(data, Ctx()));
+                AssertEqual("Anomaly kind maps to exact Def: " + kinds[i], defNames[i],
+                    AnomalyEventData.DefNameForKind(kinds[i]));
+            }
+
+            AnomalyEventData pair = Anomaly(
+                AnomalyKindTokens.GhoulTransformation,
+                AnomalyEventDefNames.GhoulTransformation);
+            pair.SecondWriterId = "Pawn_B";
+            pair.SecondWriterEligible = true;
+            AssertEqual("Anomaly two exact writers form one pair event", CaptureDecision.GeneratePair,
+                AnomalyEventData.Decide(pair, Ctx()));
+            pair.SecondWriterId = pair.FirstWriterId;
+            AssertEqual("Anomaly duplicate writer remains solo", CaptureDecision.GenerateSolo,
+                AnomalyEventData.Decide(pair, Ctx()));
+
+            AnomalyEventData invalid = Anomaly(
+                AnomalyKindTokens.StudyBreakthrough,
+                AnomalyEventDefNames.ContainmentBreach);
+            AssertEqual("Anomaly mismatched kind and Def drops", CaptureDecision.Drop,
+                AnomalyEventData.Decide(invalid, Ctx()));
+            invalid.DefName = AnomalyEventDefNames.StudyBreakthrough;
+            invalid.Kind = "hidden_downside";
+            AssertEqual("Anomaly unknown kind drops", CaptureDecision.Drop,
+                AnomalyEventData.Decide(invalid, Ctx()));
+            invalid.Kind = AnomalyKindTokens.StudyBreakthrough;
+            invalid.PlayerVisible = false;
+            AssertEqual("Anomaly hidden source drops", CaptureDecision.Drop,
+                AnomalyEventData.Decide(invalid, Ctx()));
+            invalid.PlayerVisible = true;
+            invalid.HasVerifiedSource = false;
+            AssertEqual("Anomaly unverified source drops", CaptureDecision.Drop,
+                AnomalyEventData.Decide(invalid, Ctx()));
+            invalid.HasVerifiedSource = true;
+            invalid.AlreadyRecorded = true;
+            AssertEqual("Anomaly durable replay drops", CaptureDecision.Drop,
+                AnomalyEventData.Decide(invalid, Ctx()));
+            invalid.AlreadyRecorded = false;
+            invalid.FirstWriterEligible = false;
+            AssertEqual("Anomaly without an eligible writer drops", CaptureDecision.Drop,
+                AnomalyEventData.Decide(invalid, Ctx()));
+            invalid.FirstWriterEligible = true;
+            AssertEqual("Anomaly disabled group drops", CaptureDecision.Drop,
+                AnomalyEventData.Decide(invalid, Ctx(user: false)));
+            AssertEqual("Anomaly disabled signal drops", CaptureDecision.Drop,
+                AnomalyEventData.Decide(invalid, Ctx(signal: false)));
+            invalid.SourceKey = "bad=source";
+            AssertEqual("Anomaly malformed source identity drops", CaptureDecision.Drop,
+                AnomalyEventData.Decide(invalid, Ctx()));
+            AssertEqual("Anomaly malformed source has no dedup", string.Empty, invalid.DedupKey());
+
+            AnomalyEventData exact = Anomaly(
+                AnomalyKindTokens.ContainmentBreach,
+                AnomalyEventDefNames.ContainmentBreach);
+            AssertEqual("Anomaly source dedup is shared across POVs",
+                "anomaly-event|containment_breach|anomaly-breach|7|100|escape-a",
+                exact.DedupKey());
+            AssertTrue("catalog registers AnomalyEvent spec",
+                DiaryEventCatalog.Get(DiaryEventType.AnomalyEvent) is AnomalyEventSpec);
+            AssertEqual("catalog dispatches AnomalyEvent decision", CaptureDecision.GenerateSolo,
+                DiaryEventCatalog.Get(DiaryEventType.AnomalyEvent).Decide(exact, Ctx()));
+        }
+
         // ── Catalog dispatch ──
 
         private static void TestCatalogDispatch()
@@ -1974,7 +2060,7 @@ namespace DiaryCapturePolicyTests
         private static readonly string[] PlannedNotYetMigratedSources =
         {
             "MajorThreat", "RandomEvent", "WorldEvent",
-            "AnomalyEvent", "IncidentEvent", "Health",
+            "IncidentEvent", "Health",
         };
 
         private static void TestMigrationSentinel()
@@ -2662,6 +2748,22 @@ namespace DiaryCapturePolicyTests
                 NewValue = "12",
                 Context = "skill=Construction; skill_level=12; passion=major",
                 AlreadyRecorded = alreadyRecorded,
+            };
+        }
+
+        private static AnomalyEventData Anomaly(string kind, string defName)
+        {
+            return new AnomalyEventData
+            {
+                PawnId = "Pawn_A",
+                Tick = 100,
+                DefName = defName,
+                Kind = kind,
+                SourceKey = "anomaly-breach|7|100|escape-a",
+                HasVerifiedSource = true,
+                PlayerVisible = true,
+                FirstWriterId = "Pawn_A",
+                FirstWriterEligible = true
             };
         }
 

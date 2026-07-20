@@ -563,6 +563,8 @@ namespace PawnDiary.RimTests
             RequireField(monolith, "autoActivateTick", typeof(int));
             RequireProperty(typeof(Find), "Anomaly", typeof(GameComponent_Anomaly), AnyStatic);
             RequireProperty(typeof(GameComponent_Anomaly), "LevelDef", typeof(MonolithLevelDef), AnyInstance);
+            RequireProperty(typeof(CompStudyUnlocks), "Progress", typeof(int), AnyInstance);
+            RequireProperty(typeof(CompStudyUnlocks), "Completed", typeof(bool), AnyInstance);
             RequireField(typeof(MonolithLevelDef), "levelInspectText", typeof(string));
             RequireField(typeof(MonolithLevelDef), "monolithLabel", typeof(string));
             RequireMethod(typeof(GameComponent_Anomaly), "PawnHasUnnaturalCorpse", typeof(bool),
@@ -679,6 +681,11 @@ namespace PawnDiary.RimTests
                 { "royalPermitDramatic", RoyaltyPackageId },
                 { "questRoyalAscent", RoyaltyPackageId },
                 { "eventWindowVoidMonolith", AnomalyPackageId },
+                { "anomalyStudyBreakthrough", AnomalyPackageId },
+                { "anomalyContainmentBreach", AnomalyPackageId },
+                { "anomalyCreepJoinerOutcome", AnomalyPackageId },
+                { "anomalyGhoulTransformation", AnomalyPackageId },
+                { "anomalyVoidOutcome", AnomalyPackageId },
                 { "biotechFamilyBirth", BiotechPackageId },
                 { "ritualAnomalyInvitation", AnomalyPackageId },
                 { "ritualAnomalyFleshAndWeather", AnomalyPackageId },

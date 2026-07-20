@@ -66,10 +66,13 @@ namespace PawnDiary.Capture
         PersonaWeapon,
         // Successful allowlisted Royalty permit uses; routine permits are deliberately absent.
         RoyalPermit,
+        // One shared Anomaly dispatch envelope. Separate pure/source policies still own study,
+        // containment, creepjoiner, ghoul, and terminal truth; no live source is registered in A1.1.
+        AnomalyEvent,
 
         // ── Planned future sources (placeholders only — NOT implemented yet) ──
         // No known live RecordX source remains to migrate; batch/ambient flushers are route sinks.
         // Net-new sources planned (see repo discussion):
-        //   MajorThreat, RandomEvent, WorldEvent, AnomalyEvent, IncidentEvent, Health.
+        //   MajorThreat, RandomEvent, WorldEvent, IncidentEvent, Health.
     }
 }

@@ -518,4 +518,29 @@
   <royalPermitDramatic.tone>with the weight of authority being turned into immediate action</royalPermitDramatic.tone>
   <royalPermitDramatic.tones.0>decisive and personal, grounded in what it felt like to invoke hard-won authority</royalPermitDramatic.tones.0>
   <royalPermitDramatic.tones.1>tense and status-aware, preserving uncertainty about every effect not yet observed</royalPermitDramatic.tones.1>
+  <anomalyStudyBreakthrough.label>Anomaly study breakthroughs</anomalyStudyBreakthrough.label>
+  <anomalyStudyBreakthrough.instruction>a verified Anomaly study milestone reached by the exact researcher; preserve the supplied studied subject, semantic stage, and visible knowledge context, never quote raw progress, undiscovered codex text, hidden abilities, or future consequences</anomalyStudyBreakthrough.instruction>
+  <anomalyStudyBreakthrough.tone>with hard-won understanding and the unease of knowledge that changes what feels possible</anomalyStudyBreakthrough.tone>
+  <anomalyStudyBreakthrough.tones.0>curious and unsettled, centered on the exact breakthrough rather than hidden mechanics</anomalyStudyBreakthrough.tones.0>
+  <anomalyStudyBreakthrough.tones.1>intellectually absorbed but wary, keeping every unknown consequence genuinely unknown</anomalyStudyBreakthrough.tones.1>
+  <anomalyContainmentBreach.label>Anomaly containment breaches</anomalyContainmentBreach.label>
+  <anomalyContainmentBreach.instruction>a verified involuntary containment breach witnessed from the supplied exact role; use only the escaped entities and visible setting supplied, never invent neglect, sabotage, a containment roll, hidden powers, blame, or an intentional release actor</anomalyContainmentBreach.instruction>
+  <anomalyContainmentBreach.tone>with immediate alarm and uncertainty about what the escaped entities may do next</anomalyContainmentBreach.tone>
+  <anomalyContainmentBreach.tones.0>urgent and grounded in what broke free, without assigning cause or fault</anomalyContainmentBreach.tones.0>
+  <anomalyContainmentBreach.tones.1>watchful and bodily tense, holding to the witness&apos;s actual place in the breach</anomalyContainmentBreach.tones.1>
+  <anomalyCreepJoinerOutcome.label>Visible strange-arrival outcomes</anomalyCreepJoinerOutcome.label>
+  <anomalyCreepJoinerOutcome.instruction>a strange arrival reached one exact player-visible outcome; describe only the supplied disclosure, rejection, aggression, or departure and the writer&apos;s verified role, never reveal a hidden downside, infection, host identity, timer, future transformation, or unobserved motive</anomalyCreepJoinerOutcome.instruction>
+  <anomalyCreepJoinerOutcome.tone>with shaken recognition and strict uncertainty about everything still concealed</anomalyCreepJoinerOutcome.tone>
+  <anomalyCreepJoinerOutcome.tones.0>intimate and unnerved, stopping exactly where visible knowledge ends</anomalyCreepJoinerOutcome.tones.0>
+  <anomalyCreepJoinerOutcome.tones.1>tense and observant, refusing to turn suspicion into secret certainty</anomalyCreepJoinerOutcome.tones.1>
+  <anomalyGhoulTransformation.label>Ghoul transformations</anomalyGhoulTransformation.label>
+  <anomalyGhoulTransformation.instruction>a verified non-ghoul-to-ghoul transformation completed; keep subject and surgeon perspectives distinct, write the irreversible bodily choice from supplied event-time facts, and never invent procedure mechanics, later abilities, moral judgment, or another transformation</anomalyGhoulTransformation.instruction>
+  <anomalyGhoulTransformation.tone>with irreversible bodily consequence and a last clear sense of the human life crossing away</anomalyGhoulTransformation.tone>
+  <anomalyGhoulTransformation.tones.0>visceral and grave, grounded in the exact subject and surgeon roles</anomalyGhoulTransformation.tones.0>
+  <anomalyGhoulTransformation.tones.1>intimate and final, without explaining the game mechanics behind the change</anomalyGhoulTransformation.tones.1>
+  <anomalyVoidOutcome.label>Answer to the void</anomalyVoidOutcome.label>
+  <anomalyVoidOutcome.instruction>the exact actor committed the colony&apos;s verified terminal answer to the void; preserve whether the link was embraced or disrupted and the supplied visible consequences, never invent a different branch, hidden mechanics, dialogue, or another pawn&apos;s agency</anomalyVoidOutcome.instruction>
+  <anomalyVoidOutcome.tone>with terminal choice, accumulated dread, and the weight of an answer that cannot be recalled</anomalyVoidOutcome.tone>
+  <anomalyVoidOutcome.tones.0>final and lucid, centered on the actor&apos;s exact committed choice</anomalyVoidOutcome.tones.0>
+  <anomalyVoidOutcome.tones.1>cosmic but personal, never drifting beyond the visible outcome supplied</anomalyVoidOutcome.tones.1>
 </LanguageData>

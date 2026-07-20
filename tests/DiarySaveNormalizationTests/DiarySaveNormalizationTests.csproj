@@ -4,6 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
+    <!-- This project links the full plain Anomaly DTO contract but intentionally exercises only
+         its persistence rows, so the other data-bag fields are expected to retain defaults here. -->
+    <NoWarn>$(NoWarn);0649</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,5 +16,7 @@
          tests/SAVE_COMPATIBILITY_SMOKETEST.md runbook instead. -->
     <Compile Include="..\..\Source\Pipeline\DiarySaveNormalization.cs" Link="DiarySaveNormalization.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryGenerationStatus.cs" Link="DiaryGenerationStatus.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\AnomalyContracts.cs" Link="AnomalyContracts.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\AnomalyPersistencePolicy.cs" Link="AnomalyPersistencePolicy.cs" />
   </ItemGroup>
 </Project>

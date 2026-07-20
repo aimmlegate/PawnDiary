@@ -30,7 +30,9 @@ namespace PawnDiary
     // Reflection groups match synthetic day/quadrum/arc reflection source tokens. GravshipJourney
     // matches the one synthetic Odyssey successful-landing Def name. PersonaWeapon matches exact
     // Royalty persona-bond lifecycle page names and has no catch-all. RoyalPermit likewise matches
-    // only the reviewed synthetic dramatic-family page names.
+    // only the reviewed synthetic dramatic-family page names. AnomalyEvent reuses the Interaction
+    // domain for five exact synthetic names but resolves through a required-match helper, so the
+    // ordinary social-interaction catch-all can never authorize an Anomaly page.
     // External groups match the eventKey strings other mods submit through the public
     // integration API (PawnDiary.Integration.PawnDiaryApi); adapter mods usually ship them.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
@@ -736,6 +738,17 @@ namespace PawnDiary
         public static DiaryInteractionGroupDef ClassifyRoyalPermit(string eventDefName)
         {
             return ClassifyRequiredMatch(GroupDomain.RoyalPermit, eventDefName);
+        }
+
+        /// <summary>
+        /// Resolves one exact synthetic Anomaly event name without using the Interaction catch-all.
+        /// </summary>
+        // A1.1 deliberately reuses the existing Interaction XML domain rather than adding a domain
+        // solely for one DLC. Required-match classification avoids falling through to "A quiet day"
+        // when a package gate is inactive or a future source supplies an unknown synthetic name.
+        public static DiaryInteractionGroupDef ClassifyAnomalyEvent(string eventDefName)
+        {
+            return ClassifyRequiredMatch(GroupDomain.Interaction, eventDefName);
         }
 
         // First External-domain group that explicitly matches an integration-API eventKey. Like

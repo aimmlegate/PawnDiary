@@ -373,12 +373,15 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 
 ## 12. Wave 7 — Anomaly knowledge, containment, and reveal
 
-> **Progress (2026-07-20): A1.0 complete; A1.1–A2.2 remain.** The primitive-only policy Def,
-> detached DTOs, pure study/containment/Tale-ownership planners, stable event/prompt tokens, and
-> 211-assertion standalone suite are implemented. Adversarial hardening also centralized policy
-> normalization, preserved no-progress monolith transitions, made partial Tale identity fail open, and
-> included source ticks in breach de-duplication. No catalog route, save key, live hook, prompt group,
-> or Anomaly state read has moved forward from its scheduled phase.
+> **Progress (2026-07-20): A1.0–A1.1 code-complete; A1.2–A2.2 remain.** The primitive-only policy
+> Def, detached DTOs, pure study/containment/Tale-ownership planners, stable event/prompt tokens,
+> registered fail-closed catalog envelope, six-key normalized save baseline, lifecycle-cleared
+> bounded study/Tale cache, and five package-gated prompt groups are implemented. N3-A is wired as
+> an explicit zero-candidate provider, so persistence cannot invent prompt context before a verified
+> live source exists. Focused suites pass 320 Anomaly, 707 catalog, 79 save-normalization, and 135
+> Narrative assertions; runtime and 292-test RimTest assemblies build. No Harmony registration,
+> signal, page, tick work, or hidden-state projection has moved ahead of A1.2/A1.3. The new compiled
+> no-DLC Def/signature coverage still awaits execution in RimWorld.
 
 ### Implement in this exact order
 

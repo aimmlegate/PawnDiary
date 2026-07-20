@@ -1562,4 +1562,18 @@
   <!-- Odyssey O1.2 mobile-home surroundings. -->
   <PawnDiary.Ctx.GravshipHome>aboard the gravship {0}</PawnDiary.Ctx.GravshipHome>
   <PawnDiary.Ctx.GravshipHomeAt>aboard the gravship {0} at {1}</PawnDiary.Ctx.GravshipHomeAt>
+
+  <!-- Anomaly A1-A3 exact-source fallback prose. A1.1 freezes localization; live sources follow. -->
+  <PawnDiary.Event.Anomaly.Study.Label>Anomaly study breakthrough</PawnDiary.Event.Anomaly.Study.Label>
+  <PawnDiary.Event.Anomaly.Study.Fallback>{0} reached a genuine breakthrough while studying {1}.</PawnDiary.Event.Anomaly.Study.Fallback>
+  <PawnDiary.Event.Anomaly.Containment.Label>Containment breach</PawnDiary.Event.Anomaly.Containment.Label>
+  <PawnDiary.Event.Anomaly.Containment.Fallback>{0} witnessed {1} break free from containment.</PawnDiary.Event.Anomaly.Containment.Fallback>
+  <PawnDiary.Event.Anomaly.CreepJoiner.Label>Visible strange-arrival outcome</PawnDiary.Event.Anomaly.CreepJoiner.Label>
+  <PawnDiary.Event.Anomaly.CreepJoiner.Fallback>{0} witnessed the visible outcome for {1}: {2}.</PawnDiary.Event.Anomaly.CreepJoiner.Fallback>
+  <PawnDiary.Event.Anomaly.Ghoul.Label>Ghoul transformation</PawnDiary.Event.Anomaly.Ghoul.Label>
+  <PawnDiary.Event.Anomaly.Ghoul.SubjectFallback>{0} underwent the completed infusion and became a ghoul.</PawnDiary.Event.Anomaly.Ghoul.SubjectFallback>
+  <PawnDiary.Event.Anomaly.Ghoul.SurgeonFallback>{0} completed the infusion that transformed {1} into a ghoul.</PawnDiary.Event.Anomaly.Ghoul.SurgeonFallback>
+  <PawnDiary.Event.Anomaly.Void.Label>Answer to the void</PawnDiary.Event.Anomaly.Void.Label>
+  <PawnDiary.Event.Anomaly.Void.EmbracedFallback>{0} chose to embrace the void.</PawnDiary.Event.Anomaly.Void.EmbracedFallback>
+  <PawnDiary.Event.Anomaly.Void.DisruptedFallback>{0} chose to disrupt the link to the void.</PawnDiary.Event.Anomaly.Void.DisruptedFallback>
 </LanguageData>

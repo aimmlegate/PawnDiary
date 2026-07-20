@@ -13,5 +13,7 @@
     <Compile Include="..\..\Source\Capture\Policies\AnomalyStudyPolicy.cs" Link="AnomalyStudyPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\ContainmentBreachPolicy.cs" Link="ContainmentBreachPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyTaleOwnershipPolicy.cs" Link="AnomalyTaleOwnershipPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\AnomalyPersistencePolicy.cs" Link="AnomalyPersistencePolicy.cs" />
+    <Compile Include="..\..\Source\Generation\AnomalyStudySuppressionCache.cs" Link="AnomalyStudySuppressionCache.cs" />
   </ItemGroup>
 </Project>

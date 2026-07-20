@@ -2693,6 +2693,120 @@
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
+  <!-- Anomaly A1.1 exact synthetic routes. These rows intentionally reuse the Interaction domain,
+       with orders 61-65 placing them before the broad order-70 Anomaly interaction matcher. Runtime
+       code uses required-match classification, so the ordinary Interaction catch-all cannot authorize
+       a missing/unknown Anomaly source. No live A1 source is registered in this phase. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>anomalyStudyBreakthrough</defName>
+    <label>Anomaly study breakthroughs</label>
+    <order>61</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a verified Anomaly study milestone reached by the exact researcher; preserve the supplied studied subject, semantic stage, and visible knowledge context, never quote raw progress, undiscovered codex text, hidden abilities, or future consequences</instruction>
+    <tone>with hard-won understanding and the unease of knowledge that changes what feels possible</tone>
+    <tones>
+      <li>curious and unsettled, centered on the exact breakthrough rather than hidden mechanics</li>
+      <li>intellectually absorbed but wary, keeping every unknown consequence genuinely unknown</li>
+    </tones>
+    <colorCue>psychic</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_AnomalyStudyBreakthrough</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>anomalyContainmentBreach</defName>
+    <label>Anomaly containment breaches</label>
+    <order>62</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a verified involuntary containment breach witnessed from the supplied exact role; use only the escaped entities and visible setting supplied, never invent neglect, sabotage, a containment roll, hidden powers, blame, or an intentional release actor</instruction>
+    <tone>with immediate alarm and uncertainty about what the escaped entities may do next</tone>
+    <tones>
+      <li>urgent and grounded in what broke free, without assigning cause or fault</li>
+      <li>watchful and bodily tense, holding to the witness&apos;s actual place in the breach</li>
+    </tones>
+    <colorCue>danger</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_ContainmentBreach</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>anomalyCreepJoinerOutcome</defName>
+    <label>Visible strange-arrival outcomes</label>
+    <order>63</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a strange arrival reached one exact player-visible outcome; describe only the supplied disclosure, rejection, aggression, or departure and the writer&apos;s verified role, never reveal a hidden downside, infection, host identity, timer, future transformation, or unobserved motive</instruction>
+    <tone>with shaken recognition and strict uncertainty about everything still concealed</tone>
+    <tones>
+      <li>intimate and unnerved, stopping exactly where visible knowledge ends</li>
+      <li>tense and observant, refusing to turn suspicion into secret certainty</li>
+    </tones>
+    <colorCue>extremeDark</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_CreepJoinerOutcome</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>anomalyGhoulTransformation</defName>
+    <label>Ghoul transformations</label>
+    <order>64</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a verified non-ghoul-to-ghoul transformation completed; keep subject and surgeon perspectives distinct, write the irreversible bodily choice from supplied event-time facts, and never invent procedure mechanics, later abilities, moral judgment, or another transformation</instruction>
+    <tone>with irreversible bodily consequence and a last clear sense of the human life crossing away</tone>
+    <tones>
+      <li>visceral and grave, grounded in the exact subject and surgeon roles</li>
+      <li>intimate and final, without explaining the game mechanics behind the change</li>
+    </tones>
+    <colorCue>extremeDark</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_GhoulTransformation</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>anomalyVoidOutcome</defName>
+    <label>Answer to the void</label>
+    <order>65</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Anomaly</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>the exact actor committed the colony&apos;s verified terminal answer to the void; preserve whether the link was embraced or disrupted and the supplied visible consequences, never invent a different branch, hidden mechanics, dialogue, or another pawn&apos;s agency</instruction>
+    <tone>with terminal choice, accumulated dread, and the weight of an answer that cannot be recalled</tone>
+    <tones>
+      <li>final and lucid, centered on the actor&apos;s exact committed choice</li>
+      <li>cosmic but personal, never drifting beyond the visible outcome supplied</li>
+    </tones>
+    <colorCue>psychic</colorCue>
+    <matchDefNames>
+      <li>PawnDiary_VoidOutcome</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <!-- Anomaly A0 exact psychic-ritual families. The saved classifier key is
        PsychicRitual;<PsychicRitualDef.defName>; exact rows must stay ahead of the order-776 fallback.
        Package gates hide these settings and keep classification inert when Anomaly is not active. -->

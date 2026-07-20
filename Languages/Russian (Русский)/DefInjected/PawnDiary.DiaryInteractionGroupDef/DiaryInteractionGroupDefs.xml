@@ -629,4 +629,29 @@
   <royalPermitDramatic.tone>с весом власти, превращённой в немедленное действие</royalPermitDramatic.tone>
   <royalPermitDramatic.tones.0>решительно и лично, опираясь на ощущение применения заслуженной власти</royalPermitDramatic.tones.0>
   <royalPermitDramatic.tones.1>напряжённо и с чувством статуса, сохраняя неизвестность всех ещё не наблюдавшихся последствий</royalPermitDramatic.tones.1>
+  <anomalyStudyBreakthrough.label>Прорывы в изучении аномалий</anomalyStudyBreakthrough.label>
+  <anomalyStudyBreakthrough.instruction>подтверждённая веха изучения Anomaly, достигнутая точным исследователем; сохрани переданные изучаемый объект, смысловой этап и видимый контекст знаний, не цитируй сырые очки прогресса, неоткрытый кодекс, скрытые способности или будущие последствия</anomalyStudyBreakthrough.instruction>
+  <anomalyStudyBreakthrough.tone>с добытым трудом пониманием и тревогой от знания, меняющего границы возможного</anomalyStudyBreakthrough.tone>
+  <anomalyStudyBreakthrough.tones.0>любознательно и тревожно, вокруг точного открытия, а не скрытой механики</anomalyStudyBreakthrough.tones.0>
+  <anomalyStudyBreakthrough.tones.1>увлечённо, но настороженно, сохраняя подлинную неизвестность всех последствий</anomalyStudyBreakthrough.tones.1>
+  <anomalyContainmentBreach.label>Прорывы содержания аномалий</anomalyContainmentBreach.label>
+  <anomalyContainmentBreach.instruction>подтверждённый непреднамеренный прорыв содержания глазами точно указанной роли; используй лишь переданные сбежавшие сущности и видимую обстановку, не выдумывай халатность, саботаж, проверку содержания, скрытые силы, вину или участника намеренного освобождения</anomalyContainmentBreach.instruction>
+  <anomalyContainmentBreach.tone>с немедленной тревогой и неизвестностью того, что освобождённые сущности сделают дальше</anomalyContainmentBreach.tone>
+  <anomalyContainmentBreach.tones.0>срочно и опираясь на то, что вырвалось, без назначения причины или виновного</anomalyContainmentBreach.tones.0>
+  <anomalyContainmentBreach.tones.1>настороженно и телесно напряжённо, оставаясь в точном положении свидетеля</anomalyContainmentBreach.tones.1>
+  <anomalyCreepJoinerOutcome.label>Видимые исходы странных прибытий</anomalyCreepJoinerOutcome.label>
+  <anomalyCreepJoinerOutcome.instruction>странный прибывший достиг одного точно видимого игроку исхода; опиши только переданные раскрытие, отказ, агрессию или уход и подтверждённую роль автора, не раскрывай скрытый недостаток, заражение, носителя, таймер, будущую трансформацию или ненаблюдаемый мотив</anomalyCreepJoinerOutcome.instruction>
+  <anomalyCreepJoinerOutcome.tone>с потрясённым осознанием и строгой неизвестностью всего, что ещё скрыто</anomalyCreepJoinerOutcome.tone>
+  <anomalyCreepJoinerOutcome.tones.0>лично и тревожно, останавливаясь точно на границе видимого знания</anomalyCreepJoinerOutcome.tones.0>
+  <anomalyCreepJoinerOutcome.tones.1>напряжённо и наблюдательно, не превращая подозрение в тайную уверенность</anomalyCreepJoinerOutcome.tones.1>
+  <anomalyGhoulTransformation.label>Превращения в гуля</anomalyGhoulTransformation.label>
+  <anomalyGhoulTransformation.instruction>завершённое подтверждённое превращение не-гуля в гуля; чётко разделяй точки зрения субъекта и хирурга, опиши необратимый телесный выбор по переданным фактам момента события и не выдумывай механику процедуры, будущие способности, моральную оценку или другое превращение</anomalyGhoulTransformation.instruction>
+  <anomalyGhoulTransformation.tone>с необратимым телесным последствием и последним ясным ощущением уходящей человеческой жизни</anomalyGhoulTransformation.tone>
+  <anomalyGhoulTransformation.tones.0>телесно и мрачно, опираясь на точные роли субъекта и хирурга</anomalyGhoulTransformation.tones.0>
+  <anomalyGhoulTransformation.tones.1>лично и окончательно, без объяснения игровых механизмов перемены</anomalyGhoulTransformation.tones.1>
+  <anomalyVoidOutcome.label>Ответ пустоте</anomalyVoidOutcome.label>
+  <anomalyVoidOutcome.instruction>точный участник совершил подтверждённый окончательный выбор поселения перед пустотой; сохрани, была ли связь принята или разрушена, и переданные видимые последствия, не выдумывай другую ветвь, скрытую механику, реплики или действия другого поселенца</anomalyVoidOutcome.instruction>
+  <anomalyVoidOutcome.tone>с окончательным выбором, накопленным ужасом и тяжестью ответа, который нельзя отозвать</anomalyVoidOutcome.tone>
+  <anomalyVoidOutcome.tones.0>окончательно и ясно, вокруг точного совершённого выбора участника</anomalyVoidOutcome.tones.0>
+  <anomalyVoidOutcome.tones.1>космически, но лично, не выходя за переданный видимый исход</anomalyVoidOutcome.tones.1>
 </LanguageData>

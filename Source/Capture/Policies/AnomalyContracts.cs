@@ -18,6 +18,20 @@ namespace PawnDiary.Capture
         public const string VoidOutcome = "PawnDiary_VoidOutcome";
     }
 
+    /// <summary>Frozen additive save keys for A1 study history and monolith enrichment.</summary>
+    internal static class AnomalySaveKeys
+    {
+        public const string SupportSchemaVersion = "anomalySupportSchemaVersion";
+        public const string FirstStudyBreakthroughObserved =
+            "anomalyFirstStudyBreakthroughObserved";
+        public const string CompletedStudyDefNames = "anomalyCompletedStudyDefNames";
+        public const string PromotedStudyMilestoneKeys = "anomalyPromotedStudyMilestoneKeys";
+        public const string MonolithBaselineLevelDefName =
+            "anomalyMonolithBaselineLevelDefName";
+        public const string LastMonolithKnowledgeSnapshot =
+            "anomalyLastMonolithKnowledgeSnapshot";
+    }
+
     /// <summary>Stable structured context keys; these schema labels deliberately remain English.</summary>
     internal static class AnomalyContextKeys
     {
@@ -131,6 +145,45 @@ namespace PawnDiary.Capture
         public bool firstBreakthroughObserved;
         public readonly List<string> completedStudyDefNames = new List<string>();
         public readonly List<string> observedPromotionKeys = new List<string>();
+    }
+
+    /// <summary>
+    /// Saved, event-time monolith-study enrichment. It contains no live monolith, comp, Pawn, Def,
+    /// letter, or localized prose; the later activation adapter may resolve the researcher only for
+    /// bounded contextual naming.
+    /// </summary>
+    internal sealed class AnomalyMonolithKnowledgeSnapshot
+    {
+        public string researcherPawnId = string.Empty;
+        public string studyStage = string.Empty;
+        public int tick = -1;
+        public int reachedProgress;
+        public bool becameActivatable;
+        public bool consumed;
+    }
+
+    /// <summary>Detached aggregate of the six additive A1.1 component fields.</summary>
+    internal sealed class AnomalyPersistentStateSnapshot
+    {
+        public int schemaVersion;
+        public bool firstStudyBreakthroughObserved;
+        public List<string> completedStudyDefNames = new List<string>();
+        public List<string> promotedStudyMilestoneKeys = new List<string>();
+        public string monolithBaselineLevelDefName = string.Empty;
+        public AnomalyMonolithKnowledgeSnapshot lastMonolithKnowledgeSnapshot;
+    }
+
+    /// <summary>
+    /// Best-effort facts captured once when a pre-A1 save first loads with Anomaly active. A false
+    /// <c>historyComplete</c> deliberately suppresses an unprovable future "first" claim.
+    /// </summary>
+    internal sealed class AnomalyLegacyBaselineFacts
+    {
+        public bool anomalyAvailable;
+        public bool historyComplete;
+        public bool anyCommittedStudyProgress;
+        public string currentMonolithLevelDefName = string.Empty;
+        public List<string> completedStudyDefNames = new List<string>();
     }
 
     /// <summary>One XML-owned exact study promotion expressed without an optional Def reference.</summary>

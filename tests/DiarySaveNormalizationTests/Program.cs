@@ -11,7 +11,9 @@
 // Plan 6 Step 4 chose Option B (smoke runbook) for those, because forcing RimWorld Scribe into a
 // pure test project would break the no-RimWorld convention every other tests/ project follows.
 using System;
+using System.Collections.Generic;
 using PawnDiary;
+using PawnDiary.Capture;
 
 namespace DiarySaveNormalizationTests
 {
@@ -51,6 +53,9 @@ namespace DiarySaveNormalizationTests
             // Defensive clamps + year extraction (used by both DiaryEvent and ArchivedDiaryEntry).
             TestStaggeredIntensityClampedToZeroThroughFour();
             TestYearExtractedAsLastDigitRunOfDateString();
+            TestAnomalySaveKeysAndNewGameState();
+            TestAnomalyStateNormalization();
+            TestAnomalyLegacyBaseline();
 
             Console.WriteLine("DiarySaveNormalizationTests passed " + assertions + " assertions.");
             return 0;
@@ -343,6 +348,166 @@ namespace DiarySaveNormalizationTests
                 DiarySaveNormalization.UnknownYear, DiarySaveNormalization.ExtractYear("Late Spring"));
             AssertEqual("whitespace date -> unknown year sentinel",
                 DiarySaveNormalization.UnknownYear, DiarySaveNormalization.ExtractYear("   "));
+        }
+
+        private static void TestAnomalySaveKeysAndNewGameState()
+        {
+            AssertEqual("Anomaly schema key", "anomalySupportSchemaVersion",
+                AnomalySaveKeys.SupportSchemaVersion);
+            AssertEqual("Anomaly first-study key", "anomalyFirstStudyBreakthroughObserved",
+                AnomalySaveKeys.FirstStudyBreakthroughObserved);
+            AssertEqual("Anomaly completed-study key", "anomalyCompletedStudyDefNames",
+                AnomalySaveKeys.CompletedStudyDefNames);
+            AssertEqual("Anomaly promotion key", "anomalyPromotedStudyMilestoneKeys",
+                AnomalySaveKeys.PromotedStudyMilestoneKeys);
+            AssertEqual("Anomaly monolith baseline key", "anomalyMonolithBaselineLevelDefName",
+                AnomalySaveKeys.MonolithBaselineLevelDefName);
+            AssertEqual("Anomaly monolith snapshot key", "anomalyLastMonolithKnowledgeSnapshot",
+                AnomalySaveKeys.LastMonolithKnowledgeSnapshot);
+
+            AnomalyPersistentStateSnapshot fresh = AnomalyPersistencePolicy.NewGame(" Stirring ");
+            AssertEqual("new game uses current Anomaly schema",
+                AnomalyPersistencePolicy.CurrentSchemaVersion, fresh.schemaVersion);
+            AssertTrue("new game has trustworthy unobserved first",
+                !fresh.firstStudyBreakthroughObserved);
+            AssertEqual("new game trims current monolith level", "Stirring",
+                fresh.monolithBaselineLevelDefName);
+            AssertEqual("new game has no completed kinds", 0, fresh.completedStudyDefNames.Count);
+            AssertTrue("new game invents no monolith knowledge", fresh.lastMonolithKnowledgeSnapshot == null);
+        }
+
+        private static void TestAnomalyStateNormalization()
+        {
+            AnomalyPersistentStateSnapshot raw = new AnomalyPersistentStateSnapshot
+            {
+                schemaVersion = -4,
+                firstStudyBreakthroughObserved = true,
+                completedStudyDefNames = new List<string>
+                {
+                    " Entity_B ", "Entity_A", "Entity_A", "bad|entity", "bad=entity", null
+                },
+                promotedStudyMilestoneKeys = new List<string>
+                {
+                    " Entity_B|20|late_notes ", "Entity_A|10|early_notes",
+                    "Entity_A|10|early_notes", "bad", "Entity_A|0|zero"
+                },
+                monolithBaselineLevelDefName = " Waking ",
+                lastMonolithKnowledgeSnapshot = new AnomalyMonolithKnowledgeSnapshot
+                {
+                    researcherPawnId = " Pawn_A ",
+                    studyStage = AnomalyStudyStageTokens.Promoted,
+                    tick = 100,
+                    reachedProgress = 40,
+                    becameActivatable = true
+                }
+            };
+
+            AnomalyPersistentStateSnapshot normalized = AnomalyPersistencePolicy.Normalize(raw);
+            AssertEqual("negative Anomaly schema normalizes to legacy", 0, normalized.schemaVersion);
+            AssertTrue("Anomaly first-history flag survives", normalized.firstStudyBreakthroughObserved);
+            AssertEqual("Anomaly completed kinds deduplicate and filter", 2,
+                normalized.completedStudyDefNames.Count);
+            AssertEqual("Anomaly completed kinds sort deterministically", "Entity_A",
+                normalized.completedStudyDefNames[0]);
+            AssertEqual("Anomaly promotion keys deduplicate and filter", 2,
+                normalized.promotedStudyMilestoneKeys.Count);
+            AssertEqual("Anomaly baseline level trims", "Waking",
+                normalized.monolithBaselineLevelDefName);
+            AssertTrue("Anomaly monolith snapshot detaches", !object.ReferenceEquals(
+                raw.lastMonolithKnowledgeSnapshot, normalized.lastMonolithKnowledgeSnapshot));
+            AssertEqual("Anomaly researcher ID trims", "Pawn_A",
+                normalized.lastMonolithKnowledgeSnapshot.researcherPawnId);
+            AssertEqual("Anomaly monolith progress survives", 40,
+                normalized.lastMonolithKnowledgeSnapshot.reachedProgress);
+
+            raw.lastMonolithKnowledgeSnapshot.studyStage = "hidden_downside";
+            raw.lastMonolithKnowledgeSnapshot.becameActivatable = false;
+            AssertTrue("unknown monolith stage without activation proof drops",
+                AnomalyPersistencePolicy.Normalize(raw).lastMonolithKnowledgeSnapshot == null);
+            raw.lastMonolithKnowledgeSnapshot.tick = -1;
+            raw.lastMonolithKnowledgeSnapshot.becameActivatable = true;
+            AssertTrue("negative monolith tick drops",
+                AnomalyPersistencePolicy.Normalize(raw).lastMonolithKnowledgeSnapshot == null);
+
+            AnomalyPersistentStateSnapshot future = new AnomalyPersistentStateSnapshot
+            {
+                schemaVersion = 7
+            };
+            AssertEqual("future Anomaly schema is not downgraded", 7,
+                AnomalyPersistencePolicy.Normalize(future).schemaVersion);
+        }
+
+        private static void TestAnomalyLegacyBaseline()
+        {
+            AnomalyPersistentStateSnapshot legacy = new AnomalyPersistentStateSnapshot
+            {
+                completedStudyDefNames = new List<string> { "Entity_Existing" },
+                lastMonolithKnowledgeSnapshot = new AnomalyMonolithKnowledgeSnapshot
+                {
+                    researcherPawnId = "Pawn_Stale",
+                    studyStage = AnomalyStudyStageTokens.FirstBreakthrough,
+                    tick = 20,
+                    reachedProgress = 10
+                }
+            };
+            AnomalyPersistentStateSnapshot unavailable = AnomalyPersistencePolicy.BaselineLegacy(
+                legacy,
+                new AnomalyLegacyBaselineFacts { anomalyAvailable = false });
+            AssertEqual("Anomaly-inactive legacy save remains pending", 0, unavailable.schemaVersion);
+            AssertTrue("Anomaly-inactive legacy save does not invent first history",
+                !unavailable.firstStudyBreakthroughObserved);
+
+            AnomalyPersistentStateSnapshot baseline = AnomalyPersistencePolicy.BaselineLegacy(
+                legacy,
+                new AnomalyLegacyBaselineFacts
+                {
+                    anomalyAvailable = true,
+                    historyComplete = false,
+                    anyCommittedStudyProgress = false,
+                    currentMonolithLevelDefName = "VoidAwakened",
+                    completedStudyDefNames = new List<string>
+                    {
+                        "Entity_New", "Entity_Existing", "bad|entity"
+                    }
+                });
+            AssertEqual("active legacy baseline advances schema",
+                AnomalyPersistencePolicy.CurrentSchemaVersion, baseline.schemaVersion);
+            AssertTrue("incomplete old-save history suppresses false first",
+                baseline.firstStudyBreakthroughObserved);
+            AssertEqual("old-save completed kinds merge and deduplicate", 2,
+                baseline.completedStudyDefNames.Count);
+            AssertEqual("old-save monolith level baselines", "VoidAwakened",
+                baseline.monolithBaselineLevelDefName);
+            AssertTrue("old-save baseline discards unprovable knowledge ownership",
+                baseline.lastMonolithKnowledgeSnapshot == null);
+
+            AnomalyPersistentStateSnapshot completeEmpty = AnomalyPersistencePolicy.BaselineLegacy(
+                new AnomalyPersistentStateSnapshot(),
+                new AnomalyLegacyBaselineFacts
+                {
+                    anomalyAvailable = true,
+                    historyComplete = true,
+                    anyCommittedStudyProgress = false
+                });
+            AssertTrue("provably empty legacy history may retain a future genuine first",
+                !completeEmpty.firstStudyBreakthroughObserved);
+
+            AnomalyPersistentStateSnapshot current = new AnomalyPersistentStateSnapshot
+            {
+                schemaVersion = AnomalyPersistencePolicy.CurrentSchemaVersion
+            };
+            AnomalyPersistentStateSnapshot unchanged = AnomalyPersistencePolicy.BaselineLegacy(
+                current,
+                new AnomalyLegacyBaselineFacts
+                {
+                    anomalyAvailable = true,
+                    historyComplete = false,
+                    currentMonolithLevelDefName = "Embraced"
+                });
+            AssertTrue("current schema does not rebaseline or manufacture first",
+                !unchanged.firstStudyBreakthroughObserved);
+            AssertEqual("current schema keeps its existing monolith baseline", string.Empty,
+                unchanged.monolithBaselineLevelDefName);
         }
 
         // ------------------------------------------------------------------------------------------

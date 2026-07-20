@@ -1,5 +1,25 @@
 # Changelog
 
+- **2026-07-20 — Implemented Master Wave 7 / Anomaly Phase A1.1 catalog and persistence
+  foundation.** Registered the common fail-closed `AnomalyEvent` catalog envelope for the five frozen
+  study, containment, visible creepjoiner, ghoul, and void kind/Def pairs. It requires verified
+  player-visible source ownership, enabled policy, a safe stable source key, non-replay, and one or
+  two distinct eligible writers; no live source is registered yet, so this route cannot create a page.
+  Added six additive study/monolith save keys, bounded pure normalization, trustworthy new-game state,
+  and a conservative pre-A1 loaded-map baseline which retains completed study kinds but treats
+  incomplete history as already observed rather than inventing a new “first.” All live Anomaly reads
+  are package-gated and the package-absent migration remains pending for a later eligible load.
+
+  Added a bounded unsaved consume-once study/Tale claim cache with constructor/new-game/load/finalize
+  cleanup, plus an explicit zero-candidate N3-A provider seam. Five exact package-gated XML
+  groups/settings at orders 61–65 ship with English/Russian DefInjected guidance and Keyed fallbacks;
+  their classifier requires an exact match and never falls through to the ordinary Interaction
+  catch-all. No Harmony registration, signal, page emission, tick work, hidden state, or paid-DLC Def
+  reference was added. Focused suites pass 320 Anomaly, 707 catalog, 79 save-normalization, and 135
+  Narrative assertions. Runtime and 292-test RimTest assemblies rebuild; compiled smoke coverage pins
+  the five Def/package routes and exact study-comp API, while the new in-game/no-DLC execution remains
+  pending.
+
 - **2026-07-20 — Hardened Anomaly Phase A1.0 after adversarial review.** Centralized policy-Def
   normalization in an assembly-free boundary that preserves switches, applies conservative numeric
   fallbacks, trims/de-duplicates promotion rows, and caps them at 128. The loaded adapter deliberately

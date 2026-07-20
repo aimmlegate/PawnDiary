@@ -366,6 +366,34 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>
+    /// Reserved plain input for the N3-A Anomaly provider. A1.1 intentionally carries only universal
+    /// availability/POV authorization: later source phases may add already-visible chapter, pressure,
+    /// or identity facts, but hidden downside/infection/tracker fields have no place in this contract.
+    /// </summary>
+    internal sealed class AnomalyNarrativeSnapshot
+    {
+        public bool providerAvailable;
+        public string povPawnId = string.Empty;
+        public bool pawnCanKnow;
+        public bool hasVerifiedPovConnection;
+    }
+
+    /// <summary>Zero-candidate N3-A skeleton; A1.2/A1.3/A2 extend it only with visible facts.</summary>
+    internal static class AnomalyNarrativeProvider
+    {
+        /// <summary>
+        /// Returns no candidate in A1.1 even for a fully authorized snapshot. This makes the fixed
+        /// provider wiring testable without allowing persistence alone to leak or invent live state.
+        /// </summary>
+        public static List<NarrativeLensCandidate> Build(
+            List<NarrativeEvidence> evidence,
+            AnomalyNarrativeSnapshot snapshot)
+        {
+            return new List<NarrativeLensCandidate>();
+        }
+    }
+
     /// <summary>Stable Odyssey journey phases saved into Narrative Continuity references.</summary>
     internal static class OdysseyNarrativePhaseTokens
     {
@@ -687,8 +715,9 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Fixed provider list. Royalty, Biotech, and Odyssey have guarded implementations; remaining
-    /// empty calls are intentional stubs, and any absent DLC/provider is the ordinary zero-candidate path.
+    /// Fixed provider list. Royalty, Biotech, and Odyssey have guarded implementations; Anomaly has
+    /// an explicit A1.1 zero-candidate skeleton; remaining empty calls are intentional stubs. Any
+    /// absent DLC/provider is the ordinary zero-candidate path.
     /// </summary>
     internal static class NarrativeProviderOrchestrator
     {
@@ -697,6 +726,7 @@ namespace PawnDiary
             List<NarrativeLensCandidate> coreCandidates,
             RoyaltyNarrativeSnapshot royalty,
             BiotechNarrativeSnapshot biotech,
+            AnomalyNarrativeSnapshot anomaly,
             OdysseyNarrativeSnapshot odyssey)
         {
             List<NarrativeLensCandidate> result = new List<NarrativeLensCandidate>();
@@ -704,13 +734,12 @@ namespace PawnDiary
             Add(result, RoyaltyNarrativeProvider.Build(evidence, royalty));
             Add(result, IdeologyCandidates());
             Add(result, BiotechNarrativeProvider.Build(evidence, biotech));
-            Add(result, AnomalyCandidates());
+            Add(result, AnomalyNarrativeProvider.Build(evidence, anomaly));
             Add(result, OdysseyNarrativeProvider.Build(evidence, odyssey));
             return result;
         }
 
         private static List<NarrativeLensCandidate> IdeologyCandidates() => new List<NarrativeLensCandidate>();
-        private static List<NarrativeLensCandidate> AnomalyCandidates() => new List<NarrativeLensCandidate>();
         private static void Add(List<NarrativeLensCandidate> destination, List<NarrativeLensCandidate> source)
         {
             if (source == null) return;

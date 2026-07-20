@@ -143,6 +143,25 @@ passed that fixture among all 46 tests which do not require a colony; the other 
 rejected the absent loaded game, so a full loaded-colony run remains pending. A1.0 adds no hook,
 catalog route, page, save field, or live Anomaly state to exercise.
 
+Master Wave 7 / Anomaly A1.1 raises `DiaryAnomalyPolicyTests` to 320 assertions with shipped-XML
+group/order/package/localization contracts and bounded cache registration, exact matching,
+consume-once, cap, expiry, and reset cases. `DiaryCapturePolicyTests` reaches 707 assertions by
+freezing all five kind/Def mappings, solo/pair dispatch, every final fail-closed gate, dedup identity,
+catalog registration, and removal of the old enum migration sentinel. `DiarySaveNormalizationTests`
+reaches 79 assertions for the exact six keys, new-game state, malformed/bounded history and monolith
+snapshot normalization, future-version preservation, package-absent no-op, and conservative
+incomplete old-save baseline. `NarrativeContinuityTests` reaches 135 assertions and proves that the
+explicit N3-A provider and fixed orchestrator still return zero candidates even for a nominally
+authorized snapshot.
+
+`PawnDiaryDefSmokeTests.AnomalyEventGroupsAreLoadedAndRouteOnlyExactKinds` is a new main-menu-safe
+test: all five groups must load, carry the one official package gate, agree with `ModsConfig`, route
+their exact synthetic Def only when Anomaly is active, and reject an unknown name without reaching
+the Interaction fallback. The exact official-DLC catalog fixture now includes those five rows, while
+the fragile-signature fixture pins `CompStudyUnlocks.Progress:int` and `Completed:bool`. The compiled
+RimTest assembly therefore contains 292 tests. Core and RimTest builds pass; the new in-game/no-DLC
+execution remains pending and must not be reported as a passed runtime profile until recorded.
+
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing
@@ -731,7 +750,7 @@ groups and event windows; exact classifier keys for specialized ritual families 
 `PsychicRitual` and gravship-launch token classifiers; `ModsConfig`/package-helper/settings-visibility
 agreement; fragile
 Biotech growth/birth,
-Anomaly monolith/corpse, and Ideology/Anomaly ritual signatures; and optional-adapter capability
+Anomaly monolith/corpse/study-comp, and Ideology/Anomaly ritual signatures; and optional-adapter capability
 ready/not-ready fail-open behavior. A new official package-gated Def must update that exact catalog
 fixture in the same change. True disable/re-enable save transitions still require separate game
 launches and remain in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.

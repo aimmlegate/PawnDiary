@@ -1,7 +1,7 @@
 # Pawn Diary — Anomaly Support Implementation Plan
 
-Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0 implemented as the first Master Wave 7
-slice, 2026-07-20; A1.1–A3 remain implementation-ready plans. The
+Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.1 implemented as the first two Master
+Wave 7 slices, 2026-07-20; A1.2–A3 remain implementation-ready plans. The
 RimWorld 1.6 feasibility spike is complete for study-note milestones, containment escapes, visible
 creepjoiner outcomes, ghoul infusion, and both terminal void choices. Production now includes the A0
 exact psychic-ritual routing and monolith activation chapters described below.
@@ -1468,6 +1468,23 @@ page.
 **Exit gate:** exhaustive pure tests pass without RimWorld assemblies.
 
 ### Phase A1.1 — Catalog route and persistence
+
+> **Implementation status (2026-07-20): code-complete; in-game no-DLC execution pending.** The
+> shared `AnomalyEvent` envelope/spec is registered and rejects unknown kind/Def pairs, unverified
+> sources, hidden/replayed events, malformed identity, and missing eligible writers. Six additive
+> save keys own normalized study history and one optional monolith-knowledge snapshot. New games
+> start from trustworthy empty history; pre-A1 saves with Anomaly active scan loaded study comps once
+> and deliberately mark incomplete history as already observed, preferring silence over a false
+> first. The bounded consume-once study/Tale cache is unsaved and clears at every game/load/finalize
+> boundary.
+>
+> Five exact package-gated XML groups/settings plus English/Russian DefInjected and Keyed fallbacks
+> are present, but required-match classification cannot fall through to the Interaction catch-all.
+> N3-A is wired as an explicit zero-candidate provider. There is still no Anomaly Harmony
+> registration, signal, page emission, tick work, or hidden-state projection. Focused suites pass
+> 320 Anomaly, 707 catalog, 79 save-normalization, and 135 Narrative assertions; the runtime and
+> 292-test RimTest assemblies build. The compiled Def/package/signature fixtures are ready, but the
+> new main-menu/no-DLC RimTest has not yet been executed in RimWorld.
 
 - Add/register `AnomalyEvent` catalog type.
 - Add saved study/monolith state and normalization.

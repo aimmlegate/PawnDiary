@@ -23,6 +23,7 @@ namespace NarrativeContinuityTests
             TestPersistenceCapsAndPromptFormatting();
             TestRoyaltyProviderApplicabilityAndBounds();
             TestBiotechProviderApplicabilityAndTruthGates();
+            TestAnomalyProviderSkeletonFailsClosed();
             TestOdysseyProviderEvidenceAndCrossDlcGates();
             TestReflectionPriorityAndDeferredConsumption();
             Console.WriteLine("NarrativeContinuityTests passed " + assertions + " assertions.");
@@ -183,10 +184,36 @@ namespace NarrativeContinuityTests
                     NarrativeFacetTokens.IdentityTransition) },
                 null,
                 snapshot,
+                null,
                 null);
             AssertEqual("fixed provider list preserves core-first deterministic order", "core-first",
                 fixedOrder[0].candidateKey);
             AssertEqual("empty future provider stubs add no candidates", 3, fixedOrder.Count);
+        }
+
+        private static void TestAnomalyProviderSkeletonFailsClosed()
+        {
+            AnomalyNarrativeSnapshot authorized = new AnomalyNarrativeSnapshot
+            {
+                providerAvailable = true,
+                povPawnId = "pawn-1",
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true
+            };
+            AssertEqual("A1.1 Anomaly provider remains empty with authorized evidence", 0,
+                AnomalyNarrativeProvider.Build(
+                    new List<NarrativeEvidence> { Evidence() }, authorized).Count);
+            AssertEqual("A1.1 Anomaly provider remains empty for null input", 0,
+                AnomalyNarrativeProvider.Build(null, null).Count);
+
+            List<NarrativeLensCandidate> collected = NarrativeProviderOrchestrator.Collect(
+                new List<NarrativeEvidence> { Evidence() },
+                new List<NarrativeLensCandidate>(),
+                null,
+                null,
+                authorized,
+                null);
+            AssertEqual("fixed provider list does not invent an Anomaly lens", 0, collected.Count);
         }
 
         private static void TestRoyaltyProviderApplicabilityAndBounds()
