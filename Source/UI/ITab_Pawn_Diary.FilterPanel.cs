@@ -37,8 +37,28 @@ namespace PawnDiary
         private string filterPanelPawnId;
         private bool filterFavoritesOnly;
         private readonly HashSet<string> filterActiveTags = new HashSet<string>();
-        // Reusable buffer for the per-year distinct tag labels, rebuilt in place each draw.
-        private readonly List<string> filterTagLabelsBuffer = new List<string>();
+        // Reusable buffer for the per-year distinct tags, rebuilt in place each draw. Each row carries
+        // the group label plus its color cue/importance so a filter chip can be tinted exactly like the
+        // matching group chip on the entry cards.
+        private readonly List<FilterTagInfo> filterTagInfoBuffer = new List<FilterTagInfo>();
+        // Reusable scratch for the tag-chip flow layout (relative rects), cleared and refilled each
+        // draw so the per-frame panel render allocates nothing once its capacity settles.
+        private readonly List<Rect> filterTagChipLayoutBuffer = new List<Rect>();
+
+        // One distinct tag shown as a filter chip: its display label and the accent inputs (color cue +
+        // importance) taken from the first entry that used it this year.
+        private struct FilterTagInfo
+        {
+            public string label;
+            public string colorCue;
+            public bool important;
+        }
+
+        // Filter tag chip geometry (mirrors the entry-card group chip; flows/wraps to the panel width).
+        private const float FilterTagChipHeight = 22f;
+        private const float FilterTagChipHPadding = 9f;
+        private const float FilterTagChipGap = 6f;
+        private const float FilterTagChipRowGap = 6f;
 
         private static float FilterPanelWidth => UiStyle.filterPanelWidth;
         private static float FilterPanelGap => UiStyle.filterPanelGap;
@@ -93,7 +113,10 @@ namespace PawnDiary
             }
 
             ResetFilterStateOnPawnChange(pawn);
-            Widgets.DrawMenuSection(panelRect);
+            // No DrawMenuSection here on purpose: the inspect tab already paints a window background
+            // behind the whole tab, so an extra inset box only boxed the controls in and its border
+            // crowded RimWorld's inspect-pane close button at the top-right. The panel now floats on
+            // the shared background; the journal cards still supply the visual structure on the left.
             Rect inner = panelRect.ContractedBy(FilterPanelPadding);
             if (inner.width <= 0f || inner.height <= 0f)
             {
@@ -176,8 +199,8 @@ namespace PawnDiary
 
             listing.Gap(6f);
             DrawFilterSectionHeader(listing, "PawnDiary.Tab.FilterTagsHeader".Translate());
-            CollectTagLabels(orderedForTags, filterTagLabelsBuffer);
-            if (filterTagLabelsBuffer.Count == 0)
+            CollectTagInfo(orderedForTags);
+            if (filterTagInfoBuffer.Count == 0)
             {
                 Color oldColor = GUI.color;
                 GUI.color = UiStyle.ModelNameColor;
@@ -186,24 +209,10 @@ namespace PawnDiary
             }
             else
             {
-                for (int i = 0; i < filterTagLabelsBuffer.Count; i++)
-                {
-                    string tag = filterTagLabelsBuffer[i];
-                    bool active = filterActiveTags.Contains(tag);
-                    bool before = active;
-                    listing.CheckboxLabeled(tag, ref active);
-                    if (active != before)
-                    {
-                        if (active)
-                        {
-                            filterActiveTags.Add(tag);
-                        }
-                        else
-                        {
-                            filterActiveTags.Remove(tag);
-                        }
-                    }
-                }
+                // Tags render as color-coded chips matching the group chip on the entry cards, instead
+                // of a plain checkbox list. Clicking a chip toggles it; active chips read at full
+                // strength like the card chip, inactive ones are dimmed.
+                DrawFilterTagChips(listing);
             }
 
             listing.Gap(8f);
@@ -218,11 +227,11 @@ namespace PawnDiary
             }
 
             // Count only tags that are actually shown for the current year, so the Apply badge matches
-            // the visible checked boxes rather than tags left active from a different year.
+            // the visible active chips rather than tags left active from a different year.
             int visibleActiveTags = 0;
-            for (int i = 0; i < filterTagLabelsBuffer.Count; i++)
+            for (int i = 0; i < filterTagInfoBuffer.Count; i++)
             {
-                if (filterActiveTags.Contains(filterTagLabelsBuffer[i]))
+                if (filterActiveTags.Contains(filterTagInfoBuffer[i].label))
                 {
                     visibleActiveTags++;
                 }
@@ -281,27 +290,196 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Rebuilds <paramref name="target"/> with the distinct, non-empty entry group labels present in
-        /// the current year's ordered cards (stable sorted, capped). This is the stub tag vocabulary.
+        /// Rebuilds <see cref="filterTagInfoBuffer"/> with the distinct, non-empty entry group tags in
+        /// the current year's ordered cards (stable sorted by label, capped). Each row keeps the color
+        /// cue/importance of the first entry that used the tag so its chip matches the card group chip.
         /// </summary>
-        private static void CollectTagLabels(List<DiaryEntryView> ordered, List<string> target)
+        private void CollectTagInfo(List<DiaryEntryView> ordered)
         {
-            target.Clear();
+            filterTagInfoBuffer.Clear();
             if (ordered == null)
             {
                 return;
             }
 
-            for (int i = 0; i < ordered.Count && target.Count < FilterMaxTagRows; i++)
+            for (int i = 0; i < ordered.Count && filterTagInfoBuffer.Count < FilterMaxTagRows; i++)
             {
-                string label = ordered[i]?.GroupLabel;
-                if (!string.IsNullOrWhiteSpace(label) && !target.Contains(label))
+                DiaryEntryView entry = ordered[i];
+                string label = entry?.GroupLabel;
+                if (string.IsNullOrWhiteSpace(label) || ContainsTagLabel(label))
                 {
-                    target.Add(label);
+                    continue;
+                }
+
+                filterTagInfoBuffer.Add(new FilterTagInfo
+                {
+                    label = label,
+                    colorCue = entry.ColorCue,
+                    important = entry.Important,
+                });
+            }
+
+            filterTagInfoBuffer.Sort((left, right) => string.Compare(left.label, right.label, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private bool ContainsTagLabel(string label)
+        {
+            for (int i = 0; i < filterTagInfoBuffer.Count; i++)
+            {
+                if (string.Equals(filterTagInfoBuffer[i].label, label, StringComparison.Ordinal))
+                {
+                    return true;
                 }
             }
 
-            target.Sort(StringComparer.OrdinalIgnoreCase);
+            return false;
+        }
+
+        /// <summary>
+        /// Flows the collected tag chips across the panel width, wrapping to new rows, and reserves the
+        /// matching height in <paramref name="listing"/>. Clicking a chip toggles its active state.
+        /// </summary>
+        private void DrawFilterTagChips(Listing_Standard listing)
+        {
+            int count = filterTagInfoBuffer.Count;
+            float maxWidth = listing.ColumnWidth;
+            if (count == 0 || maxWidth <= 0f)
+            {
+                return;
+            }
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+
+            // Single layout pass computes each chip's position relative to (0,0). Reserving the summed
+            // height afterwards keeps the drawn chips and the Listing's advance perfectly in sync.
+            filterTagChipLayoutBuffer.Clear();
+            float x = 0f;
+            float y = 0f;
+            for (int i = 0; i < count; i++)
+            {
+                float chipWidth = Mathf.Min(maxWidth, FilterTagChipWidth(filterTagInfoBuffer[i].label));
+                if (x > 0f && x + FilterTagChipGap + chipWidth > maxWidth)
+                {
+                    x = 0f;
+                    y += FilterTagChipHeight + FilterTagChipRowGap;
+                }
+                else if (x > 0f)
+                {
+                    x += FilterTagChipGap;
+                }
+
+                filterTagChipLayoutBuffer.Add(new Rect(x, y, chipWidth, FilterTagChipHeight));
+                x += chipWidth;
+            }
+
+            Rect block = listing.GetRect(y + FilterTagChipHeight);
+            for (int i = 0; i < count; i++)
+            {
+                FilterTagInfo info = filterTagInfoBuffer[i];
+                Rect rel = filterTagChipLayoutBuffer[i];
+                Rect chipRect = new Rect(block.x + rel.x, block.y + rel.y, rel.width, rel.height);
+                Color accent = UiStyle.ColorForCue(info.colorCue, info.important);
+                bool active = filterActiveTags.Contains(info.label);
+                if (DrawFilterTagChip(chipRect, info.label, accent, active))
+                {
+                    if (active)
+                    {
+                        filterActiveTags.Remove(info.label);
+                    }
+                    else
+                    {
+                        filterActiveTags.Add(info.label);
+                    }
+                }
+            }
+
+            Text.Font = oldFont;
+        }
+
+        /// <summary>
+        /// Measures a chip's width for the current (Tiny) font: the label plus symmetric padding.
+        /// </summary>
+        private static float FilterTagChipWidth(string label)
+        {
+            return Text.CalcSize(label ?? string.Empty).x + FilterTagChipHPadding * 2f;
+        }
+
+        /// <summary>
+        /// Draws one tag chip in the same visual language as the entry-card group chip
+        /// (<see cref="DrawGroupLabel"/>): a filled, outlined box tinted by the tag accent with the
+        /// label centered. Active chips read at full strength; inactive chips are dimmed. Returns true
+        /// when clicked.
+        /// </summary>
+        private static bool DrawFilterTagChip(Rect rect, string label, Color accent, bool active)
+        {
+            float fillMul = active ? 0.28f : 0.14f;
+            float fillAlpha = active ? 0.85f : 0.45f;
+            float outlineAlpha = active ? 0.92f : 0.42f;
+            Widgets.DrawBoxSolidWithOutline(
+                rect,
+                new Color(accent.r * fillMul, accent.g * fillMul, accent.b * fillMul, fillAlpha),
+                new Color(accent.r, accent.g, accent.b, outlineAlpha),
+                1);
+            Widgets.DrawHighlightIfMouseover(rect);
+
+            TextAnchor oldAnchor = Text.Anchor;
+            Color oldColor = GUI.color;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Color textColor = Color.Lerp(accent, Color.white, active ? 0.6f : 0.35f);
+            textColor.a = active ? 1f : 0.82f;
+            GUI.color = textColor;
+            Widgets.Label(new Rect(rect.x + 4f, rect.y, Mathf.Max(0f, rect.width - 8f), rect.height), label);
+            GUI.color = oldColor;
+            Text.Anchor = oldAnchor;
+
+            return Widgets.ButtonInvisible(rect, false);
+        }
+
+        /// <summary>
+        /// Flips the persisted show/hide state of the right-hand filter panel and saves settings, so the
+        /// choice sticks across pawns and sessions like the other global UI preferences.
+        /// </summary>
+        private void ToggleFilterPanelVisible()
+        {
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            if (settings == null)
+            {
+                return;
+            }
+
+            settings.showDiaryFilterPanel = !settings.showDiaryFilterPanel;
+            WriteGlobalSettings();
+        }
+
+        /// <summary>
+        /// Draws the header list icon that shows/hides the filter panel and returns true when clicked.
+        /// The glyph is three stacked bars drawn from primitives (no bundled texture); it brightens on
+        /// hover and reads brighter while the panel is open so its state is obvious.
+        /// </summary>
+        private static bool DrawFilterPanelToggleIcon(Rect rect, bool panelOpen)
+        {
+            bool hover = Mouse.IsOver(rect);
+            float alpha = hover
+                ? WritingStyleIconHoverAlpha
+                : (panelOpen ? Mathf.Min(1f, WritingStyleIconAlpha + 0.22f) : WritingStyleIconAlpha);
+            Color barColor = new Color(1f, 1f, 1f, Mathf.Clamp01(alpha));
+
+            float barWidth = Mathf.Max(2f, rect.width - 6f);
+            float barHeight = Mathf.Max(2f, rect.height / 7f);
+            float gap = barHeight;
+            float totalHeight = barHeight * 3f + gap * 2f;
+            float barX = rect.x + (rect.width - barWidth) * 0.5f;
+            float firstY = rect.y + (rect.height - totalHeight) * 0.5f;
+            for (int i = 0; i < 3; i++)
+            {
+                Widgets.DrawBoxSolid(new Rect(barX, firstY + i * (barHeight + gap), barWidth, barHeight), barColor);
+            }
+
+            TooltipHandler.TipRegion(
+                rect,
+                (panelOpen ? "PawnDiary.Tab.HideFilterPanel" : "PawnDiary.Tab.ShowFilterPanel").Translate());
+            return Widgets.ButtonInvisible(rect, false);
         }
     }
 }

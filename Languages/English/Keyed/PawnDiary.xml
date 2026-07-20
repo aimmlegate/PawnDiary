@@ -253,6 +253,9 @@
   <PawnDiary.Tab.FilterApply>Apply ({0})</PawnDiary.Tab.FilterApply>
   <PawnDiary.Tab.FilterStubTip>Filtering is not wired up yet.</PawnDiary.Tab.FilterStubTip>
   <PawnDiary.Tab.FilterDevHeader>Dev tools</PawnDiary.Tab.FilterDevHeader>
+  <!-- Header toggle button that shows/hides the right-hand filter panel. -->
+  <PawnDiary.Tab.ShowFilterPanel>Show the filters panel.</PawnDiary.Tab.ShowFilterPanel>
+  <PawnDiary.Tab.HideFilterPanel>Hide the filters panel.</PawnDiary.Tab.HideFilterPanel>
   <PawnDiary.Tab.RegenerateEntryTip>Rewrite this page with the current model routing. Paired pages regenerate both POVs when available.</PawnDiary.Tab.RegenerateEntryTip>
   <PawnDiary.Tab.RegenerateEntryQueued>Queued page regeneration.</PawnDiary.Tab.RegenerateEntryQueued>
   <PawnDiary.Tab.RegenerateEntryUnavailable>This page cannot be regenerated right now.</PawnDiary.Tab.RegenerateEntryUnavailable>

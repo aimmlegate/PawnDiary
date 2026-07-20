@@ -143,7 +143,8 @@ namespace PawnDiary
         // ---- Quadrum/season dividers ----
         // A slim centered "Aprimay · Spring · 5500" header drawn between the year's entry cards where
         // the quadrum changes. Height is the label row; the top gap separates it from the card above.
-        public float quadrumDividerHeight = 24f;
+        // Height sized for the GameFont.Small divider label (up from the old Tiny-sized 24f row).
+        public float quadrumDividerHeight = 30f;
         public float quadrumDividerTopGap = 6f;
         public float quadrumDividerLineGap = 10f;
 
@@ -222,11 +223,13 @@ namespace PawnDiary
         public DiaryUiColorSpec mentalBreakHeaderRuleColor = Color(0.40f, 0.58f, 0.40f, 0.42f);
         public DiaryUiColorSpec accentHighlightColor = Color(1f, 1f, 1f, 0.10f);
         public DiaryUiColorSpec titleTextColor = Color(0.88f, 0.86f, 0.79f, 1f);
-        // Muted tone for the date, rendered in a smaller font than the title so the header reads as
-        // "quiet date · stronger title" like the mockup.
-        public DiaryUiColorSpec entryDateColor = Color(0.64f, 0.64f, 0.60f, 0.92f);
-        public DiaryUiColorSpec quadrumDividerLabelColor = Color(0.72f, 0.70f, 0.63f, 0.90f);
-        public DiaryUiColorSpec quadrumDividerLineColor = Color(0.56f, 0.53f, 0.47f, 0.30f);
+        // Date tone for the entry header. Kept a touch quieter than the title, but bright enough to
+        // read easily now that the date is drawn at the normal GameFont.Small size.
+        public DiaryUiColorSpec entryDateColor = Color(0.80f, 0.79f, 0.74f, 1f);
+        // Divider label/line brightened so the season/quadrum separator is clearly visible between
+        // month groups instead of fading into the background.
+        public DiaryUiColorSpec quadrumDividerLabelColor = Color(0.85f, 0.83f, 0.75f, 1f);
+        public DiaryUiColorSpec quadrumDividerLineColor = Color(0.60f, 0.57f, 0.50f, 0.45f);
         public DiaryUiColorSpec pendingTitlePrefixColor = Color(0.86f, 0.86f, 0.86f, 0.95f);
         public DiaryUiColorSpec pendingTitleDotBaseColor = Color(0.68f, 0.72f, 0.76f, 1f);
         public DiaryUiColorSpec writingPlaceholderLowColor = Color(0.58f, 0.72f, 0.66f, 1f);
@@ -299,9 +302,9 @@ namespace PawnDiary
         public Color MentalBreakHeaderRuleColor => mentalBreakHeaderRuleColor.ToColor(new Color(0.40f, 0.58f, 0.40f, 0.42f));
         public Color AccentHighlightColor => accentHighlightColor.ToColor(new Color(1f, 1f, 1f, 0.10f));
         public Color TitleTextColor => titleTextColor.ToColor(new Color(0.88f, 0.86f, 0.79f));
-        public Color EntryDateColor => entryDateColor.ToColor(new Color(0.64f, 0.64f, 0.60f, 0.92f));
-        public Color QuadrumDividerLabelColor => quadrumDividerLabelColor.ToColor(new Color(0.72f, 0.70f, 0.63f, 0.90f));
-        public Color QuadrumDividerLineColor => quadrumDividerLineColor.ToColor(new Color(0.56f, 0.53f, 0.47f, 0.30f));
+        public Color EntryDateColor => entryDateColor.ToColor(new Color(0.80f, 0.79f, 0.74f, 1f));
+        public Color QuadrumDividerLabelColor => quadrumDividerLabelColor.ToColor(new Color(0.85f, 0.83f, 0.75f, 1f));
+        public Color QuadrumDividerLineColor => quadrumDividerLineColor.ToColor(new Color(0.60f, 0.57f, 0.50f, 0.45f));
         public Color PendingTitlePrefixColor => pendingTitlePrefixColor.ToColor(new Color(0.86f, 0.86f, 0.86f, 0.95f));
         public Color PendingTitleDotBaseColor => pendingTitleDotBaseColor.ToColor(new Color(0.68f, 0.72f, 0.76f));
         public Color WritingPlaceholderLowColor => writingPlaceholderLowColor.ToColor(new Color(0.58f, 0.72f, 0.66f));

@@ -471,8 +471,10 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the entry date in the small header font and returns the horizontal space it consumed
-        /// (including a trailing gap when a title still fits after it). Returns 0 for a blank date.
+        /// Draws the entry date at the normal header font (GameFont.Small) so it is easy to read, and
+        /// returns the horizontal space it consumed (including a trailing gap when a title still fits
+        /// after it). The muted date tone still keeps it visually quieter than the title. Returns 0 for
+        /// a blank date.
         /// </summary>
         private static float DrawHeaderDate(Rect rect, string date)
         {
@@ -485,7 +487,7 @@ namespace PawnDiary
             TextAnchor oldAnchor = Text.Anchor;
             Color oldColor = GUI.color;
 
-            Text.Font = GameFont.Tiny;
+            Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.MiddleLeft;
             float width = Mathf.Min(rect.width, Text.CalcSize(date).x);
             GUI.color = UiStyle.EntryDateColor;
@@ -591,7 +593,9 @@ namespace PawnDiary
             TextAnchor oldAnchor = Text.Anchor;
             Color oldColor = GUI.color;
 
-            Text.Font = GameFont.Tiny;
+            // GameFont.Small (up from Tiny) so the season/quadrum separator is clearly readable between
+            // month groups; the reserved row height (quadrumDividerHeight) is sized to match in XML.
+            Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.MiddleCenter;
 
             float labelWidth = Mathf.Min(rect.width, Text.CalcSize(label).x);

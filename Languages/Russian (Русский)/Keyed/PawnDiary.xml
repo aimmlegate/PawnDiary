@@ -246,6 +246,9 @@
   <PawnDiary.Tab.FilterApply>Применить ({0})</PawnDiary.Tab.FilterApply>
   <PawnDiary.Tab.FilterStubTip>Фильтрация пока не подключена.</PawnDiary.Tab.FilterStubTip>
   <PawnDiary.Tab.FilterDevHeader>Инструменты разработчика</PawnDiary.Tab.FilterDevHeader>
+  <!-- Кнопка в заголовке, показывающая/скрывающая боковую панель фильтров. -->
+  <PawnDiary.Tab.ShowFilterPanel>Показать панель фильтров.</PawnDiary.Tab.ShowFilterPanel>
+  <PawnDiary.Tab.HideFilterPanel>Скрыть панель фильтров.</PawnDiary.Tab.HideFilterPanel>
   <PawnDiary.Tab.RegenerateEntryTip>Написать страницу заново с текущими правилами выбора моделей. Парные страницы обновят оба взгляда, если они доступны.</PawnDiary.Tab.RegenerateEntryTip>
   <PawnDiary.Tab.RegenerateEntryQueued>Страница отправлена на повторное написание.</PawnDiary.Tab.RegenerateEntryQueued>
   <PawnDiary.Tab.RegenerateEntryUnavailable>Сейчас эту страницу нельзя написать заново.</PawnDiary.Tab.RegenerateEntryUnavailable>

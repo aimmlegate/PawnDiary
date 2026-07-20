@@ -154,21 +154,16 @@ namespace PawnDiary
 
 
 
-            // Three dev fixtures share one row: mock-page filler (long-history scrolling), the prompt
-            // suite (opens a dropdown of event categories; selecting one shows a single prompt-only
-            // card for that category), and a clear button that deletes every prompt-test entry.
+            // Three dev fixtures, each on its own full-width row so the labels aren't clipped in the
+            // narrow filter panel: mock-page filler (long-history scrolling), the prompt suite (opens a
+            // dropdown of event categories; selecting one shows a single prompt-only card for that
+            // category), and a clear button that deletes every prompt-test entry.
 
-            Rect devButtonRow = listing.GetRect(ControlLineHeight);
+            Rect mockButtonRect = listing.GetRect(ControlLineHeight);
 
-            float devButtonGap = 4f;
+            Rect promptSuiteButtonRect = listing.GetRect(ControlLineHeight);
 
-            float devButtonWidth = (devButtonRow.width - devButtonGap * 2f) / 3f;
-
-            Rect mockButtonRect = new Rect(devButtonRow.x, devButtonRow.y, devButtonWidth, devButtonRow.height);
-
-            Rect promptSuiteButtonRect = new Rect(mockButtonRect.xMax + devButtonGap, devButtonRow.y, devButtonWidth, devButtonRow.height);
-
-            Rect clearPromptSuiteButtonRect = new Rect(promptSuiteButtonRect.xMax + devButtonGap, devButtonRow.y, devButtonWidth, devButtonRow.height);
+            Rect clearPromptSuiteButtonRect = listing.GetRect(ControlLineHeight);
 
             if (Widgets.ButtonText(mockButtonRect, "PawnDiary.Tab.FillMockEntries".Translate(DevMockDiaryTargetCount)))
             {
