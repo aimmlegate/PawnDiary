@@ -378,10 +378,12 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > registered fail-closed catalog envelope, six-key normalized save baseline, lifecycle-cleared
 > bounded study/Tale cache, and five package-gated prompt groups are implemented. N3-A is wired as
 > an explicit zero-candidate provider, so persistence cannot invent prompt context before a verified
-> live source exists. Focused suites pass 320 Anomaly, 707 catalog, 79 save-normalization, and 135
-> Narrative assertions; runtime and 292-test RimTest assemblies build. No Harmony registration,
+> live source exists. Focused suites pass 320 Anomaly, 708 catalog, 83 save-normalization, and 135
+> Narrative assertions; runtime and 295-test RimTest assemblies build. The dedicated classifier is
+> exact-only and runtime-gated, while loaded fixtures cover the actual six-key Scribe contract and
+> DLC-off/deferred versus DLC-on/one-time legacy bootstrap. No Harmony registration,
 > signal, page, tick work, or hidden-state projection has moved ahead of A1.2/A1.3. The new compiled
-> no-DLC Def/signature coverage still awaits execution in RimWorld.
+> no-DLC Def/signature and loaded-state coverage still awaits execution in RimWorld.
 
 ### Implement in this exact order
 

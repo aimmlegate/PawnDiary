@@ -435,6 +435,33 @@ namespace DiarySaveNormalizationTests
             };
             AssertEqual("future Anomaly schema is not downgraded", 7,
                 AnomalyPersistencePolicy.Normalize(future).schemaVersion);
+
+            string oversizedIdentity = new string('X', 201);
+            AnomalyPersistentStateSnapshot oversized = AnomalyPersistencePolicy.Normalize(
+                new AnomalyPersistentStateSnapshot
+                {
+                    completedStudyDefNames = new List<string> { oversizedIdentity },
+                    promotedStudyMilestoneKeys = new List<string>
+                    {
+                        "Entity|10|" + oversizedIdentity
+                    },
+                    monolithBaselineLevelDefName = oversizedIdentity,
+                    lastMonolithKnowledgeSnapshot = new AnomalyMonolithKnowledgeSnapshot
+                    {
+                        researcherPawnId = oversizedIdentity,
+                        studyStage = AnomalyStudyStageTokens.FirstBreakthrough,
+                        tick = 100,
+                        reachedProgress = 10
+                    }
+                });
+            AssertEqual("oversized completed-study identity drops atomically", 0,
+                oversized.completedStudyDefNames.Count);
+            AssertEqual("oversized promotion identity drops atomically", 0,
+                oversized.promotedStudyMilestoneKeys.Count);
+            AssertEqual("oversized monolith level does not become a truncated identity", string.Empty,
+                oversized.monolithBaselineLevelDefName);
+            AssertTrue("oversized researcher identity drops the knowledge snapshot",
+                oversized.lastMonolithKnowledgeSnapshot == null);
         }
 
         private static void TestAnomalyLegacyBaseline()

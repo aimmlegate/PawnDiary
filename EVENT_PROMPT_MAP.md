@@ -460,7 +460,9 @@ Anomaly Phase A1.1 also registers one common `AnomalyEvent` catalog envelope and
 package-gated Interaction groups at orders `61..65`: `anomalyStudyBreakthrough`,
 `anomalyContainmentBreach`, `anomalyCreepJoinerOutcome`, `anomalyGhoulTransformation`, and
 `anomalyVoidOutcome`. Each matches only its frozen `PawnDiary_*` synthetic Def name through
-`ClassifyAnomalyEvent`; the required-match route cannot use the ordinary Interaction catch-all.
+`ClassifyAnomalyEvent`; this dedicated route accepts only an available exact `matchDefNames` row and
+cannot use any broader Interaction matcher (including the ordinary catch-all and the order-70
+`Anomaly` token group).
 They expose settings and localized prompt/fallback policy now, but no hook or signal submits an
 `AnomalyEvent` in A1.1, so they are intentionally absent from the live-hook diagram above and create
 zero pages until the separately tested A1.2/A1.3/A2/A3 sources land. N3-A is similarly wired as an

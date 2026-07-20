@@ -538,15 +538,20 @@ stable pawn ID, exact-role flags, distance bucket, eligibility, and deterministi
 
 ### 7.4 Catalog route
 
-Add one `DiaryEventType.AnomalyEvent`—the placeholder named in the current enum comment becomes real
-only when all of the following land together:
+Add one `DiaryEventType.AnomalyEvent`. The route foundation may land in A1.1 before its live sources
+only when it remains page-inert: the registered envelope/spec, exact XML routing, persistence, and
+tests can exist, but no source signal is registered. It becomes page-producing only after all of the
+following source-side pieces land together:
 
 - `AnomalyEventData` with normalized `Kind`, stable source key, visibility/authorization flags, and
   a deterministic dedup key;
 - `AnomalyEventSpec` registered in `DiaryEventCatalog`;
 - pure `Decide` coverage for every supported kind and invalid/default values;
-- source-specific signals that call the same existing event factory;
 - catalog contract and migration-sentinel test updates.
+
+Then each source phase adds its source-specific signal, exact fact adapter/planner, and live RimTests
+before that signal is registered. This phased boundary lets A1.1 prove save/catalog compatibility
+without claiming that an untested study or containment hook is live.
 
 One catalog type does not mean one generic policy. Study, containment, creepjoiner, ghoul, and void
 retain separate fact DTOs and pure planners. `AnomalyEventData` is only their common dispatch
@@ -1479,12 +1484,15 @@ page.
 > boundary.
 >
 > Five exact package-gated XML groups/settings plus English/Russian DefInjected and Keyed fallbacks
-> are present, but required-match classification cannot fall through to the Interaction catch-all.
+> are present. Their dedicated classifier accepts only available exact-name rows and cannot fall
+> through to any Interaction token/prefix/suffix/segment/package/batch/catch-all matcher.
 > N3-A is wired as an explicit zero-candidate provider. There is still no Anomaly Harmony
 > registration, signal, page emission, tick work, or hidden-state projection. Focused suites pass
-> 320 Anomaly, 707 catalog, 79 save-normalization, and 135 Narrative assertions; the runtime and
-> 292-test RimTest assemblies build. The compiled Def/package/signature fixtures are ready, but the
-> new main-menu/no-DLC RimTest has not yet been executed in RimWorld.
+> 320 Anomaly, 708 catalog, 83 save-normalization, and 135 Narrative assertions; the runtime and
+> 295-test RimTest assemblies build. Three loaded fixtures now exercise actual component Scribe,
+> missing-key normalization, deep snapshot state, deferred no-DLC migration, one-time active-DLC
+> baseline, and transient reset. The compiled main-menu and loaded fixtures are ready, but have not
+> yet been executed in RimWorld.
 
 - Add/register `AnomalyEvent` catalog type.
 - Add saved study/monolith state and normalization.

@@ -34,10 +34,13 @@ namespace PawnDiary.Capture
 
             bool first = data.FirstWriterEligible && SafeWriterId(data.FirstWriterId);
             bool second = data.SecondWriterEligible && SafeWriterId(data.SecondWriterId)
-                && !string.Equals(
+                // Distinctness matters only when the first slot is actually usable. A source may
+                // retain the same pawn identity in an ineligible first-role slot and an eligible
+                // fallback second-role slot; that truthful writer must still receive a solo page.
+                && (!first || !string.Equals(
                     (data.FirstWriterId ?? string.Empty).Trim(),
                     data.SecondWriterId.Trim(),
-                    System.StringComparison.Ordinal);
+                    System.StringComparison.Ordinal));
             if (first && second) return CaptureDecision.GeneratePair;
             return first || second ? CaptureDecision.GenerateSolo : CaptureDecision.Drop;
         }

@@ -741,14 +741,36 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Resolves one exact synthetic Anomaly event name without using the Interaction catch-all.
+        /// Resolves one available exact-name Anomaly row without using broader Interaction matchers.
         /// </summary>
         // A1.1 deliberately reuses the existing Interaction XML domain rather than adding a domain
-        // solely for one DLC. Required-match classification avoids falling through to "A quiet day"
-        // when a package gate is inactive or a future source supplies an unknown synthetic name.
+        // solely for one DLC. Its dedicated exact lookup avoids every token/catch-all fallback when
+        // a package gate is inactive or a future source supplies an unknown synthetic name.
         public static DiaryInteractionGroupDef ClassifyAnomalyEvent(string eventDefName)
         {
-            return ClassifyRequiredMatch(GroupDomain.Interaction, eventDefName);
+            if (string.IsNullOrEmpty(eventDefName))
+            {
+                return null;
+            }
+
+            List<DiaryInteractionGroupDef> all = All;
+            for (int i = 0; i < all.Count; i++)
+            {
+                DiaryInteractionGroupDef group = all[i];
+                // Anomaly's synthetic event names share the ordinary Interaction domain so they can
+                // reuse settings/prompt infrastructure, but their route is intentionally stricter:
+                // only an XML exact-name row may claim them, and a dormant package-gated row must
+                // never classify. Token groups such as the broad "Anomaly & dark" social group are
+                // therefore not fallback candidates here.
+                if (group.domain == GroupDomain.Interaction
+                    && !group.UnavailableForCurrentRuntime()
+                    && ContainsDefName(group.matchDefNames, eventDefName))
+                {
+                    return group;
+                }
+            }
+
+            return null;
         }
 
         // First External-domain group that explicitly matches an integration-API eventKey. Like

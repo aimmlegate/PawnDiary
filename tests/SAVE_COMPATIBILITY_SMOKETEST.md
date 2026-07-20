@@ -17,6 +17,8 @@ Run this whenever you touch:
   `BiotechFamilyArcState.cs`, `BiotechPawnProgressionState.cs`, `PawnArcState.cs` (Biotech state),
 - `Source/Core/DiaryGameComponent.BiotechFamily.cs` / `DiaryGameComponent.BiotechGrowth.cs`
   (`ExposeBiotechFamilyData` / `ExposeBiotechGrowthData`, maintenance, version bootstrap),
+- `Source/Core/DiaryGameComponent.Anomaly.cs`, `Source/Generation/DlcContext.Anomaly.cs`, or
+  `Source/Models/AnomalyMonolithKnowledgeState.cs` (A1 schema/bootstrap/live-read/Scribe contract),
 - `Source/Settings/PawnDiarySettings.cs` or anything under `Source/Settings/` that owns `ExposeData`,
 - the Scribe keys written by any of the above, or
 - `Source/Core/DiaryEventRepository.cs` / `DiaryArchiveRepository.cs` load/index paths.
@@ -59,6 +61,8 @@ fixtures:
 | **Player-pinned voice** | A colonist whose writing style and/or psychotype the player picked/edited/re-rolled in the per-pawn editor. | The pinned layer is never auto-re-rolled at crystallization or backfill. |
 | **RimTalk Tier B toggle** | RimTalk bridge active with Tier B on, then toggled off (and vice versa). | Toggling on places a **psychotype** (not writing-style) override; toggling off clears it. Loading an old save that had the *style*-based Tier B override must sweep that stale style override on load. |
 | **`enablePsychotypes` off** | The master psychotype toggle turned off in settings. | First-person prompts omit the psychotype block, pending rolls stay deferred, and existing saved psychotypes are preserved (re-enabling restores them). |
+| **Pre-A1 save, Anomaly active** | A colony saved before the six A1 keys existed, with at least one studied entity and any current monolith stage. | First load does not create a catch-up page; schema advances once, completed loaded-map study kinds are baselined, and the next study is not falsely called the colony's first. |
+| **Pre-A1 save, Anomaly disabled then re-enabled** | The same pristine pre-A1 fixture first loaded/saved without Anomaly, then loaded again after re-enabling it. | The no-DLC load leaves migration pending without errors; the first re-enabled load baselines once, and a second reload does not baseline again or duplicate state. |
 
 The pure fixtures are duplicated here because the **Scribe read path itself** (key lookup, default
 fallback, `PostLoadInit` ordering) is what this runbook exercises — the pure tests only cover the
@@ -103,6 +107,22 @@ field-level math that runs after Scribe has populated the fields.
    dotnet run --project tests/DiaryPipelineTests/DiaryPipelineTests.csproj
    ```
    ...or run `.githooks/verify.ps1` which runs the full pure suite plus the DLL build.
+
+---
+
+## Anomaly A1.1 disable/re-enable migration fixture
+
+Use one pristine save from before A1.1 and keep a backup for both branches below.
+
+1. With Anomaly enabled, load the pristine fixture. Confirm there is no catch-up diary page, save it,
+   reload, and confirm no second baseline or new page appears. Continue one genuine study milestone;
+   it may be a completion/promotion but must not be described as the colony's first breakthrough.
+2. Restore the pristine fixture, disable Anomaly, and load/save/reload. Confirm Pawn Diary logs no
+   Anomaly exception and the save remains playable. Do not expect any Anomaly state/page while absent.
+3. Re-enable Anomaly and load that no-DLC-resaved branch. Confirm the baseline runs now without a
+   catch-up page. Save/reload once more and confirm it does not run twice.
+4. In both profiles run `PawnDiaryAnomalyStateFixtureTests`; the no-DLC branch must retain schema-zero
+   migration state, while the active branch must advance once and clear transient Tale ownership.
 
 ---
 

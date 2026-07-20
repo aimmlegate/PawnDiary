@@ -145,22 +145,28 @@ catalog route, page, save field, or live Anomaly state to exercise.
 
 Master Wave 7 / Anomaly A1.1 raises `DiaryAnomalyPolicyTests` to 320 assertions with shipped-XML
 group/order/package/localization contracts and bounded cache registration, exact matching,
-consume-once, cap, expiry, and reset cases. `DiaryCapturePolicyTests` reaches 707 assertions by
+consume-once, cap, expiry, and reset cases. `DiaryCapturePolicyTests` reaches 708 assertions by
 freezing all five kind/Def mappings, solo/pair dispatch, every final fail-closed gate, dedup identity,
-catalog registration, and removal of the old enum migration sentinel. `DiarySaveNormalizationTests`
-reaches 79 assertions for the exact six keys, new-game state, malformed/bounded history and monolith
+the eligible-second/ineligible-duplicate-first writer edge, catalog registration, and removal of the
+old enum migration sentinel. `DiarySaveNormalizationTests`
+reaches 83 assertions for the exact six keys, new-game state, malformed/bounded history and monolith
 snapshot normalization, future-version preservation, package-absent no-op, and conservative
-incomplete old-save baseline. `NarrativeContinuityTests` reaches 135 assertions and proves that the
+incomplete old-save baseline. Oversized stable identities are pinned as atomic rejects rather than
+prefix truncations which could collide. `NarrativeContinuityTests` reaches 135 assertions and proves that the
 explicit N3-A provider and fixed orchestrator still return zero candidates even for a nominally
 authorized snapshot.
 
 `PawnDiaryDefSmokeTests.AnomalyEventGroupsAreLoadedAndRouteOnlyExactKinds` is a new main-menu-safe
 test: all five groups must load, carry the one official package gate, agree with `ModsConfig`, route
 their exact synthetic Def only when Anomaly is active, and reject an unknown name without reaching
-the Interaction fallback. The exact official-DLC catalog fixture now includes those five rows, while
+any non-exact Interaction matcher. The exact official-DLC catalog fixture now includes those five rows, while
 the fragile-signature fixture pins `CompStudyUnlocks.Progress:int` and `Completed:bool`. The compiled
-RimTest assembly therefore contains 292 tests. Core and RimTest builds pass; the new in-game/no-DLC
-execution remains pending and must not be reported as a passed runtime profile until recorded.
+`PawnDiaryAnomalyStateFixtureTests` adds three loaded tests against the actual component Scribe method:
+all six keys plus deep snapshot round-trip and normalize, missing keys become legacy-pending safe
+defaults, and the loaded-game bootstrap clears transient ownership while either deferring without
+Anomaly or baselining exactly once with it. The RimTest assembly therefore contains 295 tests. Core
+and RimTest builds pass; the new in-game no-DLC/loaded execution remains pending and must not be
+reported as a passed runtime profile until recorded.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It

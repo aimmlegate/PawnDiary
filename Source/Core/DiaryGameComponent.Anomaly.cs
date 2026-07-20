@@ -1,10 +1,8 @@
 // Anomaly A1.1 persistence and silent legacy baselining. This partial owns only stable study history,
 // one optional monolith knowledge snapshot, and lifecycle reset. It registers no Harmony source and
 // cannot create a diary page; A1.2/A1.3 will consume these contracts after their live hooks are tested.
-using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
-using RimWorld;
 using Verse;
 
 namespace PawnDiary
@@ -53,7 +51,8 @@ namespace PawnDiary
         /// <summary>Starts a new colony with trustworthy empty study history and no catch-up page.</summary>
         private void ResetAnomalyForNewGame()
         {
-            ApplyAnomalyState(AnomalyPersistencePolicy.NewGame(CurrentAnomalyMonolithLevelDefName()));
+            ApplyAnomalyState(AnomalyPersistencePolicy.NewGame(
+                DlcContext.CurrentAnomalyMonolithLevelDefName()));
             ResetAnomalyTransientState();
         }
 
@@ -71,70 +70,9 @@ namespace PawnDiary
                 return;
             }
 
-            AnomalyLegacyBaselineFacts facts = CaptureAnomalyLegacyBaseline();
+            AnomalyLegacyBaselineFacts facts = DlcContext.CaptureAnomalyLegacyBaseline();
             ApplyAnomalyState(AnomalyPersistencePolicy.BaselineLegacy(
                 AnomalyStateSnapshot(), facts));
-        }
-
-        private static AnomalyLegacyBaselineFacts CaptureAnomalyLegacyBaseline()
-        {
-            AnomalyLegacyBaselineFacts facts = new AnomalyLegacyBaselineFacts
-            {
-                anomalyAvailable = ModsConfig.AnomalyActive,
-                // Loaded maps cannot prove the history of despawned/off-map studied subjects. This
-                // false value is deliberate: the old save stays silent instead of claiming a new first.
-                historyComplete = false,
-                currentMonolithLevelDefName = CurrentAnomalyMonolithLevelDefName()
-            };
-            if (!facts.anomalyAvailable || Find.Maps == null) return facts;
-
-            for (int mapIndex = 0; mapIndex < Find.Maps.Count; mapIndex++)
-            {
-                Map map = Find.Maps[mapIndex];
-                List<Thing> things = map?.listerThings?.AllThings;
-                if (things == null) continue;
-                for (int thingIndex = 0; thingIndex < things.Count; thingIndex++)
-                {
-                    Thing thing = things[thingIndex];
-                    CompStudyUnlocks study = null;
-                    try
-                    {
-                        study = thing?.TryGetComp<CompStudyUnlocks>();
-                        if (study == null) continue;
-                        if (study.Progress > 0) facts.anyCommittedStudyProgress = true;
-                        if (study.Completed && thing?.def != null)
-                            facts.completedStudyDefNames.Add(thing.def.defName);
-                    }
-                    catch (Exception exception)
-                    {
-                        // Modded comp getters may throw. The baseline is already conservative, so one
-                        // broken subject is omitted and the save remains silent rather than failing load.
-                        Log.WarningOnce(
-                            "[Pawn Diary] Anomaly legacy study baseline skipped a broken studied subject: "
-                            + exception.GetType().Name + ": " + exception.Message,
-                            "PawnDiary.Anomaly.LegacyStudyBaseline".GetHashCode());
-                    }
-                }
-            }
-
-            return facts;
-        }
-
-        private static string CurrentAnomalyMonolithLevelDefName()
-        {
-            if (!ModsConfig.AnomalyActive) return string.Empty;
-            try
-            {
-                return Find.Anomaly?.LevelDef?.defName ?? string.Empty;
-            }
-            catch (Exception exception)
-            {
-                Log.WarningOnce(
-                    "[Pawn Diary] Could not baseline the current Anomaly monolith level: "
-                    + exception.GetType().Name + ": " + exception.Message,
-                    "PawnDiary.Anomaly.MonolithBaseline".GetHashCode());
-                return string.Empty;
-            }
         }
 
         private AnomalyPersistentStateSnapshot AnomalyStateSnapshot()

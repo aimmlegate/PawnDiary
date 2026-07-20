@@ -1683,9 +1683,11 @@ cannot currently create a page.
 `DiaryGameComponent.Anomaly.cs` adds the six frozen Scribe keys for schema version, first-study
 observation, completed studied Def names, promoted milestone keys, the monolith baseline level, and
 one optional deep-scribed monolith knowledge snapshot. Pure normalization removes malformed rows,
-sorts/de-duplicates and caps both histories at 4,096, validates promotion grammar/study stages, and
-never downgrades a future schema. New colonies receive trustworthy empty history. Loading a pre-A1
-save with Anomaly active performs one DLC-gated scan of loaded-map `CompStudyUnlocks` components;
+sorts/de-duplicates and caps both histories at 4,096, rejects oversized stable identities atomically
+instead of truncating them into collision-prone save keys, validates promotion grammar/study stages,
+and never downgrades a future schema. New colonies receive trustworthy empty history. Loading a pre-A1
+save with Anomaly active performs one DLC-gated scan of loaded-map `CompStudyUnlocks` components through
+`DlcContext.Anomaly.cs`, the single guarded adapter for live Anomaly reads;
 completed kinds are retained, while the necessarily incomplete historical scan marks the first
 breakthrough already observed so the next study cannot be falsely described as the colony's first.
 Without Anomaly the baseline no-ops and can run on a later load if the package becomes available.
@@ -1696,15 +1698,18 @@ constructor, new-game, loaded-game, and final-initialization boundaries. It is a
 no Tale consults it yet. Five exact package-gated Interaction groups at orders 61–65 expose settings
 and localized prompt/fallback policy for study breakthrough, containment breach, visible creepjoiner
 outcome, ghoul transformation, and terminal void outcome. `ClassifyAnomalyEvent` requires an exact
-match and cannot fall through to the ordinary Interaction catch-all. N3-A is likewise explicit but
+`matchDefNames` row whose package gate is currently available; it cannot fall through to token,
+prefix/suffix/segment, package, synthetic-batch, or catch-all Interaction groups. N3-A is likewise explicit but
 returns zero candidates even when handed an authorized snapshot; persistence alone cannot add prompt
 context.
 
-Focused suites now pass 320 Anomaly-policy/XML/cache, 707 catalog, 79 save-normalization, and 135
-Narrative assertions. The runtime DLL and 292-test RimTest assembly build against the installed 1.6
+Focused suites now pass 320 Anomaly-policy/XML/cache, 708 catalog, 83 save-normalization, and 135
+Narrative assertions. The runtime DLL and 295-test RimTest assembly build against the installed 1.6
 API; compiled smoke coverage pins the five Def/package/classifier rows plus
-`CompStudyUnlocks.Progress`/`Completed`. That new main-menu/no-DLC fixture has not yet been executed
-inside RimWorld, and no A1.2/A1.3 live-source claim is made.
+`CompStudyUnlocks.Progress`/`Completed`. Three loaded fixtures additionally drive the actual six-key
+component Scribe contract, missing-key defaults, deep snapshot, DLC-off deferred migration,
+DLC-on one-time loaded-map baseline, and transient load reset. Those new main-menu/no-DLC and loaded
+fixtures have not yet been executed inside RimWorld, and no A1.2/A1.3 live-source claim is made.
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,

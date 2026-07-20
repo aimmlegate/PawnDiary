@@ -1,5 +1,20 @@
 # Changelog
 
+- **2026-07-20 — Hardened Anomaly Phase A1.1 after adversarial review.** Replaced the shared
+  non-catch-all classifier path with an Anomaly-specific exact-name, runtime-available lookup, so the
+  broad order-70 `Anomaly` token group cannot claim unknown synthetic names and package-gated rows
+  return null without the DLC. Preserved the six other required-match callers unchanged. An eligible
+  fallback writer now remains solo when an ineligible first-role slot carries the same pawn ID.
+  Oversized persisted identities now drop atomically instead of truncating into collision-prone
+  replay keys, and live monolith/study reads moved into the guarded `DlcContext.Anomaly` adapter.
+
+  Pure regressions pass 708 capture and 83 save-normalization assertions. Three new loaded RimTests
+  drive the actual component's six Scribe keys, deep monolith snapshot, missing-key defaults,
+  package-absent deferred migration, package-active one-time baseline, and transient reset; the
+  RimTest assembly now contains 295 tests and builds cleanly with the runtime DLL. The save runbook
+  now covers pre-A1 active, disable/resave, and re-enable transitions. These new in-game fixtures are
+  compiled but have not yet been executed inside RimWorld.
+
 - **2026-07-20 — Implemented Master Wave 7 / Anomaly Phase A1.1 catalog and persistence
   foundation.** Registered the common fail-closed `AnomalyEvent` catalog envelope for the five frozen
   study, containment, visible creepjoiner, ghoul, and void kind/Def pairs. It requires verified
@@ -13,10 +28,10 @@
   Added a bounded unsaved consume-once study/Tale claim cache with constructor/new-game/load/finalize
   cleanup, plus an explicit zero-candidate N3-A provider seam. Five exact package-gated XML
   groups/settings at orders 61–65 ship with English/Russian DefInjected guidance and Keyed fallbacks;
-  their classifier requires an exact match and never falls through to the ordinary Interaction
-  catch-all. No Harmony registration, signal, page emission, tick work, hidden state, or paid-DLC Def
-  reference was added. Focused suites pass 320 Anomaly, 707 catalog, 79 save-normalization, and 135
-  Narrative assertions. Runtime and 292-test RimTest assemblies rebuild; compiled smoke coverage pins
+  their classifier requires an available exact match and never falls through to any broader
+  Interaction matcher. No Harmony registration, signal, page emission, tick work, hidden state, or paid-DLC Def
+  reference was added. Focused suites pass 320 Anomaly, 708 catalog, 83 save-normalization, and 135
+  Narrative assertions. Runtime and 295-test RimTest assemblies rebuild; compiled smoke coverage pins
   the five Def/package routes and exact study-comp API, while the new in-game/no-DLC execution remains
   pending.
 

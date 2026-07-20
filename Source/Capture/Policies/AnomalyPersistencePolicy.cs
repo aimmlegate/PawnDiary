@@ -162,9 +162,12 @@ namespace PawnDiary.Capture
             string cleaned = (value ?? string.Empty).Trim();
             if (cleaned.Length == 0 || cleaned.IndexOf('\r') >= 0 || cleaned.IndexOf('\n') >= 0)
                 return string.Empty;
+            // These values participate in save ownership and replay identity. Truncating one can
+            // collide with a different valid identity that shares the same prefix, so an oversized
+            // corrupt row must fail closed as a whole instead of being rewritten into a new key.
             return cleaned.Length <= MaximumIdentityCharacters
                 ? cleaned
-                : cleaned.Substring(0, MaximumIdentityCharacters);
+                : string.Empty;
         }
     }
 }

@@ -1814,6 +1814,10 @@ namespace DiaryCapturePolicyTests
             AssertEqual("Anomaly duplicate writer remains solo", CaptureDecision.GenerateSolo,
                 AnomalyEventData.Decide(pair, Ctx()));
 
+            pair.FirstWriterEligible = false;
+            AssertEqual("Anomaly eligible fallback writer survives an ineligible duplicate first slot",
+                CaptureDecision.GenerateSolo, AnomalyEventData.Decide(pair, Ctx()));
+
             AnomalyEventData invalid = Anomaly(
                 AnomalyKindTokens.StudyBreakthrough,
                 AnomalyEventDefNames.ContainmentBreach);
