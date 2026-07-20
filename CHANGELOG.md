@@ -1,5 +1,11 @@
 # Changelog
 
+- **2026-07-20 — Confirmed the corrected A1.3 loaded suite all green.** The user-confirmed
+  Anomaly-active rerun passed all 315 compiled RimTest fixtures, including all ten containment
+  fixtures and the corrected exact localized visible-label fallback assertion. The separate
+  Anomaly-inactive profile remains a manual DLC-off matrix row. No runtime, save, schema, or
+  DLC-dependency behavior changed.
+
 - **2026-07-20 — Corrected the A1.3 visible-label RimTest after its first full loaded run.** The
   Anomaly-active run executed all 315 compiled fixtures: 314 passed, including the new direct
   containment scope-state fixture, and one containment fallback assertion failed. Production had

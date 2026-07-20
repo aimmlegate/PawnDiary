@@ -220,8 +220,9 @@ user-confirmed Anomaly-active loaded rerun passed the original 9 containment fix
 A later full 315-fixture Anomaly-active run passed 314, including the new tenth direct scope-state
 fixture. Its only failure was a false-positive fallback assertion when the valid visible label
 contained the entity's stable Def name; the fixture now compares the complete localized fallback
-for exact equality. A confirmation loaded rerun and the separate Anomaly-inactive profile remain
-manual matrix rows.
+for exact equality. The user-confirmed corrected Anomaly-active rerun passed all 315 compiled
+fixtures, including all ten containment fixtures. The separate Anomaly-inactive profile remains a
+manual DLC-off matrix row.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It

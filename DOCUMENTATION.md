@@ -1799,8 +1799,9 @@ the original 9/9 containment fixtures with 0 failures. A later full 315-fixture 
 passed 314 fixtures, including the newly added direct scope-state fixture. Its sole failure was a
 false-positive test assertion: a valid localized visible label happened to contain the entity's
 stable Def name. The fixture now requires exact equality with the localized visible-label-only
-fallback; its confirmation rerun and the separate Anomaly-inactive profile remain manual in-game
-rows.
+fallback. The user-confirmed corrected Anomaly-active rerun passed all 315 compiled fixtures,
+including all ten containment fixtures. The separate Anomaly-inactive profile remains a manual
+in-game row.
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,

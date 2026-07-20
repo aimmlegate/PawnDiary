@@ -381,9 +381,10 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > assemblies build. The exact-only classifier and both hooks are Anomaly-gated. Loaded A1.1 state
 > coverage and the original nine A1.3 containment fixtures passed in their recorded profiles. A later
 > full run passed 314/315, including the new containment scope-state fixture; its sole failure was a
-> false-positive visible-label assertion, now corrected to exact localized fallback equality. A1.2
-> execution, the A1.3 confirmation rerun, and the separate no-Anomaly A1.3 profile remain manual rows.
-> No A2 source or hidden-state projection has moved ahead of schedule.
+> false-positive visible-label assertion, corrected to exact localized fallback equality. The
+> user-confirmed corrected rerun passed all 315 compiled fixtures. A1.2 execution and the separate
+> no-Anomaly A1.3 profile remain manual rows. No A2 source or hidden-state projection has moved ahead
+> of schedule.
 
 ### Implement in this exact order
 
