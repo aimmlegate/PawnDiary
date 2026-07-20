@@ -1535,8 +1535,10 @@ pass.
 > jump, completion, disabled group, real Scribe/no replay, exact consume-once Tale ownership, delayed
 > exact-job ownership, and fail-closed missing monolith-level state.
 > Core and RimTest assemblies built at that boundary. The later user-confirmed corrected 315/315
-> Anomaly-active run was the full compiled suite and therefore directly executed all ten A1.2 fixtures;
-> it closes this execution row without treating compilation as execution.
+> Anomaly-active full-suite result corresponds to the unchanged 315-fixture assembly whose source
+> inventory contains all ten A1.2 fixtures. This is aggregate user-confirmed evidence, not a preserved
+> per-method run artifact; it closes this row under the project's acceptance of that reported full-suite
+> result without treating compilation alone as execution.
 
 - Register exact public study hook defensively.
 - Capture before/after facts and run pure policy.
@@ -1589,7 +1591,9 @@ profile remains in the manual in-game matrix.
 > all 14 pure projects, the runtime rebuild, and committed-DLL freshness. No A2 behavior or hidden-state
 > projection was introduced.
 >
-> The previous corrected 315/315 Anomaly-active run remains evidence for all prior A1.2/A1.3 fixtures.
+> The previous user-confirmed corrected 315/315 Anomaly-active full-suite result remains aggregate
+> evidence for the unchanged assembly containing all prior A1.2/A1.3 fixtures; no per-method run artifact
+> survives.
 > It cannot evidence the one new A1.4 fallback fixture. A new active 316 run, the separate Anomaly-
 > inactive profile, disposable missing-hook compatibility builds, and a real process-boundary save/
 > reload remain manual rows; no pass is claimed for them. The exact procedure is recorded in

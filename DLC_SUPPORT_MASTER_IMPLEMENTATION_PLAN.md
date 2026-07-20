@@ -382,9 +382,11 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > coverage and the original nine A1.3 containment fixtures passed in their recorded profiles. A later
 > full run passed 314/315, including the new containment scope-state fixture; its sole failure was a
 > false-positive visible-label assertion, corrected to exact localized fallback equality. The
-> user-confirmed corrected rerun passed all 315 compiled fixtures. Because that was the full compiled
-> suite, it directly covered all ten A1.2 fixtures; the old A1.2 execution row is closed by evidence,
-> not inference. A1.4 adds one localized blank-label fixture, so a 316-fixture active rerun, the separate
+> user-confirmed corrected rerun passed all 315 compiled fixtures. That aggregate result corresponds to
+> the unchanged 315-fixture assembly whose source inventory contains all ten A1.2 fixtures; no preserved
+> per-method run artifact independently enumerates them. The old A1.2 row is closed under acceptance of
+> the user-confirmed full-suite result, not from compilation alone. A1.4 adds one localized blank-label
+> fixture, so a 316-fixture active rerun, the separate
 > Anomaly-inactive profile, missing-hook compatibility runs, and real process-boundary save/reload remain
 > explicit manual rows. No A2 source or hidden-state projection has moved ahead of schedule.
 

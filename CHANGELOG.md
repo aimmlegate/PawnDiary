@@ -11,9 +11,11 @@
   study matching, 600-row candidate ordering equivalence across the cap, and corrupt-history input
   bounds. A loaded fallback fixture raises RimTest to 316 compiled tests. Runtime and RimTest assemblies
   build with 0 warnings and 0 errors; the full verifier passes whitespace/XML, all 14 pure projects,
-  runtime rebuild, and committed-DLL freshness. The prior corrected Anomaly-active 315/315 full run
-  directly covered all ten A1.2 and all ten A1.3 fixtures, closing the old A1.2 execution row. It does
-  not cover the new fixture. The active 316 rerun, separate Anomaly-inactive profile, disposable
+  runtime rebuild, and committed-DLL freshness. The prior user-confirmed corrected Anomaly-active
+  315/315 full-suite result corresponds to the unchanged assembly containing all ten A1.2 and all ten
+  A1.3 fixtures; it closes the old A1.2 row as aggregate user-confirmed evidence, while no preserved
+  per-method run artifact independently enumerates them. It does not cover the new fixture. The active
+  316 rerun, separate Anomaly-inactive profile, disposable
   missing-hook profiles, and a real
   process-boundary save/reload remain explicit manual rows; none is claimed from compilation. No A2
   creepjoiner/ghoul behavior or DLC dependency was added.

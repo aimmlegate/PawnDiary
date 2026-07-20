@@ -187,8 +187,9 @@ group with history advancement and no Tale claim, actual component Scribe/no rep
 consume-once `StudiedEntity` suppression, delayed exact-job consumption, and missing-level monolith
 state preservation. The RimTest assembly now contains 305 compiled tests. The new A1.2 fixtures had
 not been executed at that boundary; compilation was not recorded as an in-game pass. The later
-corrected full 315/315 Anomaly-active run described below directly executed all ten and closes that
-historical execution row.
+user-confirmed corrected 315/315 full-suite result corresponds to the unchanged assembly whose source
+inventory contains all ten A1.2 methods. It closes that historical row as aggregate user-confirmed
+evidence, not as a preserved per-method run artifact or from compilation alone.
 
 Master Wave 7 / Anomaly A1.3 plus adversarial hardening raises `DiaryAnomalyPolicyTests` to 398
 assertions. The pure cases cover the separate non-consuming recent-study cache (exact matching,

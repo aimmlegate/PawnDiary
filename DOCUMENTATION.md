@@ -1794,9 +1794,11 @@ DLC-on one-time loaded-map baseline, and transient load reset. Those A1.1 fixtur
 0 failed in a loaded no-Anomaly colony; and user-confirmed 3/3 passed, 0 failed in a loaded
 Anomaly-active colony. The 7/7 results cover exact classification, real six-key Scribe, missing
 defaults, deferred/off migration, one-time/on baseline, and transient reset. The later user-confirmed
-full 315/315 Anomaly-active run directly executed all ten A1.2 study fixtures—including delayed exact-
-job ownership and missing-level state preservation—so their outstanding loaded execution row is
-covered by that recorded run rather than inferred from compilation. Ten A1.3
+315/315 Anomaly-active full-suite result corresponds to the unchanged 315-fixture assembly whose source
+inventory contains all ten A1.2 study fixtures, including delayed exact-job ownership and missing-level
+state preservation. That closes their outstanding loaded row as aggregate user-confirmed evidence;
+no preserved per-method run artifact independently enumerates them, and compilation alone is not
+reported as execution. Ten A1.3
 containment fixtures compile against the installed API; nine invoke the real `Escape(bool)` seam and
 one directly pins idempotent abort plus unhealthy out-of-order scope closure.
 Their map setup accepts any clean vanilla `Room`, including open terrain, because the production seam
