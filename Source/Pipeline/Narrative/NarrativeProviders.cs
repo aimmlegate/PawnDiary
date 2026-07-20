@@ -366,31 +366,427 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>Stable N3-A source and phase tokens; none can encode hidden Anomaly configuration.</summary>
+    internal static class AnomalyNarrativeContinuityTokens
+    {
+        public const string GhoulTransformation = "ghoul_transformation";
+        public const string ContainmentBreach = "containment_breach";
+        public const string MonolithChapter = "monolith_chapter";
+        public const string CreepJoinerOutcome = "creepjoiner_outcome";
+
+        public const string Transformed = "transformed";
+        public const string Breached = "breached";
+        public const string Stirring = "stirring";
+        public const string Waking = "waking";
+        public const string VoidAwakened = "void_awakened";
+        public const string SurgicalReveal = "surgical_reveal";
+        public const string Rejected = "rejected";
+        public const string Aggressive = "aggressive";
+        public const string Departed = "departed";
+
+        public const string GhoulSourceDomain = "anomaly_ghoul";
+        public const string ContainmentSourceDomain = "anomaly_containment";
+        public const string MonolithSourceDomain = "anomaly_monolith";
+        public const string CreepJoinerSourceDomain = "anomaly_creepjoiner";
+
+        public const string GhoulSourceDefName = "PawnDiary_GhoulTransformation";
+        public const string ContainmentSourceDefName = "PawnDiary_ContainmentBreach";
+        public const string CreepJoinerSourceDefName = "PawnDiary_CreepJoinerOutcome";
+        public const string MonolithStirringSourceDefName = "Stirring";
+        public const string MonolithWakingSourceDefName = "Waking";
+        public const string MonolithVoidAwakenedSourceDefName = "VoidAwakened";
+        public const string MonolithStirringWindowDefName = "VoidMonolithActivation";
+        public const string MonolithWakingWindowDefName = "VoidMonolithWaking";
+        public const string MonolithVoidAwakenedWindowDefName = "VoidMonolithVoidAwakened";
+
+        /// <summary>Accepts only the three shipped window/phase/reached-level identities.</summary>
+        public static bool MatchesVisibleMonolithSource(
+            string windowDefName,
+            string phase,
+            string sourceDefName)
+        {
+            if (phase == Stirring)
+                return windowDefName == MonolithStirringWindowDefName
+                    && sourceDefName == MonolithStirringSourceDefName;
+            if (phase == Waking)
+                return windowDefName == MonolithWakingWindowDefName
+                    && sourceDefName == MonolithWakingSourceDefName;
+            return phase == VoidAwakened
+                && windowDefName == MonolithVoidAwakenedWindowDefName
+                && sourceDefName == MonolithVoidAwakenedSourceDefName;
+        }
+    }
+
     /// <summary>
-    /// Reserved plain input for the N3-A Anomaly provider. A1.1 intentionally carries only universal
-    /// availability/POV authorization: later source phases may add already-visible chapter, pressure,
-    /// or identity facts, but hidden downside/infection/tracker fields have no place in this contract.
+    /// One already-visible Anomaly fact detached from its source page. It has no field for benefit,
+    /// downside, infection, infiltrator identity, tracker configuration, or an unresolved outcome.
+    /// </summary>
+    internal sealed class AnomalyNarrativeFact
+    {
+        public string sourceKind = string.Empty;
+        public string facet = string.Empty;
+        public string phase = string.Empty;
+        public string subjectKind = string.Empty;
+        public string subjectId = string.Empty;
+        public string arcKey = string.Empty;
+        public string text = string.Empty;
+        public int sourceTick;
+    }
+
+    /// <summary>
+    /// Plain, event-time input for the N3-A Anomaly provider. Main-thread source adapters add only facts
+    /// already authorized for this exact POV; pure policy rechecks every identity and source mapping.
     /// </summary>
     internal sealed class AnomalyNarrativeSnapshot
     {
         public bool providerAvailable;
         public string povPawnId = string.Empty;
+        public List<AnomalyNarrativeFact> facts = new List<AnomalyNarrativeFact>();
         public bool pawnCanKnow;
         public bool hasVerifiedPovConnection;
     }
 
-    /// <summary>Zero-candidate N3-A skeleton; A1.2/A1.3/A2 extend it only with visible facts.</summary>
+    /// <summary>Pure spoiler-safe provider for exact visible Anomaly identity, chapter, and pressure facts.</summary>
     internal static class AnomalyNarrativeProvider
     {
+        // These are defensive memory/output ceilings, not narrative tuning. The shared XML policy owns
+        // the final cross-provider candidate and selected-lens caps.
+        private const int MaximumIdentityCandidates = 4;
+        private const int MaximumChapterCandidates = 3;
+        private const int MaximumPressureCandidates = 1;
+        private const int MaximumTextCharacters = 512;
+        private const int MaximumStableSegmentCharacters = 160;
+
         /// <summary>
-        /// Returns no candidate in A1.1 even for a fully authorized snapshot. This makes the fixed
-        /// provider wiring testable without allowing persistence alone to leak or invent live state.
+        /// Returns only candidates whose exact POV, source, facet, phase, subject, and/or arc are all
+        /// repeated by source-owned evidence. Output is bounded and sorted independently of input order.
         /// </summary>
         public static List<NarrativeLensCandidate> Build(
             List<NarrativeEvidence> evidence,
             AnomalyNarrativeSnapshot snapshot)
         {
-            return new List<NarrativeLensCandidate>();
+            List<NarrativeLensCandidate> identity = new List<NarrativeLensCandidate>();
+            List<NarrativeLensCandidate> chapters = new List<NarrativeLensCandidate>();
+            List<NarrativeLensCandidate> pressure = new List<NarrativeLensCandidate>();
+            if (!Usable(snapshot) || evidence == null) return identity;
+
+            List<AnomalyNarrativeFact> facts = snapshot.facts ?? new List<AnomalyNarrativeFact>();
+            for (int i = 0; i < facts.Count; i++)
+            {
+                AnomalyNarrativeFact fact = facts[i];
+                NarrativeEvidence matched;
+                NarrativeLensCandidate candidate = CandidateFor(
+                    fact, evidence, snapshot.povPawnId, out matched);
+                if (candidate == null) continue;
+
+                if (candidate.category == NarrativeCategoryTokens.Identity)
+                    InsertBounded(identity, candidate, MaximumIdentityCandidates);
+                else if (candidate.category == NarrativeCategoryTokens.Chapter)
+                    InsertBounded(chapters, candidate, MaximumChapterCandidates);
+                else if (candidate.category == NarrativeCategoryTokens.Pressure)
+                    InsertBounded(pressure, candidate, MaximumPressureCandidates);
+            }
+
+            List<NarrativeLensCandidate> result = new List<NarrativeLensCandidate>();
+            result.AddRange(identity);
+            result.AddRange(chapters);
+            result.AddRange(pressure);
+            result.Sort(CompareCandidates);
+            return result;
+        }
+
+        private static bool Usable(AnomalyNarrativeSnapshot snapshot)
+        {
+            return snapshot != null && snapshot.providerAvailable && snapshot.pawnCanKnow
+                && snapshot.hasVerifiedPovConnection && SafeSegment(snapshot.povPawnId);
+        }
+
+        private static NarrativeLensCandidate CandidateFor(
+            AnomalyNarrativeFact fact,
+            List<NarrativeEvidence> evidence,
+            string povPawnId,
+            out NarrativeEvidence matched)
+        {
+            matched = null;
+            if (!ValidBaseFact(fact)) return null;
+
+            string candidateKey;
+            string category;
+            string relationship;
+            string salience;
+            List<string> topics;
+            if (IsGhoulFact(fact))
+            {
+                candidateKey = "anomaly|identity|ghoul|" + fact.subjectId.Trim() + "|transformed";
+                category = NarrativeCategoryTokens.Identity;
+                relationship = NarrativeRelationshipTokens.ExactSubject;
+                salience = NarrativeSalienceTokens.Major;
+                topics = new List<string> { "identity", "body", "transformation" };
+            }
+            else if (IsCreepJoinerFact(fact))
+            {
+                string phase = fact.phase.Trim();
+                candidateKey = "anomaly|identity|creepjoiner|" + fact.subjectId.Trim() + "|" + phase;
+                category = NarrativeCategoryTokens.Identity;
+                relationship = NarrativeRelationshipTokens.ExactSubject;
+                salience = phase == AnomalyNarrativeContinuityTokens.SurgicalReveal
+                    ? NarrativeSalienceTokens.Meaningful
+                    : NarrativeSalienceTokens.Major;
+                topics = CreepJoinerTopics(phase);
+            }
+            else if (IsMonolithFact(fact, out string campaignEpoch))
+            {
+                candidateKey = "anomaly|chapter|monolith|" + campaignEpoch + "|" + fact.phase.Trim();
+                category = NarrativeCategoryTokens.Chapter;
+                relationship = NarrativeRelationshipTokens.ExactArc;
+                salience = NarrativeSalienceTokens.Major;
+                topics = new List<string> { "monolith", "void", "escalation" };
+            }
+            else if (IsContainmentFact(fact, out string mapId, out string startTick, out string entityId))
+            {
+                candidateKey = "anomaly|pressure|breach|" + mapId + "|" + startTick + "|" + entityId;
+                category = NarrativeCategoryTokens.Pressure;
+                relationship = NarrativeRelationshipTokens.ExactArc;
+                salience = NarrativeSalienceTokens.Major;
+                topics = new List<string> { "containment", "breach", "danger" };
+            }
+            else
+            {
+                return null;
+            }
+
+            matched = MatchingEvidence(fact, evidence, povPawnId);
+            if (matched == null) return null;
+            return new NarrativeLensCandidate
+            {
+                candidateKey = candidateKey,
+                provider = NarrativeProviderTokens.Anomaly,
+                category = category,
+                text = fact.text.Trim(),
+                facet = fact.facet.Trim(),
+                subjectKind = fact.subjectKind.Trim(),
+                subjectId = fact.subjectId.Trim(),
+                arcKey = fact.arcKey.Trim(),
+                topicTokens = topics,
+                sourceEventId = matched.eventId ?? string.Empty,
+                sourceTick = fact.sourceTick,
+                salience = salience,
+                relationship = relationship,
+                pawnCanKnow = true,
+                providerAvailable = true,
+                hasVerifiedPovConnection = true
+            };
+        }
+
+        private static bool ValidBaseFact(AnomalyNarrativeFact fact)
+        {
+            if (fact == null || fact.sourceTick < 0 || string.IsNullOrWhiteSpace(fact.text)) return false;
+            string text = fact.text.Trim();
+            if (text.Length > MaximumTextCharacters) return false;
+            for (int i = 0; i < text.Length; i++)
+                if (char.IsControl(text[i])) return false;
+            return true;
+        }
+
+        private static bool IsGhoulFact(AnomalyNarrativeFact fact)
+        {
+            return fact.sourceKind == AnomalyNarrativeContinuityTokens.GhoulTransformation
+                && fact.facet == NarrativeFacetTokens.IdentityTransition
+                && fact.phase == AnomalyNarrativeContinuityTokens.Transformed
+                && fact.subjectKind == NarrativeSubjectKindTokens.Pawn
+                && SafeSegment(fact.subjectId)
+                && string.IsNullOrWhiteSpace(fact.arcKey);
+        }
+
+        private static bool IsCreepJoinerFact(AnomalyNarrativeFact fact)
+        {
+            return fact.sourceKind == AnomalyNarrativeContinuityTokens.CreepJoinerOutcome
+                && fact.facet == NarrativeFacetTokens.IdentityTransition
+                && IsVisibleCreepJoinerPhase(fact.phase)
+                && fact.subjectKind == NarrativeSubjectKindTokens.Pawn
+                && SafeSegment(fact.subjectId)
+                && string.IsNullOrWhiteSpace(fact.arcKey);
+        }
+
+        private static bool IsMonolithFact(AnomalyNarrativeFact fact, out string campaignEpoch)
+        {
+            campaignEpoch = string.Empty;
+            if (fact.sourceKind != AnomalyNarrativeContinuityTokens.MonolithChapter
+                || fact.facet != NarrativeFacetTokens.JourneyChapter
+                || !IsVisibleMonolithPhase(fact.phase)
+                || !string.IsNullOrWhiteSpace(fact.subjectKind)
+                || !string.IsNullOrWhiteSpace(fact.subjectId)) return false;
+            return TryMonolithArc(fact.arcKey, out campaignEpoch);
+        }
+
+        private static bool IsContainmentFact(
+            AnomalyNarrativeFact fact,
+            out string mapId,
+            out string startTick,
+            out string entityId)
+        {
+            mapId = string.Empty;
+            startTick = string.Empty;
+            entityId = string.Empty;
+            if (fact.sourceKind != AnomalyNarrativeContinuityTokens.ContainmentBreach
+                || fact.facet != NarrativeFacetTokens.AmbientPressure
+                || fact.phase != AnomalyNarrativeContinuityTokens.Breached
+                || fact.subjectKind != NarrativeSubjectKindTokens.Entity
+                || !SafeSegment(fact.subjectId)) return false;
+
+            string[] parts = (fact.arcKey ?? string.Empty).Trim().Split('|');
+            if (parts.Length != 4 || parts[0] != "anomaly-breach"
+                || !CanonicalNonNegativeInteger(parts[1])
+                || !CanonicalNonNegativeInteger(parts[2])
+                || !SafeSegment(parts[3])
+                || !string.Equals(parts[3], fact.subjectId.Trim(), StringComparison.Ordinal)) return false;
+            mapId = parts[1];
+            startTick = parts[2];
+            entityId = parts[3];
+            return true;
+        }
+
+        private static NarrativeEvidence MatchingEvidence(
+            AnomalyNarrativeFact fact,
+            List<NarrativeEvidence> evidence,
+            string povPawnId)
+        {
+            for (int i = 0; i < evidence.Count; i++)
+            {
+                NarrativeEvidence row = evidence[i];
+                if (row == null || row.pawnCanKnow != true
+                    || !string.Equals(row.povPawnId, povPawnId, StringComparison.Ordinal)
+                    || !string.Equals(row.facet, fact.facet, StringComparison.Ordinal)
+                    || !string.Equals(row.phase, fact.phase, StringComparison.Ordinal)
+                    || !SourceMatches(fact, row)) continue;
+
+                if (fact.sourceKind == AnomalyNarrativeContinuityTokens.MonolithChapter)
+                {
+                    if (string.Equals(row.arcKey, fact.arcKey, StringComparison.Ordinal)) return row;
+                    continue;
+                }
+                if (fact.sourceKind == AnomalyNarrativeContinuityTokens.ContainmentBreach)
+                {
+                    if (string.Equals(row.subjectKind, fact.subjectKind, StringComparison.Ordinal)
+                        && string.Equals(row.subjectId, fact.subjectId, StringComparison.Ordinal)
+                        && string.Equals(row.arcKey, fact.arcKey, StringComparison.Ordinal)) return row;
+                    continue;
+                }
+                if (string.Equals(row.subjectKind, fact.subjectKind, StringComparison.Ordinal)
+                    && string.Equals(row.subjectId, fact.subjectId, StringComparison.Ordinal)
+                    && string.IsNullOrWhiteSpace(row.arcKey)) return row;
+            }
+            return null;
+        }
+
+        private static bool SourceMatches(AnomalyNarrativeFact fact, NarrativeEvidence evidence)
+        {
+            if (fact.sourceKind == AnomalyNarrativeContinuityTokens.GhoulTransformation)
+                return evidence.sourceDomain == AnomalyNarrativeContinuityTokens.GhoulSourceDomain
+                    && evidence.sourceDefName == AnomalyNarrativeContinuityTokens.GhoulSourceDefName;
+            if (fact.sourceKind == AnomalyNarrativeContinuityTokens.ContainmentBreach)
+                return evidence.sourceDomain == AnomalyNarrativeContinuityTokens.ContainmentSourceDomain
+                    && evidence.sourceDefName == AnomalyNarrativeContinuityTokens.ContainmentSourceDefName;
+            if (fact.sourceKind == AnomalyNarrativeContinuityTokens.CreepJoinerOutcome)
+                return evidence.sourceDomain == AnomalyNarrativeContinuityTokens.CreepJoinerSourceDomain
+                    && evidence.sourceDefName == AnomalyNarrativeContinuityTokens.CreepJoinerSourceDefName;
+            if (fact.sourceKind != AnomalyNarrativeContinuityTokens.MonolithChapter
+                || evidence.sourceDomain != AnomalyNarrativeContinuityTokens.MonolithSourceDomain) return false;
+            if (fact.phase == AnomalyNarrativeContinuityTokens.Stirring)
+                return evidence.sourceDefName
+                    == AnomalyNarrativeContinuityTokens.MonolithStirringSourceDefName;
+            if (fact.phase == AnomalyNarrativeContinuityTokens.Waking)
+                return evidence.sourceDefName
+                    == AnomalyNarrativeContinuityTokens.MonolithWakingSourceDefName;
+            return fact.phase == AnomalyNarrativeContinuityTokens.VoidAwakened
+                && evidence.sourceDefName
+                    == AnomalyNarrativeContinuityTokens.MonolithVoidAwakenedSourceDefName;
+        }
+
+        private static bool TryMonolithArc(string arcKey, out string campaignEpoch)
+        {
+            campaignEpoch = string.Empty;
+            string[] parts = (arcKey ?? string.Empty).Trim().Split('|');
+            if (parts.Length != 2 || parts[0] != "anomaly-monolith"
+                || !CanonicalNonNegativeInteger(parts[1])) return false;
+            campaignEpoch = parts[1];
+            return true;
+        }
+
+        private static bool CanonicalNonNegativeInteger(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value.Length > 10
+                || (value.Length > 1 && value[0] == '0')) return false;
+            for (int i = 0; i < value.Length; i++)
+                if (value[i] < '0' || value[i] > '9') return false;
+            return true;
+        }
+
+        private static bool SafeSegment(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            string cleaned = value.Trim();
+            if (cleaned.Length > MaximumStableSegmentCharacters) return false;
+            for (int i = 0; i < cleaned.Length; i++)
+            {
+                char current = cleaned[i];
+                if (char.IsControl(current) || char.IsWhiteSpace(current)
+                    || current == '|' || current == ';') return false;
+            }
+            return true;
+        }
+
+        private static bool IsVisibleMonolithPhase(string phase)
+        {
+            return phase == AnomalyNarrativeContinuityTokens.Stirring
+                || phase == AnomalyNarrativeContinuityTokens.Waking
+                || phase == AnomalyNarrativeContinuityTokens.VoidAwakened;
+        }
+
+        private static bool IsVisibleCreepJoinerPhase(string phase)
+        {
+            return phase == AnomalyNarrativeContinuityTokens.SurgicalReveal
+                || phase == AnomalyNarrativeContinuityTokens.Rejected
+                || phase == AnomalyNarrativeContinuityTokens.Aggressive
+                || phase == AnomalyNarrativeContinuityTokens.Departed;
+        }
+
+        private static List<string> CreepJoinerTopics(string phase)
+        {
+            List<string> result = new List<string> { "identity", "creepjoiner" };
+            if (phase == AnomalyNarrativeContinuityTokens.SurgicalReveal) result.Add("disclosure");
+            else if (phase == AnomalyNarrativeContinuityTokens.Rejected) result.Add("rejection");
+            else if (phase == AnomalyNarrativeContinuityTokens.Aggressive) result.Add("hostility");
+            else if (phase == AnomalyNarrativeContinuityTokens.Departed) result.Add("departure");
+            return result;
+        }
+
+        private static void InsertBounded(
+            List<NarrativeLensCandidate> destination,
+            NarrativeLensCandidate candidate,
+            int maximum)
+        {
+            for (int i = 0; i < destination.Count; i++)
+            {
+                if (!string.Equals(
+                    destination[i].candidateKey, candidate.candidateKey, StringComparison.Ordinal)) continue;
+                if (CompareCandidates(candidate, destination[i]) < 0) destination[i] = candidate;
+                destination.Sort(CompareCandidates);
+                return;
+            }
+            destination.Add(candidate);
+            destination.Sort(CompareCandidates);
+            if (destination.Count > maximum) destination.RemoveAt(destination.Count - 1);
+        }
+
+        private static int CompareCandidates(NarrativeLensCandidate left, NarrativeLensCandidate right)
+        {
+            int key = string.CompareOrdinal(left?.candidateKey, right?.candidateKey);
+            if (key != 0) return key;
+            int text = string.CompareOrdinal(left?.text, right?.text);
+            if (text != 0) return text;
+            int source = string.CompareOrdinal(left?.sourceEventId, right?.sourceEventId);
+            return source != 0 ? source : (left?.sourceTick ?? 0).CompareTo(right?.sourceTick ?? 0);
         }
     }
 

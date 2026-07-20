@@ -1,4 +1,4 @@
-// Loaded-game Anomaly A2.2 fixtures. They invoke vanilla's exact GhoulInfusion worker on disposable
+// Loaded-game Anomaly A2.2 plus N3-A fixtures. They invoke vanilla's exact GhoulInfusion worker on disposable
 // pawns, keep every possible writer generation-disabled, and verify transformation truth, exact POVs,
 // synchronous DidSurgery ownership, exception cleanup, save silence, and ordinary Tale fallback.
 using System;
@@ -36,6 +36,7 @@ namespace PawnDiary.RimTests
         private static DiaryAnomalyPolicyDef policyDef;
         private static bool originalEnabled;
         private static int originalMaxWriters;
+        private static PromptContextDetailLevel originalContextDetailLevel;
         private static HashSet<Tale> originalTales;
         private static DiaryGameComponent scribeTarget;
 
@@ -52,6 +53,8 @@ namespace PawnDiary.RimTests
                 "The Anomaly narrative policy Def was not loaded.");
             originalEnabled = policyDef.ghoulTransformationEnabled;
             originalMaxWriters = policyDef.ghoulTransformationMaxWriters;
+            originalContextDetailLevel = PawnDiaryMod.Settings.contextDetailLevel;
+            PawnDiaryMod.Settings.contextDetailLevel = PromptContextDetailLevel.Full;
             originalTales = SnapshotTales();
             policyDef.ghoulTransformationEnabled = true;
             policyDef.ghoulTransformationMaxWriters =
@@ -72,6 +75,8 @@ namespace PawnDiary.RimTests
                     policyDef.ghoulTransformationEnabled = originalEnabled;
                     policyDef.ghoulTransformationMaxWriters = originalMaxWriters;
                 }
+                if (PawnDiaryMod.Settings != null)
+                    PawnDiaryMod.Settings.contextDetailLevel = originalContextDetailLevel;
                 RemoveFixtureTales();
             }
             catch (Exception exception)
@@ -165,6 +170,8 @@ namespace PawnDiary.RimTests
                     && page.recipientText.Contains(surgeon.LabelShortCap)
                     && page.recipientText.Contains(subject.LabelShortCap),
                 "The localized ghoul fallbacks lost an exact visible role label.");
+            RequireNarrative(page, DiaryEvent.InitiatorRole, subject);
+            RequireNarrative(page, DiaryEvent.RecipientRole, subject);
             PawnDiaryRimTestScope.Require(DlcContext.IsGhoul(subject),
                 "Vanilla returned without committing the ghoul transformation.");
         }
@@ -217,6 +224,7 @@ namespace PawnDiary.RimTests
                 rejectOtherTestPawnEvents: true);
             scope.RequireSoloRef(page, surgeon);
             RequireContext(page, "witness_role=surgeon");
+            RequireNarrative(page, DiaryEvent.InitiatorRole, subject);
         }
 
         /// <summary>An ineligible surgeon cannot write; captured pre-state authorizes the subject solo.</summary>
@@ -234,6 +242,7 @@ namespace PawnDiary.RimTests
                 rejectOtherTestPawnEvents: true);
             scope.RequireSoloRef(page, subject);
             RequireContext(page, "witness_role=subject");
+            RequireNarrative(page, DiaryEvent.InitiatorRole, subject);
         }
 
         /// <summary>Disabled specialized output releases the unchanged generic Tale after mutation.</summary>
@@ -484,6 +493,41 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(page != null
                     && (page.gameContext ?? string.Empty).Contains(token),
                 "Ghoul event context omitted exact token '" + token + "'.");
+        }
+
+        private static void RequireNarrative(DiaryEvent page, string role, Pawn subject)
+        {
+            string subjectId = subject.GetUniqueLoadID();
+            List<NarrativeEvidence> evidence = page.NarrativeEvidenceForRole(role);
+            string expectedKey = "anomaly|identity|ghoul|" + subjectId + "|transformed";
+            string context = page.NarrativeContextForRole(role) ?? string.Empty;
+            PawnDiaryRimTestScope.Require(evidence.Count == 1
+                    && evidence[0].facet == NarrativeFacetTokens.IdentityTransition
+                    && evidence[0].phase == AnomalyNarrativeContinuityTokens.Transformed
+                    && evidence[0].subjectKind == NarrativeSubjectKindTokens.Pawn
+                    && evidence[0].subjectId == subjectId
+                    && string.IsNullOrWhiteSpace(evidence[0].arcKey)
+                    && evidence[0].sourceDomain
+                        == AnomalyNarrativeContinuityTokens.GhoulSourceDomain
+                    && evidence[0].sourceDefName
+                        == AnomalyNarrativeContinuityTokens.GhoulSourceDefName
+                    && evidence[0].pawnCanKnow == true,
+                "Ghoul N3-A evidence was not exact for role '" + role + "'.");
+            PawnDiaryRimTestScope.Require(
+                page.NarrativeSelectedCandidateKeysForRole(role).Contains(expectedKey)
+                    && !string.IsNullOrWhiteSpace(context)
+                    && page.NarrativeReferencesForRole(role).Exists(reference => reference != null
+                        && reference.facet == NarrativeFacetTokens.IdentityTransition
+                        && reference.phase == AnomalyNarrativeContinuityTokens.Transformed
+                        && reference.subjectId == subjectId),
+                "Ghoul N3-A did not freeze its stable identity lens for role '" + role + "'.");
+            string[] hiddenTerms = { "recipe", "ingredient", "mutation", "infection", "infiltrator" };
+            for (int i = 0; i < hiddenTerms.Length; i++)
+            {
+                PawnDiaryRimTestScope.Require(
+                    context.IndexOf(hiddenTerms[i], StringComparison.OrdinalIgnoreCase) < 0,
+                    "Ghoul N3-A leaked hidden term '" + hiddenTerms[i] + "'.");
+            }
         }
 
         private static bool RequireAnomalyOrReport(string testName)

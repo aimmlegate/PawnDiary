@@ -1,5 +1,5 @@
-// Standalone, no-RimWorld checks for the shared Narrative Continuity layer through the first N3-B
-// gene-identity extension. The project
+// Standalone, no-RimWorld checks for the shared Narrative Continuity layer through N3-A's visible
+// Anomaly provider and the first N3-B gene-identity extension. The project
 // file links only pure source, making any accidental Verse/Unity/DLC dependency a compile-time failure.
 using System;
 using System.Collections.Generic;
@@ -23,7 +23,7 @@ namespace NarrativeContinuityTests
             TestPersistenceCapsAndPromptFormatting();
             TestRoyaltyProviderApplicabilityAndBounds();
             TestBiotechProviderApplicabilityAndTruthGates();
-            TestAnomalyProviderSkeletonFailsClosed();
+            TestAnomalyProviderVisibleMappingsAndGates();
             TestOdysseyProviderEvidenceAndCrossDlcGates();
             TestReflectionPriorityAndDeferredConsumption();
             Console.WriteLine("NarrativeContinuityTests passed " + assertions + " assertions.");
@@ -191,29 +191,397 @@ namespace NarrativeContinuityTests
             AssertEqual("empty future provider stubs add no candidates", 3, fixedOrder.Count);
         }
 
-        private static void TestAnomalyProviderSkeletonFailsClosed()
+        private static void TestAnomalyProviderVisibleMappingsAndGates()
         {
-            AnomalyNarrativeSnapshot authorized = new AnomalyNarrativeSnapshot
+            AnomalyNarrativeFact ghoul = AnomalyFact(
+                AnomalyNarrativeContinuityTokens.GhoulTransformation,
+                NarrativeFacetTokens.IdentityTransition,
+                AnomalyNarrativeContinuityTokens.Transformed,
+                NarrativeSubjectKindTokens.Pawn,
+                "pawn-ghoul",
+                string.Empty,
+                "Ari visibly completed an irreversible ghoul transformation.");
+            AssertAnomalyMapping(
+                "visible ghoul transformation maps to exact-subject identity",
+                ghoul,
+                "anomaly|identity|ghoul|pawn-ghoul|transformed",
+                NarrativeCategoryTokens.Identity,
+                NarrativeRelationshipTokens.ExactSubject);
+
+            AnomalyNarrativeFact containment = AnomalyFact(
+                AnomalyNarrativeContinuityTokens.ContainmentBreach,
+                NarrativeFacetTokens.AmbientPressure,
+                AnomalyNarrativeContinuityTokens.Breached,
+                NarrativeSubjectKindTokens.Entity,
+                "Thing_77",
+                "anomaly-breach|3|900|Thing_77",
+                "A visibly contained entity escaped on this map.");
+            AssertAnomalyMapping(
+                "visible containment breach maps to exact-arc pressure",
+                containment,
+                "anomaly|pressure|breach|3|900|Thing_77",
+                NarrativeCategoryTokens.Pressure,
+                NarrativeRelationshipTokens.ExactArc);
+
+            string[] monolithPhases =
+            {
+                AnomalyNarrativeContinuityTokens.Stirring,
+                AnomalyNarrativeContinuityTokens.Waking,
+                AnomalyNarrativeContinuityTokens.VoidAwakened
+            };
+            AssertTrue("Stirring accepts only its shipped window/source identity",
+                AnomalyNarrativeContinuityTokens.MatchesVisibleMonolithSource(
+                    AnomalyNarrativeContinuityTokens.MonolithStirringWindowDefName,
+                    AnomalyNarrativeContinuityTokens.Stirring,
+                    AnomalyNarrativeContinuityTokens.MonolithStirringSourceDefName));
+            AssertTrue("Waking accepts only its shipped window/source identity",
+                AnomalyNarrativeContinuityTokens.MatchesVisibleMonolithSource(
+                    AnomalyNarrativeContinuityTokens.MonolithWakingWindowDefName,
+                    AnomalyNarrativeContinuityTokens.Waking,
+                    AnomalyNarrativeContinuityTokens.MonolithWakingSourceDefName));
+            AssertTrue("Void Awakened accepts only its shipped window/source identity",
+                AnomalyNarrativeContinuityTokens.MatchesVisibleMonolithSource(
+                    AnomalyNarrativeContinuityTokens.MonolithVoidAwakenedWindowDefName,
+                    AnomalyNarrativeContinuityTokens.VoidAwakened,
+                    AnomalyNarrativeContinuityTokens.MonolithVoidAwakenedSourceDefName));
+            AssertTrue("swapped monolith window identity fails closed",
+                !AnomalyNarrativeContinuityTokens.MatchesVisibleMonolithSource(
+                    AnomalyNarrativeContinuityTokens.MonolithWakingWindowDefName,
+                    AnomalyNarrativeContinuityTokens.Stirring,
+                    AnomalyNarrativeContinuityTokens.MonolithStirringSourceDefName));
+            for (int i = 0; i < monolithPhases.Length; i++)
+            {
+                string phase = monolithPhases[i];
+                AssertAnomalyMapping(
+                    "visible monolith chapter maps exactly: " + phase,
+                    AnomalyFact(
+                        AnomalyNarrativeContinuityTokens.MonolithChapter,
+                        NarrativeFacetTokens.JourneyChapter,
+                        phase,
+                        string.Empty,
+                        string.Empty,
+                        "anomaly-monolith|2",
+                        "The monolith visibly reached " + phase + "."),
+                    "anomaly|chapter|monolith|2|" + phase,
+                    NarrativeCategoryTokens.Chapter,
+                    NarrativeRelationshipTokens.ExactArc);
+            }
+
+            string[] creepPhases =
+            {
+                AnomalyNarrativeContinuityTokens.SurgicalReveal,
+                AnomalyNarrativeContinuityTokens.Rejected,
+                AnomalyNarrativeContinuityTokens.Aggressive,
+                AnomalyNarrativeContinuityTokens.Departed
+            };
+            for (int i = 0; i < creepPhases.Length; i++)
+            {
+                string phase = creepPhases[i];
+                AssertAnomalyMapping(
+                    "verified visible creepjoiner outcome maps exactly: " + phase,
+                    AnomalyFact(
+                        AnomalyNarrativeContinuityTokens.CreepJoinerOutcome,
+                        NarrativeFacetTokens.IdentityTransition,
+                        phase,
+                        NarrativeSubjectKindTokens.Pawn,
+                        "pawn-creep",
+                        string.Empty,
+                        "The visible creepjoiner result was " + phase + "."),
+                    "anomaly|identity|creepjoiner|pawn-creep|" + phase,
+                    NarrativeCategoryTokens.Identity,
+                    NarrativeRelationshipTokens.ExactSubject);
+            }
+
+            NarrativeEvidence ghoulEvidence = AnomalyEvidence(ghoul);
+            AnomalyNarrativeSnapshot snapshot = AnomalySnapshot(ghoul);
+            snapshot.providerAvailable = false;
+            AssertEqual("inactive Anomaly provider is silent", 0,
+                AnomalyNarrativeProvider.Build(new List<NarrativeEvidence> { ghoulEvidence }, snapshot).Count);
+            snapshot.providerAvailable = true;
+            snapshot.pawnCanKnow = false;
+            AssertEqual("unknown Anomaly snapshot is silent", 0,
+                AnomalyNarrativeProvider.Build(new List<NarrativeEvidence> { ghoulEvidence }, snapshot).Count);
+            snapshot.pawnCanKnow = true;
+            snapshot.hasVerifiedPovConnection = false;
+            AssertEqual("unverified Anomaly POV connection is silent", 0,
+                AnomalyNarrativeProvider.Build(new List<NarrativeEvidence> { ghoulEvidence }, snapshot).Count);
+            snapshot.hasVerifiedPovConnection = true;
+            ghoulEvidence.pawnCanKnow = null;
+            AssertEqual("unknown evidence knowledge fails closed", 0,
+                AnomalyNarrativeProvider.Build(new List<NarrativeEvidence> { ghoulEvidence }, snapshot).Count);
+            ghoulEvidence.pawnCanKnow = false;
+            AssertEqual("denied evidence knowledge fails closed", 0,
+                AnomalyNarrativeProvider.Build(new List<NarrativeEvidence> { ghoulEvidence }, snapshot).Count);
+            ghoulEvidence.pawnCanKnow = true;
+
+            Action<string, Action<NarrativeEvidence>> rejectEvidence = (label, mutate) =>
+            {
+                NarrativeEvidence mismatched = AnomalyEvidence(ghoul);
+                mutate(mismatched);
+                AssertEqual(label, 0, AnomalyNarrativeProvider.Build(
+                    new List<NarrativeEvidence> { mismatched }, AnomalySnapshot(ghoul)).Count);
+            };
+            rejectEvidence("different POV cannot receive an Anomaly lens", row => row.povPawnId = "other");
+            rejectEvidence("mismatched exact subject fails closed", row => row.subjectId = "other");
+            rejectEvidence("mismatched facet fails closed", row => row.facet = NarrativeFacetTokens.JourneyChapter);
+            rejectEvidence("mismatched phase fails closed", row => row.phase = "other");
+            rejectEvidence("mismatched source domain fails closed", row => row.sourceDomain = "test");
+            rejectEvidence("mismatched source def fails closed", row => row.sourceDefName = "Other");
+            NarrativeEvidence wrongMonolithArc = AnomalyEvidence(AnomalyFact(
+                AnomalyNarrativeContinuityTokens.MonolithChapter,
+                NarrativeFacetTokens.JourneyChapter,
+                AnomalyNarrativeContinuityTokens.Waking,
+                string.Empty,
+                string.Empty,
+                "anomaly-monolith|2",
+                "Visible chapter."));
+            wrongMonolithArc.arcKey = "anomaly-monolith|3";
+            AssertEqual("mismatched monolith evidence arc fails closed", 0,
+                AnomalyNarrativeProvider.Build(
+                    new List<NarrativeEvidence> { wrongMonolithArc },
+                    AnomalySnapshot(AnomalyFact(
+                        AnomalyNarrativeContinuityTokens.MonolithChapter,
+                        NarrativeFacetTokens.JourneyChapter,
+                        AnomalyNarrativeContinuityTokens.Waking,
+                        string.Empty,
+                        string.Empty,
+                        "anomaly-monolith|2",
+                        "Visible chapter."))).Count);
+            NarrativeEvidence wrongContainmentArc = AnomalyEvidence(containment);
+            wrongContainmentArc.arcKey = "anomaly-breach|3|901|Thing_77";
+            AssertEqual("mismatched containment evidence arc fails closed", 0,
+                AnomalyNarrativeProvider.Build(
+                    new List<NarrativeEvidence> { wrongContainmentArc },
+                    AnomalySnapshot(containment)).Count);
+
+            AssertEqual("null Anomaly evidence is harmless", 0,
+                AnomalyNarrativeProvider.Build(null, snapshot).Count);
+            AssertEqual("null Anomaly snapshot is harmless", 0,
+                AnomalyNarrativeProvider.Build(new List<NarrativeEvidence> { ghoulEvidence }, null).Count);
+            snapshot.facts = null;
+            AssertEqual("null Anomaly fact list is harmless", 0,
+                AnomalyNarrativeProvider.Build(new List<NarrativeEvidence> { ghoulEvidence }, snapshot).Count);
+
+            string[] hiddenCreepPhases =
+            {
+                "joined", "embraced", "benefit", "downside", "infection", "infiltrator", "unresolved"
+            };
+            for (int i = 0; i < hiddenCreepPhases.Length; i++)
+            {
+                AnomalyNarrativeFact hidden = AnomalyFact(
+                    AnomalyNarrativeContinuityTokens.CreepJoinerOutcome,
+                    NarrativeFacetTokens.IdentityTransition,
+                    hiddenCreepPhases[i],
+                    NarrativeSubjectKindTokens.Pawn,
+                    "pawn-creep",
+                    string.Empty,
+                    "Hidden state must not become a candidate.");
+                AssertEqual("hidden creepjoiner phase is silent: " + hidden.phase, 0,
+                    AnomalyNarrativeProvider.Build(
+                        new List<NarrativeEvidence> { AnomalyEvidence(hidden) },
+                        AnomalySnapshot(hidden)).Count);
+            }
+            string[] terminalOrUnsupportedMonolith = { "gleaming", "embraced", "disrupted", "terminal" };
+            for (int i = 0; i < terminalOrUnsupportedMonolith.Length; i++)
+            {
+                AnomalyNarrativeFact hidden = AnomalyFact(
+                    AnomalyNarrativeContinuityTokens.MonolithChapter,
+                    NarrativeFacetTokens.JourneyChapter,
+                    terminalOrUnsupportedMonolith[i],
+                    string.Empty,
+                    string.Empty,
+                    "anomaly-monolith|0",
+                    "Unsupported terminal state.");
+                AssertEqual("unsupported or terminal monolith phase is silent: " + hidden.phase, 0,
+                    AnomalyNarrativeProvider.Build(
+                        new List<NarrativeEvidence> { AnomalyEvidence(hidden) },
+                        AnomalySnapshot(hidden)).Count);
+            }
+
+            Action<string, AnomalyNarrativeFact> rejectFact = (label, fact) => AssertEqual(label, 0,
+                AnomalyNarrativeProvider.Build(
+                    new List<NarrativeEvidence> { AnomalyEvidence(fact) },
+                    AnomalySnapshot(fact)).Count);
+            rejectFact("blank subject key is rejected", AnomalyFact(
+                ghoul.sourceKind, ghoul.facet, ghoul.phase, ghoul.subjectKind, " ", "", ghoul.text));
+            rejectFact("whitespace subject key is rejected", AnomalyFact(
+                ghoul.sourceKind, ghoul.facet, ghoul.phase, ghoul.subjectKind, "pawn bad", "", ghoul.text));
+            rejectFact("separator subject key is rejected", AnomalyFact(
+                ghoul.sourceKind, ghoul.facet, ghoul.phase, ghoul.subjectKind, "pawn|bad", "", ghoul.text));
+            rejectFact("overlong subject key is rejected", AnomalyFact(
+                ghoul.sourceKind, ghoul.facet, ghoul.phase, ghoul.subjectKind, new string('x', 161), "", ghoul.text));
+            rejectFact("blank narrative text is rejected", AnomalyFact(
+                ghoul.sourceKind, ghoul.facet, ghoul.phase, ghoul.subjectKind, ghoul.subjectId, "", " "));
+            rejectFact("control character narrative text is rejected", AnomalyFact(
+                ghoul.sourceKind, ghoul.facet, ghoul.phase, ghoul.subjectKind, ghoul.subjectId, "", "bad\ntext"));
+            rejectFact("overlong narrative text is rejected", AnomalyFact(
+                ghoul.sourceKind, ghoul.facet, ghoul.phase, ghoul.subjectKind, ghoul.subjectId, "", new string('x', 513)));
+            rejectFact("negative source tick is rejected", AnomalyFact(
+                ghoul.sourceKind, ghoul.facet, ghoul.phase, ghoul.subjectKind, ghoul.subjectId, "", ghoul.text, -1));
+            string[] badMonolithArcs =
+            {
+                "", "anomaly-monolith|-1", "anomaly-monolith|01", "anomaly-monolith|1|extra",
+                "anomaly-monolith|99999999999"
+            };
+            for (int i = 0; i < badMonolithArcs.Length; i++)
+            {
+                rejectFact("malformed monolith arc is rejected: " + i, AnomalyFact(
+                    AnomalyNarrativeContinuityTokens.MonolithChapter,
+                    NarrativeFacetTokens.JourneyChapter,
+                    AnomalyNarrativeContinuityTokens.Stirring,
+                    string.Empty,
+                    string.Empty,
+                    badMonolithArcs[i],
+                    "Visible chapter."));
+            }
+            rejectFact("containment arc must repeat exact escaped entity", AnomalyFact(
+                containment.sourceKind, containment.facet, containment.phase, containment.subjectKind,
+                containment.subjectId, "anomaly-breach|3|900|Thing_88", containment.text));
+
+            List<AnomalyNarrativeFact> manyFacts = new List<AnomalyNarrativeFact>();
+            List<NarrativeEvidence> manyEvidence = new List<NarrativeEvidence>();
+            for (int i = 6; i >= 1; i--)
+            {
+                AnomalyNarrativeFact fact = AnomalyFact(
+                    AnomalyNarrativeContinuityTokens.GhoulTransformation,
+                    NarrativeFacetTokens.IdentityTransition,
+                    AnomalyNarrativeContinuityTokens.Transformed,
+                    NarrativeSubjectKindTokens.Pawn,
+                    "pawn-" + i,
+                    string.Empty,
+                    "Visible identity transition " + i + ".");
+                manyFacts.Add(fact);
+                manyEvidence.Add(AnomalyEvidence(fact));
+            }
+            AnomalyNarrativeSnapshot manySnapshot = AnomalySnapshot();
+            manySnapshot.facts = manyFacts;
+            List<NarrativeLensCandidate> bounded =
+                AnomalyNarrativeProvider.Build(manyEvidence, manySnapshot);
+            AssertEqual("Anomaly identity candidates are defensively capped", 4, bounded.Count);
+            AssertEqual("Anomaly output order ignores snapshot order",
+                "anomaly|identity|ghoul|pawn-1|transformed", bounded[0].candidateKey);
+            AssertEqual("Anomaly cap keeps deterministic lowest stable key",
+                "anomaly|identity|ghoul|pawn-4|transformed", bounded[3].candidateKey);
+            AnomalyNarrativeFact duplicateFirst = AnomalyFact(
+                ghoul.sourceKind, ghoul.facet, ghoul.phase, ghoul.subjectKind, "pawn-duplicate", "",
+                "Z duplicate text.");
+            AnomalyNarrativeFact duplicateSecond = AnomalyFact(
+                ghoul.sourceKind, ghoul.facet, ghoul.phase, ghoul.subjectKind, "pawn-duplicate", "",
+                "A duplicate text.");
+            AnomalyNarrativeSnapshot duplicateSnapshot = AnomalySnapshot(
+                duplicateFirst, duplicateSecond);
+            List<NarrativeLensCandidate> duplicate = AnomalyNarrativeProvider.Build(
+                new List<NarrativeEvidence> { AnomalyEvidence(duplicateFirst) }, duplicateSnapshot);
+            AssertEqual("duplicate Anomaly stable keys collapse", 1, duplicate.Count);
+            AssertEqual("duplicate collapse is deterministic", "A duplicate text.", duplicate[0].text);
+
+            List<AnomalyNarrativeFact> categoryFacts = new List<AnomalyNarrativeFact>();
+            List<NarrativeEvidence> categoryEvidence = new List<NarrativeEvidence>();
+            for (int i = 4; i >= 0; i--)
+            {
+                AnomalyNarrativeFact chapter = AnomalyFact(
+                    AnomalyNarrativeContinuityTokens.MonolithChapter,
+                    NarrativeFacetTokens.JourneyChapter,
+                    AnomalyNarrativeContinuityTokens.Stirring,
+                    string.Empty,
+                    string.Empty,
+                    "anomaly-monolith|" + i,
+                    "Visible monolith chapter " + i + ".");
+                categoryFacts.Add(chapter);
+                categoryEvidence.Add(AnomalyEvidence(chapter));
+            }
+            for (int i = 3; i >= 1; i--)
+            {
+                string entityId = "Thing_" + i;
+                AnomalyNarrativeFact pressure = AnomalyFact(
+                    AnomalyNarrativeContinuityTokens.ContainmentBreach,
+                    NarrativeFacetTokens.AmbientPressure,
+                    AnomalyNarrativeContinuityTokens.Breached,
+                    NarrativeSubjectKindTokens.Entity,
+                    entityId,
+                    "anomaly-breach|" + i + "|900|" + entityId,
+                    "Visible containment pressure " + i + ".");
+                categoryFacts.Add(pressure);
+                categoryEvidence.Add(AnomalyEvidence(pressure));
+            }
+            AnomalyNarrativeSnapshot categorySnapshot = AnomalySnapshot();
+            categorySnapshot.facts = categoryFacts;
+            List<NarrativeLensCandidate> categoryBounded = AnomalyNarrativeProvider.Build(
+                categoryEvidence, categorySnapshot);
+            AssertEqual("chapter and pressure category caps compose", 4, categoryBounded.Count);
+            AssertEqual("chapter cap keeps the first stable epoch",
+                "anomaly|chapter|monolith|0|stirring", categoryBounded[0].candidateKey);
+            AssertEqual("chapter cap retains exactly three deterministic epochs",
+                "anomaly|chapter|monolith|2|stirring", categoryBounded[2].candidateKey);
+            AssertEqual("pressure cap retains exactly one deterministic breach",
+                "anomaly|pressure|breach|1|900|Thing_1", categoryBounded[3].candidateKey);
+
+            NarrativeLensCandidate anomalyIdentity = AnomalyNarrativeProvider.Build(
+                new List<NarrativeEvidence> { AnomalyEvidence(ghoul) }, AnomalySnapshot(ghoul))[0];
+            NarrativePolicySnapshot repetitionPolicy = NarrativePolicySnapshot.CreateDefault();
+            repetitionPolicy.maxSelectedCandidates = 2;
+            Budget(repetitionPolicy, NarrativeDetailLevelTokens.Full).maxLenses = 2;
+            Budget(repetitionPolicy, NarrativeDetailLevelTokens.Full).characterBudget = 1000;
+            Func<List<string>, NarrativeContextSelection> selectAnomaly = recent =>
+                NarrativeContextSelector.Select(new NarrativeContextRequest
+                {
+                    policy = repetitionPolicy,
+                    detailLevel = NarrativeDetailLevelTokens.Full,
+                    currentTick = 1000,
+                    evidence = new List<NarrativeEvidence> { AnomalyEvidence(ghoul) },
+                    recentSelectedCandidateKeys = recent ?? new List<string>(),
+                    candidates = new List<NarrativeLensCandidate>
+                    {
+                        anomalyIdentity,
+                        Candidate("fresh-body-topic", NarrativeCategoryTokens.Chapter,
+                            NarrativeFacetTokens.JourneyChapter,
+                            topics: new List<string> { "body" }, sourceTick: 1000)
+                    }
+                });
+            AssertEqual("fresh exact Anomaly identity outranks a direct topic",
+                anomalyIdentity.candidateKey, selectAnomaly(null).selectedCandidates[0].candidateKey);
+            AssertEqual("persisted Anomaly key activates ordinary repetition penalty",
+                "fresh-body-topic",
+                selectAnomaly(new List<string> { anomalyIdentity.candidateKey })
+                    .selectedCandidates[0].candidateKey);
+
+            OdysseyNarrativeSnapshot odyssey = new OdysseyNarrativeSnapshot
             {
                 providerAvailable = true,
                 povPawnId = "pawn-1",
+                shipStableId = "WorldObject_12",
+                shipName = "Wayfarer",
+                journeyId = "odyssey-journey|WorldObject_12|800",
+                locationKey = "planet-layer-1-tile-42",
+                locationLabel = "Frozen plain",
+                homeText = "At this event, the writer was aboard Wayfarer at the frozen plain.",
+                sourceTick = 1000,
                 pawnCanKnow = true,
                 hasVerifiedPovConnection = true
             };
-            AssertEqual("A1.1 Anomaly provider remains empty with authorized evidence", 0,
-                AnomalyNarrativeProvider.Build(
-                    new List<NarrativeEvidence> { Evidence() }, authorized).Count);
-            AssertEqual("A1.1 Anomaly provider remains empty for null input", 0,
-                AnomalyNarrativeProvider.Build(null, null).Count);
+            List<NarrativeLensCandidate> composed = NarrativeProviderOrchestrator.Collect(
+                new List<NarrativeEvidence> { AnomalyEvidence(ghoul) },
+                new List<NarrativeLensCandidate>(), null, null, AnomalySnapshot(ghoul), odyssey);
+            AssertEqual("Anomaly composes with another available provider", 2, composed.Count);
+            AssertEqual("fixed provider order keeps Anomaly before Odyssey",
+                NarrativeProviderTokens.Anomaly, composed[0].provider);
+            AssertEqual("Odyssey remains independently available after Anomaly",
+                NarrativeProviderTokens.Odyssey, composed[1].provider);
 
-            List<NarrativeLensCandidate> collected = NarrativeProviderOrchestrator.Collect(
-                new List<NarrativeEvidence> { Evidence() },
-                new List<NarrativeLensCandidate>(),
-                null,
-                null,
-                authorized,
-                null);
-            AssertEqual("fixed provider list does not invent an Anomaly lens", 0, collected.Count);
+            NarrativeContextSelection emptyProviderSelection = NarrativeContextSelector.Select(
+                new NarrativeContextRequest
+                {
+                    policy = NarrativePolicySnapshot.CreateDefault(),
+                    currentTick = 1000,
+                    detailLevel = NarrativeDetailLevelTokens.Full,
+                    evidence = new List<NarrativeEvidence> { AnomalyEvidence(ghoul) },
+                    candidates = AnomalyNarrativeProvider.Build(
+                        new List<NarrativeEvidence> { AnomalyEvidence(ghoul) }, null)
+                });
+            AssertEqual("empty Anomaly provider output selects no lens", 0,
+                emptyProviderSelection.selectedCandidates.Count);
+            AssertEqual("empty Anomaly provider output preserves source reference", 1,
+                emptyProviderSelection.references.Count);
         }
 
         private static void TestRoyaltyProviderApplicabilityAndBounds()
@@ -925,6 +1293,112 @@ namespace NarrativeContinuityTests
                 disabledPlan.stateInstructions[0].advanceDebtWhenGroupDisabled);
             AssertTrue("disabled group instruction never claims a successful dispatch",
                 !disabledPlan.stateInstructions[0].consumeAfterSuccessfulDispatch);
+        }
+
+        private static void AssertAnomalyMapping(
+            string label,
+            AnomalyNarrativeFact fact,
+            string expectedKey,
+            string expectedCategory,
+            string expectedRelationship)
+        {
+            List<NarrativeLensCandidate> candidates = AnomalyNarrativeProvider.Build(
+                new List<NarrativeEvidence> { AnomalyEvidence(fact) },
+                AnomalySnapshot(fact));
+            AssertEqual(label + " candidate count", 1, candidates.Count);
+            AssertEqual(label + " stable key", expectedKey, candidates[0].candidateKey);
+            AssertEqual(label + " provider", NarrativeProviderTokens.Anomaly, candidates[0].provider);
+            AssertEqual(label + " category", expectedCategory, candidates[0].category);
+            AssertEqual(label + " relationship", expectedRelationship, candidates[0].relationship);
+            AssertEqual(label + " exact subject", fact.subjectId, candidates[0].subjectId);
+            AssertEqual(label + " exact arc", fact.arcKey, candidates[0].arcKey);
+        }
+
+        private static AnomalyNarrativeSnapshot AnomalySnapshot(params AnomalyNarrativeFact[] facts)
+        {
+            return new AnomalyNarrativeSnapshot
+            {
+                providerAvailable = true,
+                povPawnId = "pawn-1",
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true,
+                facts = facts == null
+                    ? new List<AnomalyNarrativeFact>()
+                    : new List<AnomalyNarrativeFact>(facts)
+            };
+        }
+
+        private static AnomalyNarrativeFact AnomalyFact(
+            string sourceKind,
+            string facet,
+            string phase,
+            string subjectKind,
+            string subjectId,
+            string arcKey,
+            string text,
+            int sourceTick = 1000)
+        {
+            return new AnomalyNarrativeFact
+            {
+                sourceKind = sourceKind,
+                facet = facet,
+                phase = phase,
+                subjectKind = subjectKind,
+                subjectId = subjectId,
+                arcKey = arcKey,
+                text = text,
+                sourceTick = sourceTick
+            };
+        }
+
+        private static NarrativeEvidence AnomalyEvidence(AnomalyNarrativeFact fact)
+        {
+            string sourceDomain;
+            string sourceDefName;
+            if (fact.sourceKind == AnomalyNarrativeContinuityTokens.GhoulTransformation)
+            {
+                sourceDomain = AnomalyNarrativeContinuityTokens.GhoulSourceDomain;
+                sourceDefName = AnomalyNarrativeContinuityTokens.GhoulSourceDefName;
+            }
+            else if (fact.sourceKind == AnomalyNarrativeContinuityTokens.ContainmentBreach)
+            {
+                sourceDomain = AnomalyNarrativeContinuityTokens.ContainmentSourceDomain;
+                sourceDefName = AnomalyNarrativeContinuityTokens.ContainmentSourceDefName;
+            }
+            else if (fact.sourceKind == AnomalyNarrativeContinuityTokens.CreepJoinerOutcome)
+            {
+                sourceDomain = AnomalyNarrativeContinuityTokens.CreepJoinerSourceDomain;
+                sourceDefName = AnomalyNarrativeContinuityTokens.CreepJoinerSourceDefName;
+            }
+            else
+            {
+                sourceDomain = AnomalyNarrativeContinuityTokens.MonolithSourceDomain;
+                sourceDefName = fact.phase == AnomalyNarrativeContinuityTokens.Stirring
+                    ? AnomalyNarrativeContinuityTokens.MonolithStirringSourceDefName
+                    : fact.phase == AnomalyNarrativeContinuityTokens.Waking
+                        ? AnomalyNarrativeContinuityTokens.MonolithWakingSourceDefName
+                        : fact.phase == AnomalyNarrativeContinuityTokens.VoidAwakened
+                            ? AnomalyNarrativeContinuityTokens.MonolithVoidAwakenedSourceDefName
+                            : fact.phase;
+            }
+
+            return new NarrativeEvidence
+            {
+                eventId = "anomaly-event",
+                tick = fact.sourceTick,
+                povPawnId = "pawn-1",
+                povRole = "initiator",
+                facet = fact.facet,
+                phase = fact.phase,
+                subjectKind = fact.subjectKind,
+                subjectId = fact.subjectId,
+                arcKey = fact.arcKey,
+                beliefTopics = new List<string> { "identity", "body" },
+                salience = NarrativeSalienceTokens.Major,
+                pawnCanKnow = true,
+                sourceDomain = sourceDomain,
+                sourceDefName = sourceDefName
+            };
         }
 
         private static NarrativeEvidence Evidence()

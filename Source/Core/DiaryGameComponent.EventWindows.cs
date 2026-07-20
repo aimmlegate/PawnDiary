@@ -742,8 +742,40 @@ namespace PawnDiary
             {
                 // The writer has already been selected from this exact, visible signal. That makes
                 // pawnCanKnow=true source-owned truth rather than a provider inference. The builder
-                // normalizes/caps the plain DTO and produces a compact reference even though Wave 2
-                // intentionally has no live Anomaly lens provider yet.
+                // normalizes/caps the plain DTO and freezes a compact reference. Only the three exact
+                // monolith chapter templates additionally receive the N3-A Anomaly lens snapshot.
+                string arcKey = !string.IsNullOrWhiteSpace(active?.startNarrativeArcKey)
+                    ? active.startNarrativeArcKey
+                    : (!string.IsNullOrWhiteSpace(facts?.narrativeArcKey)
+                        ? facts.narrativeArcKey
+                        : template.arcKey);
+                bool monolithChapter = string.Equals(
+                        template.facet, NarrativeFacetTokens.JourneyChapter, StringComparison.Ordinal)
+                    && !string.IsNullOrWhiteSpace(arcKey)
+                    && arcKey.StartsWith("anomaly-monolith|", StringComparison.Ordinal)
+                    && AnomalyNarrativeContinuityTokens.MatchesVisibleMonolithSource(
+                        def.defName, template.phase, facts?.defName);
+                NarrativeEvidence evidence = new NarrativeEvidence
+                {
+                    eventId = diaryEvent.eventId,
+                    tick = diaryEvent.tick,
+                    povPawnId = pawn.GetUniqueLoadID(),
+                    povRole = DiaryEvent.InitiatorRole,
+                    facet = template.facet,
+                    phase = template.phase,
+                    subjectKind = template.subjectKind,
+                    subjectId = template.subjectId,
+                    arcKey = arcKey,
+                    beliefTopics = template.beliefTopics == null
+                        ? new List<string>()
+                        : new List<string>(template.beliefTopics),
+                    salience = template.salience,
+                    pawnCanKnow = true,
+                    sourceDomain = monolithChapter
+                        ? AnomalyNarrativeContinuityTokens.MonolithSourceDomain
+                        : NarrativeSourceDomainEventWindow,
+                    sourceDefName = facts?.defName ?? def.defName
+                };
                 NarrativeContextBuildResult result = NarrativeContextBuilder.Build(
                     new NarrativeContextBuildRequest
                     {
@@ -752,33 +784,18 @@ namespace PawnDiary
                         povPawnId = pawn.GetUniqueLoadID(),
                         povRole = DiaryEvent.InitiatorRole,
                         royalty = RoyaltyNarrativeSnapshotFor(pawn, diaryEvent.tick),
-                        // Feed the selector this POV's persisted selection history. Today no provider
-                        // proposes a Royalty lens unless the window carries an exact persona/title
-                        // subject contract, so unrelated windows keep the historical zero-lens path.
+                        anomaly = monolithChapter
+                            ? AnomalyNarrativeContextAdapter.MonolithSnapshot(pawn, evidence)
+                            : null,
+                        // Feed the selector this POV's persisted selection history. Provider candidates
+                        // still need an exact source-owned evidence match, so unrelated windows retain
+                        // their evidence/reference-only behavior.
                         recentSelectedCandidateKeys =
                             RecentNarrativeSelectedCandidateKeys(pawn.GetUniqueLoadID()),
-                        evidence = new List<NarrativeEvidence>
-                        {
-                            new NarrativeEvidence
-                            {
-                                facet = template.facet,
-                                phase = template.phase,
-                                subjectKind = template.subjectKind,
-                                subjectId = template.subjectId,
-                                arcKey = !string.IsNullOrWhiteSpace(active?.startNarrativeArcKey)
-                                    ? active.startNarrativeArcKey
-                                    : (!string.IsNullOrWhiteSpace(facts?.narrativeArcKey)
-                                        ? facts.narrativeArcKey
-                                        : template.arcKey),
-                                beliefTopics = template.beliefTopics == null
-                                    ? new List<string>()
-                                    : new List<string>(template.beliefTopics),
-                                salience = template.salience,
-                                pawnCanKnow = true,
-                                sourceDomain = NarrativeSourceDomainEventWindow,
-                                sourceDefName = facts?.defName ?? def.defName
-                            }
-                        }
+                        evidence = new List<NarrativeEvidence> { evidence },
+                        contextDetailLevel = PawnDiarySettings.NormalizeContextDetailLevel(
+                            PawnDiaryMod.Settings?.contextDetailLevel
+                                ?? PromptContextDetailLevel.Full)
                     });
 
                 if (result.evidence.Count > 0)

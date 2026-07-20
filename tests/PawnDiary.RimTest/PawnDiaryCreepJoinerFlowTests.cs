@@ -1,4 +1,4 @@
-// Loaded-game Anomaly A2.0/A2.1 fixtures. These create disposable creepjoiners through vanilla's own
+// Loaded-game Anomaly A2.0/A2.1 plus N3-A fixtures. These create disposable creepjoiners through vanilla's own
 // CreepJoinerUtility, then call the exact public lifecycle or surgical-inspection methods Pawn Diary
 // observes. All possible writers have generation disabled, so event creation is synchronous and no
 // LLM request can leave the game. Teardown restores component state, XML policy values, letters,
@@ -44,6 +44,7 @@ namespace PawnDiary.RimTests
         private static int originalRetentionTicks;
         private static int originalMaxWitnesses;
         private static int originalWitnessRadius;
+        private static PromptContextDetailLevel originalContextDetailLevel;
         private static HashSet<Letter> originalLetters;
         private static HashSet<Tale> originalTales;
 
@@ -63,6 +64,8 @@ namespace PawnDiary.RimTests
             originalRetentionTicks = policyDef.creepJoinerArcRetentionTicks;
             originalMaxWitnesses = policyDef.creepJoinerMaxWitnesses;
             originalWitnessRadius = policyDef.creepJoinerWitnessRadius;
+            originalContextDetailLevel = PawnDiaryMod.Settings.contextDetailLevel;
+            PawnDiaryMod.Settings.contextDetailLevel = PromptContextDetailLevel.Full;
             originalState = scope.Component.AnomalyStateSnapshotForTests();
             originalLetters = new HashSet<Letter>(
                 Find.LetterStack?.LettersListForReading ?? new List<Letter>());
@@ -99,6 +102,8 @@ namespace PawnDiary.RimTests
                     policyDef.creepJoinerMaxWitnesses = originalMaxWitnesses;
                     policyDef.creepJoinerWitnessRadius = originalWitnessRadius;
                 }
+                if (PawnDiaryMod.Settings != null)
+                    PawnDiaryMod.Settings.contextDetailLevel = originalContextDetailLevel;
                 RemoveFixtureLetters();
                 RemoveFixtureTales();
             }
@@ -183,6 +188,10 @@ namespace PawnDiary.RimTests
                 !(page.gameContext ?? string.Empty).Contains("PsychicAgony")
                     && !(page.gameContext ?? string.Empty).Contains("creepjoiner_terminal"),
                 "The disclosure page leaked hidden downside identity or mislabeled a non-terminal phase.");
+            RequireNarrative(page, DiaryEvent.InitiatorRole, subject,
+                AnomalyNarrativeContinuityTokens.SurgicalReveal);
+            RequireNarrative(page, DiaryEvent.RecipientRole, subject,
+                AnomalyNarrativeContinuityTokens.SurgicalReveal);
             string surgeonLabel = surgeon.LabelShortCap;
             string subjectLabel = subject.LabelShortCap;
             PawnDiaryRimTestScope.Require(
@@ -218,6 +227,8 @@ namespace PawnDiary.RimTests
             scope.RequireSoloRef(page, surgeon);
             RequireContext(page, "witness_role=surgeon");
             RequireContext(page, "creepjoiner_subject_id=" + subject.GetUniqueLoadID());
+            RequireNarrative(page, DiaryEvent.InitiatorRole, subject,
+                AnomalyNarrativeContinuityTokens.SurgicalReveal);
             PawnDiaryRimTestScope.Require(string.IsNullOrEmpty(page.recipientPawnId),
                 "An ineligible pre-join creepjoiner was assigned a diary POV.");
         }
@@ -430,6 +441,8 @@ namespace PawnDiary.RimTests
             RequireContext(page, "visible_result=rejected");
             RequireContext(page, "witness_role=speaker");
             RequireContext(page, "creepjoiner_subject_id=" + subject.GetUniqueLoadID());
+            RequireNarrative(page, DiaryEvent.InitiatorRole, subject,
+                AnomalyNarrativeContinuityTokens.Rejected);
             CreepJoinerArcSnapshot arc = RequireOnlyArc(subject);
             PawnDiaryRimTestScope.Require(arc.terminal
                     && arc.lastVisiblePhase == AnomalyOutcomeTokens.Rejected
@@ -461,6 +474,8 @@ namespace PawnDiary.RimTests
             RequireContext(page, "visible_result=hostile");
             RequireContext(page, "rejection_response=true");
             RequireContext(page, "witness_role=speaker");
+            RequireNarrative(page, DiaryEvent.InitiatorRole, subject,
+                AnomalyNarrativeContinuityTokens.Aggressive);
             CreepJoinerArcSnapshot arc = RequireOnlyArc(subject);
             PawnDiaryRimTestScope.Require(subject.Faction?.IsPlayer != true
                     && arc.terminal
@@ -490,6 +505,8 @@ namespace PawnDiary.RimTests
                     rejectOtherTestPawnEvents: true);
                 RequireContext(page, "creepjoiner_phase=aggressive");
                 RequireContext(page, "visible_result=hostile");
+                RequireNarrative(page, DiaryEvent.InitiatorRole, subject,
+                    AnomalyNarrativeContinuityTokens.Aggressive);
                 PawnDiaryRimTestScope.Require(
                     !(page.gameContext ?? string.Empty).Contains("rejection_response=true")
                         && RequireOnlyArc(subject).lastVisibleEventId == page.eventId
@@ -522,6 +539,8 @@ namespace PawnDiary.RimTests
             RequireContext(page, "visible_result=hostile");
             RequireContext(page, "witness_role=nearby");
             RequireContext(page, "creepjoiner_subject_id=" + subject.GetUniqueLoadID());
+            RequireNarrative(page, DiaryEvent.InitiatorRole, subject,
+                AnomalyNarrativeContinuityTokens.Aggressive);
             PawnDiaryRimTestScope.Require(subject.Faction?.IsPlayer != true
                     && RequireOnlyArc(subject).lastVisiblePhase == AnomalyOutcomeTokens.Aggressive,
                 "The exact aggression method did not commit its visible hostile transition.");
@@ -561,6 +580,8 @@ namespace PawnDiary.RimTests
             RequireContext(page, "creepjoiner_phase=departed");
             RequireContext(page, "visible_result=leaving");
             RequireContext(page, "witness_role=subject");
+            RequireNarrative(page, DiaryEvent.InitiatorRole, subject,
+                AnomalyNarrativeContinuityTokens.Departed);
             PawnDiaryRimTestScope.Require(subject.Faction?.IsPlayer != true
                     && subject.GetLord()?.LordJob is LordJob_ExitMapBest
                     && RequireOnlyArc(subject).lastVisibleEventId == page.eventId,
@@ -786,6 +807,48 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(page != null
                     && (page.gameContext ?? string.Empty).Contains(token),
                 "Creepjoiner event context omitted exact token '" + token + "'.");
+        }
+
+        private static void RequireNarrative(
+            DiaryEvent page,
+            string role,
+            Pawn subject,
+            string phase)
+        {
+            string subjectId = subject.GetUniqueLoadID();
+            List<NarrativeEvidence> evidence = page.NarrativeEvidenceForRole(role);
+            string expectedKey = "anomaly|identity|creepjoiner|" + subjectId + "|" + phase;
+            string context = page.NarrativeContextForRole(role) ?? string.Empty;
+            PawnDiaryRimTestScope.Require(evidence.Count == 1
+                    && evidence[0].facet == NarrativeFacetTokens.IdentityTransition
+                    && evidence[0].phase == phase
+                    && evidence[0].subjectKind == NarrativeSubjectKindTokens.Pawn
+                    && evidence[0].subjectId == subjectId
+                    && string.IsNullOrWhiteSpace(evidence[0].arcKey)
+                    && evidence[0].sourceDomain
+                        == AnomalyNarrativeContinuityTokens.CreepJoinerSourceDomain
+                    && evidence[0].sourceDefName
+                        == AnomalyNarrativeContinuityTokens.CreepJoinerSourceDefName
+                    && evidence[0].pawnCanKnow == true,
+                "Creepjoiner N3-A evidence was not exact for role '" + role + "'.");
+            PawnDiaryRimTestScope.Require(
+                page.NarrativeSelectedCandidateKeysForRole(role).Contains(expectedKey)
+                    && !string.IsNullOrWhiteSpace(context)
+                    && page.NarrativeReferencesForRole(role).Exists(reference => reference != null
+                        && reference.facet == NarrativeFacetTokens.IdentityTransition
+                        && reference.phase == phase
+                        && reference.subjectId == subjectId),
+                "Creepjoiner N3-A did not freeze its stable identity lens for role '" + role + "'.");
+            string[] hiddenTerms =
+            {
+                "PsychicAgony", "benefit", "downside", "infection", "infiltrator", "unresolved"
+            };
+            for (int i = 0; i < hiddenTerms.Length; i++)
+            {
+                PawnDiaryRimTestScope.Require(
+                    context.IndexOf(hiddenTerms[i], StringComparison.OrdinalIgnoreCase) < 0,
+                    "Creepjoiner N3-A leaked hidden term '" + hiddenTerms[i] + "'.");
+            }
         }
 
         private static void ApplyState(AnomalyPersistentStateSnapshot state)

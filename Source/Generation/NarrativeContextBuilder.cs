@@ -1,7 +1,7 @@
 // Event-time adapter for Narrative Continuity. Source-owned events supply already-authorized, plain
 // evidence and guarded providers supply factual candidates; this builder snapshots XML policy on the
 // main thread, queries the fixed pure provider list, and calls the pure selector. N3-R adds a
-// detached Royalty snapshot; N3-A adds an explicit zero-candidate Anomaly seam beside the existing
+// detached Royalty snapshot; N3-A maps only exact visible Anomaly source facts beside the existing
 // Biotech and Odyssey providers.
 //
 // New to C#/RimWorld? See AGENTS.md ("DLC-safety" and "architecture barriers").

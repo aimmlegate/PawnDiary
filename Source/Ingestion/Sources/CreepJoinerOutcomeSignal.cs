@@ -90,7 +90,12 @@ namespace PawnDiary.Ingestion
                 text,
                 InteractionGroups.InstructionForGroup(group),
                 CreepJoinerOutcomeContextFormatter.Format(facts, plan));
-            if (CreatedEvent != null) sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
+            if (CreatedEvent != null)
+            {
+                AnomalyNarrativeContextAdapter.ApplyCreepJoinerOutcome(
+                    sink, CreatedEvent, writer, DiaryEvent.InitiatorRole, facts, plan);
+                sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
+            }
         }
 
         private string FallbackText()

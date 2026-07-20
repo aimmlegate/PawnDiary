@@ -118,7 +118,16 @@ namespace PawnDiary.Ingestion
                     secondText,
                     instruction,
                     gameContext);
-                if (CreatedEvent != null) sink.QueuePair(CreatedEvent);
+                if (CreatedEvent != null)
+                {
+                    AnomalyNarrativeContextAdapter.ApplyContainment(
+                        sink, CreatedEvent, writers[0], DiaryEvent.InitiatorRole,
+                        facts, plan, plan.selectedWriters[0]);
+                    AnomalyNarrativeContextAdapter.ApplyContainment(
+                        sink, CreatedEvent, writers[1], DiaryEvent.RecipientRole,
+                        facts, plan, plan.selectedWriters[1]);
+                    sink.QueuePair(CreatedEvent);
+                }
                 return;
             }
 
@@ -134,7 +143,13 @@ namespace PawnDiary.Ingestion
                 text,
                 instruction,
                 gameContext);
-            if (CreatedEvent != null) sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
+            if (CreatedEvent != null)
+            {
+                AnomalyNarrativeContextAdapter.ApplyContainment(
+                    sink, CreatedEvent, writer, DiaryEvent.InitiatorRole,
+                    facts, plan, plan.selectedWriters[0]);
+                sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
+            }
         }
 
         private bool WriterMatches(int index, AnomalyWriterSelection selection)

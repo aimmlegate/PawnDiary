@@ -22,6 +22,26 @@
   `nextMemoryEvictionScanTick` deadline gate in `GameComponentTickInner` at the XML-tuned
   `memoryEvictionScanIntervalTicks` cadence.
 
+- **2026-07-21 — Implemented Master Wave 7 step 9 / Narrative Continuity N3-A visible Anomaly
+  candidates.** The formerly empty Anomaly provider now accepts only exact source-owned, per-POV
+  evidence from the existing ghoul transformation, containment breach, visible monolith chapter, and
+  verified creepjoiner disclosure/rejection/aggression/departure owners. It maps these to bounded
+  exact-subject identity or exact-arc chapter/pressure candidates with deterministic safe keys,
+  strict source/facet/phase/subject/arc gates, ordinary repetition history, and fixed provider-order
+  composition. Arrival, hidden benefit/downside/infection/infiltrator/unresolved state, Gleaming, and
+  terminal void outcomes have no mapping. No capture hook, page, owner, gameplay source, save field,
+  or DLC dependency was added.
+
+  Existing source adapters attach detached evidence only after the canonical page exists and before
+  generation; pair pages freeze each role independently. Nine factual formats live in the base-safe
+  Anomaly policy Def with English/Russian DefInjected prose. Blank or malformed formats and provider/
+  selector failure preserve the canonical page and exact reference without a lens. Pure coverage now
+  passes 256 Narrative Continuity and 612 Anomaly policy/XML assertions. Loaded assertions cover every
+  approved real source plus missing/malformed-format fail-soft behavior. N3-A adds one fixture over the
+  347-test Anomaly boundary; with the six upstream memory fixtures, the integrated RimTest assembly has
+  354 compiled tests. Runtime and RimTest builds are clean; an Anomaly-active loaded rerun remains
+  pending and is not claimed here.
+
 - **2026-07-21 — Hardened A2.2 after deduplicated adversarial review.** Ghoul transformation replay
   dedup now has its own XML-owned `ghoulTransformationDedupTicks` policy instead of borrowing the
   unrelated Tale-correlation expiry. All production ghoul-state reads now route through the guarded

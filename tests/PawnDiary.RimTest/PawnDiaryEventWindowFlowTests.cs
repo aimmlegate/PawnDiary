@@ -58,6 +58,7 @@ namespace PawnDiary.RimTests
         private static PawnDiaryRimTestScope scope;
         private static Pawn firstPawn;
         private static Pawn secondPawn;
+        private static PromptContextDetailLevel originalContextDetailLevel;
 
         /// <summary>
         /// Opens a fresh scope (event windows are not interaction-group gated, so no groups are enabled),
@@ -69,6 +70,8 @@ namespace PawnDiary.RimTests
         public static void SetUp()
         {
             scope = PawnDiaryRimTestScope.Begin();
+            originalContextDetailLevel = PawnDiaryMod.Settings.contextDetailLevel;
+            PawnDiaryMod.Settings.contextDetailLevel = PromptContextDetailLevel.Full;
             firstPawn = scope.CreateAdultColonist();
             secondPawn = scope.CreateAdultColonist();
 
@@ -93,6 +96,8 @@ namespace PawnDiary.RimTests
         {
             try
             {
+                if (PawnDiaryMod.Settings != null)
+                    PawnDiaryMod.Settings.contextDetailLevel = originalContextDetailLevel;
                 scope?.TearDown();
             }
             finally
@@ -290,6 +295,9 @@ namespace PawnDiary.RimTests
                     evidence[0].facet == NarrativeFacetTokens.JourneyChapter
                     && evidence[0].phase == phases[i]
                     && evidence[0].arcKey == "anomaly-monolith|0"
+                    && evidence[0].sourceDomain
+                        == AnomalyNarrativeContinuityTokens.MonolithSourceDomain
+                    && evidence[0].sourceDefName == levelDefNames[i]
                     && evidence[0].pawnCanKnow == true,
                     windowDefNames[i] + " saved incorrect or knowledge-unsafe narrative evidence.");
 
@@ -301,9 +309,13 @@ namespace PawnDiary.RimTests
                     && references[0].phase == phases[i]
                     && references[0].arcKey == "anomaly-monolith|0",
                     windowDefNames[i] + " did not freeze the exact monolith chapter reference.");
+                string expectedCandidateKey = "anomaly|chapter|monolith|0|" + phases[i];
                 PawnDiaryRimTestScope.Require(
-                    string.IsNullOrWhiteSpace(diaryEvent.NarrativeContextForRole(DiaryEvent.InitiatorRole)),
-                    "Wave 2 source evidence must not invent prompt context without a live Anomaly provider.");
+                    diaryEvent.NarrativeSelectedCandidateKeysForRole(
+                        DiaryEvent.InitiatorRole).Contains(expectedCandidateKey)
+                        && !string.IsNullOrWhiteSpace(
+                            diaryEvent.NarrativeContextForRole(DiaryEvent.InitiatorRole)),
+                    windowDefNames[i] + " did not freeze its exact visible monolith chapter lens.");
             }
 
             // Gleaming is an automatic transition with no actor. The exact XML windows must leave it silent.

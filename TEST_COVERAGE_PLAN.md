@@ -322,6 +322,26 @@ assumed the implanted Def must outrank every removed xenogene as N3-B's salient 
 reattaches only A2.2's exact preverified writers, and the three fixtures assert the real production
 contracts. The user-confirmed corrected loaded rerun passed 347/347, closing A2.2 loaded acceptance.
 
+Master Wave 7 / Narrative N3-A raises `NarrativeContinuityTests` from 135 to 256 assertions and
+`DiaryAnomalyPolicyTests` from 572 to 612. Pure provider cases cover ghoul exact-subject identity,
+containment exact-entity/map/tick pressure, all three visible monolith chapters, and all four verified
+visible creepjoiner disclosure/outcome phases. They also cover independent provider/knowledge/POV
+gates; exact source/facet/phase/subject/arc mismatches; null, blank, malformed, unsafe, overlong, and
+negative-tick input; hidden creepjoiner state and unsupported/Gleaming/terminal monolith phases;
+deterministic key/text deduplication; identity/chapter/pressure caps and input-order independence;
+ordinary repetition; Anomaly/Odyssey composition; and evidence/reference preservation when provider
+output is empty. XML coverage requires every shipped English/Russian DefInjected format and `{0}`
+placeholder while proving no terminal-void format exists.
+
+Loaded fixtures now assert the saved per-role evidence, reference, selected stable key, and non-empty
+context on the real containment, surgical disclosure, rejection, aggression, departure, ghoul infusion,
+and monolith event-window paths. Pair fixtures assert both exact POVs. The containment suite adds one
+case that blanks and malforms the optional format, proving both canonical pages and exact references
+survive with zero selected lenses. N3-A itself adds one fixture over the 347-test Anomaly boundary;
+with the six upstream memory fixtures, the integrated RimTest assembly contains 354 compiled tests.
+Core and RimTest builds pass; no new N3-A loaded execution is claimed until an Anomaly-active
+in-game run is recorded. Existing 347/347 evidence remains the A2.2 boundary result, not an N3-A pass.
+
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing

@@ -376,9 +376,12 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > **Progress (2026-07-21): A1.0–A1.4 and A2.0–A2.2 implemented.** The primitive policy,
 > detached DTOs, exact study/containment/visible-creepjoiner/surgical-disclosure/ghoul-infusion hooks, fail-closed catalog route, seven-key
 > normalized save baseline, lifecycle-cleared bounded caches/scopes, and five package-gated prompt
-> groups are implemented. N3-A remains an explicit zero-candidate provider. Focused suites pass 572
-> Anomaly, 708 catalog, 135 save-normalization, and 135 Narrative assertions; runtime and 347-test
-> RimTest assemblies build. The exact-only classifier and all hooks are Anomaly-gated. Loaded A1.1 state
+> groups are implemented. N3-A now maps only exact visible ghoul/containment/monolith/creepjoiner
+> source evidence into bounded identity/chapter/pressure candidates; it adds no source, page, owner,
+> save field, or terminal-void path. Focused suites pass 612 Anomaly, 708 catalog, 135
+> save-normalization, and 256 Narrative assertions; runtime and 354-test RimTest assemblies build.
+> The new N3-A loaded assertions are compiled but not yet claimed as an in-game pass. The exact-only
+> classifier and all hooks are Anomaly-gated. Loaded A1.1 state
 > coverage and the original nine A1.3 containment fixtures passed in their recorded profiles. A later
 > full run passed 314/315, including the new containment scope-state fixture; its sole failure was a
 > false-positive visible-label assertion, corrected to exact localized fallback equality. The
@@ -431,7 +434,7 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 6. **A2.0 (implemented; loaded acceptance green within the 335-fixture aggregate run)** — visible creepjoiner state and old-save baseline.
 7. **A2.1 (implemented; loaded acceptance green at 335/335)** — surgical visible disclosure/outcome ownership.
 8. **A2.2 (implemented; loaded acceptance green at 347/347)** — ghoul transformation.
-9. Extend **N3-A** only with visibly authorized chapter, pressure, and identity candidates.
+9. **N3-A (implemented; loaded rerun pending)** — visibly authorized chapter, pressure, and identity candidates only.
 
 ### Exit gate
 

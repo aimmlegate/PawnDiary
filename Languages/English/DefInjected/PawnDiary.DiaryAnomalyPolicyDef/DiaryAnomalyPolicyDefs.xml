@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <Diary_AnomalyPolicy.label>Anomaly narrative policy</Diary_AnomalyPolicy.label>
+  <Diary_AnomalyPolicy.monolithStirringNarrativeFormat>the monolith visibly reached its Stirring chapter</Diary_AnomalyPolicy.monolithStirringNarrativeFormat>
+  <Diary_AnomalyPolicy.monolithWakingNarrativeFormat>the monolith visibly reached its Waking chapter</Diary_AnomalyPolicy.monolithWakingNarrativeFormat>
+  <Diary_AnomalyPolicy.monolithVoidAwakenedNarrativeFormat>the monolith visibly reached the Void Awakened chapter</Diary_AnomalyPolicy.monolithVoidAwakenedNarrativeFormat>
+  <Diary_AnomalyPolicy.containmentBreachNarrativeFormat>the visible containment breach released {0}</Diary_AnomalyPolicy.containmentBreachNarrativeFormat>
+  <Diary_AnomalyPolicy.creepJoinerSurgicalRevealNarrativeFormat>{0}'s abnormal condition was visibly disclosed by the completed inspection</Diary_AnomalyPolicy.creepJoinerSurgicalRevealNarrativeFormat>
+  <Diary_AnomalyPolicy.creepJoinerRejectedNarrativeFormat>{0}'s rejection became a visible outcome</Diary_AnomalyPolicy.creepJoinerRejectedNarrativeFormat>
+  <Diary_AnomalyPolicy.creepJoinerAggressiveNarrativeFormat>{0} visibly became hostile</Diary_AnomalyPolicy.creepJoinerAggressiveNarrativeFormat>
+  <Diary_AnomalyPolicy.creepJoinerDepartedNarrativeFormat>{0} visibly departed</Diary_AnomalyPolicy.creepJoinerDepartedNarrativeFormat>
+  <Diary_AnomalyPolicy.ghoulTransformationNarrativeFormat>{0} visibly underwent the irreversible transformation into a ghoul</Diary_AnomalyPolicy.ghoulTransformationNarrativeFormat>
 </LanguageData>

@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <Diary_AnomalyPolicy.label>Политика повествования Anomaly</Diary_AnomalyPolicy.label>
+  <Diary_AnomalyPolicy.monolithStirringNarrativeFormat>монолит явно достиг стадии «Пробуждение»</Diary_AnomalyPolicy.monolithStirringNarrativeFormat>
+  <Diary_AnomalyPolicy.monolithWakingNarrativeFormat>монолит явно достиг стадии «Бодрствование»</Diary_AnomalyPolicy.monolithWakingNarrativeFormat>
+  <Diary_AnomalyPolicy.monolithVoidAwakenedNarrativeFormat>монолит явно достиг стадии «Пробуждённая пустота»</Diary_AnomalyPolicy.monolithVoidAwakenedNarrativeFormat>
+  <Diary_AnomalyPolicy.containmentBreachNarrativeFormat>при видимом прорыве содержания освободился объект: {0}</Diary_AnomalyPolicy.containmentBreachNarrativeFormat>
+  <Diary_AnomalyPolicy.creepJoinerSurgicalRevealNarrativeFormat>завершённая проверка явно раскрыла аномальное состояние: {0}</Diary_AnomalyPolicy.creepJoinerSurgicalRevealNarrativeFormat>
+  <Diary_AnomalyPolicy.creepJoinerRejectedNarrativeFormat>отказ стал явным исходом для {0}</Diary_AnomalyPolicy.creepJoinerRejectedNarrativeFormat>
+  <Diary_AnomalyPolicy.creepJoinerAggressiveNarrativeFormat>явная враждебность: {0}</Diary_AnomalyPolicy.creepJoinerAggressiveNarrativeFormat>
+  <Diary_AnomalyPolicy.creepJoinerDepartedNarrativeFormat>явный уход из поселения: {0}</Diary_AnomalyPolicy.creepJoinerDepartedNarrativeFormat>
+  <Diary_AnomalyPolicy.ghoulTransformationNarrativeFormat>явное необратимое превращение в гуля: {0}</Diary_AnomalyPolicy.ghoulTransformationNarrativeFormat>
 </LanguageData>

@@ -1,7 +1,7 @@
 // XML boundary for the Narrative Continuity Layer. RimWorld loads this Def at startup, while
 // NarrativeContextSelector stays pure by receiving a copied NarrativePolicySnapshot instead of this
 // live Verse Def. N1 reads the prompt wording and selection policy at the main-thread adapter. Wave 2
-// adds exact source-owned monolith evidence through an existing hook, but still no live DLC provider.
+// added exact source-owned evidence; N3-A can now select guarded visible Anomaly lens candidates.
 //
 // New to C#/RimWorld? See AGENTS.md ("XML Defs" and "DLC-safety").
 using System;

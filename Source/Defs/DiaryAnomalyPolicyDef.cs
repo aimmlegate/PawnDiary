@@ -46,6 +46,17 @@ namespace PawnDiary
             AnomalyPolicyLimits.DefaultGhoulTransformationWriters;
         public int ghoulTransformationDedupTicks =
             AnomalyPolicyLimits.DefaultGhoulTransformationDedupTicks;
+        // N3-A factual candidate prose is DefInjected. Blank or malformed formats disable only the
+        // optional lens while the source-owned evidence/page survives unchanged.
+        public string monolithStirringNarrativeFormat = string.Empty;
+        public string monolithWakingNarrativeFormat = string.Empty;
+        public string monolithVoidAwakenedNarrativeFormat = string.Empty;
+        public string containmentBreachNarrativeFormat = string.Empty;
+        public string creepJoinerSurgicalRevealNarrativeFormat = string.Empty;
+        public string creepJoinerRejectedNarrativeFormat = string.Empty;
+        public string creepJoinerAggressiveNarrativeFormat = string.Empty;
+        public string creepJoinerDepartedNarrativeFormat = string.Empty;
+        public string ghoulTransformationNarrativeFormat = string.Empty;
         public bool voidOutcomeEnabled = true;
         public int taleOwnershipMaxDepth = AnomalyPolicyLimits.DefaultTaleOwnershipDepth;
         public int taleOwnershipExpiryTicks = AnomalyPolicyLimits.DefaultTaleOwnershipExpiryTicks;
@@ -168,6 +179,47 @@ namespace PawnDiary
                 });
             }
             return AnomalyPolicyNormalization.Normalize(raw);
+        }
+
+        /// <summary>
+        /// Resolves one DefInjected N3-A factual format on the main thread. Unsupported/terminal phases
+        /// deliberately return empty so a custom caller cannot turn A3 or hidden state into a lens.
+        /// </summary>
+        internal static string NarrativeFormat(string sourceKind, string phase)
+        {
+            DiaryAnomalyPolicyDef source =
+                DefDatabase<DiaryAnomalyPolicyDef>.GetNamedSilentFail(DefName);
+            if (source == null) return string.Empty;
+
+            if (sourceKind == AnomalyNarrativeContinuityTokens.MonolithChapter)
+            {
+                if (phase == AnomalyNarrativeContinuityTokens.Stirring)
+                    return source.monolithStirringNarrativeFormat ?? string.Empty;
+                if (phase == AnomalyNarrativeContinuityTokens.Waking)
+                    return source.monolithWakingNarrativeFormat ?? string.Empty;
+                if (phase == AnomalyNarrativeContinuityTokens.VoidAwakened)
+                    return source.monolithVoidAwakenedNarrativeFormat ?? string.Empty;
+                return string.Empty;
+            }
+            if (sourceKind == AnomalyNarrativeContinuityTokens.ContainmentBreach)
+                return phase == AnomalyNarrativeContinuityTokens.Breached
+                    ? source.containmentBreachNarrativeFormat ?? string.Empty
+                    : string.Empty;
+            if (sourceKind == AnomalyNarrativeContinuityTokens.GhoulTransformation)
+                return phase == AnomalyNarrativeContinuityTokens.Transformed
+                    ? source.ghoulTransformationNarrativeFormat ?? string.Empty
+                    : string.Empty;
+            if (sourceKind != AnomalyNarrativeContinuityTokens.CreepJoinerOutcome)
+                return string.Empty;
+            if (phase == AnomalyNarrativeContinuityTokens.SurgicalReveal)
+                return source.creepJoinerSurgicalRevealNarrativeFormat ?? string.Empty;
+            if (phase == AnomalyNarrativeContinuityTokens.Rejected)
+                return source.creepJoinerRejectedNarrativeFormat ?? string.Empty;
+            if (phase == AnomalyNarrativeContinuityTokens.Aggressive)
+                return source.creepJoinerAggressiveNarrativeFormat ?? string.Empty;
+            if (phase == AnomalyNarrativeContinuityTokens.Departed)
+                return source.creepJoinerDepartedNarrativeFormat ?? string.Empty;
+            return string.Empty;
         }
     }
 }

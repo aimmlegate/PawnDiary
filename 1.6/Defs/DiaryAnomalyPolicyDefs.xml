@@ -30,6 +30,18 @@
     <ghoulTransformationEnabled>true</ghoulTransformationEnabled>
     <ghoulTransformationMaxWriters>2</ghoulTransformationMaxWriters>
     <ghoulTransformationDedupTicks>2500</ghoulTransformationDedupTicks>
+
+    <!-- N3-A candidate facts. DefInjected owns every natural-language value; the source Def keeps
+         these nodes present so translated fields have stable, non-indexed identities. -->
+    <monolithStirringNarrativeFormat>the monolith visibly reached its Stirring chapter</monolithStirringNarrativeFormat>
+    <monolithWakingNarrativeFormat>the monolith visibly reached its Waking chapter</monolithWakingNarrativeFormat>
+    <monolithVoidAwakenedNarrativeFormat>the monolith visibly reached the Void Awakened chapter</monolithVoidAwakenedNarrativeFormat>
+    <containmentBreachNarrativeFormat>the visible containment breach released {0}</containmentBreachNarrativeFormat>
+    <creepJoinerSurgicalRevealNarrativeFormat>{0}'s abnormal condition was visibly disclosed by the completed inspection</creepJoinerSurgicalRevealNarrativeFormat>
+    <creepJoinerRejectedNarrativeFormat>{0}'s rejection became a visible outcome</creepJoinerRejectedNarrativeFormat>
+    <creepJoinerAggressiveNarrativeFormat>{0} visibly became hostile</creepJoinerAggressiveNarrativeFormat>
+    <creepJoinerDepartedNarrativeFormat>{0} visibly departed</creepJoinerDepartedNarrativeFormat>
+    <ghoulTransformationNarrativeFormat>{0} visibly underwent the irreversible transformation into a ghoul</ghoulTransformationNarrativeFormat>
     <voidOutcomeEnabled>true</voidOutcomeEnabled>
     <taleOwnershipMaxDepth>8</taleOwnershipMaxDepth>
     <taleOwnershipExpiryTicks>2500</taleOwnershipExpiryTicks>

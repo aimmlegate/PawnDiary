@@ -52,8 +52,8 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including exact-author Anomaly study, containment-breach, visible creepjoiner-outcome, and surgical-disclosure signals, Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, lossless quick-aid raid ownership, and exact-root Royal Ascent quest fanout. |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue, associative-memory recall/deposit/eviction (`DiaryGameComponent.Memory.cs`), and additive Anomaly study/monolith/visible-creepjoiner persistence plus detached transaction owners and conservative pre-A1/pre-A2 baselining. Also `PawnMemoryRepository` (per-pawn memory store). |
-| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Anomaly study/codex/containment/monolith/creepjoiner capture, scoped containment/rejection/surgical-Tale ownership, separate lifecycle-cleared study/Tale and recent-studier caches, Odyssey location/mobile-home/lifecycle, and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including the explicit zero-candidate N3-A provider seam), Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/`. |
+| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Anomaly study/codex/containment/monolith/creepjoiner capture, the visible-only N3-A context adapter, scoped containment/rejection/surgical-Tale ownership, separate lifecycle-cleared study/Tale and recent-studier caches, Odyssey location/mobile-home/lifecycle, and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including the bounded visible-only N3-A provider), Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/`. |
 | `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, the optional Anomaly monolith-knowledge snapshot, visible-only creepjoiner arc rows, and the `MemoryFragment` pawn-memory row. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, defensive exact Anomaly study, containment-escape, creepjoiner rejection/aggression/departure, surgical inspection, and ghoul-infusion seams, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment/permit seams and state-transition-guarded Quest lifecycle hooks. |
@@ -187,7 +187,7 @@ Generation starts only after an event exists in the saved hot store.
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
 
-**Narrative Continuity (Master Waves 1–6 / N1 + N2-B + N2-O + N3-B identity + N3-R core)** supplies the shared persistence and
+**Narrative Continuity (Master Waves 1–7 / N1 + N2-B + N2-O + N3-B identity + N3-R core + N3-A)** supplies the shared persistence and
 optional prompt seam for DLC integrations. Each first-person event POV can save bounded, explicitly
 known evidence, prose-free references, selected-candidate keys, and frozen `narrativeContext`; old
 saves normalize all four to empty. `NarrativeContextBuilder` snapshots
@@ -227,8 +227,17 @@ evidence after their canonical `DiaryEvent` exists, so those pages can select th
 Title identity remains inert until its Phase-4 owner attaches exact title evidence. Phase 7 extends
 N3-R with one exact active Royal Ascent court-pressure candidate. It requires the saved shared Ascent
 arc or source-owned authority/status/duty/hospitality evidence for the same POV; it shades an existing
-page and never authorizes one. Ideology and Anomaly provider slots remain empty until their source
-waves. Provider absence, no relevant DLC, unconnected POVs, child-only
+page and never authorizes one. N3-A replaces the Anomaly stub with a bounded pure provider for only
+five source-owned visible boundaries: exact ghoul transformation, exact containment breach,
+Stirring/Waking/Void Awakened monolith chapters, and verified creepjoiner surgical disclosure,
+rejection, aggression, or departure. Ghoul and creepjoiner facts map to exact-subject identity;
+monolith and containment map to exact-arc chapter/pressure. Every candidate must repeat the same POV,
+source domain/Def, facet, phase, and exact subject or arc found in the page evidence. Stable keys carry
+only safe IDs and canonical nonnegative map/tick/epoch segments; output is deduplicated, sorted, and
+independently capped at four identity, three chapter, and one pressure candidates before shared policy
+caps apply. Arrival, Gleaming, terminal void choices, benefit/downside, infection, infiltrator, and
+unresolved creepjoiner state have no accepted mapping. The Ideology provider slot remains empty until
+its source wave. Provider absence, no relevant DLC, unconnected POVs, child-only
 arcs, unknown locations/knowledge, or malformed translated format strings preserve the ordinary prompt
 with no narrative-context field.
 
@@ -239,7 +248,7 @@ so Full/Balanced/Compact budgets choose complete factual lenses before text is s
 never truncates a selected fact. Archive compaction copies
 only references and selection keys, and `DiaryArchiveRepository` rebuilds bounded pawn-scoped exact-arc
 and exact-subject indexes after load or retention. Source-specific pages remain their own sole capture
-owners; N2-B/N2-O only enrich already-authorized pages and cannot create another event.
+owners; N2-B/N2-O/N3-A only enrich already-authorized pages and cannot create another event.
 
 N0 froze exactly four evidence facets—`identity_transition`, `bond_lifecycle`,
 `journey_chapter`, and `ambient_pressure`—rather than creating generic DLC events. They cover the
@@ -1717,9 +1726,9 @@ package-gated Interaction groups at orders 61–65 expose settings
 and localized prompt/fallback policy for study breakthrough, containment breach, visible creepjoiner
 outcome, ghoul transformation, and terminal void outcome. `ClassifyAnomalyEvent` requires an exact
 `matchDefNames` row whose package gate is currently available; it cannot fall through to token,
-prefix/suffix/segment, package, synthetic-batch, or catch-all Interaction groups. N3-A is likewise explicit but
-returns zero candidates even when handed an authorized snapshot; persistence alone cannot add prompt
-context.
+prefix/suffix/segment, package, synthetic-batch, or catch-all Interaction groups. N3-A consumes only
+the exact visible evidence emitted after one of the canonical sources below has created its page; it
+does not broaden classification, capture, deduplication, or ownership.
 
 `DiaryAnomalyPatches.TryRegister` independently resolves the exact public
 `CompStudyUnlocks.OnStudied(Pawn,float,KnowledgeCategoryDef)` and
@@ -1904,7 +1913,22 @@ observer later proves a separately visible title, belief, or personality consequ
 own event rather than being silently attributed to the ghoul page. All live ghoul checks—including the
 body-modification stance adapter—route through `DlcContext.IsGhoul`, the sole guarded access path.
 
-The A2.2 delivery plus review hardening raises focused coverage to 572
+N3-A attaches optional Narrative Continuity data only after each A1/A2 source has created its one
+canonical page and before that page enters generation. Containment evidence freezes
+`ambient_pressure` / `breached`, the exact outer escaped entity, and the existing
+`anomaly-breach|<mapId>|<startTick>|<entityId>` source key. Ghoul evidence freezes
+`identity_transition` / `transformed` and the exact transformed subject. Creepjoiner evidence freezes
+only `surgical_reveal`, `rejected`, `aggressive`, or `departed` for the exact visible subject. The
+three monolith event windows keep `journey_chapter`, their exact reached phase, and
+`anomaly-monolith|<campaignEpoch>` (currently epoch `0`). Each pair page builds the evidence/provider
+snapshot separately for initiator and recipient roles. Main-thread DefInjected formats provide the
+localized factual candidate prose; the pure provider receives only detached strings, booleans, and
+integers. Missing or malformed formats produce evidence/reference-only pages, and provider/selector
+exceptions leave the already-created fallback page authoritative. No new Scribe key is needed:
+ordinary per-POV evidence, references, selected-key history, and frozen context own persistence and
+repetition.
+
+The N3-A delivery raises focused coverage to 612
 Anomaly-policy/XML/cache/context and 135 save-normalization assertions. The A1.4 cases still pin batched recent-
 studier matching, ordering equivalence when a large eligible roster is capped, and a strict input-
 inspection bound for malformed saved histories; A2.0 adds all three visible phases, arrival continuity,
@@ -1916,8 +1940,11 @@ spoiler-firewall formatting, exact Tale ownership/fail-open behavior, blank-barr
 and same-schema load/downgrade coverage. A2.2 adds malformed/failure/already-ghoul transition rejection,
 exact writer order and caps (including subject fallback under the one-writer ceiling), same-pawn
 exclusion, disabled output, per-value context truncation, spoiler-safe context, and every exact
-Tale fail-open boundary. The 708 catalog and 135 Narrative suites remain green. The runtime DLL and
-347-test RimTest assembly build against the installed 1.6 API. The first user-provided
+Tale fail-open boundary. The 708 catalog suite remains green, while Narrative Continuity now passes
+256 assertions including all visible mappings, gates, hidden/malformed inputs, category caps,
+deterministic order, repetition, composition, and empty-provider reference preservation. The runtime
+DLL and integrated 354-test RimTest assembly build against the installed 1.6 API; the new N3-A loaded assertions
+are compiled but not yet claimed as an in-game pass. The first user-provided
 335-fixture run passed 333 tests and every embedded A2.0 fixture, closing the earlier expanded
 327-fixture acceptance debt. Its only failures were the two A2.1 joined-subject pair assertions: each
 strict guard had already counted exactly one dedicated event, but shared setup still forced A2.0's old
@@ -2008,7 +2035,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; the main-thread builder snapshots it before fixed-order pure provider selection. The repetition policy is live: every narrative-capable source feeds the selector the POV pawn's most recent persisted selection keys (newest hot pages, then archive rows, bounded by `maxRecentSelectedCandidateKeys`), so `repetitionPenalty` dampens re-picking the same lens while exact-arc continuations stay exempt via `exactArcRepetitionPenalty` |
 | `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory plus mature-birth/miscarriage matchers, supporter thresholds/caps, naming timing, family retention, two-writer birth cap, pending-growth/pending-birth admission limits, Phase-5 gene category/theme/text/observation/fallback-significance policy, N3-B salient-gene identity prose, and Phase-6 mechanitor combat Tale roles/tenure/state caps; Phases 1–6, N2-B, and the first N3-B slice use these fields live |
-| `DiaryAnomalyPolicyDefs.xml` | A1 study/containment toggles, milestone rules, dedup/ownership/cache bounds, and A2.0 visible creepjoiner output/dedup/arc-retention/witness limits. All optional-DLC identifiers remain primitive strings, so the row loads safely without Anomaly. |
+| `DiaryAnomalyPolicyDefs.xml` | A1 study/containment toggles, milestone rules, dedup/ownership/cache bounds, A2 visible creepjoiner/ghoul output and writer limits, plus N3-A factual formats for the three monolith chapters, containment breach, four visible creepjoiner outcomes, and ghoul transformation. Prose is DefInjected in English/Russian; no terminal/hidden format exists. All optional-DLC identifiers remain primitive strings, so the row loads safely without Anomaly. |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
 | `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |
 | `DiaryUiStyleDef.xml` / `DiaryTextDecorationDefs.xml` | UI dimensions/colors and display-only rich-text decoration |

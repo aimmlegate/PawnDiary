@@ -102,7 +102,16 @@ namespace PawnDiary.Ingestion
                     FallbackFor(plan.selectedWriters[1]),
                     instruction,
                     context);
-                if (CreatedEvent != null) sink.QueuePair(CreatedEvent);
+                if (CreatedEvent != null)
+                {
+                    AnomalyNarrativeContextAdapter.ApplyCreepJoinerDisclosure(
+                        sink, CreatedEvent, writers[0], DiaryEvent.InitiatorRole,
+                        facts, plan, plan.selectedWriters[0]);
+                    AnomalyNarrativeContextAdapter.ApplyCreepJoinerDisclosure(
+                        sink, CreatedEvent, writers[1], DiaryEvent.RecipientRole,
+                        facts, plan, plan.selectedWriters[1]);
+                    sink.QueuePair(CreatedEvent);
+                }
                 return;
             }
 
@@ -119,7 +128,13 @@ namespace PawnDiary.Ingestion
                 FallbackFor(selected),
                 instruction,
                 context);
-            if (CreatedEvent != null) sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
+            if (CreatedEvent != null)
+            {
+                AnomalyNarrativeContextAdapter.ApplyCreepJoinerDisclosure(
+                    sink, CreatedEvent, writer, DiaryEvent.InitiatorRole,
+                    facts, plan, selected);
+                sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
+            }
         }
 
         private string FallbackFor(AnomalyWriterSelection selected)

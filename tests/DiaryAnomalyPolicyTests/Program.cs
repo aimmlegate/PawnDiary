@@ -1,4 +1,4 @@
-// Standalone no-RimWorld tests for Master Wave 7 / Anomaly Phases A1.0-A2.2. Linking only plain DTOs
+// Standalone no-RimWorld tests for Master Wave 7 / Anomaly Phases A1.0-A2.2 plus N3-A XML prose. Linking only plain DTOs
 // and pure policies makes an accidental Verse, Unity, Harmony, DLC, or live-settings dependency a
 // compile-time failure.
 using System;
@@ -306,6 +306,25 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("XML ghoul dedup", "2500", Value(def, "ghoulTransformationDedupTicks"));
             AssertEqual("XML ownership depth", "8", Value(def, "taleOwnershipMaxDepth"));
             AssertEqual("XML ownership expiry", "2500", Value(def, "taleOwnershipExpiryTicks"));
+            string[] narrativeFormats =
+            {
+                "monolithStirringNarrativeFormat",
+                "monolithWakingNarrativeFormat",
+                "monolithVoidAwakenedNarrativeFormat",
+                "containmentBreachNarrativeFormat",
+                "creepJoinerSurgicalRevealNarrativeFormat",
+                "creepJoinerRejectedNarrativeFormat",
+                "creepJoinerAggressiveNarrativeFormat",
+                "creepJoinerDepartedNarrativeFormat",
+                "ghoulTransformationNarrativeFormat"
+            };
+            for (int i = 0; i < narrativeFormats.Length; i++)
+            {
+                AssertTrue("XML N3-A narrative format is nonblank: " + narrativeFormats[i],
+                    !string.IsNullOrWhiteSpace(Value(def, narrativeFormats[i])));
+            }
+            AssertEqual("XML adds no terminal void narrative format", string.Empty,
+                Value(def, "voidOutcomeNarrativeFormat"));
             AssertTrue("policy makes no conditional DLC Def reference",
                 !document.Descendants().Any(element => element.Attribute("MayRequire") != null));
 
@@ -319,6 +338,28 @@ namespace DiaryAnomalyPolicyTests
                 LocalizedLabel(root, "English"));
             AssertEqual("Russian DefInjected label", "Политика повествования Anomaly",
                 LocalizedLabel(root, "Russian (Русский)"));
+            string[] languages = { "English", "Russian (Русский)" };
+            for (int languageIndex = 0; languageIndex < languages.Length; languageIndex++)
+            {
+                XDocument localized = XDocument.Load(Path.Combine(root, "Languages",
+                    languages[languageIndex], "DefInjected", "PawnDiary.DiaryAnomalyPolicyDef",
+                    "DiaryAnomalyPolicyDefs.xml"));
+                for (int formatIndex = 0; formatIndex < narrativeFormats.Length; formatIndex++)
+                {
+                    string localizedValue = Value(
+                        localized.Root,
+                        "Diary_AnomalyPolicy." + narrativeFormats[formatIndex]);
+                    AssertTrue(languages[languageIndex] + " N3-A format is nonblank: "
+                            + narrativeFormats[formatIndex],
+                        !string.IsNullOrWhiteSpace(localizedValue));
+                    if (formatIndex >= 3)
+                    {
+                        AssertTrue(languages[languageIndex] + " dynamic N3-A format keeps {0}: "
+                                + narrativeFormats[formatIndex],
+                            localizedValue.Contains("{0}"));
+                    }
+                }
+            }
         }
 
         private static void TestInvalidAndNonProgressingStudy()

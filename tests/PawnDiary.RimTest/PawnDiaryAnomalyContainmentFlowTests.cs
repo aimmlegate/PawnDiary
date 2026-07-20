@@ -1,4 +1,4 @@
-// Loaded-game containment-breach coverage for Anomaly Phase A1.3 (TEST_COVERAGE_PLAN.md §7.3).
+// Loaded-game containment-breach coverage for Anomaly A1.3 plus its N3-A pressure lens.
 //
 // These fixtures create disposable holding platforms and entities, then call vanilla's real
 // CompHoldingPlatformTarget.Escape(bool) method. Harmony therefore has to cross the same prefix,
@@ -35,6 +35,8 @@ namespace PawnDiary.RimTests
         private static int originalMaxEntityLabels;
         private static int originalDedupTicks;
         private static int originalRecentStudierTicks;
+        private static string originalNarrativeFormat;
+        private static PromptContextDetailLevel originalContextDetailLevel;
         private static bool originalHasBuiltPlatform;
         private static List<AnomalyStudyTaleClaim> originalStudyClaims;
         private static List<AnomalyRecentStudyFact> originalRecentStudies;
@@ -56,6 +58,9 @@ namespace PawnDiary.RimTests
             originalMaxEntityLabels = policyDef.containmentMaxEntityLabelsInContext;
             originalDedupTicks = policyDef.containmentDedupTicks;
             originalRecentStudierTicks = policyDef.recentStudierMaxAgeTicks;
+            originalNarrativeFormat = policyDef.containmentBreachNarrativeFormat;
+            originalContextDetailLevel = PawnDiaryMod.Settings.contextDetailLevel;
+            PawnDiaryMod.Settings.contextDetailLevel = PromptContextDetailLevel.Full;
             originalStudyClaims = AnomalyStudySuppressionCache.SnapshotForTests();
             originalRecentStudies = AnomalyRecentStudyCache.SnapshotForTests();
             originalLetters = new HashSet<Letter>(
@@ -192,6 +197,40 @@ namespace PawnDiary.RimTests
                     expectedFallback,
                     StringComparison.Ordinal),
                 "Localized containment fallback did not use the exact visible-label-only text.");
+            RequireNarrative(page, DiaryEvent.InitiatorRole, held.entity);
+            RequireCleanScope();
+        }
+
+        /// <summary>Missing or malformed optional prose preserves the canonical page and exact reference.</summary>
+        [Test]
+        public static void NarrativeFormatFailureKeepsCanonicalContainmentPage()
+        {
+            if (!RequireAnomalyOrReport(nameof(NarrativeFormatFailureKeepsCanonicalContainmentPage))) return;
+            List<IntVec3> cells = FindCleanRoomCells(3);
+            Pawn writer = CreateWriterAt(cells[2]);
+            UseOnlyCandidates(writer);
+            string[] badFormats = { " ", "{1}" };
+            for (int i = 0; i < badFormats.Length; i++)
+            {
+                policyDef.containmentBreachNarrativeFormat = badFormats[i];
+                HeldFixture held = CreateHeldFixture(cells[i]);
+                DiaryEvent page = scope.FireAndRequireEvent(
+                    () => held.target.Escape(initiator: true),
+                    AnomalyEventDefNames.ContainmentBreach,
+                    writer,
+                    null,
+                    rejectOtherTestPawnEvents: true);
+                List<NarrativeEvidence> evidence =
+                    page.NarrativeEvidenceForRole(DiaryEvent.InitiatorRole);
+                PawnDiaryRimTestScope.Require(evidence.Count == 1
+                        && evidence[0].subjectId == held.entity.GetUniqueLoadID()
+                        && page.NarrativeReferencesForRole(DiaryEvent.InitiatorRole).Count == 1
+                        && page.NarrativeSelectedCandidateKeysForRole(
+                            DiaryEvent.InitiatorRole).Count == 0
+                        && string.IsNullOrWhiteSpace(
+                            page.NarrativeContextForRole(DiaryEvent.InitiatorRole)),
+                    "A missing/malformed containment format revoked source evidence or invented a lens.");
+            }
             RequireCleanScope();
         }
 
@@ -326,6 +365,8 @@ namespace PawnDiary.RimTests
             scope.RequirePairRefs(page, nearby, recent);
             RequireContext(page, "initiator_witness_role=nearby");
             RequireContext(page, "recipient_witness_role=recent_studier");
+            RequireNarrative(page, DiaryEvent.InitiatorRole, held.entity);
+            RequireNarrative(page, DiaryEvent.RecipientRole, held.entity);
             PawnDiaryRimTestScope.Require(
                 page.initiatorPawnId != fallback.GetUniqueLoadID()
                     && page.recipientPawnId != fallback.GetUniqueLoadID(),
@@ -682,6 +723,35 @@ namespace PawnDiary.RimTests
                 "Containment event context omitted exact token '" + token + "'.");
         }
 
+        private static void RequireNarrative(DiaryEvent page, string role, Pawn escapedEntity)
+        {
+            string entityId = escapedEntity.GetUniqueLoadID();
+            List<NarrativeEvidence> evidence = page.NarrativeEvidenceForRole(role);
+            PawnDiaryRimTestScope.Require(evidence.Count == 1
+                    && evidence[0].facet == NarrativeFacetTokens.AmbientPressure
+                    && evidence[0].phase == AnomalyNarrativeContinuityTokens.Breached
+                    && evidence[0].subjectKind == NarrativeSubjectKindTokens.Entity
+                    && evidence[0].subjectId == entityId
+                    && evidence[0].arcKey.StartsWith("anomaly-breach|", StringComparison.Ordinal)
+                    && evidence[0].arcKey.EndsWith("|" + entityId, StringComparison.Ordinal)
+                    && evidence[0].sourceDomain
+                        == AnomalyNarrativeContinuityTokens.ContainmentSourceDomain
+                    && evidence[0].sourceDefName
+                        == AnomalyNarrativeContinuityTokens.ContainmentSourceDefName
+                    && evidence[0].pawnCanKnow == true,
+                "Containment N3-A evidence was not exact for role '" + role + "'.");
+            string expectedKey = "anomaly|pressure|breach|"
+                + evidence[0].arcKey.Substring("anomaly-breach|".Length);
+            PawnDiaryRimTestScope.Require(
+                page.NarrativeSelectedCandidateKeysForRole(role).Contains(expectedKey)
+                    && !string.IsNullOrWhiteSpace(page.NarrativeContextForRole(role))
+                    && page.NarrativeReferencesForRole(role).Exists(reference => reference != null
+                        && reference.facet == NarrativeFacetTokens.AmbientPressure
+                        && reference.subjectId == entityId
+                        && reference.arcKey == evidence[0].arcKey),
+                "Containment N3-A did not freeze its stable pressure lens for role '" + role + "'.");
+        }
+
         private static void RequireCleanScope()
         {
             PawnDiaryRimTestScope.Require(
@@ -706,6 +776,9 @@ namespace PawnDiary.RimTests
             policyDef.containmentMaxEntityLabelsInContext = originalMaxEntityLabels;
             policyDef.containmentDedupTicks = originalDedupTicks;
             policyDef.recentStudierMaxAgeTicks = originalRecentStudierTicks;
+            policyDef.containmentBreachNarrativeFormat = originalNarrativeFormat;
+            if (PawnDiaryMod.Settings != null)
+                PawnDiaryMod.Settings.contextDetailLevel = originalContextDetailLevel;
         }
 
         private static void RemoveFixtureLetters()

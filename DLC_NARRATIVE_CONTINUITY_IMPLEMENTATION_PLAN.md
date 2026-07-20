@@ -587,12 +587,23 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 > requests, but no existing source supplies Royalty evidence yet. Court pressure remains scheduled for
 > the Wave-9 N3-R extension. No hook, page, setting, save schema, or Phase-2 lifecycle behavior was added;
 > `NarrativeContinuityTests` passes 125 assembly-free assertions.
+>
+> **N3-A progress (2026-07-21): implemented; loaded rerun pending.** The Anomaly provider accepts only
+> source-owned, per-POV evidence for verified ghoul transformation, containment breach, the three
+> visible monolith chapters, and visible creepjoiner surgical disclosure/rejection/aggression/departure.
+> Exact subject or exact arc, source domain/Def, facet, phase, and knowledge must all agree. Stable keys
+> are safe, deterministic, deduplicated, and independently bounded by category. DefInjected factual
+> prose is frozen on the main thread; blank/malformed prose degrades to evidence/reference only. No
+> arrival, hidden configuration, infection/infiltrator state, unresolved outcome, Gleaming phase, or
+> terminal void choice can become a candidate. `NarrativeContinuityTests` passes 256 assembly-free
+> assertions, `DiaryAnomalyPolicyTests` passes 612, and the integrated 354-test loaded assembly builds; its new
+> N3-A assertions still require an in-game run.
 
 1. Route high-confidence `EventRelativeStanceResolver` output through the shared interpretation
    category for ordinary event enrichment.
 2. Add Royalty persona/title/court candidates with exact applicability gates. **Core persona/title
    provider implemented; court pressure remains deferred to the scheduled N3-R extension.**
-3. Add Anomaly visible-state/pressure candidates with spoiler-firewall tests.
+3. Add Anomaly visible-state/pressure candidates with spoiler-firewall tests. **Implemented; loaded rerun pending.**
 4. Add Biotech mechanitor/pollution and Odyssey environmental extensions as their source phases ship.
 5. Verify two-lens composition and repetition across every provider pair.
 

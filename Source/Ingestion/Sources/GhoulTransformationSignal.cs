@@ -145,6 +145,15 @@ namespace PawnDiary.Ingestion
                 sink.AddPreverifiedEventRef(firstWriter, CreatedEvent.eventId, true);
                 if (secondWriter != null)
                     sink.AddPreverifiedEventRef(secondWriter, CreatedEvent.eventId, true);
+                AnomalyNarrativeContextAdapter.ApplyGhoulTransformation(
+                    sink, CreatedEvent, firstWriter, DiaryEvent.InitiatorRole,
+                    facts, plan, plan.selectedWriters[0]);
+                if (secondWriter != null && plan.selectedWriters.Count > 1)
+                {
+                    AnomalyNarrativeContextAdapter.ApplyGhoulTransformation(
+                        sink, CreatedEvent, secondWriter, DiaryEvent.RecipientRole,
+                        facts, plan, plan.selectedWriters[1]);
+                }
                 if (pair) sink.QueuePair(CreatedEvent);
                 else sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
             }

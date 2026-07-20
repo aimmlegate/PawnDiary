@@ -1,7 +1,8 @@
 # Pawn Diary — Anomaly Support Implementation Plan
 
 Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.4 and A2.0–A2.2 implemented as Master Wave 7,
-2026-07-20; A3 remains an implementation-ready plan. The
+2026-07-20; the N3-A visible-candidate extension implemented 2026-07-21; A3 remains an
+implementation-ready plan. The
 RimWorld 1.6 feasibility spike is complete for study-note milestones, containment escapes, visible
 creepjoiner outcomes, ghoul infusion, and both terminal void choices. Production now includes the A0
 exact psychic-ritual routing and monolith activation chapters described below.
@@ -566,9 +567,11 @@ envelope, scoped to one DLC; it is not a cross-DLC page-producing primitive.
 
 After Narrative Continuity N1 exists, A1–A3 source events attach per-POV evidence such as:
 
-- `identity_transition=ghoul`;
-- `journey_chapter=void_answer`;
-- `ambient_pressure=containment_breach`.
+- `identity_transition` / `transformed` for a verified ghoul transformation;
+- `journey_chapter` / exact `stirring`, `waking`, or `void_awakened` monolith phase;
+- `ambient_pressure` / `breached` for an exact containment escape;
+- `identity_transition` / exact visible creepjoiner `surgical_reveal`, `rejected`, `aggressive`, or
+  `departed` result.
 
 Use `anomaly-monolith|<campaignEpoch>` for visible monolith/void chapters, the transformed pawn as the
 ghoul subject, and exact map/entity scope for a known containment breach. Creepjoiner evidence begins
@@ -578,6 +581,17 @@ unresolved outcome facts remain absent.
 These facets never decide capture or produce another immediate page. The Anomaly provider may propose
 only visibly known transformation/chapter/pressure facts and must return empty for unknown POV state.
 Shared selector or provider failure preserves the canonical Anomaly page without enrichment.
+
+> **N3-A status (2026-07-21): implemented; loaded rerun pending.** Existing canonical sources now
+> attach the exact evidence above after page creation and before generation. A detached provider maps
+> ghoul/creepjoiner facts to exact-subject identity, monolith facts to exact-arc chapter, and containment
+> facts to exact-arc pressure. Source domain/Def, POV, phase, facet, and subject/arc must all match;
+> stable key segments reject whitespace, controls, separators, noncanonical integers, and excessive
+> length. Per-category output is sorted, deduplicated, and bounded. Candidate prose is XML/DefInjected
+> in English/Russian; missing or malformed formats preserve the page and its evidence/reference with no
+> lens. There is no new hook, source, page, capture/ownership rule, Scribe field, terminal-void outcome,
+> or hidden creepjoiner mapping. Pure suites pass 612 Anomaly and 256 Narrative assertions; the runtime
+> and integrated 354-test RimTest assemblies build, while the new loaded assertions remain unexecuted in-game.
 
 ### 7.6 Fail-open nested Tale transaction
 
