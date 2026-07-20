@@ -1,5 +1,19 @@
 # Changelog
 
+- **2026-07-20 — Hardened A2.1 surgical disclosure after consolidated adversarial review.** The
+  shared `TaleRecorder.RecordTale` hook now rejects inactive scopes and non-`DidSurgery` Tales before
+  taking an Anomaly XML policy snapshot. Once a dedicated disclosure page exists it owns the source
+  even if the defensive arc re-read cannot attach its event ID, preventing a duplicate generic surgery
+  page. Pure planning fails open instead of mutating a mismatched pawn arc, and corrupt duplicate rows
+  that collapse to a blank terminal replay barrier now clear any visible-event ID immediately.
+
+  Focused coverage now pins the exact ownership-expiry boundary, same-pawn writer exclusion,
+  mismatched-arc protection, blank-barrier event-ID cleanup, and localized surgeon/subject fallback
+  labels. The Russian subject fallback no longer uses an ambiguous gendered pronoun. The documented
+  contract that verified visible history advances independently of optional output is unchanged; so
+  are the seven-field save schema, DLC gates, and spoiler firewall. Pure suites pass 532 Anomaly and
+  135 save-normalization assertions; runtime and the 335-test RimTest assembly rebuild successfully.
+
 - **2026-07-20 — Corrected the remaining false-negative A2.1 pair-context fixture.** The second
   user-provided 335-fixture Anomaly-active run passed 334 tests, confirming the writer-cap correction
   and every other A2.1/A2.0 case. Its sole failure occurred after the exact surgeon/subject pair page

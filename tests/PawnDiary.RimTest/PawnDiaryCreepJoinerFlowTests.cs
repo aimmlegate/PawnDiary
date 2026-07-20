@@ -183,6 +183,16 @@ namespace PawnDiary.RimTests
                 !(page.gameContext ?? string.Empty).Contains("PsychicAgony")
                     && !(page.gameContext ?? string.Empty).Contains("creepjoiner_terminal"),
                 "The disclosure page leaked hidden downside identity or mislabeled a non-terminal phase.");
+            string surgeonLabel = surgeon.LabelShortCap;
+            string subjectLabel = subject.LabelShortCap;
+            PawnDiaryRimTestScope.Require(
+                !string.IsNullOrWhiteSpace(page.initiatorText)
+                    && !string.IsNullOrWhiteSpace(page.recipientText)
+                    && page.initiatorText.Contains(surgeonLabel)
+                    && page.initiatorText.Contains(subjectLabel)
+                    && page.recipientText.Contains(surgeonLabel)
+                    && page.recipientText.Contains(subjectLabel),
+                "The localized surgeon/subject fallback text was empty or lost a visible role label.");
 
             CreepJoinerArcSnapshot arc = RequireOnlyArc(subject);
             PawnDiaryRimTestScope.Require(!arc.terminal

@@ -376,8 +376,8 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > **Progress (2026-07-20): A1.0–A1.4 and A2.0–A2.1 implemented; A2.2 remains.** The primitive policy,
 > detached DTOs, exact study/containment/visible-creepjoiner/surgical-disclosure hooks, fail-closed catalog route, seven-key
 > normalized save baseline, lifecycle-cleared bounded caches/scopes, and five package-gated prompt
-> groups are implemented. N3-A remains an explicit zero-candidate provider. Focused suites pass 529
-> Anomaly, 708 catalog, 134 save-normalization, and 135 Narrative assertions; runtime and 335-test
+> groups are implemented. N3-A remains an explicit zero-candidate provider. Focused suites pass 532
+> Anomaly, 708 catalog, 135 save-normalization, and 135 Narrative assertions; runtime and 335-test
 > RimTest assemblies build. The exact-only classifier and all hooks are Anomaly-gated. Loaded A1.1 state
 > coverage and the original nine A1.3 containment fixtures passed in their recorded profiles. A later
 > full run passed 314/315, including the new containment scope-state fixture; its sole failure was a
@@ -403,9 +403,12 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > run passed 334/335 and confirmed that correction; its sole failure was the live fixture expecting
 > shortened role-context keys after it had already found the exact pair page. The fixture now asserts
 > the frozen `initiator_witness_role` / `recipient_witness_role` schema, and the corrected 335-fixture
-> rerun remains pending. The separate Anomaly-inactive
-> profile, disposable missing study/containment-hook compatibility profiles, and real process-boundary
-> save/reload remain explicit deferred rows. No A2.2 source or hidden-state projection moved ahead.
+> rerun remains pending. Review hardening now skips XML policy snapshots for unrelated Tales, prevents
+> a defensive post-create state mismatch from releasing a duplicate generic surgery page, rejects
+> mismatched arc identities, and clears event IDs from merged blank replay barriers. The separate
+> Anomaly-inactive profile, disposable missing study/containment-hook compatibility profiles, and real
+> process-boundary save/reload remain explicit deferred rows. No A2.2 source or hidden-state projection
+> moved ahead.
 
 ### Implement in this exact order
 

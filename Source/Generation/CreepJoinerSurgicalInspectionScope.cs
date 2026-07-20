@@ -30,6 +30,9 @@ namespace PawnDiary
 
         private static readonly List<Frame> Frames = new List<Frame>();
 
+        /// <summary>True only while at least one exact surgical recipe owns the synchronous scope.</summary>
+        internal static bool HasActiveFrame => Frames.Count > 0;
+
         /// <summary>Opens one exact outer recipe frame, respecting the normalized XML depth cap.</summary>
         internal static bool Begin(CreepJoinerSurgicalInspectionCapture capture, int maximumDepth)
         {

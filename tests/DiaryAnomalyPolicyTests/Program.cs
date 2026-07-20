@@ -1488,6 +1488,14 @@ namespace DiaryAnomalyPolicyTests
             AssertTrue("terminal continuity blocks a later surgical replay",
                 afterTerminal.replaySuppressed && !afterTerminal.advanceArc);
 
+            CreepJoinerArcSnapshot mismatched = Arc(CreepJoinerPhaseTokens.Joined, false);
+            mismatched.pawnId = "Pawn_Other";
+            CreepJoinerSurgicalDisclosurePlan mismatchedPlan =
+                CreepJoinerSurgicalDisclosurePolicy.Plan(facts, mismatched, null);
+            AssertTrue("mismatched continuity cannot rewrite another pawn's arc",
+                mismatchedPlan.valid && mismatchedPlan.replaySuppressed
+                    && !mismatchedPlan.advanceArc && mismatchedPlan.nextArc.pawnId == "Pawn_Other");
+
             CreepJoinerArcSnapshot preservedByArrival = CreepJoinerOutcomePolicy.UpsertArrival(
                 plan.nextArc, "Pawn_Creep", 400, "Arrival_AfterReveal");
             AssertTrue("later canonical arrival preserves non-terminal reveal history",
@@ -1541,6 +1549,13 @@ namespace DiaryAnomalyPolicyTests
                     && plan.selectedWriters.Count == 0);
 
             facts = SurgicalDisclosure();
+            facts.subjectPawnId = facts.surgeonPawnId;
+            plan = CreepJoinerSurgicalDisclosurePolicy.Plan(facts, null, null);
+            AssertTrue("same-pawn identity cannot create duplicate writer roles",
+                plan.writePage && plan.selectedWriters.Count == 1
+                    && plan.selectedWriters[0].roleToken == AnomalyWitnessRoleTokens.Surgeon);
+
+            facts = SurgicalDisclosure();
             facts.subjectLabel = "Patient; injected=blocked";
             facts.surgeonLabel = "Doctor; other=blocked";
             plan = CreepJoinerSurgicalDisclosurePolicy.Plan(facts, null, null);
@@ -1582,6 +1597,10 @@ namespace DiaryAnomalyPolicyTests
             tale.taleDefName = "DidOperation";
             AssertTrue("non-DidSurgery Tale fails open",
                 !CreepJoinerSurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
+            tale = SurgeryTale();
+            tale.tick = 110;
+            AssertTrue("DidSurgery ownership includes the exact expiry boundary",
+                CreepJoinerSurgeryTaleOwnershipPolicy.CanDefer(claim, tale, 10));
             tale = SurgeryTale();
             tale.tick = 111;
             AssertTrue("expired DidSurgery ownership fails open",

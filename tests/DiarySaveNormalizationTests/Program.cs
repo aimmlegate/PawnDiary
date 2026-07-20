@@ -854,6 +854,33 @@ namespace DiarySaveNormalizationTests
                 malformedTerminal.terminal && malformedTerminal.lastVisiblePhase.Length == 0
                     && malformedTerminal.lastVisibleEventId.Length == 0);
 
+            List<CreepJoinerArcSnapshot> contradictoryDuplicate =
+                AnomalyPersistencePolicy.NormalizeCreepJoinerArcs(
+                    new List<CreepJoinerArcSnapshot>
+                    {
+                        new CreepJoinerArcSnapshot
+                        {
+                            pawnId = "Pawn_ContradictoryDuplicate",
+                            joinedTick = 1,
+                            lastVisiblePhase = CreepJoinerPhaseTokens.Joined,
+                            terminal = true,
+                            schemaVersion = 1
+                        },
+                        new CreepJoinerArcSnapshot
+                        {
+                            pawnId = "Pawn_ContradictoryDuplicate",
+                            joinedTick = 2,
+                            lastVisiblePhase = AnomalyOutcomeTokens.SurgicalReveal,
+                            lastVisibleEventId = "Reveal_MustNotLeak",
+                            terminal = false,
+                            schemaVersion = 1
+                        }
+                    });
+            AssertTrue("duplicate blank barrier cannot retain a visible event identity",
+                contradictoryDuplicate.Count == 1 && contradictoryDuplicate[0].terminal
+                    && contradictoryDuplicate[0].lastVisiblePhase.Length == 0
+                    && contradictoryDuplicate[0].lastVisibleEventId.Length == 0);
+
             CreepJoinerArcSnapshot future = AnomalyPersistencePolicy.NormalizeCreepJoinerArc(
                 new CreepJoinerArcSnapshot
                 {

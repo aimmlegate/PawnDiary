@@ -85,6 +85,8 @@ namespace PawnDiary
         internal Pawn surgeon;
         internal Pawn_CreepJoinerTracker tracker;
         internal CreepJoinerSurgicalDisclosureFacts facts;
+        // CreepJoinerSurgicalInspectionScope owns this flag; the recipe finalizer reads it to avoid
+        // closing an already-completed frame a second time.
         internal bool scopeClosed;
 
         internal Pawn ResolveWriter(string pawnId)
@@ -231,6 +233,8 @@ namespace PawnDiary
             if (!ModsConfig.AnomalyActive || capture?.facts == null
                 || !ReferenceEquals(subject, capture.subject)
                 || !ReferenceEquals(surgeon, capture.surgeon)) return;
+            // Vanilla calls this once. If a mod re-enters it, the most recent whole-Pawn result owns
+            // visibility because that is the result the outer recipe ultimately observes.
             capture.facts.playerVisible = capture.facts.trackerDisclosureAppended
                 && outcome == SurgicalInspectionOutcome.Detected;
         }

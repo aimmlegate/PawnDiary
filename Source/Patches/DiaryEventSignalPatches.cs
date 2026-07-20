@@ -48,6 +48,11 @@ namespace PawnDiary
                 // vanilla Tale has already been recorded and is never removed; mismatches, expiry,
                 // failed/hidden results, disabled output, or hook failure keep this ordinary route.
                 if (DiaryAnomalyPatches.CreepJoinerSurgicalHookReady
+                    && CreepJoinerSurgicalInspectionScope.HasActiveFrame
+                    && string.Equals(
+                        def.defName,
+                        CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName,
+                        StringComparison.Ordinal)
                     && CreepJoinerSurgicalInspectionScope.TryDeferDidSurgery(
                         def,
                         args,

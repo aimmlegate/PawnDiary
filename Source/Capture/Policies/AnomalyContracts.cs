@@ -146,7 +146,7 @@ namespace PawnDiary.Capture
         public const string Hostile = "hostile";
         public const string Leaving = "leaving";
 
-        /// <summary>Maps a terminal phase to its generic visible-only result token.</summary>
+        /// <summary>Maps a supported visible phase to its generic visible-only result token.</summary>
         public static string ForPhase(string phase)
         {
             if (phase == AnomalyOutcomeTokens.SurgicalReveal) return Disclosed;

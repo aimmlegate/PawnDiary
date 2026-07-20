@@ -23,9 +23,19 @@ namespace PawnDiary.Capture
             plan.valid = true;
             plan.phase = AnomalyOutcomeTokens.SurgicalReveal;
             plan.visibleResultToken = CreepJoinerVisibleResultTokens.Disclosed;
-            plan.sourceKey = CleanStable(facts.subjectPawnId) + "|" + plan.phase + "|" + facts.tick;
+            string subjectId = CleanStable(facts.subjectPawnId);
+            plan.sourceKey = subjectId + "|" + plan.phase + "|" + facts.tick;
 
             CreepJoinerArcSnapshot current = AnomalyPersistencePolicy.NormalizeCreepJoinerArc(existing);
+            if (current != null && !string.Equals(
+                    current.pawnId, subjectId, StringComparison.Ordinal))
+            {
+                // A caller supplied continuity for another pawn. Preserve that normalized row and
+                // fail open to the generic Tale instead of mutating unrelated history.
+                plan.replaySuppressed = true;
+                plan.nextArc = current;
+                return plan;
+            }
             if (current != null && (current.terminal
                 || current.schemaVersion > AnomalyPersistencePolicy.CurrentCreepJoinerArcSchemaVersion
                 || current.lastVisiblePhase == AnomalyOutcomeTokens.SurgicalReveal))
@@ -38,7 +48,7 @@ namespace PawnDiary.Capture
             plan.advanceArc = true;
             plan.nextArc = current ?? new CreepJoinerArcSnapshot
             {
-                pawnId = CleanStable(facts.subjectPawnId),
+                pawnId = subjectId,
                 // A pre-acceptance inspection has no canonical join tick. Zero is the existing safe
                 // sentinel and can later be enriched with an arrival event without rewriting history.
                 joinedTick = 0,
@@ -51,7 +61,6 @@ namespace PawnDiary.Capture
 
             AnomalyPolicySnapshot effective = AnomalyPolicyNormalization.Normalize(policy);
             string surgeonId = CleanStable(facts.surgeonPawnId);
-            string subjectId = CleanStable(facts.subjectPawnId);
             if (facts.surgeonEligible && surgeonId.Length > 0)
             {
                 plan.selectedWriters.Add(new AnomalyWriterSelection

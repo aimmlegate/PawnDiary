@@ -249,15 +249,16 @@ namespace PawnDiary.Capture
                 ? left : right;
             int version = Math.Max(left.schemaVersion, right.schemaVersion);
             bool future = version > CurrentCreepJoinerArcSchemaVersion;
+            string mergedPhase = future || (terminal && !CreepJoinerPhaseTokens.IsOutcome(
+                    phaseOwner.lastVisiblePhase))
+                ? string.Empty : phaseOwner.lastVisiblePhase;
             return new CreepJoinerArcSnapshot
             {
                 pawnId = left.pawnId,
                 arrivalEventId = LexicalNonEmpty(left.arrivalEventId, right.arrivalEventId),
                 joinedTick = Math.Min(left.joinedTick, right.joinedTick),
-                lastVisiblePhase = future || (terminal && !CreepJoinerPhaseTokens.IsOutcome(
-                        phaseOwner.lastVisiblePhase))
-                    ? string.Empty : phaseOwner.lastVisiblePhase,
-                lastVisibleEventId = future
+                lastVisiblePhase = mergedPhase,
+                lastVisibleEventId = mergedPhase.Length == 0
                     ? string.Empty
                     : LexicalNonEmpty(left.lastVisibleEventId, right.lastVisibleEventId),
                 terminal = future || terminal,

@@ -1691,7 +1691,8 @@ sorts/de-duplicates and caps both histories at 4,096, inspects at most the first
 when a corrupt save contains only duplicates or invalid values, rejects oversized stable identities
 atomically instead of truncating them into collision-prone save keys, validates promotion grammar/
 study stages,
-and never downgrades a future schema. New colonies receive trustworthy empty history. Loading a pre-A1
+never lets a blank terminal replay barrier retain a possibly mismatched visible-event ID, and never
+downgrades a future schema. New colonies receive trustworthy empty history. Loading a pre-A1
 save with Anomaly active performs one DLC-gated scan of loaded-map `CompStudyUnlocks` components through
 `DlcContext.Anomaly.cs`, the single guarded adapter for live Anomaly reads;
 completed kinds are retained, while the necessarily incomplete historical scan marks the first
@@ -1845,31 +1846,36 @@ callback additionally requires the overall result to be `Detected`, so `Nothing`
 surgery failure, exceptions, mismatched objects, and missing correlation cannot authorize disclosure.
 All three callbacks are Anomaly-gated, signature-checked, and inert when the composite hook is unhealthy.
 
-The existing `TaleRecorder.RecordTale` postfix builds its ordinary `TaleSignal` first. Inside the exact
-active surgery scope, only `DidSurgery` with surgeon first and subject second may be deferred. Closing
-the recipe suppresses that signal only after a valid non-replay disclosure plan actually creates the
-dedicated page; disabled output, no eligible author, invalid/mismatched/expired ownership, no visible
-disclosure, early return, or exception releases the unchanged generic Tale path. Vanilla's historical
-`Tale` is never removed. Lifecycle resets and the recipe finalizer clear the bounded scope.
+The existing `TaleRecorder.RecordTale` postfix builds its ordinary `TaleSignal` first. A cheap active-
+scope and exact-Def check rejects every unrelated Tale before reading or normalizing XML policy. Inside
+the exact active surgery scope, only `DidSurgery` with surgeon first and subject second may be deferred.
+Closing the recipe suppresses that signal only after a valid non-replay disclosure plan actually creates
+the dedicated page; event ownership is established as soon as that page exists, independently of the
+defensive follow-up that attaches its ID to the already-committed arc. Disabled output, no eligible
+author, invalid/mismatched/expired ownership, no visible disclosure, early return, or exception releases
+the unchanged generic Tale path. Vanilla's historical `Tale` is never removed. Lifecycle resets and the
+recipe finalizer clear the bounded scope.
 
 Pure A2.1 planning commits nonterminal `surgical_reveal` / `disclosed` history before output gates,
 selects the exact eligible surgeon first and the exact eligible subject second (never a nearby witness),
-and permits a later terminal outcome. The unchanged seven-field row schema/version has no new secret
+rejects a mismatched existing pawn identity without rewriting unrelated continuity, and permits a later
+terminal outcome. The unchanged seven-field row schema/version has no new secret
 slot. Current loaders preserve `surgical_reveal`; a downgrade to A2.0 treats that then-unknown
 nonterminal phase as `joined`, so it neither crashes nor creates a false terminal barrier. Context and
 English/Russian fallback expose only generic disclosure, visible subject/surgeon labels and IDs, and
 truthful `surgeon`/`subject` roles—never the disclosed downside/benefit, letter text, hidden host state,
 or a terminal claim.
 
-The A2.1 delivery raises focused coverage to 529
-Anomaly-policy/XML/cache/context and 134 save-normalization assertions. The A1.4 cases still pin batched recent-
+The A2.1 delivery raises focused coverage to 532
+Anomaly-policy/XML/cache/context and 135 save-normalization assertions. The A1.4 cases still pin batched recent-
 studier matching, ordering equivalence when a large eligible roster is capped, and a strict input-
 inspection bound for malformed saved histories; A2.0 adds all three visible phases, arrival continuity,
 terminal/settings behavior, role/cap ordering, spoiler-firewall formatting, malformed/duplicate/future
 arc normalization, exact/future upserts, future-duplicate barriers, and ordered active/inactive old-save
 baselines. A2.1 adds disclosure/no-disclosure, visibility, malformed/replay/terminal ordering,
-surgeon/subject/cap roles, spoiler-firewall formatting, exact Tale ownership/fail-open behavior, and
-same-schema load/downgrade coverage. The 708 catalog and 135 Narrative suites remain green. The runtime
+surgeon/subject/cap roles, same-pawn exclusion, mismatched-arc protection, expiry-boundary ownership,
+spoiler-firewall formatting, exact Tale ownership/fail-open behavior, blank-barrier event-ID clearing,
+and same-schema load/downgrade coverage. The 708 catalog and 135 Narrative suites remain green. The runtime
 DLL and 335-test RimTest assembly build against the installed 1.6 API. The first user-provided
 335-fixture run passed 333 tests and every embedded A2.0 fixture, closing the earlier expanded
 327-fixture acceptance debt. Its only failures were the two A2.1 joined-subject pair assertions: each

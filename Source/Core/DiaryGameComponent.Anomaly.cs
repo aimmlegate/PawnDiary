@@ -334,6 +334,10 @@ namespace PawnDiary
             Dispatch(signal);
             if (signal.CreatedEvent == null) return plan;
 
+            // The dedicated page already owns this source even if the defensive state re-read below
+            // cannot attach its event ID. Releasing the deferred Tale here would create a double page.
+            dedicatedEventCreated = true;
+
             // The same seven-field row records the dedicated event only after creation. The row stays
             // non-terminal so later visible lifecycle methods remain eligible to close the arc.
             AnomalyPersistentStateSnapshot afterEvent = AnomalyStateSnapshot();
@@ -344,7 +348,6 @@ namespace PawnDiary
             arc.lastVisibleEventId = signal.CreatedEvent.eventId ?? string.Empty;
             ReplaceCreepJoinerArc(afterEvent.creepJoinerArcs, arc);
             ApplyAnomalyState(afterEvent);
-            dedicatedEventCreated = true;
             return plan;
         }
 

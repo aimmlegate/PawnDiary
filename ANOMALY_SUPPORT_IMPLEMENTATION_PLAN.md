@@ -1701,7 +1701,11 @@ profile remains in the manual in-game matrix.
 > and English/Russian fallback reveal only the generic disclosure and exact visible roles, never the
 > benefit/downside identity, appended letter text, hidden host state, motive, or terminal outcome.
 >
-> Focused pure suites pass 529 Anomaly and 134 save-normalization assertions. Eight new loaded fixtures,
+> Review hardening rejects unrelated Tales before taking the XML policy snapshot, treats a created
+> dedicated page as the owner even if defensive event-ID attachment cannot finish, fails open on a
+> mismatched existing arc identity, clears event IDs from merged blank replay barriers, and removes an
+> ambiguous pronoun from the Russian subject fallback. Focused pure suites pass 532 Anomaly and 135
+> save-normalization assertions. Eight new loaded fixtures,
 > plus expanded registration/lifecycle assertions, bring RimTest to 335 compiled tests. They cover a real
 > successful recipe, surgeon/subject pair and surgeon-only pre-join POVs, nothing-found and disabled-output
 > generic-Tale fallback, an early recipe exit without tracker evidence, exception-finalizer fail-open,
@@ -1714,7 +1718,7 @@ profile remains in the manual in-game matrix.
 > fixture expecting shortened `initiator_role` / `recipient_role` keys after the exact pair page had
 > already been found. The frozen schema and pure suite use `initiator_witness_role` /
 > `recipient_witness_role`, which the fixture now asserts. The corrected 335-fixture rerun remains
-> pending. No runtime behavior changed.
+> pending.
 
 - [x] Add recipe/tracker correlation and successful disclosure verification.
 - [x] Implement exact `DidSurgery` ownership with fail-open behavior.
