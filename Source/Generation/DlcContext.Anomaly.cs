@@ -1,6 +1,6 @@
 // DLC-safe live Anomaly state capture. This adapter is the only place Pawn Diary reads monolith,
-// study, containment, or raw creepjoiner tracker/private-field state; it converts optional-DLC
-// objects into detached primitive facts before pure policy, persistence, or prompts see them.
+// study, containment, ghoul, or raw creepjoiner tracker/private-field state; it converts optional-
+// DLC objects into detached primitive facts before pure policy, persistence, or prompts see them.
 //
 // New to C#/RimWorld? See AGENTS.md ("DLC-safety") and the DlcContext.cs file header.
 using System;
@@ -105,6 +105,26 @@ namespace PawnDiary
         internal int builderLengthBefore;
     }
 
+    /// <summary>
+    /// Live references retained only across one synchronous ghoul-infusion recipe. The detached
+    /// facts freeze pre-state and exact POV eligibility before vanilla mutates the subject.
+    /// </summary>
+    internal sealed class GhoulTransformationCapture
+    {
+        internal Pawn subject;
+        internal Pawn surgeon;
+        internal GhoulTransformationFacts facts;
+        internal bool scopeClosed;
+
+        internal Pawn ResolveWriter(string pawnId)
+        {
+            if (string.Equals(
+                surgeon?.GetUniqueLoadID(), pawnId, StringComparison.Ordinal)) return surgeon;
+            return string.Equals(
+                subject?.GetUniqueLoadID(), pawnId, StringComparison.Ordinal) ? subject : null;
+        }
+    }
+
     /// <summary>Guarded Anomaly accessors for save baselines and exact study callbacks.</summary>
     internal static partial class DlcContext
     {
@@ -113,6 +133,73 @@ namespace PawnDiary
         private static FieldInfo creepJoinerTriggeredRejectionField;
         private static FieldInfo creepJoinerTriggeredAggressiveField;
         private static FieldInfo creepJoinerHasLeftField;
+
+        /// <summary>Returns guarded live ghoul state, or false when Anomaly is unavailable.</summary>
+        internal static bool IsGhoul(Pawn pawn)
+        {
+            return ModsConfig.AnomalyActive && pawn != null && pawn.IsGhoul;
+        }
+
+        /// <summary>Captures exact ghoul subject/surgeon pre-state before vanilla can mutate it.</summary>
+        internal static bool TryCaptureGhoulTransformation(
+            Pawn subject,
+            Pawn surgeon,
+            out GhoulTransformationCapture capture)
+        {
+            capture = null;
+            if (!ModsConfig.AnomalyActive || subject == null || surgeon == null) return false;
+            string subjectId = subject.GetUniqueLoadID();
+            string surgeonId = surgeon.GetUniqueLoadID();
+            if (string.IsNullOrWhiteSpace(subjectId) || string.IsNullOrWhiteSpace(surgeonId))
+                return false;
+            capture = new GhoulTransformationCapture
+            {
+                subject = subject,
+                surgeon = surgeon,
+                facts = new GhoulTransformationFacts
+                {
+                    subjectPawnId = subjectId,
+                    subjectLabel = DiaryLineCleaner.CleanLine(subject.LabelShortCap),
+                    surgeonPawnId = surgeonId,
+                    surgeonLabel = DiaryLineCleaner.CleanLine(surgeon.LabelShortCap),
+                    tick = Find.TickManager?.TicksGame ?? 0,
+                    wasGhoul = IsGhoul(subject),
+                    playerVisible = true,
+                    surgeonEligible = DiaryGameComponent.IsDiaryEligible(surgeon),
+                    subjectEligible = DiaryGameComponent.IsDiaryEligible(subject)
+                }
+            };
+            return true;
+        }
+
+        /// <summary>Clones detached facts and verifies post-state after a normal recipe return.</summary>
+        internal static bool TryCompleteGhoulTransformation(
+            Pawn subject,
+            Pawn surgeon,
+            GhoulTransformationCapture capture,
+            out GhoulTransformationFacts facts)
+        {
+            facts = null;
+            if (!ModsConfig.AnomalyActive || capture?.facts == null
+                || !ReferenceEquals(subject, capture.subject)
+                || !ReferenceEquals(surgeon, capture.surgeon)) return false;
+            GhoulTransformationFacts source = capture.facts;
+            facts = new GhoulTransformationFacts
+            {
+                subjectPawnId = source.subjectPawnId,
+                subjectLabel = source.subjectLabel,
+                surgeonPawnId = source.surgeonPawnId,
+                surgeonLabel = source.surgeonLabel,
+                tick = source.tick,
+                methodReturnedNormally = true,
+                wasGhoul = source.wasGhoul,
+                isGhoul = IsGhoul(subject),
+                playerVisible = source.playerVisible,
+                surgeonEligible = source.surgeonEligible,
+                subjectEligible = source.subjectEligible
+            };
+            return true;
+        }
 
         /// <summary>
         /// Resolves the three private committed-transition markers once. Rejection also needs the
@@ -269,11 +356,11 @@ namespace PawnDiary
         }
 
         /// <summary>Copies exact ordinary DidSurgery Tale role identities for pure ownership matching.</summary>
-        internal static bool TryCaptureCreepJoinerSurgeryTale(
+        internal static bool TryCaptureAnomalySurgeryTale(
             TaleDef def,
             object[] args,
             int tick,
-            out CreepJoinerSurgeryTaleFacts facts)
+            out AnomalySurgeryTaleFacts facts)
         {
             facts = null;
             if (!ModsConfig.AnomalyActive || def == null || args == null || args.Length != 2)
@@ -281,7 +368,7 @@ namespace PawnDiary
             Pawn first = args[0] as Pawn;
             Pawn second = args[1] as Pawn;
             if (first == null || second == null) return false;
-            facts = new CreepJoinerSurgeryTaleFacts
+            facts = new AnomalySurgeryTaleFacts
             {
                 taleDefName = def.defName ?? string.Empty,
                 firstPawnId = first.GetUniqueLoadID(),

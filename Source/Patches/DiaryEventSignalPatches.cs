@@ -44,23 +44,28 @@ namespace PawnDiary
                 }
 
                 TaleSignal signal = new TaleSignal(__result, def);
-                // A2.1 delays only the exact DidSurgery signal inside the exact active recipe. The
-                // vanilla Tale has already been recorded and is never removed; mismatches, expiry,
-                // failed/hidden results, disabled output, or hook failure keep this ordinary route.
-                if (DiaryAnomalyPatches.CreepJoinerSurgicalHookReady
-                    && CreepJoinerSurgicalInspectionScope.HasActiveFrame
-                    && string.Equals(
-                        def.defName,
-                        CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName,
-                        StringComparison.Ordinal)
-                    && CreepJoinerSurgicalInspectionScope.TryDeferDidSurgery(
-                        def,
-                        args,
-                        signal,
-                        Find.TickManager?.TicksGame ?? 0,
-                        DiaryAnomalyPolicy.Snapshot().taleOwnershipExpiryTicks))
+                // A2.1/A2.2 delay only an exact DidSurgery signal inside one exact active recipe.
+                // Vanilla's Tale remains recorded; mismatch, expiry, failed/unverified transition,
+                // disabled output, exception, missing author, or hook drift keeps this ordinary route.
+                if (string.Equals(
+                    def.defName,
+                    AnomalySurgeryTaleOwnershipPolicy.DidSurgeryDefName,
+                    StringComparison.Ordinal))
                 {
-                    return;
+                    bool creepOwner = DiaryAnomalyPatches.CreepJoinerSurgicalHookReady
+                        && CreepJoinerSurgicalInspectionScope.HasActiveFrame;
+                    bool ghoulOwner = DiaryAnomalyPatches.GhoulTransformationHookReady
+                        && GhoulInfusionScope.HasActiveFrame;
+                    if (creepOwner || ghoulOwner)
+                    {
+                        int tick = Find.TickManager?.TicksGame ?? 0;
+                        int expiryTicks = DiaryAnomalyPolicy.Snapshot().taleOwnershipExpiryTicks;
+                        if (creepOwner
+                            && CreepJoinerSurgicalInspectionScope.TryDeferDidSurgery(
+                                def, args, signal, tick, expiryTicks)) return;
+                        if (ghoulOwner && GhoulInfusionScope.TryDeferDidSurgery(
+                            def, args, signal, tick, expiryTicks)) return;
+                    }
                 }
                 if (!BiotechBirthCorrelation.TryStageMatureSignal(def.defName, signal)
                     && !signal.TryStageAsPersonaKillCompanion())

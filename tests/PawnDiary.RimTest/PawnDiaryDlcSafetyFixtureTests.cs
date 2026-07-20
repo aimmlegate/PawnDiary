@@ -128,8 +128,11 @@ namespace PawnDiary.RimTests
             string royalTitleDefName;
             bool isCreepJoiner;
             bool isHaunted;
+            bool isGhoul;
             AnomalyContainmentEscapeCapture containmentEscape;
             bool containmentEscapeCaptured;
+            GhoulTransformationCapture ghoulTransformation;
+            bool ghoulTransformationCaptured;
             string ideoligion;
             string ideologicalRole;
             List<string> preceptDefNames;
@@ -164,8 +167,11 @@ namespace PawnDiary.RimTests
                 royalTitleDefName = DlcContext.RoyalTitleDefName(pawn);
                 isCreepJoiner = DlcContext.IsCreepJoiner(pawn);
                 isHaunted = DlcContext.IsHauntedByUnnaturalCorpse(pawn);
+                isGhoul = DlcContext.IsGhoul(pawn);
                 containmentEscapeCaptured = DlcContext.TryCaptureAnomalyContainmentBefore(
                     null, 60, out containmentEscape);
+                ghoulTransformationCaptured = DlcContext.TryCaptureGhoulTransformation(
+                    pawn, pawn, out ghoulTransformation);
                 ideoligion = DlcContext.Ideoligion(pawn);
                 ideologicalRole = DlcContext.IdeologicalRole(pawn);
                 preceptDefNames = DlcContext.IdeologyPreceptDefNames(pawn);
@@ -255,9 +261,10 @@ namespace PawnDiary.RimTests
             RequireDlcBranch(
                 ModsConfig.AnomalyActive,
                 "Anomaly",
-                emptyExpected: !isCreepJoiner && !isHaunted
-                    && !containmentEscapeCaptured && containmentEscape == null,
-                emptyMessage: "Without Anomaly, the creepjoiner / unnatural-corpse accessors must be false.");
+                emptyExpected: !isCreepJoiner && !isHaunted && !isGhoul
+                    && !containmentEscapeCaptured && containmentEscape == null
+                    && !ghoulTransformationCaptured && ghoulTransformation == null,
+                emptyMessage: "Without Anomaly, creepjoiner, unnatural-corpse, and ghoul accessors must be false.");
 
             // Ideology (ideoligion / role / precepts). Inactive -> empty strings + empty list; active ->
             // non-null (already asserted above); the pawn may or may not carry an ideo, so only emptiness
@@ -294,13 +301,19 @@ namespace PawnDiary.RimTests
                     && string.IsNullOrEmpty(DlcContext.RoyalTitleDefName(null)),
                 "Royalty title accessors must return empty for a null pawn.");
             PawnDiaryRimTestScope.Require(!DlcContext.IsCreepJoiner(null)
-                    && !DlcContext.IsHauntedByUnnaturalCorpse(null),
+                    && !DlcContext.IsHauntedByUnnaturalCorpse(null)
+                    && !DlcContext.IsGhoul(null),
                 "Anomaly accessors must return false for a null pawn.");
             AnomalyContainmentEscapeCapture containmentEscape;
+            GhoulTransformationCapture ghoulTransformation;
             PawnDiaryRimTestScope.Require(
                 !DlcContext.TryCaptureAnomalyContainmentBefore(null, 60, out containmentEscape)
                     && containmentEscape == null,
                 "Anomaly containment capture must return false/null for a null target.");
+            PawnDiaryRimTestScope.Require(
+                !DlcContext.TryCaptureGhoulTransformation(null, null, out ghoulTransformation)
+                    && ghoulTransformation == null,
+                "Anomaly ghoul capture must return false/null for missing role pawns.");
             PawnDiaryRimTestScope.Require(string.IsNullOrEmpty(DlcContext.Ideoligion(null))
                     && string.IsNullOrEmpty(DlcContext.IdeologicalRole(null))
                     && DlcContext.IdeologyPreceptDefNames(null).Count == 0,

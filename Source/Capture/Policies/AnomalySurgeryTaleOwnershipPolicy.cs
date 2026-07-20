@@ -1,19 +1,19 @@
-// Pure ownership rules for the ordinary DidSurgery diary signal observed during one exact A2.1
-// transaction. Live Tales and Pawns remain in the patch/scope adapters; only stable role IDs and
-// ticks reach this comparison.
+// Shared pure ownership rules for the ordinary DidSurgery diary signal observed during one exact
+// Anomaly surgery transaction. Live Tales and Pawns remain in patch/scope adapters; only stable
+// role IDs and ticks reach this comparison.
 using System;
 
 namespace PawnDiary.Capture
 {
-    /// <summary>Decides exact, bounded deferral and final suppression for surgical Tales.</summary>
-    internal static class CreepJoinerSurgeryTaleOwnershipPolicy
+    /// <summary>Decides exact, bounded deferral and final suppression for Anomaly surgical Tales.</summary>
+    internal static class AnomalySurgeryTaleOwnershipPolicy
     {
         internal const string DidSurgeryDefName = "DidSurgery";
 
         /// <summary>True only for the exact surgeon/subject Tale inside the active, unexpired scope.</summary>
         public static bool CanDefer(
-            CreepJoinerSurgeryTaleClaim claim,
-            CreepJoinerSurgeryTaleFacts tale,
+            AnomalySurgeryTaleClaim claim,
+            AnomalySurgeryTaleFacts tale,
             int expiryTicks)
         {
             if (claim == null || tale == null || !claim.active || claim.openedTick < 0
@@ -32,17 +32,15 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
-        /// The staged generic signal is discarded only after the exact visible transition advanced
-        /// history and the dedicated event was actually created. Every other result releases it.
+        /// The staged generic signal is discarded only after its source truth is verified and a
+        /// dedicated replacement event was actually created. Every other result releases it.
         /// </summary>
         public static bool ShouldSuppress(
-            CreepJoinerSurgicalDisclosurePlan plan,
+            bool verifiedReplacement,
             bool dedicatedEventCreated,
             bool taleWasDeferred)
         {
-            return taleWasDeferred && dedicatedEventCreated && plan != null && plan.valid
-                && plan.advanceArc && !plan.replaySuppressed
-                && plan.phase == AnomalyOutcomeTokens.SurgicalReveal;
+            return taleWasDeferred && dedicatedEventCreated && verifiedReplacement;
         }
 
         private static string CleanStable(string value)

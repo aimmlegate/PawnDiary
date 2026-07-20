@@ -28,6 +28,7 @@
     <creepJoinerMaxWitnesses>2</creepJoinerMaxWitnesses>
     <creepJoinerWitnessRadius>12</creepJoinerWitnessRadius>
     <ghoulTransformationEnabled>true</ghoulTransformationEnabled>
+    <ghoulTransformationMaxWriters>2</ghoulTransformationMaxWriters>
     <voidOutcomeEnabled>true</voidOutcomeEnabled>
     <taleOwnershipMaxDepth>8</taleOwnershipMaxDepth>
     <taleOwnershipExpiryTicks>2500</taleOwnershipExpiryTicks>

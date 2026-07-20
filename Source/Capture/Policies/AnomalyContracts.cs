@@ -65,6 +65,11 @@ namespace PawnDiary.Capture
         public const string CreepJoinerSubjectLabel = "creepjoiner_subject_label";
         public const string CreepJoinerSurgeonId = "creepjoiner_surgeon_id";
         public const string CreepJoinerSurgeonLabel = "creepjoiner_surgeon_label";
+        public const string GhoulSubjectId = "ghoul_subject_id";
+        public const string GhoulSubjectLabel = "ghoul_subject_label";
+        public const string GhoulSurgeonId = "ghoul_surgeon_id";
+        public const string GhoulSurgeonLabel = "ghoul_surgeon_label";
+        public const string IrreversibleChoice = "irreversible_choice";
         public const string RejectionResponse = "rejection_response";
         public const string VisibleResult = "visible_result";
         public const string Transformation = "transformation";
@@ -182,6 +187,8 @@ namespace PawnDiary.Capture
         public const int MaximumCreepJoinerCandidateInputs = 4096;
         public const int MaximumCreepJoinerArcs = 512;
         public const int MaximumCreepJoinerArcInputs = 4096;
+        public const int DefaultGhoulTransformationWriters = 2;
+        public const int MaximumGhoulTransformationWriters = 2;
     }
 
     /// <summary>Pure result category for one observed study transition.</summary>
@@ -375,8 +382,8 @@ namespace PawnDiary.Capture
         public CreepJoinerArcSnapshot nextArc;
     }
 
-    /// <summary>Detached identity of one active surgical-inspection Tale owner.</summary>
-    internal sealed class CreepJoinerSurgeryTaleClaim
+    /// <summary>Detached identity of one active Anomaly surgery Tale owner.</summary>
+    internal sealed class AnomalySurgeryTaleClaim
     {
         public string subjectPawnId = string.Empty;
         public string surgeonPawnId = string.Empty;
@@ -385,12 +392,43 @@ namespace PawnDiary.Capture
     }
 
     /// <summary>Detached identity copied from one ordinary Tale callback.</summary>
-    internal sealed class CreepJoinerSurgeryTaleFacts
+    internal sealed class AnomalySurgeryTaleFacts
     {
         public string taleDefName = string.Empty;
         public string firstPawnId = string.Empty;
         public string secondPawnId = string.Empty;
         public int tick = -1;
+    }
+
+    /// <summary>
+    /// Detached pre/post facts for one ghoul-infusion recipe call. Only stable identities, visible
+    /// labels, eligibility, and verified transformation state cross into the pure policy.
+    /// </summary>
+    internal sealed class GhoulTransformationFacts
+    {
+        public string subjectPawnId = string.Empty;
+        public string subjectLabel = string.Empty;
+        public string surgeonPawnId = string.Empty;
+        public string surgeonLabel = string.Empty;
+        public int tick = -1;
+        public bool methodReturnedNormally;
+        public bool wasGhoul;
+        public bool isGhoul;
+        public bool playerVisible;
+        public bool surgeonEligible;
+        public bool subjectEligible;
+    }
+
+    /// <summary>Pure irreversible-transition decision plus exact surgeon/subject writer order.</summary>
+    internal sealed class GhoulTransformationPlan
+    {
+        public bool valid;
+        public bool transitionVerified;
+        public bool writePage;
+        public string transformationToken = string.Empty;
+        public string sourceKey = string.Empty;
+        public readonly List<AnomalyWriterSelection> selectedWriters =
+            new List<AnomalyWriterSelection>();
     }
 
     /// <summary>One XML-owned exact study promotion expressed without an optional Def reference.</summary>
@@ -566,6 +604,7 @@ namespace PawnDiary.Capture
         public int creepJoinerMaxWitnesses;
         public int creepJoinerWitnessRadius;
         public bool ghoulTransformationEnabled;
+        public int ghoulTransformationMaxWriters;
         public bool voidOutcomeEnabled;
         public int taleOwnershipMaxDepth;
         public int taleOwnershipExpiryTicks;
@@ -592,6 +631,8 @@ namespace PawnDiary.Capture
                 creepJoinerMaxWitnesses = AnomalyPolicyLimits.MaximumCreepJoinerWitnesses,
                 creepJoinerWitnessRadius = AnomalyPolicyLimits.DefaultCreepJoinerWitnessRadius,
                 ghoulTransformationEnabled = true,
+                ghoulTransformationMaxWriters =
+                    AnomalyPolicyLimits.DefaultGhoulTransformationWriters,
                 voidOutcomeEnabled = true,
                 taleOwnershipMaxDepth = AnomalyPolicyLimits.DefaultTaleOwnershipDepth,
                 taleOwnershipExpiryTicks = AnomalyPolicyLimits.DefaultTaleOwnershipExpiryTicks
@@ -647,6 +688,10 @@ namespace PawnDiary.Capture
                 AnomalyPolicyLimits.MaximumWitnessRadius,
                 result.creepJoinerWitnessRadius);
             result.ghoulTransformationEnabled = source.ghoulTransformationEnabled;
+            result.ghoulTransformationMaxWriters = InRange(
+                source.ghoulTransformationMaxWriters, 1,
+                AnomalyPolicyLimits.MaximumGhoulTransformationWriters,
+                result.ghoulTransformationMaxWriters);
             result.voidOutcomeEnabled = source.voidOutcomeEnabled;
             result.taleOwnershipMaxDepth = InRange(
                 source.taleOwnershipMaxDepth, 1,

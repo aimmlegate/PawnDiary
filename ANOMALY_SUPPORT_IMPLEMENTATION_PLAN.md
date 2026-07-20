@@ -1,7 +1,7 @@
 # Pawn Diary — Anomaly Support Implementation Plan
 
-Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.4 and A2.0–A2.1 implemented as Master Wave 7,
-2026-07-20; A2.2–A3 remain implementation-ready plans. The
+Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.4 and A2.0–A2.2 implemented as Master Wave 7,
+2026-07-20; A3 remains an implementation-ready plan. The
 RimWorld 1.6 feasibility spike is complete for study-note milestones, containment escapes, visible
 creepjoiner outcomes, ghoul infusion, and both terminal void choices. Production now includes the A0
 exact psychic-ritual routing and monolith activation chapters described below.
@@ -11,7 +11,7 @@ Scheduling authority: implement Anomaly phases only in the waves assigned by
 
 Anomaly was the final standalone DLC planning artifact. Its small A0 semantic-precision release has
 now shipped independently; A1 study capture, containment breach capture, and A1 hardening/delivery
-and visible creepjoiner state/outcomes including surgical disclosure are implemented, while A2.2–A3 remain scheduled in the master plan.
+and visible creepjoiner state/outcomes including surgical disclosure and ghoul transformation are implemented, while A3 remains scheduled in the master plan.
 
 The plan turns Anomaly's already broad atmospheric coverage into a coherent human story:
 curiosity becomes knowledge, knowledge enables a choice, containment can fail, apparently human
@@ -126,9 +126,8 @@ The creepjoiner and ghoul pieces may merge separately after their own acceptance
 - Optionally request one rare arc reflection after the canonical outcome page records; the
   reflection must not restate the event or become a second ending page.
 
-A0, A1, and A2.0–A2.1 are implemented. A2.2 remains implementation-ready for
-the ghoul recipe; general creepjoiner-downside classification stays deferred. A3 remains
-implementation-ready for both terminal choices.
+A0, A1, and A2.0–A2.2 are implemented; general creepjoiner-downside classification stays deferred.
+A3 remains implementation-ready for both terminal choices.
 
 ## 2. Product outcome
 
@@ -1678,8 +1677,7 @@ profile remains in the manual in-game matrix.
 
 ### Phase A2.1 — Surgical disclosure
 
-> **Status (2026-07-20): implemented; latest expanded loaded run passed 334/335, with a corrected
-> test-only context-key rerun pending.** A composite
+> **Status (2026-07-20): implemented; user-confirmed corrected loaded run passed 335/335.** A composite
 > Anomaly-gated registration pins the exact installed public recipe, creepjoiner tracker, and Pawn
 > inspection-result signatures. The bounded recipe scope accepts disclosure only when the exact tracker
 > returns true and grows its builder, the overall Pawn result is letter-visible `Detected`, and the
@@ -1717,8 +1715,8 @@ profile remains in the manual in-game matrix.
 > next user-provided run passed 334/335 and confirmed that cap correction; its sole failure was a live
 > fixture expecting shortened `initiator_role` / `recipient_role` keys after the exact pair page had
 > already been found. The frozen schema and pure suite use `initiator_witness_role` /
-> `recipient_witness_role`, which the fixture now asserts. The corrected 335-fixture rerun remains
-> pending.
+> `recipient_witness_role`, which the fixture now asserts. The user-confirmed corrected rerun passed
+> all 335 compiled fixtures, closing the A2.1 loaded acceptance debt.
 
 - [x] Add recipe/tracker correlation and successful disclosure verification.
 - [x] Implement exact `DidSurgery` ownership with fail-open behavior.
@@ -1726,9 +1724,30 @@ profile remains in the manual in-game matrix.
 
 ### Phase A2.2 — Ghoul transformation
 
-- Add recipe prefix/postfix transition capture through `DlcContext`.
-- Emit one identity event and own the matching Tale only after success.
-- Add failure, already-ghoul, ineligible POV, save/load, and no-DLC tests.
+> **Status (2026-07-20): implemented; expanded loaded run pending.** Independent inspection of the
+> installed 1.6 assembly confirms the exact public recipe signature and vanilla order: failure check,
+> ghoul mutation, faction adjustment, then surgeon-first/subject-second `DidSurgery`. The Anomaly-gated
+> prefix freezes detached subject/surgeon identity, visible labels, eligibility, tick, and guarded
+> `wasGhoul` through `DlcContext`; the postfix authorizes only a normal-return `!wasGhoul && isGhoul`
+> transition through a pure policy. Exact eligible writers are surgeon first and subject second under
+> the XML-owned one/two-writer cap, with same-pawn exclusion and no invented witnesses.
+>
+> A bounded lifecycle-cleared scope uses the shared pure surgery-Tale matcher and cannot overlap A2.1.
+> `DidSurgery` is suppressed only after the dedicated event actually exists. Failure, exception,
+> already-ghoul calls, missing/ineligible authors, disabled output, hook/correlation drift, resolution
+> failure, and finalizer cleanup release the unchanged generic signal. No new save key exists; old-save
+> and current-ghoul state produce no catch-up page. Context/localized fallback contain only the visible
+> irreversible ghoul choice and exact roles. Production has no unsafe Anomaly Def lookup or dependency.
+>
+> Focused pure coverage passes 567 assertions. Twelve loaded fixtures raise RimTest to 347 compiled
+> tests and cover the real successful/failed worker, already-ghoul fallback, exact pair/solo POVs,
+> disabled output, exception/unscoped fallback, reset and A2.1 mutual exclusion, exact registration,
+> no-DLC gating, actual Scribe/no-replay behavior, and later ordinary injury routing. No loaded RimWorld
+> process/profile was available during implementation, so compilation is not claimed as execution.
+
+- [x] Add recipe prefix/postfix transition capture through `DlcContext`.
+- [x] Emit one identity event and own the matching Tale only after success.
+- [x] Add failure, already-ghoul, ineligible POV, save/load, and no-DLC tests.
 
 ### Phase A3.0 — Terminal void outcome
 

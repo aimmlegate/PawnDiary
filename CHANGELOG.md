@@ -1,5 +1,35 @@
 # Changelog
 
+- **2026-07-20 — Implemented Master Wave 7 / Anomaly Phase A2.2 ghoul transformation.** Pawn
+  Diary now observes the exact installed public `Recipe_GhoulInfusion.ApplyOnPawn(Pawn,
+  BodyPartRecord,Pawn,List<Thing>,Bill)` overload. Its prefix freezes guarded pre-state through
+  `DlcContext`; after a normal vanilla return, a pure policy authorizes only a verified non-ghoul →
+  ghoul transition. One dedicated `PawnDiary_GhoulTransformation` event uses only the exact eligible
+  surgeon and subject, ordered surgeon first, under the XML-owned one/two-writer cap. Context and
+  localized English/Russian fallback expose only visible role identities, the ghoul outcome, and the
+  irreversible choice—never failure rolls, ingredients, body mechanics, or other hidden state.
+
+  A bounded lifecycle-cleared scope correlates only the surgeon-first/subject-second `DidSurgery`
+  Tale and is mutually exclusive with A2.1 surgical-inspection ownership. The unchanged generic Tale
+  is suppressed only after the dedicated event actually exists; failed/exceptional surgery,
+  already-ghoul calls, disabled output, missing/ineligible authors, hook/correlation drift, and
+  finalizer cleanup all fail open. No ghoul state is saved, so current ghouls and old saves produce no
+  catch-up pages. The hook is `ModsConfig.AnomalyActive`-gated, adds no DLC dependency or unsafe Def
+  lookup, and leaves later ordinary injury/death routing intact.
+
+  Pure Anomaly coverage passes 567 assertions. Twelve loaded fixtures raise the RimTest assembly from
+  335 to 347 compiled tests and cover the real success/failure worker, already-ghoul/no-op behavior,
+  exact pair/solo POVs, disabled output, finalizer and unscoped fail-open paths, lifecycle/reset scope
+  exclusion, exact registration/no-DLC gates, actual Anomaly Scribe/no-replay behavior, and a later
+  ordinary injury Tale. Core and RimTest DLLs rebuild against installed RimWorld 1.6. No loaded
+  RimWorld process/profile was available during this change, so these 12 new fixtures are not claimed
+  as executed in-game; the previously user-confirmed corrected A2.1 run remains green at 335/335.
+
+- **2026-07-20 — Recorded the corrected A2.1 loaded acceptance run green at 335/335.** The
+  user-confirmed Anomaly-active rerun passed every compiled fixture after the last test-only context-key
+  correction. This closes the remaining A2.1 loaded acceptance debt; the separate Anomaly-inactive,
+  missing-hook compatibility, and real process-boundary save/reload profiles remain explicitly deferred.
+
 - **2026-07-20 — Added a filter/controls panel to the Diary tab (year selector + dev tools moved in;
   stub filters).** The Diary tab is now a two-column layout: the virtualized journal on the left and a
   new independent, non-virtualized filter/controls panel on the right (`ITab_Pawn_Diary.FilterPanel.cs`)
@@ -60,7 +90,7 @@
   had already been found: the fixture expected nonexistent `initiator_role` / `recipient_role` keys,
   while the frozen Anomaly schema and 529-assertion pure suite use `initiator_witness_role` /
   `recipient_witness_role`. The live fixture now asserts those canonical keys. No production behavior,
-  save schema, prompt text, Def, or localization changed; the corrected 335-fixture rerun remains pending.
+  save schema, prompt text, Def, or localization changed. The later corrected rerun passed 335/335.
 
 - **2026-07-20 — Corrected two false-negative A2.1 joined-surgery fixtures after the first
   loaded run.** The user-provided 335-fixture Anomaly-active run passed 333 tests and failed only the
@@ -69,7 +99,7 @@
   cap, so the A2.1 policy correctly emitted a surgeon-only page before the pair matcher ran. The setup
   now uses the supported two-writer ceiling. No production behavior, save schema, prompt text, Def, or
   localization changed. The same run passed every embedded A2.0 fixture, closing the expanded
-  327-fixture acceptance debt as aggregate evidence; the corrected 335-fixture rerun remains pending.
+  327-fixture acceptance debt as aggregate evidence; the later corrected rerun passed 335/335.
 
 - **2026-07-20 — Implemented Master Wave 7 / Anomaly Phase A2.1 surgical creepjoiner
   disclosure.** Pawn Diary now correlates the exact installed surgical-inspection recipe, creepjoiner

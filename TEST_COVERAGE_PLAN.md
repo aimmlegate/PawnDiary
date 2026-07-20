@@ -294,8 +294,26 @@ The setup now uses the supported two-writer ceiling. The next user-provided run 
 confirming that correction and every other fixture. Its sole failure occurred after finding the exact
 pair page: the live assertion expected nonexistent `initiator_role` / `recipient_role` context keys,
 while the frozen schema and pure suite pin `initiator_witness_role` / `recipient_witness_role`. The
-fixture now asserts the canonical keys. A corrected 335-fixture rerun remains pending, alongside the
-Anomaly-inactive, missing-hook, and process-boundary save/reload profiles; no production behavior changed.
+fixture now asserts the canonical keys. The user-confirmed corrected rerun passed 335/335, closing the
+A2.1 loaded acceptance debt. The Anomaly-inactive, missing-hook, and process-boundary save/reload
+profiles remain deferred; no production behavior changed.
+
+Master Wave 7 / Anomaly A2.2 raises `DiaryAnomalyPolicyTests` to 567 assertions. New pure cases cover
+verified success; null/malformed IDs; negative tick; abnormal return; already-ghoul, failed, invisible,
+and unverified transitions; exact surgeon-first/subject-second selection; XML caps 1/2; surgeon-only,
+subject-only, no-writer, and same-pawn shapes; disabled output; bounded delimiter-safe visible context;
+and exact generic-Tale suppression only when source truth, deferred ownership, and an actually created
+dedicated event all agree.
+
+`PawnDiaryGhoulTransformationFlowTests` adds twelve loaded fixtures, bringing the separate RimTest
+assembly to 347 compiled tests. They audit the exact public installed recipe signature and Harmony
+prefix/postfix/finalizer ownership, guarded no-DLC access, the real successful infusion and deterministic
+real failure outcome, already-ghoul fallback, pair plus both exact solo POV shapes, disabled-output
+generic fallback, finalizer release, unscoped `DidSurgery`, lifecycle reset and A2.1/A2.2 scope mutual
+exclusion, actual Anomaly Scribe/no-catch-up behavior, and a later ordinary injury Tale. Existing death
+flow fixtures remain in the same loaded assembly. The core and RimTest assemblies compile; no loaded
+RimWorld process/profile was available during this change, so the twelve new fixtures and expanded
+347-fixture run are explicitly not claimed as executed.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It
