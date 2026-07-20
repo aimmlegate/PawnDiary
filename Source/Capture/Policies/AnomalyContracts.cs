@@ -56,6 +56,9 @@ namespace PawnDiary.Capture
         public const string EscapedEntities = "escaped_entities";
         public const string AdditionalEscapedCount = "additional_escaped_count";
         public const string WitnessRole = "witness_role";
+        public const string InitiatorWitnessRole = "initiator_witness_role";
+        public const string RecipientWitnessRole = "recipient_witness_role";
+        public const string SameRoomCascade = "same_room_cascade";
         public const string CreepJoinerPhase = "creepjoiner_phase";
         public const string VisibleResult = "visible_result";
         public const string Transformation = "transformation";
@@ -110,6 +113,11 @@ namespace PawnDiary.Capture
         public const int MaximumEntityLabels = 8;
         public const int DefaultWitnessRadius = 12;
         public const int MaximumWitnessRadius = 100;
+        public const int MaximumContainmentEntities = 64;
+        public const int MaximumContainmentCandidates = 512;
+        public const int DefaultRecentStudies = 128;
+        public const int MaximumRecentStudies = 512;
+        public const int DefaultRecentStudierMaxAgeTicks = 60000;
         public const int MaximumStudyMilestones = 128;
         public const int DefaultStudyTaleSuppressionTicks = 2500;
         public const int DefaultTaleOwnershipDepth = 8;
@@ -258,9 +266,22 @@ namespace PawnDiary.Capture
         public string visibleLabel = string.Empty;
         public string defName = string.Empty;
         public string mutantDefName = string.Empty;
+        public string platformId = string.Empty;
+        public int mapId = -1;
         public int platformX;
         public int platformZ;
         public bool escaped;
+    }
+
+    /// <summary>
+    /// One detached exact study relationship retained independently from consume-once Tale ownership.
+    /// </summary>
+    internal sealed class AnomalyRecentStudyFact
+    {
+        public string studierPawnId = string.Empty;
+        public string studiedEntityId = string.Empty;
+        public string studiedDefName = string.Empty;
+        public int studiedTick = -1;
     }
 
     /// <summary>Plain candidate evidence used for deterministic containment witness selection.</summary>
@@ -285,6 +306,7 @@ namespace PawnDiary.Capture
         public int mapId = -1;
         public bool outerEscape;
         public bool sameRoomCascade;
+        public string preEjectionSetting = string.Empty;
         public readonly List<ContainedEntityFact> entities = new List<ContainedEntityFact>();
         public readonly List<AnomalyWriterCandidate> witnesses = new List<AnomalyWriterCandidate>();
     }
@@ -304,6 +326,8 @@ namespace PawnDiary.Capture
         public string dedupKey = string.Empty;
         public int escapedCount;
         public int additionalEscapedCount;
+        public bool sameRoomCascade;
+        public string preEjectionSetting = string.Empty;
         public readonly List<ContainedEntityFact> contextEntities = new List<ContainedEntityFact>();
         public readonly List<AnomalyWriterSelection> selectedWriters = new List<AnomalyWriterSelection>();
     }
@@ -378,7 +402,7 @@ namespace PawnDiary.Capture
                 containmentMaxWriters = AnomalyPolicyLimits.DefaultContainmentWriters,
                 containmentMaxEntityLabelsInContext = AnomalyPolicyLimits.DefaultEntityLabels,
                 containmentDedupTicks = 2500,
-                recentStudierMaxAgeTicks = 60000,
+                recentStudierMaxAgeTicks = AnomalyPolicyLimits.DefaultRecentStudierMaxAgeTicks,
                 creepJoinerEnabled = true,
                 creepJoinerOutcomeDedupTicks = 2500,
                 creepJoinerArcRetentionTicks = 3600000,

@@ -140,12 +140,4 @@ namespace PawnDiary
         }
     }
 
-    /// <summary>One reset owner for all current and future process-static Anomaly correlation state.</summary>
-    internal static class AnomalyTransientState
-    {
-        internal static void Reset()
-        {
-            AnomalyStudySuppressionCache.Clear();
-        }
-    }
 }

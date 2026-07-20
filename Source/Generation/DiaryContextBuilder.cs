@@ -443,6 +443,52 @@ namespace PawnDiary
             return string.Join(", ", parts.ToArray());
         }
 
+        /// <summary>
+        /// Builds deterministic visible surroundings for a captured map cell. Containment uses this
+        /// before ejection because a held pawn is not <c>Spawned</c>, and therefore cannot use the normal
+        /// pawn overload. This deliberately performs no weather roll and includes no exact coordinates.
+        /// </summary>
+        public static string BuildSurroundingsSummaryAt(Map map, IntVec3 position)
+        {
+            if (map == null || !position.InBounds(map)) return string.Empty;
+
+            List<string> parts = new List<string>();
+            Room room = position.GetRoom(map);
+            bool outdoors = room == null || room.PsychologicallyOutdoors;
+            string roomRole = TryReadRoomRoleLabel(room);
+            if (!string.IsNullOrWhiteSpace(roomRole)) parts.Add(roomRole);
+            parts.Add((outdoors ? "PawnDiary.Ctx.Outdoors" : "PawnDiary.Ctx.Indoors").Translate());
+
+            if (outdoors)
+            {
+                WeatherDef weather = map.weatherManager?.CurWeatherPerceived;
+                if (weather != null) parts.Add(ExternalText(weather.label));
+                if (map.Biome != null) parts.Add(ExternalText(map.Biome.label));
+            }
+
+            float temperature = GenTemperature.GetTemperatureForCell(position, map);
+            if (temperature <= DiaryTuning.Current.coldBelowC)
+                parts.Add("PawnDiary.Ctx.Cold".Translate());
+            else if (temperature >= DiaryTuning.Current.hotAboveC)
+                parts.Add("PawnDiary.Ctx.Hot".Translate());
+
+            float beauty = BeautyUtility.AverageBeautyPerceptible(position, map);
+            if (beauty >= DiaryTuning.Current.beautyPleasant
+                || beauty <= -DiaryTuning.Current.beautyPleasant)
+            {
+                parts.Add("PawnDiary.Ctx.Surroundings".Translate(DiaryBuckets.BeautyBucket(beauty)));
+            }
+
+            string activeConditions = BuildActiveMapConditionsSummary(map);
+            if (!string.IsNullOrWhiteSpace(activeConditions))
+            {
+                parts.Add(DiaryContextReactions.Format(
+                    DiaryContextReactions.ActiveMapConditions, activeConditions));
+            }
+
+            return string.Join(", ", parts.ToArray());
+        }
+
         // GetRoomRoleLabel looks like a simple label getter, but RimWorld can lazily recalculate every
         // room stat and the room role inside it. A transiently inconsistent room graph (especially while
         // performance/room-role mods are also patching that recalculation) can therefore throw. The role

@@ -43,6 +43,7 @@ namespace PawnDiary.RimTests
         private static Pawn studier;
         private static RawAnomalyState originalState;
         private static List<AnomalyStudyTaleClaim> originalClaims;
+        private static List<AnomalyRecentStudyFact> originalRecentStudies;
         private static HashSet<Letter> originalLetters;
         private static DiaryGameComponent scribeTarget;
 
@@ -55,10 +56,12 @@ namespace PawnDiary.RimTests
             RequireReflectionWiring();
             originalState = RawAnomalyState.Capture(scope.Component);
             originalClaims = AnomalyStudySuppressionCache.SnapshotForTests();
+            originalRecentStudies = AnomalyRecentStudyCache.SnapshotForTests();
             originalLetters = new HashSet<Letter>(
                 Find.LetterStack?.LettersListForReading ?? new List<Letter>());
             SetCleanState(firstBreakthroughObserved: false);
             AnomalyStudySuppressionCache.Clear();
+            AnomalyRecentStudyCache.Clear();
         }
 
         [AfterEach]
@@ -69,7 +72,10 @@ namespace PawnDiary.RimTests
             {
                 RemoveFixtureLetters();
                 originalState?.Restore(scope?.Component);
-                AnomalyStudySuppressionCache.RestoreForTests(originalClaims);
+                if (originalClaims != null)
+                    AnomalyStudySuppressionCache.RestoreForTests(originalClaims);
+                if (originalRecentStudies != null)
+                    AnomalyRecentStudyCache.RestoreForTests(originalRecentStudies);
             }
             catch (Exception exception)
             {
@@ -89,6 +95,7 @@ namespace PawnDiary.RimTests
                 scribeTarget = null;
                 originalLetters = null;
                 originalClaims = null;
+                originalRecentStudies = null;
                 originalState = null;
                 studier = null;
                 scope = null;
@@ -125,9 +132,13 @@ namespace PawnDiary.RimTests
             CompStudyUnlocks study = StudyComp("BelowThreshold", 9f, 10f, 20f);
             scope.RequireNoNewEvent(() => study.OnStudied(studier, 1f, null));
             PawnDiaryRimTestScope.Require(study.Progress == 0
-                    && !scope.Component.AnomalyStateSnapshotForTests()
-                        .firstStudyBreakthroughObserved,
-                "A below-threshold call invented study progress or first-history state.");
+                    && !scope.Component.AnomalyStateSnapshotForTests().firstStudyBreakthroughObserved
+                    && AnomalyRecentStudyCache.Matches(
+                        study.parent.GetUniqueLoadID(),
+                        studier.GetUniqueLoadID(),
+                        Find.TickManager?.TicksGame ?? 0,
+                        DiaryAnomalyPolicy.Snapshot().recentStudierMaxAgeTicks),
+                "A below-threshold call invented progress/history or lost exact recent-study evidence.");
         }
 
         /// <summary>One crossed note creates one exact-author page and only then a Tale claim.</summary>
@@ -502,8 +513,9 @@ namespace PawnDiary.RimTests
 
         private static void RemoveFixtureLetters()
         {
+            if (Verse.Current.Game == null || originalLetters == null) return;
             LetterStack stack = Find.LetterStack;
-            if (stack?.LettersListForReading == null || originalLetters == null) return;
+            if (stack?.LettersListForReading == null) return;
             for (int i = stack.LettersListForReading.Count - 1; i >= 0; i--)
             {
                 Letter letter = stack.LettersListForReading[i];

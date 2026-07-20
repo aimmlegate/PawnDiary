@@ -34,6 +34,8 @@ namespace PawnDiary.Capture
 
             plan.valid = true;
             plan.escapedCount = escaped.Count;
+            plan.sameRoomCascade = facts.sameRoomCascade && escaped.Count > 1;
+            plan.preEjectionSetting = facts.preEjectionSetting ?? string.Empty;
             int labelMaximum = NormalizeEntityLabelMaximum(policy.containmentMaxEntityLabelsInContext);
             for (int i = 0; i < escaped.Count && plan.contextEntities.Count < labelMaximum; i++)
             {
@@ -106,6 +108,10 @@ namespace PawnDiary.Capture
                 }
 
                 result.Add(entity);
+                if (result.Count >= AnomalyPolicyLimits.MaximumContainmentEntities)
+                {
+                    break;
+                }
             }
 
             return result;
@@ -233,6 +239,8 @@ namespace PawnDiary.Capture
                 visibleLabel = source.visibleLabel ?? string.Empty,
                 defName = (source.defName ?? string.Empty).Trim(),
                 mutantDefName = (source.mutantDefName ?? string.Empty).Trim(),
+                platformId = (source.platformId ?? string.Empty).Trim(),
+                mapId = source.mapId,
                 platformX = source.platformX,
                 platformZ = source.platformZ,
                 escaped = source.escaped

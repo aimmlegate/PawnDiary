@@ -128,6 +128,8 @@ namespace PawnDiary.RimTests
             string royalTitleDefName;
             bool isCreepJoiner;
             bool isHaunted;
+            AnomalyContainmentEscapeCapture containmentEscape;
+            bool containmentEscapeCaptured;
             string ideoligion;
             string ideologicalRole;
             List<string> preceptDefNames;
@@ -162,6 +164,8 @@ namespace PawnDiary.RimTests
                 royalTitleDefName = DlcContext.RoyalTitleDefName(pawn);
                 isCreepJoiner = DlcContext.IsCreepJoiner(pawn);
                 isHaunted = DlcContext.IsHauntedByUnnaturalCorpse(pawn);
+                containmentEscapeCaptured = DlcContext.TryCaptureAnomalyContainmentBefore(
+                    null, 60, out containmentEscape);
                 ideoligion = DlcContext.Ideoligion(pawn);
                 ideologicalRole = DlcContext.IdeologicalRole(pawn);
                 preceptDefNames = DlcContext.IdeologyPreceptDefNames(pawn);
@@ -251,7 +255,8 @@ namespace PawnDiary.RimTests
             RequireDlcBranch(
                 ModsConfig.AnomalyActive,
                 "Anomaly",
-                emptyExpected: !isCreepJoiner && !isHaunted,
+                emptyExpected: !isCreepJoiner && !isHaunted
+                    && !containmentEscapeCaptured && containmentEscape == null,
                 emptyMessage: "Without Anomaly, the creepjoiner / unnatural-corpse accessors must be false.");
 
             // Ideology (ideoligion / role / precepts). Inactive -> empty strings + empty list; active ->
@@ -291,6 +296,11 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(!DlcContext.IsCreepJoiner(null)
                     && !DlcContext.IsHauntedByUnnaturalCorpse(null),
                 "Anomaly accessors must return false for a null pawn.");
+            AnomalyContainmentEscapeCapture containmentEscape;
+            PawnDiaryRimTestScope.Require(
+                !DlcContext.TryCaptureAnomalyContainmentBefore(null, 60, out containmentEscape)
+                    && containmentEscape == null,
+                "Anomaly containment capture must return false/null for a null target.");
             PawnDiaryRimTestScope.Require(string.IsNullOrEmpty(DlcContext.Ideoligion(null))
                     && string.IsNullOrEmpty(DlcContext.IdeologicalRole(null))
                     && DlcContext.IdeologyPreceptDefNames(null).Count == 0,
@@ -572,6 +582,29 @@ namespace PawnDiary.RimTests
             RequireProperty(typeof(CompStudyUnlocks), "Completed", typeof(bool), AnyInstance);
             RequireMethod(typeof(CompStudyUnlocks), "OnStudied", typeof(void),
                 new[] { typeof(Pawn), typeof(float), typeof(KnowledgeCategoryDef) });
+            MethodInfo escape = typeof(CompHoldingPlatformTarget).GetMethod(
+                "Escape", AnyInstance, null, new[] { typeof(bool) }, null);
+            RequireMethod(typeof(CompHoldingPlatformTarget), "Escape", typeof(void),
+                new[] { typeof(bool) });
+            PawnDiaryRimTestScope.Require(escape != null
+                    && escape.GetParameters().Length == 1
+                    && escape.GetParameters()[0].Name == "initiator",
+                "CompHoldingPlatformTarget.Escape must retain the exact bool parameter name 'initiator' "
+                    + "used by the defensive Harmony registration.");
+            RequireProperty(typeof(CompHoldingPlatformTarget), "HeldPlatform",
+                typeof(Building_HoldingPlatform), AnyInstance);
+            RequireProperty(typeof(CompHoldingPlatformTarget), "CurrentlyHeldOnPlatform",
+                typeof(bool), AnyInstance);
+            RequireField(typeof(CompHoldingPlatformTarget), "isEscaping", typeof(bool));
+            RequireMethod(typeof(CompHoldingPlatformTarget), "Notify_HeldOnPlatform", typeof(void),
+                new[] { typeof(ThingOwner) });
+            RequireMethod(typeof(CompHoldingPlatformTarget), "Notify_ReleasedFromPlatform", typeof(void),
+                Type.EmptyTypes);
+            RequireProperty(typeof(Building_HoldingPlatform), "HeldPawn", typeof(Pawn), AnyInstance);
+            RequireField(typeof(Building_HoldingPlatform), "innerContainer", typeof(ThingOwner));
+            RequireMethod(typeof(Building_HoldingPlatform), "EjectContents", typeof(void), Type.EmptyTypes);
+            RequireMethod(typeof(Building_HoldingPlatform), "Notify_PawnDied", typeof(void),
+                new[] { typeof(Pawn), typeof(DamageInfo?) });
             RequireMethod(typeof(Job), "GetUniqueLoadID", typeof(string), Type.EmptyTypes);
             RequireField(typeof(MonolithLevelDef), "levelInspectText", typeof(string));
             RequireField(typeof(MonolithLevelDef), "monolithLabel", typeof(string));

@@ -11,6 +11,25 @@ using Verse;
 
 namespace PawnDiary
 {
+    /// <summary>
+    /// Synchronous live edge-state for one Escape call. It exists only until the matching postfix or
+    /// finalizer; the aggregation scope copies its plain facts and never exposes these objects to pure
+    /// policy, persistence, or background generation.
+    /// </summary>
+    internal sealed class AnomalyContainmentEscapeCapture
+    {
+        internal CompHoldingPlatformTarget target;
+        internal Pawn entity;
+        internal Building_HoldingPlatform platform;
+        internal Map map;
+        internal int capturedTick;
+        internal ContainedEntityFact entityFact;
+        internal string preEjectionSetting = string.Empty;
+        internal readonly List<AnomalyWriterCandidate> writerFacts =
+            new List<AnomalyWriterCandidate>();
+        internal readonly List<Pawn> writerPawns = new List<Pawn>();
+    }
+
     /// <summary>Guarded Anomaly accessors for save baselines and exact study callbacks.</summary>
     internal static partial class DlcContext
     {
@@ -47,6 +66,121 @@ namespace PawnDiary
             return !string.IsNullOrWhiteSpace(facts.studiedEntityId)
                 && !string.IsNullOrWhiteSpace(facts.studiedDefName)
                 && !string.IsNullOrWhiteSpace(facts.studierPawnId);
+        }
+
+        /// <summary>
+        /// Snapshots an exactly held pawn, platform, map/cell, visible setting, and deterministic writer
+        /// evidence before vanilla ejects anything. No optional Anomaly Def is resolved by name.
+        /// </summary>
+        internal static bool TryCaptureAnomalyContainmentBefore(
+            object targetObject,
+            int recentStudierMaxAgeTicks,
+            out AnomalyContainmentEscapeCapture capture)
+        {
+            capture = null;
+            if (!ModsConfig.AnomalyActive) return false;
+
+            CompHoldingPlatformTarget target = targetObject as CompHoldingPlatformTarget;
+            Pawn entity = target?.parent as Pawn;
+            Building_HoldingPlatform platform = target?.HeldPlatform;
+            Map map = platform?.Map;
+            if (target == null || entity?.def == null || platform == null || map == null
+                || !target.CurrentlyHeldOnPlatform)
+            {
+                return false;
+            }
+
+            string entityId = entity.GetUniqueLoadID();
+            string platformId = platform.GetUniqueLoadID();
+            if (string.IsNullOrWhiteSpace(entityId) || string.IsNullOrWhiteSpace(platformId))
+                return false;
+
+            int tick = Find.TickManager?.TicksGame ?? 0;
+            IntVec3 position = platform.Position;
+            AnomalyContainmentEscapeCapture result = new AnomalyContainmentEscapeCapture
+            {
+                target = target,
+                entity = entity,
+                platform = platform,
+                map = map,
+                capturedTick = tick,
+                entityFact = new ContainedEntityFact
+                {
+                    entityId = entityId,
+                    visibleLabel = DiaryLineCleaner.CleanLine(entity.LabelShortCap),
+                    defName = entity.def.defName,
+                    platformId = platformId,
+                    mapId = map.uniqueID,
+                    platformX = position.x,
+                    platformZ = position.z,
+                    escaped = false
+                },
+                preEjectionSetting = DiaryContextBuilder.BuildSurroundingsSummaryAt(map, position)
+            };
+
+            List<Pawn> candidates = map.mapPawns?.AllPawnsSpawned == null
+                ? new List<Pawn>() : new List<Pawn>(map.mapPawns.AllPawnsSpawned);
+            candidates.Sort((left, right) => string.CompareOrdinal(
+                left?.GetUniqueLoadID() ?? string.Empty,
+                right?.GetUniqueLoadID() ?? string.Empty));
+            for (int i = 0;
+                i < candidates.Count
+                    && result.writerFacts.Count < AnomalyPolicyLimits.MaximumContainmentCandidates;
+                i++)
+            {
+                Pawn candidate = candidates[i];
+                if (candidate == null || !candidate.Spawned || candidate.Map != map
+                    || !DiaryGameComponent.IsDiaryEligible(candidate))
+                {
+                    continue;
+                }
+
+                string pawnId = candidate.GetUniqueLoadID();
+                if (string.IsNullOrWhiteSpace(pawnId)) continue;
+                int distanceSquared = (candidate.Position - position).LengthHorizontalSquared;
+                result.writerFacts.Add(new AnomalyWriterCandidate
+                {
+                    pawnId = pawnId,
+                    eligible = true,
+                    onAffectedMap = true,
+                    nearbyCandidate = true,
+                    recentExactStudier = AnomalyRecentStudyCache.Matches(
+                        entityId, pawnId, tick, recentStudierMaxAgeTicks),
+                    freeColonistOnHomeMap = map.IsPlayerHome && candidate.IsFreeColonist,
+                    distanceSquared = distanceSquared,
+                    distanceBucket = distanceSquared,
+                    tieBreakKey = pawnId
+                });
+                result.writerPawns.Add(candidate);
+            }
+
+            capture = result;
+            return true;
+        }
+
+        /// <summary>
+        /// Verifies the exact captured pawn left its exact platform, spawned visibly on the same map,
+        /// and entered vanilla's explicit escape state. Intentional ejection never sets that state.
+        /// </summary>
+        internal static bool VerifyAnomalyContainmentEscape(
+            AnomalyContainmentEscapeCapture capture)
+        {
+            if (!ModsConfig.AnomalyActive || capture?.target == null || capture.entity == null
+                || capture.platform == null || capture.map == null)
+            {
+                return false;
+            }
+
+            Pawn entity = capture.entity;
+            return !capture.target.CurrentlyHeldOnPlatform
+                && capture.target.HeldPlatform == null
+                && entity.ParentHolder != capture.platform
+                && capture.platform.HeldPawn != entity
+                && entity.Spawned
+                && entity.Map == capture.map
+                && !entity.Destroyed
+                && !entity.Dead
+                && capture.target.isEscaping;
         }
 
         /// <summary>

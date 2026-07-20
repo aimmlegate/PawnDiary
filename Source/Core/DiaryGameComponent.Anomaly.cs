@@ -122,9 +122,22 @@ namespace PawnDiary
             bool transitioned;
             if (!DlcContext.TryCompleteAnomalyStudy(
                 studyObject, studier, categoryObject, before, out facts, out transitioned)) return;
+            AnomalyPolicySnapshot policy = DiaryAnomalyPolicy.Snapshot();
+            // Recent-study evidence is not Tale ownership. Retain it after every exactly correlated
+            // OnStudied call—even below a note threshold—so a later breach can name only the actual
+            // recent studier after the consume-once generic Tale claim is gone.
+            AnomalyRecentStudyCache.Register(
+                new AnomalyRecentStudyFact
+                {
+                    studierPawnId = before.studierPawnId,
+                    studiedEntityId = before.studiedEntityId,
+                    studiedDefName = before.studiedDefName,
+                    studiedTick = before.tick
+                },
+                before.tick,
+                policy.recentStudierMaxAgeTicks);
             if (!transitioned) return;
 
-            AnomalyPolicySnapshot policy = DiaryAnomalyPolicy.Snapshot();
             AnomalyStudyHistorySnapshot history = new AnomalyStudyHistorySnapshot
             {
                 firstBreakthroughObserved = anomalyFirstStudyBreakthroughObserved

@@ -1,7 +1,7 @@
 # Pawn Diary — Anomaly Support Implementation Plan
 
-Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.2 implemented as the first three Master
-Wave 7 slices, 2026-07-20; A1.3–A3 remain implementation-ready plans. The
+Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.3 implemented as the first four Master
+Wave 7 slices, 2026-07-20; A1.4–A3 remain implementation-ready plans. The
 RimWorld 1.6 feasibility spike is complete for study-note milestones, containment escapes, visible
 creepjoiner outcomes, ghoul infusion, and both terminal void choices. Production now includes the A0
 exact psychic-ritual routing and monolith activation chapters described below.
@@ -10,8 +10,8 @@ Scheduling authority: implement Anomaly phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Anomaly.
 
 Anomaly was the final standalone DLC planning artifact. Its small A0 semantic-precision release has
-now shipped independently; A1 study capture has since reached A1.2, while containment A1.3 and A2–A3
-remain scheduled in the master plan.
+now shipped independently; A1 study capture and containment breach capture have reached A1.3, while
+A1.4 and A2–A3 remain scheduled in the master plan.
 
 The plan turns Anomaly's already broad atmospheric coverage into a coherent human story:
 curiosity becomes knowledge, knowledge enables a choice, containment can fail, apparently human
@@ -1543,6 +1543,20 @@ pass.
 not succeed.
 
 ### Phase A1.3 — Containment breach
+
+**Status (2026-07-20): implemented and staged for adversarial review.** The exact Anomaly-active
+`Escape(bool initiator)` seam now has a defensive prefix/postfix/finalizer registration. One bounded,
+reentrancy-safe outer scope aggregates verified nested same-room escape calls; a separate detached
+recent-study cache preserves truthful writer correlation after Tale ownership is consumed. Pure and
+compiled loaded-game fixtures cover aggregation, caps, deterministic writers, exact deduplication,
+silent release siblings, exception/lifecycle cleanup, and no-DLC registration. The new loaded fixtures
+now accept any clean vanilla room, including open terrain, rather than depending on player-built or
+roofed structures. Their allocator validates the complete holding-platform footprint, reserves
+non-overlapping margins, and rejects map-edge, pawn, edifice, destructive-wipe, and occupied-platform
+placements; failed setup cannot be masked by teardown. The first loaded attempts exposed the former
+indoor-room and center-only placement assumptions. The corrected user-confirmed Anomaly-active loaded
+rerun passed 9/9 with 0 failures; only the separate Anomaly-inactive profile remains in the manual
+DLC-off matrix.
 
 - Add scoped aggregation around `Escape(bool)`.
 - Verify nested joins, intentional release silence, deterministic writers, and exception cleanup.

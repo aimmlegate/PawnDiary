@@ -31,11 +31,13 @@ namespace DiaryAnomalyPolicyTests
             TestTaleOwnershipExactness();
             TestTaleOwnershipExpiryAndConsumeOnce();
             TestBoundedStudySuppressionCache();
+            TestRecentStudyCorrelationCache();
             TestInvalidContainmentScopes();
             TestContainmentAggregationAndBounds();
             TestContainmentWriterRanking();
             TestContainmentRadiusAndCaps();
             TestContainmentDedupAndDeterminism();
+            TestContainmentContextFormatter();
             Console.WriteLine("DiaryAnomalyPolicyTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -79,6 +81,11 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("additional escape key", "additional_escaped_count",
                 AnomalyContextKeys.AdditionalEscapedCount);
             AssertEqual("witness key", "witness_role", AnomalyContextKeys.WitnessRole);
+            AssertEqual("initiator witness key", "initiator_witness_role",
+                AnomalyContextKeys.InitiatorWitnessRole);
+            AssertEqual("recipient witness key", "recipient_witness_role",
+                AnomalyContextKeys.RecipientWitnessRole);
+            AssertEqual("cascade key", "same_room_cascade", AnomalyContextKeys.SameRoomCascade);
             AssertEqual("creepjoiner phase key", "creepjoiner_phase",
                 AnomalyContextKeys.CreepJoinerPhase);
             AssertEqual("visible result key", "visible_result", AnomalyContextKeys.VisibleResult);
@@ -842,9 +849,52 @@ namespace DiaryAnomalyPolicyTests
             slowTale.tick = 10000;
             AssertTrue("cache consumes a delayed Tale from the exact study job",
                 AnomalyStudySuppressionCache.TryConsume(slowTale, 10));
-            AnomalyTransientState.Reset();
-            AssertEqual("Anomaly lifecycle reset clears all transient claims", 0,
+            AnomalyStudySuppressionCache.Clear();
+            AssertEqual("explicit study cleanup clears all transient claims", 0,
                 AnomalyStudySuppressionCache.CountForTests);
+        }
+
+        private static void TestRecentStudyCorrelationCache()
+        {
+            AnomalyRecentStudyCache.Clear();
+            AnomalyRecentStudyFact study = new AnomalyRecentStudyFact
+            {
+                studierPawnId = "Pawn_A",
+                studiedEntityId = "Entity_A",
+                studiedDefName = "EntityDef_A",
+                studiedTick = 100
+            };
+            AssertTrue("recent exact study registers",
+                AnomalyRecentStudyCache.Register(study, 100, 60));
+            AssertTrue("recent exact study matches without consumption",
+                AnomalyRecentStudyCache.Matches("Entity_A", "Pawn_A", 160, 60));
+            AssertTrue("recent lookup remains non-consuming",
+                AnomalyRecentStudyCache.Matches("Entity_A", "Pawn_A", 160, 60));
+            AssertTrue("recent entity mismatch fails",
+                !AnomalyRecentStudyCache.Matches("Entity_B", "Pawn_A", 160, 60));
+            AssertTrue("recent studier mismatch fails",
+                !AnomalyRecentStudyCache.Matches("Entity_A", "Pawn_B", 160, 60));
+            AssertTrue("recent study expires after exact boundary",
+                !AnomalyRecentStudyCache.Matches("Entity_A", "Pawn_A", 161, 60));
+            AssertEqual("expired recent study pruned", 0, AnomalyRecentStudyCache.CountForTests);
+
+            for (int i = 0; i < 3; i++)
+            {
+                AssertTrue("bounded recent row registers " + i,
+                    AnomalyRecentStudyCache.Register(new AnomalyRecentStudyFact
+                    {
+                        studierPawnId = "Pawn_" + i,
+                        studiedEntityId = "Entity_" + i,
+                        studiedTick = 200 + i
+                    }, 202, 60, 2));
+            }
+            AssertEqual("recent cache evicts oldest above cap", 2,
+                AnomalyRecentStudyCache.CountForTests);
+            AssertTrue("evicted recent row no longer matches",
+                !AnomalyRecentStudyCache.Matches("Entity_0", "Pawn_0", 202, 60));
+            AssertTrue("malformed recent row rejected",
+                !AnomalyRecentStudyCache.Register(new AnomalyRecentStudyFact(), 202, 60));
+            AnomalyRecentStudyCache.Clear();
         }
 
         private static void TestContainmentAggregationAndBounds()
@@ -865,11 +915,27 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("outer entity remains first", "Entity_A", plan.contextEntities[0].entityId);
             AssertTrue("context entity copied", !object.ReferenceEquals(facts.entities[0],
                 plan.contextEntities[0]));
+            AssertEqual("context entity platform identity copied", "Platform_A",
+                plan.contextEntities[0].platformId);
+            AssertEqual("context entity map identity copied", 7,
+                plan.contextEntities[0].mapId);
 
             policy.containmentEnabled = false;
             plan = ContainmentBreachPolicy.Plan(facts, policy);
             AssertTrue("disabled breach retains verified facts", plan.valid && plan.escapedCount == 3);
             AssertTrue("disabled breach emits no page", !plan.writePage && plan.selectedWriters.Count == 0);
+
+            facts = Breach();
+            for (int i = 1; i < 100; i++) facts.entities.Add(Entity("Entity_" + i, true));
+            policy = AnomalyPolicySnapshot.CreateDefault();
+            policy.containmentMaxEntityLabelsInContext = AnomalyPolicyLimits.MaximumEntityLabels;
+            plan = ContainmentBreachPolicy.Plan(facts, policy);
+            AssertEqual("escaped count has defensive hard bound",
+                AnomalyPolicyLimits.MaximumContainmentEntities, plan.escapedCount);
+            AssertEqual("additional count reflects bounded verified set",
+                AnomalyPolicyLimits.MaximumContainmentEntities
+                    - AnomalyPolicyLimits.MaximumEntityLabels,
+                plan.additionalEscapedCount);
         }
 
         private static void TestContainmentWriterRanking()
@@ -966,6 +1032,46 @@ namespace DiaryAnomalyPolicyTests
                 ContainmentBreachPolicy.DedupKey(facts) != ContainmentBreachPolicy.DedupKey(otherTick));
         }
 
+        private static void TestContainmentContextFormatter()
+        {
+            ContainmentEscapeFacts facts = Breach();
+            facts.sameRoomCascade = true;
+            facts.preEjectionSetting = "laboratory; indoors=visible";
+            facts.entities.Add(Entity("Entity_B", true));
+            AnomalyPolicySnapshot policy = AnomalyPolicySnapshot.CreateDefault();
+            policy.containmentMaxEntityLabelsInContext = 1;
+            ContainmentBreachPlan plan = ContainmentBreachPolicy.Plan(facts, policy);
+            string context = ContainmentBreachContextFormatter.Format(plan);
+            AssertEqual("bounded containment context",
+                "anomaly_kind=containment_breach; escaped_count=2; "
+                    + "escaped_entities=Entity_A label [EntityDef]; additional_escaped_count=1; "
+                    + "witness_role=nearby; setting=laboratory, indoors-visible; "
+                    + "same_room_cascade=true",
+                context);
+            AssertTrue("containment context omits exact platform and position",
+                context.IndexOf("Platform_A", StringComparison.Ordinal) < 0
+                    && context.IndexOf("platformX", StringComparison.Ordinal) < 0
+                    && context.IndexOf("10,20", StringComparison.Ordinal) < 0);
+            AssertTrue("containment context omits hidden mutant mechanics",
+                context.IndexOf("mutant", StringComparison.OrdinalIgnoreCase) < 0);
+
+            facts.witnesses.Add(Writer("Pawn_B", true, false, true, 9, "Pawn_B"));
+            plan = ContainmentBreachPolicy.Plan(facts, null);
+            context = ContainmentBreachContextFormatter.Format(plan);
+            AssertTrue("pair context names both exact POV roles",
+                context.Contains("initiator_witness_role=nearby")
+                    && context.Contains("recipient_witness_role=nearby")
+                    && !context.StartsWith("witness_role=nearby;", StringComparison.Ordinal)
+                    && !context.Contains("; witness_role=nearby;"));
+
+            facts.sameRoomCascade = false;
+            facts.entities.RemoveAt(1);
+            plan = ContainmentBreachPolicy.Plan(facts, null);
+            AssertTrue("single escape reports no same-room cascade",
+                ContainmentBreachContextFormatter.Format(plan)
+                    .Contains("same_room_cascade=false"));
+        }
+
         private static AnomalyStudyFacts Study()
         {
             return new AnomalyStudyFacts
@@ -1035,6 +1141,8 @@ namespace DiaryAnomalyPolicyTests
                 entityId = id,
                 visibleLabel = id + " label",
                 defName = "EntityDef",
+                platformId = "Platform_A",
+                mapId = 7,
                 platformX = 10,
                 platformZ = 20,
                 escaped = escaped

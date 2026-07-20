@@ -1,5 +1,37 @@
 # Changelog
 
+- **2026-07-20 — Hardened A1.3 RimTest map setup after its first loaded runs.** The containment
+  fixture now selects any clean vanilla `Room`, including open terrain, matching the real
+  `CompHoldingPlatformTarget.Escape(bool)` implementation's non-null-room requirement. It validates
+  the holding platform's complete loaded-Def footprint rather than only its center, keeps a one-cell
+  margin between simultaneous platforms, and refuses any placement that could cross the map edge,
+  overlap an edifice or pawn, wipe a thing, or involve an existing occupied platform. The loaded
+  witness-radius fixture now places its radius-two witness outside the real 3x3 platform footprint.
+  Failed main-menu setup also preserves the truthful loaded-game assertion instead of letting a null
+  cache snapshot fail in teardown. RimTest Redux exposes no room/map-construction fixture helper, so
+  using the live map's room graph avoids mutating player structures. The corrected user-confirmed
+  Anomaly-active loaded rerun passed 9/9 containment fixtures with 0 failures; the separate
+  Anomaly-inactive profile remains a manual DLC-off row.
+
+- **2026-07-20 — Implemented Anomaly Phase A1.3 containment-breach capture.** Added an
+  Anomaly-active-only defensive registration for the exact public
+  `CompHoldingPlatformTarget.Escape(bool initiator)` method, including prefix/postfix/finalizer
+  ownership. A bounded reentrancy-safe frame/scope stack snapshots exact entity/platform/map/cell,
+  writer evidence, and visible surroundings before ejection; nested same-room `Escape(false)` calls
+  append and verify without emitting, while the healthy outer close submits at most one canonical
+  containment event. Verification requires a live, spawned, no-longer-held entity in vanilla's visible
+  escape state. Exception and lifecycle cleanup cannot strand live references. Deterministic pure
+  policy ranks nearby witnesses, a separate non-consuming exact recent-studier cache, then free-colony
+  fallbacks, with stable IDs and no `Verse.Rand`. Context is bounded to visible entity labels/defNames,
+  counts, exact POV roles, pre-ejection setting, and cascade state; it excludes cells/platforms,
+  containment rolls, hidden abilities/codex, inventories, guessed causes, and invented blame. Exact
+  map/tick/outer-entity dedup leaves later consequences and atmosphere untouched. Intentional ejection,
+  release notifications, held deaths, capture, and reconstruction remain unpatched and silent; no
+  production UI trigger was added. The standalone Anomaly suite passes 387 assertions. Nine new loaded
+  fixtures compile against the real escape seam, raising the RimTest assembly to 314 tests; after
+  fixture hardening, the user-confirmed Anomaly-active loaded run passed all 9 with 0 failures. Core
+  and RimTest DLLs were rebuilt for adversarial review.
+
 - **2026-07-20 — Hardened Anomaly Phase A1.2 after combined adversarial review.** Correlated a
   dedicated study page and its later `StudiedEntity` fallback with RimWorld's exact non-reused
   `Job_<id>` as well as researcher/entity identity. A slow five-interaction study job can therefore
