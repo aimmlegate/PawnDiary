@@ -1,6 +1,6 @@
-// Defensive registration for the exact Anomaly study and containment seams. The paid DLC's C# types
-// exist in every RimWorld installation, but these hooks register only when Anomaly is active; live
-// DLC reads are forwarded as objects to DlcContext and vanilla always continues.
+// Defensive registration for exact Anomaly study, containment, and visible creepjoiner seams. The
+// paid DLC's C# types exist in every RimWorld installation, but these hooks register only when
+// Anomaly is active; live DLC reads are forwarded as objects to DlcContext and vanilla always continues.
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -19,12 +19,23 @@ namespace PawnDiary
         private const string KnowledgeCategoryTypeName = "RimWorld.KnowledgeCategoryDef";
         private const string HoldingPlatformTargetTypeName =
             "RimWorld.CompHoldingPlatformTarget";
+        private const string CreepJoinerTrackerTypeName =
+            "RimWorld.Pawn_CreepJoinerTracker";
 
         /// <summary>True only when the exact A1.2 study method was found and patched.</summary>
         public static bool StudyHookReady { get; private set; }
 
         /// <summary>True only when the exact A1.3 Escape(bool initiator) method was patched.</summary>
         public static bool ContainmentHookReady { get; private set; }
+
+        /// <summary>True only when exact DoRejection plus all required private markers were patched.</summary>
+        public static bool CreepJoinerRejectionHookReady { get; private set; }
+
+        /// <summary>True only when exact DoAggressive plus its private marker were patched.</summary>
+        public static bool CreepJoinerAggressionHookReady { get; private set; }
+
+        /// <summary>True only when exact DoLeave plus its private marker were patched.</summary>
+        public static bool CreepJoinerDepartureHookReady { get; private set; }
 
         /// <summary>
         /// Registers the exact signature defensively. A changed/missing target disables only study
@@ -34,10 +45,14 @@ namespace PawnDiary
         {
             StudyHookReady = false;
             ContainmentHookReady = false;
+            CreepJoinerRejectionHookReady = false;
+            CreepJoinerAggressionHookReady = false;
+            CreepJoinerDepartureHookReady = false;
             if (harmony == null || !ModsConfig.AnomalyActive) return;
 
             TryRegisterStudy(harmony);
             TryRegisterContainment(harmony);
+            TryRegisterCreepJoinerOutcomes(harmony);
         }
 
         private static void TryRegisterStudy(Harmony harmony)
@@ -104,6 +119,81 @@ namespace PawnDiary
             {
                 WarnMissingContainment("registration failed: " + exception.GetType().Name + ": "
                     + Limit(exception.Message));
+            }
+        }
+
+        private static void TryRegisterCreepJoinerOutcomes(Harmony harmony)
+        {
+            Type trackerType = AccessTools.TypeByName(CreepJoinerTrackerTypeName);
+            CreepJoinerReflectionHealth fields = DlcContext.ResolveCreepJoinerReflection(trackerType);
+            CreepJoinerRejectionHookReady = TryRegisterCreepJoinerOutcome(
+                harmony,
+                trackerType,
+                "DoRejection",
+                fields.rejectionReady,
+                nameof(CreepJoinerRejectionPrefix),
+                nameof(CreepJoinerRejectionPostfix),
+                nameof(CreepJoinerRejectionFinalizer),
+                "Rejection");
+            CreepJoinerAggressionHookReady = TryRegisterCreepJoinerOutcome(
+                harmony,
+                trackerType,
+                "DoAggressive",
+                fields.aggressionReady,
+                nameof(CreepJoinerAggressionPrefix),
+                nameof(CreepJoinerOutcomePostfix),
+                null,
+                "Aggression");
+            CreepJoinerDepartureHookReady = TryRegisterCreepJoinerOutcome(
+                harmony,
+                trackerType,
+                "DoLeave",
+                fields.departureReady,
+                nameof(CreepJoinerDeparturePrefix),
+                nameof(CreepJoinerOutcomePostfix),
+                null,
+                "Departure");
+        }
+
+        private static bool TryRegisterCreepJoinerOutcome(
+            Harmony harmony,
+            Type trackerType,
+            string methodName,
+            bool fieldsReady,
+            string prefixName,
+            string postfixName,
+            string finalizerName,
+            string outcomeLabel)
+        {
+            try
+            {
+                MethodInfo target = trackerType == null
+                    ? null
+                    : AccessTools.DeclaredMethod(trackerType, methodName, Type.EmptyTypes) as MethodInfo;
+                if (!fieldsReady || target == null || !target.IsPublic
+                    || target.ReturnType != typeof(void) || target.GetParameters().Length != 0)
+                {
+                    WarnMissingCreepJoiner(outcomeLabel,
+                        "the exact public Pawn_CreepJoinerTracker." + methodName
+                            + "() target or required committed-transition field was not found");
+                    return false;
+                }
+
+                harmony.Patch(
+                    target,
+                    prefix: new HarmonyMethod(typeof(DiaryAnomalyPatches), prefixName),
+                    postfix: new HarmonyMethod(typeof(DiaryAnomalyPatches), postfixName),
+                    finalizer: finalizerName == null
+                        ? null
+                        : new HarmonyMethod(typeof(DiaryAnomalyPatches), finalizerName));
+                return true;
+            }
+            catch (Exception exception)
+            {
+                WarnMissingCreepJoiner(outcomeLabel,
+                    "registration failed: " + exception.GetType().Name + ": "
+                        + Limit(exception.Message));
+                return false;
             }
         }
 
@@ -213,6 +303,122 @@ namespace PawnDiary
             return __exception;
         }
 
+        /// <summary>Captures rejection before-state and opens the one bounded nested-call owner.</summary>
+        private static void CreepJoinerRejectionPrefix(
+            object __instance,
+            ref CreepJoinerOutcomeCapture __state)
+        {
+            __state = null;
+            if (!CreepJoinerRejectionHookReady || !RuntimeReady()) return;
+            CreepJoinerOutcomeCapture captured = null;
+            DiaryPatchSafety.Run("DiaryAnomalyPatches.CreepJoinerRejectionPrefix", () =>
+            {
+                AnomalyPolicySnapshot policy = DiaryAnomalyPolicy.Snapshot();
+                if (!DlcContext.TryCaptureCreepJoinerOutcomeBefore(
+                    __instance,
+                    AnomalyOutcomeTokens.Rejected,
+                    policy.creepJoinerWitnessRadius,
+                    out captured)) return;
+                if (!CreepJoinerOutcomeScope.BeginRejection(captured.SubjectPawnId))
+                {
+                    captured = null;
+                    return;
+                }
+                captured.ownsRejectionScope = true;
+            });
+            __state = captured;
+        }
+
+        /// <summary>Captures aggressive before-state; a surrounding rejection remains semantic owner.</summary>
+        private static void CreepJoinerAggressionPrefix(
+            object __instance,
+            ref CreepJoinerOutcomeCapture __state)
+        {
+            CaptureCreepJoinerOutcomePrefix(
+                __instance,
+                AnomalyOutcomeTokens.Aggressive,
+                CreepJoinerAggressionHookReady,
+                ref __state);
+        }
+
+        /// <summary>Captures departure before-state; a surrounding rejection remains semantic owner.</summary>
+        private static void CreepJoinerDeparturePrefix(
+            object __instance,
+            ref CreepJoinerOutcomeCapture __state)
+        {
+            CaptureCreepJoinerOutcomePrefix(
+                __instance,
+                AnomalyOutcomeTokens.Departed,
+                CreepJoinerDepartureHookReady,
+                ref __state);
+        }
+
+        private static void CaptureCreepJoinerOutcomePrefix(
+            object instance,
+            string phase,
+            bool hookReady,
+            ref CreepJoinerOutcomeCapture state)
+        {
+            state = null;
+            if (!hookReady || !RuntimeReady()) return;
+            CreepJoinerOutcomeCapture captured = null;
+            DiaryPatchSafety.Run("DiaryAnomalyPatches.CreepJoinerOutcomePrefix." + phase, () =>
+            {
+                DlcContext.TryCaptureCreepJoinerOutcomeBefore(
+                    instance,
+                    phase,
+                    DiaryAnomalyPolicy.Snapshot().creepJoinerWitnessRadius,
+                    out captured);
+            });
+            state = captured;
+        }
+
+        /// <summary>Closes rejection ownership, verifies normal return, and submits at most one page.</summary>
+        private static void CreepJoinerRejectionPostfix(
+            object __instance,
+            CreepJoinerOutcomeCapture __state)
+        {
+            if (__state == null) return;
+            EndRejectionScope(__state);
+            CompleteCreepJoinerOutcome(__instance, __state);
+        }
+
+        /// <summary>Verifies one normal aggressive/departure return and submits only committed truth.</summary>
+        private static void CreepJoinerOutcomePostfix(
+            object __instance,
+            CreepJoinerOutcomeCapture __state)
+        {
+            if (__state == null) return;
+            CompleteCreepJoinerOutcome(__instance, __state);
+        }
+
+        private static void CompleteCreepJoinerOutcome(
+            object instance,
+            CreepJoinerOutcomeCapture capture)
+        {
+            DiaryPatchSafety.Run(
+                "DiaryAnomalyPatches.CreepJoinerOutcomePostfix",
+                (tracker: instance, state: capture),
+                row => DiaryGameComponent.Instance?.CompleteCreepJoinerOutcome(
+                    row.tracker, row.state));
+        }
+
+        /// <summary>Always unwinds a rejection owner and preserves vanilla's exception unchanged.</summary>
+        private static Exception CreepJoinerRejectionFinalizer(
+            Exception __exception,
+            CreepJoinerOutcomeCapture __state)
+        {
+            if (__state != null) EndRejectionScope(__state);
+            return __exception;
+        }
+
+        private static void EndRejectionScope(CreepJoinerOutcomeCapture capture)
+        {
+            if (capture == null || !capture.ownsRejectionScope) return;
+            CreepJoinerOutcomeScope.EndRejection(capture.SubjectPawnId);
+            capture.ownsRejectionScope = false;
+        }
+
         private static bool RuntimeReady()
         {
             return ModsConfig.AnomalyActive
@@ -240,6 +446,15 @@ namespace PawnDiary
                 "[Pawn Diary] Anomaly containment breach capture is disabled because " + detail
                     + "; vanilla escape letters, entity behavior, and other diary routes remain unchanged.",
                 "PawnDiary.Anomaly.MissingHook.Containment".GetHashCode());
+        }
+
+        private static void WarnMissingCreepJoiner(string outcome, string detail)
+        {
+            Log.WarningOnce(
+                "[Pawn Diary] Anomaly creepjoiner " + outcome.ToLowerInvariant()
+                    + " capture is disabled because " + detail
+                    + "; vanilla creepjoiner behavior and other diary routes remain unchanged.",
+                ("PawnDiary.Anomaly.MissingHook.CreepJoiner." + outcome).GetHashCode());
         }
     }
 }

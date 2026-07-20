@@ -1,6 +1,7 @@
-// Anomaly persistence, silent legacy baselining, and the A1.2 study transaction owner. Live DLC
-// objects are read only by DlcContext; this partial commits detached history before it optionally
-// dispatches one exact researcher-owned study page.
+// Anomaly persistence, silent phase baselining, and exact study/visible-creepjoiner transaction
+// ownership. Live DLC objects are read only by DlcContext; this partial commits detached history
+// before it optionally dispatches a page.
+using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
 using PawnDiary.Ingestion;
@@ -16,8 +17,10 @@ namespace PawnDiary
         private List<string> anomalyPromotedStudyMilestoneKeys = new List<string>();
         private string anomalyMonolithBaselineLevelDefName = string.Empty;
         private AnomalyMonolithKnowledgeState anomalyLastMonolithKnowledgeSnapshot;
+        private List<CreepJoinerArcState> anomalyCreepJoinerArcs =
+            new List<CreepJoinerArcState>();
 
-        /// <summary>Scribes six additive keys and normalizes every loaded primitive collection/row.</summary>
+        /// <summary>Scribes additive keys and normalizes every loaded primitive collection/row.</summary>
         private void ExposeAnomalyData()
         {
             Scribe_Values.Look(
@@ -42,6 +45,10 @@ namespace PawnDiary
             Scribe_Deep.Look(
                 ref anomalyLastMonolithKnowledgeSnapshot,
                 AnomalySaveKeys.LastMonolithKnowledgeSnapshot);
+            Scribe_Collections.Look(
+                ref anomalyCreepJoinerArcs,
+                AnomalySaveKeys.CreepJoinerArcs,
+                LookMode.Deep);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -71,9 +78,18 @@ namespace PawnDiary
                 return;
             }
 
-            AnomalyLegacyBaselineFacts facts = DlcContext.CaptureAnomalyLegacyBaseline();
-            ApplyAnomalyState(AnomalyPersistencePolicy.BaselineLegacy(
-                AnomalyStateSnapshot(), facts));
+            AnomalyPersistentStateSnapshot state = AnomalyStateSnapshot();
+            if (state.schemaVersion < AnomalyPersistencePolicy.StudySchemaVersion)
+            {
+                state = AnomalyPersistencePolicy.BaselineLegacy(
+                    state, DlcContext.CaptureAnomalyLegacyBaseline());
+            }
+            if (state.schemaVersion < AnomalyPersistencePolicy.CurrentSchemaVersion)
+            {
+                state = AnomalyPersistencePolicy.BaselineCreepJoiners(
+                    state, DlcContext.CaptureCreepJoinerLegacyBaseline());
+            }
+            ApplyAnomalyState(state);
         }
 
         private AnomalyPersistentStateSnapshot AnomalyStateSnapshot()
@@ -87,7 +103,8 @@ namespace PawnDiary
                 promotedStudyMilestoneKeys = anomalyPromotedStudyMilestoneKeys == null
                     ? new List<string>() : new List<string>(anomalyPromotedStudyMilestoneKeys),
                 monolithBaselineLevelDefName = anomalyMonolithBaselineLevelDefName ?? string.Empty,
-                lastMonolithKnowledgeSnapshot = anomalyLastMonolithKnowledgeSnapshot?.ToSnapshot()
+                lastMonolithKnowledgeSnapshot = anomalyLastMonolithKnowledgeSnapshot?.ToSnapshot(),
+                creepJoinerArcs = CreepJoinerArcSnapshots(anomalyCreepJoinerArcs)
             };
         }
 
@@ -101,6 +118,7 @@ namespace PawnDiary
             anomalyMonolithBaselineLevelDefName = normalized.monolithBaselineLevelDefName;
             anomalyLastMonolithKnowledgeSnapshot = AnomalyMonolithKnowledgeState.FromSnapshot(
                 normalized.lastMonolithKnowledgeSnapshot);
+            anomalyCreepJoinerArcs = CreepJoinerArcStates(normalized.creepJoinerArcs);
         }
 
         private static void ResetAnomalyTransientState()
@@ -196,6 +214,132 @@ namespace PawnDiary
                 },
                 facts.tick,
                 policy.studyTaleSuppressionTicks);
+        }
+
+        /// <summary>
+        /// Opens or enriches the visible creepjoiner arc from the existing canonical arrival route.
+        /// This runs before arrival page eligibility, so disabled generation/settings still preserve
+        /// truthful continuity; an event ID is added only after the arrival page actually exists.
+        /// </summary>
+        internal void ObserveCreepJoinerArrival(
+            Pawn pawn,
+            string capturedArrivalContext,
+            string createdArrivalEventId = null)
+        {
+            if (!ModsConfig.AnomalyActive || pawn == null
+                || !CreepJoinerOutcomePolicy.IsCreepJoinerArrivalContext(capturedArrivalContext))
+                return;
+
+            string pawnId = pawn.GetUniqueLoadID();
+            int tick = Find.TickManager?.TicksGame ?? 0;
+            AnomalyPersistentStateSnapshot state = AnomalyStateSnapshot();
+            CreepJoinerArcSnapshot existing = FindCreepJoinerArc(state.creepJoinerArcs, pawnId);
+            CreepJoinerArcSnapshot next = CreepJoinerOutcomePolicy.UpsertArrival(
+                existing, pawnId, tick, createdArrivalEventId);
+            if (next == null) return;
+            ReplaceCreepJoinerArc(state.creepJoinerArcs, next);
+            ApplyAnomalyState(state);
+        }
+
+        /// <summary>
+        /// Verifies one exact public lifecycle transition, commits its terminal visible history first,
+        /// then optionally dispatches one page for the pure policy's event-time writer.
+        /// </summary>
+        internal void CompleteCreepJoinerOutcome(
+            object trackerObject,
+            CreepJoinerOutcomeCapture capture)
+        {
+            CreepJoinerOutcomeFacts facts;
+            if (!DlcContext.TryCompleteCreepJoinerOutcome(
+                trackerObject, capture, out facts) || facts == null) return;
+
+            AnomalyPersistentStateSnapshot state = AnomalyStateSnapshot();
+            CreepJoinerArcSnapshot existing = FindCreepJoinerArc(
+                state.creepJoinerArcs, facts.pawnId);
+            AnomalyPolicySnapshot policy = DiaryAnomalyPolicy.Snapshot();
+            CreepJoinerOutcomePlan plan = CreepJoinerOutcomePolicy.Plan(facts, existing, policy);
+            if (!plan.valid) return;
+
+            if (plan.advanceArc && plan.nextArc != null)
+            {
+                ReplaceCreepJoinerArc(state.creepJoinerArcs, plan.nextArc);
+                ApplyAnomalyState(state);
+            }
+            if (!plan.writePage || plan.selectedWriter == null) return;
+
+            Pawn writer = capture.ResolveWriter(plan.selectedWriter.pawnId);
+            if (writer == null) return;
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyAnomalyEvent(
+                AnomalyEventDefNames.CreepJoinerOutcome);
+            CreepJoinerOutcomeSignal signal = new CreepJoinerOutcomeSignal(
+                facts, plan, policy, group, writer, capture.subject);
+            Dispatch(signal);
+            if (signal.CreatedEvent == null) return;
+
+            // The transition remains committed even if the group/transport was unavailable. Only
+            // attach an event ID after AddSoloEvent actually produced the canonical page.
+            AnomalyPersistentStateSnapshot afterEvent = AnomalyStateSnapshot();
+            CreepJoinerArcSnapshot arc = FindCreepJoinerArc(
+                afterEvent.creepJoinerArcs, facts.pawnId);
+            if (arc == null || !arc.terminal
+                || !string.Equals(arc.lastVisiblePhase, plan.phase, StringComparison.Ordinal)) return;
+            arc.lastVisibleEventId = signal.CreatedEvent.eventId ?? string.Empty;
+            ReplaceCreepJoinerArc(afterEvent.creepJoinerArcs, arc);
+            ApplyAnomalyState(afterEvent);
+        }
+
+        private static List<CreepJoinerArcSnapshot> CreepJoinerArcSnapshots(
+            List<CreepJoinerArcState> source)
+        {
+            List<CreepJoinerArcSnapshot> result = new List<CreepJoinerArcSnapshot>();
+            if (source == null) return result;
+            int count = Math.Min(source.Count, AnomalyPolicyLimits.MaximumCreepJoinerArcInputs);
+            for (int i = 0; i < count; i++)
+                result.Add(source[i]?.ToSnapshot());
+            return result;
+        }
+
+        private static List<CreepJoinerArcState> CreepJoinerArcStates(
+            List<CreepJoinerArcSnapshot> source)
+        {
+            List<CreepJoinerArcState> result = new List<CreepJoinerArcState>();
+            if (source == null) return result;
+            for (int i = 0; i < source.Count; i++)
+            {
+                CreepJoinerArcState row = CreepJoinerArcState.FromSnapshot(source[i]);
+                if (row != null) result.Add(row);
+            }
+            return result;
+        }
+
+        private static CreepJoinerArcSnapshot FindCreepJoinerArc(
+            List<CreepJoinerArcSnapshot> arcs,
+            string pawnId)
+        {
+            if (arcs == null || string.IsNullOrWhiteSpace(pawnId)) return null;
+            for (int i = 0; i < arcs.Count; i++)
+            {
+                if (arcs[i] != null && string.Equals(
+                    arcs[i].pawnId, pawnId, StringComparison.Ordinal)) return arcs[i];
+            }
+            return null;
+        }
+
+        private static void ReplaceCreepJoinerArc(
+            List<CreepJoinerArcSnapshot> arcs,
+            CreepJoinerArcSnapshot replacement)
+        {
+            if (arcs == null || replacement == null) return;
+            for (int i = 0; i < arcs.Count; i++)
+            {
+                if (arcs[i] != null && string.Equals(
+                    arcs[i].pawnId, replacement.pawnId, StringComparison.Ordinal))
+                {
+                    arcs[i] = replacement;
+                    return;
+                }
+            }
+            arcs.Add(replacement);
         }
 
         /// <summary>Detached read-only seam for focused loaded-game save/baseline fixtures.</summary>

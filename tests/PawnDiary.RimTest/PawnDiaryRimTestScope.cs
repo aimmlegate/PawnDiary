@@ -203,6 +203,22 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Adopts a disposable pawn created by a specialized vanilla factory so ordinary scope teardown
+        /// removes the pawn, its diary state, and every event that references it. Use this only when the
+        /// generic pawn factory cannot reproduce the lifecycle under test (for example creepjoiners,
+        /// whose vanilla factory assigns five coordinated Defs before calling <c>Notify_Created</c>).
+        /// </summary>
+        public void TrackSpecializedPawn(Pawn pawn)
+        {
+            if (pawn == null || string.IsNullOrWhiteSpace(pawn.GetUniqueLoadID()))
+                throw new AssertionException("A specialized test pawn must have a stable identity.");
+            string pawnId = pawn.GetUniqueLoadID();
+            if (testPawnIds.Contains(pawnId)) return;
+            testPawns.Add(pawn);
+            testPawnIds.Add(pawnId);
+        }
+
+        /// <summary>
         /// Like <see cref="CreateAdultColonist"/> but leaves diary generation ENABLED so a fired event
         /// runs the real prompt pipeline. Only valid after <see cref="EnablePromptCapture"/>: prompt-test
         /// mode makes the pipeline stamp the rendered prompt on the event and stop before any network

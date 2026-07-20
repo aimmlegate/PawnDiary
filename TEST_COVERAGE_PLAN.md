@@ -60,7 +60,7 @@ internal test-assembly harness. Each test scope should own and restore:
 
 The harness exposes helpers such as `FireAndRequireEvent`, `RequireNoNewEvent`,
 `OwnDiaryEventsCreatedAfterThisPoint`, `SuppressDiaryGenerationForTest`, `CapturePromptOnly`,
-`RequirePairRefs`, and `RequireSoloRef`.
+`TrackSpecializedPawn`, `RequirePairRefs`, and `RequireSoloRef`.
 Test code should assert outcomes, not repeat reflection-based cleanup.
 
 ### 2.2 Deterministic LLM substitute
@@ -233,11 +233,31 @@ that malformed/duplicate history input cannot force inspection beyond the 4,096-
 loaded `MissingVisibleStudyLabelUsesLocalizedNeutralSubject` fixture verifies exact localized neutral
 fallback and rejects the raw Def name, bringing the assembly to 316 compiled tests. Core and RimTest
 assemblies build with 0 warnings and 0 errors; `.githooks/verify.ps1` passes whitespace/XML, all 14
-pure projects, runtime rebuild, and committed-DLL freshness. This new fixture has not run in RimWorld:
-the last evidenced active result remains 315/315 for the prior suite. The active 316 rerun, separate
-Anomaly-inactive profile, disposable
-missing-hook compatibility profiles, and real process-boundary save/reload remain manual and unclaimed;
-follow `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
+pure projects, runtime rebuild, and committed-DLL freshness. The user confirms the complete automated
+Anomaly-active 316-fixture run green. That is aggregate user-confirmed evidence; no preserved per-method
+runner log is claimed. The separate Anomaly-inactive profile, disposable missing study/containment-hook
+compatibility profiles, and real process-boundary save/reload remain deferred and unclaimed; follow
+`tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
+
+Master Wave 7 / Anomaly A2.0 raises `DiaryAnomalyPolicyTests` to 472 assertions and
+`DiarySaveNormalizationTests` to 115. Pure cases cover exact `creepjoiner=true` parsing and canonical
+arrival upsert, all three visible outcome/result mappings, no-transition/unverifiable/nested drops,
+settings-independent terminal history, replay suppression, speaker/pre-departure-subject/nearby writer
+roles, deterministic ties/radius/input and retained-candidate caps, delimiter sanitization, and explicit
+absence of secret schema fields. Save cases cover the frozen list key and seven-field record,
+null/blank/malformed/negative/invalid/future rows, deterministic duplicate merge, 4,096-input/512-output
+bounds, active state-only old-save baselining, and inactive deferral.
+
+`PawnDiaryCreepJoinerFlowTests` adds seven loaded fixtures, bringing the separate RimTest assembly to
+323 compiled tests. They pin three independent active/inactive hook-health flags, exact public
+parameterless registration, deliberate absence of a `DoDownside` patch, canonical and repeated arrival,
+real visible rejection with nested `DoLeave` ownership, real aggression and joined departure, speaker/
+nearby/subject roles, repeat/no-op silence, and lifecycle reset. The existing component-state fixture
+now round-trips and independently deep-loads the seventh `anomalyCreepJoinerArcs` key. These A2.0
+fixtures compile against installed RimWorld 1.6 and RimTest Redux but have not been executed in-game;
+no pass is inferred from compilation. The same three deferred external profiles remain: separate
+Anomaly-inactive, disposable missing study/containment-hook compatibility, and real process-boundary
+save/reload.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It

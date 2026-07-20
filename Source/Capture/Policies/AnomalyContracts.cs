@@ -1,6 +1,6 @@
-// Plain contracts and stable schema tokens for Anomaly study and containment work. Live RimWorld
-// adapters are intentionally absent from this Phase-A1.0 file: later phases must copy game state
-// into these DTOs before invoking the pure policies beside it.
+// Plain contracts and stable schema tokens for Anomaly study, containment, and visible creepjoiner
+// work. Live RimWorld adapters are intentionally absent: callers copy game state into these DTOs
+// before invoking the pure policies beside them.
 //
 // New to C#/RimWorld? See AGENTS.md ("architecture barriers" and "DLC-safety").
 using System;
@@ -30,6 +30,7 @@ namespace PawnDiary.Capture
             "anomalyMonolithBaselineLevelDefName";
         public const string LastMonolithKnowledgeSnapshot =
             "anomalyLastMonolithKnowledgeSnapshot";
+        public const string CreepJoinerArcs = "anomalyCreepJoinerArcs";
     }
 
     /// <summary>Stable structured context keys; these schema labels deliberately remain English.</summary>
@@ -60,6 +61,8 @@ namespace PawnDiary.Capture
         public const string RecipientWitnessRole = "recipient_witness_role";
         public const string SameRoomCascade = "same_room_cascade";
         public const string CreepJoinerPhase = "creepjoiner_phase";
+        public const string CreepJoinerSubjectId = "creepjoiner_subject_id";
+        public const string CreepJoinerSubjectLabel = "creepjoiner_subject_label";
         public const string VisibleResult = "visible_result";
         public const string Transformation = "transformation";
         public const string VoidOutcome = "void_outcome";
@@ -90,6 +93,8 @@ namespace PawnDiary.Capture
         public const string Nearby = "nearby";
         public const string RecentStudier = "recent_studier";
         public const string ColonyWitness = "colony_witness";
+        public const string Speaker = "speaker";
+        public const string Subject = "subject";
     }
 
     /// <summary>Stable future-facing visible outcome tokens frozen with the A1 schema.</summary>
@@ -102,6 +107,47 @@ namespace PawnDiary.Capture
         public const string Ghoul = "ghoul";
         public const string Embraced = "embraced";
         public const string Disrupted = "disrupted";
+    }
+
+    /// <summary>Visible-only saved phases for one creepjoiner arc.</summary>
+    internal static class CreepJoinerPhaseTokens
+    {
+        // Joined is state-only: it may be established by the canonical arrival or an old-save
+        // baseline, but it is never submitted as a dedicated outcome page.
+        public const string Joined = "joined";
+
+        /// <summary>Returns whether a token is one of A2.0's three terminal visible phases.</summary>
+        public static bool IsOutcome(string value)
+        {
+            string phase = (value ?? string.Empty).Trim();
+            return phase == AnomalyOutcomeTokens.Rejected
+                || phase == AnomalyOutcomeTokens.Aggressive
+                || phase == AnomalyOutcomeTokens.Departed;
+        }
+
+        /// <summary>Returns whether a token is the joined baseline or a terminal visible phase.</summary>
+        public static bool IsKnown(string value)
+        {
+            string phase = (value ?? string.Empty).Trim();
+            return phase == Joined || IsOutcome(phase);
+        }
+    }
+
+    /// <summary>Prompt-safe visible results; these never encode a configured response Def.</summary>
+    internal static class CreepJoinerVisibleResultTokens
+    {
+        public const string Rejected = "rejected";
+        public const string Hostile = "hostile";
+        public const string Leaving = "leaving";
+
+        /// <summary>Maps a terminal phase to its generic visible-only result token.</summary>
+        public static string ForPhase(string phase)
+        {
+            if (phase == AnomalyOutcomeTokens.Rejected) return Rejected;
+            if (phase == AnomalyOutcomeTokens.Aggressive) return Hostile;
+            if (phase == AnomalyOutcomeTokens.Departed) return Leaving;
+            return string.Empty;
+        }
     }
 
     /// <summary>Defensive structural ceilings which protect malformed XML and extreme mod input.</summary>
@@ -124,6 +170,11 @@ namespace PawnDiary.Capture
         public const int MaximumTaleOwnershipDepth = 32;
         public const int DefaultTaleOwnershipExpiryTicks = 2500;
         public const int MaximumCreepJoinerWitnesses = 2;
+        public const int DefaultCreepJoinerWitnessRadius = 12;
+        public const int MaximumCreepJoinerCandidates = 512;
+        public const int MaximumCreepJoinerCandidateInputs = 4096;
+        public const int MaximumCreepJoinerArcs = 512;
+        public const int MaximumCreepJoinerArcInputs = 4096;
     }
 
     /// <summary>Pure result category for one observed study transition.</summary>
@@ -187,7 +238,7 @@ namespace PawnDiary.Capture
         public bool consumed;
     }
 
-    /// <summary>Detached aggregate of the six additive A1.1 component fields.</summary>
+    /// <summary>Detached aggregate of additive A1 study/monolith and A2 creepjoiner state.</summary>
     internal sealed class AnomalyPersistentStateSnapshot
     {
         public int schemaVersion;
@@ -196,6 +247,7 @@ namespace PawnDiary.Capture
         public List<string> promotedStudyMilestoneKeys = new List<string>();
         public string monolithBaselineLevelDefName = string.Empty;
         public AnomalyMonolithKnowledgeSnapshot lastMonolithKnowledgeSnapshot;
+        public List<CreepJoinerArcSnapshot> creepJoinerArcs = new List<CreepJoinerArcSnapshot>();
     }
 
     /// <summary>
@@ -209,6 +261,74 @@ namespace PawnDiary.Capture
         public bool anyCommittedStudyProgress;
         public string currentMonolithLevelDefName = string.Empty;
         public List<string> completedStudyDefNames = new List<string>();
+    }
+
+    /// <summary>
+    /// Visible-only saved creepjoiner continuity. It deliberately has no field capable of holding a
+    /// benefit/downside/rejection/aggression Def, worker, trigger time, infection, or future form.
+    /// </summary>
+    internal sealed class CreepJoinerArcSnapshot
+    {
+        public string pawnId = string.Empty;
+        public string arrivalEventId = string.Empty;
+        public int joinedTick;
+        public string lastVisiblePhase = string.Empty;
+        public string lastVisibleEventId = string.Empty;
+        public bool terminal;
+        public int schemaVersion;
+    }
+
+    /// <summary>One-time guarded old-save scan result; every row describes current visible state only.</summary>
+    internal sealed class CreepJoinerLegacyBaselineFacts
+    {
+        public bool anomalyAvailable;
+        public readonly List<CreepJoinerArcSnapshot> currentJoined =
+            new List<CreepJoinerArcSnapshot>();
+    }
+
+    /// <summary>Detached event-time writer evidence for one exact visible outcome.</summary>
+    internal sealed class CreepJoinerWriterCandidate
+    {
+        public string pawnId = string.Empty;
+        public bool eligible;
+        public bool exactSpeaker;
+        public bool subject;
+        public bool onSubjectMap;
+        public bool nearby;
+        public int distanceSquared;
+        public string tieBreakKey = string.Empty;
+    }
+
+    /// <summary>Before/after facts copied from one exact public creepjoiner lifecycle method.</summary>
+    internal sealed class CreepJoinerOutcomeFacts
+    {
+        public string pawnId = string.Empty;
+        public string subjectLabel = string.Empty;
+        public string phase = string.Empty;
+        public string visibleResultToken = string.Empty;
+        public int tick = -1;
+        public bool transitioned;
+        public bool transitionVerified;
+        public bool playerVisible;
+        public bool joinedBefore;
+        public bool subjectEligibleBefore;
+        public bool nestedOutcomeOwnedByRejection;
+        public readonly List<CreepJoinerWriterCandidate> writers =
+            new List<CreepJoinerWriterCandidate>();
+    }
+
+    /// <summary>Pure terminal-state mutation and optional single-writer page decision.</summary>
+    internal sealed class CreepJoinerOutcomePlan
+    {
+        public bool valid;
+        public bool advanceArc;
+        public bool writePage;
+        public bool replaySuppressed;
+        public string phase = string.Empty;
+        public string visibleResultToken = string.Empty;
+        public string sourceKey = string.Empty;
+        public AnomalyWriterSelection selectedWriter;
+        public CreepJoinerArcSnapshot nextArc;
     }
 
     /// <summary>One XML-owned exact study promotion expressed without an optional Def reference.</summary>
@@ -382,6 +502,7 @@ namespace PawnDiary.Capture
         public int creepJoinerOutcomeDedupTicks;
         public int creepJoinerArcRetentionTicks;
         public int creepJoinerMaxWitnesses;
+        public int creepJoinerWitnessRadius;
         public bool ghoulTransformationEnabled;
         public bool voidOutcomeEnabled;
         public int taleOwnershipMaxDepth;
@@ -407,6 +528,7 @@ namespace PawnDiary.Capture
                 creepJoinerOutcomeDedupTicks = 2500,
                 creepJoinerArcRetentionTicks = 3600000,
                 creepJoinerMaxWitnesses = AnomalyPolicyLimits.MaximumCreepJoinerWitnesses,
+                creepJoinerWitnessRadius = AnomalyPolicyLimits.DefaultCreepJoinerWitnessRadius,
                 ghoulTransformationEnabled = true,
                 voidOutcomeEnabled = true,
                 taleOwnershipMaxDepth = AnomalyPolicyLimits.DefaultTaleOwnershipDepth,
@@ -458,6 +580,10 @@ namespace PawnDiary.Capture
                 source.creepJoinerMaxWitnesses, 1,
                 AnomalyPolicyLimits.MaximumCreepJoinerWitnesses,
                 result.creepJoinerMaxWitnesses);
+            result.creepJoinerWitnessRadius = InRange(
+                source.creepJoinerWitnessRadius, 1,
+                AnomalyPolicyLimits.MaximumWitnessRadius,
+                result.creepJoinerWitnessRadius);
             result.ghoulTransformationEnabled = source.ghoulTransformationEnabled;
             result.voidOutcomeEnabled = source.voidOutcomeEnabled;
             result.taleOwnershipMaxDepth = InRange(

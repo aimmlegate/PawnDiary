@@ -1,6 +1,6 @@
-// In-game Anomaly A1.1 persistence fixtures. These tests use the live DiaryGameComponent's actual
-// ExposeAnomalyData method, exact save keys, deep monolith row, guarded legacy baseline adapter, and
-// transient reset. Pure normalization branches remain in DiarySaveNormalizationTests.
+// In-game Anomaly A1.1/A2.0 persistence fixtures. These tests use the live DiaryGameComponent's
+// actual ExposeAnomalyData method, exact save keys, deep monolith/creepjoiner rows, guarded legacy
+// baseline adapter, and transient reset. Pure normalization remains in DiarySaveNormalizationTests.
 //
 // Why an adapter? RimWorld's Scribe expects an IExposable root. The adapter delegates every Scribe
 // phase to the already-running component instead of constructing a second DiaryGameComponent, which
@@ -41,6 +41,8 @@ namespace PawnDiary.RimTests
         private static readonly FieldInfo MonolithSnapshotField =
             typeof(DiaryGameComponent).GetField(
                 "anomalyLastMonolithKnowledgeSnapshot", PrivateInstance);
+        private static readonly FieldInfo CreepJoinerArcsField =
+            typeof(DiaryGameComponent).GetField("anomalyCreepJoinerArcs", PrivateInstance);
 
         private static DiaryGameComponent anomalyScribeTarget;
         private static PawnDiaryRimTestScope scope;
@@ -67,12 +69,12 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// All six production keys round-trip through the actual component method. PostLoadInit also
-        /// sorts/de-duplicates histories, removes malformed rows, trims values, and deep-loads an
-        /// independent monolith knowledge object.
+        /// All seven production keys round-trip through the actual component method. PostLoadInit also
+        /// sorts/de-duplicates histories, removes malformed rows, trims values, and deep-loads
+        /// independent monolith knowledge and creepjoiner arc objects.
         /// </summary>
         [Test]
-        public static void ActualComponentRoundTripsAllSixAnomalyKeys()
+        public static void ActualComponentRoundTripsAllSevenAnomalyKeys()
         {
             RequireProductionWiring();
             RawAnomalyState original = RawAnomalyState.Capture(scope.Component);
@@ -81,7 +83,7 @@ namespace PawnDiary.RimTests
             {
                 SetRawState(
                     scope.Component,
-                    1,
+                    AnomalyPersistencePolicy.CurrentSchemaVersion,
                     true,
                     new List<string> { " Entity_B ", "Entity_A", "Entity_A", "bad|entity" },
                     new List<string>
@@ -96,16 +98,32 @@ namespace PawnDiary.RimTests
                         tick = 500,
                         reachedProgress = 40,
                         becameActivatable = true
+                    },
+                    new List<CreepJoinerArcState>
+                    {
+                        new CreepJoinerArcState
+                        {
+                            pawnId = " Pawn_Creep ",
+                            arrivalEventId = " Arrival_1 ",
+                            joinedTick = 300,
+                            lastVisiblePhase = AnomalyOutcomeTokens.Departed,
+                            lastVisibleEventId = " Outcome_1 ",
+                            terminal = true,
+                            schemaVersion = 1
+                        }
                     });
 
                 AnomalyMonolithKnowledgeState savedReference =
                     MonolithSnapshotField.GetValue(scope.Component) as AnomalyMonolithKnowledgeState;
+                CreepJoinerArcState savedArcReference =
+                    (CreepJoinerArcsField.GetValue(scope.Component) as List<CreepJoinerArcState>)[0];
                 ScribeRoundTripWithAfterSave(
                     new ActualAnomalyComponentStateAdapter(),
-                    () => SetRawState(scope.Component, -1, false, null, null, "stale", null));
+                    () => SetRawState(scope.Component, -1, false, null, null, "stale", null, null));
 
                 AnomalyPersistentStateSnapshot loaded = scope.Component.AnomalyStateSnapshotForTests();
-                Require(loaded.schemaVersion == 1 && loaded.firstStudyBreakthroughObserved,
+                Require(loaded.schemaVersion == AnomalyPersistencePolicy.CurrentSchemaVersion
+                        && loaded.firstStudyBreakthroughObserved,
                     "actual component lost the Anomaly schema/first-study values.");
                 Require(loaded.completedStudyDefNames.Count == 2
                         && loaded.completedStudyDefNames[0] == "Entity_A"
@@ -122,6 +140,16 @@ namespace PawnDiary.RimTests
                 Require(!ReferenceEquals(
                         savedReference, MonolithSnapshotField.GetValue(scope.Component)),
                     "deep Scribe reused the pre-save monolith knowledge object reference.");
+                Require(loaded.creepJoinerArcs.Count == 1
+                        && loaded.creepJoinerArcs[0].pawnId == "Pawn_Creep"
+                        && loaded.creepJoinerArcs[0].arrivalEventId == "Arrival_1"
+                        && loaded.creepJoinerArcs[0].lastVisiblePhase == AnomalyOutcomeTokens.Departed
+                        && loaded.creepJoinerArcs[0].terminal,
+                    "actual component lost or failed to normalize the deep creepjoiner arc.");
+                Require(!ReferenceEquals(savedArcReference,
+                        (CreepJoinerArcsField.GetValue(scope.Component)
+                            as List<CreepJoinerArcState>)[0]),
+                    "deep Scribe reused the pre-save creepjoiner arc object reference.");
             }
             finally
             {
@@ -131,7 +159,7 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// A pre-A1 save with none of the six keys loads as schema zero with safe empty collections.
+        /// A pre-A1 save with none of the seven keys loads as schema zero with safe empty collections.
         /// This drives the real Scribe defaults rather than a mirror of the production contract.
         /// </summary>
         [Test]
@@ -170,6 +198,8 @@ namespace PawnDiary.RimTests
                 Require(loaded.monolithBaselineLevelDefName.Length == 0
                         && loaded.lastMonolithKnowledgeSnapshot == null,
                     "missing old-save Anomaly keys invented monolith history.");
+                Require(loaded.creepJoinerArcs != null && loaded.creepJoinerArcs.Count == 0,
+                    "missing old-save Anomaly arc key did not normalize to a safe empty list.");
             }
             finally
             {
@@ -271,6 +301,7 @@ namespace PawnDiary.RimTests
             public List<string> promotionKeys;
             public string monolithBaseline;
             public AnomalyMonolithKnowledgeState monolithSnapshot;
+            public List<CreepJoinerArcState> creepJoinerArcs;
 
             public static RawAnomalyState Capture(DiaryGameComponent component)
             {
@@ -282,7 +313,9 @@ namespace PawnDiary.RimTests
                     promotionKeys = PromotionKeysField.GetValue(component) as List<string>,
                     monolithBaseline = MonolithBaselineField.GetValue(component) as string,
                     monolithSnapshot = MonolithSnapshotField.GetValue(component)
-                        as AnomalyMonolithKnowledgeState
+                        as AnomalyMonolithKnowledgeState,
+                    creepJoinerArcs = CreepJoinerArcsField.GetValue(component)
+                        as List<CreepJoinerArcState>
                 };
             }
 
@@ -295,7 +328,8 @@ namespace PawnDiary.RimTests
                     completedDefNames,
                     promotionKeys,
                     monolithBaseline,
-                    monolithSnapshot);
+                    monolithSnapshot,
+                    creepJoinerArcs);
             }
         }
 
@@ -309,7 +343,8 @@ namespace PawnDiary.RimTests
                     && CompletedDefNamesField != null
                     && PromotionKeysField != null
                     && MonolithBaselineField != null
-                    && MonolithSnapshotField != null,
+                    && MonolithSnapshotField != null
+                    && CreepJoinerArcsField != null,
                 "Could not resolve the component's actual Anomaly persistence wiring.");
         }
 
@@ -320,7 +355,8 @@ namespace PawnDiary.RimTests
             List<string> completedDefNames,
             List<string> promotionKeys,
             string monolithBaseline,
-            AnomalyMonolithKnowledgeState monolithSnapshot)
+            AnomalyMonolithKnowledgeState monolithSnapshot,
+            List<CreepJoinerArcState> creepJoinerArcs = null)
         {
             SchemaVersionField.SetValue(component, schemaVersion);
             FirstBreakthroughField.SetValue(component, firstBreakthrough);
@@ -328,6 +364,7 @@ namespace PawnDiary.RimTests
             PromotionKeysField.SetValue(component, promotionKeys);
             MonolithBaselineField.SetValue(component, monolithBaseline);
             MonolithSnapshotField.SetValue(component, monolithSnapshot);
+            CreepJoinerArcsField.SetValue(component, creepJoinerArcs);
         }
 
         private static void InvokeActualAnomalyExposeData()

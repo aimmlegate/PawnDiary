@@ -463,10 +463,12 @@ package-gated Interaction groups at orders `61..65`: `anomalyStudyBreakthrough`,
 `ClassifyAnomalyEvent`; this dedicated route accepts only an available exact `matchDefNames` row and
 cannot use any broader Interaction matcher (including the ordinary catch-all and the order-70
 `Anomaly` token group).
-They expose settings and localized prompt/fallback policy now, but no hook or signal submits an
-`AnomalyEvent` in A1.1, so they are intentionally absent from the live-hook diagram above and create
-zero pages until the separately tested A1.2/A1.3/A2/A3 sources land. N3-A is similarly wired as an
-explicit zero-candidate provider.
+A1.2 study, A1.3 containment breach, and A2.0 visible creepjoiner outcomes now submit through this
+envelope after their source-specific before/after policies prove the exact visible transition. The
+creepjoiner route accepts only generic `rejected`/`aggressive`/`departed` phase truth and one exact
+speaker, pre-departure subject, or nearby-witness POV; no hidden tracker configuration reaches context.
+Ghoul and terminal-void groups remain settings/localization reservations with zero live producers until
+A2.2/A3. N3-A remains an explicit zero-candidate provider.
 
 Biotech Phases 1–2 activate the exact `progressionGrowthMoment` / order `800` route for
 `BiotechGrowthMoment`; the Tale-domain `biotechFamilyBirth` / order `315` contract remains inactive

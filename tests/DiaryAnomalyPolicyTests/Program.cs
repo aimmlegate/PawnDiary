@@ -1,4 +1,4 @@
-// Standalone no-RimWorld tests for Master Wave 7 / Anomaly Phases A1.0-A1.3. Linking only plain DTOs
+// Standalone no-RimWorld tests for Master Wave 7 / Anomaly Phases A1.0-A2.0. Linking only plain DTOs
 // and pure policies makes an accidental Verse, Unity, Harmony, DLC, or live-settings dependency a
 // compile-time failure.
 using System;
@@ -39,6 +39,10 @@ namespace DiaryAnomalyPolicyTests
             TestContainmentRadiusAndCaps();
             TestContainmentDedupAndDeterminism();
             TestContainmentContextFormatter();
+            TestCreepJoinerArrivalContinuity();
+            TestCreepJoinerVisibleOutcomes();
+            TestCreepJoinerWriterSelectionAndBounds();
+            TestCreepJoinerContextFirewall();
             Console.WriteLine("DiaryAnomalyPolicyTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -112,6 +116,19 @@ namespace DiaryAnomalyPolicyTests
                 AnomalyOutcomeTokens.SurgicalReveal);
             AssertEqual("future aggressive token", "aggressive", AnomalyOutcomeTokens.Aggressive);
             AssertEqual("future departed token", "departed", AnomalyOutcomeTokens.Departed);
+            AssertEqual("creepjoiner joined phase", "joined", CreepJoinerPhaseTokens.Joined);
+            AssertEqual("creepjoiner rejected result", "rejected",
+                CreepJoinerVisibleResultTokens.Rejected);
+            AssertEqual("creepjoiner hostile result", "hostile",
+                CreepJoinerVisibleResultTokens.Hostile);
+            AssertEqual("creepjoiner leaving result", "leaving",
+                CreepJoinerVisibleResultTokens.Leaving);
+            AssertEqual("creepjoiner speaker role", "speaker", AnomalyWitnessRoleTokens.Speaker);
+            AssertEqual("creepjoiner subject role", "subject", AnomalyWitnessRoleTokens.Subject);
+            AssertEqual("creepjoiner subject id key", "creepjoiner_subject_id",
+                AnomalyContextKeys.CreepJoinerSubjectId);
+            AssertEqual("creepjoiner subject label key", "creepjoiner_subject_label",
+                AnomalyContextKeys.CreepJoinerSubjectLabel);
             AssertEqual("future ghoul token", "ghoul", AnomalyOutcomeTokens.Ghoul);
             AssertEqual("future embraced token", "embraced", AnomalyOutcomeTokens.Embraced);
             AssertEqual("future visible void token", "disrupted", AnomalyOutcomeTokens.Disrupted);
@@ -133,6 +150,7 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("breach dedup", 2500, policy.containmentDedupTicks);
             AssertEqual("recent studier age", 60000, policy.recentStudierMaxAgeTicks);
             AssertTrue("future creepjoiner enabled", policy.creepJoinerEnabled);
+            AssertEqual("creepjoiner witness radius", 12, policy.creepJoinerWitnessRadius);
             AssertTrue("future ghoul enabled", policy.ghoulTransformationEnabled);
             AssertTrue("future void enabled", policy.voidOutcomeEnabled);
             AssertEqual("ownership depth", 8, policy.taleOwnershipMaxDepth);
@@ -158,6 +176,7 @@ namespace DiaryAnomalyPolicyTests
                 creepJoinerOutcomeDedupTicks = -1,
                 creepJoinerArcRetentionTicks = -1,
                 creepJoinerMaxWitnesses = 99,
+                creepJoinerWitnessRadius = 0,
                 ghoulTransformationEnabled = false,
                 voidOutcomeEnabled = false,
                 taleOwnershipMaxDepth = 0,
@@ -197,6 +216,9 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("invalid creepjoiner witness cap falls back",
                 AnomalyPolicyLimits.MaximumCreepJoinerWitnesses,
                 normalized.creepJoinerMaxWitnesses);
+            AssertEqual("invalid creepjoiner radius falls back",
+                AnomalyPolicyLimits.DefaultCreepJoinerWitnessRadius,
+                normalized.creepJoinerWitnessRadius);
             AssertTrue("normalization preserves disabled ghoul", !normalized.ghoulTransformationEnabled);
             AssertTrue("normalization preserves disabled void", !normalized.voidOutcomeEnabled);
             AssertEqual("invalid ownership depth falls back",
@@ -244,6 +266,7 @@ namespace DiaryAnomalyPolicyTests
                 Value(def, "containmentMaxEntityLabelsInContext"));
             AssertEqual("XML containment dedup", "2500", Value(def, "containmentDedupTicks"));
             AssertEqual("XML recent-studier age", "60000", Value(def, "recentStudierMaxAgeTicks"));
+            AssertEqual("XML creepjoiner radius", "12", Value(def, "creepJoinerWitnessRadius"));
             AssertEqual("XML ownership depth", "8", Value(def, "taleOwnershipMaxDepth"));
             AssertEqual("XML ownership expiry", "2500", Value(def, "taleOwnershipExpiryTicks"));
             AssertTrue("policy makes no conditional DLC Def reference",
@@ -367,6 +390,10 @@ namespace DiaryAnomalyPolicyTests
                     "PawnDiary.Event.Anomaly.Containment.Fallback",
                     "PawnDiary.Event.Anomaly.CreepJoiner.Label",
                     "PawnDiary.Event.Anomaly.CreepJoiner.Fallback",
+                    "PawnDiary.Event.Anomaly.CreepJoiner.SubjectDeparted",
+                    "PawnDiary.Event.Anomaly.CreepJoiner.Result.Rejected",
+                    "PawnDiary.Event.Anomaly.CreepJoiner.Result.Aggressive",
+                    "PawnDiary.Event.Anomaly.CreepJoiner.Result.Departed",
                     "PawnDiary.Event.Anomaly.Ghoul.Label",
                     "PawnDiary.Event.Anomaly.Ghoul.SubjectFallback",
                     "PawnDiary.Event.Anomaly.Ghoul.SurgeonFallback",
@@ -1158,6 +1185,183 @@ namespace DiaryAnomalyPolicyTests
                     .Contains("same_room_cascade=false"));
         }
 
+        private static void TestCreepJoinerArrivalContinuity()
+        {
+            AssertTrue("exact creepjoiner arrival marker accepted",
+                CreepJoinerOutcomePolicy.IsCreepJoinerArrivalContext(
+                    "arrival_kind=wanderer; creepjoiner=true; setting=outdoors"));
+            AssertTrue("creepjoiner marker is case-insensitive and trimmed",
+                CreepJoinerOutcomePolicy.IsCreepJoinerArrivalContext(" CREEPJOINER = TRUE "));
+            AssertTrue("near-match creepjoiner key rejected",
+                !CreepJoinerOutcomePolicy.IsCreepJoinerArrivalContext("notcreepjoiner=true"));
+            AssertTrue("near-match creepjoiner value rejected",
+                !CreepJoinerOutcomePolicy.IsCreepJoinerArrivalContext("creepjoiner=true-ish"));
+
+            CreepJoinerArcSnapshot joined = CreepJoinerOutcomePolicy.UpsertArrival(
+                null, " Pawn_Creep ", 123, string.Empty);
+            AssertEqual("arrival creates normalized pawn identity", "Pawn_Creep", joined.pawnId);
+            AssertEqual("arrival creates joined tick", 123, joined.joinedTick);
+            AssertEqual("arrival creates joined phase", CreepJoinerPhaseTokens.Joined,
+                joined.lastVisiblePhase);
+            AssertTrue("arrival history is not terminal", !joined.terminal);
+            AssertEqual("arrival uses current record schema",
+                AnomalyPersistencePolicy.CurrentCreepJoinerArcSchemaVersion, joined.schemaVersion);
+
+            CreepJoinerArcSnapshot enriched = CreepJoinerOutcomePolicy.UpsertArrival(
+                joined, "Pawn_Creep", 124, "Arrival_1");
+            AssertEqual("arrival event id may be attached after page creation", "Arrival_1",
+                enriched.arrivalEventId);
+            AssertEqual("canonical first joined tick is retained", 123, enriched.joinedTick);
+            AssertTrue("arrival upsert returns a detached row", !object.ReferenceEquals(joined, enriched));
+
+            CreepJoinerArcSnapshot terminal = Arc(AnomalyOutcomeTokens.Departed, true);
+            terminal.arrivalEventId = string.Empty;
+            enriched = CreepJoinerOutcomePolicy.UpsertArrival(
+                terminal, "Pawn_Creep", 999, "Arrival_Late");
+            AssertEqual("late canonical arrival id can enrich terminal continuity", "Arrival_Late",
+                enriched.arrivalEventId);
+            AssertEqual("arrival never downgrades terminal phase", AnomalyOutcomeTokens.Departed,
+                enriched.lastVisiblePhase);
+            AssertTrue("arrival never clears terminal marker", enriched.terminal);
+        }
+
+        private static void TestCreepJoinerVisibleOutcomes()
+        {
+            foreach (string phase in new[]
+            {
+                AnomalyOutcomeTokens.Rejected,
+                AnomalyOutcomeTokens.Aggressive,
+                AnomalyOutcomeTokens.Departed
+            })
+            {
+                CreepJoinerOutcomeFacts facts = CreepOutcome(phase);
+                facts.writers.Add(CreepWriter("Nearby", nearby: true, distanceSquared: 4));
+                CreepJoinerOutcomePlan plan = CreepJoinerOutcomePolicy.Plan(facts, null, null);
+                AssertTrue(phase + " verified transition is valid", plan.valid);
+                AssertTrue(phase + " advances terminal continuity", plan.advanceArc
+                    && plan.nextArc.terminal && plan.nextArc.lastVisiblePhase == phase);
+                AssertEqual(phase + " maps to visible-only result",
+                    CreepJoinerVisibleResultTokens.ForPhase(phase), plan.visibleResultToken);
+                AssertEqual(phase + " source key is deterministic",
+                    "Pawn_Creep|" + phase + "|200", plan.sourceKey);
+            }
+
+            CreepJoinerOutcomeFacts invalid = CreepOutcome(AnomalyOutcomeTokens.Rejected);
+            invalid.transitioned = false;
+            AssertTrue("unchanged tracker flag drops", !CreepJoinerOutcomePolicy.Plan(invalid, null, null).valid);
+            invalid = CreepOutcome(AnomalyOutcomeTokens.Aggressive);
+            invalid.transitionVerified = false;
+            AssertTrue("unverified aggressive commit drops",
+                !CreepJoinerOutcomePolicy.Plan(invalid, null, null).valid);
+            invalid = CreepOutcome(AnomalyOutcomeTokens.Departed);
+            invalid.playerVisible = false;
+            AssertTrue("invisible departure drops", !CreepJoinerOutcomePolicy.Plan(invalid, null, null).valid);
+            invalid = CreepOutcome(AnomalyOutcomeTokens.Aggressive);
+            invalid.visibleResultToken = CreepJoinerVisibleResultTokens.Leaving;
+            AssertTrue("phase/result mismatch drops", !CreepJoinerOutcomePolicy.Plan(invalid, null, null).valid);
+            invalid = CreepOutcome(AnomalyOutcomeTokens.Departed);
+            invalid.nestedOutcomeOwnedByRejection = true;
+            AssertTrue("nested rejection outcome is owned by outer exact callback",
+                !CreepJoinerOutcomePolicy.Plan(invalid, null, null).valid);
+
+            CreepJoinerOutcomeFacts disabledFacts = CreepOutcome(AnomalyOutcomeTokens.Aggressive);
+            disabledFacts.writers.Add(CreepWriter("Nearby", nearby: true, distanceSquared: 4));
+            AnomalyPolicySnapshot disabled = AnomalyPolicySnapshot.CreateDefault();
+            disabled.creepJoinerEnabled = false;
+            CreepJoinerOutcomePlan disabledPlan = CreepJoinerOutcomePolicy.Plan(
+                disabledFacts, null, disabled);
+            AssertTrue("disabled output still advances visible history",
+                disabledPlan.valid && disabledPlan.advanceArc && disabledPlan.nextArc.terminal);
+            AssertTrue("disabled output writes no page", !disabledPlan.writePage);
+
+            CreepJoinerOutcomePlan replay = CreepJoinerOutcomePolicy.Plan(
+                CreepOutcome(AnomalyOutcomeTokens.Departed),
+                Arc(AnomalyOutcomeTokens.Rejected, true), null);
+            AssertTrue("terminal arc suppresses repeat callback",
+                replay.valid && replay.replaySuppressed && !replay.advanceArc && !replay.writePage);
+        }
+
+        private static void TestCreepJoinerWriterSelectionAndBounds()
+        {
+            CreepJoinerOutcomeFacts rejection = CreepOutcome(AnomalyOutcomeTokens.Rejected);
+            rejection.joinedBefore = false;
+            rejection.writers.Add(CreepWriter("Nearby", nearby: true, distanceSquared: 1));
+            rejection.writers.Add(CreepWriter("Speaker", exactSpeaker: true, distanceSquared: 400));
+            CreepJoinerOutcomePlan plan = CreepJoinerOutcomePolicy.Plan(rejection, null, null);
+            AssertEqual("pre-join rejection uses exact speaker", "Speaker", plan.selectedWriter.pawnId);
+            AssertEqual("pre-join rejection role is speaker", AnomalyWitnessRoleTokens.Speaker,
+                plan.selectedWriter.roleToken);
+
+            CreepJoinerOutcomeFacts departure = CreepOutcome(AnomalyOutcomeTokens.Departed);
+            departure.joinedBefore = true;
+            departure.subjectEligibleBefore = true;
+            departure.writers.Add(CreepWriter("Subject", subject: true));
+            departure.writers.Add(CreepWriter("Nearer", nearby: true, distanceSquared: 1));
+            plan = CreepJoinerOutcomePolicy.Plan(departure, null, null);
+            AssertEqual("joined departure uses eligible subject snapshot", "Subject",
+                plan.selectedWriter.pawnId);
+            AssertEqual("joined departure role is subject", AnomalyWitnessRoleTokens.Subject,
+                plan.selectedWriter.roleToken);
+
+            CreepJoinerOutcomeFacts aggression = CreepOutcome(AnomalyOutcomeTokens.Aggressive);
+            aggression.writers.Add(CreepWriter("SpeakerOnly", exactSpeaker: true, distanceSquared: 1));
+            aggression.writers.Add(CreepWriter("TieB", nearby: true, distanceSquared: 9, tie: "b"));
+            aggression.writers.Add(CreepWriter("TieA", nearby: true, distanceSquared: 9, tie: "a"));
+            plan = CreepJoinerOutcomePolicy.Plan(aggression, null, null);
+            AssertEqual("aggression uses deterministic nearby witness only", "TieA",
+                plan.selectedWriter.pawnId);
+            AssertEqual("aggression role is nearby", AnomalyWitnessRoleTokens.Nearby,
+                plan.selectedWriter.roleToken);
+
+            aggression.writers.Clear();
+            aggression.writers.Add(CreepWriter("Boundary", nearby: true, distanceSquared: 144));
+            AssertTrue("creepjoiner radius boundary included",
+                CreepJoinerOutcomePolicy.Plan(aggression, null, null).writePage);
+            aggression.writers[0].distanceSquared = 145;
+            AssertTrue("outside creepjoiner radius has no invented POV",
+                !CreepJoinerOutcomePolicy.Plan(aggression, null, null).writePage);
+
+            aggression.writers.Clear();
+            for (int i = 0; i < 600; i++)
+                aggression.writers.Add(CreepWriter("Pawn_" + i.ToString("D3"), false, 900));
+            aggression.writers.Add(CreepWriter("Pawn_ZClosest", true, 1));
+            plan = CreepJoinerOutcomePolicy.Plan(aggression, null, null);
+            AssertEqual("candidate cap retains strongest nearby evidence", "Pawn_ZClosest",
+                plan.selectedWriter.pawnId);
+
+            CreepJoinerOutcomeFacts cappedInput = CreepOutcome(AnomalyOutcomeTokens.Aggressive);
+            for (int i = 0; i < AnomalyPolicyLimits.MaximumCreepJoinerCandidateInputs; i++)
+                cappedInput.writers.Add(CreepWriter("Far_" + i.ToString("D4"), false, 900));
+            cappedInput.writers.Add(CreepWriter("BeyondInputCap", true, 1));
+            AssertTrue("input beyond hard scan ceiling is ignored",
+                !CreepJoinerOutcomePolicy.Plan(cappedInput, null, null).writePage);
+        }
+
+        private static void TestCreepJoinerContextFirewall()
+        {
+            CreepJoinerOutcomeFacts facts = CreepOutcome(AnomalyOutcomeTokens.Aggressive);
+            facts.subjectLabel = "Visible Name; future_downside=never";
+            facts.writers.Add(CreepWriter("Nearby", nearby: true, distanceSquared: 4));
+            CreepJoinerOutcomePlan plan = CreepJoinerOutcomePolicy.Plan(facts, null, null);
+            string context = CreepJoinerOutcomeContextFormatter.Format(facts, plan);
+            AssertTrue("context contains visible phase/result/subject/role/terminal",
+                context.Contains("anomaly_kind=creepjoiner_outcome")
+                    && context.Contains("creepjoiner_phase=aggressive")
+                    && context.Contains("visible_result=hostile")
+                    && context.Contains("creepjoiner_subject_id=Pawn_Creep")
+                    && context.Contains("witness_role=nearby")
+                    && context.Contains("terminal=true"));
+            AssertTrue("context sanitizes field injection",
+                !context.Contains("; future_downside=") && context.Contains("future_downside-never"));
+            AssertTrue("context schema cannot expose secret tracker configuration",
+                context.IndexOf("benefit=", StringComparison.OrdinalIgnoreCase) < 0
+                    && context.IndexOf("downside=", StringComparison.OrdinalIgnoreCase) < 0
+                    && context.IndexOf("trigger=", StringComparison.OrdinalIgnoreCase) < 0
+                    && context.IndexOf("infection=", StringComparison.OrdinalIgnoreCase) < 0);
+            AssertEqual("invalid plan has no prompt context", string.Empty,
+                CreepJoinerOutcomeContextFormatter.Format(facts, new CreepJoinerOutcomePlan()));
+        }
+
         private static AnomalyStudyFacts Study()
         {
             return new AnomalyStudyFacts
@@ -1171,6 +1375,54 @@ namespace DiaryAnomalyPolicyTests
                 oldProgress = 10,
                 newProgress = 20,
                 noteThresholdsCrossed = 1
+            };
+        }
+
+        private static CreepJoinerOutcomeFacts CreepOutcome(string phase)
+        {
+            return new CreepJoinerOutcomeFacts
+            {
+                pawnId = "Pawn_Creep",
+                subjectLabel = "Aster",
+                phase = phase,
+                visibleResultToken = CreepJoinerVisibleResultTokens.ForPhase(phase),
+                tick = 200,
+                transitioned = true,
+                transitionVerified = true,
+                playerVisible = true
+            };
+        }
+
+        private static CreepJoinerWriterCandidate CreepWriter(
+            string id,
+            bool nearby = false,
+            int distanceSquared = -1,
+            bool exactSpeaker = false,
+            bool subject = false,
+            string tie = null)
+        {
+            return new CreepJoinerWriterCandidate
+            {
+                pawnId = id,
+                eligible = true,
+                exactSpeaker = exactSpeaker,
+                subject = subject,
+                onSubjectMap = nearby || subject,
+                nearby = nearby,
+                distanceSquared = distanceSquared,
+                tieBreakKey = tie ?? id
+            };
+        }
+
+        private static CreepJoinerArcSnapshot Arc(string phase, bool terminal)
+        {
+            return new CreepJoinerArcSnapshot
+            {
+                pawnId = "Pawn_Creep",
+                joinedTick = 100,
+                lastVisiblePhase = phase,
+                terminal = terminal,
+                schemaVersion = AnomalyPersistencePolicy.CurrentCreepJoinerArcSchemaVersion
             };
         }
 

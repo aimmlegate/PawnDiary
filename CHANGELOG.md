@@ -1,5 +1,39 @@
 # Changelog
 
+- **2026-07-20 — Implemented Master Wave 7 / Anomaly Phase A2.0 visible creepjoiner state.** The
+  existing canonical arrival page now initializes one visible-only creepjoiner arc and attaches its
+  event ID only after that page exists; repeat arrivals create neither a second arc nor a second page.
+  Save schema 2 deep-scribes the frozen `anomalyCreepJoinerArcs` key with only pawn/arrival/joined/
+  visible-phase/visible-event/terminal/version primitives. Pure normalization deterministically handles
+  null, malformed, duplicate, oversized, negative-tick, invalid-phase, and future-schema rows under
+  4,096-input/512-output caps. Anomaly-active old saves silently baseline current joined player
+  creepjoiners; Anomaly-inactive loads defer without catch-up pages.
+
+  The installed 1.6 assembly was reconfirmed before implementation. Independent fail-open Harmony
+  registrations now target the exact public parameterless `Pawn_CreepJoinerTracker.DoRejection()`,
+  `DoAggressive()`, and `DoLeave()` methods and cache their private committed-transition markers once.
+  Detached before/after verification preserves vanilla behavior on missing targets, exceptions, no-op/
+  repeated calls, or unverifiable state. `DoDownside()` remains unpatched; its nested exact method owns
+  naturally, while a bounded lifecycle-cleared scope lets outer rejection own its nested aggressive/
+  departure response exactly once.
+
+  Pure policy commits terminal visible history independently of settings and chooses at most one
+  truthful event-time POV: exact eligible speaker before joining, eligible subject captured before a
+  joined departure, or the closest bounded nearby eligible witness. Context and localized English/
+  Russian fallback expose only generic visible phase/result, stable subject identity/visible label,
+  verified role, and terminal state—never benefit/downside/response Defs, private triggers, hidden host/
+  infection, worker type, future form, motive, or causality. A2.1 surgical disclosure, A2.2 ghoul
+  transformation, A3 terminal outcomes, and N3-A expansion remain untouched.
+
+  Focused suites pass 472 Anomaly and 115 save-normalization assertions. Seven new loaded fixtures
+  bring the RimTest assembly to 323 compiled tests and cover registration/no-`DoDownside`, canonical/
+  repeated arrival, live rejection/aggression/departure, nested ownership, writer roles, repeat/no-op
+  silence, and lifecycle reset; the actual component Scribe fixture now covers the seventh deep list.
+  These new fixtures are compiled but not claimed as executed in-game. The user-confirmed automated
+  A1.4 Anomaly-active 316-fixture run is recorded green as aggregate evidence without implying a
+  preserved per-method log. Deferred verification remains the separate Anomaly-inactive profile,
+  disposable missing study/containment-hook profiles, and real process-boundary save/reload.
+
 - **2026-07-20 — Completed the Anomaly A1.4 adversarial hardening and automated delivery pass.** Blank
   study labels now use a localized neutral subject in player-facing fallback instead of exposing a raw
   Def name. Containment capture resolves recent studiers with one bounded cache scan, ranks the full
@@ -14,11 +48,11 @@
   runtime rebuild, and committed-DLL freshness. The prior user-confirmed corrected Anomaly-active
   315/315 full-suite result corresponds to the unchanged assembly containing all ten A1.2 and all ten
   A1.3 fixtures; it closes the old A1.2 row as aggregate user-confirmed evidence, while no preserved
-  per-method run artifact independently enumerates them. It does not cover the new fixture. The active
-  316 rerun, separate Anomaly-inactive profile, disposable
-  missing-hook profiles, and a real
-  process-boundary save/reload remain explicit manual rows; none is claimed from compilation. No A2
-  creepjoiner/ghoul behavior or DLC dependency was added.
+  per-method run artifact independently enumerates them. At this delivery boundary it did not cover the
+  new fixture; the later A2.0 entry records the user's green 316-fixture confirmation. The separate
+  Anomaly-inactive profile, disposable missing-hook profiles, and a real process-boundary save/reload
+  remain explicit manual rows; none is claimed from compilation. No A2 creepjoiner/ghoul behavior or
+  DLC dependency was added in A1.4 itself.
 
 - **2026-07-20 — Confirmed the corrected A1.3 loaded suite all green.** The user-confirmed
   Anomaly-active rerun passed all 315 compiled RimTest fixtures, including all ten containment

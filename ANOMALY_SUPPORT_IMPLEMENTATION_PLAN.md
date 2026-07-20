@@ -1,7 +1,7 @@
 # Pawn Diary — Anomaly Support Implementation Plan
 
-Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.4 implemented as Master Wave 7,
-2026-07-20; A2–A3 remain implementation-ready plans. The
+Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.4 and A2.0 implemented as Master Wave 7,
+2026-07-20; A2.1–A3 remain implementation-ready plans. The
 RimWorld 1.6 feasibility spike is complete for study-note milestones, containment escapes, visible
 creepjoiner outcomes, ghoul infusion, and both terminal void choices. Production now includes the A0
 exact psychic-ritual routing and monolith activation chapters described below.
@@ -11,7 +11,7 @@ Scheduling authority: implement Anomaly phases only in the waves assigned by
 
 Anomaly was the final standalone DLC planning artifact. Its small A0 semantic-precision release has
 now shipped independently; A1 study capture, containment breach capture, and A1 hardening/delivery
-are implemented, while A2–A3 remain scheduled in the master plan.
+and visible creepjoiner state/outcomes are implemented, while A2.1–A3 remain scheduled in the master plan.
 
 The plan turns Anomaly's already broad atmospheric coverage into a coherent human story:
 curiosity becomes knowledge, knowledge enables a choice, containment can fail, apparently human
@@ -47,9 +47,9 @@ standalone plans.
 | `ROYALTY_SUPPORT_IMPLEMENTATION_PLAN.md` | Scope-review plan only; its persona/succession state is not production code. |
 | `BIOTECH_SUPPORT_IMPLEMENTATION_PLAN.md` | Implementation plan only; its growth/family/mechanitor state is not production code. |
 | `ODYSSEY_SUPPORT_IMPLEMENTATION_PLAN.md` | Scope-review plan only; its saved journey and landing chapters are not production code. |
-| Current Anomaly ritual support | Successful psychic rituals already fan out through `DiaryEventType.Ritual`, with exact ritual defName, perspective, quality, and generic Anomaly guidance. |
+| Current Anomaly ritual support | Successful psychic rituals fan out through `DiaryEventType.Ritual`, with exact ritual defName, perspective, quality, and exact-family Anomaly guidance plus a modded fallback. |
 | Current Anomaly atmosphere | Monolith discovery/activation, visible and hidden metalhorror pressure, pit gates, fleshmass, nociosphere, obelisks, unnatural corpses, major conditions, cube effects, void hediffs, thoughts, raids, and Tales already have useful generic coverage. |
-| Main Anomaly gap | Exact ritual meaning and researcher-owned study milestones are connected; containment consequence, spoiler-safe reveal/identity arcs, and an exact terminal void chapter remain. |
+| Main Anomaly gap | Exact ritual meaning, researcher-owned study milestones, containment consequence, and visible creepjoiner outcomes are connected; surgical disclosure, ghoul identity, and exact terminal void chapters remain. |
 
 This plan starts from that production baseline. A coding agent must not assume that a cross-DLC
 facet, event type, state model, or helper proposed by another plan already exists.
@@ -126,9 +126,9 @@ The creepjoiner and ghoul pieces may merge separately after their own acceptance
 - Optionally request one rare arc reflection after the canonical outcome page records; the
   reflection must not restate the event or become a second ending page.
 
-A0 and A1 are implementation-ready at the hook and architecture level. A2 is implementation-ready
-for the listed visible methods and ghoul recipe; general creepjoiner-downside classification stays
-deferred. A3 is implementation-ready for both terminal choices.
+A0, A1, and A2.0 are implemented. A2.1–A2.2 remain implementation-ready for surgical disclosure and
+the ghoul recipe; general creepjoiner-downside classification stays deferred. A3 remains
+implementation-ready for both terminal choices.
 
 ## 2. Product outcome
 
@@ -301,8 +301,8 @@ The first program does **not** include:
 | Entity study | Generic `StudiedEntity` Tale at the end of some pawn-study jobs | A1 rare threshold milestone owned by exact studier; conditional Tale suppression |
 | Entity codex discovery | No dedicated diary source | Deferred because `SetDiscovered` lacks researcher identity |
 | Containment | Ambient entity/condition coverage, no exact breach chapter | A1 one aggregated involuntary breach |
-| Creepjoiner arrival | Existing arrival context includes `creepjoiner=true` | A2 reuse as arc opener |
-| Creepjoiner outcome | Generic visible thoughts/hediffs/incidents may fire; no spoiler-safe arc | A2 exact visible outcomes only |
+| Creepjoiner arrival | Existing arrival context includes `creepjoiner=true`; A2.0 now opens the saved visible-only arc without another page | Keep the canonical Arrival owner |
+| Creepjoiner outcome | A2.0 owns exact rejection, aggression, and departure transitions with deterministic visible witnesses | Keep general downside classification deferred |
 | Ghoul state | Body-mod stance recognizes ghouls; generic surgery may record | A2 one exact transformation, no routine ghoul lifecycle spam |
 | Final void choice | `ClosedTheVoid` and `EmbracedTheVoid` Tales already route through the anomaly Tale group | A3 exact terminal event with fail-open Tale fallback |
 | Metalhorrors | Gray-flesh evidence, emergence, hidden infection pressure, raid/thought/hediff routes | Preserve; new sources must dedup against overlapping visible aftermath |
@@ -374,6 +374,12 @@ change them.
   nested escapees, verify the outcome, and emit once when the outer call exits.
 
 ### 6.5 Creepjoiners
+
+> **Reconfirmed against installed RimWorld 1.6 on 2026-07-20.** All three A2.0 targets are public,
+> parameterless `void` methods on `Pawn_CreepJoinerTracker`. The private committed markers are exactly
+> `triggeredRejection`, `triggeredAggressive`, and `hasLeft` (all `bool`); `joinedTick` and `speaker`
+> remain public. `DoRejection` sets its marker before its worker, and vanilla rejection workers nest
+> `DoLeave` or `DoAggressive`. `DoDownside` also nests those exact methods for its visible worker paths.
 
 - `Pawn_CreepJoinerTracker.Notify_ChangedFaction()` records the joined tick when the pawn becomes a
   colonist. Existing `Pawn.SetFaction` arrival capture already produces the acceptance page.
@@ -919,6 +925,13 @@ The containment breach owns the initial escape fact. Within its configured corre
 
 ### 12.1 Arc state and arrival ownership
 
+> **A2.0 implementation (2026-07-20): complete.** The canonical arrival route now owns joined-state
+> initialization and optional arrival-event identity. Schema 2 deep-scribes the exact seven primitive
+> fields below, normalizes at most 4,096 inputs to at most 512 stable rows, and treats future rows as
+> terminal replay barriers. An active pre-A2 save silently baselines current joined player
+> creepjoiners; Anomaly-inactive loads defer. Age alone never prunes a terminal row without proof that
+> its continuity reference is disposable.
+
 The existing arrival route remains canonical for acceptance. When its context contains
 `creepjoiner=true`, create or update a saved state-only record:
 
@@ -969,6 +982,12 @@ Patch public methods defensively and compare before/after state:
 
 If a downside worker calls one of those methods, the nested exact outcome owns the page. A separate
 `DoDownside` postfix must not emit another.
+
+`DoRejection` is the one nested semantic exception: vanilla rejection workers currently call either
+`DoLeave` or `DoAggressive`, but the player-visible decision is rejection. A tiny bounded synchronous
+owner therefore suppresses that nested page and lets the outer verified rejection emit once. The
+postfix/finalizer always unwinds it. `DoDownside` itself remains unpatched, so its nested exact method
+still owns naturally.
 
 ### 12.4 Writer policy
 
@@ -1158,6 +1177,11 @@ live letter or monolith reference.
 `CreepJoinerArcState` is a small deep-scribed record as defined in §12.1. It contains only visible
 phase history. Prune terminal records after an XML retention interval only if their event IDs are no
 longer needed for continuity; never prune in a way that allows an old outcome to replay as new.
+
+As of A2.0, current schema 2 implements the first seven component keys through
+`anomalyCreepJoinerArcs`; the three terminal-void keys remain future A3 design. Structural normalization
+is live, while terminal rows deliberately receive no age-only pruning until exact reference/liveness
+evidence can satisfy the preceding replay-safety condition.
 
 ### 16.2 Scribe keys and versioning
 
@@ -1594,23 +1618,48 @@ profile remains in the manual in-game matrix.
 > The previous user-confirmed corrected 315/315 Anomaly-active full-suite result remains aggregate
 > evidence for the unchanged assembly containing all prior A1.2/A1.3 fixtures; no per-method run artifact
 > survives.
-> It cannot evidence the one new A1.4 fallback fixture. A new active 316 run, the separate Anomaly-
-> inactive profile, disposable missing-hook compatibility builds, and a real process-boundary save/
-> reload remain manual rows; no pass is claimed for them. The exact procedure is recorded in
+> The user confirms the complete automated A1.4 Anomaly-active 316-fixture run green. This is aggregate
+> user-confirmed evidence; no preserved per-method log is claimed. The separate Anomaly-inactive
+> profile, disposable missing study/containment-hook compatibility profiles, and a real process-boundary
+> save/reload remain explicit deferred rows. The exact procedure is recorded in
 > `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
 - [x] Audit no-DLC gates, independent missing-hook failure, and generic fallback preservation.
 - [x] Profile hot paths/cache bounds and add focused bound/equivalence tests.
 - [x] Review prompts/fallback for spoilers, invented causality, role truth, localization, and raw Defs.
 - [x] Complete docs/changelog/localization and rebuild both assemblies.
-- [ ] Execute the active 316, Anomaly-inactive, missing-hook, and process-boundary manual profiles.
+- [x] Record the user-confirmed automated active 316-fixture run as aggregate green evidence.
+- [ ] Execute the separate Anomaly-inactive, missing study/containment-hook, and process-boundary profiles.
 
 ### Phase A2.0 — Visible creepjoiner state
 
-- Add saved visible-only arc records and silent old-save baselining.
-- Reuse arrival to initialize state.
-- Add pure phase arbitration/writer tests.
-- Register rejection/aggression/departure methods with private-field health checks.
+> **Status (2026-07-20): implemented; focused loaded fixtures compile, in-game execution pending.**
+> The canonical arrival now upserts one visible joined arc and attaches its event ID only after the
+> existing arrival page is created. Schema 2 deep-scribes only pawn/arrival/joined/visible-phase/
+> visible-event/terminal/version primitives; pure normalization covers malformed, duplicate, oversized,
+> negative-tick, invalid-phase, and future rows under 4,096-input/512-output caps. Active old saves
+> silently baseline current joined player creepjoiners; inactive saves remain pending.
+>
+> Independent fail-open registrations target the installed public parameterless `DoRejection`,
+> `DoAggressive`, and `DoLeave` methods and cache their required private transition fields once.
+> Detached before/after verification commits terminal visible history independently of settings. Pure
+> selection uses exact speaker, eligible pre-departure subject, or one closest nearby witness as the
+> phase permits; no RNG or now-hostile first-person POV is used. Rejection owns its nested exact response,
+> while unpatched `DoDownside` lets its nested exact method own naturally. Context/fallback expose only
+> generic visible phase/result, subject identity/label, role, and terminal state.
+>
+> Focused suites pass 472 Anomaly and 115 save-normalization assertions. Seven new loaded A2.0 fixtures
+> bring the RimTest assembly to 323 compiled tests and cover exact registration/no-`DoDownside`, one
+> canonical/repeated arrival, rejection-with-nested-departure once, aggression, joined departure,
+> disabled/no-op silence, role context, repeat suppression, and lifecycle cleanup. These seven are not
+> claimed as executed in-game. The user-confirmed A1.4 active 316 run is green aggregate evidence; the
+> separate Anomaly-inactive profile, missing study/containment-hook compatibility profiles, and real
+> process-boundary save/reload remain deferred.
+
+- [x] Add saved visible-only arc records and silent old-save baselining.
+- [x] Reuse arrival to initialize state.
+- [x] Add pure phase arbitration/writer tests.
+- [x] Register rejection/aggression/departure methods with private-field health checks.
 
 **Exit gate:** no secret field enters state or prompt; nested visible outcomes emit once.
 

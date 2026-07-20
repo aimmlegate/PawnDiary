@@ -1,13 +1,15 @@
-// DLC-safe live Anomaly state capture. This adapter is the only place A1 reads monolith,
-// CompStudyUnlocks, codex, knowledge-category, and containment state; it converts optional-DLC
-// objects into detached primitive facts before pure policy or persistence sees them.
+// DLC-safe live Anomaly state capture. This adapter is the only place Pawn Diary reads monolith,
+// study, containment, or raw creepjoiner tracker/private-field state; it converts optional-DLC
+// objects into detached primitive facts before pure policy, persistence, or prompts see them.
 //
 // New to C#/RimWorld? See AGENTS.md ("DLC-safety") and the DlcContext.cs file header.
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using PawnDiary.Capture;
 using RimWorld;
 using Verse;
+using Verse.AI.Group;
 
 namespace PawnDiary
 {
@@ -32,9 +34,331 @@ namespace PawnDiary
         internal readonly List<Pawn> candidatePawns = new List<Pawn>();
     }
 
+    /// <summary>Independent private-field health for the three exact public creepjoiner hooks.</summary>
+    internal sealed class CreepJoinerReflectionHealth
+    {
+        public bool rejectionReady;
+        public bool aggressionReady;
+        public bool departureReady;
+    }
+
+    /// <summary>
+    /// Synchronous live edge-state retained only from one exact prefix to its postfix/finalizer.
+    /// Pure code receives <see cref="facts"/>; no tracker/private value enters saves or prompts.
+    /// </summary>
+    internal sealed class CreepJoinerOutcomeCapture
+    {
+        internal Pawn_CreepJoinerTracker tracker;
+        internal Pawn subject;
+        internal readonly List<Pawn> writerPawns = new List<Pawn>();
+        internal CreepJoinerOutcomeFacts facts;
+        internal bool rejectionCommittedBefore;
+        internal bool aggressionCommittedBefore;
+        internal bool departureCommittedBefore;
+        internal bool methodAllowedBefore;
+        internal bool visibleResponseExpected;
+        internal bool ownsRejectionScope;
+
+        internal string SubjectPawnId => facts?.pawnId ?? string.Empty;
+
+        internal Pawn ResolveWriter(string pawnId)
+        {
+            for (int i = 0; i < writerPawns.Count; i++)
+            {
+                Pawn pawn = writerPawns[i];
+                if (pawn != null && string.Equals(
+                    pawn.GetUniqueLoadID(), pawnId, StringComparison.Ordinal)) return pawn;
+            }
+            return null;
+        }
+    }
+
     /// <summary>Guarded Anomaly accessors for save baselines and exact study callbacks.</summary>
     internal static partial class DlcContext
     {
+        private static bool creepJoinerReflectionResolved;
+        private static Type creepJoinerTrackerType;
+        private static FieldInfo creepJoinerTriggeredRejectionField;
+        private static FieldInfo creepJoinerTriggeredAggressiveField;
+        private static FieldInfo creepJoinerHasLeftField;
+
+        /// <summary>
+        /// Resolves the three private committed-transition markers once. Each hook consumes only its
+        /// own health bit, so a renamed field disables that outcome without disabling the other two.
+        /// </summary>
+        internal static CreepJoinerReflectionHealth ResolveCreepJoinerReflection(Type trackerType)
+        {
+            if (!creepJoinerReflectionResolved)
+            {
+                creepJoinerReflectionResolved = true;
+                creepJoinerTrackerType = trackerType;
+                const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                creepJoinerTriggeredRejectionField = BooleanField(
+                    trackerType, "triggeredRejection", flags);
+                creepJoinerTriggeredAggressiveField = BooleanField(
+                    trackerType, "triggeredAggressive", flags);
+                creepJoinerHasLeftField = BooleanField(trackerType, "hasLeft", flags);
+            }
+
+            bool sameType = trackerType != null && trackerType == creepJoinerTrackerType;
+            return new CreepJoinerReflectionHealth
+            {
+                rejectionReady = sameType && creepJoinerTriggeredRejectionField != null
+                    && creepJoinerTriggeredAggressiveField != null && creepJoinerHasLeftField != null,
+                aggressionReady = sameType && creepJoinerTriggeredAggressiveField != null,
+                departureReady = sameType && creepJoinerHasLeftField != null
+            };
+        }
+
+        /// <summary>Captures exact event-time facts and a bounded writer roster before vanilla mutates.</summary>
+        internal static bool TryCaptureCreepJoinerOutcomeBefore(
+            object trackerObject,
+            string phase,
+            int witnessRadius,
+            out CreepJoinerOutcomeCapture capture)
+        {
+            capture = null;
+            Pawn_CreepJoinerTracker tracker = trackerObject as Pawn_CreepJoinerTracker;
+            Pawn subject = tracker?.Pawn;
+            if (!ModsConfig.AnomalyActive || tracker == null || subject == null
+                || tracker.GetType() != creepJoinerTrackerType
+                || !CreepJoinerPhaseTokens.IsOutcome(phase)) return false;
+
+            bool rejectionBefore;
+            bool aggressionBefore;
+            bool departureBefore;
+            if (!TryReadCreepJoinerFlags(
+                tracker, out rejectionBefore, out aggressionBefore, out departureBefore)) return false;
+
+            string subjectId = subject.GetUniqueLoadID();
+            if (string.IsNullOrWhiteSpace(subjectId)) return false;
+            CreepJoinerOutcomeCapture result = new CreepJoinerOutcomeCapture
+            {
+                tracker = tracker,
+                subject = subject,
+                facts = new CreepJoinerOutcomeFacts
+                {
+                    pawnId = subjectId,
+                    subjectLabel = DiaryLineCleaner.CleanLine(subject.LabelShortCap),
+                    phase = phase,
+                    visibleResultToken = CreepJoinerVisibleResultTokens.ForPhase(phase),
+                    tick = Find.TickManager?.TicksGame ?? 0,
+                    joinedBefore = tracker.joinedTick > 0
+                        || (subject.IsColonist && subject.Faction?.IsPlayer == true),
+                    subjectEligibleBefore = DiaryGameComponent.IsDiaryEligible(subject)
+                },
+                rejectionCommittedBefore = rejectionBefore,
+                aggressionCommittedBefore = aggressionBefore,
+                departureCommittedBefore = departureBefore
+            };
+
+            if (phase == AnomalyOutcomeTokens.Rejected)
+            {
+                result.methodAllowedBefore = !tracker.Disabled && !rejectionBefore
+                    && !aggressionBefore && !departureBefore;
+                // Installed rejection defs visibly report via a letter. A modded silent response does
+                // not get promoted merely because its private marker changed.
+                result.visibleResponseExpected = tracker.rejection?.hasLetter == true;
+            }
+            else if (phase == AnomalyOutcomeTokens.Aggressive)
+            {
+                result.methodAllowedBefore = tracker.CanTriggerAggressive;
+                result.visibleResponseExpected = tracker.aggressive != null
+                    && (tracker.aggressive.hasMessage || tracker.aggressive.hasLetter);
+            }
+            else
+            {
+                result.methodAllowedBefore = !tracker.Disabled && !departureBefore;
+                result.visibleResponseExpected = true;
+            }
+
+            Dictionary<string, Pawn> pawnsById = new Dictionary<string, Pawn>(StringComparer.Ordinal);
+            AddCreepJoinerWriter(result, pawnsById, subject, exactSpeaker: false, isSubject: true,
+                onMap: subject.Spawned, nearby: subject.Spawned, distanceSquared: 0);
+            Pawn speaker = tracker.speaker;
+            AddCreepJoinerWriter(result, pawnsById, speaker, exactSpeaker: true,
+                isSubject: ReferenceEquals(speaker, subject),
+                onMap: speaker != null && speaker.Spawned && speaker.Map == subject.Map,
+                nearby: false,
+                distanceSquared: speaker != null && speaker.Spawned && subject.Spawned
+                    && speaker.Map == subject.Map
+                    ? (speaker.Position - subject.Position).LengthHorizontalSquared : -1);
+
+            Map map = subject.MapHeld;
+            IReadOnlyList<Pawn> mapPawns = map?.mapPawns?.AllPawnsSpawned;
+            int inspected = Math.Min(
+                mapPawns?.Count ?? 0,
+                AnomalyPolicyLimits.MaximumCreepJoinerCandidateInputs);
+            long radiusSquared = (long)Math.Max(1, witnessRadius) * Math.Max(1, witnessRadius);
+            for (int i = 0; i < inspected; i++)
+            {
+                Pawn candidate = mapPawns[i];
+                if (candidate == null || candidate.Map != map || !candidate.Spawned
+                    || !DiaryGameComponent.IsDiaryEligible(candidate)) continue;
+                int distanceSquared = (candidate.Position - subject.Position).LengthHorizontalSquared;
+                AddCreepJoinerWriter(
+                    result,
+                    pawnsById,
+                    candidate,
+                    exactSpeaker: ReferenceEquals(candidate, speaker),
+                    isSubject: ReferenceEquals(candidate, subject),
+                    onMap: true,
+                    nearby: distanceSquared >= 0 && distanceSquared <= radiusSquared,
+                    distanceSquared: distanceSquared);
+            }
+
+            capture = result;
+            return true;
+        }
+
+        /// <summary>Verifies the private marker and visible post-state after normal vanilla return.</summary>
+        internal static bool TryCompleteCreepJoinerOutcome(
+            object trackerObject,
+            CreepJoinerOutcomeCapture capture,
+            out CreepJoinerOutcomeFacts facts)
+        {
+            facts = null;
+            Pawn_CreepJoinerTracker tracker = trackerObject as Pawn_CreepJoinerTracker;
+            if (!ModsConfig.AnomalyActive || capture?.facts == null || tracker == null
+                || !ReferenceEquals(tracker, capture.tracker)
+                || !ReferenceEquals(tracker.Pawn, capture.subject)
+                || !string.Equals(
+                    tracker.Pawn?.GetUniqueLoadID(), capture.facts.pawnId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            bool rejectionAfter;
+            bool aggressionAfter;
+            bool departureAfter;
+            if (!TryReadCreepJoinerFlags(
+                tracker, out rejectionAfter, out aggressionAfter, out departureAfter)) return false;
+
+            CreepJoinerOutcomeFacts committed = capture.facts;
+            committed.nestedOutcomeOwnedByRejection = !capture.ownsRejectionScope
+                && CreepJoinerOutcomeScope.OwnsRejection(committed.pawnId);
+            if (committed.phase == AnomalyOutcomeTokens.Rejected)
+            {
+                committed.transitioned = !capture.rejectionCommittedBefore && rejectionAfter;
+                committed.transitionVerified = capture.methodAllowedBefore && committed.transitioned;
+            }
+            else if (committed.phase == AnomalyOutcomeTokens.Aggressive)
+            {
+                committed.transitioned = !capture.aggressionCommittedBefore && aggressionAfter;
+                committed.transitionVerified = capture.methodAllowedBefore && committed.transitioned;
+            }
+            else
+            {
+                committed.transitioned = !capture.departureCommittedBefore && departureAfter;
+                Pawn pawn = tracker.Pawn;
+                bool leftPlayer = pawn != null && pawn.Faction?.IsPlayer != true && !pawn.IsColonist;
+                bool exiting = pawn?.GetLord()?.LordJob is LordJob_ExitMapBest;
+                committed.transitionVerified = capture.methodAllowedBefore && committed.transitioned
+                    && leftPlayer && exiting;
+            }
+
+            committed.playerVisible = capture.visibleResponseExpected;
+            facts = committed;
+            return true;
+        }
+
+        /// <summary>Captures current joined player creepjoiners for a silent one-time A2 baseline.</summary>
+        internal static CreepJoinerLegacyBaselineFacts CaptureCreepJoinerLegacyBaseline()
+        {
+            CreepJoinerLegacyBaselineFacts facts = new CreepJoinerLegacyBaselineFacts
+            {
+                anomalyAvailable = ModsConfig.AnomalyActive
+            };
+            if (!facts.anomalyAvailable) return facts;
+
+            IEnumerable<Pawn> pawns = PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive;
+            if (pawns == null) return facts;
+            int inspected = 0;
+            foreach (Pawn pawn in pawns)
+            {
+                if (inspected++ >= AnomalyPolicyLimits.MaximumCreepJoinerArcInputs) break;
+                try
+                {
+                    Pawn_CreepJoinerTracker tracker = pawn?.creepjoiner;
+                    if (pawn == null || tracker == null || !pawn.IsCreepJoiner
+                        || pawn.Faction?.IsPlayer != true || !pawn.IsColonist
+                        || tracker.joinedTick < 0) continue;
+                    facts.currentJoined.Add(new CreepJoinerArcSnapshot
+                    {
+                        pawnId = pawn.GetUniqueLoadID(),
+                        joinedTick = tracker.joinedTick,
+                        lastVisiblePhase = CreepJoinerPhaseTokens.Joined,
+                        schemaVersion = AnomalyPersistencePolicy.CurrentCreepJoinerArcSchemaVersion
+                    });
+                }
+                catch (Exception exception)
+                {
+                    Log.WarningOnce(
+                        "[Pawn Diary] Anomaly creepjoiner baseline skipped one unreadable pawn: "
+                            + exception.GetType().Name + ": " + exception.Message,
+                        "PawnDiary.Anomaly.CreepJoinerBaseline".GetHashCode());
+                }
+            }
+
+            return facts;
+        }
+
+        private static FieldInfo BooleanField(Type type, string name, BindingFlags flags)
+        {
+            FieldInfo field = type?.GetField(name, flags);
+            return field != null && field.FieldType == typeof(bool) ? field : null;
+        }
+
+        private static bool TryReadCreepJoinerFlags(
+            Pawn_CreepJoinerTracker tracker,
+            out bool rejected,
+            out bool aggressive,
+            out bool left)
+        {
+            rejected = false;
+            aggressive = false;
+            left = false;
+            if (tracker == null) return false;
+            if (creepJoinerTriggeredRejectionField != null)
+                rejected = (bool)creepJoinerTriggeredRejectionField.GetValue(tracker);
+            if (creepJoinerTriggeredAggressiveField != null)
+                aggressive = (bool)creepJoinerTriggeredAggressiveField.GetValue(tracker);
+            if (creepJoinerHasLeftField != null)
+                left = (bool)creepJoinerHasLeftField.GetValue(tracker);
+            return true;
+        }
+
+        private static void AddCreepJoinerWriter(
+            CreepJoinerOutcomeCapture capture,
+            Dictionary<string, Pawn> pawnsById,
+            Pawn pawn,
+            bool exactSpeaker,
+            bool isSubject,
+            bool onMap,
+            bool nearby,
+            int distanceSquared)
+        {
+            if (capture == null || pawn == null || !DiaryGameComponent.IsDiaryEligible(pawn)) return;
+            string pawnId = pawn.GetUniqueLoadID();
+            if (string.IsNullOrWhiteSpace(pawnId)) return;
+            capture.facts.writers.Add(new CreepJoinerWriterCandidate
+            {
+                pawnId = pawnId,
+                eligible = true,
+                exactSpeaker = exactSpeaker,
+                subject = isSubject,
+                onSubjectMap = onMap,
+                nearby = nearby,
+                distanceSquared = distanceSquared,
+                tieBreakKey = pawnId
+            });
+            if (!pawnsById.ContainsKey(pawnId))
+            {
+                pawnsById.Add(pawnId, pawn);
+                capture.writerPawns.Add(pawn);
+            }
+        }
+
         /// <summary>
         /// Copies only the cheap exact before-state for one live <c>CompStudyUnlocks.OnStudied</c>
         /// call. Visible labels and surroundings are intentionally deferred until vanilla proves a

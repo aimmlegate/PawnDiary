@@ -1,6 +1,6 @@
 # Pawn Diary - Maintainer Guide
 
-Last updated: 2026-07-19
+Last updated: 2026-07-20
 
 Related files:
 
@@ -48,15 +48,15 @@ repo for development, but the Workshop payload omits source code and other devel
 | `LoadFolders.xml` | Normal 1.6 load roots plus the RimTest-only development test assembly gate. |
 | `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
 | `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
-| `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts, Royalty persona/permit policy, and Anomaly study/context/monolith/containment/Tale-ownership policy plus the A1 catalog envelope. |
-| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including exact-author Anomaly study and containment-breach signals, Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, lossless quick-aid raid ownership, and exact-root Royal Ascent quest fanout. |
+| `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts, Royalty persona/permit policy, and Anomaly study/context/monolith/containment/Tale-ownership plus visible creepjoiner continuity/writer policy and the shared catalog envelope. |
+| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including exact-author Anomaly study, containment-breach, and visible creepjoiner-outcome signals, Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, lossless quick-aid raid ownership, and exact-root Royal Ascent quest fanout. |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
-| `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue, and additive Anomaly study/monolith persistence plus the detached study transaction owner and conservative pre-A1 baselining. Also `PawnMemoryRepository` (per-pawn memory store; inert until the memory wiring lands). |
-| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Anomaly study/codex/containment/monolith capture, the scoped containment call stack, separate lifecycle-cleared study/Tale and recent-studier caches, Odyssey location/mobile-home/lifecycle, and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
+| `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue, and additive Anomaly study/monolith/visible-creepjoiner persistence plus detached transaction owners and conservative pre-A1/pre-A2 baselining. Also `PawnMemoryRepository` (per-pawn memory store; inert until the memory wiring lands). |
+| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Anomaly study/codex/containment/monolith/creepjoiner capture, scoped containment/rejection ownership, separate lifecycle-cleared study/Tale and recent-studier caches, Odyssey location/mobile-home/lifecycle, and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
 | `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including the explicit zero-candidate N3-A provider seam), Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/` (inert until wired). |
 | `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
-| `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, the optional Anomaly monolith-knowledge snapshot, and the `MemoryFragment` pawn-memory row. |
-| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, defensive exact Anomaly study and containment-escape seams, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment/permit seams and state-transition-guarded Quest lifecycle hooks. |
+| `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, the optional Anomaly monolith-knowledge snapshot, visible-only creepjoiner arc rows, and the `MemoryFragment` pawn-memory row. |
+| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, defensive exact Anomaly study, containment-escape, and creepjoiner rejection/aggression/departure seams, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment/permit seams and state-transition-guarded Quest lifecycle hooks. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper projects plus the optional in-game `PawnDiary.RimTest` smoke suite. |
@@ -1588,6 +1588,7 @@ it onto the bus.
 | ArcReflection | Sleep/rest flush + major psylink/xenotype progression trigger | `ArcReflectionSignal` (memory aggregation flush) | solo yearly arc reflection |
 | Quest | transition-guarded `Quest.Accept`/`End` + state scan | `QuestFanoutSignal` | ordinary completion/failure fan-out; exact Royal Ascent uses one stable witness and a start window |
 | Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out; XML group guidance plus role/perspective instruction. Anomaly's 16 installed psychic rituals route exactly into invitation, flesh/weather, predation, mind, abduction, or death-refusal guidance before the generic modded fallback. |
+| AnomalyEvent | Exact study completion, containment escape, and creepjoiner rejection/aggression/departure seams | `AnomalyStudySignal` / `ContainmentBreachSignal` / `CreepJoinerOutcomeSignal` | one verified visible page, with source-specific ownership and deterministic witness selection |
 | Death | `Pawn.Kill` + death TaleDefs | `DeathFallbackSignal` (+ Tale death routes) | neutral description |
 | Arrival | Starting scan + `Pawn.SetFaction` | `ArrivalSignal` | neutral description |
 | External | `PawnDiaryApi.SubmitEvent` / `SubmitPromptEntry` (other mods) | `ExternalEventSignal` | solo / pair |
@@ -1616,6 +1617,7 @@ it onto the bus.
 | Event windows | `IncidentWorker.TryExecute`, `Quest` lifecycle, `Thing.SpawnSetup`, `SignalAction_Letter`, `CompProximityLetter`, `Building_VoidMonolith.Activate`, `Pawn_AgeTracker.BirthdayBiological`, `Pawn_HealthTracker.AddHediff`, `PrisonBreakUtility.StartPrisonBreak` | XML starts/ends narrative windows or one-shot events, writes phase entries, and can bias prompts while active. A Def may also attach an optional plain `narrativeEvidence` template after a page exists; exact deliberate monolith levels use this without authorizing extra pages, while timer-driven activation stays silent because vanilla supplies a random colonist rather than a truthful actor. |
 | Observed conditions | Periodic live-state scan (map danger, active game conditions, evidence things, pawn hediffs) | Lasting states read from live state, not a guessed duration: bias prompts while present, optionally record start/end pages, and end after a debounce when live state stops showing them (Plan 12; see §5.1). |
 | Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
+| Anomaly study, containment, and creepjoiner outcomes | Exact guarded Anomaly lifecycle hooks | One verified visible study milestone, involuntary breach, or creepjoiner rejection/aggression/departure page. State advances independently of output; hidden downside/benefit identity is never saved or prompted, and every path no-ops without Anomaly. |
 | Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry, scaled by the shared random-generation setting. |
 | Day reflections | Sleep/rest trigger | One reflective page per pawn/day when important signals exist. Near the end of a quadrum, a pawn with enough important entries may write one longer quadrum reflection instead; that skips the ordinary daily reflection for that night. |
 | Arc reflections | Sleep/rest trigger and major psylink/xenotype progression trigger | Rare yearly life-arc page per pawn, with optional extra major-event pages after the configured gap up to `arcReflectionMaxEntriesPerYear` (default 2). The sleep/rest annual check is gated by `arcReflectionEnabled`, not by day summaries. It samples existing hot/archive diary pages from the current year, de-duplicates by event ID, excludes prior reflections/death descriptions/recently used memories, and never stores a separate history fact database. |
@@ -1672,17 +1674,19 @@ normalized defaults, and verifies that snapshots are independent. A manual main-
 passed that read-only fixture as part of 46/46 tests which do not require a colony; 245 loaded-game
 fixtures correctly rejected the absent game, so the full 291-test loaded-colony run remains pending.
 
-**Anomaly catalog, persistence, study, and containment capture (Master Wave 7 / A1.1–A1.4).** `DiaryEventType.AnomalyEvent`
+**Anomaly catalog, persistence, study, containment, and visible creepjoiner capture (Master Wave 7 / A1.1–A2.0).** `DiaryEventType.AnomalyEvent`
 now has one registered `AnomalyEventSpec` and detached common envelope. It is not a generic truth
 policy: source-specific planners must still prove the exact kind. Final dispatch accepts only one of
 the five frozen kind/Def pairs, a verified and player-visible source, a safe stable source key, a
 non-replayed tick, enabled settings/signal policy, and one or two distinct eligible writer IDs. Its
-dedup key is shared by both POV writers. A1.2 study and A1.3 containment breach are the two live
-producers for this route; the other three source kinds remain unregistered until their scheduled phases.
+dedup key is shared by both POV writers. A1.2 study, A1.3 containment breach, and A2.0 visible
+creepjoiner outcome are the three live producers for this route; ghoul and terminal-void sources remain
+unregistered until their scheduled phases.
 
-`DiaryGameComponent.Anomaly.cs` adds the six frozen Scribe keys for schema version, first-study
+`DiaryGameComponent.Anomaly.cs` owns seven frozen Scribe keys for schema version, first-study
 observation, completed studied Def names, promoted milestone keys, the monolith baseline level, and
-one optional deep-scribed monolith knowledge snapshot. Pure normalization removes malformed rows,
+one optional deep-scribed monolith knowledge snapshot, plus `anomalyCreepJoinerArcs`. Pure
+normalization removes malformed rows,
 sorts/de-duplicates and caps both histories at 4,096, inspects at most the first 4,096 input rows even
 when a corrupt save contains only duplicates or invalid values, rejects oversized stable identities
 atomically instead of truncating them into collision-prone save keys, validates promotion grammar/
@@ -1781,18 +1785,62 @@ future exact source may add narrow ownership only when it supplies both identiti
 and remain silent. No production UI trigger was added; vanilla's existing dev-only `DEV: Escape`
 gizmo continues to exercise the same seam.
 
-The A1.4 adversarial delivery pass raises focused coverage to 404
-Anomaly-policy/XML/cache/context and 84 save-normalization assertions; the new cases pin batched recent-
+A2.0 extends the save schema from study version 1 to current version 2 with a bounded deep-scribed
+`anomalyCreepJoinerArcs` list. Every `CreepJoinerArcState` has exactly seven primitive fields:
+`pawnId`, optional canonical `arrivalEventId`, `joinedTick`, `lastVisiblePhase`, optional
+`lastVisibleEventId`, `terminal`, and per-row `schemaVersion`. There is no slot for a benefit,
+downside, rejection/aggression Def, worker, private trigger/countdown, hidden host/infection, or future
+form. Load normalization inspects at most 4,096 inputs, retains at most 512 deterministically sorted
+rows, drops null/blank/malformed/negative-tick records, merges duplicate pawn IDs with a stable phase
+rank, rewrites nonterminal unknown phases to state-only `joined`, and treats unknown future row schemas
+as terminal replay barriers without interpreting their phase/event ID. Terminal rows are not pruned
+merely because the XML retention interval elapsed: A2.0 prefers replay safety until exact event-
+reference/liveness evidence can prove a row disposable.
+
+An active pre-A2 loaded save performs one guarded scan of alive map/caravan/travelling-transport pawns.
+Only current player-colonist creepjoiners become state-only `joined` rows; the baseline imports no
+arrival ID, outcome, secret, or causal claim and creates no page. Anomaly-inactive loads leave study
+schema 1 pending so a later enabled load can baseline safely. New games start at schema 2, repeated
+initialization is idempotent, and all new/load/final-init lifecycle resets clear the tiny process-static
+rejection owner stack. The existing `ArrivalSignal` remains the sole acceptance-page owner: exact
+`creepjoiner=true` context upserts joined continuity before output gates, and attaches the arrival event
+ID only after the canonical arrival page actually exists. A repeated arrival neither duplicates state
+nor creates a second acceptance page.
+
+`DiaryAnomalyPatches` independently resolves and registers the exact public parameterless `void`
+methods `Pawn_CreepJoinerTracker.DoRejection()`, `DoAggressive()`, and `DoLeave()` while Anomaly is
+active. Cached private markers verify false-to-true rejection/aggression/departure commits after vanilla
+returns. Missing signatures/fields, exceptions, forbidden/no-op/repeated transitions, or unverifiable
+post-state warn once where appropriate, preserve vanilla behavior, and create no page. `DoDownside()`
+is deliberately unpatched. Its nested exact aggressive/departure call owns the visible page naturally;
+the one special synchronous `DoRejection()` owner suppresses its nested exact response so rejection
+emits once and always unwinds in the postfix/finalizer.
+
+The pure A2.0 policy commits terminal visible history before considering settings or generation, then
+selects at most one event-time POV without RNG. A pre-join rejection/departure prefers the exact eligible
+speaker and otherwise the closest eligible witness within the XML radius; a joined departure may use
+only the subject's eligible pre-transition snapshot before falling back to a nearby witness; aggression
+uses only a nearby eligible witness and never the now-hostile subject. Candidate inspection stops at
+4,096, retains at most 512 strongest exact/nearby rows before stable ordering, and emits one writer even
+though the frozen XML maximum remains defensively clamped to two. Prompt/event context is limited to
+the generic visible phase/result, stable subject ID and captured visible label, truthful writer role,
+and terminal marker. Localized fallback likewise describes only rejection, open hostility, or leaving;
+it cannot expose motives, future outcomes, hidden mechanics, or raw private state.
+
+The A2.0 delivery raises focused coverage to 472
+Anomaly-policy/XML/cache/context and 115 save-normalization assertions. The A1.4 cases still pin batched recent-
 studier matching, ordering equivalence when a large eligible roster is capped, and a strict input-
-inspection bound for malformed saved histories. The 708 catalog and 135 Narrative suites remain green.
-The runtime DLL and 316-test RimTest assembly build against the installed 1.6
-API; compiled smoke coverage pins the five Def/package/classifier rows plus the exact study and
-containment target/platform signatures. Three loaded fixtures additionally drive the actual six-key
-component Scribe contract, missing-key defaults, deep snapshot, DLC-off deferred migration,
+inspection bound for malformed saved histories; A2.0 adds all three visible phases, arrival continuity,
+terminal/settings behavior, role/cap ordering, spoiler-firewall formatting, malformed/duplicate/future
+arc normalization, and active/inactive old-save baselines. The 708 catalog and 135 Narrative suites
+remain green. The runtime DLL and 323-test RimTest assembly build against the installed 1.6 API.
+Compiled smoke coverage pins the five Def/package/classifier rows plus exact study, containment, and
+creepjoiner method/signature ownership. Three loaded state fixtures additionally drive the actual
+seven-key component Scribe contract, missing-key defaults, deep monolith/creepjoiner rows, DLC-off deferred migration,
 DLC-on one-time loaded-map baseline, and transient load reset. Those A1.1 fixtures executed green:
 1/1 passed, 0 failed in the no-Anomaly main-menu classifier profile; user-confirmed 3/3 passed,
 0 failed in a loaded no-Anomaly colony; and user-confirmed 3/3 passed, 0 failed in a loaded
-Anomaly-active colony. The 7/7 results cover exact classification, real six-key Scribe, missing
+Anomaly-active colony. The 7/7 results cover exact classification, the then-current six-key Scribe, missing
 defaults, deferred/off migration, one-time/on baseline, and transient reset. The later user-confirmed
 315/315 Anomaly-active full-suite result corresponds to the unchanged 315-fixture assembly whose source
 inventory contains all ten A1.2 study fixtures, including delayed exact-job ownership and missing-level
@@ -1813,10 +1861,12 @@ passed 314 fixtures, including the newly added direct scope-state fixture. Its s
 false-positive test assertion: a valid localized visible label happened to contain the entity's
 stable Def name. The fixture now requires exact equality with the localized visible-label-only
 fallback. The user-confirmed corrected Anomaly-active rerun passed all 315 compiled fixtures,
-including all ten containment fixtures. A1.4 adds one blank-visible-label fallback fixture, so a new
-Anomaly-active 316-fixture run is still required for that case. The separate Anomaly-inactive profile
-and a real process-boundary save/reload remain manual in-game rows; neither is claimed from builds or
-pure tests. Exact operator steps live in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
+including all ten containment fixtures. The user subsequently confirmed the complete automated
+Anomaly-active 316-fixture A1.4 run green; this is aggregate user-confirmed evidence, not a preserved
+per-method runner log. A2.0 adds seven compiled loaded fixtures but no in-game pass is claimed for
+them. Three external/manual profiles remain explicitly deferred: a separate Anomaly-inactive run,
+disposable missing study/containment-hook compatibility profiles, and a real process-boundary save/
+reload. Exact operator steps live in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,
@@ -1842,6 +1892,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; the main-thread builder snapshots it before fixed-order pure provider selection. The repetition policy is live: every narrative-capable source feeds the selector the POV pawn's most recent persisted selection keys (newest hot pages, then archive rows, bounded by `maxRecentSelectedCandidateKeys`), so `repetitionPenalty` dampens re-picking the same lens while exact-arc continuations stay exempt via `exactArcRepetitionPenalty` |
 | `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory plus mature-birth/miscarriage matchers, supporter thresholds/caps, naming timing, family retention, two-writer birth cap, pending-growth/pending-birth admission limits, Phase-5 gene category/theme/text/observation/fallback-significance policy, N3-B salient-gene identity prose, and Phase-6 mechanitor combat Tale roles/tenure/state caps; Phases 1–6, N2-B, and the first N3-B slice use these fields live |
+| `DiaryAnomalyPolicyDefs.xml` | A1 study/containment toggles, milestone rules, dedup/ownership/cache bounds, and A2.0 visible creepjoiner output/dedup/arc-retention/witness limits. All optional-DLC identifiers remain primitive strings, so the row loads safely without Anomaly. |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
 | `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |
 | `DiaryUiStyleDef.xml` / `DiaryTextDecorationDefs.xml` | UI dimensions/colors and display-only rich-text decoration |

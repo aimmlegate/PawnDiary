@@ -15,6 +15,8 @@
     <Compile Include="..\..\Source\Capture\Policies\AnomalyMonolithKnowledgePolicy.cs" Link="AnomalyMonolithKnowledgePolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\ContainmentBreachPolicy.cs" Link="ContainmentBreachPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\ContainmentBreachContextFormatter.cs" Link="ContainmentBreachContextFormatter.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\CreepJoinerOutcomePolicy.cs" Link="CreepJoinerOutcomePolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\CreepJoinerOutcomeContextFormatter.cs" Link="CreepJoinerOutcomeContextFormatter.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyTaleOwnershipPolicy.cs" Link="AnomalyTaleOwnershipPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyPersistencePolicy.cs" Link="AnomalyPersistencePolicy.cs" />
     <Compile Include="..\..\Source\Generation\AnomalyStudySuppressionCache.cs" Link="AnomalyStudySuppressionCache.cs" />

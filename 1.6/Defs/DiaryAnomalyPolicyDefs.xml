@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
-  <!-- Phase A1.0 freezes policy only. All identifiers are our own primitive strings; there are no
-       Anomaly Def references, so this row safely loads and remains inert when the DLC is absent. -->
+  <!-- A1-A2.0 policy. All identifiers are our own primitive strings; there are no Anomaly Def
+       references, so this row safely loads and remains inert when the DLC is absent. -->
   <PawnDiary.DiaryAnomalyPolicyDef>
     <defName>Diary_AnomalyPolicy</defName>
     <label>Anomaly narrative policy</label>
@@ -20,11 +20,12 @@
     <containmentDedupTicks>2500</containmentDedupTicks>
     <recentStudierMaxAgeTicks>60000</recentStudierMaxAgeTicks>
 
-    <!-- Later Anomaly phases consume these frozen defaults. A1.0 registers no corresponding hook. -->
+    <!-- A2.0 consumes the creepjoiner rows; ghoul/void remain frozen for later phases. -->
     <creepJoinerEnabled>true</creepJoinerEnabled>
     <creepJoinerOutcomeDedupTicks>2500</creepJoinerOutcomeDedupTicks>
     <creepJoinerArcRetentionTicks>3600000</creepJoinerArcRetentionTicks>
     <creepJoinerMaxWitnesses>2</creepJoinerMaxWitnesses>
+    <creepJoinerWitnessRadius>12</creepJoinerWitnessRadius>
     <ghoulTransformationEnabled>true</ghoulTransformationEnabled>
     <voidOutcomeEnabled>true</voidOutcomeEnabled>
     <taleOwnershipMaxDepth>8</taleOwnershipMaxDepth>

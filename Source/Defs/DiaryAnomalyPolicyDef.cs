@@ -33,12 +33,12 @@ namespace PawnDiary
         public int containmentDedupTicks = 2500;
         public int recentStudierMaxAgeTicks = 60000;
 
-        // These later-phase switches and lifetimes are frozen now with the shared policy schema;
-        // Phase A1.0 does not register any creepjoiner, ghoul, or void runtime behavior.
+        // Phase A2.0 consumes the creepjoiner rows; ghoul/void remain frozen for later phases.
         public bool creepJoinerEnabled = true;
         public int creepJoinerOutcomeDedupTicks = 2500;
         public int creepJoinerArcRetentionTicks = 3600000;
         public int creepJoinerMaxWitnesses = AnomalyPolicyLimits.MaximumCreepJoinerWitnesses;
+        public int creepJoinerWitnessRadius = AnomalyPolicyLimits.DefaultCreepJoinerWitnessRadius;
         public bool ghoulTransformationEnabled = true;
         public bool voidOutcomeEnabled = true;
         public int taleOwnershipMaxDepth = AnomalyPolicyLimits.DefaultTaleOwnershipDepth;
@@ -70,6 +70,9 @@ namespace PawnDiary
             if (creepJoinerMaxWitnesses < 1
                 || creepJoinerMaxWitnesses > AnomalyPolicyLimits.MaximumCreepJoinerWitnesses)
                 yield return "creepJoinerMaxWitnesses must be one or two.";
+            if (creepJoinerWitnessRadius < 1
+                || creepJoinerWitnessRadius > AnomalyPolicyLimits.MaximumWitnessRadius)
+                yield return "creepJoinerWitnessRadius is outside the defensive supported range.";
             if (taleOwnershipMaxDepth < 1
                 || taleOwnershipMaxDepth > AnomalyPolicyLimits.MaximumTaleOwnershipDepth)
                 yield return "taleOwnershipMaxDepth is outside the defensive supported range.";
@@ -132,6 +135,7 @@ namespace PawnDiary
                 creepJoinerOutcomeDedupTicks = source.creepJoinerOutcomeDedupTicks,
                 creepJoinerArcRetentionTicks = source.creepJoinerArcRetentionTicks,
                 creepJoinerMaxWitnesses = source.creepJoinerMaxWitnesses,
+                creepJoinerWitnessRadius = source.creepJoinerWitnessRadius,
                 ghoulTransformationEnabled = source.ghoulTransformationEnabled,
                 voidOutcomeEnabled = source.voidOutcomeEnabled,
                 taleOwnershipMaxDepth = source.taleOwnershipMaxDepth,

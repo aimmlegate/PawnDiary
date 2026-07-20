@@ -55,6 +55,12 @@ namespace PawnDiary.Ingestion
                 // RecordColonistArrival capture order (drops if an arrival page already exists).
                 HasExistingArrival = DiaryGameComponent.Instance?.HasArrivalEventFor(pawnId) ?? false,
             };
+
+            // The arrival route is the sole owner of creepjoiner acceptance continuity. State is
+            // observed before catalog/settings gates so disabling pages cannot manufacture a later
+            // catch-up event; no arrival event ID is stored until Emit actually creates that page.
+            DiaryGameComponent.Instance?.ObserveCreepJoinerArrival(
+                pawn, arrivalContext, createdArrivalEventId: null);
         }
 
         public override DiaryEventData Payload => payload;
@@ -83,6 +89,8 @@ namespace PawnDiary.Ingestion
 
             DiaryEvent arrivalEvent = sink.AddSoloEvent(pawn, null, ArrivalDefName, label, text, string.Empty,
                 ArrivalEventData.BuildGameContext(payload.PawnLabel, payload.PawnLoadId, payload.ArrivalContext));
+            if (arrivalEvent != null)
+                sink.ObserveCreepJoinerArrival(pawn, arrivalContext, arrivalEvent.eventId);
             sink.QueueArrivalDescriptionFor(arrivalEvent);
         }
     }

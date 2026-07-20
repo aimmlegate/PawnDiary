@@ -36,6 +36,8 @@ namespace PawnDiary.RimTests
         private static readonly FieldInfo MonolithSnapshotField =
             typeof(DiaryGameComponent).GetField(
                 "anomalyLastMonolithKnowledgeSnapshot", PrivateInstance);
+        private static readonly FieldInfo CreepJoinerArcsField =
+            typeof(DiaryGameComponent).GetField("anomalyCreepJoinerArcs", PrivateInstance);
         private static readonly MethodInfo ExposeAnomalyDataMethod =
             typeof(DiaryGameComponent).GetMethod("ExposeAnomalyData", PrivateInstance);
 
@@ -514,6 +516,7 @@ namespace PawnDiary.RimTests
             public List<string> promotionKeys;
             public string monolithBaseline;
             public AnomalyMonolithKnowledgeState monolithSnapshot;
+            public List<CreepJoinerArcState> creepJoinerArcs;
 
             public static RawAnomalyState Capture(DiaryGameComponent component)
             {
@@ -525,7 +528,9 @@ namespace PawnDiary.RimTests
                     promotionKeys = PromotionKeysField.GetValue(component) as List<string>,
                     monolithBaseline = MonolithBaselineField.GetValue(component) as string,
                     monolithSnapshot = MonolithSnapshotField.GetValue(component)
-                        as AnomalyMonolithKnowledgeState
+                        as AnomalyMonolithKnowledgeState,
+                    creepJoinerArcs = CreepJoinerArcsField.GetValue(component)
+                        as List<CreepJoinerArcState>
                 };
             }
 
@@ -533,7 +538,7 @@ namespace PawnDiary.RimTests
             {
                 if (component == null) return;
                 SetRawState(component, schemaVersion, firstBreakthrough, completedDefNames,
-                    promotionKeys, monolithBaseline, monolithSnapshot);
+                    promotionKeys, monolithBaseline, monolithSnapshot, creepJoinerArcs);
             }
         }
 
@@ -544,7 +549,8 @@ namespace PawnDiary.RimTests
             List<string> completedDefNames,
             List<string> promotionKeys,
             string monolithBaseline,
-            AnomalyMonolithKnowledgeState monolithSnapshot)
+            AnomalyMonolithKnowledgeState monolithSnapshot,
+            List<CreepJoinerArcState> creepJoinerArcs = null)
         {
             SchemaVersionField.SetValue(component, schemaVersion);
             FirstBreakthroughField.SetValue(component, firstBreakthrough);
@@ -552,6 +558,7 @@ namespace PawnDiary.RimTests
             PromotionKeysField.SetValue(component, promotionKeys);
             MonolithBaselineField.SetValue(component, monolithBaseline);
             MonolithSnapshotField.SetValue(component, monolithSnapshot);
+            CreepJoinerArcsField.SetValue(component, creepJoinerArcs);
         }
 
         private static void RemoveFixtureLetters()
@@ -574,6 +581,7 @@ namespace PawnDiary.RimTests
                     && PromotionKeysField != null
                     && MonolithBaselineField != null
                     && MonolithSnapshotField != null
+                    && CreepJoinerArcsField != null
                     && ExposeAnomalyDataMethod != null,
                 "Could not resolve the production Anomaly state/Scribe wiring.");
         }

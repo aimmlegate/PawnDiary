@@ -1563,7 +1563,7 @@
   <PawnDiary.Ctx.GravshipHome>aboard the gravship {0}</PawnDiary.Ctx.GravshipHome>
   <PawnDiary.Ctx.GravshipHomeAt>aboard the gravship {0} at {1}</PawnDiary.Ctx.GravshipHomeAt>
 
-  <!-- Anomaly A1-A3 exact-source fallback prose. A1.1 freezes localization; live sources follow. -->
+  <!-- Anomaly A1-A3 exact-source prose. A1 and A2.0 are live; later keys remain reserved. -->
   <PawnDiary.Event.Anomaly.Study.Label>Anomaly study breakthrough</PawnDiary.Event.Anomaly.Study.Label>
   <PawnDiary.Event.Anomaly.Study.Fallback>{0} reached a genuine breakthrough while studying {1}.</PawnDiary.Event.Anomaly.Study.Fallback>
   <PawnDiary.Event.Anomaly.Study.UnknownSubject>an anomalous subject</PawnDiary.Event.Anomaly.Study.UnknownSubject>
@@ -1572,6 +1572,10 @@
   <PawnDiary.Event.Anomaly.Containment.UnknownSubject>an escaped entity</PawnDiary.Event.Anomaly.Containment.UnknownSubject>
   <PawnDiary.Event.Anomaly.CreepJoiner.Label>Visible strange-arrival outcome</PawnDiary.Event.Anomaly.CreepJoiner.Label>
   <PawnDiary.Event.Anomaly.CreepJoiner.Fallback>{0} witnessed the visible outcome for {1}: {2}.</PawnDiary.Event.Anomaly.CreepJoiner.Fallback>
+  <PawnDiary.Event.Anomaly.CreepJoiner.SubjectDeparted>{0} began leaving the colony.</PawnDiary.Event.Anomaly.CreepJoiner.SubjectDeparted>
+  <PawnDiary.Event.Anomaly.CreepJoiner.Result.Rejected>rejected the offer to join</PawnDiary.Event.Anomaly.CreepJoiner.Result.Rejected>
+  <PawnDiary.Event.Anomaly.CreepJoiner.Result.Aggressive>became openly hostile</PawnDiary.Event.Anomaly.CreepJoiner.Result.Aggressive>
+  <PawnDiary.Event.Anomaly.CreepJoiner.Result.Departed>began leaving</PawnDiary.Event.Anomaly.CreepJoiner.Result.Departed>
   <PawnDiary.Event.Anomaly.Ghoul.Label>Ghoul transformation</PawnDiary.Event.Anomaly.Ghoul.Label>
   <PawnDiary.Event.Anomaly.Ghoul.SubjectFallback>{0} underwent the completed infusion and became a ghoul.</PawnDiary.Event.Anomaly.Ghoul.SubjectFallback>
   <PawnDiary.Event.Anomaly.Ghoul.SurgeonFallback>{0} completed the infusion that transformed {1} into a ghoul.</PawnDiary.Event.Anomaly.Ghoul.SurgeonFallback>
