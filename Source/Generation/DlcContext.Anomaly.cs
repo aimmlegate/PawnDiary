@@ -28,6 +28,8 @@ namespace PawnDiary
         internal readonly List<AnomalyWriterCandidate> writerFacts =
             new List<AnomalyWriterCandidate>();
         internal readonly List<Pawn> writerPawns = new List<Pawn>();
+        // The broader bounded roster lets nested platforms recompute distance/recent-study roles.
+        internal readonly List<Pawn> candidatePawns = new List<Pawn>();
     }
 
     /// <summary>Guarded Anomaly accessors for save baselines and exact study callbacks.</summary>
@@ -77,6 +79,28 @@ namespace PawnDiary
             int recentStudierMaxAgeTicks,
             out AnomalyContainmentEscapeCapture capture)
         {
+            return TryCaptureAnomalyContainmentBefore(
+                targetObject,
+                recentStudierMaxAgeTicks,
+                AnomalyPolicyLimits.DefaultWitnessRadius,
+                includePreEjectionSetting: true,
+                candidatePool: null,
+                out capture);
+        }
+
+        /// <summary>
+        /// Captures one containment call with the outer policy snapshot. Nested calls reuse the
+        /// outer call's already-filtered, bounded pawn pool and skip the outer-only surroundings read;
+        /// this keeps a same-room cascade from repeatedly scanning and sorting every spawned pawn.
+        /// </summary>
+        internal static bool TryCaptureAnomalyContainmentBefore(
+            object targetObject,
+            int recentStudierMaxAgeTicks,
+            int witnessRadius,
+            bool includePreEjectionSetting,
+            IReadOnlyList<Pawn> candidatePool,
+            out AnomalyContainmentEscapeCapture capture)
+        {
             capture = null;
             if (!ModsConfig.AnomalyActive) return false;
 
@@ -115,18 +139,19 @@ namespace PawnDiary
                     platformZ = position.z,
                     escaped = false
                 },
-                preEjectionSetting = DiaryContextBuilder.BuildSurroundingsSummaryAt(map, position)
+                preEjectionSetting = includePreEjectionSetting
+                    ? BuildOptionalContainmentSetting(map, position)
+                    : string.Empty
             };
 
-            List<Pawn> candidates = map.mapPawns?.AllPawnsSpawned == null
-                ? new List<Pawn>() : new List<Pawn>(map.mapPawns.AllPawnsSpawned);
-            candidates.Sort((left, right) => string.CompareOrdinal(
-                left?.GetUniqueLoadID() ?? string.Empty,
-                right?.GetUniqueLoadID() ?? string.Empty));
-            for (int i = 0;
-                i < candidates.Count
-                    && result.writerFacts.Count < AnomalyPolicyLimits.MaximumContainmentCandidates;
-                i++)
+            IReadOnlyList<Pawn> candidates = candidatePool;
+            if (candidates == null) candidates = map.mapPawns?.AllPawnsSpawned;
+            List<AnomalyWriterCandidate> detachedCandidates =
+                new List<AnomalyWriterCandidate>();
+            Dictionary<string, Pawn> pawnsById =
+                new Dictionary<string, Pawn>(StringComparer.Ordinal);
+            int candidateCount = candidates?.Count ?? 0;
+            for (int i = 0; i < candidateCount; i++)
             {
                 Pawn candidate = candidates[i];
                 if (candidate == null || !candidate.Spawned || candidate.Map != map
@@ -136,9 +161,9 @@ namespace PawnDiary
                 }
 
                 string pawnId = candidate.GetUniqueLoadID();
-                if (string.IsNullOrWhiteSpace(pawnId)) continue;
+                if (string.IsNullOrWhiteSpace(pawnId) || pawnsById.ContainsKey(pawnId)) continue;
                 int distanceSquared = (candidate.Position - position).LengthHorizontalSquared;
-                result.writerFacts.Add(new AnomalyWriterCandidate
+                detachedCandidates.Add(new AnomalyWriterCandidate
                 {
                     pawnId = pawnId,
                     eligible = true,
@@ -151,11 +176,57 @@ namespace PawnDiary
                     distanceBucket = distanceSquared,
                     tieBreakKey = pawnId
                 });
-                result.writerPawns.Add(candidate);
+                pawnsById.Add(pawnId, candidate);
+            }
+
+            // The pure policy applies role, distance, and stable-ID ordering before the cap. This
+            // prevents a large modded colony's arbitrary map-pawn order from hiding the best writer.
+            List<AnomalyWriterCandidate> bounded =
+                ContainmentBreachPolicy.BoundWriterCandidates(
+                    detachedCandidates,
+                    witnessRadius,
+                    AnomalyPolicyLimits.MaximumContainmentCandidates);
+            for (int i = 0; i < bounded.Count; i++)
+            {
+                AnomalyWriterCandidate candidate = bounded[i];
+                Pawn pawn;
+                if (!pawnsById.TryGetValue(candidate.pawnId, out pawn)) continue;
+                result.writerFacts.Add(candidate);
+                result.writerPawns.Add(pawn);
+            }
+
+            List<AnomalyWriterCandidate> pooled =
+                ContainmentBreachPolicy.BoundCandidatePool(
+                    detachedCandidates,
+                    witnessRadius,
+                    AnomalyPolicyLimits.MaximumContainmentCandidates);
+            for (int i = 0; i < pooled.Count; i++)
+            {
+                Pawn pawn;
+                if (pawnsById.TryGetValue(pooled[i].pawnId, out pawn))
+                    result.candidatePawns.Add(pawn);
             }
 
             capture = result;
             return true;
+        }
+
+        private static string BuildOptionalContainmentSetting(Map map, IntVec3 position)
+        {
+            try
+            {
+                return DiaryContextBuilder.BuildSurroundingsSummaryAt(map, position);
+            }
+            catch (Exception exception)
+            {
+                // Surroundings are optional enrichment. A broken modded room/weather/beauty getter
+                // must not erase a verified escape; the page simply continues without setting text.
+                Log.WarningOnce(
+                    "[Pawn Diary] Containment breach surroundings could not be read and were omitted: "
+                        + exception.GetType().Name + ": " + exception.Message,
+                    "PawnDiary.Anomaly.Containment.OptionalSetting".GetHashCode());
+                return string.Empty;
+            }
         }
 
         /// <summary>

@@ -173,7 +173,14 @@ namespace PawnDiary
                     completion.facts, completion.policy);
                 if (!plan.writePage) return;
                 List<Pawn> writers = completion.ResolveWriters(plan);
-                if (writers.Count != plan.selectedWriters.Count) return;
+                if (writers.Count != plan.selectedWriters.Count)
+                {
+                    Log.WarningOnce(
+                        "[Pawn Diary] A verified containment breach was skipped because its captured "
+                            + "writer identities could not be resolved consistently.",
+                        "PawnDiary.Anomaly.Containment.WriterResolution".GetHashCode());
+                    return;
+                }
                 DiaryInteractionGroupDef group = InteractionGroups.ClassifyAnomalyEvent(
                     AnomalyEventDefNames.ContainmentBreach);
                 DiaryEvents.Submit(new AnomalyContainmentBreachSignal(

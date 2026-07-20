@@ -20,7 +20,7 @@ namespace PawnDiary.Capture
             List<string> parts = new List<string>();
             Add(parts, AnomalyContextKeys.Kind, AnomalyKindTokens.ContainmentBreach);
             Add(parts, AnomalyContextKeys.EscapedCount, plan.escapedCount.ToString());
-            Add(parts, AnomalyContextKeys.EscapedEntities, EntitySummary(plan));
+            Add(parts, AnomalyContextKeys.EscapedEntities, PromptEntitySummary(plan));
             if (plan.additionalEscapedCount > 0)
             {
                 Add(parts, AnomalyContextKeys.AdditionalEscapedCount,
@@ -46,8 +46,8 @@ namespace PawnDiary.Capture
             return string.Join("; ", parts.ToArray());
         }
 
-        /// <summary>Returns the same bounded visible entity list used by fallback event text.</summary>
-        public static string EntitySummary(ContainmentBreachPlan plan)
+        /// <summary>Returns bounded visible labels plus stable Def names for structured prompt context.</summary>
+        public static string PromptEntitySummary(ContainmentBreachPlan plan)
         {
             if (plan?.contextEntities == null) return string.Empty;
             List<string> entities = new List<string>();
@@ -61,6 +61,24 @@ namespace PawnDiary.Capture
                     ? label + " [" + defName + "]"
                     : label.Length > 0 ? label : defName;
                 if (value.Length > 0) entities.Add(value);
+            }
+            return string.Join(", ", entities.ToArray());
+        }
+
+        /// <summary>
+        /// Returns only player-visible entity labels for localized fallback/UI text. Stable Def names
+        /// remain useful structured schema evidence, but raw identifiers never belong in player text.
+        /// </summary>
+        public static string VisibleEntitySummary(ContainmentBreachPlan plan)
+        {
+            if (plan?.contextEntities == null) return string.Empty;
+            List<string> entities = new List<string>();
+            for (int i = 0; i < plan.contextEntities.Count; i++)
+            {
+                string label = Context(
+                    plan.contextEntities[i]?.visibleLabel,
+                    MaximumEntityCharacters);
+                if (label.Length > 0) entities.Add(label);
             }
             return string.Join(", ", entities.ToArray());
         }

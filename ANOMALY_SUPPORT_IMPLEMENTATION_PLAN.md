@@ -903,8 +903,12 @@ It must not contain:
 
 The containment breach owns the initial escape fact. Within its configured correlation window:
 
-- suppress a generic entity-assault/raid row only when it represents the same escaped entity and
-  same start tick;
+- A1.3 suppresses only the exact replay of its own map/start-tick/outer-entity source key. Vanilla
+  `Escape(bool)` emits no entity-bearing Tale or raid row, and the current generic raid/thought
+  adapters cannot prove both the escaped entity and the same start tick, so they deliberately fail
+  open instead of applying a broad same-tick ban;
+- if a later source contract exposes that exact entity/start identity, A1.4 or the source's own phase
+  may add a bounded ownership seam and suppress only the proven matching restatement;
 - let later actual injuries, deaths, kidnappings, fires, or mental breaks record normally;
 - do not suppress an observed condition merely because the entity is still present—the condition
   is ongoing atmosphere, not a second breach page;
@@ -1113,7 +1117,7 @@ their normal policies. The ownership window must not broadly suppress every void
 | Monolith reaches Stirring/Waking/VoidAwakened | Exact activation window | Generic activation window and same reached-level restatement | Later level, consequence, quest, study, terminal outcome |
 | First/complete entity study milestone | A1 `AnomalyEvent` study page | Matching end-of-job `StudiedEntity` Tale only when the dedicated page was accepted | Later distinct entity-kind completion, actual entity behavior |
 | Monolith study note | State-only knowledge snapshot | No page to suppress | Next activation consumes enrichment |
-| Several entities escape one room | One A1 containment-breach event | Nested escape calls, same-start assault/letter/thought restatements when exact | Later injuries, deaths, raids, ongoing observed atmosphere |
+| Several entities escape one room | One A1 containment-breach event | Nested escape calls and exact self-replay; future same-start restatements only after an entity/start contract exists | Current generic rows fail open; later injuries, deaths, raids, ongoing observed atmosphere |
 | Intentional release | No A1 page | Nothing | Later consequences under normal sources |
 | Creepjoiner joins | Existing arrival | Any proposed separate acceptance page | Later visible arc outcome |
 | Surgical inspection discloses creepjoiner truth | A2 creepjoiner outcome | Matching `DidSurgery` Tale | Later visible downside or departure |
@@ -1544,7 +1548,7 @@ not succeed.
 
 ### Phase A1.3 — Containment breach
 
-**Status (2026-07-20): implemented and staged for adversarial review.** The exact Anomaly-active
+**Status (2026-07-20): implemented and adversarially hardened.** The exact Anomaly-active
 `Escape(bool initiator)` seam now has a defensive prefix/postfix/finalizer registration. One bounded,
 reentrancy-safe outer scope aggregates verified nested same-room escape calls; a separate detached
 recent-study cache preserves truthful writer correlation after Tale ownership is consumed. Pure and
@@ -1555,8 +1559,8 @@ roofed structures. Their allocator validates the complete holding-platform footp
 non-overlapping margins, and rejects map-edge, pawn, edifice, destructive-wipe, and occupied-platform
 placements; failed setup cannot be masked by teardown. The first loaded attempts exposed the former
 indoor-room and center-only placement assumptions. The corrected user-confirmed Anomaly-active loaded
-rerun passed 9/9 with 0 failures; only the separate Anomaly-inactive profile remains in the manual
-DLC-off matrix.
+rerun passed the original 9/9 with 0 failures; the new direct scope-state fixture and separate
+Anomaly-inactive profile remain in the manual in-game matrix.
 
 - Add scoped aggregation around `Escape(bool)`.
 - Verify nested joins, intentional release silence, deterministic writers, and exception cleanup.

@@ -1567,7 +1567,8 @@
   <PawnDiary.Event.Anomaly.Study.Label>Anomaly study breakthrough</PawnDiary.Event.Anomaly.Study.Label>
   <PawnDiary.Event.Anomaly.Study.Fallback>{0} reached a genuine breakthrough while studying {1}.</PawnDiary.Event.Anomaly.Study.Fallback>
   <PawnDiary.Event.Anomaly.Containment.Label>Containment breach</PawnDiary.Event.Anomaly.Containment.Label>
-  <PawnDiary.Event.Anomaly.Containment.Fallback>{0} witnessed {1} break free from containment.</PawnDiary.Event.Anomaly.Containment.Fallback>
+  <PawnDiary.Event.Anomaly.Containment.Fallback>{0} recorded a containment breach involving {1}.</PawnDiary.Event.Anomaly.Containment.Fallback>
+  <PawnDiary.Event.Anomaly.Containment.UnknownSubject>an escaped entity</PawnDiary.Event.Anomaly.Containment.UnknownSubject>
   <PawnDiary.Event.Anomaly.CreepJoiner.Label>Visible strange-arrival outcome</PawnDiary.Event.Anomaly.CreepJoiner.Label>
   <PawnDiary.Event.Anomaly.CreepJoiner.Fallback>{0} witnessed the visible outcome for {1}: {2}.</PawnDiary.Event.Anomaly.CreepJoiner.Fallback>
   <PawnDiary.Event.Anomaly.Ghoul.Label>Ghoul transformation</PawnDiary.Event.Anomaly.Ghoul.Label>

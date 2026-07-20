@@ -1,7 +1,8 @@
-// Standalone no-RimWorld tests for Master Wave 7 / Anomaly Phases A1.0-A1.2. Linking only plain DTOs
+// Standalone no-RimWorld tests for Master Wave 7 / Anomaly Phases A1.0-A1.3. Linking only plain DTOs
 // and pure policies makes an accidental Verse, Unity, Harmony, DLC, or live-settings dependency a
 // compile-time failure.
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -859,9 +860,9 @@ namespace DiaryAnomalyPolicyTests
             AnomalyRecentStudyCache.Clear();
             AnomalyRecentStudyFact study = new AnomalyRecentStudyFact
             {
-                studierPawnId = "Pawn_A",
-                studiedEntityId = "Entity_A",
-                studiedDefName = "EntityDef_A",
+                studierPawnId = "  Pawn_A  ",
+                studiedEntityId = "  Entity_A  ",
+                studiedDefName = "  EntityDef_A  ",
                 studiedTick = 100
             };
             AssertTrue("recent exact study registers",
@@ -870,6 +871,14 @@ namespace DiaryAnomalyPolicyTests
                 AnomalyRecentStudyCache.Matches("Entity_A", "Pawn_A", 160, 60));
             AssertTrue("recent lookup remains non-consuming",
                 AnomalyRecentStudyCache.Matches("Entity_A", "Pawn_A", 160, 60));
+            List<AnomalyRecentStudyFact> normalized =
+                AnomalyRecentStudyCache.SnapshotForTests();
+            AssertEqual("recent cache normalizes studier identity once", "Pawn_A",
+                normalized[0].studierPawnId);
+            AssertEqual("recent cache normalizes entity identity once", "Entity_A",
+                normalized[0].studiedEntityId);
+            AssertEqual("recent cache normalizes optional Def identity once", "EntityDef_A",
+                normalized[0].studiedDefName);
             AssertTrue("recent entity mismatch fails",
                 !AnomalyRecentStudyCache.Matches("Entity_B", "Pawn_A", 160, 60));
             AssertTrue("recent studier mismatch fails",
@@ -993,6 +1002,34 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("negative cap falls back", 2,
                 ContainmentBreachPolicy.NormalizeWriterMaximum(-1));
 
+            List<AnomalyWriterCandidate> oversized = new List<AnomalyWriterCandidate>
+            {
+                Writer("Pawn_A_LowIdFallback", true, false, true, 400, "a"),
+                Writer("Pawn_Z_Recent", true, true, true, 225, "z"),
+                Writer("Pawn_Y_Nearby", true, false, true, 4, "y")
+            };
+            List<AnomalyWriterCandidate> bounded =
+                ContainmentBreachPolicy.BoundWriterCandidates(oversized, 12, 2);
+            AssertEqual("candidate cap retains requested size", 2, bounded.Count);
+            AssertEqual("candidate cap retains nearby before low-ID fallback",
+                "Pawn_Y_Nearby", bounded[0].pawnId);
+            AssertEqual("candidate cap retains recent studier before low-ID fallback",
+                "Pawn_Z_Recent", bounded[1].pawnId);
+
+            List<AnomalyWriterCandidate> nonHomePool =
+                ContainmentBreachPolicy.BoundCandidatePool(
+                    new List<AnomalyWriterCandidate>
+                    {
+                        Writer("Farther", true, false, false, 400, "z"),
+                        Writer("Closer", true, false, false, 225, "a")
+                    },
+                    12,
+                    1);
+            AssertEqual("nested pool retains an otherwise-unqualified eligible pawn",
+                1, nonHomePool.Count);
+            AssertEqual("nested pool uses distance before stable ID for unqualified pawns",
+                "Closer", nonHomePool[0].pawnId);
+
             facts = Breach();
             facts.witnesses[0].eligible = false;
             plan = ContainmentBreachPolicy.Plan(facts, null);
@@ -1054,6 +1091,17 @@ namespace DiaryAnomalyPolicyTests
                     && context.IndexOf("10,20", StringComparison.Ordinal) < 0);
             AssertTrue("containment context omits hidden mutant mechanics",
                 context.IndexOf("mutant", StringComparison.OrdinalIgnoreCase) < 0);
+            AssertEqual("visible fallback summary omits raw Def identity",
+                "Entity_A label", ContainmentBreachContextFormatter.VisibleEntitySummary(plan));
+
+            facts.entities[0].visibleLabel = new string('L', 160);
+            plan = ContainmentBreachPolicy.Plan(facts, policy);
+            string visible = ContainmentBreachContextFormatter.VisibleEntitySummary(plan);
+            AssertEqual("visible entity label is actually truncated", 120, visible.Length);
+            AssertTrue("prompt retains stable Def while visible summary does not",
+                ContainmentBreachContextFormatter.Format(plan).Contains("[EntityDef]")
+                    && !visible.Contains("EntityDef"));
+            facts.entities[0].visibleLabel = "Entity_A label";
 
             facts.witnesses.Add(Writer("Pawn_B", true, false, true, 9, "Pawn_B"));
             plan = ContainmentBreachPolicy.Plan(facts, null);

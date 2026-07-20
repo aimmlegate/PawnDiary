@@ -1703,7 +1703,8 @@ still hard-capped at 64, so interrupted exact-job rows cannot grow without bound
 does not overload that consume-once ownership cache: `AnomalyRecentStudyCache` retains a separate,
 non-consuming, bounded entity/studier/tick relationship after every exactly correlated study callback,
 including below-threshold work. It contains no live objects, expires by `recentStudierMaxAgeTicks`,
-caps at 512 defensive rows (128 by default), and clears at the same new-game/load boundaries. Five exact
+normalizes its detached IDs once on insertion/restore, caps at 512 defensive rows (128 by default),
+and clears at the same new-game/load boundaries. Five exact
 package-gated Interaction groups at orders 61–65 expose settings
 and localized prompt/fallback policy for study breakthrough, containment breach, visible creepjoiner
 outcome, ghoul transformation, and terminal void outcome. `ClassifyAnomalyEvent` requires an exact
@@ -1739,8 +1740,14 @@ Activation registration requires the exact `Find.Anomaly.LevelDef` getter, and a
 reached level leaves both baseline and remembered study context unchanged instead of falling back to
 the monolith building's ThingDef.
 
-The containment prefix snapshots the exact held entity, platform, map/cell, visible label/defName,
-pre-ejection surroundings, and bounded eligible writer evidence before vanilla changes parentage.
+The outer containment prefix snapshots the exact held entity, platform, map/cell, visible
+label/defName, pre-ejection surroundings, and bounded eligible writer evidence before vanilla changes
+parentage. The live adapter filters eligible pawns before retaining them, asks the pure writer policy
+to rank nearby/recent/fallback candidates before applying the 512-row defensive cap, and gives the
+bounded roster to the outer scope. Nested same-room calls reuse that roster and skip the outer-only
+surroundings read instead of copying and sorting the whole spawned-pawn list for every cascade member.
+Surroundings are optional enrichment: a throwing modded room/weather/temperature/beauty/condition
+getter warns once and yields an empty setting without discarding the verified breach.
 `ContainmentEscapeScopeStack` gives every call its own frame: `Escape(true)` owns an outer scope,
 vanilla's recursive same-room `Escape(false)` calls append to it, nested postfixes only verify and
 never emit, and the outer postfix closes the scope. Verification requires that the entity stopped
@@ -1755,14 +1762,20 @@ distance and stable pawn ID break ties, with no `Verse.Rand`. The formatted cont
 bounded escaped count/list, additional count, truthful per-POV witness role, pre-ejection setting, and
 same-room-cascade flag. Platform/map/cell identities, containment rolls, undiscovered codex or
 abilities, inventory, guessed causes, and claims that a witness caused the breach have no output path.
-The source key is the exact map/start-tick/outer-entity identity, so only a replay of that same outer
-escape is suppressed; later injuries, deaths, raids, mental breaks, and ongoing observed conditions
-remain available. `EjectContents`, `Notify_ReleasedFromPlatform`, held deaths, capture/placement, and
-save reconstruction are not patched and remain silent. No production UI trigger was added; vanilla's
-existing dev-only `DEV: Escape` gizmo continues to exercise the same seam.
+Structured prompt context may carry the stable entity Def name, while localized fallback/UI text uses
+only the bounded visible label and neutral “recorded” wording for nearby, recent-studier, and colony
+fallback authors alike. The source key is the exact map/start-tick/outer-entity identity, so only a
+replay of that same outer escape is suppressed. A1.3 deliberately adds no cross-source suppression:
+vanilla `Escape(bool)` records no entity-bearing Tale/raid row, and the current generic raid/thought
+contracts cannot prove the exact escaped entity plus start tick. Those routes therefore fail open;
+later injuries, deaths, raids, mental breaks, and ongoing observed conditions remain available. A
+future exact source may add narrow ownership only when it supplies both identities. `EjectContents`,
+`Notify_ReleasedFromPlatform`, held deaths, capture/placement, and save reconstruction are not patched
+and remain silent. No production UI trigger was added; vanilla's existing dev-only `DEV: Escape`
+gizmo continues to exercise the same seam.
 
-Focused suites now pass 387 Anomaly-policy/XML/cache/context, 708 catalog, 83 save-normalization, and 135
-Narrative assertions. The runtime DLL and 314-test RimTest assembly build against the installed 1.6
+Focused suites now pass 398 Anomaly-policy/XML/cache/context, 708 catalog, 83 save-normalization, and 135
+Narrative assertions. The runtime DLL and 315-test RimTest assembly build against the installed 1.6
 API; compiled smoke coverage pins the five Def/package/classifier rows plus the exact study and
 containment target/platform signatures. Three loaded fixtures additionally drive the actual six-key
 component Scribe contract, missing-key defaults, deep snapshot, DLC-off deferred migration,
@@ -1772,8 +1785,9 @@ DLC-on one-time loaded-map baseline, and transient load reset. Those A1.1 fixtur
 Anomaly-active colony. The 7/7 results cover exact classification, real six-key Scribe, missing
 defaults, deferred/off migration, one-time/on baseline, and transient reset. The ten A1.2 study
 fixtures—including delayed exact-job ownership and missing-level state preservation—are compiled but
-have not been executed in RimWorld, so compilation is not reported as an A1.2 runtime pass. Nine A1.3
-containment fixtures likewise compile against the installed API and invoke the real `Escape(bool)` seam.
+have not been executed in RimWorld, so compilation is not reported as an A1.2 runtime pass. Ten A1.3
+containment fixtures compile against the installed API; nine invoke the real `Escape(bool)` seam and
+one directly pins idempotent abort plus unhealthy out-of-order scope closure.
 Their map setup accepts any clean vanilla `Room`, including open terrain, because the production seam
 does not require a player-built or roofed room; it still rejects rooms containing an occupied holding
 platform. It validates every cell in the holding platform's loaded-Def footprint, reserves a margin
@@ -1781,8 +1795,9 @@ between simultaneous fixtures, and rejects placements that could cross the map e
 or edifice, or wipe an existing thing. A failed loaded-game precondition also leaves teardown inert so
 the original assertion remains visible. The first in-game attempts exposed the former indoor-room and
 center-only placement assumptions. The corrected user-confirmed Anomaly-active loaded rerun passed
-9/9 containment fixtures with 0 failures. The separate Anomaly-inactive profile remains a manual
-DLC-off matrix row rather than being inferred from this active-DLC pass.
+the original 9/9 containment fixtures with 0 failures. The newly added scope-state fixture and the
+separate Anomaly-inactive profile remain manual in-game rows rather than being inferred from that
+earlier active-DLC pass.
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,

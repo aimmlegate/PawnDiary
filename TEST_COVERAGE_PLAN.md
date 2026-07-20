@@ -189,18 +189,23 @@ state preservation. The RimTest assembly now contains 305 compiled tests. The
 new A1.2 fixtures have not been executed in RimWorld and remain a manual runtime task; compilation is
 not recorded as an in-game pass.
 
-Master Wave 7 / Anomaly A1.3 raises `DiaryAnomalyPolicyTests` to 387 assertions. The new pure cases
-cover the separate non-consuming recent-study cache (exact matching, expiry, cap, malformed input),
+Master Wave 7 / Anomaly A1.3 plus adversarial hardening raises `DiaryAnomalyPolicyTests` to 398
+assertions. The pure cases cover the separate non-consuming recent-study cache (exact matching,
+one-time ID normalization, expiry, cap, malformed input),
 hard-bounded containment aggregation, copied platform/map identity, per-POV witness-role formatting,
-delimiter sanitization, entity-label truncation, additional counts, and same-room flags.
-`PawnDiaryAnomalyContainmentFlowTests` adds nine compiled loaded cases, bringing the RimTest assembly
-to 314 tests. They audit Anomaly-off inertness and exact on-DLC prefix/postfix/finalizer ownership;
+delimiter sanitization, actual 120-character entity-label truncation, visible-summary/raw-Def
+separation, priority-before-cap writer retention, additional counts, and same-room flags.
+`PawnDiaryAnomalyContainmentFlowTests` now has ten compiled loaded cases, bringing the RimTest assembly
+to 315 tests. They audit Anomaly-off inertness and exact on-DLC prefix/postfix/finalizer ownership;
 invoke the real `CompHoldingPlatformTarget.Escape(bool)` for one escape and a forced vanilla recursive
-same-room join; reject nested duplicates; prove intentional `EjectContents`, release notification,
-and held-death ejection are silent; cover disabled group/policy and no-writer gates; verify nearby then
+same-room join; prove pure aggregation rejects duplicate entity identities; prove intentional
+`EjectContents`, release notification, and held-death ejection are silent; cover disabled group/policy
+and no-writer gates; verify nearby then
 exact-recent-studier selection, radius, two-writer cap, and truthful POV roles; pin exact narrow dedup;
-force a vanilla exception and prove finalizer recovery; and clear all transient state at lifecycle
-reset. The existing study fixture now proves a real below-threshold `OnStudied` callback leaves
+force a vanilla exception, prove the subject remained held, and then prove finalizer recovery; pin
+idempotent abort and unhealthy out-of-order scope closure; and clear all transient state at lifecycle
+reset. The visible event fixture also rejects raw entity Def names in localized fallback text. The
+existing study fixture now proves a real below-threshold `OnStudied` callback leaves
 non-consuming recent-study evidence and restores it after the test. `PawnDiaryDlcSafetyFixtureTests`
 pins the exact `Escape(bool initiator)` parameter name plus held/platform/ejection members. These A1.3
 fixtures compile against the installed RimWorld 1.6 and RimTest Redux assemblies. Their map setup uses
@@ -211,9 +216,9 @@ the 3x3 platform footprint. Failed loaded-game setup leaves both A1.2/A1.3 cache
 teardown cannot mask the original assertion. RimTest Redux provides no room/map-construction fixture
 helper, and vanilla `Escape(bool)` itself does not require a player-built or roofed room. The first
 loaded attempts exposed the former indoor-room and center-only placement assumptions. The corrected
-user-confirmed Anomaly-active loaded rerun passed all 9 containment fixtures with 0 failures. This is
-recorded as the A1.3 active-DLC runtime pass; the separate Anomaly-inactive profile remains a manual
-DLC-off matrix row.
+user-confirmed Anomaly-active loaded rerun passed the original 9 containment fixtures with 0 failures.
+The new tenth scope-state fixture has compiled but has not yet run in-game; the separate
+Anomaly-inactive profile also remains a manual DLC-off matrix row.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It

@@ -635,10 +635,10 @@
   <anomalyStudyBreakthrough.tones.0>любознательно и тревожно, вокруг точного открытия, а не скрытой механики</anomalyStudyBreakthrough.tones.0>
   <anomalyStudyBreakthrough.tones.1>увлечённо, но настороженно, сохраняя подлинную неизвестность всех последствий</anomalyStudyBreakthrough.tones.1>
   <anomalyContainmentBreach.label>Прорывы содержания аномалий</anomalyContainmentBreach.label>
-  <anomalyContainmentBreach.instruction>подтверждённый непреднамеренный прорыв содержания глазами точно указанной роли; используй лишь переданные сбежавшие сущности и видимую обстановку, не выдумывай халатность, саботаж, проверку содержания, скрытые силы, вину или участника намеренного освобождения</anomalyContainmentBreach.instruction>
+  <anomalyContainmentBreach.instruction>подтверждённый непреднамеренный прорыв содержания, записанный от лица автора с точно указанной ролью; используй лишь переданные сбежавшие сущности и видимую обстановку, не выдумывай халатность, саботаж, проверку содержания, скрытые силы, вину или участника намеренного освобождения</anomalyContainmentBreach.instruction>
   <anomalyContainmentBreach.tone>с немедленной тревогой и неизвестностью того, что освобождённые сущности сделают дальше</anomalyContainmentBreach.tone>
   <anomalyContainmentBreach.tones.0>срочно и опираясь на то, что вырвалось, без назначения причины или виновного</anomalyContainmentBreach.tones.0>
-  <anomalyContainmentBreach.tones.1>настороженно и телесно напряжённо, оставаясь в точном положении свидетеля</anomalyContainmentBreach.tones.1>
+  <anomalyContainmentBreach.tones.1>настороженно и телесно напряжённо, сохраняя точную связь автора с прорывом</anomalyContainmentBreach.tones.1>
   <anomalyCreepJoinerOutcome.label>Видимые исходы странных прибытий</anomalyCreepJoinerOutcome.label>
   <anomalyCreepJoinerOutcome.instruction>странный прибывший достиг одного точно видимого игроку исхода; опиши только переданные раскрытие, отказ, агрессию или уход и подтверждённую роль автора, не раскрывай скрытый недостаток, заражение, носителя, таймер, будущую трансформацию или ненаблюдаемый мотив</anomalyCreepJoinerOutcome.instruction>
   <anomalyCreepJoinerOutcome.tone>с потрясённым осознанием и строгой неизвестностью всего, что ещё скрыто</anomalyCreepJoinerOutcome.tone>

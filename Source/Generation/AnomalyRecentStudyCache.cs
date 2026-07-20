@@ -21,17 +21,18 @@ namespace PawnDiary
             int maximumAgeTicks,
             int maximumStudies = AnomalyPolicyLimits.DefaultRecentStudies)
         {
-            if (!Valid(study) || nowTick < study.studiedTick) return false;
+            AnomalyRecentStudyFact normalized = Clone(study);
+            if (!Valid(normalized) || nowTick < normalized.studiedTick) return false;
             int age = Window(maximumAgeTicks);
             Prune(nowTick, age);
-            string identity = Identity(study);
+            string identity = Identity(normalized);
             for (int i = Studies.Count - 1; i >= 0; i--)
             {
                 if (string.Equals(Identity(Studies[i]), identity, StringComparison.Ordinal))
                     Studies.RemoveAt(i);
             }
 
-            Studies.Add(Clone(study));
+            Studies.Add(normalized);
             int cap = maximumStudies < 1
                     || maximumStudies > AnomalyPolicyLimits.MaximumRecentStudies
                 ? AnomalyPolicyLimits.DefaultRecentStudies
@@ -55,8 +56,8 @@ namespace PawnDiary
             for (int i = Studies.Count - 1; i >= 0; i--)
             {
                 AnomalyRecentStudyFact row = Studies[i];
-                if (string.Equals(row.studiedEntityId.Trim(), entityId, StringComparison.Ordinal)
-                    && string.Equals(row.studierPawnId.Trim(), pawnId, StringComparison.Ordinal))
+                if (string.Equals(row.studiedEntityId, entityId, StringComparison.Ordinal)
+                    && string.Equals(row.studierPawnId, pawnId, StringComparison.Ordinal))
                 {
                     return true;
                 }
@@ -89,7 +90,8 @@ namespace PawnDiary
                 i < snapshot.Count && Studies.Count < AnomalyPolicyLimits.MaximumRecentStudies;
                 i++)
             {
-                if (Valid(snapshot[i])) Studies.Add(Clone(snapshot[i]));
+                AnomalyRecentStudyFact normalized = Clone(snapshot[i]);
+                if (Valid(normalized)) Studies.Add(normalized);
             }
         }
 
@@ -117,8 +119,8 @@ namespace PawnDiary
 
         private static string Identity(AnomalyRecentStudyFact study)
         {
-            return (study?.studiedEntityId ?? string.Empty).Trim() + "|"
-                + (study?.studierPawnId ?? string.Empty).Trim();
+            return (study?.studiedEntityId ?? string.Empty) + "|"
+                + (study?.studierPawnId ?? string.Empty);
         }
 
         private static AnomalyRecentStudyFact Clone(AnomalyRecentStudyFact source)
@@ -126,9 +128,9 @@ namespace PawnDiary
             if (source == null) return null;
             return new AnomalyRecentStudyFact
             {
-                studierPawnId = source.studierPawnId ?? string.Empty,
-                studiedEntityId = source.studiedEntityId ?? string.Empty,
-                studiedDefName = source.studiedDefName ?? string.Empty,
+                studierPawnId = (source.studierPawnId ?? string.Empty).Trim(),
+                studiedEntityId = (source.studiedEntityId ?? string.Empty).Trim(),
+                studiedDefName = (source.studiedDefName ?? string.Empty).Trim(),
                 studiedTick = source.studiedTick
             };
         }

@@ -1,5 +1,29 @@
 # Changelog
 
+- **2026-07-20 — Hardened A1.3 after combined adversarial review.** Localized containment fallback
+  text now says the selected pawn recorded the breach instead of claiming every nearby, recent
+  studier, or colony fallback personally witnessed it; player-visible fallback uses bounded entity
+  labels only, while stable Def names remain confined to structured prompt context. Missing labels
+  use a localized neutral subject. English/Russian Keyed and DefInjected policy text were updated.
+
+  The outer adapter now filters eligible pawns before retention, applies the pure role/distance order
+  before its 512-row defensive cap, and gives that bounded roster to nested same-room calls. Cascades
+  therefore avoid repeated full-map copies/sorts and nested surroundings work. Optional modded
+  surroundings failures warn once and omit only setting enrichment. Recent-study rows normalize IDs
+  once on insertion/restore, and writer-resolution drift now warns once instead of disappearing
+  silently. Cross-source breach suppression remains deliberately fail-open because vanilla escape
+  supplies no entity-bearing Tale/raid row and current generic raid/thought contracts cannot prove
+  exact escaped-entity/start identity; the plan now records that boundary instead of implying broad
+  suppression.
+
+  Pure coverage now passes 398 assertions, including priority-before-cap, cache normalization,
+  visible/raw entity separation, and real truncation. A new compiled RimTest pins idempotent abort and
+  unhealthy close cleanup; the exception fixture proves the subject remained held before retry, and
+  fallback rejects raw Def names. Core and the 315-test RimTest assemblies rebuild with no warnings.
+  The original user-confirmed active-DLC run remains 9/9; the new tenth scope fixture and separate
+  DLC-off profile still require in-game execution. No Scribe key, schema version, save migration, or
+  paid-DLC dependency changed.
+
 - **2026-07-20 — Hardened A1.3 RimTest map setup after its first loaded runs.** The containment
   fixture now selects any clean vanilla `Room`, including open terrain, matching the real
   `CompHoldingPlatformTarget.Escape(bool)` implementation's non-null-room requirement. It validates

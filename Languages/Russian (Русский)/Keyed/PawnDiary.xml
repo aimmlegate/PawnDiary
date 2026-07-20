@@ -1547,7 +1547,8 @@
   <PawnDiary.Event.Anomaly.Study.Label>Прорыв в изучении аномалии</PawnDiary.Event.Anomaly.Study.Label>
   <PawnDiary.Event.Anomaly.Study.Fallback>{0} совершает настоящий прорыв в изучении объекта «{1}».</PawnDiary.Event.Anomaly.Study.Fallback>
   <PawnDiary.Event.Anomaly.Containment.Label>Прорыв содержания</PawnDiary.Event.Anomaly.Containment.Label>
-  <PawnDiary.Event.Anomaly.Containment.Fallback>{0} видит, как {1} вырывается из содержания.</PawnDiary.Event.Anomaly.Containment.Fallback>
+  <PawnDiary.Event.Anomaly.Containment.Fallback>{0} отмечает прорыв содержания: {1}.</PawnDiary.Event.Anomaly.Containment.Fallback>
+  <PawnDiary.Event.Anomaly.Containment.UnknownSubject>неизвестная сбежавшая сущность</PawnDiary.Event.Anomaly.Containment.UnknownSubject>
   <PawnDiary.Event.Anomaly.CreepJoiner.Label>Видимый исход странного прибытия</PawnDiary.Event.Anomaly.CreepJoiner.Label>
   <PawnDiary.Event.Anomaly.CreepJoiner.Fallback>{0} наблюдает видимый исход для {1}: {2}.</PawnDiary.Event.Anomaly.CreepJoiner.Fallback>
   <PawnDiary.Event.Anomaly.Ghoul.Label>Превращение в гуля</PawnDiary.Event.Anomaly.Ghoul.Label>

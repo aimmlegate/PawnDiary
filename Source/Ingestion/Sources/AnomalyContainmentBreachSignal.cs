@@ -93,7 +93,12 @@ namespace PawnDiary.Ingestion
                 ? "PawnDiary.Event.Anomaly.Containment.Label".Translate().Resolve()
                 : group.LabelCap.Resolve();
             string instruction = InteractionGroups.InstructionForGroup(group);
-            string entitySummary = ContainmentBreachContextFormatter.EntitySummary(plan);
+            string entitySummary = ContainmentBreachContextFormatter.VisibleEntitySummary(plan);
+            if (string.IsNullOrWhiteSpace(entitySummary))
+            {
+                entitySummary = "PawnDiary.Event.Anomaly.Containment.UnknownSubject"
+                    .Translate().Resolve();
+            }
             string gameContext = ContainmentBreachContextFormatter.Format(plan);
 
             bool pair = decision == CaptureDecision.GeneratePair && writers.Count > 1;

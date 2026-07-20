@@ -67,6 +67,8 @@ namespace PawnDiary
             new Dictionary<string, Pawn>(StringComparer.Ordinal);
         internal readonly Dictionary<string, Pawn> escapedPawns =
             new Dictionary<string, Pawn>(StringComparer.Ordinal);
+        // Nested calls reuse this bounded outer roster instead of rescanning every map pawn.
+        internal readonly List<Pawn> candidatePawns = new List<Pawn>();
 
         internal ContainmentEscapeScope(AnomalyPolicySnapshot policy)
         {
@@ -103,6 +105,9 @@ namespace PawnDiary
             if (!DlcContext.TryCaptureAnomalyContainmentBefore(
                     targetObject,
                     policy.recentStudierMaxAgeTicks,
+                    policy.containmentWitnessRadius,
+                    includePreEjectionSetting: initiator,
+                    candidatePool: initiator ? null : scope.candidatePawns,
                     out capture))
             {
                 return null;
@@ -116,6 +121,7 @@ namespace PawnDiary
                 scope.facts.mapId = capture.entityFact.mapId;
                 scope.facts.outerEscape = true;
                 scope.facts.preEjectionSetting = capture.preEjectionSetting ?? string.Empty;
+                scope.candidatePawns.AddRange(capture.candidatePawns);
                 Scopes.Add(scope);
             }
             else if (capture.entityFact.mapId != scope.facts.mapId)

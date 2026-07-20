@@ -83,6 +83,56 @@ namespace PawnDiary.Capture
                 : configured;
         }
 
+        /// <summary>
+        /// Returns at most <paramref name="maximum"/> relevant detached candidates in the same
+        /// deterministic order used for final writer selection. The live adapter uses this before it
+        /// retains Pawn references, so a defensive cap cannot discard a nearby or recent-studier
+        /// candidate merely because a lower-priority colony pawn has an earlier load ID.
+        /// </summary>
+        public static List<AnomalyWriterCandidate> BoundWriterCandidates(
+            List<AnomalyWriterCandidate> source,
+            int radius,
+            int maximum)
+        {
+            return BoundCandidates(source, radius, maximum, includeUnqualified: false);
+        }
+
+        /// <summary>
+        /// Retains a bounded outer-call roster for nested platforms. Current-role candidates stay
+        /// first, followed by otherwise-unqualified eligible pawns ordered by distance, so a pawn who
+        /// is near only a later same-room escape is not lost on a non-home map.
+        /// </summary>
+        public static List<AnomalyWriterCandidate> BoundCandidatePool(
+            List<AnomalyWriterCandidate> source,
+            int radius,
+            int maximum)
+        {
+            return BoundCandidates(source, radius, maximum, includeUnqualified: true);
+        }
+
+        private static List<AnomalyWriterCandidate> BoundCandidates(
+            List<AnomalyWriterCandidate> source,
+            int radius,
+            int maximum,
+            bool includeUnqualified)
+        {
+            List<AnomalyWriterCandidate> result = new List<AnomalyWriterCandidate>();
+            if (maximum < 1 || source == null) return result;
+
+            int cap = Math.Min(maximum, AnomalyPolicyLimits.MaximumContainmentCandidates);
+            List<RankedCandidate> ranked =
+                RankCandidates(source, radius, includeUnqualified);
+            HashSet<string> selectedIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < ranked.Count && result.Count < cap; i++)
+            {
+                AnomalyWriterCandidate candidate = ranked[i].source;
+                string pawnId = candidate.pawnId.Trim();
+                if (selectedIds.Add(pawnId)) result.Add(candidate);
+            }
+
+            return result;
+        }
+
         private static bool ValidScope(ContainmentEscapeFacts facts)
         {
             return facts != null && facts.outerEscape && facts.tick >= 0 && facts.mapId >= 0
@@ -123,13 +173,36 @@ namespace PawnDiary.Capture
             int maximum,
             List<AnomalyWriterSelection> destination)
         {
-            List<RankedCandidate> ranked = new List<RankedCandidate>();
-            if (source == null)
+            List<RankedCandidate> ranked =
+                RankCandidates(source, radius, includeUnqualified: false);
+            HashSet<string> selectedIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < ranked.Count && destination.Count < maximum; i++)
             {
-                return;
-            }
+                RankedCandidate candidate = ranked[i];
+                string pawnId = candidate.source.pawnId.Trim();
+                if (!selectedIds.Add(pawnId))
+                {
+                    continue;
+                }
 
-            long radiusSquared = (long)radius * radius;
+                destination.Add(new AnomalyWriterSelection
+                {
+                    pawnId = pawnId,
+                    roleToken = candidate.roleToken
+                });
+            }
+        }
+
+        private static List<RankedCandidate> RankCandidates(
+            List<AnomalyWriterCandidate> source,
+            int radius,
+            bool includeUnqualified)
+        {
+            List<RankedCandidate> ranked = new List<RankedCandidate>();
+            if (source == null) return ranked;
+
+            int normalizedRadius = NormalizeWitnessRadius(radius);
+            long radiusSquared = (long)normalizedRadius * normalizedRadius;
             for (int i = 0; i < source.Count; i++)
             {
                 AnomalyWriterCandidate candidate = source[i];
@@ -158,6 +231,11 @@ namespace PawnDiary.Capture
                     roleRank = 2;
                     role = AnomalyWitnessRoleTokens.ColonyWitness;
                 }
+                else if (includeUnqualified)
+                {
+                    roleRank = 3;
+                    role = string.Empty;
+                }
                 else
                 {
                     continue;
@@ -172,22 +250,7 @@ namespace PawnDiary.Capture
             }
 
             ranked.Sort(Compare);
-            HashSet<string> selectedIds = new HashSet<string>(StringComparer.Ordinal);
-            for (int i = 0; i < ranked.Count && destination.Count < maximum; i++)
-            {
-                RankedCandidate candidate = ranked[i];
-                string pawnId = candidate.source.pawnId.Trim();
-                if (!selectedIds.Add(pawnId))
-                {
-                    continue;
-                }
-
-                destination.Add(new AnomalyWriterSelection
-                {
-                    pawnId = pawnId,
-                    roleToken = candidate.roleToken
-                });
-            }
+            return ranked;
         }
 
         private static int Compare(RankedCandidate left, RankedCandidate right)

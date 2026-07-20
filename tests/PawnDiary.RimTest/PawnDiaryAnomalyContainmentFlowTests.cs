@@ -182,6 +182,9 @@ namespace PawnDiary.RimTests
                 !page.gameContext.Contains(held.platform.GetUniqueLoadID())
                     && !page.gameContext.Contains(held.platform.Position.ToString()),
                 "Bounded context leaked a platform identity or exact position.");
+            PawnDiaryRimTestScope.Require(
+                !page.initiatorText.Contains(held.entity.def.defName),
+                "Localized containment fallback leaked the escaped entity's raw Def name.");
             RequireCleanScope();
         }
 
@@ -383,6 +386,10 @@ namespace PawnDiary.RimTests
             });
             PawnDiaryRimTestScope.Require(threw,
                 "The deliberately invalid vanilla container did not reach the Escape finalizer path.");
+            PawnDiaryRimTestScope.Require(held.target.CurrentlyHeldOnPlatform
+                    && held.platform.HeldPawn == held.entity,
+                "The exception fixture no longer held the entity, so a successful retry would not "
+                    + "prove finalizer recovery.");
             RequireCleanScope();
 
             DiaryEvent recovered = scope.FireAndRequireEvent(
@@ -392,6 +399,38 @@ namespace PawnDiary.RimTests
                 null,
                 rejectOtherTestPawnEvents: true);
             RequireContext(recovered, "escaped_count=1");
+            RequireCleanScope();
+        }
+
+        /// <summary>Repeated and out-of-order closes cannot leak or revive a containment scope.</summary>
+        [Test]
+        public static void ScopeClosureIsIdempotentAndRejectsAnUnhealthyOuterClose()
+        {
+            if (!RequireAnomalyOrReport(
+                nameof(ScopeClosureIsIdempotentAndRejectsAnUnhealthyOuterClose))) return;
+            HeldFixture held = CreateHeldFixture(FindCleanRoomCells(1)[0]);
+
+            ContainmentEscapeCallState aborted =
+                ContainmentEscapeScopeStack.Begin(held.target, initiator: true);
+            PawnDiaryRimTestScope.Require(aborted != null,
+                "Could not open the direct abort fixture scope.");
+            ContainmentEscapeScopeStack.Abort(aborted);
+            ContainmentEscapeScopeStack.Abort(aborted);
+            PawnDiaryRimTestScope.Require(
+                ContainmentEscapeScopeStack.Complete(aborted) == null,
+                "A completed abort frame was revived by a later close.");
+            RequireCleanScope();
+
+            ContainmentEscapeCallState outer =
+                ContainmentEscapeScopeStack.Begin(held.target, initiator: true);
+            ContainmentEscapeCallState nested =
+                ContainmentEscapeScopeStack.Begin(held.target, initiator: false);
+            PawnDiaryRimTestScope.Require(outer != null && nested != null,
+                "Could not open the direct unhealthy-close fixture frames.");
+            PawnDiaryRimTestScope.Require(
+                ContainmentEscapeScopeStack.Complete(outer) == null && nested.completed,
+                "Closing an outer frame ahead of its descendant did not reject and retire the scope.");
+            ContainmentEscapeScopeStack.Abort(nested);
             RequireCleanScope();
         }
 

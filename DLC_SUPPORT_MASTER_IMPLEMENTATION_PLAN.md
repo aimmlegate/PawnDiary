@@ -373,17 +373,15 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 
 ## 12. Wave 7 — Anomaly knowledge, containment, and reveal
 
-> **Progress (2026-07-20): A1.0–A1.1 code-complete; A1.2–A2.2 remain.** The primitive-only policy
-> Def, detached DTOs, pure study/containment/Tale-ownership planners, stable event/prompt tokens,
-> registered fail-closed catalog envelope, six-key normalized save baseline, lifecycle-cleared
-> bounded study/Tale cache, and five package-gated prompt groups are implemented. N3-A is wired as
-> an explicit zero-candidate provider, so persistence cannot invent prompt context before a verified
-> live source exists. Focused suites pass 320 Anomaly, 708 catalog, 83 save-normalization, and 135
-> Narrative assertions; runtime and 295-test RimTest assemblies build. The dedicated classifier is
-> exact-only and runtime-gated, while loaded fixtures cover the actual six-key Scribe contract and
-> DLC-off/deferred versus DLC-on/one-time legacy bootstrap. No Harmony registration,
-> signal, page, tick work, or hidden-state projection has moved ahead of A1.2/A1.3. The new compiled
-> no-DLC Def/signature and loaded-state coverage still awaits execution in RimWorld.
+> **Progress (2026-07-20): A1.0–A1.3 implemented and adversarially hardened; A1.4–A2.2 remain.** The
+> primitive policy, detached DTOs, exact study/containment hooks, fail-closed catalog route, six-key
+> normalized save baseline, lifecycle-cleared bounded caches, and five package-gated prompt groups
+> are implemented. N3-A remains an explicit zero-candidate provider. Focused suites pass 398 Anomaly,
+> 708 catalog, 83 save-normalization, and 135 Narrative assertions; runtime and 315-test RimTest
+> assemblies build. The exact-only classifier and both hooks are Anomaly-gated. Loaded A1.1 state
+> coverage and the original nine A1.3 containment fixtures have passed in their recorded profiles;
+> A1.2 execution, the new containment scope-state fixture, and the separate no-Anomaly A1.3 profile
+> remain manual rows. No A2 source or hidden-state projection has moved ahead of schedule.
 
 ### Implement in this exact order
 

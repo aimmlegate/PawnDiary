@@ -2729,11 +2729,11 @@
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Anomaly</li>
     </enableWhenPackageIdsLoaded>
-    <instruction>a verified involuntary containment breach witnessed from the supplied exact role; use only the escaped entities and visible setting supplied, never invent neglect, sabotage, a containment roll, hidden powers, blame, or an intentional release actor</instruction>
+    <instruction>a verified involuntary containment breach recorded from the supplied exact writer role; use only the escaped entities and visible setting supplied, never invent neglect, sabotage, a containment roll, hidden powers, blame, or an intentional release actor</instruction>
     <tone>with immediate alarm and uncertainty about what the escaped entities may do next</tone>
     <tones>
       <li>urgent and grounded in what broke free, without assigning cause or fault</li>
-      <li>watchful and bodily tense, holding to the witness&apos;s actual place in the breach</li>
+      <li>watchful and bodily tense, holding to the writer&apos;s actual relationship to the breach</li>
     </tones>
     <colorCue>danger</colorCue>
     <matchDefNames>

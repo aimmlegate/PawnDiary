@@ -524,10 +524,10 @@
   <anomalyStudyBreakthrough.tones.0>curious and unsettled, centered on the exact breakthrough rather than hidden mechanics</anomalyStudyBreakthrough.tones.0>
   <anomalyStudyBreakthrough.tones.1>intellectually absorbed but wary, keeping every unknown consequence genuinely unknown</anomalyStudyBreakthrough.tones.1>
   <anomalyContainmentBreach.label>Anomaly containment breaches</anomalyContainmentBreach.label>
-  <anomalyContainmentBreach.instruction>a verified involuntary containment breach witnessed from the supplied exact role; use only the escaped entities and visible setting supplied, never invent neglect, sabotage, a containment roll, hidden powers, blame, or an intentional release actor</anomalyContainmentBreach.instruction>
+  <anomalyContainmentBreach.instruction>a verified involuntary containment breach recorded from the supplied exact writer role; use only the escaped entities and visible setting supplied, never invent neglect, sabotage, a containment roll, hidden powers, blame, or an intentional release actor</anomalyContainmentBreach.instruction>
   <anomalyContainmentBreach.tone>with immediate alarm and uncertainty about what the escaped entities may do next</anomalyContainmentBreach.tone>
   <anomalyContainmentBreach.tones.0>urgent and grounded in what broke free, without assigning cause or fault</anomalyContainmentBreach.tones.0>
-  <anomalyContainmentBreach.tones.1>watchful and bodily tense, holding to the witness&apos;s actual place in the breach</anomalyContainmentBreach.tones.1>
+  <anomalyContainmentBreach.tones.1>watchful and bodily tense, holding to the writer&apos;s actual relationship to the breach</anomalyContainmentBreach.tones.1>
   <anomalyCreepJoinerOutcome.label>Visible strange-arrival outcomes</anomalyCreepJoinerOutcome.label>
   <anomalyCreepJoinerOutcome.instruction>a strange arrival reached one exact player-visible outcome; describe only the supplied disclosure, rejection, aggression, or departure and the writer&apos;s verified role, never reveal a hidden downside, infection, host identity, timer, future transformation, or unobserved motive</anomalyCreepJoinerOutcome.instruction>
   <anomalyCreepJoinerOutcome.tone>with shaken recognition and strict uncertainty about everything still concealed</anomalyCreepJoinerOutcome.tone>
