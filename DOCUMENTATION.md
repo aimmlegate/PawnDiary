@@ -2575,10 +2575,11 @@ Inspect-tab mode intentionally does not draw unread-page badges on the tab butto
 hidden and the bottom command button is active instead, that command still shows its unread/writing
 status overlay.
 
-Production UI shows completed pages. Each expanded non-archived page has a muted rewrite icon beside
-the model/provenance footer, so players can regenerate that page with the current model routing;
-pairwise pages rewrite both POVs when both are still eligible. Dev mode also shows pending/failure
-rows, raw prompt/status data, and copy buttons. Bulk dev actions live under RimWorld's Debug Actions
+Production UI shows completed pages. Each expanded page has a player-visible "Copy entry" action at
+the left of the footer line, and each expanded non-archived page has a muted rewrite icon beside the
+model/provenance footer on the right, so players can regenerate that page with the current model
+routing; pairwise pages rewrite both POVs when both are still eligible. Dev mode also shows
+pending/failure rows and raw prompt/status data (prompt-only cards copy the captured prompt). Bulk dev actions live under RimWorld's Debug Actions
 menu as `Pawn Diary > Event test panel...`, which opens a non-pausing sectioned dev panel for
 selecting a test pawn and partner. The same debug category also exposes
 `Pawn Diary > Export all diary pages...` for full hot/archive text export and
@@ -2643,8 +2644,25 @@ do not touch saved diary records during pawn
 selection; they read a transient per-pawn status cache. The new-page badge is backed by a saved
 per-pawn unread flag that is set when main LLM text finishes and cleared when that pawn's Diary tab
 opens, while writing dots reuse cached pending counts after the Diary tab finishes its sliced load.
-Archived pages use the same cards and dev copy controls as hot pages, but the normal rewrite icon is
-hidden because compact archive rows intentionally discard prompt/raw-response/retry state.
+Archived pages use the same cards and the same player-visible copy control as hot pages, but the
+normal rewrite icon is hidden because compact archive rows intentionally discard
+prompt/raw-response/retry state.
+
+**Wave C1 reading-quality treatments.** Three presentation-only touches (no change to saved history,
+sort order, or DLC independence). (1) **Season/quadrum dividers.** A slim centered
+"Aprimay · Spring · 5500" separator (icon-free) is drawn between the year's cards wherever the quadrum
+changes, computed by the pure-ish `DiaryQuadrumDivider` helper. The quadrum/year come from the saved
+tick (`GenDate.TickGameToAbs` → `GenDate.Quadrum`/`Year` at longitude 0, so they always agree with each
+card's printed date); the season is the conventional temperate-northern pairing (Aprimay=spring, …)
+using RimWorld's own localized `Season` labels. The Undated page (old saves with no in-game year) shows
+no dividers. The divider's reserved height is added to the virtual row offsets in the same sliced
+layout pass that measures cards, so the reserved and drawn geometry never disagree; sizes/colors are
+XML-tunable via `DiaryUiStyleDef` (`quadrumDivider*`). (2) **Player-visible copy.** The old dev-only,
+icon-only copy badge is now a labeled "Copy entry" action for all players, sharing a single footer line
+with the model-name provenance and the rewrite icon. (3) **Header date font.** The card header renders
+the date in a smaller in-game font (`GameFont.Tiny`) and a muted tone (`entryDateColor`) ahead of the
+title, which keeps its font, fade, and pulse. The pending-title dots animation and the date-only case
+are preserved.
 
 `DiaryTextFormat` escapes raw model rich text before applying safe formatting. Display-only text
 decorations and pawn-name highlights happen at render time; generated text is not mutated on save.

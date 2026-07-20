@@ -45,7 +45,6 @@ namespace PawnDiary
         public float ModelNameTopPadding;
         public float ModelNameHeight;
         public float DebugTextTopPadding;
-        public float DevFooterHeight;
         public DiaryRoleplayTextHeightCalculator RoleplayTextHeight;
     }
 
@@ -145,9 +144,6 @@ namespace PawnDiary
                 }
             }
 
-            // Reserve the dev-only footer so the bottom-left copy badge clears the model-name line.
-            // Outside dev mode the request passes 0 and production card heights are unchanged.
-            height += request.DevFooterHeight;
             return height;
         }
     }

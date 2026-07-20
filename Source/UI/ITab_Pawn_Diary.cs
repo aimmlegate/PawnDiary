@@ -31,6 +31,10 @@ namespace PawnDiary
         private float[] fullHeightsBuffer = new float[0];
         private float[] heightsBuffer = new float[0];
         private float[] entryOffsetsBuffer = new float[0];
+        // Non-null for entries that open a new quadrum: the localized "Aprimay · Spring · 5500" header
+        // drawn just above the card. Filled during the same layout pass that computes row offsets so
+        // the reserved divider space and the drawn divider can never disagree.
+        private string[] dividerLabelsBuffer = new string[0];
 
         // Virtualized scroll layout for the selected year. The ordered entry List is reused by
         // DiaryTabVisibleEntriesCache, so the cache key includes its revision/year in addition to the
@@ -60,6 +64,9 @@ namespace PawnDiary
         private int layoutBuildIndex;
         private float layoutBuildCurY;
         private bool layoutBuildAnimationSettled = true;
+        // Quadrum key of the previously laid-out row, carried across sliced layout frames so a divider
+        // is placed exactly at each quadrum change even when the build spans several frames.
+        private int layoutBuildPrevQuadrumKey = DiaryQuadrumDivider.UndatedKey;
 
         // Cached full (expanded) card heights. The helper owns the measured-height dictionary, while
         // this tab still decides when rows exist, whether they are expanded, and where they sit in the
@@ -119,6 +126,9 @@ namespace PawnDiary
         private static float DebugTextTopPadding => UiStyle.debugTextTopPadding;
         private static float EntryAccentWidth => UiStyle.entryAccentWidth;
         private static float EntryLabelMaxWidth => UiStyle.entryLabelMaxWidth;
+        private static float QuadrumDividerHeight => UiStyle.quadrumDividerHeight;
+        private static float QuadrumDividerTopGap => UiStyle.quadrumDividerTopGap;
+        private static float QuadrumDividerLineGap => UiStyle.quadrumDividerLineGap;
         private static float EntryFadeDurationSeconds => UiStyle.entryFadeDurationSeconds;
         private static float TitleFadeDurationSeconds => UiStyle.titleFadeDurationSeconds;
         private static float VirtualizedEntryOverscanHeight => UiStyle.VirtualizedEntryOverscanHeight;
@@ -560,6 +570,15 @@ namespace PawnDiary
                         break;
                     }
 
+                    // Season/quadrum divider sits in the reserved space just above this card. Drawn in
+                    // scroll-view coordinates (outside the per-card group) so it spans the full width.
+                    string dividerLabel = i < dividerLabelsBuffer.Length ? dividerLabelsBuffer[i] : null;
+                    if (!string.IsNullOrEmpty(dividerLabel))
+                    {
+                        Rect dividerRect = new Rect(0f, curY - QuadrumDividerHeight, viewRect.width, QuadrumDividerHeight);
+                        DrawQuadrumDivider(dividerRect, dividerLabel);
+                    }
+
                     Rect entryRect = new Rect(0f, curY, viewRect.width, height);
 
                     Color accentColor = EntryAccentColor(entry);
@@ -653,6 +672,11 @@ namespace PawnDiary
             if (entryOffsetsBuffer.Length < count)
             {
                 Array.Resize(ref entryOffsetsBuffer, count);
+            }
+
+            if (dividerLabelsBuffer.Length < count)
+            {
+                Array.Resize(ref dividerLabelsBuffer, count);
             }
         }
 
@@ -777,6 +801,7 @@ namespace PawnDiary
             layoutBuildIndex = 0;
             layoutBuildCurY = 0f;
             layoutBuildAnimationSettled = true;
+            layoutBuildPrevQuadrumKey = DiaryQuadrumDivider.UndatedKey;
         }
 
         private void ProcessEntryLayoutSlice(
@@ -825,6 +850,22 @@ namespace PawnDiary
                 float fullHeight = (expanded || expansionBlend > 0f)
                     ? CachedEntryHeight(entry, entryKey, viewWidth, showLlmDebugInfo, token, nameHighlights)
                     : CollapsedEntryHeight;
+
+                // Reserve a quadrum/season divider above this card when it opens a new quadrum. The
+                // Undated page (no in-game year) skips dividers entirely. The reserved space here must
+                // match exactly what DrawQuadrumDivider paints in the draw loop, so both read the same
+                // stored label and geometry.
+                int quadrumKey = selectedYear == UnknownYear
+                    ? DiaryQuadrumDivider.UndatedKey
+                    : DiaryQuadrumDivider.QuadrumKey(entry);
+                bool dividerAbove = DiaryQuadrumDivider.HasDividerAbove(layoutBuildPrevQuadrumKey, quadrumKey, i == 0);
+                dividerLabelsBuffer[i] = dividerAbove ? DiaryQuadrumDivider.Label(entry) : null;
+                layoutBuildPrevQuadrumKey = quadrumKey;
+                if (!string.IsNullOrEmpty(dividerLabelsBuffer[i]))
+                {
+                    // The first divider hugs the top; later ones get a small gap above their card.
+                    layoutBuildCurY += QuadrumDividerHeight + (i == 0 ? 0f : QuadrumDividerTopGap);
+                }
 
                 entryKeysBuffer[i] = entryKey;
                 expandedTargetsBuffer[i] = expanded;

@@ -238,7 +238,10 @@
   <PawnDiary.Tab.YearLabel>Year {0}</PawnDiary.Tab.YearLabel>
   <PawnDiary.Tab.UnknownYear>Undated</PawnDiary.Tab.UnknownYear>
   <PawnDiary.Tab.ExpandCollapseTip>Click the header to expand or collapse this page.</PawnDiary.Tab.ExpandCollapseTip>
-  <PawnDiary.Tab.CopyEntryTip>Dev-only: copy this page's text to the clipboard. Prompt-only cards copy the captured prompt; other cards copy the generated text.</PawnDiary.Tab.CopyEntryTip>
+  <!-- Quadrum/season divider header shown between the year's pages. {0}=quadrum, {1}=season, {2}=year. -->
+  <PawnDiary.Tab.QuadrumDivider>{0} · {1} · {2}</PawnDiary.Tab.QuadrumDivider>
+  <PawnDiary.Tab.CopyEntry>Copy entry</PawnDiary.Tab.CopyEntry>
+  <PawnDiary.Tab.CopyEntryTip>Copy this page's text to the clipboard.</PawnDiary.Tab.CopyEntryTip>
   <PawnDiary.Tab.CopyEntryCopied>Copied page text to clipboard.</PawnDiary.Tab.CopyEntryCopied>
   <PawnDiary.Tab.RegenerateEntryTip>Rewrite this page with the current model routing. Paired pages regenerate both POVs when available.</PawnDiary.Tab.RegenerateEntryTip>
   <PawnDiary.Tab.RegenerateEntryQueued>Queued page regeneration.</PawnDiary.Tab.RegenerateEntryQueued>

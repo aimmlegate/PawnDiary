@@ -1,5 +1,26 @@
 # Changelog
 
+- **2026-07-20 — Added Wave C1 diary reading-quality treatments (season dividers, player-visible copy,
+  header date font).** Three presentation-only changes to the pawn Diary tab; no change to saved
+  history, sort order, save schema, prompts, or DLC independence. (1) A slim centered, icon-free
+  "Aprimay · Spring · 5500" divider is now drawn between the year's cards wherever the quadrum changes.
+  A new pure-ish `DiaryQuadrumDivider` helper derives the quadrum/year from each entry's saved tick
+  (`GenDate.TickGameToAbs` → `GenDate.Quadrum`/`Year` at longitude 0, matching each card's printed
+  date) and pairs it with the conventional temperate-northern season using RimWorld's own localized
+  `Season` labels; the Undated page shows none. The divider's reserved height is added to the virtual
+  row offsets in the same sliced layout pass that measures cards, so the reserved and drawn geometry
+  cannot desync, and it is skipped correctly by the viewport virtualization. (2) The formerly dev-only,
+  icon-only copy badge is now a labeled "Copy entry" action visible to all players, sharing one footer
+  line with the model-name provenance and the rewrite icon (the separate dev copy-footer reservation is
+  gone). (3) The card header now renders the date in a smaller in-game font (`GameFont.Tiny`) and a
+  muted tone ahead of the title, which keeps its font, first-seen fade, accent pulse, pending-title
+  dots, and date-only handling. New XML-tunable `DiaryUiStyleDef` knobs: `quadrumDividerHeight`,
+  `quadrumDividerTopGap`, `quadrumDividerLineGap`, `entryDateColor`, `quadrumDividerLabelColor`,
+  `quadrumDividerLineColor`. New localized keys `PawnDiary.Tab.QuadrumDivider` and
+  `PawnDiary.Tab.CopyEntry` (English + Russian), and the copy tooltip is no longer marked dev-only. The
+  mod assembly rebuilds clean (0 warnings, 0 errors); RimWorld API signatures were reconfirmed against
+  the installed 1.6 `Assembly-CSharp.dll`. In-game visual confirmation of the redesigned tab is pending.
+
 - **2026-07-20 — Corrected two false-negative A2.0 loaded creepjoiner fixtures.** The first
   user-provided active 323-test run passed 321 and failed the rejection/aggression assertions after
   each test had already verified that exactly one new test-pawn event existed. Those outcomes are
