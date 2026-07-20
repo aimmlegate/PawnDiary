@@ -254,8 +254,12 @@ parameterless registration, deliberate absence of a `DoDownside` patch, canonica
 real visible rejection with nested `DoLeave` ownership, real aggression and joined departure, speaker/
 nearby/subject roles, repeat/no-op silence, and lifecycle reset. The existing component-state fixture
 now round-trips and independently deep-loads the seventh `anomalyCreepJoinerArcs` key. These A2.0
-fixtures compile against installed RimWorld 1.6 and RimTest Redux but have not been executed in-game;
-no pass is inferred from compilation. The same three deferred external profiles remain: separate
+fixtures compile against installed RimWorld 1.6 and RimTest Redux. The first user-provided active run
+passed 321/323 overall. Its two failures were false-negative rejection/aggression assertions: the
+shared guard had found exactly one new event, but `FireAndRequireEvent` was incorrectly told to match
+the visible creepjoiner as `recipientPawnId` on a solo witness page. Both fixtures now match the solo
+writer and independently require `creepjoiner_subject_id` in captured context; the corrected loaded
+rerun remains open. The same three deferred external profiles remain: separate
 Anomaly-inactive, disposable missing study/containment-hook compatibility, and real process-boundary
 save/reload.
 

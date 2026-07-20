@@ -1633,7 +1633,7 @@ profile remains in the manual in-game matrix.
 
 ### Phase A2.0 — Visible creepjoiner state
 
-> **Status (2026-07-20): implemented; focused loaded fixtures compile, in-game execution pending.**
+> **Status (2026-07-20): implemented; first active loaded run 321/323, corrected rerun pending.**
 > The canonical arrival now upserts one visible joined arc and attaches its event ID only after the
 > existing arrival page is created. Schema 2 deep-scribes only pawn/arrival/joined/visible-phase/
 > visible-event/terminal/version primitives; pure normalization covers malformed, duplicate, oversized,
@@ -1651,9 +1651,12 @@ profile remains in the manual in-game matrix.
 > Focused suites pass 472 Anomaly and 115 save-normalization assertions. Seven new loaded A2.0 fixtures
 > bring the RimTest assembly to 323 compiled tests and cover exact registration/no-`DoDownside`, one
 > canonical/repeated arrival, rejection-with-nested-departure once, aggression, joined departure,
-> disabled/no-op silence, role context, repeat suppression, and lifecycle cleanup. These seven are not
-> claimed as executed in-game. The user-confirmed A1.4 active 316 run is green aggregate evidence; the
-> separate Anomaly-inactive profile, missing study/containment-hook compatibility profiles, and real
+> disabled/no-op silence, role context, repeat suppression, and lifecycle cleanup. The first active run
+> passed 321/323 overall; its two failures were test-only recipient mismatches after each solo page had
+> already been counted. Rejection/aggression now assert a blank recipient role and the subject ID in
+> captured context; the corrected rerun is not yet claimed. The user-confirmed A1.4 active 316 run is
+> green aggregate evidence; the separate Anomaly-inactive profile, missing study/containment-hook
+> compatibility profiles, and real
 > process-boundary save/reload remain deferred.
 
 - [x] Add saved visible-only arc records and silent old-save baselining.

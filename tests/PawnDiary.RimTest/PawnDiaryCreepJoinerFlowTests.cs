@@ -176,15 +176,18 @@ namespace PawnDiary.RimTests
             Pawn speaker = CreateWriterAt(subject.Position);
             subject.creepjoiner.speaker = speaker;
 
+            // This is one speaker POV, not a pairwise page: the creepjoiner is frozen in the
+            // visible-only context below and therefore must not be expected as recipientPawnId.
             DiaryEvent page = scope.FireAndRequireEvent(
                 () => subject.creepjoiner.DoRejection(),
                 AnomalyEventDefNames.CreepJoinerOutcome,
                 speaker,
-                subject,
+                null,
                 rejectOtherTestPawnEvents: true);
             RequireContext(page, "creepjoiner_phase=rejected");
             RequireContext(page, "visible_result=rejected");
             RequireContext(page, "witness_role=speaker");
+            RequireContext(page, "creepjoiner_subject_id=" + subject.GetUniqueLoadID());
             CreepJoinerArcSnapshot arc = RequireOnlyArc(subject);
             PawnDiaryRimTestScope.Require(arc.terminal
                     && arc.lastVisiblePhase == AnomalyOutcomeTokens.Rejected
@@ -205,15 +208,18 @@ namespace PawnDiary.RimTests
             Pawn subject = CreateJoinedCreepJoiner("Departure");
             Pawn writer = CreateWriterAt(subject.Position);
 
+            // Hostility removes the subject from eligible POVs. The nearby colonist owns one solo
+            // page; the subject identity is asserted from captured context, not a recipient role.
             DiaryEvent page = scope.FireAndRequireEvent(
                 () => subject.creepjoiner.DoAggressive(),
                 AnomalyEventDefNames.CreepJoinerOutcome,
                 writer,
-                subject,
+                null,
                 rejectOtherTestPawnEvents: true);
             RequireContext(page, "creepjoiner_phase=aggressive");
             RequireContext(page, "visible_result=hostile");
             RequireContext(page, "witness_role=nearby");
+            RequireContext(page, "creepjoiner_subject_id=" + subject.GetUniqueLoadID());
             PawnDiaryRimTestScope.Require(subject.Faction?.IsPlayer != true
                     && RequireOnlyArc(subject).lastVisiblePhase == AnomalyOutcomeTokens.Aggressive,
                 "The exact aggression method did not commit its visible hostile transition.");

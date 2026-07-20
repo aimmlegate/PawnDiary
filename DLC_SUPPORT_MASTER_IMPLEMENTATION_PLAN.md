@@ -386,8 +386,11 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > the unchanged 315-fixture assembly whose source inventory contains all ten A1.2 fixtures; no preserved
 > per-method run artifact independently enumerates them. The old A1.2 row is closed under acceptance of
 > the user-confirmed full-suite result, not from compilation alone. The user also confirms the complete
-> automated A1.4 Anomaly-active 316-fixture run green; no preserved per-method log is claimed. Seven
-> A2.0 loaded fixtures compile but have not been executed in-game. The separate Anomaly-inactive
+> automated A1.4 Anomaly-active 316-fixture run green; no preserved per-method log is claimed. The
+> first 323-fixture A2.0 active run passed 321 and reported two false-negative creepjoiner assertions:
+> each solo event existed, but the fixture incorrectly matched the visible subject as a pairwise
+> recipient. The corrected fixtures assert solo writer ownership plus the captured subject ID and
+> compile in the rebuilt 323-test assembly; their in-game rerun is pending. The separate Anomaly-inactive
 > profile, disposable missing study/containment-hook compatibility profiles, and real process-boundary
 > save/reload remain explicit deferred rows. No A2.1/A2.2 source or hidden-state projection moved ahead.
 

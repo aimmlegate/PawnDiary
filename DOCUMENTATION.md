@@ -1863,8 +1863,13 @@ stable Def name. The fixture now requires exact equality with the localized visi
 fallback. The user-confirmed corrected Anomaly-active rerun passed all 315 compiled fixtures,
 including all ten containment fixtures. The user subsequently confirmed the complete automated
 Anomaly-active 316-fixture A1.4 run green; this is aggregate user-confirmed evidence, not a preserved
-per-method runner log. A2.0 adds seven compiled loaded fixtures but no in-game pass is claimed for
-them. Three external/manual profiles remain explicitly deferred: a separate Anomaly-inactive run,
+per-method runner log. The first user-provided 323-fixture Anomaly-active A2.0 run passed 321 and
+failed two assertions in the creepjoiner suite. Both failures occurred after the fixture had already
+verified that exactly one new test-pawn event existed: the matcher then incorrectly required the
+visible creepjoiner to occupy `recipientPawnId` on a deliberately solo speaker/witness page. The
+fixtures now match the solo writer and assert the subject's stable ID in spoiler-safe captured context;
+the corrected two-test in-game rerun remains pending. Three external/manual profiles remain explicitly
+deferred: a separate Anomaly-inactive run,
 disposable missing study/containment-hook compatibility profiles, and a real process-boundary save/
 reload. Exact operator steps live in `tests/SAVE_COMPATIBILITY_SMOKETEST.md`.
 

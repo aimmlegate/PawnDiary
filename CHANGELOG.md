@@ -1,5 +1,14 @@
 # Changelog
 
+- **2026-07-20 — Corrected two false-negative A2.0 loaded creepjoiner fixtures.** The first
+  user-provided active 323-test run passed 321 and failed the rejection/aggression assertions after
+  each test had already verified that exactly one new test-pawn event existed. Those outcomes are
+  intentionally single-writer pages: the visible creepjoiner is frozen in prompt-safe context, not
+  stored as a pairwise `recipientPawnId`. The fixtures now match a blank recipient role and explicitly
+  assert `creepjoiner_subject_id`, preserving both solo ownership and subject-identity coverage. No
+  production behavior, save schema, prompt text, Def, or localization changed. The 323-test RimTest
+  assembly rebuilds; the corrected in-game rerun remains pending.
+
 - **2026-07-20 — Implemented Master Wave 7 / Anomaly Phase A2.0 visible creepjoiner state.** The
   existing canonical arrival page now initializes one visible-only creepjoiner arc and attaches its
   event ID only after that page exists; repeat arrivals create neither a second arc nor a second page.
