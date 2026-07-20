@@ -1,6 +1,7 @@
 // Verse Scribe adapter for one visible-only creepjoiner continuity row. The pure snapshot and all
-// corrupt/future-state normalization live under Source/Capture; this model owns only the seven frozen
-// primitive keys and can never retain a tracker, Pawn, Def, worker, trigger time, or hidden outcome.
+// corrupt/future-state normalization live under Source/Capture; the same seven frozen primitive keys
+// now cover joined, non-terminal surgical disclosure, and terminal outcomes without ever retaining a
+// tracker, Pawn, Def, worker, trigger time, or hidden outcome.
 using PawnDiary.Capture;
 using Verse;
 
@@ -17,7 +18,7 @@ namespace PawnDiary
         public bool terminal;
         public int schemaVersion;
 
-        /// <summary>Reads/writes exactly the frozen Phase-A2.0 primitive schema.</summary>
+        /// <summary>Reads/writes the unchanged seven-field A2.0/A2.1 primitive schema.</summary>
         public void ExposeData()
         {
             Scribe_Values.Look(ref pawnId, "pawnId");

@@ -62,7 +62,9 @@ namespace PawnDiary.Capture
             string eventId = CleanStable(createdArrivalEventId);
             if (result.arrivalEventId.Length == 0 && eventId.Length > 0)
                 result.arrivalEventId = eventId;
-            if (!result.terminal && !CreepJoinerPhaseTokens.IsOutcome(result.lastVisiblePhase))
+            if (!result.terminal
+                && result.lastVisiblePhase != AnomalyOutcomeTokens.SurgicalReveal
+                && !CreepJoinerPhaseTokens.IsOutcome(result.lastVisiblePhase))
                 result.lastVisiblePhase = CreepJoinerPhaseTokens.Joined;
             if (result.schemaVersion <= AnomalyPersistencePolicy.CurrentCreepJoinerArcSchemaVersion)
                 result.schemaVersion = AnomalyPersistencePolicy.CurrentCreepJoinerArcSchemaVersion;

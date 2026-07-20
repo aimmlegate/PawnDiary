@@ -1,9 +1,10 @@
-// Loaded-game Anomaly A2.0 fixtures. These create disposable creepjoiners through vanilla's own
-// CreepJoinerUtility, then call the exact public DoRejection/DoAggressive/DoLeave lifecycle methods.
-// All possible writers have generation disabled, so event creation is synchronous and no LLM request
-// can leave the game. Teardown restores component state, XML policy values, letters, transients, and
-// every specialized pawn even if an assertion fails.
+// Loaded-game Anomaly A2.0/A2.1 fixtures. These create disposable creepjoiners through vanilla's own
+// CreepJoinerUtility, then call the exact public lifecycle or surgical-inspection methods Pawn Diary
+// observes. All possible writers have generation disabled, so event creation is synchronous and no
+// LLM request can leave the game. Teardown restores component state, XML policy values, letters,
+// vanilla Tales, transients, and every specialized pawn even if an assertion fails.
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -17,7 +18,7 @@ using Verse.AI.Group;
 
 namespace PawnDiary.RimTests
 {
-    /// <summary>Exercises visible creepjoiner continuity and the three exact vanilla outcome seams.</summary>
+    /// <summary>Exercises creepjoiner continuity, terminal outcomes, and surgical disclosure.</summary>
     [TestSuite]
     public static class PawnDiaryCreepJoinerFlowTests
     {
@@ -27,6 +28,13 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetMethod("ApplyAnomalyState", PrivateInstance);
         private static readonly MethodInfo BootstrapAnomalyMethod =
             typeof(DiaryGameComponent).GetMethod("BootstrapAnomalyForLoadedSave", PrivateInstance);
+        private static readonly MethodInfo SurgicalRecipePrefixMethod =
+            typeof(DiaryAnomalyPatches).GetMethod("SurgicalRecipePrefix", PrivateInstance | BindingFlags.Static);
+        private static readonly MethodInfo SurgicalRecipePostfixMethod =
+            typeof(DiaryAnomalyPatches).GetMethod("SurgicalRecipePostfix", PrivateInstance | BindingFlags.Static);
+        private static readonly MethodInfo SurgicalRecipeFinalizerMethod =
+            typeof(DiaryAnomalyPatches).GetMethod("SurgicalRecipeFinalizer", PrivateInstance | BindingFlags.Static);
+        private static readonly FieldInfo TalesListField = ResolveTalesListField();
 
         private static PawnDiaryRimTestScope scope;
         private static DiaryAnomalyPolicyDef policyDef;
@@ -37,13 +45,14 @@ namespace PawnDiary.RimTests
         private static int originalMaxWitnesses;
         private static int originalWitnessRadius;
         private static HashSet<Letter> originalLetters;
+        private static HashSet<Tale> originalTales;
 
         /// <summary>Snapshots every component/Def/global value these live lifecycle fixtures mutate.</summary>
         [BeforeEach]
         public static void SetUp()
         {
             scope = PawnDiaryRimTestScope.Begin(
-                ArrivalSignal.ArrivalGroupKey, "anomalyCreepJoinerOutcome");
+                ArrivalSignal.ArrivalGroupKey, "anomalyCreepJoinerOutcome", "talehealth");
             scope.OwnDiaryEventsCreatedAfterThisPoint();
             policyDef = DefDatabase<DiaryAnomalyPolicyDef>.GetNamedSilentFail(
                 DiaryAnomalyPolicy.DefName);
@@ -57,6 +66,7 @@ namespace PawnDiary.RimTests
             originalState = scope.Component.AnomalyStateSnapshotForTests();
             originalLetters = new HashSet<Letter>(
                 Find.LetterStack?.LettersListForReading ?? new List<Letter>());
+            originalTales = SnapshotTales();
 
             policyDef.creepJoinerEnabled = true;
             policyDef.creepJoinerOutcomeDedupTicks = 2500;
@@ -88,6 +98,7 @@ namespace PawnDiary.RimTests
                     policyDef.creepJoinerWitnessRadius = originalWitnessRadius;
                 }
                 RemoveFixtureLetters();
+                RemoveFixtureTales();
             }
             catch (Exception exception)
             {
@@ -105,6 +116,7 @@ namespace PawnDiary.RimTests
             finally
             {
                 originalLetters = null;
+                originalTales = null;
                 originalState = null;
                 policyDef = null;
                 scope = null;
@@ -113,7 +125,7 @@ namespace PawnDiary.RimTests
             if (firstFailure != null) throw firstFailure;
         }
 
-        /// <summary>Proves optional registration is inert off-DLC and exact on all three public methods.</summary>
+        /// <summary>Proves optional registration is inert off-DLC and exact on every observed method.</summary>
         [Test]
         public static void ExactHookRegistrationMatchesAnomalyAvailability()
         {
@@ -121,7 +133,8 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 DiaryAnomalyPatches.CreepJoinerRejectionHookReady == active
                     && DiaryAnomalyPatches.CreepJoinerAggressionHookReady == active
-                    && DiaryAnomalyPatches.CreepJoinerDepartureHookReady == active,
+                    && DiaryAnomalyPatches.CreepJoinerDepartureHookReady == active
+                    && DiaryAnomalyPatches.CreepJoinerSurgicalHookReady == active,
                 "Creepjoiner hook readiness did not match Anomaly availability.");
             if (!active)
             {
@@ -132,6 +145,7 @@ namespace PawnDiary.RimTests
             RequireExactPatch("DoRejection", requireFinalizer: true);
             RequireExactPatch("DoAggressive", requireFinalizer: false);
             RequireExactPatch("DoLeave", requireFinalizer: false);
+            RequireExactSurgicalPatches();
             MethodBase downside = AccessTools.DeclaredMethod(
                 typeof(Pawn_CreepJoinerTracker), "DoDownside", Type.EmptyTypes);
             Patches downsidePatches = downside == null ? null : Harmony.GetPatchInfo(downside);
@@ -140,6 +154,220 @@ namespace PawnDiary.RimTests
                         && !downsidePatches.Postfixes.Any(OwnedPatch)
                         && !downsidePatches.Finalizers.Any(OwnedPatch)),
                 "A2.0 must not patch Pawn_CreepJoinerTracker.DoDownside().");
+        }
+
+        /// <summary>A real visible disclosure writes one surgeon/patient page and owns DidSurgery.</summary>
+        [Test]
+        public static void VisibleSurgicalDisclosureOwnsGenericTaleAndUsesExactRoles()
+        {
+            if (!RequireAnomalyOrReport(nameof(VisibleSurgicalDisclosureOwnsGenericTaleAndUsesExactRoles))) return;
+            Pawn subject = CreateJoinedCreepJoiner("Departure", "PsychicAgony");
+            Pawn surgeon = CreateWriterAt(subject.Position);
+
+            DiaryEvent page = scope.FireAndRequireEvent(
+                () => RunSuccessfulSurgicalInspection(subject, surgeon),
+                AnomalyEventDefNames.CreepJoinerOutcome,
+                surgeon,
+                subject,
+                rejectOtherTestPawnEvents: true);
+            scope.RequirePairRefs(page, surgeon, subject);
+            RequireContext(page, "creepjoiner_phase=surgical_reveal");
+            RequireContext(page, "visible_result=disclosed");
+            RequireContext(page, "initiator_role=surgeon");
+            RequireContext(page, "recipient_role=subject");
+            RequireContext(page, "creepjoiner_surgeon_id=" + surgeon.GetUniqueLoadID());
+            RequireContext(page, "creepjoiner_subject_id=" + subject.GetUniqueLoadID());
+            PawnDiaryRimTestScope.Require(
+                !(page.gameContext ?? string.Empty).Contains("PsychicAgony")
+                    && !(page.gameContext ?? string.Empty).Contains("creepjoiner_terminal"),
+                "The disclosure page leaked hidden downside identity or mislabeled a non-terminal phase.");
+
+            CreepJoinerArcSnapshot arc = RequireOnlyArc(subject);
+            PawnDiaryRimTestScope.Require(!arc.terminal
+                    && arc.lastVisiblePhase == AnomalyOutcomeTokens.SurgicalReveal
+                    && arc.lastVisibleEventId == page.eventId,
+                "The visible disclosure did not persist one non-terminal arc step.");
+        }
+
+        /// <summary>An unjoined patient cannot write, so the exact eligible surgeon owns a solo page.</summary>
+        [Test]
+        public static void PreJoinSurgicalDisclosureUsesSurgeonOnly()
+        {
+            if (!RequireAnomalyOrReport(nameof(PreJoinSurgicalDisclosureUsesSurgeonOnly))) return;
+            Pawn subject = CreateCreepJoiner("Departure", "PsychicAgony");
+            Pawn surgeon = CreateWriterAt(subject.Position);
+
+            DiaryEvent page = scope.FireAndRequireEvent(
+                () => RunSuccessfulSurgicalInspection(subject, surgeon),
+                AnomalyEventDefNames.CreepJoinerOutcome,
+                surgeon,
+                null,
+                rejectOtherTestPawnEvents: true);
+            scope.RequireSoloRef(page, surgeon);
+            RequireContext(page, "witness_role=surgeon");
+            RequireContext(page, "creepjoiner_subject_id=" + subject.GetUniqueLoadID());
+            PawnDiaryRimTestScope.Require(string.IsNullOrEmpty(page.recipientPawnId),
+                "An ineligible pre-join creepjoiner was assigned a diary POV.");
+        }
+
+        /// <summary>A completed inspection with no tracker disclosure keeps ordinary DidSurgery.</summary>
+        [Test]
+        public static void NothingFoundKeepsGenericSurgeryTaleAndDoesNotAdvanceReveal()
+        {
+            if (!RequireAnomalyOrReport(nameof(NothingFoundKeepsGenericSurgeryTaleAndDoesNotAdvanceReveal))) return;
+            Pawn subject = CreateJoinedCreepJoiner("Departure", "Nothing");
+            Pawn surgeon = CreateWriterAt(subject.Position);
+
+            DiaryEvent page = scope.FireAndRequireEvent(
+                () => RunSuccessfulSurgicalInspection(subject, surgeon),
+                CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName,
+                surgeon,
+                subject,
+                rejectOtherTestPawnEvents: true);
+            scope.RequirePairRefs(page, surgeon, subject);
+            CreepJoinerArcSnapshot arc = RequireOnlyArc(subject);
+            PawnDiaryRimTestScope.Require(!arc.terminal
+                    && arc.lastVisiblePhase == CreepJoinerPhaseTokens.Joined,
+                "A nothing-found inspection manufactured surgical disclosure history.");
+        }
+
+        /// <summary>Disabled specialized output commits history but releases the exact generic Tale.</summary>
+        [Test]
+        public static void DisabledSurgicalOutputCommitsHistoryAndKeepsGenericTale()
+        {
+            if (!RequireAnomalyOrReport(nameof(DisabledSurgicalOutputCommitsHistoryAndKeepsGenericTale))) return;
+            Pawn subject = CreateJoinedCreepJoiner("Departure", "PsychicAgony");
+            Pawn surgeon = CreateWriterAt(subject.Position);
+            policyDef.creepJoinerEnabled = false;
+
+            DiaryEvent page = scope.FireAndRequireEvent(
+                () => RunSuccessfulSurgicalInspection(subject, surgeon),
+                CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName,
+                surgeon,
+                subject,
+                rejectOtherTestPawnEvents: true);
+            scope.RequirePairRefs(page, surgeon, subject);
+            CreepJoinerArcSnapshot arc = RequireOnlyArc(subject);
+            PawnDiaryRimTestScope.Require(!arc.terminal
+                    && arc.lastVisiblePhase == AnomalyOutcomeTokens.SurgicalReveal
+                    && arc.lastVisibleEventId.Length == 0,
+                "Disabled disclosure output did not consume the non-terminal history step.");
+        }
+
+        /// <summary>An early recipe exit never receives tracker evidence and therefore stays silent.</summary>
+        [Test]
+        public static void FailedSurgicalBoundaryCannotManufactureDisclosure()
+        {
+            if (!RequireAnomalyOrReport(nameof(FailedSurgicalBoundaryCannotManufactureDisclosure))) return;
+            PawnDiaryRimTestScope.Require(
+                SurgicalRecipePrefixMethod != null && SurgicalRecipePostfixMethod != null,
+                "Could not resolve Pawn Diary's exact surgical boundary callbacks.");
+            Pawn subject = CreateCreepJoiner("Departure", "PsychicAgony");
+            Pawn surgeon = CreateWriterAt(subject.Position);
+
+            scope.RequireNoNewEvent(() =>
+            {
+                object[] prefixArgs = { subject, surgeon, null };
+                SurgicalRecipePrefixMethod.Invoke(null, prefixArgs);
+                CreepJoinerSurgicalInspectionCapture capture =
+                    prefixArgs[2] as CreepJoinerSurgicalInspectionCapture;
+                PawnDiaryRimTestScope.Require(capture != null
+                        && CreepJoinerSurgicalInspectionScope.CountForTests == 1,
+                    "The simulated failed recipe did not open its exact outer correlation scope.");
+                SurgicalRecipePostfixMethod.Invoke(null, new object[] { subject, surgeon, capture });
+            });
+            PawnDiaryRimTestScope.Require(
+                CreepJoinerSurgicalInspectionScope.CountForTests == 0
+                    && scope.Component.AnomalyStateSnapshotForTests().creepJoinerArcs.Count == 0,
+                "An early surgery exit leaked correlation state or manufactured visible history.");
+        }
+
+        /// <summary>An exceptional close releases its deferred Tale and removes the active frame.</summary>
+        [Test]
+        public static void SurgicalFinalizerFailsOpenAndClearsScope()
+        {
+            if (!RequireAnomalyOrReport(nameof(SurgicalFinalizerFailsOpenAndClearsScope))) return;
+            PawnDiaryRimTestScope.Require(
+                SurgicalRecipePrefixMethod != null && SurgicalRecipeFinalizerMethod != null,
+                "Could not resolve Pawn Diary's surgical prefix/finalizer callbacks.");
+            Pawn subject = CreateCreepJoiner("Departure", "PsychicAgony");
+            Pawn surgeon = CreateWriterAt(subject.Position);
+            TaleDef didSurgery = DefDatabase<TaleDef>.GetNamedSilentFail(
+                CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName);
+            PawnDiaryRimTestScope.Require(didSurgery != null,
+                "The vanilla DidSurgery Tale was unavailable.");
+
+            object[] prefixArgs = { subject, surgeon, null };
+            SurgicalRecipePrefixMethod.Invoke(null, prefixArgs);
+            CreepJoinerSurgicalInspectionCapture capture =
+                prefixArgs[2] as CreepJoinerSurgicalInspectionCapture;
+            scope.RequireNoNewEvent(() => TaleRecorder.RecordTale(didSurgery, surgeon, subject));
+            PawnDiaryRimTestScope.Require(capture != null
+                    && CreepJoinerSurgicalInspectionScope.HasDeferredTaleForTests,
+                "The exact exceptional-surgery fixture did not defer its generic Tale.");
+
+            Exception original = new InvalidOperationException("A2.1 finalizer fixture");
+            Exception returned = null;
+            DiaryEvent fallback = scope.FireAndRequireEvent(
+                () => returned = SurgicalRecipeFinalizerMethod.Invoke(
+                    null, new object[] { original, capture }) as Exception,
+                CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName,
+                surgeon,
+                null,
+                rejectOtherTestPawnEvents: true);
+            scope.RequireSoloRef(fallback, surgeon);
+            PawnDiaryRimTestScope.Require(ReferenceEquals(returned, original)
+                    && CreepJoinerSurgicalInspectionScope.CountForTests == 0,
+                "The surgical finalizer changed the exception or leaked its owner scope.");
+        }
+
+        /// <summary>DidSurgery outside an exact active owner remains on the mature generic route.</summary>
+        [Test]
+        public static void UnscopedDidSurgeryKeepsGenericPairRoute()
+        {
+            if (!RequireAnomalyOrReport(nameof(UnscopedDidSurgeryKeepsGenericPairRoute))) return;
+            Pawn subject = CreateJoinedCreepJoiner("Departure", "PsychicAgony");
+            Pawn surgeon = CreateWriterAt(subject.Position);
+            TaleDef didSurgery = DefDatabase<TaleDef>.GetNamedSilentFail(
+                CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName);
+            PawnDiaryRimTestScope.Require(didSurgery != null
+                    && CreepJoinerSurgicalInspectionScope.CountForTests == 0,
+                "The unscoped Tale fixture lacked DidSurgery or started with stale ownership.");
+
+            DiaryEvent fallback = scope.FireAndRequireEvent(
+                () => TaleRecorder.RecordTale(didSurgery, surgeon, subject),
+                CreepJoinerSurgeryTaleOwnershipPolicy.DidSurgeryDefName,
+                surgeon,
+                subject,
+                rejectOtherTestPawnEvents: true);
+            scope.RequirePairRefs(fallback, surgeon, subject);
+        }
+
+        /// <summary>A later real departure remains eligible after the non-terminal disclosure step.</summary>
+        [Test]
+        public static void TerminalOutcomeStillFollowsSurgicalDisclosure()
+        {
+            if (!RequireAnomalyOrReport(nameof(TerminalOutcomeStillFollowsSurgicalDisclosure))) return;
+            Pawn subject = CreateJoinedCreepJoiner("Departure", "PsychicAgony");
+            Pawn surgeon = CreateWriterAt(subject.Position);
+            scope.FireAndRequireEvent(
+                () => RunSuccessfulSurgicalInspection(subject, surgeon),
+                AnomalyEventDefNames.CreepJoinerOutcome,
+                surgeon,
+                subject,
+                rejectOtherTestPawnEvents: true);
+
+            DiaryEvent terminal = scope.FireAndRequireEvent(
+                () => subject.creepjoiner.DoLeave(),
+                AnomalyEventDefNames.CreepJoinerOutcome,
+                subject,
+                null,
+                rejectOtherTestPawnEvents: true);
+            CreepJoinerArcSnapshot arc = RequireOnlyArc(subject);
+            PawnDiaryRimTestScope.Require(arc.terminal
+                    && arc.lastVisiblePhase == AnomalyOutcomeTokens.Departed
+                    && arc.lastVisibleEventId == terminal.eventId,
+                "The surgical reveal incorrectly blocked the later terminal departure.");
         }
 
         /// <summary>The existing arrival page initializes one arc; repeating it creates neither again.</summary>
@@ -367,22 +595,41 @@ namespace PawnDiary.RimTests
                 "The real old-save scan failed to create one state-only joined creepjoiner baseline.");
         }
 
-        /// <summary>Every existing Anomaly reset boundary clears the bounded rejection owner stack.</summary>
+        /// <summary>Every existing Anomaly reset boundary clears both bounded creepjoiner owners.</summary>
         [Test]
         public static void LifecycleResetClearsCreepJoinerOwnership()
         {
+            CreepJoinerSurgicalInspectionCapture surgical = new CreepJoinerSurgicalInspectionCapture
+            {
+                facts = new CreepJoinerSurgicalDisclosureFacts
+                {
+                    subjectPawnId = "Pawn_SurgicalResetFixture",
+                    surgeonPawnId = "Pawn_SurgeonResetFixture",
+                    tick = Find.TickManager?.TicksGame ?? 0
+                }
+            };
             PawnDiaryRimTestScope.Require(
                 CreepJoinerOutcomeScope.BeginRejection("Pawn_ResetFixture")
-                    && CreepJoinerOutcomeScope.CountForTests == 1,
-                "Could not seed the transient rejection owner before lifecycle reset.");
+                    && CreepJoinerSurgicalInspectionScope.Begin(surgical, 4)
+                    && CreepJoinerOutcomeScope.CountForTests == 1
+                    && CreepJoinerSurgicalInspectionScope.CountForTests == 1,
+                "Could not seed both transient creepjoiner owners before lifecycle reset.");
             AnomalyTransientState.Reset();
-            PawnDiaryRimTestScope.Require(CreepJoinerOutcomeScope.CountForTests == 0,
-                "The Anomaly lifecycle reset leaked a creepjoiner rejection owner.");
+            PawnDiaryRimTestScope.Require(CreepJoinerOutcomeScope.CountForTests == 0
+                    && CreepJoinerSurgicalInspectionScope.CountForTests == 0,
+                "The Anomaly lifecycle reset leaked a creepjoiner owner.");
         }
 
         private static Pawn CreateJoinedCreepJoiner(string rejectionDefName)
         {
-            Pawn pawn = CreateCreepJoiner(rejectionDefName);
+            return CreateJoinedCreepJoiner(rejectionDefName, "Nothing");
+        }
+
+        private static Pawn CreateJoinedCreepJoiner(
+            string rejectionDefName,
+            string downsideDefName)
+        {
+            Pawn pawn = CreateCreepJoiner(rejectionDefName, downsideDefName);
             scope.Component.SetDiaryGenerationEnabled(pawn, false);
             pawn.SetFaction(scope.PlayerFaction);
             PawnDiaryRimTestScope.Require(DiaryGameComponent.IsDiaryEligible(pawn),
@@ -392,13 +639,20 @@ namespace PawnDiary.RimTests
 
         private static Pawn CreateCreepJoiner(string rejectionDefName)
         {
+            return CreateCreepJoiner(rejectionDefName, "Nothing");
+        }
+
+        private static Pawn CreateCreepJoiner(
+            string rejectionDefName,
+            string downsideDefName)
+        {
             Map map = Find.CurrentMap;
             CreepJoinerFormKindDef form = DefDatabase<CreepJoinerFormKindDef>.AllDefsListForReading
                 .OrderBy(def => def.defName, StringComparer.Ordinal).FirstOrDefault();
             CreepJoinerBenefitDef benefit = DefDatabase<CreepJoinerBenefitDef>.AllDefsListForReading
                 .OrderBy(def => def.defName, StringComparer.Ordinal).FirstOrDefault();
             CreepJoinerDownsideDef downside = DefDatabase<CreepJoinerDownsideDef>
-                .GetNamedSilentFail("Nothing");
+                .GetNamedSilentFail(downsideDefName);
             CreepJoinerAggressiveDef aggressive = DefDatabase<CreepJoinerAggressiveDef>
                 .GetNamedSilentFail("Assault");
             CreepJoinerRejectionDef rejection = DefDatabase<CreepJoinerRejectionDef>
@@ -413,6 +667,27 @@ namespace PawnDiary.RimTests
                 "Vanilla failed to generate and spawn a disposable creepjoiner.");
             scope.TrackSpecializedPawn(pawn);
             return pawn;
+        }
+
+        // The live recipe normally rolls an XML-configured failure effect. A2.1 is testing capture and
+        // ownership, not RimWorld's medicine RNG, so this helper temporarily removes only that roll,
+        // invokes the exact vanilla worker, and restores the shared Def in a finally block.
+        private static void RunSuccessfulSurgicalInspection(Pawn subject, Pawn surgeon)
+        {
+            RecipeDef recipe = DefDatabase<RecipeDef>.GetNamedSilentFail("SurgicalInspection");
+            PawnDiaryRimTestScope.Require(recipe?.Worker is Recipe_SurgicalInspection,
+                "The vanilla SurgicalInspection recipe worker was unavailable.");
+            SurgeryOutcomeEffectDef originalOutcome = recipe.surgeryOutcomeEffect;
+            try
+            {
+                recipe.surgeryOutcomeEffect = null;
+                recipe.Worker.ApplyOnPawn(
+                    subject, null, surgeon, new List<Thing>(), null);
+            }
+            finally
+            {
+                recipe.surgeryOutcomeEffect = originalOutcome;
+            }
         }
 
         private static Pawn CreateWriterAt(IntVec3 cell)
@@ -454,6 +729,40 @@ namespace PawnDiary.RimTests
                     + "() method lacks Pawn Diary's expected patch set.");
         }
 
+        private static void RequireExactSurgicalPatches()
+        {
+            MethodBase recipe = AccessTools.DeclaredMethod(
+                typeof(Recipe_SurgicalInspection),
+                "ApplyOnPawn",
+                new[]
+                {
+                    typeof(Pawn), typeof(BodyPartRecord), typeof(Pawn),
+                    typeof(List<Thing>), typeof(Bill)
+                });
+            MethodBase tracker = AccessTools.DeclaredMethod(
+                typeof(Pawn_CreepJoinerTracker),
+                "DoSurgicalInspection",
+                new[] { typeof(Pawn), typeof(System.Text.StringBuilder) });
+            MethodBase pawn = AccessTools.DeclaredMethod(
+                typeof(Pawn),
+                "DoSurgicalInspection",
+                new[] { typeof(Pawn), typeof(string).MakeByRefType() });
+            Patches recipePatches = recipe == null ? null : Harmony.GetPatchInfo(recipe);
+            Patches trackerPatches = tracker == null ? null : Harmony.GetPatchInfo(tracker);
+            Patches pawnPatches = pawn == null ? null : Harmony.GetPatchInfo(pawn);
+            PawnDiaryRimTestScope.Require(
+                recipePatches != null
+                    && recipePatches.Prefixes.Any(OwnedPatch)
+                    && recipePatches.Postfixes.Any(OwnedPatch)
+                    && recipePatches.Finalizers.Any(OwnedPatch)
+                    && trackerPatches != null
+                    && trackerPatches.Prefixes.Any(OwnedPatch)
+                    && trackerPatches.Postfixes.Any(OwnedPatch)
+                    && pawnPatches != null
+                    && pawnPatches.Postfixes.Any(OwnedPatch),
+                "The exact recipe/tracker/Pawn surgical correlation lacks Pawn Diary's patch set.");
+        }
+
         private static bool OwnedPatch(Patch patch)
         {
             return patch.owner == "aimml.pawndiary"
@@ -477,7 +786,8 @@ namespace PawnDiary.RimTests
             if (ModsConfig.AnomalyActive) return true;
             PawnDiaryRimTestScope.Require(!DiaryAnomalyPatches.CreepJoinerRejectionHookReady
                     && !DiaryAnomalyPatches.CreepJoinerAggressionHookReady
-                    && !DiaryAnomalyPatches.CreepJoinerDepartureHookReady,
+                    && !DiaryAnomalyPatches.CreepJoinerDepartureHookReady
+                    && !DiaryAnomalyPatches.CreepJoinerSurgicalHookReady,
                 "A creepjoiner hook remained ready without Anomaly.");
             Log.Message(LogPrefix + testName + ": not applicable (Anomaly inactive).");
             return false;
@@ -492,6 +802,49 @@ namespace PawnDiary.RimTests
             {
                 Letter letter = stack.LettersListForReading[i];
                 if (!originalLetters.Contains(letter)) stack.RemoveLetter(letter);
+            }
+        }
+
+        // Verse exposes no public single-Tale removal. Resolve the private List<Tale> by type and
+        // remove only rows created after this fixture's setup snapshot, preserving the player's history.
+        private static FieldInfo ResolveTalesListField()
+        {
+            FieldInfo[] fields = typeof(TaleManager).GetFields(
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                Type type = fields[i].FieldType;
+                if (typeof(IList).IsAssignableFrom(type)
+                    && type.IsGenericType
+                    && type.GetGenericArguments()[0] == typeof(Tale))
+                {
+                    return fields[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static HashSet<Tale> SnapshotTales()
+        {
+            HashSet<Tale> result = new HashSet<Tale>();
+            IList rows = TalesListField?.GetValue(Find.TaleManager) as IList;
+            if (rows == null) return result;
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (rows[i] is Tale tale) result.Add(tale);
+            }
+            return result;
+        }
+
+        private static void RemoveFixtureTales()
+        {
+            if (originalTales == null) return;
+            IList rows = TalesListField?.GetValue(Find.TaleManager) as IList;
+            if (rows == null) return;
+            for (int i = rows.Count - 1; i >= 0; i--)
+            {
+                if (rows[i] is Tale tale && !originalTales.Contains(tale)) rows.RemoveAt(i);
             }
         }
     }

@@ -1,6 +1,6 @@
 // Anomaly persistence, silent phase baselining, and exact study/visible-creepjoiner transaction
-// ownership. Live DLC objects are read only by DlcContext; this partial commits detached history
-// before it optionally dispatches a page.
+// ownership, including non-terminal surgical disclosure. Live DLC objects are read only by
+// DlcContext; this partial commits detached history before it optionally dispatches a page.
 using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
@@ -286,6 +286,66 @@ namespace PawnDiary
             arc.lastVisibleEventId = signal.CreatedEvent.eventId ?? string.Empty;
             ReplaceCreepJoinerArc(afterEvent.creepJoinerArcs, arc);
             ApplyAnomalyState(afterEvent);
+        }
+
+        /// <summary>
+        /// Verifies one exact returned surgical recipe, commits non-terminal reveal history before
+        /// output, then reports whether a dedicated event exists so Tale ownership can decide safely.
+        /// </summary>
+        internal CreepJoinerSurgicalDisclosurePlan CompleteCreepJoinerSurgicalInspection(
+            Pawn subject,
+            Pawn surgeon,
+            CreepJoinerSurgicalInspectionCapture capture,
+            out bool dedicatedEventCreated)
+        {
+            dedicatedEventCreated = false;
+            CreepJoinerSurgicalDisclosureFacts facts;
+            if (!DlcContext.TryCompleteCreepJoinerSurgicalInspection(
+                    subject, surgeon, capture, out facts)
+                || facts == null) return null;
+
+            AnomalyPersistentStateSnapshot state = AnomalyStateSnapshot();
+            CreepJoinerArcSnapshot existing = FindCreepJoinerArc(
+                state.creepJoinerArcs, facts.subjectPawnId);
+            AnomalyPolicySnapshot policy = DiaryAnomalyPolicy.Snapshot();
+            CreepJoinerSurgicalDisclosurePlan plan =
+                CreepJoinerSurgicalDisclosurePolicy.Plan(facts, existing, policy);
+            if (!plan.valid) return plan;
+
+            if (plan.advanceArc && plan.nextArc != null)
+            {
+                ReplaceCreepJoinerArc(state.creepJoinerArcs, plan.nextArc);
+                ApplyAnomalyState(state);
+            }
+            if (!plan.writePage || plan.selectedWriters.Count == 0) return plan;
+
+            List<Pawn> writers = new List<Pawn>();
+            for (int i = 0; i < plan.selectedWriters.Count; i++)
+            {
+                Pawn writer = capture.ResolveWriter(plan.selectedWriters[i].pawnId);
+                if (writer == null) return plan;
+                writers.Add(writer);
+            }
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyAnomalyEvent(
+                AnomalyEventDefNames.CreepJoinerOutcome);
+            CreepJoinerSurgicalDisclosureSignal signal =
+                new CreepJoinerSurgicalDisclosureSignal(
+                    facts, plan, policy, group, writers, subject, surgeon);
+            Dispatch(signal);
+            if (signal.CreatedEvent == null) return plan;
+
+            // The same seven-field row records the dedicated event only after creation. The row stays
+            // non-terminal so later visible lifecycle methods remain eligible to close the arc.
+            AnomalyPersistentStateSnapshot afterEvent = AnomalyStateSnapshot();
+            CreepJoinerArcSnapshot arc = FindCreepJoinerArc(
+                afterEvent.creepJoinerArcs, facts.subjectPawnId);
+            if (arc == null || arc.terminal
+                || arc.lastVisiblePhase != AnomalyOutcomeTokens.SurgicalReveal) return plan;
+            arc.lastVisibleEventId = signal.CreatedEvent.eventId ?? string.Empty;
+            ReplaceCreepJoinerArc(afterEvent.creepJoinerArcs, arc);
+            ApplyAnomalyState(afterEvent);
+            dedicatedEventCreated = true;
+            return plan;
         }
 
         private static List<CreepJoinerArcSnapshot> CreepJoinerArcSnapshots(

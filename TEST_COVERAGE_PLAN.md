@@ -269,6 +269,26 @@ three deferred external profiles remain: separate
 Anomaly-inactive, disposable missing study/containment-hook compatibility, and real process-boundary
 save/reload.
 
+Master Wave 7 / Anomaly A2.1 raises `DiaryAnomalyPolicyTests` to 529 assertions and
+`DiarySaveNormalizationTests` to 134. Pure cases pin successful, false, unverified, invisible,
+malformed, replayed, disabled-output, and terminal-blocked disclosure planning; nonterminal reveal
+followed by a later terminal outcome; exact surgeon-first/subject-second selection at writer caps
+1/2; no nearby-witness fallback; role-truth and delimiter/spoiler sanitization; exact
+`DidSurgery` surgeon/subject ownership, mismatch/expiry/pre-scope/closed-scope fail-open behavior; and
+same-schema preservation, duplicate ranking, contradictory-row barriers, future-row barriers, and A2.0
+downgrade behavior for `surgical_reveal`.
+
+`PawnDiaryCreepJoinerFlowTests` now has nineteen loaded fixtures, bringing the separate RimTest
+assembly to 335 compiled tests. Eight new cases exercise the real successful surgical-inspection recipe
+for exact surgeon/subject pair ownership, surgeon-only pre-join authorship, “nothing found” generic-Tale
+fallback, disabled specialized output with committed nonterminal history, a simulated early recipe exit
+without tracker evidence, exception-finalizer release of a deferred Tale, an unscoped generic Tale, and
+a later real terminal departure. The existing registration fixture now
+pins the composite exact recipe/tracker/Pawn patch set and the lifecycle fixture clears both rejection
+and surgery scopes. Teardown removes only fixture-created vanilla letters and Tales. No 335-test
+in-game execution is claimed: the earlier expanded 327-test A2.0 rerun and the new A2.1 cases remain
+pending, alongside the Anomaly-inactive, missing-hook, and process-boundary save/reload profiles.
+
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing

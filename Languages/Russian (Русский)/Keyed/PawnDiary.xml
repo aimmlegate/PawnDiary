@@ -1557,6 +1557,8 @@
   <PawnDiary.Event.Anomaly.CreepJoiner.Result.RejectedAggressive>отказ от предложения присоединиться и переход к открытой враждебности</PawnDiary.Event.Anomaly.CreepJoiner.Result.RejectedAggressive>
   <PawnDiary.Event.Anomaly.CreepJoiner.Result.Aggressive>переход к открытой враждебности</PawnDiary.Event.Anomaly.CreepJoiner.Result.Aggressive>
   <PawnDiary.Event.Anomaly.CreepJoiner.Result.Departed>начало ухода</PawnDiary.Event.Anomaly.CreepJoiner.Result.Departed>
+  <PawnDiary.Event.Anomaly.CreepJoiner.Surgical.SurgeonFallback>{0} обнаруживает при хирургическом осмотре {1} нечто аномальное.</PawnDiary.Event.Anomaly.CreepJoiner.Surgical.SurgeonFallback>
+  <PawnDiary.Event.Anomaly.CreepJoiner.Surgical.SubjectFallback>{0} проходит осмотр у {1}, и он раскрывает нечто аномальное.</PawnDiary.Event.Anomaly.CreepJoiner.Surgical.SubjectFallback>
   <PawnDiary.Event.Anomaly.Ghoul.Label>Превращение в гуля</PawnDiary.Event.Anomaly.Ghoul.Label>
   <PawnDiary.Event.Anomaly.Ghoul.SubjectFallback>{0} проходит завершённую инфузию и становится гулем.</PawnDiary.Event.Anomaly.Ghoul.SubjectFallback>
   <PawnDiary.Event.Anomaly.Ghoul.SurgeonFallback>{0} завершает инфузию, превратившую {1} в гуля.</PawnDiary.Event.Anomaly.Ghoul.SurgeonFallback>

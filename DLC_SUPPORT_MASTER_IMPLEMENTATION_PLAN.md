@@ -373,11 +373,11 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 
 ## 12. Wave 7 — Anomaly knowledge, containment, and reveal
 
-> **Progress (2026-07-20): A1.0–A1.4 and A2.0 implemented; A2.1–A2.2 remain.** The primitive policy,
-> detached DTOs, exact study/containment/visible-creepjoiner hooks, fail-closed catalog route, seven-key
+> **Progress (2026-07-20): A1.0–A1.4 and A2.0–A2.1 implemented; A2.2 remains.** The primitive policy,
+> detached DTOs, exact study/containment/visible-creepjoiner/surgical-disclosure hooks, fail-closed catalog route, seven-key
 > normalized save baseline, lifecycle-cleared bounded caches/scopes, and five package-gated prompt
-> groups are implemented. N3-A remains an explicit zero-candidate provider. Focused suites pass 481
-> Anomaly, 708 catalog, 122 save-normalization, and 135 Narrative assertions; runtime and 327-test
+> groups are implemented. N3-A remains an explicit zero-candidate provider. Focused suites pass 529
+> Anomaly, 708 catalog, 134 save-normalization, and 135 Narrative assertions; runtime and 335-test
 > RimTest assemblies build. The exact-only classifier and all hooks are Anomaly-gated. Loaded A1.1 state
 > coverage and the original nine A1.3 containment fixtures passed in their recorded profiles. A later
 > full run passed 314/315, including the new containment scope-state fixture; its sole failure was a
@@ -393,9 +393,13 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > compile in the rebuilt 323-test assembly. Adversarial hardening now promotes vanilla aggressive
 > rejection to truthful hostile state, enforces same-map speaker POV, releases nested visible outcomes
 > from letterless rejection, closes unverifiable committed markers as terminal barriers, and adds four
-> loaded fixtures; the expanded 327-test in-game rerun is pending. The separate Anomaly-inactive
+> loaded fixtures; the expanded 327-test A2.0 in-game rerun is pending. A2.1 adds an exact composite
+> recipe/tracker/Pawn result correlation, nonterminal visible-only disclosure continuity, exact
+> surgeon-first/subject-second POVs, and fail-open `DidSurgery` ownership. Eight focused loaded cases plus
+> expanded registration/lifecycle assertions compile in the 335-test assembly; its in-game run is also
+> pending. The separate Anomaly-inactive
 > profile, disposable missing study/containment-hook compatibility profiles, and real process-boundary
-> save/reload remain explicit deferred rows. No A2.1/A2.2 source or hidden-state projection moved ahead.
+> save/reload remain explicit deferred rows. No A2.2 source or hidden-state projection moved ahead.
 
 ### Implement in this exact order
 
@@ -405,7 +409,7 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 4. **A1.3** — exact containment breach ownership.
 5. **A1.4** — A1 hardening/delivery.
 6. **A2.0 (implemented; loaded acceptance pending)** — visible creepjoiner state and old-save baseline.
-7. **A2.1** — surgical visible disclosure/outcome ownership.
+7. **A2.1 (implemented; loaded acceptance pending)** — surgical visible disclosure/outcome ownership.
 8. **A2.2** — ghoul transformation.
 9. Extend **N3-A** only with visibly authorized chapter, pressure, and identity candidates.
 

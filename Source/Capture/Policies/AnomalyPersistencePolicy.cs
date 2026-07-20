@@ -139,6 +139,7 @@ namespace PawnDiary.Capture
             string visibleEventId = CleanStablePart(source.lastVisibleEventId);
             bool future = version > CurrentCreepJoinerArcSchemaVersion;
             bool outcome = CreepJoinerPhaseTokens.IsOutcome(phase);
+            bool surgicalReveal = phase == AnomalyOutcomeTokens.SurgicalReveal;
             bool terminal = future || source.terminal || outcome;
             if (future || (terminal && !outcome))
             {
@@ -147,7 +148,7 @@ namespace PawnDiary.Capture
                 phase = string.Empty;
                 visibleEventId = string.Empty;
             }
-            else if (!terminal)
+            else if (!terminal && !surgicalReveal)
             {
                 phase = CreepJoinerPhaseTokens.Joined;
                 visibleEventId = string.Empty;
@@ -240,8 +241,8 @@ namespace PawnDiary.Capture
             CreepJoinerArcSnapshot right)
         {
             // Corrupt duplicates have no trustworthy chronology beyond joinedTick. Preserve the
-            // strongest replay barrier, choose every optional ID lexically, and choose a terminal
-            // phase with a stable explicit rank so input order cannot affect the normalized save.
+            // strongest replay barrier, rank a non-terminal surgical reveal above joined but below
+            // every terminal outcome, and choose optional IDs stably so input order cannot matter.
             bool terminal = left.terminal || right.terminal;
             CreepJoinerArcSnapshot phaseOwner = PhaseRank(left.lastVisiblePhase)
                     >= PhaseRank(right.lastVisiblePhase)
@@ -266,9 +267,10 @@ namespace PawnDiary.Capture
 
         private static int PhaseRank(string phase)
         {
-            if (phase == AnomalyOutcomeTokens.Departed) return 4;
-            if (phase == AnomalyOutcomeTokens.Aggressive) return 3;
-            if (phase == AnomalyOutcomeTokens.Rejected) return 2;
+            if (phase == AnomalyOutcomeTokens.Departed) return 5;
+            if (phase == AnomalyOutcomeTokens.Aggressive) return 4;
+            if (phase == AnomalyOutcomeTokens.Rejected) return 3;
+            if (phase == AnomalyOutcomeTokens.SurgicalReveal) return 2;
             if (phase == CreepJoinerPhaseTokens.Joined) return 1;
             return 0;
         }

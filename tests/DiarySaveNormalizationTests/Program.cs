@@ -58,6 +58,7 @@ namespace DiarySaveNormalizationTests
             TestAnomalyLegacyBaseline();
             TestAnomalyCreepJoinerNormalization();
             TestAnomalyCreepJoinerLegacyBaseline();
+            TestAnomalyCreepJoinerSurgicalRevealCompatibility();
 
             Console.WriteLine("DiarySaveNormalizationTests passed " + assertions + " assertions.");
             return 0;
@@ -773,6 +774,112 @@ namespace DiarySaveNormalizationTests
                 current, facts);
             AssertEqual("current A2 schema is not rebaselined", 0,
                 unchanged.creepJoinerArcs.Count);
+        }
+
+        private static void TestAnomalyCreepJoinerSurgicalRevealCompatibility()
+        {
+            // A2.1 deliberately keeps the seven-field row at schema 1. An A2.0 downgrade therefore
+            // treats its then-unknown non-terminal phase like any unknown joined-state row instead of
+            // converting it into a future-schema terminal barrier that could block a later outcome.
+            AssertEqual("A2.1 keeps downgrade-compatible creepjoiner row schema", 1,
+                AnomalyPersistencePolicy.CurrentCreepJoinerArcSchemaVersion);
+            CreepJoinerArcSnapshot reveal = AnomalyPersistencePolicy.NormalizeCreepJoinerArc(
+                new CreepJoinerArcSnapshot
+                {
+                    pawnId = "Pawn_Reveal",
+                    arrivalEventId = "Arrival_1",
+                    joinedTick = 10,
+                    lastVisiblePhase = AnomalyOutcomeTokens.SurgicalReveal,
+                    lastVisibleEventId = "Reveal_1",
+                    terminal = false,
+                    schemaVersion = 1
+                });
+            AssertEqual("non-terminal surgical phase survives normalization",
+                AnomalyOutcomeTokens.SurgicalReveal, reveal.lastVisiblePhase);
+            AssertEqual("non-terminal surgical event identity survives normalization",
+                "Reveal_1", reveal.lastVisibleEventId);
+            AssertTrue("surgical reveal normalization remains non-terminal", !reveal.terminal);
+
+            List<CreepJoinerArcSnapshot> duplicate = AnomalyPersistencePolicy.NormalizeCreepJoinerArcs(
+                new List<CreepJoinerArcSnapshot>
+                {
+                    new CreepJoinerArcSnapshot
+                    {
+                        pawnId = "Pawn_DuplicateReveal",
+                        joinedTick = 20,
+                        lastVisiblePhase = CreepJoinerPhaseTokens.Joined,
+                        schemaVersion = 1
+                    },
+                    new CreepJoinerArcSnapshot
+                    {
+                        pawnId = "Pawn_DuplicateReveal",
+                        joinedTick = 10,
+                        lastVisiblePhase = AnomalyOutcomeTokens.SurgicalReveal,
+                        lastVisibleEventId = "Reveal_A",
+                        schemaVersion = 1
+                    }
+                });
+            AssertEqual("duplicate joined/reveal rows collapse", 1, duplicate.Count);
+            AssertEqual("duplicate merge ranks reveal above joined",
+                AnomalyOutcomeTokens.SurgicalReveal, duplicate[0].lastVisiblePhase);
+            AssertEqual("duplicate reveal retains its event identity", "Reveal_A",
+                duplicate[0].lastVisibleEventId);
+            AssertTrue("duplicate reveal remains non-terminal", !duplicate[0].terminal);
+
+            duplicate.Add(new CreepJoinerArcSnapshot
+            {
+                pawnId = "Pawn_DuplicateReveal",
+                joinedTick = 30,
+                lastVisiblePhase = AnomalyOutcomeTokens.Rejected,
+                lastVisibleEventId = "Terminal_A",
+                terminal = true,
+                schemaVersion = 1
+            });
+            duplicate = AnomalyPersistencePolicy.NormalizeCreepJoinerArcs(duplicate);
+            AssertTrue("terminal duplicate ranks above earlier surgical reveal",
+                duplicate.Count == 1 && duplicate[0].terminal
+                    && duplicate[0].lastVisiblePhase == AnomalyOutcomeTokens.Rejected);
+
+            CreepJoinerArcSnapshot malformedTerminal =
+                AnomalyPersistencePolicy.NormalizeCreepJoinerArc(new CreepJoinerArcSnapshot
+                {
+                    pawnId = "Pawn_MalformedReveal",
+                    joinedTick = 1,
+                    lastVisiblePhase = AnomalyOutcomeTokens.SurgicalReveal,
+                    lastVisibleEventId = "UnsafeReveal",
+                    terminal = true,
+                    schemaVersion = 1
+                });
+            AssertTrue("contradictory terminal reveal becomes a blank replay barrier",
+                malformedTerminal.terminal && malformedTerminal.lastVisiblePhase.Length == 0
+                    && malformedTerminal.lastVisibleEventId.Length == 0);
+
+            CreepJoinerArcSnapshot future = AnomalyPersistencePolicy.NormalizeCreepJoinerArc(
+                new CreepJoinerArcSnapshot
+                {
+                    pawnId = "Pawn_FutureReveal",
+                    joinedTick = 1,
+                    lastVisiblePhase = AnomalyOutcomeTokens.SurgicalReveal,
+                    lastVisibleEventId = "FutureReveal",
+                    terminal = false,
+                    schemaVersion = 9
+                });
+            AssertTrue("future reveal schema remains an uninterpreted terminal barrier",
+                future.terminal && future.schemaVersion == 9
+                    && future.lastVisiblePhase.Length == 0
+                    && future.lastVisibleEventId.Length == 0);
+
+            CreepJoinerArcSnapshot migratedJoined = AnomalyPersistencePolicy.NormalizeCreepJoinerArc(
+                new CreepJoinerArcSnapshot
+                {
+                    pawnId = "Pawn_A20",
+                    joinedTick = 2,
+                    lastVisiblePhase = CreepJoinerPhaseTokens.Joined,
+                    schemaVersion = 1
+                });
+            AssertTrue("existing A2.0 row migrates without a schema or terminal rewrite",
+                migratedJoined.schemaVersion == 1 && !migratedJoined.terminal
+                    && migratedJoined.lastVisiblePhase == CreepJoinerPhaseTokens.Joined);
         }
 
         // ------------------------------------------------------------------------------------------

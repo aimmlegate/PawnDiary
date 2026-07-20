@@ -1,6 +1,6 @@
 // Plain contracts and stable schema tokens for Anomaly study, containment, and visible creepjoiner
-// work. Live RimWorld adapters are intentionally absent: callers copy game state into these DTOs
-// before invoking the pure policies beside them.
+// work, including surgical disclosure. Live RimWorld adapters are intentionally absent: callers copy
+// game state into these DTOs before invoking the pure policies beside them.
 //
 // New to C#/RimWorld? See AGENTS.md ("architecture barriers" and "DLC-safety").
 using System;
@@ -63,6 +63,8 @@ namespace PawnDiary.Capture
         public const string CreepJoinerPhase = "creepjoiner_phase";
         public const string CreepJoinerSubjectId = "creepjoiner_subject_id";
         public const string CreepJoinerSubjectLabel = "creepjoiner_subject_label";
+        public const string CreepJoinerSurgeonId = "creepjoiner_surgeon_id";
+        public const string CreepJoinerSurgeonLabel = "creepjoiner_surgeon_label";
         public const string RejectionResponse = "rejection_response";
         public const string VisibleResult = "visible_result";
         public const string Transformation = "transformation";
@@ -96,6 +98,7 @@ namespace PawnDiary.Capture
         public const string ColonyWitness = "colony_witness";
         public const string Speaker = "speaker";
         public const string Subject = "subject";
+        public const string Surgeon = "surgeon";
     }
 
     /// <summary>Stable future-facing visible outcome tokens frozen with the A1 schema.</summary>
@@ -117,7 +120,7 @@ namespace PawnDiary.Capture
         // baseline, but it is never submitted as a dedicated outcome page.
         public const string Joined = "joined";
 
-        /// <summary>Returns whether a token is one of A2.0's three terminal visible phases.</summary>
+        /// <summary>Returns whether a token is one of the three terminal visible phases.</summary>
         public static bool IsOutcome(string value)
         {
             string phase = (value ?? string.Empty).Trim();
@@ -126,17 +129,19 @@ namespace PawnDiary.Capture
                 || phase == AnomalyOutcomeTokens.Departed;
         }
 
-        /// <summary>Returns whether a token is the joined baseline or a terminal visible phase.</summary>
+        /// <summary>Returns whether a token is the joined baseline or any supported visible phase.</summary>
         public static bool IsKnown(string value)
         {
             string phase = (value ?? string.Empty).Trim();
-            return phase == Joined || IsOutcome(phase);
+            return phase == Joined || phase == AnomalyOutcomeTokens.SurgicalReveal
+                || IsOutcome(phase);
         }
     }
 
     /// <summary>Prompt-safe visible results; these never encode a configured response Def.</summary>
     internal static class CreepJoinerVisibleResultTokens
     {
+        public const string Disclosed = "disclosed";
         public const string Rejected = "rejected";
         public const string Hostile = "hostile";
         public const string Leaving = "leaving";
@@ -144,6 +149,7 @@ namespace PawnDiary.Capture
         /// <summary>Maps a terminal phase to its generic visible-only result token.</summary>
         public static string ForPhase(string phase)
         {
+            if (phase == AnomalyOutcomeTokens.SurgicalReveal) return Disclosed;
             if (phase == AnomalyOutcomeTokens.Rejected) return Rejected;
             if (phase == AnomalyOutcomeTokens.Aggressive) return Hostile;
             if (phase == AnomalyOutcomeTokens.Departed) return Leaving;
@@ -333,6 +339,58 @@ namespace PawnDiary.Capture
         public string sourceKey = string.Empty;
         public AnomalyWriterSelection selectedWriter;
         public CreepJoinerArcSnapshot nextArc;
+    }
+
+    /// <summary>
+    /// Detached proof from one exact surgical-inspection transaction. It carries only role identity,
+    /// visible labels, eligibility, and generic yes/no disclosure evidence—never appended letter text
+    /// or a configured creepjoiner Def/worker/private state.
+    /// </summary>
+    internal sealed class CreepJoinerSurgicalDisclosureFacts
+    {
+        public string subjectPawnId = string.Empty;
+        public string subjectLabel = string.Empty;
+        public string surgeonPawnId = string.Empty;
+        public string surgeonLabel = string.Empty;
+        public int tick = -1;
+        public bool surgeryCompleted;
+        public bool trackerDisclosureAppended;
+        public bool playerVisible;
+        public bool surgeonEligible;
+        public bool subjectEligible;
+    }
+
+    /// <summary>Pure non-terminal arc mutation plus exact surgeon/subject writer order.</summary>
+    internal sealed class CreepJoinerSurgicalDisclosurePlan
+    {
+        public bool valid;
+        public bool advanceArc;
+        public bool writePage;
+        public bool replaySuppressed;
+        public string phase = string.Empty;
+        public string visibleResultToken = string.Empty;
+        public string sourceKey = string.Empty;
+        public readonly List<AnomalyWriterSelection> selectedWriters =
+            new List<AnomalyWriterSelection>();
+        public CreepJoinerArcSnapshot nextArc;
+    }
+
+    /// <summary>Detached identity of one active surgical-inspection Tale owner.</summary>
+    internal sealed class CreepJoinerSurgeryTaleClaim
+    {
+        public string subjectPawnId = string.Empty;
+        public string surgeonPawnId = string.Empty;
+        public int openedTick = -1;
+        public bool active;
+    }
+
+    /// <summary>Detached identity copied from one ordinary Tale callback.</summary>
+    internal sealed class CreepJoinerSurgeryTaleFacts
+    {
+        public string taleDefName = string.Empty;
+        public string firstPawnId = string.Empty;
+        public string secondPawnId = string.Empty;
+        public int tick = -1;
     }
 
     /// <summary>One XML-owned exact study promotion expressed without an optional Def reference.</summary>

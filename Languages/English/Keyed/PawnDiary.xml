@@ -1577,6 +1577,8 @@
   <PawnDiary.Event.Anomaly.CreepJoiner.Result.RejectedAggressive>rejected the offer to join and became openly hostile</PawnDiary.Event.Anomaly.CreepJoiner.Result.RejectedAggressive>
   <PawnDiary.Event.Anomaly.CreepJoiner.Result.Aggressive>became openly hostile</PawnDiary.Event.Anomaly.CreepJoiner.Result.Aggressive>
   <PawnDiary.Event.Anomaly.CreepJoiner.Result.Departed>began leaving</PawnDiary.Event.Anomaly.CreepJoiner.Result.Departed>
+  <PawnDiary.Event.Anomaly.CreepJoiner.Surgical.SurgeonFallback>{0} found that the surgical inspection of {1} disclosed something abnormal.</PawnDiary.Event.Anomaly.CreepJoiner.Surgical.SurgeonFallback>
+  <PawnDiary.Event.Anomaly.CreepJoiner.Surgical.SubjectFallback>{0} underwent an inspection by {1} that disclosed something abnormal.</PawnDiary.Event.Anomaly.CreepJoiner.Surgical.SubjectFallback>
   <PawnDiary.Event.Anomaly.Ghoul.Label>Ghoul transformation</PawnDiary.Event.Anomaly.Ghoul.Label>
   <PawnDiary.Event.Anomaly.Ghoul.SubjectFallback>{0} underwent the completed infusion and became a ghoul.</PawnDiary.Event.Anomaly.Ghoul.SubjectFallback>
   <PawnDiary.Event.Anomaly.Ghoul.SurgeonFallback>{0} completed the infusion that transformed {1} into a ghoul.</PawnDiary.Event.Anomaly.Ghoul.SurgeonFallback>

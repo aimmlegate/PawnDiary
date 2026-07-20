@@ -29,7 +29,7 @@ namespace PawnDiary
         /// Harmony Postfix for TaleRecorder.RecordTale. The returned Tale is null when vanilla
         /// chose not to record it, so only successful tales are forwarded to DiaryGameComponent.
         /// </summary>
-        public static void Postfix(Tale __result, TaleDef def)
+        public static void Postfix(Tale __result, TaleDef def, object[] args)
         {
             DiaryPatchSafety.Run("TaleRecorderPatch", () =>
             {
@@ -44,6 +44,19 @@ namespace PawnDiary
                 }
 
                 TaleSignal signal = new TaleSignal(__result, def);
+                // A2.1 delays only the exact DidSurgery signal inside the exact active recipe. The
+                // vanilla Tale has already been recorded and is never removed; mismatches, expiry,
+                // failed/hidden results, disabled output, or hook failure keep this ordinary route.
+                if (DiaryAnomalyPatches.CreepJoinerSurgicalHookReady
+                    && CreepJoinerSurgicalInspectionScope.TryDeferDidSurgery(
+                        def,
+                        args,
+                        signal,
+                        Find.TickManager?.TicksGame ?? 0,
+                        DiaryAnomalyPolicy.Snapshot().taleOwnershipExpiryTicks))
+                {
+                    return;
+                }
                 if (!BiotechBirthCorrelation.TryStageMatureSignal(def.defName, signal)
                     && !signal.TryStageAsPersonaKillCompanion())
                 {

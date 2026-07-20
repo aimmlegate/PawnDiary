@@ -640,7 +640,7 @@
   <anomalyContainmentBreach.tones.0>срочно и опираясь на то, что вырвалось, без назначения причины или виновного</anomalyContainmentBreach.tones.0>
   <anomalyContainmentBreach.tones.1>настороженно и телесно напряжённо, сохраняя точную связь автора с прорывом</anomalyContainmentBreach.tones.1>
   <anomalyCreepJoinerOutcome.label>Видимые исходы странных прибытий</anomalyCreepJoinerOutcome.label>
-  <anomalyCreepJoinerOutcome.instruction>странный прибывший достиг одного точно видимого игроку исхода; опиши только переданные раскрытие, отказ, агрессию или уход и подтверждённую роль автора, не раскрывай скрытый недостаток, заражение, носителя, таймер, будущую трансформацию или ненаблюдаемый мотив</anomalyCreepJoinerOutcome.instruction>
+  <anomalyCreepJoinerOutcome.instruction>странный прибывший достиг одного точно видимого игроку исхода; опиши только переданные общее раскрытие, отказ, агрессию или уход и подтверждённую роль автора; при хирургическом раскрытии сохраняй различие между хирургом-исследователем и пациентом, не называй обнаруженную тайну, не цитируй текст осмотра и не раскрывай скрытый недостаток, заражение, носителя, таймер, будущую трансформацию или ненаблюдаемый мотив</anomalyCreepJoinerOutcome.instruction>
   <anomalyCreepJoinerOutcome.tone>с потрясённым осознанием и строгой неизвестностью всего, что ещё скрыто</anomalyCreepJoinerOutcome.tone>
   <anomalyCreepJoinerOutcome.tones.0>лично и тревожно, останавливаясь точно на границе видимого знания</anomalyCreepJoinerOutcome.tones.0>
   <anomalyCreepJoinerOutcome.tones.1>напряжённо и наблюдательно, не превращая подозрение в тайную уверенность</anomalyCreepJoinerOutcome.tones.1>

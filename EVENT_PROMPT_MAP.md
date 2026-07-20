@@ -463,12 +463,16 @@ package-gated Interaction groups at orders `61..65`: `anomalyStudyBreakthrough`,
 `ClassifyAnomalyEvent`; this dedicated route accepts only an available exact `matchDefNames` row and
 cannot use any broader Interaction matcher (including the ordinary catch-all and the order-70
 `Anomaly` token group).
-A1.2 study, A1.3 containment breach, and A2.0 visible creepjoiner outcomes now submit through this
+A1.2 study, A1.3 containment breach, and A2.0/A2.1 visible creepjoiner outcomes now submit through this
 envelope after their source-specific before/after policies prove the exact visible transition. The
-creepjoiner route accepts only generic `rejected`/`aggressive`/`departed` phase truth and one exact
-same-map speaker, pre-departure subject, or nearby-witness POV. Vanilla aggressive rejection is one
-outer-owned `aggressive`/`hostile` page with `rejection_response=true`; letterless modded rejection
-releases any nested visible outcome owner, and no hidden tracker configuration reaches context.
+creepjoiner route accepts only generic `surgical_reveal`/`rejected`/`aggressive`/`departed` phase truth.
+A2.0 chooses one exact same-map speaker, pre-departure subject, or nearby-witness POV. A2.1 instead
+chooses the exact eligible surgeon first and the exact eligible subject second, with no nearby fallback;
+its nonterminal result is only `disclosed`. The exact correlated `DidSurgery` signal is suppressed only
+when that dedicated disclosure page exists, otherwise the ordinary Tale route fails open. Vanilla
+aggressive rejection is one outer-owned `aggressive`/`hostile` page with `rejection_response=true`;
+letterless modded rejection releases any nested visible outcome owner. No hidden tracker configuration,
+inspection prose, or disclosed benefit/downside identity reaches context.
 Ghoul and terminal-void groups remain settings/localization reservations with zero live producers until
 A2.2/A3. N3-A remains an explicit zero-candidate provider.
 

@@ -1,5 +1,30 @@
 # Changelog
 
+- **2026-07-20 — Implemented Master Wave 7 / Anomaly Phase A2.1 surgical creepjoiner
+  disclosure.** Pawn Diary now correlates the exact installed surgical-inspection recipe, creepjoiner
+  tracker callback, overall Pawn inspection result, and surgeon-first/subject-second `DidSurgery`
+  Tale. A visible tracker disclosure creates one nonterminal `surgical_reveal` / `disclosed` page;
+  the exact eligible surgeon writes first and the exact eligible subject may write second, with no
+  unrelated nearby witness. “Nothing found”, letter-suppressed inspection, failed/exceptional surgery,
+  correlation mismatch, missing author, and disabled specialized output fail open to the ordinary
+  Tale route. The vanilla historical Tale itself is never removed.
+
+  The bounded lifecycle-cleared scope copies only detached IDs, visible labels, eligibility, tick, and
+  generic disclosure booleans. Appended inspection prose, configured benefit/downside identity, hidden
+  host state, private tracker fields, motive, and future/terminal claims have no prompt or save path.
+  The seven-field creepjoiner row schema/version remains unchanged: current loads preserve the new
+  nonterminal phase, while A2.0 downgrade behavior safely treats it as state-only `joined`. Arrival
+  continuity and later rejection/aggression/departure remain available. XML prompt policy and localized
+  English/Russian fallback now describe only generic disclosure and truthful surgeon/subject roles.
+
+  Focused suites pass 529 Anomaly and 134 save-normalization assertions. Eight new loaded fixtures plus
+  expanded registration/lifecycle checks bring RimTest to 335 compiled tests and cover the real recipe,
+  pair/solo roles, no-disclosure and disabled-output Tale fallback, early exit, exception-finalizer and
+  unscoped fail-open behavior, later terminal outcome, exact composite patch ownership, and reset cleanup.
+  Runtime and RimTest assemblies rebuild against installed RimWorld 1.6. The earlier 327-test A2.0
+  rerun and the expanded 335-test A2.1 in-game run
+  remain pending; compilation is not claimed as execution.
+
 - **2026-07-20 — Hardened A2.0 creepjoiner truth, compatibility, and loaded coverage after
   adversarial review.** Vanilla `AggressiveRejection` still owns exactly one outer page, but that
   page and its saved terminal arc now report the pawn's visible `aggressive`/`hostile` state and carry

@@ -1,7 +1,7 @@
 # Pawn Diary — Anomaly Support Implementation Plan
 
-Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.4 and A2.0 implemented as Master Wave 7,
-2026-07-20; A2.1–A3 remain implementation-ready plans. The
+Status: A0 implemented as Master Wave 2, 2026-07-15; A1.0–A1.4 and A2.0–A2.1 implemented as Master Wave 7,
+2026-07-20; A2.2–A3 remain implementation-ready plans. The
 RimWorld 1.6 feasibility spike is complete for study-note milestones, containment escapes, visible
 creepjoiner outcomes, ghoul infusion, and both terminal void choices. Production now includes the A0
 exact psychic-ritual routing and monolith activation chapters described below.
@@ -11,7 +11,7 @@ Scheduling authority: implement Anomaly phases only in the waves assigned by
 
 Anomaly was the final standalone DLC planning artifact. Its small A0 semantic-precision release has
 now shipped independently; A1 study capture, containment breach capture, and A1 hardening/delivery
-and visible creepjoiner state/outcomes are implemented, while A2.1–A3 remain scheduled in the master plan.
+and visible creepjoiner state/outcomes including surgical disclosure are implemented, while A2.2–A3 remain scheduled in the master plan.
 
 The plan turns Anomaly's already broad atmospheric coverage into a coherent human story:
 curiosity becomes knowledge, knowledge enables a choice, containment can fail, apparently human
@@ -49,7 +49,7 @@ standalone plans.
 | `ODYSSEY_SUPPORT_IMPLEMENTATION_PLAN.md` | Scope-review plan only; its saved journey and landing chapters are not production code. |
 | Current Anomaly ritual support | Successful psychic rituals fan out through `DiaryEventType.Ritual`, with exact ritual defName, perspective, quality, and exact-family Anomaly guidance plus a modded fallback. |
 | Current Anomaly atmosphere | Monolith discovery/activation, visible and hidden metalhorror pressure, pit gates, fleshmass, nociosphere, obelisks, unnatural corpses, major conditions, cube effects, void hediffs, thoughts, raids, and Tales already have useful generic coverage. |
-| Main Anomaly gap | Exact ritual meaning, researcher-owned study milestones, containment consequence, and visible creepjoiner outcomes are connected; surgical disclosure, ghoul identity, and exact terminal void chapters remain. |
+| Main Anomaly gap | Exact ritual meaning, researcher-owned study milestones, containment consequence, and visible creepjoiner outcomes including surgical disclosure are connected; ghoul identity and exact terminal void chapters remain. |
 
 This plan starts from that production baseline. A coding agent must not assume that a cross-DLC
 facet, event type, state model, or helper proposed by another plan already exists.
@@ -126,7 +126,7 @@ The creepjoiner and ghoul pieces may merge separately after their own acceptance
 - Optionally request one rare arc reflection after the canonical outcome page records; the
   reflection must not restate the event or become a second ending page.
 
-A0, A1, and A2.0 are implemented. A2.1–A2.2 remain implementation-ready for surgical disclosure and
+A0, A1, and A2.0–A2.1 are implemented. A2.2 remains implementation-ready for
 the ghoul recipe; general creepjoiner-downside classification stays deferred. A3 remains
 implementation-ready for both terminal choices.
 
@@ -1676,9 +1676,39 @@ profile remains in the manual in-game matrix.
 
 ### Phase A2.1 — Surgical disclosure
 
-- Add recipe/tracker correlation and successful disclosure verification.
-- Implement exact `DidSurgery` ownership with fail-open behavior.
-- Add surgeon/subject POV tests and “nothing/failure” silence tests.
+> **Status (2026-07-20): implemented; expanded 335-fixture loaded run pending.** A composite
+> Anomaly-gated registration pins the exact installed public recipe, creepjoiner tracker, and Pawn
+> inspection-result signatures. The bounded recipe scope accepts disclosure only when the exact tracker
+> returns true and grows its builder, the overall Pawn result is letter-visible `Detected`, and the
+> recipe returns normally. Only generic booleans and detached subject/surgeon identity, visible labels,
+> eligibility, and tick cross the DLC boundary; appended letter prose and hidden tracker configuration
+> are neither copied nor saved.
+>
+> Pure planning commits one nonterminal `surgical_reveal` / `disclosed` phase independently of output,
+> selects the exact eligible surgeon first and exact eligible subject second under the XML writer cap,
+> never selects a nearby witness, suppresses replay, and leaves later terminal outcomes available. The
+> existing seven-field creepjoiner row and per-row schema version remain unchanged. Current load
+> normalization preserves the new phase, while an A2.0 downgrade safely normalizes the then-unknown
+> nonterminal phase back to `joined`.
+>
+> `DidSurgery` is deferred only inside the exact active surgeon-first/subject-second recipe scope and
+> suppressed only after the dedicated page is actually created. “Nothing found”, `DetectedNoLetter`,
+> surgery failure, exceptions, signature/correlation mismatch, expired/closed ownership, disabled output,
+> and no-author cases release the ordinary `TaleSignal`; vanilla's historical Tale is untouched. Context
+> and English/Russian fallback reveal only the generic disclosure and exact visible roles, never the
+> benefit/downside identity, appended letter text, hidden host state, motive, or terminal outcome.
+>
+> Focused pure suites pass 529 Anomaly and 134 save-normalization assertions. Eight new loaded fixtures,
+> plus expanded registration/lifecycle assertions, bring RimTest to 335 compiled tests. They cover a real
+> successful recipe, surgeon/subject pair and surgeon-only pre-join POVs, nothing-found and disabled-output
+> generic-Tale fallback, an early recipe exit without tracker evidence, exception-finalizer fail-open,
+> unscoped ownership fallback, later terminal continuity, exact composite patch ownership, and lifecycle
+> cleanup. The earlier 327-test A2.0 rerun and the expanded 335-test A2.1 run remain pending; no in-game
+> execution is claimed.
+
+- [x] Add recipe/tracker correlation and successful disclosure verification.
+- [x] Implement exact `DidSurgery` ownership with fail-open behavior.
+- [x] Add surgeon/subject POV tests and “nothing/failure” silence tests.
 
 ### Phase A2.2 — Ghoul transformation
 

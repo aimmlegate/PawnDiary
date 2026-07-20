@@ -11,6 +11,7 @@ namespace PawnDiary
             AnomalyRecentStudyCache.Clear();
             ContainmentEscapeScopeStack.Clear();
             CreepJoinerOutcomeScope.Clear();
+            CreepJoinerSurgicalInspectionScope.Clear();
         }
     }
 }
