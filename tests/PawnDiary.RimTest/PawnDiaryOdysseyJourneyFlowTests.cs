@@ -635,23 +635,56 @@ namespace PawnDiary.RimTests
             object previousObserved = observedField.GetValue(scope.Component);
             try
             {
-                scope.SpawnAsLiveColonist(pawn);
-                OdysseyLocationSnapshot location;
-                bool captured = DlcContext.TryCaptureOdysseyLocation(pawn, out location);
-                OdysseyMobileHomeSnapshot mobileHome;
-                bool mobileCaptured = DlcContext.TryCaptureOdysseyMobileHome(pawn, out mobileHome);
-
                 if (!ModsConfig.OdysseyActive)
                 {
+                    // Keep the inactive branch independent of every Odyssey live object. A normal
+                    // spawned pawn is enough to prove both adapters return before reading DLC state.
+                    scope.SpawnAsLiveColonist(pawn);
+                    OdysseyLocationSnapshot inactiveLocation;
+                    bool inactiveLocationCaptured = DlcContext.TryCaptureOdysseyLocation(
+                        pawn, out inactiveLocation);
+                    OdysseyMobileHomeSnapshot inactiveMobileHome;
+                    bool inactiveMobileCaptured = DlcContext.TryCaptureOdysseyMobileHome(
+                        pawn, out inactiveMobileHome);
                     OdysseyNarrativeSnapshot inactiveNarrative = DiaryGameComponent.Instance?
                         .OdysseyNarrativeSnapshotFor(pawn, Find.TickManager?.TicksGame ?? 0);
-                    Require(!captured && location == null && !mobileCaptured && mobileHome == null
+                    Require(!inactiveLocationCaptured && inactiveLocation == null
+                            && !inactiveMobileCaptured && inactiveMobileHome == null
                             && inactiveNarrative == null,
                         "Odyssey-inactive live context must return false/null before touching DLC state.");
                     Log.Message(LogPrefix + "Odyssey inactive: guarded live adapters returned no state.");
                     return;
                 }
 
+                // This is a positive N3-O acceptance fixture, not merely a conditional smoke test.
+                // Spawn on a cell that vanilla itself accepts as onboard so a parked gravship host
+                // deterministically exercises mobile-home plus exact-map environmental pressure.
+                Map map = Find.CurrentMap;
+                Building_GravEngine engine = map == null
+                    ? null
+                    : GravshipUtility.GetPlayerGravEngine_NewTemp(map);
+                Require(engine != null && engine.Spawned,
+                    "Odyssey-active N3-O acceptance requires a loaded map with a parked player gravship.");
+                IntVec3 onboardCell = IntVec3.Invalid;
+                foreach (IntVec3 candidate in engine.ValidSubstructure)
+                {
+                    if (candidate.Standable(map)
+                        && GravshipUtility.IsOnboardGravship_NewTemp(
+                            candidate, engine, pawn, desperate: false, respectAllowedAreas: false))
+                    {
+                        onboardCell = candidate;
+                        break;
+                    }
+                }
+                Require(onboardCell.IsValid,
+                    "The parked player gravship had no standable indoor cell accepted by vanilla's "
+                    + "onboard predicate.");
+                GenSpawn.Spawn(pawn, onboardCell, map);
+
+                OdysseyLocationSnapshot location;
+                bool captured = DlcContext.TryCaptureOdysseyLocation(pawn, out location);
+                OdysseyMobileHomeSnapshot mobileHome;
+                bool mobileCaptured = DlcContext.TryCaptureOdysseyMobileHome(pawn, out mobileHome);
                 Require(captured && location != null,
                     "Odyssey-active spawned pawn did not produce a detached map location.");
                 AssertStr(pawn.Map.Biome?.defName ?? string.Empty, location.biomeDefName,
@@ -661,12 +694,12 @@ namespace PawnDiary.RimTests
                         || location.layerToken == OdysseyLocationLayerTokens.Unknown,
                     "Live location emitted an unknown layer token.");
 
-                Building_GravEngine engine = GravshipUtility.GetPlayerGravEngine_NewTemp(pawn.Map);
                 bool vanillaOnboard = engine != null
                     && GravshipUtility.IsOnboardGravship_NewTemp(
                         pawn.Position, engine, pawn, desperate: false, respectAllowedAreas: false);
-                Require(mobileCaptured == vanillaOnboard,
-                    "Mobile-home capture disagreed with vanilla's exact pawn-on-gravship predicate.");
+                Require(vanillaOnboard && mobileCaptured,
+                    "The positive N3-O fixture or mobile-home adapter disagreed with vanilla's exact "
+                    + "pawn-on-gravship predicate.");
 
                 string surroundings = DiaryContextBuilder.BuildSurroundingsSummary(pawn);
                 if (mobileCaptured)
@@ -753,6 +786,8 @@ namespace PawnDiary.RimTests
                         {
                             Require(built.selection.selectedCandidates.Count == 2
                                     && built.selection.narrativeContext.IndexOf(
+                                        narrative.homeText, StringComparison.Ordinal) >= 0
+                                    && built.selection.narrativeContext.IndexOf(
                                         narrative.environmentalPressures[0].text,
                                         StringComparison.Ordinal) >= 0,
                                 "Loaded Full context did not compose exact home and seasonal-flood lenses.");
@@ -810,8 +845,14 @@ namespace PawnDiary.RimTests
                     flood.mapUniqueId = pawn.Map.uniqueID + 1;
                     OdysseyNarrativeSnapshot wrongMap = scope.Component
                         .OdysseyNarrativeSnapshotFor(pawn, now);
-                    Require(wrongMap != null && wrongMap.environmentalPressures.Count == 0,
-                        "A seasonal-flood observer row from another map entered this POV snapshot.");
+                    Require(wrongMap != null && wrongMap.hasVerifiedPovConnection
+                            && wrongMap.shipStableId == mobileHome.shipStableId
+                            && wrongMap.locationKey == mobileHome.location.stableKey
+                            && wrongMap.homeText.IndexOf(
+                                mobileHome.shipName, StringComparison.OrdinalIgnoreCase) >= 0
+                            && wrongMap.environmentalPressures.Count == 0,
+                        "A wrong-map flood row did not suppress only pressure while preserving the "
+                        + "valid mobile-home snapshot.");
                     string visibleLocation = mobileHome.location?.visibleLabel ?? string.Empty;
                     string biomeLabel = pawn.Map.Biome?.label ?? string.Empty;
                     if (!string.IsNullOrWhiteSpace(visibleLocation)

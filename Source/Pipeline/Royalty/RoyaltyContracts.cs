@@ -767,6 +767,8 @@ namespace PawnDiary
     {
         public const string SourceDomain = "royalty_persona";
         public const string TitleSourceDomain = "royalty_title";
+        public const string SuccessionSourceDomain = "royalty_succession";
+        public const string PermitSourceDomain = "royalty_permit";
 
         public static NarrativeEvidence Persona(
             string eventId,

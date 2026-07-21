@@ -116,6 +116,33 @@ namespace PawnDiary.RimTests
                     permit.Title.GetLabelCapFor(pawn)));
                 RequireContext(diaryEvent, "permit_setting=" + DiaryLineCleaner.CleanLine(
                     pawn.MapHeld.Parent.LabelCap));
+                string family = RoyalPermitPolicy.FamilyFor(
+                    defs[i].defName, DiaryRoyaltyPolicy.Snapshot());
+                List<NarrativeEvidence> evidence =
+                    diaryEvent.NarrativeEvidenceForRole(DiaryEvent.InitiatorRole);
+                PawnDiaryRimTestScope.Require(evidence.Count == 1
+                        && evidence[0].facet == NarrativeFacetTokens.IdentityTransition
+                        && evidence[0].phase == family
+                        && evidence[0].subjectKind == NarrativeSubjectKindTokens.Pawn
+                        && evidence[0].subjectId == pawn.GetUniqueLoadID()
+                        && evidence[0].sourceDomain == RoyaltyNarrativeEvidenceFactory.PermitSourceDomain
+                        && evidence[0].sourceDefName == expectedEvents[i]
+                        && string.IsNullOrEmpty(evidence[0].arcKey),
+                    "The exact permit page did not freeze its source-owned N3-R authority evidence.");
+                string titleKeyPrefix = "royalty|title|" + pawn.GetUniqueLoadID() + "|"
+                    + faction.GetUniqueLoadID() + "|";
+                PawnDiaryRimTestScope.Require(
+                    diaryEvent.NarrativeSelectedCandidateKeysForRole(DiaryEvent.InitiatorRole)
+                        .Exists(key => key != null
+                            && key.StartsWith(titleKeyPrefix, StringComparison.Ordinal))
+                        && !string.IsNullOrWhiteSpace(
+                            diaryEvent.NarrativeContextForRole(DiaryEvent.InitiatorRole))
+                        && diaryEvent.NarrativeReferencesForRole(DiaryEvent.InitiatorRole)
+                            .Exists(reference => reference != null
+                                && reference.facet == NarrativeFacetTokens.IdentityTransition
+                                && reference.subjectKind == NarrativeSubjectKindTokens.Pawn
+                                && reference.subjectId == pawn.GetUniqueLoadID()),
+                    "The permit page did not select the existing exact-POV Royalty title provider.");
                 PawnDiaryRimTestScope.Require(permit.LastUsedTick == Find.TickManager.TicksGame,
                     "Notify_Used did not commit vanilla lastUsedTick for " + defs[i].defName + ".");
             }

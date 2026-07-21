@@ -61,6 +61,50 @@
   read as the quiet, configurable tints their code always intended. New EN/RU tooltip keys
   (`PawnDiary.Tab.FavoriteAddTip`/`FavoriteRemoveTip`). Debug build passes 0/0 and all 14 pure test
   suites stay green; no in-game acceptance run is claimed.
+- **2026-07-21 — Completed the Master Wave 9 Narrative N3-R extension.** A source/code/test audit
+  confirmed that exact succession identity evidence, Royal Ascent start/terminal journey evidence,
+  and the exact active court-pressure candidate already shipped in Royalty Phases 5 and 7, so this
+  slice does not duplicate their provider or invent another Ascent page. The one missing contract was
+  permit authority: after an allowlisted successful-use page exists, `RoyalPermitSignal` now attaches
+  one exact caller-POV `identity_transition` row and lets the existing current-title provider supply
+  its bounded authority lens. The pure boundary revalidates event/tick/owner identity and the exact
+  XML permit mapping; routine, unknown, forged-family, and unlisted modded permits remain silent, while
+  an explicitly mapped modded permit can opt into a reviewed family. No arrival, aid/impact/transport
+  completion, escape, credits, or other unverified outcome is inferred.
+
+  Focused assembly-free suites pass 486 Royalty and 330 Narrative Continuity assertions. The full
+  repository hook passes all 14 pure suites at 6,588 assertions total, and its Debug runtime build
+  finishes with 0 warnings and 0 errors. The current 354-test RimTest assembly also builds;
+  strengthened real succession/permit fixtures
+  compile exact evidence/reference/provider assertions but have not been executed in a loaded game.
+  No XML, prompt prose, localization, save schema, hook, or paid-DLC dependency changed. Royalty Phase
+  5's recorded 354/354 result across 57/57 suites remains intact. Phase 6's hands-on and separately
+  recorded Royalty-inactive profiles; Phase 7's corrected loaded rerun, hands-on, and inactive profile;
+  Phase 8's loaded/cross-colony/Royalty-off/localization/hands-on matrices; and every earlier open
+  Phase 2–4 hands-on row all remain TODO/pending.
+
+- **2026-07-21 — Closed Royalty Phase 5 manual loaded acceptance.** On RimWorld 1.6.4871
+  rev591 in English, the isolated Harmony/Core/Royalty/Laboratory/RimTest Redux/Pawn Diary profile
+  first passed 353/354 tests across 56/57 suites; its sole failure was the older, non-Phase-5
+  `NonPrimaryCodedWielderDeathRetainsPersonaContext` fixture failing to establish its disposable
+  pending bond. The immediate user-confirmed rerun was fully green at 354/354 tests across 57/57
+  suites, while every exact inheritance, titleless intermediate, delayed succession, equal-or-higher
+  silence, explicit-heir, Scribe/migration, and load-reset Phase-5 fixture passed in both runs. The
+  separate Harmony/Core/Laboratory/RimTest Redux/Pawn Diary profile loaded cleanly without Royalty:
+  active Royalty fixtures took their guarded empty-state paths and the explicit inactive-collector
+  assertion passed. Its runner summary was not persisted to `Player.log`; the operator explicitly
+  accepted that evidence and directed the Phase-5 gate closed. No production, test, XML, save-schema,
+  localization, or DLL change was required. Royalty 6/7 and N3-R are not advanced by this acceptance.
+
+- **2026-07-21 — Confirmed Odyssey N3-O loaded acceptance green.** The first Odyssey-active
+  integrated run reached 353/354 and failed only because the loaded map did not contain the spawned,
+  parked player gravship required to exercise the positive onboard boundary. The focused fixture now
+  selects a standable cell accepted by vanilla's exact onboard predicate and explicitly requires both
+  Full-detail lenses plus wrong-map mobile-home preservation. On a valid player-home gravship host,
+  the user-confirmed corrected run passed 354/354 tests across 57/57 suites. The separately focused
+  Odyssey-inactive path passed 1/1, and the no-Odyssey profile produced no Pawn Diary crash,
+  missing-Def error, or error spam. This is test-only hardening; production behavior, hooks, and save
+  schema are unchanged.
 
 - **2026-07-21 — Added a queue-time prompt anti-repetition guard.** Before a first-person prompt is
   dispatched, the assembled user prompt is compared (pure word-token Jaccard, new
@@ -86,7 +130,7 @@
   and the home-map precondition used by the existing observer. The generic prompt-field fixture and
   its documentation no longer claim to perform provider selection. Focused suites pass 324 Narrative
   Continuity, 160 Odyssey policy, 68 observed-condition, and 2,750 pipeline assertions; both Debug
-  assemblies build, while the already-tracked N3-O in-game acceptance run remains pending.
+  assemblies build. The later corrected N3-O run passed 354/354 tests across 57/57 suites.
 
 - **2026-07-21 — Implemented Master Wave 8 / Narrative Continuity N3-O environmental pressure.** The
   existing Odyssey snapshot now carries an optional detached environmental fact sourced only from the
@@ -103,8 +147,8 @@
   `GravNausea` page, life-support inference, or landing consequence was added. Focused suites pass 324
   Narrative Continuity, 160 Odyssey policy, and 2,750 pipeline assertions; both Debug assemblies and
   repository verification pass, and committed runtime/RimTest DLLs are rebuilt. Focused loaded-path
-  assertions compile for the exact active/wrong-map/inactive and Full/Balanced/Compact paths, but no
-  N3-O in-game pass is claimed. Wave 9 remains untouched.
+  assertions cover the exact active/wrong-map/inactive and Full/Balanced/Compact paths; the later
+  corrected N3-O run passed 354/354 tests across 57/57 suites. Wave 9 remains untouched.
 - **2026-07-21 — Fixed four Diary filter-panel UI bugs.** (1) Hiding the filter panel now shrinks the
   whole tab back to the journal-only width instead of leaving the journal floating in the wide frame:
   `ResponsiveTabWidth` drops the panel allotment (`filterPanelWidth` + `filterPanelGap`) from `tabWidth`

@@ -704,7 +704,12 @@ those disposable heir/writer pawns, the user-confirmed corrected run passed 267/
   instant Freeholder step, equal-or-higher silence, delayed target claim/retirement, bestowing/title
   dedup, explicit `ChangeRoyalHeir`, nonempty component-ledger Scribe, missing-key/old-expiry
   normalization, Royalty-inactive hook/scope silence, and load-reset fixtures.
-- [ ] **MANUAL LATER:** Perform every row below before calling Phase 5 acceptance-complete.
+- [x] **MANUAL LOADED ACCEPTANCE:** On 2026-07-21 the isolated Royalty-only profile first reached
+  353/354 tests across 56/57 suites because an unrelated Phase-3 persona fixture intermittently failed
+  to establish its disposable pending bond. Every Phase-5 fixture passed, and the immediate
+  user-confirmed rerun was 354/354 across 57/57 suites. The separate Royalty-inactive loaded profile
+  exercised the guarded fixture paths and explicit empty-collector assertion without a Pawn Diary
+  Royalty failure; its summary was not persisted, and the operator directed this gate closed.
 
 | # | Scenario | Expected result | Regression signal |
 |---:|---|---|---|
@@ -718,9 +723,12 @@ those disposable heir/writer pawns, the user-confirmed corrected run passed 267/
 | 8 | Inspect Full/Balanced/Compact English and Russian succession/appointment prompt previews. | Required supplied identities/title/faction remain. Appointment omits deceased. No pawn/faction/title IDs, ticks, correlation IDs, commit flags, or `wasInherited` appear. | Missing central fact, untranslated key, invented death, or internal proof metadata in prose. |
 | 9 | Run Base + Harmony + Pawn Diary without Royalty; load/save a Royalty-authored Phase-5 save and continue ordinary title-independent play. | All three Phase-5 hooks/readers are inert, saved detached rows normalize safely, and no missing Def/type/patch warning, page, or DLC dependency appears. | Startup/load exception, warning spam, Royalty-only output, or paid-DLC requirement. |
 
-- [ ] **TODO:** Record exact RimWorld assembly/build, language, active mod lists, all manual rows above,
-  prompt captures, save excerpts, and Royalty-on/off logs. The 267/267 automated loaded result is
-  confirmed; Phase 5 remains hands-on acceptance-open until the remaining evidence is recorded.
+- [x] **ACCEPTED 2026-07-21:** RimWorld 1.6.4871 rev591, English. Royalty-on active mods were
+  Harmony, Core, Royalty, Laboratory, RimTest Redux, and Pawn Diary; the accepted full rerun was
+  354/354 tests across 57/57 suites. Royalty-off active mods were Harmony, Core, Laboratory, RimTest
+  Redux, and Pawn Diary; the log retained guarded skips and the inactive-collector success marker but
+  not its final runner summary. The operator accepted these fixture-backed loaded artifacts as the
+  Phase-5 manual record. No standalone prompt screenshots or save excerpts were retained.
 
 ---
 

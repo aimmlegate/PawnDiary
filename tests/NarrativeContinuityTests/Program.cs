@@ -1,6 +1,7 @@
 // Standalone, no-RimWorld checks for the shared Narrative Continuity layer through N3-A's visible
-// Anomaly provider, N3-B identity, and N3-O's exact-map seasonal-flood pressure. The project
-// file links only pure source, making any accidental Verse/Unity/DLC dependency a compile-time failure.
+// Anomaly provider, N3-B identity, N3-O's exact-map seasonal-flood pressure, and N3-R's exact
+// succession/permit/Ascent applicability. The project links only pure source, making any accidental
+// Verse/Unity/DLC dependency a compile-time failure.
 using System;
 using System.Collections.Generic;
 using PawnDiary;
@@ -785,6 +786,47 @@ namespace NarrativeContinuityTests
                 title[0].topicTokens.Count == 5
                     && title[0].topicTokens[3] == "apparel"
                     && title[0].topicTokens[4] == "speech");
+
+            NarrativeEvidence successionEvidence = Evidence();
+            successionEvidence.povPawnId = "pawn-1";
+            successionEvidence.facet = NarrativeFacetTokens.IdentityTransition;
+            successionEvidence.phase = "succession";
+            successionEvidence.subjectKind = NarrativeSubjectKindTokens.Pawn;
+            successionEvidence.subjectId = "pawn-1";
+            successionEvidence.sourceDomain = "royalty_succession";
+            successionEvidence.beliefTopics = new List<string>
+                { "authority", "status", "duty", "death" };
+            List<NarrativeLensCandidate> succession = RoyaltyNarrativeProvider.Build(
+                new List<NarrativeEvidence> { successionEvidence }, snapshot);
+            AssertEqual("exact heir-POV succession evidence reuses one current-title candidate",
+                1, succession.Count);
+            AssertEqual("succession identity keeps the stable faction-title candidate key",
+                "royalty|title|pawn-1|Faction_2|Baron", succession[0].candidateKey);
+            successionEvidence.subjectId = "pawn-2";
+            AssertEqual("succession evidence for a different heir cannot pull this POV title", 0,
+                RoyaltyNarrativeProvider.Build(
+                    new List<NarrativeEvidence> { successionEvidence }, snapshot).Count);
+            successionEvidence.subjectId = "pawn-1";
+
+            NarrativeEvidence permitEvidence = Evidence();
+            permitEvidence.povPawnId = "pawn-1";
+            permitEvidence.facet = NarrativeFacetTokens.IdentityTransition;
+            permitEvidence.phase = "military_aid";
+            permitEvidence.subjectKind = NarrativeSubjectKindTokens.Pawn;
+            permitEvidence.subjectId = "pawn-1";
+            permitEvidence.sourceDomain = "royalty_permit";
+            permitEvidence.sourceDefName = "RoyalPermitMilitaryAid";
+            permitEvidence.beliefTopics = new List<string> { "authority", "service", "violence" };
+            List<NarrativeLensCandidate> permit = RoyaltyNarrativeProvider.Build(
+                new List<NarrativeEvidence> { permitEvidence }, snapshot);
+            AssertEqual("exact caller-POV permit evidence reuses one current-title authority candidate",
+                1, permit.Count);
+            AssertEqual("permit authority keeps the stable faction-title candidate key",
+                "royalty|title|pawn-1|Faction_2|Baron", permit[0].candidateKey);
+            permitEvidence.povPawnId = "other-pawn";
+            AssertEqual("permit evidence for a different POV cannot pull this pawn's title", 0,
+                RoyaltyNarrativeProvider.Build(
+                    new List<NarrativeEvidence> { permitEvidence }, snapshot).Count);
 
             NarrativeEvidence biotechIdentity = Evidence();
             biotechIdentity.povPawnId = "pawn-1";
