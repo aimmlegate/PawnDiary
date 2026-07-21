@@ -280,7 +280,8 @@ future-tick row (even one still inside symmetric cache-maintenance bounds), and 
 row whose result/direction does not fit; it never searches backward into an older action. Reads remain
 non-consuming, so one pair event freezes the same target mechanics independently for both authorized
 POVs. A recipient mutation remains visible to the converter as event mechanics but cannot overwrite
-the converter's own current certainty or certainty trend.
+the converter's own current certainty or certainty trend; cross-POV blocks add the target's guarded
+visible name as `belief change subject`, so the recipient's transition cannot read as the converter's.
 
 The saved belief block now exposes mechanics through stable schema fields: before/after/attempted
 ideoligion, certainty before/after/delta, conversion result, and (Full detail only) method-boundary
@@ -289,6 +290,11 @@ localized model instruction was added, so English/Russian localization files are
 is deliberately unmapped because vanilla Counsel changes mood/thought state rather than Ideology
 certainty. Conversion-ritual fan-out, `IdeoChange` crisis pages, and other Phase-2 evidence adapters
 remain deferred; the mutation observer/cache still cannot authorize or emit any page.
+
+An exact conversion consumer also appends only the stable `belief_event=conversion` routing marker to
+the ordinary interaction `gameContext`. Prompt-context selection uses that marker to rank the saved
+belief block as critical; before/after numbers and identities remain solely in typed evidence/the saved
+belief block rather than being duplicated into the general context string.
 
 The frozen value flows through `DiaryPovPayload.beliefContext` → `PromptValues.beliefContext` →
 `PromptAssembler.ResolveSource("BeliefContext")`. Full/Balanced/Compact detail projection is applied
@@ -3046,15 +3052,18 @@ live: with any selection engaged, FillTab narrows the year's cards through
 semantics). The filtered list reuses one stable buffer rebuilt only when an input (the year's cards,
 the selections, or the favorite set) changes, and its monotonic `journalFilterVersion` stands in for
 the visible-entries revision in the row-layout dirty check so a filter click re-lays out the same
-frame. The tag chips and year pager counts intentionally read the UNFILTERED year list so they stay
-stable while the journal narrows; a year whose pages are all filtered out shows a "no pages match"
-hint instead of the journal. The
+frame. Tag metadata has its own source-list/year/visible-revision cache, so RimWorld's repeated IMGUI
+passes do not rescan a long year's entries. The tag chips and year pager counts intentionally read the
+UNFILTERED year list so they stay stable while the journal narrows; switching years clears the
+year-specific tag selection, and a year whose pages are all filtered out shows a "no pages match"
+hint instead of the journal. The shared tab resets filters before even a hidden panel's geometry
+return, so one pawn's closed-panel state cannot narrow another pawn's journal. The
 dev tools **and the year selector** live **only** in this panel — when the panel is hidden nothing is
 drawn inline in the journal, so hiding the panel gives a fully clean journal-only window (reopen the
 panel via the header filter icon to change years). The header toggle icon that shows/hides the panel sits just
 after (right of) the writing-style icon. It is a **funnel** glyph with three tint states: dim when the
-panel is closed, brighter when open, and an amber accent (`filterActiveIconColor`) when open with a
-filter selection engaged (favorites-only or any tag chip). The journal column keeps its familiar width because `tabWidth`
+panel is closed, brighter when open, and an amber accent (`filterActiveIconColor`) whenever a filter
+selection is engaged (favorites-only or any tag chip), including while the panel is closed. The journal column keeps its familiar width because `tabWidth`
 grew by the panel width, and hiding the panel shrinks the whole tab back to that width; the panel also
 hides on a tab too narrow to fit both. Panel sizes are XML-tunable via `DiaryUiStyleDef`
 (`filterPanelWidth`, `filterPanelGap`).
@@ -3287,7 +3296,9 @@ scans.
 with those fields absent, then normalize to empty baseline-pending state. The additive
 `favoriteEntryKeys` list stores the player's starred diary pages (stable `eventId|povRole` UI entry
 keys, written by the Diary tab's favorite star via `DiaryGameComponent.SetEntryFavorite`); old saves
-normalize a missing list to empty and load-time dedupe guards against doubled keys. The progression
+normalize a missing list to empty. The pure load normalizer removes blank/exact-duplicate keys in
+first-seen order and clamps corrupt/hand-edited input to the shared 4096-key bound in O(n), before the
+component exposes a read-only list view and the tab builds its private HashSet mirror. The progression
 state stores
 only highest passion-skill milestones, last observed psylink/xenotype/royal-title values, the set
 of known trait keys (`<defName>|<degree>`) used to detect newly gained traits, and an additive nested

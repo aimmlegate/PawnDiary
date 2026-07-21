@@ -167,6 +167,11 @@ namespace PawnDiary
             result.roleName = snapshot.roleName ?? string.Empty;
             result.expandedTopicTokens.AddRange(expanded.topics);
             result.mutation = evidence.mutation != null && evidence.mutation.HasUsefulFact ? evidence.mutation : null;
+            result.mutationSubjectLabel = result.mutation == null
+                ? string.Empty
+                : evidence.narrative.subjectLabel ?? string.Empty;
+            result.mutationSubjectIsPov = result.mutation != null
+                && string.Equals(snapshot.pawnId, result.mutation.pawnId, StringComparison.Ordinal);
             List<Candidate> selected = Select(candidates, evidence, request, policy);
             for (int i = 0; i < selected.Count; i++) result.stances.Add(ToResolved(selected[i]));
 

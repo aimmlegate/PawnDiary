@@ -123,21 +123,13 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
-            // This lookup deliberately happens after the existing capture decision. Detached cache
-            // evidence can decorate an authorized page, but it cannot make an interaction eligible.
-            BeliefEventEvidence beliefEvidence = BeliefMutationEvidenceAdapter.ForInteraction(
-                payload.DefName,
-                effectiveGroupDefName,
-                payload.InitiatorPawnId,
-                payload.RecipientPawnId,
-                payload.Tick);
-
             string interactionLabel = interactionDef.LabelCap.Resolve();
             string initiatorText = DiaryLineCleaner.CleanLine(initiatorGameText);
             string recipientText = DiaryLineCleaner.CleanLine(recipientGameText);
 
             if (shape == InteractionEventData.InteractionEmitShape.Solo)
             {
+                BeliefEventEvidence beliefEvidence = BeliefEvidenceForPage();
                 Pawn eligiblePawn = initiatorEligible ? initiator : recipient;
                 Pawn otherPawn = initiatorEligible ? recipient : initiator;
                 string eligibleText = initiatorEligible ? initiatorText : recipientText;
@@ -146,7 +138,9 @@ namespace PawnDiary.Ingestion
                     eligibleText = "PawnDiary.Event.Interaction".Translate(eligiblePawn.LabelShortCap, interactionLabel, otherPawn.LabelShortCap);
                 }
 
-                string gameContext = DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel);
+                string gameContext = BeliefMutationEventSelector.AppendGameContextMarker(
+                    DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel),
+                    beliefEvidence);
                 DiaryEvent soloEvent = sink.AddSoloEvent(eligiblePawn, otherPawn, interactionDef.defName, interactionLabel,
                     eligibleText, InteractionGroups.InstructionFor(interactionDef), gameContext, beliefEvidence);
                 soloEvent.AddPlayLogEntryId(playLogEntryId);
@@ -175,14 +169,35 @@ namespace PawnDiary.Ingestion
             }
 
             // Pair.
+            BeliefEventEvidence pairBeliefEvidence = BeliefEvidenceForPage();
             DiaryEvent diaryEvent = sink.AddPairwiseEvent(initiator, recipient, interactionDef.defName, interactionLabel,
                 initiatorText, recipientText,
                 InteractionGroups.InstructionFor(interactionDef),
-                DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel),
-                beliefEvidence);
+                BeliefMutationEventSelector.AppendGameContextMarker(
+                    DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel),
+                    pairBeliefEvidence),
+                pairBeliefEvidence);
             diaryEvent.playLogInteractionDefName = interactionDef.defName;
             diaryEvent.AddPlayLogEntryId(playLogEntryId);
             sink.QueuePair(diaryEvent);
+        }
+
+        /// <summary>
+        /// Peeks detached belief mechanics only for a page-producing solo/pair route. Batch and ambient
+        /// routes return before this seam, so they do not pay for evidence they cannot persist.
+        /// </summary>
+        private BeliefEventEvidence BeliefEvidenceForPage()
+        {
+            // This lookup deliberately happens after the existing capture decision. Detached cache
+            // evidence can decorate an authorized page, but it cannot make an interaction eligible.
+            return BeliefMutationEvidenceAdapter.ForInteraction(
+                payload.DefName,
+                effectiveGroupDefName,
+                payload.InitiatorPawnId,
+                payload.RecipientPawnId,
+                payload.Tick,
+                initiator.LabelShort,
+                recipient.LabelShort);
         }
     }
 }

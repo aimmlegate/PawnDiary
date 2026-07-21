@@ -17,7 +17,9 @@ namespace PawnDiary
             string effectiveGroupDefName,
             string initiatorPawnId,
             string recipientPawnId,
-            int eventTick)
+            int eventTick,
+            string initiatorLabel = null,
+            string recipientLabel = null)
         {
             if (!ModsConfig.IdeologyActive || !DiaryGameComponent.GamePlaying) return null;
             BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
@@ -33,10 +35,14 @@ namespace PawnDiary
             string subjectPawnId = BeliefMutationEventSelector.SubjectPawnId(
                 rule, initiatorPawnId, recipientPawnId);
             if (subjectPawnId.Length == 0) return null;
+            string subjectLabel = rule.subjectRole == BeliefMutationSubjectRoleTokens.Initiator
+                ? initiatorLabel
+                : recipientLabel;
             BeliefMutationSnapshot newest = BeliefMutationCache.PeekLatest(
                 subjectPawnId, eventTick, policy);
             return BeliefMutationEventSelector.Select(
-                rule, subjectPawnId, eventTick, policy.mutationCorrelationWindowTicks, newest);
+                rule, subjectPawnId, eventTick, policy.mutationCorrelationWindowTicks, newest,
+                subjectLabel);
         }
     }
 }

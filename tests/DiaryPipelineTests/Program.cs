@@ -3161,6 +3161,30 @@ namespace DiaryPipelineTests
             AssertTrue(
                 "an empty tag set behaves like no tag filter",
                 DiaryEntryFilterPolicy.Passes(false, false, null, new HashSet<string>()));
+
+            List<string> normalized = DiaryEntryFilterPolicy.NormalizeFavoriteEntryKeys(
+                new[] { "evt_a|initiator", string.Empty, "evt_a|initiator", "evt_b|recipient" });
+            AssertEqual("favorite normalization removes blanks and exact duplicates", 2, normalized.Count);
+            AssertEqual("favorite normalization preserves first-seen order", "evt_a|initiator", normalized[0]);
+            AssertEqual("favorite normalization preserves later unique keys", "evt_b|recipient", normalized[1]);
+            AssertEqual("favorite normalization treats key casing as significant", 2,
+                DiaryEntryFilterPolicy.NormalizeFavoriteEntryKeys(
+                    new[] { "evt|initiator", "EVT|initiator" }).Count);
+            AssertEqual("null favorite saves normalize to an empty list", 0,
+                DiaryEntryFilterPolicy.NormalizeFavoriteEntryKeys(null).Count);
+
+            List<string> oversized = new List<string>();
+            for (int i = 0; i < DiaryEntryFilterPolicy.MaximumFavoriteEntryKeys + 8; i++)
+            {
+                oversized.Add("evt_" + i + "|initiator");
+            }
+            List<string> bounded = DiaryEntryFilterPolicy.NormalizeFavoriteEntryKeys(oversized);
+            AssertEqual("favorite normalization enforces the shared defensive cap",
+                DiaryEntryFilterPolicy.MaximumFavoriteEntryKeys, bounded.Count);
+            AssertEqual("favorite normalization keeps the first keys when clamping",
+                "evt_0|initiator", bounded[0]);
+            AssertEqual("favorite normalization keeps the last in-bound key",
+                "evt_4095|initiator", bounded[bounded.Count - 1]);
         }
 
         private static void TestEventWindowPolicy()

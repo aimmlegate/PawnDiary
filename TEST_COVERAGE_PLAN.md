@@ -42,7 +42,7 @@ collector kind (hediff, capacity, Royal title, Ideology role, event window, obse
 | Save/load scenario | Disposable test save plus two-phase RimTest suite | Real Scribe round trip, index rebuilds, pending-state normalization, archive persistence, and session reset. |
 | Manual visual checks | `tests/SAVE_COMPATIBILITY_SMOKETEST.md` plus a new UI checklist | Immediate-mode rendering, resolution/accessibility layouts, scroll behavior, and screenshots that are not stable enough for unit assertions. |
 
-`tests/BeliefContextTests` is the assembly-free Master Wave 10 / Ideology Phases 0–2 harness. Its 308
+`tests/BeliefContextTests` is the assembly-free Master Wave 10 / Ideology Phases 0–2 harness. Its 317
 assertions lock missing/inactive/unknown-knowledge silence; exact source, thought, history, issue, and
 meme precedence; synthetic mod IDs; guarded phrase/token/fuzzy matching; dynamic common-token,
 confidence, explicit below-threshold diagnostics, and runner-up rejection; reused evidence expansion;
@@ -59,10 +59,10 @@ The Phase-2 slices add detached mutation construction, overlapping nested-call c
 earliest-before/latest-after preservation, sequential same-tick separation, exact-pawn/windowed
 non-consuming correlation, and exact/inactive/substring-safe canonical ability ownership. Exact
 interaction selection additionally pins XML rule immutability/validation, downstream-group and
-case-sensitive Def matching, inactive-policy silence, success/failure mechanics, certainty-only
+case-sensitive Def matching, inactive-policy silence, known/success/failure mechanics, certainty-only
 reassurance, cross-pawn/stale/future rejection, two-POV reuse, no backward search through sequential
-rows, malformed inputs, mutation schema formatting, and target mutation not rewriting the converter's
-own certainty/trend.
+rows, malformed inputs, critical conversion-marker append/idempotence, subject-labeled mutation schema
+formatting, and target mutation not rewriting the converter's own certainty/trend.
 It file-links only plain Narrative/Belief source and has no RimWorld, Verse, Unity, or DLC reference.
 
 ### 2.1 `PawnDiaryRimTestScope`
@@ -1034,8 +1034,9 @@ assembly is now 362 tests and builds with 0 warnings/errors into the tracked dep
 RimWorld has not been launched for this follow-up, so its new cases are not
 recorded as loaded-game passes and no manual/in-game acceptance row is closed.
 
-Ideology Phase 2 infrastructure and exact interaction enrichment add ten compiled loaded cases in
-`PawnDiaryIdeologyPhase2InfrastructureTests` (372 total). They resolve and inspect the exact three
+Ideology Phase 2 infrastructure and exact interaction enrichment add eleven compiled loaded cases in
+`PawnDiaryIdeologyPhase2InfrastructureTests`. Together with two non-rendering filter lifecycle cases in
+`PawnDiaryDiaryTabFilterFixtureTests`, the assembly contains 375 tests. They resolve and inspect the exact three
 production Harmony targets, branch truthfully for an inactive DLC profile, call real `SetIdeo` and
 `OffsetCertainty` boundaries plus `IdeoConversionAttempt` for detached before/after/attempted/result
 facts and nested/sequential ownership (forcing zero certainty so the real conversion deterministically
@@ -1048,7 +1049,8 @@ generic `ConversionRitual` start page because cancellation has no downstream own
 consumer follow-up proves a real mutation/cache write alone emits no page; loads all four exact XML
 consumer rules; runs deterministic real conversion success and failure plus real reassurance certainty
 gain before the real `PlayLog.Add` boundary; requires both existing pair POVs to receive the mechanical
-result/delta while one non-consuming cache row remains; and rejects conversion wording on reassurance.
+result/delta while one non-consuming cache row remains; requires a one-eligible-pawn solo conversion to
+label its ineligible target and carry the critical marker; and rejects conversion wording on reassurance.
 A disposable second Ideo is generated when the loaded game exposes only one, preserving the
 deterministic conversion fixture and single-Ideo fallback.
 These fixtures compile against the installed assemblies;

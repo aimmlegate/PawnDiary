@@ -355,10 +355,6 @@ namespace PawnDiary
         // Bumped on every toggle (and every re-sync) so the journal filter re-runs when the
         // "Favorites only" selection should change what is visible.
         private int favoritesVersion;
-        // UI-side mirror of the record's defensive bound; checked before toggling so the mirror set
-        // never grows past what SetEntryFavorite would persist.
-        private const int MaxFavoritedEntries = 4096;
-
         /// <summary>
         /// Re-syncs the favorite lookup mirror from the pawn's saved record when the shown pawn or the
         /// loaded game changed. Cheap no-op on every other frame, so FillTab calls it unconditionally.
@@ -375,7 +371,7 @@ namespace PawnDiary
             favoritesSyncedComponent = component;
             favoritesSyncedPawnId = pawnId;
             favoriteEntryKeys.Clear();
-            List<string> saved = component?.FavoriteEntryKeysFor(pawn);
+            IReadOnlyList<string> saved = component?.FavoriteEntryKeysFor(pawn);
             if (saved != null)
             {
                 for (int i = 0; i < saved.Count; i++)
@@ -419,7 +415,7 @@ namespace PawnDiary
                 return;
             }
 
-            if (favoriteEntryKeys.Count >= MaxFavoritedEntries)
+            if (favoriteEntryKeys.Count >= DiaryEntryFilterPolicy.MaximumFavoriteEntryKeys)
             {
                 return;
             }

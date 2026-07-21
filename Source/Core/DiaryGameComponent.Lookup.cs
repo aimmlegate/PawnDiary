@@ -916,17 +916,12 @@ namespace PawnDiary
             return events.MostRecentEvents(DiaryTuning.ActiveScanEventWindow);
         }
 
-        // Defensive bound on one pawn's starred pages. Unreachable in normal play (a player would
-        // have to star thousands of pages in one diary); it only keeps a corrupt/buggy writer from
-        // growing the saved list without limit.
-        private const int MaxFavoriteEntryKeysPerDiary = 4096;
-
         /// <summary>
         /// Returns the pawn's saved favorite entry keys ("eventId|povRole"), or null when the pawn has
         /// no diary record yet. The Diary tab syncs its per-session lookup set from this list; callers
         /// must treat it as read-only and go through <see cref="SetEntryFavorite"/> to change it.
         /// </summary>
-        internal List<string> FavoriteEntryKeysFor(Pawn pawn)
+        internal IReadOnlyList<string> FavoriteEntryKeysFor(Pawn pawn)
         {
             PawnDiaryRecord diary = FindDiary(pawn, false);
             return diary?.favoriteEntryKeys;
@@ -958,7 +953,7 @@ namespace PawnDiary
 
             if (favorite)
             {
-                if (diary.favoriteEntryKeys.Count >= MaxFavoriteEntryKeysPerDiary
+                if (diary.favoriteEntryKeys.Count >= DiaryEntryFilterPolicy.MaximumFavoriteEntryKeys
                     || diary.favoriteEntryKeys.Contains(entryKey))
                 {
                     return;

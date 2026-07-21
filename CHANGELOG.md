@@ -6,6 +6,22 @@
   XML-tunable colors are kept; when the setting is off, the whole per-frame season tracking is skipped
   too. New EN/RU settings label + tooltip. Debug build 0/0; all 15 pure suites green; no in-game
   acceptance run is claimed.
+
+- **2026-07-22 — Closed adversarial favorites/filter and Ideology-consumer findings.** Hidden Diary
+  panels now reset filter state before their geometry return, year changes clear invisible tag-only
+  selections, active filters keep the funnel amber while closed, and tag metadata is cached by source/
+  revision/year instead of rescanning on every IMGUI pass. Favorite save normalization is now a pure
+  O(n), first-seen-order pass that removes blanks/duplicates and clamps corrupt input to the shared
+  4096-key bound; the component exposes the saved list read-only. English/Russian dead filter keys were
+  removed and Russian gained the live empty-filter hint. Exact conversion interactions now append the
+  stable `belief_event=conversion` priority marker, cross-POV mutation fields name the changed pawn,
+  and Batch/Ambient routes skip the unused evidence lookup. Pure regressions cover favorite bounds,
+  `conversionResult=known`, marker idempotence, and Compact subject/result retention; loaded fixtures
+  add hidden-panel/year lifecycle cases, corrupt-save Scribe normalization, and one exact solo
+  conversion consumer. DiaryPipeline passes 2822 assertions, BeliefContext 317, and capture policy 716;
+  the 375-test RimTest assembly and Debug `PawnDiary.dll` build without warnings/errors. The new loaded
+  cases are compiled but not claimed as an in-game pass.
+
 - **2026-07-22 — Wired the Diary tab favorites and journal filters for real.** (1) **Favorites persist.**
   The card favorite star no longer writes a session-only static set: the choice is scribed per pawn on
   `PawnDiaryRecord.favoriteEntryKeys` (additive save key; old saves normalize to an empty, deduped

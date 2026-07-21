@@ -37,10 +37,14 @@ namespace PawnDiary
         private string filterPanelPawnId;
         private bool filterFavoritesOnly;
         private readonly HashSet<string> filterActiveTags = new HashSet<string>();
-        // Reusable buffer for the per-year distinct tags, rebuilt in place each draw. Each row carries
-        // the group label plus its color cue/importance so a filter chip can be tinted exactly like the
-        // matching group chip on the entry cards.
+        // Reusable buffer for the per-year distinct tags. The source/revision/year keys let Layout,
+        // Repaint, and other IMGUI passes reuse it instead of rescanning a long diary every draw.
+        // Each row carries the group label plus its color cue/importance so a filter chip can be tinted
+        // exactly like the matching group chip on the entry cards.
         private readonly List<FilterTagInfo> filterTagInfoBuffer = new List<FilterTagInfo>();
+        private List<DiaryEntryView> filterTagInfoSource;
+        private int filterTagInfoSourceRevision = -1;
+        private int filterTagInfoYear = int.MinValue;
         // Reusable scratch for the tag-chip flow layout (relative rects), cleared and refilled each
         // draw so the per-frame panel render allocates nothing once its capacity settles.
         private readonly List<Rect> filterTagChipLayoutBuffer = new List<Rect>();
@@ -182,6 +186,9 @@ namespace PawnDiary
             DiaryTabVisibleEntriesCache entriesCache,
             List<DiaryEntryView> orderedForTags)
         {
+            // This lifecycle reset must run even when the panel is hidden. FillTab still applies active
+            // filters in that state, so returning first would leak the previous pawn's selections.
+            ResetFilterStateOnPawnChange(pawn);
             if (panelRect.width <= 1f || panelRect.height <= 1f)
             {
                 return;
@@ -189,7 +196,6 @@ namespace PawnDiary
 
             // The seasonal wash is painted once across the whole tab in FillTab, so it already sits
             // behind this panel; nothing extra to draw here.
-            ResetFilterStateOnPawnChange(pawn);
             // No DrawMenuSection here on purpose: the inspect tab already paints a window background
             // behind the whole tab, so an extra inset box only boxed the controls in and its border
             // crowded RimWorld's inspect-pane close button at the top-right. The panel now floats on
@@ -212,7 +218,10 @@ namespace PawnDiary
                 listing.Begin(viewRect);
                 listingBegun = true;
                 DrawFilterYearSection(listing, years, entriesCache);
-                DrawFilterStubSection(listing, orderedForTags);
+                DrawJournalFilterSection(
+                    listing,
+                    orderedForTags,
+                    entriesCache == null ? -1 : entriesCache.VisibleRevision);
                 if (Prefs.DevMode)
                 {
                     listing.GapLine();
@@ -267,7 +276,10 @@ namespace PawnDiary
         /// current year, and a Clear button. The selections narrow the journal via
         /// <see cref="EnsureFilteredJournalEntries"/> on the next frame.
         /// </summary>
-        private void DrawFilterStubSection(Listing_Standard listing, List<DiaryEntryView> orderedForTags)
+        private void DrawJournalFilterSection(
+            Listing_Standard listing,
+            List<DiaryEntryView> orderedForTags,
+            int visibleRevision)
         {
             // No "Filters" section header: the favorites star and the tag chips read as filter controls
             // on their own, and the extra title only added clutter above them.
@@ -276,7 +288,7 @@ namespace PawnDiary
 
             listing.Gap(6f);
             DrawFilterSectionHeader(listing, "PawnDiary.Tab.FilterTagsHeader".Translate());
-            CollectTagInfo(orderedForTags);
+            CollectTagInfo(orderedForTags, visibleRevision);
             if (filterTagInfoBuffer.Count == 0)
             {
                 Color oldColor = GUI.color;
@@ -384,6 +396,9 @@ namespace PawnDiary
             filterFavoritesOnly = false;
             filterActiveTags.Clear();
             filterPanelScrollPosition = Vector2.zero;
+            filterTagInfoSource = null;
+            filterTagInfoSourceRevision = -1;
+            filterTagInfoYear = int.MinValue;
         }
 
         /// <summary>
@@ -391,9 +406,19 @@ namespace PawnDiary
         /// the current year's ordered cards (stable sorted by label, capped). Each row keeps the color
         /// cue/importance of the first entry that used the tag so its chip matches the card group chip.
         /// </summary>
-        private void CollectTagInfo(List<DiaryEntryView> ordered)
+        private void CollectTagInfo(List<DiaryEntryView> ordered, int visibleRevision)
         {
+            if (ReferenceEquals(filterTagInfoSource, ordered)
+                && filterTagInfoSourceRevision == visibleRevision
+                && filterTagInfoYear == selectedYear)
+            {
+                return;
+            }
+
             filterTagInfoBuffer.Clear();
+            filterTagInfoSource = ordered;
+            filterTagInfoSourceRevision = visibleRevision;
+            filterTagInfoYear = selectedYear;
             if (ordered == null)
             {
                 return;
@@ -553,14 +578,14 @@ namespace PawnDiary
         /// <summary>
         /// Draws the header funnel icon that shows/hides the filter panel and returns true when clicked.
         /// Three states are shown by tint alone (the CoreUI solid/duotone funnels are Pro, so there is
-        /// no separate filled glyph): closed = dim, open = brighter, and open with a filter engaged =
-        /// amber accent. Hover lifts each toward full strength.
+        /// no separate filled glyph): closed with no filters = dim, open with no filters = brighter,
+        /// and any active filter = amber even while closed. Hover lifts each toward full strength.
         /// </summary>
         private static bool DrawFilterPanelToggleIcon(Rect rect, bool panelOpen, bool filtersActive)
         {
             bool hover = Mouse.IsOver(rect);
             Color iconColor;
-            if (panelOpen && filtersActive)
+            if (filtersActive)
             {
                 Color accent = UiStyle.FilterActiveIconColor;
                 iconColor = hover ? new Color(accent.r, accent.g, accent.b, 1f) : accent;

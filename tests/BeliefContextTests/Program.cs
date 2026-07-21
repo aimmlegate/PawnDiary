@@ -313,9 +313,15 @@ namespace PawnDiary
                 BeliefMutationCertaintyDirectionTokens.Increase,
                 BeliefMutationIdeologyChangeTokens.Unchanged,
                 requireAttemptedIdeology: false);
+            BeliefMutationEventRule knownResultRule = MutationRule(
+                "ConvertIdeoAttempt", "conversion", BeliefMutationCauseTokens.ConversionAttempt,
+                BeliefMutationConversionResultTokens.Known,
+                BeliefMutationCertaintyDirectionTokens.Any,
+                BeliefMutationIdeologyChangeTokens.Any,
+                requireAttemptedIdeology: true);
             List<BeliefMutationEventRule> rules = new List<BeliefMutationEventRule>
             {
-                successRule, failureRule, reassuranceRule
+                successRule, failureRule, reassuranceRule, knownResultRule
             };
 
             BeliefMutationEventRule exact = BeliefMutationEventSelector.RuleFor(
@@ -359,12 +365,22 @@ namespace PawnDiary
             success.attemptedIdeologyId = "NewIdeo";
             success.attemptedIdeologyName = "New faith";
             BeliefEventEvidence selected = BeliefMutationEventSelector.Select(
-                successRule, "TargetPawn", 100, 10, success);
+                successRule, "TargetPawn", 100, 10, success, "Target");
             AssertTrue("matching conversion mutation becomes evidence",
                 selected != null && ReferenceEquals(success, selected.mutation));
             AssertEqual("selected evidence keeps exact event source", "Convert_Success",
                 selected.narrative.sourceDefName);
             AssertEqual("selected evidence keeps XML group", "conversion", selected.groupKey);
+            AssertEqual("selected evidence keeps the visible mutation subject", "Target",
+                selected.narrative.subjectLabel);
+            AssertContains("conversion evidence appends the critical prompt marker",
+                BeliefMutationEventSelector.AppendGameContextMarker("def=Convert_Success", selected),
+                BeliefMutationEventSelector.ConversionGameContextMarker);
+            AssertEqual("conversion marker append is idempotent",
+                "def=Convert_Success; " + BeliefMutationEventSelector.ConversionGameContextMarker,
+                BeliefMutationEventSelector.AppendGameContextMarker(
+                    "def=Convert_Success; " + BeliefMutationEventSelector.ConversionGameContextMarker,
+                    selected));
             BeliefEventEvidence converterPov = BeliefEventEvidenceFactory.ForPov(
                 selected, "EventA", 100, "ConverterPawn", "initiator");
             BeliefEventEvidence targetPov = BeliefEventEvidenceFactory.ForPov(
@@ -390,6 +406,19 @@ namespace PawnDiary
                 BeliefMutationEventSelector.Select(successRule, "TargetPawn", 101, 10, failure) == null);
             AssertTrue("success row cannot enrich a failure page",
                 BeliefMutationEventSelector.Select(failureRule, "TargetPawn", 100, 10, success) == null);
+            AssertTrue("known-result conversion rule accepts a success result",
+                BeliefMutationEventSelector.Select(
+                    knownResultRule, "TargetPawn", 100, 10, success) != null);
+            AssertTrue("known-result conversion rule accepts a failure result",
+                BeliefMutationEventSelector.Select(
+                    knownResultRule, "TargetPawn", 101, 10, failure) != null);
+            BeliefMutationSnapshot unknownResult = Mutation(
+                "TargetPawn", 101, "OldIdeo", "OldIdeo", 0.8f, 0.7f,
+                BeliefMutationCauseTokens.ConversionAttempt, null, ideologyChanged: false);
+            unknownResult.attemptedIdeologyId = "NewIdeo";
+            AssertTrue("known-result conversion rule rejects an unknown result",
+                BeliefMutationEventSelector.Select(
+                    knownResultRule, "TargetPawn", 101, 10, unknownResult) == null);
 
             BeliefMutationSnapshot reassurance = Mutation(
                 "TargetPawn", 102, "SameIdeo", "SameIdeo", 0.4f, 0.55f,
@@ -978,6 +1007,7 @@ namespace PawnDiary
         private static void TestMutationOnlyContextAndFormatting()
         {
             BeliefEventEvidence evidence = Evidence(true);
+            evidence.narrative.subjectLabel = "Target";
             evidence.mutation = new BeliefMutationSnapshot
             {
                 pawnId = "SyntheticPawn",
@@ -998,12 +1028,18 @@ namespace PawnDiary
             evidence.mutation.causeTokens.Add(BeliefMutationCauseTokens.ConversionAttempt);
             evidence.mutation.causeTokens.Add(BeliefMutationCauseTokens.SetIdeology);
             BeliefPolicySnapshot policy = BeliefPolicySnapshot.CreateDefault();
-            BeliefStanceResolution result = Resolve(Snapshot(), evidence, policy);
+            BeliefSnapshot converterSnapshot = Snapshot();
+            converterSnapshot.pawnId = "ConverterPawn";
+            BeliefStanceResolution result = Resolve(converterSnapshot, evidence, policy);
             AssertTrue("mutation-only resolution is useful context", result.HasUsefulContext);
             AssertEqual("mutation-only resolution needs no selected stance", 0, result.stances.Count);
             AssertTrue("mutation-only resolution retains the observed mutation", result.mutation != null);
+            AssertEqual("mutation-only resolution retains the visible mutation subject", "Target",
+                result.mutationSubjectLabel);
 
             string full = BeliefContextFormatter.Format(result, NarrativeDetailLevelTokens.Full, policy);
+            AssertContains("full mutation format labels the changed pawn", full,
+                "belief change subject: Target");
             AssertContains("full mutation format includes previous ideoligion", full,
                 "previous ideoligion: Before Ideoligion");
             AssertContains("full mutation format includes current ideoligion", full,
@@ -1021,6 +1057,8 @@ namespace PawnDiary
             AssertContains("full mutation format includes mechanical cause tokens", full,
                 "mutation cause: conversion_attempt,set_ideology");
             string compact = BeliefContextFormatter.Format(result, NarrativeDetailLevelTokens.Compact, policy);
+            AssertContains("compact mutation format labels the changed pawn", compact,
+                "belief change subject: Target");
             AssertTrue("compact mutation format omits transition lines",
                 compact.IndexOf("previous ideoligion:", StringComparison.Ordinal) < 0
                     && compact.IndexOf("current ideoligion:", StringComparison.Ordinal) < 0

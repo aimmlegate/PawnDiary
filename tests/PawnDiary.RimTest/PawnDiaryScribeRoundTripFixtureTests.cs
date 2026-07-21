@@ -961,6 +961,34 @@ namespace PawnDiary.RimTests
             Require(
                 nullLoaded.favoriteEntryKeys != null && nullLoaded.favoriteEntryKeys.Count == 0,
                 "record null favoriteEntryKeys should load as a non-null empty list.");
+
+            // Corrupt/hand-edited favorite rows exercise the non-trivial PostLoadInit normalizer: exact
+            // duplicates and blanks disappear in first-seen order, and oversized input is bounded.
+            List<string> malformedFavorites = new List<string>
+            {
+                "duplicate|initiator",
+                string.Empty,
+                "duplicate|initiator"
+            };
+            for (int i = 0; i < DiaryEntryFilterPolicy.MaximumFavoriteEntryKeys + 4; i++)
+            {
+                malformedFavorites.Add("bounded_" + i + "|recipient");
+            }
+            PawnDiaryRecord malformedLoaded = ScribeRoundTrip(new PawnDiaryRecord
+            {
+                pawnId = "Thing_Human_MalformedFavorites",
+                favoriteEntryKeys = malformedFavorites
+            });
+            Require(malformedLoaded.favoriteEntryKeys.Count
+                    == DiaryEntryFilterPolicy.MaximumFavoriteEntryKeys,
+                "record favoriteEntryKeys should clamp corrupt oversized saves.");
+            AssertStr("duplicate|initiator", malformedLoaded.favoriteEntryKeys[0],
+                "record favorite normalization first key");
+            AssertStr("bounded_0|recipient", malformedLoaded.favoriteEntryKeys[1],
+                "record favorite normalization first unique key");
+            AssertStr("bounded_4094|recipient",
+                malformedLoaded.favoriteEntryKeys[malformedLoaded.favoriteEntryKeys.Count - 1],
+                "record favorite normalization last in-bound key");
             Require(nullLoaded.progressionState != null, "record null progressionState should load as non-null.");
             Require(nullLoaded.arcSchedule != null, "record null arcSchedule should load as non-null.");
             GeneIdentityObservationState oldSaveGeneObservation = nullLoaded.progressionState

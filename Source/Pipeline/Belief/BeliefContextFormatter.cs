@@ -16,7 +16,7 @@ namespace PawnDiary
         {
             "ideoligion", "role", "certainty", "certainty trend", "certainty outlook",
             "certainty before", "certainty after", "certainty delta", "conversion result",
-            "mutation cause",
+            "belief change subject", "mutation cause",
             "previous ideoligion", "current ideoligion", "attempted ideoligion",
             "relevant precept", "precept meaning", "relevant meme", "structure",
             "structure outlook", "deity"
@@ -60,6 +60,12 @@ namespace PawnDiary
             if (resolution.mutation != null)
             {
                 BeliefMutationSnapshot mutation = resolution.mutation;
+                // Pair/solo converters can receive mechanics observed on the target pawn. Name that
+                // subject explicitly before the facts so the POV's own ideology/certainty above cannot
+                // be confused with the target's transition below.
+                if (!resolution.mutationSubjectIsPov)
+                    Add(lines, "belief change subject", resolution.mutationSubjectLabel,
+                        effective, maximumLines);
                 // Outcome and delta are the most compact mechanical facts, so add them before the
                 // longer identity/before/after detail. Balanced/Compact budgets must not keep names
                 // while silently dropping whether the conversion succeeded.

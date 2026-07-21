@@ -31,7 +31,7 @@ namespace PawnDiary
             if (index < 0)
             {
                 index = 0;
-                selectedYear = years[0];
+                SelectYear(years[0]);
             }
 
             // Prev/next arrows appear only when the row is wide enough for them plus a readable center
@@ -151,11 +151,14 @@ namespace PawnDiary
         /// </summary>
         private void SelectYear(int year)
         {
-
+            // Tag chips describe one year's available group labels. Clear them at the transition so a
+            // tag absent from the destination year cannot remain active while exposing no chip to undo it.
+            if (selectedYear != year)
+            {
+                filterActiveTags.Clear();
+            }
             selectedYear = year;
-
             scrollPosition.y = 0f;
-
         }
 
 
@@ -170,7 +173,7 @@ namespace PawnDiary
             if (years == null || years.Count == 0)
             {
 
-                selectedYear = UnknownYear;
+                SelectYear(UnknownYear);
 
                 yearFilterPawnId = null;
 
@@ -226,7 +229,7 @@ namespace PawnDiary
             if (entriesCache.TryGetYearForEvent(pendingScrollEventId, out year))
             {
 
-                selectedYear = year;
+                SelectYear(year);
 
                 yearFilterPawnId = pendingScrollPawnId;
 

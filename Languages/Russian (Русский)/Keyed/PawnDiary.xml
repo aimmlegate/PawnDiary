@@ -238,15 +238,13 @@
   <PawnDiary.Tab.CopyEntryCopied>Текст страницы скопирован.</PawnDiary.Tab.CopyEntryCopied>
   <PawnDiary.Tab.FavoriteAddTip>Отметить страницу как избранную.</PawnDiary.Tab.FavoriteAddTip>
   <PawnDiary.Tab.FavoriteRemoveTip>Убрать страницу из избранного.</PawnDiary.Tab.FavoriteRemoveTip>
-  <!-- Боковая панель фильтров и управления. Переключатели фильтров — заглушки, пока фильтрация не подключена. -->
+  <!-- Боковая панель фильтров и управления: выбор года, фильтры журнала и инструменты разработчика. -->
   <PawnDiary.Tab.FilterYearHeader>Год</PawnDiary.Tab.FilterYearHeader>
-  <PawnDiary.Tab.FilterHeader>Фильтры</PawnDiary.Tab.FilterHeader>
   <PawnDiary.Tab.FilterFavoritesOnly>Только избранное</PawnDiary.Tab.FilterFavoritesOnly>
   <PawnDiary.Tab.FilterTagsHeader>Метки</PawnDiary.Tab.FilterTagsHeader>
   <PawnDiary.Tab.FilterNoTags>В этом году нет меток.</PawnDiary.Tab.FilterNoTags>
   <PawnDiary.Tab.FilterClear>Сбросить</PawnDiary.Tab.FilterClear>
-  <PawnDiary.Tab.FilterApply>Применить ({0})</PawnDiary.Tab.FilterApply>
-  <PawnDiary.Tab.FilterStubTip>Фильтрация пока не подключена.</PawnDiary.Tab.FilterStubTip>
+  <PawnDiary.Tab.NoEntriesMatchFilters>Нет страниц, соответствующих текущим фильтрам. Сбросьте фильтры на панели, чтобы увидеть весь год.</PawnDiary.Tab.NoEntriesMatchFilters>
   <PawnDiary.Tab.FilterDevHeader>Инструменты разработчика</PawnDiary.Tab.FilterDevHeader>
   <!-- Кнопка в заголовке, показывающая/скрывающая боковую панель фильтров. -->
   <PawnDiary.Tab.ShowFilterPanel>Показать панель фильтров.</PawnDiary.Tab.ShowFilterPanel>

@@ -9,6 +9,9 @@ namespace PawnDiary
     /// <summary>Matches XML event rules and turns one exact nearby mutation into event evidence.</summary>
     internal static class BeliefMutationEventSelector
     {
+        /// <summary>Stable prompt-selection marker for exact conversion mechanics.</summary>
+        public const string ConversionGameContextMarker = "belief_event=conversion";
+
         /// <summary>
         /// Finds one exact source/group rule. Duplicate matching rows are ambiguous and return null.
         /// </summary>
@@ -65,7 +68,8 @@ namespace PawnDiary
             string subjectPawnId,
             int eventTick,
             int correlationWindowTicks,
-            BeliefMutationSnapshot newestMutation)
+            BeliefMutationSnapshot newestMutation,
+            string subjectLabel = null)
         {
             string subject = SafeId(subjectPawnId);
             int window = Math.Max(0, Math.Min(600, correlationWindowTicks));
@@ -94,10 +98,32 @@ namespace PawnDiary
                 rule.sourceDomain,
                 rule.sourceDefName,
                 rule.subjectRole,
-                string.Empty,
+                subjectLabel,
                 rule.evidenceGroupKey);
             evidence.mutation = newestMutation;
             return evidence;
+        }
+
+        /// <summary>
+        /// Appends the minimal stable conversion marker used by prompt-context prioritization. Detailed
+        /// mutation facts stay in the typed belief block and are not duplicated into game context.
+        /// </summary>
+        public static string AppendGameContextMarker(
+            string gameContext,
+            BeliefEventEvidence evidence)
+        {
+            string current = gameContext ?? string.Empty;
+            if (evidence?.mutation == null || !evidence.mutation.HasUsefulFact
+                || !string.Equals(evidence.groupKey, "conversion", StringComparison.Ordinal)
+                || current.IndexOf(ConversionGameContextMarker, StringComparison.Ordinal) >= 0)
+            {
+                return current;
+            }
+
+            string prefix = current.Trim().TrimEnd(';');
+            return prefix.Length == 0
+                ? ConversionGameContextMarker
+                : prefix + "; " + ConversionGameContextMarker;
         }
 
         private static bool ContainsCause(BeliefMutationSnapshot mutation, string wanted)

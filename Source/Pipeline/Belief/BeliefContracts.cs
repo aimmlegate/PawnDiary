@@ -355,6 +355,8 @@ namespace PawnDiary
         public string certaintyTrend = BeliefCertaintyTrendTokens.Unknown;
         public string certaintyMagnitude = BeliefCertaintyMagnitudeTokens.Unknown;
         public BeliefMutationSnapshot mutation;
+        public string mutationSubjectLabel = string.Empty;
+        public bool mutationSubjectIsPov;
         public List<string> expandedTopicTokens = new List<string>();
         public List<string> selectionReasonTokens = new List<string>();
         public string narrativeCategory = NarrativeCategoryTokens.Interpretation;

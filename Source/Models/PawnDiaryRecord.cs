@@ -167,26 +167,10 @@ namespace PawnDiary
                     eventIds = new List<string>();
                 }
 
-                if (favoriteEntryKeys == null)
-                {
-                    favoriteEntryKeys = new List<string>();
-                }
-                else
-                {
-                    // Defensive dedupe: a hand-edited or interrupted save could list a key twice, and
-                    // the UI toggle treats presence as the single source of truth.
-                    for (int i = favoriteEntryKeys.Count - 1; i > 0; i--)
-                    {
-                        for (int j = 0; j < i; j++)
-                        {
-                            if (string.Equals(favoriteEntryKeys[j], favoriteEntryKeys[i], System.StringComparison.Ordinal))
-                            {
-                                favoriteEntryKeys.RemoveAt(i);
-                                break;
-                            }
-                        }
-                    }
-                }
+                // A hand-edited/interrupted save can contain duplicates, blanks, or an extreme list.
+                // Normalize through the pure O(n) policy so loading remains bounded before the UI ever
+                // mirrors these keys. Old saves with no field become the same non-null empty list.
+                favoriteEntryKeys = DiaryEntryFilterPolicy.NormalizeFavoriteEntryKeys(favoriteEntryKeys);
 
                 EnsureProgressionState();
                 EnsureArcSchedule();

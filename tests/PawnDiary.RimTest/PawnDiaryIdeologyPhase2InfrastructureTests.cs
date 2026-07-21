@@ -306,6 +306,9 @@ namespace PawnDiary.RimTests
                 Find.PlayLog.Add(entry);
             }, "Convert_Success", pawn, otherPawn, rejectOtherTestPawnEvents: true);
             scope.RequirePairRefs(page, pawn, otherPawn);
+            AssertGameContextContains(page, BeliefMutationEventSelector.ConversionGameContextMarker);
+            AssertContextContains(page, DiaryEvent.InitiatorRole,
+                "belief change subject: " + otherPawn.LabelShort);
             AssertContextContains(page, DiaryEvent.InitiatorRole, "conversion result: success");
             AssertContextContains(page, DiaryEvent.RecipientRole, "conversion result: success");
             AssertContextContains(page, DiaryEvent.RecipientRole, "certainty delta:");
@@ -410,6 +413,7 @@ namespace PawnDiary.RimTests
                 Find.PlayLog.Add(entry);
             }, "Convert_Failure", pawn, otherPawn, rejectOtherTestPawnEvents: true);
             scope.RequirePairRefs(page, pawn, otherPawn);
+            AssertGameContextContains(page, BeliefMutationEventSelector.ConversionGameContextMarker);
             AssertContextContains(page, DiaryEvent.InitiatorRole, "conversion result: failure");
             AssertContextContains(page, DiaryEvent.RecipientRole, "conversion result: failure");
             AssertContextContains(page, DiaryEvent.RecipientRole, "certainty delta: -5%");
@@ -418,6 +422,53 @@ namespace PawnDiary.RimTests
                     .IndexOf("current ideoligion: " + attemptedIdeology.name,
                         StringComparison.Ordinal) < 0,
                 "A failed conversion page claimed the attempted ideoligion became current.");
+        }
+
+        /// <summary>
+        /// When only the converter is diary-eligible, the solo page still receives the exact target
+        /// mechanics, explicitly labels whose belief changed, and carries the critical prompt marker.
+        /// </summary>
+        [Test]
+        public static void SoloConversionPageLabelsTheIneligibleTargetMutation()
+        {
+            if (!RequireActiveTracker()) return;
+            InteractionDef interaction = DefDatabase<InteractionDef>.GetNamedSilentFail("Convert_Failure");
+            PawnDiaryRimTestScope.Require(interaction != null,
+                "The Ideology-active fixture could not load Convert_Failure.");
+            Pawn outsider = scope.CreateTrackedPawn(PawnKindDefOf.Colonist, faction: null);
+            PawnDiaryRimTestScope.Require(DiaryGameComponent.IsDiaryEligible(pawn)
+                    && !DiaryGameComponent.IsDiaryEligible(outsider),
+                "The solo conversion fixture did not establish exactly one diary-eligible participant.");
+
+            Ideo beforeIdeology = EnsureCurrentIdeology(outsider);
+            Ideo attemptedIdeology = EnsureCurrentIdeology(pawn);
+            if (ReferenceEquals(beforeIdeology, attemptedIdeology))
+            {
+                attemptedIdeology = FindOrCreateDifferentIdeology(beforeIdeology);
+                pawn.ideo.SetIdeo(attemptedIdeology);
+            }
+            outsider.ideo.OffsetCertainty(1f - outsider.ideo.Certainty);
+            BeliefMutationCache.Reset();
+            PlayLogEntry_Interaction entry = GeneratedSpeechPlayLog.CreateInteractionEntry(
+                interaction, pawn, outsider);
+            PawnDiaryRimTestScope.Require(entry != null,
+                "Could not create the solo downstream Convert_Failure PlayLog row.");
+            scope.TrackPlayLogEntry(entry);
+
+            DiaryEvent page = scope.FireAndRequireEvent(() =>
+            {
+                bool converted = outsider.ideo.IdeoConversionAttempt(
+                    0.05f, attemptedIdeology, applyCertaintyFactor: false);
+                PawnDiaryRimTestScope.Require(!converted,
+                    "The full-certainty solo fixture unexpectedly converted the target.");
+                Find.PlayLog.Add(entry);
+            }, "Convert_Failure", pawn, null, rejectOtherTestPawnEvents: true);
+
+            scope.RequireSoloRef(page, pawn);
+            AssertGameContextContains(page, BeliefMutationEventSelector.ConversionGameContextMarker);
+            AssertContextContains(page, DiaryEvent.InitiatorRole,
+                "belief change subject: " + outsider.LabelShort);
+            AssertContextContains(page, DiaryEvent.InitiatorRole, "conversion result: failure");
         }
 
         /// <summary>
@@ -509,6 +560,15 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 context.IndexOf(expected, StringComparison.Ordinal) >= 0,
                 "The " + role + " belief context did not contain '" + expected + "'. Context: "
+                    + context);
+        }
+
+        private static void AssertGameContextContains(DiaryEvent diaryEvent, string expected)
+        {
+            string context = diaryEvent?.gameContext ?? string.Empty;
+            PawnDiaryRimTestScope.Require(
+                context.IndexOf(expected, StringComparison.Ordinal) >= 0,
+                "The interaction game context did not contain '" + expected + "'. Context: "
                     + context);
         }
 

@@ -723,18 +723,20 @@ certainty drift that bypasses these methods.
 > **First consumer implemented (2026-07-21).** Exact XML rows now map `ConvertIdeoAttempt`,
 > `Convert_Success`, `Convert_Failure`, and `Reassure` to the recipient mutation and validate result,
 > direction, ideology-change shape, cause, effective group, exact pawn, and one-way tick age. The
-> existing saved belief block carries the stable mechanical fields for both authorized POVs; no
-> separate `gameContext` mutation copy is needed. Counsel and exact event prompt Defs remain pending.
+> existing saved belief block carries the stable mechanical fields for both authorized POVs and labels
+> cross-POV target mechanics explicitly. Exact conversions append only `belief_event=conversion` to
+> `gameContext` for prompt priority; numerical facts are not duplicated. Counsel and exact event prompt
+> Defs remain pending.
 
 Before `InteractionSignal` calls `AddSoloEvent`/`AddPairwiseEvent`:
 
 - classify conversion success, conversion failure, conversion attempt, reassurance, counsel, and
   related known defNames through XML strings;
 - peek the target pawn's recent mutation;
-- append only stable mutation markers/numbers to `gameContext`, such as
-  `belief_event=conversion`, `certainty_before=...`, `certainty_after=...`,
-  `ideology_changed=true`, and `conversion_succeeded=true/false`;
-- pass a `BeliefEventEvidence` containing the mutation and each POV role to event creation.
+- append a stable event-class marker such as `belief_event=conversion` to `gameContext` so prompt
+  selection can prioritize the typed block;
+- pass a `BeliefEventEvidence` containing the mutation, its visible subject, and each POV role to event
+  creation; keep certainty/identity/result numbers in that typed evidence and saved belief block.
 
 Add exact `DiaryEventPromptDef` entries for success, failure, attempt, and reassurance/counsel so an
 exact defName beats the broad conversion group. The event's saved game text remains the factual
