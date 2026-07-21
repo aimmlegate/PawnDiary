@@ -1,10 +1,10 @@
 // Right-hand filter/controls panel for the Diary tab. Split from ITab_Pawn_Diary.cs.
 //
 // This is an independent, NON-virtualized scroll column drawn beside the journal. It owns the year
-// selector, a set of stub filter controls (favorites + per-tag toggles that are not wired to the
-// journal yet), and — in dev mode — the diary dev tools that used to sit above the journal. It is
-// built entirely from existing RimWorld widgets (Listing_Standard, Widgets.CheckboxLabeled/ButtonText,
-// the year FloatMenu pager, DrawMenuSection) rather than any bespoke control.
+// selector, the journal filter controls (a favorites-only star toggle + per-tag chips that narrow
+// the journal's cards), and — in dev mode — the diary dev tools that used to sit above the journal.
+// It is built entirely from existing RimWorld widgets (Listing_Standard, Widgets.CheckboxLabeled/
+// ButtonText, the year FloatMenu pager, DrawMenuSection) rather than any bespoke control.
 //
 // New to C#/RimWorld? (JS/TS analogy) A `Listing_Standard` is a vertical layout helper like a flexbox
 // column: you `Begin(rect)`, append rows (labels, checkboxes, buttons), and `End()`. `BeginScrollView`
@@ -30,10 +30,10 @@ namespace PawnDiary
         // panel is short and static, so this settles in one frame.
         private float filterPanelContentHeight;
 
-        // ---- Stub filter state ----
-        // These are placeholders: the controls render and toggle, but nothing filters the journal yet.
-        // The pawn id lets the panel reset its state when the tab (a shared singleton) switches pawns,
-        // so one pawn's toggles/scroll don't bleed onto the next.
+        // ---- Journal filter state ----
+        // The player's current filter selections. The pawn id lets the panel reset its state when the
+        // tab (a shared singleton) switches pawns, so one pawn's toggles/scroll don't bleed onto the
+        // next. The selections feed the journal through EnsureFilteredJournalEntries (FillTab).
         private string filterPanelPawnId;
         private bool filterFavoritesOnly;
         private readonly HashSet<string> filterActiveTags = new HashSet<string>();
@@ -44,6 +44,81 @@ namespace PawnDiary
         // Reusable scratch for the tag-chip flow layout (relative rects), cleared and refilled each
         // draw so the per-frame panel render allocates nothing once its capacity settles.
         private readonly List<Rect> filterTagChipLayoutBuffer = new List<Rect>();
+
+        // ---- Filtered journal list ----
+        // The narrowed card list FillTab draws while any filter is engaged, plus the inputs it was
+        // built from. Rebuilt only when one of those inputs changes (the year's cards, the filter
+        // selections, or the favorite set), so idle frames reuse the same list reference and the row
+        // layout cache stays valid. journalFilterVersion bumps on every rebuild and stands in for the
+        // visible-entries revision in the layout dirty check — it covers BOTH content changes and
+        // filter changes, which a cache revision alone would miss.
+        private readonly List<DiaryEntryView> journalFilterBuffer = new List<DiaryEntryView>();
+        private List<DiaryEntryView> journalFilterSource;
+        private int journalFilterSourceRevision = -1;
+        private bool journalFilterFavoritesOnly;
+        private readonly HashSet<string> journalFilterTags = new HashSet<string>();
+        private int journalFilterFavoritesVersion = -1;
+        private int journalFilterVersion;
+
+        /// <summary>
+        /// True while any journal filter selection is engaged (favorites-only or at least one tag
+        /// chip). Drives both the header funnel's amber "filtering" state and whether FillTab narrows
+        /// the journal through <see cref="EnsureFilteredJournalEntries"/>.
+        /// </summary>
+        private bool JournalFiltersActive
+        {
+            get { return filterFavoritesOnly || filterActiveTags.Count > 0; }
+        }
+
+        /// <summary>
+        /// Returns the selected year's cards narrowed by the current filter selections, reusing one
+        /// stable buffer between frames. The buffer is refilled only when an input changed: the source
+        /// list, its revision, the favorites-only toggle, the active tag set, or the favorite set
+        /// itself (a star click with "Favorites only" on must re-filter the same frame). The match
+        /// rule itself is the pure <see cref="DiaryEntryFilterPolicy.Passes"/>; the tag chips and year
+        /// counts intentionally read the UNFILTERED year list so they cannot shrink away while
+        /// filtering narrows the journal.
+        /// </summary>
+        private List<DiaryEntryView> EnsureFilteredJournalEntries(List<DiaryEntryView> ordered, int visibleRevision)
+        {
+            bool dirty = journalFilterSource != ordered
+                || journalFilterSourceRevision != visibleRevision
+                || journalFilterFavoritesOnly != filterFavoritesOnly
+                || journalFilterFavoritesVersion != favoritesVersion
+                || journalFilterTags.Count != filterActiveTags.Count
+                || !journalFilterTags.SetEquals(filterActiveTags);
+            if (!dirty)
+            {
+                return journalFilterBuffer;
+            }
+
+            journalFilterBuffer.Clear();
+            if (ordered != null)
+            {
+                for (int i = 0; i < ordered.Count; i++)
+                {
+                    DiaryEntryView entry = ordered[i];
+                    if (entry != null
+                        && DiaryEntryFilterPolicy.Passes(
+                            filterFavoritesOnly,
+                            IsFavoriteEntry(entry.EntryKey),
+                            entry.GroupLabel,
+                            filterActiveTags))
+                    {
+                        journalFilterBuffer.Add(entry);
+                    }
+                }
+            }
+
+            journalFilterSource = ordered;
+            journalFilterSourceRevision = visibleRevision;
+            journalFilterFavoritesOnly = filterFavoritesOnly;
+            journalFilterFavoritesVersion = favoritesVersion;
+            journalFilterTags.Clear();
+            journalFilterTags.UnionWith(filterActiveTags);
+            journalFilterVersion++;
+            return journalFilterBuffer;
+        }
 
         // One distinct tag shown as a filter chip: its display label and the accent inputs (color cue +
         // importance) taken from the first entry that used it this year.
@@ -188,8 +263,9 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Stub filter controls: a favorites toggle, per-tag toggles for the tags present in the
-        /// current year, and Clear/Apply buttons. None of these filter the journal yet.
+        /// Journal filter controls: a favorites-only toggle, per-tag chips for the tags present in the
+        /// current year, and a Clear button. The selections narrow the journal via
+        /// <see cref="EnsureFilteredJournalEntries"/> on the next frame.
         /// </summary>
         private void DrawFilterStubSection(Listing_Standard listing, List<DiaryEntryView> orderedForTags)
         {
@@ -217,8 +293,8 @@ namespace PawnDiary
             }
 
             listing.Gap(8f);
-            // Clear resets the (stub) filter selections. The "Apply" button was removed — filtering is
-            // toggle-driven and not wired to the journal yet, so a separate Apply added nothing.
+            // Clear resets the filter selections; the journal re-filters on the next frame. A separate
+            // "Apply" button was removed — filtering is toggle-driven and applies immediately.
             Rect clearRect = listing.GetRect(ControlLineHeight);
             if (Widgets.ButtonText(clearRect, "PawnDiary.Tab.FilterClear".Translate()))
             {
@@ -230,8 +306,8 @@ namespace PawnDiary
         /// <summary>
         /// Draws the "Favorites only" filter as a star toggle (replacing the old checkbox): the label on
         /// the left and a star icon on the right that reads warm gold when active and a quiet outline
-        /// when not. The whole row toggles <see cref="filterFavoritesOnly"/> on click. Like the other
-        /// filter controls it is not wired to the journal yet.
+        /// when not. The whole row toggles <see cref="filterFavoritesOnly"/> on click, narrowing the
+        /// journal to the pawn's starred pages.
         /// </summary>
         private void DrawFavoritesOnlyToggle(Listing_Standard listing)
         {
@@ -293,8 +369,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Clears the stub filter toggles and panel scroll when the shown pawn changes, so state does
-        /// not carry across pawns on this shared tab instance.
+        /// Clears the journal filter selections and panel scroll when the shown pawn changes, so state
+        /// does not carry across pawns on this shared tab instance.
         /// </summary>
         private void ResetFilterStateOnPawnChange(Pawn pawn)
         {

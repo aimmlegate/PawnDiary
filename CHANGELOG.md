@@ -1,5 +1,43 @@
 # Changelog
 
+- **2026-07-22 — Wired the Diary tab favorites and journal filters for real.** (1) **Favorites persist.**
+  The card favorite star no longer writes a session-only static set: the choice is scribed per pawn on
+  `PawnDiaryRecord.favoriteEntryKeys` (additive save key; old saves normalize to an empty, deduped
+  list), keyed by the same stable `eventId|povRole` entry key the renderer uses, so stars survive
+  save/load and event archiving. The tab keeps only an O(1) HashSet mirror of the record list,
+  re-synced when the shown pawn or loaded game changes, and every star click writes through via the
+  new `DiaryGameComponent.SetEntryFavorite`/`FavoriteEntryKeysFor` (a 4096-per-diary defensive bound
+  refuses adds rather than evicting). (2) **The filter panel filters.** The favorites-only star toggle
+  and the per-tag chips now narrow the journal: with any selection engaged, FillTab draws the year's
+  cards through `EnsureFilteredJournalEntries`, whose match rule is the new pure
+  `DiaryEntryFilterPolicy.Passes` (favorites AND tags; multiple chips widen via OR/union). The
+  filtered list reuses a stable buffer invalidated by its inputs, and a monotonic
+  `journalFilterVersion` drives the row-layout rebuild the same frame. Tag chips and year pager counts
+  still read the unfiltered year list so they stay stable while filtering; a fully-filtered year shows
+  a localized "no pages match" hint. (3) **Tests/docs.** `DiaryPipelineTests` gains
+  `TestDiaryEntryFilterPolicy` (2814 assertions pass, including the pre-existing suite) and now links
+  `BeliefMutationPolicy.cs` — required for that harness to compile against the in-flight Belief
+  workstream's `BeliefContracts.cs` edits. The RimTest scribe round-trip fixture now covers
+  `favoriteEntryKeys` round-trip + null normalization. Debug build 0/0; no in-game acceptance run is
+  claimed.
+
+
+- **2026-07-21 — Added the first Ideology Phase 2 mutation consumer: exact PlayLog interactions.**
+  Existing authorized `ConvertIdeoAttempt`, `Convert_Success`, `Convert_Failure`, and `Reassure`
+  solo/pair pages now peek the detached mutation cache after capture authorization and freeze actual
+  target before/after/attempted ideoligion, certainty delta, conversion result, and mechanical cause
+  tokens into belief context. XML owns every exact DefName/downstream-group/recipient/result/direction
+  mapping with an empty code fallback; Counsel remains unmapped because it changes mood/thought state,
+  not Ideology certainty. Pure selection rejects cross-pawn, stale, future, malformed, result/direction-
+  mismatched, and older sequential rows while keeping reads non-consuming for two POVs. Recipient facts
+  cannot overwrite the converter's own certainty/trend. Mutation observation alone remains page-silent,
+  no-DLC profiles remain inert, generic ownership/settings behavior and the conversion-ritual start
+  fallback are unchanged, and ritual/crisis consumers remain deferred. BeliefContextTests pass 308
+  assertions; ten Phase-2 cases (372 total) compile in the tracked RimTest project, including real
+  tracker + PlayLog success/failure/reassurance boundaries and the deterministic single-Ideo fallback.
+  `PawnDiary.dll`/`PawnDiary.RimTest.dll` rebuild and full validation results are recorded at handoff;
+  no in-game execution is claimed unless RimWorld is actually running.
+
 - **2026-07-21 — Diary UI round-5: global window wash, removed the season scroll strip.** The seasonal
   background wash is now painted **globally across the whole diary window** (edge to edge, behind the
   header, the journal, and the right-hand filter/dev panel), so the entire window shifts color with the

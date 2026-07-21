@@ -916,6 +916,62 @@ namespace PawnDiary
             return events.MostRecentEvents(DiaryTuning.ActiveScanEventWindow);
         }
 
+        // Defensive bound on one pawn's starred pages. Unreachable in normal play (a player would
+        // have to star thousands of pages in one diary); it only keeps a corrupt/buggy writer from
+        // growing the saved list without limit.
+        private const int MaxFavoriteEntryKeysPerDiary = 4096;
+
+        /// <summary>
+        /// Returns the pawn's saved favorite entry keys ("eventId|povRole"), or null when the pawn has
+        /// no diary record yet. The Diary tab syncs its per-session lookup set from this list; callers
+        /// must treat it as read-only and go through <see cref="SetEntryFavorite"/> to change it.
+        /// </summary>
+        internal List<string> FavoriteEntryKeysFor(Pawn pawn)
+        {
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            return diary?.favoriteEntryKeys;
+        }
+
+        /// <summary>
+        /// Stars/un-stars one diary page, persisting the choice on the pawn's diary record. A pawn
+        /// without a record has no pages to favorite, so nothing is created here. Past the defensive
+        /// bound the add is refused (the page simply cannot be starred) rather than evicting older
+        /// favorites the player chose.
+        /// </summary>
+        internal void SetEntryFavorite(Pawn pawn, string entryKey, bool favorite)
+        {
+            if (string.IsNullOrEmpty(entryKey))
+            {
+                return;
+            }
+
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            if (diary == null)
+            {
+                return;
+            }
+
+            if (diary.favoriteEntryKeys == null)
+            {
+                diary.favoriteEntryKeys = new List<string>();
+            }
+
+            if (favorite)
+            {
+                if (diary.favoriteEntryKeys.Count >= MaxFavoriteEntryKeysPerDiary
+                    || diary.favoriteEntryKeys.Contains(entryKey))
+                {
+                    return;
+                }
+
+                diary.favoriteEntryKeys.Add(entryKey);
+            }
+            else
+            {
+                diary.favoriteEntryKeys.Remove(entryKey);
+            }
+        }
+
         /// <summary>
         /// Looks up a pawn's diary record by Pawn instance; optionally creates one if missing.
         /// </summary>
