@@ -368,6 +368,35 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>Stable source-domain tokens used by XML canonical-event ownership rules.</summary>
+    internal static class BeliefCanonicalEventSourceTokens
+    {
+        public const string Ability = "ability";
+        public const string Thought = "thought";
+    }
+
+    /// <summary>
+    /// One exact source Def whose generic page is redundant while a named downstream group is active.
+    /// The downstream group stays in the plain contract so the game-edge adapter can honor the
+    /// player's effective group setting before suppressing anything.
+    /// </summary>
+    internal sealed class BeliefCanonicalEventOwnershipRule
+    {
+        public readonly string sourceDomain;
+        public readonly string sourceDefName;
+        public readonly string downstreamGroupDefName;
+
+        public BeliefCanonicalEventOwnershipRule(
+            string sourceDomain,
+            string sourceDefName,
+            string downstreamGroupDefName)
+        {
+            this.sourceDomain = sourceDomain ?? string.Empty;
+            this.sourceDefName = sourceDefName ?? string.Empty;
+            this.downstreamGroupDefName = downstreamGroupDefName ?? string.Empty;
+        }
+    }
+
     /// <summary>One localized semantic concept and its equivalent guarded matching phrases.</summary>
     internal sealed class BeliefSemanticAlias
     {
@@ -603,7 +632,8 @@ namespace PawnDiary
         public List<BeliefEventEvidenceRule> eventEvidenceRules = new List<BeliefEventEvidenceRule>();
         public List<string> lexicalExclusions = new List<string>();
         public List<string> proselytizingPovRoles = new List<string>();
-        public List<string> downstreamCoveredAbilityDefNames = new List<string>();
+        public List<BeliefCanonicalEventOwnershipRule> canonicalEventOwnershipRules =
+            new List<BeliefCanonicalEventOwnershipRule>();
         public List<BeliefCorrelationCorrection> correlationOverrides = new List<BeliefCorrelationCorrection>();
         public List<BeliefDetailBudget> detailBudgets = new List<BeliefDetailBudget>();
 
@@ -748,7 +778,7 @@ namespace PawnDiary
         public readonly IReadOnlyList<BeliefEventEvidenceRule> eventEvidenceRules;
         public readonly IReadOnlyList<string> lexicalExclusions;
         public readonly IReadOnlyList<string> proselytizingPovRoles;
-        public readonly IReadOnlyList<string> downstreamCoveredAbilityDefNames;
+        public readonly IReadOnlyList<BeliefCanonicalEventOwnershipRule> canonicalEventOwnershipRules;
         public readonly IReadOnlyList<BeliefCorrelationCorrection> correlationOverrides;
         public readonly IReadOnlyList<BeliefDetailBudget> detailBudgets;
 
@@ -817,7 +847,7 @@ namespace PawnDiary
             eventEvidenceRules = CopyRules(value.eventEvidenceRules);
             lexicalExclusions = CopyStrings(value.lexicalExclusions);
             proselytizingPovRoles = CopyStrings(value.proselytizingPovRoles);
-            downstreamCoveredAbilityDefNames = CopyStrings(value.downstreamCoveredAbilityDefNames);
+            canonicalEventOwnershipRules = CopyOwnershipRules(value.canonicalEventOwnershipRules);
             correlationOverrides = CopyCorrections(value.correlationOverrides);
             detailBudgets = CopyBudgets(value.detailBudgets);
         }
@@ -901,6 +931,24 @@ namespace PawnDiary
                         row.mutationCauseToken, ToList(row.addTopics), ToList(row.addSemanticAliases)));
                 }
             return new ReadOnlyCollection<BeliefEventEvidenceRule>(copy);
+        }
+
+        private static IReadOnlyList<BeliefCanonicalEventOwnershipRule> CopyOwnershipRules(
+            IList<BeliefCanonicalEventOwnershipRule> source)
+        {
+            List<BeliefCanonicalEventOwnershipRule> copy =
+                new List<BeliefCanonicalEventOwnershipRule>();
+            if (source != null)
+                for (int i = 0; i < source.Count; i++)
+                {
+                    BeliefCanonicalEventOwnershipRule row = source[i];
+                    if (row != null && !string.IsNullOrWhiteSpace(row.sourceDomain)
+                        && !string.IsNullOrWhiteSpace(row.sourceDefName)
+                        && !string.IsNullOrWhiteSpace(row.downstreamGroupDefName))
+                        copy.Add(new BeliefCanonicalEventOwnershipRule(
+                            row.sourceDomain, row.sourceDefName, row.downstreamGroupDefName));
+                }
+            return new ReadOnlyCollection<BeliefCanonicalEventOwnershipRule>(copy);
         }
 
         private static IReadOnlyList<BeliefCorrelationCorrection> CopyCorrections(IList<BeliefCorrelationCorrection> source)

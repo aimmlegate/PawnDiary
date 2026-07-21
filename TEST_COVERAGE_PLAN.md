@@ -1029,14 +1029,19 @@ assembly is now 362 tests and builds with 0 warnings/errors into the tracked dep
 RimWorld has not been launched for this follow-up, so its new cases are not
 recorded as loaded-game passes and no manual/in-game acceptance row is closed.
 
-Ideology Phase 2 infrastructure adds five compiled loaded cases in
-`PawnDiaryIdeologyPhase2InfrastructureTests` (367 total). They resolve and inspect the exact three
+Ideology Phase 2 infrastructure adds eight compiled loaded cases in
+`PawnDiaryIdeologyPhase2InfrastructureTests` (370 total). They resolve and inspect the exact three
 production Harmony targets, branch truthfully for an inactive DLC profile, call real `SetIdeo` and
 `OffsetCertainty` boundaries plus `IdeoConversionAttempt` for detached before/after/attempted/result
-facts and nested/sequential ownership, inject a finally-removed projection failure to prove vanilla
+facts and nested/sequential ownership (forcing zero certainty so the real conversion deterministically
+enters its nested success/`SetIdeo` path), inject a finally-removed projection failure to prove vanilla
 mutation and cache cleanup, and combine a dropped
 exact `Convert` Ability signal with a real `Find.PlayLog.Add(Convert_Success)` downstream hook to require
-one canonical pair page and no random draw. These fixtures compile against the installed assemblies;
+one canonical pair page and no random draw. Added adversarial cases pin equivalent `Reassure` ownership,
+release the generic Convert page when the downstream conversion group is disabled, and retain the
+generic `ConversionRitual` start page because cancellation has no downstream owner. A disposable second
+Ideo is generated when the loaded game exposes only one, so the mutation cases no longer silently pass.
+These fixtures compile against the installed assemblies;
 RimWorld has not been launched, so they are not recorded as executed in-game results.
 
 The first user-observed 367-test loaded run completed 363/367. The N3-O failure was the documented
@@ -1048,6 +1053,15 @@ worker refuses an unspawned pawn. Production now normalizes belief blocks before
 only non-social situational ThoughtDefs; the loaded fixtures reset the history sidecar after setup and
 spawn the disposable body-mod pawn with scope-owned finally cleanup. A corrected in-game rerun is
 pending and is not inferred from compilation.
+
+The next user-observed loaded rerun reached 365/367: the Scribe and both body-mod worker cases passed,
+leaving the expected N3-O parked-gravship host guard plus one HistoryEvent fixture attribution error.
+Its correlated `ExecutedPrisonerInnocent_Horrible` gameplay event truthfully granted a visible memory,
+and the ordinary Thought hook—not the non-emitting HistoryEvent observer—owned the reported page. The
+fixture now drives the real manager/Harmony observer with a dynamically selected HistoryEventDef that
+is unrelated to every current precept, then separately projects one exact visible correlation into the
+plain cache to prove builder enrichment without replaying vanilla gameplay consequences. Production
+capture and suppression policy are unchanged. The corrected loaded rerun remains pending.
 
 ## 8. Implementation Order
 

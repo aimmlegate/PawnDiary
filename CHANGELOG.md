@@ -7,6 +7,31 @@
   along with its scrollbar-gutter reservation — the full content width returns to the entries. The wash
   still follows the season at the top of the viewport and crossfades as you scroll (`UpdateSeasonWash`).
   Debug build 0/0; no in-game acceptance run is claimed.
+
+- **2026-07-21 — Closed the adversarial Ideology Phase 2 ownership/mutation findings.** The pure
+  mutation buffer now absorbs every overlapping sibling under one outer boundary, removes all child
+  rows for a net-no-op outer call, and prunes stale rows symmetrically on both read and write so tick
+  rollback cannot strand future-dated state. XML ownership is now typed as exact source-domain/
+  DefName/downstream-group rows with ordinal matching; generic Convert/Reassure abilities and vanilla
+  failed-conversion thoughts yield only while their actual downstream group is enabled. A disabled
+  group therefore releases the generic owner, and ConversionRitual retains its start page because
+  vanilla has no cancellation event. Mutation registration warns and disables cleanly if the private
+  tracker-to-pawn projection field changes. The loaded conversion fixture now creates a second Ideo
+  when needed and forces zero certainty to exercise the real nested success path. Added multi-overlap,
+  no-op, read/write expiry, clock-regression, exact-match, thought-ownership, Reassure, settings-fallback,
+  and ritual-cancel-safety regressions. BeliefContext 271 and capture policy 716 assertions pass;
+  `PawnDiary.dll` and the 370-test `PawnDiary.RimTest.dll` build with 0 warnings/errors. RimWorld was not
+  launched, so no new in-game pass is claimed.
+
+- **2026-07-21 — Corrected HistoryEvent observer fixture ownership after the 365/367 rerun.** The
+  earlier Scribe and body-mod fixes passed. The remaining non-Odyssey failure was not production
+  emission: replaying a doctrine-correlated `ExecutedPrisonerInnocent_Horrible` HistoryEvent granted a
+  visible memory, and the ordinary Thought hook truthfully created its page. The loaded fixture now
+  calls the real manager/Harmony observer with a dynamically selected event unrelated to every current
+  precept, then feeds a separately projected exact visible correlation through the plain cache/builder
+  seam. This still proves non-emission, exact structural enrichment, and cleanup without suppressing a
+  legitimate downstream route. Production behavior is unchanged; a corrected in-game rerun is pending.
+
 - **2026-07-21 — Hardened the first loaded Ideology run after a 363/367 result.** The Odyssey N3-O
   failure was the documented parked-player-gravship host guard and remains expected on that map. The
   three unintended failures are corrected: `DiaryEvent` now reapplies the pure belief whitelist before

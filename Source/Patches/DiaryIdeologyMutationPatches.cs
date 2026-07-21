@@ -32,6 +32,12 @@ namespace PawnDiary
             OffsetCertaintyHookReady = false;
             SetIdeologyHookReady = false;
             if (harmony == null || !ModsConfig.IdeologyActive) return;
+            if (!DlcContext.BeliefMutationProjectionReady)
+            {
+                Log.Warning("[Pawn Diary] Pawn_IdeoTracker.pawn changed; exact Ideology mutation "
+                    + "capture is disabled until the projection adapter is updated.");
+                return;
+            }
 
             ConversionAttemptHookReady = TryPatch(
                 harmony,
@@ -179,6 +185,7 @@ namespace PawnDiary
         private static Exception Finalizer(Exception __exception)
         {
             // __state is stack-local, so a throwing vanilla method leaves no half-open cache entry.
+            // Its allocated monotonic sequence number may be skipped; sequence gaps carry no meaning.
             // Return the original exception unchanged; Pawn Diary must not alter vanilla behavior.
             return __exception;
         }

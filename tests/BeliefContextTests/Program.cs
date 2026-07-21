@@ -78,8 +78,8 @@ namespace PawnDiary
             AssertTrue("missing Compact budget retains the shipped deity policy", compactFallback.includeDeity);
             AssertEqual("mutation entry fallback is bounded", 256, safe.maximumMutationCorrelationEntries);
             AssertEqual("mutation window fallback is bounded", 120, safe.mutationCorrelationWindowTicks);
-            AssertEqual("code fallback suppresses no ability routes", 0,
-                BeliefPolicySnapshot.CreateDefault().downstreamCoveredAbilityDefNames.Count);
+            AssertEqual("code fallback suppresses no generic event routes", 0,
+                BeliefPolicySnapshot.CreateDefault().canonicalEventOwnershipRules.Count);
         }
 
         private static void TestPhase2MutationCoalescingCorrelationAndOwnership()
@@ -146,6 +146,79 @@ namespace PawnDiary
             AssertTrue("stale mutation expires outside window", buffer.PeekLatest("PawnA", 111, 10) == null);
             AssertEqual("stale mutation pruning clears rows", 0, buffer.Count);
 
+            BeliefMutationBuffer writePruned = new BeliefMutationBuffer();
+            writePruned.RecordOrMerge(nested, 100, 8, 10);
+            writePruned.RecordOrMerge(null, 111, 8, 10);
+            AssertEqual("write-side maintenance prunes stale rows without a read", 0,
+                writePruned.Count);
+
+            BeliefMutationBuffer regressedClock = new BeliefMutationBuffer();
+            BeliefMutationState futureBefore = new BeliefMutationState
+            {
+                pawnId = "FuturePawn", capturedTick = 200, ideologyId = "IdeoA",
+                hasCertainty = true, certainty = 0.8f
+            };
+            BeliefMutationState futureAfter = new BeliefMutationState
+            {
+                pawnId = "FuturePawn", capturedTick = 200, ideologyId = "IdeoA",
+                hasCertainty = true, certainty = 0.7f
+            };
+            regressedClock.RecordOrMerge(BeliefMutationPolicy.Create(
+                futureBefore, futureAfter, null, BeliefMutationCauseTokens.CertaintyOffset,
+                null, 20, 21), 200, 8, 10);
+            regressedClock.RecordOrMerge(null, 100, 8, 10);
+            AssertEqual("clock regression prunes rows stranded beyond the future window", 0,
+                regressedClock.Count);
+
+            BeliefMutationBuffer nearFuture = new BeliefMutationBuffer();
+            futureBefore.capturedTick = 105;
+            futureAfter.capturedTick = 105;
+            nearFuture.RecordOrMerge(BeliefMutationPolicy.Create(
+                futureBefore, futureAfter, null, BeliefMutationCauseTokens.CertaintyOffset,
+                null, 22, 23), 105, 8, 10);
+            nearFuture.RecordOrMerge(null, 100, 8, 10);
+            AssertEqual("near-future rows remain inside the symmetric correlation window", 1,
+                nearFuture.Count);
+
+            BeliefMutationState secondNestedAfter = new BeliefMutationState
+            {
+                pawnId = "PawnA", capturedTick = 100, ideologyId = "IdeoB",
+                ideologyName = "Second", hasCertainty = true, certainty = 0.5f
+            };
+            BeliefMutationSnapshot secondSibling = BeliefMutationPolicy.Create(
+                nestedAfter, secondNestedAfter, null, BeliefMutationCauseTokens.SetIdeology,
+                null, 4, 5);
+            BeliefMutationSnapshot spanningOuter = BeliefMutationPolicy.Create(
+                start, secondNestedAfter, attempted, BeliefMutationCauseTokens.ConversionAttempt,
+                true, 1, 6);
+            BeliefMutationBuffer siblings = new BeliefMutationBuffer();
+            siblings.RecordOrMerge(nested, 100, 8, 10);
+            siblings.RecordOrMerge(secondSibling, 100, 8, 10);
+            AssertEqual("completed sibling mutations initially remain separate", 2, siblings.Count);
+            siblings.RecordOrMerge(spanningOuter, 100, 8, 10);
+            BeliefMutationSnapshot siblingsMerged = siblings.PeekLatest("PawnA", 100, 10);
+            AssertEqual("one outer interval absorbs every overlapping sibling", 1, siblings.Count);
+            AssertEqual("multi-overlap keeps the outer attempted ideology", "IdeoB",
+                siblingsMerged.attemptedIdeologyId);
+            AssertEqual("multi-overlap keeps the outer conversion result", true,
+                siblingsMerged.conversionSucceeded.Value);
+            AssertTrue("multi-overlap unions the first sibling cause",
+                Contains(siblingsMerged.causeTokens, BeliefMutationCauseTokens.CertaintyOffset));
+            AssertTrue("multi-overlap unions the second sibling cause",
+                Contains(siblingsMerged.causeTokens, BeliefMutationCauseTokens.SetIdeology));
+
+            BeliefMutationSnapshot reversingSibling = BeliefMutationPolicy.Create(
+                nestedAfter, start, null, BeliefMutationCauseTokens.CertaintyOffset,
+                null, 4, 5);
+            BeliefMutationSnapshot cancellingOuter = BeliefMutationPolicy.Create(
+                start, start, null, BeliefMutationCauseTokens.SetIdeology, null, 1, 6);
+            BeliefMutationBuffer siblingCancellation = new BeliefMutationBuffer();
+            siblingCancellation.RecordOrMerge(nested, 100, 8, 10);
+            siblingCancellation.RecordOrMerge(reversingSibling, 100, 8, 10);
+            siblingCancellation.RecordOrMerge(cancellingOuter, 100, 8, 10);
+            AssertEqual("no-op outer boundary removes every transient sibling row", 0,
+                siblingCancellation.Count);
+
             BeliefMutationBuffer cancelled = new BeliefMutationBuffer();
             cancelled.RecordOrMerge(nested, 100, 8, 10);
             BeliefMutationSnapshot noNetOuter = BeliefMutationPolicy.Create(
@@ -182,17 +255,39 @@ namespace PawnDiary
                 capped.PeekLatest("CapPawn2", 202, 10) != null);
 
             BeliefPolicyBuilder policy = BeliefPolicyBuilder.CreateDefault();
-            policy.downstreamCoveredAbilityDefNames.Add("Convert");
-            IReadOnlyList<string> covered = policy.Build().downstreamCoveredAbilityDefNames;
-            AssertTrue("exact active ability is downstream-covered",
-                BeliefCanonicalEventOwnershipPolicy.IsDownstreamCoveredAbility("Convert", true, covered));
-            AssertTrue("exact ability matching is case-insensitive",
-                BeliefCanonicalEventOwnershipPolicy.IsDownstreamCoveredAbility("convert", true, covered));
-            AssertTrue("substring resemblance never suppresses a modded ability",
-                !BeliefCanonicalEventOwnershipPolicy.IsDownstreamCoveredAbility(
-                    "ConvertNearbySettlement", true, covered));
-            AssertTrue("inactive Ideology never suppresses the generic route",
-                !BeliefCanonicalEventOwnershipPolicy.IsDownstreamCoveredAbility("Convert", false, covered));
+            policy.canonicalEventOwnershipRules.Add(new BeliefCanonicalEventOwnershipRule(
+                BeliefCanonicalEventSourceTokens.Ability, "Convert", "conversion"));
+            policy.canonicalEventOwnershipRules.Add(new BeliefCanonicalEventOwnershipRule(
+                BeliefCanonicalEventSourceTokens.Thought,
+                "FailedConvertAbilityRecipient", "conversion"));
+            BeliefPolicySnapshot ownershipSnapshot = policy.Build();
+            IReadOnlyList<BeliefCanonicalEventOwnershipRule> ownership =
+                ownershipSnapshot.canonicalEventOwnershipRules;
+            policy.canonicalEventOwnershipRules.Clear();
+            AssertEqual("ownership snapshot deep-copies XML-style rows", 2, ownership.Count);
+            AssertEqual("exact active ability resolves its downstream group", "conversion",
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Ability, "Convert", true, true, ownership));
+            AssertEqual("Def-name ownership matching is ordinal and case-sensitive", string.Empty,
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Ability, "convert", true, true, ownership));
+            AssertEqual("substring resemblance never suppresses a modded ability", string.Empty,
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Ability,
+                    "ConvertNearbySettlement", true, true, ownership));
+            AssertEqual("source domains cannot borrow another route's ownership", string.Empty,
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Thought, "Convert", true, true, ownership));
+            AssertEqual("failed-conversion thought resolves the conversion owner", "conversion",
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Thought,
+                    "FailedConvertAbilityRecipient", true, true, ownership));
+            AssertEqual("inactive Ideology never suppresses the generic route", string.Empty,
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Ability, "Convert", false, true, ownership));
+            AssertEqual("disabled belief policy never suppresses the generic route", string.Empty,
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Ability, "Convert", true, false, ownership));
         }
 
         private static void TestMissingInactiveEmptyAndKnowledgeGates()

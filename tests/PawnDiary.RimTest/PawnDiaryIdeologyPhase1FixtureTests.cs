@@ -196,9 +196,9 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// Calls the real vanilla manager. The Harmony observer must add only one plain cache row and
-        /// never emit a DiaryEvent; when an exact live correlation exists, the next authorized builder
-        /// pass must consume that identity as structural evidence.
+        /// Calls the real vanilla manager with an uncorrelated event. The Harmony observer must add only
+        /// one plain cache row and never emit a DiaryEvent; a separately projected exact live correlation
+        /// must then reach the next authorized builder pass as structural evidence.
         /// </summary>
         [Test]
         public static void HistoryObserverIsBoundedNonEmittingAndStructurallyUseful()
@@ -207,6 +207,7 @@ namespace PawnDiary.RimTests
                 .FirstOrDefault(def => def != null && !string.IsNullOrWhiteSpace(def.defName));
             PawnDiaryRimTestScope.Require(historyDef != null && Find.HistoryEventsManager != null,
                 "The loaded game must expose a HistoryEventDef and HistoryEventsManager.");
+            string correlatedDefName = string.Empty;
 
             if (ModsConfig.IdeologyActive)
             {
@@ -215,15 +216,33 @@ namespace PawnDiary.RimTests
                 {
                     pawn.ideo.SetIdeo(fixtureIdeo);
                     BeliefSnapshot snapshot = DlcContext.CaptureBeliefSnapshot(pawn);
-                    string correlatedDef = snapshot.precepts
-                        .Where(precept => precept?.correlations != null)
+                    HashSet<string> correlatedHistoryDefs = new HashSet<string>(
+                        snapshot.precepts
+                            .Where(precept => precept?.correlations != null)
+                            .SelectMany(precept => precept.correlations)
+                            .Where(correlation => correlation != null
+                                && correlation.kind == BeliefCorrelationKindTokens.HistoryEvent
+                                && !string.IsNullOrWhiteSpace(correlation.defName))
+                            .Select(correlation => correlation.defName),
+                        StringComparer.OrdinalIgnoreCase);
+                    correlatedDefName = snapshot.precepts
+                        .Where(precept => precept?.visible == true && precept.correlations != null)
                         .SelectMany(precept => precept.correlations)
                         .FirstOrDefault(correlation => correlation != null
-                            && correlation.kind == BeliefCorrelationKindTokens.HistoryEvent)?.defName;
-                    HistoryEventDef correlated = string.IsNullOrWhiteSpace(correlatedDef)
-                        ? null
-                        : DefDatabase<HistoryEventDef>.GetNamedSilentFail(correlatedDef);
-                    if (correlated != null) historyDef = correlated;
+                            && correlation.kind == BeliefCorrelationKindTokens.HistoryEvent
+                            && !string.IsNullOrWhiteSpace(correlation.defName)
+                            && DefDatabase<HistoryEventDef>.GetNamedSilentFail(correlation.defName) != null)?.defName
+                        ?? string.Empty;
+
+                    // A correlated vanilla event can legitimately grant a visible Thought_Memory, whose
+                    // ordinary Thought hook owns its own page. Use an uncorrelated Def for the real manager
+                    // call so "observer emitted nothing" is measured without suppressing that valid route.
+                    HistoryEventDef uncorrelated = DefDatabase<HistoryEventDef>.AllDefsListForReading
+                        .FirstOrDefault(def => def != null && !string.IsNullOrWhiteSpace(def.defName)
+                            && !correlatedHistoryDefs.Contains(def.defName));
+                    PawnDiaryRimTestScope.Require(uncorrelated != null,
+                        "The loaded Ideology fixture needs one HistoryEventDef unrelated to its current precepts.");
+                    historyDef = uncorrelated;
                 }
             }
 
@@ -251,13 +270,21 @@ namespace PawnDiary.RimTests
                     && nearby.Count == 1 && nearby[0] == historyDef.defName,
                 "The non-emitting history observer did not retain one exact nearby identity.");
 
-            BeliefSnapshot current = DlcContext.CaptureBeliefSnapshot(pawn);
-            bool liveCorrelation = current.precepts.Any(precept => precept?.correlations != null
-                && precept.correlations.Any(correlation => correlation != null
-                    && correlation.kind == BeliefCorrelationKindTokens.HistoryEvent
-                    && correlation.defName == historyDef.defName));
-            if (liveCorrelation)
+            if (!string.IsNullOrWhiteSpace(correlatedDefName))
             {
+                // Exercise the same guarded live-argument projection with the correlated identity, but do
+                // not ask vanilla to apply its gameplay consequences a second time. The first call above
+                // already proves the actual Harmony wiring; this detached row proves the enrichment seam.
+                HistoryEventDef correlatedDef = DefDatabase<HistoryEventDef>.GetNamedSilentFail(
+                    correlatedDefName);
+                BeliefHistoryObservation correlatedObservation = null;
+                PawnDiaryRimTestScope.Require(correlatedDef != null
+                        && DlcContext.TryCaptureBeliefHistoryObservation(
+                            new HistoryEvent(correlatedDef, pawn.Named(HistoryEventArgsNames.Doer)),
+                            out correlatedObservation),
+                    "The guarded adapter could not project the selected exact HistoryEvent correlation.");
+                BeliefHistoryCorrelationCache.Reset();
+                BeliefHistoryCorrelationCache.Observe(correlatedObservation, policy);
                 BeliefEventEvidence evidence = BeliefEventEvidenceFactory.ForEvent(
                     pawn.GetUniqueLoadID(), Find.TickManager.TicksGame, "synthetic",
                     "HistoryObserverFixture", "initiator", "ordinary fixture", string.Empty);
@@ -272,7 +299,7 @@ namespace PawnDiary.RimTests
             else
             {
                 Log.Message(LogPrefix + "history observer exact resolver branch: no loaded current "
-                    + "precept correlated the available HistoryEventDef; cache/non-emission still passed.");
+                    + "visible precept exposed a resolvable HistoryEventDef; cache/non-emission still passed.");
             }
         }
 

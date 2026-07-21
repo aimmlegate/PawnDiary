@@ -228,7 +228,10 @@ The old approve/despise Def-name lists are gone. The guarded
 `HistoryEventsManager.RecordEvent` postfix only stores a short-lived, bounded pawn/tick/Def-name
 observation and can neither authorize nor create a page. Its hot hook uses the state-passing safety
 wrapper, and the deep-copied belief policy snapshot is shared per active language instead of rebuilt
-for every observation/prompt. Phase 1 supplies evidence only from the exact
+for every observation/prompt. A correlated vanilla HistoryEvent may independently grant a visible
+memory whose ordinary Thought hook owns a page; that downstream page is not observer ownership. The
+loaded observer fixture therefore uses an uncorrelated event for its real manager/Harmony non-emission
+assertion and a detached exact correlation for the enrichment assertion. Phase 1 supplies evidence only from the exact
 visible thought/body/developer seams implemented in this slice; it deliberately does not add a generic
 belief capture path. Empty, ambiguous, or
 unmatched evidence therefore leaves the ordinary entry unchanged.
@@ -241,20 +244,31 @@ only owner of live pawn/tracker/Ideo reads and returns detached before/after fac
 `BeliefMutationPolicy` plus `BeliefMutationBuffer` coalesce only overlapping nested call intervals for
 the same pawn/tick, preserving the earliest before state, latest after state, attempted identity,
 conversion result, and union of mechanical cause tokens. Sequential same-tick actions remain separate.
-The bounded cache is non-consuming, cannot create a page, is reset at game construction/finalization,
-and is deliberately not scribed. Old saves therefore start empty and never receive retroactive entries.
-Projection/patch failures are swallowed at the optional boundary and leave vanilla behavior plus any
-ordinary diary page unchanged.
+An outer interval absorbs every already-completed overlapping sibling, not just the newest row, and a
+net-no-op outer boundary removes all of those transient child rows. Age maintenance runs on both reads
+and writes and uses symmetric tick distance, so rows stranded in the future by a save rollback/test
+clock reset cannot live forever. The bounded cache is non-consuming, cannot create a page, is reset at
+game construction/finalization, and is deliberately not scribed. Old saves therefore start empty and
+never receive retroactive entries. Projection/patch failures are swallowed at the optional boundary
+and leave vanilla behavior plus any ordinary diary page unchanged. Registration also verifies the
+private `Pawn_IdeoTracker.pawn` projection seam once and logs a visible warning if a RimWorld rename
+disables all mutation projection.
 
-Canonical ability ownership is also XML-owned. The exact `Convert`, `Reassure`, and
-`ConversionRitual` strings identify generic Ability routes with a demonstrable later visible
-interaction/ritual owner. When Ideology is active, `AbilityEventData.Decide` drops those generic routes
-before `Rand.Value` is drawn; the existing downstream route remains the sole page owner. Matching is
-exact and case-insensitive—never substring, English prose, or precept-ID inference—and the code fallback
-list is empty. No-DLC profiles and unknown/modded abilities retain ordinary pre-slice behavior. This
-slice does not yet attach mutation facts to conversion/reassurance/crisis/ritual pages or add the other
-Phase-2 event-evidence adapters. It introduces no UI/model-facing text, so English/Russian localization
-files are unchanged.
+Canonical generic-source ownership is XML-owned by `canonicalEventOwnershipRules`. Each row names an
+exact source domain, exact DefName, and downstream interaction group. DefName matching is ordinal and
+case-sensitive—never substring, localized prose, or precept-ID inference—and the code fallback list is
+empty. The generic route is suppressed only while Ideology, the belief policy, and that downstream
+group are effectively enabled. `Convert` therefore yields to the `conversion` group and `Reassure` to
+`heartfelt`; failed-conversion initiator/recipient thoughts also yield to `conversion`, preventing the
+vanilla -3/-5 memory from creating a second page beside `Convert_Failure`. If the player disables the
+downstream group, the generic ability/thought route remains available instead of losing both owners.
+`ConversionRitual` deliberately keeps its generic start page because vanilla exposes no cancellation
+event from which a deferred fallback page could be emitted; a completed ritual may consequently also
+receive its normal finish page until a cancel-aware pending owner exists. Covered abilities still drop
+before `Rand.Value`. No-DLC profiles and unknown/modded sources retain ordinary pre-slice behavior.
+This slice does not yet attach mutation facts to conversion/reassurance/crisis/ritual pages or add the
+other Phase-2 event-evidence adapters. It introduces no UI/model-facing text, so English/Russian
+localization files are unchanged.
 
 The frozen value flows through `DiaryPovPayload.beliefContext` → `PromptValues.beliefContext` →
 `PromptAssembler.ResolveSource("BeliefContext")`. Full/Balanced/Compact detail projection is applied
