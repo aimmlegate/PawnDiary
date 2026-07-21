@@ -595,8 +595,10 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 > are safe, deterministic, deduplicated, and independently bounded by category. DefInjected factual
 > prose is frozen on the main thread; blank/malformed prose degrades to evidence/reference only. No
 > arrival, hidden configuration, infection/infiltrator state, unresolved outcome, Gleaming phase, or
-> terminal void choice can become a candidate. `NarrativeContinuityTests` passes 256 assembly-free
-> assertions, `DiaryAnomalyPolicyTests` passes 612, and the integrated 354-test loaded assembly builds; its new
+> terminal void choice can become a candidate. Review hardening shares the monolith phase/source gate,
+> pins the copied capture/provider tokens, and keeps non-monolith event-window detail behavior unchanged.
+> `NarrativeContinuityTests` passes 289 assembly-free assertions, `DiaryAnomalyPolicyTests` passes 639,
+> and the integrated 354-test loaded assembly builds; its new
 > N3-A assertions still require an in-game run.
 
 1. Route high-confidence `EventRelativeStanceResolver` output through the shared interpretation

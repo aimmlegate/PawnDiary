@@ -1,5 +1,20 @@
 # Changelog
 
+- **2026-07-21 — Hardened Narrative Continuity N3-A after deduplicated adversarial review.** The
+  event-window adapter now applies the player's context-detail budget only to the new exact monolith
+  lens; ordinary core and Royalty event windows retain their pre-N3-A Full request instead of changing
+  behavior as an unrelated side effect. Public Anomaly enrichment entry points now reject inactive-DLC
+  and incomplete runtime inputs before localization/formatting, and all accepted facts use the
+  authoritative page tick.
+
+  Monolith window admission and provider matching now share one exact phase/reached-level predicate,
+  and the stale orchestrator comment no longer calls the live Anomaly provider a zero-candidate
+  skeleton. Pure coverage pins copied capture/provider source and phase tokens, every source-Def and
+  subject-kind firewall, unknown sources, unsafe segments, canonical containment integers, empty
+  boundaries, phase-specific salience, and zero/one-argument format safety in base/English/Russian XML.
+  Focused suites pass 289 Narrative Continuity and 639 Anomaly policy/XML assertions. The previously
+  disclosed Anomaly-active loaded rerun remains pending.
+
 - **2026-07-21 — Repaired the loaded associative-memory RimTest fixtures.** Memory-flow tests now
   enter through the W1 `AddPairwiseEvent` seam instead of incorrectly expecting the batched `Insult`
   PlayLog group to emit synchronously, use the real vanilla `Chitchat` Def for the quiet noise gate,

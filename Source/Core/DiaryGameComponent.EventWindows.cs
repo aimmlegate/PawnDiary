@@ -793,9 +793,14 @@ namespace PawnDiary
                         recentSelectedCandidateKeys =
                             RecentNarrativeSelectedCandidateKeys(pawn.GetUniqueLoadID()),
                         evidence = new List<NarrativeEvidence> { evidence },
-                        contextDetailLevel = PawnDiarySettings.NormalizeContextDetailLevel(
-                            PawnDiaryMod.Settings?.contextDetailLevel
-                                ?? PromptContextDetailLevel.Full)
+                        // N3-A introduced the setting-aware monolith lens here. Keep ordinary event
+                        // windows on their historical Full request so this DLC slice cannot silently
+                        // change Royalty or core event-window selection budgets.
+                        contextDetailLevel = monolithChapter
+                            ? PawnDiarySettings.NormalizeContextDetailLevel(
+                                PawnDiaryMod.Settings?.contextDetailLevel
+                                    ?? PromptContextDetailLevel.Full)
+                            : PromptContextDetailLevel.Full
                     });
 
                 if (result.evidence.Count > 0)

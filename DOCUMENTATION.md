@@ -1928,7 +1928,14 @@ exceptions leave the already-created fallback page authoritative. No new Scribe 
 ordinary per-POV evidence, references, selected-key history, and frozen context own persistence and
 repetition.
 
-The N3-A delivery raises focused coverage to 612
+Review hardening keeps this slice isolated: only an exact monolith event window applies the player's
+Full/Balanced/Compact setting to its new lens request; every ordinary core or Royalty event window
+retains the historical Full request. Public Anomaly adapter methods check the package plus required
+page/POV inputs before resolving localized prose, then the inner adapter repeats the gate. Monolith
+window admission and provider evidence validation share one exact phase/reached-level matcher, while
+assembly-free tests pin the copied capture/provider token contracts so future schema drift fails loudly.
+
+The N3-A delivery raises focused coverage to 639
 Anomaly-policy/XML/cache/context and 135 save-normalization assertions. The A1.4 cases still pin batched recent-
 studier matching, ordering equivalence when a large eligible roster is capped, and a strict input-
 inspection bound for malformed saved histories; A2.0 adds all three visible phases, arrival continuity,
@@ -1941,7 +1948,8 @@ and same-schema load/downgrade coverage. A2.2 adds malformed/failure/already-gho
 exact writer order and caps (including subject fallback under the one-writer ceiling), same-pawn
 exclusion, disabled output, per-value context truncation, spoiler-safe context, and every exact
 Tale fail-open boundary. The 708 catalog suite remains green, while Narrative Continuity now passes
-256 assertions including all visible mappings, gates, hidden/malformed inputs, category caps,
+289 assertions including all visible mappings, cross-layer token/source contracts, gates,
+hidden/malformed inputs, subject/source firewalls, canonical key grammar, category caps,
 deterministic order, repetition, composition, and empty-provider reference preservation. The runtime
 DLL and integrated 354-test RimTest assembly build against the installed 1.6 API; the new N3-A loaded assertions
 are compiled but not yet claimed as an in-game pass. The first user-provided

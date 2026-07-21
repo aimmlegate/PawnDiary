@@ -320,8 +320,14 @@ namespace DiaryAnomalyPolicyTests
             };
             for (int i = 0; i < narrativeFormats.Length; i++)
             {
+                string format = Value(def, narrativeFormats[i]);
                 AssertTrue("XML N3-A narrative format is nonblank: " + narrativeFormats[i],
-                    !string.IsNullOrWhiteSpace(Value(def, narrativeFormats[i])));
+                    !string.IsNullOrWhiteSpace(format));
+                AssertFormatArity(
+                    "XML N3-A narrative format accepts its exact argument count: "
+                        + narrativeFormats[i],
+                    format,
+                    i < 3 ? 0 : 1);
             }
             AssertEqual("XML adds no terminal void narrative format", string.Empty,
                 Value(def, "voidOutcomeNarrativeFormat"));
@@ -352,6 +358,11 @@ namespace DiaryAnomalyPolicyTests
                     AssertTrue(languages[languageIndex] + " N3-A format is nonblank: "
                             + narrativeFormats[formatIndex],
                         !string.IsNullOrWhiteSpace(localizedValue));
+                    AssertFormatArity(
+                        languages[languageIndex] + " N3-A format accepts its exact argument count: "
+                            + narrativeFormats[formatIndex],
+                        localizedValue,
+                        formatIndex < 3 ? 0 : 1);
                     if (formatIndex >= 3)
                     {
                         AssertTrue(languages[languageIndex] + " dynamic N3-A format keeps {0}: "
@@ -360,6 +371,26 @@ namespace DiaryAnomalyPolicyTests
                     }
                 }
             }
+        }
+
+        private static void AssertFormatArity(
+            string label,
+            string format,
+            int argumentCount)
+        {
+            bool valid = true;
+            try
+            {
+                object[] values = new object[Math.Max(0, argumentCount)];
+                for (int i = 0; i < values.Length; i++) values[i] = "subject";
+                string.Format(format, values);
+            }
+            catch (FormatException)
+            {
+                valid = false;
+            }
+
+            AssertTrue(label, valid);
         }
 
         private static void TestInvalidAndNonProgressingStudy()

@@ -24,7 +24,9 @@ namespace PawnDiary
             ContainmentBreachPlan plan,
             AnomalyWriterSelection writer)
         {
-            if (facts == null || plan == null || writer == null || !plan.valid || plan.escapedCount < 1
+            if (!ModsConfig.AnomalyActive || sink == null || diaryEvent == null || povPawn == null
+                || string.IsNullOrWhiteSpace(povRole) || facts == null || plan == null || writer == null
+                || !plan.valid || plan.escapedCount < 1
                 || !WriterMatches(povPawn, writer) || string.IsNullOrWhiteSpace(facts.escapeId)
                 || string.IsNullOrWhiteSpace(plan.dedupKey)) return;
 
@@ -47,7 +49,7 @@ namespace PawnDiary
                             AnomalyNarrativeContinuityTokens.ContainmentBreach,
                             AnomalyNarrativeContinuityTokens.Breached,
                             visibleSubject),
-                        diaryEvent?.tick ?? facts.tick),
+                        diaryEvent.tick),
                     visibleSubject,
                     AnomalyNarrativeContinuityTokens.ContainmentSourceDomain,
                     AnomalyNarrativeContinuityTokens.ContainmentSourceDefName);
@@ -67,7 +69,9 @@ namespace PawnDiary
             CreepJoinerOutcomeFacts facts,
             CreepJoinerOutcomePlan plan)
         {
-            if (facts == null || plan == null || plan.selectedWriter == null || !plan.valid
+            if (!ModsConfig.AnomalyActive || sink == null || diaryEvent == null || povPawn == null
+                || string.IsNullOrWhiteSpace(povRole) || facts == null || plan == null
+                || plan.selectedWriter == null || !plan.valid
                 || !plan.advanceArc || !facts.playerVisible || !facts.transitionVerified
                 || !WriterMatches(povPawn, plan.selectedWriter)) return;
             try
@@ -91,7 +95,9 @@ namespace PawnDiary
             CreepJoinerSurgicalDisclosurePlan plan,
             AnomalyWriterSelection writer)
         {
-            if (facts == null || plan == null || writer == null || !plan.valid || !plan.advanceArc
+            if (!ModsConfig.AnomalyActive || sink == null || diaryEvent == null || povPawn == null
+                || string.IsNullOrWhiteSpace(povRole) || facts == null || plan == null || writer == null
+                || !plan.valid || !plan.advanceArc
                 || !facts.surgeryCompleted || !facts.trackerDisclosureAppended || !facts.playerVisible
                 || !WriterMatches(povPawn, writer)) return;
             try
@@ -116,7 +122,9 @@ namespace PawnDiary
             GhoulTransformationPlan plan,
             AnomalyWriterSelection writer)
         {
-            if (facts == null || plan == null || writer == null || !plan.valid
+            if (!ModsConfig.AnomalyActive || sink == null || diaryEvent == null || povPawn == null
+                || string.IsNullOrWhiteSpace(povRole) || facts == null || plan == null || writer == null
+                || !plan.valid
                 || !plan.transitionVerified || !facts.methodReturnedNormally || facts.wasGhoul
                 || !facts.isGhoul || !facts.playerVisible || !WriterMatches(povPawn, writer)) return;
             try
@@ -140,7 +148,7 @@ namespace PawnDiary
                                 AnomalyNarrativeContinuityTokens.GhoulTransformation,
                                 AnomalyNarrativeContinuityTokens.Transformed,
                                 subjectLabel),
-                        diaryEvent?.tick ?? facts.tick),
+                        diaryEvent.tick),
                     subjectLabel,
                     AnomalyNarrativeContinuityTokens.GhoulSourceDomain,
                     AnomalyNarrativeContinuityTokens.GhoulSourceDefName);
@@ -207,7 +215,7 @@ namespace PawnDiary
                             AnomalyNarrativeContinuityTokens.CreepJoinerOutcome,
                             phase,
                             cleanedLabel),
-                    diaryEvent?.tick ?? 0),
+                    diaryEvent.tick),
                 cleanedLabel,
                 AnomalyNarrativeContinuityTokens.CreepJoinerSourceDomain,
                 AnomalyNarrativeContinuityTokens.CreepJoinerSourceDefName);

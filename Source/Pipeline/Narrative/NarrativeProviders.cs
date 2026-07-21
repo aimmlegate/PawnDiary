@@ -405,15 +405,21 @@ namespace PawnDiary
             string phase,
             string sourceDefName)
         {
-            if (phase == Stirring)
-                return windowDefName == MonolithStirringWindowDefName
-                    && sourceDefName == MonolithStirringSourceDefName;
-            if (phase == Waking)
-                return windowDefName == MonolithWakingWindowDefName
-                    && sourceDefName == MonolithWakingSourceDefName;
-            return phase == VoidAwakened
-                && windowDefName == MonolithVoidAwakenedWindowDefName
-                && sourceDefName == MonolithVoidAwakenedSourceDefName;
+            if (!MatchesVisibleMonolithPhaseSource(phase, sourceDefName)) return false;
+            if (phase == Stirring) return windowDefName == MonolithStirringWindowDefName;
+            if (phase == Waking) return windowDefName == MonolithWakingWindowDefName;
+            return windowDefName == MonolithVoidAwakenedWindowDefName;
+        }
+
+        /// <summary>
+        /// Accepts only the reached-level Def that belongs to one visible monolith phase. The event-window
+        /// adapter additionally checks the owning window identity before it creates source evidence.
+        /// </summary>
+        public static bool MatchesVisibleMonolithPhaseSource(string phase, string sourceDefName)
+        {
+            if (phase == Stirring) return sourceDefName == MonolithStirringSourceDefName;
+            if (phase == Waking) return sourceDefName == MonolithWakingSourceDefName;
+            return phase == VoidAwakened && sourceDefName == MonolithVoidAwakenedSourceDefName;
         }
     }
 
@@ -690,17 +696,10 @@ namespace PawnDiary
             if (fact.sourceKind == AnomalyNarrativeContinuityTokens.CreepJoinerOutcome)
                 return evidence.sourceDomain == AnomalyNarrativeContinuityTokens.CreepJoinerSourceDomain
                     && evidence.sourceDefName == AnomalyNarrativeContinuityTokens.CreepJoinerSourceDefName;
-            if (fact.sourceKind != AnomalyNarrativeContinuityTokens.MonolithChapter
-                || evidence.sourceDomain != AnomalyNarrativeContinuityTokens.MonolithSourceDomain) return false;
-            if (fact.phase == AnomalyNarrativeContinuityTokens.Stirring)
-                return evidence.sourceDefName
-                    == AnomalyNarrativeContinuityTokens.MonolithStirringSourceDefName;
-            if (fact.phase == AnomalyNarrativeContinuityTokens.Waking)
-                return evidence.sourceDefName
-                    == AnomalyNarrativeContinuityTokens.MonolithWakingSourceDefName;
-            return fact.phase == AnomalyNarrativeContinuityTokens.VoidAwakened
-                && evidence.sourceDefName
-                    == AnomalyNarrativeContinuityTokens.MonolithVoidAwakenedSourceDefName;
+            return fact.sourceKind == AnomalyNarrativeContinuityTokens.MonolithChapter
+                && evidence.sourceDomain == AnomalyNarrativeContinuityTokens.MonolithSourceDomain
+                && AnomalyNarrativeContinuityTokens.MatchesVisibleMonolithPhaseSource(
+                    fact.phase, evidence.sourceDefName);
         }
 
         private static bool TryMonolithArc(string arcKey, out string campaignEpoch)
@@ -1111,9 +1110,9 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Fixed provider list. Royalty, Biotech, and Odyssey have guarded implementations; Anomaly has
-    /// an explicit A1.1 zero-candidate skeleton; remaining empty calls are intentional stubs. Any
-    /// absent DLC/provider is the ordinary zero-candidate path.
+    /// Fixed provider list. Royalty, Biotech, Odyssey, and visible-only Anomaly facts have guarded
+    /// implementations; remaining empty calls are intentional stubs. Any absent DLC/provider is the
+    /// ordinary zero-candidate path.
     /// </summary>
     internal static class NarrativeProviderOrchestrator
     {

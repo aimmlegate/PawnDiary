@@ -590,7 +590,9 @@ Shared selector or provider failure preserves the canonical Anomaly page without
 > length. Per-category output is sorted, deduplicated, and bounded. Candidate prose is XML/DefInjected
 > in English/Russian; missing or malformed formats preserve the page and its evidence/reference with no
 > lens. There is no new hook, source, page, capture/ownership rule, Scribe field, terminal-void outcome,
-> or hidden creepjoiner mapping. Pure suites pass 612 Anomaly and 256 Narrative assertions; the runtime
+> or hidden creepjoiner mapping. Review hardening pins copied capture/provider tokens and exact format
+> arity, shares the monolith phase/source matcher, and preserves non-monolith event-window detail behavior.
+> Pure suites pass 639 Anomaly and 289 Narrative assertions; the runtime
 > and integrated 354-test RimTest assemblies build, while the new loaded assertions remain unexecuted in-game.
 
 ### 7.6 Fail-open nested Tale transaction

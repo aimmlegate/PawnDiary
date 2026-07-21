@@ -378,8 +378,10 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > normalized save baseline, lifecycle-cleared bounded caches/scopes, and five package-gated prompt
 > groups are implemented. N3-A now maps only exact visible ghoul/containment/monolith/creepjoiner
 > source evidence into bounded identity/chapter/pressure candidates; it adds no source, page, owner,
-> save field, or terminal-void path. Focused suites pass 612 Anomaly, 708 catalog, 135
-> save-normalization, and 256 Narrative assertions; runtime and 354-test RimTest assemblies build.
+> save field, or terminal-void path. Deduplicated review hardening shares its exact monolith source gate
+> and prevents the slice from changing non-monolith event-window detail budgets. Focused suites pass 639
+> Anomaly, 708 catalog, 135 save-normalization, and 289 Narrative assertions; runtime and 354-test RimTest
+> assemblies build.
 > The new N3-A loaded assertions are compiled but not yet claimed as an in-game pass. The exact-only
 > classifier and all hooks are Anomaly-gated. Loaded A1.1 state
 > coverage and the original nine A1.3 containment fixtures passed in their recorded profiles. A later

@@ -322,16 +322,19 @@ assumed the implanted Def must outrank every removed xenogene as N3-B's salient 
 reattaches only A2.2's exact preverified writers, and the three fixtures assert the real production
 contracts. The user-confirmed corrected loaded rerun passed 347/347, closing A2.2 loaded acceptance.
 
-Master Wave 7 / Narrative N3-A raises `NarrativeContinuityTests` from 135 to 256 assertions and
-`DiaryAnomalyPolicyTests` from 572 to 612. Pure provider cases cover ghoul exact-subject identity,
+Master Wave 7 / Narrative N3-A plus its deduplicated review hardening raises
+`NarrativeContinuityTests` from 135 to 289 assertions and `DiaryAnomalyPolicyTests` from 572 to 639.
+Pure provider cases cover ghoul exact-subject identity,
 containment exact-entity/map/tick pressure, all three visible monolith chapters, and all four verified
 visible creepjoiner disclosure/outcome phases. They also cover independent provider/knowledge/POV
-gates; exact source/facet/phase/subject/arc mismatches; null, blank, malformed, unsafe, overlong, and
-negative-tick input; hidden creepjoiner state and unsupported/Gleaming/terminal monolith phases;
+gates; copied capture/provider token equality; exact source/facet/phase/subject/arc mismatches and
+subject-kind firewalls; null, empty, blank, malformed, unsafe, overlong, and negative-tick input;
+hidden creepjoiner state, unknown sources, and unsupported/Gleaming/terminal monolith phases;
 deterministic key/text deduplication; identity/chapter/pressure caps and input-order independence;
 ordinary repetition; Anomaly/Odyssey composition; and evidence/reference preservation when provider
-output is empty. XML coverage requires every shipped English/Russian DefInjected format and `{0}`
-placeholder while proving no terminal-void format exists.
+output is empty. XML coverage requires every shipped base/English/Russian DefInjected format to accept
+its exact zero/one argument count, requires `{0}` on dynamic formats, and proves no terminal-void format
+exists.
 
 Loaded fixtures now assert the saved per-role evidence, reference, selected stable key, and non-empty
 context on the real containment, surgical disclosure, rejection, aggression, departure, ghoul infusion,
