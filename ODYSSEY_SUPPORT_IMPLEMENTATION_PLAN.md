@@ -19,7 +19,10 @@ Wave 8's XML-first O2 behavior and Narrative N3-O environmental extension are im
 the exact POV is verified aboard the same gravship, then proposes one bounded `ambient_pressure`
 candidate beside N2-O's mobile-home candidate. It adds no live Thing rescan, Harmony hook, page owner,
 setting, save field, life-support inference, or landing consequence. Focused pure/build validation is
-complete; the combined loaded Odyssey acceptance run remains outstanding.
+complete. The first manual active run reached 353/354 and exposed an invalid host without a spawned,
+parked player gravship; the user-confirmed corrected run on a valid player-home gravship host passed the
+combined 354/354 tests across 57/57 suites. The separately focused Odyssey-inactive path passed 1/1,
+and the no-Odyssey profile produced no Pawn Diary crash, missing-Def error, or error spam.
 
 Scheduling authority: implement Odyssey phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Odyssey.
@@ -1244,7 +1247,7 @@ life-support spikes separately; implement only the parts whose gates pass.
 
 ### Narrative N3-O — Exact environmental pressure
 
-> **Implementation status (2026-07-21): automated slice complete; loaded acceptance not run.** The
+> **Implementation status (2026-07-21): implemented; loaded acceptance passed.** The
 > shared Odyssey snapshot now carries an optional bounded list of detached environmental facts. The
 > only admitted fact is the existing active `SeasonalFloodActive`/`SeasonalFlood` row for the exact
 > POV's current gravship map. The pure provider independently validates source, evidence, POV, ship,
@@ -1256,6 +1259,10 @@ life-support spikes separately; implement only the parts whose gates pass.
 > metadata cannot suppress an independently valid pressure fact. Review hardening also compiles loaded
 > checks for the canonical landing-signal handoff and the observer's player-home map precondition. No
 > new hook, page, setting, save field, life-support claim, or landing consequence is part of N3-O.
+> The fixture now requires a spawned, parked player gravship and chooses a standable cell accepted by
+> vanilla's exact onboard predicate. The first manual active run reached 353/354 on an invalid host;
+> the user-confirmed corrected run passed 354/354 tests across 57/57 suites. The focused inactive path
+> passed 1/1 with a clean no-Odyssey profile.
 
 ### Phase O3 — Exploration and ending
 

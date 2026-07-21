@@ -584,9 +584,25 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 > so unrelated Biotech identity events cannot pull generic rank context. Title transitions map to the
 > shared `identity_transition` contract with no invented title arc; title/faction remain event facts.
 > Guarded current snapshots use XML/DefInjected prose and are passed through existing event-time build
-> requests, but no existing source supplies Royalty evidence yet. Court pressure remains scheduled for
-> the Wave-9 N3-R extension. No hook, page, setting, save schema, or Phase-2 lifecycle behavior was added;
+> requests. At this checkpoint no source supplied Royalty evidence, and court pressure remained
+> scheduled for the Wave-9 N3-R extension. No hook, page, setting, save schema, or Phase-2 lifecycle behavior was added;
 > `NarrativeContinuityTests` passes 125 assembly-free assertions.
+>
+> **N3-R Wave-9 extension progress (2026-07-21): code-complete; changed loaded assertions pending.**
+> Audit confirmed that Phase 5 already supplies exact heir-subject succession identity evidence and
+> Phase 7 already supplies exact start/terminal journey evidence on a shared Royal Ascent arc plus the
+> generic provider's active court-pressure candidate. The missing attachment was permit authority.
+> After an allowlisted successful-use page exists, its adapter now attaches one exact caller-POV
+> `identity_transition` row whose pure factory rechecks the event/tick/owner and current XML permit
+> mapping. Routine, unknown, forged-family, and unlisted modded permits remain silent unless XML
+> explicitly opts them into a reviewed family. The existing current-title provider and stable key are
+> reused; no second provider, page, hook, setting, save field, prompt prose, XML row, or outcome claim
+> was added. Royal Ascent acceptance still means commitment only, never arrival, escape, credits, or
+> another unverified result. Focused suites pass 486 Royalty and 330 Narrative Continuity assertions;
+> the Debug runtime and current 354-test RimTest assemblies build. Strengthened succession and
+> permit loaded assertions are compiled but TODO/pending. The earlier Phase 5 354/354 result across
+> 57/57 suites is unchanged, and every deferred Royalty Phase 2–4, 6, 7, and 8 acceptance item remains
+> open.
 >
 > **N3-A progress (2026-07-21): implemented; loaded acceptance passed.** The Anomaly provider accepts only
 > source-owned, per-POV evidence for verified ghoul transformation, containment breach, the three
@@ -600,7 +616,7 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 > `NarrativeContinuityTests` passes 289 assembly-free assertions, `DiaryAnomalyPolicyTests` passes 639,
 > and the user-confirmed corrected Anomaly-active loaded run passed the integrated 354/354 RimTests.
 >
-> **N3-O progress (2026-07-21): implemented; loaded acceptance not run.** The fixed Odyssey provider
+> **N3-O progress (2026-07-21): implemented; loaded acceptance passed.** The fixed Odyssey provider
 > now accepts one optional detached environmental-pressure fact in the existing per-POV snapshot. The
 > only concrete source is O2's already-saved, prompt-active `SeasonalFloodActive` observer row with
 > exact `SeasonalFlood` evidence for the POV's verified current gravship map. Source, evidence, POV,
@@ -612,14 +628,19 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 > provider failure preserves the canonical page and evidence/references with no lens. No new hook,
 > page, setting, save field, generic-condition duplicate, life-support state, or landing consequence
 > was added. Review hardening isolates malformed home-only tick/journey metadata from valid pressure,
-> locks the exact observer XML tuple, and compiles loaded cache/signal/map-precondition checks. Focused
-> coverage passes 324 Narrative Continuity, 160 Odyssey policy, and 2,750 pipeline
-> assertions; both Debug assemblies build, while the integrated loaded suite has not been run for N3-O.
+> locks the exact observer XML tuple, and compiles loaded cache/signal/map-precondition checks. At the
+> N3-O checkpoint, focused coverage passed 324 Narrative Continuity, 160 Odyssey policy, and 2,750 pipeline
+> assertions; both Debug assemblies build. The first manual active run reached 353/354 and exposed an
+> invalid host without a spawned, parked player gravship. The user-confirmed corrected run on a valid
+> player-home gravship host passed 354/354 tests across 57/57 suites. The separately focused inactive
+> path passed 1/1, and the no-Odyssey profile produced no Pawn Diary crash, missing-Def error, or error
+> spam.
 
 1. Route high-confidence `EventRelativeStanceResolver` output through the shared interpretation
    category for ordinary event enrichment.
-2. Add Royalty persona/title/court candidates with exact applicability gates. **Core persona/title
-   provider implemented; court pressure remains deferred to the scheduled N3-R extension.**
+2. Add Royalty persona/title/court candidates with exact applicability gates. **Implemented, including
+   the Wave-9 succession, permit-authority, Royal Ascent journey, and court-pressure extension; changed
+   loaded assertions remain pending.**
 3. Add Anomaly visible-state/pressure candidates with spoiler-firewall tests. **Implemented; loaded acceptance passed.**
 4. Add Biotech mechanitor/pollution and Odyssey environmental extensions as their source phases ship.
    **Odyssey environmental pressure is implemented; Biotech mechanitor/pollution remains scheduled.**

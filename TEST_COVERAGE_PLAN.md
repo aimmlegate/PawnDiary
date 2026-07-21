@@ -357,10 +357,14 @@ with empty safe defaults and loaded XML format projection; `DiaryPipelineTests` 
 and freezes English/Russian format placeholders, the exact seasonal-flood observer tuple,
 home/pressure coexistence policy, no Odyssey dependency, and Full/Balanced/Compact prompt projection.
 The 354-test RimTest assembly builds with focused real-adapter, policy-cache, canonical-signal, and
-home-map-precondition assertions, but no N3-O in-game run is claimed.
+home-map-precondition assertions. The first manual Odyssey-active run reached 353/354 and correctly
+rejected a host without a spawned, parked player gravship. After loading a valid player-home gravship
+host, the user-confirmed corrected integrated run passed 354/354 tests across 57/57 suites. The focused
+Odyssey-inactive path passed 1/1, and the no-Odyssey profile produced no Pawn Diary crash, missing-Def
+error, or error spam.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
-471-assertion assembly-free suite. It
+486-assertion assembly-free suite. It
 freezes the `royalty-persona|<weaponThingId>|<bondEpoch>` grammar and its mapping to the existing
 Narrative Continuity `bond_lifecycle`/`weapon` contract; formation/load-baseline/re-equip,
 pending/threshold/unobservable separation, recorded/unrecorded recovery, destruction/death/transfer,
@@ -383,9 +387,13 @@ is parsed separately and its
 detached `CreateDefault` path is exercised. Phase 1 additionally covers conservative persona
 baselines, malformed phase/tick/cause repair, duplicate weapon ownership, trait/row caps, faction-title
 dedup, highest-seniority selection, stable ordering, missing rows, corruption ceilings, exact live
-weapon validation for provider facts, and persistence of steady-primary observation ticks. The new
-N3-R adds exact pawn title-transition evidence, authority/status/duty/death topic boundaries, major
-loss salience, and rejection of no-change/malformed rows. `PawnDiaryRoyaltyStateFixtureTests` compiles
+weapon validation for provider facts, and persistence of steady-primary observation ticks. N3-R adds
+exact pawn title-transition and succession evidence, authority/status/duty/death topic boundaries,
+major loss salience, and rejection of no-change/malformed rows. Its Wave-9 extension additionally
+pins exact permit event/tick/owner/POV correlation, exact XML mapping revalidation, bounded authority/
+service/violence topics, forged-family rejection, routine and unlisted-modded silence, explicit
+modded opt-in, and Royal Ascent acceptance as a started colony chapter without an outcome claim.
+`PawnDiaryRoyaltyStateFixtureTests` compiles
 against RimTest Redux and exercises deep persona Scribe
 round-trip, every nested per-pawn faction/title/label/seniority/tick field plus psylink preservation,
 the component's actual persona-ledger keys for old-save version-zero versus initialized-empty markers,
@@ -481,7 +489,14 @@ The first expanded loaded run reached 264/267. Its three failures all came from 
 remaining unspawned while succession ID resolution and the component-wide pre-save scanner correctly
 consulted only RimWorld's live-colonist roster; the affected fixtures now spawn their disposable
 heir/writer. The user-confirmed corrected loaded rerun passed 267/267. Phase 5 automated coverage is
-green, while its hands-on matrix remains open.
+green. Its 2026-07-21 manual loaded gate then ran the current 354-test/57-suite assembly on RimWorld
+1.6.4871 rev591 in an isolated Royalty-only DLC profile. The first pass was 353/354 across 56/57
+suites because the unrelated Phase-3 non-primary persona fixture intermittently failed to establish
+its disposable pending bond; all Phase-5 fixtures passed, and the immediate user-confirmed rerun was
+354/354 across 57/57. A separate Royalty-inactive loaded profile logged every active fixture's guarded
+path plus the explicit empty-collector success marker without a Pawn Diary Royalty error. That
+inactive runner summary was not persisted, and the operator explicitly accepted the recorded guard
+evidence as sufficient to close Phase 5. No source or fixture change was required.
 
 Phase 6 raises `RoyaltyContextTests` to 431 assertions, `DiaryPipelineTests` to 2,650, and
 `DiaryCapturePolicyTests` to 680. Pipeline coverage parses the XML-owned allowlist/caps/windows, the
@@ -602,10 +617,12 @@ Every fixture explicitly logs `SKIP` when Odyssey is inactive or a real player g
 and failure-safe cleanup restores component/controller state, time speed, the mask engine, world
 objects, spawned things, pawns, events, diary indexes, and temporary Harmony patches.
 
-Narrative N2-O, N3-B identity, N3-R core, N3-A, and N3-O extend `NarrativeContinuityTests` to 324
-assembly-free assertions. N3-R covers exact persona arc/weapon and title POV/domain/topic applicability, cross-DLC
-identity isolation, absent/unknown/unverified/null silence, stable candidate keys and ordering,
-defensive persona/duty caps, and deterministic duty-topic normalization. N2-O covers the one-row
+Narrative N2-O, N3-B identity, N3-R, N3-A, and N3-O extend `NarrativeContinuityTests` to 330
+assembly-free assertions. N3-R covers exact persona arc/weapon and title POV/domain/topic applicability,
+cross-DLC identity isolation, absent/unknown/unverified/null silence, stable candidate keys and
+ordering, defensive persona/duty caps, and deterministic duty-topic normalization. Its Wave-9 proof
+requires the exact heir subject before succession can reuse the stable faction-title key, and the exact
+caller POV before allowlisted permit evidence can reuse that same authority provider. N2-O covers the one-row
 Odyssey home candidate, exact ship/journey/location identity, family-event ambient selection, landing
 exact-arc selection, inactive-provider/unknown-knowledge/disconnected-POV/unknown-location silence, and
 the frozen departure plus arrived/returned ship/place reference factories. Loaded RimTests exercise the
@@ -616,8 +633,19 @@ the same snapshot and the existing saved O2 observer row, adds at most one exact
 and covers unsafe inputs, per-lens home/pressure failure isolation, deterministic deduplication, ordinary
 repetition, two-provider composition, and evidence/reference preservation. Focused loaded assertions
 exercise the real adapter, DefInjected cache refresh, canonical landing-signal handoff, player-home map
-precondition, and all three prompt detail budgets when an exact onboard host is available; they are
-compiled but not yet run in game.
+precondition, and all three prompt detail budgets. The fixture now requires a spawned, parked player
+gravship and chooses a standable cell accepted by vanilla's exact onboard predicate. The user-confirmed
+corrected Odyssey-active run passed the integrated 354/354 tests across 57/57 suites; the separately
+focused inactive path passed 1/1 with a clean no-Odyssey profile.
+
+The existing real succession and dramatic-permit RimTest fixtures now also compile assertions for
+their exact N3-R evidence, references, context, and selected current-title key. Their changed loaded
+execution is TODO/pending: build success is not a loaded-game result. Royalty Phase 5's previously
+recorded 354/354 result across 57/57 suites remains unchanged, and no deferred Royalty Phase 2–4,
+6, 7, or 8 manual/inactive/loaded/localization row is closed by these compiled assertions.
+The repository verification hook passes all 14 pure suites at 6,588 assertions total, parses all XML,
+and rebuilds the Debug runtime with 0 warnings and 0 errors; the current 354-test RimTest assembly also
+builds successfully.
 
 Master Wave 3 / Biotech Phases 0–3 plus Phase 4 automated hardening use
 `DiaryBiotechPolicyTests`, an assembly-free suite that freezes

@@ -237,7 +237,7 @@ namespace PawnDiary
                     beliefTopics = topics,
                     salience = includesDeath ? NarrativeSalienceTokens.Major : NarrativeSalienceTokens.Meaningful,
                     pawnCanKnow = true,
-                    sourceDomain = "royalty_succession",
+                    sourceDomain = RoyaltyNarrativeEvidenceFactory.SuccessionSourceDomain,
                     sourceDefName = sourceDefName
                 }
             };

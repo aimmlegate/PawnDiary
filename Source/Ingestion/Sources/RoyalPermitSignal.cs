@@ -2,6 +2,7 @@
 // values were copied and sanitized on the main thread; the saved context never retains a live permit,
 // Pawn_RoyaltyTracker, Def, Faction, Map, or target object.
 using System;
+using System.Collections.Generic;
 using PawnDiary.Capture;
 using Verse;
 
@@ -91,7 +92,59 @@ namespace PawnDiary.Ingestion
                 text,
                 InteractionGroups.InstructionForRoyalPermit(group),
                 RoyalPermitContextFormatter.Format(use, policy));
-            if (CreatedEvent != null) sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
+            if (CreatedEvent == null) return;
+
+            ApplyNarrativeEvidence(sink, CreatedEvent);
+            sink.QueueSolo(CreatedEvent, DiaryEvent.InitiatorRole);
+        }
+
+        /// <summary>
+        /// Attaches exact successful-use evidence after the canonical page exists. The existing generic
+        /// Royalty title provider may then add current authority context for this exact caller; failures
+        /// preserve the permit page and never turn intent or an unknown permit into evidence.
+        /// </summary>
+        private void ApplyNarrativeEvidence(DiaryGameComponent sink, DiaryEvent diaryEvent)
+        {
+            if (sink == null || diaryEvent == null || pawn == null || use == null) return;
+
+            try
+            {
+                string pawnId = pawn.GetUniqueLoadID();
+                NarrativeEvidence evidence = RoyalPermitPolicy.BuildNarrativeEvidence(
+                    diaryEvent.eventId,
+                    diaryEvent.tick,
+                    pawnId,
+                    DiaryEvent.InitiatorRole,
+                    use,
+                    policy);
+                if (evidence == null) return;
+
+                NarrativeContextBuildResult result = NarrativeContextBuilder.Build(
+                    new NarrativeContextBuildRequest
+                    {
+                        eventId = diaryEvent.eventId,
+                        eventTick = diaryEvent.tick,
+                        povPawnId = pawnId,
+                        povRole = DiaryEvent.InitiatorRole,
+                        evidence = new List<NarrativeEvidence> { evidence },
+                        royalty = sink.RoyaltyNarrativeSnapshotFor(pawn, diaryEvent.tick),
+                        odyssey = sink.OdysseyNarrativeSnapshotFor(pawn, diaryEvent.tick),
+                        recentSelectedCandidateKeys = sink.RecentNarrativeSelectedCandidateKeys(pawnId),
+                        contextDetailLevel = PawnDiarySettings.NormalizeContextDetailLevel(
+                            PawnDiaryMod.Settings?.contextDetailLevel ?? PromptContextDetailLevel.Full)
+                    });
+                if (result.evidence.Count > 0)
+                {
+                    diaryEvent.ApplyNarrativeContext(DiaryEvent.InitiatorRole, result);
+                }
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Royal permit Narrative Continuity evidence failed; the permit page remains: "
+                    + exception,
+                    "PawnDiary.RoyalPermit.NarrativeEvidence".GetHashCode());
+            }
         }
 
         private static string FallbackKey(string family)

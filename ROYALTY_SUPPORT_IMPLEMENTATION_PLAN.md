@@ -1,6 +1,7 @@
 # Pawn Diary — Royalty Support Implementation Plan
 
-Status: Phases 0–8 and the Narrative N3-R Royal Ascent extension are implemented as of 2026-07-19.
+Status: Phases 0–8 are implemented, and the full Narrative N3-R Wave-9 extension is code-complete as
+of 2026-07-21.
 Phase 2 now ships exact persona-weapon formation, meaningful separation/recovery, destruction, and
 transfer lifecycle pages with guarded Harmony collection, saved state, late-visible recovery,
 package-gated settings/prompts, English/Russian localization, prompt fixtures, and N3-R evidence.
@@ -16,7 +17,9 @@ same-tick title-edge dedup defect plus one Phase-3 mod-profile-sensitive fixture
 expanded the suite; its user-confirmed loaded rerun passed 256/256. Hands-on acceptance remains
 pending. Phase 5 succession is code-complete with pure/build coverage and compiled loaded fixtures;
 after correcting three disposable-pawn liveness gaps, its user-confirmed loaded rerun passed 267/267.
-Its hands-on matrix remains pending. Phase 6 dramatic permits are code-complete with pure tests,
+Its later isolated Royalty-only acceptance rerun passed the current 354/354 tests across 57/57 suites,
+and a separate Royalty-inactive loaded profile exercised the guarded empty paths; the operator closed
+the Phase-5 manual gate on 2026-07-21. Phase 6 dramatic permits are code-complete with pure tests,
 runtime/RimTest builds, XML/prompts/localization, and eleven compiled loaded fixtures. The installed
 1.6 audit confirms `FactionPermit.Notify_Used()` is the successful-use edge and quick military aid's
 successful `RaidFriendly` precedes it; exact faction+map stage/claim/expiry arbitration preserves the
@@ -32,7 +35,11 @@ synthetic modded persona and permit adapter fixtures, repeat-safe scanner fallba
 transient-cache reset coverage. The
 runtime and 291-test RimTest assemblies build; the focused pure suites pass, but the 291-test loaded
 run and real exit-to-menu/second-colony, Royalty-off, localization, and hands-on matrices remain open.
-Therefore Phase 7 hands-on/loaded acceptance and R2/R3 release acceptance remain open. This status does not pass,
+The later N3-R audit confirmed the existing exact succession, Ascent journey, and court-pressure
+contracts and added the missing exact permit-authority evidence attachment. Focused suites now pass
+486 Royalty and 330 Narrative Continuity assertions; the current 354-test RimTest assembly builds,
+but its strengthened succession/permit assertions have not run in a loaded game. Therefore Phase 7
+hands-on/loaded acceptance and R2/R3 release acceptance remain open. This status does not pass,
 waive, or remove any earlier Biotech B1 manual
 acceptance row.
 
@@ -1427,10 +1434,33 @@ describe structural behavior where applicable.
 > `identity_transition` evidence; title/faction facts never become a Royalty-only arc key. The guarded
 > main-thread adapter copies current Phase-1 bond/title truth, formats optional prose from
 > `DiaryRoyaltyPolicyDef`/DefInjected fields, and passes snapshots through existing build requests.
-> No existing event supplies Royalty evidence yet, so this dependency is structurally inert until
-> Phase 2 or Phase 4's canonical owner attaches it. Court pressure remains deferred to the Wave-9
-> N3-R extension. Pure suites pass 196 Royalty and 125 Narrative Continuity assertions. No Harmony
+> At this checkpoint no existing event supplied Royalty evidence, so the dependency remained inert
+> until Phase 2 or Phase 4 attached a canonical owner; court pressure was deferred to Wave 9. Pure
+> suites passed 196 Royalty and 125 Narrative Continuity assertions. No Harmony
 > hook, page source, setting, save field, or Phase-2 lifecycle behavior was added.
+
+### Narrative N3-R Wave-9 extension — Succession, permits, and Royal Ascent
+
+> **Implementation status (2026-07-21): code-complete; new loaded assertions pending.** Audit before
+> implementation found that Phase 5 already attaches exact heir-subject succession identity evidence,
+> and Phase 7 already attaches exact started/terminal Royal Ascent journey evidence on one shared arc
+> and supplies the generic provider's exact active court-pressure candidate. Those contracts were
+> retained and given focused provider/runtime-boundary proof rather than duplicated. The missing
+> contract was Phase 6 permit authority: after the exact successful-use page exists,
+> `RoyalPermitSignal` now asks a pure factory for one caller-POV `identity_transition` row. That factory
+> revalidates event/tick/owner identity plus the current XML Def-name-to-family mapping. Routine,
+> unknown, forged-family, and unlisted modded permits stay silent; explicit XML mapping remains the
+> only modded opt-in. The evidence claims invocation and current authority only—never arrival,
+> delivered aid, impact, transport completion, escape, credits, or another unverified outcome.
+>
+> The implementation reuses the existing generic current-title provider and stable key; it adds no
+> provider, page, hook, setting, save field, prompt prose, localization, XML row, or DLC dependency.
+> Focused assembly-free suites pass 486 Royalty and 330 Narrative Continuity assertions. The Debug
+> runtime and current 354-test RimTest assemblies build. Existing real succession/permit fixtures now
+> compile exact evidence/reference/context/provider assertions, but their changed loaded execution is
+> TODO/pending. Phase 5's recorded 354/354 result across 57/57 suites is preserved. All Phase 2–4
+> hands-on rows, Phase 6 hands-on/inactive profile, Phase 7 corrected loaded/hands-on/inactive profile,
+> and Phase 8 loaded/cross-colony/Royalty-off/localization/hands-on matrices remain TODO/pending.
 
 ### Phase 2 — Persona lifecycle pages
 
@@ -1536,8 +1566,8 @@ Exit gate: R1 is releasable.
 
 ### Phase 5 — Succession
 
-> **Implementation status (2026-07-19): code-complete; pure/build/automated loaded green at 267/267;
-> hands-on acceptance pending.** Exact `RoyalTitleDefExt.TryInherit` candidates are nested inside the
+> **Implementation status (2026-07-21): complete; manual loaded acceptance green at 354/354 tests
+> across 57/57 suites.** Exact `RoyalTitleDefExt.TryInherit` candidates are nested inside the
 > outer `Pawn_RoyaltyTracker.Notify_PawnKilled` scope and authorize a fact only after the matching
 > deceased title row commits `wasInherited`. Equal-or-higher heirs and candidate-only outcomes stay
 > silent. Title callbacks that arrive before the outer commit are staged; this includes vanilla's
@@ -1552,7 +1582,13 @@ Exit gate: R1 is releasable.
 > `succession_faction`, with identity-transition authority/status/duty/death evidence. English and
 > Russian prompts/UI/fixtures and append-only SoloImportant fields 113–116 ship. Pure suites pass
 > 358 Royalty and 2,493 pipeline assertions; the runtime and expanded 267-test RimTest assemblies
-> build, and the user-confirmed corrected loaded run passes all 267 tests.
+> build, and the user-confirmed corrected loaded run passes all 267 tests. The later isolated
+> Royalty-only current-assembly run first reached 353/354 because the unrelated Phase-3 non-primary
+> persona fixture intermittently failed to establish its disposable pending bond; every Phase-5 test
+> passed, and the immediate rerun was green at 354/354 across 57/57 suites. A separate loaded profile
+> without Royalty logged the guarded active-fixture paths and explicit empty-collector success marker
+> without a Pawn Diary Royalty error. Its runner summary was not persisted; the operator accepted the
+> evidence and directed this gate closed. No code change was required.
 
 1. Add the pure succession policy and its deterministic tests.
 2. Register the nested `TryInherit` candidate hook plus the outer `Notify_PawnKilled` commit scope.
