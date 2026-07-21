@@ -16,6 +16,7 @@ namespace DiaryCapturePolicyTests
         {
             TestThoughtNullGuards();
             TestThoughtEligibilityGates();
+            TestThoughtCanonicalOwnership();
             TestThoughtPermanentDrop();
             TestThoughtIgnoreToken();
             TestThoughtGeneralThreshold();
@@ -121,6 +122,18 @@ namespace DiaryCapturePolicyTests
                 ThoughtEventData.Decide(Thought("Foo", mood: 10f), Ctx(user: false)));
             AssertEqual("all enabled records", CaptureDecision.GenerateSolo,
                 ThoughtEventData.Decide(Thought("Foo", mood: 10f), Ctx()));
+        }
+
+        private static void TestThoughtCanonicalOwnership()
+        {
+            ThoughtEventData covered = Thought("FailedConvertAbilityRecipient", mood: -5f);
+            covered.DownstreamCovered = true;
+            AssertEqual("downstream-covered thought drops before magnitude routing", CaptureDecision.Drop,
+                ThoughtEventData.Decide(covered, Ctx()));
+
+            covered.DownstreamCovered = false;
+            AssertEqual("thought remains available when its downstream group is disabled",
+                CaptureDecision.GenerateSolo, ThoughtEventData.Decide(covered, Ctx()));
         }
 
         // ── Thought: source-specific filters ──

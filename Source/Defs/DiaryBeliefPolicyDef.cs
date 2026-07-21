@@ -38,6 +38,14 @@ namespace PawnDiary
         public List<string> addSemanticAliases;
     }
 
+    /// <summary>One exact generic-source to effective-downstream-group ownership rule.</summary>
+    public class DiaryBeliefCanonicalEventOwnershipRuleDef
+    {
+        public string sourceDomain;
+        public string sourceDefName;
+        public string downstreamGroupDefName;
+    }
+
     /// <summary>Optional explicit compatibility correction. The shipped list remains empty.</summary>
     public class DiaryBeliefCorrelationCorrectionDef
     {
@@ -145,8 +153,8 @@ namespace PawnDiary
         public List<string> lexicalExclusions;
         public List<string> proselytizingPovRoles;
         // Exact event-source ownership, not doctrine policy. The code fallback is intentionally empty
-        // so missing XML never suppresses an unknown or modded ability.
-        public List<string> downstreamCoveredAbilityDefNames;
+        // so missing XML never suppresses an unknown or modded source.
+        public List<DiaryBeliefCanonicalEventOwnershipRuleDef> canonicalEventOwnershipRules;
         public List<DiaryBeliefCorrelationCorrectionDef> correlationOverrides;
         public List<DiaryBeliefDetailBudgetDef> detailBudgets;
     }
@@ -264,8 +272,8 @@ namespace PawnDiary
             CopyRules(source.eventEvidenceRules, builder.eventEvidenceRules);
             CopyStrings(source.lexicalExclusions, builder.lexicalExclusions, replaceWhenEmpty: false);
             CopyStrings(source.proselytizingPovRoles, builder.proselytizingPovRoles, replaceWhenEmpty: false);
-            CopyStrings(source.downstreamCoveredAbilityDefNames,
-                builder.downstreamCoveredAbilityDefNames, replaceWhenEmpty: true);
+            CopyOwnershipRules(source.canonicalEventOwnershipRules,
+                builder.canonicalEventOwnershipRules);
             CopyCorrections(source.correlationOverrides, builder.correlationOverrides);
             CopyBudgets(source.detailBudgets, builder.detailBudgets);
             cached = builder.Build();
@@ -319,6 +327,24 @@ namespace PawnDiary
                 destination.Add(new BeliefEventEvidenceRule(row.key.Trim(), row.sourceDomain, row.sourceDefName,
                     row.groupKey, row.facet, row.phase, row.povRole, row.mutationCauseToken,
                     row.addTopics, row.addSemanticAliases));
+            }
+        }
+
+        private static void CopyOwnershipRules(
+            List<DiaryBeliefCanonicalEventOwnershipRuleDef> source,
+            List<BeliefCanonicalEventOwnershipRule> destination)
+        {
+            destination.Clear();
+            if (source == null) return;
+            for (int i = 0; i < source.Count; i++)
+            {
+                DiaryBeliefCanonicalEventOwnershipRuleDef row = source[i];
+                if (row == null || string.IsNullOrWhiteSpace(row.sourceDomain)
+                    || string.IsNullOrWhiteSpace(row.sourceDefName)
+                    || string.IsNullOrWhiteSpace(row.downstreamGroupDefName)) continue;
+                destination.Add(new BeliefCanonicalEventOwnershipRule(
+                    row.sourceDomain.Trim(), row.sourceDefName.Trim(),
+                    row.downstreamGroupDefName.Trim()));
             }
         }
 

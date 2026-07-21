@@ -150,13 +150,15 @@
       <li>converter</li><li>organizer</li><li>moral_guide</li>
     </proselytizingPovRoles>
 
-    <!-- These exact vanilla ability routes already produce a later visible interaction/ritual event.
-         Suppressing the generic Ability page makes that downstream event the one canonical owner. -->
-    <downstreamCoveredAbilityDefNames>
-      <li>Convert</li>
-      <li>Reassure</li>
-      <li>ConversionRitual</li>
-    </downstreamCoveredAbilityDefNames>
+    <!-- Suppress a generic source only while its exact downstream settings group is effectively on.
+         ConversionRitual is deliberately absent: vanilla exposes no cancel event, so its generic
+         start page remains the safe owner until a cancel-aware pending/fallback route exists. -->
+    <canonicalEventOwnershipRules>
+      <li><sourceDomain>ability</sourceDomain><sourceDefName>Convert</sourceDefName><downstreamGroupDefName>conversion</downstreamGroupDefName></li>
+      <li><sourceDomain>ability</sourceDomain><sourceDefName>Reassure</sourceDefName><downstreamGroupDefName>heartfelt</downstreamGroupDefName></li>
+      <li><sourceDomain>thought</sourceDomain><sourceDefName>FailedConvertAbilityInitiator</sourceDefName><downstreamGroupDefName>conversion</downstreamGroupDefName></li>
+      <li><sourceDomain>thought</sourceDomain><sourceDefName>FailedConvertAbilityRecipient</sourceDefName><downstreamGroupDefName>conversion</downstreamGroupDefName></li>
+    </canonicalEventOwnershipRules>
 
     <!-- Empty by design. Add only a documented, gated, regression-tested metadata failure. -->
     <correlationOverrides />

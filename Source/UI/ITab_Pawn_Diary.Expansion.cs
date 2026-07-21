@@ -18,7 +18,7 @@ namespace PawnDiary
         /// strip, and no body tint/rule. This keeps collapsed histories readable instead of looking
         /// like clipped full cards.
         /// </summary>
-        private static bool DrawCollapsedEntry(DiaryEntryView entry, Rect rect, Color accent, bool expanded, float expansionBlend, string entryKey)
+        private bool DrawCollapsedEntry(DiaryEntryView entry, Rect rect, Color accent, bool expanded, float expansionBlend, string entryKey, Pawn pawn, DiaryGameComponent component)
         {
 
             Widgets.DrawMenuSection(rect);
@@ -56,7 +56,11 @@ namespace PawnDiary
             // Favorite star at the far right of the title bar; the chip/header shift left. Drawing it
             // here (and returning whether it was clicked) lets the caller skip the row's expand toggle
             // when the star was the click target, so a page can be starred while still collapsed.
-            bool favClicked = DrawTitleFavorite(titleRect, entry, entryKey);
+            bool favClicked = DrawTitleFavorite(titleRect, entry, entryKey, IsFavoriteEntry(entryKey));
+            if (favClicked)
+            {
+                ToggleFavoriteEntry(pawn, component, entryKey);
+            }
 
             Rect chipTitleRect = new Rect(titleRect.x, titleRect.y, titleRect.width - TitleFavoriteReserve(entry), titleRect.height);
 

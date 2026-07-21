@@ -37,6 +37,13 @@ namespace PawnDiary
         private static LoadedLanguage beliefProjectionLanguage;
 
         /// <summary>
+        /// True while the verified private tracker-to-pawn seam still exists. Registration checks this
+        /// once so a RimWorld field rename is visible in Player.log instead of silently dropping every
+        /// mutation projection at runtime.
+        /// </summary>
+        internal static bool BeliefMutationProjectionReady => BeliefTrackerPawnField != null;
+
+        /// <summary>
         /// Projects one tracker boundary into a detached state. This is the sole mutation adapter that
         /// reads Pawn_IdeoTracker, Pawn.ideo, or live Ideo identity/name/certainty.
         /// </summary>

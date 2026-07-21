@@ -6,6 +6,43 @@
   XML-tunable colors are kept; when the setting is off, the whole per-frame season tracking is skipped
   too. New EN/RU settings label + tooltip. Debug build 0/0; all 15 pure suites green; no in-game
   acceptance run is claimed.
+- **2026-07-22 — Wired the Diary tab favorites and journal filters for real.** (1) **Favorites persist.**
+  The card favorite star no longer writes a session-only static set: the choice is scribed per pawn on
+  `PawnDiaryRecord.favoriteEntryKeys` (additive save key; old saves normalize to an empty, deduped
+  list), keyed by the same stable `eventId|povRole` entry key the renderer uses, so stars survive
+  save/load and event archiving. The tab keeps only an O(1) HashSet mirror of the record list,
+  re-synced when the shown pawn or loaded game changes, and every star click writes through via the
+  new `DiaryGameComponent.SetEntryFavorite`/`FavoriteEntryKeysFor` (a 4096-per-diary defensive bound
+  refuses adds rather than evicting). (2) **The filter panel filters.** The favorites-only star toggle
+  and the per-tag chips now narrow the journal: with any selection engaged, FillTab draws the year's
+  cards through `EnsureFilteredJournalEntries`, whose match rule is the new pure
+  `DiaryEntryFilterPolicy.Passes` (favorites AND tags; multiple chips widen via OR/union). The
+  filtered list reuses a stable buffer invalidated by its inputs, and a monotonic
+  `journalFilterVersion` drives the row-layout rebuild the same frame. Tag chips and year pager counts
+  still read the unfiltered year list so they stay stable while filtering; a fully-filtered year shows
+  a localized "no pages match" hint. (3) **Tests/docs.** `DiaryPipelineTests` gains
+  `TestDiaryEntryFilterPolicy` (2814 assertions pass, including the pre-existing suite) and now links
+  `BeliefMutationPolicy.cs` — required for that harness to compile against the in-flight Belief
+  workstream's `BeliefContracts.cs` edits. The RimTest scribe round-trip fixture now covers
+  `favoriteEntryKeys` round-trip + null normalization. Debug build 0/0; no in-game acceptance run is
+  claimed.
+
+
+- **2026-07-21 — Added the first Ideology Phase 2 mutation consumer: exact PlayLog interactions.**
+  Existing authorized `ConvertIdeoAttempt`, `Convert_Success`, `Convert_Failure`, and `Reassure`
+  solo/pair pages now peek the detached mutation cache after capture authorization and freeze actual
+  target before/after/attempted ideoligion, certainty delta, conversion result, and mechanical cause
+  tokens into belief context. XML owns every exact DefName/downstream-group/recipient/result/direction
+  mapping with an empty code fallback; Counsel remains unmapped because it changes mood/thought state,
+  not Ideology certainty. Pure selection rejects cross-pawn, stale, future, malformed, result/direction-
+  mismatched, and older sequential rows while keeping reads non-consuming for two POVs. Recipient facts
+  cannot overwrite the converter's own certainty/trend. Mutation observation alone remains page-silent,
+  no-DLC profiles remain inert, generic ownership/settings behavior and the conversion-ritual start
+  fallback are unchanged, and ritual/crisis consumers remain deferred. BeliefContextTests pass 308
+  assertions; ten Phase-2 cases (372 total) compile in the tracked RimTest project, including real
+  tracker + PlayLog success/failure/reassurance boundaries and the deterministic single-Ideo fallback.
+  `PawnDiary.dll`/`PawnDiary.RimTest.dll` rebuild and full validation results are recorded at handoff;
+  no in-game execution is claimed unless RimWorld is actually running.
 
 - **2026-07-21 — Diary UI round-5: global window wash, removed the season scroll strip.** The seasonal
   background wash is now painted **globally across the whole diary window** (edge to edge, behind the
@@ -14,6 +51,31 @@
   along with its scrollbar-gutter reservation — the full content width returns to the entries. The wash
   still follows the season at the top of the viewport and crossfades as you scroll (`UpdateSeasonWash`).
   Debug build 0/0; no in-game acceptance run is claimed.
+
+- **2026-07-21 — Closed the adversarial Ideology Phase 2 ownership/mutation findings.** The pure
+  mutation buffer now absorbs every overlapping sibling under one outer boundary, removes all child
+  rows for a net-no-op outer call, and prunes stale rows symmetrically on both read and write so tick
+  rollback cannot strand future-dated state. XML ownership is now typed as exact source-domain/
+  DefName/downstream-group rows with ordinal matching; generic Convert/Reassure abilities and vanilla
+  failed-conversion thoughts yield only while their actual downstream group is enabled. A disabled
+  group therefore releases the generic owner, and ConversionRitual retains its start page because
+  vanilla has no cancellation event. Mutation registration warns and disables cleanly if the private
+  tracker-to-pawn projection field changes. The loaded conversion fixture now creates a second Ideo
+  when needed and forces zero certainty to exercise the real nested success path. Added multi-overlap,
+  no-op, read/write expiry, clock-regression, exact-match, thought-ownership, Reassure, settings-fallback,
+  and ritual-cancel-safety regressions. BeliefContext 271 and capture policy 716 assertions pass;
+  `PawnDiary.dll` and the 370-test `PawnDiary.RimTest.dll` build with 0 warnings/errors. RimWorld was not
+  launched, so no new in-game pass is claimed.
+
+- **2026-07-21 — Corrected HistoryEvent observer fixture ownership after the 365/367 rerun.** The
+  earlier Scribe and body-mod fixes passed. The remaining non-Odyssey failure was not production
+  emission: replaying a doctrine-correlated `ExecutedPrisonerInnocent_Horrible` HistoryEvent granted a
+  visible memory, and the ordinary Thought hook truthfully created its page. The loaded fixture now
+  calls the real manager/Harmony observer with a dynamically selected event unrelated to every current
+  precept, then feeds a separately projected exact visible correlation through the plain cache/builder
+  seam. This still proves non-emission, exact structural enrichment, and cleanup without suppressing a
+  legitimate downstream route. Production behavior is unchanged; a corrected in-game rerun is pending.
+
 - **2026-07-21 — Hardened the first loaded Ideology run after a 363/367 result.** The Odyssey N3-O
   failure was the documented parked-player-gravship host guard and remains expected on that map. The
   three unintended failures are corrected: `DiaryEvent` now reapplies the pure belief whitelist before

@@ -111,6 +111,17 @@ namespace PawnDiary.RimTests
 
             PawnDiaryRimTestScope.Require(captured && state != null,
                 "An Ideology-active pawn did not project a detached mutation state.");
+            BeliefPolicySnapshot ownership = DiaryBeliefPolicy.Snapshot();
+            PawnDiaryRimTestScope.Require(
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Thought,
+                    "FailedConvertAbilityInitiator", true, ownership.enabled,
+                    ownership.canonicalEventOwnershipRules) == "conversion"
+                && BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Thought,
+                    "FailedConvertAbilityRecipient", true, ownership.enabled,
+                    ownership.canonicalEventOwnershipRules) == "conversion",
+                "The loaded XML policy did not assign both failed-conversion thoughts to conversion.");
         }
 
         /// <summary>
@@ -122,12 +133,7 @@ namespace PawnDiary.RimTests
         {
             if (!RequireActiveTracker()) return;
             Ideo beforeIdeology = EnsureCurrentIdeology();
-            Ideo afterIdeology = FindDifferentIdeology(beforeIdeology);
-            if (afterIdeology == null)
-            {
-                Log.Message(LogPrefix + "before/after SetIdeo: no second loaded ideoligion available.");
-                return;
-            }
+            Ideo afterIdeology = FindOrCreateDifferentIdeology(beforeIdeology);
 
             BeliefMutationCache.Reset();
             pawn.ideo.SetIdeo(afterIdeology);
@@ -166,13 +172,12 @@ namespace PawnDiary.RimTests
         {
             if (!RequireActiveTracker()) return;
             Ideo beforeIdeology = EnsureCurrentIdeology();
-            Ideo attemptedIdeology = FindDifferentIdeology(beforeIdeology);
-            if (attemptedIdeology == null)
-            {
-                Log.Message(LogPrefix + "conversion attempt: no second loaded ideoligion available.");
-                return;
-            }
+            Ideo attemptedIdeology = FindOrCreateDifferentIdeology(beforeIdeology);
 
+            // Vanilla converts only after certainty is exhausted. Establish that boundary before the
+            // observed call, then reset the cache so the fixture deterministically exercises nested
+            // SetIdeo work instead of usually recording a failed, non-nested 0.05 reduction.
+            pawn.ideo.OffsetCertainty(-pawn.ideo.Certainty);
             BeliefMutationCache.Reset();
             float beforeCertainty = pawn.ideo.Certainty;
             bool result = pawn.ideo.IdeoConversionAttempt(0.05f, attemptedIdeology,
@@ -181,6 +186,8 @@ namespace PawnDiary.RimTests
                 pawn.GetUniqueLoadID(), Find.TickManager.TicksGame, DiaryBeliefPolicy.Snapshot());
             PawnDiaryRimTestScope.Require(mutation != null && mutation.conversionSucceeded == result,
                 "Real IdeoConversionAttempt did not retain its exact bool result.");
+            PawnDiaryRimTestScope.Require(result,
+                "The zero-certainty conversion fixture did not enter vanilla's success/SetIdeo path.");
             PawnDiaryRimTestScope.Require(
                 mutation.beforeIdeologyId == beforeIdeology.GetUniqueLoadID()
                     && mutation.attemptedIdeologyId == attemptedIdeology.GetUniqueLoadID(),
@@ -190,7 +197,8 @@ namespace PawnDiary.RimTests
                     && Math.Abs(mutation.afterCertainty - pawn.ideo.Certainty) < 0.0001f,
                 "Conversion capture did not preserve its final live ideology/certainty facts.");
             PawnDiaryRimTestScope.Require(BeliefMutationCache.Count == 1
-                    && mutation.causeTokens.Contains(BeliefMutationCauseTokens.ConversionAttempt),
+                    && mutation.causeTokens.Contains(BeliefMutationCauseTokens.ConversionAttempt)
+                    && mutation.causeTokens.Contains(BeliefMutationCauseTokens.SetIdeology),
                 "Nested conversion work did not coalesce under one conversion-owned row.");
         }
 
@@ -278,6 +286,78 @@ namespace PawnDiary.RimTests
             }
         }
 
+        /// <summary>
+        /// The other shipped ability-owned interaction follows the same contract: Reassure's visible
+        /// PlayLog interaction owns one pair page and its generic ability route emits nothing.
+        /// </summary>
+        [Test]
+        public static void ReassureAbilityAndDownstreamInteractionProduceOneCanonicalPage()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                Log.Message(LogPrefix + "canonical Reassure route: not applicable (Ideology inactive). ");
+                return;
+            }
+            InteractionDef interaction = DefDatabase<InteractionDef>.GetNamedSilentFail("Reassure");
+            PawnDiaryRimTestScope.Require(interaction != null,
+                "The Ideology-active fixture could not load Reassure.");
+            Ability ability = new Ability(pawn, BuildSyntheticAbilityDef("Reassure"));
+            PlayLogEntry_Interaction entry = GeneratedSpeechPlayLog.CreateInteractionEntry(
+                interaction, pawn, otherPawn);
+            PawnDiaryRimTestScope.Require(entry != null,
+                "Could not create the downstream Reassure PlayLog row.");
+            scope.TrackPlayLogEntry(entry);
+
+            DiaryEvent page = scope.FireAndRequireEvent(() =>
+            {
+                DiaryEvents.Submit(new AbilitySignal(
+                    ability, new LocalTargetInfo(otherPawn), LocalTargetInfo.Invalid));
+                Find.PlayLog.Add(entry);
+            }, "Reassure", pawn, otherPawn, rejectOtherTestPawnEvents: true);
+            scope.RequirePairRefs(page, pawn, otherPawn);
+        }
+
+        /// <summary>
+        /// Ownership follows the effective downstream setting: disabling conversion releases the
+        /// ordinary Convert ability route, so the player never loses both possible page owners.
+        /// </summary>
+        [Test]
+        public static void DisabledDownstreamGroupReleasesGenericAbilityOwner()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                Log.Message(LogPrefix + "disabled downstream owner: not applicable (Ideology inactive). ");
+                return;
+            }
+            PawnDiaryMod.Settings.SetGroupEnabled("conversion", false);
+            Ability ability = new Ability(pawn, BuildSyntheticAbilityDef("Convert"));
+            DiaryEvent page = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(new AbilitySignal(
+                    ability, new LocalTargetInfo(otherPawn), LocalTargetInfo.Invalid)),
+                "Convert", pawn, null, rejectOtherTestPawnEvents: true);
+            scope.RequireSoloRef(page, pawn);
+        }
+
+        /// <summary>
+        /// Conversion rituals keep their generic start page because vanilla has no cancel signal from
+        /// which a deferred canonical owner could be emitted safely.
+        /// </summary>
+        [Test]
+        public static void ConversionRitualKeepsGenericStartOwner()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                Log.Message(LogPrefix + "conversion ritual start owner: not applicable (Ideology inactive). ");
+                return;
+            }
+            Ability ability = new Ability(pawn, BuildSyntheticAbilityDef("ConversionRitual"));
+            DiaryEvent page = scope.FireAndRequireEvent(
+                () => DiaryEvents.Submit(new AbilitySignal(
+                    ability, new LocalTargetInfo(otherPawn), LocalTargetInfo.Invalid)),
+                "ConversionRitual", pawn, null, rejectOtherTestPawnEvents: true);
+            scope.RequireSoloRef(page, pawn);
+        }
+
         private static void AssertNoDlcConvertAbilityKeepsOrdinaryRoute()
         {
             Ability ability = new Ability(pawn, BuildSyntheticAbilityDef("Convert"));
@@ -328,10 +408,20 @@ namespace PawnDiary.RimTests
             return loaded;
         }
 
-        private static Ideo FindDifferentIdeology(Ideo current)
+        private static Ideo FindOrCreateDifferentIdeology(Ideo current)
         {
-            return Find.IdeoManager?.IdeosListForReading?
+            Ideo loaded = Find.IdeoManager?.IdeosListForReading?
                 .FirstOrDefault(value => value != null && !ReferenceEquals(value, current));
+            if (loaded != null) return loaded;
+
+            Ideo generated = IdeoGenerator.GenerateIdeo(new IdeoGenerationParms
+            {
+                forFaction = Faction.OfPlayer.def,
+                fixedIdeo = true
+            });
+            PawnDiaryRimTestScope.Require(generated != null && !ReferenceEquals(generated, current),
+                "RimWorld did not provide a second loaded or disposable ideoligion fixture.");
+            return generated;
         }
 
         private static AbilityDef BuildSyntheticAbilityDef(string defName)

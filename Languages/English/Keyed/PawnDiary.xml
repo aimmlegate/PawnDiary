@@ -245,7 +245,7 @@
   <PawnDiary.Tab.CopyEntryCopied>Copied page text to clipboard.</PawnDiary.Tab.CopyEntryCopied>
   <PawnDiary.Tab.FavoriteAddTip>Star this page as a favorite.</PawnDiary.Tab.FavoriteAddTip>
   <PawnDiary.Tab.FavoriteRemoveTip>Remove this page from favorites.</PawnDiary.Tab.FavoriteRemoveTip>
-  <!-- Right-hand filter/controls panel. The filter toggles are placeholders until filtering is wired. -->
+  <!-- Right-hand filter/controls panel: year selector, journal filters, and (dev mode) dev tools. -->
   <PawnDiary.Tab.FilterYearHeader>Year</PawnDiary.Tab.FilterYearHeader>
   <PawnDiary.Tab.FilterHeader>Filters</PawnDiary.Tab.FilterHeader>
   <PawnDiary.Tab.FilterFavoritesOnly>Favorites only</PawnDiary.Tab.FilterFavoritesOnly>
@@ -253,7 +253,7 @@
   <PawnDiary.Tab.FilterNoTags>No tags in this year.</PawnDiary.Tab.FilterNoTags>
   <PawnDiary.Tab.FilterClear>Clear</PawnDiary.Tab.FilterClear>
   <PawnDiary.Tab.FilterApply>Apply ({0})</PawnDiary.Tab.FilterApply>
-  <PawnDiary.Tab.FilterStubTip>Filtering is not wired up yet.</PawnDiary.Tab.FilterStubTip>
+  <PawnDiary.Tab.NoEntriesMatchFilters>No pages match the current filters. Clear the filters in the filters panel to see the whole year.</PawnDiary.Tab.NoEntriesMatchFilters>
   <PawnDiary.Tab.FilterDevHeader>Dev tools</PawnDiary.Tab.FilterDevHeader>
   <!-- Header toggle button that shows/hides the right-hand filter panel. -->
   <PawnDiary.Tab.ShowFilterPanel>Show the filters panel.</PawnDiary.Tab.ShowFilterPanel>

@@ -49,14 +49,22 @@ namespace PawnDiary.Capture
         public ThoughtCapturePolicy Policy;
 
         /// <summary>
-        /// Pure decision for a thought event. Order of checks matches the pre-refactor RecordThought
-        /// body so observable behavior is byte-for-byte identical:
+        /// True only when an exact XML ownership rule matched and its downstream group was effectively
+        /// enabled at capture time. Failed-conversion thoughts use this to avoid a second page beside
+        /// the canonical conversion interaction while remaining available if that group is disabled.
+        /// </summary>
+        public bool DownstreamCovered;
+
+        /// <summary>
+        /// Pure decision for a thought event. The original RecordThought token/magnitude order remains
+        /// intact after the exact canonical-owner gate:
         /// 1. eligibility/signal/user gating,
-        /// 2. permanent-thought drop (durationDays &lt;= 0),
-        /// 3. ignore-token drop,
-        /// 4. magnitude threshold (bypass tokens skip it; eating tokens use the higher bar),
-        /// 5. ambient routing when ambient policy enabled + ambient token matches,
-        /// 6. otherwise record as a solo event.
+        /// 2. exact downstream-owner drop,
+        /// 3. permanent-thought drop (durationDays &lt;= 0),
+        /// 4. ignore-token drop,
+        /// 5. magnitude threshold (bypass tokens skip it; eating tokens use the higher bar),
+        /// 6. ambient routing when ambient policy enabled + ambient token matches,
+        /// 7. otherwise record as a solo event.
         /// </summary>
         public static CaptureDecision Decide(ThoughtEventData data, CaptureContext ctx)
         {
@@ -72,7 +80,13 @@ namespace PawnDiary.Capture
                 return CaptureDecision.Drop;
             }
 
-            // Step 2: permanent thoughts (traits, etc.) — never expire, never diary-worthy as an event.
+            // Step 2: a demonstrable enabled downstream event owns the canonical page.
+            if (data.DownstreamCovered)
+            {
+                return CaptureDecision.Drop;
+            }
+
+            // Step 3: permanent thoughts (traits, etc.) — never expire, never diary-worthy as an event.
             if (data.DurationDays <= 0f)
             {
                 return CaptureDecision.Drop;
@@ -80,13 +94,13 @@ namespace PawnDiary.Capture
 
             ThoughtCapturePolicy policy = data.Policy;
 
-            // Step 3: ignore-token filter. These defNames are configured in XML as "never diary this".
+            // Step 4: ignore-token filter. These defNames are configured in XML as "never diary this".
             if (policy != null && MatchesAny(data.DefName, policy.IgnoreTokens))
             {
                 return CaptureDecision.Drop;
             }
 
-            // Step 4: magnitude threshold. Bypass tokens (death, banishment, ...) skip it; eating
+            // Step 5: magnitude threshold. Bypass tokens (death, banishment, ...) skip it; eating
             // tokens use the higher bar so we don't diary every meal.
             bool bypassThreshold = policy != null && MatchesAny(data.DefName, policy.BypassThresholdTokens);
             if (!bypassThreshold)
@@ -101,7 +115,7 @@ namespace PawnDiary.Capture
                 }
             }
 
-            // Step 5: ambient routing. Low-stakes thoughts batch into one per-pawn day note instead
+            // Step 6: ambient routing. Low-stakes thoughts batch into one per-pawn day note instead
             // of becoming their own entry. Both the ambient policy and an ambient-token match are
             // required; otherwise the thought becomes a normal solo event.
             if (ctx.AmbientSignalEnabled
@@ -111,7 +125,7 @@ namespace PawnDiary.Capture
                 return CaptureDecision.RouteAmbient;
             }
 
-            // Step 6: default — record as a solo event from this pawn's POV.
+            // Step 7: default — record as a solo event from this pawn's POV.
             return CaptureDecision.GenerateSolo;
         }
 

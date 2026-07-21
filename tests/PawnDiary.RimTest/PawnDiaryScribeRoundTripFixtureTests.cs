@@ -859,6 +859,7 @@ namespace PawnDiary.RimTests
                 pawnId = "Thing_Human_Record",
                 pawnName = "Gale",
                 eventIds = new List<string> { "evt_a", "evt_b", "evt_c" },
+                favoriteEntryKeys = new List<string> { "evt_a|initiator", "evt_c|recipient" },
                 diaryGenerationEnabled = false, // non-default, must round-trip
                 hasUnreadGeneratedEntry = true,
                 customWritingStyleRule = "Terse and grim.",
@@ -874,6 +875,7 @@ namespace PawnDiary.RimTests
             Require(loaded.hasUnreadGeneratedEntry, "record hasUnreadGeneratedEntry=true should survive load.");
 
             AssertStrList(original.eventIds, loaded.eventIds, "record eventIds");
+            AssertStrList(original.favoriteEntryKeys, loaded.favoriteEntryKeys, "record favoriteEntryKeys");
             Require(
                 !string.IsNullOrWhiteSpace(loaded.personaDefName),
                 "record personaDefName should normalize to a non-empty default on load.");
@@ -948,6 +950,7 @@ namespace PawnDiary.RimTests
                 pawnId = "Thing_Human_Record2",
                 pawnName = "Hale",
                 eventIds = null,
+                favoriteEntryKeys = null,
                 progressionState = null,
                 arcSchedule = null,
             };
@@ -955,6 +958,9 @@ namespace PawnDiary.RimTests
             Require(
                 nullLoaded.eventIds != null && nullLoaded.eventIds.Count == 0,
                 "record null eventIds should load as a non-null empty list.");
+            Require(
+                nullLoaded.favoriteEntryKeys != null && nullLoaded.favoriteEntryKeys.Count == 0,
+                "record null favoriteEntryKeys should load as a non-null empty list.");
             Require(nullLoaded.progressionState != null, "record null progressionState should load as non-null.");
             Require(nullLoaded.arcSchedule != null, "record null arcSchedule should load as non-null.");
             GeneIdentityObservationState oldSaveGeneObservation = nullLoaded.progressionState

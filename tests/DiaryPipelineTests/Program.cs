@@ -58,6 +58,7 @@ namespace DiaryPipelineTests
             TestDiaryListText();
             TestContextProviderRegistry();
             TestEventWindowPolicy();
+            TestDiaryEntryFilterPolicy();
             TestAnomalySemanticPrecisionXmlPolicy();
             TestOdysseyExistingIntegrationXmlPolicy();
             TestOdysseyJourneyFoundationXmlContract();
@@ -3121,6 +3122,45 @@ namespace DiaryPipelineTests
                 "mid-callback registration lands for the next pass (appended to order)",
                 "first=again; second=again; added=again",
                 reentrant.BuildContextLines("again", 8, 80, (id, e) => reentrantFailures.Add(id)));
+        }
+
+        private static void TestDiaryEntryFilterPolicy()
+        {
+            HashSet<string> tags = new HashSet<string> { "Social", "Raid" };
+
+            AssertTrue(
+                "no filters passes everything",
+                DiaryEntryFilterPolicy.Passes(false, false, "Social", null));
+            AssertTrue(
+                "favorites-only keeps a starred page",
+                DiaryEntryFilterPolicy.Passes(true, true, "Social", null));
+            AssertTrue(
+                "favorites-only rejects an unstarred page",
+                !DiaryEntryFilterPolicy.Passes(true, false, "Social", null));
+            AssertTrue(
+                "active tags keep a matching label",
+                DiaryEntryFilterPolicy.Passes(false, false, "Raid", tags));
+            AssertTrue(
+                "active tags reject a non-matching label",
+                !DiaryEntryFilterPolicy.Passes(false, false, "Medical", tags));
+            AssertTrue(
+                "active tags reject an untagged page",
+                !DiaryEntryFilterPolicy.Passes(false, false, string.Empty, tags));
+            AssertTrue(
+                "active tags reject a null label",
+                !DiaryEntryFilterPolicy.Passes(false, false, null, tags));
+            AssertTrue(
+                "favorites and tags combine: starred matching page passes",
+                DiaryEntryFilterPolicy.Passes(true, true, "Social", tags));
+            AssertTrue(
+                "favorites and tags combine: unstarred matching page fails",
+                !DiaryEntryFilterPolicy.Passes(true, false, "Social", tags));
+            AssertTrue(
+                "favorites and tags combine: starred non-matching page fails",
+                !DiaryEntryFilterPolicy.Passes(true, true, "Medical", tags));
+            AssertTrue(
+                "an empty tag set behaves like no tag filter",
+                DiaryEntryFilterPolicy.Passes(false, false, null, new HashSet<string>()));
         }
 
         private static void TestEventWindowPolicy()

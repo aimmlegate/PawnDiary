@@ -70,6 +70,17 @@ namespace PawnDiary.Ingestion
 
             moodOffset = thought.MoodOffset();
             biotechFamilyContext = BiotechBirthCorrelation.MiscarriageContext(pawn, thought.def.defName);
+            string downstreamGroup = string.Empty;
+            if (ModsConfig.IdeologyActive)
+            {
+                BeliefPolicySnapshot beliefPolicy = DiaryBeliefPolicy.Snapshot();
+                downstreamGroup = BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Thought,
+                    thought.def.defName,
+                    ideologyActive: true,
+                    policyEnabled: beliefPolicy.enabled,
+                    rules: beliefPolicy.canonicalEventOwnershipRules);
+            }
             payload = new ThoughtEventData
             {
                 PawnId = pawn.GetUniqueLoadID(),
@@ -81,6 +92,8 @@ namespace PawnDiary.Ingestion
                 // token into the pure payload.
                 MoodImpact = MoodImpact.Classify(moodOffset),
                 Policy = SnapshotThoughtPolicy(),
+                DownstreamCovered = downstreamGroup.Length > 0 && PawnDiaryMod.Settings != null
+                    && PawnDiaryMod.Settings.IsGroupEnabled(downstreamGroup),
             };
             thoughtLabel = ResolveThoughtLabel(thought.def);
             beliefEvidence = BeliefEventEvidenceFactory.ForThought(

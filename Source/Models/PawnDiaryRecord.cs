@@ -73,6 +73,12 @@ namespace PawnDiary
         // Ordered list of DiaryEvent IDs this pawn appears in.
         public List<string> eventIds = new List<string>();
 
+        // Pages the player starred as favorites from the Diary tab, keyed by the same stable UI entry
+        // key ("eventId|povRole") the card renderer uses. Additive save key; old saves load an empty
+        // list. Keys are only ever removed by the player un-starring a page, so a stale key left by a
+        // pruned/archived event is harmless — it simply never matches a visible card again.
+        public List<string> favoriteEntryKeys = new List<string>();
+
         // Scanner bookkeeping for pawn progression pages. Additive save key; old saves create a
         // baseline-pending state so they do not emit catch-up milestone pages on first load.
         public PawnProgressionState progressionState;
@@ -107,6 +113,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref acknowledgedGeneratedEntryCount, "acknowledgedGeneratedEntryCount", -1);
             Scribe_Values.Look(ref hasUnreadGeneratedEntry, "hasUnreadGeneratedEntry", false);
             Scribe_Collections.Look(ref eventIds, "eventIds", LookMode.Value);
+            Scribe_Collections.Look(ref favoriteEntryKeys, "favoriteEntryKeys", LookMode.Value);
             Scribe_Deep.Look(ref progressionState, "progressionState");
             Scribe_Deep.Look(ref arcSchedule, "arcSchedule");
 
@@ -158,6 +165,27 @@ namespace PawnDiary
                 if (eventIds == null)
                 {
                     eventIds = new List<string>();
+                }
+
+                if (favoriteEntryKeys == null)
+                {
+                    favoriteEntryKeys = new List<string>();
+                }
+                else
+                {
+                    // Defensive dedupe: a hand-edited or interrupted save could list a key twice, and
+                    // the UI toggle treats presence as the single source of truth.
+                    for (int i = favoriteEntryKeys.Count - 1; i > 0; i--)
+                    {
+                        for (int j = 0; j < i; j++)
+                        {
+                            if (string.Equals(favoriteEntryKeys[j], favoriteEntryKeys[i], System.StringComparison.Ordinal))
+                            {
+                                favoriteEntryKeys.RemoveAt(i);
+                                break;
+                            }
+                        }
+                    }
                 }
 
                 EnsureProgressionState();

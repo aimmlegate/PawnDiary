@@ -8,7 +8,8 @@
 //
 // The dedup key is tick-stamped and includes the cleaned target label, so it lives here (it needs
 // DiaryLineCleaner) rather than on the pure payload. Pure decision + game-context + the
-// cooldown-weighted chance math live in Source/Capture/Events/AbilityEventData.cs.
+// cooldown-weighted chance math live in Source/Capture/Events/AbilityEventData.cs. A generic route is
+// suppressed only while its XML-named downstream group is effectively enabled for this player.
 // New to C#/RimWorld? See AGENTS.md.
 using System;
 using System.Reflection;
@@ -105,10 +106,15 @@ namespace PawnDiary.Ingestion
             this.targetLabel = targetLabel;
             this.cooldownTicks = cooldown;
             this.recordChance = chance;
-            bool downstreamCovered = BeliefCanonicalEventOwnershipPolicy.IsDownstreamCoveredAbility(
+            BeliefPolicySnapshot beliefPolicy = DiaryBeliefPolicy.Snapshot();
+            string downstreamGroup = BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                BeliefCanonicalEventSourceTokens.Ability,
                 name,
                 ModsConfig.IdeologyActive,
-                DiaryBeliefPolicy.Snapshot().downstreamCoveredAbilityDefNames);
+                beliefPolicy.enabled,
+                beliefPolicy.canonicalEventOwnershipRules);
+            bool downstreamCovered = downstreamGroup.Length > 0
+                && PawnDiaryMod.Settings.IsGroupEnabled(downstreamGroup);
 
             payload = new AbilityEventData
             {

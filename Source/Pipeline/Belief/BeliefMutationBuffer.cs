@@ -26,17 +26,28 @@ namespace PawnDiary
             BeliefMutationSnapshot copy = Copy(mutation);
             if (copy == null) return;
 
-            for (int i = rows.Count - 1; i >= 0; i--)
+            // One outer call can contain several completed sibling calls already stored as separate
+            // rows. Keep widening the accumulator and rescan until every transitive overlap belongs
+            // to one earliest-before/latest-after row.
+            BeliefMutationSnapshot merged = copy;
+            bool foundOverlap;
+            do
             {
-                BeliefMutationSnapshot existing = rows[i];
-                if (!CanCoalesce(existing, copy)) continue;
-                MergeInto(existing, copy);
-                if (!existing.observedMutation) rows.RemoveAt(i);
-                return;
+                foundOverlap = false;
+                for (int i = rows.Count - 1; i >= 0; i--)
+                {
+                    BeliefMutationSnapshot existing = rows[i];
+                    if (!CanCoalesce(existing, merged)) continue;
+                    MergeInto(existing, merged);
+                    rows.RemoveAt(i);
+                    merged = existing;
+                    foundOverlap = true;
+                }
             }
+            while (foundOverlap);
 
-            if (!copy.observedMutation) return;
-            rows.Add(copy);
+            if (!merged.observedMutation) return;
+            rows.Add(merged);
             if (rows.Count > cap) rows.RemoveRange(0, rows.Count - cap);
         }
 
@@ -69,8 +80,9 @@ namespace PawnDiary
             for (int i = rows.Count - 1; i >= 0; i--)
             {
                 BeliefMutationSnapshot row = rows[i];
-                if (row == null || currentTick >= row.capturedTick
-                    && currentTick - (long)row.capturedTick > windowTicks)
+                // Absolute distance also removes rows stranded in the "future" after a tick reset,
+                // save rollback, or test fixture clock regression.
+                if (row == null || Math.Abs((long)currentTick - row.capturedTick) > windowTicks)
                     rows.RemoveAt(i);
             }
         }

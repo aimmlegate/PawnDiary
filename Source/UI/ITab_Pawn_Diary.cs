@@ -465,6 +465,7 @@ namespace PawnDiary
             // Singleton component that owns all diary state for the current game.
             DiaryGameComponent component = DiaryGameComponent.Instance;
             component?.AcknowledgeGeneratedEntriesFor(pawn);
+            EnsureFavoritesSynced(pawn, component);
             ApplyPendingDevPreview(pawn);
 
             bool showLlmDebugInfo = ShouldShowLlmDebugInfo();
@@ -488,7 +489,7 @@ namespace PawnDiary
 
             // Two-column layout: the journal (virtualized cards) on the left, and an independent,
             // non-virtualized filter/controls panel on the right. The panel hosts the year selector,
-            // filter stubs, and — in dev mode — the diary dev tools. The journal keeps its familiar
+            // the journal filters, and — in dev mode — the diary dev tools. The journal keeps its familiar
             // width because tabWidth grew by the panel's width; hiding the panel (header toggle) shrinks
             // the whole tab back to that journal width (ResponsiveTabWidth), with the year pager falling
             // back inline below and the dev tools staying panel-only.
@@ -514,10 +515,10 @@ namespace PawnDiary
                     journalRect.y + Mathf.Max(0f, (headerRect.height - toggleSize) * 0.5f),
                     toggleSize,
                     toggleSize);
-                // "Active" third state = the panel is open and at least one filter selection is set
-                // (favorites-only or any tag chip), so the funnel reads amber even before filtering is
-                // wired to the journal.
-                bool filtersActive = filterFavoritesOnly || filterActiveTags.Count > 0;
+                // "Active" third state = the panel is open and at least one journal filter is engaged
+                // (favorites-only or any tag chip), so the funnel reads amber while it is narrowing
+                // the journal.
+                bool filtersActive = JournalFiltersActive;
                 if (DrawFilterPanelToggleIcon(toggleRect, filterPanelEnabled, filtersActive))
                 {
                     ToggleFilterPanelVisible();
@@ -567,7 +568,7 @@ namespace PawnDiary
             float entriesY = journalRect.y + 36f + EntryGap;
 
             // Resolve the year list and the selected year's ordered cards up front so the filter panel
-            // (drawn once, in every state) can host the year selector and the stub tag list, and the
+            // (drawn once, in every state) can host the year selector and the tag filter chips, and the
             // journal column below can render or show its own loading/empty state.
             bool indexLoading = visibleEntriesCache.IsIndexLoading;
             List<int> years = indexLoading ? null : visibleEntriesCache.VisibleYears;
@@ -619,6 +620,24 @@ namespace PawnDiary
                 return;
             }
 
+            // Journal filters (favorites-only + the tag chips) narrow the year's cards to the pages
+            // the player asked for. The UNFILTERED list still feeds the tag-chip collection and the
+            // year pager counts above, so chips and counts stay stable while filtering narrows the
+            // journal. With no filter engaged the journal uses the cache's list directly and the
+            // filtering pass costs nothing.
+            List<DiaryEntryView> shown = ordered;
+            int shownRevision = visibleEntriesCache.VisibleRevision;
+            if (JournalFiltersActive)
+            {
+                shown = EnsureFilteredJournalEntries(ordered, visibleEntriesCache.VisibleRevision);
+                shownRevision = journalFilterVersion;
+                if (shown.Count == 0)
+                {
+                    Widgets.Label(outRect, "PawnDiary.Tab.NoEntriesMatchFilters".Translate());
+                    return;
+                }
+            }
+
             // Subtract 16f to leave room for the scrollbar grip inside the scroll view.
             float viewWidth = outRect.width - 16f;
             float animationDelta = ExpansionAnimationDelta();
@@ -626,8 +645,8 @@ namespace PawnDiary
             int layoutProcessed;
             int layoutTotal;
             if (!RebuildEntryLayoutIfNeeded(
-                ordered,
-                visibleEntriesCache.VisibleRevision,
+                shown,
+                shownRevision,
                 pawn.GetUniqueLoadID(),
                 viewWidth,
                 showLlmDebugInfo,
@@ -653,7 +672,7 @@ namespace PawnDiary
             float viewHeight = cachedLayoutViewHeight;
             Rect viewRect = new Rect(0f, 0f, viewWidth, viewHeight);
 
-            TryApplyPendingScroll(pawn, ordered, entryOffsets, viewHeight, outRect.height);
+            TryApplyPendingScroll(pawn, shown, entryOffsets, viewHeight, outRect.height);
             scrollPosition.y = Mathf.Clamp(scrollPosition.y, 0f, Mathf.Max(0f, viewHeight - outRect.height));
 
             // Update the seasonal wash target from the season of the entry at the top of the scroll,
@@ -661,9 +680,9 @@ namespace PawnDiary
             // FillTab (using this smoothed value); here we only advance it as the user scrolls.
             if (SeasonalBackgroundEnabled())
             {
-                int washTopIndex = FirstVisibleEntryIndex(ordered.Count, scrollPosition.y);
-                Season washSeason = washTopIndex >= 0 && washTopIndex < ordered.Count
-                    ? DiaryQuadrumDivider.SeasonFor(ordered[washTopIndex])
+                int washTopIndex = FirstVisibleEntryIndex(shown.Count, scrollPosition.y);
+                Season washSeason = washTopIndex >= 0 && washTopIndex < shown.Count
+                    ? DiaryQuadrumDivider.SeasonFor(shown[washTopIndex])
                     : Season.Undefined;
                 UpdateSeasonWash(washSeason);
             }
@@ -681,10 +700,10 @@ namespace PawnDiary
                 float overscanHeight = VirtualizedEntryOverscanHeight;
                 float visibleTop = Mathf.Max(0f, scrollPosition.y - overscanHeight);
                 float visibleBottom = Mathf.Min(viewHeight, scrollPosition.y + outRect.height + overscanHeight);
-                int firstVisibleIndex = FirstVisibleEntryIndex(ordered.Count, visibleTop);
-                for (int i = firstVisibleIndex; i < ordered.Count; i++)
+                int firstVisibleIndex = FirstVisibleEntryIndex(shown.Count, visibleTop);
+                for (int i = firstVisibleIndex; i < shown.Count; i++)
                 {
-                    DiaryEntryView entry = ordered[i];
+                    DiaryEntryView entry = shown[i];
                     bool expanded = expandedTargets[i];
                     float expansionBlend = expansionBlends[i];
                     float fullHeight = fullHeights[i];
@@ -724,7 +743,7 @@ namespace PawnDiary
                     bool compactCollapsed = !expanded && expansionBlend <= 0f;
                     if (compactCollapsed)
                     {
-                        bool favClicked = DrawCollapsedEntry(entry, visibleEntryRect, accentColor, expanded, expansionBlend, entryKeys[i]);
+                        bool favClicked = DrawCollapsedEntry(entry, visibleEntryRect, accentColor, expanded, expansionBlend, entryKeys[i], pawn, component);
                         if (Widgets.ButtonInvisible(visibleEntryRect, false) && !favClicked)
                         {
                             SetEntryExpanded(entry, true, expansionBlend);
@@ -744,6 +763,7 @@ namespace PawnDiary
                             VisibleEntryRect = visibleEntryRect,
                             Pawn = pawn,
                             Component = component,
+                            Tab = this,
                             AccentColor = accentColor,
                             DialogueColor = dialogueColor,
                             Expanded = expanded,

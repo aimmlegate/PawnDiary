@@ -39,7 +39,7 @@ namespace PawnDiary.Capture
                 return CaptureDecision.Drop;
             }
 
-            // Exact XML policy proves that a later visible interaction/ritual already owns this
+            // Exact XML policy proves that a later visible downstream event already owns this
             // event. Drop before sampling so a redundant route does not advance the global RNG.
             if (data.DownstreamCovered)
             {

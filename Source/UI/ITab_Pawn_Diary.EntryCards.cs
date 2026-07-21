@@ -62,6 +62,9 @@ namespace PawnDiary
             public Rect VisibleEntryRect;
             public Pawn Pawn;
             public DiaryGameComponent Component;
+            // The owning tab instance: the favorite star reads/toggles the pawn's persisted favorite
+            // set through it. Null is tolerated (star simply cannot toggle) for defensive robustness.
+            public ITab_Pawn_Diary Tab;
             public Color AccentColor;
             public Color DialogueColor;
             public bool Expanded;
@@ -113,7 +116,15 @@ namespace PawnDiary
                 // Favorite star at the far right of the title bar; the group chip and header shrink to
                 // its left. Drawing it before the title's own invisible button lets a star click toggle
                 // the favorite without also expanding/collapsing the card.
-                bool favClicked = DrawTitleFavorite(titleRect, entry, request.EntryKey);
+                bool favClicked = DrawTitleFavorite(
+                    titleRect,
+                    entry,
+                    request.EntryKey,
+                    request.Tab != null && request.Tab.IsFavoriteEntry(request.EntryKey));
+                if (favClicked)
+                {
+                    request.Tab?.ToggleFavoriteEntry(request.Pawn, request.Component, request.EntryKey);
+                }
                 Rect chipTitleRect = new Rect(titleRect.x, titleRect.y, titleRect.width - TitleFavoriteReserve(entry), titleRect.height);
 
                 Rect groupRect = GroupLabelRect(chipTitleRect, entry?.GroupLabel);
@@ -331,44 +342,91 @@ namespace PawnDiary
             return clicked;
         }
 
-        // ---- Favorite star (session-only) ----
-        // Entries the player has starred this session, keyed by the same stable entry key (event id +
-        // POV role) used for expand/collapse state. This is intentionally NOT scribed: the star is a
-        // visuals-only affordance for now, and this single set is the seam where save/load persistence
-        // and the "Favorites only" journal filter would later attach.
-        private static readonly HashSet<string> FavoritedEntryKeys = new HashSet<string>();
-        // Generous safety bound so a marathon session cannot grow the set without limit; unreachable in
-        // normal play (a player would have to star thousands of entries in one sitting).
+        // ---- Favorite star (persisted per pawn) ----
+        // The player's starred pages live on the pawn's saved PawnDiaryRecord (favoriteEntryKeys),
+        // keyed by the same stable entry key (event id + POV role) used for expand/collapse state, so
+        // favorites survive save/load and event archiving. This HashSet is only the tab's O(1) lookup
+        // mirror of that record list: EnsureFavoritesSynced rebuilds it whenever the shown pawn or the
+        // loaded game (component instance) changes, and ToggleFavoriteEntry writes every click through
+        // to the record so the mirror and the save never drift apart.
+        private DiaryGameComponent favoritesSyncedComponent;
+        private string favoritesSyncedPawnId;
+        private readonly HashSet<string> favoriteEntryKeys = new HashSet<string>();
+        // Bumped on every toggle (and every re-sync) so the journal filter re-runs when the
+        // "Favorites only" selection should change what is visible.
+        private int favoritesVersion;
+        // UI-side mirror of the record's defensive bound; checked before toggling so the mirror set
+        // never grows past what SetEntryFavorite would persist.
         private const int MaxFavoritedEntries = 4096;
 
         /// <summary>
-        /// True when the entry has been starred as a favorite this session.
+        /// Re-syncs the favorite lookup mirror from the pawn's saved record when the shown pawn or the
+        /// loaded game changed. Cheap no-op on every other frame, so FillTab calls it unconditionally.
         /// </summary>
-        private static bool IsFavorite(string entryKey)
+        private void EnsureFavoritesSynced(Pawn pawn, DiaryGameComponent component)
         {
-            return !string.IsNullOrEmpty(entryKey) && FavoritedEntryKeys.Contains(entryKey);
+            string pawnId = pawn?.GetUniqueLoadID();
+            if (ReferenceEquals(component, favoritesSyncedComponent)
+                && string.Equals(pawnId, favoritesSyncedPawnId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            favoritesSyncedComponent = component;
+            favoritesSyncedPawnId = pawnId;
+            favoriteEntryKeys.Clear();
+            List<string> saved = component?.FavoriteEntryKeysFor(pawn);
+            if (saved != null)
+            {
+                for (int i = 0; i < saved.Count; i++)
+                {
+                    if (!string.IsNullOrEmpty(saved[i]))
+                    {
+                        favoriteEntryKeys.Add(saved[i]);
+                    }
+                }
+            }
+
+            favoritesVersion++;
         }
 
         /// <summary>
-        /// Toggles the session favorite flag for the entry. Clears the whole set past a generous bound
-        /// (never hit in normal play) so it cannot leak across a very long session.
+        /// True when the entry has been starred as a favorite for the currently shown pawn.
         /// </summary>
-        private static void ToggleFavorite(string entryKey)
+        private bool IsFavoriteEntry(string entryKey)
+        {
+            return !string.IsNullOrEmpty(entryKey) && favoriteEntryKeys.Contains(entryKey);
+        }
+
+        /// <summary>
+        /// Flips one page's favorite state: updates the lookup mirror, persists the choice on the
+        /// pawn's diary record, and bumps <see cref="favoritesVersion"/> so an active "Favorites only"
+        /// filter re-runs this frame. Refused past the defensive bound (matching the record-side
+        /// policy) rather than evicting older favorites.
+        /// </summary>
+        private void ToggleFavoriteEntry(Pawn pawn, DiaryGameComponent component, string entryKey)
         {
             if (string.IsNullOrEmpty(entryKey))
             {
                 return;
             }
 
-            if (!FavoritedEntryKeys.Remove(entryKey))
+            EnsureFavoritesSynced(pawn, component);
+            if (favoriteEntryKeys.Remove(entryKey))
             {
-                if (FavoritedEntryKeys.Count >= MaxFavoritedEntries)
-                {
-                    FavoritedEntryKeys.Clear();
-                }
-
-                FavoritedEntryKeys.Add(entryKey);
+                favoritesVersion++;
+                component?.SetEntryFavorite(pawn, entryKey, false);
+                return;
             }
+
+            if (favoriteEntryKeys.Count >= MaxFavoritedEntries)
+            {
+                return;
+            }
+
+            favoriteEntryKeys.Add(entryKey);
+            favoritesVersion++;
+            component?.SetEntryFavorite(pawn, entryKey, true);
         }
 
         /// <summary>
@@ -395,12 +453,13 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the favorite star at the top-right of the title bar and toggles the session favorite on
-        /// click. Returns true when the star consumed the click, so the caller can suppress the row's
-        /// expand/collapse toggle. Off reads as a quiet outline; on reads as a warm gold star. Uses the
-        /// base/mouseover-color overload so the tint is honored (the 2-arg overload forces white).
+        /// Draws the favorite star at the top-right of the title bar in the given on/off state and
+        /// returns true when clicked, so the caller (which owns the pawn/component context) can flip
+        /// the persisted favorite and suppress the row's expand/collapse toggle. Off reads as a quiet
+        /// outline; on reads as a warm gold star. Uses the base/mouseover-color overload so the tint is
+        /// honored (the 2-arg overload forces white).
         /// </summary>
-        private static bool DrawTitleFavorite(Rect titleRect, DiaryEntryView entry, string entryKey)
+        private static bool DrawTitleFavorite(Rect titleRect, DiaryEntryView entry, string entryKey, bool favorite)
         {
             if (!ShowFavoriteButton(entry))
             {
@@ -413,10 +472,9 @@ namespace PawnDiary
                 TitleFavoriteSize,
                 TitleFavoriteSize);
 
-            bool fav = IsFavorite(entryKey);
             Color baseColor;
             Color hoverColor;
-            if (fav)
+            if (favorite)
             {
                 Color gold = UiStyle.FavoriteStarColor;
                 baseColor = gold;
@@ -429,14 +487,10 @@ namespace PawnDiary
             }
 
             bool clicked = Widgets.ButtonImage(favRect, DiaryButtonTextures.Favorite, baseColor, hoverColor, false);
-            if (clicked)
-            {
-                ToggleFavorite(entryKey);
-            }
 
             TooltipHandler.TipRegion(
                 favRect,
-                (fav ? "PawnDiary.Tab.FavoriteRemoveTip" : "PawnDiary.Tab.FavoriteAddTip").Translate());
+                (favorite ? "PawnDiary.Tab.FavoriteRemoveTip" : "PawnDiary.Tab.FavoriteAddTip").Translate());
             return clicked;
         }
 
