@@ -219,6 +219,7 @@ namespace PawnDiary
             BiotechGeneMutationCorrelation.Clear();
             ResetAnomalyTransientState();
             BeliefHistoryCorrelationCache.Reset();
+            BeliefMutationCache.Reset();
             DlcContext.ResetBeliefProjectionCaches();
             // TicksGame can repeat across different games, so drop the per-tick free-colonist snapshot
             // here (every Game construction) rather than risk reusing the previous game's list.
@@ -514,6 +515,7 @@ namespace PawnDiary
             try
             {
                 BeliefHistoryCorrelationCache.Reset();
+                BeliefMutationCache.Reset();
                 DlcContext.ResetBeliefProjectionCaches();
             }
             catch (Exception exception)

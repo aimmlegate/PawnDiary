@@ -1,7 +1,7 @@
-// Plain, assembly-free contracts for Ideology belief interpretation. Live RimWorld objects are
-// projected into these detached facts by a later adapter phase; Phase 0 only defines and consumes
-// the safe contract. NarrativeEvidence remains the owner of facet, salience, POV knowledge, source,
-// and topic vocabulary shared with the Narrative Continuity layer.
+// Plain, assembly-free contracts for Ideology belief interpretation and transient mutation facts.
+// Live RimWorld objects are projected into these detached rows only by DlcContext. NarrativeEvidence
+// remains the owner of facet, salience, POV knowledge, source, and topic vocabulary shared with the
+// Narrative Continuity layer.
 //
 // New to C#/RimWorld? See AGENTS.md ("architecture barriers" and "DLC-safety").
 using System;
@@ -219,6 +219,20 @@ namespace PawnDiary
         public List<string> visiblePawnIds = new List<string>();
     }
 
+    /// <summary>
+    /// One detached point-in-time Pawn_IdeoTracker state. Runtime adapters create it at mutation
+    /// boundaries; pure coalescing code never retains a Pawn, Ideo, tracker, or Def.
+    /// </summary>
+    internal sealed class BeliefMutationState
+    {
+        public string pawnId = string.Empty;
+        public int capturedTick;
+        public string ideologyId = string.Empty;
+        public string ideologyName = string.Empty;
+        public bool hasCertainty;
+        public float certainty;
+    }
+
     /// <summary>Detached before/after facts for a conversion, reassurance, or certainty mutation.</summary>
     internal sealed class BeliefMutationSnapshot
     {
@@ -238,6 +252,13 @@ namespace PawnDiary
         public bool certaintyChanged;
         public bool? conversionSucceeded;
         public List<string> causeTokens = new List<string>();
+
+        // Transient ordering metadata makes nested vanilla calls deterministic: the outer call owns
+        // the earliest before state even though its postfix completes last. It is never persisted or
+        // formatted into a prompt.
+        internal long startedSequence;
+        internal long completedSequence;
+        internal bool observedMutation;
 
         /// <summary>True only when the adapter supplied an observed mutation fact.</summary>
         public bool HasUsefulFact
@@ -530,6 +551,8 @@ namespace PawnDiary
         public int maximumRecentSelections = 16;
         public int maximumHistoryCorrelationEntries = 256;
         public int historyCorrelationWindowTicks = 120;
+        public int maximumMutationCorrelationEntries = 256;
+        public int mutationCorrelationWindowTicks = 120;
         public int maximumFieldCharacters = 320;
         public int maximumNormalizedTokensPerField = 48;
         public int maximumLexicalFieldsPerDocument = 96;
@@ -580,6 +603,7 @@ namespace PawnDiary
         public List<BeliefEventEvidenceRule> eventEvidenceRules = new List<BeliefEventEvidenceRule>();
         public List<string> lexicalExclusions = new List<string>();
         public List<string> proselytizingPovRoles = new List<string>();
+        public List<string> downstreamCoveredAbilityDefNames = new List<string>();
         public List<BeliefCorrelationCorrection> correlationOverrides = new List<BeliefCorrelationCorrection>();
         public List<BeliefDetailBudget> detailBudgets = new List<BeliefDetailBudget>();
 
@@ -672,6 +696,8 @@ namespace PawnDiary
         public readonly int maximumRecentSelections;
         public readonly int maximumHistoryCorrelationEntries;
         public readonly int historyCorrelationWindowTicks;
+        public readonly int maximumMutationCorrelationEntries;
+        public readonly int mutationCorrelationWindowTicks;
         public readonly int maximumFieldCharacters;
         public readonly int maximumNormalizedTokensPerField;
         public readonly int maximumLexicalFieldsPerDocument;
@@ -722,6 +748,7 @@ namespace PawnDiary
         public readonly IReadOnlyList<BeliefEventEvidenceRule> eventEvidenceRules;
         public readonly IReadOnlyList<string> lexicalExclusions;
         public readonly IReadOnlyList<string> proselytizingPovRoles;
+        public readonly IReadOnlyList<string> downstreamCoveredAbilityDefNames;
         public readonly IReadOnlyList<BeliefCorrelationCorrection> correlationOverrides;
         public readonly IReadOnlyList<BeliefDetailBudget> detailBudgets;
 
@@ -738,6 +765,8 @@ namespace PawnDiary
             maximumRecentSelections = Clamp(value.maximumRecentSelections, 0, 64, 16);
             maximumHistoryCorrelationEntries = Clamp(value.maximumHistoryCorrelationEntries, 1, 2048, 256);
             historyCorrelationWindowTicks = Clamp(value.historyCorrelationWindowTicks, 0, 600, 120);
+            maximumMutationCorrelationEntries = Clamp(value.maximumMutationCorrelationEntries, 1, 2048, 256);
+            mutationCorrelationWindowTicks = Clamp(value.mutationCorrelationWindowTicks, 0, 600, 120);
             maximumFieldCharacters = Clamp(value.maximumFieldCharacters, 32, 2048, 320);
             maximumNormalizedTokensPerField = Clamp(value.maximumNormalizedTokensPerField, 4, 128, 48);
             maximumLexicalFieldsPerDocument = Clamp(value.maximumLexicalFieldsPerDocument, 8, 256, 96);
@@ -788,6 +817,7 @@ namespace PawnDiary
             eventEvidenceRules = CopyRules(value.eventEvidenceRules);
             lexicalExclusions = CopyStrings(value.lexicalExclusions);
             proselytizingPovRoles = CopyStrings(value.proselytizingPovRoles);
+            downstreamCoveredAbilityDefNames = CopyStrings(value.downstreamCoveredAbilityDefNames);
             correlationOverrides = CopyCorrections(value.correlationOverrides);
             detailBudgets = CopyBudgets(value.detailBudgets);
         }

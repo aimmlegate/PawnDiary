@@ -232,7 +232,7 @@ namespace PawnDiary
 
             if (detailLevel == NarrativeDetailLevelTokens.Compact)
             {
-                if (label == "role" || label == "certainty trend" || label == "certainty outlook"
+                if (label == "role" || label == "certainty outlook"
                     || label == "previous ideoligion" || label == "attempted ideoligion") return false;
                 if (label == "relevant precept")
                 {

@@ -179,8 +179,6 @@ namespace PawnDiary
                     partTierToken = BodyPartTierToken(hediff, isOrganicAddedPart);
                 }
 
-                BodyModStanceFacts stance = BodyModContext.FactsFor(pawn);
-                attitudeToken = BodyPartEventPolicy.ResolveAttitude(partKindToken, partTierToken, stance);
                 if (isMissingPart)
                 {
                     causeToken = MissingPartCauseToken(hediff);
@@ -258,7 +256,7 @@ namespace PawnDiary
                 data.AttitudeToken = BodyPartEventPolicy.ResolveAttitude(
                     data.PartKindToken,
                     data.PartTierToken,
-                    BodyModContext.FactsFor(pawn, BodyModContext.IdeologyStance(preparedBelief?.resolution)));
+                    BodyModContext.FactsFor(pawn, BodyModContext.IdeologyStance(pawn, preparedBelief?.resolution)));
             }
             string instruction = InteractionGroups.InstructionForGroup(group);
             if (!string.IsNullOrEmpty(data.PartKindToken))

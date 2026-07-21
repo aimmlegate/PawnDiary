@@ -1,11 +1,12 @@
-// Ideology Phase 1 runtime adapter. This is the only place that reads live Ideo, Precept,
-// PreceptComp, sourcePrecept, or HistoryEvent belief metadata. Every entry point is double-guarded by
-// ModsConfig.IdeologyActive plus null checks, and every value crossing the boundary is a detached,
-// sanitized DTO from Source/Pipeline/Belief.
+// Ideology Phases 1–2 runtime adapter. This is the only place that reads live Pawn_IdeoTracker,
+// Pawn.ideo, Ideo, Precept, PreceptComp, sourcePrecept, or HistoryEvent belief metadata. Every entry
+// point is double-guarded by ModsConfig.IdeologyActive plus null checks, and every value crossing the
+// boundary is a detached, sanitized DTO from Source/Pipeline/Belief.
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using HarmonyLib;
 using RimWorld;
 using Verse;
 
@@ -31,7 +32,55 @@ namespace PawnDiary
             new Dictionary<PreceptDef, PreceptDefProjection>();
         private static readonly Dictionary<Type, List<FieldInfo>> BeliefComponentFieldCache =
             new Dictionary<Type, List<FieldInfo>>();
+        private static readonly FieldInfo BeliefTrackerPawnField =
+            AccessTools.Field(typeof(Pawn_IdeoTracker), "pawn");
         private static LoadedLanguage beliefProjectionLanguage;
+
+        /// <summary>
+        /// Projects one tracker boundary into a detached state. This is the sole mutation adapter that
+        /// reads Pawn_IdeoTracker, Pawn.ideo, or live Ideo identity/name/certainty.
+        /// </summary>
+        internal static bool TryCaptureBeliefMutationState(
+            Pawn_IdeoTracker tracker,
+            out BeliefMutationState state)
+        {
+            state = null;
+            if (!ModsConfig.IdeologyActive || !DiaryGameComponent.GamePlaying
+                || tracker == null || BeliefTrackerPawnField == null) return false;
+            Pawn pawn = BeliefTrackerPawnField.GetValue(tracker) as Pawn;
+            if (pawn == null || !ReferenceEquals(pawn.ideo, tracker)) return false;
+
+            BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
+            Ideo ideo = tracker.Ideo;
+            string pawnId = SafeBeliefId(pawn.GetUniqueLoadID(), policy);
+            string ideologyId = SafeBeliefId(ideo?.GetUniqueLoadID(), policy);
+            if (pawnId.Length == 0 || ideologyId.Length == 0) return false;
+            state = new BeliefMutationState
+            {
+                pawnId = pawnId,
+                capturedTick = Find.TickManager?.TicksGame ?? 0,
+                ideologyId = ideologyId,
+                ideologyName = SafeBeliefText(ideo.name, policy.maximumFieldCharacters),
+                hasCertainty = true,
+                certainty = Clamp01(tracker.Certainty)
+            };
+            return true;
+        }
+
+        /// <summary>Projects the attempted conversion Ideo without leaking the live object.</summary>
+        internal static BeliefMutationState CaptureAttemptedBeliefMutationState(Ideo attemptedIdeology)
+        {
+            if (!ModsConfig.IdeologyActive || !DiaryGameComponent.GamePlaying
+                || attemptedIdeology == null) return null;
+            BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
+            string ideologyId = SafeBeliefId(attemptedIdeology.GetUniqueLoadID(), policy);
+            if (ideologyId.Length == 0) return null;
+            return new BeliefMutationState
+            {
+                ideologyId = ideologyId,
+                ideologyName = SafeBeliefText(attemptedIdeology.name, policy.maximumFieldCharacters)
+            };
+        }
 
         /// <summary>
         /// Captures the pawn's current live ideoligion into plain immutable-by-convention facts.
@@ -41,6 +90,91 @@ namespace PawnDiary
         public static BeliefSnapshot CaptureBeliefSnapshot(Pawn pawn)
         {
             return CaptureBeliefSnapshot(pawn, BeliefPolicySnapshot.CreateDefault());
+        }
+
+        /// <summary>
+        /// Returns exact active ThoughtDef identities for the resolver-selected live precepts. This is
+        /// used only after an authorized body change, where mutually-exclusive situational workers give
+        /// stronger mechanical polarity than merged correlation prose. No doctrine names are assumed.
+        /// </summary>
+        public static List<string> CaptureActiveSelectedPreceptThoughtDefNames(
+            Pawn pawn,
+            BeliefStanceResolution resolution)
+        {
+            List<string> result = new List<string>();
+            if (!ModsConfig.IdeologyActive || pawn?.ideo?.Ideo == null
+                || pawn.needs?.mood?.thoughts == null || resolution?.stances == null)
+                return result;
+
+            List<Precept> livePrecepts = pawn.ideo.Ideo.PreceptsListForReading;
+            if (livePrecepts == null) return result;
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            List<Thought> activeThoughts = new List<Thought>();
+            for (int stanceIndex = 0; stanceIndex < resolution.stances.Count; stanceIndex++)
+            {
+                BeliefPreceptFact selected = resolution.stances[stanceIndex]?.precept;
+                Precept live = FindSelectedLivePrecept(livePrecepts, selected);
+                if (live == null || selected?.correlations == null) continue;
+
+                for (int correlationIndex = 0;
+                    correlationIndex < selected.correlations.Count && result.Count < 32;
+                    correlationIndex++)
+                {
+                    BeliefCorrelationFact correlation = selected.correlations[correlationIndex];
+                    if (correlation == null
+                        || !string.Equals(correlation.kind, BeliefCorrelationKindTokens.Thought,
+                            StringComparison.OrdinalIgnoreCase)
+                        || string.IsNullOrWhiteSpace(correlation.defName))
+                        continue;
+
+                    ThoughtDef thoughtDef = DefDatabase<ThoughtDef>.GetNamedSilentFail(correlation.defName);
+                    if (thoughtDef == null) continue;
+                    activeThoughts.Clear();
+                    try
+                    {
+                        pawn.needs.mood.thoughts.GetMoodThoughtsFor(thoughtDef, activeThoughts);
+                    }
+                    catch (Exception)
+                    {
+                        // A modded situational worker may throw while queried. Treat that single
+                        // correlation as unavailable; the resolver's normal valence remains the fallback.
+                        continue;
+                    }
+
+                    for (int thoughtIndex = 0; thoughtIndex < activeThoughts.Count; thoughtIndex++)
+                    {
+                        Thought thought = activeThoughts[thoughtIndex];
+                        if (thought == null || thought.def != thoughtDef
+                            || thought.sourcePrecept != null && !ReferenceEquals(thought.sourcePrecept, live))
+                            continue;
+                        if (seen.Add(thoughtDef.defName)) result.Add(thoughtDef.defName);
+                        break;
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static Precept FindSelectedLivePrecept(List<Precept> livePrecepts, BeliefPreceptFact selected)
+        {
+            if (selected == null) return null;
+            for (int i = 0; i < livePrecepts.Count; i++)
+            {
+                Precept live = livePrecepts[i];
+                if (live == null) continue;
+                if (!string.IsNullOrWhiteSpace(selected.instanceId)
+                    && string.Equals(live.GetUniqueLoadID(), selected.instanceId, StringComparison.Ordinal))
+                    return live;
+            }
+            Precept unique = null;
+            for (int i = 0; i < livePrecepts.Count; i++)
+            {
+                Precept live = livePrecepts[i];
+                if (!string.Equals(live?.def?.defName, selected.defName, StringComparison.Ordinal)) continue;
+                if (unique != null) return null;
+                unique = live;
+            }
+            return unique;
         }
 
         /// <summary>Policy-aware overload used by the event-time builder to share the same caps.</summary>

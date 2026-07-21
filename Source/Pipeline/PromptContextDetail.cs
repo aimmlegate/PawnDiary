@@ -450,11 +450,31 @@ namespace PawnDiary
             bool persona = DomainOrContext(domain, gameContext, "PersonaWeapon")
                 || HasAnyMarker(gameContext, "persona_weapon=", "persona_milestone=");
             bool social = HasAnyMarker(gameContext, "worker=Interaction_", "romance=", "kind=married", "def=Insult");
+            bool thought = DomainOrContext(domain, gameContext, "Thought")
+                || HasAnyMarker(gameContext, "thought=", "thought_def=");
+            bool criticalBelief = HasAnyMarker(gameContext,
+                "belief_event=conversion", "belief_event=crisis", "belief_crisis=",
+                "conversion_ritual=", "mental_state=IdeoChange");
 
             if (Eq(source, BeliefContextPrompt.Source))
             {
+                if (criticalBelief)
+                {
+                    reason = "conversion or belief-crisis context";
+                    return 94;
+                }
+                if (thought)
+                {
+                    reason = "ordinary thought belief context";
+                    return 68;
+                }
+                if (social)
+                {
+                    reason = "ordinary social belief context";
+                    return 72;
+                }
                 reason = "event-relative belief context";
-                return 90;
+                return 76;
             }
 
             if (Eq(source, "EventEnhancement"))

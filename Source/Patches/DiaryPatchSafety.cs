@@ -53,6 +53,28 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Result-returning companion to the state-passing overload. It keeps frequent prefixes free
+        /// of captured closures while still returning detached Harmony __state; failures log once and
+        /// return the caller's safe fallback.
+        /// </summary>
+        public static TResult Run<TState, TResult>(
+            string context,
+            TState state,
+            Func<TState, TResult> body,
+            TResult fallback)
+        {
+            try
+            {
+                return body(state);
+            }
+            catch (Exception e)
+            {
+                LogFailure(context, e);
+                return fallback;
+            }
+        }
+
+        /// <summary>
         /// Runs a bool-returning prefix body (the return decides whether vanilla runs). On failure it
         /// logs once and returns <paramref name="fallback"/> — pass the value that lets vanilla proceed
         /// normally, so a broken diary hook never suppresses the original behavior.

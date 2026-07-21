@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using HarmonyLib;
 using PawnDiary.Capture;
 using PawnDiary.Ingestion;
 using RimTestRedux;
@@ -27,10 +28,12 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin();
+            scope = PawnDiaryRimTestScope.Begin("hediffPartGainedArtificial");
             pawn = scope.CreateAdultColonist();
             BeliefHistoryCorrelationCache.Reset();
+            BeliefMutationCache.Reset();
             scope.RegisterCleanup(BeliefHistoryCorrelationCache.Reset);
+            scope.RegisterCleanup(BeliefMutationCache.Reset);
         }
 
         [AfterEach]
@@ -97,6 +100,99 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 context == BeliefContextFormatter.NormalizeSaved(context, DiaryBeliefPolicy.Snapshot()),
                 "The event-time belief block was not already in its stable saved form.");
+        }
+
+        /// <summary>Locks the shared same-language policy snapshot used by frequent history hooks.</summary>
+        [Test]
+        public static void BeliefPolicySnapshotIsCachedForTheActiveLanguage()
+        {
+            BeliefPolicySnapshot first = DiaryBeliefPolicy.Snapshot();
+            BeliefPolicySnapshot second = DiaryBeliefPolicy.Snapshot();
+            PawnDiaryRimTestScope.Require(ReferenceEquals(first, second),
+                "Belief policy rebuilt its deep-copied snapshot inside one active language.");
+            PawnDiaryRimTestScope.Require(DiaryBeliefPolicy.Enabled == first.enabled,
+                "The fast Enabled gate disagreed with the cached belief-policy snapshot.");
+        }
+
+        /// <summary>
+        /// Forces the guarded live snapshot boundary to throw and proves optional enrichment cannot
+        /// cancel the already-authorized ordinary body-change page.
+        /// </summary>
+        [Test]
+        public static void BeliefEnrichmentFailureKeepsTheOrdinaryEvent()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                Log.Message(LogPrefix + "enrichment failure isolation: not applicable (Ideology inactive). ");
+                return;
+            }
+
+            Ideo fixture = Find.IdeoManager?.IdeosListForReading?.FirstOrDefault(ideo => ideo != null);
+            PawnDiaryRimTestScope.Require(fixture != null && pawn.ideo != null,
+                "The failure-isolation fixture needs one loaded ideoligion.");
+            pawn.ideo.SetIdeo(fixture);
+            HediffDef pegLeg = DefDatabase<HediffDef>.GetNamedSilentFail("PegLeg");
+            BodyPartRecord leg = pawn.health.hediffSet.GetNotMissingParts()
+                .FirstOrDefault(part => part?.def?.defName == "Leg");
+            PawnDiaryRimTestScope.Require(pegLeg != null && leg != null,
+                "The failure-isolation fixture needs the vanilla peg leg and a leg.");
+            Hediff hediff = HediffMaker.MakeHediff(pegLeg, pawn);
+            scope.RegisterCleanup(() =>
+            {
+                if (pawn?.health?.hediffSet?.hediffs?.Contains(hediff) == true)
+                    pawn.health.RemoveHediff(hediff);
+            });
+
+            System.Reflection.MethodInfo target = AccessTools.Method(
+                typeof(DlcContext),
+                nameof(DlcContext.CaptureBeliefSnapshot),
+                new[] { typeof(Pawn), typeof(BeliefPolicySnapshot) });
+            PawnDiaryRimTestScope.Require(target != null,
+                "Could not resolve the guarded belief snapshot overload for the failure fixture.");
+            Harmony harmony = new Harmony("PawnDiary.RimTest.BeliefFailure." + Guid.NewGuid().ToString("N"));
+            harmony.Patch(target, prefix: new HarmonyMethod(
+                typeof(PawnDiaryIdeologyPhase1FixtureTests), nameof(ThrowBeliefSnapshotFixture)));
+            try
+            {
+                DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                    () => pawn.health.AddHediff(hediff, leg), pegLeg.defName, pawn, null);
+                PawnDiaryRimTestScope.Require(
+                    string.IsNullOrEmpty(diaryEvent.BeliefContextForRole(DiaryEvent.InitiatorRole)),
+                    "A failed optional belief snapshot left partial context on the ordinary page.");
+            }
+            finally
+            {
+                harmony.Unpatch(target, HarmonyPatchType.Prefix, harmony.Id);
+            }
+        }
+
+        /// <summary>
+        /// Drives the real AddHediff hook with vanilla situational precepts whose opposite workers share
+        /// one doctrine. Exact active ThoughtDef truth must retain the legacy approval/rejection cue.
+        /// </summary>
+        [Test]
+        public static void VanillaBodyModificationWorkersPreserveAttitudeParity()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                Log.Message(LogPrefix + "body-mod stance parity: not applicable (Ideology inactive). ");
+                return;
+            }
+
+            AssertBodyModificationAttitude("BodyMod_Approved", "approves");
+        }
+
+        /// <summary>Companion negative worker fixture for vanilla body-mod rejection.</summary>
+        [Test]
+        public static void VanillaBodyModificationNegativeWorkerPreservesAttitudeParity()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                Log.Message(LogPrefix + "negative body-mod stance parity: not applicable (Ideology inactive). ");
+                return;
+            }
+
+            AssertBodyModificationAttitude("BodyMod_Disapproved", "despises");
         }
 
         /// <summary>
@@ -204,6 +300,56 @@ namespace PawnDiary.RimTests
                 }
             }
             return null;
+        }
+
+        private static bool ThrowBeliefSnapshotFixture()
+        {
+            throw new InvalidOperationException("Synthetic belief snapshot failure.");
+        }
+
+        private static void AssertBodyModificationAttitude(string preceptDefName, string expectedAttitude)
+        {
+            PreceptDef target = DefDatabase<PreceptDef>.GetNamedSilentFail(preceptDefName);
+            HediffDef pegLeg = DefDatabase<HediffDef>.GetNamedSilentFail("PegLeg");
+            BodyPartRecord leg = pawn.health.hediffSet.GetNotMissingParts()
+                .FirstOrDefault(part => part?.def?.defName == "Leg");
+            PawnDiaryRimTestScope.Require(target?.issue != null && pegLeg != null && leg != null,
+                "The vanilla body-modification fixture Defs/body part were not loaded.");
+
+            IdeoGenerationParms parms = new IdeoGenerationParms
+            {
+                forFaction = Faction.OfPlayer.def,
+                fixedIdeo = true
+            };
+            Ideo fixture = IdeoGenerator.GenerateIdeo(parms);
+            PawnDiaryRimTestScope.Require(fixture != null,
+                "RimWorld did not generate a disposable Ideology fixture.");
+            Precept existing = fixture.PreceptsListForReading
+                .FirstOrDefault(precept => precept?.def?.issue == target.issue);
+            if (existing != null) fixture.RemovePrecept(existing, false);
+            fixture.AddPrecept(PreceptMaker.MakePrecept(target), false, Faction.OfPlayer.def, null);
+
+            // Traits have stronger intentional precedence than ideology. Remove either vanilla body
+            // trait from this disposable pawn so the assertion isolates the precept worker path.
+            pawn.story.traits.allTraits.RemoveAll(trait =>
+                trait?.def?.defName == "Transhumanist" || trait?.def?.defName == "BodyPurist");
+            pawn.ideo.SetIdeo(fixture);
+            Hediff hediff = HediffMaker.MakeHediff(pegLeg, pawn);
+            scope.RegisterCleanup(() =>
+            {
+                if (pawn?.health?.hediffSet?.hediffs?.Contains(hediff) == true)
+                    pawn.health.RemoveHediff(hediff);
+            });
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => pawn.health.AddHediff(hediff, leg), pegLeg.defName, pawn, null);
+            PawnDiaryRimTestScope.Require(
+                string.Equals(
+                    DiaryContextFields.Value(diaryEvent.gameContext, "body_attitude"),
+                    expectedAttitude,
+                    StringComparison.Ordinal),
+                preceptDefName + " did not preserve body_attitude=" + expectedAttitude
+                    + " through the real AddHediff capture path.");
         }
     }
 }

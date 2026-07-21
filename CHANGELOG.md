@@ -7,7 +7,51 @@
   along with its scrollbar-gutter reservation — the full content width returns to the entries. The wash
   still follows the season at the top of the viewport and crossfades as you scroll (`UpdateSeasonWash`).
   Debug build 0/0; no in-game acceptance run is claimed.
+- **2026-07-21 — Added the first Ideology Phase 2 mutation/ownership infrastructure slice.** Added
+  defensively registered, `ModsConfig.IdeologyActive`-gated exact hooks for
+  `Pawn_IdeoTracker.IdeoConversionAttempt`, `OffsetCertainty`, and `SetIdeo`. All live tracker/pawn/
+  Ideo reads remain in `DlcContext`; the hooks pass detached before/after/attempted facts into a pure,
+  bounded coalescer which preserves earliest-before/latest-after across overlapping nested calls while
+  keeping sequential same-tick actions separate. The transient cache is non-emitting, non-scribed,
+  game-boundary-reset, and empty for old saves/no-DLC games. XML now owns mutation bounds and the exact
+  `Convert`/`Reassure`/`ConversionRitual` generic Ability routes whose visible downstream interaction or
+  ritual is canonical; those routes drop before `Rand.Value`, while modded/unknown/no-DLC abilities are
+  unchanged. No conversion/crisis/ritual consumer enrichment or new page route was added yet. No UI or
+  model-facing prose changed, so English/Russian localization required no edit. Added pure
+  policy/correlation/coalescing tests (BeliefContext 257; capture policy 714) and five compiled loaded
+  fixtures for exact Harmony ownership, no-DLC behavior, real before/after tracker calls, failure
+  cleanup, RNG preservation, and one canonical Convert-success page. `PawnDiary.dll` and the 367-test
+  `PawnDiary.RimTest.dll` build 0/0. RimWorld was not launched, so no in-game pass is claimed.
 
+- **2026-07-21 — Ideology belief prompt-text tuning pass (EN + RU).** Reviewed the prompt prose added
+  by Ideology Phase 0/1. English: the belief-context instruction now keeps the diary's first-person
+  frame ("Beliefs I held at the time…") and pairs positive guidance (let beliefs color reaction and
+  word choice) with the existing guards (no invented doctrine, no belief-caused-the-event framing);
+  the five certainty-band phrases switch from "Speak…" to concrete "Write/Let/Voice…" wording, and
+  the "faith was abandoned" guard is rephrased to stay accurate for secular ideoligions. Russian:
+  re-authored natively per the RU prompt rules — «пешка» replaced with the house first-person/imperative
+  voice, the «об этом событии на момент события» repetition removed, calques («не выдумывая фанатизма»,
+  «напряжение и исключения») replaced with native phrasing, all without gendered first-person past
+  tense. Dev prompt-suite belief fixture texts no longer leak dev jargon ("synthetic event",
+  "high-confidence wording") into the LLM-facing "what you saw" field; they now read as in-world
+  moments in both languages (fixture matching is unaffected — evidence is forced from the live
+  snapshot, not this text). Def XML and EN DefInjected kept byte-identical; certainty-band order and
+  indexed keys unchanged. All five touched XML files parse; BeliefContextTests pass 227 assertions.
+- **2026-07-21 — Hardened Ideology Phase 1 after adversarial review.** Optional belief enrichment now
+  catches malformed modded getters/Defs at its shared builder boundary, logs once per exception type,
+  and preserves the already-authorized ordinary page. Vanilla/modded situational body-mod precepts now
+  derive approval/rejection from exact currently-active typed thoughts on the resolver-selected
+  precept, restoring `BodyMod_Approved`/`BodyMod_Disapproved` parity without Def-name or English-text
+  allowlists; the redundant pre-resolution attitude scan was removed. Compact saved-context projection
+  retains certainty trend, and prompt selection gives conversion/crisis contexts high priority while
+  ordinary thought/social belief context remains medium/lower. The HistoryEvent hot hook no longer
+  captures a closure, and the deep-copied belief policy snapshot is cached per active language.
+  Save fields/tokens are unchanged; old saves remain compatible. Added pure and compiled loaded-game
+  regressions for active-thought polarity, Compact projection, event-sensitive scores, cache identity,
+  failure isolation, and real vanilla AddHediff body attitudes. Belief/capture/pipeline suites pass
+  227/713/2,803 assertions; runtime and 362-test RimTest assemblies build 0/0. The previously stale
+  tracked RimTest DLL is rebuilt and current; the full coverage audit passes 23 pure projects at 7,445
+  assertions and all 23/23 event rows. RimWorld was not launched, so no new in-game pass is claimed.
 - **2026-07-21 — Diary UI round-4 tweaks from in-game feedback.** (1) The **seasonal wash now fills the
   full height** of the journal reading area (behind the cards and the empty space below a short page),
   instead of stopping at the last entry. (2) **Removed the stub "Apply" button** from the filter panel —
@@ -15,7 +59,6 @@
   are boldly filled with a 2px accent outline and near-white text; unselected chips read as a quiet thin
   outline. (4) **Removed the redundant "Filters" section header** above the favorites toggle. All values
   remain XML-tunable. Debug build 0/0; no in-game acceptance run is claimed.
-
 - **2026-07-21 — Diary UI round-3 tweaks from in-game feedback.** (1) The **season-band scroll strip now
   only draws when the page actually overflows** (a scrollbar is present), so a short non-scrolling page
   no longer shows a stray strip beside empty space. (2) The **seasonal wash is scoped to the entries

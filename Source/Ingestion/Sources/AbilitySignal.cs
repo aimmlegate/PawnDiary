@@ -3,7 +3,8 @@
 // DiaryGameComponent.RecordAbilityUsed. A solo source: one entry for the caster, sampled by a
 // cooldown-weighted chance so fast repeatable powers rarely become diary pages while rare powers
 // carry more weight. The sample roll lives in the pure AbilityEventData.Decide (compares the
-// captured Roll against RecordChance); this class only snapshots the live facts and emits.
+// captured Roll against RecordChance); this class only snapshots the live facts and emits. Exact
+// XML-owned Ideology routes with a later canonical interaction/ritual are dropped before that draw.
 //
 // The dedup key is tick-stamped and includes the cleaned target label, so it lives here (it needs
 // DiaryLineCleaner) rather than on the pure payload. Pure decision + game-context + the
@@ -104,6 +105,10 @@ namespace PawnDiary.Ingestion
             this.targetLabel = targetLabel;
             this.cooldownTicks = cooldown;
             this.recordChance = chance;
+            bool downstreamCovered = BeliefCanonicalEventOwnershipPolicy.IsDownstreamCoveredAbility(
+                name,
+                ModsConfig.IdeologyActive,
+                DiaryBeliefPolicy.Snapshot().downstreamCoveredAbilityDefNames);
 
             payload = new AbilityEventData
             {
@@ -115,6 +120,7 @@ namespace PawnDiary.Ingestion
                 TargetLabel = targetLabel,
                 CooldownTicks = cooldown,
                 RecordChance = chance,
+                DownstreamCovered = downstreamCovered,
                 // Roll is NOT drawn here. The pre-bus RecordAbilityUsed checked dedup before rolling,
                 // so a same-tick duplicate never consumed RimWorld's global RNG. Dispatch now performs
                 // the dedup CHECK before it reads Payload, so the roll is drawn lazily in the Payload
@@ -135,7 +141,7 @@ namespace PawnDiary.Ingestion
         {
             get
             {
-                if (payload != null && !rollDrawn)
+                if (payload != null && !payload.DownstreamCovered && !rollDrawn)
                 {
                     payload.Roll = Rand.Value;
                     rollDrawn = true;
