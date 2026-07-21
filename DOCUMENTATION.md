@@ -193,12 +193,17 @@ salience, knowledge, source, topic, interpretation-category, and deterministic-s
 duplicated. `EventRelativeStanceResolver` accepts only detached current-doctrine facts, fails closed
 unless POV knowledge is explicitly true, and checks exact source-precept identity, exact projected
 thought/history correlations, and direct issue/meme identity before it permits the bounded
-`BeliefLexicalMatcher` fallback. Every result is intersected with the snapshot's visible live precepts
-and memes; same-issue variants collapse, ordinary selection is one, the independently evidenced second
-slot is policy-gated, and the hard cap is two. Within the strongest admitted tier, a local stable seed
-drives deterministic weighted selection without touching `Verse.Rand`. Impact, required-by-meme status, POV role, salience, and
+`BeliefLexicalMatcher` fallback. Immutable policy construction discards selectorless event-evidence
+rules, and the matcher repeats that fail-closed check before expansion. Lexical fallback reuses the
+resolver's already-expanded vocabulary and lazily caches token bigrams per bounded document. Every
+result is intersected with the snapshot's visible live precepts and memes; same-issue variants
+collapse, `defaultSelectedStances` controls whether a second independent stance is ordinary, the
+shipped default of one requires that second slot to clear its own exceptional threshold, and the hard
+cap remains two. Within the strongest admitted tier, a local stable seed drives deterministic weighted
+selection without touching `Verse.Rand`. Impact, required-by-meme status, POV role, salience, and
 repetition can reorder only candidates admitted by the same categorical tier. Quiet high-impact fallback
-exists only in the unused future-reflection mode. `BeliefContextFormatter` and
+exists only in the unused future-reflection mode. `BeliefContextFormatter` keeps complete bounded plain
+text after an unmatched angle delimiter while still stripping markup, and it plus
 `BeliefReflectionPolicy` are pure shells for later phases; no live collector, Harmony patch, save/Scribe
 field, event attachment, prompt source, page type, scanner, or Narrative Continuity provider consumes
 them yet. Ideology inactive/missing remains an ordinary empty result.
@@ -2099,7 +2104,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeRollPolicyDefs.xml` | numeric tuning for the psychotype roll: family bases, bonuses, wildcard chance, jitter range, duplicate penalty |
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; the main-thread builder snapshots it before fixed-order pure provider selection. The repetition policy is live: every narrative-capable source feeds the selector the POV pawn's most recent persisted selection keys (newest hot pages, then archive rows, bounded by `maxRecentSelectedCandidateKeys`), so `repetitionPenalty` dampens re-picking the same lens while exact-arc continuations stay exempt via `exactArcRepetitionPenalty` |
-| `DiaryBeliefPolicyDef.xml` | Inactive Ideology Phase-0 policy contract: categorical structural/lexical scores, guarded field weights, confidence and runner-up margins, common/fuzzy-token limits, normally-one/maximum-two selection, certainty bands and DefInjected-ready phrases, formatter/reflection-shell caps, exact event-evidence vocabulary, localized semantic aliases, exclusions, and an intentionally empty compatibility-correction list. It contains no precept/issue/meme catalog or DLC Def reference; a future main-thread adapter will copy it into an immutable pure snapshot. |
+| `DiaryBeliefPolicyDef.xml` | Inactive Ideology Phase-0 policy contract: categorical structural/lexical scores, guarded field weights, confidence and runner-up margins, common/fuzzy-token limits, XML-owned default-one/maximum-two selection, certainty bands with aligned English/Russian DefInjected phrases, formatter/reflection-shell caps, selector-bearing exact event-evidence vocabulary, localized semantic aliases, exclusions, and an intentionally empty compatibility-correction list. It contains no precept/issue/meme catalog or DLC Def reference; a future main-thread adapter will copy it into an immutable pure snapshot. |
 | `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory plus mature-birth/miscarriage matchers, supporter thresholds/caps, naming timing, family retention, two-writer birth cap, pending-growth/pending-birth admission limits, Phase-5 gene category/theme/text/observation/fallback-significance policy, N3-B salient-gene identity prose, and Phase-6 mechanitor combat Tale roles/tenure/state caps; Phases 1–6, N2-B, and the first N3-B slice use these fields live |
 | `DiaryAnomalyPolicyDefs.xml` | A1 study/containment toggles, milestone rules, dedup/ownership/cache bounds, A2 visible creepjoiner/ghoul output and writer limits, plus N3-A factual formats for the three monolith chapters, containment breach, four visible creepjoiner outcomes, and ghoul transformation. Prose is DefInjected in English/Russian; no terminal/hidden format exists. All optional-DLC identifiers remain primitive strings, so the row loads safely without Anomaly. |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |

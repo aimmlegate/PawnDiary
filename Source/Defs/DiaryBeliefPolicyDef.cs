@@ -302,7 +302,6 @@ namespace PawnDiary
         {
             if (source == null || source.Count == 0 && !replaceWhenEmpty) return;
             destination.Clear();
-            if (source == null) return;
             for (int i = 0; i < source.Count; i++)
                 if (!string.IsNullOrWhiteSpace(source[i])) destination.Add(source[i].Trim());
         }

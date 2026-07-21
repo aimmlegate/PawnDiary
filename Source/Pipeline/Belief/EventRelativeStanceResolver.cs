@@ -43,6 +43,9 @@ namespace PawnDiary
 
         private static bool Matches(BeliefEventEvidenceRule rule, BeliefEventEvidence evidence)
         {
+            // A selectorless XML row must never become an implicit global rule, even if a malformed
+            // snapshot reaches this defensive layer without passing through the normal copy filter.
+            if (rule == null || !rule.HasSelector) return false;
             NarrativeEvidence narrative = evidence.narrative;
             if (!OptionalSame(rule.sourceDomain, narrative == null ? string.Empty : narrative.sourceDomain)) return false;
             if (!OptionalSame(rule.sourceDefName, narrative == null ? string.Empty : narrative.sourceDefName)) return false;
@@ -153,7 +156,7 @@ namespace PawnDiary
             if (!directIdentityAnswered)
                 candidates = ForcedCorrectionCandidates(evidence, expanded, livePrecepts, liveMemes, policy);
             if (!directIdentityAnswered && candidates.Count == 0)
-                candidates = LexicalCandidates(evidence, snapshot, livePrecepts, policy);
+                candidates = LexicalCandidates(evidence, expanded, snapshot, livePrecepts, policy);
             if (!directIdentityAnswered && candidates.Count == 0
                 && request.mode == BeliefResolutionModeTokens.QuietReflection)
                 candidates = QuietFallbackCandidates(livePrecepts, policy);
@@ -331,11 +334,13 @@ namespace PawnDiary
 
         private static List<Candidate> LexicalCandidates(
             BeliefEventEvidence evidence,
+            ExpandedBeliefEvidence expanded,
             BeliefSnapshot snapshot,
             List<BeliefPreceptFact> precepts,
             BeliefPolicySnapshot policy)
         {
-            BeliefLexicalMatchResult lexical = BeliefLexicalMatcher.Match(evidence, snapshot, precepts, policy);
+            BeliefLexicalMatchResult lexical = BeliefLexicalMatcher.Match(
+                evidence, snapshot, precepts, policy, expanded);
             if (lexical.winner == null) return new List<Candidate>();
             Candidate candidate = NewCandidate(lexical.winner.precept, null, lexical.winner.relevanceSource,
                 lexical.winner.relevanceTier, lexical.winner.matchedIdentity,
@@ -401,12 +406,13 @@ namespace PawnDiary
 
             int hardCap = Math.Min(2, policy.maximumSelectedStances);
             if (hardCap < 2) return result;
+            bool secondSlotIsDefault = policy.defaultSelectedStances >= 2;
             List<Candidate> secondSlot = new List<Candidate>();
             for (int i = 0; i < collapsed.Count; i++)
             {
                 Candidate second = collapsed[i];
                 if (ReferenceEquals(second, first)) continue;
-                if (second.finalScore < policy.secondSlotMinimumScore) continue;
+                if (!secondSlotIsDefault && second.finalScore < policy.secondSlotMinimumScore) continue;
                 if (string.IsNullOrEmpty(second.evidenceKey)
                     || Same(second.evidenceKey, first.evidenceKey)) continue;
                 if (IssueKey(second.precept).Length > 0 && Same(IssueKey(second.precept), IssueKey(first.precept)))

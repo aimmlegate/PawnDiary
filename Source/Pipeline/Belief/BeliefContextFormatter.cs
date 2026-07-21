@@ -92,20 +92,17 @@ namespace PawnDiary
                 ? value
                 : value.Substring(0, maximumCharacters * 2);
             StringBuilder builder = new StringBuilder(Math.Min(bounded.Length, maximumCharacters));
-            bool insideTag = false;
             bool pendingSpace = false;
             for (int i = 0; i < bounded.Length && builder.Length < maximumCharacters; i++)
             {
                 char character = bounded[i];
                 if (character == '<')
                 {
-                    insideTag = true;
                     pendingSpace = builder.Length > 0;
-                    continue;
-                }
-                if (insideTag)
-                {
-                    if (character == '>') insideTag = false;
+                    int closingBracket = bounded.IndexOf('>', i + 1);
+                    // Strip a complete markup-looking span. With an unmatched '<', discard only the
+                    // unsafe delimiter and keep sanitizing the ordinary text that follows it.
+                    if (closingBracket >= 0) i = closingBracket;
                     continue;
                 }
                 if (char.IsControl(character) || char.IsWhiteSpace(character))
