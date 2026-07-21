@@ -599,6 +599,20 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 > pins the copied capture/provider tokens, and keeps non-monolith event-window detail behavior unchanged.
 > `NarrativeContinuityTests` passes 289 assembly-free assertions, `DiaryAnomalyPolicyTests` passes 639,
 > and the user-confirmed corrected Anomaly-active loaded run passed the integrated 354/354 RimTests.
+>
+> **N3-O progress (2026-07-21): implemented; loaded acceptance not run.** The fixed Odyssey provider
+> now accepts one optional detached environmental-pressure fact in the existing per-POV snapshot. The
+> only concrete source is O2's already-saved, prompt-active `SeasonalFloodActive` observer row with
+> exact `SeasonalFlood` evidence for the POV's verified current gravship map. Source, evidence, POV,
+> ship, location, knowledge, connection, tick, safe key parts, and bounded single-line prose must all
+> agree. The candidate uses the existing `pressure` category and `ambient_pressure` facet, an exact
+> place subject, no journey arc or causal claim, one provider-local pressure cap, stable deterministic
+> ordering, and ordinary shared repetition history. XML permits exact Odyssey home plus pressure while
+> the unchanged selector enforces Full two-lens and Balanced/Compact one-lens budgets. Formatter or
+> provider failure preserves the canonical page and evidence/references with no lens. No new hook,
+> page, setting, save field, generic-condition duplicate, life-support state, or landing consequence
+> was added. Focused coverage passes 321 Narrative Continuity, 160 Odyssey policy, and 2,746 pipeline
+> assertions; both Debug assemblies build, while the integrated loaded suite has not been run for N3-O.
 
 1. Route high-confidence `EventRelativeStanceResolver` output through the shared interpretation
    category for ordinary event enrichment.
@@ -606,6 +620,7 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
    provider implemented; court pressure remains deferred to the scheduled N3-R extension.**
 3. Add Anomaly visible-state/pressure candidates with spoiler-firewall tests. **Implemented; loaded acceptance passed.**
 4. Add Biotech mechanitor/pollution and Odyssey environmental extensions as their source phases ship.
+   **Odyssey environmental pressure is implemented; Biotech mechanitor/pollution remains scheduled.**
 5. Verify two-lens composition and repetition across every provider pair.
 
 Exit gate: every active provider can be absent independently; Ideology-off combinations still receive

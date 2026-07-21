@@ -798,6 +798,35 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// Stable N3-O identities copied from the already-shipped O2 seasonal-flood observer. They are
+    /// plain schema strings, not Def references, so the pure provider stays no-DLC safe.
+    /// </summary>
+    internal static class OdysseyEnvironmentalNarrativeTokens
+    {
+        public const string SeasonalFlood = "seasonal_flood";
+        public const string SeasonalFloodConditionDefName = "SeasonalFloodActive";
+        public const string SeasonalFloodEvidenceDefName = "SeasonalFlood";
+    }
+
+    /// <summary>
+    /// One source-owned, event-time Odyssey pressure fact detached from the observed-condition save
+    /// row and every live Pawn, map, Thing, condition Def, and DLC object.
+    /// </summary>
+    internal sealed class OdysseyEnvironmentalNarrativeFact
+    {
+        public string sourceKind = string.Empty;
+        public string sourceDefName = string.Empty;
+        public string evidenceDefName = string.Empty;
+        public string povPawnId = string.Empty;
+        public string shipStableId = string.Empty;
+        public string locationKey = string.Empty;
+        public string text = string.Empty;
+        public int sourceTick;
+        public bool pawnCanKnow;
+        public bool hasVerifiedPovConnection;
+    }
+
+    /// <summary>
     /// Plain event-time Odyssey home facts. The runtime adapter authorizes the exact POV/gravship
     /// connection and freezes localized text before this contract reaches pure provider policy.
     /// </summary>
@@ -811,35 +840,84 @@ namespace PawnDiary
         public string locationKey = string.Empty;
         public string locationLabel = string.Empty;
         public string homeText = string.Empty;
+        public List<OdysseyEnvironmentalNarrativeFact> environmentalPressures =
+            new List<OdysseyEnvironmentalNarrativeFact>();
         public int sourceTick;
         public bool pawnCanKnow;
         public bool hasVerifiedPovConnection;
     }
 
-    /// <summary>Pure candidate factory for one exact, currently occupied Odyssey mobile home.</summary>
+    /// <summary>
+    /// Pure candidate factory for one exact occupied Odyssey mobile home and bounded, source-owned
+    /// environmental pressure on that same map.
+    /// </summary>
     internal static class OdysseyNarrativeProvider
     {
+        // These are defensive schema limits. The shared XML policy still owns global candidate/lens
+        // caps, score weights, detail budgets, and the explicit home+pressure coexistence rule.
+        private const int MaximumPressureCandidates = 1;
+        private const int MaximumKeyPartCharacters = 160;
+        private const int MaximumArcCharacters = 360;
+        private const int MaximumTextCharacters = 480;
+
         /// <summary>
-        /// Returns at most one home lens. A matching journey arc promotes it to exact-arc relevance;
-        /// otherwise the selector can use it only as a verified ambient fact for this exact POV.
+        /// Returns at most one home and one pressure lens. A matching journey arc promotes the home
+        /// lens to exact-arc relevance; seasonal flooding remains an exact-place or verified ambient
+        /// fact and never claims that the journey caused it.
         /// </summary>
         public static List<NarrativeLensCandidate> Build(
             List<NarrativeEvidence> evidence,
             OdysseyNarrativeSnapshot snapshot)
         {
             List<NarrativeLensCandidate> result = new List<NarrativeLensCandidate>();
-            if (snapshot == null || !snapshot.providerAvailable || !snapshot.pawnCanKnow
-                || !snapshot.hasVerifiedPovConnection || !CouldApply(evidence, snapshot.povPawnId)
-                || string.IsNullOrWhiteSpace(snapshot.povPawnId)
-                || string.IsNullOrWhiteSpace(snapshot.shipStableId)
-                || string.IsNullOrWhiteSpace(snapshot.locationKey)
-                || string.IsNullOrWhiteSpace(snapshot.locationLabel)
-                || string.IsNullOrWhiteSpace(snapshot.homeText))
+            if (!Usable(evidence, snapshot))
             {
                 return result;
             }
 
-            result.Add(new NarrativeLensCandidate
+            NarrativeLensCandidate home = BuildHome(snapshot);
+            if (home != null) result.Add(home);
+
+            List<NarrativeLensCandidate> pressure = new List<NarrativeLensCandidate>();
+            List<OdysseyEnvironmentalNarrativeFact> facts = snapshot.environmentalPressures
+                ?? new List<OdysseyEnvironmentalNarrativeFact>();
+            for (int i = 0; i < facts.Count; i++)
+            {
+                NarrativeLensCandidate candidate = BuildPressure(snapshot, facts[i]);
+                if (candidate != null) pressure.Add(candidate);
+            }
+
+            // A corrupt/mod-expanded snapshot can repeat the same source row. Sort newest first within
+            // one stable key, then de-duplicate, so input/save list order never changes the result.
+            pressure.Sort(ComparePressure);
+            string lastKey = string.Empty;
+            int pressureAdded = 0;
+            for (int i = 0; i < pressure.Count && pressureAdded < MaximumPressureCandidates; i++)
+            {
+                NarrativeLensCandidate candidate = pressure[i];
+                if (string.Equals(candidate.candidateKey, lastKey, StringComparison.Ordinal)) continue;
+                result.Add(candidate);
+                pressureAdded++;
+                lastKey = candidate.candidateKey;
+            }
+            return result;
+        }
+
+        private static bool Usable(List<NarrativeEvidence> evidence, OdysseyNarrativeSnapshot snapshot)
+        {
+            return snapshot != null && snapshot.providerAvailable && snapshot.pawnCanKnow
+                && snapshot.hasVerifiedPovConnection && snapshot.sourceTick >= 0
+                && SafeKeyPart(snapshot.povPawnId) && SafeKeyPart(snapshot.shipStableId)
+                && SafeKeyPart(snapshot.locationKey) && CouldApply(evidence, snapshot.povPawnId)
+                && ValidJourneyArcOrEmpty(snapshot.journeyId, snapshot.shipStableId);
+        }
+
+        private static NarrativeLensCandidate BuildHome(OdysseyNarrativeSnapshot snapshot)
+        {
+            if (!SafeText(snapshot.homeText)
+                || string.IsNullOrWhiteSpace(snapshot.locationLabel)) return null;
+
+            return new NarrativeLensCandidate
             {
                 candidateKey = "odyssey|home|" + snapshot.shipStableId.Trim()
                     + "|" + snapshot.locationKey.Trim(),
@@ -857,8 +935,92 @@ namespace PawnDiary
                 pawnCanKnow = true,
                 providerAvailable = true,
                 hasVerifiedPovConnection = true
-            });
-            return result;
+            };
+        }
+
+        private static NarrativeLensCandidate BuildPressure(
+            OdysseyNarrativeSnapshot snapshot,
+            OdysseyEnvironmentalNarrativeFact fact)
+        {
+            if (fact == null || !fact.pawnCanKnow || !fact.hasVerifiedPovConnection
+                || fact.sourceTick < 0 || !SafeText(fact.text)
+                || !string.Equals(fact.sourceKind,
+                    OdysseyEnvironmentalNarrativeTokens.SeasonalFlood, StringComparison.Ordinal)
+                || !string.Equals(fact.sourceDefName,
+                    OdysseyEnvironmentalNarrativeTokens.SeasonalFloodConditionDefName,
+                    StringComparison.Ordinal)
+                || !string.Equals(fact.evidenceDefName,
+                    OdysseyEnvironmentalNarrativeTokens.SeasonalFloodEvidenceDefName,
+                    StringComparison.Ordinal)
+                || !string.Equals(fact.povPawnId, snapshot.povPawnId, StringComparison.Ordinal)
+                || !string.Equals(fact.shipStableId, snapshot.shipStableId, StringComparison.Ordinal)
+                || !string.Equals(fact.locationKey, snapshot.locationKey, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            return new NarrativeLensCandidate
+            {
+                candidateKey = "odyssey|pressure|" + fact.sourceKind + "|" + fact.locationKey.Trim(),
+                provider = NarrativeProviderTokens.Odyssey,
+                category = NarrativeCategoryTokens.Pressure,
+                text = fact.text.Trim(),
+                facet = NarrativeFacetTokens.AmbientPressure,
+                subjectKind = NarrativeSubjectKindTokens.Place,
+                subjectId = fact.locationKey.Trim(),
+                // The flood belongs to the exact current place, not to the journey's causal arc.
+                arcKey = string.Empty,
+                topicTokens = new List<string> { "environment", "flood", "water" },
+                sourceTick = fact.sourceTick,
+                salience = NarrativeSalienceTokens.Meaningful,
+                relationship = NarrativeRelationshipTokens.Ambient,
+                pawnCanKnow = true,
+                providerAvailable = true,
+                hasVerifiedPovConnection = true
+            };
+        }
+
+        private static bool SafeKeyPart(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            string clean = value.Trim();
+            return clean.Length <= MaximumKeyPartCharacters
+                && clean.IndexOfAny(new[] { '|', ';', '=', '\r', '\n' }) < 0;
+        }
+
+        private static bool SafeText(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            string clean = value.Trim();
+            return clean.Length <= MaximumTextCharacters
+                && clean.IndexOfAny(new[] { '\r', '\n' }) < 0;
+        }
+
+        private static bool ValidJourneyArcOrEmpty(string value, string shipStableId)
+        {
+            string arc = (value ?? string.Empty).Trim();
+            if (arc.Length == 0) return true;
+            if (arc.Length > MaximumArcCharacters || arc.IndexOfAny(new[] { ';', '=', '\r', '\n' }) >= 0)
+                return false;
+
+            const string prefix = "odyssey-journey|";
+            if (!arc.StartsWith(prefix, StringComparison.Ordinal)) return false;
+            string suffix = arc.Substring(prefix.Length);
+            int separator = suffix.LastIndexOf('|');
+            int tick;
+            return separator > 0 && separator < suffix.Length - 1
+                && string.Equals(suffix.Substring(0, separator), shipStableId.Trim(), StringComparison.Ordinal)
+                && int.TryParse(suffix.Substring(separator + 1), out tick) && tick >= 0;
+        }
+
+        private static int ComparePressure(
+            NarrativeLensCandidate left,
+            NarrativeLensCandidate right)
+        {
+            int byKey = string.CompareOrdinal(left?.candidateKey, right?.candidateKey);
+            if (byKey != 0) return byKey;
+            int byTick = (right?.sourceTick ?? -1).CompareTo(left?.sourceTick ?? -1);
+            return byTick != 0 ? byTick : string.CompareOrdinal(left?.text, right?.text);
         }
 
         private static bool CouldApply(List<NarrativeEvidence> evidence, string povPawnId)

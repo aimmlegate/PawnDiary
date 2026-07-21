@@ -78,6 +78,7 @@
       <li><firstCategory>identity</firstCategory><secondCategory>pressure</secondCategory><allowed>true</allowed></li>
       <li><firstCategory>bond</firstCategory><secondCategory>pressure</secondCategory><allowed>true</allowed></li>
       <li><firstCategory>chapter</firstCategory><secondCategory>home</secondCategory><allowed>true</allowed></li>
+      <li><firstCategory>home</firstCategory><secondCategory>pressure</secondCategory><allowed>true</allowed></li>
     </categoryCoexistence>
 
     <!-- N4 will consume these pure scheduling values through ReflectionCoordinator; N1 dispatches no reflection. -->

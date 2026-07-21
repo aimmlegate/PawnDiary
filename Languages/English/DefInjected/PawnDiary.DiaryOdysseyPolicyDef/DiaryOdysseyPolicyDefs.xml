@@ -2,4 +2,5 @@
 <LanguageData>
   <Diary_Odyssey.label>Odyssey gravship journey policy</Diary_Odyssey.label>
   <Diary_Odyssey.mobileHomeNarrativeFormat>At this event, the writer was aboard {0}, their exact gravship home at {1}.</Diary_Odyssey.mobileHomeNarrativeFormat>
+  <Diary_Odyssey.seasonalFloodNarrativeFormat>At this event, seasonal floodwater remained present on the map where the writer was aboard {0} at {1}.</Diary_Odyssey.seasonalFloodNarrativeFormat>
 </LanguageData>

@@ -14,6 +14,13 @@ Phase A/B/C reload sequence preserved the frozen keys, rejected replay/resurrect
 reserved saves. The broader loaded component/prompt-flow rerun remains separate, and later O2/O3
 life-support and Mechhive hooks still require their own spikes.
 
+Wave 8's XML-first O2 behavior and Narrative N3-O environmental extension are implemented as of
+2026-07-21. N3-O consumes only the already-saved, exact-map `SeasonalFloodActive` observer row when
+the exact POV is verified aboard the same gravship, then proposes one bounded `ambient_pressure`
+candidate beside N2-O's mobile-home candidate. It adds no live Thing rescan, Harmony hook, page owner,
+setting, save field, life-support inference, or landing consequence. Focused pure/build validation is
+complete; the combined loaded Odyssey acceptance run remains outstanding.
+
 Scheduling authority: implement Odyssey phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Odyssey.
 
@@ -451,6 +458,14 @@ Odyssey's provider may propose active mobile-home/journey/homecoming and locatio
 not dump fuel, engines, cells, subsystem state, or world-generation internals. Biotech family/home
 facts are the recommended first cross-provider acceptance case, but Odyssey code must know them only
 through the shared evidence/candidate contract.
+
+> **N3-O implementation (2026-07-21):** the first location-pressure fact is the existing
+> `SeasonalFloodActive` observer's exact `SeasonalFlood` evidence row. The main-thread adapter accepts
+> it only while Odyssey is active, the observer is still prompt-active, the row belongs to the exact
+> current map, and vanilla confirms the exact POV is aboard the same gravship. It freezes a detached
+> source/POV/ship/location/tick/text fact; the pure provider repeats every identity and knowledge gate,
+> emits a stable prose-free place key, and leaves the journey arc empty so floodwater is never presented
+> as a consequence of travel.
 
 ## 8. Journey lifecycle policy
 
@@ -1223,6 +1238,23 @@ Exit: O1 acceptance scenarios pass in RimTest and a manual Odyssey save.
 Ship seasonal flood and `GravNausea` as an XML-first change. Run the landing-outcome and
 life-support spikes separately; implement only the parts whose gates pass.
 
+> **Implementation status (2026-07-21): shipped except for the separately gated life-support
+> feasibility work.** `SeasonalFloodActive`, `DiaryEnchant_GravNausea`, and exact successful landing-
+> outcome enrichment are implemented without duplicate pages or generic-condition duplication.
+
+### Narrative N3-O — Exact environmental pressure
+
+> **Implementation status (2026-07-21): automated slice complete; loaded acceptance not run.** The
+> shared Odyssey snapshot now carries an optional bounded list of detached environmental facts. The
+> only admitted fact is the existing active `SeasonalFloodActive`/`SeasonalFlood` row for the exact
+> POV's current gravship map. The pure provider independently validates source, evidence, POV, ship,
+> location, knowledge, connection, tick, key grammar, and bounded single-line prose; deterministic
+> sorting/deduplication admits at most one pressure candidate. Existing XML coexistence policy allows
+> exact home plus pressure under the unchanged Full two-lens and Balanced/Compact one-lens budgets,
+> with ordinary saved repetition history. Missing policy/format/provider data omits the optional lens
+> while preserving the canonical event and its evidence/references. No new hook, page, setting, save
+> field, life-support claim, or landing consequence is part of N3-O.
+
 ### Phase O3 — Exploration and ending
 
 Extend visible site categories first. Verify Mechhive resolution before adding specialized code,
@@ -1291,6 +1323,11 @@ At minimum:
 - visible `GameCondition` context is not duplicated.
 - `GravNausea` respects enchantment chance/severity policy.
 - every dynamically discovered landing-outcome override reports exact applied outcome once.
+- N3-O accepts only the exact active observer/evidence/POV/ship/location tuple, bounds and sanitizes
+  keys/prose, deterministically deduplicates to one pressure fact, and stays silent without Odyssey.
+- home/pressure and Anomaly/Odyssey composition preserve fixed provider order, ordinary repetition,
+  and the shared zero/one/two-lens budgets; Full/Balanced/Compact prompt projection keeps selected
+  prose optional and fail-soft.
 - Mechhive choice tests remain absent until the source is verified; once added, both outcomes and
   load replay require fixtures.
 

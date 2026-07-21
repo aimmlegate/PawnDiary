@@ -455,13 +455,15 @@ Terminal void outcomes remain deferred to the endings wave.
 
 ## 13. Wave 8 — Odyssey environmental depth
 
-> **Progress 2026-07-17:** the XML-first O2 slice is implemented: the stale `Flooding` mood matcher
-> is replaced by an Odyssey-gated, prompt-only `SeasonalFlood` `ThingPresent` observer, existing
-> visible-condition projection remains unduplicated, and `GravNausea` is bounded prompt context.
-> Focused XML/localization and loaded-Def contracts are present. The exact negative landing-outcome
-> seam is also implemented through fail-soft discovery of every concrete worker override; a successful
-> worker enriches the same canonical landing and never creates a second page. The life-support
-> feasibility spike, N3-O, and the combined in-game acceptance run remain open.
+> **Progress 2026-07-21:** the XML-first O2 slice and Narrative N3-O environmental extension are
+> implemented. O2 replaces the stale `Flooding` mood matcher with the Odyssey-gated, prompt-only
+> `SeasonalFlood` `ThingPresent` observer, leaves generic visible-condition projection unduplicated,
+> keeps `GravNausea` as bounded prompt context, and enriches the one canonical landing from exact
+> successful worker outcomes. N3-O reuses that observer's saved exact-map row at event time to propose
+> at most one detached, per-POV seasonal-flood pressure lens beside the existing mobile-home lens; it
+> adds no rescan, hook, page, save field, setting, or landing consequence. Pure and build validation is
+> recorded in the source plans. The life-support feasibility spike and combined in-game Odyssey
+> acceptance run remain open.
 
 ### Implement
 
@@ -472,6 +474,8 @@ Complete **Odyssey O2** and extend **N3-O**:
 3. Add bounded `GravNausea` context.
 4. Add negative landing consequences only after the exact outcome hook is verified.
 5. Keep life-support crisis deferred unless its separate spike proves a safe visible seam.
+6. **Narrative N3-O (implemented 2026-07-21)** — project only the existing source-owned seasonal-
+   flood observer fact through the shared exact-POV provider and ordinary lens budget/history.
 
 ### Exit gate
 

@@ -572,22 +572,35 @@ namespace DiaryPipelineTests
         private static void TestNarrativeContextPromptField()
         {
             DiaryEventPayload payload = SoloPayload("e-narrative", "quiet work", "Alice repaired the generator.");
-            payload.initiator.narrativeContext = "The earlier family rift is still unresolved.";
+            payload.initiator.narrativeContext =
+                "Seasonal floodwater is present on the writer's exact gravship map.";
             DiaryPolicySnapshot policy = Policy(combat: false, important: true);
             policy.narrativeContextInstruction = "Use only these frozen facts.";
             policy.Template(DiaryPipelineTemplates.SoloImportant).fields.Add(
                 Field("narrative context", NarrativeContextPrompt.Source));
 
-            DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            PromptContextDetailLevel[] levels =
             {
-                payload = payload,
-                policy = policy,
-                povRole = DiaryPipelineRoles.Initiator,
-                maxTokens = 30
-            });
+                PromptContextDetailLevel.Full,
+                PromptContextDetailLevel.Balanced,
+                PromptContextDetailLevel.Compact
+            };
+            for (int i = 0; i < levels.Length; i++)
+            {
+                DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = payload,
+                    policy = policy,
+                    povRole = DiaryPipelineRoles.Initiator,
+                    contextDetailLevel = levels[i],
+                    maxTokens = 30
+                });
 
-            AssertContains("selected narrative context reaches the prompt", plan.userPrompt,
-                "narrative context: Use only these frozen facts.\nThe earlier family rift is still unresolved.");
+                AssertContains("selected N3-O pressure reaches the " + levels[i] + " prompt",
+                    plan.userPrompt,
+                    "narrative context: Use only these frozen facts.\n"
+                    + "Seasonal floodwater is present on the writer's exact gravship map.");
+            }
 
             payload.initiator.narrativeContext = string.Empty;
             DiaryPromptPlan empty = DiaryPromptPlanner.Build(new DiaryPromptRequest
@@ -3591,6 +3604,8 @@ namespace DiaryPipelineTests
                 "true", ChildValue(policy, "landingPageEnabled"));
             AssertTrue("Odyssey N2-O mobile-home format is XML-owned",
                 !string.IsNullOrWhiteSpace(ChildValue(policy, "mobileHomeNarrativeFormat")));
+            AssertTrue("Odyssey N3-O seasonal-flood format is XML-owned",
+                !string.IsNullOrWhiteSpace(ChildValue(policy, "seasonalFloodNarrativeFormat")));
             XDocument englishOdyssey = XDocument.Load(RepoPath(
                 "Languages", "English", "DefInjected", "PawnDiary.DiaryOdysseyPolicyDef",
                 "DiaryOdysseyPolicyDefs.xml"));
@@ -3601,10 +3616,18 @@ namespace DiaryPipelineTests
                 "Diary_Odyssey.mobileHomeNarrativeFormat")?.Value ?? string.Empty;
             string russianHome = russianOdyssey.Root?.Element(
                 "Diary_Odyssey.mobileHomeNarrativeFormat")?.Value ?? string.Empty;
+            string englishFlood = englishOdyssey.Root?.Element(
+                "Diary_Odyssey.seasonalFloodNarrativeFormat")?.Value ?? string.Empty;
+            string russianFlood = russianOdyssey.Root?.Element(
+                "Diary_Odyssey.seasonalFloodNarrativeFormat")?.Value ?? string.Empty;
             AssertTrue("Odyssey N2-O English format keeps both placeholders",
                 englishHome.Contains("{0}") && englishHome.Contains("{1}"));
             AssertTrue("Odyssey N2-O Russian format keeps both placeholders",
                 russianHome.Contains("{0}") && russianHome.Contains("{1}"));
+            AssertTrue("Odyssey N3-O English pressure format keeps both placeholders",
+                englishFlood.Contains("{0}") && englishFlood.Contains("{1}"));
+            AssertTrue("Odyssey N3-O Russian pressure format keeps both placeholders",
+                russianFlood.Contains("{0}") && russianFlood.Contains("{1}"));
             AssertEqual("Odyssey launch writer cap", "2", ChildValue(policy, "maximumLaunchWriters"));
             AssertEqual("Odyssey landing writer cap", "2", ChildValue(policy, "maximumLandingWriters"));
 
@@ -3641,6 +3664,17 @@ namespace DiaryPipelineTests
                     "categoryToken", "mechhive"));
             AssertTrue("Odyssey policy contains no DLC XML dependency references",
                 policyDocument.ToString().IndexOf("MayRequire", StringComparison.OrdinalIgnoreCase) < 0);
+            string about = File.ReadAllText(RepoPath("About", "About.xml"));
+            AssertTrue("Odyssey remains optional in About.xml",
+                about.IndexOf("Ludeon.RimWorld.Odyssey", StringComparison.OrdinalIgnoreCase) < 0);
+
+            XDocument narrativePolicy = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryNarrativeContinuityDefs.xml"));
+            XElement narrative = FindDef(
+                narrativePolicy, "PawnDiary.DiaryNarrativeContinuityDef", "Diary_NarrativeContinuity");
+            AssertTrue("N3-O home and pressure coexistence is XML-owned",
+                HasStructuredListRow(narrative, "categoryCoexistence",
+                    "firstCategory", "home", "secondCategory", "pressure"));
 
             XDocument promptTemplates = XDocument.Load(
                 RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));

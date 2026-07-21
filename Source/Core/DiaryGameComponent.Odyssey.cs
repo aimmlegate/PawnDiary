@@ -1,6 +1,6 @@
-// Odyssey O1.2 persistence, O1.3 lifecycle ownership, O1.4 landing emission, and N2-O event-time
-// provider snapshots. Harmony adapters call guarded live-object overloads here; every lasting value
-// is immediately detached and only the successful landing boundary may create a journey page.
+// Odyssey O1.2 persistence, O1.3 lifecycle ownership, O1.4 landing emission, and N2-O/N3-O
+// event-time provider snapshots. Harmony adapters call guarded live-object overloads here; every
+// lasting value is immediately detached and only the successful landing boundary may create a page.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -168,9 +168,9 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Freezes one exact current mobile-home lens for an already-authorized event. The guarded
-        /// collector proves this pawn is physically inside this gravship; an active journey arc is
-        /// attached only when the captured ship identity matches the committed state exactly.
+        /// Freezes one exact current mobile-home snapshot for an already-authorized event. The guarded
+        /// collector proves this pawn is physically inside this gravship; N3-O may additionally copy
+        /// the existing seasonal-flood observer row only when it belongs to this exact map and POV.
         /// </summary>
         internal OdysseyNarrativeSnapshot OdysseyNarrativeSnapshotFor(Pawn pawn, int sourceTick)
         {
@@ -193,11 +193,6 @@ namespace PawnDiary
                 policy.mobileHomeNarrativeFormat,
                 home.shipName,
                 home.location.visibleLabel);
-            if (text.Length == 0)
-            {
-                return null;
-            }
-
             string journeyId = odysseyActiveJourney != null
                 && string.Equals(
                     odysseyActiveJourney.shipStableId,
@@ -205,7 +200,7 @@ namespace PawnDiary
                     StringComparison.Ordinal)
                 ? odysseyActiveJourney.journeyId
                 : string.Empty;
-            return new OdysseyNarrativeSnapshot
+            OdysseyNarrativeSnapshot snapshot = new OdysseyNarrativeSnapshot
             {
                 providerAvailable = policy.enabled,
                 povPawnId = pawn.GetUniqueLoadID(),
@@ -219,6 +214,120 @@ namespace PawnDiary
                 pawnCanKnow = true,
                 hasVerifiedPovConnection = true
             };
+
+            OdysseyEnvironmentalNarrativeFact pressure = CaptureOdysseySeasonalFloodPressure(
+                pawn,
+                home,
+                policy,
+                snapshot.povPawnId,
+                snapshot.sourceTick);
+            if (pressure != null) snapshot.environmentalPressures.Add(pressure);
+
+            // A broken translation/override omits only its own optional lens. If neither provider
+            // format survived, return the normal no-provider path without affecting source evidence.
+            return text.Length > 0 || snapshot.environmentalPressures.Count > 0 ? snapshot : null;
+        }
+
+        /// <summary>
+        /// Reuses O2's saved prompt-only observer fact; it never scans SeasonalFlood Things itself.
+        /// Every check fails closed so a stale/corrupt/cross-map row cannot become narrative context.
+        /// </summary>
+        private OdysseyEnvironmentalNarrativeFact CaptureOdysseySeasonalFloodPressure(
+            Pawn pawn,
+            OdysseyMobileHomeSnapshot home,
+            OdysseyPolicySnapshot policy,
+            string povPawnId,
+            int eventTick)
+        {
+            try
+            {
+                if (pawn?.Map == null || home?.location == null || policy == null
+                    || activeObservedConditions == null || activeObservedConditions.Count == 0)
+                {
+                    return null;
+                }
+
+                int mapUniqueId = MapUniqueId(pawn.Map);
+                ActiveObservedConditionState newest = null;
+                for (int i = 0; i < activeObservedConditions.Count; i++)
+                {
+                    ActiveObservedConditionState active = activeObservedConditions[i];
+                    if (active == null || active.scope != ObservedConditionScope.Map
+                        || active.mapUniqueId != mapUniqueId
+                        || active.lastObservedTick < 0 || active.lastObservedTick > eventTick
+                        || active.lastSeenEvidenceCount < 1
+                        || !string.Equals(active.conditionDefName,
+                            OdysseyEnvironmentalNarrativeTokens.SeasonalFloodConditionDefName,
+                            StringComparison.Ordinal)
+                        || !string.Equals(active.conditionKey,
+                            OdysseyEnvironmentalNarrativeTokens.SeasonalFloodConditionDefName,
+                            StringComparison.Ordinal)
+                        || !string.Equals(active.lastSeenEvidenceDefName,
+                            OdysseyEnvironmentalNarrativeTokens.SeasonalFloodEvidenceDefName,
+                            StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    DiaryObservedConditionDef def = ObservedConditionDefFor(active);
+                    if (!ExactSeasonalFloodObserver(def)
+                        || !ObservedConditionPromptActivity.IsPromptActive(
+                            active.startRecorded,
+                            active.endRecorded,
+                            active.firstMissingTick,
+                            eventTick,
+                            def.endDebounceTicks))
+                    {
+                        continue;
+                    }
+
+                    if (newest == null || active.lastObservedTick > newest.lastObservedTick)
+                        newest = active;
+                }
+
+                if (newest == null) return null;
+                string text = FormatOdysseyNarrative(
+                    policy.seasonalFloodNarrativeFormat,
+                    home.shipName,
+                    home.location.visibleLabel);
+                if (text.Length == 0) return null;
+
+                return new OdysseyEnvironmentalNarrativeFact
+                {
+                    sourceKind = OdysseyEnvironmentalNarrativeTokens.SeasonalFlood,
+                    sourceDefName = newest.conditionDefName,
+                    evidenceDefName = newest.lastSeenEvidenceDefName,
+                    povPawnId = povPawnId,
+                    shipStableId = home.shipStableId,
+                    locationKey = home.location.stableKey,
+                    text = text,
+                    sourceTick = newest.lastObservedTick,
+                    pawnCanKnow = true,
+                    hasVerifiedPovConnection = true
+                };
+            }
+            catch (Exception exception)
+            {
+                // Environmental context is optional. Keep the already-authorized event and the N2-O
+                // home snapshot even if a malformed Def/save row breaks this one N3-O projection.
+                Log.ErrorOnce(
+                    "[Pawn Diary] Odyssey seasonal-flood narrative context failed; the event keeps "
+                    + "its ordinary evidence and home context: " + exception,
+                    "PawnDiary.OdysseyNarrative.SeasonalFlood".GetHashCode());
+                return null;
+            }
+        }
+
+        private static bool ExactSeasonalFloodObserver(DiaryObservedConditionDef def)
+        {
+            return def != null && def.enabled && def.promptEnabled
+                && def.scope == ObservedConditionScope.Map
+                && def.observerType == ObservedConditionObserverType.ThingPresent
+                && def.matchDefNames != null && def.matchDefNames.Count == 1
+                && string.Equals(
+                    def.matchDefNames[0],
+                    OdysseyEnvironmentalNarrativeTokens.SeasonalFloodEvidenceDefName,
+                    StringComparison.Ordinal);
         }
 
         private static string FormatOdysseyNarrative(string format, params object[] values)

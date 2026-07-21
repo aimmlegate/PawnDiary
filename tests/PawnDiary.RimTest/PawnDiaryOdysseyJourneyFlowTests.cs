@@ -1,6 +1,6 @@
-// In-game O1.2-O2/N2-O fixtures for Odyssey policy, guarded context, persistence, state-only
-// takeoff/travel boundaries, canonical successful-landing ownership, narrative evidence, and
-// package-safe environmental policy Defs.
+// In-game O1.2-O2/N2-O/N3-O fixtures for Odyssey policy, guarded context, persistence, state-only
+// takeoff/travel boundaries, canonical successful-landing ownership, narrative evidence, and the
+// package-safe seasonal-flood pressure projection.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +14,7 @@ using Verse;
 
 namespace PawnDiary.RimTests
 {
-    /// <summary>Proves Odyssey state, landing ownership, environmental policy, and N2-O boundaries.</summary>
+    /// <summary>Proves Odyssey state, landing ownership, environmental policy, and N2-O/N3-O boundaries.</summary>
     [TestSuite]
     public static class PawnDiaryOdysseyJourneyFlowTests
     {
@@ -579,6 +579,8 @@ namespace PawnDiary.RimTests
             AssertStr("odysseyGravshipLanding", policy.landingGroupKey, "landing group key");
             Require(!string.IsNullOrWhiteSpace(policy.mobileHomeNarrativeFormat),
                 "N2-O mobile-home DefInjected format was not projected.");
+            Require(!string.IsNullOrWhiteSpace(policy.seasonalFloodNarrativeFormat),
+                "N3-O seasonal-flood DefInjected format was not projected.");
             Require(policy.landingPageEnabled,
                 "O1.4 must project XML-enabled novelty-gated landing pages.");
             Require(policy.maximumLaunchWriters >= 1 && policy.maximumLaunchWriters <= 2
@@ -612,6 +614,8 @@ namespace PawnDiary.RimTests
         {
             PawnDiaryRimTestScope scope = PawnDiaryRimTestScope.Begin();
             Pawn pawn = scope.CreateAdultColonist();
+            FieldInfo observedField = ComponentField("activeObservedConditions");
+            object previousObserved = observedField.GetValue(scope.Component);
             try
             {
                 scope.SpawnAsLiveColonist(pawn);
@@ -619,13 +623,13 @@ namespace PawnDiary.RimTests
                 bool captured = DlcContext.TryCaptureOdysseyLocation(pawn, out location);
                 OdysseyMobileHomeSnapshot mobileHome;
                 bool mobileCaptured = DlcContext.TryCaptureOdysseyMobileHome(pawn, out mobileHome);
-                OdysseyNarrativeSnapshot narrative = DiaryGameComponent.Instance?
-                    .OdysseyNarrativeSnapshotFor(pawn, Find.TickManager?.TicksGame ?? 0);
 
                 if (!ModsConfig.OdysseyActive)
                 {
+                    OdysseyNarrativeSnapshot inactiveNarrative = DiaryGameComponent.Instance?
+                        .OdysseyNarrativeSnapshotFor(pawn, Find.TickManager?.TicksGame ?? 0);
                     Require(!captured && location == null && !mobileCaptured && mobileHome == null
-                            && narrative == null,
+                            && inactiveNarrative == null,
                         "Odyssey-inactive live context must return false/null before touching DLC state.");
                     Log.Message(LogPrefix + "Odyssey inactive: guarded live adapters returned no state.");
                     return;
@@ -650,6 +654,26 @@ namespace PawnDiary.RimTests
                 string surroundings = DiaryContextBuilder.BuildSurroundingsSummary(pawn);
                 if (mobileCaptured)
                 {
+                    int now = Find.TickManager?.TicksGame ?? 0;
+                    ActiveObservedConditionState flood = new ActiveObservedConditionState
+                    {
+                        conditionDefName = OdysseyEnvironmentalNarrativeTokens.SeasonalFloodConditionDefName,
+                        conditionKey = OdysseyEnvironmentalNarrativeTokens.SeasonalFloodConditionDefName,
+                        scope = ObservedConditionScope.Map,
+                        mapUniqueId = pawn.Map.uniqueID,
+                        firstObservedTick = Math.Max(0, now - 100),
+                        lastObservedTick = now,
+                        firstMissingTick = -1,
+                        lastSeenEvidenceDefName = OdysseyEnvironmentalNarrativeTokens.SeasonalFloodEvidenceDefName,
+                        lastSeenEvidenceCount = 1,
+                        startRecorded = true,
+                        endRecorded = false
+                    };
+                    observedField.SetValue(scope.Component,
+                        new List<ActiveObservedConditionState> { flood });
+                    OdysseyNarrativeSnapshot narrative = scope.Component
+                        .OdysseyNarrativeSnapshotFor(pawn, now);
+
                     Require(mobileHome != null && !string.IsNullOrWhiteSpace(mobileHome.shipStableId)
                             && !string.IsNullOrWhiteSpace(mobileHome.shipName),
                         "An onboard pawn lost detached ship identity/name.");
@@ -664,6 +688,62 @@ namespace PawnDiary.RimTests
                             && narrative.homeText.IndexOf(mobileHome.shipName,
                                 StringComparison.OrdinalIgnoreCase) >= 0,
                         "Exact onboard state did not freeze one matching N2-O provider snapshot.");
+                    Require(narrative.environmentalPressures != null
+                            && narrative.environmentalPressures.Count == 1
+                            && narrative.environmentalPressures[0].sourceDefName
+                                == OdysseyEnvironmentalNarrativeTokens.SeasonalFloodConditionDefName
+                            && narrative.environmentalPressures[0].evidenceDefName
+                                == OdysseyEnvironmentalNarrativeTokens.SeasonalFloodEvidenceDefName
+                            && narrative.environmentalPressures[0].locationKey
+                                == mobileHome.location.stableKey
+                            && !string.IsNullOrWhiteSpace(narrative.environmentalPressures[0].text),
+                        "Exact active flood/map/onboard state did not freeze one N3-O pressure fact.");
+
+                    string journeyId = "odyssey-journey|" + mobileHome.shipStableId + "|" + now;
+                    List<NarrativeEvidence> evidence = OdysseyNarrativeEvidenceFactory.Landing(
+                        "rimtest-n3-o", now, pawn.GetUniqueLoadID(), DiaryEvent.InitiatorRole,
+                        journeyId, mobileHome.shipStableId, mobileHome.shipName,
+                        mobileHome.location.stableKey, mobileHome.location.visibleLabel,
+                        string.Empty, GravshipJourneyEventData.DefName, false, true);
+                    PromptContextDetailLevel[] levels =
+                    {
+                        PromptContextDetailLevel.Full,
+                        PromptContextDetailLevel.Balanced,
+                        PromptContextDetailLevel.Compact
+                    };
+                    int[] expectedLensCaps = { 2, 1, 1 };
+                    for (int i = 0; i < levels.Length; i++)
+                    {
+                        NarrativeContextBuildResult built = NarrativeContextBuilder.Build(
+                            new NarrativeContextBuildRequest
+                            {
+                                eventId = "rimtest-n3-o",
+                                eventTick = now,
+                                povPawnId = pawn.GetUniqueLoadID(),
+                                povRole = DiaryEvent.InitiatorRole,
+                                evidence = evidence,
+                                odyssey = narrative,
+                                contextDetailLevel = levels[i]
+                            });
+                        Require(built.evidence.Count == 2 && built.selection.references.Count == 2,
+                            "N3-O " + levels[i] + " lost canonical landing evidence/references.");
+                        Require(built.selection.selectedCandidates.Count <= expectedLensCaps[i],
+                            "N3-O " + levels[i] + " exceeded the loaded zero/one/two-lens budget.");
+                        if (levels[i] == PromptContextDetailLevel.Full)
+                        {
+                            Require(built.selection.selectedCandidates.Count == 2
+                                    && built.selection.narrativeContext.IndexOf(
+                                        narrative.environmentalPressures[0].text,
+                                        StringComparison.Ordinal) >= 0,
+                                "Loaded Full context did not compose exact home and seasonal-flood lenses.");
+                        }
+                    }
+
+                    flood.mapUniqueId = pawn.Map.uniqueID + 1;
+                    OdysseyNarrativeSnapshot wrongMap = scope.Component
+                        .OdysseyNarrativeSnapshotFor(pawn, now);
+                    Require(wrongMap != null && wrongMap.environmentalPressures.Count == 0,
+                        "A seasonal-flood observer row from another map entered this POV snapshot.");
                     string visibleLocation = mobileHome.location?.visibleLabel ?? string.Empty;
                     string biomeLabel = pawn.Map.Biome?.label ?? string.Empty;
                     if (!string.IsNullOrWhiteSpace(visibleLocation)
@@ -675,6 +755,8 @@ namespace PawnDiary.RimTests
                 }
                 else
                 {
+                    OdysseyNarrativeSnapshot narrative = scope.Component
+                        .OdysseyNarrativeSnapshotFor(pawn, Find.TickManager?.TicksGame ?? 0);
                     Require(narrative == null,
                         "A pawn outside vanilla's grav field received an N2-O provider snapshot.");
                     string marker = "PawnDiary.Ctx.GravshipHome".Translate("RIMTEST_SHIP").ToString();
@@ -686,6 +768,7 @@ namespace PawnDiary.RimTests
             }
             finally
             {
+                observedField.SetValue(scope.Component, previousObserved);
                 scope.TearDown();
             }
         }

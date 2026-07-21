@@ -53,7 +53,7 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue, associative-memory recall/deposit/eviction (`DiaryGameComponent.Memory.cs`), and additive Anomaly study/monolith/visible-creepjoiner persistence plus detached transaction owners and conservative pre-A1/pre-A2 baselining. Also `PawnMemoryRepository` (per-pawn memory store). |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Anomaly study/codex/containment/monolith/creepjoiner capture, the visible-only N3-A context adapter, scoped containment/rejection/surgical-Tale ownership, separate lifecycle-cleared study/Tale and recent-studier caches, Odyssey location/mobile-home/lifecycle, and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including the bounded visible-only N3-A provider), Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/`. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including bounded visible-only N3-A and exact-map N3-O providers), Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/`. |
 | `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, the optional Anomaly monolith-knowledge snapshot, visible-only creepjoiner arc rows, and the `MemoryFragment` pawn-memory row. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, defensive exact Anomaly study, containment-escape, creepjoiner rejection/aggression/departure, surgical inspection, and ghoul-infusion seams, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment/permit seams and state-transition-guarded Quest lifecycle hooks. |
@@ -187,7 +187,7 @@ Generation starts only after an event exists in the saved hot store.
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
 
-**Narrative Continuity (Master Waves 1–7 / N1 + N2-B + N2-O + N3-B identity + N3-R core + N3-A)** supplies the shared persistence and
+**Narrative Continuity (Master Waves 1–8 / N1 + N2-B + N2-O + N3-B identity + N3-R core + N3-A + N3-O)** supplies the shared persistence and
 optional prompt seam for DLC integrations. Each first-person event POV can save bounded, explicitly
 known evidence, prose-free references, selected-candidate keys, and frozen `narrativeContext`; old
 saves normalize all four to empty. `NarrativeContextBuilder` snapshots
@@ -217,7 +217,18 @@ DefInjected factual unit is frozen at event time, includes no engine/fuel/cell/h
 creates no page. Pure departure/landing evidence factories freeze `departed`, `arrived`, and `returned`
 references, including exact ship/place subjects and an optional correlated departure event ID. O1.4's
 canonical landing owner now supplies arrival evidence only after its DiaryEvent exists; the factories
-still do not authorize an event themselves. N3-R replaces the Royalty stub with bounded persona-bond
+still do not authorize an event themselves. N3-O extends the same Odyssey snapshot rather than adding a
+capture path: at event time, the guarded adapter may copy the already-saved, still prompt-active
+`SeasonalFloodActive` observer row only when its exact `SeasonalFlood` evidence belongs to the exact
+map where vanilla confirms that POV is aboard the current gravship. The detached fact repeats source,
+POV, ship, place, tick, knowledge, and connection identity. The pure provider validates every field,
+uses the existing `pressure`/`ambient_pressure`/place contracts, keeps the journey arc empty, and emits
+at most one stable prose-free seasonal-flood key. The existing home and pressure categories may coexist,
+but the unchanged selector still admits at most two Full lenses or one Balanced/Compact lens and applies
+ordinary selected-key repetition history. Missing/malformed DefInjected prose or provider failure drops
+only the optional lens; the canonical landing event and its evidence/references survive. N3-O does not
+rescan Things, duplicate visible `GameCondition` surroundings, promote `GravNausea`, interpret landing
+outcomes, infer life support, or add a hook, page, setting, or save field. N3-R replaces the Royalty stub with bounded persona-bond
 and current faction-title candidates. Persona facts require the exact saved persona arc or weapon
 subject; title facts require the exact POV pawn plus Royalty title-domain or authority/status/duty
 evidence. A Biotech gene/body identity event therefore cannot pull generic rank context. Title
@@ -248,7 +259,7 @@ so Full/Balanced/Compact budgets choose complete factual lenses before text is s
 never truncates a selected fact. Archive compaction copies
 only references and selection keys, and `DiaryArchiveRepository` rebuilds bounded pawn-scoped exact-arc
 and exact-subject indexes after load or retention. Source-specific pages remain their own sole capture
-owners; N2-B/N2-O/N3-A only enrich already-authorized pages and cannot create another event.
+owners; N2-B/N2-O/N3-A/N3-O only enrich already-authorized pages and cannot create another event.
 
 N0 froze exactly four evidence facets—`identity_transition`, `bond_lifecycle`,
 `journey_chapter`, and `ambient_pressure`—rather than creating generic DLC events. They cover the
@@ -3226,7 +3237,12 @@ Never rename a key "for cleanliness" alone.
   override. A postfix runs only after the concrete worker succeeds, reads the exact applied
   `LandingOutcomeDef`, correlates it to the same transient pending ship, and adds its localized visible
   label as required `landing_outcome` context on the one canonical landing page. It adds no page and
-  no save field; missing hooks merely omit the detail. Life support remains behind its feasibility gate.
+  no save field; missing hooks merely omit the detail. N3-O reuses the saved seasonal-flood observer row
+  as one exact-map, exact-onboard, per-POV Narrative Continuity pressure fact. Its DefInjected English/
+  Russian format is frozen on the main thread, and the pure provider fails closed on mismatched or unsafe
+  source data while retaining the underlying page and references. Home plus pressure remains subject to
+  the shared global lens budget and repetition history. No generic condition, bodily enchantment, or
+  landing consequence is duplicated. Life support remains behind its feasibility gate.
 - DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks. This
   includes Biotech growth trait/skill/work-disabled snapshots and Ideology precept/role reads used by
   body-mod stance policy; other code consumes plain detached rows, labels, defNames, or booleans.
@@ -3434,7 +3450,13 @@ O2 adds loaded-Def checks for the Odyssey-active/inactive seasonal-flood package
 `ThingPresent` matching, prompt-only page policy, and the exact `GravNausea` matcher and tuning.
 It also asserts that all four shipped concrete landing-outcome overrides carry Pawn Diary's
 successful-return postfix; pure policy tests cover exact-ship correlation/rejection and sanitized,
-bounded outcome prompt projection.
+bounded outcome prompt projection. N3-O adds compiled loaded-path assertions that temporarily supply
+one exact active saved flood row, require the real `OdysseyNarrativeSnapshotFor` adapter to project it
+only for the verified onboard POV/map, and run the loaded shared selector under Full, Balanced, and
+Compact. A wrong-map row omits pressure while preserving the existing mobile-home snapshot, and an
+inactive-Odyssey path remains null. These assertions build in the 354-test RimTest assembly but have not
+yet been executed in game for N3-O. Assembly-free coverage passes 321 Narrative Continuity, 160 Odyssey
+policy, and 2,746 pipeline assertions.
 
 `PawnDiaryOdysseyRuntimeLifecycleTests` covers only the host behavior the detached suite cannot prove.
 It enters the real `InitiateTakeoff` and `InitiateLanding` public methods with isolated live objects;

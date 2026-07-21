@@ -1,5 +1,5 @@
-// Standalone no-RimWorld tests for Master Wave 4 / Odyssey O1 policy. The project links only the plain
-// contracts and pure policies, so any accidental Verse/Unity/Harmony dependency fails compilation.
+// Standalone no-RimWorld tests for Odyssey O1/O2 plus N3-O policy snapshots. The project links only
+// plain contracts and pure policies, so any accidental Verse/Unity/Harmony dependency fails compilation.
 using System;
 using System.Collections.Generic;
 using PawnDiary;
@@ -43,6 +43,11 @@ namespace DiaryOdysseyPolicyTests
             AssertEqual("negative tick rejected", string.Empty, OdysseyArcKeys.Landing("Ship_7", -1));
             AssertTrue("known landing reason", OdysseyLandingReasonTokens.IsKnown("homecoming"));
             AssertTrue("unknown landing reason rejected", !OdysseyLandingReasonTokens.IsKnown("first_fish"));
+            OdysseyPolicySnapshot fallback = OdysseyPolicySnapshot.CreateDefault();
+            AssertEqual("missing XML safely omits the mobile-home provider format", string.Empty,
+                fallback.mobileHomeNarrativeFormat);
+            AssertEqual("missing XML safely omits the seasonal-flood provider format", string.Empty,
+                fallback.seasonalFloodNarrativeFormat);
             AssertEqual("pilot rank", 0, OdysseyJourneyRoleTokens.Rank("pilot"));
             AssertEqual("unknown role rank", int.MaxValue, OdysseyJourneyRoleTokens.Rank("passenger"));
             AssertEqual("layer normalization", "orbit", OdysseyLocationLayerTokens.Normalize("ORBIT"));

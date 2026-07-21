@@ -161,8 +161,10 @@ namespace PawnDiary
         public string packageId = "Ludeon.RimWorld.Odyssey";
         public string launchGroupKey = OdysseyGroupDefNames.Launch;
         public string landingGroupKey = OdysseyGroupDefNames.Landing;
-        // Prompt prose is DefInjected at runtime. Empty is the safe no-Def fallback: omit the lens.
+        // Provider prose is DefInjected at runtime. Empty is the safe no-Def fallback: omit only
+        // that optional lens while keeping the source-owned event and its evidence/reference.
         public string mobileHomeNarrativeFormat = string.Empty;
+        public string seasonalFloodNarrativeFormat = string.Empty;
         public int takeoffCorrelationTicks = 2500;
         public int landingCorrelationTicks = 2500;
         public int staleJourneyRetentionTicks = 3600000;

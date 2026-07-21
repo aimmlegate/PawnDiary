@@ -200,6 +200,7 @@ namespace PawnDiary.Ingestion
                         povPawnId = pawnId,
                         povRole = povRole,
                         royalty = sink.RoyaltyNarrativeSnapshotFor(povPawn, diaryEvent.tick),
+                        odyssey = sink.OdysseyNarrativeSnapshotFor(povPawn, diaryEvent.tick),
                         recentSelectedCandidateKeys = sink.RecentNarrativeSelectedCandidateKeys(pawnId),
                         contextDetailLevel = PawnDiarySettings.NormalizeContextDetailLevel(
                             PawnDiaryMod.Settings?.contextDetailLevel ?? PromptContextDetailLevel.Full),

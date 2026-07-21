@@ -1,5 +1,23 @@
 # Changelog
 
+- **2026-07-21 — Implemented Master Wave 8 / Narrative Continuity N3-O environmental pressure.** The
+  existing Odyssey snapshot now carries an optional detached environmental fact sourced only from the
+  already-saved, still-active `SeasonalFloodActive`/`SeasonalFlood` observer row for the exact POV's
+  verified gravship map. The pure provider validates source, evidence, POV, ship, location, knowledge,
+  connection, tick, safe key grammar, and bounded single-line prose, then proposes at most one stable
+  place-pressure lens beside N2-O's mobile-home lens. The existing XML coexistence rule and unchanged
+  selector retain fixed provider order, ordinary repetition history, and Full two-lens versus Balanced/
+  Compact one-lens budgets. English/Russian DefInjected prose and safe empty fallbacks are included.
+
+  The canonical landing now supplies its existing Odyssey snapshot to the shared builder; formatter or
+  provider failure still preserves the event plus exact evidence/references and omits only the lens.
+  No Thing rescan, Harmony hook, page owner, setting, save field, generic visible-condition duplicate,
+  `GravNausea` page, life-support inference, or landing consequence was added. Focused suites pass 321
+  Narrative Continuity, 160 Odyssey policy, and 2,746 pipeline assertions; both Debug assemblies and
+  repository verification pass, and committed runtime/RimTest DLLs are rebuilt. Focused loaded-path
+  assertions compile for the exact active/wrong-map/inactive and Full/Balanced/Compact paths, but no
+  N3-O in-game pass is claimed. Wave 9 remains untouched.
+
 - **2026-07-21 — Confirmed Narrative Continuity N3-A loaded acceptance green.** The
   user-confirmed corrected Anomaly-active run passed all 354/354 compiled RimTests, including the
   exact containment, creepjoiner, ghoul, monolith, and associative-memory fixtures that exposed the

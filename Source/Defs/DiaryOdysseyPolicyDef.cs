@@ -38,6 +38,9 @@ namespace PawnDiary
         public string landingGroupKey = "odysseyGravshipLanding";
         // N2-O provider prose. {0} is the visible ship name and {1} the visible location label.
         public string mobileHomeNarrativeFormat;
+        // N3-O pressure prose uses the same two event-time values after the existing seasonal-flood
+        // observer proves an active exact-map row. It does not rescan the map or create a page.
+        public string seasonalFloodNarrativeFormat;
         public int takeoffCorrelationTicks = 2500;
         public int landingCorrelationTicks = 2500;
         public int staleJourneyRetentionTicks = 3600000;
@@ -72,6 +75,8 @@ namespace PawnDiary
             if (string.IsNullOrWhiteSpace(landingGroupKey)) yield return "landingGroupKey must be non-blank.";
             if (string.IsNullOrWhiteSpace(mobileHomeNarrativeFormat))
                 yield return "mobileHomeNarrativeFormat must contain DefInjected prompt prose.";
+            if (string.IsNullOrWhiteSpace(seasonalFloodNarrativeFormat))
+                yield return "seasonalFloodNarrativeFormat must contain DefInjected prompt prose.";
             if (takeoffCorrelationTicks <= 0) yield return "takeoffCorrelationTicks must be positive.";
             if (landingCorrelationTicks <= 0) yield return "landingCorrelationTicks must be positive.";
             if (staleJourneyRetentionTicks <= 0) yield return "staleJourneyRetentionTicks must be positive.";
@@ -166,11 +171,15 @@ namespace PawnDiary
         {
             DiaryOdysseyPolicyDef source = DefDatabase<DiaryOdysseyPolicyDef>.GetNamedSilentFail(DefName);
             // DefInjected can replace prompt prose on a runtime language switch while retaining the
-            // same Def object. Include the localized field in the cache key so event-time text follows it.
+            // same Def object. Include both localized fields in the cache key so event-time text follows it.
             if (source != null && ReferenceEquals(source, cachedSource) && cachedSnapshot != null
                 && string.Equals(
                     source.mobileHomeNarrativeFormat ?? string.Empty,
                     cachedSnapshot.mobileHomeNarrativeFormat,
+                    StringComparison.Ordinal)
+                && string.Equals(
+                    source.seasonalFloodNarrativeFormat ?? string.Empty,
+                    cachedSnapshot.seasonalFloodNarrativeFormat,
                     StringComparison.Ordinal))
             {
                 return cachedSnapshot;
@@ -185,6 +194,7 @@ namespace PawnDiary
             result.launchGroupKey = Clean(source.launchGroupKey, result.launchGroupKey);
             result.landingGroupKey = Clean(source.landingGroupKey, result.landingGroupKey);
             result.mobileHomeNarrativeFormat = source.mobileHomeNarrativeFormat ?? string.Empty;
+            result.seasonalFloodNarrativeFormat = source.seasonalFloodNarrativeFormat ?? string.Empty;
             result.takeoffCorrelationTicks = Positive(source.takeoffCorrelationTicks, result.takeoffCorrelationTicks);
             result.landingCorrelationTicks = Positive(source.landingCorrelationTicks, result.landingCorrelationTicks);
             result.staleJourneyRetentionTicks = Positive(source.staleJourneyRetentionTicks, result.staleJourneyRetentionTicks);

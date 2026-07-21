@@ -2,4 +2,5 @@
 <LanguageData>
   <Diary_Odyssey.label>Политика путешествий гравикорабля Odyssey</Diary_Odyssey.label>
   <Diary_Odyssey.mobileHomeNarrativeFormat>В момент этого события автор был на борту {0}, своего гравикорабля-дома в точке {1}.</Diary_Odyssey.mobileHomeNarrativeFormat>
+  <Diary_Odyssey.seasonalFloodNarrativeFormat>В момент этого события сезонный паводок оставался на карте, где автор находился на борту {0} в точке {1}.</Diary_Odyssey.seasonalFloodNarrativeFormat>
 </LanguageData>
