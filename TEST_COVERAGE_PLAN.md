@@ -485,7 +485,14 @@ The first expanded loaded run reached 264/267. Its three failures all came from 
 remaining unspawned while succession ID resolution and the component-wide pre-save scanner correctly
 consulted only RimWorld's live-colonist roster; the affected fixtures now spawn their disposable
 heir/writer. The user-confirmed corrected loaded rerun passed 267/267. Phase 5 automated coverage is
-green, while its hands-on matrix remains open.
+green. Its 2026-07-21 manual loaded gate then ran the current 354-test/57-suite assembly on RimWorld
+1.6.4871 rev591 in an isolated Royalty-only DLC profile. The first pass was 353/354 across 56/57
+suites because the unrelated Phase-3 non-primary persona fixture intermittently failed to establish
+its disposable pending bond; all Phase-5 fixtures passed, and the immediate user-confirmed rerun was
+354/354 across 57/57. A separate Royalty-inactive loaded profile logged every active fixture's guarded
+path plus the explicit empty-collector success marker without a Pawn Diary Royalty error. That
+inactive runner summary was not persisted, and the operator explicitly accepted the recorded guard
+evidence as sufficient to close Phase 5. No source or fixture change was required.
 
 Phase 6 raises `RoyaltyContextTests` to 431 assertions, `DiaryPipelineTests` to 2,650, and
 `DiaryCapturePolicyTests` to 680. Pipeline coverage parses the XML-owned allowlist/caps/windows, the

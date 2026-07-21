@@ -16,7 +16,9 @@ same-tick title-edge dedup defect plus one Phase-3 mod-profile-sensitive fixture
 expanded the suite; its user-confirmed loaded rerun passed 256/256. Hands-on acceptance remains
 pending. Phase 5 succession is code-complete with pure/build coverage and compiled loaded fixtures;
 after correcting three disposable-pawn liveness gaps, its user-confirmed loaded rerun passed 267/267.
-Its hands-on matrix remains pending. Phase 6 dramatic permits are code-complete with pure tests,
+Its later isolated Royalty-only acceptance rerun passed the current 354/354 tests across 57/57 suites,
+and a separate Royalty-inactive loaded profile exercised the guarded empty paths; the operator closed
+the Phase-5 manual gate on 2026-07-21. Phase 6 dramatic permits are code-complete with pure tests,
 runtime/RimTest builds, XML/prompts/localization, and eleven compiled loaded fixtures. The installed
 1.6 audit confirms `FactionPermit.Notify_Used()` is the successful-use edge and quick military aid's
 successful `RaidFriendly` precedes it; exact faction+map stage/claim/expiry arbitration preserves the
@@ -1536,8 +1538,8 @@ Exit gate: R1 is releasable.
 
 ### Phase 5 — Succession
 
-> **Implementation status (2026-07-19): code-complete; pure/build/automated loaded green at 267/267;
-> hands-on acceptance pending.** Exact `RoyalTitleDefExt.TryInherit` candidates are nested inside the
+> **Implementation status (2026-07-21): complete; manual loaded acceptance green at 354/354 tests
+> across 57/57 suites.** Exact `RoyalTitleDefExt.TryInherit` candidates are nested inside the
 > outer `Pawn_RoyaltyTracker.Notify_PawnKilled` scope and authorize a fact only after the matching
 > deceased title row commits `wasInherited`. Equal-or-higher heirs and candidate-only outcomes stay
 > silent. Title callbacks that arrive before the outer commit are staged; this includes vanilla's
@@ -1552,7 +1554,13 @@ Exit gate: R1 is releasable.
 > `succession_faction`, with identity-transition authority/status/duty/death evidence. English and
 > Russian prompts/UI/fixtures and append-only SoloImportant fields 113–116 ship. Pure suites pass
 > 358 Royalty and 2,493 pipeline assertions; the runtime and expanded 267-test RimTest assemblies
-> build, and the user-confirmed corrected loaded run passes all 267 tests.
+> build, and the user-confirmed corrected loaded run passes all 267 tests. The later isolated
+> Royalty-only current-assembly run first reached 353/354 because the unrelated Phase-3 non-primary
+> persona fixture intermittently failed to establish its disposable pending bond; every Phase-5 test
+> passed, and the immediate rerun was green at 354/354 across 57/57 suites. A separate loaded profile
+> without Royalty logged the guarded active-fixture paths and explicit empty-collector success marker
+> without a Pawn Diary Royalty error. Its runner summary was not persisted; the operator accepted the
+> evidence and directed this gate closed. No code change was required.
 
 1. Add the pure succession policy and its deterministic tests.
 2. Register the nested `TryInherit` candidate hook plus the outer `Notify_PawnKilled` commit scope.

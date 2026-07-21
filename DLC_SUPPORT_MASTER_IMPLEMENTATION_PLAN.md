@@ -327,7 +327,7 @@ Do not add seasonal flooding, life support, or Mechhive choices in this wave.
 4. **Royalty 2 (implemented; automated green, manual acceptance pending)** — persona lifecycle pages.
 5. **Royalty 3 (implemented; automated loaded green, manual acceptance pending)** — first consequential kill and death integration through existing owners.
 6. **Royalty 4 (implemented; pure/build/expanded loaded green, manual acceptance pending)** — immediate title/psylink cause correctness and scanner fallback.
-7. **Royalty 5 (implemented; pure/build/automated loaded green at 267/267, manual acceptance pending)** — exact inheritance correlation, explicit heir appointment, and succession evidence.
+7. **Royalty 5 (complete; manual loaded acceptance green at 354/354 across 57/57 suites)** — exact inheritance correlation, explicit heir appointment, and succession evidence.
 
 ### Exit gate
 
@@ -490,7 +490,12 @@ Complete **Odyssey O2** and extend **N3-O**:
 
 ### Implement in this exact order
 
-1. **Royalty 5 (implemented; automated loaded green at 267/267, manual acceptance pending)** — exact inheritance correlation and succession evidence.
+1. **Royalty 5 (complete; manual loaded acceptance green at 354/354 across 57/57 suites)** — exact inheritance correlation and succession evidence. The isolated Royalty-only run first reached
+   353/354 because an unrelated Phase-3 persona fixture intermittently failed to establish its
+   disposable pending bond; every Phase-5 fixture passed, and the immediate user-confirmed rerun was
+   fully green. A separate Royalty-inactive loaded profile exercised the guarded empty-state path
+   without a Pawn Diary Royalty failure; its summary was not persisted, and the operator explicitly
+   accepted the recorded guard evidence. No code change was required.
 2. **Royalty 6 (code-complete; pure/runtime/RimTest builds green; loaded suite green at 278/278;
    manual acceptance and a separately recorded Royalty-inactive run pending)**
    — successful dramatic permit families and friendly-raid ownership. Installed RimWorld 1.6 audit

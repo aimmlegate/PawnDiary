@@ -507,7 +507,16 @@ normalization, no-Royalty hook/scope silence, and load reset. Their first loaded
 all three failures were fixture-liveness gaps because generated pawns were not in the live-colonist
 roster required by succession ID lookup and the component-wide pre-save scanner. The affected fixtures
 now spawn only their disposable heir/writer. The user-confirmed corrected rerun passed 267/267, closing
-Phase 5 automated loaded coverage while leaving its hands-on matrix open.
+Phase 5 automated loaded coverage. The later manual loaded gate used RimWorld 1.6.4871 rev591 in
+English with an isolated Harmony/Core/Royalty/Laboratory/RimTest Redux/Pawn Diary profile. Its first
+current-assembly run reached 353/354 tests across 56/57 suites because the unrelated Phase-3
+non-primary persona fixture intermittently failed to establish its disposable pending bond; every
+Phase-5 fixture passed. The immediate user-confirmed rerun passed 354/354 tests across 57/57 suites.
+A separate Base/Harmony/Laboratory/RimTest Redux/Pawn Diary load without Royalty logged guarded skips
+for the active fixtures and the explicit empty-collector success marker, with no Pawn Diary Royalty
+patch/Def/type failure. Its final runner summary was not written to `Player.log`; the operator accepted
+the recorded guard evidence and directed the Phase-5 manual gate closed. No runtime or test change was
+needed, and this evidence does not advance Royalty 6/7 or N3-R.
 
 Phase 6 adds only the reviewed story-sized permit families. `DiaryRoyaltyPolicyDef` owns the exact
 plain-string allowlist and maps `CallMilitaryAidSmall`/`Large`/`Grand`,

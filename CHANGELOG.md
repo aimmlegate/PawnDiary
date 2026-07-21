@@ -1,5 +1,18 @@
 # Changelog
 
+- **2026-07-21 — Closed Royalty Phase 5 manual loaded acceptance.** On RimWorld 1.6.4871
+  rev591 in English, the isolated Harmony/Core/Royalty/Laboratory/RimTest Redux/Pawn Diary profile
+  first passed 353/354 tests across 56/57 suites; its sole failure was the older, non-Phase-5
+  `NonPrimaryCodedWielderDeathRetainsPersonaContext` fixture failing to establish its disposable
+  pending bond. The immediate user-confirmed rerun was fully green at 354/354 tests across 57/57
+  suites, while every exact inheritance, titleless intermediate, delayed succession, equal-or-higher
+  silence, explicit-heir, Scribe/migration, and load-reset Phase-5 fixture passed in both runs. The
+  separate Harmony/Core/Laboratory/RimTest Redux/Pawn Diary profile loaded cleanly without Royalty:
+  active Royalty fixtures took their guarded empty-state paths and the explicit inactive-collector
+  assertion passed. Its runner summary was not persisted to `Player.log`; the operator explicitly
+  accepted that evidence and directed the Phase-5 gate closed. No production, test, XML, save-schema,
+  localization, or DLL change was required. Royalty 6/7 and N3-R are not advanced by this acceptance.
+
 - **2026-07-21 — Confirmed Odyssey N3-O loaded acceptance green.** The first Odyssey-active
   integrated run reached 353/354 and failed only because the loaded map did not contain the spawned,
   parked player gravship required to exercise the positive onboard boundary. The focused fixture now
