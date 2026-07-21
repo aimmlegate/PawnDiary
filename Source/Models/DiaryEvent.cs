@@ -135,6 +135,13 @@ namespace PawnDiary
         public string colorCue; // stable semantic UI color key; empty older saves derive it from group/context
         public bool solo; // true for events with a single POV (e.g. mental breaks)
 
+        // Anti-repetition guard state: how many times the queue-time guard has rerolled this event's
+        // prompt variants (instruction/tone/humor seeds) because the assembled prompt looked too
+        // similar to the pawn's recent prompts. Persisted so the salted deterministic picks stay
+        // stable across save/load and manual regeneration. 0 = original picks (additive save key;
+        // old saves load as 0 and behave exactly as before).
+        public int promptVariantRerolls;
+
         // Mood impact direction for mood-event diary entries: "positive", "negative", or "neutral".
         // Reflects how the condition actually feels for the pawn (e.g. PsychicSuppressorMale is
         // "neutral" for female pawns). Used in gameContext (mood_impact=) and to select text keys.
@@ -243,6 +250,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref gameContext, "gameContext");
             Scribe_Values.Look(ref instruction, "instruction");
             Scribe_Values.Look(ref colorCue, "colorCue");
+            // Additive anti-repetition counter; absent in old saves, defaults to 0 (original picks).
+            Scribe_Values.Look(ref promptVariantRerolls, "promptVariantRerolls", 0);
             Scribe_Values.Look(ref moodImpact, "moodImpact");
 
             // Per-POV storage: each slot is scribed under its historical flat keys. Initiator and
@@ -309,6 +318,12 @@ namespace PawnDiary
             if (string.IsNullOrWhiteSpace(moodImpact))
             {
                 moodImpact = DiarySaveNormalization.DefaultMoodImpact;
+            }
+
+            // Defensive: a negative reroll counter is meaningless; 0 restores the original picks.
+            if (promptVariantRerolls < 0)
+            {
+                promptVariantRerolls = 0;
             }
 
             // Per-slot normalization: null/blank pipeline fields are cleaned and statuses upgraded
@@ -498,6 +513,16 @@ namespace PawnDiary
         public void SetPrompt(string povRole, string prompt)
         {
             SlotFor(povRole).prompt = prompt;
+        }
+
+        /// <summary>
+        /// Returns the assembled prompt text stored for a specific POV role (empty when none was
+        /// stamped yet). The anti-repetition guard reads these to compare a fresh prompt against the
+        /// pawn's recent ones.
+        /// </summary>
+        public string PromptForRole(string povRole)
+        {
+            return SlotFor(povRole).prompt ?? string.Empty;
         }
 
         /// <summary>

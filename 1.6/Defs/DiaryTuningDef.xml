@@ -469,6 +469,20 @@
       <li>Psychopath</li>
       <li>Disturbing</li>     <!-- Anomaly; inert without DLC -->
     </humorReducedTraitKeys>
+
+    <!-- Prompt anti-repetition guard (queue-time). When a freshly assembled first-person prompt
+         looks too similar to the pawn's recent stored prompts, its rerollable enhancements
+         (instruction/tone variant, prompt enchantment, humor cue) are re-picked before dispatch.
+         Best-effort: generation is never blocked, even if every reroll still looks similar. -->
+    <promptAntiRepeatEnabled>true</promptAntiRepeatEnabled>
+    <!-- Word-token Jaccard similarity (0..1) at or above which a fresh prompt counts as "too
+         similar". Higher = stricter (the guard triggers less often). 1 effectively disables it
+         unless a prompt is an exact token match. -->
+    <promptAntiRepeatSimilarityThreshold>0.8</promptAntiRepeatSimilarityThreshold>
+    <!-- How many of the pawn's most recent stored prompts the fresh prompt is compared against. -->
+    <promptAntiRepeatRecentPrompts>5</promptAntiRepeatRecentPrompts>
+    <!-- Maximum reroll attempts per queued prompt once it is flagged too similar. -->
+    <promptAntiRepeatMaxRerolls>2</promptAntiRepeatMaxRerolls>
   </PawnDiary.DiaryTuningDef>
 
 </Defs>

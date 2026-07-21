@@ -82,6 +82,7 @@ namespace PawnDiary
                 gameContext = diaryEvent.gameContext,
                 instruction = diaryEvent.instruction,
                 neutralText = diaryEvent.neutralText,
+                variantRerolls = diaryEvent.promptVariantRerolls,
                 colonyName = "PawnDiary.Prompt.Colony".Translate().Resolve(),
                 hasDeathDescription = diaryEvent.HasDeathDescription(),
                 hasArrivalDescription = diaryEvent.HasArrivalDescription(),
@@ -140,7 +141,7 @@ namespace PawnDiary
                     important = payload?.display == null || payload.display.important,
                     combat = GroupCombat(payload, group),
                     colorCue = payload?.display?.colorCue,
-                    tone = ToneFor(group, payload?.eventId)
+                    tone = ToneFor(group, payload?.eventId, payload == null ? 0 : payload.variantRerolls)
                 }
             };
 
@@ -388,14 +389,66 @@ namespace PawnDiary
         // wording is picked deterministically by the event id so the same entry keeps the same tone
         // across save/load and regeneration; the singular `tone` is the fallback. Seeding keeps the
         // otherwise-impure pick out of the pure planner (RNG-free by contract).
-        private static string ToneFor(DiaryInteractionGroupDef group, string seed)
+        //
+        // `variantRerolls` is the anti-repetition guard's persisted reroll counter: 0 keeps the exact
+        // historical seed (so untouched entries pick the tone they always did), while a positive value
+        // salts the seed so a flagged-too-similar prompt deterministically re-picks its tone.
+        private static string ToneFor(DiaryInteractionGroupDef group, string seed, int variantRerolls = 0)
         {
             if (group == null)
             {
                 return string.Empty;
             }
 
+            if (variantRerolls > 0)
+            {
+                seed = (seed ?? string.Empty) + "|tone|" + variantRerolls;
+            }
+
             return PromptVariants.Pick(group.tones, group.tone, PromptVariants.HashSeed(seed));
+        }
+
+        /// <summary>
+        /// Anti-repetition hook: re-picks the event's instruction wording from the classified group's
+        /// <c>instructions</c> variant pool, avoiding the current wording. Returns true when the
+        /// instruction changed. Safety rails:
+        ///  - the event must classify to a group that actually HAS a variant pool (otherwise the
+        ///    captured instruction is the only wording and there is nothing to reroll), and
+        ///  - the current instruction must provably come from that pool (fallback or a pool entry),
+        ///    so event-window/external instructions are never replaced by unrelated group text.
+        /// The pick is deterministic per (event, attempt) via PromptVariants.HashSeed — no gameplay
+        /// RNG is consumed, and the result persists on the event once stored.
+        /// </summary>
+        public static bool TryRerollInstruction(DiaryEvent diaryEvent, int attempt)
+        {
+            if (diaryEvent == null)
+            {
+                return false;
+            }
+
+            DiaryEventPayload payload = ToPayload(diaryEvent);
+            DiaryInteractionGroupDef group = GroupForPayload(payload, ClassifierKeyForPayload(payload));
+            if (group == null || group.instructions == null || group.instructions.Count == 0)
+            {
+                return false;
+            }
+
+            string current = diaryEvent.instruction ?? string.Empty;
+            if (!PromptVariants.Contains(group.instructions, group.instruction, current))
+            {
+                return false;
+            }
+
+            int seed = PromptVariants.HashSeed(
+                (diaryEvent.eventId ?? string.Empty) + "|instruction|" + attempt);
+            string rerolled = PromptVariants.PickDifferent(group.instructions, group.instruction, seed, current);
+            if (string.Equals(rerolled, current.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            diaryEvent.instruction = rerolled;
+            return true;
         }
 
         private static DiaryInteractionGroupDef GroupForPayload(DiaryEventPayload payload, string classifierKey)

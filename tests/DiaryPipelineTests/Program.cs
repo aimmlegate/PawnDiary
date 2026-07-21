@@ -38,6 +38,7 @@ namespace DiaryPipelineTests
             TestPromptEnchantmentCandidateSnapshot();
             TestPromptEnchantmentDecayPolicy();
             TestHumorChancePolicy();
+            TestPromptSimilarity();
             TestHediffPersonaOverridePolicy();
             TestDiaryEntryTitleFilter();
             TestDiaryEntryStatsAccumulator();
@@ -1928,6 +1929,62 @@ namespace DiaryPipelineTests
             AssertTrue("humor seed separates POV writers",
                 HumorChancePolicy.StableSeed("event", "pawn-a")
                     != HumorChancePolicy.StableSeed("event", "pawn-b"));
+            // Anti-repetition reroll salt: salt 0 must reproduce the legacy two-field seed exactly,
+            // so entries untouched by the guard keep their original humor decision.
+            AssertEqual("humor seed salt 0 equals legacy seed",
+                HumorChancePolicy.StableSeed("event", "pawn"),
+                HumorChancePolicy.StableSeed("event", "pawn", 0));
+            AssertTrue("humor seed salt changes the seed",
+                HumorChancePolicy.StableSeed("event", "pawn", 1)
+                    != HumorChancePolicy.StableSeed("event", "pawn", 0));
+            AssertTrue("humor seed salt is per-value",
+                HumorChancePolicy.StableSeed("event", "pawn", 1)
+                    != HumorChancePolicy.StableSeed("event", "pawn", 2));
+            AssertEqual("humor salted seed is deterministic",
+                HumorChancePolicy.StableSeed("event", "pawn", 2),
+                HumorChancePolicy.StableSeed("event", "pawn", 2));
+        }
+
+        private static void TestPromptSimilarity()
+        {
+            AssertNear("identical prompts score 1", 1f,
+                PromptSimilarity.Similarity("event: raid\ninstruction: write about it",
+                    "event: raid\ninstruction: write about it"));
+            AssertNear("disjoint prompts score 0", 0f,
+                PromptSimilarity.Similarity("alpha beta gamma", "delta epsilon zeta"));
+            AssertNear("empty candidate scores 0", 0f,
+                PromptSimilarity.Similarity("", "event: raid"));
+            AssertNear("empty both sides scores 0", 0f,
+                PromptSimilarity.Similarity(null, "   "));
+            // Case and punctuation are normalized away; "label: value" schema tokens compare as words.
+            AssertNear("case/punctuation normalize",
+                1f, PromptSimilarity.Similarity("Event: Raid!", "event raid"));
+            // Half the tokens shared: {a,b} vs {b,c} -> 1 shared / 3 union.
+            AssertNear("partial overlap is jaccard", 1f / 3f,
+                PromptSimilarity.Similarity("a b", "b c"));
+
+            List<string> recent = new List<string>
+            {
+                "event: raid\ninstruction: fought off the raid",
+                "event: birthday\ninstruction: write about the party",
+            };
+            float strongest;
+            AssertTrue("similar prompt flagged",
+                PromptSimilarity.TooSimilar(
+                    "event: raid\ninstruction: fought off the raid", recent, 0.9f, out strongest));
+            AssertNear("strongest picks the best match", 1f, strongest);
+            AssertTrue("dissimilar prompt passes",
+                !PromptSimilarity.TooSimilar(
+                    "event: eclipse\ninstruction: watched the sky go dark", recent, 0.9f, out strongest));
+            AssertTrue("threshold 1 only flags exact token match",
+                !PromptSimilarity.TooSimilar(
+                    "event: raid\ninstruction: fought off the raid bravely", recent, 1f, out strongest));
+            AssertTrue("invalid threshold fails open",
+                !PromptSimilarity.TooSimilar("a", recent, float.NaN, out strongest));
+            AssertTrue("out-of-range threshold fails open",
+                !PromptSimilarity.TooSimilar("a", recent, 1.5f, out strongest));
+            AssertNear("empty recent list scores 0", 0f,
+                PromptSimilarity.StrongestSimilarity("anything", null));
         }
 
         private static void TestPromptEnchantmentDecayPolicy()

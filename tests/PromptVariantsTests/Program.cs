@@ -28,6 +28,15 @@ namespace PromptVariantsTests
             HashSeedIsStableAndNonNegative();
             HashSeedEmptyStringIsZero();
             HashSeedIsNotProcessRandomized();
+            PickDifferentAvoidsCurrentWording();
+            PickDifferentKeepsPickWhenCurrentNotPicked();
+            PickDifferentWithSingleEntryKeepsPick();
+            PickDifferentWithEmptyPoolReturnsFallback();
+            PickDifferentIsDeterministic();
+            PickDifferentSkipsBlanks();
+            ContainsMatchesFallbackAndPool();
+            ContainsRejectsForeignText();
+            ContainsTrimsAndIgnoresCase();
 
             Console.WriteLine("PromptVariantsTests passed " + assertions + " assertions.");
             return 0;
@@ -154,6 +163,97 @@ namespace PromptVariantsTests
             int a = PromptVariants.HashSeed("alpha");
             int b = PromptVariants.HashSeed("beta");
             AssertEqual("different strings hash differently", true, a != b);
+        }
+
+        // --- PickDifferent (anti-repetition reroll) ---
+
+        private static void PickDifferentAvoidsCurrentWording()
+        {
+            List<string> pool = new List<string> { "a", "b", "c", "d" };
+            for (int seed = 0; seed < 50; seed++)
+            {
+                string current = PromptVariants.Pick(pool, "fb", seed);
+                string rerolled = PromptVariants.PickDifferent(pool, "fb", seed, current);
+                AssertEqual("PickDifferent never returns the current wording (seed " + seed + ")",
+                    true, !string.Equals(rerolled, current, StringComparison.OrdinalIgnoreCase));
+                AssertEqual("PickDifferent still returns a pool entry (seed " + seed + ")",
+                    true, pool.Contains(rerolled));
+            }
+        }
+
+        private static void PickDifferentKeepsPickWhenCurrentNotPicked()
+        {
+            List<string> pool = new List<string> { "a", "b", "c" };
+            for (int seed = 0; seed < 20; seed++)
+            {
+                string picked = PromptVariants.Pick(pool, "fb", seed);
+                // When the seeded pick is NOT the current wording, PickDifferent must keep it.
+                string current = string.Equals(picked, "a", StringComparison.OrdinalIgnoreCase) ? "b" : "a";
+                AssertEqual("PickDifferent keeps a non-current pick (seed " + seed + ")",
+                    picked, PromptVariants.PickDifferent(pool, "fb", seed, current));
+            }
+        }
+
+        private static void PickDifferentWithSingleEntryKeepsPick()
+        {
+            // No alternative wording exists; the reroll must not invent one or return the fallback.
+            List<string> pool = new List<string> { "only" };
+            AssertEqual("single-entry pool keeps the pick",
+                "only", PromptVariants.PickDifferent(pool, "fb", 3, "only"));
+        }
+
+        private static void PickDifferentWithEmptyPoolReturnsFallback()
+        {
+            AssertEqual("empty pool reroll returns fallback",
+                "fb", PromptVariants.PickDifferent(null, "fb", 3, "fb"));
+        }
+
+        private static void PickDifferentIsDeterministic()
+        {
+            List<string> pool = new List<string> { "a", "b", "c" };
+            string first = PromptVariants.PickDifferent(pool, "fb", 42, "a");
+            string second = PromptVariants.PickDifferent(pool, "fb", 42, "a");
+            AssertEqual("PickDifferent stable across calls", first, second);
+        }
+
+        private static void PickDifferentSkipsBlanks()
+        {
+            List<string> pool = new List<string> { "a", "  ", "b", "" };
+            for (int seed = 0; seed < 10; seed++)
+            {
+                string rerolled = PromptVariants.PickDifferent(pool, "fb", seed, "a");
+                AssertEqual("PickDifferent never returns a blank entry (seed " + seed + ")",
+                    true, !string.IsNullOrWhiteSpace(rerolled));
+            }
+        }
+
+        // --- Contains (instruction-reroll safety check) ---
+
+        private static void ContainsMatchesFallbackAndPool()
+        {
+            List<string> pool = new List<string> { "x", "y" };
+            AssertEqual("Contains matches the fallback",
+                true, PromptVariants.Contains(pool, "fb", "fb"));
+            AssertEqual("Contains matches a pool entry",
+                true, PromptVariants.Contains(pool, "fb", "y"));
+        }
+
+        private static void ContainsRejectsForeignText()
+        {
+            List<string> pool = new List<string> { "x", "y" };
+            AssertEqual("Contains rejects foreign text",
+                false, PromptVariants.Contains(pool, "fb", "z"));
+            AssertEqual("Contains rejects null/blank",
+                false, PromptVariants.Contains(pool, "fb", "  "));
+            AssertEqual("Contains handles a null pool",
+                false, PromptVariants.Contains(null, "fb", "z"));
+        }
+
+        private static void ContainsTrimsAndIgnoresCase()
+        {
+            List<string> pool = new List<string> { "Wording" };
+            AssertEqual("Contains trims and ignores case",
+                true, PromptVariants.Contains(pool, "fb", "  wording "));
         }
 
         // --- Minimal assert helper (mirrors the other test harnesses) ---

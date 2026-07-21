@@ -2581,6 +2581,26 @@ arrive once as style and again as "important context." When an external writing-
 active, it sits above the hediff style layer, so those hediff prompt-enchantment suppressions are not
 applied.
 
+A queue-time **anti-repetition guard** keeps repeated same-group events (the 50th raid) from
+generating near-identical entries. Before a first-person prompt is dispatched
+(`QueueLlmRewrite` and both POV branches of `QueueSequentialPairwiseRewrite`), the assembled user
+prompt is compared — by the pure word-token Jaccard `PromptSimilarity` — against the POV pawn's most
+recent stored prompts (queued or completed). When the strongest score reaches
+`DiaryTuningDef.promptAntiRepeatSimilarityThreshold` (default `0.8`), the guard rerolls the prompt's
+variable enhancements and rebuilds, up to `promptAntiRepeatMaxRerolls` attempts (default `2`): the
+instruction is re-picked from the classified group's `instructions` variant pool (only when the
+current wording provably came from that pool, so event-window/external instructions are never
+replaced), the tone is re-picked from the `tones` pool through a salted deterministic seed, the
+prompt enchantment is re-rolled from the live weighted pool, and the humor cue is re-picked through
+a salted stable seed. The salt is the additive persisted `DiaryEvent.promptVariantRerolls` counter,
+so rerolled picks stay stable across save/load and manual Regenerate, and salt 0 reproduces the
+original picks exactly. Comparison scope is `promptAntiRepeatRecentPrompts` (default `5`) of the
+pawn's newest prompts; neutral death/arrival/title prompts are exempt (they share the
+persona/enchantment-free templates where similarity is expected). The guard is best-effort and never
+blocks generation: when every reroll still looks similar, the entry generates anyway. All four knobs
+live in `DiaryTuningDef.xml` and the Advanced tuning editor; the similarity decision is covered by
+pure tests in `tests/DiaryPipelineTests` and `tests/PromptVariantsTests`.
+
 First-person prompts also receive two compact continuity hints from the pawn's previous page when one
 exists. `LastOpener` is the first sentence and is labeled as an opening to avoid repeating;
 `PreviousEntryEnding` is the XML-tuned final sentence excerpt (`previousEntryEndingSentenceCount`,

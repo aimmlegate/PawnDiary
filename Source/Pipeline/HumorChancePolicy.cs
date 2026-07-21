@@ -15,13 +15,23 @@ namespace PawnDiary
             return elevated ? elevatedMultiplier : reducedMultiplier;
         }
 
-        /// <summary>Stable FNV-1a seed for one event+POV; never uses process-randomized GetHashCode.</summary>
-        public static int StableSeed(string eventId, string writerStableId)
+        /// <summary>Stable FNV-1a seed for one event+POV; never uses process-randomized GetHashCode.
+        /// The optional <paramref name="salt"/> is the anti-repetition reroll counter persisted on the
+        /// event: salt 0 produces byte-identical input to the original two-field hash (so existing
+        /// entries keep their humor decision), while salt &gt; 0 derives a different stable seed so the
+        /// guard's reroll re-picks the cue deterministically.</summary>
+        public static int StableSeed(string eventId, string writerStableId, int salt = 0)
         {
             uint hash = 2166136261u;
             Add(ref hash, eventId);
             AddChar(ref hash, '|');
             Add(ref hash, writerStableId);
+            if (salt > 0)
+            {
+                AddChar(ref hash, '|');
+                Add(ref hash, salt.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+
             return unchecked((int)hash);
         }
 

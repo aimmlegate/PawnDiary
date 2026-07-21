@@ -1355,7 +1355,11 @@ namespace PawnDiary
                 .Float("humorElevatedChanceMultiplier", 0f, 5f, true)
                 .Float("humorReducedChanceMultiplier", 0f, 1f, true)
                 .StringList("humorElevatedTraitKeys")
-                .StringList("humorReducedTraitKeys");
+                .StringList("humorReducedTraitKeys")
+                .Bool("promptAntiRepeatEnabled")
+                .Float("promptAntiRepeatSimilarityThreshold", 0f, 1f, true)
+                .Int("promptAntiRepeatRecentPrompts", 0, 50)
+                .Int("promptAntiRepeatMaxRerolls", 0, 10);
 
             // ---- Signal policies (DiarySignalPolicyDef). The accessor returns a fallback def when a
             // signal def is absent, so editing never crashes; values use -1 as the "inherit tuning"

@@ -1,5 +1,21 @@
 # Changelog
 
+- **2026-07-21 — Added a queue-time prompt anti-repetition guard.** Before a first-person prompt is
+  dispatched, the assembled user prompt is compared (pure word-token Jaccard, new
+  `Source/Pipeline/PromptSimilarity.cs`) against the POV pawn's most recent stored prompts. When the
+  strongest similarity reaches the XML-tuned threshold (`DiaryTuningDef.promptAntiRepeat*`: enabled,
+  threshold 0.8, 5 recent prompts, 2 max rerolls — all exposed in Advanced tuning), the guard
+  rerolls the prompt's variable enhancements and rebuilds: the instruction is re-picked from the
+  classified group's `instructions` pool (new pure `PromptVariants.PickDifferent`/`Contains`, with a
+  pool-membership safety check so event-window/external instructions are never replaced), the tone
+  is re-picked through a salted deterministic seed, the prompt enchantment is re-rolled, and the
+  humor cue is re-picked through a salted stable seed. The salt is the additive persisted
+  `DiaryEvent.promptVariantRerolls` counter, so rerolled picks stay stable across save/load and
+  Regenerate while salt 0 reproduces every existing entry's original picks exactly. Neutral
+  death/arrival/title prompts are exempt, and the guard never blocks generation — an entry whose
+  rerolls all still look similar generates anyway. Pure suites pass 161 PromptVariants and 2,767
+  pipeline assertions; Debug build and XML validation pass. No in-game acceptance run is claimed.
+
 - **2026-07-21 — Hardened Odyssey N3-O after adversarial review.** Home-only source-tick and
   journey-arc validation now omits only the malformed N2-O mobile-home lens instead of suppressing an
   independently valid exact-map pressure fact. Pure regressions freeze that isolation. XML coverage

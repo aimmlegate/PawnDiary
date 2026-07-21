@@ -528,6 +528,21 @@ namespace PawnDiary
             "Psychopath",
             "Disturbing",
         };
+
+        // ---- Prompt anti-repetition guard (queue-time prompt similarity check) ----
+        // Master toggle. When true, a first-person prompt that looks too similar to the pawn's
+        // recent prompts has its rerollable enhancements (instruction/tone variants, prompt
+        // enchantment, humor cue) re-picked before dispatch. Best-effort: generation is never
+        // blocked, even when every reroll still looks similar.
+        public bool promptAntiRepeatEnabled = true;
+        // Word-token Jaccard similarity (0..1) at or above which a fresh prompt counts as "too
+        // similar" to one of the pawn's recent prompts. Higher = stricter (fewer rerolls trigger).
+        public float promptAntiRepeatSimilarityThreshold = 0.8f;
+        // How many of the pawn's most recent stored prompts the fresh prompt is compared against.
+        public int promptAntiRepeatRecentPrompts = 5;
+        // Maximum reroll attempts per queued prompt. Each attempt re-picks the instruction/tone
+        // variant (deterministic salted seed) and re-rolls the enchantment/humor cue.
+        public int promptAntiRepeatMaxRerolls = 2;
     }
 
     // Accessor for the single DiaryTuningDef. Caches the lookup and falls back to a default
@@ -839,6 +854,53 @@ namespace PawnDiary
                         : tuning.promptEnchantmentMaxImpactCues
                 };
             }
+        }
+
+        /// <summary>
+        /// Master toggle for the queue-time prompt anti-repetition guard. XML-authored; the def
+        /// field initializer (true) applies when the tuning def is absent.
+        /// </summary>
+        public static bool PromptAntiRepeatEnabled
+        {
+            get { return Current.promptAntiRepeatEnabled; }
+        }
+
+        /// <summary>
+        /// Word-token Jaccard similarity (0..1) at or above which a fresh first-person prompt counts
+        /// as too similar to the pawn's recent prompts. Out-of-range/NaN values fall back to the
+        /// shipped default so a typo can never reroll every prompt (0) or none (1 is allowed:
+        /// effectively off unless a prompt is an exact token match).
+        /// </summary>
+        public static float PromptAntiRepeatSimilarityThreshold
+        {
+            get
+            {
+                float value = Current.promptAntiRepeatSimilarityThreshold;
+                if (value < 0f || value > 1f || float.IsNaN(value) || float.IsInfinity(value))
+                {
+                    return Fallback.promptAntiRepeatSimilarityThreshold;
+                }
+
+                return value;
+            }
+        }
+
+        /// <summary>
+        /// How many of the pawn's most recent stored prompts a fresh prompt is compared against.
+        /// Zero disables the guard (nothing to compare); negatives fall back to the shipped default.
+        /// </summary>
+        public static int PromptAntiRepeatRecentPrompts
+        {
+            get { return NonNegativeOrDefault(Current.promptAntiRepeatRecentPrompts, Fallback.promptAntiRepeatRecentPrompts); }
+        }
+
+        /// <summary>
+        /// Maximum reroll attempts per queued prompt once it is flagged too similar. Zero disables
+        /// rerolling; negatives fall back to the shipped default.
+        /// </summary>
+        public static int PromptAntiRepeatMaxRerolls
+        {
+            get { return NonNegativeOrDefault(Current.promptAntiRepeatMaxRerolls, Fallback.promptAntiRepeatMaxRerolls); }
         }
 
         private static float NonNegativeOrDefault(float value, float fallback)

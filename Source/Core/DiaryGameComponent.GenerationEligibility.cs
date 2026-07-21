@@ -242,7 +242,10 @@ namespace PawnDiary
 
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
-            return HumorCues.CueFor(diaryEvent, pawn, pawnId);
+            // The anti-repetition reroll counter salts the stable humor seed: 0 (the normal case)
+            // reproduces the entry's original humor decision; the guard increments it to re-roll.
+            return HumorCues.CueFor(diaryEvent, pawn, pawnId,
+                diaryEvent == null ? 0 : diaryEvent.promptVariantRerolls);
         }
 
         private static Dictionary<string, Pawn> SnapshotLivePawnsByLoadId()

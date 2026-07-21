@@ -13,6 +13,7 @@
 // the same output. That makes the selection rule unit-testable without the game (see
 // tests/PromptVariantsTests). The impure callers (InteractionGroups.InstructionForGroup and
 // DiaryPipelineAdapters.ToneFor) own the RNG/seed and call into here.
+using System;
 using System.Collections.Generic;
 
 namespace PawnDiary
@@ -70,6 +71,78 @@ namespace PawnDiary
 
             // Unreachable given usable >= 1, but keeps the compiler happy and stays defensive.
             return fallback;
+        }
+
+        /// <summary>
+        /// Like <see cref="Pick"/>, but avoids returning <paramref name="currentValue"/> when the
+        /// pool offers at least one other usable wording: when the seeded pick lands on the current
+        /// wording, the NEXT usable pool entry is taken instead (wrapping around). Used by the
+        /// anti-repetition guard to reroll a variant without risking the same wording again. The
+        /// comparison is trimmed and case-insensitive, matching how prompt text is rendered.
+        /// </summary>
+        public static string PickDifferent(List<string> variants, string fallback, int seed, string currentValue)
+        {
+            string picked = Pick(variants, fallback, seed);
+            if (!TextEquals(picked, currentValue))
+            {
+                return picked;
+            }
+
+            int usable = CountUsable(variants);
+            if (usable <= 1 || variants == null || variants.Count == 0)
+            {
+                // No alternative wording exists (the fallback is already the current value), so keep
+                // the pick; the anti-repetition guard stays best-effort.
+                return picked;
+            }
+
+            // Walk the pool from the current wording's position and take the next usable entry.
+            int currentIndex = IndexOfUsable(variants, currentValue);
+            for (int step = 1; step <= variants.Count; step++)
+            {
+                int index = (currentIndex + step) % variants.Count;
+                string entry = variants[index];
+                if (IsUsable(entry) && !TextEquals(entry, currentValue))
+                {
+                    return entry.Trim();
+                }
+            }
+
+            return picked;
+        }
+
+        /// <summary>
+        /// Returns true when <paramref name="value"/> matches the fallback or any usable pool entry
+        /// (trimmed, case-insensitive). The anti-repetition instruction reroll uses this as a safety
+        /// check: it only re-picks a wording that provably came from this pool, so event-window or
+        /// external instructions are never replaced by group pool text.
+        /// </summary>
+        public static bool Contains(List<string> variants, string fallback, string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            if (TextEquals(fallback, value))
+            {
+                return true;
+            }
+
+            if (variants == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < variants.Count; i++)
+            {
+                if (IsUsable(variants[i]) && TextEquals(variants[i], value))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -135,6 +208,34 @@ namespace PawnDiary
         private static bool IsUsable(string entry)
         {
             return !string.IsNullOrWhiteSpace(entry);
+        }
+
+        // Index of the pool entry matching the value (trimmed, case-insensitive), or 0 when absent
+        // so the "next usable" walk in PickDifferent simply starts at the pool head.
+        private static int IndexOfUsable(List<string> variants, string value)
+        {
+            if (variants == null || string.IsNullOrWhiteSpace(value))
+            {
+                return 0;
+            }
+
+            for (int i = 0; i < variants.Count; i++)
+            {
+                if (IsUsable(variants[i]) && TextEquals(variants[i], value))
+                {
+                    return i;
+                }
+            }
+
+            return 0;
+        }
+
+        private static bool TextEquals(string left, string right)
+        {
+            return string.Equals(
+                (left ?? string.Empty).Trim(),
+                (right ?? string.Empty).Trim(),
+                StringComparison.OrdinalIgnoreCase);
         }
     }
 }

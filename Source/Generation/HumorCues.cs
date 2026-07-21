@@ -37,9 +37,11 @@ namespace PawnDiary
         /// Returns the chosen cue's rule text for this event, or <c>string.Empty</c> when no cue is
         /// selected. At most one cue per entry. <paramref name="writerPawn"/> is the live pawn writing
         /// this POV (null is fine — the offline/unresolvable case simply skips the temperament check
-        /// and uses the plain base rate).
+        /// and uses the plain base rate). <paramref name="seedSalt"/> is the anti-repetition guard's
+        /// persisted reroll counter: 0 reproduces the entry's original humor decision exactly, while
+        /// a positive value re-rolls onto a different stable seed.
         /// </summary>
-        public static string CueFor(DiaryEvent diaryEvent, Pawn writerPawn, string writerStableId)
+        public static string CueFor(DiaryEvent diaryEvent, Pawn writerPawn, string writerStableId, int seedSalt = 0)
         {
             if (diaryEvent == null)
             {
@@ -48,7 +50,7 @@ namespace PawnDiary
 
             // Isolate this cosmetic prompt choice from Verse's process-global gameplay RNG. The stable
             // event+POV seed also means Regenerate produces the same humor decision and cue.
-            Rand.PushState(HumorChancePolicy.StableSeed(diaryEvent.eventId, writerStableId));
+            Rand.PushState(HumorChancePolicy.StableSeed(diaryEvent.eventId, writerStableId, seedSalt));
             try
             {
                 // Base rate is XML-tuned (DiaryTuningDef.humorChance); DiaryTuning.HumorChance owns the

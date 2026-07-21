@@ -94,6 +94,10 @@ namespace PawnDiary
         public string gameContext;
         public string instruction;
         public string neutralText;
+        // Anti-repetition reroll counter copied from the saved event. 0 means the original seeded
+        // picks (tone etc.); higher values salt the deterministic variant seeds. Pure code only
+        // carries this through; the adapter owns how it is derived.
+        public int variantRerolls;
         public string colonyName;
         public bool hasDeathDescription;
         public bool hasArrivalDescription;
