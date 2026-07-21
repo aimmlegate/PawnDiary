@@ -25,6 +25,7 @@ namespace PawnDiary
             TestSecondSlotIndependenceOrderingAndRepetition();
             TestCertaintyBoundariesAndTrends();
             TestFormatterBudgetsSanitationAndWorldviewFacts();
+            TestMutationOnlyContextAndFormatting();
             TestEvidenceRulesAndOptionalCorrections();
             TestObservationBaselineAndReflectionShell();
             TestMalformedUnsafeAndOversizedInputs();
@@ -64,6 +65,15 @@ namespace PawnDiary
             AssertNear("fuzzy fallback survives NaN", 0.84f, safe.fuzzySimilarityMinimum);
             AssertTrue("pure snapshot exposes shared interpretation category",
                 new BeliefStanceResolution().narrativeCategory == NarrativeCategoryTokens.Interpretation);
+
+            BeliefPolicyBuilder missingCompact = BeliefPolicyBuilder.CreateDefault();
+            missingCompact.detailBudgets.Clear();
+            BeliefDetailBudget compactFallback = missingCompact.Build().DetailBudget(
+                NarrativeDetailLevelTokens.Compact);
+            AssertTrue("missing Compact budget still omits descriptions", !compactFallback.includeDescriptions);
+            AssertTrue("missing Compact budget still omits structure", !compactFallback.includeStructure);
+            AssertTrue("missing Compact budget still omits memes", !compactFallback.includeMemes);
+            AssertTrue("missing Compact budget retains the shipped deity policy", compactFallback.includeDeity);
         }
 
         private static void TestMissingInactiveEmptyAndKnowledgeGates()
@@ -256,9 +266,16 @@ namespace PawnDiary
 
             BeliefPolicyBuilder highThreshold = BeliefPolicyBuilder.CreateDefault();
             highThreshold.minimumLexicalConfidence = 500f;
+            BeliefPolicySnapshot highThresholdPolicy = highThreshold.Build();
+            BeliefSnapshot belowSnapshot = Snapshot(
+                Precept("Below", "Issue_Below", "distinctive orchard", 1));
+            BeliefEventEvidence belowEvidence = TextEvidence(true, "distinctive orchard");
+            BeliefLexicalMatchResult belowResult = BeliefLexicalMatcher.Match(
+                belowEvidence, belowSnapshot, belowSnapshot.precepts, highThresholdPolicy);
+            AssertTrue("below minimum confidence exposes its diagnostic", belowResult.rejectedBelowConfidence);
+            AssertTrue("below minimum confidence exposes no winner", belowResult.winner == null);
             AssertEmpty("below minimum confidence is rejected", Resolve(
-                Snapshot(Precept("Below", "Issue_Below", "distinctive orchard", 1)),
-                TextEvidence(true, "distinctive orchard"), highThreshold.Build()));
+                belowSnapshot, belowEvidence, highThresholdPolicy));
 
             BeliefPolicyBuilder ambiguity = BeliefPolicyBuilder.CreateDefault();
             ambiguity.commonTokenDocumentFraction = 1f;
@@ -300,6 +317,14 @@ namespace PawnDiary
             unknown.narrative.beliefTopics.Add("quasar_husbandry");
             AssertSelected("unknown safe topic can match future mod text without code changes",
                 Resolve(Snapshot(future), unknown, BeliefPolicySnapshot.CreateDefault()), "Future_Mod_Precept");
+            BeliefSnapshot futureSnapshot = Snapshot(future);
+            ExpandedBeliefEvidence preExpanded = new ExpandedBeliefEvidence();
+            preExpanded.topics.Add("quasar_husbandry");
+            BeliefLexicalMatchResult reusedExpansion = BeliefLexicalMatcher.Match(
+                Evidence(true), futureSnapshot, futureSnapshot.precepts,
+                BeliefPolicySnapshot.CreateDefault(), preExpanded);
+            AssertEqual("resolver-owned expansion can be reused without recomputation", "Future_Mod_Precept",
+                reusedExpansion.winner == null ? string.Empty : reusedExpansion.winner.precept.defName);
             BeliefEventEvidence unrelatedUnknown = Evidence(true);
             unrelatedUnknown.narrative.beliefTopics.Add("totally_unknown_topic");
             AssertEmpty("unknown topic with no live match is a no-op",
@@ -400,6 +425,9 @@ namespace PawnDiary
             BeliefPolicyBuilder strictSecond = BeliefPolicyBuilder.CreateDefault();
             strictSecond.secondSlotMinimumScore = 2000f;
             AssertEqual("independent second-slot threshold is enforced", 1,
+                Resolve(Snapshot(first, second), evidence, strictSecond.Build()).stances.Count);
+            strictSecond.defaultSelectedStances = 2;
+            AssertEqual("default-two policy admits a second independent stance without the exceptional threshold", 2,
                 Resolve(Snapshot(first, second), evidence, strictSecond.Build()).stances.Count);
 
             BeliefStanceResolution deterministicA = Resolve(Snapshot(first, second), evidence,
@@ -516,6 +544,8 @@ namespace PawnDiary
             AssertTrue("compact omits memes", compact.IndexOf("relevant meme:", StringComparison.Ordinal) < 0);
             AssertContains("compact keeps top doctrine", compact, "relevant precept: Visible stance");
             AssertEqual("whole-word trim", "alpha", BeliefContextFormatter.WholeWord("alpha beta gamma", 10));
+            AssertEqual("unmatched angle delimiter preserves following plain text", "alpha beta tail",
+                BeliefContextFormatter.Clean("alpha < beta tail", 100));
             AssertEmpty("empty resolution formats empty", new BeliefStanceResolution(), policy);
 
             BeliefMemeFact relatedMeme = Meme("Related_Meme", "Related meme", 1);
@@ -531,6 +561,64 @@ namespace PawnDiary
             AssertEqual("related-meme deity outranks key deity", "Related One", deityResult.deity.name);
             AssertTrue("structure stays separate from ordinary memes",
                 deityResult.structure != null && !ContainsMeme(deityResult.supportingMemes, "Structure_Only"));
+
+            BeliefPolicyBuilder alternativeBuilder = BeliefPolicyBuilder.CreateDefault();
+            alternativeBuilder.includeRelatedDeity = false;
+            alternativeBuilder.includeKeyDeity = false;
+            alternativeBuilder.allowDeterministicAlternativeDeity = true;
+            BeliefPolicySnapshot alternativePolicy = alternativeBuilder.Build();
+            BeliefPreceptFact alternativePrecept = Precept(
+                "Alternative_Deity_Precept", "Alternative_Deity_Issue", "alternative deity stance", 1);
+            BeliefSnapshot alternativeSnapshot = Snapshot(alternativePrecept);
+            BeliefDeityFact alternativeA = new BeliefDeityFact { name = "Alternative A" };
+            BeliefDeityFact alternativeB = new BeliefDeityFact { name = "Alternative B" };
+            alternativeSnapshot.deities.Add(alternativeA);
+            alternativeSnapshot.deities.Add(alternativeB);
+            BeliefStanceResolution alternativeFirst = Resolve(alternativeSnapshot,
+                SourceEvidence(alternativePrecept.instanceId, alternativePrecept.defName), alternativePolicy, seed: 91);
+            AssertTrue("deterministic alternative deity branch selects a valid deity",
+                alternativeFirst.deity != null);
+            alternativeSnapshot.deities.Clear();
+            alternativeSnapshot.deities.Add(alternativeB);
+            alternativeSnapshot.deities.Add(alternativeA);
+            BeliefStanceResolution alternativeReordered = Resolve(alternativeSnapshot,
+                SourceEvidence(alternativePrecept.instanceId, alternativePrecept.defName), alternativePolicy, seed: 91);
+            AssertEqual("alternative deity selection is independent of source ordering",
+                alternativeFirst.deity.name, alternativeReordered.deity.name);
+        }
+
+        private static void TestMutationOnlyContextAndFormatting()
+        {
+            BeliefEventEvidence evidence = Evidence(true);
+            evidence.mutation = new BeliefMutationSnapshot
+            {
+                beforeIdeologyId = "Before_Ideo",
+                beforeIdeologyName = "Before Ideoligion",
+                afterIdeologyId = "After_Ideo",
+                afterIdeologyName = "After Ideoligion",
+                attemptedIdeologyId = "Attempted_Ideo",
+                attemptedIdeologyName = "Attempted Ideoligion",
+                ideologyChanged = true,
+                conversionSucceeded = true
+            };
+            BeliefPolicySnapshot policy = BeliefPolicySnapshot.CreateDefault();
+            BeliefStanceResolution result = Resolve(Snapshot(), evidence, policy);
+            AssertTrue("mutation-only resolution is useful context", result.HasUsefulContext);
+            AssertEqual("mutation-only resolution needs no selected stance", 0, result.stances.Count);
+            AssertTrue("mutation-only resolution retains the observed mutation", result.mutation != null);
+
+            string full = BeliefContextFormatter.Format(result, NarrativeDetailLevelTokens.Full, policy);
+            AssertContains("full mutation format includes previous ideoligion", full,
+                "previous ideoligion: Before Ideoligion");
+            AssertContains("full mutation format includes current ideoligion", full,
+                "current ideoligion: After Ideoligion");
+            AssertContains("full mutation format includes attempted ideoligion", full,
+                "attempted ideoligion: Attempted Ideoligion");
+            string compact = BeliefContextFormatter.Format(result, NarrativeDetailLevelTokens.Compact, policy);
+            AssertTrue("compact mutation format omits transition lines",
+                compact.IndexOf("previous ideoligion:", StringComparison.Ordinal) < 0
+                    && compact.IndexOf("current ideoligion:", StringComparison.Ordinal) < 0
+                    && compact.IndexOf("attempted ideoligion:", StringComparison.Ordinal) < 0);
         }
 
         private static void TestEvidenceRulesAndOptionalCorrections()
@@ -548,6 +636,21 @@ namespace PawnDiary
             ExpandedBeliefEvidence expandedUnknown = BeliefEventEvidencePolicy.Expand(unknown, vocabulary);
             AssertTrue("safe unknown topic preserved", Contains(expandedUnknown.topics, "future_safe_topic"));
             AssertTrue("malformed topic rejected", !Contains(expandedUnknown.topics, "bad topic with spaces"));
+
+            BeliefPolicyBuilder guardedRules = BeliefPolicyBuilder.CreateDefault();
+            BeliefEventEvidenceRule selectorless = new BeliefEventEvidenceRule(
+                "selectorless", string.Empty, string.Empty, string.Empty, string.Empty, string.Empty,
+                string.Empty, string.Empty, new[] { "global_topic" }, new string[0]);
+            guardedRules.eventEvidenceRules.Add(selectorless);
+            guardedRules.eventEvidenceRules.Add(Rule("scoped", "scoped_domain", "scoped_group",
+                new[] { "scoped_topic" }, new string[0]));
+            BeliefPolicySnapshot guardedPolicy = guardedRules.Build();
+            AssertTrue("selectorless evidence row reports no selector", !selectorless.HasSelector);
+            AssertEqual("immutable policy discards selectorless evidence rows", 1,
+                guardedPolicy.eventEvidenceRules.Count);
+            ExpandedBeliefEvidence unrelated = BeliefEventEvidencePolicy.Expand(Evidence(true), guardedPolicy);
+            AssertTrue("selectorless evidence vocabulary cannot enrich unrelated events",
+                !Contains(unrelated.topics, "global_topic"));
 
             AssertEqual("default override list remains empty", 0,
                 BeliefPolicySnapshot.CreateDefault().correlationOverrides.Count);

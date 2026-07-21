@@ -42,13 +42,15 @@ collector kind (hediff, capacity, Royal title, Ideology role, event window, obse
 | Save/load scenario | Disposable test save plus two-phase RimTest suite | Real Scribe round trip, index rebuilds, pending-state normalization, archive persistence, and session reset. |
 | Manual visual checks | `tests/SAVE_COMPATIBILITY_SMOKETEST.md` plus a new UI checklist | Immediate-mode rendering, resolution/accessibility layouts, scroll behavior, and screenshots that are not stable enough for unit assertions. |
 
-`tests/BeliefContextTests` is the assembly-free Master Wave 10 / Ideology Phase-0 harness. Its 172
+`tests/BeliefContextTests` is the assembly-free Master Wave 10 / Ideology Phase-0 harness. Its 193
 assertions lock missing/inactive/unknown-knowledge silence; exact source, thought, history, issue, and
 meme precedence; synthetic mod IDs; guarded phrase/token/fuzzy matching; dynamic common-token,
-confidence, and runner-up rejection; live-doctrine intersection; same-issue collapse; independent
-second-slot and hard caps; certainty boundaries; repetition; body/organ/cannibal-meal/raid/ritual
-scenarios; stable same-seed ordering plus distinct-seed within-tier diversity; unknown-topic
-compatibility; formatter budgets/sanitation; empty default corrections; and
+confidence, explicit below-threshold diagnostics, and runner-up rejection; reused evidence expansion;
+live-doctrine intersection; same-issue collapse; selectorless-rule rejection; default-one/default-two
+independent second-slot behavior and hard caps; certainty boundaries; repetition;
+body/organ/cannibal-meal/raid/ritual scenarios; stable same-seed ordering plus distinct-seed within-tier
+diversity; unknown-topic compatibility; formatter budgets, Compact fallback, mutation-only output, and
+sanitation; deterministic alternative-deity selection; empty default corrections; and
 first-scan/reflection-policy shell decisions. It file-links only plain Narrative/Belief source and has
 no RimWorld, Verse, Unity, or DLC reference.
 

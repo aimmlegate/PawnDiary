@@ -49,6 +49,10 @@ namespace PawnDiary
                 new Dictionary<string, float>(StringComparer.Ordinal);
             public readonly Dictionary<string, string> tokenKinds =
                 new Dictionary<string, string>(StringComparer.Ordinal);
+            // Fuzzy matching revisits the same normalized tokens across many candidate comparisons.
+            // Cache each token's bigrams once per bounded document instead of allocating per pair.
+            public readonly Dictionary<string, Dictionary<string, int>> bigramCounts =
+                new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal);
         }
 
         private sealed class Scored
@@ -68,6 +72,17 @@ namespace PawnDiary
             IList<BeliefPreceptFact> candidates,
             BeliefPolicySnapshot policy)
         {
+            return Match(evidence, snapshot, candidates, policy, null);
+        }
+
+        /// <summary>Reuses resolver-owned evidence expansion while keeping the standalone API intact.</summary>
+        internal static BeliefLexicalMatchResult Match(
+            BeliefEventEvidence evidence,
+            BeliefSnapshot snapshot,
+            IList<BeliefPreceptFact> candidates,
+            BeliefPolicySnapshot policy,
+            ExpandedBeliefEvidence expandedEvidence)
+        {
             BeliefLexicalMatchResult result = new BeliefLexicalMatchResult();
             BeliefPolicySnapshot effective = policy ?? BeliefPolicySnapshot.CreateDefault();
             if (evidence == null || snapshot == null || candidates == null || !effective.enabled)
@@ -77,7 +92,8 @@ namespace PawnDiary
             if (bounded.Count == 0) return result;
 
             HashSet<string> exclusions = BuildExclusions(snapshot, effective);
-            ExpandedBeliefEvidence expanded = BeliefEventEvidencePolicy.Expand(evidence, effective);
+            ExpandedBeliefEvidence expanded = expandedEvidence
+                ?? BeliefEventEvidencePolicy.Expand(evidence, effective);
             Document eventDocument = BuildEventDocument(evidence, expanded, effective, exclusions);
             if (eventDocument.fields.Count == 0) return result;
 
@@ -464,7 +480,8 @@ namespace PawnDiary
                     {
                         if (beliefToken.Key.Length < policy.fuzzyTokenMinimumCharacters
                             || common.Contains(beliefToken.Key) || usedBeliefTokens.Contains(beliefToken.Key)) continue;
-                        float similarity = DiceCoefficient(eventToken.Key, beliefToken.Key);
+                        float similarity = DiceCoefficient(
+                            eventToken.Key, eventDocument, beliefToken.Key, beliefDocument);
                         if (similarity > bestSimilarity)
                         {
                             bestSimilarity = similarity;
@@ -565,12 +582,16 @@ namespace PawnDiary
             return byScore != 0 ? byScore : string.Compare(left.stableKey, right.stableKey, StringComparison.Ordinal);
         }
 
-        private static float DiceCoefficient(string left, string right)
+        private static float DiceCoefficient(
+            string left,
+            Document leftDocument,
+            string right,
+            Document rightDocument)
         {
             if (left == right) return 1f;
             if (left.Length < 2 || right.Length < 2) return 0f;
-            Dictionary<string, int> leftPairs = Bigrams(left);
-            Dictionary<string, int> rightPairs = Bigrams(right);
+            Dictionary<string, int> leftPairs = BigramsFor(leftDocument, left);
+            Dictionary<string, int> rightPairs = BigramsFor(rightDocument, right);
             int intersection = 0;
             foreach (KeyValuePair<string, int> pair in leftPairs)
             {
@@ -578,6 +599,15 @@ namespace PawnDiary
                 if (rightPairs.TryGetValue(pair.Key, out other)) intersection += Math.Min(pair.Value, other);
             }
             return (2f * intersection) / (left.Length - 1 + right.Length - 1);
+        }
+
+        private static Dictionary<string, int> BigramsFor(Document document, string value)
+        {
+            Dictionary<string, int> result;
+            if (document.bigramCounts.TryGetValue(value, out result)) return result;
+            result = Bigrams(value);
+            document.bigramCounts[value] = result;
+            return result;
         }
 
         private static Dictionary<string, int> Bigrams(string value)

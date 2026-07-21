@@ -36,6 +36,26 @@
   `FillTab` instead of only the thin gaps between the opaque cards, and the default alpha rose from
   ~0.09–0.10 to ~0.14–0.16. All values remain XML-tunable. Debug build 0/0; all 14 pure suites green;
   no in-game acceptance run is claimed.
+- **2026-07-21 — Hardened the inactive Ideology Phase-0 contract after adversarial review.** Event-
+  evidence rules now require at least one exact selector at immutable-snapshot construction and at
+  match time, so malformed XML or a compatibility patch cannot create a global enrichment rule.
+  `defaultSelectedStances` now has defined behavior: the shipped default of one still requires the
+  independent second slot to clear its exceptional score threshold, while an explicit default of two
+  admits a second independently evidenced, different-issue stance without that threshold. Missing
+  Compact budget rows retain the shipped omission of descriptions, structure, and memes while keeping
+  deity context enabled. Formatter sanitation now discards an unmatched `<` without swallowing the
+  remaining plain text. The lexical fallback reuses resolver-owned evidence expansion and caches each
+  bounded document token's bigrams, eliminating per-token-pair dictionary construction. Removed one
+  unreachable Def-boundary null check.
+
+  Added aligned English/Russian DefInjected certainty-band phrases and 21 focused assertions for
+  selectorless-rule rejection, default-two selection, Compact fallback semantics, explicit low-
+  confidence diagnostics, reused expansion, unmatched-delimiter sanitation, mutation-only context and
+  formatting, and deterministic alternative-deity selection. `BeliefContextTests` now passes 193
+  assertions; the 15 pure suites total 6,781 assertions, all 95 main-mod XML files and 25 core/test
+  project files parse, and the Debug runtime build completes with 0 warnings and 0 errors. Phase 0
+  remains inactive: no collector, DLC adapter, hook, save field, event route, prompt field, page, or
+  reflection scheduler was added, and no RimWorld/manual acceptance is claimed.
 
 - **2026-07-21 — Completed Master Wave 10 / Ideology Phase 0’s automated pure-contract gate.** Added
   detached belief snapshot, precept, issue, meme, deity, correlation, mutation, event-evidence,
@@ -53,7 +73,7 @@
 
   Added the DLC-neutral singleton `DiaryBeliefPolicyDef` plus an immutable deep-copied pure snapshot.
   XML owns tier/field scores, strength/repetition weights, lexical thresholds/margins, certainty bands
-  and DefInjected-ready phrases, semantic aliases, exact event-evidence vocabulary, exclusions,
+  and XML-authored phrases, semantic aliases, exact event-evidence vocabulary, exclusions,
   formatter/reflection-shell caps, and an intentionally empty compatibility-correction list. No
   vanilla, DLC, or mod precept/issue/meme catalog was added. Pure formatter, certainty/baseline, and
   future reflection-policy shells are present but unused. This phase adds no live Ideology collector,
@@ -66,7 +86,7 @@
   live-doctrine intersection, redundancy/caps, second-slot independence, repetition, certainty,
   malformed input, unknown topics, body/organ/cannibal-meal/raid/ritual cases, formatting, corrections,
   and first-scan/reflection shells. The repository hook now runs 15 pure suites totaling 6,760
-  assertions; all 93 shipped XML files and 25 C# project files parse, and the Debug runtime build
+  assertions; all 93 main-mod XML files and 25 core/test C# project files parse, and the Debug runtime build
   completes with 0 warnings and 0 errors. `PawnDiary.dll` is rebuilt. Royalty Phase 5’s recorded
   354/354 result across 57/57 suites and every deferred Royalty TODO/pending item remain unchanged.
 
