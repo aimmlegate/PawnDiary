@@ -1,8 +1,8 @@
 # Pawn Diary — Ideoligion Support Implementation Plan
 
-Status: Phases 0–1 completed on 2026-07-21; Phases 2–6 remain pending.
-Phase 1 adds guarded event-time enrichment only; it adds no reflection page, mutation behavior, passive
-belief scanner, or generic belief capture route.
+Status: Phases 0–1 completed on 2026-07-21; Phase 2 infrastructure is partially implemented; Phases
+3–6 remain pending. The first Phase-2 slice adds exact guarded mutation capture/coalescing and exact
+downstream Ability ownership, but no new conversion/crisis/ritual enrichment route or page.
 
 Scheduling authority: implement Ideology phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Ideology.
@@ -1124,21 +1124,35 @@ correlations, and mechanical thought valence into plain DTOs. Thought and body-m
 per already-eligible POV and persist normalized `beliefContext`; ordinary non-evidenced routes remain
 unchanged. The non-emitting HistoryEvent observer uses a bounded exact-pawn/tick cache, developer
 structural/lexical previews use the normal saved prompt seam, body-mod ID shortcuts are removed, and
-Full/Balanced/Compact plus prompt-lab golden coverage passes. Standalone belief tests pass 222
-assertions; focused capture/pipeline suites pass 713/2,790; the core and 358-test RimTest assemblies
-build 0/0. The complete verification hook passes all 15 pure suites at 6,838 assertions. RimWorld was
-not launched, so live fixtures are compiled but not recorded as executed.
+Full/Balanced/Compact plus prompt-lab golden coverage passes. The adversarial follow-up additionally
+failure-isolates optional enrichment, restores vanilla situational body-mod polarity through exact
+active selected-precept thoughts, caches policy by active language, removes the history-hook closure,
+and applies event-sensitive belief-field priority. Standalone belief tests pass 227 assertions;
+focused capture/pipeline suites pass 713/2,803; the core and 362-test RimTest assemblies
+build 0/0. The complete verification hook passes all 23 pure projects at 7,445 assertions. RimWorld was
+not launched for the follow-up, so its new live fixtures are compiled but not recorded as executed.
 
 ### Phase 2 — Required event integrations and mutation capture
 
-1. Implement guarded/coalescing mutation patches and cache.
+> **Partial implementation status (2026-07-21): infrastructure slice complete.** Exact guarded
+> `IdeoConversionAttempt`/`OffsetCertainty`/`SetIdeo` hooks project live state only through
+> `DlcContext`, and a bounded pure buffer coalesces overlapping nested calls while keeping sequential
+> same-tick actions distinct. The transient cache is reset per game, non-scribed, non-emitting, and
+> optional-DLC inert. XML now owns exact `Convert`/`Reassure`/`ConversionRitual` canonical ownership;
+> their generic Ability route drops before random sampling only while Ideology is active. Pure suites
+> and five compiled RimTests cover policy/correlation/coalescing, hook ownership, no-DLC behavior,
+> actual before/after boundaries, failure cleanup, and one Convert downstream page. RimWorld was not
+> launched. Steps 2–4, consumer enrichment, and the complete per-path exit gate remain pending.
+
+1. Implement guarded/coalescing mutation patches and cache. **Implemented in the infrastructure slice.**
 2. Add conservative evidence adapters for the §7.5 families to existing captured thought, social,
    body/medical, food, combat/prisoner, observed-condition, and ritual routes. Emit a topic only when
    that source has the exact visible fact needed; unavailable evidence leaves the route unchanged.
 3. Enrich conversion conversation, conversion success/failure, reassurance/counsel, `IdeoChange`,
    conversion ritual, and throne speech through the same resolver.
 4. Add exact XML groups/prompts and role-specific evidence.
-5. Drop downstream-covered generic abilities before their random roll.
+5. Drop downstream-covered generic abilities before their random roll. **Implemented for the three
+   exact XML-owned vanilla routes; full interaction/ritual enrichment coverage remains pending.**
 
 Exit gate: focused pure and RimTests prove correct before/after facts and exactly one canonical event
 for each conversion ability/interaction/ritual path; representative body, meal, raid, thought, and

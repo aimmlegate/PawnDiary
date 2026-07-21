@@ -1,6 +1,7 @@
 // Payload + pure decision for a pawn using a RimWorld Ability. The live hook supplies primitive
 // facts from Ability.Activate; this class owns the cooldown-weighted sampling decision and context
-// string format so ability spam can be filtered without touching RimWorld state in tests.
+// string format so ability spam and exact downstream-owned routes can be filtered without touching
+// RimWorld state in tests.
 using System;
 using System.Globalization;
 
@@ -20,6 +21,7 @@ namespace PawnDiary.Capture
         public int CooldownTicks;
         public float RecordChance;
         public float Roll;
+        public bool DownstreamCovered;
 
         /// <summary>
         /// Pure decision for one ability use. Callers precompute the cooldown-weighted chance and a
@@ -33,6 +35,13 @@ namespace PawnDiary.Capture
             }
 
             if (!ctx.Eligible || !ctx.UserEnabled || !ctx.SignalEnabled)
+            {
+                return CaptureDecision.Drop;
+            }
+
+            // Exact XML policy proves that a later visible interaction/ritual already owns this
+            // event. Drop before sampling so a redundant route does not advance the global RNG.
+            if (data.DownstreamCovered)
             {
                 return CaptureDecision.Drop;
             }

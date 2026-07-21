@@ -30,6 +30,7 @@ namespace PawnDiary
             TestObservationBaselineAndReflectionShell();
             TestMalformedUnsafeAndOversizedInputs();
             TestPhase1EvidencePersistenceAndCorrelation();
+            TestPhase2MutationCoalescingCorrelationAndOwnership();
             Console.WriteLine("BeliefContextTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -75,6 +76,123 @@ namespace PawnDiary
             AssertTrue("missing Compact budget still omits structure", !compactFallback.includeStructure);
             AssertTrue("missing Compact budget still omits memes", !compactFallback.includeMemes);
             AssertTrue("missing Compact budget retains the shipped deity policy", compactFallback.includeDeity);
+            AssertEqual("mutation entry fallback is bounded", 256, safe.maximumMutationCorrelationEntries);
+            AssertEqual("mutation window fallback is bounded", 120, safe.mutationCorrelationWindowTicks);
+            AssertEqual("code fallback suppresses no ability routes", 0,
+                BeliefPolicySnapshot.CreateDefault().downstreamCoveredAbilityDefNames.Count);
+        }
+
+        private static void TestPhase2MutationCoalescingCorrelationAndOwnership()
+        {
+            BeliefMutationState start = new BeliefMutationState
+            {
+                pawnId = "PawnA", capturedTick = 100, ideologyId = "IdeoA",
+                ideologyName = "First", hasCertainty = true, certainty = 0.8f
+            };
+            BeliefMutationState nestedAfter = new BeliefMutationState
+            {
+                pawnId = "PawnA", capturedTick = 100, ideologyId = "IdeoA",
+                ideologyName = "First", hasCertainty = true, certainty = 0.7f
+            };
+            BeliefMutationState final = new BeliefMutationState
+            {
+                pawnId = "PawnA", capturedTick = 100, ideologyId = "IdeoB",
+                ideologyName = "Second", hasCertainty = true, certainty = 0.5f
+            };
+            BeliefMutationState attempted = new BeliefMutationState
+            {
+                ideologyId = "IdeoB", ideologyName = "Second"
+            };
+            BeliefMutationSnapshot nested = BeliefMutationPolicy.Create(
+                start, nestedAfter, null, BeliefMutationCauseTokens.CertaintyOffset,
+                null, 2, 3);
+            BeliefMutationSnapshot outer = BeliefMutationPolicy.Create(
+                start, final, attempted, BeliefMutationCauseTokens.ConversionAttempt,
+                true, 1, 4);
+            AssertTrue("certainty mutation produces a detached fact", nested != null);
+            AssertTrue("conversion mutation produces a detached fact", outer != null);
+
+            BeliefMutationBuffer buffer = new BeliefMutationBuffer();
+            buffer.RecordOrMerge(nested, 100, 8, 10);
+            buffer.RecordOrMerge(outer, 100, 8, 10);
+            AssertEqual("nested mutation calls coalesce to one row", 1, buffer.Count);
+            BeliefMutationSnapshot merged = buffer.PeekLatest("PawnA", 101, 10);
+            AssertTrue("coalesced mutation remains correlatable", merged != null);
+            AssertEqual("coalescing preserves earliest ideology", "IdeoA", merged.beforeIdeologyId);
+            AssertNear("coalescing preserves earliest certainty", 0.8f, merged.beforeCertainty);
+            AssertEqual("coalescing preserves latest ideology", "IdeoB", merged.afterIdeologyId);
+            AssertNear("coalescing preserves latest certainty", 0.5f, merged.afterCertainty);
+            AssertEqual("coalescing preserves attempted ideology", "IdeoB", merged.attemptedIdeologyId);
+            AssertEqual("coalescing preserves conversion result", true, merged.conversionSucceeded.Value);
+            AssertTrue("coalescing unions nested certainty cause",
+                Contains(merged.causeTokens, BeliefMutationCauseTokens.CertaintyOffset));
+            AssertTrue("coalescing unions outer conversion cause",
+                Contains(merged.causeTokens, BeliefMutationCauseTokens.ConversionAttempt));
+            buffer.PeekLatest("PawnA", 101, 10);
+            AssertEqual("correlation reads are non-consuming", 1, buffer.Count);
+
+            BeliefMutationState later = new BeliefMutationState
+            {
+                pawnId = "PawnA", capturedTick = 100, ideologyId = "IdeoB",
+                ideologyName = "Second", hasCertainty = true, certainty = 0.4f
+            };
+            buffer.RecordOrMerge(BeliefMutationPolicy.Create(
+                final, later, null, BeliefMutationCauseTokens.CertaintyOffset,
+                null, 5, 6), 100, 8, 10);
+            AssertEqual("sequential same-tick actions do not coalesce", 2, buffer.Count);
+            AssertNear("latest sequential action wins correlation", 0.4f,
+                buffer.PeekLatest("PawnA", 100, 10).afterCertainty);
+            AssertTrue("different pawn cannot see mutation", buffer.PeekLatest("PawnB", 100, 10) == null);
+            AssertTrue("stale mutation expires outside window", buffer.PeekLatest("PawnA", 111, 10) == null);
+            AssertEqual("stale mutation pruning clears rows", 0, buffer.Count);
+
+            BeliefMutationBuffer cancelled = new BeliefMutationBuffer();
+            cancelled.RecordOrMerge(nested, 100, 8, 10);
+            BeliefMutationSnapshot noNetOuter = BeliefMutationPolicy.Create(
+                start, start, null, BeliefMutationCauseTokens.SetIdeology, null, 1, 4);
+            cancelled.RecordOrMerge(noNetOuter, 100, 8, 10);
+            AssertEqual("no-op outer boundary cancels transient nested change", 0, cancelled.Count);
+
+            BeliefMutationSnapshot failedAttempt = BeliefMutationPolicy.Create(
+                start, start, attempted, BeliefMutationCauseTokens.ConversionAttempt, false, 7, 8);
+            cancelled.RecordOrMerge(failedAttempt, 100, 8, 10);
+            AssertEqual("failed conversion result remains a useful mechanical fact", 1, cancelled.Count);
+
+            BeliefMutationBuffer capped = new BeliefMutationBuffer();
+            for (int i = 0; i < 3; i++)
+            {
+                BeliefMutationState capBefore = new BeliefMutationState
+                {
+                    pawnId = "CapPawn" + i, capturedTick = 200 + i, ideologyId = "CapIdeo",
+                    hasCertainty = true, certainty = 0.8f
+                };
+                BeliefMutationState capAfter = new BeliefMutationState
+                {
+                    pawnId = capBefore.pawnId, capturedTick = capBefore.capturedTick,
+                    ideologyId = "CapIdeo", hasCertainty = true, certainty = 0.7f
+                };
+                capped.RecordOrMerge(BeliefMutationPolicy.Create(
+                    capBefore, capAfter, null, BeliefMutationCauseTokens.CertaintyOffset,
+                    null, 10 + i * 2, 11 + i * 2), 200 + i, 2, 10);
+            }
+            AssertEqual("mutation buffer enforces XML-sized entry cap", 2, capped.Count);
+            AssertTrue("mutation cap removes the oldest row",
+                capped.PeekLatest("CapPawn0", 202, 10) == null);
+            AssertTrue("mutation cap retains the newest row",
+                capped.PeekLatest("CapPawn2", 202, 10) != null);
+
+            BeliefPolicyBuilder policy = BeliefPolicyBuilder.CreateDefault();
+            policy.downstreamCoveredAbilityDefNames.Add("Convert");
+            IReadOnlyList<string> covered = policy.Build().downstreamCoveredAbilityDefNames;
+            AssertTrue("exact active ability is downstream-covered",
+                BeliefCanonicalEventOwnershipPolicy.IsDownstreamCoveredAbility("Convert", true, covered));
+            AssertTrue("exact ability matching is case-insensitive",
+                BeliefCanonicalEventOwnershipPolicy.IsDownstreamCoveredAbility("convert", true, covered));
+            AssertTrue("substring resemblance never suppresses a modded ability",
+                !BeliefCanonicalEventOwnershipPolicy.IsDownstreamCoveredAbility(
+                    "ConvertNearbySettlement", true, covered));
+            AssertTrue("inactive Ideology never suppresses the generic route",
+                !BeliefCanonicalEventOwnershipPolicy.IsDownstreamCoveredAbility("Convert", false, covered));
         }
 
         private static void TestMissingInactiveEmptyAndKnowledgeGates()
@@ -551,6 +669,9 @@ namespace PawnDiary
             AssertTrue("compact omits structure", compact.IndexOf("structure:", StringComparison.Ordinal) < 0);
             AssertTrue("compact omits memes", compact.IndexOf("relevant meme:", StringComparison.Ordinal) < 0);
             AssertContains("compact keeps top doctrine", compact, "relevant precept: Visible stance");
+            AssertContains("saved Compact projection keeps certainty trend",
+                BeliefContextFormatter.ForDetail(full, NarrativeDetailLevelTokens.Compact, policy),
+                "certainty trend: rising (meaningful)");
             AssertEqual("whole-word trim", "alpha", BeliefContextFormatter.WholeWord("alpha beta gamma", 10));
             AssertEqual("unmatched angle delimiter preserves following plain text", "alpha beta tail",
                 BeliefContextFormatter.Clean("alpha < beta tail", 100));
@@ -652,6 +773,32 @@ namespace PawnDiary
                 approvingResult.stances[0].correlationValence);
             AssertEqual("despising ideology keeps mechanical polarity", BeliefValenceTokens.Negative,
                 despisingResult.stances[0].correlationValence);
+
+            BeliefPreceptFact situational = Precept(
+                "Synthetic_Situational", "Synthetic_Body_Issue", "body change stance", 1);
+            situational.correlations.Add(Correlation(BeliefCorrelationKindTokens.Thought,
+                "HasNoReplacement", BeliefValenceTokens.Negative));
+            situational.correlations.Add(Correlation(BeliefCorrelationKindTokens.Thought,
+                "HasReplacement", BeliefValenceTokens.Positive));
+            BeliefStanceResolution situationalResolution = new BeliefStanceResolution();
+            situationalResolution.stances.Add(new ResolvedBeliefStance
+            {
+                precept = situational,
+                correlationValence = BeliefValenceTokens.Mixed
+            });
+            AssertEqual("active positive situational correlation resolves approval",
+                BeliefValenceTokens.Positive,
+                BeliefActiveThoughtPolicy.ResolveValence(situationalResolution, new[] { "HasReplacement" }));
+            AssertEqual("active negative situational correlation resolves rejection",
+                BeliefValenceTokens.Negative,
+                BeliefActiveThoughtPolicy.ResolveValence(situationalResolution, new[] { "HasNoReplacement" }));
+            AssertEqual("negative active correlation wins a conflicting worker result",
+                BeliefValenceTokens.Negative,
+                BeliefActiveThoughtPolicy.ResolveValence(
+                    situationalResolution, new[] { "HasReplacement", "HasNoReplacement" }));
+            AssertEqual("unrelated active thought does not infer doctrine polarity",
+                BeliefValenceTokens.Unknown,
+                BeliefActiveThoughtPolicy.ResolveValence(situationalResolution, new[] { "AteFineMeal" }));
 
             BeliefEventEvidence ordinary = BeliefEventEvidenceFactory.ForEvent(
                 "SyntheticPawn", 251, "work", "SyntheticSweeping", "initiator", "swept the floor", "ordinary");

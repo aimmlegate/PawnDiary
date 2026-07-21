@@ -81,6 +81,7 @@ owners. Both use the shared harness:
 | `PawnDiaryOdysseyRuntimeLifecycleTests` | O1 runtime/save | Real Harmony payloads through the public takeoff/landing entry points, real vanilla cross-layer `TravelTo` and successful `LandingEnded`, cancellation/replay cleanup, plus the manual-boundary Phase A/B/C disposable-save flow. |
 | `PawnDiaryQuestFlowTests` | 16 | Quest accept/complete/fail fan-out + label sanitation + dedup. |
 | `PawnDiaryRitualFlowTests` | 17 | Ideology/Anomaly four-perspective production fan-out through internal fact fixtures, pawn-ID uniqueness, colony dedup, context/localization, and DLC-safe fields. |
+| `PawnDiaryIdeologyPhase1FixtureTests` | Ideology P1 | Exact source-precept/history evidence, cached policy, enrichment failure isolation, and real approved/disapproved body-mod situational workers through `AddHediff`. |
 | `PawnDiaryArrivalFlowTests` | 18 | Neutral arrival page + first-ordering + bootstrap resilience. |
 | `PawnDiaryDayReflectionFlowTests` | 19 | Day/quadrum reflection highlight + once-per-day guard + evidence consumption. |
 | `PawnDiaryArcReflectionFlowTests` | 20 | Arc reflection year/gap limits + memory filter/dedup + backoff. |

@@ -14,13 +14,13 @@ namespace PawnDiary
         [HarmonyPostfix]
         private static void Postfix(HistoryEvent historyEvent)
         {
-            DiaryPatchSafety.Run("HistoryEventObserverPatch", () =>
+            DiaryPatchSafety.Run("HistoryEventObserverPatch", historyEvent, observedEvent =>
             {
                 // This is a frequently used vanilla choke point. Gate before inspecting arguments or
                 // allocating a policy snapshot in base/no-Ideology games.
                 if (!ModsConfig.IdeologyActive || !DiaryBeliefPolicy.Enabled) return;
                 BeliefHistoryObservation observation;
-                if (!DlcContext.TryCaptureBeliefHistoryObservation(historyEvent, out observation)) return;
+                if (!DlcContext.TryCaptureBeliefHistoryObservation(observedEvent, out observation)) return;
                 BeliefHistoryCorrelationCache.Observe(observation, DiaryBeliefPolicy.Snapshot());
             });
         }

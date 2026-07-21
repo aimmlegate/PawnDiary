@@ -42,7 +42,7 @@ collector kind (hediff, capacity, Royal title, Ideology role, event window, obse
 | Save/load scenario | Disposable test save plus two-phase RimTest suite | Real Scribe round trip, index rebuilds, pending-state normalization, archive persistence, and session reset. |
 | Manual visual checks | `tests/SAVE_COMPATIBILITY_SMOKETEST.md` plus a new UI checklist | Immediate-mode rendering, resolution/accessibility layouts, scroll behavior, and screenshots that are not stable enough for unit assertions. |
 
-`tests/BeliefContextTests` is the assembly-free Master Wave 10 / Ideology Phases 0–1 harness. Its 222
+`tests/BeliefContextTests` is the assembly-free Master Wave 10 / Ideology Phases 0–2 harness. Its 257
 assertions lock missing/inactive/unknown-knowledge silence; exact source, thought, history, issue, and
 meme precedence; synthetic mod IDs; guarded phrase/token/fuzzy matching; dynamic common-token,
 confidence, explicit below-threshold diagnostics, and runner-up rejection; reused evidence expansion;
@@ -55,6 +55,9 @@ first-scan/reflection-policy shell decisions. Phase 1 also pins explicit thought
 construction, exact source-precept identity, POV-detached copies, different ideology outcomes for one
 event, unmatched-event neutrality, correlation-text valence, bounded exact-pawn HistoryEvent storage,
 staleness/non-consumption, and stable sanitized save normalization across Full/Balanced/Compact detail.
+The first Phase-2 slice adds detached mutation construction, overlapping nested-call coalescing,
+earliest-before/latest-after preservation, sequential same-tick separation, exact-pawn/windowed
+non-consuming correlation, and exact/inactive/substring-safe canonical ability ownership.
 It file-links only plain Narrative/Belief source and has no RimWorld, Verse, Unity, or DLC reference.
 
 ### 2.1 `PawnDiaryRimTestScope`
@@ -1017,11 +1020,34 @@ Ideology Phase 1 adds `PawnDiaryIdeologyPhase1FixtureTests` plus focused DLC-saf
 The compiled cases exercise a real typed `PreceptComp_Thought`, exact `Thought.sourcePrecept` capture,
 one frozen thought-event context, a real `HistoryEventsManager.RecordEvent` call that creates no page,
 exact-pawn bounded correlation, inactive/no-Ideo silence, and stable sanitized per-POV Scribe
-round-trips. A focused compatibility fixture also pins the pre-Phase-1 solo/pair `DiarySignal` factory
-MemberRefs because core and RimTest DLLs are deployed independently. The current 358-test RimTest
-assembly builds with 0 warnings/errors to a temporary output
-outside the tracked test DLL. RimWorld has not been launched for this slice, so these cases are not
+round-trips. Adversarial follow-up fixtures also pin same-language policy caching, optional-enrichment
+failure isolation, and real `AddHediff` parity for vanilla approved/disapproved situational body-mod
+precepts; pure/pipeline cases cover active-correlation polarity, Compact certainty trend, and
+event-sensitive belief-field scores. A focused compatibility fixture also pins the pre-Phase-1 solo/pair `DiarySignal` factory
+MemberRefs because core and RimTest DLLs are deployed independently. The prior 358-test RimTest
+assembly is now 362 tests and builds with 0 warnings/errors into the tracked deployed test DLL.
+RimWorld has not been launched for this follow-up, so its new cases are not
 recorded as loaded-game passes and no manual/in-game acceptance row is closed.
+
+Ideology Phase 2 infrastructure adds five compiled loaded cases in
+`PawnDiaryIdeologyPhase2InfrastructureTests` (367 total). They resolve and inspect the exact three
+production Harmony targets, branch truthfully for an inactive DLC profile, call real `SetIdeo` and
+`OffsetCertainty` boundaries plus `IdeoConversionAttempt` for detached before/after/attempted/result
+facts and nested/sequential ownership, inject a finally-removed projection failure to prove vanilla
+mutation and cache cleanup, and combine a dropped
+exact `Convert` Ability signal with a real `Find.PlayLog.Add(Convert_Success)` downstream hook to require
+one canonical pair page and no random draw. These fixtures compile against the installed assemblies;
+RimWorld has not been launched, so they are not recorded as executed in-game results.
+
+The first user-observed 367-test loaded run completed 363/367. The N3-O failure was the documented
+acceptance guard for a loaded map without a parked player gravship and remains expected on that host.
+The other three failures exposed fixture/runtime hardening gaps: the Scribe normalization fixture put an
+XML-illegal control character into memory before the writer ran; `SetIdeo` setup could add legitimate
+HistoryEvents before the observer's exact-count assertion; and vanilla's negative body-mod situational
+worker refuses an unspawned pawn. Production now normalizes belief blocks before XML save and probes
+only non-social situational ThoughtDefs; the loaded fixtures reset the history sidecar after setup and
+spawn the disposable body-mod pawn with scope-owned finally cleanup. A corrected in-game rerun is
+pending and is not inferred from compilation.
 
 ## 8. Implementation Order
 

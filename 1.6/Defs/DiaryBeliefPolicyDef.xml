@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Master Wave 10 / Ideology Phase 1 policy. This Def is deliberately DLC-neutral: it names only
-  Pawn Diary schema/evidence vocabulary, never a vanilla/DLC/mod precept, issue, or meme Def.
-  Phase 1 enables event-time enrichment only; it does not add a belief-reflection scheduler.
+  Master Wave 10 / Ideology Phase 1 plus the first Phase 2 infrastructure slice. This Def remains
+  DLC-neutral: the exact ability strings below are event-source ownership, never a hard Def reference
+  or doctrine inference. No belief-reflection scheduler is enabled.
 -->
 <Defs>
   <PawnDiary.DiaryBeliefPolicyDef>
@@ -19,6 +19,8 @@
     <maximumRecentSelections>16</maximumRecentSelections>
     <maximumHistoryCorrelationEntries>256</maximumHistoryCorrelationEntries>
     <historyCorrelationWindowTicks>120</historyCorrelationWindowTicks>
+    <maximumMutationCorrelationEntries>256</maximumMutationCorrelationEntries>
+    <mutationCorrelationWindowTicks>120</mutationCorrelationWindowTicks>
     <maximumFieldCharacters>320</maximumFieldCharacters>
     <maximumNormalizedTokensPerField>48</maximumNormalizedTokensPerField>
     <maximumLexicalFieldsPerDocument>96</maximumLexicalFieldsPerDocument>
@@ -71,7 +73,7 @@
     <!-- DefInjected prompt wording. The saved block contains facts only; this guidance is prepended
          after Full/Balanced/Compact filtering at prompt-build time. -->
     <promptFieldLabel>belief context</promptFieldLabel>
-    <promptFieldInstruction>Treat these as the pawn's event-time beliefs about this event. Do not invent doctrine or imply that belief caused the event.</promptFieldInstruction>
+    <promptFieldInstruction>Beliefs I held at the time. Let them color my reaction and word choice; do not invent doctrine beyond them or claim they caused what happened.</promptFieldInstruction>
 
     <!-- Categorical precedence. Lower-tier bonuses can never cross these stages in pure code. -->
     <tierScores>
@@ -110,11 +112,11 @@
 
     <!-- Def text is localizable through DefInjected; C# stores no English certainty prose. -->
     <certaintyBands>
-      <li><token>fervent</token><minimum>0.85</minimum><phrase>Speak with firm conviction while staying faithful to the supplied facts.</phrase></li>
-      <li><token>confident</token><minimum>0.60</minimum><phrase>Speak with assurance without inventing zeal or extremism.</phrase></li>
-      <li><token>uneasy</token><minimum>0.35</minimum><phrase>Allow tension and exceptions without claiming the faith was abandoned.</phrase></li>
+      <li><token>fervent</token><minimum>0.85</minimum><phrase>Write with firm conviction, staying inside the supplied facts.</phrase></li>
+      <li><token>confident</token><minimum>0.60</minimum><phrase>Write with quiet assurance; do not escalate into zeal or extremism.</phrase></li>
+      <li><token>uneasy</token><minimum>0.35</minimum><phrase>Let unease and small reservations show; the belief itself still holds.</phrase></li>
       <li><token>conflicted</token><minimum>0.15</minimum><phrase>Show an active struggle between doctrine and lived experience.</phrase></li>
-      <li><token>doubtful</token><minimum>0</minimum><phrase>Allow questioning and uncertainty without forcing sadness or conversion.</phrase></li>
+      <li><token>doubtful</token><minimum>0</minimum><phrase>Voice open questioning and uncertainty; do not force grief or a conversion.</phrase></li>
     </certaintyBands>
 
     <!-- Event vocabulary, not doctrine IDs. Unknown safe topic tokens remain forward-compatible. -->
@@ -147,6 +149,14 @@
     <proselytizingPovRoles>
       <li>converter</li><li>organizer</li><li>moral_guide</li>
     </proselytizingPovRoles>
+
+    <!-- These exact vanilla ability routes already produce a later visible interaction/ritual event.
+         Suppressing the generic Ability page makes that downstream event the one canonical owner. -->
+    <downstreamCoveredAbilityDefNames>
+      <li>Convert</li>
+      <li>Reassure</li>
+      <li>ConversionRitual</li>
+    </downstreamCoveredAbilityDefNames>
 
     <!-- Empty by design. Add only a documented, gated, regression-tested metadata failure. -->
     <correlationOverrides />
