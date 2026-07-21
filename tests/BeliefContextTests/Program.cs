@@ -1,0 +1,944 @@
+// Standalone no-game-assembly coverage for Master Wave 10 / Ideology Phase 0. These fixtures use
+// arbitrary synthetic identifiers so successful matching proves the resolver is metadata-driven,
+// not a hidden catalog of vanilla/DLC doctrine.
+using System;
+using System.Collections.Generic;
+
+namespace PawnDiary
+{
+    internal static class Program
+    {
+        private static int assertions;
+
+        private static int Main()
+        {
+            TestPolicyFallbacksAndImmutability();
+            TestMissingInactiveEmptyAndKnowledgeGates();
+            TestSourcePreceptIdentityPrecedence();
+            TestThoughtHistoryAndStructuralPrecedence();
+            TestIssueAndMemeIdentityTiers();
+            TestLexicalNormalizationAndGuardedMatches();
+            TestLexicalCommonConfidenceAndAmbiguityRejection();
+            TestLexicalFuzzyAndUnknownTopicBehavior();
+            TestBodyOrganMealRaidAndRitualScenarios();
+            TestLiveDoctrineIntersectionRedundancyAndCaps();
+            TestSecondSlotIndependenceOrderingAndRepetition();
+            TestCertaintyBoundariesAndTrends();
+            TestFormatterBudgetsSanitationAndWorldviewFacts();
+            TestEvidenceRulesAndOptionalCorrections();
+            TestObservationBaselineAndReflectionShell();
+            TestMalformedUnsafeAndOversizedInputs();
+            Console.WriteLine("BeliefContextTests passed " + assertions + " assertions.");
+            return 0;
+        }
+
+        private static void TestPolicyFallbacksAndImmutability()
+        {
+            BeliefPolicyBuilder builder = BeliefPolicyBuilder.CreateDefault();
+            AssertEqual("default correction list stays empty", 0, builder.correlationOverrides.Count);
+            AssertEqual("source tier fallback", 1200f,
+                builder.Build().TierScore(BeliefRelevanceTierTokens.SourcePrecept));
+            AssertEqual("correlation tier fallback", 1000f,
+                builder.Build().TierScore(BeliefRelevanceTierTokens.ExactCorrelation));
+            AssertTrue("structural tier outranks lexical fallback",
+                builder.Build().TierScore(BeliefRelevanceTierTokens.ExactCorrelation)
+                    > builder.Build().TierScore(BeliefRelevanceTierTokens.CorrelationText));
+
+            List<string> aliases = new List<string> { "synthetic concept" };
+            builder.semanticAliases.Add(new BeliefSemanticAlias("synthetic_topic", aliases));
+            BeliefPolicySnapshot frozen = builder.Build();
+            aliases.Add("late mutation");
+            builder.semanticAliases.Clear();
+            AssertEqual("snapshot deep-copies alias collection", 1, frozen.semanticAliases.Count);
+            AssertEqual("snapshot deep-copies alias strings", 1, frozen.semanticAliases[0].aliases.Count);
+
+            BeliefPolicyBuilder malformed = BeliefPolicyBuilder.CreateDefault();
+            malformed.maximumSelectedStances = 99;
+            malformed.maximumPreceptCandidates = -1;
+            malformed.fuzzySimilarityMinimum = float.NaN;
+            BeliefPolicySnapshot safe = malformed.Build();
+            AssertEqual("hard stance cap survives malformed XML", 2, safe.maximumSelectedStances);
+            AssertEqual("candidate fallback survives malformed XML", 128, safe.maximumPreceptCandidates);
+            AssertEqual("lexical field hard fallback is bounded", 96, safe.maximumLexicalFieldsPerDocument);
+            AssertEqual("lexical token hard fallback is bounded", 256, safe.maximumLexicalTokensPerDocument);
+            AssertNear("fuzzy fallback survives NaN", 0.84f, safe.fuzzySimilarityMinimum);
+            AssertTrue("pure snapshot exposes shared interpretation category",
+                new BeliefStanceResolution().narrativeCategory == NarrativeCategoryTokens.Interpretation);
+        }
+
+        private static void TestMissingInactiveEmptyAndKnowledgeGates()
+        {
+            BeliefPolicySnapshot policy = BeliefPolicySnapshot.CreateDefault();
+            AssertEmpty("null request fails closed", EventRelativeStanceResolver.Resolve(null));
+            AssertEmpty("missing snapshot fails closed", EventRelativeStanceResolver.Resolve(new BeliefResolutionRequest
+            {
+                evidence = Evidence(true), policy = policy
+            }));
+
+            BeliefSnapshot inactive = Snapshot(Precept("A", "IssueA", "alpha doctrine", 1));
+            inactive.ideologyActive = false;
+            AssertEmpty("inactive Ideology fails closed", Resolve(inactive, TextEvidence(true, "alpha doctrine"), policy));
+            BeliefSnapshot emptyIdeology = Snapshot(Precept("A", "IssueA", "alpha doctrine", 1));
+            emptyIdeology.ideologyId = string.Empty;
+            AssertEmpty("empty ideoligion fails closed", Resolve(emptyIdeology, TextEvidence(true, "alpha doctrine"), policy));
+
+            BeliefSnapshot live = Snapshot(Precept("A", "IssueA", "alpha doctrine", 1));
+            AssertEmpty("unknown POV knowledge fails closed", Resolve(live, TextEvidence(null, "alpha doctrine"), policy));
+            AssertEmpty("false POV knowledge fails closed", Resolve(live, TextEvidence(false, "alpha doctrine"), policy));
+            AssertEmpty("empty event enrichment evidence fails closed", Resolve(live, Evidence(true), policy));
+            AssertEmpty("hidden precept remains unavailable", Resolve(
+                Snapshot(Precept("Hidden", "HiddenIssue", "hidden doctrine", 3, visible: false)),
+                SourceEvidence("hidden-instance", "Hidden"), policy));
+        }
+
+        private static void TestSourcePreceptIdentityPrecedence()
+        {
+            BeliefPreceptFact first = Precept("Synthetic_First", "Issue_First", "first doctrine", 3);
+            first.instanceId = "instance-first";
+            first.correlations.Add(Correlation(BeliefCorrelationKindTokens.Thought, "Thought_First",
+                BeliefValenceTokens.Positive));
+            BeliefPreceptFact second = Precept("Synthetic_Second", "Issue_Second", "second doctrine", 0);
+            second.instanceId = "instance-second";
+            BeliefSnapshot snapshot = Snapshot(first, second);
+
+            BeliefEventEvidence evidence = SourceEvidence("instance-second", "Synthetic_Second");
+            evidence.thoughtDefNames.Add("Thought_First");
+            evidence.issueDefNames.Add("Issue_First");
+            evidence.matchFields.Add(Text("event_label", "first doctrine"));
+            BeliefStanceResolution resolved = Resolve(snapshot, evidence, BeliefPolicySnapshot.CreateDefault());
+            AssertSelected("source instance wins over every other signal", resolved, "Synthetic_Second");
+            AssertEqual("source instance reason", BeliefRelevanceSourceTokens.SourcePrecept,
+                resolved.stances[0].relevanceSource);
+
+            BeliefEventEvidence fallback = SourceEvidence(string.Empty, "Synthetic_First");
+            AssertSelected("unique source def fallback", Resolve(snapshot, fallback,
+                BeliefPolicySnapshot.CreateDefault()), "Synthetic_First");
+
+            BeliefPreceptFact duplicate = Precept("Synthetic_First", "Issue_Duplicate", "duplicate", 3);
+            duplicate.instanceId = "instance-duplicate";
+            AssertEmpty("duplicate def fallback is ambiguous", Resolve(Snapshot(first, duplicate), fallback,
+                BeliefPolicySnapshot.CreateDefault()));
+            AssertEmpty("source identity cannot select doctrine absent from live snapshot", Resolve(snapshot,
+                SourceEvidence("missing-instance", "Missing_Precept"), BeliefPolicySnapshot.CreateDefault()));
+        }
+
+        private static void TestThoughtHistoryAndStructuralPrecedence()
+        {
+            BeliefPreceptFact thought = Precept("Mod_ThoughtStance", "Issue_Thought", "quiet modest custom stance", 0);
+            thought.correlations.Add(Correlation(BeliefCorrelationKindTokens.Thought, "Modded_Thought_X9",
+                BeliefValenceTokens.Negative));
+            BeliefPreceptFact history = Precept("Mod_HistoryStance", "Issue_History", "archive custom stance", 0);
+            history.correlations.Add(Correlation(BeliefCorrelationKindTokens.HistoryEvent, "Modded_History_Y7",
+                BeliefValenceTokens.Positive));
+            BeliefPreceptFact loud = Precept("Unrelated_HighImpact", "Issue_Unrelated", "modded thought x9", 3);
+            BeliefSnapshot snapshot = Snapshot(thought, history, loud);
+
+            BeliefEventEvidence thoughtEvidence = Evidence(true);
+            thoughtEvidence.thoughtDefNames.Add("Modded_Thought_X9");
+            thoughtEvidence.issueDefNames.Add("Issue_Unrelated");
+            thoughtEvidence.matchFields.Add(Text("event_label", "modded thought x9"));
+            BeliefStanceResolution thoughtResult = Resolve(snapshot, thoughtEvidence,
+                BeliefPolicySnapshot.CreateDefault());
+            AssertSelected("exact thought correlation beats identity/text/impact", thoughtResult, "Mod_ThoughtStance");
+            AssertEqual("thought relevance source", BeliefRelevanceSourceTokens.ThoughtCorrelation,
+                thoughtResult.stances[0].relevanceSource);
+            AssertEqual("thought valence stays mechanical", BeliefValenceTokens.Negative,
+                thoughtResult.stances[0].correlationValence);
+
+            BeliefEventEvidence historyEvidence = Evidence(true);
+            historyEvidence.historyEventDefNames.Add("Modded_History_Y7");
+            BeliefStanceResolution historyResult = Resolve(snapshot, historyEvidence,
+                BeliefPolicySnapshot.CreateDefault());
+            AssertSelected("arbitrary mod history correlation resolves", historyResult, "Mod_HistoryStance");
+            AssertEqual("history relevance source", BeliefRelevanceSourceTokens.HistoryCorrelation,
+                historyResult.stances[0].relevanceSource);
+            AssertEqual("history valence stays mechanical", BeliefValenceTokens.Positive,
+                historyResult.stances[0].correlationValence);
+
+            AssertTrue("lexical prose never creates polarity",
+                Resolve(snapshot, TextEvidence(true, "quiet modest custom stance"),
+                    BeliefPolicySnapshot.CreateDefault()).stances[0].correlationValence
+                    == BeliefValenceTokens.Unknown);
+        }
+
+        private static void TestIssueAndMemeIdentityTiers()
+        {
+            BeliefPreceptFact issue = Precept("Exact_Issue_Stance", "Synthetic_Issue_404", "unassuming", 0);
+            BeliefPreceptFact unrelated = Precept("Unrelated_Strong", "Other_Issue", "synthetic issue 404", 3);
+            BeliefEventEvidence issueEvidence = Evidence(true);
+            issueEvidence.issueDefNames.Add("Synthetic_Issue_404");
+            BeliefStanceResolution issueResult = Resolve(Snapshot(issue, unrelated), issueEvidence,
+                BeliefPolicySnapshot.CreateDefault());
+            AssertSelected("direct issue identity beats unrelated high impact", issueResult, "Exact_Issue_Stance");
+            AssertEqual("issue identity tier", BeliefRelevanceTierTokens.DirectIdentity,
+                issueResult.stances[0].relevanceTier);
+
+            BeliefMemeFact meme = Meme("Synthetic_Meme", "Synthetic worldview", 2);
+            BeliefPreceptFact linked = Precept("Meme_Linked_Stance", "Meme_Issue", "linked stance", 1);
+            linked.associatedMemeDefNames.Add("Synthetic_Meme");
+            BeliefSnapshot withMeme = Snapshot(linked);
+            withMeme.memes.Add(meme);
+            BeliefEventEvidence memeEvidence = Evidence(true);
+            memeEvidence.memeDefNames.Add("Synthetic_Meme");
+            BeliefStanceResolution memeResult = Resolve(withMeme, memeEvidence,
+                BeliefPolicySnapshot.CreateDefault());
+            AssertSelected("direct live meme association selects linked precept", memeResult, "Meme_Linked_Stance");
+            AssertEqual("supporting meme selected once", 1, memeResult.supportingMemes.Count);
+
+            BeliefSnapshot memeOnly = Snapshot();
+            memeOnly.memes.Add(meme);
+            BeliefStanceResolution memeOnlyResult = Resolve(memeOnly, memeEvidence,
+                BeliefPolicySnapshot.CreateDefault());
+            AssertEqual("direct live meme can be sole doctrinal result", 0, memeOnlyResult.stances.Count);
+            AssertEqual("sole direct meme remains useful", 1, memeOnlyResult.supportingMemes.Count);
+            BeliefSnapshot memeBeatsLexical = Snapshot(
+                Precept("Lexical_Unrelated", "Lexical_Issue", "tempting lexical doctrine", 3));
+            memeBeatsLexical.memes.Add(meme);
+            BeliefEventEvidence memeAndText = Evidence(true);
+            memeAndText.memeDefNames.Add("Synthetic_Meme");
+            memeAndText.matchFields.Add(Text("event_label", "tempting lexical doctrine"));
+            BeliefStanceResolution memePrecedence = Resolve(memeBeatsLexical, memeAndText,
+                BeliefPolicySnapshot.CreateDefault());
+            AssertEqual("direct meme identity prevents unrelated lexical fallback", 0,
+                memePrecedence.stances.Count);
+            AssertEqual("direct meme identity remains selected", 1, memePrecedence.supportingMemes.Count);
+            AssertTrue("meme absent from live doctrine returns empty",
+                !Resolve(Snapshot(), memeEvidence, BeliefPolicySnapshot.CreateDefault()).HasUsefulContext);
+        }
+
+        private static void TestLexicalNormalizationAndGuardedMatches()
+        {
+            string normalized = BeliefLexicalMatcher.Normalize(
+                "<b>Body_Modification</b>\r\n  ÉLAN", 100, 10);
+            AssertEqual("markup/case/underscore/whitespace normalization", "body modification élan", normalized);
+            AssertEqual("CamelCase Def normalization", "organ use history event",
+                BeliefLexicalMatcher.Normalize("OrganUseHistoryEvent", 100, 10));
+
+            BeliefPolicySnapshot policy = VocabularyPolicy();
+            BeliefPreceptFact phrase = Precept("Synthetic_Cannibal", "Issue_Cannibal", "human meat", 1);
+            BeliefPreceptFact tokens = Precept("Synthetic_Other", "Issue_Other", "human crops", 3);
+            BeliefEventEvidence eventEvidence = Evidence(true);
+            eventEvidence.narrative.beliefTopics.Add("cannibalism");
+            BeliefStanceResolution result = Resolve(Snapshot(phrase, tokens), eventEvidence, policy);
+            AssertSelected("semantic alias exact phrase wins", result, "Synthetic_Cannibal");
+            AssertEqual("phrase relevance diagnostic", BeliefRelevanceSourceTokens.LexicalPhrase,
+                result.stances[0].relevanceSource);
+
+            BeliefPreceptFact twoTokens = Precept("Synthetic_TwoTokens", "Issue_TwoTokens",
+                "luminous orchard stewardship", 1);
+            BeliefEventEvidence tokenEvidence = TextEvidence(true, "orchard luminous gathering");
+            BeliefStanceResolution tokenResult = Resolve(Snapshot(twoTokens), tokenEvidence, policy);
+            AssertSelected("two distinctive tokens qualify", tokenResult, "Synthetic_TwoTokens");
+            AssertEqual("token relevance diagnostic", BeliefRelevanceSourceTokens.LexicalTokens,
+                tokenResult.stances[0].relevanceSource);
+
+            BeliefPreceptFact unique = Precept("Synthetic_Unique", "Issue_Unique", "xenoharvesting", 1);
+            BeliefEventEvidence uniqueEvidence = Evidence(true);
+            uniqueEvidence.matchFields.Add(Text("ingredient_label", "xenoharvesting"));
+            AssertSelected("one sufficiently long unique token qualifies at boundary",
+                Resolve(Snapshot(unique), uniqueEvidence, policy), "Synthetic_Unique");
+        }
+
+        private static void TestLexicalCommonConfidenceAndAmbiguityRejection()
+        {
+            BeliefPolicySnapshot policy = VocabularyPolicy();
+            BeliefPreceptFact first = Precept("Common_A", "Issue_A", "sacred ritual", 1);
+            BeliefPreceptFact second = Precept("Common_B", "Issue_B", "sacred ritual", 3);
+            AssertEmpty("all-common phrase/tokens are suppressed", Resolve(Snapshot(first, second),
+                TextEvidence(true, "sacred ritual"), policy));
+
+            AssertEmpty("single generic token is rejected", Resolve(
+                Snapshot(Precept("Generic", "Issue_Generic", "sacred", 3)),
+                TextEvidence(true, "sacred"), policy));
+            AssertEmpty("configured schema-token exclusion is rejected", Resolve(
+                Snapshot(Precept("Schema", "Issue_Schema", "belief", 3)),
+                TextEvidence(true, "belief"), policy));
+
+            BeliefPolicyBuilder highThreshold = BeliefPolicyBuilder.CreateDefault();
+            highThreshold.minimumLexicalConfidence = 500f;
+            AssertEmpty("below minimum confidence is rejected", Resolve(
+                Snapshot(Precept("Below", "Issue_Below", "distinctive orchard", 1)),
+                TextEvidence(true, "distinctive orchard"), highThreshold.Build()));
+
+            BeliefPolicyBuilder ambiguity = BeliefPolicyBuilder.CreateDefault();
+            ambiguity.commonTokenDocumentFraction = 1f;
+            ambiguity.lexicalRunnerUpMargin = 1f;
+            BeliefSnapshot tied = Snapshot(
+                Precept("Tie_A", "Issue_Tie_A", "crimson doctrine", 1),
+                Precept("Tie_B", "Issue_Tie_B", "crimson doctrine", 1),
+                Precept("Tie_C", "Issue_Tie_C", "azure orchard", 1));
+            BeliefLexicalMatchResult tiedResult = BeliefLexicalMatcher.Match(
+                TextEvidence(true, "crimson doctrine"), tied, tied.precepts, ambiguity.Build());
+            AssertTrue("near runner-up is explicitly ambiguous", tiedResult.rejectedAsAmbiguous);
+            AssertTrue("ambiguous matcher exposes no winner", tiedResult.winner == null);
+            AssertEmpty("resolver remains silent on lexical tie", Resolve(tied,
+                TextEvidence(true, "crimson doctrine"), ambiguity.Build()));
+        }
+
+        private static void TestLexicalFuzzyAndUnknownTopicBehavior()
+        {
+            BeliefPolicyBuilder fuzzyBuilder = BeliefPolicyBuilder.CreateDefault();
+            fuzzyBuilder.fuzzySimilarityMinimum = 0.72f;
+            fuzzyBuilder.fuzzyMatchScore = 30f;
+            fuzzyBuilder.minimumLexicalConfidence = 55f;
+            fuzzyBuilder.fuzzyRunnerUpMargin = 20f;
+            BeliefPolicySnapshot fuzzyPolicy = fuzzyBuilder.Build();
+            BeliefPreceptFact fuzzy = Precept("Fuzzy_Target", "Fuzzy_Issue",
+                "cybernetiks transhumanizm", 1);
+            BeliefStanceResolution fuzzyResult = Resolve(Snapshot(fuzzy),
+                TextEvidence(true, "cybernetics transhumanism"), fuzzyPolicy);
+            AssertSelected("two conservative fuzzy tokens qualify", fuzzyResult, "Fuzzy_Target");
+            AssertEqual("fuzzy diagnostic", BeliefRelevanceSourceTokens.LexicalFuzzy,
+                fuzzyResult.stances[0].relevanceSource);
+            AssertEmpty("one fuzzy token remains insufficient", Resolve(
+                Snapshot(Precept("Fuzzy_Weak", "Fuzzy_Weak_Issue", "cybernetiks", 3)),
+                TextEvidence(true, "cybernetics"), fuzzyPolicy));
+
+            BeliefPreceptFact future = Precept("Future_Mod_Precept", "Future_Issue",
+                "quasar husbandry", 1);
+            BeliefEventEvidence unknown = Evidence(true);
+            unknown.narrative.beliefTopics.Add("quasar_husbandry");
+            AssertSelected("unknown safe topic can match future mod text without code changes",
+                Resolve(Snapshot(future), unknown, BeliefPolicySnapshot.CreateDefault()), "Future_Mod_Precept");
+            BeliefEventEvidence unrelatedUnknown = Evidence(true);
+            unrelatedUnknown.narrative.beliefTopics.Add("totally_unknown_topic");
+            AssertEmpty("unknown topic with no live match is a no-op",
+                Resolve(Snapshot(future), unrelatedUnknown, BeliefPolicySnapshot.CreateDefault()));
+        }
+
+        private static void TestBodyOrganMealRaidAndRitualScenarios()
+        {
+            BeliefPolicySnapshot policy = VocabularyPolicy();
+
+            BeliefPreceptFact bodyApprove = Precept("Body_Approve", "Body_Issue", "prosthetic acceptance", 3);
+            bodyApprove.correlations.Add(Correlation(BeliefCorrelationKindTokens.HistoryEvent,
+                "SyntheticBodyOperation", BeliefValenceTokens.Positive));
+            BeliefPreceptFact bodyDespise = Precept("Body_Despise", "Body_Issue", "prosthetic rejection", 0);
+            bodyDespise.correlations.Add(Correlation(BeliefCorrelationKindTokens.HistoryEvent,
+                "SyntheticBodyOperation", BeliefValenceTokens.Negative));
+            BeliefEventEvidence bodyEvidence = GroupEvidence("medical", "body_modification");
+            bodyEvidence.historyEventDefNames.Add("SyntheticBodyOperation");
+            BeliefStanceResolution bodyResult = Resolve(Snapshot(bodyApprove, bodyDespise), bodyEvidence, policy);
+            AssertSelected("body modification keeps despise precedence on reliable conflict",
+                bodyResult, "Body_Despise");
+            AssertEqual("body mechanical polarity retained", BeliefValenceTokens.Negative,
+                bodyResult.stances[0].correlationValence);
+
+            BeliefPreceptFact organ = Precept("Organ_Stance", "Organ_Issue", "organ harvesting", 1);
+            AssertSelected("organ-use vocabulary selects matching live stance",
+                Resolve(Snapshot(organ), GroupEvidence("medical", "organ_use"), policy), "Organ_Stance");
+
+            BeliefPreceptFact cannibal = Precept("Cannibal_Stance", "Cannibal_Issue", "human meat", 1);
+            BeliefPreceptFact slavery = Precept("Slavery_Unrelated", "Slavery_Issue", "slavery bondage", 3);
+            AssertSelected("known cannibal meal ignores stronger unrelated doctrine",
+                Resolve(Snapshot(cannibal, slavery), GroupEvidence("food", "cannibal_meal"), policy),
+                "Cannibal_Stance");
+            AssertEmpty("generic meal does not invent cannibal ingredients",
+                Resolve(Snapshot(cannibal), GroupEvidence("food", "meal"), policy));
+            BeliefEventEvidence knownIngredient = GroupEvidence("food", "meal");
+            knownIngredient.matchFields.Add(Text("ingredient_label", "human meat"));
+            AssertSelected("known meal ingredient can resolve cannibalism",
+                Resolve(Snapshot(cannibal), knownIngredient, policy), "Cannibal_Stance");
+
+            ExpandedBeliefEvidence raidExpanded = BeliefEventEvidencePolicy.Expand(
+                GroupEvidence("combat", "raid"), policy);
+            AssertTrue("raid adds violence", Contains(raidExpanded.topics, "violence"));
+            AssertTrue("raid never invents charity", !Contains(raidExpanded.topics, "charity"));
+            BeliefPreceptFact violence = Precept("Violence_Stance", "Violence_Issue", "violence", 1);
+            BeliefPreceptFact charity = Precept("Charity_Stance", "Charity_Issue", "charity aid", 3);
+            AssertSelected("raid selects violence rather than charity",
+                Resolve(Snapshot(violence, charity), GroupEvidence("combat", "raid"), policy), "Violence_Stance");
+
+            BeliefPreceptFact ritual = Precept("Ritual_Stance", "Ritual_Issue", "ritual ceremony", 1);
+            AssertSelected("visible ritual vocabulary resolves matching doctrine",
+                Resolve(Snapshot(ritual), GroupEvidence("ritual", "ritual"), policy), "Ritual_Stance");
+        }
+
+        private static void TestLiveDoctrineIntersectionRedundancyAndCaps()
+        {
+            BeliefPolicySnapshot policy = BeliefPolicySnapshot.CreateDefault();
+            BeliefPreceptFact variantA = Precept("Variant_A", "Shared_Issue", "variant a", 3);
+            variantA.correlations.Add(Correlation(BeliefCorrelationKindTokens.Thought, "SharedThought",
+                BeliefValenceTokens.Positive));
+            BeliefPreceptFact variantB = Precept("Variant_B", "Shared_Issue", "variant b", 0);
+            variantB.correlations.Add(Correlation(BeliefCorrelationKindTokens.Thought, "SharedThought",
+                BeliefValenceTokens.Negative));
+            BeliefEventEvidence shared = Evidence(true);
+            shared.thoughtDefNames.Add("SharedThought");
+            BeliefStanceResolution collapsed = Resolve(Snapshot(variantA, variantB), shared, policy);
+            AssertEqual("same-issue variants collapse", 1, collapsed.stances.Count);
+            AssertSelected("same evidence uses reliable negative precedence", collapsed, "Variant_B");
+
+            BeliefPreceptFact first = CorrelatedPrecept("First", "Issue_First", "Thought_First");
+            BeliefPreceptFact second = CorrelatedPrecept("Second", "Issue_Second", "Thought_Second");
+            BeliefPreceptFact third = CorrelatedPrecept("Third", "Issue_Third", "Thought_Third");
+            BeliefEventEvidence three = Evidence(true);
+            three.thoughtDefNames.AddRange(new[] { "Thought_First", "Thought_Second", "Thought_Third" });
+            BeliefStanceResolution capped = Resolve(Snapshot(first, second, third), three, policy);
+            AssertEqual("resolver hard-caps at two", 2, capped.stances.Count);
+            AssertTrue("two selected stances have separate issues",
+                capped.stances[0].precept.issue.defName != capped.stances[1].precept.issue.defName);
+
+            BeliefEventEvidence absent = Evidence(true);
+            absent.thoughtDefNames.Add("Thought_Not_Live");
+            AssertEmpty("correlation cannot escape live-doctrine intersection",
+                Resolve(Snapshot(first), absent, policy));
+        }
+
+        private static void TestSecondSlotIndependenceOrderingAndRepetition()
+        {
+            BeliefPreceptFact first = CorrelatedPrecept("SecondSlot_A", "SecondSlot_Issue_A", "Fact_A");
+            BeliefPreceptFact second = CorrelatedPrecept("SecondSlot_B", "SecondSlot_Issue_B", "Fact_B");
+            BeliefEventEvidence evidence = Evidence(true);
+            evidence.thoughtDefNames.AddRange(new[] { "Fact_A", "Fact_B" });
+            BeliefStanceResolution two = Resolve(Snapshot(first, second), evidence,
+                BeliefPolicySnapshot.CreateDefault(), seed: 77);
+            AssertEqual("independent structural facts permit second slot", 2, two.stances.Count);
+            AssertTrue("second slot records independent evidence",
+                two.stances[0].independentEvidenceKey != two.stances[1].independentEvidenceKey);
+
+            BeliefPolicyBuilder strictSecond = BeliefPolicyBuilder.CreateDefault();
+            strictSecond.secondSlotMinimumScore = 2000f;
+            AssertEqual("independent second-slot threshold is enforced", 1,
+                Resolve(Snapshot(first, second), evidence, strictSecond.Build()).stances.Count);
+
+            BeliefStanceResolution deterministicA = Resolve(Snapshot(first, second), evidence,
+                BeliefPolicySnapshot.CreateDefault(), seed: 1942);
+            BeliefStanceResolution deterministicB = Resolve(Snapshot(second, first), evidence,
+                BeliefPolicySnapshot.CreateDefault(), seed: 1942);
+            AssertEqual("input ordering cannot change first selection",
+                deterministicA.stances[0].precept.defName, deterministicB.stances[0].precept.defName);
+            AssertEqual("input ordering cannot change second selection",
+                deterministicA.stances[1].precept.defName, deterministicB.stances[1].precept.defName);
+
+            BeliefPreceptFact quietA = Precept("Quiet_A", "Quiet_Issue_A", "quiet a", 3);
+            BeliefPreceptFact quietB = Precept("Quiet_B", "Quiet_Issue_B", "quiet b", 3);
+            BeliefEventEvidence quietEvidence = Evidence(true);
+            HashSet<string> diverse = new HashSet<string>(StringComparer.Ordinal);
+            for (int seed = 0; seed < 64; seed++)
+                diverse.Add(Resolve(Snapshot(quietA, quietB), quietEvidence,
+                    BeliefPolicySnapshot.CreateDefault(), BeliefResolutionModeTokens.QuietReflection,
+                    seed).stances[0].precept.defName);
+            AssertTrue("different deterministic seeds can diversify equal relevant doctrine", diverse.Count > 1);
+            BeliefStanceResolution initial = Resolve(Snapshot(quietA, quietB), quietEvidence,
+                BeliefPolicySnapshot.CreateDefault(), BeliefResolutionModeTokens.QuietReflection, 9);
+            AssertEqual("quiet fallback normally selects one", 1, initial.stances.Count);
+            List<string> recent = new List<string> { initial.stances[0].precept.defName };
+            BeliefStanceResolution repeated = Resolve(Snapshot(quietA, quietB), quietEvidence,
+                BeliefPolicySnapshot.CreateDefault(), BeliefResolutionModeTokens.QuietReflection, 9, recent);
+            AssertTrue("repetition penalty prefers fresh quiet doctrine",
+                repeated.stances[0].precept.defName != initial.stances[0].precept.defName);
+            AssertEmpty("ordinary event enrichment never uses quiet fallback",
+                Resolve(Snapshot(quietA, quietB), quietEvidence, BeliefPolicySnapshot.CreateDefault()));
+
+            BeliefPreceptFact unrelatedHigh = Precept("Unrelated_High", "Unrelated_High_Issue", "night darkness", 3);
+            unrelatedHigh.requiredByCurrentMeme = true;
+            AssertEmpty("unrelated high-impact/required doctrine remains silent",
+                Resolve(Snapshot(unrelatedHigh), TextEvidence(true, "shared lunch"),
+                    BeliefPolicySnapshot.CreateDefault()));
+
+            BeliefPreceptFact role = CorrelatedPrecept("Role_Fit", "Role_Issue", "RoleFact");
+            role.proselytizes = true;
+            BeliefPreceptFact ordinary = CorrelatedPrecept("Role_Ordinary", "Role_Other", "RoleFact");
+            BeliefEventEvidence roleEvidence = Evidence(true);
+            roleEvidence.narrative.povRole = "converter";
+            roleEvidence.thoughtDefNames.Add("RoleFact");
+            AssertSelected("role fit only reorders already-correlated doctrine",
+                Resolve(Snapshot(role, ordinary), roleEvidence, BeliefPolicySnapshot.CreateDefault()), "Role_Fit");
+        }
+
+        private static void TestCertaintyBoundariesAndTrends()
+        {
+            BeliefPolicySnapshot policy = BeliefPolicySnapshot.CreateDefault();
+            AssertEqual("below conflicted boundary", "doubtful", BeliefCertaintyPolicy.BandFor(0.149f, policy).token);
+            AssertEqual("at conflicted boundary", "conflicted", BeliefCertaintyPolicy.BandFor(0.15f, policy).token);
+            AssertEqual("below uneasy boundary", "conflicted", BeliefCertaintyPolicy.BandFor(0.349f, policy).token);
+            AssertEqual("at uneasy boundary", "uneasy", BeliefCertaintyPolicy.BandFor(0.35f, policy).token);
+            AssertEqual("below confident boundary", "uneasy", BeliefCertaintyPolicy.BandFor(0.599f, policy).token);
+            AssertEqual("at confident boundary", "confident", BeliefCertaintyPolicy.BandFor(0.60f, policy).token);
+            AssertEqual("below fervent boundary", "confident", BeliefCertaintyPolicy.BandFor(0.849f, policy).token);
+            AssertEqual("at fervent boundary", "fervent", BeliefCertaintyPolicy.BandFor(0.85f, policy).token);
+            AssertEqual("above fervent boundary", "fervent", BeliefCertaintyPolicy.BandFor(1.2f, policy).token);
+
+            string trend;
+            string magnitude;
+            BeliefCertaintyPolicy.Trend(0.5f, 0.5f, policy, out trend, out magnitude);
+            AssertEqual("zero delta stable", BeliefCertaintyTrendTokens.Stable, trend);
+            AssertEqual("zero delta minor", BeliefCertaintyMagnitudeTokens.Minor, magnitude);
+            BeliefCertaintyPolicy.Trend(0.50f, 0.55f, policy, out trend, out magnitude);
+            AssertEqual("meaningful boundary rises", BeliefCertaintyTrendTokens.Rising, trend);
+            AssertEqual("meaningful boundary class", BeliefCertaintyMagnitudeTokens.Meaningful, magnitude);
+            BeliefCertaintyPolicy.Trend(0.60f, 0.45f, policy, out trend, out magnitude);
+            AssertEqual("major boundary falls", BeliefCertaintyTrendTokens.Falling, trend);
+            AssertEqual("major boundary class", BeliefCertaintyMagnitudeTokens.Major, magnitude);
+        }
+
+        private static void TestFormatterBudgetsSanitationAndWorldviewFacts()
+        {
+            BeliefPolicyBuilder builder = BeliefPolicyBuilder.CreateDefault();
+            builder.certaintyBands.Clear();
+            builder.certaintyBands.Add(new BeliefCertaintyBand("steady", 0f, "XML-owned certainty phrase"));
+            BeliefPolicySnapshot policy = builder.Build();
+            BeliefPreceptFact precept = Precept("Format_Precept", "Format_Issue", "<b>Visible stance</b>", 1);
+            precept.description = "First line\nsecond line; hostile <i>tag</i> tail";
+            BeliefStanceResolution resolution = new BeliefStanceResolution
+            {
+                ideologyName = "The <b>Quiet</b> Flame",
+                roleName = "Guide\nInjected",
+                hasCertainty = true,
+                certainty = 0.62f,
+                certaintyBand = "steady",
+                certaintyPhrase = "XML-owned certainty phrase",
+                certaintyTrend = BeliefCertaintyTrendTokens.Rising,
+                certaintyMagnitude = BeliefCertaintyMagnitudeTokens.Meaningful,
+                structure = Meme("Structure_Meme", "Abstract structure", 1, isStructure: true),
+                deity = new BeliefDeityFact { name = "Auralis", isKeyDeity = true }
+            };
+            resolution.structure.description = "Structure description stays factual";
+            resolution.stances.Add(new ResolvedBeliefStance { precept = precept });
+            resolution.supportingMemes.Add(Meme("Support_Meme", "Proselytizer", 2));
+            string full = BeliefContextFormatter.Format(resolution, NarrativeDetailLevelTokens.Full, policy);
+            AssertContains("full formatter includes ideoligion", full, "ideoligion: The Quiet Flame");
+            AssertContains("full formatter includes certainty percentage", full, "certainty: 62% (steady)");
+            AssertContains("full formatter includes XML certainty phrase", full, "XML-owned certainty phrase");
+            AssertContains("full formatter includes precept", full, "relevant precept: Visible stance");
+            AssertContains("full formatter includes structure", full, "structure: Abstract structure");
+            AssertContains("full formatter includes deity", full, "deity: Auralis");
+            AssertTrue("formatter strips markup", full.IndexOf('<') < 0 && full.IndexOf('>') < 0);
+            AssertTrue("formatter collapses hostile field newlines", full.IndexOf("Guide\nInjected", StringComparison.Ordinal) < 0);
+            AssertTrue("formatter replaces semicolon data", full.IndexOf(';') < 0);
+
+            string balanced = BeliefContextFormatter.Format(resolution, NarrativeDetailLevelTokens.Balanced, policy);
+            AssertTrue("balanced omits descriptions", balanced.IndexOf("precept meaning:", StringComparison.Ordinal) < 0);
+            AssertContains("balanced keeps supporting meme", balanced, "relevant meme: Proselytizer");
+            string compact = BeliefContextFormatter.Format(resolution, NarrativeDetailLevelTokens.Compact, policy);
+            AssertTrue("compact omits structure", compact.IndexOf("structure:", StringComparison.Ordinal) < 0);
+            AssertTrue("compact omits memes", compact.IndexOf("relevant meme:", StringComparison.Ordinal) < 0);
+            AssertContains("compact keeps top doctrine", compact, "relevant precept: Visible stance");
+            AssertEqual("whole-word trim", "alpha", BeliefContextFormatter.WholeWord("alpha beta gamma", 10));
+            AssertEmpty("empty resolution formats empty", new BeliefStanceResolution(), policy);
+
+            BeliefMemeFact relatedMeme = Meme("Related_Meme", "Related meme", 1);
+            BeliefPreceptFact linked = Precept("Deity_Precept", "Deity_Issue", "deity stance", 1);
+            linked.associatedMemeDefNames.Add("Related_Meme");
+            BeliefSnapshot deitySnapshot = Snapshot(linked);
+            deitySnapshot.memes.Add(relatedMeme);
+            deitySnapshot.structure = Meme("Structure_Only", "Structure", 1, isStructure: true);
+            deitySnapshot.deities.Add(new BeliefDeityFact { name = "Key One", isKeyDeity = true });
+            deitySnapshot.deities.Add(new BeliefDeityFact { name = "Related One", relatedMemeDefName = "Related_Meme" });
+            BeliefStanceResolution deityResult = Resolve(deitySnapshot,
+                SourceEvidence(linked.instanceId, linked.defName), policy);
+            AssertEqual("related-meme deity outranks key deity", "Related One", deityResult.deity.name);
+            AssertTrue("structure stays separate from ordinary memes",
+                deityResult.structure != null && !ContainsMeme(deityResult.supportingMemes, "Structure_Only"));
+        }
+
+        private static void TestEvidenceRulesAndOptionalCorrections()
+        {
+            BeliefPolicySnapshot vocabulary = VocabularyPolicy();
+            ExpandedBeliefEvidence body = BeliefEventEvidencePolicy.Expand(
+                GroupEvidence("medical", "body_modification"), vocabulary);
+            AssertTrue("body rule adds topic", Contains(body.topics, "body_modification"));
+            AssertTrue("body rule adds semantic alias key", Contains(body.semanticAliases, "body_modification"));
+            AssertTrue("body rule records diagnostic key", Contains(body.matchedRuleKeys, "body_rule"));
+
+            BeliefEventEvidence unknown = Evidence(true);
+            unknown.narrative.beliefTopics.Add("future_safe_topic");
+            unknown.narrative.beliefTopics.Add("bad topic with spaces");
+            ExpandedBeliefEvidence expandedUnknown = BeliefEventEvidencePolicy.Expand(unknown, vocabulary);
+            AssertTrue("safe unknown topic preserved", Contains(expandedUnknown.topics, "future_safe_topic"));
+            AssertTrue("malformed topic rejected", !Contains(expandedUnknown.topics, "bad topic with spaces"));
+
+            AssertEqual("default override list remains empty", 0,
+                BeliefPolicySnapshot.CreateDefault().correlationOverrides.Count);
+            BeliefPreceptFact target = Precept("Correction_Target", "Correction_Issue", "opaque metadata", 0);
+            BeliefPolicyBuilder forceBuilder = BeliefPolicyBuilder.CreateDefault();
+            forceBuilder.correlationOverrides.Add(new BeliefCorrelationCorrection(
+                "fixture_force", BeliefCorrectionActionTokens.Force, "Correction_Target", string.Empty,
+                string.Empty, "synthetic", string.Empty, "opaque", "fixture_topic"));
+            BeliefEventEvidence forceEvidence = GroupEvidence("synthetic", "opaque");
+            forceEvidence.narrative.beliefTopics.Add("fixture_topic");
+            BeliefStanceResolution forced = Resolve(Snapshot(target), forceEvidence, forceBuilder.Build());
+            AssertSelected("optional force correction remains live-snapshot intersected", forced, "Correction_Target");
+            AssertEqual("force correction key retained", "fixture_force", forced.stances[0].correctionKey);
+
+            BeliefPolicyBuilder excludeBuilder = BeliefPolicyBuilder.CreateDefault();
+            excludeBuilder.correlationOverrides.Add(new BeliefCorrelationCorrection(
+                "fixture_exclude", BeliefCorrectionActionTokens.Exclude, "Correction_Target", string.Empty,
+                string.Empty, "synthetic", string.Empty, "opaque", "fixture_topic"));
+            forceEvidence.issueDefNames.Add("Correction_Issue");
+            AssertEmpty("optional exclude correction removes only targeted live candidate",
+                Resolve(Snapshot(target), forceEvidence, excludeBuilder.Build()));
+        }
+
+        private static void TestObservationBaselineAndReflectionShell()
+        {
+            BeliefPolicySnapshot policy = BeliefPolicySnapshot.CreateDefault();
+            BeliefObservationDecision missing = BeliefReflectionPolicy.Observe(new BeliefObservationRequest
+            {
+                featureAvailable = false
+            }, policy);
+            AssertEqual("missing tracker resets pending", BeliefObservationActionTokens.ResetPending, missing.action);
+            AssertTrue("missing tracker clears debt", missing.clearPending && !missing.createReflectionDebt);
+
+            BeliefObservationDecision baseline = BeliefReflectionPolicy.Observe(new BeliefObservationRequest
+            {
+                featureAvailable = true,
+                baselineOnNextScan = true,
+                hasCurrent = true,
+                currentIdeologyId = "SyntheticIdeo",
+                currentCertainty = 0.5f
+            }, policy);
+            AssertEqual("first scan is baseline", BeliefObservationActionTokens.Baseline, baseline.action);
+            AssertTrue("first scan emits no debt", baseline.recordBaseline && !baseline.createReflectionDebt);
+
+            BeliefObservationDecision small = ObserveDelta(0.50f, 0.54f, "Same", "Same", policy);
+            AssertEqual("minor passive delta remains quiet", BeliefObservationActionTokens.NoChange, small.action);
+            BeliefObservationDecision meaningful = ObserveDelta(0.50f, 0.55f, "Same", "Same", policy);
+            AssertEqual("meaningful passive delta creates debt", BeliefObservationActionTokens.CertaintyChanged,
+                meaningful.action);
+            AssertEqual("meaningful passive trigger", BeliefReflectionTriggerTokens.CertaintyShift,
+                meaningful.trigger);
+            BeliefObservationDecision changed = ObserveDelta(0.50f, 0.50f, "Old", "New", policy);
+            AssertEqual("ideology change precedes scalar comparison", BeliefObservationActionTokens.IdeologyChanged,
+                changed.action);
+
+            BeliefReflectionRequest request = ReflectionRequest();
+            request.pendingIdeologyChange = true;
+            request.pendingMajorCertaintyShift = true;
+            request.hasRecentRelevantEvent = true;
+            request.hasPendingCertaintyDrift = true;
+            AssertEqual("reflection priority chooses ideology change", BeliefReflectionTriggerTokens.IdeologyChange,
+                BeliefReflectionPolicy.Plan(request, policy).trigger);
+            request.pendingIdeologyChange = false;
+            AssertEqual("certainty shift is second", BeliefReflectionTriggerTokens.CertaintyShift,
+                BeliefReflectionPolicy.Plan(request, policy).trigger);
+            request.pendingMajorCertaintyShift = false;
+            AssertEqual("recent event is third", BeliefReflectionTriggerTokens.RecentEvent,
+                BeliefReflectionPolicy.Plan(request, policy).trigger);
+            request.hasRecentRelevantEvent = false;
+            AssertEqual("passive drift is fourth", BeliefReflectionTriggerTokens.PassiveDrift,
+                BeliefReflectionPolicy.Plan(request, policy).trigger);
+
+            request.hasPendingCertaintyDrift = false;
+            request.allowQuietReflection = true;
+            request.quietRoll = 0f;
+            AssertEqual("quiet roll zero passes", BeliefReflectionTriggerTokens.Quiet,
+                BeliefReflectionPolicy.Plan(request, policy).trigger);
+            request.quietRoll = 1f;
+            AssertTrue("quiet roll one fails", !BeliefReflectionPolicy.Plan(request, policy).allowed);
+
+            BeliefReflectionRequest cooldown = ReflectionRequest();
+            cooldown.pendingIdeologyChange = true;
+            cooldown.lastReflectionTick = 999999;
+            cooldown.nowTick = 1000000;
+            AssertEqual("reflection cooldown blocks", "cooldown",
+                BeliefReflectionPolicy.Plan(cooldown, policy).blockReason);
+            BeliefReflectionRequest cap = ReflectionRequest();
+            cap.pendingIdeologyChange = true;
+            cap.reflectionsThisQuadrum = policy.maximumBeliefReflectionsPerQuadrum;
+            AssertEqual("quadrum cap blocks", "quadrum_cap", BeliefReflectionPolicy.Plan(cap, policy).blockReason);
+            BeliefReflectionRequest reused = ReflectionRequest();
+            reused.hasRecentRelevantEvent = true;
+            reused.recentSourceAlreadyReflected = true;
+            AssertEqual("source event reuse blocks", "source_reused",
+                BeliefReflectionPolicy.Plan(reused, policy).blockReason);
+        }
+
+        private static void TestMalformedUnsafeAndOversizedInputs()
+        {
+            BeliefPolicySnapshot policy = BeliefPolicySnapshot.CreateDefault();
+            string oversizedId = new string('X', policy.maximumIdentifierCharacters + 1);
+            BeliefPreceptFact malformed = Precept(oversizedId, "Issue", "oversized doctrine", 3);
+            malformed.instanceId = oversizedId;
+            AssertEmpty("oversized identities are rejected", Resolve(Snapshot(malformed),
+                SourceEvidence(oversizedId, oversizedId), policy));
+            AssertEqual("invalid Unicode normalizes empty", string.Empty,
+                BeliefLexicalMatcher.Normalize("\ud800", 32, 8));
+
+            List<BeliefPreceptFact> many = new List<BeliefPreceptFact>();
+            for (int i = 0; i < policy.maximumPreceptCandidates + 50; i++)
+                many.Add(Precept("Bulk_" + i.ToString("D3"), "BulkIssue_" + i.ToString("D3"),
+                    "bulk ordinary", 3));
+            BeliefSnapshot oversized = Snapshot(many.ToArray());
+            AssertEmpty("oversized unrelated candidate pool remains silent",
+                Resolve(oversized, TextEvidence(true, new string('z', 10000)), policy));
+
+            BeliefPreceptFact blank = Precept(string.Empty, "BlankIssue", "matching special phrase", 3);
+            BeliefPreceptFact valid = Precept("Valid_Precept", "ValidIssue", "matching special phrase", 1);
+            BeliefStanceResolution duplicateSafe = Resolve(Snapshot(null, blank, valid, valid),
+                TextEvidence(true, "matching special phrase"), policy);
+            AssertSelected("blank/null/duplicate facts collapse without suppressing a valid match",
+                duplicateSafe, "Valid_Precept");
+
+            BeliefStanceResolution longFormat = new BeliefStanceResolution { ideologyName = new string('A', 5000) };
+            longFormat.stances.Add(new ResolvedBeliefStance { precept = valid });
+            string formatted = BeliefContextFormatter.Format(longFormat, NarrativeDetailLevelTokens.Full, policy);
+            AssertTrue("oversized formatter input respects total cap", formatted.Length <= policy.maximumTotalCharacters);
+            AssertTrue("oversized formatter input respects line cap",
+                formatted.Split(new[] { '\n' }, StringSplitOptions.None).Length <= policy.maximumTotalLines);
+        }
+
+        private static BeliefPolicySnapshot VocabularyPolicy()
+        {
+            BeliefPolicyBuilder builder = BeliefPolicyBuilder.CreateDefault();
+            builder.semanticAliases.Add(new BeliefSemanticAlias("body_modification",
+                new List<string> { "body modification", "prosthetic", "augmentation", "artificial body part" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("organ_use",
+                new List<string> { "organ use", "organ harvesting", "organ transplant" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("cannibalism",
+                new List<string> { "cannibalism", "human meat" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("meals",
+                new List<string> { "meal", "food", "ingredient" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("raids",
+                new List<string> { "raid", "raiding" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("violence",
+                new List<string> { "violence", "combat" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("charity",
+                new List<string> { "charity", "aid", "refugee" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("rituals",
+                new List<string> { "ritual", "ceremony" }));
+            builder.eventEvidenceRules.Add(Rule("body_rule", "medical", "body_modification",
+                new[] { "body_modification" }, new[] { "body_modification" }));
+            builder.eventEvidenceRules.Add(Rule("organ_rule", "medical", "organ_use",
+                new[] { "organ_use" }, new[] { "organ_use" }));
+            builder.eventEvidenceRules.Add(Rule("cannibal_rule", "food", "cannibal_meal",
+                new[] { "cannibalism", "meals" }, new[] { "cannibalism" }));
+            builder.eventEvidenceRules.Add(Rule("meal_rule", "food", "meal",
+                new[] { "meals" }, new string[0]));
+            builder.eventEvidenceRules.Add(Rule("raid_rule", "combat", "raid",
+                new[] { "raids", "violence" }, new string[0]));
+            builder.eventEvidenceRules.Add(Rule("aid_rule", "social", "aid",
+                new[] { "charity" }, new[] { "charity" }));
+            builder.eventEvidenceRules.Add(Rule("ritual_rule", "ritual", "ritual",
+                new[] { "rituals" }, new[] { "rituals" }));
+            return builder.Build();
+        }
+
+        private static BeliefEventEvidenceRule Rule(
+            string key, string domain, string group, string[] topics, string[] aliases)
+        {
+            return new BeliefEventEvidenceRule(key, domain, string.Empty, group, string.Empty,
+                string.Empty, string.Empty, string.Empty, topics, aliases);
+        }
+
+        private static BeliefSnapshot Snapshot(params BeliefPreceptFact[] precepts)
+        {
+            BeliefSnapshot result = new BeliefSnapshot
+            {
+                ideologyActive = true,
+                pawnId = "SyntheticPawn",
+                capturedTick = 12345,
+                ideologyId = "SyntheticIdeology",
+                ideologyName = "Synthetic Ideoligion",
+                certainty = new BeliefCertaintyFact { hasCurrent = true, current = 0.62f }
+            };
+            if (precepts != null) result.precepts.AddRange(precepts);
+            return result;
+        }
+
+        private static BeliefPreceptFact Precept(
+            string defName, string issueDefName, string text, int impact, bool visible = true)
+        {
+            return new BeliefPreceptFact
+            {
+                instanceId = (defName ?? string.Empty) + "#instance",
+                defName = defName ?? string.Empty,
+                issue = new BeliefIssueFact
+                {
+                    defName = issueDefName ?? string.Empty,
+                    label = text ?? string.Empty,
+                    description = text ?? string.Empty
+                },
+                displayLabel = text ?? string.Empty,
+                description = text ?? string.Empty,
+                impactRank = impact,
+                visible = visible
+            };
+        }
+
+        private static BeliefPreceptFact CorrelatedPrecept(string defName, string issue, string thought)
+        {
+            BeliefPreceptFact result = Precept(defName, issue, defName, 1);
+            result.correlations.Add(Correlation(BeliefCorrelationKindTokens.Thought, thought,
+                BeliefValenceTokens.Unknown));
+            return result;
+        }
+
+        private static BeliefCorrelationFact Correlation(string kind, string defName, string valence)
+        {
+            return new BeliefCorrelationFact
+            {
+                kind = kind,
+                defName = defName,
+                label = defName,
+                description = defName,
+                sourceComponentKind = "SyntheticComponent",
+                sourceFieldToken = kind == BeliefCorrelationKindTokens.Thought ? "thought" : "eventDef",
+                valence = valence
+            };
+        }
+
+        private static BeliefMemeFact Meme(string defName, string label, int impact, bool isStructure = false)
+        {
+            return new BeliefMemeFact
+            {
+                defName = defName,
+                label = label,
+                description = label + " description",
+                impactRank = impact,
+                isStructure = isStructure
+            };
+        }
+
+        private static BeliefEventEvidence Evidence(bool? pawnCanKnow)
+        {
+            return new BeliefEventEvidence
+            {
+                narrative = new NarrativeEvidence
+                {
+                    eventId = "SyntheticEvent",
+                    tick = 12345,
+                    povPawnId = "SyntheticPawn",
+                    povRole = "initiator",
+                    salience = NarrativeSalienceTokens.Meaningful,
+                    pawnCanKnow = pawnCanKnow,
+                    sourceDomain = "synthetic",
+                    sourceDefName = "SyntheticEventDef"
+                }
+            };
+        }
+
+        private static BeliefEventEvidence TextEvidence(bool? pawnCanKnow, string text)
+        {
+            BeliefEventEvidence result = Evidence(pawnCanKnow);
+            result.matchFields.Add(Text("event_label", text));
+            return result;
+        }
+
+        private static BeliefEventEvidence SourceEvidence(string instanceId, string defName)
+        {
+            BeliefEventEvidence result = Evidence(true);
+            result.sourcePreceptInstanceId = instanceId;
+            result.sourcePreceptDefName = defName;
+            return result;
+        }
+
+        private static BeliefEventEvidence GroupEvidence(string domain, string group)
+        {
+            BeliefEventEvidence result = Evidence(true);
+            result.narrative.sourceDomain = domain;
+            result.groupKey = group;
+            return result;
+        }
+
+        private static BeliefEvidenceTextFact Text(string field, string value)
+        {
+            return new BeliefEvidenceTextFact { field = field, value = value };
+        }
+
+        private static BeliefStanceResolution Resolve(
+            BeliefSnapshot snapshot,
+            BeliefEventEvidence evidence,
+            BeliefPolicySnapshot policy,
+            string mode = BeliefResolutionModeTokens.EventEnrichment,
+            int seed = 1,
+            List<string> recent = null)
+        {
+            return EventRelativeStanceResolver.Resolve(new BeliefResolutionRequest
+            {
+                snapshot = snapshot,
+                evidence = evidence,
+                policy = policy,
+                mode = mode,
+                deterministicSeed = seed,
+                recentSelectionDefNames = recent ?? new List<string>()
+            });
+        }
+
+        private static BeliefObservationDecision ObserveDelta(
+            float before, float after, string beforeIdeology, string afterIdeology, BeliefPolicySnapshot policy)
+        {
+            return BeliefReflectionPolicy.Observe(new BeliefObservationRequest
+            {
+                featureAvailable = true,
+                baselineOnNextScan = false,
+                hasCurrent = true,
+                currentIdeologyId = afterIdeology,
+                currentCertainty = after,
+                hasPrevious = true,
+                previousIdeologyId = beforeIdeology,
+                previousCertainty = before
+            }, policy);
+        }
+
+        private static BeliefReflectionRequest ReflectionRequest()
+        {
+            return new BeliefReflectionRequest
+            {
+                groupEnabled = true,
+                signalEnabled = true,
+                hasBeliefContext = true,
+                nowTick = 1000000,
+                lastReflectionTick = -1,
+                reflectionsThisQuadrum = 0
+            };
+        }
+
+        private static bool Contains(IList<string> values, string wanted)
+        {
+            for (int i = 0; i < values.Count; i++)
+                if (string.Equals(values[i], wanted, StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
+        }
+
+        private static bool ContainsMeme(IList<BeliefMemeFact> values, string wanted)
+        {
+            for (int i = 0; i < values.Count; i++)
+                if (string.Equals(values[i].defName, wanted, StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
+        }
+
+        private static void AssertSelected(string name, BeliefStanceResolution actual, string expectedDefName)
+        {
+            AssertTrue(name + " has one selected stance", actual != null && actual.stances.Count > 0);
+            AssertEqual(name, expectedDefName, actual.stances[0].precept.defName);
+        }
+
+        private static void AssertEmpty(string name, BeliefStanceResolution actual)
+        {
+            AssertTrue(name, actual != null && !actual.HasUsefulContext && actual.stances.Count == 0);
+        }
+
+        private static void AssertEmpty(string name, BeliefStanceResolution actual, BeliefPolicySnapshot policy)
+        {
+            AssertEqual(name, string.Empty,
+                BeliefContextFormatter.Format(actual, NarrativeDetailLevelTokens.Full, policy));
+        }
+
+        private static void AssertContains(string name, string actual, string expected)
+        {
+            AssertTrue(name, actual != null && actual.IndexOf(expected, StringComparison.Ordinal) >= 0);
+        }
+
+        private static void AssertNear(string name, float expected, float actual)
+        {
+            assertions++;
+            if (Math.Abs(expected - actual) > 0.0001f)
+                throw new InvalidOperationException(name + ": expected " + expected + ", got " + actual + ".");
+        }
+
+        private static void AssertEqual<T>(string name, T expected, T actual)
+        {
+            assertions++;
+            if (!EqualityComparer<T>.Default.Equals(expected, actual))
+                throw new InvalidOperationException(name + ": expected '" + expected + "', got '" + actual + "'.");
+        }
+
+        private static void AssertTrue(string name, bool condition)
+        {
+            assertions++;
+            if (!condition) throw new InvalidOperationException(name + ": expected true.");
+        }
+    }
+}

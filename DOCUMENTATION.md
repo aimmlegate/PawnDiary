@@ -53,8 +53,8 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue, associative-memory recall/deposit/eviction (`DiaryGameComponent.Memory.cs`), and additive Anomaly study/monolith/visible-creepjoiner persistence plus detached transaction owners and conservative pre-A1/pre-A2 baselining. Also `PawnMemoryRepository` (per-pawn memory store). |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including guarded Anomaly study/codex/containment/monolith/creepjoiner capture, the visible-only N3-A context adapter, scoped containment/rejection/surgical-Tale ownership, separate lifecycle-cleared study/Tale and recent-studier caches, Odyssey location/mobile-home/lifecycle, and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including bounded visible-only N3-A and exact-map N3-O providers), Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/`. |
-| `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including bounded visible-only N3-A and exact-map N3-O providers), Ideology Phase-0 detached belief contracts plus structural/lexical stance resolver, bounded formatter, and future reflection-policy shell under `Pipeline/Belief/`, Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/`. |
+| `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the Ideology Phase-0 belief-policy boundary and the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, the optional Anomaly monolith-knowledge snapshot, visible-only creepjoiner arc rows, and the `MemoryFragment` pawn-memory row. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, defensive exact Anomaly study, containment-escape, creepjoiner rejection/aggression/departure, surgical inspection, and ghoul-infusion seams, guarded Odyssey lifecycle seams, and defensively registered Royalty persona coding/equipment/destruction/cleanup plus exact kill/death/title/succession/heir-appointment/permit seams and state-transition-guarded Quest lifecycle hooks. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
@@ -186,6 +186,22 @@ Generation starts only after an event exists in the saved hot store.
 `DiaryPipelineAdapters` copy current settings, XML Def policy, localization, and live pawn facts
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
+
+**Ideology Phase 0 (Master Wave 10, inactive pure contract)** adds no runtime collection or prompt
+behavior. `BeliefResolutionRequest` embeds the existing per-POV `NarrativeEvidence`, so shared facet,
+salience, knowledge, source, topic, interpretation-category, and deterministic-seed semantics are not
+duplicated. `EventRelativeStanceResolver` accepts only detached current-doctrine facts, fails closed
+unless POV knowledge is explicitly true, and checks exact source-precept identity, exact projected
+thought/history correlations, and direct issue/meme identity before it permits the bounded
+`BeliefLexicalMatcher` fallback. Every result is intersected with the snapshot's visible live precepts
+and memes; same-issue variants collapse, ordinary selection is one, the independently evidenced second
+slot is policy-gated, and the hard cap is two. Within the strongest admitted tier, a local stable seed
+drives deterministic weighted selection without touching `Verse.Rand`. Impact, required-by-meme status, POV role, salience, and
+repetition can reorder only candidates admitted by the same categorical tier. Quiet high-impact fallback
+exists only in the unused future-reflection mode. `BeliefContextFormatter` and
+`BeliefReflectionPolicy` are pure shells for later phases; no live collector, Harmony patch, save/Scribe
+field, event attachment, prompt source, page type, scanner, or Narrative Continuity provider consumes
+them yet. Ideology inactive/missing remains an ordinary empty result.
 
 **Narrative Continuity (Master Waves 1–9 / N1 + N2-B + N2-O + N3-B identity + N3-R + N3-A + N3-O)** supplies the shared persistence and
 optional prompt seam for DLC integrations. Each first-person event POV can save bounded, explicitly
@@ -2083,6 +2099,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeRollPolicyDefs.xml` | numeric tuning for the psychotype roll: family bases, bonuses, wildcard chance, jitter range, duplicate penalty |
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; the main-thread builder snapshots it before fixed-order pure provider selection. The repetition policy is live: every narrative-capable source feeds the selector the POV pawn's most recent persisted selection keys (newest hot pages, then archive rows, bounded by `maxRecentSelectedCandidateKeys`), so `repetitionPenalty` dampens re-picking the same lens while exact-arc continuations stay exempt via `exactArcRepetitionPenalty` |
+| `DiaryBeliefPolicyDef.xml` | Inactive Ideology Phase-0 policy contract: categorical structural/lexical scores, guarded field weights, confidence and runner-up margins, common/fuzzy-token limits, normally-one/maximum-two selection, certainty bands and DefInjected-ready phrases, formatter/reflection-shell caps, exact event-evidence vocabulary, localized semantic aliases, exclusions, and an intentionally empty compatibility-correction list. It contains no precept/issue/meme catalog or DLC Def reference; a future main-thread adapter will copy it into an immutable pure snapshot. |
 | `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory plus mature-birth/miscarriage matchers, supporter thresholds/caps, naming timing, family retention, two-writer birth cap, pending-growth/pending-birth admission limits, Phase-5 gene category/theme/text/observation/fallback-significance policy, N3-B salient-gene identity prose, and Phase-6 mechanitor combat Tale roles/tenure/state caps; Phases 1–6, N2-B, and the first N3-B slice use these fields live |
 | `DiaryAnomalyPolicyDefs.xml` | A1 study/containment toggles, milestone rules, dedup/ownership/cache bounds, A2 visible creepjoiner/ghoul output and writer limits, plus N3-A factual formats for the three monolith chapters, containment breach, four visible creepjoiner outcomes, and ghoul transformation. Prose is DefInjected in English/Russian; no terminal/hidden format exists. All optional-DLC identifiers remain primitive strings, so the row loads safely without Anomaly. |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
@@ -3334,6 +3351,10 @@ Never rename a key "for cleanliness" alone.
 - DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks. This
   includes Biotech growth trait/skill/work-disabled snapshots and Ideology precept/role reads used by
   body-mod stance policy; other code consumes plain detached rows, labels, defNames, or booleans.
+- Ideology Phase 0 deliberately performs no live `pawn.ideo`, `Ideo`, `Precept`, `MemeDef`, history,
+  or certainty read. Its assembly-free resolver consumes synthetic/plain snapshots only, and the new
+  XML policy is DLC-neutral. Phase 1 remains responsible for the guarded `DlcContext` projection and
+  saved event-time prompt seam; until then, Phase-0 code cannot affect a loaded game or require Ideology.
 - `PawnDiaryDlcSafetyFixtureTests` exercises this boundary in both directions: absent/null state must
   disappear from the final prompt/public summary, while installed DLC uses disposable real xenotype,
   title, ideoligion/precept/eligible-role, and creepjoiner pawn state. The CreepJoiner positive path
@@ -3422,6 +3443,7 @@ dotnet run --project tests/PromptVariantsTests/PromptVariantsTests.csproj
 dotnet run --project tests/DiarySaveNormalizationTests/DiarySaveNormalizationTests.csproj
 dotnet run --project tests/DiaryObservedConditionTests/DiaryObservedConditionTests.csproj
 dotnet run --project tests/NarrativeContinuityTests/NarrativeContinuityTests.csproj
+dotnet run --project tests/BeliefContextTests/BeliefContextTests.csproj
 dotnet run --project tests/PawnMemoryTests/PawnMemoryTests.csproj
 dotnet run --project tests/DiaryBiotechPolicyTests/DiaryBiotechPolicyTests.csproj
 dotnet run --project tests/DiaryAnomalyPolicyTests/DiaryAnomalyPolicyTests.csproj

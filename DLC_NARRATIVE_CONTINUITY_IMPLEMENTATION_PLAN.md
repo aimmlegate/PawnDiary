@@ -567,6 +567,12 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 
 ### Phase N3 — Ideology interpretation and remaining providers
 
+> **N3-I dependency status (2026-07-21): Ideology Phase 0 complete; N3-I itself remains pending.** The
+> pure belief resolver now reuses `NarrativeEvidence` for facet, salience, knowledge, source/topic, and
+> deterministic-seed input and freezes `interpretation` as its future candidate category. It does not
+> yet construct or submit a `NarrativeLensCandidate`; that live adapter belongs after Ideology Phase 1,
+> so provider routing, shared-lens selection, persistence, and prompt behavior are unchanged.
+
 > **N3-B identity progress (2026-07-17): implemented; loaded acceptance passed.** The existing
 > `GeneIdentityChanged` page now supplies exact-subject identity evidence and one provider candidate
 > from Phase 5's already-selected leading gene theme. Its stable
@@ -637,7 +643,8 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 > spam.
 
 1. Route high-confidence `EventRelativeStanceResolver` output through the shared interpretation
-   category for ordinary event enrichment.
+   category for ordinary event enrichment. **Pending; the Phase-0 pure output contract is ready, but no
+   live provider candidate is created yet.**
 2. Add Royalty persona/title/court candidates with exact applicability gates. **Implemented, including
    the Wave-9 succession, permit-authority, Royal Ascent journey, and court-pressure extension; changed
    loaded assertions remain pending.**

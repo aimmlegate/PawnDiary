@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Master Wave 10 / Ideology Phase 0 policy. This Def is deliberately DLC-neutral: it names only
+  Pawn Diary schema/evidence vocabulary, never a vanilla/DLC/mod precept, issue, or meme Def.
+  Phase 0 has no live collector, event attachment, prompt route, save field, or reflection scheduler.
+-->
+<Defs>
+  <PawnDiary.DiaryBeliefPolicyDef>
+    <defName>Diary_BeliefPolicy</defName>
+    <enabled>true</enabled>
+
+    <!-- Defensive work and output caps. The pure code additionally enforces hard safety ceilings. -->
+    <maximumPreceptCandidates>128</maximumPreceptCandidates>
+    <maximumMemeCandidates>32</maximumMemeCandidates>
+    <maximumDeityCandidates>16</maximumDeityCandidates>
+    <maximumSelectedStances>2</maximumSelectedStances>
+    <defaultSelectedStances>1</defaultSelectedStances>
+    <maximumSupportingMemes>2</maximumSupportingMemes>
+    <maximumRecentSelections>16</maximumRecentSelections>
+    <maximumFieldCharacters>320</maximumFieldCharacters>
+    <maximumNormalizedTokensPerField>48</maximumNormalizedTokensPerField>
+    <maximumLexicalFieldsPerDocument>96</maximumLexicalFieldsPerDocument>
+    <maximumLexicalTokensPerDocument>256</maximumLexicalTokensPerDocument>
+    <maximumDescriptionCharacters>240</maximumDescriptionCharacters>
+    <maximumIdentifierCharacters>160</maximumIdentifierCharacters>
+    <maximumTotalCharacters>1800</maximumTotalCharacters>
+    <maximumTotalLines>16</maximumTotalLines>
+
+    <!-- Conservative lexical admission and ambiguity policy. -->
+    <minimumLexicalConfidence>65</minimumLexicalConfidence>
+    <lexicalRunnerUpMargin>18</lexicalRunnerUpMargin>
+    <fuzzyRunnerUpMargin>26</fuzzyRunnerUpMargin>
+    <minimumDistinctiveTokenMatches>2</minimumDistinctiveTokenMatches>
+    <uniqueTokenMinimumCharacters>8</uniqueTokenMinimumCharacters>
+    <fuzzyTokenMinimumCharacters>7</fuzzyTokenMinimumCharacters>
+    <fuzzyMinimumDistinctiveMatches>2</fuzzyMinimumDistinctiveMatches>
+    <fuzzySimilarityMinimum>0.84</fuzzySimilarityMinimum>
+    <commonTokenMinimumDocuments>2</commonTokenMinimumDocuments>
+    <commonTokenDocumentFraction>0.55</commonTokenDocumentFraction>
+    <phraseMatchScore>42</phraseMatchScore>
+    <tokenMatchScore>18</tokenMatchScore>
+    <uniqueTokenBonus>18</uniqueTokenBonus>
+    <fuzzyMatchScore>16</fuzzyMatchScore>
+
+    <!-- Strength affects only already-relevant candidates within their categorical tier. -->
+    <selectionWeightBase>100</selectionWeightBase>
+    <secondSlotMinimumScore>900</secondSlotMinimumScore>
+    <recentSelectionPenalty>450</recentSelectionPenalty>
+    <requiredByMemeBonus>120</requiredByMemeBonus>
+    <proselytizingRoleBonus>100</proselytizingRoleBonus>
+    <meaningfulSalienceBonus>45</meaningfulSalienceBonus>
+    <majorSalienceBonus>90</majorSalienceBonus>
+    <terminalSalienceBonus>120</terminalSalienceBonus>
+    <highImpactBonus>220</highImpactBonus>
+    <mediumImpactBonus>120</mediumImpactBonus>
+    <lowImpactBonus>40</lowImpactBonus>
+
+    <!-- Certainty and future reflection-shell policy. No scheduler consumes these in Phase 0. -->
+    <certaintyMeaningfulDelta>0.05</certaintyMeaningfulDelta>
+    <certaintyMajorDelta>0.15</certaintyMajorDelta>
+    <includeStructure>true</includeStructure>
+    <includeRelatedDeity>true</includeRelatedDeity>
+    <includeKeyDeity>true</includeKeyDeity>
+    <allowDeterministicAlternativeDeity>false</allowDeterministicAlternativeDeity>
+    <quietReflectionChance>0.08</quietReflectionChance>
+    <beliefReflectionCooldownTicks>900000</beliefReflectionCooldownTicks>
+    <maximumBeliefReflectionsPerQuadrum>2</maximumBeliefReflectionsPerQuadrum>
+
+    <!-- Categorical precedence. Lower-tier bonuses can never cross these stages in pure code. -->
+    <tierScores>
+      <li><token>source_precept</token><score>1200</score></li>
+      <li><token>exact_correlation</token><score>1000</score></li>
+      <li><token>direct_identity</token><score>900</score></li>
+      <li><token>correlation_text</token><score>750</score></li>
+      <li><token>issue_text</token><score>650</score></li>
+      <li><token>general_text</token><score>450</score></li>
+      <li><token>association</token><score>300</score></li>
+      <li><token>quiet_fallback</token><score>200</score></li>
+    </tierScores>
+
+    <eventFieldWeights>
+      <li><token>correlation</token><score>3</score></li>
+      <li><token>event_label</token><score>2.5</score></li>
+      <li><token>subject_label</token><score>2.3</score></li>
+      <li><token>object_label</token><score>2.3</score></li>
+      <li><token>ingredient_label</token><score>2.8</score></li>
+      <li><token>body_part_label</token><score>2.8</score></li>
+      <li><token>hediff_label</token><score>2.8</score></li>
+      <li><token>weapon_label</token><score>2.5</score></li>
+      <li><token>ritual_label</token><score>2.5</score></li>
+      <li><token>condition_label</token><score>2.3</score></li>
+      <li><token>semantic_alias</token><score>2.6</score></li>
+      <li><token>def_name</token><score>1.4</score></li>
+      <li><token>group</token><score>0.5</score></li>
+      <li><token>domain</token><score>0.25</score></li>
+    </eventFieldWeights>
+    <beliefFieldWeights>
+      <li><token>correlation</token><score>3</score></li>
+      <li><token>issue</token><score>2.7</score></li>
+      <li><token>precept</token><score>1.8</score></li>
+      <li><token>meme</token><score>1.2</score></li>
+    </beliefFieldWeights>
+
+    <!-- Def text is localizable through DefInjected; C# stores no English certainty prose. -->
+    <certaintyBands>
+      <li><token>fervent</token><minimum>0.85</minimum><phrase>Speak with firm conviction while staying faithful to the supplied facts.</phrase></li>
+      <li><token>confident</token><minimum>0.60</minimum><phrase>Speak with assurance without inventing zeal or extremism.</phrase></li>
+      <li><token>uneasy</token><minimum>0.35</minimum><phrase>Allow tension and exceptions without claiming the faith was abandoned.</phrase></li>
+      <li><token>conflicted</token><minimum>0.15</minimum><phrase>Show an active struggle between doctrine and lived experience.</phrase></li>
+      <li><token>doubtful</token><minimum>0</minimum><phrase>Allow questioning and uncertainty without forcing sadness or conversion.</phrase></li>
+    </certaintyBands>
+
+    <!-- Event vocabulary, not doctrine IDs. Unknown safe topic tokens remain forward-compatible. -->
+    <semanticAliases>
+      <li><topicToken>body_modification</topicToken><aliases><li>body modification</li><li>prosthetic</li><li>augmentation</li><li>artificial body part</li></aliases></li>
+      <li><topicToken>organ_use</topicToken><aliases><li>organ use</li><li>organ harvesting</li><li>organ transplant</li></aliases></li>
+      <li><topicToken>cannibalism</topicToken><aliases><li>cannibalism</li><li>human meat</li></aliases></li>
+      <li><topicToken>meals</topicToken><aliases><li>meal</li><li>food</li><li>ingredient</li></aliases></li>
+      <li><topicToken>raids</topicToken><aliases><li>raid</li><li>raiding</li></aliases></li>
+      <li><topicToken>rituals</topicToken><aliases><li>ritual</li><li>ceremony</li></aliases></li>
+      <li><topicToken>violence</topicToken><aliases><li>violence</li><li>combat</li></aliases></li>
+      <li><topicToken>charity</topicToken><aliases><li>charity</li><li>aid</li><li>refugee</li></aliases></li>
+    </semanticAliases>
+
+    <!-- Exact future adapter groups. A broad raid adds violence, never charity without an aid fact. -->
+    <eventEvidenceRules>
+      <li><key>body_modification</key><sourceDomain>medical</sourceDomain><groupKey>body_modification</groupKey><addTopics><li>body_modification</li></addTopics><addSemanticAliases><li>body_modification</li></addSemanticAliases></li>
+      <li><key>organ_use</key><sourceDomain>medical</sourceDomain><groupKey>organ_use</groupKey><addTopics><li>organ_use</li></addTopics><addSemanticAliases><li>organ_use</li></addSemanticAliases></li>
+      <li><key>cannibal_meal</key><sourceDomain>food</sourceDomain><groupKey>cannibal_meal</groupKey><addTopics><li>cannibalism</li><li>meals</li></addTopics><addSemanticAliases><li>cannibalism</li></addSemanticAliases></li>
+      <li><key>known_meal</key><sourceDomain>food</sourceDomain><groupKey>meal</groupKey><addTopics><li>meals</li></addTopics></li>
+      <li><key>raid_visible</key><sourceDomain>combat</sourceDomain><groupKey>raid</groupKey><addTopics><li>raids</li><li>violence</li></addTopics></li>
+      <li><key>aid_visible</key><sourceDomain>social</sourceDomain><groupKey>aid</groupKey><addTopics><li>charity</li></addTopics><addSemanticAliases><li>charity</li></addSemanticAliases></li>
+      <li><key>ritual_visible</key><sourceDomain>ritual</sourceDomain><groupKey>ritual</groupKey><addTopics><li>rituals</li></addTopics><addSemanticAliases><li>rituals</li></addSemanticAliases></li>
+    </eventEvidenceRules>
+
+    <!-- Schema/prompt labels only; language-specific common words are suppressed per live snapshot. -->
+    <lexicalExclusions>
+      <li>event</li><li>pawn</li><li>ideology</li><li>ideoligion</li><li>precept</li><li>belief</li><li>context</li>
+    </lexicalExclusions>
+    <proselytizingPovRoles>
+      <li>converter</li><li>organizer</li><li>moral_guide</li>
+    </proselytizingPovRoles>
+
+    <!-- Empty by design. Add only a documented, gated, regression-tested metadata failure. -->
+    <correlationOverrides />
+
+    <detailBudgets>
+      <li><detailLevel>full</detailLevel><maximumLines>16</maximumLines><maximumCharacters>1800</maximumCharacters><includeDescriptions>true</includeDescriptions><includeStructure>true</includeStructure><includeMemes>true</includeMemes><includeDeity>true</includeDeity></li>
+      <li><detailLevel>balanced</detailLevel><maximumLines>9</maximumLines><maximumCharacters>1000</maximumCharacters><includeDescriptions>false</includeDescriptions><includeStructure>true</includeStructure><includeMemes>true</includeMemes><includeDeity>true</includeDeity></li>
+      <li><detailLevel>compact</detailLevel><maximumLines>5</maximumLines><maximumCharacters>520</maximumCharacters><includeDescriptions>false</includeDescriptions><includeStructure>false</includeStructure><includeMemes>false</includeMemes><includeDeity>true</includeDeity></li>
+    </detailBudgets>
+  </PawnDiary.DiaryBeliefPolicyDef>
+</Defs>
