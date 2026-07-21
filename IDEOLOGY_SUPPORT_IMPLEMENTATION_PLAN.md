@@ -1,8 +1,9 @@
 # Pawn Diary — Ideoligion Support Implementation Plan
 
-Status: Phases 0–1 completed on 2026-07-21; Phase 2 infrastructure is partially implemented; Phases
-3–6 remain pending. The first Phase-2 slice adds exact guarded mutation capture/coalescing and exact
-downstream Ability ownership, but no new conversion/crisis/ritual enrichment route or page.
+Status: Phases 0–1 completed on 2026-07-21; Phase 2 infrastructure and the first exact interaction
+consumer are partially implemented; Phases 3–6 remain pending. Guarded mutation capture/coalescing,
+exact downstream Ability ownership, and existing PlayLog conversion/reassurance page enrichment are
+live; crisis, ritual, broader evidence, exact prompt, and reflection work remains pending.
 
 Scheduling authority: implement Ideology phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Ideology.
@@ -719,6 +720,12 @@ certainty drift that bypasses these methods.
 
 ### 10.2 Interaction path
 
+> **First consumer implemented (2026-07-21).** Exact XML rows now map `ConvertIdeoAttempt`,
+> `Convert_Success`, `Convert_Failure`, and `Reassure` to the recipient mutation and validate result,
+> direction, ideology-change shape, cause, effective group, exact pawn, and one-way tick age. The
+> existing saved belief block carries the stable mechanical fields for both authorized POVs; no
+> separate `gameContext` mutation copy is needed. Counsel and exact event prompt Defs remain pending.
+
 Before `InteractionSignal` calls `AddSoloEvent`/`AddPairwiseEvent`:
 
 - classify conversion success, conversion failure, conversion attempt, reassurance, counsel, and
@@ -1134,22 +1141,28 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 
 ### Phase 2 — Required event integrations and mutation capture
 
-> **Partial implementation status (2026-07-21): infrastructure slice complete.** Exact guarded
+> **Partial implementation status (2026-07-21): infrastructure plus first interaction consumer.** Exact guarded
 > `IdeoConversionAttempt`/`OffsetCertainty`/`SetIdeo` hooks project live state only through
 > `DlcContext`, and a bounded pure buffer coalesces overlapping nested calls while keeping sequential
 > same-tick actions distinct. The transient cache is reset per game, non-scribed, non-emitting, and
 > optional-DLC inert. XML now owns exact `Convert`/`Reassure`/`ConversionRitual` canonical ownership;
 > their generic Ability route drops before random sampling only while Ideology is active. Pure suites
 > and five compiled RimTests cover policy/correlation/coalescing, hook ownership, no-DLC behavior,
-> actual before/after boundaries, failure cleanup, and one Convert downstream page. RimWorld was not
-> launched. Steps 2–4, consumer enrichment, and the complete per-path exit gate remain pending.
+> actual before/after boundaries, failure cleanup, and one Convert downstream page. Exact XML mutation
+> rules now enrich existing conversion success/failure/attempt and reassurance PlayLog pages with one
+> non-consuming target fact shared by both authorized POVs; pure selection fails closed on wrong pawn,
+> time direction/age, mechanics, or a newer mismatched sequential row. Ten compiled Phase-2 RimTests
+> add real success/failure/reassurance tracker + PlayLog boundaries and prove cache-only non-emission.
+> RimWorld was not launched. Broader step 2, ritual/crisis/throne-speech parts of step 3, step 4 prompt/
+> group work, and the complete per-path exit gate remain pending.
 
 1. Implement guarded/coalescing mutation patches and cache. **Implemented in the infrastructure slice.**
 2. Add conservative evidence adapters for the §7.5 families to existing captured thought, social,
    body/medical, food, combat/prisoner, observed-condition, and ritual routes. Emit a topic only when
    that source has the exact visible fact needed; unavailable evidence leaves the route unchanged.
 3. Enrich conversion conversation, conversion success/failure, reassurance/counsel, `IdeoChange`,
-   conversion ritual, and throne speech through the same resolver.
+   conversion ritual, and throne speech through the same resolver. **Exact conversion interaction and
+   Reassure mechanics are implemented; Counsel, crisis, ritual, and throne speech remain pending.**
 4. Add exact XML groups/prompts and role-specific evidence.
 5. Drop downstream-covered generic abilities before their random roll. **Implemented for the three
    exact XML-owned vanilla routes; full interaction/ritual enrichment coverage remains pending.**

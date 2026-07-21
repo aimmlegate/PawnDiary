@@ -187,7 +187,8 @@ Generation starts only after an event exists in the saved hot store.
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
 
-**Ideology Phases 0–1 plus Phase-2 mutation infrastructure and exact interaction enrichment (Master Wave 10)** keep the Phase-0
+**Ideology Phases 0–1 plus Phase-2 mutation infrastructure and exact interaction enrichment
+(Master Wave 10)** keep the Phase-0
 pure policy contract and Phase-1 event-time runtime seam. `BeliefResolutionRequest` embeds the existing per-POV `NarrativeEvidence`, so shared facet,
 salience, knowledge, source, topic, interpretation-category, and deterministic-seed semantics are not
 duplicated. `EventRelativeStanceResolver` accepts only detached current-doctrine facts, fails closed
@@ -267,7 +268,7 @@ event from which a deferred fallback page could be emitted; a completed ritual m
 receive its normal finish page until a cancel-aware pending owner exists. Covered abilities still drop
 before `Rand.Value`. No-DLC profiles and unknown/modded sources retain ordinary pre-slice behavior.
 
-The next surgical Phase-2 consumer slice enriches only the existing synchronous PlayLog interaction
+The first surgical Phase-2 consumer slice enriches only the existing synchronous PlayLog interaction
 adapter. `mutationEventRules` in `DiaryBeliefPolicyDef.xml` map exact `ConvertIdeoAttempt`,
 `Convert_Success`, `Convert_Failure`, and `Reassure` DefNames to their effective downstream group,
 recipient tracker owner, required mechanical cause, result, certainty direction, ideology-change

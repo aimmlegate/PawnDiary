@@ -42,7 +42,7 @@ collector kind (hediff, capacity, Royal title, Ideology role, event window, obse
 | Save/load scenario | Disposable test save plus two-phase RimTest suite | Real Scribe round trip, index rebuilds, pending-state normalization, archive persistence, and session reset. |
 | Manual visual checks | `tests/SAVE_COMPATIBILITY_SMOKETEST.md` plus a new UI checklist | Immediate-mode rendering, resolution/accessibility layouts, scroll behavior, and screenshots that are not stable enough for unit assertions. |
 
-`tests/BeliefContextTests` is the assembly-free Master Wave 10 / Ideology Phases 0–2 harness. Its 257
+`tests/BeliefContextTests` is the assembly-free Master Wave 10 / Ideology Phases 0–2 harness. Its 308
 assertions lock missing/inactive/unknown-knowledge silence; exact source, thought, history, issue, and
 meme precedence; synthetic mod IDs; guarded phrase/token/fuzzy matching; dynamic common-token,
 confidence, explicit below-threshold diagnostics, and runner-up rejection; reused evidence expansion;
@@ -55,9 +55,14 @@ first-scan/reflection-policy shell decisions. Phase 1 also pins explicit thought
 construction, exact source-precept identity, POV-detached copies, different ideology outcomes for one
 event, unmatched-event neutrality, correlation-text valence, bounded exact-pawn HistoryEvent storage,
 staleness/non-consumption, and stable sanitized save normalization across Full/Balanced/Compact detail.
-The first Phase-2 slice adds detached mutation construction, overlapping nested-call coalescing,
+The Phase-2 slices add detached mutation construction, overlapping nested-call coalescing,
 earliest-before/latest-after preservation, sequential same-tick separation, exact-pawn/windowed
-non-consuming correlation, and exact/inactive/substring-safe canonical ability ownership.
+non-consuming correlation, and exact/inactive/substring-safe canonical ability ownership. Exact
+interaction selection additionally pins XML rule immutability/validation, downstream-group and
+case-sensitive Def matching, inactive-policy silence, success/failure mechanics, certainty-only
+reassurance, cross-pawn/stale/future rejection, two-POV reuse, no backward search through sequential
+rows, malformed inputs, mutation schema formatting, and target mutation not rewriting the converter's
+own certainty/trend.
 It file-links only plain Narrative/Belief source and has no RimWorld, Verse, Unity, or DLC reference.
 
 ### 2.1 `PawnDiaryRimTestScope`
@@ -1029,8 +1034,8 @@ assembly is now 362 tests and builds with 0 warnings/errors into the tracked dep
 RimWorld has not been launched for this follow-up, so its new cases are not
 recorded as loaded-game passes and no manual/in-game acceptance row is closed.
 
-Ideology Phase 2 infrastructure adds eight compiled loaded cases in
-`PawnDiaryIdeologyPhase2InfrastructureTests` (370 total). They resolve and inspect the exact three
+Ideology Phase 2 infrastructure and exact interaction enrichment add ten compiled loaded cases in
+`PawnDiaryIdeologyPhase2InfrastructureTests` (372 total). They resolve and inspect the exact three
 production Harmony targets, branch truthfully for an inactive DLC profile, call real `SetIdeo` and
 `OffsetCertainty` boundaries plus `IdeoConversionAttempt` for detached before/after/attempted/result
 facts and nested/sequential ownership (forcing zero certainty so the real conversion deterministically
@@ -1039,8 +1044,13 @@ mutation and cache cleanup, and combine a dropped
 exact `Convert` Ability signal with a real `Find.PlayLog.Add(Convert_Success)` downstream hook to require
 one canonical pair page and no random draw. Added adversarial cases pin equivalent `Reassure` ownership,
 release the generic Convert page when the downstream conversion group is disabled, and retain the
-generic `ConversionRitual` start page because cancellation has no downstream owner. A disposable second
-Ideo is generated when the loaded game exposes only one, so the mutation cases no longer silently pass.
+generic `ConversionRitual` start page because cancellation has no downstream owner. The interaction
+consumer follow-up proves a real mutation/cache write alone emits no page; loads all four exact XML
+consumer rules; runs deterministic real conversion success and failure plus real reassurance certainty
+gain before the real `PlayLog.Add` boundary; requires both existing pair POVs to receive the mechanical
+result/delta while one non-consuming cache row remains; and rejects conversion wording on reassurance.
+A disposable second Ideo is generated when the loaded game exposes only one, preserving the
+deterministic conversion fixture and single-Ideo fallback.
 These fixtures compile against the installed assemblies;
 RimWorld has not been launched, so they are not recorded as executed in-game results.
 

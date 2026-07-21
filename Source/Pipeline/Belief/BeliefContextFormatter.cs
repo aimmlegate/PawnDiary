@@ -15,6 +15,8 @@ namespace PawnDiary
         private static readonly HashSet<string> AllowedLabels = new HashSet<string>(StringComparer.Ordinal)
         {
             "ideoligion", "role", "certainty", "certainty trend", "certainty outlook",
+            "certainty before", "certainty after", "certainty delta", "conversion result",
+            "mutation cause",
             "previous ideoligion", "current ideoligion", "attempted ideoligion",
             "relevant precept", "precept meaning", "relevant meme", "structure",
             "structure outlook", "deity"
@@ -55,11 +57,35 @@ namespace PawnDiary
                     Add(lines, "certainty outlook", resolution.certaintyPhrase, effective, maximumLines);
             }
 
-            if (!compact && resolution.mutation != null)
+            if (resolution.mutation != null)
             {
-                Add(lines, "previous ideoligion", resolution.mutation.beforeIdeologyName, effective, maximumLines);
-                Add(lines, "current ideoligion", resolution.mutation.afterIdeologyName, effective, maximumLines);
-                Add(lines, "attempted ideoligion", resolution.mutation.attemptedIdeologyName, effective, maximumLines);
+                BeliefMutationSnapshot mutation = resolution.mutation;
+                // Outcome and delta are the most compact mechanical facts, so add them before the
+                // longer identity/before/after detail. Balanced/Compact budgets must not keep names
+                // while silently dropping whether the conversion succeeded.
+                if (mutation.hasBeforeCertainty && mutation.hasAfterCertainty)
+                    Add(lines, "certainty delta",
+                        FormatDeltaPercent(mutation.afterCertainty - mutation.beforeCertainty),
+                        effective, maximumLines);
+                if (mutation.conversionSucceeded.HasValue)
+                    Add(lines, "conversion result",
+                        mutation.conversionSucceeded.Value ? "success" : "failure",
+                        effective, maximumLines);
+                if (!compact)
+                {
+                    Add(lines, "previous ideoligion", mutation.beforeIdeologyName, effective, maximumLines);
+                    Add(lines, "current ideoligion", mutation.afterIdeologyName, effective, maximumLines);
+                    Add(lines, "attempted ideoligion", mutation.attemptedIdeologyName, effective, maximumLines);
+                    if (mutation.hasBeforeCertainty)
+                        Add(lines, "certainty before", FormatPercent(mutation.beforeCertainty),
+                            effective, maximumLines);
+                    if (mutation.hasAfterCertainty)
+                        Add(lines, "certainty after", FormatPercent(mutation.afterCertainty),
+                            effective, maximumLines);
+                }
+                if (normalizedDetail == NarrativeDetailLevelTokens.Full)
+                    Add(lines, "mutation cause", JoinCauseTokens(mutation.causeTokens),
+                        effective, maximumLines);
             }
 
             int stanceCap = compact ? 1 : 2;
@@ -229,11 +255,15 @@ namespace PawnDiary
                 return false;
             if (label == "relevant meme" && !budget.includeMemes) return false;
             if (label == "deity" && !budget.includeDeity) return false;
+            if (label == "mutation cause" && detailLevel != NarrativeDetailLevelTokens.Full)
+                return false;
 
             if (detailLevel == NarrativeDetailLevelTokens.Compact)
             {
                 if (label == "role" || label == "certainty outlook"
-                    || label == "previous ideoligion" || label == "attempted ideoligion") return false;
+                    || label == "previous ideoligion" || label == "current ideoligion"
+                    || label == "attempted ideoligion" || label == "certainty before"
+                    || label == "certainty after") return false;
                 if (label == "relevant precept")
                 {
                     stanceCount++;
@@ -241,6 +271,36 @@ namespace PawnDiary
                 }
             }
             return true;
+        }
+
+        private static string FormatPercent(float value)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value)) return string.Empty;
+            float clamped = Math.Max(0f, Math.Min(1f, value));
+            return Math.Round(clamped * 100f, MidpointRounding.AwayFromZero)
+                .ToString("0", CultureInfo.InvariantCulture) + "%";
+        }
+
+        private static string FormatDeltaPercent(float value)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value)) return string.Empty;
+            float clamped = Math.Max(-1f, Math.Min(1f, value));
+            return Math.Round(clamped * 100f, MidpointRounding.AwayFromZero)
+                .ToString("+0;-0;0", CultureInfo.InvariantCulture) + "%";
+        }
+
+        private static string JoinCauseTokens(IList<string> values)
+        {
+            if (values == null) return string.Empty;
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < values.Count && i < 16; i++)
+            {
+                string token = values[i];
+                if (!BeliefMutationCauseTokens.IsKnown(token)) continue;
+                if (result.Length > 0) result.Append(',');
+                result.Append(token);
+            }
+            return result.ToString();
         }
 
         private static string FirstNonBlank(string first, string second)

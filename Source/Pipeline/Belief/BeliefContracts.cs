@@ -233,6 +233,20 @@ namespace PawnDiary
         public float certainty;
     }
 
+    /// <summary>Stable mechanical cause tokens. They identify hooked methods, never doctrine policy.</summary>
+    internal static class BeliefMutationCauseTokens
+    {
+        public const string ConversionAttempt = "conversion_attempt";
+        public const string CertaintyOffset = "certainty_offset";
+        public const string SetIdeology = "set_ideology";
+
+        /// <summary>Returns true only for a stable method-boundary token owned by Phase 2.</summary>
+        public static bool IsKnown(string value)
+        {
+            return value == ConversionAttempt || value == CertaintyOffset || value == SetIdeology;
+        }
+    }
+
     /// <summary>Detached before/after facts for a conversion, reassurance, or certainty mutation.</summary>
     internal sealed class BeliefMutationSnapshot
     {
@@ -394,6 +408,106 @@ namespace PawnDiary
             this.sourceDomain = sourceDomain ?? string.Empty;
             this.sourceDefName = sourceDefName ?? string.Empty;
             this.downstreamGroupDefName = downstreamGroupDefName ?? string.Empty;
+        }
+    }
+
+    /// <summary>Stable source domains understood by mutation-to-event correlation rules.</summary>
+    internal static class BeliefMutationEventSourceTokens
+    {
+        public const string Interaction = "interaction";
+    }
+
+    /// <summary>Stable event participant roles used to find the pawn whose tracker mutated.</summary>
+    internal static class BeliefMutationSubjectRoleTokens
+    {
+        public const string Initiator = "initiator";
+        public const string Recipient = "recipient";
+
+        public static bool IsKnown(string value)
+        {
+            return value == Initiator || value == Recipient;
+        }
+    }
+
+    /// <summary>XML tokens describing the conversion result an exact event row must corroborate.</summary>
+    internal static class BeliefMutationConversionResultTokens
+    {
+        public const string Known = "known";
+        public const string Success = "success";
+        public const string Failure = "failure";
+        public const string None = "none";
+
+        public static bool IsKnown(string value)
+        {
+            return value == Known || value == Success || value == Failure || value == None;
+        }
+    }
+
+    /// <summary>XML tokens describing the certainty direction required by an exact event row.</summary>
+    internal static class BeliefMutationCertaintyDirectionTokens
+    {
+        public const string Any = "any";
+        public const string Increase = "increase";
+        public const string Decrease = "decrease";
+
+        public static bool IsKnown(string value)
+        {
+            return value == Any || value == Increase || value == Decrease;
+        }
+    }
+
+    /// <summary>XML tokens describing whether an exact event requires an ideology transition.</summary>
+    internal static class BeliefMutationIdeologyChangeTokens
+    {
+        public const string Any = "any";
+        public const string Changed = "changed";
+        public const string Unchanged = "unchanged";
+
+        public static bool IsKnown(string value)
+        {
+            return value == Any || value == Changed || value == Unchanged;
+        }
+    }
+
+    /// <summary>
+    /// One exact already-authorized event route and the mechanical mutation shape it may enrich.
+    /// It names event facts and participant roles only; it never identifies doctrine.
+    /// </summary>
+    internal sealed class BeliefMutationEventRule
+    {
+        public readonly string sourceDomain;
+        public readonly string sourceDefName;
+        public readonly string downstreamGroupDefName;
+        public readonly string subjectRole;
+        public readonly string evidenceGroupKey;
+        public readonly string requiredCauseToken;
+        public readonly string conversionResult;
+        public readonly string certaintyDirection;
+        public readonly string ideologyChange;
+        public readonly bool requireAttemptedIdeology;
+
+        public BeliefMutationEventRule(
+            string sourceDomain,
+            string sourceDefName,
+            string downstreamGroupDefName,
+            string subjectRole,
+            string evidenceGroupKey,
+            string requiredCauseToken,
+            string conversionResult,
+            string certaintyDirection,
+            string ideologyChange,
+            bool requireAttemptedIdeology)
+        {
+            this.sourceDomain = sourceDomain ?? string.Empty;
+            this.sourceDefName = sourceDefName ?? string.Empty;
+            this.downstreamGroupDefName = downstreamGroupDefName ?? string.Empty;
+            this.subjectRole = subjectRole ?? string.Empty;
+            this.evidenceGroupKey = evidenceGroupKey ?? string.Empty;
+            this.requiredCauseToken = requiredCauseToken ?? string.Empty;
+            this.conversionResult = conversionResult ?? string.Empty;
+            this.certaintyDirection = certaintyDirection ?? string.Empty;
+            this.ideologyChange = ideologyChange ?? string.Empty;
+            this.requireAttemptedIdeology = requireAttemptedIdeology;
         }
     }
 
@@ -634,6 +748,8 @@ namespace PawnDiary
         public List<string> proselytizingPovRoles = new List<string>();
         public List<BeliefCanonicalEventOwnershipRule> canonicalEventOwnershipRules =
             new List<BeliefCanonicalEventOwnershipRule>();
+        public List<BeliefMutationEventRule> mutationEventRules =
+            new List<BeliefMutationEventRule>();
         public List<BeliefCorrelationCorrection> correlationOverrides = new List<BeliefCorrelationCorrection>();
         public List<BeliefDetailBudget> detailBudgets = new List<BeliefDetailBudget>();
 
@@ -779,6 +895,7 @@ namespace PawnDiary
         public readonly IReadOnlyList<string> lexicalExclusions;
         public readonly IReadOnlyList<string> proselytizingPovRoles;
         public readonly IReadOnlyList<BeliefCanonicalEventOwnershipRule> canonicalEventOwnershipRules;
+        public readonly IReadOnlyList<BeliefMutationEventRule> mutationEventRules;
         public readonly IReadOnlyList<BeliefCorrelationCorrection> correlationOverrides;
         public readonly IReadOnlyList<BeliefDetailBudget> detailBudgets;
 
@@ -848,6 +965,7 @@ namespace PawnDiary
             lexicalExclusions = CopyStrings(value.lexicalExclusions);
             proselytizingPovRoles = CopyStrings(value.proselytizingPovRoles);
             canonicalEventOwnershipRules = CopyOwnershipRules(value.canonicalEventOwnershipRules);
+            mutationEventRules = CopyMutationEventRules(value.mutationEventRules);
             correlationOverrides = CopyCorrections(value.correlationOverrides);
             detailBudgets = CopyBudgets(value.detailBudgets);
         }
@@ -949,6 +1067,33 @@ namespace PawnDiary
                             row.sourceDomain, row.sourceDefName, row.downstreamGroupDefName));
                 }
             return new ReadOnlyCollection<BeliefCanonicalEventOwnershipRule>(copy);
+        }
+
+        private static IReadOnlyList<BeliefMutationEventRule> CopyMutationEventRules(
+            IList<BeliefMutationEventRule> source)
+        {
+            List<BeliefMutationEventRule> copy = new List<BeliefMutationEventRule>();
+            if (source != null)
+                for (int i = 0; i < source.Count; i++)
+                {
+                    BeliefMutationEventRule row = source[i];
+                    if (row == null || string.IsNullOrWhiteSpace(row.sourceDomain)
+                        || string.IsNullOrWhiteSpace(row.sourceDefName)
+                        || string.IsNullOrWhiteSpace(row.downstreamGroupDefName)
+                        || !BeliefMutationSubjectRoleTokens.IsKnown(row.subjectRole)
+                        || string.IsNullOrWhiteSpace(row.evidenceGroupKey)
+                        || !BeliefMutationCauseTokens.IsKnown(row.requiredCauseToken)
+                        || !BeliefMutationConversionResultTokens.IsKnown(row.conversionResult)
+                        || !BeliefMutationCertaintyDirectionTokens.IsKnown(row.certaintyDirection)
+                        || !BeliefMutationIdeologyChangeTokens.IsKnown(row.ideologyChange))
+                        continue;
+                    copy.Add(new BeliefMutationEventRule(
+                        row.sourceDomain, row.sourceDefName, row.downstreamGroupDefName,
+                        row.subjectRole, row.evidenceGroupKey, row.requiredCauseToken,
+                        row.conversionResult, row.certaintyDirection, row.ideologyChange,
+                        row.requireAttemptedIdeology));
+                }
+            return new ReadOnlyCollection<BeliefMutationEventRule>(copy);
         }
 
         private static IReadOnlyList<BeliefCorrelationCorrection> CopyCorrections(IList<BeliefCorrelationCorrection> source)

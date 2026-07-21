@@ -32,7 +32,7 @@ namespace PawnDiary
             int eventTick,
             BeliefPolicySnapshot policy)
         {
-            return policy == null
+            return policy == null || !policy.enabled
                 ? null
                 : Buffer.PeekLatest(pawnId, eventTick, policy.mutationCorrelationWindowTicks);
         }

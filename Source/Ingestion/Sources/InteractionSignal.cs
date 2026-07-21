@@ -29,6 +29,7 @@ namespace PawnDiary.Ingestion
         private readonly bool initiatorEligible;
         private readonly bool recipientEligible;
         private readonly DiaryInteractionGroupDef batchGroup;
+        private readonly string effectiveGroupDefName;
         private readonly InteractionEventData payload;
 
         public InteractionSignal(Pawn initiator, Pawn recipient, InteractionDef interactionDef,
@@ -50,6 +51,11 @@ namespace PawnDiary.Ingestion
             {
                 return;
             }
+
+            // Freeze the exact effective group which authorized this PlayLog row. Mutation policy
+            // must match this group as well as the DefName, so a later XML reorder cannot let a broad
+            // conversion-looking name borrow evidence from a differently-owned route.
+            effectiveGroupDefName = InteractionGroups.Classify(interactionDef)?.defName ?? string.Empty;
 
             initiatorEligible = DiaryGameComponent.IsDiaryEligible(initiator);
             recipientEligible = DiaryGameComponent.IsDiaryEligible(recipient);
@@ -117,6 +123,15 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
+            // This lookup deliberately happens after the existing capture decision. Detached cache
+            // evidence can decorate an authorized page, but it cannot make an interaction eligible.
+            BeliefEventEvidence beliefEvidence = BeliefMutationEvidenceAdapter.ForInteraction(
+                payload.DefName,
+                effectiveGroupDefName,
+                payload.InitiatorPawnId,
+                payload.RecipientPawnId,
+                payload.Tick);
+
             string interactionLabel = interactionDef.LabelCap.Resolve();
             string initiatorText = DiaryLineCleaner.CleanLine(initiatorGameText);
             string recipientText = DiaryLineCleaner.CleanLine(recipientGameText);
@@ -133,7 +148,7 @@ namespace PawnDiary.Ingestion
 
                 string gameContext = DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel);
                 DiaryEvent soloEvent = sink.AddSoloEvent(eligiblePawn, otherPawn, interactionDef.defName, interactionLabel,
-                    eligibleText, InteractionGroups.InstructionFor(interactionDef), gameContext);
+                    eligibleText, InteractionGroups.InstructionFor(interactionDef), gameContext, beliefEvidence);
                 soloEvent.AddPlayLogEntryId(playLogEntryId);
                 sink.QueueSolo(soloEvent, DiaryEvent.InitiatorRole);
                 return;
@@ -163,7 +178,8 @@ namespace PawnDiary.Ingestion
             DiaryEvent diaryEvent = sink.AddPairwiseEvent(initiator, recipient, interactionDef.defName, interactionLabel,
                 initiatorText, recipientText,
                 InteractionGroups.InstructionFor(interactionDef),
-                DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel));
+                DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel),
+                beliefEvidence);
             diaryEvent.playLogInteractionDefName = interactionDef.defName;
             diaryEvent.AddPlayLogEntryId(playLogEntryId);
             sink.QueuePair(diaryEvent);

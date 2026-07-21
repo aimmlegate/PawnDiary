@@ -35,8 +35,9 @@
   fallback are unchanged, and ritual/crisis consumers remain deferred. BeliefContextTests pass 308
   assertions; ten Phase-2 cases (372 total) compile in the tracked RimTest project, including real
   tracker + PlayLog success/failure/reassurance boundaries and the deterministic single-Ideo fallback.
-  `PawnDiary.dll`/`PawnDiary.RimTest.dll` rebuild and full validation results are recorded at handoff;
-  no in-game execution is claimed unless RimWorld is actually running.
+  All 23 standalone test projects pass, the touched XML parses, and Debug builds of
+  `PawnDiary.dll` and the tracked `PawnDiary.RimTest.dll` complete without warnings or errors.
+  RimWorld was not running, so the 372 compiled RimTests were not executed in-game.
 
 - **2026-07-21 — Diary UI round-5: global window wash, removed the season scroll strip.** The seasonal
   background wash is now painted **globally across the whole diary window** (edge to edge, behind the

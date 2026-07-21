@@ -20,6 +20,7 @@
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefHistoryCorrelationBuffer.cs" Link="BeliefHistoryCorrelationBuffer.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefMutationPolicy.cs" Link="BeliefMutationPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefMutationBuffer.cs" Link="BeliefMutationBuffer.cs" />
+    <Compile Include="..\..\Source\Pipeline\Belief\BeliefMutationEventSelector.cs" Link="BeliefMutationEventSelector.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefCanonicalEventOwnershipPolicy.cs" Link="BeliefCanonicalEventOwnershipPolicy.cs" />
   </ItemGroup>
 </Project>

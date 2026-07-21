@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Master Wave 10 / Ideology Phase 1 plus the first Phase 2 infrastructure slice. This Def remains
-  DLC-neutral: the exact ability strings below are event-source ownership, never a hard Def reference
-  or doctrine inference. No belief-reflection scheduler is enabled.
+  Master Wave 10 / Ideology Phase 1 plus Phase 2 mutation infrastructure and exact interaction
+  enrichment. This Def remains DLC-neutral: the exact event strings below are source ownership and
+  mechanical correlation, never a hard Def reference or doctrine inference. No belief-reflection
+  scheduler is enabled.
 -->
 <Defs>
   <PawnDiary.DiaryBeliefPolicyDef>
@@ -159,6 +160,61 @@
       <li><sourceDomain>thought</sourceDomain><sourceDefName>FailedConvertAbilityInitiator</sourceDefName><downstreamGroupDefName>conversion</downstreamGroupDefName></li>
       <li><sourceDomain>thought</sourceDomain><sourceDefName>FailedConvertAbilityRecipient</sourceDefName><downstreamGroupDefName>conversion</downstreamGroupDefName></li>
     </canonicalEventOwnershipRules>
+
+    <!-- Exact already-authorized interaction consumers. The recipient is the tracker owner for all
+         four vanilla mechanics. Shape checks prevent an adjacent same-tick action from lending the
+         wrong success/failure or certainty direction to a page. Counsel is intentionally absent: it
+         changes mood/thought state, not Ideology certainty. The code fallback list is empty. -->
+    <mutationEventRules>
+      <li>
+        <sourceDomain>interaction</sourceDomain>
+        <sourceDefName>ConvertIdeoAttempt</sourceDefName>
+        <downstreamGroupDefName>conversion</downstreamGroupDefName>
+        <subjectRole>recipient</subjectRole>
+        <evidenceGroupKey>conversion</evidenceGroupKey>
+        <requiredCauseToken>conversion_attempt</requiredCauseToken>
+        <conversionResult>known</conversionResult>
+        <certaintyDirection>any</certaintyDirection>
+        <ideologyChange>any</ideologyChange>
+        <requireAttemptedIdeology>true</requireAttemptedIdeology>
+      </li>
+      <li>
+        <sourceDomain>interaction</sourceDomain>
+        <sourceDefName>Convert_Success</sourceDefName>
+        <downstreamGroupDefName>conversion</downstreamGroupDefName>
+        <subjectRole>recipient</subjectRole>
+        <evidenceGroupKey>conversion</evidenceGroupKey>
+        <requiredCauseToken>conversion_attempt</requiredCauseToken>
+        <conversionResult>success</conversionResult>
+        <certaintyDirection>any</certaintyDirection>
+        <ideologyChange>changed</ideologyChange>
+        <requireAttemptedIdeology>true</requireAttemptedIdeology>
+      </li>
+      <li>
+        <sourceDomain>interaction</sourceDomain>
+        <sourceDefName>Convert_Failure</sourceDefName>
+        <downstreamGroupDefName>conversion</downstreamGroupDefName>
+        <subjectRole>recipient</subjectRole>
+        <evidenceGroupKey>conversion</evidenceGroupKey>
+        <requiredCauseToken>conversion_attempt</requiredCauseToken>
+        <conversionResult>failure</conversionResult>
+        <certaintyDirection>decrease</certaintyDirection>
+        <ideologyChange>unchanged</ideologyChange>
+        <requireAttemptedIdeology>true</requireAttemptedIdeology>
+      </li>
+      <li>
+        <sourceDomain>interaction</sourceDomain>
+        <sourceDefName>Reassure</sourceDefName>
+        <downstreamGroupDefName>heartfelt</downstreamGroupDefName>
+        <subjectRole>recipient</subjectRole>
+        <evidenceGroupKey>reassurance</evidenceGroupKey>
+        <requiredCauseToken>certainty_offset</requiredCauseToken>
+        <conversionResult>none</conversionResult>
+        <certaintyDirection>increase</certaintyDirection>
+        <ideologyChange>unchanged</ideologyChange>
+        <requireAttemptedIdeology>false</requireAttemptedIdeology>
+      </li>
+    </mutationEventRules>
 
     <!-- Empty by design. Add only a documented, gated, regression-tested metadata failure. -->
     <correlationOverrides />

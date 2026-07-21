@@ -175,7 +175,14 @@ namespace PawnDiary
 
             result.structure = policy.includeStructure ? NormalizeMeme(snapshot.structure, policy) : null;
             result.deity = SelectDeity(snapshot.deities, result.supportingMemes, request.deterministicSeed, policy);
-            BeliefCertaintyPolicy.Apply(snapshot.certainty, evidence.mutation, policy, result);
+            // A pair page may share the recipient's mechanical mutation with the converter's POV.
+            // Keep that event fact in result.mutation, but only let it rewrite the current/trend
+            // certainty fields when this live snapshot belongs to the exact mutated pawn.
+            BeliefMutationSnapshot ownMutation = evidence.mutation != null
+                && string.Equals(snapshot.pawnId, evidence.mutation.pawnId, StringComparison.Ordinal)
+                ? evidence.mutation
+                : null;
+            BeliefCertaintyPolicy.Apply(snapshot.certainty, ownMutation, policy, result);
             for (int i = 0; i < selected.Count; i++) AddUnique(result.selectionReasonTokens, selected[i].relevanceSource);
             for (int i = 0; i < expanded.matchedRuleKeys.Count; i++) AddUnique(result.selectionReasonTokens, expanded.matchedRuleKeys[i]);
             return result;

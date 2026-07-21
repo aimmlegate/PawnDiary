@@ -31,6 +31,7 @@ namespace PawnDiary
             TestMalformedUnsafeAndOversizedInputs();
             TestPhase1EvidencePersistenceAndCorrelation();
             TestPhase2MutationCoalescingCorrelationAndOwnership();
+            TestPhase2MutationEvidenceSelection();
             Console.WriteLine("BeliefContextTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -80,6 +81,8 @@ namespace PawnDiary
             AssertEqual("mutation window fallback is bounded", 120, safe.mutationCorrelationWindowTicks);
             AssertEqual("code fallback suppresses no generic event routes", 0,
                 BeliefPolicySnapshot.CreateDefault().canonicalEventOwnershipRules.Count);
+            AssertEqual("code fallback enriches no mutation event routes", 0,
+                BeliefPolicySnapshot.CreateDefault().mutationEventRules.Count);
         }
 
         private static void TestPhase2MutationCoalescingCorrelationAndOwnership()
@@ -288,6 +291,167 @@ namespace PawnDiary
             AssertEqual("disabled belief policy never suppresses the generic route", string.Empty,
                 BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
                     BeliefCanonicalEventSourceTokens.Ability, "Convert", true, false, ownership));
+        }
+
+        private static void TestPhase2MutationEvidenceSelection()
+        {
+            BeliefMutationEventRule successRule = MutationRule(
+                "Convert_Success", "conversion", BeliefMutationCauseTokens.ConversionAttempt,
+                BeliefMutationConversionResultTokens.Success,
+                BeliefMutationCertaintyDirectionTokens.Any,
+                BeliefMutationIdeologyChangeTokens.Changed,
+                requireAttemptedIdeology: true);
+            BeliefMutationEventRule failureRule = MutationRule(
+                "Convert_Failure", "conversion", BeliefMutationCauseTokens.ConversionAttempt,
+                BeliefMutationConversionResultTokens.Failure,
+                BeliefMutationCertaintyDirectionTokens.Decrease,
+                BeliefMutationIdeologyChangeTokens.Unchanged,
+                requireAttemptedIdeology: true);
+            BeliefMutationEventRule reassuranceRule = MutationRule(
+                "Reassure", "heartfelt", BeliefMutationCauseTokens.CertaintyOffset,
+                BeliefMutationConversionResultTokens.None,
+                BeliefMutationCertaintyDirectionTokens.Increase,
+                BeliefMutationIdeologyChangeTokens.Unchanged,
+                requireAttemptedIdeology: false);
+            List<BeliefMutationEventRule> rules = new List<BeliefMutationEventRule>
+            {
+                successRule, failureRule, reassuranceRule
+            };
+
+            BeliefMutationEventRule exact = BeliefMutationEventSelector.RuleFor(
+                BeliefMutationEventSourceTokens.Interaction, "Convert_Success", "conversion",
+                true, true, rules);
+            AssertTrue("exact enabled interaction rule resolves", ReferenceEquals(successRule, exact));
+            AssertTrue("inactive Ideology exposes no mutation consumer",
+                BeliefMutationEventSelector.RuleFor(
+                    BeliefMutationEventSourceTokens.Interaction, "Convert_Success", "conversion",
+                    false, true, rules) == null);
+            AssertTrue("disabled belief policy exposes no mutation consumer",
+                BeliefMutationEventSelector.RuleFor(
+                    BeliefMutationEventSourceTokens.Interaction, "Convert_Success", "conversion",
+                    true, false, rules) == null);
+            AssertTrue("exact downstream group is required",
+                BeliefMutationEventSelector.RuleFor(
+                    BeliefMutationEventSourceTokens.Interaction, "Convert_Success", "heartfelt",
+                    true, true, rules) == null);
+            AssertTrue("Def-name mapping is ordinal and case-sensitive",
+                BeliefMutationEventSelector.RuleFor(
+                    BeliefMutationEventSourceTokens.Interaction, "convert_success", "conversion",
+                    true, true, rules) == null);
+            List<BeliefMutationEventRule> duplicateRules = new List<BeliefMutationEventRule>(rules)
+            {
+                MutationRule("Convert_Success", "conversion",
+                    BeliefMutationCauseTokens.ConversionAttempt,
+                    BeliefMutationConversionResultTokens.Success,
+                    BeliefMutationCertaintyDirectionTokens.Any,
+                    BeliefMutationIdeologyChangeTokens.Changed, true)
+            };
+            AssertTrue("duplicate exact mutation mappings fail closed",
+                BeliefMutationEventSelector.RuleFor(
+                    BeliefMutationEventSourceTokens.Interaction, "Convert_Success", "conversion",
+                    true, true, duplicateRules) == null);
+            AssertEqual("recipient rule selects exact recipient identity", "TargetPawn",
+                BeliefMutationEventSelector.SubjectPawnId(successRule, "ConverterPawn", "TargetPawn"));
+
+            BeliefMutationSnapshot success = Mutation(
+                "TargetPawn", 100, "OldIdeo", "NewIdeo", 0f, 0.5f,
+                BeliefMutationCauseTokens.ConversionAttempt, true, ideologyChanged: true);
+            success.attemptedIdeologyId = "NewIdeo";
+            success.attemptedIdeologyName = "New faith";
+            BeliefEventEvidence selected = BeliefMutationEventSelector.Select(
+                successRule, "TargetPawn", 100, 10, success);
+            AssertTrue("matching conversion mutation becomes evidence",
+                selected != null && ReferenceEquals(success, selected.mutation));
+            AssertEqual("selected evidence keeps exact event source", "Convert_Success",
+                selected.narrative.sourceDefName);
+            AssertEqual("selected evidence keeps XML group", "conversion", selected.groupKey);
+            BeliefEventEvidence converterPov = BeliefEventEvidenceFactory.ForPov(
+                selected, "EventA", 100, "ConverterPawn", "initiator");
+            BeliefEventEvidence targetPov = BeliefEventEvidenceFactory.ForPov(
+                selected, "EventA", 100, "TargetPawn", "recipient");
+            AssertTrue("two authorized POV copies can share one detached mechanical fact",
+                converterPov.mutation.conversionSucceeded == true
+                    && targetPov.mutation.conversionSucceeded == true);
+
+            AssertTrue("cross-pawn mutation is rejected",
+                BeliefMutationEventSelector.Select(successRule, "OtherPawn", 100, 10, success) == null);
+            AssertTrue("stale mutation is rejected",
+                BeliefMutationEventSelector.Select(successRule, "TargetPawn", 111, 10, success) == null);
+            AssertTrue("future-tick mutation is rejected even inside cache maintenance window",
+                BeliefMutationEventSelector.Select(successRule, "TargetPawn", 99, 10, success) == null);
+
+            BeliefMutationSnapshot failure = Mutation(
+                "TargetPawn", 101, "OldIdeo", "OldIdeo", 0.8f, 0.7f,
+                BeliefMutationCauseTokens.ConversionAttempt, false, ideologyChanged: false);
+            failure.attemptedIdeologyId = "NewIdeo";
+            AssertTrue("exact failed conversion selects falling-certainty evidence",
+                BeliefMutationEventSelector.Select(failureRule, "TargetPawn", 101, 10, failure) != null);
+            AssertTrue("failure row cannot enrich a success page",
+                BeliefMutationEventSelector.Select(successRule, "TargetPawn", 101, 10, failure) == null);
+            AssertTrue("success row cannot enrich a failure page",
+                BeliefMutationEventSelector.Select(failureRule, "TargetPawn", 100, 10, success) == null);
+
+            BeliefMutationSnapshot reassurance = Mutation(
+                "TargetPawn", 102, "SameIdeo", "SameIdeo", 0.4f, 0.55f,
+                BeliefMutationCauseTokens.CertaintyOffset, null, ideologyChanged: false);
+            AssertTrue("certainty-only increase enriches exact reassurance",
+                BeliefMutationEventSelector.Select(
+                    reassuranceRule, "TargetPawn", 102, 10, reassurance) != null);
+            reassurance.beforeCertainty = 0.6f;
+            reassurance.afterCertainty = 0.5f;
+            AssertTrue("certainty decrease cannot masquerade as reassurance",
+                BeliefMutationEventSelector.Select(
+                    reassuranceRule, "TargetPawn", 102, 10, reassurance) == null);
+
+            BeliefMutationBuffer sequential = new BeliefMutationBuffer();
+            sequential.RecordOrMerge(success, 100, 8, 10);
+            BeliefMutationSnapshot laterCertainty = Mutation(
+                "TargetPawn", 100, "NewIdeo", "NewIdeo", 0.5f, 0.4f,
+                BeliefMutationCauseTokens.CertaintyOffset, null, ideologyChanged: false);
+            laterCertainty.startedSequence = 3;
+            laterCertainty.completedSequence = 4;
+            sequential.RecordOrMerge(laterCertainty, 100, 8, 10);
+            BeliefMutationSnapshot newest = sequential.PeekLatest("TargetPawn", 100, 10);
+            AssertEqual("sequential fixture keeps both mechanical actions", 2, sequential.Count);
+            AssertTrue("selector never scans backward into an older sequential conversion",
+                BeliefMutationEventSelector.Select(
+                    successRule, "TargetPawn", 100, 10, newest) == null);
+            AssertEqual("failed sequential selection remains non-consuming", 2, sequential.Count);
+
+            BeliefMutationSnapshot malformed = Mutation(
+                "TargetPawn", 100, "OldIdeo", "NewIdeo", 0.2f, 0.3f,
+                BeliefMutationCauseTokens.ConversionAttempt, true, ideologyChanged: true);
+            malformed.startedSequence = 0;
+            malformed.attemptedIdeologyId = "NewIdeo";
+            AssertTrue("missing cache ordering metadata fails closed",
+                BeliefMutationEventSelector.Select(
+                    successRule, "TargetPawn", 100, 10, malformed) == null);
+            AssertTrue("null and empty selector inputs fail closed",
+                BeliefMutationEventSelector.Select(null, string.Empty, -1, 10, null) == null);
+
+            BeliefPolicyBuilder builder = BeliefPolicyBuilder.CreateDefault();
+            builder.mutationEventRules.Add(successRule);
+            builder.mutationEventRules.Add(new BeliefMutationEventRule(
+                "interaction", "Malformed", "conversion", "observer", "conversion",
+                "unknown_cause", "maybe", "sideways", "sometimes", false));
+            BeliefPolicySnapshot frozen = builder.Build();
+            builder.mutationEventRules.Clear();
+            AssertEqual("mutation-event snapshot deep-copies only validated XML-style rows", 1,
+                frozen.mutationEventRules.Count);
+
+            BeliefEventEvidence sharedTargetMutation = Evidence(true);
+            sharedTargetMutation.mutation = success;
+            BeliefSnapshot converterSnapshot = Snapshot();
+            converterSnapshot.pawnId = "ConverterPawn";
+            converterSnapshot.certainty = new BeliefCertaintyFact { hasCurrent = true, current = 0.8f };
+            BeliefStanceResolution converterResolution = Resolve(
+                converterSnapshot, sharedTargetMutation, BeliefPolicySnapshot.CreateDefault());
+            AssertNear("recipient mutation does not rewrite converter certainty", 0.8f,
+                converterResolution.certainty);
+            AssertEqual("recipient mutation does not become converter certainty trend",
+                BeliefCertaintyTrendTokens.Unknown, converterResolution.certaintyTrend);
+            AssertTrue("converter still receives the shared event mutation",
+                converterResolution.mutation != null);
         }
 
         private static void TestMissingInactiveEmptyAndKnowledgeGates()
@@ -816,15 +980,23 @@ namespace PawnDiary
             BeliefEventEvidence evidence = Evidence(true);
             evidence.mutation = new BeliefMutationSnapshot
             {
+                pawnId = "SyntheticPawn",
                 beforeIdeologyId = "Before_Ideo",
                 beforeIdeologyName = "Before Ideoligion",
                 afterIdeologyId = "After_Ideo",
                 afterIdeologyName = "After Ideoligion",
                 attemptedIdeologyId = "Attempted_Ideo",
                 attemptedIdeologyName = "Attempted Ideoligion",
+                hasBeforeCertainty = true,
+                beforeCertainty = 0.2f,
+                hasAfterCertainty = true,
+                afterCertainty = 0.5f,
+                certaintyChanged = true,
                 ideologyChanged = true,
                 conversionSucceeded = true
             };
+            evidence.mutation.causeTokens.Add(BeliefMutationCauseTokens.ConversionAttempt);
+            evidence.mutation.causeTokens.Add(BeliefMutationCauseTokens.SetIdeology);
             BeliefPolicySnapshot policy = BeliefPolicySnapshot.CreateDefault();
             BeliefStanceResolution result = Resolve(Snapshot(), evidence, policy);
             AssertTrue("mutation-only resolution is useful context", result.HasUsefulContext);
@@ -838,11 +1010,27 @@ namespace PawnDiary
                 "current ideoligion: After Ideoligion");
             AssertContains("full mutation format includes attempted ideoligion", full,
                 "attempted ideoligion: Attempted Ideoligion");
+            AssertContains("full mutation format includes before certainty", full,
+                "certainty before: 20%");
+            AssertContains("full mutation format includes after certainty", full,
+                "certainty after: 50%");
+            AssertContains("full mutation format includes numeric certainty delta", full,
+                "certainty delta: +30%");
+            AssertContains("full mutation format includes exact conversion result", full,
+                "conversion result: success");
+            AssertContains("full mutation format includes mechanical cause tokens", full,
+                "mutation cause: conversion_attempt,set_ideology");
             string compact = BeliefContextFormatter.Format(result, NarrativeDetailLevelTokens.Compact, policy);
             AssertTrue("compact mutation format omits transition lines",
                 compact.IndexOf("previous ideoligion:", StringComparison.Ordinal) < 0
                     && compact.IndexOf("current ideoligion:", StringComparison.Ordinal) < 0
                     && compact.IndexOf("attempted ideoligion:", StringComparison.Ordinal) < 0);
+            AssertContains("compact mutation format keeps certainty delta", compact,
+                "certainty delta: +30%");
+            AssertContains("compact mutation format keeps conversion result", compact,
+                "conversion result: success");
+            AssertTrue("compact mutation format omits low-level cause tokens",
+                compact.IndexOf("mutation cause:", StringComparison.Ordinal) < 0);
         }
 
         private static void TestPhase1EvidencePersistenceAndCorrelation()
@@ -1306,6 +1494,64 @@ namespace PawnDiary
                 deterministicSeed = seed,
                 recentSelectionDefNames = recent ?? new List<string>()
             });
+        }
+
+        private static BeliefMutationEventRule MutationRule(
+            string sourceDefName,
+            string downstreamGroupDefName,
+            string requiredCauseToken,
+            string conversionResult,
+            string certaintyDirection,
+            string ideologyChange,
+            bool requireAttemptedIdeology)
+        {
+            return new BeliefMutationEventRule(
+                BeliefMutationEventSourceTokens.Interaction,
+                sourceDefName,
+                downstreamGroupDefName,
+                BeliefMutationSubjectRoleTokens.Recipient,
+                sourceDefName == "Reassure" ? "reassurance" : "conversion",
+                requiredCauseToken,
+                conversionResult,
+                certaintyDirection,
+                ideologyChange,
+                requireAttemptedIdeology);
+        }
+
+        private static BeliefMutationSnapshot Mutation(
+            string pawnId,
+            int tick,
+            string beforeIdeologyId,
+            string afterIdeologyId,
+            float beforeCertainty,
+            float afterCertainty,
+            string causeToken,
+            bool? conversionSucceeded,
+            bool ideologyChanged)
+        {
+            BeliefMutationSnapshot result = new BeliefMutationSnapshot
+            {
+                pawnId = pawnId,
+                capturedTick = tick,
+                beforeIdeologyId = beforeIdeologyId,
+                beforeIdeologyName = beforeIdeologyId + " name",
+                afterIdeologyId = afterIdeologyId,
+                afterIdeologyName = afterIdeologyId + " name",
+                hasBeforeCertainty = true,
+                beforeCertainty = beforeCertainty,
+                hasAfterCertainty = true,
+                afterCertainty = afterCertainty,
+                certaintyChanged = Math.Abs(afterCertainty - beforeCertainty) > 0.0001f,
+                ideologyChanged = ideologyChanged,
+                conversionSucceeded = conversionSucceeded,
+                observedMutation = ideologyChanged
+                    || Math.Abs(afterCertainty - beforeCertainty) > 0.0001f
+                    || conversionSucceeded.HasValue,
+                startedSequence = 1,
+                completedSequence = 2
+            };
+            result.causeTokens.Add(causeToken);
+            return result;
         }
 
         private static BeliefObservationDecision ObserveDelta(

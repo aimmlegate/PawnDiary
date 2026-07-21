@@ -4,20 +4,6 @@ using System;
 
 namespace PawnDiary
 {
-    /// <summary>Stable mechanical cause tokens. They identify hooked methods, never doctrine policy.</summary>
-    internal static class BeliefMutationCauseTokens
-    {
-        public const string ConversionAttempt = "conversion_attempt";
-        public const string CertaintyOffset = "certainty_offset";
-        public const string SetIdeology = "set_ideology";
-
-        /// <summary>Returns true only for a stable method-boundary token owned by this slice.</summary>
-        public static bool IsKnown(string value)
-        {
-            return value == ConversionAttempt || value == CertaintyOffset || value == SetIdeology;
-        }
-    }
-
     /// <summary>Builds one sanitized mutation boundary from two detached states.</summary>
     internal static class BeliefMutationPolicy
     {

@@ -46,6 +46,21 @@ namespace PawnDiary
         public string downstreamGroupDefName;
     }
 
+    /// <summary>One exact authorized event route and its required mechanical mutation shape.</summary>
+    public class DiaryBeliefMutationEventRuleDef
+    {
+        public string sourceDomain;
+        public string sourceDefName;
+        public string downstreamGroupDefName;
+        public string subjectRole;
+        public string evidenceGroupKey;
+        public string requiredCauseToken;
+        public string conversionResult;
+        public string certaintyDirection;
+        public string ideologyChange;
+        public bool requireAttemptedIdeology;
+    }
+
     /// <summary>Optional explicit compatibility correction. The shipped list remains empty.</summary>
     public class DiaryBeliefCorrelationCorrectionDef
     {
@@ -155,6 +170,9 @@ namespace PawnDiary
         // Exact event-source ownership, not doctrine policy. The code fallback is intentionally empty
         // so missing XML never suppresses an unknown or modded source.
         public List<DiaryBeliefCanonicalEventOwnershipRuleDef> canonicalEventOwnershipRules;
+        // Exact enrichment mappings. The code fallback is empty so missing/malformed XML attaches no
+        // transient mutation to an unrelated event.
+        public List<DiaryBeliefMutationEventRuleDef> mutationEventRules;
         public List<DiaryBeliefCorrelationCorrectionDef> correlationOverrides;
         public List<DiaryBeliefDetailBudgetDef> detailBudgets;
     }
@@ -274,6 +292,7 @@ namespace PawnDiary
             CopyStrings(source.proselytizingPovRoles, builder.proselytizingPovRoles, replaceWhenEmpty: false);
             CopyOwnershipRules(source.canonicalEventOwnershipRules,
                 builder.canonicalEventOwnershipRules);
+            CopyMutationEventRules(source.mutationEventRules, builder.mutationEventRules);
             CopyCorrections(source.correlationOverrides, builder.correlationOverrides);
             CopyBudgets(source.detailBudgets, builder.detailBudgets);
             cached = builder.Build();
@@ -345,6 +364,34 @@ namespace PawnDiary
                 destination.Add(new BeliefCanonicalEventOwnershipRule(
                     row.sourceDomain.Trim(), row.sourceDefName.Trim(),
                     row.downstreamGroupDefName.Trim()));
+            }
+        }
+
+        private static void CopyMutationEventRules(
+            List<DiaryBeliefMutationEventRuleDef> source,
+            List<BeliefMutationEventRule> destination)
+        {
+            destination.Clear();
+            if (source == null) return;
+            for (int i = 0; i < source.Count; i++)
+            {
+                DiaryBeliefMutationEventRuleDef row = source[i];
+                if (row == null || string.IsNullOrWhiteSpace(row.sourceDomain)
+                    || string.IsNullOrWhiteSpace(row.sourceDefName)
+                    || string.IsNullOrWhiteSpace(row.downstreamGroupDefName)
+                    || string.IsNullOrWhiteSpace(row.subjectRole)
+                    || string.IsNullOrWhiteSpace(row.evidenceGroupKey)
+                    || string.IsNullOrWhiteSpace(row.requiredCauseToken)
+                    || string.IsNullOrWhiteSpace(row.conversionResult)
+                    || string.IsNullOrWhiteSpace(row.certaintyDirection)
+                    || string.IsNullOrWhiteSpace(row.ideologyChange))
+                    continue;
+                destination.Add(new BeliefMutationEventRule(
+                    row.sourceDomain.Trim(), row.sourceDefName.Trim(),
+                    row.downstreamGroupDefName.Trim(), row.subjectRole.Trim(),
+                    row.evidenceGroupKey.Trim(), row.requiredCauseToken.Trim(),
+                    row.conversionResult.Trim(), row.certaintyDirection.Trim(),
+                    row.ideologyChange.Trim(), row.requireAttemptedIdeology));
             }
         }
 
