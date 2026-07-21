@@ -220,9 +220,11 @@ history correlations, and mechanical thought-offset valence, and returns only bo
 `ThoughtSignal` freezes exact `Thought.sourcePrecept` identity before emitting. Body-mod pages reuse
 the same one resolver result and map only matched mechanical correlation valence into their established
 attitude precedence; when one selected situational precept contains opposite state workers, the adapter
-queries only that selected precept's currently active typed ThoughtDefs and uses their projected
-mechanical valence. This preserves vanilla/modded approval and rejection without precept-name or
-localized-text allowlists. The old approve/despise Def-name lists are gone. The guarded
+queries only that selected precept's currently active, non-social situational ThoughtDefs and uses their
+projected mechanical valence. Memory ThoughtDefs are never passed to vanilla's situational handler
+(whose worker is null), and social ThoughtDefs are never evaluated without their required other pawn.
+This preserves vanilla/modded approval and rejection without precept-name or localized-text allowlists.
+The old approve/despise Def-name lists are gone. The guarded
 `HistoryEventsManager.RecordEvent` postfix only stores a short-lived, bounded pawn/tick/Def-name
 observation and can neither authorize nor create a page. Its hot hook uses the state-passing safety
 wrapper, and the deep-copied belief policy snapshot is shared per active language instead of rebuilt
@@ -3217,8 +3219,9 @@ and gated by the persisted `errorReportingNoticeShown` flag) tells the player it
 Hot events and archive rows are separate on purpose. Hot `DiaryEvent` rows keep prompts, retry state,
 raw/generated text, status, LLM metadata, titles, context, source ids, and per-role state. Ideology
 Phase 1 adds the stable additive `initiatorBeliefContext` and `recipientBeliefContext` string keys;
-old/missing values normalize to empty, and every load re-sanitizes and re-bounds them so repeated
-save/load produces the same bytes. Compact
+old/missing values normalize to empty, every load re-sanitizes and re-bounds them, and the same pure
+normalizer runs immediately before XML save so an in-memory XML-illegal control character cannot abort
+the save before PostLoadInit can repair it. Repeated save/load therefore produces the same bytes. Compact
 archive rows keep only what the Diary UI needs to render an old page.
 
 History retention is per pawn:

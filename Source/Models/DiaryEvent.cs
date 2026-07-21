@@ -363,6 +363,16 @@ namespace PawnDiary
         // can take refs to its fields directly. Save format is unchanged from before the refactor.
         private static void ScribePawnSlot(string prefix, ref PovSlot slot)
         {
+            // PostLoadInit repair is too late for XML 1.0 control characters: XmlWriter rejects them
+            // before a malformed in-memory value can be loaded again. Reapply the same pure belief
+            // whitelist immediately before saving so direct API writes or corrupted transient state
+            // cannot abort the whole game save. The historical key and ordinary normalized bytes stay
+            // unchanged.
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                slot.beliefContext = BeliefContextFormatter.NormalizeSaved(slot.beliefContext);
+            }
+
             Scribe_Values.Look(ref slot.pawnId, prefix + "PawnId");
             Scribe_Values.Look(ref slot.name, prefix + "Name");
             Scribe_Values.Look(ref slot.text, prefix + "Text");

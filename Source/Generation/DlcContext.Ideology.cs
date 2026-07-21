@@ -128,7 +128,11 @@ namespace PawnDiary
                         continue;
 
                     ThoughtDef thoughtDef = DefDatabase<ThoughtDef>.GetNamedSilentFail(correlation.defName);
-                    if (thoughtDef == null) continue;
+                    // ThoughtHandler.GetMoodThoughtsFor always asks its situational handler too. Passing
+                    // a memory ThoughtDef (Worker == null) makes vanilla log a NullReferenceException;
+                    // passing a social worker lacks the other pawn it needs. Only the non-social
+                    // situational correlations can truthfully answer this pawn-local state question.
+                    if (thoughtDef == null || !thoughtDef.IsSituational || thoughtDef.IsSocial) continue;
                     activeThoughts.Clear();
                     try
                     {

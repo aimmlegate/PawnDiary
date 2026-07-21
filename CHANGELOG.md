@@ -1,5 +1,14 @@
 # Changelog
 
+- **2026-07-21 — Hardened the first loaded Ideology run after a 363/367 result.** The Odyssey N3-O
+  failure was the documented parked-player-gravship host guard and remains expected on that map. The
+  three unintended failures are corrected: `DiaryEvent` now reapplies the pure belief whitelist before
+  XML save so an in-memory XML-illegal control character cannot abort Scribe; the live Ideology adapter
+  queries only non-social situational ThoughtDefs, avoiding vanilla's null-worker memory-thought path;
+  and the loaded HistoryEvent/body-mod fixtures establish their baseline after `SetIdeo` setup and spawn
+  the disposable pawn for workers that are invalid while despawned. Save keys and DLC behavior are
+  unchanged, and all fixture state remains scope/finally-owned. A corrected in-game rerun is pending.
+
 - **2026-07-21 — Added the first Ideology Phase 2 mutation/ownership infrastructure slice.** Added
   defensively registered, `ModsConfig.IdeologyActive`-gated exact hooks for
   `Pawn_IdeoTracker.IdeoConversionAttempt`, `OffsetCertainty`, and `SetIdeo`. All live tracker/pawn/

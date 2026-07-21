@@ -1039,6 +1039,16 @@ exact `Convert` Ability signal with a real `Find.PlayLog.Add(Convert_Success)` d
 one canonical pair page and no random draw. These fixtures compile against the installed assemblies;
 RimWorld has not been launched, so they are not recorded as executed in-game results.
 
+The first user-observed 367-test loaded run completed 363/367. The N3-O failure was the documented
+acceptance guard for a loaded map without a parked player gravship and remains expected on that host.
+The other three failures exposed fixture/runtime hardening gaps: the Scribe normalization fixture put an
+XML-illegal control character into memory before the writer ran; `SetIdeo` setup could add legitimate
+HistoryEvents before the observer's exact-count assertion; and vanilla's negative body-mod situational
+worker refuses an unspawned pawn. Production now normalizes belief blocks before XML save and probes
+only non-social situational ThoughtDefs; the loaded fixtures reset the history sidecar after setup and
+spawn the disposable body-mod pawn with scope-owned finally cleanup. A corrected in-game rerun is
+pending and is not inferred from compilation.
+
 ## 8. Implementation Order
 
 | Phase | Deliverable | Exit gate |

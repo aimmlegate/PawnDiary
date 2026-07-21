@@ -227,6 +227,10 @@ namespace PawnDiary.RimTests
                 }
             }
 
+            // SetIdeo can legitimately record its own HistoryEvents. This assertion owns only the one
+            // explicit RecordEvent call below, so establish the exact sidecar baseline after all setup.
+            // Scope teardown already registered a finally-run reset for failure cleanup.
+            BeliefHistoryCorrelationCache.Reset();
             HistoryEvent observed = new HistoryEvent(
                 historyDef,
                 pawn.Named(HistoryEventArgsNames.Doer));
@@ -330,9 +334,12 @@ namespace PawnDiary.RimTests
             fixture.AddPrecept(PreceptMaker.MakePrecept(target), false, Faction.OfPlayer.def, null);
 
             // Traits have stronger intentional precedence than ideology. Remove either vanilla body
-            // trait from this disposable pawn so the assertion isolates the precept worker path.
+            // trait from this disposable pawn so the assertion isolates the precept worker path. The
+            // negative vanilla worker is not valid while despawned, so exercise it on the loaded map
+            // exactly as production does; the shared scope destroys the spawned pawn in its finally path.
             pawn.story.traits.allTraits.RemoveAll(trait =>
                 trait?.def?.defName == "Transhumanist" || trait?.def?.defName == "BodyPurist");
+            scope.SpawnAsLiveColonist(pawn);
             pawn.ideo.SetIdeo(fixture);
             Hediff hediff = HediffMaker.MakeHediff(pegLeg, pawn);
             scope.RegisterCleanup(() =>
