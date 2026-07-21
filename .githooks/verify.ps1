@@ -88,6 +88,7 @@ Invoke-Native "dotnet" @("run", "--project", "tests\DiaryBiotechPolicyTests\Diar
 Invoke-Native "dotnet" @("run", "--project", "tests\DiaryAnomalyPolicyTests\DiaryAnomalyPolicyTests.csproj")
 Invoke-Native "dotnet" @("run", "--project", "tests\DiaryOdysseyPolicyTests\DiaryOdysseyPolicyTests.csproj")
 Invoke-Native "dotnet" @("run", "--project", "tests\NarrativeContinuityTests\NarrativeContinuityTests.csproj")
+Invoke-Native "dotnet" @("run", "--project", "tests\BeliefContextTests\BeliefContextTests.csproj")
 Invoke-Native "dotnet" @("run", "--project", "tests\PawnMemoryTests\PawnMemoryTests.csproj")
 Invoke-Native "dotnet" @("run", "--project", "tests\RoyaltyContextTests\RoyaltyContextTests.csproj")
 Invoke-Native "dotnet" @("run", "--project", "tests\DiaryTextDecorationTests\DiaryTextDecorationTests.csproj")
