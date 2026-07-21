@@ -345,17 +345,19 @@ with the six upstream memory fixtures, the integrated RimTest assembly contains 
 Core and RimTest builds pass; the user-confirmed corrected Anomaly-active run passed 354/354 and
 closes N3-A loaded acceptance. The earlier 347/347 evidence remains the distinct A2.2 boundary result.
 
-Master Wave 8 / Narrative N3-O raises `NarrativeContinuityTests` from 289 to 321 assertions. It covers
+Master Wave 8 / Narrative N3-O raises `NarrativeContinuityTests` from 289 to 324 assertions. It covers
 the exact `SeasonalFloodActive` source plus `SeasonalFlood` evidence tuple; provider availability,
-knowledge, connection, POV, ship, map/location, tick, journey grammar, key safety, single-line prose,
+knowledge, connection, POV, ship, map/location, tick, home-only journey grammar, per-lens failure
+isolation, key safety, single-line prose,
 and length gates; one-candidate cap, duplicate newest-row choice, input-order independence, stable key,
 ordinary repetition, home/pressure coexistence, Anomaly/Odyssey fixed-order composition, and the shared
 Full two-lens versus Balanced/Compact one-lens budgets. A malformed formatter fact yields no lens while
 the landing evidence and both references remain intact. `DiaryOdysseyPolicyTests` passes 160 assertions
-with empty safe defaults and loaded XML format projection; `DiaryPipelineTests` passes 2,746 assertions
-and freezes English/Russian format placeholders, home/pressure coexistence policy, no Odyssey dependency,
-and Full/Balanced/Compact prompt projection. The 354-test RimTest assembly builds with focused real-
-adapter assertions, but no N3-O in-game run is claimed.
+with empty safe defaults and loaded XML format projection; `DiaryPipelineTests` passes 2,750 assertions
+and freezes English/Russian format placeholders, the exact seasonal-flood observer tuple,
+home/pressure coexistence policy, no Odyssey dependency, and Full/Balanced/Compact prompt projection.
+The 354-test RimTest assembly builds with focused real-adapter, policy-cache, canonical-signal, and
+home-map-precondition assertions, but no N3-O in-game run is claimed.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It
@@ -583,9 +585,10 @@ so its dual-POV assertions are independent of the player's live colonist orderin
 The same fixture asserts fail-soft registration on all four shipped `LandingOutcomeWorker` overrides.
 `DiaryOdysseyPolicyTests` now has 160 assertions, including wrong-ship/empty-outcome rejection, exact
 outcome attachment, Def-identity omission, visible-label sanitization, and bounded context. Pipeline
-coverage now passes 2,746 assertions, keeps `landing_outcome` and the correct pilot/copilot POV role in
-Full/Balanced/Compact, locks both localized indexed labels, and projects a selected N3-O seasonal-flood
-lens through the existing optional narrative-context field under every detail preset.
+coverage now passes 2,750 assertions, keeps `landing_outcome` and the correct pilot/copilot POV role in
+Full/Balanced/Compact, locks both localized indexed labels, and projects a frozen optional
+narrative-context string through every detail preset. Provider selection itself remains covered by
+`NarrativeContinuityTests` and the compiled loaded Odyssey fixture.
 
 Odyssey runtime hardening adds `PawnDiaryOdysseyRuntimeLifecycleTests`, deliberately limited to the
 facts that detached/component fixtures cannot prove. `InitiateTakeoff` and `InitiateLanding` are entered
@@ -599,7 +602,7 @@ Every fixture explicitly logs `SKIP` when Odyssey is inactive or a real player g
 and failure-safe cleanup restores component/controller state, time speed, the mask engine, world
 objects, spawned things, pawns, events, diary indexes, and temporary Harmony patches.
 
-Narrative N2-O, N3-B identity, N3-R core, N3-A, and N3-O extend `NarrativeContinuityTests` to 321
+Narrative N2-O, N3-B identity, N3-R core, N3-A, and N3-O extend `NarrativeContinuityTests` to 324
 assembly-free assertions. N3-R covers exact persona arc/weapon and title POV/domain/topic applicability, cross-DLC
 identity isolation, absent/unknown/unverified/null silence, stable candidate keys and ordering,
 defensive persona/duty caps, and deterministic duty-topic normalization. N2-O covers the one-row
@@ -610,9 +613,11 @@ fixed provider list and Def-backed format, while `PawnDiaryOdysseyJourneyFlowTes
 snapshot exists iff vanilla's exact onboard predicate succeeds. The existing growth/birth owner passes
 that snapshot at event time; N2-O adds no hook, event, writer fan-out, or new save field. N3-O reuses
 the same snapshot and the existing saved O2 observer row, adds at most one exact place-pressure fact,
-and covers unsafe inputs, deterministic deduplication, ordinary repetition, two-provider composition,
-and evidence/reference preservation. Focused loaded assertions exercise the real adapter and all three
-prompt detail budgets when an exact onboard host is available; they are compiled but not yet run in game.
+and covers unsafe inputs, per-lens home/pressure failure isolation, deterministic deduplication, ordinary
+repetition, two-provider composition, and evidence/reference preservation. Focused loaded assertions
+exercise the real adapter, DefInjected cache refresh, canonical landing-signal handoff, player-home map
+precondition, and all three prompt detail budgets when an exact onboard host is available; they are
+compiled but not yet run in game.
 
 Master Wave 3 / Biotech Phases 0–3 plus Phase 4 automated hardening use
 `DiaryBiotechPolicyTests`, an assembly-free suite that freezes

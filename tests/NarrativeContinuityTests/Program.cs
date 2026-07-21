@@ -1150,7 +1150,23 @@ namespace NarrativeContinuityTests
                 bad.locationKey = "bad|location";
                 fact.locationKey = bad.locationKey;
             });
-            reject("unsafe journey arc fails closed", (bad, fact) => bad.journeyId = "odyssey-journey|wrong|1");
+
+            OdysseyNarrativeSnapshot malformedHome = OdysseySnapshot();
+            malformedHome.environmentalPressures.Add(SeasonalFloodFact(
+                malformedHome, 999, "Flood fact survives malformed home metadata."));
+            malformedHome.journeyId = "odyssey-journey|wrong|1";
+            List<NarrativeLensCandidate> malformedArc = OdysseyNarrativeProvider.Build(landing, malformedHome);
+            AssertEqual("unsafe journey arc omits only the mobile-home lens", 1, malformedArc.Count);
+            AssertEqual("unsafe journey arc preserves independent exact-map pressure",
+                NarrativeCategoryTokens.Pressure, malformedArc[0].category);
+            malformedHome.journeyId = string.Empty;
+            malformedHome.sourceTick = -1;
+            List<NarrativeLensCandidate> negativeHomeTick = OdysseyNarrativeProvider.Build(
+                landing, malformedHome);
+            AssertEqual("negative mobile-home tick omits only the mobile-home lens", 1,
+                negativeHomeTick.Count);
+            AssertEqual("negative mobile-home tick keeps the pressure fact's own valid tick", 999,
+                negativeHomeTick[0].sourceTick);
 
             OdysseyNarrativeSnapshot malformedFormat = OdysseySnapshot();
             malformedFormat.homeText = string.Empty;

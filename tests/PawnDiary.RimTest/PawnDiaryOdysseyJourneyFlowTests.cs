@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using PawnDiary.Capture;
+using PawnDiary.Ingestion;
 using RimTestRedux;
 using RimWorld;
 using RimWorld.Planet;
@@ -581,6 +582,22 @@ namespace PawnDiary.RimTests
                 "N2-O mobile-home DefInjected format was not projected.");
             Require(!string.IsNullOrWhiteSpace(policy.seasonalFloodNarrativeFormat),
                 "N3-O seasonal-flood DefInjected format was not projected.");
+            string originalFloodFormat = def.seasonalFloodNarrativeFormat;
+            try
+            {
+                // DefInjected updates the existing Def object during a language switch. Mutate that
+                // exact field to prove the snapshot cache observes the new localized value.
+                const string refreshedFloodFormat = "RimTest refreshed flood {0} at {1}.";
+                def.seasonalFloodNarrativeFormat = refreshedFloodFormat;
+                OdysseyPolicySnapshot refreshed = DiaryOdysseyPolicy.Snapshot();
+                AssertStr(refreshedFloodFormat, refreshed.seasonalFloodNarrativeFormat,
+                    "seasonal-flood language-switch cache refresh");
+            }
+            finally
+            {
+                def.seasonalFloodNarrativeFormat = originalFloodFormat;
+                DiaryOdysseyPolicy.Snapshot();
+            }
             Require(policy.landingPageEnabled,
                 "O1.4 must project XML-enabled novelty-gated landing pages.");
             Require(policy.maximumLaunchWriters >= 1 && policy.maximumLaunchWriters <= 2
@@ -654,6 +671,9 @@ namespace PawnDiary.RimTests
                 string surroundings = DiaryContextBuilder.BuildSurroundingsSummary(pawn);
                 if (mobileCaptured)
                 {
+                    Require(pawn.Map.IsPlayerHome,
+                        "An onboard gravship map was not a player-home map, so the home-only "
+                        + "SeasonalFloodActive observer could never feed N3-O.");
                     int now = Find.TickManager?.TicksGame ?? 0;
                     ActiveObservedConditionState flood = new ActiveObservedConditionState
                     {
@@ -738,6 +758,54 @@ namespace PawnDiary.RimTests
                                 "Loaded Full context did not compose exact home and seasonal-flood lenses.");
                         }
                     }
+
+                    PromptContextDetailLevel previousDetail = PawnDiaryMod.Settings.contextDetailLevel;
+                    scope.RegisterCleanup(() =>
+                        PawnDiaryMod.Settings.contextDetailLevel = previousDetail);
+                    PawnDiaryMod.Settings.contextDetailLevel = PromptContextDetailLevel.Full;
+                    OdysseyJourneySnapshot landingJourney = new OdysseyJourneySnapshot
+                    {
+                        journeyId = journeyId,
+                        shipStableId = mobileHome.shipStableId,
+                        shipName = mobileHome.shipName,
+                        destination = mobileHome.location
+                    };
+                    GravshipJourneySignal landingSignal = new GravshipJourneySignal(
+                        landingJourney,
+                        mobileHome.location,
+                        new OdysseyLandingPlan(),
+                        DiaryOdysseyPolicy.Snapshot(),
+                        null,
+                        new List<Pawn> { pawn });
+                    DiaryEvent landingPage = new DiaryEvent
+                    {
+                        eventId = "rimtest-n3-o-signal",
+                        tick = now,
+                        initiatorPawnId = pawn.GetUniqueLoadID(),
+                        solo = true
+                    };
+                    MethodInfo applyNarrative = typeof(GravshipJourneySignal).GetMethod(
+                        "ApplyNarrativeEvidence",
+                        BindingFlags.Instance | BindingFlags.NonPublic);
+                    Require(applyNarrative != null,
+                        "The canonical landing signal lost its Narrative Continuity adapter.");
+                    applyNarrative.Invoke(landingSignal, new object[]
+                    {
+                        scope.Component,
+                        landingPage,
+                        pawn,
+                        DiaryEvent.InitiatorRole
+                    });
+                    string pressureKey = "odyssey|pressure|"
+                        + OdysseyEnvironmentalNarrativeTokens.SeasonalFlood + "|"
+                        + mobileHome.location.stableKey;
+                    Require(landingPage.NarrativeSelectedCandidateKeysForRole(
+                                DiaryEvent.InitiatorRole).Contains(pressureKey)
+                            && landingPage.NarrativeContextForRole(DiaryEvent.InitiatorRole).IndexOf(
+                                narrative.environmentalPressures[0].text,
+                                StringComparison.Ordinal) >= 0,
+                        "The canonical landing signal did not pass its live Odyssey snapshot into "
+                        + "the shared Narrative Continuity builder.");
 
                     flood.mapUniqueId = pawn.Map.uniqueID + 1;
                     OdysseyNarrativeSnapshot wrongMap = scope.Component

@@ -596,7 +596,7 @@ namespace DiaryPipelineTests
                     maxTokens = 30
                 });
 
-                AssertContains("selected N3-O pressure reaches the " + levels[i] + " prompt",
+                AssertContains("frozen narrative-context text reaches the " + levels[i] + " prompt",
                     plan.userPrompt,
                     "narrative context: Use only these frozen facts.\n"
                     + "Seasonal floodwater is present on the writer's exact gravship map.");
@@ -3510,10 +3510,25 @@ namespace DiaryPipelineTests
             AssertTrue("Odyssey seasonal-flood observed-condition row exists", seasonalFlood != null);
             AssertEqual("Odyssey seasonal-flood row is package-gated",
                 "Ludeon.RimWorld.Odyssey", seasonalFlood?.Attribute("MayRequire")?.Value ?? string.Empty);
+            AssertEqual("Odyssey seasonal flood keeps the adapter's exact condition key",
+                "SeasonalFloodActive", ChildValue(seasonalFlood, "conditionKey"));
+            AssertEqual("Odyssey seasonal flood remains enabled for observation",
+                "true", ChildValue(seasonalFlood, "enabled"));
+            AssertEqual("Odyssey seasonal flood remains map-scoped",
+                "Map", ChildValue(seasonalFlood, "scope"));
             AssertEqual("Odyssey seasonal flood uses thing-presence observer",
                 "ThingPresent", ChildValue(seasonalFlood, "observerType"));
             AssertTrue("Odyssey seasonal flood matches exact installed thing identity",
                 HasListValue(seasonalFlood, "matchDefNames", "SeasonalFlood"));
+            int seasonalFloodMatcherCount = 0;
+            XElement seasonalFloodMatchers = seasonalFlood?.Element("matchDefNames");
+            if (seasonalFloodMatchers != null)
+            {
+                foreach (XElement ignored in seasonalFloodMatchers.Elements("li"))
+                    seasonalFloodMatcherCount++;
+            }
+            AssertEqual("Odyssey seasonal flood admits exactly one evidence identity", 1,
+                seasonalFloodMatcherCount);
             AssertEqual("Odyssey seasonal flood has scan-gap end hysteresis",
                 "5000", ChildValue(seasonalFlood, "endDebounceTicks"));
             AssertEqual("Odyssey seasonal flood has restart cooldown",

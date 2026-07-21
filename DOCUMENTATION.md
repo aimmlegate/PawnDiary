@@ -226,8 +226,9 @@ uses the existing `pressure`/`ambient_pressure`/place contracts, keeps the journ
 at most one stable prose-free seasonal-flood key. The existing home and pressure categories may coexist,
 but the unchanged selector still admits at most two Full lenses or one Balanced/Compact lens and applies
 ordinary selected-key repetition history. Missing/malformed DefInjected prose or provider failure drops
-only the optional lens; the canonical landing event and its evidence/references survive. N3-O does not
-rescan Things, duplicate visible `GameCondition` surroundings, promote `GravNausea`, interpret landing
+only the optional lens; malformed home-only source-tick or journey-arc metadata likewise cannot suppress
+an independently valid pressure fact. The canonical landing event and its evidence/references survive.
+N3-O does not rescan Things, duplicate visible `GameCondition` surroundings, promote `GravNausea`, interpret landing
 outcomes, infer life support, or add a hook, page, setting, or save field. N3-R replaces the Royalty stub with bounded persona-bond
 and current faction-title candidates. Persona facts require the exact saved persona arc or weapon
 subject; title facts require the exact POV pawn plus Royalty title-domain or authority/status/duty
@@ -3453,10 +3454,13 @@ successful-return postfix; pure policy tests cover exact-ship correlation/reject
 bounded outcome prompt projection. N3-O adds compiled loaded-path assertions that temporarily supply
 one exact active saved flood row, require the real `OdysseyNarrativeSnapshotFor` adapter to project it
 only for the verified onboard POV/map, and run the loaded shared selector under Full, Balanced, and
-Compact. A wrong-map row omits pressure while preserving the existing mobile-home snapshot, and an
-inactive-Odyssey path remains null. These assertions build in the 354-test RimTest assembly but have not
-yet been executed in game for N3-O. Assembly-free coverage passes 321 Narrative Continuity, 160 Odyssey
-policy, and 2,746 pipeline assertions.
+Compact. The same fixture now invokes the canonical landing signal's private adapter and requires its
+saved selection to contain the pressure key, checks the observer's player-home map precondition, and
+proves a DefInjected field mutation invalidates the Odyssey policy cache. A wrong-map row omits pressure
+while preserving the existing mobile-home snapshot, and an inactive-Odyssey path remains null. These
+assertions build in the 354-test RimTest assembly but have not yet been executed in game for N3-O.
+Assembly-free coverage passes 324 Narrative Continuity, 160 Odyssey policy, 68 observed-condition, and
+2,750 pipeline assertions.
 
 `PawnDiaryOdysseyRuntimeLifecycleTests` covers only the host behavior the detached suite cannot prove.
 It enters the real `InitiateTakeoff` and `InitiateLanding` public methods with isolated live objects;

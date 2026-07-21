@@ -1252,8 +1252,10 @@ life-support spikes separately; implement only the parts whose gates pass.
 > sorting/deduplication admits at most one pressure candidate. Existing XML coexistence policy allows
 > exact home plus pressure under the unchanged Full two-lens and Balanced/Compact one-lens budgets,
 > with ordinary saved repetition history. Missing policy/format/provider data omits the optional lens
-> while preserving the canonical event and its evidence/references. No new hook, page, setting, save
-> field, life-support claim, or landing consequence is part of N3-O.
+> while preserving the canonical event and its evidence/references; malformed home-only tick/journey
+> metadata cannot suppress an independently valid pressure fact. Review hardening also compiles loaded
+> checks for the canonical landing-signal handoff and the observer's player-home map precondition. No
+> new hook, page, setting, save field, life-support claim, or landing consequence is part of N3-O.
 
 ### Phase O3 — Exploration and ending
 

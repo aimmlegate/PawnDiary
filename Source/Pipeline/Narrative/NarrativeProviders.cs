@@ -906,15 +906,19 @@ namespace PawnDiary
         private static bool Usable(List<NarrativeEvidence> evidence, OdysseyNarrativeSnapshot snapshot)
         {
             return snapshot != null && snapshot.providerAvailable && snapshot.pawnCanKnow
-                && snapshot.hasVerifiedPovConnection && snapshot.sourceTick >= 0
+                && snapshot.hasVerifiedPovConnection
                 && SafeKeyPart(snapshot.povPawnId) && SafeKeyPart(snapshot.shipStableId)
-                && SafeKeyPart(snapshot.locationKey) && CouldApply(evidence, snapshot.povPawnId)
-                && ValidJourneyArcOrEmpty(snapshot.journeyId, snapshot.shipStableId);
+                && SafeKeyPart(snapshot.locationKey) && CouldApply(evidence, snapshot.povPawnId);
         }
 
         private static NarrativeLensCandidate BuildHome(OdysseyNarrativeSnapshot snapshot)
         {
-            if (!SafeText(snapshot.homeText)
+            // The source tick and journey arc belong only to the mobile-home lens. Keeping those gates
+            // here prevents one malformed optional home fact from suppressing an independently valid
+            // exact-map environmental pressure fact carried by the same provider snapshot.
+            if (snapshot.sourceTick < 0
+                || !ValidJourneyArcOrEmpty(snapshot.journeyId, snapshot.shipStableId)
+                || !SafeText(snapshot.homeText)
                 || string.IsNullOrWhiteSpace(snapshot.locationLabel)) return null;
 
             return new NarrativeLensCandidate

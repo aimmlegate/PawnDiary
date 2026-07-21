@@ -611,7 +611,9 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 > the unchanged selector enforces Full two-lens and Balanced/Compact one-lens budgets. Formatter or
 > provider failure preserves the canonical page and evidence/references with no lens. No new hook,
 > page, setting, save field, generic-condition duplicate, life-support state, or landing consequence
-> was added. Focused coverage passes 321 Narrative Continuity, 160 Odyssey policy, and 2,746 pipeline
+> was added. Review hardening isolates malformed home-only tick/journey metadata from valid pressure,
+> locks the exact observer XML tuple, and compiles loaded cache/signal/map-precondition checks. Focused
+> coverage passes 324 Narrative Continuity, 160 Odyssey policy, and 2,750 pipeline
 > assertions; both Debug assemblies build, while the integrated loaded suite has not been run for N3-O.
 
 1. Route high-confidence `EventRelativeStanceResolver` output through the shared interpretation

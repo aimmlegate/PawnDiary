@@ -1,5 +1,15 @@
 # Changelog
 
+- **2026-07-21 — Hardened Odyssey N3-O after adversarial review.** Home-only source-tick and
+  journey-arc validation now omits only the malformed N2-O mobile-home lens instead of suppressing an
+  independently valid exact-map pressure fact. Pure regressions freeze that isolation. XML coverage
+  now locks the observer condition key, enabled/map scope, and single exact evidence matcher; loaded
+  fixtures additionally exercise DefInjected cache invalidation, the canonical landing-signal wiring,
+  and the home-map precondition used by the existing observer. The generic prompt-field fixture and
+  its documentation no longer claim to perform provider selection. Focused suites pass 324 Narrative
+  Continuity, 160 Odyssey policy, 68 observed-condition, and 2,750 pipeline assertions; both Debug
+  assemblies build, while the already-tracked N3-O in-game acceptance run remains pending.
+
 - **2026-07-21 — Implemented Master Wave 8 / Narrative Continuity N3-O environmental pressure.** The
   existing Odyssey snapshot now carries an optional detached environmental fact sourced only from the
   already-saved, still-active `SeasonalFloodActive`/`SeasonalFlood` observer row for the exact POV's
@@ -12,8 +22,8 @@
   The canonical landing now supplies its existing Odyssey snapshot to the shared builder; formatter or
   provider failure still preserves the event plus exact evidence/references and omits only the lens.
   No Thing rescan, Harmony hook, page owner, setting, save field, generic visible-condition duplicate,
-  `GravNausea` page, life-support inference, or landing consequence was added. Focused suites pass 321
-  Narrative Continuity, 160 Odyssey policy, and 2,746 pipeline assertions; both Debug assemblies and
+  `GravNausea` page, life-support inference, or landing consequence was added. Focused suites pass 324
+  Narrative Continuity, 160 Odyssey policy, and 2,750 pipeline assertions; both Debug assemblies and
   repository verification pass, and committed runtime/RimTest DLLs are rebuilt. Focused loaded-path
   assertions compile for the exact active/wrong-map/inactive and Full/Balanced/Compact paths, but no
   N3-O in-game pass is claimed. Wave 9 remains untouched.
