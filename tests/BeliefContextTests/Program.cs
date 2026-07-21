@@ -1069,6 +1069,18 @@ namespace PawnDiary
                 "conversion result: success");
             AssertTrue("compact mutation format omits low-level cause tokens",
                 compact.IndexOf("mutation cause:", StringComparison.Ordinal) < 0);
+
+            BeliefSnapshot targetSnapshot = Snapshot();
+            targetSnapshot.pawnId = "SyntheticPawn";
+            BeliefStanceResolution targetResult = Resolve(targetSnapshot, evidence, policy);
+            AssertTrue("mutation owner is identified as the current POV",
+                targetResult.mutationSubjectIsPov);
+            string targetCompact = BeliefContextFormatter.Format(
+                targetResult, NarrativeDetailLevelTokens.Compact, policy);
+            AssertTrue("mutation owner does not receive a redundant third-person subject line",
+                targetCompact.IndexOf("belief change subject:", StringComparison.Ordinal) < 0);
+            AssertContains("mutation owner still receives the exact compact result", targetCompact,
+                "conversion result: success");
         }
 
         private static void TestPhase1EvidencePersistenceAndCorrelation()

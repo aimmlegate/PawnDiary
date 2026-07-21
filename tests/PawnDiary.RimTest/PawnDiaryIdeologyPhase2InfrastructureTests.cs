@@ -114,8 +114,17 @@ namespace PawnDiary.RimTests
                 return;
             }
 
-            PawnDiaryRimTestScope.Require(captured && state != null,
-                "An Ideology-active pawn did not project a detached mutation state.");
+            if (Find.IdeoManager?.classicMode == true)
+            {
+                // Classic Ideology mode keeps the package active while vanilla tracker mutations are
+                // disabled. Patch/policy ownership still matters, but a live mutable state does not.
+                Log.Message(LogPrefix + "live mutation projection: not applicable (classic mode). ");
+            }
+            else
+            {
+                PawnDiaryRimTestScope.Require(captured && state != null,
+                    "An Ideology-active pawn did not project a detached mutation state.");
+            }
             BeliefPolicySnapshot ownership = DiaryBeliefPolicy.Snapshot();
             PawnDiaryRimTestScope.Require(
                 BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
@@ -127,10 +136,18 @@ namespace PawnDiary.RimTests
                     "FailedConvertAbilityRecipient", true, ownership.enabled,
                     ownership.canonicalEventOwnershipRules) == "conversion",
                 "The loaded XML policy did not assign both failed-conversion thoughts to conversion.");
-            AssertLoadedMutationRule(ownership, "ConvertIdeoAttempt", "conversion");
-            AssertLoadedMutationRule(ownership, "Convert_Success", "conversion");
-            AssertLoadedMutationRule(ownership, "Convert_Failure", "conversion");
-            AssertLoadedMutationRule(ownership, "Reassure", "heartfelt");
+            AssertLoadedMutationRule(ownership, "ConvertIdeoAttempt", "conversion", "conversion",
+                BeliefMutationCauseTokens.ConversionAttempt, BeliefMutationConversionResultTokens.Known,
+                BeliefMutationCertaintyDirectionTokens.Any, BeliefMutationIdeologyChangeTokens.Any, true);
+            AssertLoadedMutationRule(ownership, "Convert_Success", "conversion", "conversion",
+                BeliefMutationCauseTokens.ConversionAttempt, BeliefMutationConversionResultTokens.Success,
+                BeliefMutationCertaintyDirectionTokens.Any, BeliefMutationIdeologyChangeTokens.Changed, true);
+            AssertLoadedMutationRule(ownership, "Convert_Failure", "conversion", "conversion",
+                BeliefMutationCauseTokens.ConversionAttempt, BeliefMutationConversionResultTokens.Failure,
+                BeliefMutationCertaintyDirectionTokens.Decrease, BeliefMutationIdeologyChangeTokens.Unchanged, true);
+            AssertLoadedMutationRule(ownership, "Reassure", "heartfelt", "reassurance",
+                BeliefMutationCauseTokens.CertaintyOffset, BeliefMutationConversionResultTokens.None,
+                BeliefMutationCertaintyDirectionTokens.Increase, BeliefMutationIdeologyChangeTokens.Unchanged, false);
         }
 
         /// <summary>Mechanical cache observation alone must never authorize or emit a diary page.</summary>
@@ -271,11 +288,7 @@ namespace PawnDiary.RimTests
         [Test]
         public static void ConvertAbilityAndDownstreamInteractionProduceOneCanonicalPage()
         {
-            if (!ModsConfig.IdeologyActive)
-            {
-                Log.Message(LogPrefix + "canonical Convert route: not applicable (Ideology inactive). ");
-                return;
-            }
+            if (!RequireActiveTracker()) return;
             InteractionDef interaction = DefDatabase<InteractionDef>.GetNamedSilentFail("Convert_Success");
             PawnDiaryRimTestScope.Require(interaction != null,
                 "The Ideology-active fixture could not load Convert_Success.");
@@ -337,17 +350,105 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Runs vanilla's random-conversion worker, including its normal certainty factor, before the
+        /// exact ConvertIdeoAttempt PlayLog row and requires the observed bool result on both POVs.
+        /// </summary>
+        [Test]
+        public static void ConvertIdeoAttemptWorkerPublishesKnownResultToItsExactPage()
+        {
+            if (!RequireActiveTracker()) return;
+            InteractionDef interaction = DefDatabase<InteractionDef>.GetNamedSilentFail("ConvertIdeoAttempt");
+            PawnDiaryRimTestScope.Require(interaction?.Worker != null,
+                "The Ideology-active fixture could not load the ConvertIdeoAttempt worker.");
+
+            // The vanilla worker requires an initiator with usable Social/ConversionPower and a spawned
+            // recipient with a live interactions tracker. Random harness pawns may be incapable of Social,
+            // while unspawned pawns deliberately omit dynamic components. Choose a bounded valid initiator,
+            // then establish the same spawned-map prerequisites as a real social interaction.
+            Pawn converter = pawn;
+            Pawn target = otherPawn;
+            if (!CanUseConversionPower(converter) && CanUseConversionPower(target))
+            {
+                converter = otherPawn;
+                target = pawn;
+            }
+            for (int attempt = 0; !CanUseConversionPower(converter) && attempt < 8; attempt++)
+                converter = scope.CreateAdultColonist();
+            PawnDiaryRimTestScope.Require(CanUseConversionPower(converter),
+                "Could not generate a bounded ConvertIdeoAttempt initiator with usable ConversionPower.");
+
+            scope.SpawnAsLiveColonist(converter);
+            scope.SpawnAsLiveColonist(target);
+            PawnDiaryRimTestScope.Require(converter.interactions != null && target.interactions != null,
+                "The spawned ConvertIdeoAttempt fixture did not initialize live interaction trackers.");
+
+            Ideo beforeIdeology = EnsureCurrentIdeology(target);
+            Ideo attemptedIdeology = EnsureCurrentIdeology(converter);
+            if (ReferenceEquals(beforeIdeology, attemptedIdeology))
+            {
+                attemptedIdeology = FindOrCreateDifferentIdeology(beforeIdeology);
+                converter.ideo.SetIdeo(attemptedIdeology);
+            }
+            target.ideo.OffsetCertainty(0.5f - target.ideo.Certainty);
+            BeliefMutationCache.Reset();
+            PlayLogEntry_Interaction entry = GeneratedSpeechPlayLog.CreateInteractionEntry(
+                interaction, converter, target);
+            PawnDiaryRimTestScope.Require(entry != null,
+                "Could not create the ConvertIdeoAttempt PlayLog row.");
+            scope.TrackPlayLogEntry(entry);
+
+            bool? observedResult = null;
+            DiaryEvent page = scope.FireAndRequireEvent(() =>
+            {
+                List<RulePackDef> extraSentencePacks = new List<RulePackDef>();
+                string letterText;
+                string letterLabel;
+                LetterDef letterDef;
+                LookTargets lookTargets;
+                // The failure prose/social-fight branch samples Verse.Rand. Keep that real branch
+                // deterministic without leaking its draw into the loaded colony or the next test.
+                Rand.PushState(584921);
+                try
+                {
+                    interaction.Worker.Interacted(converter, target, extraSentencePacks,
+                        out letterText, out letterLabel, out letterDef, out lookTargets);
+                }
+                finally
+                {
+                    Rand.PopState();
+                }
+
+                BeliefMutationSnapshot mutation = BeliefMutationCache.PeekLatest(
+                    target.GetUniqueLoadID(), Find.TickManager.TicksGame,
+                    DiaryBeliefPolicy.Snapshot());
+                PawnDiaryRimTestScope.Require(mutation?.conversionSucceeded.HasValue == true,
+                    "Vanilla's ConvertIdeoAttempt worker did not leave an exact conversion result.");
+                observedResult = mutation.conversionSucceeded;
+                Find.PlayLog.Add(entry);
+            }, "ConvertIdeoAttempt", converter, target, rejectOtherTestPawnEvents: true);
+
+            scope.RequirePairRefs(page, converter, target);
+            AssertGameContextContains(page, BeliefMutationEventSelector.ConversionGameContextMarker);
+            AssertContextContains(page, DiaryEvent.InitiatorRole,
+                "belief change subject: " + target.LabelShort);
+            string expectedResult = observedResult == true ? "success" : "failure";
+            AssertContextContains(page, DiaryEvent.InitiatorRole,
+                "conversion result: " + expectedResult);
+            AssertContextContains(page, DiaryEvent.RecipientRole,
+                "conversion result: " + expectedResult);
+            AssertContextContains(page, DiaryEvent.RecipientRole, "certainty delta:");
+            AssertContextContains(page, DiaryEvent.InitiatorRole,
+                BeliefMutationCauseTokens.ConversionAttempt);
+        }
+
+        /// <summary>
         /// The other shipped ability-owned interaction follows the same contract: Reassure's visible
         /// PlayLog interaction owns one pair page and its generic ability route emits nothing.
         /// </summary>
         [Test]
         public static void ReassureAbilityAndDownstreamInteractionProduceOneCanonicalPage()
         {
-            if (!ModsConfig.IdeologyActive)
-            {
-                Log.Message(LogPrefix + "canonical Reassure route: not applicable (Ideology inactive). ");
-                return;
-            }
+            if (!RequireActiveTracker()) return;
             InteractionDef interaction = DefDatabase<InteractionDef>.GetNamedSilentFail("Reassure");
             PawnDiaryRimTestScope.Require(interaction != null,
                 "The Ideology-active fixture could not load Reassure.");
@@ -539,7 +640,13 @@ namespace PawnDiary.RimTests
         private static void AssertLoadedMutationRule(
             BeliefPolicySnapshot policy,
             string interactionDefName,
-            string downstreamGroupDefName)
+            string downstreamGroupDefName,
+            string evidenceGroupKey,
+            string requiredCauseToken,
+            string conversionResult,
+            string certaintyDirection,
+            string ideologyChange,
+            bool requireAttemptedIdeology)
         {
             BeliefMutationEventRule rule = BeliefMutationEventSelector.RuleFor(
                 BeliefMutationEventSourceTokens.Interaction,
@@ -549,8 +656,14 @@ namespace PawnDiary.RimTests
                 policyEnabled: policy?.enabled == true,
                 policy?.mutationEventRules);
             PawnDiaryRimTestScope.Require(rule != null
-                    && rule.subjectRole == BeliefMutationSubjectRoleTokens.Recipient,
-                "The loaded XML did not expose one exact recipient mutation rule for "
+                    && rule.subjectRole == BeliefMutationSubjectRoleTokens.Recipient
+                    && rule.evidenceGroupKey == evidenceGroupKey
+                    && rule.requiredCauseToken == requiredCauseToken
+                    && rule.conversionResult == conversionResult
+                    && rule.certaintyDirection == certaintyDirection
+                    && rule.ideologyChange == ideologyChange
+                    && rule.requireAttemptedIdeology == requireAttemptedIdeology,
+                "The loaded XML did not preserve the exact mechanical mutation rule for "
                     + interactionDefName + ".");
         }
 
@@ -576,6 +689,11 @@ namespace PawnDiary.RimTests
         {
             if (ModsConfig.IdeologyActive)
             {
+                if (Find.IdeoManager?.classicMode == true)
+                {
+                    Log.Message(LogPrefix + "tracker mutation: not applicable (classic mode). ");
+                    return false;
+                }
                 PawnDiaryRimTestScope.Require(pawn?.ideo != null,
                     "An Ideology-active fixture pawn did not have a tracker.");
                 return true;
@@ -584,6 +702,12 @@ namespace PawnDiary.RimTests
                 "The mutation cache must remain empty without Ideology.");
             Log.Message(LogPrefix + "tracker mutation: not applicable (Ideology inactive). ");
             return false;
+        }
+
+        private static bool CanUseConversionPower(Pawn candidate)
+        {
+            return candidate != null && StatDefOf.ConversionPower?.Worker != null
+                && !StatDefOf.ConversionPower.Worker.IsDisabledFor(candidate);
         }
 
         private static Ideo EnsureCurrentIdeology()

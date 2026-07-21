@@ -1153,10 +1153,15 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > actual before/after boundaries, failure cleanup, and one Convert downstream page. Exact XML mutation
 > rules now enrich existing conversion success/failure/attempt and reassurance PlayLog pages with one
 > non-consuming target fact shared by both authorized POVs; pure selection fails closed on wrong pawn,
-> time direction/age, mechanics, or a newer mismatched sequential row. Ten compiled Phase-2 RimTests
-> add real success/failure/reassurance tracker + PlayLog boundaries and prove cache-only non-emission.
-> RimWorld was not launched. Broader step 2, ritual/crisis/throne-speech parts of step 3, step 4 prompt/
-> group work, and the complete per-path exit gate remain pending.
+> time direction/age, mechanics, or a newer mismatched sequential row. Twelve compiled Phase-2 RimTests
+> add real success/failure/reassurance tracker + PlayLog boundaries, exercise the vanilla random-
+> conversion worker with a conversion-capable spawned initiator and its normal stat/certainty factors,
+> validate every shipped consumer-rule field, and prove cache-only non-emission. Classic Ideology mode
+> skips only live mutation mechanics while keeping patch and XML-policy ownership checks active.
+> The first loaded 376-test run completed 374/376; after correcting the conversion-worker fixture and
+> satisfying the unrelated N3-O parked-gravship host guard, the rerun passed all 376/376 tests. Broader
+> step 2, ritual/crisis/throne-speech parts of step 3, step 4 prompt/group work, and the complete
+> per-path exit gate remain pending.
 
 1. Implement guarded/coalescing mutation patches and cache. **Implemented in the infrastructure slice.**
 2. Add conservative evidence adapters for the §7.5 families to existing captured thought, social,

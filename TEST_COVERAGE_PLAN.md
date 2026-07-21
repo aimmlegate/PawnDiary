@@ -1034,9 +1034,9 @@ assembly is now 362 tests and builds with 0 warnings/errors into the tracked dep
 RimWorld has not been launched for this follow-up, so its new cases are not
 recorded as loaded-game passes and no manual/in-game acceptance row is closed.
 
-Ideology Phase 2 infrastructure and exact interaction enrichment add eleven compiled loaded cases in
+Ideology Phase 2 infrastructure and exact interaction enrichment add twelve compiled loaded cases in
 `PawnDiaryIdeologyPhase2InfrastructureTests`. Together with two non-rendering filter lifecycle cases in
-`PawnDiaryDiaryTabFilterFixtureTests`, the assembly contains 375 tests. They resolve and inspect the exact three
+`PawnDiaryDiaryTabFilterFixtureTests`, the assembly contains 376 tests. They resolve and inspect the exact three
 production Harmony targets, branch truthfully for an inactive DLC profile, call real `SetIdeo` and
 `OffsetCertainty` boundaries plus `IdeoConversionAttempt` for detached before/after/attempted/result
 facts and nested/sequential ownership (forcing zero certainty so the real conversion deterministically
@@ -1046,15 +1046,24 @@ exact `Convert` Ability signal with a real `Find.PlayLog.Add(Convert_Success)` d
 one canonical pair page and no random draw. Added adversarial cases pin equivalent `Reassure` ownership,
 release the generic Convert page when the downstream conversion group is disabled, and retain the
 generic `ConversionRitual` start page because cancellation has no downstream owner. The interaction
-consumer follow-up proves a real mutation/cache write alone emits no page; loads all four exact XML
-consumer rules; runs deterministic real conversion success and failure plus real reassurance certainty
+consumer follow-up proves a real mutation/cache write alone emits no page; validates every field of all
+four exact XML consumer rules; runs deterministic real conversion success and failure plus real
+reassurance certainty
 gain before the real `PlayLog.Add` boundary; requires both existing pair POVs to receive the mechanical
 result/delta while one non-consuming cache row remains; requires a one-eligible-pawn solo conversion to
 label its ineligible target and carry the critical marker; and rejects conversion wording on reassurance.
+A dedicated case selects a bounded, tracked initiator with enabled `ConversionPower`, spawns both
+harness pawns as live colonists, asserts their interaction trackers, and calls vanilla
+`InteractionWorker_ConvertIdeoAttempt.Interacted` under a restored deterministic RNG scope. That
+preserves the normal stat/certainty-factor path before requiring its observed known result on the exact
+pair PlayLog page.
+Live mutation cases skip explicitly in Ideology classic mode, where vanilla disables tracker mechanics.
 A disposable second Ideo is generated when the loaded game exposes only one, preserving the
 deterministic conversion fixture and single-Ideo fallback.
-These fixtures compile against the installed assemblies;
-RimWorld has not been launched, so they are not recorded as executed in-game results.
+The first user-observed 376-test loaded run completed 374/376. It exposed the dedicated worker
+fixture's disabled `ConversionPower`/unspawned-recipient prerequisites, while the other failure was the
+unrelated N3-O acceptance guard on a host without a parked player gravship. After correcting the
+fixture and satisfying that host precondition, the loaded-game rerun passed all 376/376 tests.
 
 The first user-observed 367-test loaded run completed 363/367. The N3-O failure was the documented
 acceptance guard for a loaded map without a parked player gravship and remains expected on that host.

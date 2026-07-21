@@ -1,5 +1,21 @@
 # Changelog
 
+- **2026-07-22 — Closed the remaining adversarial Ideology consumer test gaps.** The loaded Phase-2
+  fixture now asserts every mechanical field of all four shipped `mutationEventRules`, drives the real
+  vanilla `InteractionWorker_ConvertIdeoAttempt` with its normal certainty factor before the exact
+  PlayLog consumer, and verifies both POVs receive the observed known result while the converter names
+  the changed pawn. The first user-run suite exposed that the worker fixture supplied unspawned harness
+  pawns, one randomly incapable of Social: vanilla reported disabled `ConversionPower`, then
+  dereferenced the recipient's missing interaction tracker. The fixture now selects a bounded, tracked
+  conversion-capable initiator, spawns both pawns as live colonists, asserts their interaction trackers,
+  and invokes the worker under a restored deterministic RNG scope. Mutation fixtures skip truthfully
+  when Ideology classic mode disables live tracker mechanics.
+  Pure coverage also pins that the mutation-owning POV omits the
+  redundant third-person subject line while retaining its exact Compact result. `BeliefContextTests`
+  passes 320 assertions and the 376-test RimTest assembly builds with 0 warnings/errors. The corrected
+  loaded-game rerun passed all 376/376 tests, including the real conversion worker and the Odyssey N3-O
+  parked-gravship acceptance guard.
+
 - **2026-07-22 — Made the seasonal window wash an experimental, default-off setting.** The global
   seasonal background wash now draws only when the new **"Seasonal window tint (experimental)"** setting
   is enabled (`enableSeasonalBackground`, default `false`, scribed). All the wash code and its
