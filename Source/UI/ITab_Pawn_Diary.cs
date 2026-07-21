@@ -244,6 +244,15 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// True when the player currently wants the right-hand filter/controls panel shown. Defaults to
+        /// on when settings are not yet loaded (early startup) so the tab still sizes for the panel.
+        /// </summary>
+        private static bool FilterPanelSettingEnabled()
+        {
+            return PawnDiaryMod.Settings == null || PawnDiaryMod.Settings.showDiaryFilterPanel;
+        }
+
+        /// <summary>
         /// Clamps the preferred tab width to the logical screen so the panel-widened tab cannot extend
         /// off the left edge on small resolutions or high UI scale. The panel itself hides gracefully
         /// (see ResolveFilterPanelWidth) when the clamped width is too small to hold both columns.
@@ -251,6 +260,15 @@ namespace PawnDiary
         private static float ResponsiveTabWidth(DiaryUiStyleDef style)
         {
             float preferred = PositiveFiniteOrFallback(style.tabWidth, FallbackTabWidth);
+            // tabWidth carries the right-hand filter panel (panel width + gap) on top of the journal
+            // column. When the player hides the panel, drop that allotment so the whole tab shrinks
+            // back to a journal-only window instead of leaving the journal floating in the wide frame.
+            if (!FilterPanelSettingEnabled() && style.filterPanelWidth > 0f)
+            {
+                float panelAllotment = style.filterPanelWidth + Mathf.Max(0f, style.filterPanelGap);
+                preferred = Mathf.Max(FallbackTabMinWidth, preferred - panelAllotment);
+            }
+
             float screenWidth = UI.screenWidth;
             if (!IsPositiveFinite(screenWidth))
             {
@@ -440,9 +458,10 @@ namespace PawnDiary
             // Two-column layout: the journal (virtualized cards) on the left, and an independent,
             // non-virtualized filter/controls panel on the right. The panel hosts the year selector,
             // filter stubs, and — in dev mode — the diary dev tools. The journal keeps its familiar
-            // width because tabWidth grew by the panel's width. The header toggle can hide the panel,
-            // which widens the journal to the full tab width (the year pager falls back inline below).
-            bool filterPanelEnabled = PawnDiaryMod.Settings == null || PawnDiaryMod.Settings.showDiaryFilterPanel;
+            // width because tabWidth grew by the panel's width; hiding the panel (header toggle) shrinks
+            // the whole tab back to that journal width (ResponsiveTabWidth), with the year pager falling
+            // back inline below and the dev tools staying panel-only.
+            bool filterPanelEnabled = FilterPanelSettingEnabled();
             float panelWidth = filterPanelEnabled ? ResolveFilterPanelWidth(rect.width) : 0f;
             Rect filterPanelRect = new Rect(rect.xMax - panelWidth, rect.y, panelWidth, rect.height);
             Rect journalRect = panelWidth > 0f
@@ -462,21 +481,10 @@ namespace PawnDiary
                 headerRight = writingIndicatorRect.x - 8f;
             }
 
-            if (ShouldDrawWritingStyleButton(pawn, component))
-            {
-                float iconSize = Mathf.Max(1f, WritingStyleIconSize);
-                Rect writingStyleIconRect = new Rect(
-                    headerRight - iconSize,
-                    journalRect.y + Mathf.Max(0f, (headerRect.height - iconSize) * 0.5f),
-                    iconSize,
-                    iconSize);
-                DrawWritingStyleHeaderIcon(writingStyleIconRect, pawn, component);
-                headerRight = writingStyleIconRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
-            }
-
             // Filter-panel toggle: a compact list icon that shows/hides the right-hand sidebar. It sits
-            // just left of the writing-style icon so the header controls stay grouped at the top-right
-            // of the journal column, clear of RimWorld's inspect-pane close button.
+            // at the far right of the journal header — just after the writing-style icon — so the header
+            // controls stay grouped at the top-right of the journal column, clear of RimWorld's
+            // inspect-pane close button. Drawn first so it takes the rightmost slot.
             {
                 float toggleSize = Mathf.Max(1f, WritingStyleIconSize);
                 Rect toggleRect = new Rect(
@@ -490,6 +498,19 @@ namespace PawnDiary
                 }
 
                 headerRight = toggleRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
+            }
+
+            // Writing-style opener sits just left of the filter toggle.
+            if (ShouldDrawWritingStyleButton(pawn, component))
+            {
+                float iconSize = Mathf.Max(1f, WritingStyleIconSize);
+                Rect writingStyleIconRect = new Rect(
+                    headerRight - iconSize,
+                    journalRect.y + Mathf.Max(0f, (headerRect.height - iconSize) * 0.5f),
+                    iconSize,
+                    iconSize);
+                DrawWritingStyleHeaderIcon(writingStyleIconRect, pawn, component);
+                headerRight = writingStyleIconRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
             }
 
             headerRect.width = Mathf.Max(0f, headerRight - journalRect.x);
@@ -530,18 +551,12 @@ namespace PawnDiary
 
             DrawFilterPanel(filterPanelRect, pawn, component, years, visibleEntriesCache, haveOrdered ? ordered : null);
 
-            // Fallback for a tab too narrow to fit the panel (only reachable via off-default XML): the
-            // panel is hidden, so keep the dev tools and year pager reachable in the journal column,
-            // exactly as they were before the panel existed.
+            // Fallback when the panel is hidden (player toggled it off, or the tab is too narrow to fit
+            // it via off-default XML): keep the year pager reachable inline in the journal column. The
+            // dev tools are deliberately NOT drawn here — they live only in the filter panel, never on
+            // the main journal, so hiding the panel gives a clean journal-only window.
             if (!panelVisible)
             {
-                if (PawnControlsHeight() > 0f)
-                {
-                    Rect devRect = new Rect(journalRect.x, entriesY, journalRect.width, PawnControlsHeight());
-                    DrawPawnControls(pawn, component, devRect);
-                    entriesY = devRect.yMax + EntryGap;
-                }
-
                 if (!indexLoading && years != null && years.Count > 1)
                 {
                     Rect yearRect = new Rect(journalRect.x, entriesY, journalRect.width, YearFilterHeight);
