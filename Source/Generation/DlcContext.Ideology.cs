@@ -43,6 +43,91 @@ namespace PawnDiary
             return CaptureBeliefSnapshot(pawn, BeliefPolicySnapshot.CreateDefault());
         }
 
+        /// <summary>
+        /// Returns exact active ThoughtDef identities for the resolver-selected live precepts. This is
+        /// used only after an authorized body change, where mutually-exclusive situational workers give
+        /// stronger mechanical polarity than merged correlation prose. No doctrine names are assumed.
+        /// </summary>
+        public static List<string> CaptureActiveSelectedPreceptThoughtDefNames(
+            Pawn pawn,
+            BeliefStanceResolution resolution)
+        {
+            List<string> result = new List<string>();
+            if (!ModsConfig.IdeologyActive || pawn?.ideo?.Ideo == null
+                || pawn.needs?.mood?.thoughts == null || resolution?.stances == null)
+                return result;
+
+            List<Precept> livePrecepts = pawn.ideo.Ideo.PreceptsListForReading;
+            if (livePrecepts == null) return result;
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            List<Thought> activeThoughts = new List<Thought>();
+            for (int stanceIndex = 0; stanceIndex < resolution.stances.Count; stanceIndex++)
+            {
+                BeliefPreceptFact selected = resolution.stances[stanceIndex]?.precept;
+                Precept live = FindSelectedLivePrecept(livePrecepts, selected);
+                if (live == null || selected?.correlations == null) continue;
+
+                for (int correlationIndex = 0;
+                    correlationIndex < selected.correlations.Count && result.Count < 32;
+                    correlationIndex++)
+                {
+                    BeliefCorrelationFact correlation = selected.correlations[correlationIndex];
+                    if (correlation == null
+                        || !string.Equals(correlation.kind, BeliefCorrelationKindTokens.Thought,
+                            StringComparison.OrdinalIgnoreCase)
+                        || string.IsNullOrWhiteSpace(correlation.defName))
+                        continue;
+
+                    ThoughtDef thoughtDef = DefDatabase<ThoughtDef>.GetNamedSilentFail(correlation.defName);
+                    if (thoughtDef == null) continue;
+                    activeThoughts.Clear();
+                    try
+                    {
+                        pawn.needs.mood.thoughts.GetMoodThoughtsFor(thoughtDef, activeThoughts);
+                    }
+                    catch (Exception)
+                    {
+                        // A modded situational worker may throw while queried. Treat that single
+                        // correlation as unavailable; the resolver's normal valence remains the fallback.
+                        continue;
+                    }
+
+                    for (int thoughtIndex = 0; thoughtIndex < activeThoughts.Count; thoughtIndex++)
+                    {
+                        Thought thought = activeThoughts[thoughtIndex];
+                        if (thought == null || thought.def != thoughtDef
+                            || thought.sourcePrecept != null && !ReferenceEquals(thought.sourcePrecept, live))
+                            continue;
+                        if (seen.Add(thoughtDef.defName)) result.Add(thoughtDef.defName);
+                        break;
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static Precept FindSelectedLivePrecept(List<Precept> livePrecepts, BeliefPreceptFact selected)
+        {
+            if (selected == null) return null;
+            for (int i = 0; i < livePrecepts.Count; i++)
+            {
+                Precept live = livePrecepts[i];
+                if (live == null) continue;
+                if (!string.IsNullOrWhiteSpace(selected.instanceId)
+                    && string.Equals(live.GetUniqueLoadID(), selected.instanceId, StringComparison.Ordinal))
+                    return live;
+            }
+            Precept unique = null;
+            for (int i = 0; i < livePrecepts.Count; i++)
+            {
+                Precept live = livePrecepts[i];
+                if (!string.Equals(live?.def?.defName, selected.defName, StringComparison.Ordinal)) continue;
+                if (unique != null) return null;
+                unique = live;
+            }
+            return unique;
+        }
+
         /// <summary>Policy-aware overload used by the event-time builder to share the same caps.</summary>
         internal static BeliefSnapshot CaptureBeliefSnapshot(Pawn pawn, BeliefPolicySnapshot policy)
         {

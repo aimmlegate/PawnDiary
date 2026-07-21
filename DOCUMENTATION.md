@@ -207,7 +207,9 @@ exists only in the unused future-reflection mode.
 `BeliefContextBuilder` runs only after the normal capture policy has authorized a POV. It receives
 explicit source evidence, takes one guarded `DlcContext.CaptureBeliefSnapshot`, merges nearby exact
 HistoryEvent Def identities for the same pawn, evaluates `EventRelativeStanceResolver` exactly once,
-and freezes the full sanitized result into that POV's `beliefContext`. `DlcContext.Ideology.cs` is the
+and freezes the full sanitized result into that POV's `beliefContext`. Optional enrichment is
+failure-isolated: a malformed modded getter/Def logs one bounded warning and the ordinary authorized
+page continues with empty belief context. `DlcContext.Ideology.cs` is the
 only Phase-1 adapter that reads live `Ideo`, `Precept`, `PreceptComp`, `Thought.sourcePrecept`, or
 HistoryEvent belief metadata. It double-guards every entry point with `ModsConfig.IdeologyActive` and
 null checks, projects active ideology/certainty/role, memes/structure, issues/precepts, exact thought or
@@ -217,16 +219,23 @@ history correlations, and mechanical thought-offset valence, and returns only bo
 
 `ThoughtSignal` freezes exact `Thought.sourcePrecept` identity before emitting. Body-mod pages reuse
 the same one resolver result and map only matched mechanical correlation valence into their established
-attitude precedence; the old approve/despise Def-name lists are gone. The guarded
+attitude precedence; when one selected situational precept contains opposite state workers, the adapter
+queries only that selected precept's currently active typed ThoughtDefs and uses their projected
+mechanical valence. This preserves vanilla/modded approval and rejection without precept-name or
+localized-text allowlists. The old approve/despise Def-name lists are gone. The guarded
 `HistoryEventsManager.RecordEvent` postfix only stores a short-lived, bounded pawn/tick/Def-name
-observation and can neither authorize nor create a page. Phase 1 supplies evidence only from the exact
+observation and can neither authorize nor create a page. Its hot hook uses the state-passing safety
+wrapper, and the deep-copied belief policy snapshot is shared per active language instead of rebuilt
+for every observation/prompt. Phase 1 supplies evidence only from the exact
 visible thought/body/developer seams implemented in this slice; it deliberately does not add a generic
 belief capture path or the Phase-2 interaction/ability/ritual integrations. Empty, ambiguous, or
 unmatched evidence therefore leaves the ordinary entry unchanged.
 
 The frozen value flows through `DiaryPovPayload.beliefContext` → `PromptValues.beliefContext` →
 `PromptAssembler.ResolveSource("BeliefContext")`. Full/Balanced/Compact detail projection is applied
-to the saved block, and prompt preview, the developer structural/lexical synthetic fixtures, and
+to the saved block; Compact retains identity plus certainty trend while omitting lower-value prose.
+Prompt selection gives critical conversion/crisis markers high priority and ordinary thought/social
+belief context medium/lower priority. Prompt preview, the developer structural/lexical synthetic fixtures, and
 prompt-lab use the same source/value contract. `BeliefContext` appears in all 11 first-person templates;
 death, arrival, and title prompts remain untouched. `BeliefReflectionPolicy` remains an unused pure
 shell: Phase 1 adds no reflection page, mutation scanner, or passive belief state. Ideology

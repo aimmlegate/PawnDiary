@@ -14,6 +14,7 @@
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefLexicalMatcher.cs" Link="BeliefLexicalMatcher.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\EventRelativeStanceResolver.cs" Link="EventRelativeStanceResolver.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefContextFormatter.cs" Link="BeliefContextFormatter.cs" />
+    <Compile Include="..\..\Source\Pipeline\Belief\BeliefActiveThoughtPolicy.cs" Link="BeliefActiveThoughtPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefReflectionPolicy.cs" Link="BeliefReflectionPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefEventEvidenceFactory.cs" Link="BeliefEventEvidenceFactory.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefHistoryCorrelationBuffer.cs" Link="BeliefHistoryCorrelationBuffer.cs" />

@@ -150,14 +150,18 @@ namespace PawnDiary
     internal static class DiaryBeliefPolicy
     {
         private const string DefName = "Diary_BeliefPolicy";
+        private static BeliefPolicySnapshot cached;
+        private static LoadedLanguage cachedLanguage;
 
         /// <summary>Fast main-thread gate used by the non-emitting history observer.</summary>
         public static bool Enabled
         {
             get
             {
+                if (cached != null && cachedLanguage == LanguageDatabase.activeLanguage)
+                    return cached.enabled;
                 DiaryBeliefPolicyDef source = DefDatabase<DiaryBeliefPolicyDef>.GetNamedSilentFail(DefName);
-                return source != null && source.enabled;
+                return source != null && Snapshot().enabled;
             }
         }
 
@@ -179,9 +183,15 @@ namespace PawnDiary
             }
         }
 
-        /// <summary>Returns a fresh immutable snapshot; missing or malformed XML retains code defaults.</summary>
+        /// <summary>
+        /// Returns a shared read-only snapshot for the active language. Missing XML is not cached, so
+        /// an early startup lookup cannot hide a Def which loads later.
+        /// </summary>
         public static BeliefPolicySnapshot Snapshot()
         {
+            if (cached != null && cachedLanguage == LanguageDatabase.activeLanguage)
+                return cached;
+
             BeliefPolicyBuilder builder = BeliefPolicyBuilder.CreateDefault();
             DiaryBeliefPolicyDef source = DefDatabase<DiaryBeliefPolicyDef>.GetNamedSilentFail(DefName);
             if (source == null) return builder.Build();
@@ -249,7 +259,9 @@ namespace PawnDiary
             CopyStrings(source.proselytizingPovRoles, builder.proselytizingPovRoles, replaceWhenEmpty: false);
             CopyCorrections(source.correlationOverrides, builder.correlationOverrides);
             CopyBudgets(source.detailBudgets, builder.detailBudgets);
-            return builder.Build();
+            cached = builder.Build();
+            cachedLanguage = LanguageDatabase.activeLanguage;
+            return cached;
         }
 
         private static void CopyScores(List<DiaryBeliefTokenScoreDef> source, List<BeliefTokenScore> destination)

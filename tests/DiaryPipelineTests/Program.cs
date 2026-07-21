@@ -744,6 +744,7 @@ namespace DiaryPipelineTests
             payload.initiator.beliefContext =
                 "ideoligion: Ember Path\n"
                 + "certainty: 62% (steady)\n"
+                + "certainty trend: rising (meaningful)\n"
                 + "relevant precept: crafted replacements are welcomed\n"
                 + "precept meaning: replacing a weak limb is an honored act\n"
                 + "relevant meme: Transhumanist\n"
@@ -787,9 +788,24 @@ namespace DiaryPipelineTests
             });
             AssertContains("compact prompt keeps the event-relative stance", compact.userPrompt,
                 "relevant precept: crafted replacements are welcomed");
+            AssertContains("compact prompt keeps certainty trend", compact.userPrompt,
+                "certainty trend: rising (meaningful)");
             AssertTrue("compact belief context omits structure and meme",
                 !compact.userPrompt.Contains("structure:")
                     && !compact.userPrompt.Contains("relevant meme:"));
+
+            AssertEqual("generic belief context has medium selector priority", 76,
+                BeliefContextScore("Hediff", "part_kind=addedpart"));
+            AssertEqual("ordinary social belief context has lower selector priority", 72,
+                BeliefContextScore("Interaction", "worker=Interaction_Chat"));
+            AssertEqual("ordinary thought belief context has lower selector priority", 68,
+                BeliefContextScore("Thought", "thought_def=AteFineMeal"));
+            AssertEqual("conversion belief context has critical selector priority", 94,
+                BeliefContextScore("Social", "belief_event=conversion"));
+            AssertEqual("belief crisis context has critical selector priority", 94,
+                BeliefContextScore("MentalState", "belief_crisis=certainty_break"));
+            AssertEqual("conversion ritual context has critical selector priority", 94,
+                BeliefContextScore("Ritual", "conversion_ritual=Conversion"));
 
             payload.initiator.beliefContext = string.Empty;
             DiaryPromptPlan empty = DiaryPromptPlanner.Build(new DiaryPromptRequest
@@ -817,6 +833,31 @@ namespace DiaryPipelineTests
                     template?.Element("fields")?.Elements("li")
                         .Count(row => ChildValue(row, "source") == BeliefContextPrompt.Source) ?? 0);
             }
+        }
+
+        private static int BeliefContextScore(string domain, string gameContext)
+        {
+            DiaryEventPayload payload = SoloPayload(
+                "e-belief-score", "belief score fixture", "Alice considered what happened.");
+            payload.domain = domain;
+            payload.gameContext = gameContext;
+            payload.initiator.beliefContext = "ideoligion: Ember Path";
+            DiaryPolicySnapshot policy = Policy(combat: false, important: true);
+            policy.beliefPolicy = BeliefPolicySnapshot.CreateDefault();
+            policy.Template(DiaryPipelineTemplates.SoloImportant).fields.Add(
+                Field("belief context", BeliefContextPrompt.Source));
+            DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = payload,
+                policy = policy,
+                povRole = DiaryPipelineRoles.Initiator,
+                contextDetailLevel = PromptContextDetailLevel.Balanced,
+                contextBudgets = new PromptContextBudgets { balancedDefault = 10000 }
+            });
+            PromptContextFieldReport report = plan.contextSelectionReport.kept
+                .FirstOrDefault(row => row.source == BeliefContextPrompt.Source);
+            AssertTrue("belief score fixture keeps the belief field", report != null);
+            return report == null ? -1 : report.score;
         }
 
         private static void TestPromptContextDetailOverrideResolution()

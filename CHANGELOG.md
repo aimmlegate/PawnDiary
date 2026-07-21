@@ -1,5 +1,20 @@
 # Changelog
 
+- **2026-07-21 — Hardened Ideology Phase 1 after adversarial review.** Optional belief enrichment now
+  catches malformed modded getters/Defs at its shared builder boundary, logs once per exception type,
+  and preserves the already-authorized ordinary page. Vanilla/modded situational body-mod precepts now
+  derive approval/rejection from exact currently-active typed thoughts on the resolver-selected
+  precept, restoring `BodyMod_Approved`/`BodyMod_Disapproved` parity without Def-name or English-text
+  allowlists; the redundant pre-resolution attitude scan was removed. Compact saved-context projection
+  retains certainty trend, and prompt selection gives conversion/crisis contexts high priority while
+  ordinary thought/social belief context remains medium/lower. The HistoryEvent hot hook no longer
+  captures a closure, and the deep-copied belief policy snapshot is cached per active language.
+  Save fields/tokens are unchanged; old saves remain compatible. Added pure and compiled loaded-game
+  regressions for active-thought polarity, Compact projection, event-sensitive scores, cache identity,
+  failure isolation, and real vanilla AddHediff body attitudes. Belief/capture/pipeline suites pass
+  227/713/2,803 assertions; runtime and 362-test RimTest assemblies build 0/0. The previously stale
+  tracked RimTest DLL is rebuilt and current; the full coverage audit passes 23 pure projects at 7,445
+  assertions and all 23/23 event rows. RimWorld was not launched, so no new in-game pass is claimed.
 - **2026-07-21 — Diary UI round-3 tweaks from in-game feedback.** (1) The **season-band scroll strip now
   only draws when the page actually overflows** (a scrollbar is present), so a short non-scrolling page
   no longer shows a stray strip beside empty space. (2) The **seasonal wash is scoped to the entries

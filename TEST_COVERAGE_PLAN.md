@@ -1017,10 +1017,13 @@ Ideology Phase 1 adds `PawnDiaryIdeologyPhase1FixtureTests` plus focused DLC-saf
 The compiled cases exercise a real typed `PreceptComp_Thought`, exact `Thought.sourcePrecept` capture,
 one frozen thought-event context, a real `HistoryEventsManager.RecordEvent` call that creates no page,
 exact-pawn bounded correlation, inactive/no-Ideo silence, and stable sanitized per-POV Scribe
-round-trips. A focused compatibility fixture also pins the pre-Phase-1 solo/pair `DiarySignal` factory
-MemberRefs because core and RimTest DLLs are deployed independently. The current 358-test RimTest
-assembly builds with 0 warnings/errors to a temporary output
-outside the tracked test DLL. RimWorld has not been launched for this slice, so these cases are not
+round-trips. Adversarial follow-up fixtures also pin same-language policy caching, optional-enrichment
+failure isolation, and real `AddHediff` parity for vanilla approved/disapproved situational body-mod
+precepts; pure/pipeline cases cover active-correlation polarity, Compact certainty trend, and
+event-sensitive belief-field scores. A focused compatibility fixture also pins the pre-Phase-1 solo/pair `DiarySignal` factory
+MemberRefs because core and RimTest DLLs are deployed independently. The prior 358-test RimTest
+assembly is now 362 tests and builds with 0 warnings/errors into the tracked deployed test DLL.
+RimWorld has not been launched for this follow-up, so its new cases are not
 recorded as loaded-game passes and no manual/in-game acceptance row is closed.
 
 ## 8. Implementation Order

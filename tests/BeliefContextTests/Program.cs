@@ -551,6 +551,9 @@ namespace PawnDiary
             AssertTrue("compact omits structure", compact.IndexOf("structure:", StringComparison.Ordinal) < 0);
             AssertTrue("compact omits memes", compact.IndexOf("relevant meme:", StringComparison.Ordinal) < 0);
             AssertContains("compact keeps top doctrine", compact, "relevant precept: Visible stance");
+            AssertContains("saved Compact projection keeps certainty trend",
+                BeliefContextFormatter.ForDetail(full, NarrativeDetailLevelTokens.Compact, policy),
+                "certainty trend: rising (meaningful)");
             AssertEqual("whole-word trim", "alpha", BeliefContextFormatter.WholeWord("alpha beta gamma", 10));
             AssertEqual("unmatched angle delimiter preserves following plain text", "alpha beta tail",
                 BeliefContextFormatter.Clean("alpha < beta tail", 100));
@@ -652,6 +655,32 @@ namespace PawnDiary
                 approvingResult.stances[0].correlationValence);
             AssertEqual("despising ideology keeps mechanical polarity", BeliefValenceTokens.Negative,
                 despisingResult.stances[0].correlationValence);
+
+            BeliefPreceptFact situational = Precept(
+                "Synthetic_Situational", "Synthetic_Body_Issue", "body change stance", 1);
+            situational.correlations.Add(Correlation(BeliefCorrelationKindTokens.Thought,
+                "HasNoReplacement", BeliefValenceTokens.Negative));
+            situational.correlations.Add(Correlation(BeliefCorrelationKindTokens.Thought,
+                "HasReplacement", BeliefValenceTokens.Positive));
+            BeliefStanceResolution situationalResolution = new BeliefStanceResolution();
+            situationalResolution.stances.Add(new ResolvedBeliefStance
+            {
+                precept = situational,
+                correlationValence = BeliefValenceTokens.Mixed
+            });
+            AssertEqual("active positive situational correlation resolves approval",
+                BeliefValenceTokens.Positive,
+                BeliefActiveThoughtPolicy.ResolveValence(situationalResolution, new[] { "HasReplacement" }));
+            AssertEqual("active negative situational correlation resolves rejection",
+                BeliefValenceTokens.Negative,
+                BeliefActiveThoughtPolicy.ResolveValence(situationalResolution, new[] { "HasNoReplacement" }));
+            AssertEqual("negative active correlation wins a conflicting worker result",
+                BeliefValenceTokens.Negative,
+                BeliefActiveThoughtPolicy.ResolveValence(
+                    situationalResolution, new[] { "HasReplacement", "HasNoReplacement" }));
+            AssertEqual("unrelated active thought does not infer doctrine polarity",
+                BeliefValenceTokens.Unknown,
+                BeliefActiveThoughtPolicy.ResolveValence(situationalResolution, new[] { "AteFineMeal" }));
 
             BeliefEventEvidence ordinary = BeliefEventEvidenceFactory.ForEvent(
                 "SyntheticPawn", 251, "work", "SyntheticSweeping", "initiator", "swept the floor", "ordinary");

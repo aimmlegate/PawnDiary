@@ -61,8 +61,18 @@ namespace PawnDiary
         /// Maps only reliable matched correlation valence back to the legacy body-attitude token.
         /// Negative wins when two independent selected stances disagree, preserving prior precedence.
         /// </summary>
-        public static string IdeologyStance(BeliefStanceResolution resolution)
+        public static string IdeologyStance(Pawn pawn, BeliefStanceResolution resolution)
         {
+            // Standard situational precepts can contain opposite thoughts for mutually-exclusive live
+            // states (for example, has-part vs. has-no-part). Exact active worker truth is therefore
+            // stronger than their merged lexical valence and restores vanilla/modded parity without
+            // naming any precept or interpreting localized labels.
+            string activeValence = BeliefActiveThoughtPolicy.ResolveValence(
+                resolution,
+                DlcContext.CaptureActiveSelectedPreceptThoughtDefNames(pawn, resolution));
+            if (activeValence != BeliefValenceTokens.Unknown)
+                return BodyPartEventPolicy.IdeologyStanceForCorrelationValences(new[] { activeValence });
+
             List<string> valences = new List<string>();
             if (resolution?.stances != null)
             {
