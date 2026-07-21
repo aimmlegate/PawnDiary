@@ -71,7 +71,7 @@
     <!-- DefInjected prompt wording. The saved block contains facts only; this guidance is prepended
          after Full/Balanced/Compact filtering at prompt-build time. -->
     <promptFieldLabel>belief context</promptFieldLabel>
-    <promptFieldInstruction>Treat these as the pawn's event-time beliefs about this event. Do not invent doctrine or imply that belief caused the event.</promptFieldInstruction>
+    <promptFieldInstruction>Beliefs I held at the time. Let them color my reaction and word choice; do not invent doctrine beyond them or claim they caused what happened.</promptFieldInstruction>
 
     <!-- Categorical precedence. Lower-tier bonuses can never cross these stages in pure code. -->
     <tierScores>
@@ -110,11 +110,11 @@
 
     <!-- Def text is localizable through DefInjected; C# stores no English certainty prose. -->
     <certaintyBands>
-      <li><token>fervent</token><minimum>0.85</minimum><phrase>Speak with firm conviction while staying faithful to the supplied facts.</phrase></li>
-      <li><token>confident</token><minimum>0.60</minimum><phrase>Speak with assurance without inventing zeal or extremism.</phrase></li>
-      <li><token>uneasy</token><minimum>0.35</minimum><phrase>Allow tension and exceptions without claiming the faith was abandoned.</phrase></li>
+      <li><token>fervent</token><minimum>0.85</minimum><phrase>Write with firm conviction, staying inside the supplied facts.</phrase></li>
+      <li><token>confident</token><minimum>0.60</minimum><phrase>Write with quiet assurance; do not escalate into zeal or extremism.</phrase></li>
+      <li><token>uneasy</token><minimum>0.35</minimum><phrase>Let unease and small reservations show; the belief itself still holds.</phrase></li>
       <li><token>conflicted</token><minimum>0.15</minimum><phrase>Show an active struggle between doctrine and lived experience.</phrase></li>
-      <li><token>doubtful</token><minimum>0</minimum><phrase>Allow questioning and uncertainty without forcing sadness or conversion.</phrase></li>
+      <li><token>doubtful</token><minimum>0</minimum><phrase>Voice open questioning and uncertainty; do not force grief or a conversion.</phrase></li>
     </certaintyBands>
 
     <!-- Event vocabulary, not doctrine IDs. Unknown safe topic tokens remain forward-compatible. -->

@@ -1600,7 +1600,7 @@
   <PawnDiary.Event.Anomaly.Void.EmbracedFallback>{0} chose to embrace the void.</PawnDiary.Event.Anomaly.Void.EmbracedFallback>
   <PawnDiary.Event.Anomaly.Void.DisruptedFallback>{0} chose to disrupt the link to the void.</PawnDiary.Event.Anomaly.Void.DisruptedFallback>
   <PawnDiary.Dev.PromptSuite.BeliefStructural.Label>Belief context — structural match</PawnDiary.Dev.PromptSuite.BeliefStructural.Label>
-  <PawnDiary.Dev.PromptSuite.BeliefStructural.Text>{0} considers a synthetic event with an exact thought or history correlation from their current ideoligion.</PawnDiary.Dev.PromptSuite.BeliefStructural.Text>
+  <PawnDiary.Dev.PromptSuite.BeliefStructural.Text>{0} turned over a small moment that echoed one of their ideoligion's teachings.</PawnDiary.Dev.PromptSuite.BeliefStructural.Text>
   <PawnDiary.Dev.PromptSuite.BeliefLexical.Label>Belief context — lexical match</PawnDiary.Dev.PromptSuite.BeliefLexical.Label>
-  <PawnDiary.Dev.PromptSuite.BeliefLexical.Text>{0} considers a synthetic event described only by high-confidence wording from their current ideoligion.</PawnDiary.Dev.PromptSuite.BeliefLexical.Text>
+  <PawnDiary.Dev.PromptSuite.BeliefLexical.Text>{0} caught themself thinking in the very phrases of their ideoligion.</PawnDiary.Dev.PromptSuite.BeliefLexical.Text>
 </LanguageData>

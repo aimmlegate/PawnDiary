@@ -1580,7 +1580,7 @@
   <PawnDiary.Event.Anomaly.Void.EmbracedFallback>{0} решает принять пустоту.</PawnDiary.Event.Anomaly.Void.EmbracedFallback>
   <PawnDiary.Event.Anomaly.Void.DisruptedFallback>{0} решает разрушить связь с пустотой.</PawnDiary.Event.Anomaly.Void.DisruptedFallback>
   <PawnDiary.Dev.PromptSuite.BeliefStructural.Label>Контекст убеждений — структурное совпадение</PawnDiary.Dev.PromptSuite.BeliefStructural.Label>
-  <PawnDiary.Dev.PromptSuite.BeliefStructural.Text>{0} обдумывает синтетическое событие с точной связью мысли или события из текущей идеолигии.</PawnDiary.Dev.PromptSuite.BeliefStructural.Text>
+  <PawnDiary.Dev.PromptSuite.BeliefStructural.Text>{0} мысленно возвращается к моменту, созвучному заветам своей идеолигии.</PawnDiary.Dev.PromptSuite.BeliefStructural.Text>
   <PawnDiary.Dev.PromptSuite.BeliefLexical.Label>Контекст убеждений — лексическое совпадение</PawnDiary.Dev.PromptSuite.BeliefLexical.Label>
-  <PawnDiary.Dev.PromptSuite.BeliefLexical.Text>{0} обдумывает синтетическое событие, описанное только достаточно надёжными словами из текущей идеолигии.</PawnDiary.Dev.PromptSuite.BeliefLexical.Text>
+  <PawnDiary.Dev.PromptSuite.BeliefLexical.Text>{0} ловит себя на том, что думает словами своей идеолигии.</PawnDiary.Dev.PromptSuite.BeliefLexical.Text>
 </LanguageData>

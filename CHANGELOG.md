@@ -1,5 +1,19 @@
 # Changelog
 
+- **2026-07-21 — Ideology belief prompt-text tuning pass (EN + RU).** Reviewed the prompt prose added
+  by Ideology Phase 0/1. English: the belief-context instruction now keeps the diary's first-person
+  frame ("Beliefs I held at the time…") and pairs positive guidance (let beliefs color reaction and
+  word choice) with the existing guards (no invented doctrine, no belief-caused-the-event framing);
+  the five certainty-band phrases switch from "Speak…" to concrete "Write/Let/Voice…" wording, and
+  the "faith was abandoned" guard is rephrased to stay accurate for secular ideoligions. Russian:
+  re-authored natively per the RU prompt rules — «пешка» replaced with the house first-person/imperative
+  voice, the «об этом событии на момент события» repetition removed, calques («не выдумывая фанатизма»,
+  «напряжение и исключения») replaced with native phrasing, all without gendered first-person past
+  tense. Dev prompt-suite belief fixture texts no longer leak dev jargon ("synthetic event",
+  "high-confidence wording") into the LLM-facing "what you saw" field; they now read as in-world
+  moments in both languages (fixture matching is unaffected — evidence is forced from the live
+  snapshot, not this text). Def XML and EN DefInjected kept byte-identical; certainty-band order and
+  indexed keys unchanged. All five touched XML files parse; BeliefContextTests pass 227 assertions.
 - **2026-07-21 — Hardened Ideology Phase 1 after adversarial review.** Optional belief enrichment now
   catches malformed modded getters/Defs at its shared builder boundary, logs once per exception type,
   and preserves the already-authorized ordinary page. Vanilla/modded situational body-mod precepts now
