@@ -18,7 +18,7 @@ namespace PawnDiary
         /// strip, and no body tint/rule. This keeps collapsed histories readable instead of looking
         /// like clipped full cards.
         /// </summary>
-        private static void DrawCollapsedEntry(DiaryEntryView entry, Rect rect, Color accent, bool expanded, float expansionBlend)
+        private static bool DrawCollapsedEntry(DiaryEntryView entry, Rect rect, Color accent, bool expanded, float expansionBlend, string entryKey)
         {
 
             Widgets.DrawMenuSection(rect);
@@ -53,7 +53,14 @@ namespace PawnDiary
 
 
 
-            Rect groupRect = GroupLabelRect(titleRect, entry?.GroupLabel);
+            // Favorite star at the far right of the title bar; the chip/header shift left. Drawing it
+            // here (and returning whether it was clicked) lets the caller skip the row's expand toggle
+            // when the star was the click target, so a page can be starred while still collapsed.
+            bool favClicked = DrawTitleFavorite(titleRect, entry, entryKey);
+
+            Rect chipTitleRect = new Rect(titleRect.x, titleRect.y, titleRect.width - TitleFavoriteReserve(entry), titleRect.height);
+
+            Rect groupRect = GroupLabelRect(chipTitleRect, entry?.GroupLabel);
 
             if (groupRect.width > 0f)
             {
@@ -64,7 +71,7 @@ namespace PawnDiary
 
 
 
-            float headerRight = groupRect.width > 0f ? groupRect.x - 6f : rect.xMax - 8f;
+            float headerRight = groupRect.width > 0f ? groupRect.x - 6f : chipTitleRect.xMax - 8f;
 
             Rect headerRect = new Rect(
 
@@ -83,6 +90,8 @@ namespace PawnDiary
 
 
             TooltipHandler.TipRegion(rect, "PawnDiary.Tab.ExpandCollapseTip".Translate());
+
+            return favClicked;
 
         }
 

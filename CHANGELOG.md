@@ -1,5 +1,17 @@
 # Changelog
 
+- **2026-07-21 — Diary UI polish from in-game feedback.** (1) **Brightened several dim action icons:**
+  the header writing-style/filter icons (`writingStyleIconAlpha` 0.42→0.55, hover 0.82→0.90), the
+  per-entry regenerate icon (`regenerateEntryButtonColor` alpha 0.46→0.60), and the "Copy entry" icon
+  (0.5→0.62 idle). (2) **Moved the favorite star from the expanded-card footer to the top-right of
+  every card's title bar,** so a page can be starred while still collapsed. The star consumes its own
+  click (via `DrawTitleFavorite`, returning whether it was hit) so it never expands/collapses the row,
+  and the group chip shifts left to make room. (3) **Made the seasonal background wash actually
+  visible:** it now paints once across the whole tab (behind the header, cards, and filter panel) in
+  `FillTab` instead of only the thin gaps between the opaque cards, and the default alpha rose from
+  ~0.09–0.10 to ~0.14–0.16. All values remain XML-tunable. Debug build 0/0; all 14 pure suites green;
+  no in-game acceptance run is claimed.
+
 - **2026-07-21 — Added a subtle seasonal background wash to the diary journal and filter panel.** As
   you scroll, a very low-alpha color wash behind the cards and the right-hand filter panel eases
   between seasons — spring green, summer gold, autumn orange, winter blue — following the season of the

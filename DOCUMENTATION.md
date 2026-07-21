@@ -2757,15 +2757,17 @@ Inspect-tab mode intentionally does not draw unread-page badges on the tab butto
 hidden and the bottom command button is active instead, that command still shows its unread/writing
 status overlay.
 
-Production UI shows completed pages. Each expanded page has a player-visible "Copy entry" action
-(a stacked-pages icon) at the left of the footer line. On the right, beside the model/provenance
-footer, each finished page shows a **favorite star**, and each non-archived page also shows a muted
-**regenerate icon** (a circular reload arrow), so players can star a page or rewrite it with the
-current model routing; pairwise pages rewrite both POVs when both are still eligible. The favorite
-star toggles a warm-gold on/off state, but that state is **session-only for now** — it is not
-persisted across save/load and does not filter the journal yet. The single seam where persistence and
-the "Favorites only" filter would attach is the transient `FavoritedEntryKeys` set in
-`ITab_Pawn_Diary.EntryCards.cs`. These footer/header glyphs (filter funnel, favorite star, copy,
+Production UI shows completed pages. A **favorite star** sits at the top-right of every card's title
+bar (collapsed or expanded, `DrawTitleFavorite`), so a page can be starred without expanding it; the
+star consumes its own click so it never toggles the row's expand/collapse, and the group chip shifts
+left to make room. Each expanded page also has a player-visible "Copy entry" action (a stacked-pages
+icon) at the left of the footer line, and — for non-archived pages — a muted **regenerate icon**
+(a circular reload arrow) on the right, so players can rewrite that page with the current model
+routing; pairwise pages rewrite both POVs when both are still eligible. The favorite star toggles a
+warm-gold on/off state, but that state is **session-only for now** — it is not persisted across
+save/load and does not filter the journal yet. The single seam where persistence and the "Favorites
+only" filter would attach is the transient `FavoritedEntryKeys` set in `ITab_Pawn_Diary.EntryCards.cs`.
+These title/footer/header glyphs (filter funnel, favorite star, copy,
 regenerate, and the writing-style/persona header icon) are **CoreUI Icons** (Free set, MIT)
 rasterized to tintable white PNGs under `Textures/UI/DiaryButtons/` and loaded through
 `DiaryButtonTextures` with vanilla `TexButton` fallbacks (see that folder's `CREDITS.txt`). Dev mode also shows
@@ -2856,14 +2858,17 @@ unit. Its size/spacing are XML-tunable (`quadrumDividerIconSize`/`quadrumDivider
 the glyph), and a missing texture simply draws no icon. Entries whose date cannot be placed on the
 calendar (the Undated page, or a malformed old-save string) show no dividers. The divider's reserved height is added to the virtual row offsets in the same sliced
 layout pass that measures cards, so the reserved and drawn geometry never disagree; sizes/colors are
-XML-tunable via `DiaryUiStyleDef` (`quadrumDivider*`). A matching **seasonal background wash** (very
-low alpha) sits behind the journal cards and the filter panel, following the season of the entry at
-the top of the viewport (`FirstVisibleEntryIndex` + `DiaryQuadrumDivider.SeasonFor`) and easing between
-seasons as you scroll via `UpdateSeasonWash` — a real-time exponential ease, so it crossfades even
-while the game is paused. It draws behind the semi-opaque cards (never over text), so it reads in the
-gaps and most clearly on the otherwise-background-less filter panel. The four wash colors and crossfade
-rate are XML-tunable (`springWashColor`/`summerWashColor`/`fallWashColor`/`winterWashColor`,
-`seasonWashLerpSpeed`); a season's alpha 0 disables it, all four at 0 turns the wash off. (2) **Player-visible copy.** The old dev-only,
+XML-tunable via `DiaryUiStyleDef` (`quadrumDivider*`). A matching **seasonal background wash** (low
+alpha) follows the season of the entry at the top of the viewport (`FirstVisibleEntryIndex` +
+`DiaryQuadrumDivider.SeasonFor`) and eases between seasons as you scroll via `UpdateSeasonWash` — a
+real-time exponential ease, so it crossfades even while the game is paused. It is painted once across
+the **whole tab** at the top of `FillTab` (behind the header, the journal cards, and the filter panel),
+so it reads in every gap and margin — an earlier per-viewport wash was invisible because the opaque
+cards covered it. The `UpdateSeasonWash` call in the journal pass now only advances the smoothed color
+(consumed by the next frame's whole-tab draw); the drawn color is never over card text. The four wash
+colors and crossfade rate are XML-tunable (`springWashColor`/`summerWashColor`/`fallWashColor`/
+`winterWashColor` — default alpha ~0.14–0.16 — and `seasonWashLerpSpeed`); a season's alpha 0 disables
+it, all four at 0 turns the wash off. (2) **Player-visible copy.** The old dev-only,
 icon-only copy badge is now a labeled "Copy entry" action for all players, sharing a single footer line
 with the model-name provenance and the rewrite icon. (3) **Header date font.** The card header renders
 the date in a smaller in-game font (`GameFont.Tiny`) and a muted tone (`entryDateColor`) ahead of the

@@ -440,6 +440,16 @@ namespace PawnDiary
             }
 
             Rect rect = new Rect(0f, 0f, size.x, size.y).ContractedBy(12f);
+            // Seasonal background wash across the WHOLE tab, painted first so it sits behind the header,
+            // the journal cards, and the filter panel. This reads in every gap and margin — not just the
+            // thin strips between cards, where an earlier per-viewport wash was invisible. It uses the
+            // smoothed color the journal pass computed last frame (target = season at the top of the
+            // viewport); one frame of lag is imperceptible.
+            if (seasonWashColor.a > 0f)
+            {
+                Widgets.DrawBoxSolid(rect, seasonWashColor);
+            }
+
             // Singleton component that owns all diary state for the current game.
             DiaryGameComponent component = DiaryGameComponent.Instance;
             component?.AcknowledgeGeneratedEntriesFor(pawn);
@@ -641,19 +651,14 @@ namespace PawnDiary
             TryApplyPendingScroll(pawn, ordered, entryOffsets, viewHeight, outRect.height);
             scrollPosition.y = Mathf.Clamp(scrollPosition.y, 0f, Mathf.Max(0f, viewHeight - outRect.height));
 
-            // Seasonal background wash: tint the journal viewport (and, via the shared field, the
-            // filter panel) by the season of the entry at the top of the scroll, easing between seasons
-            // as the user scrolls across a divider. Drawn behind the scroll content so it only shows in
-            // the gaps around and between the semi-opaque cards — a quiet ambient cue, never over text.
+            // Update the seasonal wash target from the season of the entry at the top of the scroll,
+            // easing toward it. The wash itself is painted once across the whole tab at the top of
+            // FillTab (using this smoothed value); here we only advance it as the user scrolls.
             int washTopIndex = FirstVisibleEntryIndex(ordered.Count, scrollPosition.y);
             Season washSeason = washTopIndex >= 0 && washTopIndex < ordered.Count
                 ? DiaryQuadrumDivider.SeasonFor(ordered[washTopIndex])
                 : Season.Undefined;
-            Color journalWash = UpdateSeasonWash(washSeason);
-            if (journalWash.a > 0f)
-            {
-                Widgets.DrawBoxSolid(outRect, journalWash);
-            }
+            UpdateSeasonWash(washSeason);
 
             Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
             // Immediate-mode safety net: BeginScrollView and the per-card GUI.BeginGroup below push
@@ -711,8 +716,8 @@ namespace PawnDiary
                     bool compactCollapsed = !expanded && expansionBlend <= 0f;
                     if (compactCollapsed)
                     {
-                        DrawCollapsedEntry(entry, visibleEntryRect, accentColor, expanded, expansionBlend);
-                        if (Widgets.ButtonInvisible(visibleEntryRect, false))
+                        bool favClicked = DrawCollapsedEntry(entry, visibleEntryRect, accentColor, expanded, expansionBlend, entryKeys[i]);
+                        if (Widgets.ButtonInvisible(visibleEntryRect, false) && !favClicked)
                         {
                             SetEntryExpanded(entry, true, expansionBlend);
                         }
