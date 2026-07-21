@@ -31,7 +31,9 @@ namespace PawnDiary.RimTests
             scope = PawnDiaryRimTestScope.Begin("hediffPartGainedArtificial");
             pawn = scope.CreateAdultColonist();
             BeliefHistoryCorrelationCache.Reset();
+            BeliefMutationCache.Reset();
             scope.RegisterCleanup(BeliefHistoryCorrelationCache.Reset);
+            scope.RegisterCleanup(BeliefMutationCache.Reset);
         }
 
         [AfterEach]

@@ -1146,6 +1146,10 @@ namespace DiaryCapturePolicyTests
                 AbilityEventData.Decide(Ability(chance: 0.25f, roll: 0.25f), Ctx()));
             AssertEqual("ability chance clamps high", CaptureDecision.GenerateSolo,
                 AbilityEventData.Decide(Ability(chance: 2f, roll: 1f), Ctx()));
+            AbilityEventData covered = Ability(chance: 1f, roll: 0f);
+            covered.DownstreamCovered = true;
+            AssertEqual("downstream-covered ability drops before sampling", CaptureDecision.Drop,
+                AbilityEventData.Decide(covered, Ctx()));
         }
 
         private static void TestAbilityCooldownWeightedChance()

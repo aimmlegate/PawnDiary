@@ -52,11 +52,11 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including exact-author Anomaly study, containment-breach, visible creepjoiner-outcome, and surgical-disclosure signals, Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, lossless quick-aid raid ownership, and exact-root Royal Ascent quest fanout. |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue, associative-memory recall/deposit/eviction (`DiaryGameComponent.Memory.cs`), and additive Anomaly study/monolith/visible-creepjoiner persistence plus detached transaction owners and conservative pre-A1/pre-A2 baselining. Also `PawnMemoryRepository` (per-pawn memory store). |
-| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including the Ideology Phase-1 event-time builder, guarded doctrine projection, and bounded plain HistoryEvent sidecar; guarded Anomaly study/codex/containment/monolith/creepjoiner capture; the visible-only N3-A context adapter; Odyssey location/mobile-home/lifecycle; and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including bounded visible-only N3-A and exact-map N3-O providers), Ideology Phase-1 detached belief contracts, explicit-source evidence constructors, bounded HistoryEvent correlation storage, structural/lexical stance resolver, formatter, and future reflection-policy shell under `Pipeline/Belief/`, Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/`. |
+| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including the Ideology event-time builder, guarded doctrine/mutation projection, bounded plain HistoryEvent sidecar, and transient mutation cache; guarded Anomaly study/codex/containment/monolith/creepjoiner capture; the visible-only N3-A context adapter; Odyssey location/mobile-home/lifecycle; and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including bounded visible-only N3-A and exact-map N3-O providers), Ideology detached belief contracts, explicit-source evidence constructors, bounded HistoryEvent correlation and mutation-coalescing storage, exact canonical-event ownership, structural/lexical stance resolver, formatter, and future reflection-policy shell under `Pipeline/Belief/`, Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/`. |
 | `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the active Ideology Phase-1 belief-policy boundary and the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including event-time per-POV `beliefContext`, detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, the optional Anomaly monolith-knowledge snapshot, visible-only creepjoiner arc rows, and the `MemoryFragment` pawn-memory row. |
-| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, the non-emitting Ideology HistoryEvent observer, defensive exact Anomaly study/containment/creepjoiner/ghoul seams, guarded Odyssey lifecycle seams, and defensively registered Royalty persona/title/succession/permit and Quest lifecycle hooks. |
+| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, the non-emitting Ideology HistoryEvent observer plus exact mutation boundaries, defensive exact Anomaly study/containment/creepjoiner/ghoul seams, guarded Odyssey lifecycle seams, and defensively registered Royalty persona/title/succession/permit and Quest lifecycle hooks. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper projects plus the optional in-game `PawnDiary.RimTest` smoke suite. |
@@ -187,8 +187,8 @@ Generation starts only after an event exists in the saved hot store.
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
 
-**Ideology Phases 0–1 (Master Wave 10, guarded saved prompt source)** keep the Phase-0 pure policy
-contract and add only the Phase-1 event-time runtime seam. `BeliefResolutionRequest` embeds the existing per-POV `NarrativeEvidence`, so shared facet,
+**Ideology Phases 0–1 plus the first Phase-2 infrastructure slice (Master Wave 10)** keep the Phase-0
+pure policy contract and Phase-1 event-time runtime seam. `BeliefResolutionRequest` embeds the existing per-POV `NarrativeEvidence`, so shared facet,
 salience, knowledge, source, topic, interpretation-category, and deterministic-seed semantics are not
 duplicated. `EventRelativeStanceResolver` accepts only detached current-doctrine facts, fails closed
 unless POV knowledge is explicitly true, and checks exact source-precept identity, exact projected
@@ -228,8 +228,31 @@ observation and can neither authorize nor create a page. Its hot hook uses the s
 wrapper, and the deep-copied belief policy snapshot is shared per active language instead of rebuilt
 for every observation/prompt. Phase 1 supplies evidence only from the exact
 visible thought/body/developer seams implemented in this slice; it deliberately does not add a generic
-belief capture path or the Phase-2 interaction/ability/ritual integrations. Empty, ambiguous, or
+belief capture path. Empty, ambiguous, or
 unmatched evidence therefore leaves the ordinary entry unchanged.
+
+The first Phase-2 slice adds infrastructure without adding another diary source. Manual, exact-signature
+Harmony registration observes `Pawn_IdeoTracker.IdeoConversionAttempt`, `OffsetCertainty`, and
+`SetIdeo` only while `ModsConfig.IdeologyActive` and normal gameplay are active. Prefix/postfix code
+passes tracker/attempted-Ideo objects directly to `DlcContext.Ideology.cs`; that adapter remains the
+only owner of live pawn/tracker/Ideo reads and returns detached before/after facts. Pure
+`BeliefMutationPolicy` plus `BeliefMutationBuffer` coalesce only overlapping nested call intervals for
+the same pawn/tick, preserving the earliest before state, latest after state, attempted identity,
+conversion result, and union of mechanical cause tokens. Sequential same-tick actions remain separate.
+The bounded cache is non-consuming, cannot create a page, is reset at game construction/finalization,
+and is deliberately not scribed. Old saves therefore start empty and never receive retroactive entries.
+Projection/patch failures are swallowed at the optional boundary and leave vanilla behavior plus any
+ordinary diary page unchanged.
+
+Canonical ability ownership is also XML-owned. The exact `Convert`, `Reassure`, and
+`ConversionRitual` strings identify generic Ability routes with a demonstrable later visible
+interaction/ritual owner. When Ideology is active, `AbilityEventData.Decide` drops those generic routes
+before `Rand.Value` is drawn; the existing downstream route remains the sole page owner. Matching is
+exact and case-insensitive—never substring, English prose, or precept-ID inference—and the code fallback
+list is empty. No-DLC profiles and unknown/modded abilities retain ordinary pre-slice behavior. This
+slice does not yet attach mutation facts to conversion/reassurance/crisis/ritual pages or add the other
+Phase-2 event-evidence adapters. It introduces no UI/model-facing text, so English/Russian localization
+files are unchanged.
 
 The frozen value flows through `DiaryPovPayload.beliefContext` → `PromptValues.beliefContext` →
 `PromptAssembler.ResolveSource("BeliefContext")`. Full/Balanced/Compact detail projection is applied
@@ -981,7 +1004,8 @@ the universal path:
 
 The dedup order is intentional. The check happens before `Decide`, so a duplicate does not build
 context, run pure policy, or consume source-side random state. `AbilitySignal` depends on this because
-its chance roll is read lazily from `Rand.Value`.
+its chance roll is read lazily from `Rand.Value`. Exact XML-owned downstream coverage is evaluated in
+the payload first, so redundant Ideology ability routes are dropped without drawing that value.
 
 The generic event-type check happens after `Decide` because it needs the payload event type and final
 decision shape. It is a short safety net for sources with no detailed key and for cross-source shapes
@@ -2143,7 +2167,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeRollPolicyDefs.xml` | numeric tuning for the psychotype roll: family bases, bonuses, wildcard chance, jitter range, duplicate penalty |
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; the main-thread builder snapshots it before fixed-order pure provider selection. The repetition policy is live: every narrative-capable source feeds the selector the POV pawn's most recent persisted selection keys (newest hot pages, then archive rows, bounded by `maxRecentSelectedCandidateKeys`), so `repetitionPenalty` dampens re-picking the same lens while exact-arc continuations stay exempt via `exactArcRepetitionPenalty` |
-| `DiaryBeliefPolicyDef.xml` | Active Ideology Phase-1 event-time policy: categorical structural/lexical scores, guarded field weights, confidence and runner-up margins, common/fuzzy-token limits, XML-owned default-one/maximum-two selection, certainty bands, formatter/detail budgets, bounded HistoryEvent correlation capacity/window, localized prompt-field wording, selector-bearing exact event-evidence vocabulary, semantic aliases, exclusions, and an intentionally empty compatibility-correction list. It contains no precept/issue/meme catalog or DLC Def reference; the guarded main-thread adapter copies it into a detached snapshot. Reflection thresholds remain reserved for later phases. |
+| `DiaryBeliefPolicyDef.xml` | Active Ideology event-time policy: categorical structural/lexical scores, guarded field weights, confidence and runner-up margins, common/fuzzy-token limits, XML-owned default-one/maximum-two selection, certainty bands, formatter/detail budgets, bounded HistoryEvent and transient mutation correlation capacity/windows, localized prompt-field wording, selector-bearing exact event-evidence vocabulary, semantic aliases, exclusions, exact downstream-covered ability ownership, and an intentionally empty compatibility-correction list. It contains no precept/issue/meme catalog or hard DLC Def reference; the guarded main-thread adapter copies it into a detached snapshot. Reflection thresholds remain reserved for later phases. |
 | `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory plus mature-birth/miscarriage matchers, supporter thresholds/caps, naming timing, family retention, two-writer birth cap, pending-growth/pending-birth admission limits, Phase-5 gene category/theme/text/observation/fallback-significance policy, N3-B salient-gene identity prose, and Phase-6 mechanitor combat Tale roles/tenure/state caps; Phases 1–6, N2-B, and the first N3-B slice use these fields live |
 | `DiaryAnomalyPolicyDefs.xml` | A1 study/containment toggles, milestone rules, dedup/ownership/cache bounds, A2 visible creepjoiner/ghoul output and writer limits, plus N3-A factual formats for the three monolith chapters, containment breach, four visible creepjoiner outcomes, and ghoul transformation. Prose is DefInjected in English/Russian; no terminal/hidden format exists. All optional-DLC identifiers remain primitive strings, so the row loads safely without Anomaly. |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
@@ -3401,12 +3425,14 @@ Never rename a key "for cleanliness" alone.
 - DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks. This
   includes Biotech growth trait/skill/work-disabled snapshots and Ideology precept/role reads used by
   body-mod stance policy; other code consumes plain detached rows, labels, defNames, or booleans.
-- Ideology Phase 1 confines all live `pawn.ideo`, `Ideo`, `Precept`, `PreceptComp`, `MemeDef`,
+- Ideology Phases 1–2 confine all live `pawn.ideo`, `Pawn_IdeoTracker`, `Ideo`, `Precept`, `PreceptComp`, `MemeDef`,
   `Thought.sourcePrecept`, history, and certainty reads to `DlcContext.Ideology.cs`. Every public adapter
   returns immediately unless `ModsConfig.IdeologyActive` and its required live tracker/object are both
   present. Other layers consume only detached snapshots, evidence rows, Def-name strings, valence
-  tokens, and saved text. The HistoryEvent observer and cache are inert without Ideology and never emit;
-  no-DLC profiles keep their pre-Phase-1 capture and prompt behavior.
+  tokens, and saved text. The HistoryEvent observer and both transient caches are inert without
+  Ideology and never emit. Exact mutation hooks are registered only while the DLC is active, and the
+  exact ability-ownership policy is likewise gated before it can suppress a generic route. No-DLC
+  profiles keep their pre-Ideology capture and prompt behavior.
 - `PawnDiaryDlcSafetyFixtureTests` exercises this boundary in both directions: absent/null state must
   disappear from the final prompt/public summary, while installed DLC uses disposable real xenotype,
   title, ideoligion/precept/eligible-role, and creepjoiner pawn state. The CreepJoiner positive path

@@ -28,6 +28,7 @@ namespace PawnDiary
             BiotechBirthOutcomePatch.TryRegister(harmony);
             BiotechMiscarriagePatch.TryRegister(harmony);
             BiotechXenogermMutationPatch.TryRegister(harmony);
+            DiaryIdeologyMutationPatches.TryRegister(harmony);
             OdysseyLandingEndedPatch.TryRegister(harmony);
             OdysseyLandingOutcomePatch.TryRegister(harmony);
             SpeakUpReplySchedulingGuardPatch.TryRegister(harmony);

@@ -18,5 +18,8 @@
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefReflectionPolicy.cs" Link="BeliefReflectionPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefEventEvidenceFactory.cs" Link="BeliefEventEvidenceFactory.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefHistoryCorrelationBuffer.cs" Link="BeliefHistoryCorrelationBuffer.cs" />
+    <Compile Include="..\..\Source\Pipeline\Belief\BeliefMutationPolicy.cs" Link="BeliefMutationPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\Belief\BeliefMutationBuffer.cs" Link="BeliefMutationBuffer.cs" />
+    <Compile Include="..\..\Source\Pipeline\Belief\BeliefCanonicalEventOwnershipPolicy.cs" Link="BeliefCanonicalEventOwnershipPolicy.cs" />
   </ItemGroup>
 </Project>

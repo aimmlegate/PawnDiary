@@ -1,5 +1,21 @@
 # Changelog
 
+- **2026-07-21 — Added the first Ideology Phase 2 mutation/ownership infrastructure slice.** Added
+  defensively registered, `ModsConfig.IdeologyActive`-gated exact hooks for
+  `Pawn_IdeoTracker.IdeoConversionAttempt`, `OffsetCertainty`, and `SetIdeo`. All live tracker/pawn/
+  Ideo reads remain in `DlcContext`; the hooks pass detached before/after/attempted facts into a pure,
+  bounded coalescer which preserves earliest-before/latest-after across overlapping nested calls while
+  keeping sequential same-tick actions separate. The transient cache is non-emitting, non-scribed,
+  game-boundary-reset, and empty for old saves/no-DLC games. XML now owns mutation bounds and the exact
+  `Convert`/`Reassure`/`ConversionRitual` generic Ability routes whose visible downstream interaction or
+  ritual is canonical; those routes drop before `Rand.Value`, while modded/unknown/no-DLC abilities are
+  unchanged. No conversion/crisis/ritual consumer enrichment or new page route was added yet. No UI or
+  model-facing prose changed, so English/Russian localization required no edit. Added pure
+  policy/correlation/coalescing tests (BeliefContext 257; capture policy 714) and five compiled loaded
+  fixtures for exact Harmony ownership, no-DLC behavior, real before/after tracker calls, failure
+  cleanup, RNG preservation, and one canonical Convert-success page. `PawnDiary.dll` and the 367-test
+  `PawnDiary.RimTest.dll` build 0/0. RimWorld was not launched, so no in-game pass is claimed.
+
 - **2026-07-21 — Ideology belief prompt-text tuning pass (EN + RU).** Reviewed the prompt prose added
   by Ideology Phase 0/1. English: the belief-context instruction now keeps the diary's first-person
   frame ("Beliefs I held at the time…") and pairs positive guidance (let beliefs color reaction and

@@ -1,5 +1,5 @@
-// XML boundary for Ideology belief policy. RimWorld loads this Def, then the future main-thread
-// adapter copies it into an immutable BeliefPolicySnapshot before pure matching. No DLC Def or live
+// XML boundary for Ideology belief policy. RimWorld loads this Def, then the main-thread adapter
+// copies it into an immutable BeliefPolicySnapshot before pure matching/ownership. No DLC Def or live
 // Ideology object is referenced here, so the policy is safe when Ideology is absent.
 //
 // New to C#/RimWorld? See AGENTS.md ("XML Defs" and "DLC-safety").
@@ -88,6 +88,8 @@ namespace PawnDiary
         public int maximumRecentSelections = 16;
         public int maximumHistoryCorrelationEntries = 256;
         public int historyCorrelationWindowTicks = 120;
+        public int maximumMutationCorrelationEntries = 256;
+        public int mutationCorrelationWindowTicks = 120;
         public int maximumFieldCharacters = 320;
         public int maximumNormalizedTokensPerField = 48;
         public int maximumLexicalFieldsPerDocument = 96;
@@ -142,6 +144,9 @@ namespace PawnDiary
         public List<DiaryBeliefEventEvidenceRuleDef> eventEvidenceRules;
         public List<string> lexicalExclusions;
         public List<string> proselytizingPovRoles;
+        // Exact event-source ownership, not doctrine policy. The code fallback is intentionally empty
+        // so missing XML never suppresses an unknown or modded ability.
+        public List<string> downstreamCoveredAbilityDefNames;
         public List<DiaryBeliefCorrelationCorrectionDef> correlationOverrides;
         public List<DiaryBeliefDetailBudgetDef> detailBudgets;
     }
@@ -206,6 +211,8 @@ namespace PawnDiary
             builder.maximumRecentSelections = source.maximumRecentSelections;
             builder.maximumHistoryCorrelationEntries = source.maximumHistoryCorrelationEntries;
             builder.historyCorrelationWindowTicks = source.historyCorrelationWindowTicks;
+            builder.maximumMutationCorrelationEntries = source.maximumMutationCorrelationEntries;
+            builder.mutationCorrelationWindowTicks = source.mutationCorrelationWindowTicks;
             builder.maximumFieldCharacters = source.maximumFieldCharacters;
             builder.maximumNormalizedTokensPerField = source.maximumNormalizedTokensPerField;
             builder.maximumLexicalFieldsPerDocument = source.maximumLexicalFieldsPerDocument;
@@ -257,6 +264,8 @@ namespace PawnDiary
             CopyRules(source.eventEvidenceRules, builder.eventEvidenceRules);
             CopyStrings(source.lexicalExclusions, builder.lexicalExclusions, replaceWhenEmpty: false);
             CopyStrings(source.proselytizingPovRoles, builder.proselytizingPovRoles, replaceWhenEmpty: false);
+            CopyStrings(source.downstreamCoveredAbilityDefNames,
+                builder.downstreamCoveredAbilityDefNames, replaceWhenEmpty: true);
             CopyCorrections(source.correlationOverrides, builder.correlationOverrides);
             CopyBudgets(source.detailBudgets, builder.detailBudgets);
             cached = builder.Build();
