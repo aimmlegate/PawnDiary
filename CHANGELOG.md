@@ -1,5 +1,17 @@
 # Changelog
 
+- **2026-07-21 — Diary UI round-3 tweaks from in-game feedback.** (1) The **season-band scroll strip now
+  only draws when the page actually overflows** (a scrollbar is present), so a short non-scrolling page
+  no longer shows a stray strip beside empty space. (2) The **seasonal wash is scoped to the entries
+  region only** — behind the cards from the top of the viewport down to where the content ends — so it
+  never tints the header or the empty space below a short page. (3) **Made the action icons more
+  visible:** the header writing-style/filter icons (`writingStyleIconAlpha` 0.55→0.72, hover →1.0), the
+  regenerate icon (lighter tint at 0.85 alpha), the copy icon (idle 0.75→0.85), and the favorite /
+  favorites-only stars' off state (0.55→0.72). (4) **Removed the inline year pager from the journal** —
+  year navigation now lives exclusively in the filter panel; hiding the panel no longer drops a year
+  pager into the journal column (reopen the panel via the header filter icon to change years). All
+  values remain XML-tunable. Debug build 0/0; all pure suites green; no in-game acceptance run is
+  claimed.
 - **2026-07-21 — Restored mixed-build RimTest signal-factory compatibility.** The first loaded
   Phase-1 run used the intentionally preserved 354-test RimTest DLL beside the new core and exposed a
   `MissingMethodException`: its mature-birth fallback still referenced the pre-Phase-1
@@ -8,7 +20,6 @@
   source assembly to 358 compiled tests. Capture, deduplication, belief evaluation, and the expected
   parked-gravship Odyssey acceptance failure are unchanged. The protected deployed RimTest DLL remains
   untouched; the new Ideology fixtures require a separately deployed current test build.
-
 - **2026-07-21 — Completed Ideology Phase 1 guarded event-time belief context.** Added the
   double-guarded `DlcContext.CaptureBeliefSnapshot` adapter for active ideology, certainty/role,
   memes/structure, issues/precepts, exact source/thought/history correlations, and mechanical thought

@@ -2967,11 +2967,12 @@ separate from the journal's) and is built only from existing RimWorld widgets �
 scroll view next frame. It hosts the **year selector** (the pager `DrawYearFilter`, now responsive: a
 full pager when wide, a single dropdown in the narrow panel via the shared `ShowYearFloatMenu`), the
 **dev tools** (`DrawPawnControls`, wrapped in its own try/finally so its nested `Listing` group can
-never leak), and — for now — **stub filter controls** (a favorites toggle and per-tag toggles derived
-from the visible year's group labels, plus Clear/Apply). The stub toggles render and toggle but are
-**not yet wired** to filter the journal. The dev tools live **only** in this panel — when the panel is
-hidden they are not drawn inline in the journal, so hiding the panel gives a clean journal-only window
-(only the year pager falls back inline). The header toggle icon that shows/hides the panel sits just
+never leak), and — for now — **stub filter controls** (a favorites **star** toggle,
+`DrawFavoritesOnlyToggle`, and per-tag toggles derived from the visible year's group labels, plus
+Clear/Apply). The stub toggles render and toggle but are **not yet wired** to filter the journal. The
+dev tools **and the year selector** live **only** in this panel — when the panel is hidden nothing is
+drawn inline in the journal, so hiding the panel gives a fully clean journal-only window (reopen the
+panel via the header filter icon to change years). The header toggle icon that shows/hides the panel sits just
 after (right of) the writing-style icon. It is a **funnel** glyph with three tint states: dim when the
 panel is closed, brighter when open, and an amber accent (`filterActiveIconColor`) when open with a
 filter selection set (favorites-only or any tag chip) — the "active" state reads even though filtering
