@@ -16,6 +16,7 @@ namespace PawnDiary
         public string relevanceSource = string.Empty;
         public string relevanceTier = string.Empty;
         public string matchedIdentity = string.Empty;
+        public string correlationValence = BeliefValenceTokens.Unknown;
         public int distinctiveTokenMatches;
         public int fuzzyTokenMatches;
         public bool phraseMatched;
@@ -40,6 +41,7 @@ namespace PawnDiary
             public string phrase;
             public float weight;
             public List<string> tokens;
+            public string valence = BeliefValenceTokens.Unknown;
         }
 
         private sealed class Document
@@ -48,6 +50,8 @@ namespace PawnDiary
             public readonly Dictionary<string, float> tokenWeights =
                 new Dictionary<string, float>(StringComparer.Ordinal);
             public readonly Dictionary<string, string> tokenKinds =
+                new Dictionary<string, string>(StringComparer.Ordinal);
+            public readonly Dictionary<string, string> tokenValences =
                 new Dictionary<string, string>(StringComparer.Ordinal);
             // Fuzzy matching revisits the same normalized tokens across many candidate comparisons.
             // Cache each token's bigrams once per bounded document instead of allocating per pair.
@@ -303,9 +307,12 @@ namespace PawnDiary
                     BeliefCorrelationFact correlation = precept.correlations[i];
                     if (correlation == null) continue;
                     float weight = policy.BeliefFieldWeight("correlation");
-                    AddField(result, "correlation", correlation.defName, weight, policy, exclusions);
-                    AddField(result, "correlation", correlation.label, weight, policy, exclusions);
-                    AddField(result, "correlation", correlation.description, weight, policy, exclusions);
+                    AddField(result, "correlation", correlation.defName, weight, policy, exclusions,
+                        correlation.valence);
+                    AddField(result, "correlation", correlation.label, weight, policy, exclusions,
+                        correlation.valence);
+                    AddField(result, "correlation", correlation.description, weight, policy, exclusions,
+                        correlation.valence);
                 }
             }
             if (precept.issue != null)
@@ -382,7 +389,8 @@ namespace PawnDiary
             string value,
             float weight,
             BeliefPolicySnapshot policy,
-            HashSet<string> exclusions)
+            HashSet<string> exclusions,
+            string valence = null)
         {
             if (weight <= 0f || string.IsNullOrWhiteSpace(value)
                 || target.fields.Count >= policy.maximumLexicalFieldsPerDocument) return;
@@ -402,10 +410,24 @@ namespace PawnDiary
                 {
                     target.tokenWeights[token] = weight;
                     target.tokenKinds[token] = kind;
+                    target.tokenValences[token] = BeliefValenceTokens.Normalize(valence);
+                }
+                else if (Math.Abs(weight - existing) < 0.001f)
+                {
+                    string current;
+                    target.tokenValences.TryGetValue(token, out current);
+                    target.tokenValences[token] = MergeValence(current, valence);
                 }
             }
             if (tokens.Count == 0) return;
-            target.fields.Add(new FieldValue { kind = kind, phrase = string.Join(" ", tokens), weight = weight, tokens = tokens });
+            target.fields.Add(new FieldValue
+            {
+                kind = kind,
+                phrase = string.Join(" ", tokens),
+                weight = weight,
+                tokens = tokens,
+                valence = BeliefValenceTokens.Normalize(valence)
+            });
         }
 
         private static BeliefLexicalMatch Score(
@@ -423,6 +445,7 @@ namespace PawnDiary
             string bestKind = "precept";
             float bestContribution = 0f;
             string matchedIdentity = string.Empty;
+            string bestValence = BeliefValenceTokens.Unknown;
 
             for (int i = 0; i < eventDocument.fields.Count; i++)
             {
@@ -441,6 +464,7 @@ namespace PawnDiary
                         bestContribution = contribution;
                         bestKind = beliefField.kind;
                         matchedIdentity = beliefField.phrase;
+                        bestValence = beliefField.valence;
                     }
                     break;
                 }
@@ -464,6 +488,7 @@ namespace PawnDiary
                     bestContribution = contribution;
                     bestKind = beliefDocument.tokenKinds[token];
                     matchedIdentity = token;
+                    beliefDocument.tokenValences.TryGetValue(token, out bestValence);
                 }
             }
 
@@ -499,6 +524,7 @@ namespace PawnDiary
                         bestContribution = contribution;
                         bestKind = beliefDocument.tokenKinds[bestToken];
                         matchedIdentity = eventToken.Key + "~" + bestToken;
+                        beliefDocument.tokenValences.TryGetValue(bestToken, out bestValence);
                     }
                 }
             }
@@ -535,10 +561,24 @@ namespace PawnDiary
                 relevanceSource = source,
                 relevanceTier = tier,
                 matchedIdentity = matchedIdentity,
+                correlationValence = tier == BeliefRelevanceTierTokens.CorrelationText
+                    ? BeliefValenceTokens.Normalize(bestValence)
+                    : BeliefValenceTokens.Unknown,
                 distinctiveTokenMatches = exactMatches,
                 fuzzyTokenMatches = fuzzyMatches,
                 phraseMatched = phraseMatched
             };
+        }
+
+        private static string MergeValence(string left, string right)
+        {
+            string first = BeliefValenceTokens.Normalize(left);
+            string second = BeliefValenceTokens.Normalize(right);
+            if (first == BeliefValenceTokens.Unknown) return second;
+            if (second == BeliefValenceTokens.Unknown || first == second) return first;
+            if (first == BeliefValenceTokens.Neutral) return second;
+            if (second == BeliefValenceTokens.Neutral) return first;
+            return BeliefValenceTokens.Mixed;
         }
 
         private static HashSet<string> CommonTokens(

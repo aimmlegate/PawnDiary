@@ -1,5 +1,22 @@
 # Changelog
 
+- **2026-07-21 — Completed Ideology Phase 1 guarded event-time belief context.** Added the
+  double-guarded `DlcContext.CaptureBeliefSnapshot` adapter for active ideology, certainty/role,
+  memes/structure, issues/precepts, exact source/thought/history correlations, and mechanical thought
+  valence, with typed `PreceptComp_Thought` support and narrowly cached public Def-field discovery for
+  compatible component subclasses. `ThoughtSignal` now freezes exact `Thought.sourcePrecept`, and a
+  guarded non-emitting `HistoryEventsManager.RecordEvent` observer supplies bounded exact-pawn/tick
+  correlation without authorizing or creating pages. `BeliefContextBuilder` resolves exactly once per
+  already-eligible POV, persists normalized `initiatorBeliefContext`/`recipientBeliefContext`, and
+  carries the frozen block through Full/Balanced/Compact prompt planning, normal previews, developer
+  structural/lexical fixtures, and prompt-lab. Body modifications reuse the same result and typed
+  correlation valence; the old approve/despise precept-ID shortcuts are removed. No generic belief
+  capture route, mutation behavior, passive scanner, or reflection page was added. Focused suites pass
+  222 belief, 713 capture-policy, and 2,790 pipeline assertions; the runtime and 357-test RimTest
+  assemblies build with 0 warnings/errors. RimWorld was not launched, so no in-game verification is
+  claimed. The complete verification hook passes all 15 pure suites at 6,838 assertions, XML/project
+  parsing, DLL freshness, and a 0-warning/0-error Debug build.
+
 - **2026-07-21 — More diary UI tuning from in-game feedback.** (1) **Scoped the seasonal wash to the
   journal column only** (behind its header and cards) instead of the whole tab, so the right filter/dev
   panel reads untinted. (2) **Added a season-band strip** in a thin gutter just left of the scrollbar:

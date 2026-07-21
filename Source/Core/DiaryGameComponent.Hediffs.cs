@@ -237,6 +237,29 @@ namespace PawnDiary
             HediffSignalPolicy policy, HediffSignalSource source, HediffEventData data)
         {
             string text = ImmediateHediffText(policy, source, pawn.LabelShortCap, data.Label);
+            BeliefEventEvidence beliefEvidence = null;
+            BeliefContextBuildResult preparedBelief = null;
+            if (!string.IsNullOrEmpty(data.PartKindToken))
+            {
+                beliefEvidence = BeliefEventEvidenceFactory.ForBodyModification(
+                    data.PawnId,
+                    data.Tick,
+                    data.DefName,
+                    data.Label,
+                    data.CleanedBodyPartLabel,
+                    data.PartKindToken,
+                    data.PartTierToken);
+                preparedBelief = BeliefContextBuilder.Build(
+                    pawn,
+                    beliefEvidence,
+                    "body|" + data.PawnId + "|" + data.Tick.ToString(CultureInfo.InvariantCulture),
+                    data.Tick,
+                    DiaryEvent.InitiatorRole);
+                data.AttitudeToken = BodyPartEventPolicy.ResolveAttitude(
+                    data.PartKindToken,
+                    data.PartTierToken,
+                    BodyModContext.FactsFor(pawn, BodyModContext.IdeologyStance(preparedBelief?.resolution)));
+            }
             string instruction = InteractionGroups.InstructionForGroup(group);
             if (!string.IsNullOrEmpty(data.PartKindToken))
             {
@@ -248,7 +271,9 @@ namespace PawnDiary
                 data.PartKindToken, data.PartTierToken, data.AttitudeToken, data.CauseToken);
             gameContext = AppendBiotechFamilyContext(hediff, gameContext);
 
-            DiaryEvent diaryEvent = AddSoloEvent(pawn, null, data.DefName, data.Label, text, instruction, gameContext);
+            DiaryEvent diaryEvent = AddSoloEvent(
+                pawn, null, data.DefName, data.Label, text, instruction, gameContext,
+                beliefEvidence, preparedBelief);
             QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
         }
 

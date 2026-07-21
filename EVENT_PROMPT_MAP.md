@@ -11,6 +11,8 @@ Authoritative sources:
 - `Source/Core/DiaryGameComponent.*.cs`: dispatch, event creation, prompt queuing, scans, event
   windows, observed conditions, progression, and day/quadrum/arc reflections.
 - `Source/Generation/DiaryPipelineAdapters.cs`: runtime/XML/localization adapter into prompt DTOs.
+- `Source/Generation/BeliefContextBuilder.cs` and `DlcContext.Ideology.cs`: guarded event-time
+  Ideology projection, one-shot stance resolution, and saved per-POV belief context.
 - `Source/Pipeline/DiaryPromptPlanner.cs`: pure template selection and prompt planning.
 - `Source/Pipeline/ProgressionMilestonePolicy.cs`, `ArcReflectionSchedulePolicy.cs`, and
   `ArcReflectionMemorySelector.cs`: pure progression, cadence, and memory-sampling policy.
@@ -60,6 +62,7 @@ flowchart TD
     subgraph Generic["Generic page and prompt side channels"]
         EW["Event-window signals<br/>Incident, Quest, ThingSpawned, Letter, ProximityLetter,<br/>VoidMonolith, PawnAge, Hediff, PrisonBreak"]
         OC["Observed-condition scan<br/>MapDanger, GameCondition, ThingPresent, PawnHediff"]
+        IH["HistoryEventsManager.RecordEvent observer<br/>bounded exact-pawn correlation only; never emits"]
     end
 
     I --> Submit
@@ -106,9 +109,12 @@ flowchart TD
     OCPlan --> OCRecord{"recordStartEvent or recordEndEvent?"}
     OCRecord -- Yes --> OCPage["RecordObservedConditionPage<br/>direct AddSoloEvent"]
     OCRecord -- No --> OCOnly["Prompt-bias state only"]
+    IH --> BC["Belief correlation cache<br/>plain Def names and ticks"]
 
-    Solo --> Store
-    Pair --> Store
+    Solo --> Belief["Optional explicit-source BeliefContextBuilder<br/>after capture; once per eligible POV"]
+    Pair --> Belief
+    BC --> Belief
+    Belief --> Store
     Death --> Store
     Arrival --> Store
     EWRecord --> Store
@@ -720,7 +726,7 @@ flowchart TD
     Plan --> User["userPrompt<br/>structured label: value lines plus final instruction"]
     User --> Fields["Template field list from DiaryPromptTemplateDefs.xml"]
     Fields --> Skip["PromptAssembler skips blank values<br/>and sentinels none, n/a, unknown"]
-    Fields --> Common["Common first-person fields:<br/>event, pov, raw evidence, instruction,<br/>event prompt, event enhancement,<br/>important context, setting, tone, last opening line"]
+    Fields --> Common["Common first-person fields:<br/>event, pov, raw evidence, instruction,<br/>event prompt, event enhancement,<br/>important context, optional saved belief context,<br/>setting, tone, last opening line"]
     Fields --> PairFields["Pair extras:<br/>role, with, relationship,<br/>hidden initiator diary for PairImportant and PairCombat"]
     Fields --> CombatFields["Combat extras:<br/>you, weapon"]
     Fields --> SourceFacts["Context facts:<br/>quest, ritual, ability, raid,<br/>progression skill/psylink/xenotype/title/growth,<br/>persona lifecycle and Tale milestone,<br/>Royalty mutation pawn/cause/faction/duties,<br/>succession deceased/heir/title/faction,<br/>permit label/family/faction/title/setting/cooldown,<br/>royal title, ideoligion role"]

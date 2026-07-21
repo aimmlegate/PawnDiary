@@ -645,8 +645,6 @@
   <PawnDiary.Settings.Adv.Field.bodyPartTierOverrideArchotech>Archotech part overrides</PawnDiary.Settings.Adv.Field.bodyPartTierOverrideArchotech>
   <PawnDiary.Settings.Adv.Field.bodyPartCravesTraitDefNames>Body-mod craving traits</PawnDiary.Settings.Adv.Field.bodyPartCravesTraitDefNames>
   <PawnDiary.Settings.Adv.Field.bodyPartDespisesTraitDefNames>Body-mod despising traits</PawnDiary.Settings.Adv.Field.bodyPartDespisesTraitDefNames>
-  <PawnDiary.Settings.Adv.Field.bodyPartApprovePreceptDefNames>Body-mod approving precepts</PawnDiary.Settings.Adv.Field.bodyPartApprovePreceptDefNames>
-  <PawnDiary.Settings.Adv.Field.bodyPartDespisePreceptDefNames>Body-mod despising precepts</PawnDiary.Settings.Adv.Field.bodyPartDespisePreceptDefNames>
   <PawnDiary.Settings.Adv.Field.bodyPartInhumanizedHediffDefNames>Detached body hediffs</PawnDiary.Settings.Adv.Field.bodyPartInhumanizedHediffDefNames>
   <PawnDiary.Settings.Adv.Field.bodyPartCrudeEfficiencyBelow>Crude efficiency below</PawnDiary.Settings.Adv.Field.bodyPartCrudeEfficiencyBelow>
   <PawnDiary.Settings.Adv.Field.bodyPartProstheticEfficiencyMax>Prosthetic efficiency max</PawnDiary.Settings.Adv.Field.bodyPartProstheticEfficiencyMax>
@@ -795,8 +793,6 @@
   <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideArchotech>HediffDef defNames forced to archotech tier, one per line.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideArchotech>
   <PawnDiary.Settings.Adv.Help.bodyPartCravesTraitDefNames>TraitDef defNames that make pawns crave body modification.</PawnDiary.Settings.Adv.Help.bodyPartCravesTraitDefNames>
   <PawnDiary.Settings.Adv.Help.bodyPartDespisesTraitDefNames>TraitDef defNames that make pawns despise body modification.</PawnDiary.Settings.Adv.Help.bodyPartDespisesTraitDefNames>
-  <PawnDiary.Settings.Adv.Help.bodyPartApprovePreceptDefNames>Ideology PreceptDef defNames that approve body modification.</PawnDiary.Settings.Adv.Help.bodyPartApprovePreceptDefNames>
-  <PawnDiary.Settings.Adv.Help.bodyPartDespisePreceptDefNames>Ideology PreceptDef defNames that disapprove or abhor body modification.</PawnDiary.Settings.Adv.Help.bodyPartDespisePreceptDefNames>
   <PawnDiary.Settings.Adv.Help.bodyPartInhumanizedHediffDefNames>HediffDef defNames that make a pawn detached from ordinary body horror.</PawnDiary.Settings.Adv.Help.bodyPartInhumanizedHediffDefNames>
   <PawnDiary.Settings.Adv.Help.bodyPartCrudeEfficiencyBelow>Added parts below this efficiency are crude when no stronger tier signal exists.</PawnDiary.Settings.Adv.Help.bodyPartCrudeEfficiencyBelow>
   <PawnDiary.Settings.Adv.Help.bodyPartProstheticEfficiencyMax>Added parts at or below this efficiency are prosthetic when no stronger tier signal exists.</PawnDiary.Settings.Adv.Help.bodyPartProstheticEfficiencyMax>
@@ -1603,4 +1599,8 @@
   <PawnDiary.Event.Anomaly.Void.Label>Answer to the void</PawnDiary.Event.Anomaly.Void.Label>
   <PawnDiary.Event.Anomaly.Void.EmbracedFallback>{0} chose to embrace the void.</PawnDiary.Event.Anomaly.Void.EmbracedFallback>
   <PawnDiary.Event.Anomaly.Void.DisruptedFallback>{0} chose to disrupt the link to the void.</PawnDiary.Event.Anomaly.Void.DisruptedFallback>
+  <PawnDiary.Dev.PromptSuite.BeliefStructural.Label>Belief context — structural match</PawnDiary.Dev.PromptSuite.BeliefStructural.Label>
+  <PawnDiary.Dev.PromptSuite.BeliefStructural.Text>{0} considers a synthetic event with an exact thought or history correlation from their current ideoligion.</PawnDiary.Dev.PromptSuite.BeliefStructural.Text>
+  <PawnDiary.Dev.PromptSuite.BeliefLexical.Label>Belief context — lexical match</PawnDiary.Dev.PromptSuite.BeliefLexical.Label>
+  <PawnDiary.Dev.PromptSuite.BeliefLexical.Text>{0} considers a synthetic event described only by high-confidence wording from their current ideoligion.</PawnDiary.Dev.PromptSuite.BeliefLexical.Text>
 </LanguageData>

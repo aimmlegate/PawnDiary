@@ -107,6 +107,9 @@ namespace PawnDiary
             // no memory surfaced (the prompt field disappears entirely). Capped at 600 chars on
             // save-normalization so a corrupt save cannot bloat the prompt.
             internal string memoryContext;
+            // Ideology Phase 1: full, sanitized event-time belief block. Prompt detail presets filter
+            // this saved value; they never re-read or re-resolve live doctrine.
+            internal string beliefContext;
         }
 
         // The three POV storage slots. Value-typed, so they live inline here and are mutated in
@@ -186,6 +189,8 @@ namespace PawnDiary
         public string recipientPreviousEntryEnding { get => recipientSlot.previousEntryEnding; set => recipientSlot.previousEntryEnding = value; }
         public string initiatorWeapon { get => initiatorSlot.weapon; set => initiatorSlot.weapon = value; }
         public string recipientWeapon { get => recipientSlot.weapon; set => recipientSlot.weapon = value; }
+        public string initiatorBeliefContext { get => initiatorSlot.beliefContext; set => initiatorSlot.beliefContext = value; }
+        public string recipientBeliefContext { get => recipientSlot.beliefContext; set => recipientSlot.beliefContext = value; }
 
         // Generated LLM output (all three roles).
         public string initiatorGeneratedText { get => initiatorSlot.generatedText; set => initiatorSlot.generatedText = value; }
@@ -390,6 +395,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref slot.narrativeContext, NarrativeSlotKey(prefix, NarrativeSaveKeys.Context));
             // Additive memory-context key. Old saves leave this null; NormalizeLoadedSlot coalesces it.
             Scribe_Values.Look(ref slot.memoryContext, prefix + "MemoryContext");
+            // Ideology Phase 1 additive per-POV key. Old saves normalize to an empty block.
+            Scribe_Values.Look(ref slot.beliefContext, prefix + "BeliefContext");
         }
 
         // The base save tokens intentionally start lowercase for archive rows (`narrativeReferences`).
@@ -480,6 +487,7 @@ namespace PawnDiary
             {
                 slot.memoryContext = slot.memoryContext.Substring(0, 600);
             }
+            slot.beliefContext = BeliefContextFormatter.NormalizeSaved(slot.beliefContext);
         }
 
         /// <summary>
@@ -1307,6 +1315,31 @@ namespace PawnDiary
             }
 
             return SlotFor(povRole).memoryContext ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Returns the full event-time belief block for one first-person POV. Neutral chronicle pages
+        /// have no pawn belief boundary and therefore always return empty.
+        /// </summary>
+        public string BeliefContextForRole(string povRole)
+        {
+            if (!RoleIsInitiatorOrRecipient(povRole))
+            {
+                return string.Empty;
+            }
+
+            return SlotFor(povRole).beliefContext ?? string.Empty;
+        }
+
+        /// <summary>Freezes one already-resolved, bounded belief block without touching live state.</summary>
+        internal void SetBeliefContext(string povRole, string beliefContext)
+        {
+            if (!RoleIsInitiatorOrRecipient(povRole))
+            {
+                return;
+            }
+
+            SlotFor(povRole).beliefContext = BeliefContextFormatter.NormalizeSaved(beliefContext);
         }
 
         /// <summary>

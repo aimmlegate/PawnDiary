@@ -198,6 +198,27 @@ namespace PawnDiary
         public List<BeliefDeityFact> deities = new List<BeliefDeityFact>();
     }
 
+    /// <summary>
+    /// Exact source-precept identity copied from a live thought. The adapter returns this detached row
+    /// so ingestion never needs to retain or inspect a RimWorld <c>Precept</c> object.
+    /// </summary>
+    internal sealed class BeliefSourcePreceptFact
+    {
+        public string instanceId = string.Empty;
+        public string defName = string.Empty;
+    }
+
+    /// <summary>
+    /// One non-emitting history observation. Only stable identifiers leave the guarded runtime
+    /// adapter; the bounded correlation buffer never owns a HistoryEvent, Pawn, or Def.
+    /// </summary>
+    internal sealed class BeliefHistoryObservation
+    {
+        public int tick;
+        public string historyEventDefName = string.Empty;
+        public List<string> visiblePawnIds = new List<string>();
+    }
+
     /// <summary>Detached before/after facts for a conversion, reassurance, or certainty mutation.</summary>
     internal sealed class BeliefMutationSnapshot
     {
@@ -507,6 +528,8 @@ namespace PawnDiary
         public int defaultSelectedStances = 1;
         public int maximumSupportingMemes = 2;
         public int maximumRecentSelections = 16;
+        public int maximumHistoryCorrelationEntries = 256;
+        public int historyCorrelationWindowTicks = 120;
         public int maximumFieldCharacters = 320;
         public int maximumNormalizedTokensPerField = 48;
         public int maximumLexicalFieldsPerDocument = 96;
@@ -647,6 +670,8 @@ namespace PawnDiary
         public readonly int defaultSelectedStances;
         public readonly int maximumSupportingMemes;
         public readonly int maximumRecentSelections;
+        public readonly int maximumHistoryCorrelationEntries;
+        public readonly int historyCorrelationWindowTicks;
         public readonly int maximumFieldCharacters;
         public readonly int maximumNormalizedTokensPerField;
         public readonly int maximumLexicalFieldsPerDocument;
@@ -711,6 +736,8 @@ namespace PawnDiary
             defaultSelectedStances = Clamp(value.defaultSelectedStances, 1, maximumSelectedStances, 1);
             maximumSupportingMemes = Clamp(value.maximumSupportingMemes, 0, 4, 2);
             maximumRecentSelections = Clamp(value.maximumRecentSelections, 0, 64, 16);
+            maximumHistoryCorrelationEntries = Clamp(value.maximumHistoryCorrelationEntries, 1, 2048, 256);
+            historyCorrelationWindowTicks = Clamp(value.historyCorrelationWindowTicks, 0, 600, 120);
             maximumFieldCharacters = Clamp(value.maximumFieldCharacters, 32, 2048, 320);
             maximumNormalizedTokensPerField = Clamp(value.maximumNormalizedTokensPerField, 4, 128, 48);
             maximumLexicalFieldsPerDocument = Clamp(value.maximumLexicalFieldsPerDocument, 8, 256, 96);

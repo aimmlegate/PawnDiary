@@ -1,5 +1,5 @@
 // DLC-safe body-modification stance reader. This is the impure edge for body-part diary events:
-// it reads live Pawn state (traits, ideoligion precepts, hediffs, Anomaly ghoul status) and returns
+// it reads live Pawn state (traits, hediffs, Anomaly ghoul status) and returns
 // a plain BodyModStanceFacts DTO for the pure BodyPartEventPolicy. New to C#/RimWorld? See AGENTS.md
 // ("DLC-safety") for why all optional-DLC reads are guarded.
 using System;
@@ -19,14 +19,18 @@ namespace PawnDiary
         /// Returns plain stance facts for body-part event policy. Missing DLC/content simply produces
         /// false/none values, so a base-game-only player keeps the same safe runtime path.
         /// </summary>
-        public static BodyModStanceFacts FactsFor(Pawn pawn)
+        public static BodyModStanceFacts FactsFor(
+            Pawn pawn,
+            string ideologyStance = BodyPartEventPolicy.IdeologyNone)
         {
             DiaryTuningDef tuning = DiaryTuning.Current;
             return new BodyModStanceFacts
             {
                 HasCravesTrait = HasTrait(pawn, tuning.bodyPartCravesTraitDefNames),
                 HasDespisesTrait = HasTrait(pawn, tuning.bodyPartDespisesTraitDefNames),
-                IdeologyStance = IdeologyStance(pawn, tuning.bodyPartApprovePreceptDefNames, tuning.bodyPartDespisePreceptDefNames),
+                // Ideology Phase 1 supplies this token from the one shared resolver pass. This adapter
+                // no longer owns or consults a vanilla/DLC precept-ID allowlist.
+                IdeologyStance = ideologyStance,
                 IsInhumanized = HasHediff(pawn, tuning.bodyPartInhumanizedHediffDefNames),
                 // All ghoul-state reads deliberately route through the guarded DLC adapter.
                 IsGhoul = DlcContext.IsGhoul(pawn)
@@ -53,30 +57,20 @@ namespace PawnDiary
             return false;
         }
 
-        private static string IdeologyStance(Pawn pawn, List<string> approvePrecepts, List<string> despisePrecepts)
+        /// <summary>
+        /// Maps only reliable matched correlation valence back to the legacy body-attitude token.
+        /// Negative wins when two independent selected stances disagree, preserving prior precedence.
+        /// </summary>
+        public static string IdeologyStance(BeliefStanceResolution resolution)
         {
-            List<string> precepts = DlcContext.IdeologyPreceptDefNames(pawn);
-            if (precepts == null || precepts.Count == 0)
+            List<string> valences = new List<string>();
+            if (resolution?.stances != null)
             {
-                return BodyPartEventPolicy.IdeologyNone;
+                for (int i = 0; i < resolution.stances.Count; i++)
+                    if (resolution.stances[i] != null)
+                        valences.Add(resolution.stances[i].correlationValence);
             }
-
-            bool approves = false;
-            for (int i = 0; i < precepts.Count; i++)
-            {
-                string defName = precepts[i];
-                if (ContainsDefName(despisePrecepts, defName))
-                {
-                    return BodyPartEventPolicy.IdeologyDespises;
-                }
-
-                if (ContainsDefName(approvePrecepts, defName))
-                {
-                    approves = true;
-                }
-            }
-
-            return approves ? BodyPartEventPolicy.IdeologyApproves : BodyPartEventPolicy.IdeologyNone;
+            return BodyPartEventPolicy.IdeologyStanceForCorrelationValences(valences);
         }
 
         private static bool HasHediff(Pawn pawn, List<string> hediffDefNames)

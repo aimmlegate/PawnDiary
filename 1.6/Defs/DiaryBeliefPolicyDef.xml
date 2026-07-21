@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Master Wave 10 / Ideology Phase 0 policy. This Def is deliberately DLC-neutral: it names only
+  Master Wave 10 / Ideology Phase 1 policy. This Def is deliberately DLC-neutral: it names only
   Pawn Diary schema/evidence vocabulary, never a vanilla/DLC/mod precept, issue, or meme Def.
-  Phase 0 has no live collector, event attachment, prompt route, save field, or reflection scheduler.
+  Phase 1 enables event-time enrichment only; it does not add a belief-reflection scheduler.
 -->
 <Defs>
   <PawnDiary.DiaryBeliefPolicyDef>
@@ -17,6 +17,8 @@
     <defaultSelectedStances>1</defaultSelectedStances>
     <maximumSupportingMemes>2</maximumSupportingMemes>
     <maximumRecentSelections>16</maximumRecentSelections>
+    <maximumHistoryCorrelationEntries>256</maximumHistoryCorrelationEntries>
+    <historyCorrelationWindowTicks>120</historyCorrelationWindowTicks>
     <maximumFieldCharacters>320</maximumFieldCharacters>
     <maximumNormalizedTokensPerField>48</maximumNormalizedTokensPerField>
     <maximumLexicalFieldsPerDocument>96</maximumLexicalFieldsPerDocument>
@@ -65,6 +67,11 @@
     <quietReflectionChance>0.08</quietReflectionChance>
     <beliefReflectionCooldownTicks>900000</beliefReflectionCooldownTicks>
     <maximumBeliefReflectionsPerQuadrum>2</maximumBeliefReflectionsPerQuadrum>
+
+    <!-- DefInjected prompt wording. The saved block contains facts only; this guidance is prepended
+         after Full/Balanced/Compact filtering at prompt-build time. -->
+    <promptFieldLabel>belief context</promptFieldLabel>
+    <promptFieldInstruction>Treat these as the pawn's event-time beliefs about this event. Do not invent doctrine or imply that belief caused the event.</promptFieldInstruction>
 
     <!-- Categorical precedence. Lower-tier bonuses can never cross these stages in pure code. -->
     <tierScores>

@@ -1,6 +1,7 @@
-// Pure bounded formatter for a resolved belief snapshot. Phase 0 does not attach this block to any
-// event or prompt route. Labels below are stable structured prompt-schema labels; all descriptive
-// phrases and values come from guarded game facts or XML/DefInjected policy.
+// Pure bounded formatter for a resolved belief snapshot. The full block is frozen on DiaryEvent at
+// capture time; prompt detail presets only filter those saved lines and never re-read live doctrine.
+// Labels below are stable structured prompt-schema labels; all descriptive phrases and values come
+// from guarded game facts or XML/DefInjected policy.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,6 +12,14 @@ namespace PawnDiary
     /// <summary>Formats Full/Balanced/Compact belief facts without re-reading live doctrine.</summary>
     internal static class BeliefContextFormatter
     {
+        private static readonly HashSet<string> AllowedLabels = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "ideoligion", "role", "certainty", "certainty trend", "certainty outlook",
+            "previous ideoligion", "current ideoligion", "attempted ideoligion",
+            "relevant precept", "precept meaning", "relevant meme", "structure",
+            "structure outlook", "deity"
+        };
+
         /// <summary>Returns an empty string for an empty resolution and otherwise emits complete bounded lines.</summary>
         public static string Format(
             BeliefStanceResolution resolution,
@@ -84,6 +93,31 @@ namespace PawnDiary
             return JoinWithinBudget(lines, maximumCharacters);
         }
 
+        /// <summary>
+        /// Re-sanitizes a persisted full block with the same line/character budgets used at capture.
+        /// Old saves return empty, malformed labels fail closed, and already-normalized blocks remain
+        /// byte-identical across a save/load round trip.
+        /// </summary>
+        public static string NormalizeSaved(string saved, BeliefPolicySnapshot policy = null)
+        {
+            BeliefPolicySnapshot effective = policy ?? BeliefPolicySnapshot.CreateDefault();
+            return FilterSaved(saved, NarrativeDetailLevelTokens.Full, effective, normalizeOnly: true);
+        }
+
+        /// <summary>
+        /// Projects Full/Balanced/Compact from the event-time saved block. It never reconstructs or
+        /// reevaluates a belief and never truncates a line mid-fact.
+        /// </summary>
+        public static string ForDetail(
+            string saved,
+            string detailLevel,
+            BeliefPolicySnapshot policy = null)
+        {
+            BeliefPolicySnapshot effective = policy ?? BeliefPolicySnapshot.CreateDefault();
+            return FilterSaved(saved, NarrativeDetailLevelTokens.Normalize(detailLevel), effective,
+                normalizeOnly: false);
+        }
+
         /// <summary>Strips rich text/control characters and collapses untrusted multiline text.</summary>
         public static string Clean(string value, int maximumCharacters)
         {
@@ -153,9 +187,84 @@ namespace PawnDiary
             return result.ToString();
         }
 
+        private static string FilterSaved(
+            string saved,
+            string detailLevel,
+            BeliefPolicySnapshot policy,
+            bool normalizeOnly)
+        {
+            if (string.IsNullOrWhiteSpace(saved)) return string.Empty;
+            BeliefDetailBudget budget = policy.DetailBudget(detailLevel);
+            int maximumLines = Math.Min(policy.maximumTotalLines, Math.Max(1, budget.maximumLines));
+            int maximumCharacters = Math.Min(policy.maximumTotalCharacters,
+                Math.Max(64, budget.maximumCharacters));
+            List<string> kept = new List<string>();
+            string[] rows = saved.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+            int stanceCount = 0;
+            for (int i = 0; i < rows.Length && i < 64 && kept.Count < maximumLines; i++)
+            {
+                string row = rows[i] ?? string.Empty;
+                int separator = row.IndexOf(':');
+                if (separator <= 0) continue;
+                string label = Clean(row.Substring(0, separator), 40).ToLowerInvariant();
+                if (!AllowedLabels.Contains(label)) continue;
+                if (!normalizeOnly && !AllowedForDetail(label, detailLevel, budget, ref stanceCount))
+                    continue;
+                string value = Clean(row.Substring(separator + 1), policy.maximumFieldCharacters);
+                if (value.Length == 0) continue;
+                kept.Add(label + ": " + value);
+            }
+            return JoinWithinBudget(kept, maximumCharacters);
+        }
+
+        private static bool AllowedForDetail(
+            string label,
+            string detailLevel,
+            BeliefDetailBudget budget,
+            ref int stanceCount)
+        {
+            if (label == "precept meaning" && !budget.includeDescriptions) return false;
+            if (label == "structure outlook" && !budget.includeDescriptions) return false;
+            if ((label == "structure" || label == "structure outlook") && !budget.includeStructure)
+                return false;
+            if (label == "relevant meme" && !budget.includeMemes) return false;
+            if (label == "deity" && !budget.includeDeity) return false;
+
+            if (detailLevel == NarrativeDetailLevelTokens.Compact)
+            {
+                if (label == "role" || label == "certainty trend" || label == "certainty outlook"
+                    || label == "previous ideoligion" || label == "attempted ideoligion") return false;
+                if (label == "relevant precept")
+                {
+                    stanceCount++;
+                    return stanceCount == 1;
+                }
+            }
+            return true;
+        }
+
         private static string FirstNonBlank(string first, string second)
         {
             return !string.IsNullOrWhiteSpace(first) ? first : second ?? string.Empty;
+        }
+    }
+
+    /// <summary>Stable prompt source and localized-instruction composition for saved belief context.</summary>
+    internal static class BeliefContextPrompt
+    {
+        public const string Source = "BeliefContext";
+
+        /// <summary>Filters one saved block for the requested detail preset, then prefixes guidance.</summary>
+        public static string Compose(
+            string savedContext,
+            string detailLevel,
+            BeliefPolicySnapshot policy,
+            string instruction)
+        {
+            string context = BeliefContextFormatter.ForDetail(savedContext, detailLevel, policy);
+            if (string.IsNullOrWhiteSpace(context)) return string.Empty;
+            if (string.IsNullOrWhiteSpace(instruction)) return context;
+            return instruction.Trim() + "\n" + context;
         }
     }
 }

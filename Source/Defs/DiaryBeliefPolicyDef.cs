@@ -86,6 +86,8 @@ namespace PawnDiary
         public int defaultSelectedStances = 1;
         public int maximumSupportingMemes = 2;
         public int maximumRecentSelections = 16;
+        public int maximumHistoryCorrelationEntries = 256;
+        public int historyCorrelationWindowTicks = 120;
         public int maximumFieldCharacters = 320;
         public int maximumNormalizedTokensPerField = 48;
         public int maximumLexicalFieldsPerDocument = 96;
@@ -128,6 +130,10 @@ namespace PawnDiary
         public float quietReflectionChance = 0.08f;
         public int beliefReflectionCooldownTicks = 900000;
         public int maximumBeliefReflectionsPerQuadrum = 2;
+        // DefInjected model-facing text. These are read on the main thread and copied into the plain
+        // prompt-policy contract; pure/background code never calls Translate().
+        public string promptFieldLabel = "belief context";
+        public string promptFieldInstruction = string.Empty;
         public List<DiaryBeliefTokenScoreDef> tierScores;
         public List<DiaryBeliefTokenScoreDef> eventFieldWeights;
         public List<DiaryBeliefTokenScoreDef> beliefFieldWeights;
@@ -145,6 +151,34 @@ namespace PawnDiary
     {
         private const string DefName = "Diary_BeliefPolicy";
 
+        /// <summary>Fast main-thread gate used by the non-emitting history observer.</summary>
+        public static bool Enabled
+        {
+            get
+            {
+                DiaryBeliefPolicyDef source = DefDatabase<DiaryBeliefPolicyDef>.GetNamedSilentFail(DefName);
+                return source != null && source.enabled;
+            }
+        }
+
+        public static string PromptFieldLabel
+        {
+            get
+            {
+                DiaryBeliefPolicyDef source = DefDatabase<DiaryBeliefPolicyDef>.GetNamedSilentFail(DefName);
+                return PromptTextSanitizer.OneLine(source?.promptFieldLabel);
+            }
+        }
+
+        public static string PromptFieldInstruction
+        {
+            get
+            {
+                DiaryBeliefPolicyDef source = DefDatabase<DiaryBeliefPolicyDef>.GetNamedSilentFail(DefName);
+                return PromptTextSanitizer.LocalizedPromptText(source?.promptFieldInstruction);
+            }
+        }
+
         /// <summary>Returns a fresh immutable snapshot; missing or malformed XML retains code defaults.</summary>
         public static BeliefPolicySnapshot Snapshot()
         {
@@ -160,6 +194,8 @@ namespace PawnDiary
             builder.defaultSelectedStances = source.defaultSelectedStances;
             builder.maximumSupportingMemes = source.maximumSupportingMemes;
             builder.maximumRecentSelections = source.maximumRecentSelections;
+            builder.maximumHistoryCorrelationEntries = source.maximumHistoryCorrelationEntries;
+            builder.historyCorrelationWindowTicks = source.historyCorrelationWindowTicks;
             builder.maximumFieldCharacters = source.maximumFieldCharacters;
             builder.maximumNormalizedTokensPerField = source.maximumNormalizedTokensPerField;
             builder.maximumLexicalFieldsPerDocument = source.maximumLexicalFieldsPerDocument;

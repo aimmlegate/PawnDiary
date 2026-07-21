@@ -207,6 +207,11 @@ namespace PawnDiary
                 memoryContext = MemoryContextPrompt.Compose(
                     pov?.memoryContext,
                     request.policy?.memoryContextInstruction),
+                beliefContext = BeliefContextPrompt.Compose(
+                    pov?.beliefContext,
+                    DetailToken(request.contextDetailLevel),
+                    request.policy?.beliefPolicy,
+                    request.policy?.beliefContextInstruction),
                 lastOpener = pov?.lastOpener,
                 previousEntryEnding = pov?.previousEntryEnding,
                 weapon = pov?.weapon,
@@ -220,6 +225,19 @@ namespace PawnDiary
                 entryText = request.entryText,
                 gameContext = projectedGameContext
             };
+        }
+
+        private static string DetailToken(PromptContextDetailLevel level)
+        {
+            switch (PromptContextSelector.Normalize(level))
+            {
+                case PromptContextDetailLevel.Balanced:
+                    return NarrativeDetailLevelTokens.Balanced;
+                case PromptContextDetailLevel.Compact:
+                    return NarrativeDetailLevelTokens.Compact;
+                default:
+                    return NarrativeDetailLevelTokens.Full;
+            }
         }
 
         private static List<PromptAssemblerField> ToAssemblerFields(List<DiaryPromptFieldPolicy> fields)

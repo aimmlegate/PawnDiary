@@ -42,7 +42,7 @@ collector kind (hediff, capacity, Royal title, Ideology role, event window, obse
 | Save/load scenario | Disposable test save plus two-phase RimTest suite | Real Scribe round trip, index rebuilds, pending-state normalization, archive persistence, and session reset. |
 | Manual visual checks | `tests/SAVE_COMPATIBILITY_SMOKETEST.md` plus a new UI checklist | Immediate-mode rendering, resolution/accessibility layouts, scroll behavior, and screenshots that are not stable enough for unit assertions. |
 
-`tests/BeliefContextTests` is the assembly-free Master Wave 10 / Ideology Phase-0 harness. Its 193
+`tests/BeliefContextTests` is the assembly-free Master Wave 10 / Ideology Phases 0–1 harness. Its 222
 assertions lock missing/inactive/unknown-knowledge silence; exact source, thought, history, issue, and
 meme precedence; synthetic mod IDs; guarded phrase/token/fuzzy matching; dynamic common-token,
 confidence, explicit below-threshold diagnostics, and runner-up rejection; reused evidence expansion;
@@ -51,8 +51,11 @@ independent second-slot behavior and hard caps; certainty boundaries; repetition
 body/organ/cannibal-meal/raid/ritual scenarios; stable same-seed ordering plus distinct-seed within-tier
 diversity; unknown-topic compatibility; formatter budgets, Compact fallback, mutation-only output, and
 sanitation; deterministic alternative-deity selection; empty default corrections; and
-first-scan/reflection-policy shell decisions. It file-links only plain Narrative/Belief source and has
-no RimWorld, Verse, Unity, or DLC reference.
+first-scan/reflection-policy shell decisions. Phase 1 also pins explicit thought/body evidence
+construction, exact source-precept identity, POV-detached copies, different ideology outcomes for one
+event, unmatched-event neutrality, correlation-text valence, bounded exact-pawn HistoryEvent storage,
+staleness/non-consumption, and stable sanitized save normalization across Full/Balanced/Compact detail.
+It file-links only plain Narrative/Belief source and has no RimWorld, Verse, Unity, or DLC reference.
 
 ### 2.1 `PawnDiaryRimTestScope`
 
@@ -1010,11 +1013,13 @@ persisted page to resolve as important. This guards the domain-classification bo
 the PairImportant/SoloImportant templates; retaining outcome fields in XML alone is insufficient if
 the saved event is accidentally recovered through the Interaction domain.
 
-Ideology Phase 0 has no loaded-game row: it adds no collector, hook, save field, event attachment,
-prompt route, page, or runtime DLC adapter. Its automated exit gate is the standalone
-`BeliefContextTests` suite, policy-XML parse, and core Debug build. Loaded/no-Ideology and event-route
-coverage begins only when Phase 1 introduces an impure runtime boundary; no compile result is counted
-as manual or loaded-game acceptance.
+Ideology Phase 1 adds `PawnDiaryIdeologyPhase1FixtureTests` plus focused DLC-safety and Scribe fixtures.
+The compiled cases exercise a real typed `PreceptComp_Thought`, exact `Thought.sourcePrecept` capture,
+one frozen thought-event context, a real `HistoryEventsManager.RecordEvent` call that creates no page,
+exact-pawn bounded correlation, inactive/no-Ideo silence, and stable sanitized per-POV Scribe
+round-trips. The current 357-test RimTest assembly builds with 0 warnings/errors to a temporary output
+outside the tracked test DLL. RimWorld has not been launched for this slice, so these cases are not
+recorded as loaded-game passes and no manual/in-game acceptance row is closed.
 
 ## 8. Implementation Order
 

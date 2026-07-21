@@ -106,12 +106,15 @@ namespace PawnDiary.Ingestion
             string label,
             string text,
             string instruction,
-            string gameContext)
+            string gameContext,
+            BeliefEventEvidence beliefEvidence = null)
         {
             return historicalEventTick >= 0
                 ? sink.AddSoloEvent(
-                    pawn, otherPawn, defName, label, text, instruction, gameContext, historicalEventTick)
-                : sink.AddSoloEvent(pawn, otherPawn, defName, label, text, instruction, gameContext);
+                    pawn, otherPawn, defName, label, text, instruction, gameContext,
+                    historicalEventTick, beliefEvidence)
+                : sink.AddSoloEvent(pawn, otherPawn, defName, label, text, instruction,
+                    gameContext, beliefEvidence);
         }
 
         /// <summary>Creates a pair event, preserving a staged signal's original chronology when set.</summary>
@@ -124,7 +127,8 @@ namespace PawnDiary.Ingestion
             string initiatorText,
             string recipientText,
             string instruction,
-            string gameContext)
+            string gameContext,
+            BeliefEventEvidence beliefEvidence = null)
         {
             return historicalEventTick >= 0
                 ? sink.AddPairwiseEvent(
@@ -136,7 +140,8 @@ namespace PawnDiary.Ingestion
                     recipientText,
                     instruction,
                     gameContext,
-                    historicalEventTick)
+                    historicalEventTick,
+                    beliefEvidence)
                 : sink.AddPairwiseEvent(
                     initiator,
                     recipient,
@@ -145,7 +150,8 @@ namespace PawnDiary.Ingestion
                     initiatorText,
                     recipientText,
                     instruction,
-                    gameContext);
+                    gameContext,
+                    beliefEvidence);
         }
 
         /// <summary>

@@ -60,6 +60,7 @@ namespace PawnDiary
         public string relationship;
         public string narrativeContext;
         public string memoryContext;
+        public string beliefContext;
         public string lastOpener;
         public string previousEntryEnding;
         public string weapon;
@@ -202,8 +203,11 @@ namespace PawnDiary
             if (Eq(source, "Setting")) return v.setting;
             if (Eq(source, "Tone")) return v.tone;
             if (Eq(source, "Relationship")) return v.relationship;
-            if (Eq(source, NarrativeContextPrompt.Source)) return v.narrativeContext;
-            if (Eq(source, MemoryContextPrompt.Source)) return v.memoryContext;
+            // Literal schema tokens keep this tiny pure renderer linkable by prompt-lab without
+            // pulling in the separate narrative, memory, and belief policy implementations.
+            if (Eq(source, "NarrativeContext")) return v.narrativeContext;
+            if (Eq(source, "MemoryContext")) return v.memoryContext;
+            if (Eq(source, "BeliefContext")) return v.beliefContext;
             if (Eq(source, "LastOpener")) return v.lastOpener;
             if (Eq(source, "PreviousEntryEnding")) return v.previousEntryEnding;
             if (Eq(source, "Weapon")) return v.weapon;

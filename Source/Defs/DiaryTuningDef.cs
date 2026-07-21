@@ -399,12 +399,6 @@ namespace PawnDiary
         public List<string> bodyPartTierOverrideArchotech = new List<string>();
         public List<string> bodyPartCravesTraitDefNames = new List<string> { "Transhumanist" };
         public List<string> bodyPartDespisesTraitDefNames = new List<string> { "BodyPurist" };
-        public List<string> bodyPartApprovePreceptDefNames = new List<string> { "BodyMod_Approved" };
-        public List<string> bodyPartDespisePreceptDefNames = new List<string>
-        {
-            "BodyMod_Disapproved",
-            "BodyMod_Abhorrent"
-        };
         public List<string> bodyPartInhumanizedHediffDefNames = new List<string> { "Inhumanized" };
         public float bodyPartCrudeEfficiencyBelow = BodyPartEventPolicy.DefaultCrudeEfficiencyBelow;
         public float bodyPartProstheticEfficiencyMax = BodyPartEventPolicy.DefaultProstheticEfficiencyMax;
