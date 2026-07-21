@@ -1,5 +1,14 @@
 # Changelog
 
+- **2026-07-21 — Restored mixed-build RimTest signal-factory compatibility.** The first loaded
+  Phase-1 run used the intentionally preserved 354-test RimTest DLL beside the new core and exposed a
+  `MissingMethodException`: its mature-birth fallback still referenced the pre-Phase-1
+  `DiarySignal.CreateSoloEvent` signature. Restored the exact legacy solo and pair overloads as thin
+  forwards to the evidence-aware factories and added a loaded reflection guard, bringing the current
+  source assembly to 358 compiled tests. Capture, deduplication, belief evaluation, and the expected
+  parked-gravship Odyssey acceptance failure are unchanged. The protected deployed RimTest DLL remains
+  untouched; the new Ideology fixtures require a separately deployed current test build.
+
 - **2026-07-21 — Completed Ideology Phase 1 guarded event-time belief context.** Added the
   double-guarded `DlcContext.CaptureBeliefSnapshot` adapter for active ideology, certainty/role,
   memes/structure, issues/precepts, exact source/thought/history correlations, and mechanical thought

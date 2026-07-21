@@ -1125,7 +1125,7 @@ per already-eligible POV and persist normalized `beliefContext`; ordinary non-ev
 unchanged. The non-emitting HistoryEvent observer uses a bounded exact-pawn/tick cache, developer
 structural/lexical previews use the normal saved prompt seam, body-mod ID shortcuts are removed, and
 Full/Balanced/Compact plus prompt-lab golden coverage passes. Standalone belief tests pass 222
-assertions; focused capture/pipeline suites pass 713/2,790; the core and 357-test RimTest assemblies
+assertions; focused capture/pipeline suites pass 713/2,790; the core and 358-test RimTest assemblies
 build 0/0. The complete verification hook passes all 15 pure suites at 6,838 assertions. RimWorld was
 not launched, so live fixtures are compiled but not recorded as executed.
 
