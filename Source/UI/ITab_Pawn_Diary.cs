@@ -122,6 +122,9 @@ namespace PawnDiary
         // block (mock/prompt-suite/dev-preview rows) so PawnControlsHeight can reserve its space.
         private static float WritingStyleIconSize => UiStyle.writingStyleIconSize;
         private static float WritingStyleIconRightGap => UiStyle.writingStyleIconRightGap;
+        // Horizontal clearance kept between the header's rightmost icon and the window's right edge, so
+        // the icons never sit under the window close (X) button when the filter panel is hidden.
+        private const float HeaderCloseButtonClearance = 34f;
         private static float WritingStyleIconAlpha => UiStyle.writingStyleIconAlpha;
         private static float WritingStyleIconHoverAlpha => UiStyle.writingStyleIconHoverAlpha;
         // Stable display-only estimate of the dev block height (4 toggle rows + 3 full-width fixture
@@ -440,16 +443,6 @@ namespace PawnDiary
             }
 
             Rect rect = new Rect(0f, 0f, size.x, size.y).ContractedBy(12f);
-            // Seasonal background wash across the WHOLE tab, painted first so it sits behind the header,
-            // the journal cards, and the filter panel. This reads in every gap and margin — not just the
-            // thin strips between cards, where an earlier per-viewport wash was invisible. It uses the
-            // smoothed color the journal pass computed last frame (target = season at the top of the
-            // viewport); one frame of lag is imperceptible.
-            if (seasonWashColor.a > 0f)
-            {
-                Widgets.DrawBoxSolid(rect, seasonWashColor);
-            }
-
             // Singleton component that owns all diary state for the current game.
             DiaryGameComponent component = DiaryGameComponent.Instance;
             component?.AcknowledgeGeneratedEntriesFor(pawn);
@@ -487,23 +480,23 @@ namespace PawnDiary
                 ? new Rect(rect.x, rect.y, Mathf.Max(0f, rect.width - panelWidth - FilterPanelGap), rect.height)
                 : rect;
 
-            Rect headerRect = new Rect(journalRect.x, journalRect.y, journalRect.width, 34f);
-            float headerRight = journalRect.xMax;
-            Rect writingIndicatorRect = Rect.zero;
-            if (generatingCount > 0)
+            // Seasonal background wash — scoped to the JOURNAL column only (behind its header and cards),
+            // NOT the right-hand filter/dev panel, which reads better untinted. It uses the smoothed
+            // color the journal pass computed last frame (target = season at the top of the viewport);
+            // one frame of lag is imperceptible.
+            if (seasonWashColor.a > 0f)
             {
-                writingIndicatorRect = new Rect(
-                    journalRect.xMax - StatusBadgeRightPadding - StatusBadgeWidth,
-                    journalRect.y + 3f,
-                    StatusBadgeWidth,
-                    StatusBadgeHeight);
-                headerRight = writingIndicatorRect.x - 8f;
+                Widgets.DrawBoxSolid(journalRect, seasonWashColor);
             }
 
-            // Filter-panel toggle: a compact list icon that shows/hides the right-hand sidebar. It sits
-            // at the far right of the journal header — just after the writing-style icon — so the header
-            // controls stay grouped at the top-right of the journal column, clear of RimWorld's
-            // inspect-pane close button. Drawn first so it takes the rightmost slot.
+            Rect headerRect = new Rect(journalRect.x, journalRect.y, journalRect.width, 34f);
+            // Start the right-side icon cluster clear of the window's close (X) button. When the filter
+            // panel is hidden the journal spans the full width, so without this clamp the icons would sit
+            // under the X in the top-right corner.
+            float headerRight = Mathf.Min(journalRect.xMax, rect.xMax - HeaderCloseButtonClearance);
+
+            // Filter-panel toggle: a compact funnel icon that shows/hides the right-hand sidebar. Drawn
+            // first so it takes the rightmost slot; the writing-style icon sits to its left.
             {
                 float toggleSize = Mathf.Max(1f, WritingStyleIconSize);
                 Rect toggleRect = new Rect(
@@ -537,14 +530,27 @@ namespace PawnDiary
             }
 
             headerRect.width = Mathf.Max(0f, headerRight - journalRect.x);
-            if (generatingCount > 0)
-            {
-                DrawWritingIndicator(writingIndicatorRect);
-            }
 
             Text.Font = GameFont.Medium;
-            Widgets.Label(headerRect, "PawnDiary.Tab.DiaryHeader".Translate(pawn.LabelShortCap));
+            string headerLabel = "PawnDiary.Tab.DiaryHeader".Translate(pawn.LabelShortCap);
+            Widgets.Label(headerRect, headerLabel);
+            float headerLabelWidth = Text.CalcSize(headerLabel).x;
             Text.Font = GameFont.Small;
+
+            // "Writing pages..." indicator now sits just after the title on the LEFT, so it never crowds
+            // the top-right icon cluster or the window close button. Clamped to stay left of the icons.
+            if (generatingCount > 0)
+            {
+                float indicatorX = Mathf.Max(
+                    journalRect.x,
+                    Mathf.Min(journalRect.x + headerLabelWidth + 12f, headerRight - StatusBadgeWidth - 4f));
+                Rect writingIndicatorRect = new Rect(
+                    indicatorX,
+                    journalRect.y + Mathf.Max(0f, (headerRect.height - StatusBadgeHeight) * 0.5f),
+                    StatusBadgeWidth,
+                    StatusBadgeHeight);
+                DrawWritingIndicator(writingIndicatorRect);
+            }
 
             // Dev tools and the year selector normally live in the right-hand panel, so the journal
             // column opens directly under the header (a fixed 36px title row plus the usual gap).
@@ -614,8 +620,9 @@ namespace PawnDiary
                 return;
             }
 
-            // Subtract 16f to leave room for the scrollbar grip inside the scroll view.
-            float viewWidth = outRect.width - 16f;
+            // Subtract 16f for the scrollbar grip, plus a thin gutter for the season-band strip drawn
+            // just left of it (see DrawSeasonScrollStrip).
+            float viewWidth = outRect.width - 16f - SeasonScrollStripGutter;
             float animationDelta = ExpansionAnimationDelta();
             List<DiaryNameHighlight> nameHighlights = NameHighlightsFor(pawn);
             int layoutProcessed;
@@ -761,6 +768,60 @@ namespace PawnDiary
                 }
 
                 Widgets.EndScrollView();
+
+                // Season-band strip in the reserved gutter left of the scrollbar: maps the year's
+                // entries onto the full scroll height, colored by season, so you can see at a glance
+                // where each season sits. Drawn after the scroll view so it overlays the fixed gutter.
+                DrawSeasonScrollStrip(outRect, ordered, entryOffsets, heights, viewHeight);
+            }
+        }
+
+        // Season-band strip geometry (a thin colored minimap in the gutter left of the scrollbar).
+        private const float SeasonScrollStripWidth = 4f;
+        private const float SeasonScrollStripGutter = 7f;
+
+        /// <summary>
+        /// Draws a thin vertical strip in the gutter left of the scrollbar, coloring bands by the season
+        /// of the entries at each depth so the year's seasons are visible at a glance. Each contiguous
+        /// run of same-season entries becomes one band, mapped from content space onto the viewport
+        /// height. Undated/unknown-season runs leave a gap.
+        /// </summary>
+        private void DrawSeasonScrollStrip(Rect outRect, List<DiaryEntryView> ordered, float[] offsets, float[] heights, float viewHeight)
+        {
+            int count = ordered?.Count ?? 0;
+            if (count == 0 || viewHeight <= 0f || outRect.height <= 0f)
+            {
+                return;
+            }
+
+            float stripX = outRect.xMax - 16f - SeasonScrollStripGutter + 2f;
+            float scale = outRect.height / viewHeight;
+
+            Season bandSeason = DiaryQuadrumDivider.SeasonFor(ordered[0]);
+            float bandTop = offsets[0];
+            for (int k = 1; k <= count; k++)
+            {
+                Season next = k < count ? DiaryQuadrumDivider.SeasonFor(ordered[k]) : Season.Undefined;
+                if (k == count || next != bandSeason)
+                {
+                    float bandBottom = offsets[k - 1] + heights[k - 1];
+                    Color wash = UiStyle.SeasonWashColor(bandSeason);
+                    if (wash.a > 0f)
+                    {
+                        float y0 = outRect.y + bandTop * scale;
+                        float y1 = outRect.y + bandBottom * scale;
+                        // The wash alpha is deliberately subtle; the strip uses a firmer alpha so the
+                        // bands read clearly against the dark scroll gutter.
+                        Color band = new Color(wash.r, wash.g, wash.b, 0.9f);
+                        Widgets.DrawBoxSolid(new Rect(stripX, y0, SeasonScrollStripWidth, Mathf.Max(1f, y1 - y0)), band);
+                    }
+
+                    if (k < count)
+                    {
+                        bandSeason = next;
+                        bandTop = offsets[k];
+                    }
+                }
             }
         }
 

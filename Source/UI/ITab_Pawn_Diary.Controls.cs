@@ -307,12 +307,19 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Opens one writing-style dialog for the pawn, avoiding duplicate editors that could save over
-        /// each other.
+        /// Toggles the writing-style dialog for the pawn: a second click on the header icon closes the
+        /// editor that is already open, otherwise it opens one (still avoiding duplicate editors that
+        /// could save over each other).
         /// </summary>
         private static void OpenWritingStyleDialog(Pawn pawn, DiaryGameComponent component)
         {
-            if (!Find.WindowStack.Windows.OfType<Dialog_PawnWritingStyle>().Any(w => w.IsFor(pawn)))
+            Dialog_PawnWritingStyle existing =
+                Find.WindowStack.Windows.OfType<Dialog_PawnWritingStyle>().FirstOrDefault(w => w.IsFor(pawn));
+            if (existing != null)
+            {
+                existing.Close();
+            }
+            else
             {
                 Find.WindowStack.Add(new Dialog_PawnWritingStyle(pawn, component));
             }

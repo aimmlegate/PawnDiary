@@ -255,7 +255,7 @@ namespace PawnDiary
             bool hover = Mouse.IsOver(actionRect);
 
             Color oldColor = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, hover ? 0.9f : 0.62f);
+            GUI.color = new Color(1f, 1f, 1f, hover ? 0.95f : 0.75f);
             GUI.DrawTexture(iconRect, DiaryButtonTextures.Copy);
             if (labelWidth > 0f)
             {

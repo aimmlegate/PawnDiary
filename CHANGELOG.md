@@ -1,5 +1,17 @@
 # Changelog
 
+- **2026-07-21 — More diary UI tuning from in-game feedback.** (1) **Scoped the seasonal wash to the
+  journal column only** (behind its header and cards) instead of the whole tab, so the right filter/dev
+  panel reads untinted. (2) **Added a season-band strip** in a thin gutter just left of the scrollbar:
+  the year's entries are mapped onto the scroll height and colored by season (`DrawSeasonScrollStrip`),
+  so you can see at a glance where spring/summer/fall/winter sit. (3) **Kept the header icons clear of
+  the window close (X) button** (`HeaderCloseButtonClearance`) so they no longer overlap it when the
+  filter panel is hidden. (4) **The writing-style header icon now toggles** — a second click closes the
+  editor it opened. (5) **Moved the "writing pages…" indicator** from the crowded top-right to just
+  after the header title. (6) **Brightened the footer copy (idle 0.62→0.75) and regenerate (lighter
+  tint at 0.72 alpha) icons** further. All values remain XML-tunable. Debug build 0/0; all 14 pure
+  suites green; no in-game acceptance run is claimed.
+
 - **2026-07-21 — Diary UI polish from in-game feedback.** (1) **Brightened several dim action icons:**
   the header writing-style/filter icons (`writingStyleIconAlpha` 0.42→0.55, hover 0.82→0.90), the
   per-entry regenerate icon (`regenerateEntryButtonColor` alpha 0.46→0.60), and the "Copy entry" icon
