@@ -1,6 +1,7 @@
 # Pawn Diary — Ideoligion Support Implementation Plan
 
-Status: design approved for later implementation; no production behavior is changed by this file.
+Status: Phase 0 pure resolver/policy contract completed on 2026-07-21; Phases 1–6 remain pending.
+Phase 0 changes no live event route, save data, prompt route, or loaded-game behavior.
 
 Scheduling authority: implement Ideology phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Ideology.
@@ -1054,6 +1055,14 @@ update docs/changelog, build, inspect diff, and stop if unrelated user changes o
 
 ### Phase 0 — Complete pure resolver and policy contract
 
+> **Implementation status (2026-07-21): automated code exit gate complete.** The detached contracts,
+> immutable XML-policy snapshot, structural/lexical resolver, bounded formatter/reflection shells, and
+> assembly-free `BeliefContextTests` now exist. The suite passes 172 assertions with arbitrary synthetic
+> Def identities, the shipped correction list is empty, the policy XML parses, and the core Debug build
+> succeeds. No RimWorld/Verse/Unity/DLC reference enters the pure project. No live collector, adapter,
+> hook, event route, prompt field, page, Scribe field, or scanner was added; Phase 1 and later remain
+> pending and no loaded-game/manual acceptance is claimed.
+
 1. Add `BeliefContracts`, including `BeliefResolutionRequest`, `ResolvedBeliefStance`, and
    `BeliefStanceResolution`, and `BeliefCorrelationFact`.
 2. Add the `DiaryBeliefPolicyDef` schema/fallbacks and immutable pure snapshot for tier scores, lexical
@@ -1074,6 +1083,9 @@ update docs/changelog, build, inspect diff, and stop if unrelated user changes o
 Exit gate: arbitrary synthetic mod IDs resolve through structural/text facts, ambiguous/common-token
 fixtures return empty, and organ/cannibalism/unrelated-belief scenarios pass; no RimWorld types leak
 into the pure project; XML loads; docs describe the inactive policy contract.
+
+**Exit-gate result:** complete for automated Phase-0 code/XML/tests only. Phase 1 is the next permitted
+Ideology slice and is still pending.
 
 Phase 0 may be implemented beside Narrative Continuity N0. Narrative Continuity N1 must exist before
 Phase 1 persists ordinary event enrichment, and Narrative Continuity N4 must be included in or precede

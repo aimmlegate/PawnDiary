@@ -1,5 +1,38 @@
 # Changelog
 
+- **2026-07-21 — Completed Master Wave 10 / Ideology Phase 0’s automated pure-contract gate.** Added
+  detached belief snapshot, precept, issue, meme, deity, correlation, mutation, event-evidence,
+  certainty, request, and resolution contracts under `Source/Pipeline/Belief/`. The request reuses the
+  existing `NarrativeEvidence` owner for facet, salience, per-POV knowledge, source/topic, category, and
+  deterministic-seed semantics. `EventRelativeStanceResolver` now fails closed without explicit POV
+  knowledge, resolves exact source-precept identity before exact thought/history correlations and
+  direct issue/meme identity, and permits the bounded `BeliefLexicalMatcher` only after structural
+  evidence has no answer. Lexical fallback normalizes guarded text, scores phrases/tokens plus a
+  conservative fuzzy path, dynamically suppresses common tokens, requires confidence and runner-up
+  separation, and never infers polarity from prose. Every output remains intersected with the detached
+  visible live-doctrine snapshot; same-issue variants collapse, ordinary selection is normally one,
+  the second slot requires independent evidence and its own threshold, and the hard cap is two. A local
+  stable seed provides deterministic weighted choice without consuming gameplay randomness.
+
+  Added the DLC-neutral singleton `DiaryBeliefPolicyDef` plus an immutable deep-copied pure snapshot.
+  XML owns tier/field scores, strength/repetition weights, lexical thresholds/margins, certainty bands
+  and DefInjected-ready phrases, semantic aliases, exact event-evidence vocabulary, exclusions,
+  formatter/reflection-shell caps, and an intentionally empty compatibility-correction list. No
+  vanilla, DLC, or mod precept/issue/meme catalog was added. Pure formatter, certainty/baseline, and
+  future reflection-policy shells are present but unused. This phase adds no live Ideology collector,
+  `DlcContext` adapter, Harmony hook, event attachment, prompt route, page, Scribe field, scanner, or
+  Narrative N3-I candidate; Phase 1 and later remain pending, and no RimWorld/manual acceptance is
+  claimed or automated.
+
+  The new assembly-free `BeliefContextTests` passes 172 assertions covering inactive/empty/knowledge
+  gates, synthetic mod IDs, every structural tier, structural-over-lexical precedence, lexical guards,
+  live-doctrine intersection, redundancy/caps, second-slot independence, repetition, certainty,
+  malformed input, unknown topics, body/organ/cannibal-meal/raid/ritual cases, formatting, corrections,
+  and first-scan/reflection shells. The repository hook now runs 15 pure suites totaling 6,760
+  assertions; all 93 shipped XML files and 25 C# project files parse, and the Debug runtime build
+  completes with 0 warnings and 0 errors. `PawnDiary.dll` is rebuilt. Royalty Phase 5’s recorded
+  354/354 result across 57/57 suites and every deferred Royalty TODO/pending item remain unchanged.
+
 - **2026-07-21 — Added a subtle seasonal background wash to the diary journal and filter panel.** As
   you scroll, a very low-alpha color wash behind the cards and the right-hand filter panel eases
   between seasons — spring green, summer gold, autumn orange, winter blue — following the season of the
