@@ -274,6 +274,44 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// The test assembly is deployed separately from the core DLL. Preserve the exact factory
+        /// MemberRefs used by a pre-Ideology build so a temporarily mixed install fails open instead
+        /// of losing a staged mature-birth fallback to MissingMethodException.
+        /// </summary>
+        [Test]
+        public static void LegacySignalFactorySignaturesRemainResolvable()
+        {
+            MethodInfo solo = typeof(DiarySignal).GetMethod(
+                "CreateSoloEvent",
+                PrivateInstance,
+                null,
+                new[]
+                {
+                    typeof(DiaryGameComponent), typeof(Pawn), typeof(Pawn),
+                    typeof(string), typeof(string), typeof(string), typeof(string), typeof(string)
+                },
+                null);
+            MethodInfo pair = typeof(DiarySignal).GetMethod(
+                "CreatePairwiseEvent",
+                PrivateInstance,
+                null,
+                new[]
+                {
+                    typeof(DiaryGameComponent), typeof(Pawn), typeof(Pawn),
+                    typeof(string), typeof(string), typeof(string), typeof(string), typeof(string),
+                    typeof(string)
+                },
+                null);
+
+            PawnDiaryRimTestScope.Require(
+                solo != null && solo.ReturnType == typeof(DiaryEvent),
+                "The legacy solo signal factory signature is missing from the core assembly.");
+            PawnDiaryRimTestScope.Require(
+                pair != null && pair.ReturnType == typeof(DiaryEvent),
+                "The legacy pair signal factory signature is missing from the core assembly.");
+        }
+
+        /// <summary>
         /// A saved unnamed birth wakes through the production naming poll, resolves the live child's final
         /// visible name, emits once at the original tick with frozen writer context, and removes ownership.
         /// </summary>

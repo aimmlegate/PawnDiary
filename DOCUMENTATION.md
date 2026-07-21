@@ -985,6 +985,12 @@ A `DiarySignal` is the impure capture+emit half of one source. Pure decision dat
 formatting stay in `Source/Capture/Events/*EventData.cs`, covered by standalone tests where possible.
 Colony-wide sources extend `DiaryFanoutSignal`.
 
+The evidence-aware solo/pair factory overloads retain the exact pre-Ideology signatures as forwarding
+shims. The optional RimTest DLL is deployed separately from the core runtime, so this narrow binary-
+compatibility seam lets a temporarily mixed build release already-staged fallback signals instead of
+throwing `MissingMethodException`. It does not change capture, deduplication, or belief resolution;
+normal test runs should still deploy the matching current RimTest assembly.
+
 For fan-out events, the dispatcher checks the colony key once. It then runs each per-pawn child
 through the same path and marks the colony key only after at least one entry emits.
 
