@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-07-21 — Diary UI round-5: global window wash, removed the season scroll strip.** The seasonal
+  background wash is now painted **globally across the whole diary window** (edge to edge, behind the
+  header, the journal, and the right-hand filter/dev panel), so the entire window shifts color with the
+  season instead of only the journal column. The **season-band scroll strip was removed** entirely,
+  along with its scrollbar-gutter reservation — the full content width returns to the entries. The wash
+  still follows the season at the top of the viewport and crossfades as you scroll (`UpdateSeasonWash`).
+  Debug build 0/0; no in-game acceptance run is claimed.
+
 - **2026-07-21 — Diary UI round-4 tweaks from in-game feedback.** (1) The **seasonal wash now fills the
   full height** of the journal reading area (behind the cards and the empty space below a short page),
   instead of stopping at the last entry. (2) **Removed the stub "Apply" button** from the filter panel —
