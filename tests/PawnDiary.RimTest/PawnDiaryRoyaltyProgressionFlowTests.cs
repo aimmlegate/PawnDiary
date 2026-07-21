@@ -187,6 +187,27 @@ namespace PawnDiary.RimTests
                 succession.gameContext.IndexOf("correlation", StringComparison.Ordinal) < 0
                     && succession.gameContext.IndexOf("wasInherited", StringComparison.Ordinal) < 0,
                 "Internal succession proof metadata leaked into the prompt context.");
+            List<NarrativeEvidence> evidence =
+                succession.NarrativeEvidenceForRole(DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(evidence.Count == 1
+                    && evidence[0].facet == NarrativeFacetTokens.IdentityTransition
+                    && evidence[0].phase == "succession"
+                    && evidence[0].subjectKind == NarrativeSubjectKindTokens.Pawn
+                    && evidence[0].subjectId == pawn.GetUniqueLoadID()
+                    && evidence[0].sourceDomain
+                        == RoyaltyNarrativeEvidenceFactory.SuccessionSourceDomain
+                    && evidence[0].beliefTopics.Contains("death")
+                    && string.IsNullOrEmpty(evidence[0].arcKey),
+                "The committed succession page did not retain exact heir-POV N3-R identity evidence.");
+            string titleKeyPrefix = "royalty|title|" + pawn.GetUniqueLoadID() + "|"
+                + faction.GetUniqueLoadID() + "|";
+            PawnDiaryRimTestScope.Require(
+                succession.NarrativeSelectedCandidateKeysForRole(DiaryEvent.InitiatorRole)
+                    .Exists(key => key != null
+                        && key.StartsWith(titleKeyPrefix, StringComparison.Ordinal))
+                    && !string.IsNullOrWhiteSpace(
+                        succession.NarrativeContextForRole(DiaryEvent.InitiatorRole)),
+                "The succession page did not select the existing exact-POV Royalty title provider.");
 
             scope.RequireNoNewEvent(() =>
                 scope.Component.CompleteRoyalMutationCause(bestowing, pawn, faction));

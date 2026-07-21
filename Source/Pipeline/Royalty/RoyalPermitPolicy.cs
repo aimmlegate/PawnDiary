@@ -139,6 +139,67 @@ namespace PawnDiary
             return result;
         }
 
+        /// <summary>
+        /// Builds one source-owned identity row for an exact allowlisted successful permit use. The
+        /// evidence can let the existing Royalty title provider describe the caller's current authority;
+        /// it never authorizes a page or claims that the requested aid, shuttle, or strike finished.
+        /// </summary>
+        public static NarrativeEvidence BuildNarrativeEvidence(
+            string eventId,
+            int tick,
+            string povPawnId,
+            string povRole,
+            RoyalPermitUseSnapshot use,
+            RoyaltyPolicySnapshot policy)
+        {
+            string safeEventId = SafeId(eventId);
+            string safePovPawnId = SafeId(povPawnId);
+            if (safeEventId.Length == 0 || safePovPawnId.Length == 0 || tick < 0
+                || !ValidUse(use) || tick != use.tick
+                || !string.Equals(safePovPawnId, use.ownerPawnId, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            // Re-check the exact XML mapping at the evidence boundary. A forged/malformed DTO, routine
+            // vanilla permit, or unknown modded permit must not acquire narrative authority merely by
+            // carrying a known family token. Explicit XML opt-in remains the only extension mechanism.
+            string mappedFamily = FamilyFor(use.permitDefName, policy);
+            string eventDefName = EventDefNameForFamily(mappedFamily);
+            if (mappedFamily.Length == 0 || eventDefName.Length == 0
+                || !string.Equals(mappedFamily, use.permitFamilyToken, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            List<string> topics = new List<string> { "authority", "service" };
+            if (mappedFamily == RoyalPermitFamilyTokens.MilitaryAid
+                || mappedFamily == RoyalPermitFamilyTokens.OrbitalStrike
+                || mappedFamily == RoyalPermitFamilyTokens.OrbitalSalvo)
+            {
+                topics.Add("violence");
+            }
+
+            return new NarrativeEvidence
+            {
+                eventId = safeEventId,
+                tick = tick,
+                povPawnId = safePovPawnId,
+                povRole = (povRole ?? string.Empty).Trim(),
+                facet = NarrativeFacetTokens.IdentityTransition,
+                phase = mappedFamily,
+                subjectKind = NarrativeSubjectKindTokens.Pawn,
+                subjectId = use.ownerPawnId.Trim(),
+                subjectLabel = CleanText(use.ownerPawnName),
+                arcKey = string.Empty,
+                beliefTopics = topics,
+                salience = NarrativeSalienceTokens.Meaningful,
+                pawnCanKnow = true,
+                sourceDomain = RoyaltyNarrativeEvidenceFactory.PermitSourceDomain,
+                sourceDefName = eventDefName
+            };
+        }
+
         /// <summary>Maps a reviewed family to its stable saved event Def name.</summary>
         public static string EventDefNameForFamily(string family)
         {

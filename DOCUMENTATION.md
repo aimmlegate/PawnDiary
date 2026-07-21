@@ -187,7 +187,7 @@ Generation starts only after an event exists in the saved hot store.
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
 
-**Narrative Continuity (Master Waves 1–8 / N1 + N2-B + N2-O + N3-B identity + N3-R core + N3-A + N3-O)** supplies the shared persistence and
+**Narrative Continuity (Master Waves 1–9 / N1 + N2-B + N2-O + N3-B identity + N3-R + N3-A + N3-O)** supplies the shared persistence and
 optional prompt seam for DLC integrations. Each first-person event POV can save bounded, explicitly
 known evidence, prose-free references, selected-candidate keys, and frozen `narrativeContext`; old
 saves normalize all four to empty. `NarrativeContextBuilder` snapshots
@@ -234,12 +234,18 @@ and current faction-title candidates. Persona facts require the exact saved pers
 subject; title facts require the exact POV pawn plus Royalty title-domain or authority/status/duty
 evidence. A Biotech gene/body identity event therefore cannot pull generic rank context. Title
 evidence uses the shared `identity_transition` facet and keeps title/faction as event facts rather than
-inventing a localized title arc. Phase 2 persona lifecycle pages now attach exact `bond_lifecycle`
-evidence after their canonical `DiaryEvent` exists, so those pages can select the saved bond lens.
-Title identity remains inert until its Phase-4 owner attaches exact title evidence. Phase 7 extends
-N3-R with one exact active Royal Ascent court-pressure candidate. It requires the saved shared Ascent
-arc or source-owned authority/status/duty/hospitality evidence for the same POV; it shades an existing
-page and never authorizes one. N3-A replaces the Anomaly stub with a bounded pure provider for only
+inventing a localized title arc. Persona lifecycle and title-transition pages attach exact evidence
+only after their canonical `DiaryEvent` exists. The committed succession page names its heir and
+deceased pawn only from the exact vanilla succession fact, keeps the heir as the evidence subject, and
+reuses the same current-title provider without inventing a title arc. Dramatic permit pages now attach
+one exact caller-POV authority row only after the successful-use edge; the pure factory rechecks the
+event tick, owner, reviewed family, and XML permit mapping, so routine, unknown, forged-family, and
+unlisted modded permits remain continuity-silent unless XML explicitly opts them into a reviewed
+family. Phase 7 supplies exact started/terminal `journey_chapter` evidence on one shared Royal Ascent
+arc plus one exact active court-pressure candidate. Acceptance means commitment only; it does not
+claim arrival, escape, credits, or another outcome. Pressure requires that shared arc or source-owned
+authority/status/duty/hospitality evidence for the same POV, shades an existing page, and never
+authorizes one. N3-A replaces the Anomaly stub with a bounded pure provider for only
 five source-owned visible boundaries: exact ghoul transformation, exact containment breach,
 Stirring/Waking/Void Awakened monolith chapters, and verified creepjoiner surgical disclosure,
 rejection, aggression, or departure. Ghoul and creepjoiner facts map to exact-subject identity;
@@ -274,7 +280,7 @@ Odyssey departure/landing/home pressure. Arc keys use lowercase source-owned gra
 additive save-key suffixes under each POV/archive row; it performs no retroactive inference or
 catch-up on older pages.
 
-**Royalty Phases 0–8 plus Narrative N3-R (Master Waves 5, 9, and 13; Phase 6 automated loaded suite
+**Royalty Phases 0–8 plus the completed Narrative N3-R extension (Master Waves 5, 9, and 13; Phase 6 automated loaded suite
 green at 278/278; Phase 7 corrected loaded rerun, Phase 8 loaded run, and all hands-on matrices
 pending)**
 freeze the detached R1 boundary and now own persona-weapon lifecycle, first-kill/death enrichment,
@@ -564,6 +570,13 @@ English and Russian Keyed/DefInjected text and four prompt fixtures cover every 
 Phase-6 prompt Defs remain loaded for pending-event/save compatibility, but package metadata hides
 their editor rows from Prompt Studio when Royalty is inactive.
 
+After that canonical page exists, the N3-R adapter asks the pure permit policy for one source-owned
+identity row. The policy requires the exact saved event/tick, caller POV, owner pawn, reviewed family,
+and current XML Def-name mapping; it emits no arc and cannot turn a routine, unknown, or forged-family
+permit into authority evidence. The existing generic current-title provider may then select one
+stable faction-title lens for that exact caller. This enrichment owns no new prose, page, hook, or
+outcome and remains empty when Royalty or the XML policy is inactive.
+
 Phase-6 pure coverage raises `RoyaltyContextTests` to 431 assertions, `DiaryPipelineTests` to 2,650,
 and `DiaryCapturePolicyTests` to 680. The runtime and 278-test RimTest assemblies build. Eleven new
 loaded fixtures compile exact Harmony target audits, the real vanilla successful-use callback for all
@@ -656,6 +669,13 @@ not colony ownership, and deliberately are not treated as cross-game narrative s
 capture, 2,734 pipeline, 22 prompt-variant, and 46 save-normalization assertions. The 291-test loaded
 execution, true exit-to-menu/second-colony boundary, Royalty-off profile, and all hands-on matrices
 remain pending; 278/278 is still the last fully green loaded baseline.
+
+The later Wave-9 N3-R completion audit raises the current focused pure totals to 486 Royalty and 330
+Narrative Continuity assertions. It also compiles stronger assertions into the existing succession
+and permit RimTest fixtures: exact evidence ownership, exact POV subject/reference, and reuse of the
+stable current-title provider key. Those changed loaded assertions have not run and remain pending.
+They do not alter or reopen Royalty Phase 5's recorded 354/354 result across 57/57 suites, and they do
+not close any Phase 2–4 hands-on row or any Phase 6–8 loaded/manual/inactive/localization matrix.
 
 **Biotech canonical growth, family continuity, and birth ownership (Master Wave 3 / Phases 0–3,
 plus Phase 4 automated hardening)** owns age-7/10/13
@@ -3503,7 +3523,7 @@ snapshot, and an inactive-Odyssey path remains null. The first manual Odyssey-ac
 valid player-home gravship host passed 354/354 tests across 57/57 suites. The separately focused
 Odyssey-inactive path passed 1/1, and the no-Odyssey profile produced no Pawn Diary crash, missing-Def
 error, or error spam.
-Assembly-free coverage passes 324 Narrative Continuity, 160 Odyssey policy, 68 observed-condition, and
+Current assembly-free coverage passes 330 Narrative Continuity, 160 Odyssey policy, 68 observed-condition, and
 2,750 pipeline assertions.
 
 `PawnDiaryOdysseyRuntimeLifecycleTests` covers only the host behavior the detached suite cannot prove.

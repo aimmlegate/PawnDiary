@@ -34,6 +34,7 @@ namespace RoyaltyContextTests
             TestPermitAllowlistMappingsAndExclusions();
             TestPermitMalformedOrderingDedupAndCaps();
             TestPermitOwnerDecisionAndQuickAidArbitration();
+            TestPermitNarrativeEvidenceRequiresExactAllowlistAndPov();
             TestRoyalAscentLifecycleOwnershipExpiryAndMigration();
             TestReconciliationScheduleBounds();
             TestPersonaPersistenceBaselinesAndNormalization();
@@ -150,6 +151,19 @@ namespace RoyaltyContextTests
             AssertEqual("terminal journey evidence shared arc", started.arcKey, terminalEvidence[0].arcKey);
             AssertEqual("terminal journey evidence salience", NarrativeSalienceTokens.Terminal,
                 terminalEvidence[0].salience);
+            List<NarrativeEvidence> startEvidence = RoyalAscentPolicy.JourneyEvidence(
+                "event-0", 100, "Pawn_1", "initiator", started, "quest", policy.royalAscentQuestDefName);
+            AssertTrue("acceptance evidence is only the exact started colony chapter",
+                startEvidence.Count == 1
+                    && startEvidence[0].phase == RoyalAscentPhaseTokens.Started
+                    && startEvidence[0].subjectKind == NarrativeSubjectKindTokens.Colony
+                    && startEvidence[0].subjectId == "royal_ascent"
+                    && startEvidence[0].arcKey == started.arcKey
+                    && startEvidence[0].salience == NarrativeSalienceTokens.Major);
+            AssertTrue("acceptance evidence preserves exact POV/source without outcome prose",
+                startEvidence[0].povPawnId == "Pawn_1"
+                    && startEvidence[0].sourceDomain == "quest"
+                    && startEvidence[0].sourceDefName == policy.royalAscentQuestDefName);
             AssertEqual("malformed continuity identity emits no evidence", 0,
                 RoyalAscentPolicy.JourneyEvidence(
                     "event-2", 200, "Pawn_1", "initiator",
@@ -349,6 +363,82 @@ namespace RoyaltyContextTests
             use.permitFamilyToken = RoyalPermitFamilyTokens.TransportShuttle;
             AssertTrue("nonmilitary permit cannot claim quick aid",
                 !RoyalPermitPolicy.MatchesRecentOwner(use, raid, 60));
+        }
+
+        private static void TestPermitNarrativeEvidenceRequiresExactAllowlistAndPov()
+        {
+            RoyaltyPolicySnapshot policy = RoyaltyPolicySnapshot.CreateDefault();
+            RoyalPermitOwnerCandidate owner = PermitOwner("Pawn_A", 100);
+            RoyalPermitUseSnapshot use = RoyalPermitPolicy.BuildUse(
+                owner, "CallMilitaryAidSmall", "call trooper squad", false, 101, policy);
+            NarrativeEvidence evidence = RoyalPermitPolicy.BuildNarrativeEvidence(
+                "permit-event-1", 101, "Pawn_A", "initiator", use, policy);
+
+            AssertNotNull("exact allowlisted permit builds narrative evidence", evidence);
+            AssertTrue("permit evidence owns exact event/tick/POV",
+                evidence.eventId == "permit-event-1" && evidence.tick == 101
+                    && evidence.povPawnId == "Pawn_A" && evidence.povRole == "initiator");
+            AssertTrue("permit evidence maps to identity on the exact owner",
+                evidence.facet == NarrativeFacetTokens.IdentityTransition
+                    && evidence.phase == RoyalPermitFamilyTokens.MilitaryAid
+                    && evidence.subjectKind == NarrativeSubjectKindTokens.Pawn
+                    && evidence.subjectId == "Pawn_A" && string.IsNullOrEmpty(evidence.arcKey));
+            AssertTrue("military permit topics stay bounded to verified authority/service/violence",
+                evidence.beliefTopics.Count == 3
+                    && evidence.beliefTopics[0] == "authority"
+                    && evidence.beliefTopics[1] == "service"
+                    && evidence.beliefTopics[2] == "violence");
+            AssertTrue("permit evidence keeps the exact source contract",
+                evidence.sourceDomain == RoyaltyNarrativeEvidenceFactory.PermitSourceDomain
+                    && evidence.sourceDefName == RoyalPermitPolicy.MilitaryAidEventDefName
+                    && evidence.salience == NarrativeSalienceTokens.Meaningful
+                    && evidence.pawnCanKnow == true);
+
+            AssertTrue("different POV cannot receive permit authority evidence",
+                RoyalPermitPolicy.BuildNarrativeEvidence(
+                    "permit-event-1", 101, "Pawn_B", "initiator", use, policy) == null);
+            AssertTrue("different event tick cannot claim the exact permit use",
+                RoyalPermitPolicy.BuildNarrativeEvidence(
+                    "permit-event-1", 102, "Pawn_A", "initiator", use, policy) == null);
+            AssertTrue("unsafe event identity cannot create permit evidence",
+                RoyalPermitPolicy.BuildNarrativeEvidence(
+                    "permit;event", 101, "Pawn_A", "initiator", use, policy) == null);
+
+            use.permitFamilyToken = RoyalPermitFamilyTokens.TransportShuttle;
+            AssertTrue("forged known family cannot override the exact XML mapping",
+                RoyalPermitPolicy.BuildNarrativeEvidence(
+                    "permit-event-1", 101, "Pawn_A", "initiator", use, policy) == null);
+            use.permitFamilyToken = RoyalPermitFamilyTokens.MilitaryAid;
+
+            RoyalPermitUseSnapshot routine = new RoyalPermitUseSnapshot
+            {
+                ownerPawnId = "Pawn_A",
+                ownerPawnName = "Ada",
+                permitDefName = "SteelDrop",
+                permitFamilyToken = RoyalPermitFamilyTokens.MilitaryAid,
+                factionId = "Faction_Empire",
+                tick = 101
+            };
+            AssertTrue("routine permit remains narrative-silent without XML opt-in",
+                RoyalPermitPolicy.BuildNarrativeEvidence(
+                    "permit-event-2", 101, "Pawn_A", "initiator", routine, policy) == null);
+            routine.permitDefName = "UnknownModPermit";
+            AssertTrue("unknown modded permit remains narrative-silent without XML opt-in",
+                RoyalPermitPolicy.BuildNarrativeEvidence(
+                    "permit-event-3", 101, "Pawn_A", "initiator", routine, policy) == null);
+
+            policy.permitFamilyRules.Add(new RoyalPermitFamilyRule
+            {
+                permitDefName = "ModdedHonorGuard",
+                familyToken = RoyalPermitFamilyTokens.MilitaryAid
+            });
+            owner.permitDefName = "ModdedHonorGuard";
+            RoyalPermitUseSnapshot optedIn = RoyalPermitPolicy.BuildUse(
+                owner, "ModdedHonorGuard", "honor guard", false, 103, policy);
+            AssertNotNull("exact XML mapping can opt a modded permit into a reviewed family", optedIn);
+            AssertNotNull("explicitly mapped modded permit can create exact narrative evidence",
+                RoyalPermitPolicy.BuildNarrativeEvidence(
+                    "permit-event-4", 103, "Pawn_A", "initiator", optedIn, policy));
         }
 
         private static void TestFrozenTokensArcAndContinuityMapping()

@@ -488,6 +488,15 @@ Complete **Odyssey O2** and extend **N3-O**:
 
 ## 14. Wave 9 — Royalty succession, permits, and ascent
 
+> **Implementation status (2026-07-21): all Wave-9 code items, including the N3-R extension, are
+> code-complete; R2/R3 acceptance remains open.** The N3-R audit retained the already-shipped exact
+> succession identity, Royal Ascent journey, and active court-pressure contracts and added only the
+> missing exact permit-authority attachment. Focused suites pass 486 Royalty and 330 Narrative
+> Continuity assertions; the runtime and current 354-test RimTest assemblies build. The strengthened
+> succession/permit loaded assertions are compiled but TODO/pending. Phase 5's recorded 354/354 result
+> across 57/57 suites is unchanged. All previously deferred Phase 2–4 hands-on rows plus the Phase 6,
+> 7, and 8 loaded/manual/inactive/localization matrices listed below remain TODO/pending.
+
 ### Implement in this exact order
 
 1. **Royalty 5 (complete; manual loaded acceptance green at 354/354 across 57/57 suites)** — exact inheritance correlation and succession evidence. The isolated Royalty-only run first reached
@@ -518,8 +527,14 @@ Complete **Odyssey O2** and extend **N3-O**:
    expectations, an intentionally invalid signal used by the fanout assertion, and a pre-existing
    generic Quest dedup entry on the stable witness. Corrected fixtures build and await a rerun; no
    hands-on row or separate Royalty-inactive profile is recorded as passed.
-4. Extend **N3-R** with succession identity, permit authority, Ascent journey, and court-pressure
-   candidates.
+4. **Narrative N3-R extension (code-complete; changed loaded assertions pending)** — succession uses
+   only the exact committed heir-subject evidence already owned by Phase 5; Royal Ascent uses Phase 7's
+   existing started/terminal shared-arc evidence and exact active pressure candidate. The newly added
+   permit row is created only after an exact allowlisted successful-use page and revalidates event,
+   tick, caller POV/owner, reviewed family, and XML mapping before reusing the generic current-title
+   provider. Routine, unknown, forged-family, and unlisted modded permits remain silent unless XML
+   explicitly opts them in. No provider/page/hook/save/XML/prose duplication or outcome inference was
+   added.
 
 ### Exit gate
 
@@ -527,6 +542,12 @@ Complete **Odyssey O2** and extend **N3-O**:
 - Routine permits remain silent.
 - Ascent produces beginning, bounded pressure, and one exact ending.
 - No arrival/outcome is claimed before its verified signal.
+
+The automated code exit gate is proven by the focused suites and successful builds. Release acceptance
+is not: Royalty 6 still needs its hands-on matrix and separately recorded inactive profile; Royalty 7
+still needs its corrected loaded rerun, hands-on matrix, and inactive profile; Royalty 8 still needs its
+loaded suite plus exit-to-menu/second-colony, Royalty-off, localization, and hands-on matrices; and all
+earlier open Phase 2–4 hands-on rows remain TODO/pending.
 
 ### Release checkpoint 9 — R2/R3
 

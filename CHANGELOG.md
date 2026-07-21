@@ -1,5 +1,27 @@
 # Changelog
 
+- **2026-07-21 — Completed the Master Wave 9 Narrative N3-R extension.** A source/code/test audit
+  confirmed that exact succession identity evidence, Royal Ascent start/terminal journey evidence,
+  and the exact active court-pressure candidate already shipped in Royalty Phases 5 and 7, so this
+  slice does not duplicate their provider or invent another Ascent page. The one missing contract was
+  permit authority: after an allowlisted successful-use page exists, `RoyalPermitSignal` now attaches
+  one exact caller-POV `identity_transition` row and lets the existing current-title provider supply
+  its bounded authority lens. The pure boundary revalidates event/tick/owner identity and the exact
+  XML permit mapping; routine, unknown, forged-family, and unlisted modded permits remain silent, while
+  an explicitly mapped modded permit can opt into a reviewed family. No arrival, aid/impact/transport
+  completion, escape, credits, or other unverified outcome is inferred.
+
+  Focused assembly-free suites pass 486 Royalty and 330 Narrative Continuity assertions. The full
+  repository hook passes all 14 pure suites at 6,588 assertions total, and its Debug runtime build
+  finishes with 0 warnings and 0 errors. The current 354-test RimTest assembly also builds;
+  strengthened real succession/permit fixtures
+  compile exact evidence/reference/provider assertions but have not been executed in a loaded game.
+  No XML, prompt prose, localization, save schema, hook, or paid-DLC dependency changed. Royalty Phase
+  5's recorded 354/354 result across 57/57 suites remains intact. Phase 6's hands-on and separately
+  recorded Royalty-inactive profiles; Phase 7's corrected loaded rerun, hands-on, and inactive profile;
+  Phase 8's loaded/cross-colony/Royalty-off/localization/hands-on matrices; and every earlier open
+  Phase 2–4 hands-on row all remain TODO/pending.
+
 - **2026-07-21 — Closed Royalty Phase 5 manual loaded acceptance.** On RimWorld 1.6.4871
   rev591 in English, the isolated Harmony/Core/Royalty/Laboratory/RimTest Redux/Pawn Diary profile
   first passed 353/354 tests across 56/57 suites; its sole failure was the older, non-Phase-5

@@ -608,7 +608,7 @@ namespace PawnDiary
                         ? NarrativeSalienceTokens.Major
                         : NarrativeSalienceTokens.Meaningful,
                     pawnCanKnow = true,
-                    sourceDomain = "royalty_title",
+                    sourceDomain = RoyaltyNarrativeEvidenceFactory.TitleSourceDomain,
                     sourceDefName = RoyalTitleDefNameForTransition(transition)
                 }
             };
