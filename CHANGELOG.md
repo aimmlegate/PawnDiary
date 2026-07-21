@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-07-21 — Repaired the loaded associative-memory RimTest fixtures.** Memory-flow tests now
+  enter through the W1 `AddPairwiseEvent` seam instead of incorrectly expecting the batched `Insult`
+  PlayLog group to emit synchronously, use the real vanilla `Chitchat` Def for the quiet noise gate,
+  and no longer depend on a nonexistent `important` settings group. The recall fixture now seeds tags
+  that match `DeepTalk`, forces/restores its probabilistic gate and minimum age, and requires a
+  non-empty frozen `memoryContext` instead of accepting a silent miss. Its header and test
+  documentation now describe the six cases that actually run.
+
 - **2026-07-21 — Wired the associative-memory subsystem into the diary pipeline (W1–W3).**
   The inert pure memory layer (extraction, recall selector, eviction planner, context prompt)
   is now live. New partial `DiaryGameComponent.Memory.cs` owns all impure state: the

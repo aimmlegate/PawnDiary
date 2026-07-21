@@ -1,16 +1,13 @@
 // In-game associative-memory wiring tests for Pawn Diary (design/MEMORY_WIRING_PLAN.md §W4).
 //
-// Proves the end-to-end memory pipeline inside a real loaded game:
-//   1. Deposit: firing a significant event deposits a memory fragment into the repository.
-//   2. Recall: after enough fragments exist and the event is old enough, a related event recalls
-//      a frozen memoryContext onto its PovSlot.
-//   3. Prompt rendering: with prompt-capture mode, the assembled prompt contains the "memory:" field.
-//   4. Idempotency: replaying the same signal does not deposit a duplicate fragment.
-//   5. Dead-owner grace: removing a pawn's colony membership starts the tombstone; the fragments
-//      survive until the grace period elapses.
-//   6. Old-save compatibility: a repository loaded from a save with no memory keys is empty and
-//      no errors (covered by PawnDiaryRepositoryRebuildFixtureTests; here we verify the live
-//      component's memories field is non-null and functional after load).
+// Proves the six memory behaviors this fixture actually exercises inside a real loaded game:
+//   1. Deposit: a significant EventFactory pair page deposits one fragment for each POV pawn.
+//   2. Noise gate: a real quiet-cue Chitchat page deposits no fragment.
+//   3. Idempotency: registering the same pawn+event deposit twice keeps one fragment.
+//   4. Recall: matching, old-enough fragments freeze a non-empty memoryContext onto the next page.
+//   5. Settings gate: disabling the memory system prevents deposit without preventing the page.
+//   6. Old-save compatibility: the live component repository is non-null and functional after load
+//      (the real-Scribe missing-key repair is covered by PawnDiaryRepositoryRebuildFixtureTests).
 //
 // All fragile scaffolding — isolated pawns, RNG isolation, settings snapshot/restore, event/diary
 // cleanup — lives in the shared PawnDiaryRimTestScope harness.
@@ -24,8 +21,8 @@ using Verse;
 namespace PawnDiary.RimTests
 {
     /// <summary>
-    /// End-to-end verification of the associative-memory wiring: deposit, recall, prompt rendering,
-    /// idempotency, and dead-owner grace. Requires a loaded game with a map.
+    /// Loaded-game verification of the associative-memory EventFactory wiring: deposit, noise gate,
+    /// recall, idempotency, settings gate, and repaired repository availability.
     /// </summary>
     [TestSuite]
     public static class PawnDiaryMemoryFlowTests
@@ -45,8 +42,10 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            // Enable the "important" interaction group so pairwise events deposit with high importance.
-            scope = PawnDiaryRimTestScope.Begin("important");
+            // These tests enter through EventFactory itself, the W1 seam that owns recall/deposit.
+            // They deliberately do not depend on PlayLog routing, player group overrides, or delayed
+            // interaction batches; those behaviors have their own loaded-game suites.
+            scope = PawnDiaryRimTestScope.Begin();
 
             if (Find.CurrentMap == null)
             {
@@ -98,8 +97,8 @@ namespace PawnDiary.RimTests
             int countBeforeA = memories.ForPawn(pawnAId).Count;
             int countBeforeB = memories.ForPawn(pawnBId).Count;
 
-            // Fire a pairwise social interaction (insult — high importance, negative mood).
-            FirePairwiseInteraction(pawnA, pawnB, "Insult");
+            // DeepTalk belongs to the significant, non-batched heartfelt group (white cue, importance 0.5).
+            AddPairwiseMemoryEvent(pawnA, pawnB, "DeepTalk");
 
             int countAfterA = memories.ForPawn(pawnAId).Count;
             int countAfterB = memories.ForPawn(pawnBId).Count;
@@ -136,8 +135,9 @@ namespace PawnDiary.RimTests
             string pawnAId = pawnA.GetUniqueLoadID();
             int countBefore = memories.ForPawn(pawnAId).Count;
 
-            // Fire a "chat" interaction — quiet cue, importance 0.2 < 0.3 threshold.
-            FirePairwiseInteraction(pawnA, pawnB, "Chat");
+            // Chitchat is the real vanilla Def name. Calling EventFactory directly gives the memory
+            // noise gate a page to inspect without waiting for smalltalk's separate ambient-day batch.
+            AddPairwiseMemoryEvent(pawnA, pawnB, "Chitchat");
 
             int countAfter = memories.ForPawn(pawnAId).Count;
             Require(countAfter == countBefore,
@@ -158,7 +158,7 @@ namespace PawnDiary.RimTests
             string pawnAId = pawnA.GetUniqueLoadID();
 
             // Fire once.
-            DiaryEvent first = FirePairwiseInteraction(pawnA, pawnB, "Insult");
+            DiaryEvent first = AddPairwiseMemoryEvent(pawnA, pawnB, "DeepTalk");
             int countAfterFirst = memories.ForPawn(pawnAId).Count;
 
             // Manually attempt a second deposit for the same event (simulates replay).
@@ -197,45 +197,61 @@ namespace PawnDiary.RimTests
             PawnMemoryRepository memories = GetMemories();
             string pawnAId = pawnA.GetUniqueLoadID();
             int now = Find.TickManager.TicksGame;
-            MemoryPolicySnapshot policy = DiaryMemoryPolicy.Snapshot();
-
-            // Seed enough fragments with combat-related tags so the next combat event has overlap.
-            int seedCount = Math.Max(policy.minFragmentsForRecall, 4) + 2;
-            for (int i = 0; i < seedCount; i++)
+            DiaryMemoryTuningDef tuning =
+                DefDatabase<DiaryMemoryTuningDef>.GetNamedSilentFail("Diary_Memory");
+            if (tuning == null)
             {
-                memories.Register(new MemoryFragment
-                {
-                    memoryId = Guid.NewGuid().ToString("N"),
-                    pawnId = pawnAId,
-                    sourceEventId = "seed-evt-" + i,
-                    text = "Seeded combat memory number " + i + " involving a weapon.",
-                    tags = new List<string> { MemoryTagTokens.Combat, MemoryTagTokens.Danger },
-                    keywords = new List<string> { "weapon", "raid", "fight" },
-                    importance = 0.8f,
-                    createdTick = now - policy.minRecallAgeTicks - 100000 - (i * 10000),
-                    lastRecalledTick = now - policy.minRecallAgeTicks - 100000 - (i * 10000),
-                    recallCount = 0
-                });
+                throw new AssertionException("Diary_Memory tuning Def was not loaded.");
             }
 
-            // Fire a new combat-related event for pawn A (insult has social+conflict tags; use a
-            // direct approach: fire an event and check if memoryContext was frozen).
-            DiaryEvent newEvent = FirePairwiseInteraction(pawnA, pawnB, "Insult");
-
-            // The recall is gated by a seeded RNG (recallGateChance 0.6), so it may not fire every
-            // time. We verify the WIRING is correct: if memoryContext is non-empty, it must be
-            // well-formed; if empty, the diagnostic was one of the expected gate misses.
-            string memoryContext = newEvent.MemoryContextForRole(DiaryEvent.InitiatorRole);
-            if (!string.IsNullOrWhiteSpace(memoryContext))
+            float originalRecallGateChance = tuning.recallGateChance;
+            int originalMinRecallAgeTicks = tuning.minRecallAgeTicks;
+            try
             {
-                // Recall succeeded — verify the frozen text is well-formed.
+                // The production gate is intentionally probabilistic and the production minimum age
+                // is one day. This fixture tests wiring, not those pure policies (PawnMemoryTests owns
+                // them), so force both boundaries deterministically and restore the live Def below.
+                tuning.recallGateChance = 1f;
+                tuning.minRecallAgeTicks = 0;
+                MemoryPolicySnapshot policy = DiaryMemoryPolicy.Snapshot();
+
+                // DeepTalk extracts Joy (white cue) plus Social (pairwise), so seed those exact tags.
+                // This fixes the old combat/danger seed, which had no overlap with its Insult query.
+                int seedCount = Math.Max(policy.minFragmentsForRecall, 4) + 2;
+                for (int i = 0; i < seedCount; i++)
+                {
+                    int createdTick = Math.Max(0, now - 1000 - (i * 10));
+                    memories.Register(new MemoryFragment
+                    {
+                        memoryId = Guid.NewGuid().ToString("N"),
+                        pawnId = pawnAId,
+                        sourceEventId = "seed-evt-" + i,
+                        text = "Seeded heartfelt memory number " + i + ".",
+                        tags = new List<string> { MemoryTagTokens.Joy, MemoryTagTokens.Social },
+                        keywords = new List<string>(),
+                        importance = 0.8f,
+                        createdTick = createdTick,
+                        lastRecalledTick = createdTick,
+                        recallCount = 0
+                    });
+                }
+
+                DiaryEvent newEvent = AddPairwiseMemoryEvent(pawnA, pawnB, "DeepTalk");
+                string memoryContext = newEvent.MemoryContextForRole(DiaryEvent.InitiatorRole);
+                Require(!string.IsNullOrWhiteSpace(memoryContext),
+                    "Matching fragments with a forced-open recall gate must freeze memoryContext.");
+                Require(memoryContext.Contains("Seeded heartfelt memory"),
+                    "The frozen memoryContext should contain one of the matching seeded fragments.");
                 Require(memoryContext.Contains("-"),
                     "A recalled memoryContext should contain at least one '- ' prefixed line.");
                 Require(memoryContext.Length <= 600,
                     "Frozen memoryContext must respect the 600-char save-normalization cap.");
             }
-            // If empty, the seeded gate missed (recallGateChance 0.6) — that is valid behavior.
-            // The wiring is still proven: the code path ran without error and the field is empty.
+            finally
+            {
+                tuning.recallGateChance = originalRecallGateChance;
+                tuning.minRecallAgeTicks = originalMinRecallAgeTicks;
+            }
         }
 
         // ── Test 5: Memory system disabled → no deposit ──────────────────────────────────────────────
@@ -253,7 +269,7 @@ namespace PawnDiary.RimTests
             PawnDiaryMod.Settings.enableMemorySystem = false;
             try
             {
-                FirePairwiseInteraction(pawnA, pawnB, "Insult");
+                AddPairwiseMemoryEvent(pawnA, pawnB, "DeepTalk");
             }
             finally
             {
@@ -303,14 +319,12 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// Fires a real pairwise social interaction between two pawns via the PlayLog interaction
-        /// path and returns the resulting DiaryEvent. Uses the scope's FireAndRequireEvent to assert
-        /// exactly one new event was created.
+        /// Creates one pair page through the production EventFactory funnel and returns it. The helper
+        /// intentionally bypasses PlayLog classification/batching: those are independent ingestion
+        /// concerns, while this suite verifies the recall-before-deposit hooks inside AddPairwiseEvent.
         /// </summary>
-        private static DiaryEvent FirePairwiseInteraction(Pawn initiator, Pawn recipient, string interactionDefName)
+        private static DiaryEvent AddPairwiseMemoryEvent(Pawn initiator, Pawn recipient, string interactionDefName)
         {
-            // Build a real PlayLogEntry_Interaction and submit it through the PlayLog, which the
-            // production Harmony patch observes. The interaction Def must exist in the loaded game.
             InteractionDef interaction = DefDatabase<InteractionDef>.GetNamedSilentFail(interactionDefName);
             if (interaction == null)
             {
@@ -318,20 +332,32 @@ namespace PawnDiary.RimTests
                     "InteractionDef '" + interactionDefName + "' not found in the loaded game.");
             }
 
-            PlayLogEntry_Interaction entry = GeneratedSpeechPlayLog.CreateInteractionEntry(
-                interaction, initiator, recipient);
-            if (entry == null)
+            string label = interaction.LabelCap.Resolve();
+            string initiatorText = "PawnDiary.Event.Interaction".Translate(
+                initiator.LabelShortCap,
+                label,
+                recipient.LabelShortCap).Resolve();
+            string recipientText = "PawnDiary.Event.Interaction".Translate(
+                recipient.LabelShortCap,
+                label,
+                initiator.LabelShortCap).Resolve();
+
+            DiaryEvent diaryEvent = scope.Component.AddPairwiseEvent(
+                initiator,
+                recipient,
+                interaction.defName,
+                label,
+                initiatorText,
+                recipientText,
+                InteractionGroups.InstructionFor(interaction),
+                DiaryContextBuilder.BuildGameContextSummary(interaction, label));
+            if (diaryEvent == null)
             {
                 throw new AssertionException(
-                    "Could not construct the vanilla " + interactionDefName + " PlayLog row.");
+                    "EventFactory did not create the " + interactionDefName + " memory fixture page.");
             }
 
-            scope.TrackPlayLogEntry(entry);
-            return scope.FireAndRequireEvent(
-                () => Find.PlayLog.Add(entry),
-                interactionDefName,
-                initiator,
-                recipient);
+            return diaryEvent;
         }
 
         /// <summary>

@@ -3342,6 +3342,14 @@ vanilla `PlayLog.Add`, `Pawn_RelationsTracker.AddDirectRelation`, and
 Diary's Harmony → ingestion-signal → persisted-event path (EVT-01/EVT-07/EVT-08 in the coverage
 matrix).
 
+`PawnDiaryMemoryFlowTests` separately targets the W1 EventFactory seam so interaction batching cannot
+make its assertions timing- or settings-dependent. It creates significant `DeepTalk` and quiet
+`Chitchat` pair pages through `AddPairwiseEvent`, then verifies deposit, the quiet noise gate,
+deposit idempotency, a forced deterministic matching recall, the settings gate, and live repository
+availability. The fixture temporarily overrides recall gate/minimum-age tuning only inside the recall
+test and restores both values in `finally`; pure seeded-gate and age-boundary behavior remains covered
+by `PawnMemoryTests`.
+
 Both loaded-game suites share the `PawnDiaryRimTestScope` harness (`TEST_COVERAGE_PLAN.md §2.1`),
 which owns all of the fragile setup/teardown so a test body only fires a trigger and asserts an
 outcome. Each scope generates isolated adult colonists whose diary generation is disabled before they
