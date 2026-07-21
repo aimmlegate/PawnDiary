@@ -1,5 +1,17 @@
 # Changelog
 
+- **2026-07-21 — Fixed four Diary filter-panel UI bugs.** (1) Hiding the filter panel now shrinks the
+  whole tab back to the journal-only width instead of leaving the journal floating in the wide frame:
+  `ResponsiveTabWidth` drops the panel allotment (`filterPanelWidth` + `filterPanelGap`) from `tabWidth`
+  when `showDiaryFilterPanel` is off. (2) The dev tools no longer appear inline on the main journal when
+  the panel is hidden — they live only in the filter panel; the panel-hidden fallback keeps just the
+  inline year pager. (3) The filter-panel header toggle now sits after (right of) the writing-style icon
+  instead of before it. (4) Season/quadrum dividers are now derived from each entry's DISPLAY date
+  string (matched back to a `Quadrum` label + trailing year, the same source the year pager groups by)
+  rather than the raw sort tick, so dev-mock stress pages — whose sort tick is deliberately decoupled
+  from their spread-out display dates — render correct per-quadrum dividers consistent with the cards.
+  Presentation-only; no saved-history, sort-order, or DLC changes. Build clean; all 14 pure suites green.
+
 - **2026-07-21 — Confirmed Narrative Continuity N3-A loaded acceptance green.** The
   user-confirmed corrected Anomaly-active run passed all 354/354 compiled RimTests, including the
   exact containment, creepjoiner, ghoul, monolith, and associative-memory fixtures that exposed the

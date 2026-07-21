@@ -3,9 +3,14 @@
 // localized label. It changes nothing about the saved history, the sort order, or the cards.
 //
 // New to C#/RimWorld? (JS/TS analogy) Think of this as a tiny pure-ish module the tab imports.
-// RimWorld measures time in "ticks"; a stored entry keeps the in-game tick it happened on. RimWorld
-// splits each 60-day year into four "quadrums" (Aprimay, Jugust, Septober, Decembary) — the diary
-// groups entries under the quadrum header they fall in, the same way a blog groups posts by month.
+// RimWorld splits each 60-day year into four "quadrums" (Aprimay, Jugust, Septober, Decembary) — the
+// diary groups entries under the quadrum header they fall in, the same way a blog groups posts by
+// month. The grouping is read from each entry's DISPLAY date string (the same "15th of Decembary,
+// 5500" line shown on the card), NOT from its raw sort tick: real pages format that date from their
+// own tick so the two agree, but dev-mock stress pages deliberately spread their display dates across
+// a fake multi-year history while clamping their sort tick to the pawn's real lifetime — there only
+// the display date is meaningful, and it is what the year pager groups by too.
+using System;
 using RimWorld;
 using Verse;
 
@@ -17,15 +22,17 @@ namespace PawnDiary
     /// </summary>
     internal static class DiaryQuadrumDivider
     {
-        // Diary dates are formatted at longitude 0 (GenDate.DateFullStringAt with Vector2.zero), so
-        // the quadrum/year we derive here uses the same longitude and therefore always agrees with the
-        // month name already printed in each entry's date line.
-        private const float Longitude = 0f;
-
-        // Sentinel returned for entries whose tick cannot be placed on the calendar (very old saves
-        // that only stored a display string). Two undated entries share this key, so no divider is
-        // drawn between them.
+        // Sentinel returned for entries whose display date cannot be placed on the calendar (very old
+        // saves that only stored a malformed string). Two undated entries share this key, so no
+        // divider is drawn between them.
         internal const int UndatedKey = int.MinValue;
+
+        // The four real quadrums in calendar order. RimWorld's full date string embeds the quadrum by
+        // name, so each entry's quadrum is recovered by matching these back against its date line.
+        private static readonly Quadrum[] CalendarQuadrums =
+        {
+            Quadrum.Aprimay, Quadrum.Jugust, Quadrum.Septober, Quadrum.Decembary,
+        };
 
         /// <summary>
         /// A stable key that is identical for every entry in the same (year, quadrum) and different
@@ -33,19 +40,13 @@ namespace PawnDiary
         /// </summary>
         internal static int QuadrumKey(DiaryEntryView entry)
         {
-            // Tick 0 is the valid game-start tick (the arrival page can carry it), so only a negative
-            // tick is treated as "no calendar position". This keeps the divider grouping consistent
-            // with the year pager, which places any entry with a real date on its real-year page.
-            if (entry == null || entry.Tick < 0)
+            if (!TryResolveCalendar(entry, out int year, out Quadrum quadrum))
             {
                 return UndatedKey;
             }
 
-            long absTick = GenDate.TickGameToAbs(entry.Tick);
-            int year = GenDate.Year(absTick, Longitude);
-            int quadrum = (int)GenDate.Quadrum(absTick, Longitude);
             // Four quadrums per year; year * 4 + quadrum is unique and monotonic in calendar order.
-            return (year * 4) + quadrum;
+            return (year * 4) + (int)quadrum;
         }
 
         /// <summary>
@@ -69,17 +70,88 @@ namespace PawnDiary
         /// </summary>
         internal static string Label(DiaryEntryView entry)
         {
-            if (entry == null || entry.Tick < 0)
+            if (!TryResolveCalendar(entry, out int year, out Quadrum quadrum))
             {
                 return string.Empty;
             }
 
-            long absTick = GenDate.TickGameToAbs(entry.Tick);
-            Quadrum quadrum = GenDate.Quadrum(absTick, Longitude);
-            int year = GenDate.Year(absTick, Longitude);
             string quadrumLabel = quadrum.Label().CapitalizeFirst();
             string seasonLabel = NominalSeason(quadrum).LabelCap();
             return "PawnDiary.Tab.QuadrumDivider".Translate(quadrumLabel, seasonLabel, year);
+        }
+
+        /// <summary>
+        /// Resolves the (year, quadrum) an entry belongs to from its DISPLAY date string — the same
+        /// source the year pager groups by — rather than its sort tick. Returns false for entries whose
+        /// date cannot be placed on the calendar, which then get no divider (matching the pager's
+        /// "undated" page). See the file header for why the date, not the tick, is authoritative here.
+        /// </summary>
+        private static bool TryResolveCalendar(DiaryEntryView entry, out int year, out Quadrum quadrum)
+        {
+            year = 0;
+            quadrum = Quadrum.Undefined;
+            string date = entry?.Date;
+            if (string.IsNullOrWhiteSpace(date))
+            {
+                return false;
+            }
+
+            return TryExtractYear(date, out year) && TryMatchQuadrum(date, out quadrum);
+        }
+
+        /// <summary>
+        /// Finds the final run of digits in RimWorld's full date string (for example the 5500 in
+        /// "15th of Decembary, 5500"). Reading from the end keeps this tolerant of localized month
+        /// names and day ordinals earlier in the string, and mirrors the year pager's own parsing so
+        /// the divider and the pager always agree on an entry's year.
+        /// </summary>
+        private static bool TryExtractYear(string date, out int year)
+        {
+            year = 0;
+            int end = -1;
+            for (int i = date.Length - 1; i >= 0; i--)
+            {
+                if (char.IsDigit(date[i]))
+                {
+                    end = i;
+                    break;
+                }
+            }
+
+            if (end < 0)
+            {
+                return false;
+            }
+
+            int start = end;
+            while (start > 0 && char.IsDigit(date[start - 1]))
+            {
+                start--;
+            }
+
+            return int.TryParse(date.Substring(start, end - start + 1), out year);
+        }
+
+        /// <summary>
+        /// Recovers the quadrum from a full date string by matching each quadrum's own localized label
+        /// (the same one GenDate printed into the string) back against it. Using RimWorld's labels keeps
+        /// this correct under localization; the first matching quadrum in calendar order wins.
+        /// </summary>
+        private static bool TryMatchQuadrum(string date, out Quadrum quadrum)
+        {
+            for (int i = 0; i < CalendarQuadrums.Length; i++)
+            {
+                string label = CalendarQuadrums[i].Label();
+                if (!string.IsNullOrEmpty(label)
+                    && date.IndexOf(label, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    quadrum = CalendarQuadrums[i];
+                    return true;
+                }
+            }
+
+            quadrum = Quadrum.Undefined;
+            return false;
         }
 
         /// <summary>
