@@ -156,7 +156,7 @@
     <yearDisabledColor><r>1</r><g>1</g><b>1</b><a>0.42</a></yearDisabledColor>
     <expansionIndicatorBaseColor><r>0.62</r><g>0.65</g><b>0.68</b><a>0.85</a></expansionIndicatorBaseColor>
     <modelNameColor><r>0.45</r><g>0.48</g><b>0.50</b><a>0.62</a></modelNameColor>
-    <regenerateEntryButtonColor><r>0.55</r><g>0.58</g><b>0.60</b><a>0.60</a></regenerateEntryButtonColor>
+    <regenerateEntryButtonColor><r>0.76</r><g>0.79</g><b>0.82</b><a>0.72</a></regenerateEntryButtonColor>
     <!-- Entry favorite star when toggled on (warm gold); off state reuses the quiet footer tint. -->
     <favoriteStarColor><r>0.98</r><g>0.82</g><b>0.34</b><a>1</a></favoriteStarColor>
     <!-- Filter-panel toggle when open AND a filter is engaged (amber "active" third state). -->

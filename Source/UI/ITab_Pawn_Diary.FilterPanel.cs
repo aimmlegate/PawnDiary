@@ -195,9 +195,7 @@ namespace PawnDiary
         {
             listing.Gap(6f);
             DrawFilterSectionHeader(listing, "PawnDiary.Tab.FilterHeader".Translate());
-            bool favorites = filterFavoritesOnly;
-            listing.CheckboxLabeled("PawnDiary.Tab.FilterFavoritesOnly".Translate(), ref favorites);
-            filterFavoritesOnly = favorites;
+            DrawFavoritesOnlyToggle(listing);
 
             listing.Gap(6f);
             DrawFilterSectionHeader(listing, "PawnDiary.Tab.FilterTagsHeader".Translate());
@@ -243,6 +241,43 @@ namespace PawnDiary
             // Stub: the Apply button is present but filtering is not wired to the journal yet.
             Widgets.ButtonText(applyRect, "PawnDiary.Tab.FilterApply".Translate(activeCount));
             TooltipHandler.TipRegion(applyRect, "PawnDiary.Tab.FilterStubTip".Translate());
+        }
+
+        /// <summary>
+        /// Draws the "Favorites only" filter as a star toggle (replacing the old checkbox): the label on
+        /// the left and a star icon on the right that reads warm gold when active and a quiet outline
+        /// when not. The whole row toggles <see cref="filterFavoritesOnly"/> on click. Like the other
+        /// filter controls it is not wired to the journal yet.
+        /// </summary>
+        private void DrawFavoritesOnlyToggle(Listing_Standard listing)
+        {
+            Rect row = listing.GetRect(ControlLineHeight);
+            Widgets.DrawHighlightIfMouseover(row);
+
+            bool on = filterFavoritesOnly;
+            float iconSize = Mathf.Min(row.height - 4f, 22f);
+            Rect starRect = new Rect(
+                row.xMax - iconSize,
+                row.y + (row.height - iconSize) * 0.5f,
+                iconSize,
+                iconSize);
+
+            Color oldColor = GUI.color;
+            GUI.color = on ? UiStyle.FavoriteStarColor : new Color(1f, 1f, 1f, 0.55f);
+            GUI.DrawTexture(starRect, DiaryButtonTextures.Favorite);
+            GUI.color = oldColor;
+
+            TextAnchor oldAnchor = Text.Anchor;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Widgets.Label(
+                new Rect(row.x, row.y, Mathf.Max(0f, row.width - iconSize - 6f), row.height),
+                "PawnDiary.Tab.FilterFavoritesOnly".Translate());
+            Text.Anchor = oldAnchor;
+
+            if (Widgets.ButtonInvisible(row, false))
+            {
+                filterFavoritesOnly = !filterFavoritesOnly;
+            }
         }
 
         /// <summary>

@@ -251,7 +251,7 @@ namespace PawnDiary
         public DiaryUiColorSpec yearDisabledColor = Color(1f, 1f, 1f, 0.42f);
         public DiaryUiColorSpec expansionIndicatorBaseColor = Color(0.62f, 0.65f, 0.68f, 0.85f);
         public DiaryUiColorSpec modelNameColor = Color(0.45f, 0.48f, 0.50f, 0.62f);
-        public DiaryUiColorSpec regenerateEntryButtonColor = Color(0.55f, 0.58f, 0.60f, 0.60f);
+        public DiaryUiColorSpec regenerateEntryButtonColor = Color(0.76f, 0.79f, 0.82f, 0.72f);
         // Warm gold used to tint the entry favorite star when it is toggled on; the off state reuses
         // the quiet regenerate/footer tint so an un-favorited star reads as a dim outline.
         public DiaryUiColorSpec favoriteStarColor = Color(0.98f, 0.82f, 0.34f, 1f);
@@ -336,7 +336,7 @@ namespace PawnDiary
         public Color YearDisabledColor => yearDisabledColor.ToColor(new Color(1f, 1f, 1f, 0.42f));
         public Color ExpansionIndicatorBaseColor => expansionIndicatorBaseColor.ToColor(new Color(0.62f, 0.65f, 0.68f, 0.85f));
         public Color ModelNameColor => modelNameColor.ToColor(new Color(0.45f, 0.48f, 0.50f, 0.62f));
-        public Color RegenerateEntryButtonColor => regenerateEntryButtonColor.ToColor(new Color(0.55f, 0.58f, 0.60f, 0.60f));
+        public Color RegenerateEntryButtonColor => regenerateEntryButtonColor.ToColor(new Color(0.76f, 0.79f, 0.82f, 0.72f));
         public Color FavoriteStarColor => favoriteStarColor.ToColor(new Color(0.98f, 0.82f, 0.34f, 1f));
         public Color FilterActiveIconColor => filterActiveIconColor.ToColor(new Color(0.96f, 0.78f, 0.40f, 0.98f));
         public Color DebugTextColor => debugTextColor.ToColor(new Color(0.54f, 0.58f, 0.60f, 0.90f));
