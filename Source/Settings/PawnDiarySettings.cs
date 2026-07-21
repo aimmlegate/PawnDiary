@@ -145,6 +145,10 @@ namespace PawnDiary
         // spacing or staggered word sizes in the Diary tab. This never changes prompts or saved
         // generated text.
         public bool enableAtmosphericFormatting = true;
+        // Experimental (default off): when true, the whole Diary window takes a subtle seasonal color
+        // wash that follows the season at the top of the page and crossfades as you scroll. Display-only
+        // — it never changes prompts or saved text. Off by default while the look is being tuned.
+        public bool enableSeasonalBackground = false;
         // Master toggle for live prompt enchantments. When true, first-person diary prompts may get
         // one live health/status hint weighted by DiaryPromptEnchantmentDefs.xml.
         public bool enablePromptEnchantments = true;
@@ -270,6 +274,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref promptTestMode, "promptTestMode", false);
             Scribe_Values.Look(ref generateTitles, "generateTitles", true);
             Scribe_Values.Look(ref enableAtmosphericFormatting, "enableAtmosphericFormatting", true);
+            Scribe_Values.Look(ref enableSeasonalBackground, "enableSeasonalBackground", false);
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
             Scribe_Values.Look(ref enablePsychotypes, "enablePsychotypes", true);
             Scribe_Values.Look(ref enableMemorySystem, "enableMemorySystem", true);

@@ -1,5 +1,11 @@
 # Changelog
 
+- **2026-07-22 — Made the seasonal window wash an experimental, default-off setting.** The global
+  seasonal background wash now draws only when the new **"Seasonal window tint (experimental)"** setting
+  is enabled (`enableSeasonalBackground`, default `false`, scribed). All the wash code and its
+  XML-tunable colors are kept; when the setting is off, the whole per-frame season tracking is skipped
+  too. New EN/RU settings label + tooltip. Debug build 0/0; all 15 pure suites green; no in-game
+  acceptance run is claimed.
 - **2026-07-22 — Wired the Diary tab favorites and journal filters for real.** (1) **Favorites persist.**
   The card favorite star no longer writes a session-only static set: the choice is scribed per pawn on
   `PawnDiaryRecord.favoriteEntryKeys` (additive save key; old saves normalize to an empty, deduped
