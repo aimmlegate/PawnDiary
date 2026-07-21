@@ -85,8 +85,8 @@
     <!-- Per-pawn writing-style header icon (Diary tab) -->
     <writingStyleIconSize>22</writingStyleIconSize>
     <writingStyleIconRightGap>6</writingStyleIconRightGap>
-    <writingStyleIconAlpha>0.42</writingStyleIconAlpha>
-    <writingStyleIconHoverAlpha>0.82</writingStyleIconHoverAlpha>
+    <writingStyleIconAlpha>0.55</writingStyleIconAlpha>
+    <writingStyleIconHoverAlpha>0.90</writingStyleIconHoverAlpha>
 
     <!-- Roleplay text and direct-speech blocks -->
     <roleplayLineGap>5</roleplayLineGap>
@@ -145,10 +145,10 @@
     <quadrumDividerLabelColor><r>0.85</r><g>0.83</g><b>0.75</b><a>1</a></quadrumDividerLabelColor>
     <quadrumDividerLineColor><r>0.60</r><g>0.57</g><b>0.50</b><a>0.45</a></quadrumDividerLineColor>
     <!-- Subtle seasonal background wash (very low alpha; set an alpha to 0 to disable that season). -->
-    <springWashColor><r>0.42</r><g>0.58</g><b>0.40</b><a>0.09</a></springWashColor>
-    <summerWashColor><r>0.85</r><g>0.72</g><b>0.36</b><a>0.09</a></summerWashColor>
-    <fallWashColor><r>0.80</r><g>0.47</g><b>0.22</b><a>0.10</a></fallWashColor>
-    <winterWashColor><r>0.48</r><g>0.60</g><b>0.80</b><a>0.09</a></winterWashColor>
+    <springWashColor><r>0.42</r><g>0.58</g><b>0.40</b><a>0.14</a></springWashColor>
+    <summerWashColor><r>0.85</r><g>0.72</g><b>0.36</b><a>0.14</a></summerWashColor>
+    <fallWashColor><r>0.80</r><g>0.47</g><b>0.22</b><a>0.16</a></fallWashColor>
+    <winterWashColor><r>0.48</r><g>0.60</g><b>0.80</b><a>0.14</a></winterWashColor>
     <pendingTitlePrefixColor><r>0.86</r><g>0.86</g><b>0.86</b><a>0.95</a></pendingTitlePrefixColor>
     <pendingTitleDotBaseColor><r>0.68</r><g>0.72</g><b>0.76</b><a>1</a></pendingTitleDotBaseColor>
     <writingPlaceholderLowColor><r>0.58</r><g>0.72</g><b>0.66</b><a>1</a></writingPlaceholderLowColor>
@@ -156,7 +156,7 @@
     <yearDisabledColor><r>1</r><g>1</g><b>1</b><a>0.42</a></yearDisabledColor>
     <expansionIndicatorBaseColor><r>0.62</r><g>0.65</g><b>0.68</b><a>0.85</a></expansionIndicatorBaseColor>
     <modelNameColor><r>0.45</r><g>0.48</g><b>0.50</b><a>0.62</a></modelNameColor>
-    <regenerateEntryButtonColor><r>0.48</r><g>0.51</g><b>0.53</b><a>0.46</a></regenerateEntryButtonColor>
+    <regenerateEntryButtonColor><r>0.55</r><g>0.58</g><b>0.60</b><a>0.60</a></regenerateEntryButtonColor>
     <!-- Entry favorite star when toggled on (warm gold); off state reuses the quiet footer tint. -->
     <favoriteStarColor><r>0.98</r><g>0.82</g><b>0.34</b><a>1</a></favoriteStarColor>
     <!-- Filter-panel toggle when open AND a filter is engaged (amber "active" third state). -->

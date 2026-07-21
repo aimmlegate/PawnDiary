@@ -110,19 +110,25 @@ namespace PawnDiary
                         1f),
                     EntryHeaderRuleColor(entry));
 
-                Rect groupRect = GroupLabelRect(titleRect, entry?.GroupLabel);
+                // Favorite star at the far right of the title bar; the group chip and header shrink to
+                // its left. Drawing it before the title's own invisible button lets a star click toggle
+                // the favorite without also expanding/collapsing the card.
+                bool favClicked = DrawTitleFavorite(titleRect, entry, request.EntryKey);
+                Rect chipTitleRect = new Rect(titleRect.x, titleRect.y, titleRect.width - TitleFavoriteReserve(entry), titleRect.height);
+
+                Rect groupRect = GroupLabelRect(chipTitleRect, entry?.GroupLabel);
                 if (groupRect.width > 0f)
                 {
                     DrawGroupLabel(groupRect, entry.GroupLabel, accentColor);
                 }
 
-                float headerRight = groupRect.width > 0f ? groupRect.x - 6f : localEntryRect.xMax - 8f;
+                float headerRight = groupRect.width > 0f ? groupRect.x - 6f : chipTitleRect.xMax - 8f;
                 DrawEntryHeader(
                     new Rect(localEntryRect.x + 34f, localEntryRect.y + 5f, Mathf.Max(80f, headerRight - localEntryRect.x - 34f), 22f),
                     entry,
                     accentColor);
                 DrawExpansionIndicator(titleRect, request.Expanded, request.ExpansionBlend, accentColor);
-                bool toggleExpansion = Widgets.ButtonInvisible(titleRect, false);
+                bool toggleExpansion = Widgets.ButtonInvisible(titleRect, false) && !favClicked;
 
                 TooltipHandler.TipRegion(titleRect, "PawnDiary.Tab.ExpandCollapseTip".Translate());
 
@@ -196,14 +202,14 @@ namespace PawnDiary
                 }
 
                 bool showCopyButton = ShowCopyButton(entry);
-                bool showFavoriteButton = ShowFavoriteButton(entry);
-                if (showModelName || showRegenerateButton || showCopyButton || showFavoriteButton)
+                if (showModelName || showRegenerateButton || showCopyButton)
                 {
-                    // One footer line: player-visible "Copy entry" on the left, provenance/model name
-                    // in the middle, and the favorite star + regenerate icon on the right. HasFooterLine
-                    // reserves its height so the measured and drawn card heights stay in sync.
+                    // One footer line: player-visible "Copy entry" on the left, then the provenance/model
+                    // name and the regenerate icon on the right. HasFooterLine reserves its height so the
+                    // measured and drawn card heights stay in sync. (The favorite star lives in the title
+                    // bar now, not here.)
                     Rect footerRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
-                    DrawEntryFooter(footerRect, footerNote, showCopyButton, showRegenerateButton, showFavoriteButton, request.EntryKey, entry, request.Pawn, request.Component);
+                    DrawEntryFooter(footerRect, footerNote, showCopyButton, showRegenerateButton, entry, request.Pawn, request.Component);
                 }
 
                 return toggleExpansion;
@@ -249,7 +255,7 @@ namespace PawnDiary
             bool hover = Mouse.IsOver(actionRect);
 
             Color oldColor = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, hover ? 0.85f : 0.5f);
+            GUI.color = new Color(1f, 1f, 1f, hover ? 0.9f : 0.62f);
             GUI.DrawTexture(iconRect, DiaryButtonTextures.Copy);
             if (labelWidth > 0f)
             {
@@ -374,13 +380,39 @@ namespace PawnDiary
             return entry != null && !IsGenerating(entry) && !IsPromptOnly(entry);
         }
 
+        // Title-bar favorite star geometry. It sits at the top-right of every card header (collapsed or
+        // expanded), just right of the group chip, so a page can be starred without expanding it.
+        private const float TitleFavoriteSize = 18f;
+        private const float TitleFavoriteGap = 8f;
+
         /// <summary>
-        /// Draws the favorite star in the given footer slot and toggles the session favorite on click.
-        /// Off reads as a quiet outline (matching the copy action); on reads as a warm gold star. Uses
-        /// the base/mouseover-color overload so the tint is honored (the 2-arg overload forces white).
+        /// Width to reserve at the right of the title bar for the favorite star (0 when the entry can't
+        /// be favorited), so the group chip and header text shift left to make room.
         /// </summary>
-        private static void DrawFavoriteAction(Rect rect, string entryKey)
+        private static float TitleFavoriteReserve(DiaryEntryView entry)
         {
+            return ShowFavoriteButton(entry) ? TitleFavoriteSize + TitleFavoriteGap : 0f;
+        }
+
+        /// <summary>
+        /// Draws the favorite star at the top-right of the title bar and toggles the session favorite on
+        /// click. Returns true when the star consumed the click, so the caller can suppress the row's
+        /// expand/collapse toggle. Off reads as a quiet outline; on reads as a warm gold star. Uses the
+        /// base/mouseover-color overload so the tint is honored (the 2-arg overload forces white).
+        /// </summary>
+        private static bool DrawTitleFavorite(Rect titleRect, DiaryEntryView entry, string entryKey)
+        {
+            if (!ShowFavoriteButton(entry))
+            {
+                return false;
+            }
+
+            Rect favRect = new Rect(
+                titleRect.xMax - TitleFavoriteSize - TitleFavoriteGap,
+                titleRect.y + (titleRect.height - TitleFavoriteSize) * 0.5f,
+                TitleFavoriteSize,
+                TitleFavoriteSize);
+
             bool fav = IsFavorite(entryKey);
             Color baseColor;
             Color hoverColor;
@@ -392,18 +424,20 @@ namespace PawnDiary
             }
             else
             {
-                baseColor = new Color(1f, 1f, 1f, 0.5f);
-                hoverColor = new Color(1f, 1f, 1f, 0.85f);
+                baseColor = new Color(1f, 1f, 1f, 0.55f);
+                hoverColor = new Color(1f, 1f, 1f, 0.9f);
             }
 
-            if (Widgets.ButtonImage(rect, DiaryButtonTextures.Favorite, baseColor, hoverColor, false))
+            bool clicked = Widgets.ButtonImage(favRect, DiaryButtonTextures.Favorite, baseColor, hoverColor, false);
+            if (clicked)
             {
                 ToggleFavorite(entryKey);
             }
 
             TooltipHandler.TipRegion(
-                rect,
+                favRect,
                 (fav ? "PawnDiary.Tab.FavoriteRemoveTip" : "PawnDiary.Tab.FavoriteAddTip").Translate());
+            return clicked;
         }
 
         /// <summary>
@@ -487,7 +521,7 @@ namespace PawnDiary
         /// </summary>
         private static bool HasFooterLine(DiaryEntryView entry)
         {
-            return HasModelName(entry) || CanShowRegenerateButton(entry) || ShowCopyButton(entry) || ShowFavoriteButton(entry);
+            return HasModelName(entry) || CanShowRegenerateButton(entry) || ShowCopyButton(entry);
         }
 
         private static bool CanShowRegenerateButton(DiaryEntryView entry)
@@ -962,8 +996,6 @@ namespace PawnDiary
             string modelName,
             bool showCopyButton,
             bool showRegenerateButton,
-            bool showFavoriteButton,
-            string entryKey,
             DiaryEntryView entry,
             Pawn pawn,
             DiaryGameComponent component)
@@ -976,7 +1008,7 @@ namespace PawnDiary
                 leftEdge = rect.x + copyWidth + EntryFooterActionGap;
             }
 
-            // Right cluster, laid out right-to-left: regenerate (rightmost), then the favorite star.
+            // Right side: the regenerate icon (rightmost); the provenance/model note fills the middle.
             float rightEdge = rect.xMax;
             if (showRegenerateButton)
             {
@@ -987,17 +1019,6 @@ namespace PawnDiary
                     EntryFooterActionButtonSize);
                 rightEdge = regenerateRect.x - EntryFooterActionGap;
                 DrawRegenerateButton(regenerateRect, entry, pawn, component);
-            }
-
-            if (showFavoriteButton)
-            {
-                Rect favoriteRect = new Rect(
-                    rightEdge - EntryFooterActionButtonSize,
-                    rect.y + (rect.height - EntryFooterActionButtonSize) * 0.5f,
-                    EntryFooterActionButtonSize,
-                    EntryFooterActionButtonSize);
-                rightEdge = favoriteRect.x - EntryFooterActionGap;
-                DrawFavoriteAction(favoriteRect, entryKey);
             }
 
             if (!string.IsNullOrWhiteSpace(modelName) && rightEdge > leftEdge)

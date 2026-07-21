@@ -176,8 +176,8 @@ namespace PawnDiary
         // its own vertical row. Alpha values keep it subtle until hover.
         public float writingStyleIconSize = 22f;
         public float writingStyleIconRightGap = 6f;
-        public float writingStyleIconAlpha = 0.42f;
-        public float writingStyleIconHoverAlpha = 0.82f;
+        public float writingStyleIconAlpha = 0.55f;
+        public float writingStyleIconHoverAlpha = 0.90f;
 
         // ---- Roleplay text and direct-speech blocks ----
         public float roleplayLineGap = 5f;
@@ -240,10 +240,10 @@ namespace PawnDiary
         // Subtle seasonal background wash behind the journal + filter panel. Very low alpha; the tab
         // eases between these as you scroll across a season divider. Set an alpha to 0 to disable one
         // season's wash (all four at 0 disables the effect entirely).
-        public DiaryUiColorSpec springWashColor = Color(0.42f, 0.58f, 0.40f, 0.09f);
-        public DiaryUiColorSpec summerWashColor = Color(0.85f, 0.72f, 0.36f, 0.09f);
-        public DiaryUiColorSpec fallWashColor = Color(0.80f, 0.47f, 0.22f, 0.10f);
-        public DiaryUiColorSpec winterWashColor = Color(0.48f, 0.60f, 0.80f, 0.09f);
+        public DiaryUiColorSpec springWashColor = Color(0.42f, 0.58f, 0.40f, 0.14f);
+        public DiaryUiColorSpec summerWashColor = Color(0.85f, 0.72f, 0.36f, 0.14f);
+        public DiaryUiColorSpec fallWashColor = Color(0.80f, 0.47f, 0.22f, 0.16f);
+        public DiaryUiColorSpec winterWashColor = Color(0.48f, 0.60f, 0.80f, 0.14f);
         public DiaryUiColorSpec pendingTitlePrefixColor = Color(0.86f, 0.86f, 0.86f, 0.95f);
         public DiaryUiColorSpec pendingTitleDotBaseColor = Color(0.68f, 0.72f, 0.76f, 1f);
         public DiaryUiColorSpec writingPlaceholderLowColor = Color(0.58f, 0.72f, 0.66f, 1f);
@@ -251,7 +251,7 @@ namespace PawnDiary
         public DiaryUiColorSpec yearDisabledColor = Color(1f, 1f, 1f, 0.42f);
         public DiaryUiColorSpec expansionIndicatorBaseColor = Color(0.62f, 0.65f, 0.68f, 0.85f);
         public DiaryUiColorSpec modelNameColor = Color(0.45f, 0.48f, 0.50f, 0.62f);
-        public DiaryUiColorSpec regenerateEntryButtonColor = Color(0.48f, 0.51f, 0.53f, 0.46f);
+        public DiaryUiColorSpec regenerateEntryButtonColor = Color(0.55f, 0.58f, 0.60f, 0.60f);
         // Warm gold used to tint the entry favorite star when it is toggled on; the off state reuses
         // the quiet regenerate/footer tint so an un-favorited star reads as a dim outline.
         public DiaryUiColorSpec favoriteStarColor = Color(0.98f, 0.82f, 0.34f, 1f);
@@ -325,10 +325,10 @@ namespace PawnDiary
         public Color EntryDateColor => entryDateColor.ToColor(new Color(0.80f, 0.79f, 0.74f, 1f));
         public Color QuadrumDividerLabelColor => quadrumDividerLabelColor.ToColor(new Color(0.85f, 0.83f, 0.75f, 1f));
         public Color QuadrumDividerLineColor => quadrumDividerLineColor.ToColor(new Color(0.60f, 0.57f, 0.50f, 0.45f));
-        public Color SpringWashColor => springWashColor.ToColor(new Color(0.42f, 0.58f, 0.40f, 0.09f));
-        public Color SummerWashColor => summerWashColor.ToColor(new Color(0.85f, 0.72f, 0.36f, 0.09f));
-        public Color FallWashColor => fallWashColor.ToColor(new Color(0.80f, 0.47f, 0.22f, 0.10f));
-        public Color WinterWashColor => winterWashColor.ToColor(new Color(0.48f, 0.60f, 0.80f, 0.09f));
+        public Color SpringWashColor => springWashColor.ToColor(new Color(0.42f, 0.58f, 0.40f, 0.14f));
+        public Color SummerWashColor => summerWashColor.ToColor(new Color(0.85f, 0.72f, 0.36f, 0.14f));
+        public Color FallWashColor => fallWashColor.ToColor(new Color(0.80f, 0.47f, 0.22f, 0.16f));
+        public Color WinterWashColor => winterWashColor.ToColor(new Color(0.48f, 0.60f, 0.80f, 0.14f));
         public Color PendingTitlePrefixColor => pendingTitlePrefixColor.ToColor(new Color(0.86f, 0.86f, 0.86f, 0.95f));
         public Color PendingTitleDotBaseColor => pendingTitleDotBaseColor.ToColor(new Color(0.68f, 0.72f, 0.76f));
         public Color WritingPlaceholderLowColor => writingPlaceholderLowColor.ToColor(new Color(0.58f, 0.72f, 0.66f));
@@ -336,7 +336,7 @@ namespace PawnDiary
         public Color YearDisabledColor => yearDisabledColor.ToColor(new Color(1f, 1f, 1f, 0.42f));
         public Color ExpansionIndicatorBaseColor => expansionIndicatorBaseColor.ToColor(new Color(0.62f, 0.65f, 0.68f, 0.85f));
         public Color ModelNameColor => modelNameColor.ToColor(new Color(0.45f, 0.48f, 0.50f, 0.62f));
-        public Color RegenerateEntryButtonColor => regenerateEntryButtonColor.ToColor(new Color(0.48f, 0.51f, 0.53f, 0.46f));
+        public Color RegenerateEntryButtonColor => regenerateEntryButtonColor.ToColor(new Color(0.55f, 0.58f, 0.60f, 0.60f));
         public Color FavoriteStarColor => favoriteStarColor.ToColor(new Color(0.98f, 0.82f, 0.34f, 1f));
         public Color FilterActiveIconColor => filterActiveIconColor.ToColor(new Color(0.96f, 0.78f, 0.40f, 0.98f));
         public Color DebugTextColor => debugTextColor.ToColor(new Color(0.54f, 0.58f, 0.60f, 0.90f));

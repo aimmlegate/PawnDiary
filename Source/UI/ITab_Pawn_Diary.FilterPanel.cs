@@ -112,14 +112,8 @@ namespace PawnDiary
                 return;
             }
 
-            // Seasonal wash behind the whole panel, sharing the journal's smoothed tint (updated by the
-            // journal draw; one frame behind, which is imperceptible) so both columns read as the same
-            // season. The panel has no other background, so this is where its tint reads most clearly.
-            if (seasonWashColor.a > 0f)
-            {
-                Widgets.DrawBoxSolid(panelRect, seasonWashColor);
-            }
-
+            // The seasonal wash is painted once across the whole tab in FillTab, so it already sits
+            // behind this panel; nothing extra to draw here.
             ResetFilterStateOnPawnChange(pawn);
             // No DrawMenuSection here on purpose: the inspect tab already paints a window background
             // behind the whole tab, so an extra inset box only boxed the controls in and its border
