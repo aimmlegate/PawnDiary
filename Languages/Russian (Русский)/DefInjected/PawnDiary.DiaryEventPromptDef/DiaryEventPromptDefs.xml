@@ -6,6 +6,9 @@
   <DiaryEventPrompt_MentalState.label>нервный срыв</DiaryEventPrompt_MentalState.label>
   <DiaryEventPrompt_MentalState.prompt>Опиши психическое состояние как давление на мысль, порыв и действие.</DiaryEventPrompt_MentalState.prompt>
   <DiaryEventPrompt_MentalState.enhancement>Дай срыву ход: мысль, порыв, тело, действие. Оставайся в рамках названного состояния и наблюдаемого поведения; не ставь диагнозы сверх фактов.</DiaryEventPrompt_MentalState.enhancement>
+  <DiaryEventPrompt_IdeoChange.label>кризис веры</DiaryEventPrompt_IdeoChange.label>
+  <DiaryEventPrompt_IdeoChange.prompt>Опиши точное психическое состояние «Кризис веры» с точки зрения сорвавшегося поселенца.</DiaryEventPrompt_IdeoChange.prompt>
+  <DiaryEventPrompt_IdeoChange.enhancement>Используй только переданные факты о психическом состоянии и вере. Успешное обращение или разные прежняя и текущая идеолигии доказывают настоящую смену веры; неудачное обращение или неизменная идеолигия означают пошатнувшуюся веру и падение уверенности, а не обращение. Если прежних сведений или фактов изменения нет, упоминай только видимые текущую идеолигию и уверенность. Не выдумывай прежнюю или предложенную веру.</DiaryEventPrompt_IdeoChange.enhancement>
   <DiaryEventPrompt_Tale.label>памятное событие</DiaryEventPrompt_Tale.label>
   <DiaryEventPrompt_Tale.prompt>Опиши значимое несоциальное событие RimWorld как личный опыт или память поселенца.</DiaryEventPrompt_Tale.prompt>
   <DiaryEventPrompt_Tale.enhancement>Ищи напряжение в самих фактах: опасность, гордость, стыд, облегчение, увечье или последствия. Не превращай запись в обычную болтовню.</DiaryEventPrompt_Tale.enhancement>

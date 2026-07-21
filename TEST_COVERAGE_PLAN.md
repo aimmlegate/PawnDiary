@@ -1060,6 +1060,16 @@ pair PlayLog page.
 Live mutation cases skip explicitly in Ideology classic mode, where vanilla disables tracker mechanics.
 A disposable second Ideo is generated when the loaded game exposes only one, preserving the
 deterministic conversion fixture and single-Ideo fallback.
+The exact Crisis-of-Belief follow-up adds one compiled case to the same suite, bringing the RimTest
+assembly to 377 tests. It spawns a disposable pawn, forces the real `IdeoChange` mental-state boundary
+under a fixed/restored nested Verse RNG state, requires one existing solo page and one truthful,
+non-consumed conversion mutation, and verifies that PlayLog does not change. It reports inactive DLC
+and classic mode as not applicable; teardown restores the mental state, pawn, generated alternative
+Ideo when needed, cache, group/settings state, and RNG. Standalone belief/pipeline fixtures prove exact
+group/prompt priority, ordinary Berserk ownership, wrong-pawn/stale/future evidence rejection,
+changed-versus-unchanged truth, and current-only fallback without reconstructing an old faith. This
+new 377th fixture is compiled but has not yet been executed in-game; the recorded 376/376 baseline
+below remains the latest loaded result.
 The first user-observed 376-test loaded run completed 374/376. It exposed the dedicated worker
 fixture's disabled `ConversionPower`/unspawned-recipient prerequisites, while the other failure was the
 unrelated N3-O acceptance guard on a host without a parked player gravship. After correcting the

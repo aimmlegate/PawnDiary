@@ -39,6 +39,8 @@ preserve the existing accordion, year paging, saved diary entries, and DLC indep
   footers.
 - `13-native-footer-icons.png` — refines those footer actions into tiny, unboxed, low-contrast
   RimWorld-style glyphs while preserving the node-based expansion state.
+- `14-year-tags-favorites-sidebar.png` — explores a compact expandable right sidebar with a
+  current-year selector, color-coded tag filters, and per-entry favorites.
 
 A5 and B2 are represented through more personal prose, not by adding a new identity panel to the
 Diary UI. B1 is represented by the Russian mockup: user-facing output is Russian while internal

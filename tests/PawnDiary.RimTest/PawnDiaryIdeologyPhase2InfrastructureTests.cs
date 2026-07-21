@@ -1,9 +1,10 @@
-// Loaded-game fixtures for Ideology Phase 2 mutation infrastructure and exact interaction consumers.
+// Loaded-game fixtures for Ideology Phase 2 mutation infrastructure, exact interaction consumers, and
+// the exact IdeoChange crisis consumer on the existing solo mental-state page.
 // These tests invoke real Pawn_IdeoTracker methods patched by production, inspect their detached
-// before/after facts, and prove exact ability ownership leaves the enriched downstream PlayLog
-// interaction as the sole diary page.
-// Every cache, tuning value, setting, PlayLog row, temporary Harmony patch, and disposable pawn is
-// restored by finally-backed teardown or an explicit try/finally block.
+// before/after facts, prove exact ability ownership leaves the enriched downstream PlayLog interaction
+// as the sole diary page, and force the real MentalState_IdeoChange.PreStart boundary once.
+// Every cache, tuning value, setting, PlayLog row, temporary Ideo/Harmony object, RNG scope, and
+// disposable pawn is restored by finally-backed teardown or an explicit try/finally block.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,7 +33,8 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin("conversion", "heartfelt", "abilityUsed");
+            scope = PawnDiaryRimTestScope.Begin(
+                "conversion", "heartfelt", "abilityUsed", "beliefCrisis");
             pawn = scope.CreateAdultColonist();
             otherPawn = scope.CreateAdultColonist();
             BeliefMutationCache.Reset();
@@ -243,6 +245,124 @@ namespace PawnDiary.RimTests
                     && mutation.causeTokens.Contains(BeliefMutationCauseTokens.ConversionAttempt)
                     && mutation.causeTokens.Contains(BeliefMutationCauseTokens.SetIdeology),
                 "Nested conversion work did not coalesce under one conversion-owned row.");
+        }
+
+        /// <summary>
+        /// Forces the real IdeoChange mental-state boundary once. Vanilla PreStart performs its
+        /// conversion attempt before Pawn Diary's successful-start postfix, so the existing solo page
+        /// must freeze that exact mutation without consuming it or creating a second page.
+        /// </summary>
+        [Test]
+        public static void RealIdeoChangeBoundaryEnrichesItsSingleSoloPage()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                PawnDiaryRimTestScope.Require(
+                    BeliefMutationEvidenceAdapter.ForMentalState(
+                        "IdeoChange", "beliefCrisis", pawn.GetUniqueLoadID(),
+                        Find.TickManager.TicksGame) == null
+                        && BeliefMutationCache.Count == 0,
+                    "The IdeoChange consumer/cache must remain inert without Ideology.");
+                Log.Message(LogPrefix
+                    + "real IdeoChange boundary: not applicable (Ideology inactive). ");
+                return;
+            }
+
+            MentalStateDef stateDef = DefDatabase<MentalStateDef>.GetNamedSilentFail("IdeoChange");
+            MentalBreakDef breakDef = DefDatabase<MentalBreakDef>.GetNamedSilentFail("IdeoChange");
+            PawnDiaryRimTestScope.Require(stateDef != null && breakDef?.Worker != null,
+                "The Ideology-active fixture did not load the real IdeoChange mental-state boundary.");
+            if (Find.IdeoManager?.classicMode == true)
+            {
+                PawnDiaryRimTestScope.Require(!breakDef.Worker.BreakCanOccur(pawn)
+                        && BeliefMutationCache.Count == 0,
+                    "Classic Ideology mode should make vanilla IdeoChange not applicable.");
+                Log.Message(LogPrefix
+                    + "real IdeoChange boundary: not applicable (classic mode). ");
+                return;
+            }
+
+            scope.SpawnAsLiveColonist(pawn);
+            Ideo beforeIdeology = EnsureCurrentIdeology();
+            EnsureRegisteredAlternativeIdeology(beforeIdeology);
+            DiaryInteractionGroupDef crisisGroup = InteractionGroups.ClassifyMentalState(stateDef);
+            PawnDiaryRimTestScope.Require(crisisGroup?.defName == "beliefCrisis",
+                "The exact IdeoChange group did not win before the generic mental-state fallback.");
+            DiaryEventPromptDef crisisPrompt = DefDatabase<DiaryEventPromptDef>
+                .GetNamedSilentFail("DiaryEventPrompt_IdeoChange");
+            PawnDiaryRimTestScope.Require(crisisPrompt?.eventType == "IdeoChange",
+                "The exact localized IdeoChange event prompt was not loaded.");
+            BeliefMutationEventRule crisisRule = BeliefMutationEventSelector.RuleFor(
+                BeliefMutationEventSourceTokens.MentalState,
+                "IdeoChange",
+                "beliefCrisis",
+                ideologyActive: true,
+                policyEnabled: DiaryBeliefPolicy.Snapshot().enabled,
+                DiaryBeliefPolicy.Snapshot().mutationEventRules);
+            PawnDiaryRimTestScope.Require(crisisRule != null
+                    && crisisRule.subjectRole == BeliefMutationSubjectRoleTokens.Initiator
+                    && crisisRule.evidenceGroupKey == "crisis",
+                "The loaded belief policy did not expose the exact IdeoChange crisis rule.");
+
+            // Starting at zero certainty guarantees that vanilla's fixed 0.5 reduction enters the
+            // observed SetIdeo path. Reset setup evidence so only PreStart's real mutation remains.
+            pawn.ideo.OffsetCertainty(-pawn.ideo.Certainty);
+            BeliefMutationCache.Reset();
+            float beforeCertainty = pawn.ideo.Certainty;
+            int playLogCount = Find.PlayLog?.AllEntries?.Count ?? 0;
+
+            DiaryEvent page;
+            Rand.PushState(681247);
+            try
+            {
+                page = scope.FireAndRequireEvent(
+                    () =>
+                    {
+                        bool started = pawn.mindState.mentalStateHandler.TryStartMentalState(
+                            stateDef,
+                            "Pawn Diary RimTest IdeoChange boundary",
+                            forced: true);
+                        PawnDiaryRimTestScope.Require(started,
+                            "Vanilla refused to start the forced IdeoChange mental state.");
+                    },
+                    "IdeoChange",
+                    pawn,
+                    null,
+                    rejectOtherTestPawnEvents: true);
+            }
+            finally
+            {
+                Rand.PopState();
+            }
+
+            scope.RequireSoloRef(page, pawn);
+            AssertGameContextContains(page, "mental_state=IdeoChange");
+            AssertGameContextContains(page, BeliefMutationEventSelector.CrisisGameContextMarker);
+            PawnDiaryRimTestScope.Require((Find.PlayLog?.AllEntries?.Count ?? 0) == playLogCount,
+                "The IdeoChange boundary unexpectedly changed PlayLog.");
+
+            BeliefMutationSnapshot mutation = BeliefMutationCache.PeekLatest(
+                pawn.GetUniqueLoadID(), Find.TickManager.TicksGame, DiaryBeliefPolicy.Snapshot());
+            PawnDiaryRimTestScope.Require(mutation != null
+                    && mutation.conversionSucceeded == true
+                    && mutation.ideologyChanged
+                    && mutation.beforeIdeologyId == beforeIdeology.GetUniqueLoadID()
+                    && mutation.afterIdeologyId == pawn.ideo.Ideo.GetUniqueLoadID()
+                    && mutation.attemptedIdeologyId == mutation.afterIdeologyId
+                    && Math.Abs(mutation.beforeCertainty - beforeCertainty) < 0.0001f
+                    && Math.Abs(mutation.afterCertainty - pawn.ideo.Certainty) < 0.0001f
+                    && mutation.causeTokens.Contains(BeliefMutationCauseTokens.ConversionAttempt)
+                    && mutation.causeTokens.Contains(BeliefMutationCauseTokens.SetIdeology),
+                "The real IdeoChange page did not retain its truthful coalesced mutation facts.");
+            AssertContextContains(page, DiaryEvent.InitiatorRole,
+                "previous ideoligion: " + mutation.beforeIdeologyName);
+            AssertContextContains(page, DiaryEvent.InitiatorRole,
+                "current ideoligion: " + mutation.afterIdeologyName);
+            AssertContextContains(page, DiaryEvent.InitiatorRole, "conversion result: success");
+            AssertContextContains(page, DiaryEvent.InitiatorRole, "certainty before:");
+            AssertContextContains(page, DiaryEvent.InitiatorRole, "certainty after:");
+            PawnDiaryRimTestScope.Require(BeliefMutationCache.Count == 1,
+                "The existing solo crisis page consumed or duplicated its mutation cache row.");
         }
 
         /// <summary>
@@ -742,6 +862,37 @@ namespace PawnDiary.RimTests
             });
             PawnDiaryRimTestScope.Require(generated != null && !ReferenceEquals(generated, current),
                 "RimWorld did not provide a second loaded or disposable ideoligion fixture.");
+            return generated;
+        }
+
+        /// <summary>
+        /// Ensures vanilla IdeoChange's weighted manager lookup has a different candidate. A generated
+        /// fallback is registered only for this test and is removed after restoring the disposable pawn.
+        /// </summary>
+        private static Ideo EnsureRegisteredAlternativeIdeology(Ideo current)
+        {
+            IdeoManager manager = Find.IdeoManager;
+            PawnDiaryRimTestScope.Require(manager != null,
+                "The Ideology-active fixture did not expose an IdeoManager.");
+            Ideo loaded = manager.IdeosListForReading
+                .FirstOrDefault(value => value != null && !ReferenceEquals(value, current));
+            if (loaded != null) return loaded;
+
+            Ideo generated = IdeoGenerator.GenerateIdeo(new IdeoGenerationParms
+            {
+                forFaction = Faction.OfPlayer.def,
+                fixedIdeo = true
+            });
+            PawnDiaryRimTestScope.Require(generated != null && manager.Add(generated),
+                "Could not register a disposable alternative ideoligion for IdeoChange.");
+            scope.RegisterCleanup(() =>
+            {
+                if (pawn?.ideo?.Ideo == generated && current != null)
+                    pawn.ideo.SetIdeo(current);
+                BeliefMutationCache.Reset();
+                if (manager.IdeosListForReading.Contains(generated)) manager.Remove(generated);
+                BeliefMutationCache.Reset();
+            });
             return generated;
         }
 

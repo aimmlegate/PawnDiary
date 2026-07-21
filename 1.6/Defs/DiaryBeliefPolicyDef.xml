@@ -161,11 +161,23 @@
       <li><sourceDomain>thought</sourceDomain><sourceDefName>FailedConvertAbilityRecipient</sourceDefName><downstreamGroupDefName>conversion</downstreamGroupDefName></li>
     </canonicalEventOwnershipRules>
 
-    <!-- Exact already-authorized interaction consumers. The recipient is the tracker owner for all
-         four vanilla mechanics. Shape checks prevent an adjacent same-tick action from lending the
-         wrong success/failure or certainty direction to a page. Counsel is intentionally absent: it
-         changes mood/thought state, not Ideology certainty. The code fallback list is empty. -->
+    <!-- Exact already-authorized consumers. Interaction recipients own the four existing mechanics;
+         the breaking pawn initiates IdeoChange. Shape checks prevent an adjacent same-tick action from
+         lending the wrong success/failure or certainty direction to a page. Counsel is intentionally
+         absent: it changes mood/thought state, not Ideology certainty. The code fallback list is empty. -->
     <mutationEventRules>
+      <li>
+        <sourceDomain>mental_state</sourceDomain>
+        <sourceDefName>IdeoChange</sourceDefName>
+        <downstreamGroupDefName>beliefCrisis</downstreamGroupDefName>
+        <subjectRole>initiator</subjectRole>
+        <evidenceGroupKey>crisis</evidenceGroupKey>
+        <requiredCauseToken>conversion_attempt</requiredCauseToken>
+        <conversionResult>known</conversionResult>
+        <certaintyDirection>any</certaintyDirection>
+        <ideologyChange>any</ideologyChange>
+        <requireAttemptedIdeology>true</requireAttemptedIdeology>
+      </li>
       <li>
         <sourceDomain>interaction</sourceDomain>
         <sourceDefName>ConvertIdeoAttempt</sourceDefName>

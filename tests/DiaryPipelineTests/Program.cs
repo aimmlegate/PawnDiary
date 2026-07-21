@@ -66,6 +66,7 @@ namespace DiaryPipelineTests
             TestRoyaltyPersonaLifecycleXmlContract();
             TestRoyaltyPermitXmlContract();
             TestRoyaltyAscentXmlContract();
+            TestIdeologyCrisisXmlContract();
             TestProgressionMilestonePolicy();
             TestPsylinkProgressionLevelPolicy();
             TestArcReflectionSchedulePolicy();
@@ -5666,6 +5667,89 @@ namespace DiaryPipelineTests
                 "Ritual");
             AssertEqual("event prompt key classifier retained", "Ritual_Speech;RitualBehaviorWorker_ThroneSpeech", ritualKeys[2]);
             AssertEqual("event prompt key ritual fallback", "Ritual", ritualKeys[3]);
+        }
+
+        private static void TestIdeologyCrisisXmlContract()
+        {
+            XDocument groups = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryInteractionGroupDefs.xml"));
+            XElement crisis = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "beliefCrisis");
+            XElement fallback = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "mentalbreak");
+            XElement berserk = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "mentalbreakViolent");
+            AssertTrue("IdeoChange crisis group exists", crisis != null);
+            AssertEqual("IdeoChange crisis domain", "MentalState", ChildValue(crisis, "domain"));
+            AssertTrue("IdeoChange crisis uses one exact Def matcher",
+                crisis.Element("matchDefNames")?.Elements("li").Count() == 1
+                    && HasListValue(crisis, "matchDefNames", "IdeoChange")
+                    && !HasListValue(crisis, "matchPrefixes", null)
+                    && !HasListValue(crisis, "matchSegments", null)
+                    && !HasListValue(crisis, "matchTokens", null));
+            AssertTrue("IdeoChange crisis precedes the generic mental-state fallback",
+                InteractionGroupOrder(crisis) < InteractionGroupOrder(fallback));
+            AssertTrue("ordinary Berserk remains owned by the violent mental-state group",
+                !HasListValue(crisis, "matchDefNames", "Berserk")
+                    && HasListValue(berserk, "matchDefNames", "Berserk"));
+            AssertTrue("IdeoChange crisis is package-gated to optional Ideology",
+                HasListValue(crisis, "enableWhenPackageIdsLoaded", "Ludeon.RimWorld.Ideology"));
+
+            XDocument prompts = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryEventPromptDefs.xml"));
+            XElement exactPrompt = FindDef(
+                prompts, "PawnDiary.DiaryEventPromptDef", "DiaryEventPrompt_IdeoChange");
+            AssertTrue("exact IdeoChange event prompt exists", exactPrompt != null);
+            AssertEqual("exact IdeoChange prompt key", "IdeoChange",
+                ChildValue(exactPrompt, "eventType"));
+            AssertTrue("exact IdeoChange prompt is package-gated to optional Ideology",
+                HasListValue(exactPrompt, "enableWhenPackageIdsLoaded", "Ludeon.RimWorld.Ideology"));
+
+            List<string> keys = DiaryEventPromptKeys.CandidateKeys(
+                new DiaryEventPayload { defName = "IdeoChange" },
+                "beliefCrisis", "IdeoChange", "MentalState");
+            AssertEqual("IdeoChange prompt exact key wins first", "IdeoChange", keys[0]);
+            AssertEqual("IdeoChange group prompt remains second", "beliefCrisis", keys[1]);
+            AssertEqual("IdeoChange mental-state fallback remains last", "MentalState", keys[2]);
+            AssertEqual("duplicate classifier key is removed", 3, keys.Count);
+
+            XDocument policy = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryBeliefPolicyDef.xml"));
+            List<XElement> crisisRules = policy.Descendants("mutationEventRules")
+                .Elements("li")
+                .Where(row => string.Equals(ChildValue(row, "sourceDomain"), "mental_state",
+                        StringComparison.Ordinal)
+                    && string.Equals(ChildValue(row, "sourceDefName"), "IdeoChange",
+                        StringComparison.Ordinal))
+                .ToList();
+            AssertEqual("one exact IdeoChange mutation rule ships", 1, crisisRules.Count);
+            AssertEqual("IdeoChange mutation rule requires crisis ownership", "beliefCrisis",
+                ChildValue(crisisRules[0], "downstreamGroupDefName"));
+            AssertEqual("IdeoChange mutation rule keeps crisis evidence key", "crisis",
+                ChildValue(crisisRules[0], "evidenceGroupKey"));
+
+            XDocument englishGroups = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryInteractionGroupDef",
+                "DiaryInteractionGroupDefs.xml"));
+            XDocument russianGroups = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryInteractionGroupDef", "DiaryInteractionGroupDefs.xml"));
+            XDocument englishPrompts = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryEventPromptDef",
+                "DiaryEventPromptDefs.xml"));
+            XDocument russianPrompts = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryEventPromptDef", "DiaryEventPromptDefs.xml"));
+            AssertTrue("English crisis group text is localized",
+                !string.IsNullOrWhiteSpace(ChildValue(englishGroups.Root, "beliefCrisis.instruction")));
+            AssertTrue("Russian crisis group text is localized",
+                !string.IsNullOrWhiteSpace(ChildValue(russianGroups.Root, "beliefCrisis.instruction")));
+            AssertTrue("English exact crisis prompt is localized",
+                !string.IsNullOrWhiteSpace(ChildValue(
+                    englishPrompts.Root, "DiaryEventPrompt_IdeoChange.enhancement")));
+            AssertTrue("Russian exact crisis prompt is localized",
+                !string.IsNullOrWhiteSpace(ChildValue(
+                    russianPrompts.Root, "DiaryEventPrompt_IdeoChange.enhancement")));
         }
 
         private static void TestResponsePostprocessorRules()

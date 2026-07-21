@@ -31,6 +31,19 @@
     <enhancement>Write with pressure and unstable momentum: thought, impulse, body, then action. Stay inside the named state and observed behavior; do not diagnose beyond supplied facts.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
+  <!-- Exact Ideology crisis prompt. Exact source DefName wins before beliefCrisis and MentalState
+       fallbacks, so changed/unchanged/missing mutation facts receive one truthful contract. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_IdeoChange</defName>
+    <label>crisis of belief</label>
+    <eventType>IdeoChange</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the exact Crisis of Belief mental state from the breaking pawn&apos;s point of view.</prompt>
+    <enhancement>Use only supplied mental-state and belief facts. A successful conversion or different previous/current ideoligion proves an actual change of faith; a failed conversion or unchanged identity proves challenged faith and falling certainty, not conversion. When no previous or mutation facts are present, mention only the visible current ideoligion and certainty. Never invent a former or attempted faith.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Tale</defName>
     <label>tale</label>

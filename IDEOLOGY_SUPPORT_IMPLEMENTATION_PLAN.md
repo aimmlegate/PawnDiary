@@ -1,9 +1,10 @@
 # Pawn Diary — Ideoligion Support Implementation Plan
 
-Status: Phases 0–1 completed on 2026-07-21; Phase 2 infrastructure and the first exact interaction
-consumer are partially implemented; Phases 3–6 remain pending. Guarded mutation capture/coalescing,
-exact downstream Ability ownership, and existing PlayLog conversion/reassurance page enrichment are
-live; crisis, ritual, broader evidence, exact prompt, and reflection work remains pending.
+Status: Phases 0–1 completed on 2026-07-21; Phase 2 infrastructure, exact interaction consumers, and
+the exact `IdeoChange` crisis slice are partially implemented; Phases 3–6 remain pending. Guarded
+mutation capture/coalescing, exact downstream Ability ownership, existing PlayLog conversion/
+reassurance enrichment, and the existing solo crisis page's truthful mutation/current-state context
+are live; ritual, broader evidence, remaining exact prompts, and reflection work remains pending.
 
 Scheduling authority: implement Ideology phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Ideology.
@@ -774,6 +775,14 @@ events and exactly one canonical downstream interaction/ritual event.
 
 ### 10.5 Crisis of belief
 
+> **Implemented (2026-07-22) as the smallest next Phase-2 slice.** The existing exact `IdeoChange`
+> solo mental-state page now resolves the Ideology-gated `beliefCrisis` group before the generic
+> catchall, peeks the matching breaking-pawn mutation, freezes observed changed/unchanged mechanics,
+> and appends `belief_event=crisis`. Missing or rejected mutation evidence carries only a typed request
+> for guarded current identity/certainty; no old ideology is reconstructed. The exact localized
+> `DiaryEventPrompt_IdeoChange` wins by normal prompt-key precedence. No new page, hook, save field,
+> polling path, or gameplay RNG draw was added.
+
 - Add an exact mental-state group for `IdeoChange` before the generic mental-state catchall.
 - Peek the mutation created during `MentalState_IdeoChange.PreStart` and attach it to the event.
 - If the attempt did not change ideology, say certainty fell or faith was challenged, not that the
@@ -1143,7 +1152,7 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 
 ### Phase 2 — Required event integrations and mutation capture
 
-> **Partial implementation status (2026-07-21): infrastructure plus first interaction consumer.** Exact guarded
+> **Partial implementation status (2026-07-22): infrastructure, exact interactions, and crisis.** Exact guarded
 > `IdeoConversionAttempt`/`OffsetCertainty`/`SetIdeo` hooks project live state only through
 > `DlcContext`, and a bounded pure buffer coalesces overlapping nested calls while keeping sequential
 > same-tick actions distinct. The transient cache is reset per game, non-scribed, non-emitting, and
@@ -1160,7 +1169,7 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > skips only live mutation mechanics while keeping patch and XML-policy ownership checks active.
 > The first loaded 376-test run completed 374/376; after correcting the conversion-worker fixture and
 > satisfying the unrelated N3-O parked-gravship host guard, the rerun passed all 376/376 tests. Broader
-> step 2, ritual/crisis/throne-speech parts of step 3, step 4 prompt/group work, and the complete
+> step 2, ritual/throne-speech parts of step 3, remaining step 4 prompt/group work, and the complete
 > per-path exit gate remain pending.
 
 1. Implement guarded/coalescing mutation patches and cache. **Implemented in the infrastructure slice.**
@@ -1168,9 +1177,11 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
    body/medical, food, combat/prisoner, observed-condition, and ritual routes. Emit a topic only when
    that source has the exact visible fact needed; unavailable evidence leaves the route unchanged.
 3. Enrich conversion conversation, conversion success/failure, reassurance/counsel, `IdeoChange`,
-   conversion ritual, and throne speech through the same resolver. **Exact conversion interaction and
-   Reassure mechanics are implemented; Counsel, crisis, ritual, and throne speech remain pending.**
-4. Add exact XML groups/prompts and role-specific evidence.
+   conversion ritual, and throne speech through the same resolver. **Exact conversion interaction,
+   Reassure mechanics, and the existing `IdeoChange` solo page are implemented; Counsel, ritual, and
+   throne speech remain pending.**
+4. Add exact XML groups/prompts and role-specific evidence. **The exact IdeoChange group/prompt and
+   breaking-pawn evidence are implemented; remaining routes stay pending.**
 5. Drop downstream-covered generic abilities before their random roll. **Implemented for the three
    exact XML-owned vanilla routes; full interaction/ritual enrichment coverage remains pending.**
 
@@ -1332,6 +1343,13 @@ failure. Gate Ideology/Royalty cases and report not-applicable when the DLC is i
     even when its Def/issue names are absent from Pawn Diary XML.
 16. Recording a matching `HistoryEvent` populates/consumes the bounded evidence sidecar for the correct
     visible pawn and tick but creates zero diary pages on its own; stale/unrelated facts do not attach.
+
+The 2026-07-22 crisis slice compiles scenario 2 as a deterministic, restored-RNG loaded fixture. It
+forces the real `MentalState_IdeoChange.PreStart` boundary on a spawned disposable pawn, requires one
+existing solo page and one non-consumed coalesced mutation row, checks exact previous/current identity
+and certainty mechanics, verifies PlayLog is unchanged, and reports inactive-DLC/classic-mode branches
+as not applicable. Pure fixtures cover changed/unchanged results plus wrong-pawn, stale, future, and
+missing-evidence fallbacks; the existing real Berserk fixture remains the unrelated-state regression.
 
 Never retry chance-driven cases until they happen. Override XML-effective chance to `0`/`1` or inject
 a deterministic pure decision.

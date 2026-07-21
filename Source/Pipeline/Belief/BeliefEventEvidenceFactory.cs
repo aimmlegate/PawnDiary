@@ -86,6 +86,7 @@ namespace PawnDiary
             {
                 narrative = CopyNarrative(source.narrative),
                 groupKey = SafeToken(source.groupKey),
+                currentBeliefFactsRelevant = source.currentBeliefFactsRelevant,
                 sourcePreceptInstanceId = SafeId(source.sourcePreceptInstanceId),
                 sourcePreceptDefName = SafeId(source.sourcePreceptDefName),
                 mutation = source.mutation
@@ -123,6 +124,7 @@ namespace PawnDiary
                 || HasFields(evidence.matchFields)
                 || HasValues(evidence.semanticAliasTokens)
                 || HasValues(evidence.narrative.beliefTopics)
+                || evidence.currentBeliefFactsRelevant
                 || evidence.mutation != null && evidence.mutation.HasUsefulFact;
         }
 

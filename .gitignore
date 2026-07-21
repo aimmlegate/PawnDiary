@@ -29,6 +29,13 @@ design/
 prompt-lab/
 scripts/
 INTEGRATIONS.md
+.foglamp/
+.qoder/
+
+# Local adversarial-review/build crash artifacts
+/build_output.txt
+*.stackdump
+/tmp_review_*/
 
 # Note: 1.6/Assemblies/PawnDiary.dll (and bundled 0Harmony.dll) are committed on purpose
 # so the mod is usable straight from a clone.

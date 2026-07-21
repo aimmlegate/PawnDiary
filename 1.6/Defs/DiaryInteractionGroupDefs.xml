@@ -868,6 +868,27 @@
 
   <!-- ===== Mental-state domain ===== -->
 
+  <!-- Exact Ideology crisis owner. This remains the ordinary solo mental-state page; the narrower
+       group only supplies policy/prompt framing and optional detached belief evidence. The matcher is
+       a plain string and the package gate keeps the row invisible in a no-Ideology game. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>beliefCrisis</defName>
+    <label>Crisis of belief</label>
+    <order>199</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>an exact crisis of belief; use supplied belief facts to distinguish an actual change of faith from certainty breaking under doubt, and never invent a former ideoligion</instruction>
+    <tone>with shaken conviction and raw inward doubt</tone>
+    <colorCue>mentalBreak</colorCue>
+    <matchDefNames>
+      <li>IdeoChange</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>socialfight</defName>
     <label>Social fights</label>

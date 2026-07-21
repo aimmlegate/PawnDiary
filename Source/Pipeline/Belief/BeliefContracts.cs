@@ -300,6 +300,10 @@ namespace PawnDiary
     {
         public NarrativeEvidence narrative = new NarrativeEvidence();
         public string groupKey = string.Empty;
+        // Exact belief-crisis pages may truthfully show the pawn's visible current ideoligion and
+        // certainty even when the transient mutation row is unavailable. This flag never authorizes
+        // a page and never permits reconstruction of an earlier ideoligion.
+        public bool currentBeliefFactsRelevant;
         public string sourcePreceptInstanceId = string.Empty;
         public string sourcePreceptDefName = string.Empty;
         public List<string> thoughtDefNames = new List<string>();
@@ -357,6 +361,7 @@ namespace PawnDiary
         public BeliefMutationSnapshot mutation;
         public string mutationSubjectLabel = string.Empty;
         public bool mutationSubjectIsPov;
+        public bool currentBeliefFactsRelevant;
         public List<string> expandedTopicTokens = new List<string>();
         public List<string> selectionReasonTokens = new List<string>();
         public string narrativeCategory = NarrativeCategoryTokens.Interpretation;
@@ -365,7 +370,7 @@ namespace PawnDiary
         {
             get
             {
-                return stances.Count > 0 || supportingMemes.Count > 0
+                return currentBeliefFactsRelevant || stances.Count > 0 || supportingMemes.Count > 0
                     || mutation != null && mutation.HasUsefulFact;
             }
         }
@@ -417,6 +422,7 @@ namespace PawnDiary
     internal static class BeliefMutationEventSourceTokens
     {
         public const string Interaction = "interaction";
+        public const string MentalState = "mental_state";
     }
 
     /// <summary>Stable event participant roles used to find the pawn whose tracker mutated.</summary>

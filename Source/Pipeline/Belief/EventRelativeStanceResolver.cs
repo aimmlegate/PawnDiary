@@ -165,6 +165,7 @@ namespace PawnDiary
             result.ideologyId = snapshot.ideologyId ?? string.Empty;
             result.ideologyName = snapshot.ideologyName ?? string.Empty;
             result.roleName = snapshot.roleName ?? string.Empty;
+            result.currentBeliefFactsRelevant = evidence.currentBeliefFactsRelevant;
             result.expandedTopicTokens.AddRange(expanded.topics);
             result.mutation = evidence.mutation != null && evidence.mutation.HasUsefulFact ? evidence.mutation : null;
             result.mutationSubjectLabel = result.mutation == null
@@ -729,6 +730,7 @@ namespace PawnDiary
                 || HasAny(evidence.thoughtDefNames) || HasAny(evidence.historyEventDefNames)
                 || HasAny(evidence.issueDefNames) || HasAny(evidence.memeDefNames)
                 || HasAny(evidence.matchFields) || expanded.topics.Count > 0 || expanded.semanticAliases.Count > 0
+                || evidence.currentBeliefFactsRelevant
                 || evidence.mutation != null && evidence.mutation.HasUsefulFact;
         }
 

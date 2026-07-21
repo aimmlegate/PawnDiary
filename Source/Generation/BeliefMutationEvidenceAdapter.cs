@@ -44,5 +44,38 @@ namespace PawnDiary
                 rule, subjectPawnId, eventTick, policy.mutationCorrelationWindowTicks, newest,
                 subjectLabel);
         }
+
+        /// <summary>
+        /// Returns exact IdeoChange crisis evidence for an already-authorized solo mental-state page.
+        /// The cache read is a peek: both mutation-backed and current-only results remain detached facts,
+        /// and this adapter can neither consume evidence nor create another page.
+        /// </summary>
+        public static BeliefEventEvidence ForMentalState(
+            string mentalStateDefName,
+            string effectiveGroupDefName,
+            string pawnId,
+            int eventTick,
+            string pawnLabel = null)
+        {
+            if (!ModsConfig.IdeologyActive || !DiaryGameComponent.GamePlaying) return null;
+            BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
+            BeliefMutationEventRule rule = BeliefMutationEventSelector.RuleFor(
+                BeliefMutationEventSourceTokens.MentalState,
+                mentalStateDefName,
+                effectiveGroupDefName,
+                ideologyActive: true,
+                policyEnabled: policy.enabled,
+                policy.mutationEventRules);
+            if (rule == null) return null;
+
+            string subjectPawnId = BeliefMutationEventSelector.SubjectPawnId(
+                rule, pawnId, null);
+            if (subjectPawnId.Length == 0) return null;
+            BeliefMutationSnapshot newest = BeliefMutationCache.PeekLatest(
+                subjectPawnId, eventTick, policy);
+            return BeliefMutationEventSelector.SelectCrisisOrCurrent(
+                rule, subjectPawnId, eventTick, policy.mutationCorrelationWindowTicks,
+                newest, pawnLabel);
+        }
     }
 }

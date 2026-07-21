@@ -1,5 +1,19 @@
 # Changelog
 
+- **2026-07-22 — Integrated Ideology Phase 2 Crisis of Belief without adding a page.** Exact
+  `IdeoChange` now resolves the Ideology-gated `beliefCrisis` mental-state group before the generic
+  catchall and enriches its existing solo event by peeking the breaking pawn's detached mutation row.
+  Observed conversions freeze real previous/current/attempted identity and before/after certainty;
+  failed attempts retain challenged-faith/falling-certainty facts, while wrong-pawn, stale, future,
+  malformed, or absent evidence exposes only guarded current ideoligion/certainty and never invents
+  an old faith. The stable `belief_event=crisis` marker and exact EN/RU DefInjected
+  `DiaryEventPrompt_IdeoChange` contract give the page critical prompt priority. No new hook, page,
+  save field, polling path, or gameplay RNG draw was added; no-DLC/classic/modded mental states remain
+  safe. Pure belief/pipeline coverage passes 338/2,842 assertions. A deterministic real-boundary
+  fixture raises the tracked RimTest assembly to 377 compiled tests and restores pawn, mental state,
+  PlayLog invariant, mutation cache, settings, and RNG; it has not yet been executed in-game. Both
+  tracked DLLs build with 0 warnings/errors.
+
 - **2026-07-22 — Closed the remaining adversarial Ideology consumer test gaps.** The loaded Phase-2
   fixture now asserts every mechanical field of all four shipped `mutationEventRules`, drives the real
   vanilla `InteractionWorker_ConvertIdeoAttempt` with its normal certainty factor before the exact

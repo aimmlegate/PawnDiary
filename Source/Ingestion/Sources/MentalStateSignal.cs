@@ -2,8 +2,9 @@
 // source (MentalStateHandler.TryStartMentalState). Replaces the old DiaryGameComponent.RecordMentalState.
 // A dual-shape source: a social fight ("SocialFighting") between two eligible pawns is a PAIR event
 // (both POV entries, mirrored second call deduped by canonical pair key); every other break is a SOLO
-// event from the breaking pawn's POV (deduped per pawn + defName). The dedup window therefore differs
-// by shape (socialFight vs mentalBreak ticks).
+// event from the breaking pawn's POV (deduped per pawn + defName). Exact IdeoChange remains that same
+// solo page but may freeze a non-consuming detached belief mutation/current snapshot after capture is
+// authorized. The dedup window therefore differs by shape (socialFight vs mentalBreak ticks).
 //
 // Pure pair-vs-solo decision, the IsSocialFightPair check, the dedup key, and the game-context format
 // live in Source/Capture/Events/MentalStateEventData.cs. New to C#/RimWorld? See AGENTS.md.
@@ -26,6 +27,7 @@ namespace PawnDiary.Ingestion
         private readonly string reason;
         private readonly string otherPawnLabel;
         private readonly bool isPair;
+        private readonly string effectiveGroupDefName;
         private readonly MentalStateEventData payload;
 
         public MentalStateSignal(Pawn pawn, MentalStateDef stateDef, Pawn otherPawn, string reason)
@@ -45,6 +47,11 @@ namespace PawnDiary.Ingestion
             bool hasOtherPawn = otherPawn != null;
             string otherPawnId = hasOtherPawn ? otherPawn.GetUniqueLoadID() : null;
             otherPawnLabel = hasOtherPawn ? DiaryLineCleaner.CleanLine(otherPawn.LabelShortCap) : null;
+            // Freeze the exact group which authorized this mental-state page. The evidence adapter
+            // requires both exact IdeoChange and exact group ownership, so broad/modded states cannot
+            // borrow a nearby belief mutation.
+            effectiveGroupDefName = InteractionGroups.ClassifyMentalState(stateDef)?.defName
+                ?? string.Empty;
 
             payload = new MentalStateEventData
             {
@@ -98,9 +105,17 @@ namespace PawnDiary.Ingestion
             string breakText = BuildMentalBreakText(pawn, label, otherPawn, reason);
             string breakContext = MentalStateEventData.BuildSoloGameContext(
                 stateDef.defName, cleanedLabel, otherPawnLabel, cleanedReason);
+            BeliefEventEvidence beliefEvidence = BeliefMutationEvidenceAdapter.ForMentalState(
+                stateDef.defName,
+                effectiveGroupDefName,
+                payload.PawnId,
+                payload.Tick,
+                DiaryLineCleaner.CleanLine(pawn.LabelShortCap));
+            breakContext = BeliefMutationEventSelector.AppendGameContextMarker(
+                breakContext, beliefEvidence);
 
             DiaryEvent breakEvent = sink.AddSoloEvent(pawn, otherPawn, stateDef.defName, label,
-                breakText, instruction, breakContext);
+                breakText, instruction, breakContext, beliefEvidence: beliefEvidence);
             sink.QueueSolo(breakEvent, DiaryEvent.InitiatorRole);
         }
 

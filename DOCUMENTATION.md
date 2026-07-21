@@ -52,7 +52,7 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including exact-author Anomaly study, containment-breach, visible creepjoiner-outcome, and surgical-disclosure signals, Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, lossless quick-aid raid ownership, and exact-root Royal Ascent quest fanout. |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue, associative-memory recall/deposit/eviction (`DiaryGameComponent.Memory.cs`), and additive Anomaly study/monolith/visible-creepjoiner persistence plus detached transaction owners and conservative pre-A1/pre-A2 baselining. Also `PawnMemoryRepository` (per-pawn memory store). |
-| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including the Ideology event-time builder, guarded doctrine/mutation projection, bounded plain HistoryEvent sidecar, transient mutation cache, and exact interaction-evidence adapter; guarded Anomaly study/codex/containment/monolith/creepjoiner capture; the visible-only N3-A context adapter; Odyssey location/mobile-home/lifecycle; and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
+| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including the Ideology event-time builder, guarded doctrine/mutation projection, bounded plain HistoryEvent sidecar, transient mutation cache, and exact interaction/mental-state evidence adapter; guarded Anomaly study/codex/containment/monolith/creepjoiner capture; the visible-only N3-A context adapter; Odyssey location/mobile-home/lifecycle; and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
 | `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including bounded visible-only N3-A and exact-map N3-O providers), Ideology detached belief contracts, explicit-source evidence constructors, bounded HistoryEvent correlation and mutation-coalescing storage, exact canonical-event ownership and mutation-event selection, structural/lexical stance resolver, formatter, and future reflection-policy shell under `Pipeline/Belief/`, Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/`. |
 | `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the active Ideology Phase-1 belief-policy boundary and the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including event-time per-POV `beliefContext`, detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, the optional Anomaly monolith-knowledge snapshot, visible-only creepjoiner arc rows, and the `MemoryFragment` pawn-memory row. |
@@ -285,16 +285,32 @@ visible name as `belief change subject`, so the recipient's transition cannot re
 
 The saved belief block now exposes mechanics through stable schema fields: before/after/attempted
 ideoligion, certainty before/after/delta, conversion result, and (Full detail only) method-boundary
-cause tokens. These labels/tokens are structured prompt schema, not player-facing prose; no new UI or
-localized model instruction was added, so English/Russian localization files are unchanged. Counsel
-is deliberately unmapped because vanilla Counsel changes mood/thought state rather than Ideology
-certainty. Conversion-ritual fan-out, `IdeoChange` crisis pages, and other Phase-2 evidence adapters
-remain deferred; the mutation observer/cache still cannot authorize or emit any page.
+cause tokens. These labels/tokens are structured prompt schema, not player-facing prose. Counsel is
+deliberately unmapped because vanilla Counsel changes mood/thought state rather than Ideology
+certainty. Conversion-ritual fan-out and other broad Phase-2 evidence adapters remain deferred; the
+mutation observer/cache still cannot authorize or emit any page.
 
 An exact conversion consumer also appends only the stable `belief_event=conversion` routing marker to
 the ordinary interaction `gameContext`. Prompt-context selection uses that marker to rank the saved
 belief block as critical; before/after numbers and identities remain solely in typed evidence/the saved
 belief block rather than being duplicated into the general context string.
+
+The next surgical Phase-2 slice enriches the existing solo mental-state page for exact `IdeoChange`;
+it does not add a diary source or a second event. The Ideology-gated XML group `beliefCrisis` matches
+that exact DefName at order 199, before the generic mental-state catchall, and the exact
+`DiaryEventPrompt_IdeoChange` key wins before group/classifier/domain fallbacks. After ordinary mental-
+state capture authorizes the page, `MentalStateSignal` passes its frozen exact group/Def/pawn/tick to
+`BeliefMutationEvidenceAdapter.ForMentalState`. The adapter peeks, never consumes, the newest exact-
+pawn cache row and uses the same pure ordering/age/mechanical-shape checks as interactions. A match
+freezes the observed old/new/attempted identity, result, and before/after certainty on the existing
+initiator POV; a wrong-pawn, stale, future, malformed, or missing row sets only the typed
+`currentBeliefFactsRelevant` flag, allowing `DlcContext` to snapshot visible current ideoligion and
+certainty without reconstructing any former faith. Exact crisis pages append only
+`belief_event=crisis`; all detailed facts remain in the saved belief block. English and Russian
+DefInjected text explicitly distinguishes actual conversion from challenged/falling certainty and
+forbids invented former or attempted faiths. No-DLC/package-inactive paths return null, classic mode
+cannot naturally start vanilla's break, and unrelated or modded mental states retain their prior
+groups, prompts, page count, and empty optional evidence behavior.
 
 The frozen value flows through `DiaryPovPayload.beliefContext` → `PromptValues.beliefContext` →
 `PromptAssembler.ResolveSource("BeliefContext")`. Full/Balanced/Compact detail projection is applied

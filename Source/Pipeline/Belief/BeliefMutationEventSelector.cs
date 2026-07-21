@@ -12,6 +12,9 @@ namespace PawnDiary
         /// <summary>Stable prompt-selection marker for exact conversion mechanics.</summary>
         public const string ConversionGameContextMarker = "belief_event=conversion";
 
+        /// <summary>Stable prompt-selection marker for the exact IdeoChange mental state.</summary>
+        public const string CrisisGameContextMarker = "belief_event=crisis";
+
         /// <summary>
         /// Finds one exact source/group rule. Duplicate matching rows are ambiguous and return null.
         /// </summary>
@@ -105,25 +108,57 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Appends the minimal stable conversion marker used by prompt-context prioritization. Detailed
-        /// mutation facts stay in the typed belief block and are not duplicated into game context.
+        /// Builds exact crisis evidence without inventing history. A matching newest mutation supplies
+        /// observed before/after facts; every unavailable or mismatching row falls back to the pawn's
+        /// current visible identity/certainty, which the guarded runtime adapter snapshots later.
+        /// </summary>
+        public static BeliefEventEvidence SelectCrisisOrCurrent(
+            BeliefMutationEventRule rule,
+            string subjectPawnId,
+            int eventTick,
+            int correlationWindowTicks,
+            BeliefMutationSnapshot newestMutation,
+            string subjectLabel = null)
+        {
+            string subject = SafeId(subjectPawnId);
+            if (rule == null || subject.Length == 0 || eventTick < 0
+                || !string.Equals(rule.sourceDomain, BeliefMutationEventSourceTokens.MentalState,
+                    StringComparison.Ordinal)
+                || !string.Equals(rule.evidenceGroupKey, "crisis", StringComparison.Ordinal))
+                return null;
+
+            BeliefEventEvidence evidence = Select(
+                rule, subject, eventTick, correlationWindowTicks, newestMutation, subjectLabel)
+                ?? BeliefEventEvidenceFactory.ForEvent(
+                    subject, eventTick, rule.sourceDomain, rule.sourceDefName,
+                    rule.subjectRole, subjectLabel, rule.evidenceGroupKey);
+            evidence.currentBeliefFactsRelevant = true;
+            return evidence;
+        }
+
+        /// <summary>
+        /// Appends the minimal stable conversion/crisis marker used by prompt-context prioritization.
+        /// Detailed belief facts stay in the typed belief block and are not duplicated into game context.
         /// </summary>
         public static string AppendGameContextMarker(
             string gameContext,
             BeliefEventEvidence evidence)
         {
             string current = gameContext ?? string.Empty;
-            if (evidence?.mutation == null || !evidence.mutation.HasUsefulFact
-                || !string.Equals(evidence.groupKey, "conversion", StringComparison.Ordinal)
-                || current.IndexOf(ConversionGameContextMarker, StringComparison.Ordinal) >= 0)
-            {
+            string marker = evidence?.mutation != null && evidence.mutation.HasUsefulFact
+                && string.Equals(evidence.groupKey, "conversion", StringComparison.Ordinal)
+                    ? ConversionGameContextMarker
+                    : evidence?.currentBeliefFactsRelevant == true
+                        && string.Equals(evidence.groupKey, "crisis", StringComparison.Ordinal)
+                            ? CrisisGameContextMarker
+                            : string.Empty;
+            if (marker.Length == 0 || current.IndexOf(marker, StringComparison.Ordinal) >= 0)
                 return current;
-            }
 
             string prefix = current.Trim().TrimEnd(';');
             return prefix.Length == 0
-                ? ConversionGameContextMarker
-                : prefix + "; " + ConversionGameContextMarker;
+                ? marker
+                : prefix + "; " + marker;
         }
 
         private static bool ContainsCause(BeliefMutationSnapshot mutation, string wanted)

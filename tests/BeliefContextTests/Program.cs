@@ -319,9 +319,20 @@ namespace PawnDiary
                 BeliefMutationCertaintyDirectionTokens.Any,
                 BeliefMutationIdeologyChangeTokens.Any,
                 requireAttemptedIdeology: true);
+            BeliefMutationEventRule crisisRule = new BeliefMutationEventRule(
+                BeliefMutationEventSourceTokens.MentalState,
+                "IdeoChange",
+                "beliefCrisis",
+                BeliefMutationSubjectRoleTokens.Initiator,
+                "crisis",
+                BeliefMutationCauseTokens.ConversionAttempt,
+                BeliefMutationConversionResultTokens.Known,
+                BeliefMutationCertaintyDirectionTokens.Any,
+                BeliefMutationIdeologyChangeTokens.Any,
+                requireAttemptedIdeology: true);
             List<BeliefMutationEventRule> rules = new List<BeliefMutationEventRule>
             {
-                successRule, failureRule, reassuranceRule, knownResultRule
+                successRule, failureRule, reassuranceRule, knownResultRule, crisisRule
             };
 
             BeliefMutationEventRule exact = BeliefMutationEventSelector.RuleFor(
@@ -358,6 +369,18 @@ namespace PawnDiary
                     true, true, duplicateRules) == null);
             AssertEqual("recipient rule selects exact recipient identity", "TargetPawn",
                 BeliefMutationEventSelector.SubjectPawnId(successRule, "ConverterPawn", "TargetPawn"));
+            BeliefMutationEventRule exactCrisis = BeliefMutationEventSelector.RuleFor(
+                BeliefMutationEventSourceTokens.MentalState, "IdeoChange", "beliefCrisis",
+                true, true, rules);
+            AssertTrue("exact IdeoChange rule wins for the crisis group",
+                ReferenceEquals(crisisRule, exactCrisis));
+            AssertEqual("crisis rule selects the breaking pawn", "BreakingPawn",
+                BeliefMutationEventSelector.SubjectPawnId(
+                    crisisRule, "BreakingPawn", "UnrelatedPawn"));
+            AssertTrue("generic Berserk keeps the ordinary mental-state path",
+                BeliefMutationEventSelector.RuleFor(
+                    BeliefMutationEventSourceTokens.MentalState, "Berserk",
+                    "mentalbreakViolent", true, true, rules) == null);
 
             BeliefMutationSnapshot success = Mutation(
                 "TargetPawn", 100, "OldIdeo", "NewIdeo", 0f, 0.5f,
@@ -481,6 +504,96 @@ namespace PawnDiary
                 BeliefCertaintyTrendTokens.Unknown, converterResolution.certaintyTrend);
             AssertTrue("converter still receives the shared event mutation",
                 converterResolution.mutation != null);
+
+            BeliefMutationSnapshot crisisChanged = Mutation(
+                "BreakingPawn", 200, "FormerFaith", "CurrentFaith", 0.2f, 0.5f,
+                BeliefMutationCauseTokens.ConversionAttempt, true, ideologyChanged: true);
+            crisisChanged.attemptedIdeologyId = "CurrentFaith";
+            crisisChanged.attemptedIdeologyName = "Current faith";
+            BeliefEventEvidence changedCrisis = BeliefMutationEventSelector.SelectCrisisOrCurrent(
+                crisisRule, "BreakingPawn", 200, 10, crisisChanged, "Breaking pawn");
+            AssertTrue("changed IdeoChange keeps its observed mutation and current-facts fallback",
+                changedCrisis != null && ReferenceEquals(changedCrisis.mutation, crisisChanged)
+                    && changedCrisis.currentBeliefFactsRelevant);
+            AssertContains("crisis evidence appends the exact priority marker",
+                BeliefMutationEventSelector.AppendGameContextMarker(
+                    "mental_state=IdeoChange", changedCrisis),
+                BeliefMutationEventSelector.CrisisGameContextMarker);
+
+            BeliefSnapshot changedSnapshot = Snapshot();
+            changedSnapshot.pawnId = "BreakingPawn";
+            changedSnapshot.ideologyId = "CurrentFaith";
+            changedSnapshot.ideologyName = "Current faith";
+            changedSnapshot.certainty = new BeliefCertaintyFact { hasCurrent = true, current = 0.5f };
+            string changedCrisisContext = BeliefContextFormatter.Format(
+                Resolve(changedSnapshot, changedCrisis, BeliefPolicySnapshot.CreateDefault()),
+                NarrativeDetailLevelTokens.Full, BeliefPolicySnapshot.CreateDefault());
+            AssertContains("changed crisis reports observed previous identity",
+                changedCrisisContext, "previous ideoligion: FormerFaith name");
+            AssertContains("changed crisis reports observed current identity",
+                changedCrisisContext, "current ideoligion: CurrentFaith name");
+            AssertContains("changed crisis reports observed certainty mechanics",
+                changedCrisisContext, "conversion result: success");
+
+            BeliefMutationSnapshot crisisUnchanged = Mutation(
+                "BreakingPawn", 201, "SteadyFaith", "SteadyFaith", 0.9f, 0.4f,
+                BeliefMutationCauseTokens.ConversionAttempt, false, ideologyChanged: false);
+            crisisUnchanged.attemptedIdeologyId = "ChallengerFaith";
+            crisisUnchanged.attemptedIdeologyName = "Challenger faith";
+            BeliefEventEvidence unchangedCrisis = BeliefMutationEventSelector.SelectCrisisOrCurrent(
+                crisisRule, "BreakingPawn", 201, 10, crisisUnchanged, "Breaking pawn");
+            BeliefSnapshot unchangedSnapshot = Snapshot();
+            unchangedSnapshot.pawnId = "BreakingPawn";
+            unchangedSnapshot.ideologyId = "SteadyFaith";
+            unchangedSnapshot.ideologyName = "Steady faith";
+            unchangedSnapshot.certainty = new BeliefCertaintyFact { hasCurrent = true, current = 0.4f };
+            string unchangedCrisisContext = BeliefContextFormatter.Format(
+                Resolve(unchangedSnapshot, unchangedCrisis, BeliefPolicySnapshot.CreateDefault()),
+                NarrativeDetailLevelTokens.Full, BeliefPolicySnapshot.CreateDefault());
+            AssertContains("unchanged crisis reports failure instead of conversion",
+                unchangedCrisisContext, "conversion result: failure");
+            AssertContains("unchanged crisis reports falling certainty",
+                unchangedCrisisContext, "certainty trend: falling");
+            AssertContains("unchanged crisis preserves the same observed identity",
+                unchangedCrisisContext, "current ideoligion: SteadyFaith name");
+
+            BeliefMutationSnapshot wrongPawnCrisis = Mutation(
+                "OtherPawn", 202, "OtherOld", "OtherNew", 0.2f, 0.5f,
+                BeliefMutationCauseTokens.ConversionAttempt, true, ideologyChanged: true);
+            wrongPawnCrisis.attemptedIdeologyId = "OtherNew";
+            BeliefEventEvidence wrongPawnFallback = BeliefMutationEventSelector.SelectCrisisOrCurrent(
+                crisisRule, "BreakingPawn", 202, 10, wrongPawnCrisis);
+            AssertTrue("wrong-pawn crisis evidence falls back to current facts only",
+                wrongPawnFallback?.currentBeliefFactsRelevant == true
+                    && wrongPawnFallback.mutation == null);
+            BeliefEventEvidence staleFallback = BeliefMutationEventSelector.SelectCrisisOrCurrent(
+                crisisRule, "BreakingPawn", 213, 10, crisisUnchanged);
+            AssertTrue("stale crisis evidence falls back to current facts only",
+                staleFallback?.currentBeliefFactsRelevant == true && staleFallback.mutation == null);
+            BeliefEventEvidence futureFallback = BeliefMutationEventSelector.SelectCrisisOrCurrent(
+                crisisRule, "BreakingPawn", 200, 10, crisisUnchanged);
+            AssertTrue("future crisis evidence falls back to current facts only",
+                futureFallback?.currentBeliefFactsRelevant == true && futureFallback.mutation == null);
+            BeliefEventEvidence missingFallback = BeliefMutationEventSelector.SelectCrisisOrCurrent(
+                crisisRule, "BreakingPawn", 202, 10, null);
+            AssertTrue("missing crisis mutation still permits only current visible facts",
+                missingFallback?.currentBeliefFactsRelevant == true && missingFallback.mutation == null);
+
+            BeliefSnapshot fallbackSnapshot = Snapshot();
+            fallbackSnapshot.pawnId = "BreakingPawn";
+            fallbackSnapshot.ideologyName = "Visible current faith";
+            fallbackSnapshot.certainty = new BeliefCertaintyFact { hasCurrent = true, current = 0.37f };
+            string fallbackContext = BeliefContextFormatter.Format(
+                Resolve(fallbackSnapshot, missingFallback, BeliefPolicySnapshot.CreateDefault()),
+                NarrativeDetailLevelTokens.Full, BeliefPolicySnapshot.CreateDefault());
+            AssertContains("missing mutation fallback reports current ideoligion",
+                fallbackContext, "ideoligion: Visible current faith");
+            AssertContains("missing mutation fallback reports current certainty",
+                fallbackContext, "certainty: 37%");
+            AssertTrue("missing mutation fallback never reconstructs an old or attempted ideoligion",
+                fallbackContext.IndexOf("previous ideoligion:", StringComparison.Ordinal) < 0
+                    && fallbackContext.IndexOf("attempted ideoligion:", StringComparison.Ordinal) < 0
+                    && fallbackContext.IndexOf("conversion result:", StringComparison.Ordinal) < 0);
         }
 
         private static void TestMissingInactiveEmptyAndKnowledgeGates()
