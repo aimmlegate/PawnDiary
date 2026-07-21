@@ -138,6 +138,8 @@ namespace PawnDiary
         private static float QuadrumDividerHeight => UiStyle.quadrumDividerHeight;
         private static float QuadrumDividerTopGap => UiStyle.quadrumDividerTopGap;
         private static float QuadrumDividerLineGap => UiStyle.quadrumDividerLineGap;
+        private static float QuadrumDividerIconSize => UiStyle.quadrumDividerIconSize;
+        private static float QuadrumDividerIconGap => UiStyle.quadrumDividerIconGap;
         private static float EntryFadeDurationSeconds => UiStyle.entryFadeDurationSeconds;
         private static float TitleFadeDurationSeconds => UiStyle.titleFadeDurationSeconds;
         private static float VirtualizedEntryOverscanHeight => UiStyle.VirtualizedEntryOverscanHeight;
@@ -179,6 +181,13 @@ namespace PawnDiary
 
         // Unity scroll position; persists across frames so the user's scroll offset isn't lost on redraw.
         private Vector2 scrollPosition;
+        // Smoothed seasonal background wash. The target is the wash color of the season at the top of
+        // the journal viewport; the shown color eases toward it each frame (see UpdateSeasonWash) so
+        // scrolling across a season divider crossfades instead of snapping. The filter panel reuses the
+        // same field, so both columns share one seasonal tint (the panel lags the journal by one frame,
+        // which is imperceptible).
+        private Color seasonWashColor = new Color(0f, 0f, 0f, 0f);
+        private float seasonWashLastRealtime = -1f;
         // The Diary tab pages history by in-game year so one enormous save cannot create one
         // enormous Unity scroll view. Stored per tab instance, and reset when the selected pawn changes.
         private string yearFilterPawnId;
@@ -492,7 +501,11 @@ namespace PawnDiary
                     journalRect.y + Mathf.Max(0f, (headerRect.height - toggleSize) * 0.5f),
                     toggleSize,
                     toggleSize);
-                if (DrawFilterPanelToggleIcon(toggleRect, filterPanelEnabled))
+                // "Active" third state = the panel is open and at least one filter selection is set
+                // (favorites-only or any tag chip), so the funnel reads amber even before filtering is
+                // wired to the journal.
+                bool filtersActive = filterFavoritesOnly || filterActiveTags.Count > 0;
+                if (DrawFilterPanelToggleIcon(toggleRect, filterPanelEnabled, filtersActive))
                 {
                     ToggleFilterPanelVisible();
                 }
@@ -628,6 +641,20 @@ namespace PawnDiary
             TryApplyPendingScroll(pawn, ordered, entryOffsets, viewHeight, outRect.height);
             scrollPosition.y = Mathf.Clamp(scrollPosition.y, 0f, Mathf.Max(0f, viewHeight - outRect.height));
 
+            // Seasonal background wash: tint the journal viewport (and, via the shared field, the
+            // filter panel) by the season of the entry at the top of the scroll, easing between seasons
+            // as the user scrolls across a divider. Drawn behind the scroll content so it only shows in
+            // the gaps around and between the semi-opaque cards — a quiet ambient cue, never over text.
+            int washTopIndex = FirstVisibleEntryIndex(ordered.Count, scrollPosition.y);
+            Season washSeason = washTopIndex >= 0 && washTopIndex < ordered.Count
+                ? DiaryQuadrumDivider.SeasonFor(ordered[washTopIndex])
+                : Season.Undefined;
+            Color journalWash = UpdateSeasonWash(washSeason);
+            if (journalWash.a > 0f)
+            {
+                Widgets.DrawBoxSolid(outRect, journalWash);
+            }
+
             Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
             // Immediate-mode safety net: BeginScrollView and the per-card GUI.BeginGroup below push
             // onto Unity's shared GUI clip stack, and their matching EndGroup/EndScrollView calls pop
@@ -667,7 +694,9 @@ namespace PawnDiary
                     if (!string.IsNullOrEmpty(dividerLabel))
                     {
                         Rect dividerRect = new Rect(0f, curY - QuadrumDividerHeight, viewRect.width, QuadrumDividerHeight);
-                        DrawQuadrumDivider(dividerRect, dividerLabel);
+                        // Season derived from the same entry the label came from, so the glyph always
+                        // matches the "· season ·" text. Cheap: only visible divider rows resolve it.
+                        DrawQuadrumDivider(dividerRect, dividerLabel, DiaryQuadrumDivider.SeasonFor(entry));
                     }
 
                     Rect entryRect = new Rect(0f, curY, viewRect.width, height);
@@ -1022,6 +1051,31 @@ namespace PawnDiary
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Eases <see cref="seasonWashColor"/> toward the wash color for <paramref name="topSeason"/>
+        /// (the season at the top of the journal) and returns it. Uses a frame-rate-independent
+        /// exponential ease on real time, so the crossfade runs smoothly even while the game is paused;
+        /// the first frame snaps straight to the target to avoid a fade-in from transparent.
+        /// </summary>
+        private Color UpdateSeasonWash(Season topSeason)
+        {
+            Color target = UiStyle.SeasonWashColor(topSeason);
+            float now = Time.realtimeSinceStartup;
+            if (seasonWashLastRealtime < 0f)
+            {
+                seasonWashColor = target;
+            }
+            else
+            {
+                float dt = Mathf.Max(0f, now - seasonWashLastRealtime);
+                float t = 1f - Mathf.Exp(-dt * Mathf.Max(0.01f, UiStyle.seasonWashLerpSpeed));
+                seasonWashColor = Color.Lerp(seasonWashColor, target, t);
+            }
+
+            seasonWashLastRealtime = now;
+            return seasonWashColor;
         }
 
         /// <summary>

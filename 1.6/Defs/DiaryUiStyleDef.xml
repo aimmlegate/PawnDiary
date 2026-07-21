@@ -60,6 +60,11 @@
     <quadrumDividerHeight>30</quadrumDividerHeight>
     <quadrumDividerTopGap>6</quadrumDividerTopGap>
     <quadrumDividerLineGap>10</quadrumDividerLineGap>
+    <!-- Small season glyph beside the divider label (size 0 hides it; gap is icon-to-label spacing). -->
+    <quadrumDividerIconSize>15</quadrumDividerIconSize>
+    <quadrumDividerIconGap>6</quadrumDividerIconGap>
+    <!-- Seasonal background wash crossfade rate (higher = snappier). -->
+    <seasonWashLerpSpeed>3</seasonWashLerpSpeed>
 
     <!-- Linked-entry preview card -->
     <linkedEntryPadding>8</linkedEntryPadding>
@@ -139,6 +144,11 @@
     <entryDateColor><r>0.80</r><g>0.79</g><b>0.74</b><a>1</a></entryDateColor>
     <quadrumDividerLabelColor><r>0.85</r><g>0.83</g><b>0.75</b><a>1</a></quadrumDividerLabelColor>
     <quadrumDividerLineColor><r>0.60</r><g>0.57</g><b>0.50</b><a>0.45</a></quadrumDividerLineColor>
+    <!-- Subtle seasonal background wash (very low alpha; set an alpha to 0 to disable that season). -->
+    <springWashColor><r>0.42</r><g>0.58</g><b>0.40</b><a>0.09</a></springWashColor>
+    <summerWashColor><r>0.85</r><g>0.72</g><b>0.36</b><a>0.09</a></summerWashColor>
+    <fallWashColor><r>0.80</r><g>0.47</g><b>0.22</b><a>0.10</a></fallWashColor>
+    <winterWashColor><r>0.48</r><g>0.60</g><b>0.80</b><a>0.09</a></winterWashColor>
     <pendingTitlePrefixColor><r>0.86</r><g>0.86</g><b>0.86</b><a>0.95</a></pendingTitlePrefixColor>
     <pendingTitleDotBaseColor><r>0.68</r><g>0.72</g><b>0.76</b><a>1</a></pendingTitleDotBaseColor>
     <writingPlaceholderLowColor><r>0.58</r><g>0.72</g><b>0.66</b><a>1</a></writingPlaceholderLowColor>
@@ -147,6 +157,10 @@
     <expansionIndicatorBaseColor><r>0.62</r><g>0.65</g><b>0.68</b><a>0.85</a></expansionIndicatorBaseColor>
     <modelNameColor><r>0.45</r><g>0.48</g><b>0.50</b><a>0.62</a></modelNameColor>
     <regenerateEntryButtonColor><r>0.48</r><g>0.51</g><b>0.53</b><a>0.46</a></regenerateEntryButtonColor>
+    <!-- Entry favorite star when toggled on (warm gold); off state reuses the quiet footer tint. -->
+    <favoriteStarColor><r>0.98</r><g>0.82</g><b>0.34</b><a>1</a></favoriteStarColor>
+    <!-- Filter-panel toggle when open AND a filter is engaged (amber "active" third state). -->
+    <filterActiveIconColor><r>0.96</r><g>0.78</g><b>0.40</b><a>0.98</a></filterActiveIconColor>
     <debugTextColor><r>0.54</r><g>0.58</g><b>0.60</b><a>0.90</a></debugTextColor>
     <devDangerButtonColor><r>0.95</r><g>0.22</g><b>0.18</b><a>0.92</a></devDangerButtonColor>
     <linkedEntryLabelColor><r>0.80</r><g>0.85</g><b>0.92</b><a>1</a></linkedEntryLabelColor>

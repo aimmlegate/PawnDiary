@@ -294,14 +294,14 @@ namespace PawnDiary
             // Read-only (no EnsureVoiceStage): the tooltip must not roll/mutate during a draw pass.
             PsychotypeResolution psychotype = component.ResolvePsychotypeForDisplay(pawn);
 
-            bool hover = Mouse.IsOver(rect);
-            Color oldColor = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, Mathf.Clamp01(hover ? WritingStyleIconHoverAlpha : WritingStyleIconAlpha));
-            if (Widgets.ButtonImage(rect, TexButton.Rename))
+            // Base/mouseover-color overload so the quiet alpha is honored: the 2-arg ButtonImage
+            // overload forces GUI.color to white/mouseover and would draw the icon at full strength.
+            Color baseColor = new Color(1f, 1f, 1f, Mathf.Clamp01(WritingStyleIconAlpha));
+            Color hoverColor = new Color(1f, 1f, 1f, Mathf.Clamp01(WritingStyleIconHoverAlpha));
+            if (Widgets.ButtonImage(rect, DiaryButtonTextures.WritingStyle, baseColor, hoverColor))
             {
                 OpenWritingStyleDialog(pawn, component);
             }
-            GUI.color = oldColor;
 
             TooltipHandler.TipRegion(rect, WritingStyleTooltip(resolution, psychotype, component));
         }

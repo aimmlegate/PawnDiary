@@ -81,6 +81,21 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// The nominal season for the quadrum an entry belongs to — the same season shown in the
+        /// divider label — or <see cref="Season.Undefined"/> for an entry whose date cannot be placed.
+        /// Drives the small season glyph drawn beside the divider label.
+        /// </summary>
+        internal static Season SeasonFor(DiaryEntryView entry)
+        {
+            if (!TryResolveCalendar(entry, out _, out Quadrum quadrum))
+            {
+                return Season.Undefined;
+            }
+
+            return NominalSeason(quadrum);
+        }
+
+        /// <summary>
         /// Resolves the (year, quadrum) an entry belongs to from its DISPLAY date string — the same
         /// source the year pager groups by — rather than its sort tick. Returns false for entries whose
         /// date cannot be placed on the calendar, which then get no divider (matching the pager's

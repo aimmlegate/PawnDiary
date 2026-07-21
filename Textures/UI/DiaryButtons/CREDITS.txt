@@ -1,0 +1,43 @@
+Diary UI button icons
+=====================
+
+These icons are derived from CoreUI Icons (Free set), recolored to solid white
+with a transparent background and rasterized to PNG for use as tintable RimWorld
+UI textures. No glyph shapes were altered.
+
+Source:  https://github.com/coreui/coreui-icons  (svg/free)
+License: MIT
+
+Icon mapping (shipped file <- CoreUI source):
+  Filter.png        <- cil-filter
+  Favorite.png      <- cil-star
+  Copy.png          <- cil-copy
+  Regenerate.png    <- cil-reload
+  WritingStyle.png  <- cil-contact
+  SeasonSummer.png  <- cil-sun
+  SeasonWinter.png  <- cil-snowflake
+  SeasonSpring.png  <- cil-flower
+  SeasonFall.png    <- cil-leaf
+
+------------------------------------------------------------------------
+MIT License
+
+Copyright (c) 2016-present creativeLabs Lukasz Holeczek.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

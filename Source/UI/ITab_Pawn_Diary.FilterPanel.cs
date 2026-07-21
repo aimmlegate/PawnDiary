@@ -112,6 +112,14 @@ namespace PawnDiary
                 return;
             }
 
+            // Seasonal wash behind the whole panel, sharing the journal's smoothed tint (updated by the
+            // journal draw; one frame behind, which is imperceptible) so both columns read as the same
+            // season. The panel has no other background, so this is where its tint reads most clearly.
+            if (seasonWashColor.a > 0f)
+            {
+                Widgets.DrawBoxSolid(panelRect, seasonWashColor);
+            }
+
             ResetFilterStateOnPawnChange(pawn);
             // No DrawMenuSection here on purpose: the inspect tab already paints a window background
             // behind the whole tab, so an extra inset box only boxed the controls in and its border
@@ -453,33 +461,37 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the header list icon that shows/hides the filter panel and returns true when clicked.
-        /// The glyph is three stacked bars drawn from primitives (no bundled texture); it brightens on
-        /// hover and reads brighter while the panel is open so its state is obvious.
+        /// Draws the header funnel icon that shows/hides the filter panel and returns true when clicked.
+        /// Three states are shown by tint alone (the CoreUI solid/duotone funnels are Pro, so there is
+        /// no separate filled glyph): closed = dim, open = brighter, and open with a filter engaged =
+        /// amber accent. Hover lifts each toward full strength.
         /// </summary>
-        private static bool DrawFilterPanelToggleIcon(Rect rect, bool panelOpen)
+        private static bool DrawFilterPanelToggleIcon(Rect rect, bool panelOpen, bool filtersActive)
         {
             bool hover = Mouse.IsOver(rect);
-            float alpha = hover
-                ? WritingStyleIconHoverAlpha
-                : (panelOpen ? Mathf.Min(1f, WritingStyleIconAlpha + 0.22f) : WritingStyleIconAlpha);
-            Color barColor = new Color(1f, 1f, 1f, Mathf.Clamp01(alpha));
-
-            float barWidth = Mathf.Max(2f, rect.width - 6f);
-            float barHeight = Mathf.Max(2f, rect.height / 7f);
-            float gap = barHeight;
-            float totalHeight = barHeight * 3f + gap * 2f;
-            float barX = rect.x + (rect.width - barWidth) * 0.5f;
-            float firstY = rect.y + (rect.height - totalHeight) * 0.5f;
-            for (int i = 0; i < 3; i++)
+            Color iconColor;
+            if (panelOpen && filtersActive)
             {
-                Widgets.DrawBoxSolid(new Rect(barX, firstY + i * (barHeight + gap), barWidth, barHeight), barColor);
+                Color accent = UiStyle.FilterActiveIconColor;
+                iconColor = hover ? new Color(accent.r, accent.g, accent.b, 1f) : accent;
             }
+            else
+            {
+                float alpha = hover
+                    ? WritingStyleIconHoverAlpha
+                    : (panelOpen ? Mathf.Min(1f, WritingStyleIconAlpha + 0.22f) : WritingStyleIconAlpha);
+                iconColor = new Color(1f, 1f, 1f, Mathf.Clamp01(alpha));
+            }
+
+            // Pass iconColor as both base and mouseover (hover is already folded in above); this
+            // overload, unlike the 2-arg ButtonImage, does not force GUI.color to white. No mouseover
+            // sound, matching the old primitive toggle.
+            bool clicked = Widgets.ButtonImage(rect, DiaryButtonTextures.Filter, iconColor, iconColor, false);
 
             TooltipHandler.TipRegion(
                 rect,
                 (panelOpen ? "PawnDiary.Tab.HideFilterPanel" : "PawnDiary.Tab.ShowFilterPanel").Translate());
-            return Widgets.ButtonInvisible(rect, false);
+            return clicked;
         }
     }
 }
