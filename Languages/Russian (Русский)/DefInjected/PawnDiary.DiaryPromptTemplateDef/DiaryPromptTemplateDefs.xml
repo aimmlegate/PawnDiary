@@ -560,4 +560,16 @@
   <DiaryPromptTemplate_SoloImportant.fields.120.label>титул разрешения</DiaryPromptTemplate_SoloImportant.fields.120.label>
   <DiaryPromptTemplate_SoloImportant.fields.121.label>место применения разрешения</DiaryPromptTemplate_SoloImportant.fields.121.label>
   <DiaryPromptTemplate_SoloImportant.fields.122.label>применено во время перезарядки</DiaryPromptTemplate_SoloImportant.fields.122.label>
+  <!-- Ideology Phase 1 additive field; indices append to preserve every existing translation. -->
+  <DiaryPromptTemplate_PairDefault.fields.29.label>контекст убеждений</DiaryPromptTemplate_PairDefault.fields.29.label>
+  <DiaryPromptTemplate_PairImportant.fields.76.label>контекст убеждений</DiaryPromptTemplate_PairImportant.fields.76.label>
+  <DiaryPromptTemplate_PairCombat.fields.32.label>контекст убеждений</DiaryPromptTemplate_PairCombat.fields.32.label>
+  <DiaryPromptTemplate_PairBatched.fields.28.label>контекст убеждений</DiaryPromptTemplate_PairBatched.fields.28.label>
+  <DiaryPromptTemplate_SoloDefault.fields.44.label>контекст убеждений</DiaryPromptTemplate_SoloDefault.fields.44.label>
+  <DiaryPromptTemplate_SoloImportant.fields.124.label>контекст убеждений</DiaryPromptTemplate_SoloImportant.fields.124.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.40.label>контекст убеждений</DiaryPromptTemplate_SoloInternalState.fields.40.label>
+  <DiaryPromptTemplate_SoloBatched.fields.40.label>контекст убеждений</DiaryPromptTemplate_SoloBatched.fields.40.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.38.label>контекст убеждений</DiaryPromptTemplate_SoloDayReflection.fields.38.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>контекст убеждений</DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.16.label>контекст убеждений</DiaryPromptTemplate_SoloArcReflection.fields.16.label>
 </LanguageData>

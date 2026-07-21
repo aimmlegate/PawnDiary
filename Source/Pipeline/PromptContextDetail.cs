@@ -451,6 +451,12 @@ namespace PawnDiary
                 || HasAnyMarker(gameContext, "persona_weapon=", "persona_milestone=");
             bool social = HasAnyMarker(gameContext, "worker=Interaction_", "romance=", "kind=married", "def=Insult");
 
+            if (Eq(source, BeliefContextPrompt.Source))
+            {
+                reason = "event-relative belief context";
+                return 90;
+            }
+
             if (Eq(source, "EventEnhancement"))
             {
                 reason = "event guidance";

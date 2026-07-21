@@ -1295,8 +1295,6 @@ namespace PawnDiary
                 .StringList("bodyPartTierOverrideArchotech")
                 .StringList("bodyPartCravesTraitDefNames")
                 .StringList("bodyPartDespisesTraitDefNames")
-                .StringList("bodyPartApprovePreceptDefNames")
-                .StringList("bodyPartDespisePreceptDefNames")
                 .StringList("bodyPartInhumanizedHediffDefNames")
                 .Float("bodyPartCrudeEfficiencyBelow", 0f, 2f, true)
                 .Float("bodyPartProstheticEfficiencyMax", 0f, 2f, true)

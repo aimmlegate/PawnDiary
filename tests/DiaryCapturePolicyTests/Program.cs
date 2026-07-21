@@ -722,6 +722,16 @@ namespace DiaryCapturePolicyTests
                 Attitude("missingpart", "", new BodyModStanceFacts { IdeologyStance = BodyPartEventPolicy.IdeologyApproves }));
             AssertEqual("default loss grieving", "grieving",
                 Attitude("missingpart", "", new BodyModStanceFacts()));
+            AssertEqual("positive resolver valence maps to body approval", BodyPartEventPolicy.IdeologyApproves,
+                BodyPartEventPolicy.IdeologyStanceForCorrelationValences(new[] { "positive" }));
+            AssertEqual("negative resolver valence maps to body despise", BodyPartEventPolicy.IdeologyDespises,
+                BodyPartEventPolicy.IdeologyStanceForCorrelationValences(new[] { "negative" }));
+            AssertEqual("mixed resolver valence fails closed", BodyPartEventPolicy.IdeologyNone,
+                BodyPartEventPolicy.IdeologyStanceForCorrelationValences(new[] { "mixed" }));
+            AssertEqual("negative body evidence wins a reliable conflict", BodyPartEventPolicy.IdeologyDespises,
+                BodyPartEventPolicy.IdeologyStanceForCorrelationValences(new[] { "positive", "negative" }));
+            AssertEqual("unknown body evidence never overrides", BodyPartEventPolicy.IdeologyNone,
+                BodyPartEventPolicy.IdeologyStanceForCorrelationValences(new[] { "unknown", "neutral" }));
             AssertEqual("fresh surgical loss cause", "surgery",
                 BodyPartEventPolicy.CauseToken(true, "SurgicalCut"));
             AssertEqual("fresh non-surgical loss cause", "violence",

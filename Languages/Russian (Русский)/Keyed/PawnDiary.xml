@@ -634,8 +634,6 @@
   <PawnDiary.Settings.Adv.Field.bodyPartTierOverrideArchotech>Архотек: исключения</PawnDiary.Settings.Adv.Field.bodyPartTierOverrideArchotech>
   <PawnDiary.Settings.Adv.Field.bodyPartCravesTraitDefNames>Черты тяги к аугментации</PawnDiary.Settings.Adv.Field.bodyPartCravesTraitDefNames>
   <PawnDiary.Settings.Adv.Field.bodyPartDespisesTraitDefNames>Черты отвращения к аугментации</PawnDiary.Settings.Adv.Field.bodyPartDespisesTraitDefNames>
-  <PawnDiary.Settings.Adv.Field.bodyPartApprovePreceptDefNames>Предписания одобрения аугментации</PawnDiary.Settings.Adv.Field.bodyPartApprovePreceptDefNames>
-  <PawnDiary.Settings.Adv.Field.bodyPartDespisePreceptDefNames>Предписания отвращения к аугментации</PawnDiary.Settings.Adv.Field.bodyPartDespisePreceptDefNames>
   <PawnDiary.Settings.Adv.Field.bodyPartInhumanizedHediffDefNames>Состояния телесной отстранённости</PawnDiary.Settings.Adv.Field.bodyPartInhumanizedHediffDefNames>
   <PawnDiary.Settings.Adv.Field.bodyPartCrudeEfficiencyBelow>Грубая часть ниже эффективности</PawnDiary.Settings.Adv.Field.bodyPartCrudeEfficiencyBelow>
   <PawnDiary.Settings.Adv.Field.bodyPartProstheticEfficiencyMax>Макс. эффективность протеза</PawnDiary.Settings.Adv.Field.bodyPartProstheticEfficiencyMax>
@@ -779,8 +777,6 @@
   <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideArchotech>HediffDef defName, которые всегда считаются архотеком; по одному на строку.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideArchotech>
   <PawnDiary.Settings.Adv.Help.bodyPartCravesTraitDefNames>TraitDef defName черт, из-за которых поселенец желает аугментации.</PawnDiary.Settings.Adv.Help.bodyPartCravesTraitDefNames>
   <PawnDiary.Settings.Adv.Help.bodyPartDespisesTraitDefNames>TraitDef defName черт, из-за которых поселенец отвергает аугментацию.</PawnDiary.Settings.Adv.Help.bodyPartDespisesTraitDefNames>
-  <PawnDiary.Settings.Adv.Help.bodyPartApprovePreceptDefNames>PreceptDef defName идеологии, одобряющие аугментацию.</PawnDiary.Settings.Adv.Help.bodyPartApprovePreceptDefNames>
-  <PawnDiary.Settings.Adv.Help.bodyPartDespisePreceptDefNames>PreceptDef defName идеологии, не одобряющие или отвергающие аугментацию.</PawnDiary.Settings.Adv.Help.bodyPartDespisePreceptDefNames>
   <PawnDiary.Settings.Adv.Help.bodyPartInhumanizedHediffDefNames>HediffDef defName состояний, при которых обычный телесный ужас становится отстранённым.</PawnDiary.Settings.Adv.Help.bodyPartInhumanizedHediffDefNames>
   <PawnDiary.Settings.Adv.Help.bodyPartCrudeEfficiencyBelow>Если нет более сильного сигнала, установленные части ниже этой эффективности считаются грубыми.</PawnDiary.Settings.Adv.Help.bodyPartCrudeEfficiencyBelow>
   <PawnDiary.Settings.Adv.Help.bodyPartProstheticEfficiencyMax>Если нет более сильного сигнала, установленные части до этой эффективности считаются протезами.</PawnDiary.Settings.Adv.Help.bodyPartProstheticEfficiencyMax>
@@ -1583,4 +1579,8 @@
   <PawnDiary.Event.Anomaly.Void.Label>Ответ пустоте</PawnDiary.Event.Anomaly.Void.Label>
   <PawnDiary.Event.Anomaly.Void.EmbracedFallback>{0} решает принять пустоту.</PawnDiary.Event.Anomaly.Void.EmbracedFallback>
   <PawnDiary.Event.Anomaly.Void.DisruptedFallback>{0} решает разрушить связь с пустотой.</PawnDiary.Event.Anomaly.Void.DisruptedFallback>
+  <PawnDiary.Dev.PromptSuite.BeliefStructural.Label>Контекст убеждений — структурное совпадение</PawnDiary.Dev.PromptSuite.BeliefStructural.Label>
+  <PawnDiary.Dev.PromptSuite.BeliefStructural.Text>{0} обдумывает синтетическое событие с точной связью мысли или события из текущей идеолигии.</PawnDiary.Dev.PromptSuite.BeliefStructural.Text>
+  <PawnDiary.Dev.PromptSuite.BeliefLexical.Label>Контекст убеждений — лексическое совпадение</PawnDiary.Dev.PromptSuite.BeliefLexical.Label>
+  <PawnDiary.Dev.PromptSuite.BeliefLexical.Text>{0} обдумывает синтетическое событие, описанное только достаточно надёжными словами из текущей идеолигии.</PawnDiary.Dev.PromptSuite.BeliefLexical.Text>
 </LanguageData>

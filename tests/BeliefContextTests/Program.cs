@@ -29,6 +29,7 @@ namespace PawnDiary
             TestEvidenceRulesAndOptionalCorrections();
             TestObservationBaselineAndReflectionShell();
             TestMalformedUnsafeAndOversizedInputs();
+            TestPhase1EvidencePersistenceAndCorrelation();
             Console.WriteLine("BeliefContextTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -119,6 +120,13 @@ namespace PawnDiary
             AssertSelected("source instance wins over every other signal", resolved, "Synthetic_Second");
             AssertEqual("source instance reason", BeliefRelevanceSourceTokens.SourcePrecept,
                 resolved.stances[0].relevanceSource);
+
+            BeliefEventEvidence exactWithThought = SourceEvidence("instance-first", "Synthetic_First");
+            exactWithThought.thoughtDefNames.Add("Thought_First");
+            BeliefStanceResolution exactWithValence = Resolve(snapshot, exactWithThought,
+                BeliefPolicySnapshot.CreateDefault());
+            AssertEqual("exact source keeps its matching thought's mechanical valence",
+                BeliefValenceTokens.Positive, exactWithValence.stances[0].correlationValence);
 
             BeliefEventEvidence fallback = SourceEvidence(string.Empty, "Synthetic_First");
             AssertSelected("unique source def fallback", Resolve(snapshot, fallback,
@@ -619,6 +627,105 @@ namespace PawnDiary
                 compact.IndexOf("previous ideoligion:", StringComparison.Ordinal) < 0
                     && compact.IndexOf("current ideoligion:", StringComparison.Ordinal) < 0
                     && compact.IndexOf("attempted ideoligion:", StringComparison.Ordinal) < 0);
+        }
+
+        private static void TestPhase1EvidencePersistenceAndCorrelation()
+        {
+            BeliefPolicySnapshot policy = BeliefPolicySnapshot.CreateDefault();
+            BeliefPreceptFact approves = Precept(
+                "Synthetic_Approval", "Synthetic_Body_Issue", "welcomes crafted replacements", 1);
+            approves.correlations.Add(Correlation(BeliefCorrelationKindTokens.HistoryEvent,
+                "SyntheticBodyChanged", BeliefValenceTokens.Positive));
+            BeliefPreceptFact despises = Precept(
+                "Synthetic_Despise", "Synthetic_Body_Issue", "rejects crafted replacements", 1);
+            despises.correlations.Add(Correlation(BeliefCorrelationKindTokens.HistoryEvent,
+                "SyntheticBodyChanged", BeliefValenceTokens.Negative));
+            BeliefEventEvidence sameEvent = BeliefEventEvidenceFactory.ForBodyModification(
+                "SyntheticPawn", 250, "SyntheticArm", "crafted arm", "left arm", "added", "bionic");
+            sameEvent.historyEventDefNames.Add("SyntheticBodyChanged");
+
+            BeliefStanceResolution approvingResult = Resolve(Snapshot(approves), sameEvent, policy);
+            BeliefStanceResolution despisingResult = Resolve(Snapshot(despises), sameEvent, policy);
+            AssertSelected("same event resolves approving ideology", approvingResult, "Synthetic_Approval");
+            AssertSelected("same event resolves despising ideology", despisingResult, "Synthetic_Despise");
+            AssertEqual("approving ideology keeps mechanical polarity", BeliefValenceTokens.Positive,
+                approvingResult.stances[0].correlationValence);
+            AssertEqual("despising ideology keeps mechanical polarity", BeliefValenceTokens.Negative,
+                despisingResult.stances[0].correlationValence);
+
+            BeliefEventEvidence ordinary = BeliefEventEvidenceFactory.ForEvent(
+                "SyntheticPawn", 251, "work", "SyntheticSweeping", "initiator", "swept the floor", "ordinary");
+            AssertEmpty("unmatched ordinary Phase 1 evidence remains neutral",
+                Resolve(Snapshot(approves), ordinary, policy));
+
+            BeliefSnapshot lexicalSnapshot = Snapshot(approves);
+            approves.correlations[0].description = "crafted replacement ceremony";
+            BeliefStanceResolution lexical = Resolve(lexicalSnapshot,
+                TextEvidence(true, "crafted replacement ceremony"), policy);
+            AssertSelected("high-confidence correlation text resolves", lexical, "Synthetic_Approval");
+            AssertEqual("correlation-text fallback carries typed companion valence",
+                BeliefValenceTokens.Positive, lexical.stances[0].correlationValence);
+
+            string full = BeliefContextFormatter.Format(approvingResult,
+                NarrativeDetailLevelTokens.Full, policy);
+            AssertEqual("event-time full block survives save/load normalization byte-identically",
+                full, BeliefContextFormatter.NormalizeSaved(full, policy));
+            string hostile = full + "\r\n<script>: injected\r\nrelevant precept: <b>safe</b>\u0007 tail";
+            string normalized = BeliefContextFormatter.NormalizeSaved(hostile, policy);
+            AssertTrue("save normalization drops unknown labels", !normalized.Contains("script"));
+            AssertTrue("save normalization strips markup and controls",
+                normalized.IndexOf('<') < 0 && normalized.IndexOf('\u0007') < 0);
+            AssertTrue("saved context remains bounded", normalized.Length <= policy.maximumTotalCharacters);
+            AssertContains("balanced detail retains event stance",
+                BeliefContextFormatter.ForDetail(full, NarrativeDetailLevelTokens.Balanced, policy),
+                "relevant precept:");
+            AssertContains("compact detail retains event stance",
+                BeliefContextFormatter.ForDetail(full, NarrativeDetailLevelTokens.Compact, policy),
+                "relevant precept:");
+
+            BeliefSourcePreceptFact source = new BeliefSourcePreceptFact
+            {
+                instanceId = "Exact#1",
+                defName = "Exact_Precept"
+            };
+            BeliefEventEvidence thought = BeliefEventEvidenceFactory.ForThought(
+                "SyntheticPawn", 300, "SyntheticThought", "synthetic thought", source);
+            AssertEqual("thought evidence freezes exact source-precept instance", "Exact#1",
+                thought.sourcePreceptInstanceId);
+            AssertEqual("thought evidence freezes exact source-precept Def", "Exact_Precept",
+                thought.sourcePreceptDefName);
+            BeliefEventEvidence cloned = BeliefEventEvidenceFactory.ForPov(
+                thought, "Event#2", 301, "OtherPawn", "recipient");
+            thought.thoughtDefNames.Clear();
+            AssertEqual("POV evidence is detached from its source list", 1, cloned.thoughtDefNames.Count);
+            AssertEqual("POV evidence replaces event identity", "Event#2", cloned.narrative.eventId);
+            AssertEqual("POV evidence replaces pawn identity", "OtherPawn", cloned.narrative.povPawnId);
+
+            BeliefHistoryCorrelationBuffer buffer = new BeliefHistoryCorrelationBuffer();
+            for (int i = 0; i < 5; i++)
+                buffer.Observe(new BeliefHistoryObservation
+                {
+                    tick = 400 + i,
+                    historyEventDefName = "History_" + i,
+                    visiblePawnIds = new List<string> { "SyntheticPawn" }
+                }, 400 + i, 3, 20);
+            AssertEqual("history cache obeys its entry cap", 3, buffer.Count);
+            AssertEqual("history lookup is exact-pawn only", 0,
+                buffer.NearbyDefNames("OtherPawn", 404, 20).Count);
+            AssertEqual("history lookup returns all bounded nearby exact identities", 3,
+                buffer.NearbyDefNames("SyntheticPawn", 404, 20).Count);
+            AssertEqual("history lookup does not consume evidence", 3,
+                buffer.NearbyDefNames("SyntheticPawn", 404, 20).Count);
+            AssertEqual("stale history rows expire", 0,
+                buffer.NearbyDefNames("SyntheticPawn", 500, 20).Count);
+            AssertEqual("stale history pruning releases storage", 0, buffer.Count);
+            buffer.Observe(new BeliefHistoryObservation
+            {
+                tick = 510,
+                historyEventDefName = "Bad Event Name",
+                visiblePawnIds = new List<string> { "SyntheticPawn" }
+            }, 510, 3, 20);
+            AssertEqual("malformed history identities fail closed", 0, buffer.Count);
         }
 
         private static void TestEvidenceRulesAndOptionalCorrections()

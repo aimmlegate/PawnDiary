@@ -515,4 +515,16 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_SoloImportant.fields.120.label>permit title</DiaryPromptTemplate_SoloImportant.fields.120.label>
   <DiaryPromptTemplate_SoloImportant.fields.121.label>permit setting</DiaryPromptTemplate_SoloImportant.fields.121.label>
   <DiaryPromptTemplate_SoloImportant.fields.122.label>used during cooldown</DiaryPromptTemplate_SoloImportant.fields.122.label>
+  <!-- Ideology Phase 1 additive field; indices append to preserve every existing translation. -->
+  <DiaryPromptTemplate_PairDefault.fields.29.label>belief context</DiaryPromptTemplate_PairDefault.fields.29.label>
+  <DiaryPromptTemplate_PairImportant.fields.76.label>belief context</DiaryPromptTemplate_PairImportant.fields.76.label>
+  <DiaryPromptTemplate_PairCombat.fields.32.label>belief context</DiaryPromptTemplate_PairCombat.fields.32.label>
+  <DiaryPromptTemplate_PairBatched.fields.28.label>belief context</DiaryPromptTemplate_PairBatched.fields.28.label>
+  <DiaryPromptTemplate_SoloDefault.fields.44.label>belief context</DiaryPromptTemplate_SoloDefault.fields.44.label>
+  <DiaryPromptTemplate_SoloImportant.fields.124.label>belief context</DiaryPromptTemplate_SoloImportant.fields.124.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.40.label>belief context</DiaryPromptTemplate_SoloInternalState.fields.40.label>
+  <DiaryPromptTemplate_SoloBatched.fields.40.label>belief context</DiaryPromptTemplate_SoloBatched.fields.40.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.38.label>belief context</DiaryPromptTemplate_SoloDayReflection.fields.38.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>belief context</DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.16.label>belief context</DiaryPromptTemplate_SoloArcReflection.fields.16.label>
 </LanguageData>

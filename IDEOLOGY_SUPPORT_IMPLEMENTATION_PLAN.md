@@ -1,7 +1,8 @@
 # Pawn Diary — Ideoligion Support Implementation Plan
 
-Status: Phase 0 pure resolver/policy contract completed on 2026-07-21; Phases 1–6 remain pending.
-Phase 0 changes no live event route, save data, prompt route, or loaded-game behavior.
+Status: Phases 0–1 completed on 2026-07-21; Phases 2–6 remain pending.
+Phase 1 adds guarded event-time enrichment only; it adds no reflection page, mutation behavior, passive
+belief scanner, or generic belief capture route.
 
 Scheduling authority: implement Ideology phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Ideology.
@@ -996,7 +997,9 @@ impure/pure boundary.
 | `Source/Core/DiaryGameComponent.Belief.cs` | Elapsed scanner, state updates, evidence lookup, rest flush. |
 | `Source/Patches/DiaryIdeologySignalPatches.cs` | Guarded certainty/ideology mutation hooks. |
 | `Source/Generation/BeliefMutationCache.cs` | Bounded/coalescing transient mutation snapshots. |
-| `Source/Generation/HistoryEventEvidenceCache.cs` | Non-emitting bounded per-pawn/tick plain history-event correlation sidecar. |
+| `Source/Generation/BeliefHistoryCorrelationCache.cs` | Runtime wrapper for the non-emitting bounded per-pawn/tick plain history-event correlation sidecar. |
+| `Source/Pipeline/Belief/BeliefHistoryCorrelationBuffer.cs` | Pure bounded/stale-pruned exact-pawn HistoryEvent storage. |
+| `Source/Pipeline/Belief/BeliefEventEvidenceFactory.cs` | Pure bounded constructors/copies for explicit source evidence and developer fixtures. |
 | `Source/Defs/DiaryBeliefPolicyDef.cs` | XML schema, singleton resolution, defensive fallbacks, plain snapshot conversion. |
 | `1.6/Defs/DiaryBeliefPolicyDef.xml` | Runtime tuning and relevance policy. |
 | `tests/BeliefContextTests/` | Standalone pure test executable/project. |
@@ -1086,8 +1089,8 @@ Exit gate: arbitrary synthetic mod IDs resolve through structural/text facts, am
 fixtures return empty, and organ/cannibalism/unrelated-belief scenarios pass; no RimWorld types leak
 into the pure project; XML loads; docs describe the inactive policy contract.
 
-**Exit-gate result:** complete for automated Phase-0 code/XML/tests only. Phase 1 is the next permitted
-Ideology slice and is still pending.
+**Exit-gate result:** complete for automated Phase-0 code/XML/tests only. Phase 1 subsequently supplied
+the guarded runtime boundary without changing this resolver contract.
 
 Phase 0 may be implemented beside Narrative Continuity N0. Narrative Continuity N1 must exist before
 Phase 1 persists ordinary event enrichment, and Narrative Continuity N4 must be included in or precede
@@ -1114,6 +1117,17 @@ Exit gate: a saved/reloaded synthetic event renders identical context; custom te
 bounded; no-DLC returns empty; the history observer emits no pages; full/balanced/compact golden tests
 pass; the same visible event resolves differently for different live ideoligions and remains ordinary
 when there is no confident match.
+
+**Exit-gate result:** complete for the Phase-1 code/XML/automated slice. The guarded adapter captures
+active ideology, certainty/role, memes/structure, issues/precepts, exact source/thought/history
+correlations, and mechanical thought valence into plain DTOs. Thought and body-mod sources resolve once
+per already-eligible POV and persist normalized `beliefContext`; ordinary non-evidenced routes remain
+unchanged. The non-emitting HistoryEvent observer uses a bounded exact-pawn/tick cache, developer
+structural/lexical previews use the normal saved prompt seam, body-mod ID shortcuts are removed, and
+Full/Balanced/Compact plus prompt-lab golden coverage passes. Standalone belief tests pass 222
+assertions; focused capture/pipeline suites pass 713/2,790; the core and 357-test RimTest assemblies
+build 0/0. The complete verification hook passes all 15 pure suites at 6,838 assertions. RimWorld was
+not launched, so live fixtures are compiled but not recorded as executed.
 
 ### Phase 2 — Required event integrations and mutation capture
 

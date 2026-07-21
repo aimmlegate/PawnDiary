@@ -59,6 +59,9 @@ namespace PawnDiary
         // Optional associative-memory recall frozen at event capture time. Empty means no memory
         // surfaced; the prompt field disappears entirely (zero token cost).
         public string memoryContext;
+        // Event-time Ideology interpretation, already sanitized and bounded by the guarded adapter.
+        // Empty is the normal no-DLC or unrelated-event path and costs no prompt tokens.
+        public string beliefContext;
         public string lastOpener;
         public string previousEntryEnding;
         public string weapon;
@@ -204,6 +207,11 @@ namespace PawnDiary
         // Copied from DiaryMemoryTuningDef on the main thread. The pure planner uses this string
         // only to prefix the already-frozen memory recall; it never reads a live Def.
         public string memoryContextInstruction = string.Empty;
+        // Copied from DiaryBeliefPolicyDef on the main thread. The immutable resolver policy is also
+        // captured once so prompt-detail projection never rereads live Defs.
+        public string beliefContextFieldLabel = "belief context";
+        public string beliefContextInstruction = string.Empty;
+        public BeliefPolicySnapshot beliefPolicy = BeliefPolicySnapshot.CreateDefault();
 
         public DiaryTemplatePolicy Template(string templateKey)
         {

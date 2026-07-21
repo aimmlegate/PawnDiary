@@ -26,6 +26,11 @@ namespace PawnDiary.Ingestion
         private readonly float moodOffset;
         private readonly ThoughtEventData payload;
         private readonly string biotechFamilyContext;
+        private readonly string thoughtLabel;
+        private readonly BeliefEventEvidence beliefEvidence;
+
+        /// <summary>Detached source identity/evidence exposed to focused RimTests.</summary>
+        internal BeliefEventEvidence CapturedBeliefEvidence => beliefEvidence;
 
         public ThoughtSignal(Pawn pawn, Thought_Memory thought)
         {
@@ -77,6 +82,13 @@ namespace PawnDiary.Ingestion
                 MoodImpact = MoodImpact.Classify(moodOffset),
                 Policy = SnapshotThoughtPolicy(),
             };
+            thoughtLabel = ResolveThoughtLabel(thought.def);
+            beliefEvidence = BeliefEventEvidenceFactory.ForThought(
+                payload.PawnId,
+                payload.Tick,
+                payload.DefName,
+                thoughtLabel,
+                DlcContext.CaptureThoughtSourcePrecept(thought));
         }
 
         public override DiaryEventData Payload => payload;
@@ -98,7 +110,7 @@ namespace PawnDiary.Ingestion
         {
             // Impure build: label, instruction. These need the live ThoughtDef (LabelCap, settings
             // instruction) so they cannot live in the pure payload layer.
-            string label = ResolveThoughtLabel(thought.def);
+            string label = thoughtLabel;
             string instruction = InteractionGroups.InstructionForThought(thought.def);
 
             if (decision == CaptureDecision.RouteAmbient)
@@ -121,7 +133,8 @@ namespace PawnDiary.Ingestion
                 pawn.LabelShortCap, label);
 
             DiaryEvent thoughtEvent = CreateSoloEvent(
-                sink, pawn, null, payload.DefName, label, text, instruction, gameContext);
+                sink, pawn, null, payload.DefName, label, text, instruction, gameContext,
+                beliefEvidence);
             thoughtEvent.moodImpact = payload.MoodImpact;
             sink.QueueSolo(thoughtEvent, DiaryEvent.InitiatorRole);
         }

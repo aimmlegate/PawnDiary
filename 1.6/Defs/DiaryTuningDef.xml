@@ -350,13 +350,6 @@
     <bodyPartDespisesTraitDefNames>
       <li>BodyPurist</li>
     </bodyPartDespisesTraitDefNames>
-    <bodyPartApprovePreceptDefNames>
-      <li>BodyMod_Approved</li>    <!-- Ideology -->
-    </bodyPartApprovePreceptDefNames>
-    <bodyPartDespisePreceptDefNames>
-      <li>BodyMod_Disapproved</li> <!-- Ideology -->
-      <li>BodyMod_Abhorrent</li>   <!-- Ideology -->
-    </bodyPartDespisePreceptDefNames>
     <bodyPartInhumanizedHediffDefNames>
       <li>Inhumanized</li>         <!-- Anomaly -->
     </bodyPartInhumanizedHediffDefNames>
