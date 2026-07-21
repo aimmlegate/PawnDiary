@@ -147,6 +147,13 @@ namespace PawnDiary
         public float quadrumDividerHeight = 30f;
         public float quadrumDividerTopGap = 6f;
         public float quadrumDividerLineGap = 10f;
+        // Small season glyph drawn just left of the "quadrum · season · year" divider label. Size 0
+        // hides it; the gap is the space between the glyph and the label.
+        public float quadrumDividerIconSize = 15f;
+        public float quadrumDividerIconGap = 6f;
+        // Seasonal background-wash crossfade rate (higher = snappier). Frame-rate-independent
+        // exponential ease, so the wash smoothly follows the season at the top of the journal.
+        public float seasonWashLerpSpeed = 3f;
 
         // ---- Linked-entry card ----
         public float linkedEntryPadding = 8f;
@@ -230,6 +237,13 @@ namespace PawnDiary
         // month groups instead of fading into the background.
         public DiaryUiColorSpec quadrumDividerLabelColor = Color(0.85f, 0.83f, 0.75f, 1f);
         public DiaryUiColorSpec quadrumDividerLineColor = Color(0.60f, 0.57f, 0.50f, 0.45f);
+        // Subtle seasonal background wash behind the journal + filter panel. Very low alpha; the tab
+        // eases between these as you scroll across a season divider. Set an alpha to 0 to disable one
+        // season's wash (all four at 0 disables the effect entirely).
+        public DiaryUiColorSpec springWashColor = Color(0.42f, 0.58f, 0.40f, 0.09f);
+        public DiaryUiColorSpec summerWashColor = Color(0.85f, 0.72f, 0.36f, 0.09f);
+        public DiaryUiColorSpec fallWashColor = Color(0.80f, 0.47f, 0.22f, 0.10f);
+        public DiaryUiColorSpec winterWashColor = Color(0.48f, 0.60f, 0.80f, 0.09f);
         public DiaryUiColorSpec pendingTitlePrefixColor = Color(0.86f, 0.86f, 0.86f, 0.95f);
         public DiaryUiColorSpec pendingTitleDotBaseColor = Color(0.68f, 0.72f, 0.76f, 1f);
         public DiaryUiColorSpec writingPlaceholderLowColor = Color(0.58f, 0.72f, 0.66f, 1f);
@@ -238,6 +252,12 @@ namespace PawnDiary
         public DiaryUiColorSpec expansionIndicatorBaseColor = Color(0.62f, 0.65f, 0.68f, 0.85f);
         public DiaryUiColorSpec modelNameColor = Color(0.45f, 0.48f, 0.50f, 0.62f);
         public DiaryUiColorSpec regenerateEntryButtonColor = Color(0.48f, 0.51f, 0.53f, 0.46f);
+        // Warm gold used to tint the entry favorite star when it is toggled on; the off state reuses
+        // the quiet regenerate/footer tint so an un-favorited star reads as a dim outline.
+        public DiaryUiColorSpec favoriteStarColor = Color(0.98f, 0.82f, 0.34f, 1f);
+        // Amber accent for the filter-panel toggle when the panel is open AND a filter is engaged, so
+        // the third ("active") state stands apart from the plain open (bright) and closed (dim) states.
+        public DiaryUiColorSpec filterActiveIconColor = Color(0.96f, 0.78f, 0.40f, 0.98f);
         public DiaryUiColorSpec debugTextColor = Color(0.54f, 0.58f, 0.60f, 0.90f);
         public DiaryUiColorSpec devDangerButtonColor = Color(0.95f, 0.22f, 0.18f, 0.92f);
         public DiaryUiColorSpec linkedEntryLabelColor = Color(0.80f, 0.85f, 0.92f, 1f);
@@ -305,6 +325,10 @@ namespace PawnDiary
         public Color EntryDateColor => entryDateColor.ToColor(new Color(0.80f, 0.79f, 0.74f, 1f));
         public Color QuadrumDividerLabelColor => quadrumDividerLabelColor.ToColor(new Color(0.85f, 0.83f, 0.75f, 1f));
         public Color QuadrumDividerLineColor => quadrumDividerLineColor.ToColor(new Color(0.60f, 0.57f, 0.50f, 0.45f));
+        public Color SpringWashColor => springWashColor.ToColor(new Color(0.42f, 0.58f, 0.40f, 0.09f));
+        public Color SummerWashColor => summerWashColor.ToColor(new Color(0.85f, 0.72f, 0.36f, 0.09f));
+        public Color FallWashColor => fallWashColor.ToColor(new Color(0.80f, 0.47f, 0.22f, 0.10f));
+        public Color WinterWashColor => winterWashColor.ToColor(new Color(0.48f, 0.60f, 0.80f, 0.09f));
         public Color PendingTitlePrefixColor => pendingTitlePrefixColor.ToColor(new Color(0.86f, 0.86f, 0.86f, 0.95f));
         public Color PendingTitleDotBaseColor => pendingTitleDotBaseColor.ToColor(new Color(0.68f, 0.72f, 0.76f));
         public Color WritingPlaceholderLowColor => writingPlaceholderLowColor.ToColor(new Color(0.58f, 0.72f, 0.66f));
@@ -313,6 +337,8 @@ namespace PawnDiary
         public Color ExpansionIndicatorBaseColor => expansionIndicatorBaseColor.ToColor(new Color(0.62f, 0.65f, 0.68f, 0.85f));
         public Color ModelNameColor => modelNameColor.ToColor(new Color(0.45f, 0.48f, 0.50f, 0.62f));
         public Color RegenerateEntryButtonColor => regenerateEntryButtonColor.ToColor(new Color(0.48f, 0.51f, 0.53f, 0.46f));
+        public Color FavoriteStarColor => favoriteStarColor.ToColor(new Color(0.98f, 0.82f, 0.34f, 1f));
+        public Color FilterActiveIconColor => filterActiveIconColor.ToColor(new Color(0.96f, 0.78f, 0.40f, 0.98f));
         public Color DebugTextColor => debugTextColor.ToColor(new Color(0.54f, 0.58f, 0.60f, 0.90f));
         public Color DevDangerButtonColor => devDangerButtonColor.ToColor(new Color(0.95f, 0.22f, 0.18f, 0.92f));
         public Color LinkedEntryLabelColor => linkedEntryLabelColor.ToColor(new Color(0.80f, 0.85f, 0.92f));
@@ -358,6 +384,29 @@ namespace PawnDiary
             }
 
             return CueEquals(cue, DiaryEvent.MentalBreakColorCue) ? MentalBreakPageTintColor : PageTintColor;
+        }
+
+        /// <summary>
+        /// The subtle seasonal background wash for a season, or fully transparent for an unknown
+        /// season (which fades the wash out). Permanent-summer/winter map to their seasonal wash.
+        /// </summary>
+        public Color SeasonWashColor(Season season)
+        {
+            switch (season)
+            {
+                case Season.Spring:
+                    return SpringWashColor;
+                case Season.Summer:
+                case Season.PermanentSummer:
+                    return SummerWashColor;
+                case Season.Fall:
+                    return FallWashColor;
+                case Season.Winter:
+                case Season.PermanentWinter:
+                    return WinterWashColor;
+                default:
+                    return new Color(0f, 0f, 0f, 0f);
+            }
         }
 
         public Color HeaderRuleForCue(string cue)

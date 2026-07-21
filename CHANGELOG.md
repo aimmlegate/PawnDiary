@@ -1,5 +1,55 @@
 # Changelog
 
+- **2026-07-21 — Added a subtle seasonal background wash to the diary journal and filter panel.** As
+  you scroll, a very low-alpha color wash behind the cards and the right-hand filter panel eases
+  between seasons — spring green, summer gold, autumn orange, winter blue — following the season of the
+  entry at the top of the viewport, so the whole tab quietly shifts with the year in step with the
+  season divider icons. It is drawn behind the semi-opaque cards (never over text, so it only shows in
+  the gaps and on the panel), and a frame-rate-independent exponential ease (`UpdateSeasonWash`, on real
+  time so it still animates while the game is paused) crossfades at each divider instead of snapping.
+  The four wash colors and the crossfade rate are XML-tunable via `DiaryUiStyleDef`
+  (`springWashColor`/`summerWashColor`/`fallWashColor`/`winterWashColor` — default alpha ~0.09–0.10 —
+  and `seasonWashLerpSpeed`); set a season's alpha to 0 to disable that season, or all four to turn the
+  effect off. The top-of-viewport season reuses the existing binary-search `FirstVisibleEntryIndex` +
+  `DiaryQuadrumDivider.SeasonFor`, so it stays cheap on huge histories. Debug build passes 0/0 and all
+  14 pure test suites stay green; no in-game acceptance run is claimed.
+
+- **2026-07-21 — Added small season glyphs to the diary's quadrum/season dividers.** The
+  "Aprimay · Spring · 5500" separators now carry a subtle season icon just left of the label —
+  **CoreUI Icons** (Free set, **MIT**): `cil-sun` (summer), `cil-snowflake` (winter), `cil-flower`
+  (spring), `cil-leaf` (autumn), rasterized to white tintable PNGs in `Textures/UI/DiaryButtons/` and
+  served through the existing `DiaryButtonTextures` holder (new `SeasonIcon(Season)`). The glyph is
+  keyed off the same nominal season as the label via a new `DiaryQuadrumDivider.SeasonFor`, tinted
+  with the muted `quadrumDividerLabelColor`, and the icon+label pair stays centered with the hairlines
+  flanking the whole unit. Size and spacing are XML-tunable (`quadrumDividerIconSize` default 15,
+  `quadrumDividerIconGap` default 6; size 0 hides the glyph), and a missing texture draws no icon.
+  (The originally suggested Icons8 icons were not used — their free license requires an attribution
+  link and restricts redistributing the files, so the same MIT CoreUI set as the diary buttons was
+  used instead, keeping the licensing clean and the look consistent.) Debug build passes 0/0 and all
+  14 pure test suites stay green; no in-game acceptance run is claimed.
+
+- **2026-07-21 — Replaced the Diary tab button glyphs with CoreUI icons and added a favorite star.**
+  The filter-panel toggle (previously three hand-drawn bars), the "Copy entry" action, the
+  per-entry regenerate icon, and the writing-style/persona header icon now use dedicated glyphs:
+  a filter funnel, stacked pages, a circular reload arrow, and a portrait-on-card. The sources are
+  **CoreUI Icons** (Free set, **MIT**) — `cil-filter`, `cil-copy`, `cil-reload`, `cil-contact`,
+  `cil-star` — rasterized to solid-white, tintable 128×128 PNGs under `Textures/UI/DiaryButtons/`
+  (attribution in that folder's `CREDITS.txt`) and loaded lazily through the new
+  `DiaryButtonTextures` holder with vanilla `TexButton` fallbacks. The CoreUI `solid`/`duotone`
+  variants are Pro/paywalled, so every state is distinguished by **tint alone**: the filter funnel
+  now has three states — dim (closed), brighter (open), and an amber accent (open with a
+  favorites-only or tag selection set), driven by the new XML color `filterActiveIconColor`. A new
+  **favorite star** sits on each finished page's footer (left of the regenerate icon); clicking it
+  toggles a warm-gold state (`favoriteStarColor`). That favorite state is **session-only for now** —
+  it is intentionally not persisted across save/load and does not filter the journal (the seam is the
+  transient `FavoritedEntryKeys` set in `ITab_Pawn_Diary.EntryCards.cs`); persistence and the
+  "Favorites only" journal filter remain deferred follow-ups. Swapping to the base/mouseover-color
+  `Widgets.ButtonImage` overload also fixes a latent issue where the copy/regenerate/writing-style
+  tints were being overridden to full white by the 2-arg overload, so the footer/header icons now
+  read as the quiet, configurable tints their code always intended. New EN/RU tooltip keys
+  (`PawnDiary.Tab.FavoriteAddTip`/`FavoriteRemoveTip`). Debug build passes 0/0 and all 14 pure test
+  suites stay green; no in-game acceptance run is claimed.
+
 - **2026-07-21 — Added a queue-time prompt anti-repetition guard.** Before a first-person prompt is
   dispatched, the assembled user prompt is compared (pure word-token Jaccard, new
   `Source/Pipeline/PromptSimilarity.cs`) against the POV pawn's most recent stored prompts. When the

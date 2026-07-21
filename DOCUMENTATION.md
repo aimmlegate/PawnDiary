@@ -2757,10 +2757,18 @@ Inspect-tab mode intentionally does not draw unread-page badges on the tab butto
 hidden and the bottom command button is active instead, that command still shows its unread/writing
 status overlay.
 
-Production UI shows completed pages. Each expanded page has a player-visible "Copy entry" action at
-the left of the footer line, and each expanded non-archived page has a muted rewrite icon beside the
-model/provenance footer on the right, so players can regenerate that page with the current model
-routing; pairwise pages rewrite both POVs when both are still eligible. Dev mode also shows
+Production UI shows completed pages. Each expanded page has a player-visible "Copy entry" action
+(a stacked-pages icon) at the left of the footer line. On the right, beside the model/provenance
+footer, each finished page shows a **favorite star**, and each non-archived page also shows a muted
+**regenerate icon** (a circular reload arrow), so players can star a page or rewrite it with the
+current model routing; pairwise pages rewrite both POVs when both are still eligible. The favorite
+star toggles a warm-gold on/off state, but that state is **session-only for now** — it is not
+persisted across save/load and does not filter the journal yet. The single seam where persistence and
+the "Favorites only" filter would attach is the transient `FavoritedEntryKeys` set in
+`ITab_Pawn_Diary.EntryCards.cs`. These footer/header glyphs (filter funnel, favorite star, copy,
+regenerate, and the writing-style/persona header icon) are **CoreUI Icons** (Free set, MIT)
+rasterized to tintable white PNGs under `Textures/UI/DiaryButtons/` and loaded through
+`DiaryButtonTextures` with vanilla `TexButton` fallbacks (see that folder's `CREDITS.txt`). Dev mode also shows
 pending/failure rows and raw prompt/status data (prompt-only cards copy the captured prompt). Bulk dev actions live under RimWorld's Debug Actions
 menu as `Pawn Diary > Event test panel...`, which opens a non-pausing sectioned dev panel for
 selecting a test pawn and partner. The same debug category also exposes
@@ -2832,18 +2840,30 @@ prompt/raw-response/retry state.
 
 **Wave C1 reading-quality treatments.** Three presentation-only touches (no change to saved history,
 sort order, or DLC independence). (1) **Season/quadrum dividers.** A slim centered
-"Aprimay · Spring · 5500" separator (icon-free) is drawn between the year's cards wherever the quadrum
-changes, computed by the pure-ish `DiaryQuadrumDivider` helper. The quadrum/year are read from each
+"Aprimay · Spring · 5500" separator — prefixed with a small, muted season glyph — is drawn between the
+year's cards wherever the quadrum changes, computed by the pure-ish `DiaryQuadrumDivider` helper. The quadrum/year are read from each
 entry's DISPLAY date string (the same "15th of Decembary, 5500" line shown on the card, matched back to
 a `Quadrum` label + trailing year) — the same source the year pager groups by, not the raw sort tick.
 Real pages format that date from their own tick so the two always agree, but dev-mock stress pages
 deliberately spread their display dates across a fake multi-year history while clamping their sort tick
 to the pawn's lifetime; reading the date keeps the divider consistent with the cards and the pager in
 both cases. The season is the conventional temperate-northern pairing (Aprimay=spring, …) using
-RimWorld's own localized `Season` labels. Entries whose date cannot be placed on the calendar (the
-Undated page, or a malformed old-save string) show no dividers. The divider's reserved height is added to the virtual row offsets in the same sliced
+RimWorld's own localized `Season` labels. A small season glyph — CoreUI `cil-flower`/`cil-sun`/
+`cil-leaf`/`cil-snowflake` (MIT), loaded through `DiaryButtonTextures.SeasonIcon` and tinted like the
+label — sits just left of it, keyed off the same nominal season (`DiaryQuadrumDivider.SeasonFor`) so
+glyph and text always agree; the icon+label pair stays centered with the hairlines flanking the whole
+unit. Its size/spacing are XML-tunable (`quadrumDividerIconSize`/`quadrumDividerIconGap`; size 0 hides
+the glyph), and a missing texture simply draws no icon. Entries whose date cannot be placed on the
+calendar (the Undated page, or a malformed old-save string) show no dividers. The divider's reserved height is added to the virtual row offsets in the same sliced
 layout pass that measures cards, so the reserved and drawn geometry never disagree; sizes/colors are
-XML-tunable via `DiaryUiStyleDef` (`quadrumDivider*`). (2) **Player-visible copy.** The old dev-only,
+XML-tunable via `DiaryUiStyleDef` (`quadrumDivider*`). A matching **seasonal background wash** (very
+low alpha) sits behind the journal cards and the filter panel, following the season of the entry at
+the top of the viewport (`FirstVisibleEntryIndex` + `DiaryQuadrumDivider.SeasonFor`) and easing between
+seasons as you scroll via `UpdateSeasonWash` — a real-time exponential ease, so it crossfades even
+while the game is paused. It draws behind the semi-opaque cards (never over text), so it reads in the
+gaps and most clearly on the otherwise-background-less filter panel. The four wash colors and crossfade
+rate are XML-tunable (`springWashColor`/`summerWashColor`/`fallWashColor`/`winterWashColor`,
+`seasonWashLerpSpeed`); a season's alpha 0 disables it, all four at 0 turns the wash off. (2) **Player-visible copy.** The old dev-only,
 icon-only copy badge is now a labeled "Copy entry" action for all players, sharing a single footer line
 with the model-name provenance and the rewrite icon. (3) **Header date font.** The card header renders
 the date in a smaller in-game font (`GameFont.Tiny`) and a muted tone (`entryDateColor`) ahead of the
@@ -2864,7 +2884,10 @@ from the visible year's group labels, plus Clear/Apply). The stub toggles render
 **not yet wired** to filter the journal. The dev tools live **only** in this panel — when the panel is
 hidden they are not drawn inline in the journal, so hiding the panel gives a clean journal-only window
 (only the year pager falls back inline). The header toggle icon that shows/hides the panel sits just
-after (right of) the writing-style icon. The journal column keeps its familiar width because `tabWidth`
+after (right of) the writing-style icon. It is a **funnel** glyph with three tint states: dim when the
+panel is closed, brighter when open, and an amber accent (`filterActiveIconColor`) when open with a
+filter selection set (favorites-only or any tag chip) — the "active" state reads even though filtering
+is not wired to the journal yet. The journal column keeps its familiar width because `tabWidth`
 grew by the panel width, and hiding the panel shrinks the whole tab back to that width; the panel also
 hides on a tab too narrow to fit both. Panel sizes are XML-tunable via `DiaryUiStyleDef`
 (`filterPanelWidth`, `filterPanelGap`).

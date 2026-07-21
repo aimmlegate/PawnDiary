@@ -196,13 +196,14 @@ namespace PawnDiary
                 }
 
                 bool showCopyButton = ShowCopyButton(entry);
-                if (showModelName || showRegenerateButton || showCopyButton)
+                bool showFavoriteButton = ShowFavoriteButton(entry);
+                if (showModelName || showRegenerateButton || showCopyButton || showFavoriteButton)
                 {
                     // One footer line: player-visible "Copy entry" on the left, provenance/model name
-                    // and the regenerate icon on the right. HasFooterLine reserves its height so the
-                    // measured and drawn card heights stay in sync.
+                    // in the middle, and the favorite star + regenerate icon on the right. HasFooterLine
+                    // reserves its height so the measured and drawn card heights stay in sync.
                     Rect footerRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
-                    DrawEntryFooter(footerRect, footerNote, showCopyButton, showRegenerateButton, entry, request.Pawn, request.Component);
+                    DrawEntryFooter(footerRect, footerNote, showCopyButton, showRegenerateButton, showFavoriteButton, request.EntryKey, entry, request.Pawn, request.Component);
                 }
 
                 return toggleExpansion;
@@ -249,7 +250,7 @@ namespace PawnDiary
 
             Color oldColor = GUI.color;
             GUI.color = new Color(1f, 1f, 1f, hover ? 0.85f : 0.5f);
-            GUI.DrawTexture(iconRect, TexButton.Copy);
+            GUI.DrawTexture(iconRect, DiaryButtonTextures.Copy);
             if (labelWidth > 0f)
             {
                 GameFont oldLabelFont = Text.Font;
@@ -309,16 +310,12 @@ namespace PawnDiary
 
         private static bool DrawRegenerateFooterIcon(Rect rect, string tooltip)
         {
-            bool hover = Mouse.IsOver(rect);
             Color baseColor = UiStyle.RegenerateEntryButtonColor;
-            Color iconColor = hover
-                ? new Color(baseColor.r, baseColor.g, baseColor.b, Mathf.Clamp01(baseColor.a + 0.18f))
-                : baseColor;
-
-            Color oldColor = GUI.color;
-            GUI.color = iconColor;
-            bool clicked = Widgets.ButtonImage(rect, TexButton.Rename);
-            GUI.color = oldColor;
+            Color hoverColor = new Color(baseColor.r, baseColor.g, baseColor.b, Mathf.Clamp01(baseColor.a + 0.18f));
+            // Use the base/mouseover-color overload so the quiet footer tint is honored: the 2-arg
+            // ButtonImage overload forces GUI.color to white/mouseover and would ignore any tint set
+            // beforehand. This keeps the regenerate icon as quiet as the neighboring copy action.
+            bool clicked = Widgets.ButtonImage(rect, DiaryButtonTextures.Regenerate, baseColor, hoverColor);
 
             if (!string.IsNullOrWhiteSpace(tooltip))
             {
@@ -326,6 +323,87 @@ namespace PawnDiary
             }
 
             return clicked;
+        }
+
+        // ---- Favorite star (session-only) ----
+        // Entries the player has starred this session, keyed by the same stable entry key (event id +
+        // POV role) used for expand/collapse state. This is intentionally NOT scribed: the star is a
+        // visuals-only affordance for now, and this single set is the seam where save/load persistence
+        // and the "Favorites only" journal filter would later attach.
+        private static readonly HashSet<string> FavoritedEntryKeys = new HashSet<string>();
+        // Generous safety bound so a marathon session cannot grow the set without limit; unreachable in
+        // normal play (a player would have to star thousands of entries in one sitting).
+        private const int MaxFavoritedEntries = 4096;
+
+        /// <summary>
+        /// True when the entry has been starred as a favorite this session.
+        /// </summary>
+        private static bool IsFavorite(string entryKey)
+        {
+            return !string.IsNullOrEmpty(entryKey) && FavoritedEntryKeys.Contains(entryKey);
+        }
+
+        /// <summary>
+        /// Toggles the session favorite flag for the entry. Clears the whole set past a generous bound
+        /// (never hit in normal play) so it cannot leak across a very long session.
+        /// </summary>
+        private static void ToggleFavorite(string entryKey)
+        {
+            if (string.IsNullOrEmpty(entryKey))
+            {
+                return;
+            }
+
+            if (!FavoritedEntryKeys.Remove(entryKey))
+            {
+                if (FavoritedEntryKeys.Count >= MaxFavoritedEntries)
+                {
+                    FavoritedEntryKeys.Clear();
+                }
+
+                FavoritedEntryKeys.Add(entryKey);
+            }
+        }
+
+        /// <summary>
+        /// True when the expanded card should show the favorite star: any real finished or archived
+        /// page. Still-generating pages and dev prompt-only cards are not favoritable.
+        /// </summary>
+        private static bool ShowFavoriteButton(DiaryEntryView entry)
+        {
+            return entry != null && !IsGenerating(entry) && !IsPromptOnly(entry);
+        }
+
+        /// <summary>
+        /// Draws the favorite star in the given footer slot and toggles the session favorite on click.
+        /// Off reads as a quiet outline (matching the copy action); on reads as a warm gold star. Uses
+        /// the base/mouseover-color overload so the tint is honored (the 2-arg overload forces white).
+        /// </summary>
+        private static void DrawFavoriteAction(Rect rect, string entryKey)
+        {
+            bool fav = IsFavorite(entryKey);
+            Color baseColor;
+            Color hoverColor;
+            if (fav)
+            {
+                Color gold = UiStyle.FavoriteStarColor;
+                baseColor = gold;
+                hoverColor = new Color(gold.r, gold.g, gold.b, 1f);
+            }
+            else
+            {
+                baseColor = new Color(1f, 1f, 1f, 0.5f);
+                hoverColor = new Color(1f, 1f, 1f, 0.85f);
+            }
+
+            if (Widgets.ButtonImage(rect, DiaryButtonTextures.Favorite, baseColor, hoverColor, false))
+            {
+                ToggleFavorite(entryKey);
+            }
+
+            TooltipHandler.TipRegion(
+                rect,
+                (fav ? "PawnDiary.Tab.FavoriteRemoveTip" : "PawnDiary.Tab.FavoriteAddTip").Translate());
         }
 
         /// <summary>
@@ -409,7 +487,7 @@ namespace PawnDiary
         /// </summary>
         private static bool HasFooterLine(DiaryEntryView entry)
         {
-            return HasModelName(entry) || CanShowRegenerateButton(entry) || ShowCopyButton(entry);
+            return HasModelName(entry) || CanShowRegenerateButton(entry) || ShowCopyButton(entry) || ShowFavoriteButton(entry);
         }
 
         private static bool CanShowRegenerateButton(DiaryEntryView entry)
@@ -579,10 +657,11 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws a slim centered "Aprimay \u00b7 Spring \u00b7 5500" separator between the year's entry cards.
-        /// A hairline rule runs to each side of the centered label. Icon-free by design.
+        /// Draws a slim centered "Aprimay \u00b7 Spring \u00b7 5500" separator between the year's entry cards,
+        /// with a small season glyph (sun/leaf/snowflake/flower) just left of the label when one is
+        /// available. A hairline rule runs to each side of the centered icon+label unit.
         /// </summary>
-        private static void DrawQuadrumDivider(Rect rect, string label)
+        private static void DrawQuadrumDivider(Rect rect, string label, Season season)
         {
             if (rect.width <= 0f || string.IsNullOrEmpty(label))
             {
@@ -598,13 +677,22 @@ namespace PawnDiary
             Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.MiddleCenter;
 
-            float labelWidth = Mathf.Min(rect.width, Text.CalcSize(label).x);
-            float labelLeft = rect.x + (rect.width - labelWidth) * 0.5f;
+            // Optional season glyph, tinted like the label so it reads as a quiet cue. Hidden when the
+            // size knob is 0, the season is unknown, or the mod asset is missing. The icon + label form
+            // a single unit that stays centered, with the hairlines flanking the whole unit.
+            float iconSize = Mathf.Max(0f, QuadrumDividerIconSize);
+            Texture2D seasonIcon = iconSize > 0f ? DiaryButtonTextures.SeasonIcon(season) : null;
+            float iconSpace = seasonIcon != null ? iconSize + QuadrumDividerIconGap : 0f;
+
+            float labelWidth = Mathf.Min(Text.CalcSize(label).x, Mathf.Max(0f, rect.width - iconSpace));
+            float unitWidth = iconSpace + labelWidth;
+            float unitLeft = rect.x + (rect.width - unitWidth) * 0.5f;
+            float labelLeft = unitLeft + iconSpace;
             float labelRight = labelLeft + labelWidth;
             float lineY = rect.y + rect.height * 0.5f - 0.5f;
 
             Color lineColor = UiStyle.QuadrumDividerLineColor;
-            float leftLineEnd = labelLeft - QuadrumDividerLineGap;
+            float leftLineEnd = unitLeft - QuadrumDividerLineGap;
             if (leftLineEnd > rect.x)
             {
                 Widgets.DrawBoxSolid(new Rect(rect.x, lineY, leftLineEnd - rect.x, 1f), lineColor);
@@ -617,6 +705,12 @@ namespace PawnDiary
             }
 
             GUI.color = UiStyle.QuadrumDividerLabelColor;
+            if (seasonIcon != null)
+            {
+                Rect iconRect = new Rect(unitLeft, rect.y + (rect.height - iconSize) * 0.5f, iconSize, iconSize);
+                GUI.DrawTexture(iconRect, seasonIcon);
+            }
+
             Widgets.Label(new Rect(labelLeft, rect.y, labelWidth, rect.height), label);
 
             GUI.color = oldColor;
@@ -868,6 +962,8 @@ namespace PawnDiary
             string modelName,
             bool showCopyButton,
             bool showRegenerateButton,
+            bool showFavoriteButton,
+            string entryKey,
             DiaryEntryView entry,
             Pawn pawn,
             DiaryGameComponent component)
@@ -880,6 +976,7 @@ namespace PawnDiary
                 leftEdge = rect.x + copyWidth + EntryFooterActionGap;
             }
 
+            // Right cluster, laid out right-to-left: regenerate (rightmost), then the favorite star.
             float rightEdge = rect.xMax;
             if (showRegenerateButton)
             {
@@ -890,6 +987,17 @@ namespace PawnDiary
                     EntryFooterActionButtonSize);
                 rightEdge = regenerateRect.x - EntryFooterActionGap;
                 DrawRegenerateButton(regenerateRect, entry, pawn, component);
+            }
+
+            if (showFavoriteButton)
+            {
+                Rect favoriteRect = new Rect(
+                    rightEdge - EntryFooterActionButtonSize,
+                    rect.y + (rect.height - EntryFooterActionButtonSize) * 0.5f,
+                    EntryFooterActionButtonSize,
+                    EntryFooterActionButtonSize);
+                rightEdge = favoriteRect.x - EntryFooterActionGap;
+                DrawFavoriteAction(favoriteRect, entryKey);
             }
 
             if (!string.IsNullOrWhiteSpace(modelName) && rightEdge > leftEdge)

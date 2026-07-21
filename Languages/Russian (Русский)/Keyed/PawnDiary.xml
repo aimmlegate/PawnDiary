@@ -236,6 +236,8 @@
   <PawnDiary.Tab.CopyEntry>Копировать страницу</PawnDiary.Tab.CopyEntry>
   <PawnDiary.Tab.CopyEntryTip>Скопировать текст страницы в буфер обмена.</PawnDiary.Tab.CopyEntryTip>
   <PawnDiary.Tab.CopyEntryCopied>Текст страницы скопирован.</PawnDiary.Tab.CopyEntryCopied>
+  <PawnDiary.Tab.FavoriteAddTip>Отметить страницу как избранную.</PawnDiary.Tab.FavoriteAddTip>
+  <PawnDiary.Tab.FavoriteRemoveTip>Убрать страницу из избранного.</PawnDiary.Tab.FavoriteRemoveTip>
   <!-- Боковая панель фильтров и управления. Переключатели фильтров — заглушки, пока фильтрация не подключена. -->
   <PawnDiary.Tab.FilterYearHeader>Год</PawnDiary.Tab.FilterYearHeader>
   <PawnDiary.Tab.FilterHeader>Фильтры</PawnDiary.Tab.FilterHeader>
