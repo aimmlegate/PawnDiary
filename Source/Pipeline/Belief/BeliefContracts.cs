@@ -385,6 +385,24 @@ namespace PawnDiary
             this.addSemanticAliases = CopyStrings(addSemanticAliases);
         }
 
+        /// <summary>
+        /// True when the rule constrains at least one event fact. A key plus output vocabulary is not
+        /// enough: selectorless rules would otherwise enrich every event in the game.
+        /// </summary>
+        public bool HasSelector
+        {
+            get
+            {
+                return !string.IsNullOrWhiteSpace(sourceDomain)
+                    || !string.IsNullOrWhiteSpace(sourceDefName)
+                    || !string.IsNullOrWhiteSpace(groupKey)
+                    || !string.IsNullOrWhiteSpace(facet)
+                    || !string.IsNullOrWhiteSpace(phase)
+                    || !string.IsNullOrWhiteSpace(povRole)
+                    || !string.IsNullOrWhiteSpace(mutationCauseToken);
+            }
+        }
+
         private static IReadOnlyList<string> CopyStrings(IList<string> values)
         {
             List<string> copy = new List<string>();
@@ -773,8 +791,9 @@ namespace PawnDiary
             string normalized = NarrativeDetailLevelTokens.Normalize(detailLevel);
             for (int i = 0; i < detailBudgets.Count; i++)
                 if (detailBudgets[i].detailLevel == normalized) return detailBudgets[i];
+            bool compact = normalized == NarrativeDetailLevelTokens.Compact;
             return new BeliefDetailBudget(normalized, maximumTotalLines, maximumTotalCharacters,
-                normalized == NarrativeDetailLevelTokens.Full, true, true, true);
+                normalized == NarrativeDetailLevelTokens.Full, !compact, !compact, true);
         }
 
         private static float ScoreFor(IReadOnlyList<BeliefTokenScore> values, string token, float fallback)
@@ -819,7 +838,8 @@ namespace PawnDiary
                 for (int i = 0; i < source.Count; i++)
                 {
                     BeliefEventEvidenceRule row = source[i];
-                    if (row != null) copy.Add(new BeliefEventEvidenceRule(row.key, row.sourceDomain,
+                    if (row != null && !string.IsNullOrWhiteSpace(row.key) && row.HasSelector)
+                        copy.Add(new BeliefEventEvidenceRule(row.key, row.sourceDomain,
                         row.sourceDefName, row.groupKey, row.facet, row.phase, row.povRole,
                         row.mutationCauseToken, ToList(row.addTopics), ToList(row.addSemanticAliases)));
                 }

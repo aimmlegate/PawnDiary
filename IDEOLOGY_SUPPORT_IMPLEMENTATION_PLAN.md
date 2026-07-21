@@ -1057,8 +1057,10 @@ update docs/changelog, build, inspect diff, and stop if unrelated user changes o
 
 > **Implementation status (2026-07-21): automated code exit gate complete.** The detached contracts,
 > immutable XML-policy snapshot, structural/lexical resolver, bounded formatter/reflection shells, and
-> assembly-free `BeliefContextTests` now exist. The suite passes 172 assertions with arbitrary synthetic
-> Def identities, the shipped correction list is empty, the policy XML parses, and the core Debug build
+> assembly-free `BeliefContextTests` now exist. The suite passes 193 assertions with arbitrary synthetic
+> Def identities, selectorless evidence rules fail closed, default-one/default-two selection and every
+> formatter/deity/mutation diagnostic seam are pinned, the shipped correction list is empty, the policy
+> and English/Russian DefInjected XML parse, and the core Debug build
 > succeeds. No RimWorld/Verse/Unity/DLC reference enters the pure project. No live collector, adapter,
 > hook, event route, prompt field, page, Scribe field, or scanner was added; Phase 1 and later remain
 > pending and no loaded-game/manual acceptance is claimed.
