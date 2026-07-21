@@ -255,7 +255,7 @@ namespace PawnDiary
             bool hover = Mouse.IsOver(actionRect);
 
             Color oldColor = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, hover ? 0.95f : 0.75f);
+            GUI.color = new Color(1f, 1f, 1f, hover ? 1f : 0.85f);
             GUI.DrawTexture(iconRect, DiaryButtonTextures.Copy);
             if (labelWidth > 0f)
             {
@@ -424,8 +424,8 @@ namespace PawnDiary
             }
             else
             {
-                baseColor = new Color(1f, 1f, 1f, 0.55f);
-                hoverColor = new Color(1f, 1f, 1f, 0.9f);
+                baseColor = new Color(1f, 1f, 1f, 0.72f);
+                hoverColor = new Color(1f, 1f, 1f, 1f);
             }
 
             bool clicked = Widgets.ButtonImage(favRect, DiaryButtonTextures.Favorite, baseColor, hoverColor, false);

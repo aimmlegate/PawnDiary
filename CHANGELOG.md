@@ -1,5 +1,18 @@
 # Changelog
 
+- **2026-07-21 — Diary UI round-3 tweaks from in-game feedback.** (1) The **season-band scroll strip now
+  only draws when the page actually overflows** (a scrollbar is present), so a short non-scrolling page
+  no longer shows a stray strip beside empty space. (2) The **seasonal wash is scoped to the entries
+  region only** — behind the cards from the top of the viewport down to where the content ends — so it
+  never tints the header or the empty space below a short page. (3) **Made the action icons more
+  visible:** the header writing-style/filter icons (`writingStyleIconAlpha` 0.55→0.72, hover →1.0), the
+  regenerate icon (lighter tint at 0.85 alpha), the copy icon (idle 0.75→0.85), and the favorite /
+  favorites-only stars' off state (0.55→0.72). (4) **Removed the inline year pager from the journal** —
+  year navigation now lives exclusively in the filter panel; hiding the panel no longer drops a year
+  pager into the journal column (reopen the panel via the header filter icon to change years). All
+  values remain XML-tunable. Debug build 0/0; all pure suites green; no in-game acceptance run is
+  claimed.
+
 - **2026-07-21 — More diary UI tuning from in-game feedback.** (1) **Scoped the seasonal wash to the
   journal column only** (behind its header and cards) instead of the whole tab, so the right filter/dev
   panel reads untinted. (2) **Added a season-band strip** in a thin gutter just left of the scrollbar:

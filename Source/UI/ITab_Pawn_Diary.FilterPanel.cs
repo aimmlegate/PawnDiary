@@ -263,7 +263,7 @@ namespace PawnDiary
                 iconSize);
 
             Color oldColor = GUI.color;
-            GUI.color = on ? UiStyle.FavoriteStarColor : new Color(1f, 1f, 1f, 0.55f);
+            GUI.color = on ? UiStyle.FavoriteStarColor : new Color(1f, 1f, 1f, 0.72f);
             GUI.DrawTexture(starRect, DiaryButtonTextures.Favorite);
             GUI.color = oldColor;
 

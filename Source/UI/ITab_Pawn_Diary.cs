@@ -480,15 +480,6 @@ namespace PawnDiary
                 ? new Rect(rect.x, rect.y, Mathf.Max(0f, rect.width - panelWidth - FilterPanelGap), rect.height)
                 : rect;
 
-            // Seasonal background wash — scoped to the JOURNAL column only (behind its header and cards),
-            // NOT the right-hand filter/dev panel, which reads better untinted. It uses the smoothed
-            // color the journal pass computed last frame (target = season at the top of the viewport);
-            // one frame of lag is imperceptible.
-            if (seasonWashColor.a > 0f)
-            {
-                Widgets.DrawBoxSolid(journalRect, seasonWashColor);
-            }
-
             Rect headerRect = new Rect(journalRect.x, journalRect.y, journalRect.width, 34f);
             // Start the right-side icon cluster clear of the window's close (X) button. When the filter
             // panel is hidden the journal spans the full width, so without this clamp the icons would sit
@@ -552,9 +543,8 @@ namespace PawnDiary
                 DrawWritingIndicator(writingIndicatorRect);
             }
 
-            // Dev tools and the year selector normally live in the right-hand panel, so the journal
-            // column opens directly under the header (a fixed 36px title row plus the usual gap).
-            bool panelVisible = panelWidth > 0f;
+            // Dev tools and the year selector live only in the right-hand panel, so the journal column
+            // opens directly under the header (a fixed 36px title row plus the usual gap).
             float entriesY = journalRect.y + 36f + EntryGap;
 
             // Resolve the year list and the selected year's ordered cards up front so the filter panel
@@ -580,19 +570,9 @@ namespace PawnDiary
 
             DrawFilterPanel(filterPanelRect, pawn, component, years, visibleEntriesCache, haveOrdered ? ordered : null);
 
-            // Fallback when the panel is hidden (player toggled it off, or the tab is too narrow to fit
-            // it via off-default XML): keep the year pager reachable inline in the journal column. The
-            // dev tools are deliberately NOT drawn here — they live only in the filter panel, never on
-            // the main journal, so hiding the panel gives a clean journal-only window.
-            if (!panelVisible)
-            {
-                if (!indexLoading && years != null && years.Count > 1)
-                {
-                    Rect yearRect = new Rect(journalRect.x, entriesY, journalRect.width, YearFilterHeight);
-                    DrawYearFilter(yearRect, years, visibleEntriesCache);
-                    entriesY = yearRect.yMax + YearFilterGap;
-                }
-            }
+            // Year navigation lives exclusively in the filter panel now — there is no inline year pager
+            // in the journal column, even when the panel is hidden. Reopen the panel via the header
+            // filter icon to change years; this keeps the journal free of any control chrome.
 
             Rect outRect = new Rect(journalRect.x, entriesY, journalRect.width, journalRect.yMax - entriesY);
 
@@ -666,6 +646,16 @@ namespace PawnDiary
                 ? DiaryQuadrumDivider.SeasonFor(ordered[washTopIndex])
                 : Season.Undefined;
             UpdateSeasonWash(washSeason);
+
+            // Seasonal background wash — scoped to the ENTRIES region only: from the top of the viewport
+            // down to where the content ends (clamped by viewHeight), behind the cards. So it never
+            // tints the header, the empty space below a short page, or the right-hand panel — it sits
+            // only under the diary items.
+            if (seasonWashColor.a > 0f)
+            {
+                float washHeight = Mathf.Min(outRect.height, viewHeight);
+                Widgets.DrawBoxSolid(new Rect(outRect.x, outRect.y, outRect.width, washHeight), seasonWashColor);
+            }
 
             Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
             // Immediate-mode safety net: BeginScrollView and the per-card GUI.BeginGroup below push
@@ -789,7 +779,9 @@ namespace PawnDiary
         private void DrawSeasonScrollStrip(Rect outRect, List<DiaryEntryView> ordered, float[] offsets, float[] heights, float viewHeight)
         {
             int count = ordered?.Count ?? 0;
-            if (count == 0 || viewHeight <= 0f || outRect.height <= 0f)
+            // Only show the strip when the content actually overflows (a scrollbar is present); a full
+            // strip beside a short, non-scrolling page reads as clutter.
+            if (count == 0 || viewHeight <= outRect.height || outRect.height <= 0f)
             {
                 return;
             }
