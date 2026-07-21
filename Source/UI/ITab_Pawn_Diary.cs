@@ -265,6 +265,15 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Experimental, default-off gate for the global seasonal background wash. Defaults to off when
+        /// settings are not yet loaded, so the wash never flashes on before the player opts in.
+        /// </summary>
+        private static bool SeasonalBackgroundEnabled()
+        {
+            return PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.enableSeasonalBackground;
+        }
+
+        /// <summary>
         /// Clamps the preferred tab width to the logical screen so the panel-widened tab cannot extend
         /// off the left edge on small resolutions or high UI scale. The panel itself hides gracefully
         /// (see ResolveFilterPanelWidth) when the clamped width is too small to hold both columns.
@@ -442,11 +451,12 @@ namespace PawnDiary
                 return;
             }
 
-            // Seasonal background wash — global for the whole window: painted first, edge to edge, so it
-            // sits behind the header, the journal, and the right-hand filter/dev panel and the entire
-            // diary shifts color with the season. It uses the smoothed color the journal pass computed
-            // last frame (target = season at the top of the viewport); one frame of lag is imperceptible.
-            if (seasonWashColor.a > 0f)
+            // Seasonal background wash (experimental, off by default) — global for the whole window:
+            // painted first, edge to edge, so it sits behind the header, the journal, and the right-hand
+            // filter/dev panel and the entire diary shifts color with the season. It uses the smoothed
+            // color the journal pass computed last frame (target = season at the top of the viewport);
+            // one frame of lag is imperceptible.
+            if (SeasonalBackgroundEnabled() && seasonWashColor.a > 0f)
             {
                 Widgets.DrawBoxSolid(new Rect(0f, 0f, size.x, size.y), seasonWashColor);
             }
@@ -649,11 +659,14 @@ namespace PawnDiary
             // Update the seasonal wash target from the season of the entry at the top of the scroll,
             // easing toward it. The wash itself is painted once across the whole tab at the top of
             // FillTab (using this smoothed value); here we only advance it as the user scrolls.
-            int washTopIndex = FirstVisibleEntryIndex(ordered.Count, scrollPosition.y);
-            Season washSeason = washTopIndex >= 0 && washTopIndex < ordered.Count
-                ? DiaryQuadrumDivider.SeasonFor(ordered[washTopIndex])
-                : Season.Undefined;
-            UpdateSeasonWash(washSeason);
+            if (SeasonalBackgroundEnabled())
+            {
+                int washTopIndex = FirstVisibleEntryIndex(ordered.Count, scrollPosition.y);
+                Season washSeason = washTopIndex >= 0 && washTopIndex < ordered.Count
+                    ? DiaryQuadrumDivider.SeasonFor(ordered[washTopIndex])
+                    : Season.Undefined;
+                UpdateSeasonWash(washSeason);
+            }
 
             Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
             // Immediate-mode safety net: BeginScrollView and the per-card GUI.BeginGroup below push

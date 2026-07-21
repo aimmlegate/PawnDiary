@@ -2940,13 +2940,16 @@ the glyph), and a missing texture simply draws no icon. Entries whose date canno
 calendar (the Undated page, or a malformed old-save string) show no dividers. The divider's reserved height is added to the virtual row offsets in the same sliced
 layout pass that measures cards, so the reserved and drawn geometry never disagree; sizes/colors are
 XML-tunable via `DiaryUiStyleDef` (`quadrumDivider*`). A matching **seasonal background wash** (low
-alpha) follows the season of the entry at the top of the viewport (`FirstVisibleEntryIndex` +
-`DiaryQuadrumDivider.SeasonFor`) and eases between seasons as you scroll via `UpdateSeasonWash` — a
-real-time exponential ease, so it crossfades even while the game is paused. It is painted **globally
-across the whole diary window** (edge to edge) at the very top of `FillTab`, behind the header, the
-journal, and the right-hand filter/dev panel, so the entire window shifts color with the season. The
-`UpdateSeasonWash` call in the journal pass advances the smoothed color for the next frame's global draw
-(one frame of lag, imperceptible). The four wash colors and crossfade rate are XML-tunable
+alpha) is an **experimental, default-off** effect, gated behind the "Seasonal window tint" setting
+(`enableSeasonalBackground`, default `false`) via `SeasonalBackgroundEnabled()` — when off, both the
+draw and the per-frame season tracking are skipped. When enabled it follows the season of the entry at
+the top of the viewport (`FirstVisibleEntryIndex` + `DiaryQuadrumDivider.SeasonFor`) and eases between
+seasons as you scroll via `UpdateSeasonWash` — a real-time exponential ease, so it crossfades even while
+the game is paused. It is painted **globally across the whole diary window** (edge to edge) at the very
+top of `FillTab`, behind the header, the journal, and the right-hand filter/dev panel, so the entire
+window shifts color with the season. The `UpdateSeasonWash` call in the journal pass advances the
+smoothed color for the next frame's global draw (one frame of lag, imperceptible). The four wash colors
+and crossfade rate are XML-tunable
 (`springWashColor`/`summerWashColor`/`fallWashColor`/`winterWashColor` — default alpha ~0.14–0.16 — and
 `seasonWashLerpSpeed`); a season's alpha 0 disables it, all four at 0 turns the wash off. (2) **Player-visible copy.** The old dev-only,
 icon-only copy badge is now a labeled "Copy entry" action for all players, sharing a single footer line

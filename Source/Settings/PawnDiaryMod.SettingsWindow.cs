@@ -198,6 +198,10 @@ namespace PawnDiary
                     ref Settings.enableAtmosphericFormatting,
                     "PawnDiary.Settings.EnableAtmosphericFormattingTip".Translate());
                 listing.CheckboxLabeled(
+                    "PawnDiary.Settings.EnableSeasonalBackground".Translate(),
+                    ref Settings.enableSeasonalBackground,
+                    "PawnDiary.Settings.EnableSeasonalBackgroundTip".Translate());
+                listing.CheckboxLabeled(
                     "PawnDiary.Settings.EnablePromptEnchantments".Translate(),
                     ref Settings.enablePromptEnchantments,
                     "PawnDiary.Settings.EnablePromptEnchantmentsTip".Translate());
