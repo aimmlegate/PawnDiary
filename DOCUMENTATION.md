@@ -3481,14 +3481,19 @@ O2 adds loaded-Def checks for the Odyssey-active/inactive seasonal-flood package
 `ThingPresent` matching, prompt-only page policy, and the exact `GravNausea` matcher and tuning.
 It also asserts that all four shipped concrete landing-outcome overrides carry Pawn Diary's
 successful-return postfix; pure policy tests cover exact-ship correlation/rejection and sanitized,
-bounded outcome prompt projection. N3-O adds compiled loaded-path assertions that temporarily supply
-one exact active saved flood row, require the real `OdysseyNarrativeSnapshotFor` adapter to project it
-only for the verified onboard POV/map, and run the loaded shared selector under Full, Balanced, and
-Compact. The same fixture now invokes the canonical landing signal's private adapter and requires its
-saved selection to contain the pressure key, checks the observer's player-home map precondition, and
-proves a DefInjected field mutation invalidates the Odyssey policy cache. A wrong-map row omits pressure
-while preserving the existing mobile-home snapshot, and an inactive-Odyssey path remains null. These
-assertions build in the 354-test RimTest assembly but have not yet been executed in game for N3-O.
+bounded outcome prompt projection. N3-O adds loaded-path assertions that temporarily supply one exact
+active saved flood row, require the real `OdysseyNarrativeSnapshotFor` adapter to project it only for
+the verified onboard POV/map, and run the loaded shared selector under Full, Balanced, and Compact. The
+fixture requires a spawned, parked player gravship and selects a standable cell accepted by vanilla's
+exact onboard predicate, so the positive path cannot be skipped. It invokes the canonical landing
+signal's private adapter and requires its saved selection to contain the pressure key, checks the
+observer's player-home map precondition, and proves a DefInjected field mutation invalidates the
+Odyssey policy cache. A wrong-map row omits pressure while preserving the existing mobile-home
+snapshot, and an inactive-Odyssey path remains null. The first manual Odyssey-active run reached
+353/354 and exposed an invalid host without a parked gravship; the user-confirmed corrected run on a
+valid player-home gravship host passed 354/354 tests across 57/57 suites. The separately focused
+Odyssey-inactive path passed 1/1, and the no-Odyssey profile produced no Pawn Diary crash, missing-Def
+error, or error spam.
 Assembly-free coverage passes 324 Narrative Continuity, 160 Odyssey policy, 68 observed-condition, and
 2,750 pipeline assertions.
 

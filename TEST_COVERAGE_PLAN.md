@@ -357,7 +357,11 @@ with empty safe defaults and loaded XML format projection; `DiaryPipelineTests` 
 and freezes English/Russian format placeholders, the exact seasonal-flood observer tuple,
 home/pressure coexistence policy, no Odyssey dependency, and Full/Balanced/Compact prompt projection.
 The 354-test RimTest assembly builds with focused real-adapter, policy-cache, canonical-signal, and
-home-map-precondition assertions, but no N3-O in-game run is claimed.
+home-map-precondition assertions. The first manual Odyssey-active run reached 353/354 and correctly
+rejected a host without a spawned, parked player gravship. After loading a valid player-home gravship
+host, the user-confirmed corrected integrated run passed 354/354 tests across 57/57 suites. The focused
+Odyssey-inactive path passed 1/1, and the no-Odyssey profile produced no Pawn Diary crash, missing-Def
+error, or error spam.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It
@@ -616,8 +620,10 @@ the same snapshot and the existing saved O2 observer row, adds at most one exact
 and covers unsafe inputs, per-lens home/pressure failure isolation, deterministic deduplication, ordinary
 repetition, two-provider composition, and evidence/reference preservation. Focused loaded assertions
 exercise the real adapter, DefInjected cache refresh, canonical landing-signal handoff, player-home map
-precondition, and all three prompt detail budgets when an exact onboard host is available; they are
-compiled but not yet run in game.
+precondition, and all three prompt detail budgets. The fixture now requires a spawned, parked player
+gravship and chooses a standable cell accepted by vanilla's exact onboard predicate. The user-confirmed
+corrected Odyssey-active run passed the integrated 354/354 tests across 57/57 suites; the separately
+focused inactive path passed 1/1 with a clean no-Odyssey profile.
 
 Master Wave 3 / Biotech Phases 0–3 plus Phase 4 automated hardening use
 `DiaryBiotechPolicyTests`, an assembly-free suite that freezes

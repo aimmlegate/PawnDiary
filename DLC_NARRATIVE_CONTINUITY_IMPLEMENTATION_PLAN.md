@@ -600,7 +600,7 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 > `NarrativeContinuityTests` passes 289 assembly-free assertions, `DiaryAnomalyPolicyTests` passes 639,
 > and the user-confirmed corrected Anomaly-active loaded run passed the integrated 354/354 RimTests.
 >
-> **N3-O progress (2026-07-21): implemented; loaded acceptance not run.** The fixed Odyssey provider
+> **N3-O progress (2026-07-21): implemented; loaded acceptance passed.** The fixed Odyssey provider
 > now accepts one optional detached environmental-pressure fact in the existing per-POV snapshot. The
 > only concrete source is O2's already-saved, prompt-active `SeasonalFloodActive` observer row with
 > exact `SeasonalFlood` evidence for the POV's verified current gravship map. Source, evidence, POV,
@@ -614,7 +614,11 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 > was added. Review hardening isolates malformed home-only tick/journey metadata from valid pressure,
 > locks the exact observer XML tuple, and compiles loaded cache/signal/map-precondition checks. Focused
 > coverage passes 324 Narrative Continuity, 160 Odyssey policy, and 2,750 pipeline
-> assertions; both Debug assemblies build, while the integrated loaded suite has not been run for N3-O.
+> assertions; both Debug assemblies build. The first manual active run reached 353/354 and exposed an
+> invalid host without a spawned, parked player gravship. The user-confirmed corrected run on a valid
+> player-home gravship host passed 354/354 tests across 57/57 suites. The separately focused inactive
+> path passed 1/1, and the no-Odyssey profile produced no Pawn Diary crash, missing-Def error, or error
+> spam.
 
 1. Route high-confidence `EventRelativeStanceResolver` output through the shared interpretation
    category for ordinary event enrichment.

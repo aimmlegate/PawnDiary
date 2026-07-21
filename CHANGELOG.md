@@ -1,5 +1,15 @@
 # Changelog
 
+- **2026-07-21 — Confirmed Odyssey N3-O loaded acceptance green.** The first Odyssey-active
+  integrated run reached 353/354 and failed only because the loaded map did not contain the spawned,
+  parked player gravship required to exercise the positive onboard boundary. The focused fixture now
+  selects a standable cell accepted by vanilla's exact onboard predicate and explicitly requires both
+  Full-detail lenses plus wrong-map mobile-home preservation. On a valid player-home gravship host,
+  the user-confirmed corrected run passed 354/354 tests across 57/57 suites. The separately focused
+  Odyssey-inactive path passed 1/1, and the no-Odyssey profile produced no Pawn Diary crash,
+  missing-Def error, or error spam. This is test-only hardening; production behavior, hooks, and save
+  schema are unchanged.
+
 - **2026-07-21 — Added a queue-time prompt anti-repetition guard.** Before a first-person prompt is
   dispatched, the assembled user prompt is compared (pure word-token Jaccard, new
   `Source/Pipeline/PromptSimilarity.cs`) against the POV pawn's most recent stored prompts. When the
@@ -24,7 +34,7 @@
   and the home-map precondition used by the existing observer. The generic prompt-field fixture and
   its documentation no longer claim to perform provider selection. Focused suites pass 324 Narrative
   Continuity, 160 Odyssey policy, 68 observed-condition, and 2,750 pipeline assertions; both Debug
-  assemblies build, while the already-tracked N3-O in-game acceptance run remains pending.
+  assemblies build. The later corrected N3-O run passed 354/354 tests across 57/57 suites.
 
 - **2026-07-21 — Implemented Master Wave 8 / Narrative Continuity N3-O environmental pressure.** The
   existing Odyssey snapshot now carries an optional detached environmental fact sourced only from the
@@ -41,8 +51,8 @@
   `GravNausea` page, life-support inference, or landing consequence was added. Focused suites pass 324
   Narrative Continuity, 160 Odyssey policy, and 2,750 pipeline assertions; both Debug assemblies and
   repository verification pass, and committed runtime/RimTest DLLs are rebuilt. Focused loaded-path
-  assertions compile for the exact active/wrong-map/inactive and Full/Balanced/Compact paths, but no
-  N3-O in-game pass is claimed. Wave 9 remains untouched.
+  assertions cover the exact active/wrong-map/inactive and Full/Balanced/Compact paths; the later
+  corrected N3-O run passed 354/354 tests across 57/57 suites. Wave 9 remains untouched.
 - **2026-07-21 — Fixed four Diary filter-panel UI bugs.** (1) Hiding the filter panel now shrinks the
   whole tab back to the journal-only width instead of leaving the journal floating in the wide frame:
   `ResponsiveTabWidth` drops the panel allotment (`filterPanelWidth` + `filterPanelGap`) from `tabWidth`
