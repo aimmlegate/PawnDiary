@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-07-21 — Diary UI round-4 tweaks from in-game feedback.** (1) The **seasonal wash now fills the
+  full height** of the journal reading area (behind the cards and the empty space below a short page),
+  instead of stopping at the last entry. (2) **Removed the stub "Apply" button** from the filter panel —
+  the Clear button is now full-width. (3) **Made tag chips' selected state far clearer:** selected chips
+  are boldly filled with a 2px accent outline and near-white text; unselected chips read as a quiet thin
+  outline. (4) **Removed the redundant "Filters" section header** above the favorites toggle. All values
+  remain XML-tunable. Debug build 0/0; no in-game acceptance run is claimed.
+
 - **2026-07-21 — Diary UI round-3 tweaks from in-game feedback.** (1) The **season-band scroll strip now
   only draws when the page actually overflows** (a scrollbar is present), so a short non-scrolling page
   no longer shows a stray strip beside empty space. (2) The **seasonal wash is scoped to the entries

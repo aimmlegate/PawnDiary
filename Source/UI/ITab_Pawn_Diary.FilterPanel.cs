@@ -193,8 +193,9 @@ namespace PawnDiary
         /// </summary>
         private void DrawFilterStubSection(Listing_Standard listing, List<DiaryEntryView> orderedForTags)
         {
+            // No "Filters" section header: the favorites star and the tag chips read as filter controls
+            // on their own, and the extra title only added clutter above them.
             listing.Gap(6f);
-            DrawFilterSectionHeader(listing, "PawnDiary.Tab.FilterHeader".Translate());
             DrawFavoritesOnlyToggle(listing);
 
             listing.Gap(6f);
@@ -209,38 +210,21 @@ namespace PawnDiary
             }
             else
             {
-                // Tags render as color-coded chips matching the group chip on the entry cards, instead
-                // of a plain checkbox list. Clicking a chip toggles it; active chips read at full
-                // strength like the card chip, inactive ones are dimmed.
+                // Tags render as color-coded chips matching the group chip on the entry cards. Clicking
+                // a chip toggles it; active chips read filled at full strength, inactive ones as a quiet
+                // outline, so the selected/unselected state is obvious.
                 DrawFilterTagChips(listing);
             }
 
             listing.Gap(8f);
-            Rect buttonRow = listing.GetRect(ControlLineHeight);
-            float half = Mathf.Max(0f, (buttonRow.width - FilterPanelButtonGap) * 0.5f);
-            Rect clearRect = new Rect(buttonRow.x, buttonRow.y, half, buttonRow.height);
-            Rect applyRect = new Rect(buttonRow.xMax - half, buttonRow.y, half, buttonRow.height);
+            // Clear resets the (stub) filter selections. The "Apply" button was removed — filtering is
+            // toggle-driven and not wired to the journal yet, so a separate Apply added nothing.
+            Rect clearRect = listing.GetRect(ControlLineHeight);
             if (Widgets.ButtonText(clearRect, "PawnDiary.Tab.FilterClear".Translate()))
             {
                 filterFavoritesOnly = false;
                 filterActiveTags.Clear();
             }
-
-            // Count only tags that are actually shown for the current year, so the Apply badge matches
-            // the visible active chips rather than tags left active from a different year.
-            int visibleActiveTags = 0;
-            for (int i = 0; i < filterTagInfoBuffer.Count; i++)
-            {
-                if (filterActiveTags.Contains(filterTagInfoBuffer[i].label))
-                {
-                    visibleActiveTags++;
-                }
-            }
-
-            int activeCount = visibleActiveTags + (filterFavoritesOnly ? 1 : 0);
-            // Stub: the Apply button is present but filtering is not wired to the journal yet.
-            Widgets.ButtonText(applyRect, "PawnDiary.Tab.FilterApply".Translate(activeCount));
-            TooltipHandler.TipRegion(applyRect, "PawnDiary.Tab.FilterStubTip".Translate());
         }
 
         /// <summary>
@@ -444,27 +428,28 @@ namespace PawnDiary
 
         /// <summary>
         /// Draws one tag chip in the same visual language as the entry-card group chip
-        /// (<see cref="DrawGroupLabel"/>): a filled, outlined box tinted by the tag accent with the
-        /// label centered. Active chips read at full strength; inactive chips are dimmed. Returns true
-        /// when clicked.
+        /// (<see cref="DrawGroupLabel"/>). Selected chips are boldly filled with a 2px accent outline and
+        /// near-white text; unselected chips read as a quiet, mostly-empty thin outline — so the
+        /// select/deselect state is obvious at a glance. Returns true when clicked.
         /// </summary>
         private static bool DrawFilterTagChip(Rect rect, string label, Color accent, bool active)
         {
-            float fillMul = active ? 0.28f : 0.14f;
-            float fillAlpha = active ? 0.85f : 0.45f;
-            float outlineAlpha = active ? 0.92f : 0.42f;
+            float fillMul = active ? 0.42f : 0.08f;
+            float fillAlpha = active ? 0.95f : 0.30f;
+            float outlineAlpha = active ? 1f : 0.55f;
+            int outlineThickness = active ? 2 : 1;
             Widgets.DrawBoxSolidWithOutline(
                 rect,
                 new Color(accent.r * fillMul, accent.g * fillMul, accent.b * fillMul, fillAlpha),
                 new Color(accent.r, accent.g, accent.b, outlineAlpha),
-                1);
+                outlineThickness);
             Widgets.DrawHighlightIfMouseover(rect);
 
             TextAnchor oldAnchor = Text.Anchor;
             Color oldColor = GUI.color;
             Text.Anchor = TextAnchor.MiddleCenter;
-            Color textColor = Color.Lerp(accent, Color.white, active ? 0.6f : 0.35f);
-            textColor.a = active ? 1f : 0.82f;
+            Color textColor = Color.Lerp(accent, Color.white, active ? 0.75f : 0.25f);
+            textColor.a = active ? 1f : 0.70f;
             GUI.color = textColor;
             Widgets.Label(new Rect(rect.x + 4f, rect.y, Mathf.Max(0f, rect.width - 8f), rect.height), label);
             GUI.color = oldColor;

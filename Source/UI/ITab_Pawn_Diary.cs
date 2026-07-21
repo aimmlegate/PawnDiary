@@ -647,14 +647,12 @@ namespace PawnDiary
                 : Season.Undefined;
             UpdateSeasonWash(washSeason);
 
-            // Seasonal background wash — scoped to the ENTRIES region only: from the top of the viewport
-            // down to where the content ends (clamped by viewHeight), behind the cards. So it never
-            // tints the header, the empty space below a short page, or the right-hand panel — it sits
-            // only under the diary items.
+            // Seasonal background wash — fills the full height of the journal reading area (behind the
+            // cards and the empty space below a short page), but stays inside the journal column, so it
+            // never tints the header title bar or the right-hand filter/dev panel.
             if (seasonWashColor.a > 0f)
             {
-                float washHeight = Mathf.Min(outRect.height, viewHeight);
-                Widgets.DrawBoxSolid(new Rect(outRect.x, outRect.y, outRect.width, washHeight), seasonWashColor);
+                Widgets.DrawBoxSolid(outRect, seasonWashColor);
             }
 
             Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
