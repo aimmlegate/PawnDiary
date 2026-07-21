@@ -34,7 +34,18 @@ namespace PawnDiary
                 instruction,
                 gameContext,
                 null,
-                -1);
+                -1,
+                null,
+                null);
+        }
+
+        /// <summary>Creates a pair page and decorates each eligible POV from one plain evidence row.</summary>
+        internal DiaryEvent AddPairwiseEvent(Pawn initiator, Pawn recipient, string defName, string label,
+            string initiatorText, string recipientText, string instruction, string gameContext,
+            BeliefEventEvidence beliefEvidence)
+        {
+            return AddPairwiseEventCore(initiator, recipient, defName, label, initiatorText,
+                recipientText, instruction, gameContext, null, -1, beliefEvidence, null);
         }
 
         /// <summary>
@@ -54,7 +65,9 @@ namespace PawnDiary
                 instruction,
                 gameContext,
                 capturedContext,
-                historicalTick);
+                historicalTick,
+                null,
+                null);
         }
 
         /// <summary>Creates a pair page from a staged signal at its original captured tick.</summary>
@@ -72,7 +85,18 @@ namespace PawnDiary
                 instruction,
                 gameContext,
                 null,
-                historicalTick);
+                historicalTick,
+                null,
+                null);
+        }
+
+        /// <summary>Creates a staged pair page with plain event-time belief evidence.</summary>
+        internal DiaryEvent AddPairwiseEvent(Pawn initiator, Pawn recipient, string defName, string label,
+            string initiatorText, string recipientText, string instruction, string gameContext,
+            int historicalTick, BeliefEventEvidence beliefEvidence)
+        {
+            return AddPairwiseEventCore(initiator, recipient, defName, label, initiatorText,
+                recipientText, instruction, gameContext, null, historicalTick, beliefEvidence, null);
         }
 
         private DiaryEvent AddPairwiseEventCore(
@@ -85,7 +109,9 @@ namespace PawnDiary
             string instruction,
             string gameContext,
             BirthEventContextSnapshot capturedContext,
-            int historicalTick)
+            int historicalTick,
+            BeliefEventEvidence beliefEvidence,
+            BeliefContextBuildResult preparedInitiatorBelief)
         {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
             string initiatorId = initiator.GetUniqueLoadID();
@@ -148,6 +174,10 @@ namespace PawnDiary
                 diaryEvent, DiaryEvent.InitiatorRole, initiator, initiatorCapture);
             ApplyCapturedOrLiveGenerationEligibility(
                 diaryEvent, DiaryEvent.RecipientRole, recipient, recipientCapture);
+            ApplyBeliefContext(diaryEvent, DiaryEvent.InitiatorRole, initiator,
+                beliefEvidence, preparedInitiatorBelief);
+            ApplyBeliefContext(diaryEvent, DiaryEvent.RecipientRole, recipient,
+                beliefEvidence, null);
             // Snapshot display-only pawn facts (staggered handwriting, text-decoration hediff/trait
             // names) from the live pawns here, then store plain values on the model. After this the
             // DiaryEvent never touches Pawn state. See PawnFactCapture / AGENTS.md ("barrier").
@@ -186,7 +216,27 @@ namespace PawnDiary
             string text, string instruction, string gameContext)
         {
             return AddSoloEventCore(
-                pawn, otherPawn, defName, label, text, instruction, gameContext, null, -1);
+                pawn, otherPawn, defName, label, text, instruction, gameContext, null, -1, null, null);
+        }
+
+        /// <summary>Creates a solo page with one plain event-relative belief evidence row.</summary>
+        internal DiaryEvent AddSoloEvent(Pawn pawn, Pawn otherPawn, string defName, string label,
+            string text, string instruction, string gameContext, BeliefEventEvidence beliefEvidence)
+        {
+            return AddSoloEventCore(pawn, otherPawn, defName, label, text, instruction, gameContext,
+                null, -1, beliefEvidence, null);
+        }
+
+        /// <summary>
+        /// Creates a solo page with an already-evaluated result. Body-mod capture uses this seam so
+        /// the same resolver pass supplies both its legacy attitude token and its saved prompt source.
+        /// </summary>
+        internal DiaryEvent AddSoloEvent(Pawn pawn, Pawn otherPawn, string defName, string label,
+            string text, string instruction, string gameContext, BeliefEventEvidence beliefEvidence,
+            BeliefContextBuildResult preparedBelief)
+        {
+            return AddSoloEventCore(pawn, otherPawn, defName, label, text, instruction, gameContext,
+                null, -1, beliefEvidence, preparedBelief);
         }
 
         /// <summary>
@@ -205,7 +255,9 @@ namespace PawnDiary
                 instruction,
                 gameContext,
                 capturedContext,
-                historicalTick);
+                historicalTick,
+                null,
+                null);
         }
 
         /// <summary>Creates a solo page from a staged signal at its original captured tick.</summary>
@@ -221,7 +273,18 @@ namespace PawnDiary
                 instruction,
                 gameContext,
                 null,
-                historicalTick);
+                historicalTick,
+                null,
+                null);
+        }
+
+        /// <summary>Creates a staged solo page with plain event-time belief evidence.</summary>
+        internal DiaryEvent AddSoloEvent(Pawn pawn, Pawn otherPawn, string defName, string label,
+            string text, string instruction, string gameContext, int historicalTick,
+            BeliefEventEvidence beliefEvidence)
+        {
+            return AddSoloEventCore(pawn, otherPawn, defName, label, text, instruction, gameContext,
+                null, historicalTick, beliefEvidence, null);
         }
 
         private DiaryEvent AddSoloEventCore(
@@ -233,7 +296,9 @@ namespace PawnDiary
             string instruction,
             string gameContext,
             BirthEventContextSnapshot capturedContext,
-            int historicalTick)
+            int historicalTick,
+            BeliefEventEvidence beliefEvidence,
+            BeliefContextBuildResult preparedBelief)
         {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
             string pawnId = pawn.GetUniqueLoadID();
@@ -281,6 +346,8 @@ namespace PawnDiary
 
             ApplyCapturedOrLiveGenerationEligibility(
                 diaryEvent, DiaryEvent.InitiatorRole, pawn, pawnCapture);
+            ApplyBeliefContext(diaryEvent, DiaryEvent.InitiatorRole, pawn,
+                beliefEvidence, preparedBelief);
             diaryEvent.SetStaggeredIntensity(DiaryEvent.InitiatorRole,
                 pawnCapture?.staggeredIntensity ?? PawnFactCapture.StaggeredIntensity(pawn));
             diaryEvent.SetTextDecorationFacts(DiaryEvent.InitiatorRole,
@@ -297,6 +364,20 @@ namespace PawnDiary
             }
 
             return diaryEvent;
+        }
+
+        private static void ApplyBeliefContext(
+            DiaryEvent diaryEvent,
+            string povRole,
+            Pawn pawn,
+            BeliefEventEvidence evidence,
+            BeliefContextBuildResult prepared)
+        {
+            if (diaryEvent == null || pawn == null || evidence == null && prepared == null)
+                return;
+            BeliefContextBuildResult result = prepared ?? BeliefContextBuilder.Build(
+                pawn, evidence, diaryEvent.eventId, diaryEvent.tick, povRole);
+            diaryEvent.SetBeliefContext(povRole, result?.fullContext);
         }
 
         private static BirthWriterContextSnapshot FindBirthWriterContext(

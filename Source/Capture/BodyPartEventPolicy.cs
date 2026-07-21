@@ -250,6 +250,24 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
+        /// Converts mechanically observed thought/precept valence to the legacy body stance. Unknown,
+        /// neutral, and mixed evidence fail closed; negative outranks positive when both are reliable.
+        /// </summary>
+        public static string IdeologyStanceForCorrelationValences(IEnumerable<string> valences)
+        {
+            bool positive = false;
+            if (valences == null) return IdeologyNone;
+            foreach (string valence in valences)
+            {
+                if (string.Equals(valence, "negative", StringComparison.OrdinalIgnoreCase))
+                    return IdeologyDespises;
+                if (string.Equals(valence, "positive", StringComparison.OrdinalIgnoreCase))
+                    positive = true;
+            }
+            return positive ? IdeologyApproves : IdeologyNone;
+        }
+
+        /// <summary>
         /// Classifies a fresh missing-part cause. Non-fresh records do not carry reliable cause data.
         /// </summary>
         public static string CauseToken(bool isFresh, string lastInjuryDefName)

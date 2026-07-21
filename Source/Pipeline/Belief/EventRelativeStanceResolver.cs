@@ -195,7 +195,7 @@ namespace PawnDiary
                     {
                         result.Add(NewCandidate(precepts[i], null, BeliefRelevanceSourceTokens.SourcePrecept,
                             BeliefRelevanceTierTokens.SourcePrecept, instanceId, "source|" + instanceId,
-                            BeliefValenceTokens.Unknown, policy));
+                            MatchingCorrelationValence(precepts[i], evidence), policy));
                         return result;
                     }
             }
@@ -212,7 +212,32 @@ namespace PawnDiary
             if (unique != null)
                 result.Add(NewCandidate(unique, null, BeliefRelevanceSourceTokens.SourcePrecept,
                     BeliefRelevanceTierTokens.SourcePrecept, defName, "source_def|" + defName,
-                    BeliefValenceTokens.Unknown, policy));
+                    MatchingCorrelationValence(unique, evidence), policy));
+            return result;
+        }
+
+        private static string MatchingCorrelationValence(
+            BeliefPreceptFact precept,
+            BeliefEventEvidence evidence)
+        {
+            if (precept?.correlations == null || evidence == null)
+                return BeliefValenceTokens.Unknown;
+            string result = BeliefValenceTokens.Unknown;
+            int cap = Math.Min(precept.correlations.Count, 64);
+            for (int i = 0; i < cap; i++)
+            {
+                BeliefCorrelationFact correlation = precept.correlations[i];
+                if (correlation == null) continue;
+                bool matched = correlation.kind == BeliefCorrelationKindTokens.Thought
+                    && Contains(evidence.thoughtDefNames, correlation.defName)
+                    || correlation.kind == BeliefCorrelationKindTokens.HistoryEvent
+                    && Contains(evidence.historyEventDefNames, correlation.defName);
+                if (!matched) continue;
+                string valence = BeliefValenceTokens.Normalize(correlation.valence);
+                if (result == BeliefValenceTokens.Unknown) result = valence;
+                else if (valence != BeliefValenceTokens.Unknown && valence != result)
+                    result = BeliefValenceTokens.Mixed;
+            }
             return result;
         }
 
@@ -344,7 +369,8 @@ namespace PawnDiary
             if (lexical.winner == null) return new List<Candidate>();
             Candidate candidate = NewCandidate(lexical.winner.precept, null, lexical.winner.relevanceSource,
                 lexical.winner.relevanceTier, lexical.winner.matchedIdentity,
-                "lexical|" + lexical.winner.matchedIdentity, BeliefValenceTokens.Unknown, policy);
+                "lexical|" + lexical.winner.matchedIdentity,
+                lexical.winner.correlationValence, policy);
             candidate.confidence = lexical.winner.confidence;
             candidate.runnerUpGap = lexical.runnerUpGap;
             return new List<Candidate> { candidate };

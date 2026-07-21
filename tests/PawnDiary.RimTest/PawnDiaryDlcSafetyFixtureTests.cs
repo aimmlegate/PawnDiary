@@ -136,6 +136,8 @@ namespace PawnDiary.RimTests
             string ideoligion;
             string ideologicalRole;
             List<string> preceptDefNames;
+            BeliefSnapshot beliefSnapshot;
+            BeliefSourcePreceptFact nullThoughtSource;
             GrowthPawnSnapshot growthSnapshot;
             bool growthCaptured;
             HashSet<string> disabledGrowthWorkTypes;
@@ -175,6 +177,8 @@ namespace PawnDiary.RimTests
                 ideoligion = DlcContext.Ideoligion(pawn);
                 ideologicalRole = DlcContext.IdeologicalRole(pawn);
                 preceptDefNames = DlcContext.IdeologyPreceptDefNames(pawn);
+                beliefSnapshot = DlcContext.CaptureBeliefSnapshot(pawn);
+                nullThoughtSource = DlcContext.CaptureThoughtSourcePrecept(null);
                 growthCaptured = DlcContext.TryCaptureGrowthPawn(
                     pawn,
                     birthdayAge: 13,
@@ -230,6 +234,7 @@ namespace PawnDiary.RimTests
                 xenotype != null && xenotypeLabel != null && xenotypeDefName != null
                     && royalTitle != null && royalTitleLabel != null && royalTitleDefName != null
                     && ideoligion != null && ideologicalRole != null && preceptDefNames != null
+                    && beliefSnapshot != null && nullThoughtSource != null
                     && disabledGrowthWorkTypes != null,
                 "A DlcContext accessor returned null; callers append these unconditionally and rely on "
                 + "an empty string / empty list instead.");
@@ -272,8 +277,11 @@ namespace PawnDiary.RimTests
             RequireDlcBranch(
                 ModsConfig.IdeologyActive,
                 "Ideology",
-                emptyExpected: ideoligion.Length == 0 && ideologicalRole.Length == 0 && preceptDefNames.Count == 0,
-                emptyMessage: "Without Ideology, the ideoligion / role / precept accessors must be empty.");
+                emptyExpected: ideoligion.Length == 0 && ideologicalRole.Length == 0
+                    && preceptDefNames.Count == 0 && !beliefSnapshot.ideologyActive
+                    && beliefSnapshot.precepts.Count == 0 && beliefSnapshot.memes.Count == 0
+                    && nullThoughtSource.instanceId.Length == 0 && nullThoughtSource.defName.Length == 0,
+                emptyMessage: "Without Ideology, the ideoligion / role / precept and Phase 1 snapshot accessors must be empty.");
 
             RequireDlcBranch(
                 ModsConfig.OdysseyActive,
@@ -316,7 +324,9 @@ namespace PawnDiary.RimTests
                 "Anomaly ghoul capture must return false/null for missing role pawns.");
             PawnDiaryRimTestScope.Require(string.IsNullOrEmpty(DlcContext.Ideoligion(null))
                     && string.IsNullOrEmpty(DlcContext.IdeologicalRole(null))
-                    && DlcContext.IdeologyPreceptDefNames(null).Count == 0,
+                    && DlcContext.IdeologyPreceptDefNames(null).Count == 0
+                    && !DlcContext.CaptureBeliefSnapshot(null).ideologyActive
+                    && DlcContext.CaptureThoughtSourcePrecept(null).instanceId.Length == 0,
                 "Ideology accessors must return empty for a null pawn.");
             OdysseyLocationSnapshot odysseyLocation;
             OdysseyMobileHomeSnapshot odysseyMobileHome;
@@ -417,6 +427,17 @@ namespace PawnDiary.RimTests
                     PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(DlcContext.Ideoligion(pawn))
                             && DlcContext.IdeologyPreceptDefNames(pawn).SequenceEqual(expectedPrecepts),
                         "A real ideoligion/precept set did not survive the guarded DlcContext adapter.");
+                    BeliefSnapshot belief = DlcContext.CaptureBeliefSnapshot(pawn);
+                    PawnDiaryRimTestScope.Require(belief.ideologyActive
+                            && belief.pawnId == pawn.GetUniqueLoadID()
+                            && belief.ideologyId == fixtureIdeo.GetUniqueLoadID()
+                            && belief.precepts.Count > 0
+                            && belief.precepts.Count <= DiaryBeliefPolicy.Snapshot().maximumPreceptCandidates,
+                        "The Phase 1 belief adapter did not return a bounded detached live-doctrine snapshot.");
+                    PawnDiaryRimTestScope.Require(belief.precepts.All(precept => precept != null
+                            && !string.IsNullOrWhiteSpace(precept.instanceId)
+                            && !string.IsNullOrWhiteSpace(precept.defName)),
+                        "The Phase 1 belief snapshot retained an incomplete precept identity.");
                     ideologyStateExpected = true;
 
                     // A colony's authored role requirements can legitimately reject this randomly

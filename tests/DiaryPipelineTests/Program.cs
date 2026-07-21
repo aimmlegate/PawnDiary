@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Xml.Linq;
 using PawnDiary;
@@ -17,6 +18,7 @@ namespace DiaryPipelineTests
             TestCombatPromptPlan();
             TestSoloPromptPlan();
             TestNarrativeContextPromptField();
+            TestBeliefContextPromptField();
             TestPromptContextDetailSelection();
             TestPromptContextDetailOverrideResolution();
             TestOwnedPromptTextIsNotSentenceCapped();
@@ -733,6 +735,88 @@ namespace DiaryPipelineTests
                 "psylink level: 2");
             AssertTrue("compact removes optional royal duty prose first",
                 !royaltyCompact.userPrompt.Contains("new royal duties:"));
+        }
+
+        private static void TestBeliefContextPromptField()
+        {
+            DiaryEventPayload payload = SoloPayload(
+                "e-belief", "body modification", "Alice received a crafted arm.");
+            payload.initiator.beliefContext =
+                "ideoligion: Ember Path\n"
+                + "certainty: 62% (steady)\n"
+                + "relevant precept: crafted replacements are welcomed\n"
+                + "precept meaning: replacing a weak limb is an honored act\n"
+                + "relevant meme: Transhumanist\n"
+                + "structure: Abstract Theist";
+            DiaryPolicySnapshot policy = Policy(combat: false, important: true);
+            policy.beliefContextInstruction = "Interpret only through these event-relevant beliefs.";
+            policy.beliefPolicy = BeliefPolicySnapshot.CreateDefault();
+            policy.Template(DiaryPipelineTemplates.SoloImportant).fields.Add(
+                Field("belief context", BeliefContextPrompt.Source));
+
+            DiaryPromptPlan full = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = payload,
+                policy = policy,
+                povRole = DiaryPipelineRoles.Initiator,
+                contextDetailLevel = PromptContextDetailLevel.Full
+            });
+            AssertContains("full prompt carries frozen belief guidance", full.userPrompt,
+                "belief context: Interpret only through these event-relevant beliefs.\nideoligion: Ember Path");
+            AssertContains("full prompt carries saved belief description", full.userPrompt,
+                "precept meaning: replacing a weak limb is an honored act");
+
+            DiaryPromptPlan balanced = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = payload,
+                policy = policy,
+                povRole = DiaryPipelineRoles.Initiator,
+                contextDetailLevel = PromptContextDetailLevel.Balanced
+            });
+            AssertContains("balanced prompt keeps the event-relative stance", balanced.userPrompt,
+                "relevant precept: crafted replacements are welcomed");
+            AssertTrue("balanced belief context omits descriptions",
+                !balanced.userPrompt.Contains("precept meaning:"));
+
+            DiaryPromptPlan compact = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = payload,
+                policy = policy,
+                povRole = DiaryPipelineRoles.Initiator,
+                contextDetailLevel = PromptContextDetailLevel.Compact
+            });
+            AssertContains("compact prompt keeps the event-relative stance", compact.userPrompt,
+                "relevant precept: crafted replacements are welcomed");
+            AssertTrue("compact belief context omits structure and meme",
+                !compact.userPrompt.Contains("structure:")
+                    && !compact.userPrompt.Contains("relevant meme:"));
+
+            payload.initiator.beliefContext = string.Empty;
+            DiaryPromptPlan empty = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = payload,
+                policy = policy,
+                povRole = DiaryPipelineRoles.Initiator
+            });
+            AssertTrue("empty belief context costs no prompt field",
+                !empty.userPrompt.Contains("belief context:"));
+
+            XDocument templates = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
+            string[] firstPersonTemplates =
+            {
+                "PairDefault", "PairImportant", "PairCombat", "PairBatched",
+                "SoloDefault", "SoloImportant", "SoloInternalState", "SoloBatched",
+                "SoloDayReflection", "SoloQuadrumReflection", "SoloArcReflection"
+            };
+            for (int i = 0; i < firstPersonTemplates.Length; i++)
+            {
+                XElement template = templates.Root?.Elements("PawnDiary.DiaryPromptTemplateDef")
+                    .FirstOrDefault(row => ChildValue(row, "templateKey") == firstPersonTemplates[i]);
+                AssertEqual("belief source appears exactly once in " + firstPersonTemplates[i], 1,
+                    template?.Element("fields")?.Elements("li")
+                        .Count(row => ChildValue(row, "source") == BeliefContextPrompt.Source) ?? 0);
+            }
         }
 
         private static void TestPromptContextDetailOverrideResolution()
@@ -4025,8 +4109,8 @@ namespace DiaryPipelineTests
                 "persona_trait_description_2", "persona_milestone", "tale_source_def",
                 "tale_source_label", "tale_killer_role", "tale_victim_role"
             };
-            AssertEqual("SoloImportant Royalty R6 projection remains append-only at 124 fields",
-                124, new List<XElement>(solo.Element("fields").Elements("li")).Count);
+            AssertEqual("SoloImportant Ideology Phase 1 projection remains append-only at 125 fields",
+                125, new List<XElement>(solo.Element("fields").Elements("li")).Count);
             for (int i = 0; i < contextKeys.Length; i++)
             {
                 AssertTrue("SoloImportant persona prompt field exists: " + contextKeys[i],

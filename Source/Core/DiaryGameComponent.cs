@@ -218,6 +218,8 @@ namespace PawnDiary
             ResetBiotechFamilyTransientState();
             BiotechGeneMutationCorrelation.Clear();
             ResetAnomalyTransientState();
+            BeliefHistoryCorrelationCache.Reset();
+            DlcContext.ResetBeliefProjectionCaches();
             // TicksGame can repeat across different games, so drop the per-tick free-colonist snapshot
             // here (every Game construction) rather than risk reusing the previous game's list.
             ResetFreeColonistSnapshot();
@@ -508,6 +510,17 @@ namespace PawnDiary
                 Log.ErrorOnce(
                     "[Pawn Diary] Anomaly transient-state reset failed: " + exception,
                     "PawnDiary.Anomaly.Reset".GetHashCode());
+            }
+            try
+            {
+                BeliefHistoryCorrelationCache.Reset();
+                DlcContext.ResetBeliefProjectionCaches();
+            }
+            catch (Exception exception)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Belief transient-state reset failed: " + exception,
+                    "PawnDiary.Belief.Reset".GetHashCode());
             }
         }
 

@@ -110,6 +110,10 @@ namespace PawnDiary.RimTests
             };
             original.SetPrompt(DiaryEvent.InitiatorRole, "init-prompt");
             original.SetPrompt(DiaryEvent.RecipientRole, "recip-prompt");
+            original.initiatorBeliefContext =
+                "ideoligion: Ember Path\nrelevant precept: crafted replacements are welcomed";
+            original.recipientBeliefContext =
+                "ideoligion: Quiet Current\nrelevant precept: crafted replacements are despised";
             original.SetLlmMeta(DiaryEvent.InitiatorRole, "http://a", "model-a");
             original.SetLlmMeta(DiaryEvent.RecipientRole, "http://b", "model-b");
 
@@ -121,6 +125,51 @@ namespace PawnDiary.RimTests
             AssertPovComplete(original, loaded, DiaryEvent.RecipientRole, "recipient");
             AssertStr("Talking crops", loaded.initiatorTitle, "initiatorTitle (titled)");
             AssertStr(string.Empty, loaded.recipientTitle, "recipientTitle (untitled normalizes to empty)");
+            AssertStr(original.initiatorBeliefContext, loaded.initiatorBeliefContext,
+                "initiatorBeliefContext (event-time block)");
+            AssertStr(original.recipientBeliefContext, loaded.recipientBeliefContext,
+                "recipientBeliefContext (event-time block)");
+        }
+
+        /// <summary>
+        /// Phase 1 belief rows are re-sanitized and bounded in the real PostLoadInit path. Unknown
+        /// labels disappear, markup/control characters cannot survive, and a second round-trip is
+        /// byte-identical to the first normalized result.
+        /// </summary>
+        [Test]
+        public static void BeliefContextNormalizesAndStabilizesAcrossScribe()
+        {
+            DiaryEvent original = new DiaryEvent
+            {
+                eventId = "evt_belief_normalize",
+                tick = 210000,
+                date = "6th Aprimay 5502",
+                interactionDefName = "SyntheticBelief",
+                interactionLabel = "belief fixture",
+                solo = true,
+                initiatorPawnId = "Thing_Human_Belief",
+                initiatorName = "Ari",
+                initiatorBeliefContext =
+                    "ideoligion: <b>Ember</b> Path\r\n"
+                    + "unknown injected label: discard me\r\n"
+                    + "relevant precept: crafted\u0007 replacements are welcomed"
+            };
+
+            DiaryEvent loaded = ScribeRoundTrip(original);
+            string once = loaded.initiatorBeliefContext;
+            Require(once.Contains("ideoligion: Ember Path"),
+                "belief normalization lost the allowed ideoligion fact.");
+            Require(once.Contains("relevant precept: crafted replacements are welcomed"),
+                "belief normalization lost the allowed relevant-precept fact.");
+            Require(!once.Contains("unknown injected label") && once.IndexOf('<') < 0
+                    && once.IndexOf('\u0007') < 0,
+                "belief normalization retained an unknown label, markup, or control character.");
+
+            DiaryEvent loadedAgain = ScribeRoundTrip(loaded);
+            AssertStr(once, loadedAgain.initiatorBeliefContext,
+                "beliefContext must be byte-identical after a second Scribe round-trip");
+            Require(once.Length <= BeliefPolicySnapshot.CreateDefault().maximumTotalCharacters,
+                "beliefContext exceeded its persisted hard character bound.");
         }
 
         /// <summary>

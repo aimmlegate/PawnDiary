@@ -109,6 +109,7 @@ namespace PawnDiary
             // itself stays on DiaryEvent and is never rebuilt from live DLC state here.
             NarrativePolicySnapshot narrativePolicy = DiaryNarrativeContinuityPolicy.Snapshot();
             MemoryPolicySnapshot memoryPolicy = DiaryMemoryPolicy.Snapshot();
+            BeliefPolicySnapshot beliefPolicy = DiaryBeliefPolicy.Snapshot();
             string classifierKey = ClassifierKeyForPayload(payload);
             DiaryInteractionGroupDef group = GroupForPayload(payload, classifierKey);
             List<string> eventPromptKeys = DiaryEventPromptKeys.CandidateKeys(
@@ -129,6 +130,9 @@ namespace PawnDiary
                 narrativeContextFieldLabel = narrativePolicy.promptFieldLabel,
                 narrativeContextInstruction = narrativePolicy.promptFieldInstruction,
                 memoryContextInstruction = memoryPolicy.memoryContextInstruction,
+                beliefContextFieldLabel = DiaryBeliefPolicy.PromptFieldLabel,
+                beliefContextInstruction = DiaryBeliefPolicy.PromptFieldInstruction,
+                beliefPolicy = beliefPolicy,
                 group = new DiaryGroupPolicy
                 {
                     defName = group?.defName,
@@ -215,6 +219,7 @@ namespace PawnDiary
                 continuity = diaryEvent.ContinuityForRole(role),
                 narrativeContext = diaryEvent.NarrativeContextForRole(role),
                 memoryContext = diaryEvent.MemoryContextForRole(role),
+                beliefContext = diaryEvent.BeliefContextForRole(role),
                 lastOpener = diaryEvent.LastOpenerForRole(role),
                 previousEntryEnding = diaryEvent.PreviousEntryEndingForRole(role),
                 weapon = recipient ? diaryEvent.recipientWeapon : diaryEvent.initiatorWeapon,
@@ -248,12 +253,15 @@ namespace PawnDiary
                 maxTokens = maxTokens,
                 fields = CopyFields(
                     DiaryPromptTemplates.FieldsFor(templateKey),
-                    snapshot.narrativeContextFieldLabel)
+                    snapshot.narrativeContextFieldLabel,
+                    snapshot.beliefContextFieldLabel)
             });
         }
 
         private static List<DiaryPromptFieldPolicy> CopyFields(
-            List<DiaryPromptFieldDef> fields, string narrativeContextFieldLabel)
+            List<DiaryPromptFieldDef> fields,
+            string narrativeContextFieldLabel,
+            string beliefContextFieldLabel)
         {
             List<DiaryPromptFieldPolicy> result = new List<DiaryPromptFieldPolicy>();
             if (fields == null)
@@ -275,8 +283,11 @@ namespace PawnDiary
                     // The normal XML template label is a safe fallback. The continuity Def owns the
                     // actual prompt-field label so translators/editors have one shared policy surface.
                     label = string.Equals(field.source, NarrativeContextPrompt.Source, StringComparison.Ordinal)
-                        && !string.IsNullOrWhiteSpace(narrativeContextFieldLabel)
+                            && !string.IsNullOrWhiteSpace(narrativeContextFieldLabel)
                         ? narrativeContextFieldLabel
+                        : string.Equals(field.source, BeliefContextPrompt.Source, StringComparison.Ordinal)
+                            && !string.IsNullOrWhiteSpace(beliefContextFieldLabel)
+                        ? beliefContextFieldLabel
                         : field.label,
                     source = field.source,
                     contextKey = field.contextKey

@@ -97,7 +97,10 @@ namespace PawnDiary.Ingestion
             historicalEventTick = System.Math.Max(0, eventTick);
         }
 
-        /// <summary>Creates a solo event, preserving a staged signal's original chronology when set.</summary>
+        /// <summary>
+        /// Binary-compatible pre-Phase-1 solo factory. Keep this exact signature because the separate
+        /// RimTest assembly may still be the prior build while the core DLL has already been rebuilt.
+        /// </summary>
         protected DiaryEvent CreateSoloEvent(
             DiaryGameComponent sink,
             Pawn pawn,
@@ -108,13 +111,34 @@ namespace PawnDiary.Ingestion
             string instruction,
             string gameContext)
         {
-            return historicalEventTick >= 0
-                ? sink.AddSoloEvent(
-                    pawn, otherPawn, defName, label, text, instruction, gameContext, historicalEventTick)
-                : sink.AddSoloEvent(pawn, otherPawn, defName, label, text, instruction, gameContext);
+            return CreateSoloEvent(
+                sink, pawn, otherPawn, defName, label, text, instruction, gameContext, null);
         }
 
-        /// <summary>Creates a pair event, preserving a staged signal's original chronology when set.</summary>
+        /// <summary>Creates a solo event, preserving chronology and optional plain belief evidence.</summary>
+        protected DiaryEvent CreateSoloEvent(
+            DiaryGameComponent sink,
+            Pawn pawn,
+            Pawn otherPawn,
+            string defName,
+            string label,
+            string text,
+            string instruction,
+            string gameContext,
+            BeliefEventEvidence beliefEvidence)
+        {
+            return historicalEventTick >= 0
+                ? sink.AddSoloEvent(
+                    pawn, otherPawn, defName, label, text, instruction, gameContext,
+                    historicalEventTick, beliefEvidence)
+                : sink.AddSoloEvent(pawn, otherPawn, defName, label, text, instruction,
+                    gameContext, beliefEvidence);
+        }
+
+        /// <summary>
+        /// Binary-compatible pre-Phase-1 pair factory. It forwards to the evidence-aware overload
+        /// without re-evaluating or changing capture policy.
+        /// </summary>
         protected DiaryEvent CreatePairwiseEvent(
             DiaryGameComponent sink,
             Pawn initiator,
@@ -126,6 +150,24 @@ namespace PawnDiary.Ingestion
             string instruction,
             string gameContext)
         {
+            return CreatePairwiseEvent(
+                sink, initiator, recipient, defName, label, initiatorText, recipientText,
+                instruction, gameContext, null);
+        }
+
+        /// <summary>Creates a pair event, preserving chronology and optional plain belief evidence.</summary>
+        protected DiaryEvent CreatePairwiseEvent(
+            DiaryGameComponent sink,
+            Pawn initiator,
+            Pawn recipient,
+            string defName,
+            string label,
+            string initiatorText,
+            string recipientText,
+            string instruction,
+            string gameContext,
+            BeliefEventEvidence beliefEvidence)
+        {
             return historicalEventTick >= 0
                 ? sink.AddPairwiseEvent(
                     initiator,
@@ -136,7 +178,8 @@ namespace PawnDiary.Ingestion
                     recipientText,
                     instruction,
                     gameContext,
-                    historicalEventTick)
+                    historicalEventTick,
+                    beliefEvidence)
                 : sink.AddPairwiseEvent(
                     initiator,
                     recipient,
@@ -145,7 +188,8 @@ namespace PawnDiary.Ingestion
                     initiatorText,
                     recipientText,
                     instruction,
-                    gameContext);
+                    gameContext,
+                    beliefEvidence);
         }
 
         /// <summary>

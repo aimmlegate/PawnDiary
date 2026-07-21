@@ -50,6 +50,7 @@ namespace PawnDiary
             public string initiatorTextKey; // pair only
             public string recipientTextKey; // pair only
             public string textKey; // solo only
+            public string beliefFixtureMode; // optional: structural or lexical synthetic evidence
 
             /// <summary>True when this fixture needs a second eligible colonist.</summary>
             public bool pair
@@ -100,6 +101,10 @@ namespace PawnDiary
             Solo("Thought", "PawnDiary.Dev.PromptSuite.Thought.Label", "AteWithoutTable",
                 "thought=AteWithoutTable; mood_impact=negative; mood_offset=-5; duration_days=1",
                 null, "PawnDiary.Dev.PromptSuite.Thought.Text"),
+            SoloBelief("BeliefStructural", "PawnDiary.Dev.PromptSuite.BeliefStructural.Label",
+                "BeliefStructuralPreview", "structural", "PawnDiary.Dev.PromptSuite.BeliefStructural.Text"),
+            SoloBelief("BeliefLexical", "PawnDiary.Dev.PromptSuite.BeliefLexical.Label",
+                "BeliefLexicalPreview", "lexical", "PawnDiary.Dev.PromptSuite.BeliefLexical.Text"),
             Solo("ThoughtProgression", "PawnDiary.Dev.PromptSuite.ThoughtProgression.Label", "NeedFood",
                 "thought=NeedFood; thought_progression=need_food; label=Starving; stage_index=3; severity=3; mood_impact=negative; mood_offset=-18.0",
                 null, "PawnDiary.Dev.PromptSuite.ThoughtProgression.Text"),
@@ -330,6 +335,25 @@ namespace PawnDiary
                 markers = markers,
                 reasonKey = reasonKey,
                 textKey = textKey
+            };
+        }
+
+        private static DevPromptSuiteEntry SoloBelief(
+            string id,
+            string labelKey,
+            string eventDefName,
+            string mode,
+            string textKey)
+        {
+            return new DevPromptSuiteEntry
+            {
+                id = id,
+                labelKey = labelKey,
+                shape = DevPromptSuiteFixtureShape.Solo,
+                eventDefName = eventDefName,
+                markers = "belief_preview=" + mode,
+                textKey = textKey,
+                beliefFixtureMode = mode
             };
         }
 
@@ -596,7 +620,23 @@ namespace PawnDiary
             else
             {
                 string text = SuiteText(entry.textKey, pawn.LabelShortCap);
-                diaryEvent = AddSoloEvent(pawn, null, entry.eventDefName, label, text, instruction, context);
+                BeliefEventEvidence beliefEvidence = null;
+                BeliefContextBuildResult preparedBelief = null;
+                if (!string.IsNullOrWhiteSpace(entry.beliefFixtureMode))
+                {
+                    BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
+                    BeliefSnapshot snapshot = DlcContext.CaptureBeliefSnapshot(pawn, policy);
+                    string pawnId = pawn.GetUniqueLoadID();
+                    int tick = Find.TickManager.TicksGame;
+                    beliefEvidence = string.Equals(entry.beliefFixtureMode, "structural", StringComparison.Ordinal)
+                        ? BeliefEventEvidenceFactory.SyntheticStructural(snapshot, pawnId, tick, label)
+                        : BeliefEventEvidenceFactory.SyntheticLexical(snapshot, pawnId, tick, label);
+                    preparedBelief = BeliefContextBuilder.BuildSyntheticPreview(
+                        snapshot, beliefEvidence, entry.id + "|" + pawnId + "|" + tick, pawnId, policy);
+                }
+                diaryEvent = AddSoloEvent(
+                    pawn, null, entry.eventDefName, label, text, instruction, context,
+                    beliefEvidence, preparedBelief);
             }
 
             if (diaryEvent != null)

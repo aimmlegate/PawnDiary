@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
+  <Diary_BeliefPolicy.promptFieldLabel>контекст убеждений</Diary_BeliefPolicy.promptFieldLabel>
+  <Diary_BeliefPolicy.promptFieldInstruction>Считай это убеждениями пешки об этом событии на момент события. Не выдумывай доктрину и не утверждай, что убеждение стало причиной события.</Diary_BeliefPolicy.promptFieldInstruction>
   <Diary_BeliefPolicy.certaintyBands.0.phrase>Пиши с твёрдой убеждённостью, строго придерживаясь предоставленных фактов.</Diary_BeliefPolicy.certaintyBands.0.phrase>
   <Diary_BeliefPolicy.certaintyBands.1.phrase>Пиши уверенно, не выдумывая фанатизма или крайностей.</Diary_BeliefPolicy.certaintyBands.1.phrase>
   <Diary_BeliefPolicy.certaintyBands.2.phrase>Допускай напряжение и исключения, не утверждая, что идеолигия была отвергнута.</Diary_BeliefPolicy.certaintyBands.2.phrase>
