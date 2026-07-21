@@ -1,5 +1,13 @@
 # Changelog
 
+- **2026-07-21 — Confirmed Narrative Continuity N3-A loaded acceptance green.** The
+  user-confirmed corrected Anomaly-active run passed all 354/354 compiled RimTests, including the
+  exact containment, creepjoiner, ghoul, monolith, and associative-memory fixtures that exposed the
+  stale test edits. This closes the N3-A loaded acceptance checkpoint and permits Master Wave 8 /
+  Narrative N3-O work; the separately tracked Anomaly-inactive and process-boundary profiles remain
+  explicit follow-ups. No production behavior changed. The committed RimTest assembly was rebuilt
+  from the restored deterministic fixtures.
+
 - **2026-07-21 — Hardened Narrative Continuity N3-A after deduplicated adversarial review.** The
   event-window adapter now applies the player's context-detail budget only to the new exact monolith
   lens; ordinary core and Royalty event windows retain their pre-N3-A Full request instead of changing
@@ -12,8 +20,8 @@
   skeleton. Pure coverage pins copied capture/provider source and phase tokens, every source-Def and
   subject-kind firewall, unknown sources, unsafe segments, canonical containment integers, empty
   boundaries, phase-specific salience, and zero/one-argument format safety in base/English/Russian XML.
-  Focused suites pass 289 Narrative Continuity and 639 Anomaly policy/XML assertions. The previously
-  disclosed Anomaly-active loaded rerun remains pending.
+  Focused suites pass 289 Narrative Continuity and 639 Anomaly policy/XML assertions. The subsequent
+  user-confirmed corrected Anomaly-active loaded rerun passed 354/354.
 
 - **2026-07-21 — Repaired the loaded associative-memory RimTest fixtures.** Memory-flow tests now
   enter through the W1 `AddPairwiseEvent` seam instead of incorrectly expecting the batched `Insult`

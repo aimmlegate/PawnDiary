@@ -582,7 +582,7 @@ These facets never decide capture or produce another immediate page. The Anomaly
 only visibly known transformation/chapter/pressure facts and must return empty for unknown POV state.
 Shared selector or provider failure preserves the canonical Anomaly page without enrichment.
 
-> **N3-A status (2026-07-21): implemented; loaded rerun pending.** Existing canonical sources now
+> **N3-A status (2026-07-21): implemented; loaded acceptance passed.** Existing canonical sources now
 > attach the exact evidence above after page creation and before generation. A detached provider maps
 > ghoul/creepjoiner facts to exact-subject identity, monolith facts to exact-arc chapter, and containment
 > facts to exact-arc pressure. Source domain/Def, POV, phase, facet, and subject/arc must all match;
@@ -592,8 +592,8 @@ Shared selector or provider failure preserves the canonical Anomaly page without
 > lens. There is no new hook, source, page, capture/ownership rule, Scribe field, terminal-void outcome,
 > or hidden creepjoiner mapping. Review hardening pins copied capture/provider tokens and exact format
 > arity, shares the monolith phase/source matcher, and preserves non-monolith event-window detail behavior.
-> Pure suites pass 639 Anomaly and 289 Narrative assertions; the runtime
-> and integrated 354-test RimTest assemblies build, while the new loaded assertions remain unexecuted in-game.
+> Pure suites pass 639 Anomaly and 289 Narrative assertions; the runtime and integrated RimTest
+> assemblies build, and the user-confirmed corrected Anomaly-active run passed 354/354.
 
 ### 7.6 Fail-open nested Tale transaction
 

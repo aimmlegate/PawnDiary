@@ -342,8 +342,8 @@ and monolith event-window paths. Pair fixtures assert both exact POVs. The conta
 case that blanks and malforms the optional format, proving both canonical pages and exact references
 survive with zero selected lenses. N3-A itself adds one fixture over the 347-test Anomaly boundary;
 with the six upstream memory fixtures, the integrated RimTest assembly contains 354 compiled tests.
-Core and RimTest builds pass; no new N3-A loaded execution is claimed until an Anomaly-active
-in-game run is recorded. Existing 347/347 evidence remains the A2.2 boundary result, not an N3-A pass.
+Core and RimTest builds pass; the user-confirmed corrected Anomaly-active run passed 354/354 and
+closes N3-A loaded acceptance. The earlier 347/347 evidence remains the distinct A2.2 boundary result.
 
 Master Waves 5, 9, and 13 / Royalty Phases 0–8 plus N3-R evidence use `RoyaltyContextTests`, now a
 471-assertion assembly-free suite. It

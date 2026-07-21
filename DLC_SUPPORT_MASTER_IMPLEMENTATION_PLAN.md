@@ -381,9 +381,9 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 > save field, or terminal-void path. Deduplicated review hardening shares its exact monolith source gate
 > and prevents the slice from changing non-monolith event-window detail budgets. Focused suites pass 639
 > Anomaly, 708 catalog, 135 save-normalization, and 289 Narrative assertions; runtime and 354-test RimTest
-> assemblies build.
-> The new N3-A loaded assertions are compiled but not yet claimed as an in-game pass. The exact-only
-> classifier and all hooks are Anomaly-gated. Loaded A1.1 state
+> assemblies build. The user-confirmed corrected Anomaly-active rerun passed 354/354, including the
+> new N3-A evidence/reference/key/context assertions and the repaired deterministic memory fixtures.
+> The exact-only classifier and all hooks are Anomaly-gated. Loaded A1.1 state
 > coverage and the original nine A1.3 containment fixtures passed in their recorded profiles. A later
 > full run passed 314/315, including the new containment scope-state fixture; its sole failure was a
 > false-positive visible-label assertion, corrected to exact localized fallback equality. The
@@ -436,7 +436,7 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 6. **A2.0 (implemented; loaded acceptance green within the 335-fixture aggregate run)** — visible creepjoiner state and old-save baseline.
 7. **A2.1 (implemented; loaded acceptance green at 335/335)** — surgical visible disclosure/outcome ownership.
 8. **A2.2 (implemented; loaded acceptance green at 347/347)** — ghoul transformation.
-9. **N3-A (implemented; loaded rerun pending)** — visibly authorized chapter, pressure, and identity candidates only.
+9. **N3-A (implemented; loaded acceptance green at 354/354)** — visibly authorized chapter, pressure, and identity candidates only.
 
 ### Exit gate
 
@@ -446,6 +446,10 @@ Pollution, psychic bonds, and interrupted deathrest remain deferred to Wave 11.
 - Anomaly inactive is silent.
 
 ### Release checkpoint 7 — A1/A2
+
+The user-confirmed 354/354 Anomaly-active run closes N3-A automated loaded acceptance and permits
+Wave 8. The separately tracked Anomaly-inactive compatibility and process-boundary save profiles
+remain explicit follow-ups and are not implied by that aggregate run.
 
 Terminal void outcomes remain deferred to the endings wave.
 
