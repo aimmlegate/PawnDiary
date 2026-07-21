@@ -2977,14 +2977,11 @@ layout pass that measures cards, so the reserved and drawn geometry never disagr
 XML-tunable via `DiaryUiStyleDef` (`quadrumDivider*`). A matching **seasonal background wash** (low
 alpha) follows the season of the entry at the top of the viewport (`FirstVisibleEntryIndex` +
 `DiaryQuadrumDivider.SeasonFor`) and eases between seasons as you scroll via `UpdateSeasonWash` — a
-real-time exponential ease, so it crossfades even while the game is paused. It is painted behind the
-**journal column** (its header and cards) in `FillTab` — scoped to that column, not the whole tab, so
-the right-hand filter/dev panel reads untinted. The `UpdateSeasonWash` call in the journal pass only
-advances the smoothed color (consumed by the next frame's journal draw); the drawn color is never over
-card text. Alongside it, a thin **season-band strip** (`DrawSeasonScrollStrip`) sits in a small gutter
-just left of the scrollbar: each contiguous run of same-season entries is mapped from content space
-onto the viewport height and drawn as a firm-alpha colored band, so the year's seasons are visible at a
-glance as a minimap. The four wash colors and crossfade rate are XML-tunable
+real-time exponential ease, so it crossfades even while the game is paused. It is painted **globally
+across the whole diary window** (edge to edge) at the very top of `FillTab`, behind the header, the
+journal, and the right-hand filter/dev panel, so the entire window shifts color with the season. The
+`UpdateSeasonWash` call in the journal pass advances the smoothed color for the next frame's global draw
+(one frame of lag, imperceptible). The four wash colors and crossfade rate are XML-tunable
 (`springWashColor`/`summerWashColor`/`fallWashColor`/`winterWashColor` — default alpha ~0.14–0.16 — and
 `seasonWashLerpSpeed`); a season's alpha 0 disables it, all four at 0 turns the wash off. (2) **Player-visible copy.** The old dev-only,
 icon-only copy badge is now a labeled "Copy entry" action for all players, sharing a single footer line

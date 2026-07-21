@@ -442,6 +442,15 @@ namespace PawnDiary
                 return;
             }
 
+            // Seasonal background wash — global for the whole window: painted first, edge to edge, so it
+            // sits behind the header, the journal, and the right-hand filter/dev panel and the entire
+            // diary shifts color with the season. It uses the smoothed color the journal pass computed
+            // last frame (target = season at the top of the viewport); one frame of lag is imperceptible.
+            if (seasonWashColor.a > 0f)
+            {
+                Widgets.DrawBoxSolid(new Rect(0f, 0f, size.x, size.y), seasonWashColor);
+            }
+
             Rect rect = new Rect(0f, 0f, size.x, size.y).ContractedBy(12f);
             // Singleton component that owns all diary state for the current game.
             DiaryGameComponent component = DiaryGameComponent.Instance;
@@ -600,9 +609,8 @@ namespace PawnDiary
                 return;
             }
 
-            // Subtract 16f for the scrollbar grip, plus a thin gutter for the season-band strip drawn
-            // just left of it (see DrawSeasonScrollStrip).
-            float viewWidth = outRect.width - 16f - SeasonScrollStripGutter;
+            // Subtract 16f to leave room for the scrollbar grip inside the scroll view.
+            float viewWidth = outRect.width - 16f;
             float animationDelta = ExpansionAnimationDelta();
             List<DiaryNameHighlight> nameHighlights = NameHighlightsFor(pawn);
             int layoutProcessed;
@@ -646,14 +654,6 @@ namespace PawnDiary
                 ? DiaryQuadrumDivider.SeasonFor(ordered[washTopIndex])
                 : Season.Undefined;
             UpdateSeasonWash(washSeason);
-
-            // Seasonal background wash — fills the full height of the journal reading area (behind the
-            // cards and the empty space below a short page), but stays inside the journal column, so it
-            // never tints the header title bar or the right-hand filter/dev panel.
-            if (seasonWashColor.a > 0f)
-            {
-                Widgets.DrawBoxSolid(outRect, seasonWashColor);
-            }
 
             Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
             // Immediate-mode safety net: BeginScrollView and the per-card GUI.BeginGroup below push
@@ -756,62 +756,6 @@ namespace PawnDiary
                 }
 
                 Widgets.EndScrollView();
-
-                // Season-band strip in the reserved gutter left of the scrollbar: maps the year's
-                // entries onto the full scroll height, colored by season, so you can see at a glance
-                // where each season sits. Drawn after the scroll view so it overlays the fixed gutter.
-                DrawSeasonScrollStrip(outRect, ordered, entryOffsets, heights, viewHeight);
-            }
-        }
-
-        // Season-band strip geometry (a thin colored minimap in the gutter left of the scrollbar).
-        private const float SeasonScrollStripWidth = 4f;
-        private const float SeasonScrollStripGutter = 7f;
-
-        /// <summary>
-        /// Draws a thin vertical strip in the gutter left of the scrollbar, coloring bands by the season
-        /// of the entries at each depth so the year's seasons are visible at a glance. Each contiguous
-        /// run of same-season entries becomes one band, mapped from content space onto the viewport
-        /// height. Undated/unknown-season runs leave a gap.
-        /// </summary>
-        private void DrawSeasonScrollStrip(Rect outRect, List<DiaryEntryView> ordered, float[] offsets, float[] heights, float viewHeight)
-        {
-            int count = ordered?.Count ?? 0;
-            // Only show the strip when the content actually overflows (a scrollbar is present); a full
-            // strip beside a short, non-scrolling page reads as clutter.
-            if (count == 0 || viewHeight <= outRect.height || outRect.height <= 0f)
-            {
-                return;
-            }
-
-            float stripX = outRect.xMax - 16f - SeasonScrollStripGutter + 2f;
-            float scale = outRect.height / viewHeight;
-
-            Season bandSeason = DiaryQuadrumDivider.SeasonFor(ordered[0]);
-            float bandTop = offsets[0];
-            for (int k = 1; k <= count; k++)
-            {
-                Season next = k < count ? DiaryQuadrumDivider.SeasonFor(ordered[k]) : Season.Undefined;
-                if (k == count || next != bandSeason)
-                {
-                    float bandBottom = offsets[k - 1] + heights[k - 1];
-                    Color wash = UiStyle.SeasonWashColor(bandSeason);
-                    if (wash.a > 0f)
-                    {
-                        float y0 = outRect.y + bandTop * scale;
-                        float y1 = outRect.y + bandBottom * scale;
-                        // The wash alpha is deliberately subtle; the strip uses a firmer alpha so the
-                        // bands read clearly against the dark scroll gutter.
-                        Color band = new Color(wash.r, wash.g, wash.b, 0.9f);
-                        Widgets.DrawBoxSolid(new Rect(stripX, y0, SeasonScrollStripWidth, Mathf.Max(1f, y1 - y0)), band);
-                    }
-
-                    if (k < count)
-                    {
-                        bandSeason = next;
-                        bandTop = offsets[k];
-                    }
-                }
             }
         }
 

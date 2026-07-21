@@ -1,5 +1,12 @@
 # Changelog
 
+- **2026-07-21 — Diary UI round-5: global window wash, removed the season scroll strip.** The seasonal
+  background wash is now painted **globally across the whole diary window** (edge to edge, behind the
+  header, the journal, and the right-hand filter/dev panel), so the entire window shifts color with the
+  season instead of only the journal column. The **season-band scroll strip was removed** entirely,
+  along with its scrollbar-gutter reservation — the full content width returns to the entries. The wash
+  still follows the season at the top of the viewport and crossfades as you scroll (`UpdateSeasonWash`).
+  Debug build 0/0; no in-game acceptance run is claimed.
 - **2026-07-21 — Hardened the first loaded Ideology run after a 363/367 result.** The Odyssey N3-O
   failure was the documented parked-player-gravship host guard and remains expected on that map. The
   three unintended failures are corrected: `DiaryEvent` now reapplies the pure belief whitelist before
@@ -8,7 +15,6 @@
   and the loaded HistoryEvent/body-mod fixtures establish their baseline after `SetIdeo` setup and spawn
   the disposable pawn for workers that are invalid while despawned. Save keys and DLC behavior are
   unchanged, and all fixture state remains scope/finally-owned. A corrected in-game rerun is pending.
-
 - **2026-07-21 — Added the first Ideology Phase 2 mutation/ownership infrastructure slice.** Added
   defensively registered, `ModsConfig.IdeologyActive`-gated exact hooks for
   `Pawn_IdeoTracker.IdeoConversionAttempt`, `OffsetCertainty`, and `SetIdeo`. All live tracker/pawn/
