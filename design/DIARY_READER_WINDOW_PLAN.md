@@ -1,6 +1,9 @@
 # Diary Reader Window — three-pane reading mode + default/alternative toggle
 
 **Status: APPROVED 2026-07-22 (owner-reviewed plan; implement from this doc, don't re-research).**
+**Amended 2026-07-22 (owner): fixed window size — no resize; must look right on both HD
+(1366×768 / 1280×720) and Full HD (1920×1080). Supersedes the earlier resizable+remembered
+decision; see Step 4.**
 Wave-C1 item C3, extended with the owner's three-pane alternative-mode idea.
 Visual reference for the right pane: `Mockups/Wave-C1/14-year-tags-favorites-sidebar.png`.
 
@@ -19,7 +22,9 @@ diary card renderer; right: the filter panel. Same data, bigger canvas.
   programmatic open paths (social-log links, linked-entry jumps) redirect to the window.
 - Entry point is a **bottom main-bar button** (`MainButtonDef`), visible only in alternative
   mode; clicking toggles the reader window.
-- The window is **non-pausing, draggable, resizable, size/position remembered** (session).
+- The window is **non-pausing, draggable, and fixed-size (no resize)** — amended 2026-07-22.
+  Size is computed from the screen at open and must look right on HD (1366×768 / 1280×720)
+  and Full HD (1920×1080) alike.
 - Pawn list shows living colonists by default with **dead/departed behind a toggle**.
 - The filters pane reuses the shipped FilterPanel behavior (instant apply — no Apply/Clear
   buttons from the mockup).
@@ -166,14 +171,24 @@ null-Pawn subject re-triggers the index build every frame forever.** Favorites s
 `internal sealed class Dialog_DiaryReader : Window` (regular Window, NOT `MainTabWindow` —
 must survive other tabs opening, drag, and not pause; windowing conventions per
 `Source\UI\Dialog_PawnWritingStyle.cs:68-99`). Ctor:
-`forcePause = false; draggable = true; resizeable = true; doCloseX = true;
+`forcePause = false; draggable = true; resizeable = false; doCloseX = true;
 closeOnClickedOutside = false; absorbInputAroundWindow = false; preventCameraMotion = false;
 onlyOneOfTypeAllowed = true;`.
 
-- `InitialSize`: clamp `readerMaxWidth × readerMaxHeight` to screen − `readerScreenMargin`,
-  floors `readerMinWidth/Height`. Session-remembered `static Rect rememberedRect` captured in
-  `PreClose()`, re-applied in `SetInitialSizeAndPosition()` (cross-session persistence
-  deferred — would write settings on every drag).
+- `InitialSize` (fixed, responsive — no resize grip, no remembered rect; opens centered via
+  the vanilla default): `min(readerMaxWidth, UI.screenWidth − readerScreenMargin) ×
+  min(readerMaxHeight, UI.screenHeight − readerScreenMargin)`, floors
+  `readerMinWidth/Height`. Resulting geometry (window margin 18px each side):
+  - **Full HD 1920×1080** → 1460×940; book column at the full 850px.
+  - **HD 1366×768** → ~1318×720; book column ≈750px.
+  - **1280×720** → ~1232×672; with the compact pawn list (below), book column ≈720px —
+    still wider than the 696px inspect-tab journal column.
+  The journal renderer is width-parametric (measures at `width − 20f`) and the filter panel
+  already self-hides below its minimum journal width, so the reflow needs no new rendering
+  code; `readerBookWidth=850` is a preferred cap, not a promise.
+- **Compact pawn list on narrow screens**: when the window's inner width <
+  `readerCompactThreshold` (default 1360), the left pane uses `readerPawnListWidthCompact`
+  (default 170) instead of `readerPawnListWidth` (220) — name labels truncate with tooltip.
 - `internal static void Open(DiaryReaderSubject subject)` / `Open(Pawn)`: existing window →
   update selection + bring to front; else `Find.WindowStack.Add(...)` (dedupe pattern per
   old `Controls.cs:314-326`). `internal static void Toggle()` for the main button.
@@ -197,7 +212,8 @@ onlyOneOfTypeAllowed = true;`.
   `PawnDiary.Reader.NoDiaries` label; no selection → `PawnDiary.Reader.SelectPawnHint`.
 - New `DiaryUiStyleDef` fields (code defaults in `Source\Defs\DiaryUiStyleDef.cs` + XML in
   `1.6\Defs\DiaryUiStyleDef.xml`, per the tunables-in-XML rule): `readerPawnListWidth=220`,
-  `readerPaneGap=12`, `readerBookWidth=850`, `readerPawnRowHeight=48`, `readerPortraitSize=40`,
+  `readerPawnListWidthCompact=170`, `readerCompactThreshold=1360`, `readerPaneGap=12`,
+  `readerBookWidth=850`, `readerPawnRowHeight=48`, `readerPortraitSize=40`,
   `readerMaxWidth=1460`, `readerMaxHeight=940`, `readerMinWidth=760`, `readerMinHeight=520`,
   `readerScreenMargin=48`, `readerDeadPawnTint` (≈0.72/0.66/0.62/1).
 - Dev-mode debug action "Open diary reader window" in `Source\Dev\PawnDiaryDebugActions.cs`
@@ -281,7 +297,12 @@ Roslyn): `MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug`; rebu
    year pager, dev tools, social-log link jump, corpse selection); no main-bar button.
 2. Toggle alternative mode: inspect tab button AND gizmo disappear; minimized Diary button
    appears in the bottom bar next to History; click toggles the window.
-3. Window: game does NOT pause on open; drag; resize; size/pos remembered within session.
+3. Window: game does NOT pause on open; draggable; fixed size (no resize grip); opens
+   centered.
+3a. Resolution sweep: at 1920×1080 the book column hits the full 850px; at 1366×768 and
+   1280×720 the window fits with margin, the pawn list switches to compact width below the
+   threshold, the filter panel still fits (or self-hides via its existing min-width guard),
+   and nothing clips off-screen. Test via RimWorld's resolution setting or windowed mode.
 4. Left pane: colonists listed (0-page colonists included); dead-pawns toggle reveals dead/
    departed (with pages only); portraits for live + corpse pawns; placeholder + cached name
    for departed/archive-only; selection switches diary and resets scroll/filters.
