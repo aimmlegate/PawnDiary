@@ -402,9 +402,11 @@ namespace PawnDiary.Ingestion
                 for (int i = 0; i < participants.Count; i++)
                 {
                     // Vanilla's Participants list includes spectators. Preserve generic ritual behavior,
-                    // but keep the exact conversion family's smaller spectator context on its real role,
-                    // even when its optional evidence adapter failed and conversionPolicy stayed null.
-                    if (exactConversion && spectators != null
+                    // but keep exact conversion and matched authority-speech spectators on their real
+                    // branch so their XML-owned evidence modes cannot be replaced by participant policy.
+                    // Conversion keeps its structural flag across adapter failure; authority needs a
+                    // successfully matched route before any authority-specific policy can apply.
+                    if ((exactConversion || authoritySpeechRoute != null) && spectators != null
                         && spectators.Contains(participants[i])) continue;
                     foreach (DiarySignal s in PerPawn(participants[i], organizer, RitualEventData.PerspectiveParticipant, seen))
                     {

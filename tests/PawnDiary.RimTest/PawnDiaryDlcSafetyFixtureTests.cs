@@ -849,13 +849,34 @@ namespace PawnDiary.RimTests
                         "The Odyssey gravship-launch ritual must retain its two narrow runtime tokens; "
                         + "it intentionally has no exact ritual defName classifier.");
                 }
+                else if (string.Equals(expected.Key, "counsel", StringComparison.Ordinal))
+                {
+                    PawnDiaryRimTestScope.Require(
+                        (group.matchDefNames == null || group.matchDefNames.Count == 0)
+                        && group.matchOrdinalDefNames != null
+                        && group.matchOrdinalDefNames.Count == 2
+                        && new HashSet<string>(group.matchOrdinalDefNames, StringComparer.Ordinal)
+                            .SetEquals(new[] { "Counsel_Success", "Counsel_Failure" }),
+                        "The Counsel group must retain only its two ordinal vanilla interaction keys.");
+                }
+                else if (string.Equals(expected.Key, "ritualConversion", StringComparison.Ordinal))
+                {
+                    PawnDiaryRimTestScope.Require(
+                        (group.matchDefNames == null || group.matchDefNames.Count == 0)
+                        && group.matchOrdinalDefNames != null
+                        && group.matchOrdinalDefNames.Count == 1
+                        && string.Equals(group.matchOrdinalDefNames[0],
+                            "Conversion;RitualBehaviorWorker_Conversion", StringComparison.Ordinal),
+                        "The conversion-ritual group must retain its one ordinal installed identity.");
+                }
                 else
                 {
                     PawnDiaryRimTestScope.Require(
-                        (group.matchDefNames != null && group.matchDefNames.Count > 0)
-                            || (group.matchOrdinalDefNames != null
-                                && group.matchOrdinalDefNames.Count > 0),
-                        "Official DLC group '" + expected.Key + "' has no exact classifier keys.");
+                        group.matchDefNames != null && group.matchDefNames.Count > 0
+                            && (group.matchOrdinalDefNames == null
+                                || group.matchOrdinalDefNames.Count == 0),
+                        "Official DLC group '" + expected.Key
+                            + "' must retain its case-insensitive exact classifier keys.");
                 }
             }
 

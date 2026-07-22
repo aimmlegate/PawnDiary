@@ -1,5 +1,19 @@
 # Changelog
 
+- **2026-07-22 — Preserved authority-speech spectator policy after adversarial review.** Vanilla's
+  ritual participant collection also contains spectators, so a matched authority speech previously
+  emitted each spectator through the participant pass before pawn-id collapse could reach the real
+  spectator branch. The shipped participant and spectator modes are currently identical, masking the
+  defect, but the separately XML-owned `spectatorEvidenceMode` could not take effect. Exact matched
+  authority routes now reserve spectators for their real branch while generic ritual behavior and all
+  dedup keys/windows remain unchanged. Pure coverage separates participant and spectator modes; the
+  loaded fixture pins all three emitted perspective markers while retaining duplicate-free fan-out.
+  The exhaustive DLC fixture now permits ordinal classifier keys only for the exact Counsel and
+  conversion groups and pins their installed values instead of accepting a broad either/or shape.
+  `BeliefContextTests` passes 514 assertions, the full verification hook passes all 15 pure projects
+  at 7,340 assertions, and both production and the 391-test RimTest assembly build with zero warnings
+  or errors.
+
 - **2026-07-22 — Isolated the same-tick throne fixture from generic ritual dedup.** The third
   user-supplied active run again reached 389/391. The deterministic doctrine correction worked: the
   combined authority case cleared its leader/context assertions and reached the throne fan-out count.

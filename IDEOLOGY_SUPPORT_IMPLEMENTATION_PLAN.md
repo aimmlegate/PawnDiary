@@ -1289,10 +1289,15 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > Speaker role/certainty never crosses into witness projections. Target enrichment is disabled. Policy
 > absence/malformed values, ordinal/FQN/group/role collisions, DLC inactivity, and adapter faults all
 > fall back to the ordinary ritual page. Fan-out, dedup, cosmetic RNG, settings, policy snapshots, and
-> saves are unchanged. Pure coverage raises `BeliefContextTests` to 511 assertions; three compiled
+> saves are unchanged. Adversarial follow-up found that vanilla's participant collection also contains
+> spectators, so the authority route now preserves those pawns for the real spectator branch before
+> pawn-id collapse. This makes the independently XML-owned participant/spectator evidence modes
+> effective without changing generic ritual fan-out or any dedup key/window. Pure coverage raises
+> `BeliefContextTests` to 514 assertions; three compiled
 > loaded cases raise the RimTest assembly to 391. They cover installed identities/owners and inactive
-> routing, leader plus conditional throne speaker/witness isolation with RNG/dedup/Scribe/later-state
-> invariants, and adapter fail-open behavior. No in-game run is claimed; the latest recorded full loaded
+> routing, leader plus conditional throne speaker/witness isolation with exact audience perspectives,
+> RNG/dedup/Scribe/later-state invariants, and adapter fail-open behavior. No in-game run is claimed;
+> the latest recorded full loaded
 > result remains 388/388.
 
 > **Narrative N3-I result (2026-07-22): code-complete, adversarially hardened, and active loaded

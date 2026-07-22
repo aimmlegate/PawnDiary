@@ -1042,6 +1042,24 @@ namespace PawnDiary
                 AuthoritySpeechPolicy.EvidenceFor(
                     "Other", 880, "ThroneSpeech", "Other label",
                     "organizer", throne, policy) == null);
+
+            AuthoritySpeechPolicyBuilder splitModeBuilder = AuthoritySpeechPolicyBuilderForTests();
+            splitModeBuilder.spectatorEvidenceMode = AuthoritySpeechEvidenceModeTokens.None;
+            AuthoritySpeechPolicySnapshot splitModePolicy = splitModeBuilder.Build();
+            AuthoritySpeechRouteSnapshot splitModeRoute = AuthoritySpeechPolicy.Match(
+                "ThroneSpeech", "RimWorld.RitualBehaviorWorker_ThroneSpeech",
+                SpeechOutcomeTypeName, "ritualRoyal", "speaker", true, true, splitModePolicy);
+            AssertTrue("split audience-mode policy still matches the exact route", splitModeRoute != null);
+            AssertTrue("participant mode remains active when spectator mode is none",
+                AuthoritySpeechPolicy.EvidenceFor(
+                    "Witness", 880, "ThroneSpeech", "Witness label",
+                    AuthoritySpeechPolicy.PerspectiveParticipant,
+                    splitModeRoute, splitModePolicy) != null);
+            AssertTrue("spectator mode can disable evidence independently of participant mode",
+                AuthoritySpeechPolicy.EvidenceFor(
+                    "Spectator", 880, "ThroneSpeech", "Spectator label",
+                    AuthoritySpeechPolicy.PerspectiveSpectator,
+                    splitModeRoute, splitModePolicy) == null);
             AssertTrue("speaker projection keeps role and certainty",
                 speaker.projection.includeRole && speaker.projection.includeCertainty);
             AssertTrue("witness projection cannot inherit speaker role or certainty",

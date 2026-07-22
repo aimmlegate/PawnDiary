@@ -682,6 +682,12 @@ namespace PawnDiary.RimTests
             DiaryEvent speakerPage = PageForPawn(emitted, firstPawn);
             DiaryEvent witnessPage = PageForPawn(emitted, witness);
             DiaryEvent spectatorPage = PageForPawn(emitted, spectator);
+            RequireContains(speakerPage.gameContext,
+                "ritual_perspective=" + RitualEventData.PerspectiveOrganizer);
+            RequireContains(witnessPage.gameContext,
+                "ritual_perspective=" + RitualEventData.PerspectiveParticipant);
+            RequireContains(spectatorPage.gameContext,
+                "ritual_perspective=" + RitualEventData.PerspectiveSpectator);
             string frozenSpeaker = speakerPage.BeliefContextForRole(DiaryEvent.InitiatorRole);
             string witnessContext = witnessPage.BeliefContextForRole(DiaryEvent.InitiatorRole);
             string spectatorContext = spectatorPage.BeliefContextForRole(DiaryEvent.InitiatorRole);
@@ -965,8 +971,9 @@ namespace PawnDiary.RimTests
             RitualFanoutSignal signal = RitualFanoutSignal.CreateTestFixture(
                 speaker,
                 null,
-                // Vanilla Participants also contains spectators. Keeping that membership proves the
-                // existing order/dedup behavior is unchanged; both non-speaker modes are equally bounded.
+                // Vanilla Participants also contains spectators. Keeping that membership proves pawn-id
+                // collapse stays duplicate-free while the exact authority route still reaches the real
+                // spectator branch instead of consuming that pawn under participant policy.
                 new List<Pawn> { speaker, witness, spectator },
                 new List<Pawn> { spectator },
                 defName,

@@ -406,11 +406,15 @@ projection with neither role nor certainty, so no speaker-only fact crosses POVs
 
 The policy is snapshotted once per fan-out, and each child gets a deep detached evidence/projection
 copy. Missing or malformed XML, namespace/group/role collisions, inactive DLC, and adapter exceptions
-all return null evidence and preserve ordinary Royal/generic ritual behavior. Existing fan-out order,
-spectator membership, pawn-id collapse, colony dedup, cosmetic RNG, settings, save fields, and policy
-snapshots are unchanged. Three compiled RimTests raise the assembly from 388 to 391 cases; they verify
+all return null evidence and preserve ordinary Royal/generic ritual behavior. Vanilla includes
+spectators in its broader participant collection, so a matched authority route removes those pawns
+from the participant pass before pawn-id collapse and emits them through the real spectator branch.
+That makes `spectatorEvidenceMode` independent from `participantEvidenceMode`; generic ritual fan-out,
+fan-out order, colony dedup, cosmetic RNG, settings, save fields, and policy snapshots remain unchanged.
+Three compiled RimTests raise the assembly from 388 to 391 cases; they verify
 loaded type/owner wiring, leader and conditional throne fan-outs, speaker/witness isolation, RNG and
-dedup invariants, Scribe/later-state freezing, inactive routing, and adapter fail-open behavior. The
+dedup invariants, exact participant/spectator perspective routing, Scribe/later-state freezing,
+inactive routing, and adapter fail-open behavior. The
 first user-supplied active-Ideology/Royalty run reached 389/391: exact owner/type wiring, the complete
 leader branch, and adapter failure passed, while the throne branch exposed a fixture-only assumption
 that a second randomly generated Ideology would contain related authority doctrine. Production
