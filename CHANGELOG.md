@@ -1,5 +1,20 @@
 # Changelog
 
+- **2026-07-22 — Corrected the exact-food loaded doctrine fixture after its first run.** The valid
+  loaded-game run reached 391/393: exact `humanlike_meat` capture, page ownership, dedup/RNG, and the
+  adapter fail-open case passed, but the positive fixture produced empty context. Vanilla
+  `Ideo.RemovePrecept(..., replacing: false)` immediately installs an issue's default stance; the
+  fixture then added `Cannibalism_Preferred` beside that replacement, and the resolver correctly
+  failed closed on contradictory same-issue doctrine. The fixture now uses replacement mode and
+  asserts that exactly one intended cannibalism stance remains. Its pure regression now mirrors the
+  full live `ThoughtSignal`, vanilla stance text, a competing generic meat stance, and fail-closed
+  contradictory same-issue doctrine. `BeliefContextTests` passes 547 assertions and the full
+  15-project verification passes 7,373 assertions. Production
+  capture, XML policy, page ownership, saves, dedup, RNG, and DLC behavior are unchanged. The other
+  valid-run failure was the already-known Odyssey parked-gravship host prerequisite; the earlier
+  main-menu invocation had no loaded game and was not a valid loaded-suite result. A corrected
+  loaded rerun remains pending, and no deferred authority-speech manual run is claimed.
+
 - **2026-07-22 — Added exact humanlike-meat evidence to existing thought pages.** Installed
   RimWorld 1.6.9676 XML and `Assembly-CSharp.dll` show that the accepted thought hook has no food
   object, but `Thing.Ingested` synchronously obtains the exact thoughts caused by the live food before

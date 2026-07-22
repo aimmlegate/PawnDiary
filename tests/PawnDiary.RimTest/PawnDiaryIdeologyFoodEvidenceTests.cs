@@ -204,9 +204,17 @@ namespace PawnDiary.RimTests
                 "RimWorld did not generate a disposable food-evidence ideoligion.");
             Precept existing = fixture.PreceptsListForReading
                 .FirstOrDefault(precept => precept?.def?.issue == target.issue);
-            if (existing != null) fixture.RemovePrecept(existing, false);
+            // Removing a non-default stance normally makes vanilla insert the issue's default
+            // stance immediately. This fixture is replacing that stance, so use replacement mode;
+            // otherwise two Cannibalism precepts survive and the resolver correctly fails closed
+            // on the contradictory live doctrine.
+            if (existing != null) fixture.RemovePrecept(existing, true);
             fixture.AddPrecept(
                 PreceptMaker.MakePrecept(target), false, Faction.OfPlayer.def, null);
+            PawnDiaryRimTestScope.Require(
+                fixture.PreceptsListForReading.Count(precept => precept?.def?.issue == target.issue) == 1
+                    && fixture.PreceptsListForReading.Any(precept => precept?.def == target),
+                "The disposable food-evidence Ideology did not retain one Cannibalism_Preferred stance.");
             pawn.ideo.SetIdeo(fixture);
         }
     }

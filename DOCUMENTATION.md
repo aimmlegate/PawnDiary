@@ -269,6 +269,15 @@ The bridge is base-game fact capture, performs no Def lookup or reflection on th
 page, consumes no `Rand`, changes no dedup key, and adds no save field; the already-authorized page
 freezes the resulting belief context normally.
 
+The first valid loaded run reached 391/393. The food adapter fail-open case passed, and the positive
+case reached its exact group and `ingredient_label` assertions before returning empty doctrine. That
+was a disposable-fixture error: ordinary `Ideo.RemovePrecept` installs the issue's default stance, so
+the fixture accidentally retained two cannibalism stances and the resolver correctly failed closed.
+The fixture now removes in replacement mode and requires exactly one `Cannibalism_Preferred` stance;
+the pure regression also uses the full live thought evidence shape and a competing generic meat
+stance. A corrected loaded rerun remains pending. The other valid-run failure is the separately known
+Odyssey parked-gravship prerequisite, not food evidence.
+
 The guarded
 `HistoryEventsManager.RecordEvent` postfix only stores a short-lived, bounded pawn/tick/Def-name
 observation and can neither authorize nor create a page. Its hot hook uses the state-passing safety

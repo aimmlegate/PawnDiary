@@ -2542,7 +2542,11 @@ namespace PawnDiary
                 ingredientLabel = "human meat"
             };
 
-            BeliefEventEvidence exact = Evidence(true);
+            // Match the live ThoughtSignal shape: the existing page already carries its generic
+            // thought identity/label before the exact ingredient scope enriches that same evidence.
+            BeliefEventEvidence exact = BeliefEventEvidenceFactory.ForThought(
+                "SyntheticPawn", 12345, "AteFineMeal", "fine meal",
+                new BeliefSourcePreceptFact());
             string originalDomain = exact.narrative.sourceDomain;
             AssertTrue("exact human-meat fact activates the XML food mapping",
                 FoodBeliefEvidencePolicy.TryEnrich(exact, exactHumanMeat, true, policy));
@@ -2550,24 +2554,40 @@ namespace PawnDiary
                 exact.narrative.sourceDomain);
             AssertEqual("exact human-meat mapping supplies the configured group", "cannibal_meal",
                 exact.groupKey);
-            AssertEqual("exact human-meat mapping supplies one configured match field", 1,
+            AssertEqual("exact human-meat mapping preserves the thought field and adds one ingredient field", 2,
                 exact.matchFields.Count);
             AssertEqual("exact human-meat field keeps the captured ingredient label", "human meat",
-                exact.matchFields[0].value);
+                exact.matchFields[1].value);
             ExpandedBeliefEvidence expanded = BeliefEventEvidencePolicy.Expand(exact, policy);
             AssertTrue("cannibal food rule expands the cannibalism topic",
                 Contains(expanded.topics, "cannibalism"));
             AssertTrue("cannibal food rule expands the meal topic",
                 Contains(expanded.topics, "meals"));
 
+            // Mirror the installed vanilla Cannibalism_Preferred projection. Its visible label is
+            // merely "preferred"; the issue and description carry the food-specific language.
             BeliefPreceptFact cannibal = Precept(
-                "Cannibal_Food_Stance", "Cannibal_Food_Issue", "human meat", 1);
+                "Cannibalism_Preferred", "Cannibalism", "preferred", 2);
+            cannibal.issue.label = "cannibalism";
+            cannibal.issue.description = string.Empty;
+            cannibal.description = "To consume human meat is a noble and necessary part of life.";
             BeliefPreceptFact unrelated = Precept(
                 "Slavery_Unrelated", "Slavery_Issue", "slavery bondage", 3);
+            BeliefPreceptFact genericFood = Precept(
+                "MeatEating_NonMeat_Disapproved", "MeatEating", "vegetarian disliked", 2);
+            genericFood.issue.label = "meat eating";
+            genericFood.description =
+                "Eating vegetarian food is distasteful. Every meal should have some meat, eggs, milk, or other animal product.";
             AssertSelected("exact human-meat evidence activates the cannibal rule only",
-                Resolve(Snapshot(cannibal, unrelated), exact, policy), "Cannibal_Food_Stance");
+                Resolve(Snapshot(cannibal, genericFood, unrelated), exact, policy), cannibal.defName);
             AssertEmpty("exact human-meat evidence leaves unrelated doctrine silent",
                 Resolve(Snapshot(unrelated), exact, policy));
+            BeliefPreceptFact contradictoryCannibal = Precept(
+                "Cannibalism_Abhorrent", "Cannibalism", "abhorrent", 3);
+            contradictoryCannibal.issue.label = "cannibalism";
+            contradictoryCannibal.description = "The thought of eating human meat is abhorrent and horrible.";
+            AssertEmpty("contradictory same-issue cannibal stances fail closed",
+                Resolve(Snapshot(cannibal, contradictoryCannibal), exact, policy));
 
             BeliefEventEvidence generic = Evidence(true);
             AssertTrue("generic meal without an exact ingredient stays unchanged",

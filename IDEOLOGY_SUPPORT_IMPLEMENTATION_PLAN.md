@@ -1321,9 +1321,18 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > unrelated doctrine, malformed/duplicate policy, inactive Ideology, and adapter faults leave the
 > ordinary thought page unchanged. Direct source-precept and exact thought-correlation evidence retain
 > resolver precedence. The scope adds no page, save token, dedup change, global `Rand` use, reflection,
-> or irrelevant-thought Def lookup. Pure coverage reaches 546 assertions, and two compiled loaded
+> or irrelevant-thought Def lookup. Pure coverage reaches 547 assertions, and two compiled loaded
 > fixtures raise the RimTest assembly to 393 cases; they pin exact evidence, non-returned-thought
 > rejection, one-page ownership, frozen saved context, RNG/dedup invariants, and adapter fail-open.
+> The first valid loaded run reached 391/393. Exact food capture and the adapter-failure case passed;
+> the positive case failed only after capture because its disposable Ideology used ordinary precept
+> removal. Vanilla inserted the issue's default stance, leaving it beside `Cannibalism_Preferred`, so
+> the resolver correctly failed closed on contradictory same-issue doctrine. The fixture now uses
+> replacement mode, asserts one retained intended stance, and its pure regression mirrors the full
+> live thought evidence plus a competing meat stance. A corrected loaded rerun remains pending. The
+> other failure is the known N3-O parked-gravship host prerequisite; the earlier main-menu invocation
+> had no loaded game and is not a loaded acceptance result. No deferred authority-speech run is
+> claimed.
 
 > **Narrative N3-I result (2026-07-22): code-complete, adversarially hardened, and active loaded
 > acceptance passed; base-only acceptance pending.** Phase 1's guarded,
