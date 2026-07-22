@@ -9,7 +9,8 @@
   meals preserve the shipped humanlike-first result. Direct/ingredient insect meat, ordinary-meal and
   corpse negatives, unknown/malformed policy, no-Ideology silence, scope cleanup, dedup/Rand, frozen
   save context, and both real Harmony boundaries have focused pure and compiled loaded coverage.
-  `BeliefContextTests` passes 556 assertions and the RimTest assembly now contains 398 cases.
+  `BeliefContextTests` passes 556 assertions; the full 15-project verifier passes 7,382 assertions;
+  and the runtime plus final 398-case RimTest assemblies build with zero warnings or errors.
   The requested corrected pre-slice suite ran first at 392/396: two food-fixture failures, one unrelated
   moral-guide fixture, and the known Odyssey parked-gravship prerequisite. Deterministic issue-only
   food ideologies and a teardown-restored test-only eating threshold corrected the fixture assumptions

@@ -1367,7 +1367,8 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > precedence. The first post-implementation loaded run reached 395/398 and exposed only the two
 > test-threshold prerequisites above plus N3-O. After the isolated fixture correction, the complete
 > active-Ideology suite reached **397/398 across 60/61 suites**: every food case passed, and the sole
-> failure was the known Odyssey parked-player-gravship prerequisite.
+> failure was the known Odyssey parked-player-gravship prerequisite. The full 15-project verifier
+> passes 7,382 assertions, and the runtime plus final 398-case RimTest assemblies compile cleanly.
 
 > **Narrative N3-I result (2026-07-22): code-complete, adversarially hardened, and active loaded
 > acceptance passed; base-only acceptance pending.** Phase 1's guarded,
