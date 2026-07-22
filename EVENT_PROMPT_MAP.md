@@ -472,6 +472,8 @@ assignment: `ThroneSpeech` /
 belief resolver only after DLC gates pass. It contributes context and DefInjected guidance only when
 visible current doctrine actually relates to authority, leadership, social role, slavery, or social
 structure. Speaker projection may include that pawn's current role/certainty and optional structure;
+the localized vocabulary includes installed `Slavery_Acceptable` visible wording so its real projection
+clears the resolver's two-distinctive-token gate without a production Precept-Def allowlist.
 participant/spectator projection is smaller and omits role, certainty, memes, structure, deity, and
 N3-I. Target mode is none. Missing/malformed policy, inactive DLC, collisions, or adapter failure leave
 the ordinary Royal/generic ritual prompt untouched. Fan-out, dedup, RNG, settings, and save ownership

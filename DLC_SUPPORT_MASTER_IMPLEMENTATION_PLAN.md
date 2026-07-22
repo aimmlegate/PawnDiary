@@ -613,8 +613,12 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 > the assembly to 391 RimTests. The first active loaded execution reached 389/391: exact wiring,
 > fail-open behavior, and the full leader branch passed; the throne branch exposed a fixture-only
 > assumption that a second random Ideology would contain related doctrine. It now reuses the already-
-> proven relevant profile. The other failure was the unchanged N3-O parked-gravship prerequisite.
-> A corrected all-green rerun and the base-only profile are still pending.
+> proven profile. A second 389/391 run then showed that the first random profile can also be unrelated,
+> stopping at the leader branch. The positive fixture now installs `Slavery_Acceptable` through
+> vanilla's live precept APIs before both routes. A pure installed-shape audit also exposed the former
+> slavery alias below the two-token lexical threshold, so EN/RU XML now carries grounded visible-word
+> aliases for that stance. The other failure in both runs was the unchanged N3-O parked-gravship
+> prerequisite. A corrected all-green rerun and the base-only profile are still pending.
 > Every deferred Royalty acceptance item remains unchanged.
 
 ### Implement in this exact order
@@ -638,8 +642,10 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 
 Wave 10 remains open: original exact active-Counsel loaded coverage and the corrected 384/384 suite
 passed, and the corrected active completed-conversion suite passed 388/388. The first authority-speech
-run reached 389/391 and its fixture-only random-doctrine assumption is corrected; an all-green rerun,
-the base-only profile, remaining Ideology-2 evidence-family work, and Ideology 3 are pending.
+run reached 389/391 at the throne branch, and a second reached 389/391 at the leader branch, proving
+both random doctrine assumptions needed an explicit relevant live stance. That fixture is corrected;
+an all-green rerun, the base-only profile, remaining Ideology-2 evidence-family work, and Ideology 3
+are pending.
 
 ### Release checkpoint 10 — belief enrichment
 

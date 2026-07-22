@@ -132,7 +132,7 @@
       <li><topicToken>rituals</topicToken><aliases><li>ritual</li><li>ceremony</li></aliases></li>
       <li><topicToken>violence</topicToken><aliases><li>violence</li><li>combat</li></aliases></li>
       <li><topicToken>charity</topicToken><aliases><li>charity</li><li>aid</li><li>refugee</li></aliases></li>
-      <li><topicToken>authority_speech</topicToken><aliases><li>authority leadership</li><li>leader social role</li><li>slavery social structure</li><li>social hierarchy</li><li>ranked authority</li></aliases></li>
+      <li><topicToken>authority_speech</topicToken><aliases><li>authority leadership</li><li>leader social role</li><li>slavery social structure</li><li>social hierarchy</li><li>ranked authority</li><li>slavery normal part life</li></aliases></li>
     </semanticAliases>
 
     <!-- Exact future adapter groups. A broad raid adds violence, never charity without an aid fact. -->

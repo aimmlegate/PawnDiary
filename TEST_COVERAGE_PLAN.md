@@ -1130,10 +1130,12 @@ assignment and DLC gates, and proves `ThroneSpeech` keeps `ritualRoyal` while `L
 Ideology state: leader speech runs when Ideology is active, throne speech additionally runs when
 Royalty is active, each pawn receives at most one page, global `Rand` is unchanged, repeat dispatch is
 deduped, and the original group owns the prompt. The throne branch reuses the profile whose leader
-branch already proved related visible doctrine, so exact route coverage cannot be invalidated by a
-second random Ideology correctly resolving to no context. Speaker belief context may contain its own
-current role and certainty; participant/spectator context is independently bounded and contains
-neither, nor meme, structure, deity, or N3-I projection. The saved speaker block survives a later
+branch already proved related visible doctrine. That registered disposable profile explicitly replaces
+its generated Slavery stance with installed `Slavery_Acceptable` through vanilla's
+`PreceptMaker`/`Ideo.AddPrecept` path, so positive route coverage cannot be invalidated by a random
+Ideology correctly resolving to no context. Speaker belief context may contain its own current role
+and certainty; participant/spectator context is independently bounded and contains neither, nor meme,
+structure, deity, or N3-I projection. The saved speaker block survives a later
 certainty change and a real Scribe round-trip. The fault case throws at the optional adapter boundary
 and still requires the three ordinary pages with empty belief blocks. Inactive Ideology/Royalty match
 branches are asserted without constructing DLC content. Standalone policy coverage adds exact/case/
@@ -1144,8 +1146,13 @@ optional presentation. These cases raise `BeliefContextTests` to 511 assertions 
 RimTest assembly from 388 to 391 cases. The first loaded run reached 389/391: the exact wiring and
 fail-open cases passed, and the positive case cleared its full leader branch before a second randomly
 generated doctrine profile truthfully left the throne page ordinary. That fixture-only lottery is now
-removed. The other failure was the unchanged N3-O parked-gravship host prerequisite. A corrected
-loaded rerun is pending; 388/388 remains the latest all-green result.
+removed. The second loaded run also reached 389/391 and stopped earlier in the same combined case when
+the first random profile contained no related stance, proving reuse alone was insufficient. The
+fixture now installs one exact relevant stance before exercising either route. Pure coverage also
+replaces its former alias-shaped synthetic stance with the installed `Slavery_Acceptable` issue/label/
+description shape and pins the added EN/RU visible-word alias needed to clear the two-distinctive-token
+threshold. The other failure in both runs was the unchanged N3-O parked-gravship host prerequisite. A
+corrected loaded rerun is pending; 388/388 remains the latest all-green result.
 
 The first 377-test execution exposed vanilla's nested silent companion page and completed 375/377; the
 other failure was the unrelated N3-O Odyssey host prerequisite. After the exact companion fix and a
@@ -1169,9 +1176,12 @@ four fixture assumptions, the second reached 386/388 and isolated a real organiz
 now corrected. The user-confirmed rerun passed 388/388 on a valid parked-gravship host, closing the
 active completed-conversion gate. The first active run of all three authority-speech cases reached
 389/391, passed the exact wiring/fail-open cases and the full leader branch, and exposed the now-
-corrected random-doctrine throne fixture assumption. Its other failure was the expected N3-O host
-guard on a map without a parked player gravship. Therefore 388/388 remains the latest all-green loaded
-result. A current 391-test base-only profile remains
+corrected random-doctrine throne fixture assumption. A second 389/391 run stopped at the leader branch,
+confirming that the first random profile also needed an explicit relevant stance; the fixture now
+installs `Slavery_Acceptable` through vanilla's live precept APIs, while pure coverage mirrors its
+installed visible wording and the XML/EN/RU policy supplies enough grounded tokens for admission. Both
+runs' other failure was the expected N3-O host guard on a map without a parked player gravship.
+Therefore 388/388 remains the latest all-green loaded result. A current 391-test base-only profile remains
 release-blocking under the matrix above because it is the only execution that reaches every
 `ModsConfig.IdeologyActive == false` branch.
 The first user-observed 376-test loaded run completed 374/376. It exposed the dedicated worker

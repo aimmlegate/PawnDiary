@@ -1,5 +1,21 @@
 # Changelog
 
+- **2026-07-22 — Made the authority-speech positive fixture establish exact live doctrine.** The
+  second user-supplied active run again reached 389/391, but the combined authority case now stopped
+  at the leader branch: its first randomly generated Ideology contained no stance related to the
+  `authority_speech` vocabulary, so production correctly emitted an ordinary page. This confirms the
+  earlier throne symptom was not a route defect and that merely reusing one random profile could not
+  make the positive precondition deterministic. A follow-up projection audit also found that the
+  original `slavery social structure` alias shared only one distinctive token with vanilla's visible
+  `Slavery_Acceptable` fields, below the resolver's required two-token admission threshold. EN/RU XML
+  now adds localized keyword bags grounded in the installed "normal part of life" description, and the
+  pure test mirrors those real fields instead of repeating the alias verbatim. The registered disposable
+  Ideology uses vanilla's `PreceptMaker`/`Ideo.AddPrecept` path to install that stance before leader
+  assignment, then feeds both exact routes. The other failure remains the strict N3-O prerequisite on a
+  map without a parked player gravship. No C# production path, save, setting, RNG, fan-out, dedup, hook,
+  or DLC gate changed. `BeliefContextTests` still passes 511 assertions and the rebuilt 391-test assembly
+  compiles with zero warnings; an all-green loaded rerun and the Ideology-inactive profile remain pending.
+
 - **2026-07-22 — Hardened the authority-speech loaded fixture after its first 391-test run.** The
   user-supplied Ideology/Royalty execution reached 389/391. Exact installed worker/owner routing,
   leader-speech POV isolation, RNG/dedup/persistence behavior, and the adapter fail-open case all

@@ -1060,11 +1060,17 @@ namespace PawnDiary
                 "authority_speech", new List<string>
                 {
                     "authority leadership", "leader social role",
-                    "slavery social structure", "social hierarchy"
+                    "slavery social structure", "social hierarchy",
+                    "slavery normal part life"
                 }));
             BeliefPolicySnapshot resolverPolicy = resolverBuilder.Build();
             BeliefPreceptFact authority = Precept(
-                "Slavery_Acceptable", "Slavery", "slavery social structure", 2);
+                "Slavery_Acceptable", "Slavery", "acceptable", 2);
+            // Mirror the installed 1.6 projection instead of making the synthetic doctrine repeat our
+            // alias verbatim. This pins the lexical bridge to vanilla's visible issue/description text.
+            authority.issue.label = "slavery";
+            authority.issue.description = string.Empty;
+            authority.description = "Slavery is a normal, unremarkable part of life.";
             authority.associatedMemeDefNames.Add("HierarchyMeme");
             BeliefPreceptFact unrelated = Precept(
                 "TreeWorship", "Trees", "trees forests natural reverence", 3);

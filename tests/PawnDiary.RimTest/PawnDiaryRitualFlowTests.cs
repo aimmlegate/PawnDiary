@@ -648,6 +648,7 @@ namespace PawnDiary.RimTests
             Pawn witness = scope.CreateAdultColonist();
             Pawn spectator = scope.CreateAdultColonist();
             Ideo shared = GenerateRegisteredIdeology(firstPawn, witness, spectator);
+            InstallAuthorityDoctrine(shared);
             firstPawn.ideo.SetIdeo(shared);
             witness.ideo.SetIdeo(shared);
             spectator.ideo.SetIdeo(shared);
@@ -913,6 +914,31 @@ namespace PawnDiary.RimTests
             {
                 if (leader.IsAssigned(pawn)) leader.Unassign(pawn, false);
             });
+        }
+
+        /// <summary>
+        /// Replaces the generated Slavery stance with one installed, visibly authority-related stance.
+        /// Randomly generated Ideologies may truthfully contain no doctrine matched by authority_speech;
+        /// a positive integration fixture must establish that precondition instead of hoping for it.
+        /// </summary>
+        private static void InstallAuthorityDoctrine(Ideo ideology)
+        {
+            PreceptDef target = DefDatabase<PreceptDef>.GetNamedSilentFail("Slavery_Acceptable");
+            PawnDiaryRimTestScope.Require(ideology != null && target?.issue != null
+                    && Faction.OfPlayer?.def != null,
+                "The installed authority-speech doctrine fixture Defs were not available.");
+
+            // New to RimWorld Ideology tests? An Ideo may hold only one stance for an IssueDef. Remove
+            // the generated Slavery stance before asking vanilla's PreceptMaker/AddPrecept path to add
+            // the exact fixture stance; the disposable Ideo is removed wholesale during scope cleanup.
+            Precept existing = ideology.PreceptsListForReading.FirstOrDefault(precept =>
+                precept?.def?.issue == target.issue);
+            if (existing != null) ideology.RemovePrecept(existing, false);
+            Precept authority = PreceptMaker.MakePrecept(target);
+            ideology.AddPrecept(authority, false, Faction.OfPlayer.def, null);
+            PawnDiaryRimTestScope.Require(
+                ideology.PreceptsListForReading.Any(precept => precept?.def == target),
+                "The disposable authority-speech Ideology did not retain Slavery_Acceptable.");
         }
 
         private static RitualFanoutSignal ExactAuthoritySpeechFixture(

@@ -414,9 +414,18 @@ dedup invariants, Scribe/later-state freezing, inactive routing, and adapter fai
 first user-supplied active-Ideology/Royalty run reached 389/391: exact owner/type wiring, the complete
 leader branch, and adapter failure passed, while the throne branch exposed a fixture-only assumption
 that a second randomly generated Ideology would contain related authority doctrine. Production
-correctly omitted context for that unrelated profile. The fixture now reuses the authority-relevant
-profile already proved by the leader branch, isolating throne route/owner coverage from random doctrine
-generation. The other failure was the unchanged N3-O positive fixture running without its required
+correctly omitted context for that unrelated profile. Reusing one profile removed the second random
+draw, but the next 389/391 rerun showed that the first generated Ideology can also be unrelated: the
+same combined case then stopped at the leader assertion. The positive fixture now replaces the
+disposable registered Ideology's Slavery issue with installed `Slavery_Acceptable` through vanilla's
+`PreceptMaker`/`Ideo.AddPrecept` path before assigning the leader, then reuses that explicitly relevant
+profile for the throne route. The corresponding pure audit now mirrors vanilla's visible issue, label,
+and "Slavery is a normal, unremarkable part of life" description. It exposed that the former
+`slavery social structure` semantic alias contributed only one shared distinctive token, while lexical
+admission requires two. The XML/EN/RU policy therefore adds a localized `slavery normal part life`
+keyword bag (with its Russian visible-word equivalent); this makes the intended installed stance
+eligible without naming a Precept Def in production code or weakening unrelated-doctrine rejection.
+The other failure in both runs was the unchanged N3-O positive fixture running without its required
 parked player gravship. A corrected loaded rerun is pending; 388/388 remains the latest all-green run.
 
 The first post-Counsel Ideology-active loaded run executed all 384 fixtures and reached 382/384. All
