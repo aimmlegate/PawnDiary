@@ -1278,8 +1278,8 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > coverage are corrected. The user-confirmed rerun passed 388/388 on a valid parked-gravship host,
 > closing this active loaded gate. The separate base-only profile remains pending.
 
-> **Exact throne/leader authority-speech slice (2026-07-22): code, XML, localization, and automated
-> fixtures complete; loaded execution pending.** Installed Defs and decompiled 1.6 code confirm the
+> **Exact throne/leader authority-speech slice (2026-07-22): automated requirements partially closed;
+> manual loaded acceptance deferred.** Installed Defs and decompiled 1.6 code confirm the
 > exact ritual/behavior/outcome/assignment identities and that the existing postfix observes
 > post-outcome state. A deep immutable XML snapshot owns two exact routes, DLC requirements,
 > `authority_speech` evidence modes, speaker/witness caps and presentation, and EN/RU DefInjected
@@ -1296,9 +1296,12 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > `BeliefContextTests` to 514 assertions; three compiled
 > loaded cases raise the RimTest assembly to 391. They cover installed identities/owners and inactive
 > routing, leader plus conditional throne speaker/witness isolation with exact audience perspectives,
-> RNG/dedup/Scribe/later-state invariants, and adapter fail-open behavior. No in-game run is claimed;
-> the latest recorded full loaded
-> result remains 388/388.
+> RNG/dedup/Scribe/later-state invariants, and adapter fail-open behavior. The automated gate is treated
+> as green: all 15 standalone projects pass 7,340 assertions, the main DLL builds cleanly, and the
+> 391-case loaded assembly compiles cleanly. **Deferred manual TODO:** run the corrected 391-case suite
+> in a non-classic Ideology/Royalty profile on a host with a parked player gravship, then run the
+> separate Ideology-inactive/base-only profile and record both exact results. No new in-game run is
+> claimed; the latest recorded fully green loaded result remains 388/388.
 
 > **Narrative N3-I result (2026-07-22): code-complete, adversarially hardened, and active loaded
 > acceptance passed; base-only acceptance pending.** Phase 1's guarded,
@@ -1344,7 +1347,9 @@ Exit gate: focused pure and RimTests prove correct before/after facts and exactl
 for each conversion ability/interaction/ritual path; representative body, meal, raid, thought, and
 ritual fixtures select only relevant live doctrine; unrelated event and ability behavior is unchanged.
 
-**Phase-2 exit-gate status:** still open. The original exact active-Counsel sub-gate and corrected
+**Phase-2 exit-gate status:** partly closed at the automated boundary and still open overall. The
+standalone suites, production build, and compiled loaded fixtures are green, while the original exact
+active-Counsel sub-gate and corrected
 384/384 suite are green, and the corrected active conversion-ritual suite passed 388/388. The first
 active authority-speech run reached 389/391: exact type/owner wiring, fail-open behavior, and the full
 leader branch passed, while the throne branch exposed a fixture-only second-random-doctrine assumption
@@ -1357,9 +1362,10 @@ production Precept-Def list. A third 389/391 run cleared the doctrine/leader che
 fixture-only collision: both ritual routes ran in one tick for the same pawns, so the first route's
 generic ritual type/subject keys correctly deduped the second. The throne route now uses fresh pawns
 under the same proven Ideology, without changing production dedup. The unrelated N3-O positive fixture
-also ran without its required parked gravship in all three runs. A corrected all-green authority-speech
-rerun, the remaining evidence-family matrix, and the required Ideology-inactive loaded profile must
-complete before Phase 2 can close.
+also ran without its required parked gravship in all three runs. **Deferred manual TODO:** execute the
+corrected all-green authority-speech rerun on a valid parked-gravship host and the required
+Ideology-inactive loaded profile. Those manual rows and the remaining evidence-family matrix must
+complete before Phase 2 can close fully; they do not block starting the next bounded development slice.
 
 ### Phase 3 — Persistent passive belief tracking
 

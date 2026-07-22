@@ -1,5 +1,14 @@
 # Changelog
 
+- **2026-07-22 — Marked authority-speech acceptance partially closed and deferred its manual rows.**
+  Automated evidence is green: all 15 standalone projects pass 7,340 assertions, the production DLL
+  builds cleanly, and the 391-case loaded assembly compiles cleanly. The implementation plan and
+  architecture guide now carry an explicit later TODO for the corrected non-classic
+  Ideology/Royalty run on a parked-gravship host and the separate Ideology-inactive/base-only profile.
+  No in-game result is invented: 388/388 remains the latest fully green loaded baseline. This is a
+  documentation/status change only; runtime behavior, tests, DLLs, XML, saves, settings, RNG, fan-out,
+  dedup, localization, and DLC gates are unchanged.
+
 - **2026-07-22 — Preserved authority-speech spectator policy after adversarial review.** Vanilla's
   ritual participant collection also contains spectators, so a matched authority speech previously
   emitted each spectator through the participant pass before pawn-id collapse could reach the real

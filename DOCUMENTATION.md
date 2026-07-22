@@ -435,8 +435,12 @@ the leader pages correctly occupied the generic 60-tick ritual type/subject dedu
 the throne children. The throne half now uses fresh disposable pawns assigned to the same explicitly
 relevant Ideology, isolating exact routing without changing production dedup or the live game clock.
 The other failure in all three runs was the unchanged N3-O positive fixture running without its
-required parked player gravship. A corrected loaded rerun is pending; 388/388 remains the latest
-all-green run.
+required parked player gravship. The automated authority-speech requirements are treated as partially
+closed: all 15 standalone projects pass 7,340 assertions, the production DLL builds cleanly, and the
+391-case loaded assembly compiles cleanly. **Deferred manual TODO:** run that corrected suite in a
+non-classic Ideology/Royalty profile on a host with a parked player gravship, then run the separate
+Ideology-inactive/base-only profile and record both exact results. No new in-game run is claimed;
+388/388 remains the latest fully green loaded run.
 
 The first post-Counsel Ideology-active loaded run executed all 384 fixtures and reached 382/384. All
 three exact Counsel fixtures passed at the real vanilla boundary. One failure was a stale exhaustive
