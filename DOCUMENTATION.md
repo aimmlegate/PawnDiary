@@ -34,6 +34,26 @@ See the [Event-to-Prompt Map](repowiki/en/content/Event%20System/Event-to-Prompt
 
 Capture is impure; classification, planning, parsing, formatting, and policy helpers should be pure. Keep the live RimWorld boundary at the edge and pass typed DTOs inward.
 
+### 4.1 Exact Ideology food evidence
+
+Food belief enrichment follows the same barrier without owning a page. While Ideology is active,
+`Thing.Ingested` opens a short-lived scope only when the direct food or a bounded
+`CompIngredients` row has vanilla's exact `Humanlike` or `Insect` meat category. Capture freezes a
+primitive `ingredientKind`/DefName/localized-label fact and the exact ThoughtDefs returned by that
+same `FoodUtility.ThoughtsFromIngesting` call. `ThoughtSignal` then asks the pure XML-driven food
+policy to enrich its already-authorized evidence before the scope closes. The existing thought page,
+dedup key, RNG behavior, and event-time saved belief context remain the owners of the result.
+
+XML maps `humanlike_meat` to `cannibal_meal` and `insect_meat` to `insect_meal`; localized semantic
+aliases let the shared stance resolver compare those facts with live visible doctrine without a
+precept-name catalog. A mixed modded meal keeps humanlike-meat precedence so insect support cannot
+change the shipped humanlike result. Corpses, ordinary meals, unknown categories, ambiguous or
+malformed XML, inactive Ideology, and adapter failures leave the ordinary page unchanged. Every
+thought returned for the same exact meal intentionally may receive the same factual ingredient row;
+the resolver still emits doctrine only when it finds one relevant live stance. Loaded active-Ideology
+coverage is 397/398; all food cases pass, and the sole remaining failure is the separate Odyssey
+fixture's parked-player-gravship prerequisite.
+
 ## 5. XML Policy
 
 Put tunable prompt text, groups, thresholds, weights, caps, and style rules in `1.6/Defs/`. Use safe code fallbacks only for stable schema tokens, defensive limits, parser sentinels, and defaults.

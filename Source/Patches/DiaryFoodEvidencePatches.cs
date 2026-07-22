@@ -10,7 +10,7 @@ using Verse;
 
 namespace PawnDiary
 {
-    /// <summary>Captures exact humanlike-meat facts for existing thought pages without scanning pawns.</summary>
+    /// <summary>Captures exact supported-meat facts for existing thought pages without scanning pawns.</summary>
     internal static class FoodIngestionEvidencePatch
     {
         // Vanilla currently limits this list to three. The defensive cap also keeps an unexpectedly
@@ -90,7 +90,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Opens a scope only for active-Ideology, diary-eligible pawns eating an exact humanlike-meat
+        /// Opens a scope only for active-Ideology, diary-eligible pawns eating an exact supported-meat
         /// food or ingredient. Generic meal identity, quality, and broad eating labels are ignored.
         /// </summary>
         private static void IngestedPrefix(
@@ -161,46 +161,79 @@ namespace PawnDiary
 
         private static FoodIngestionEvidenceScope BeginExactScope(Thing food, Pawn pawn)
         {
-            FoodIngestionEvidenceFact fact = ExactHumanlikeMeatFact(food);
+            FoodIngestionEvidenceFact fact = ExactSupportedMeatFact(food);
             return fact == null ? null : FoodIngestionEvidenceContext.Begin(
                 pawn.GetUniqueLoadID(), food.GetUniqueLoadID(), fact);
         }
 
+        /// <summary>
+        /// Returns the first supported exact category in policy order. Humanlike meat remains first so
+        /// adding insect support cannot change the already-shipped result for a mixed modded meal.
+        /// </summary>
+        internal static FoodIngestionEvidenceFact ExactSupportedMeatFact(Thing food)
+        {
+            return ExactHumanlikeMeatFact(food) ?? ExactInsectMeatFact(food);
+        }
+
+        /// <summary>Classifies exact humanlike meat through vanilla's mechanical meat category.</summary>
         internal static FoodIngestionEvidenceFact ExactHumanlikeMeatFact(Thing food)
         {
+            return ExactMeatFact(
+                food,
+                MeatSourceCategory.Humanlike,
+                FoodIngestionEvidenceKindTokens.HumanlikeMeat);
+        }
+
+        /// <summary>Classifies exact insect meat through vanilla's mechanical meat category.</summary>
+        internal static FoodIngestionEvidenceFact ExactInsectMeatFact(Thing food)
+        {
+            return ExactMeatFact(
+                food,
+                MeatSourceCategory.Insect,
+                FoodIngestionEvidenceKindTokens.InsectMeat);
+        }
+
+        private static FoodIngestionEvidenceFact ExactMeatFact(
+            Thing food,
+            MeatSourceCategory category,
+            string ingredientKind)
+        {
+            if (food == null) return null;
             CompIngredients ingredients = food.TryGetComp<CompIngredients>();
             if (ingredients?.ingredients != null)
             {
-                // This exact-Def list is the same source vanilla uses to decide
-                // AteHumanMeatAsIngredient. Stop at the defensive cap and fail open if a mod exceeds it.
+                // This exact-Def list and FoodUtility category are the same evidence vanilla uses for
+                // AteHumanMeatAsIngredient / AteInsectMeatAsIngredient. Stop at the defensive cap.
                 int count = Math.Min(ingredients.ingredients.Count, MaximumIngredientsInspected);
                 for (int i = 0; i < count; i++)
                 {
                     ThingDef ingredient = ingredients.ingredients[i];
                     if (ingredient != null && FoodUtility.GetMeatSourceCategory(ingredient)
-                        == MeatSourceCategory.Humanlike)
+                        == category)
                     {
-                        return FactFor(ingredient);
+                        return FactFor(ingredient, ingredientKind);
                     }
                 }
             }
 
-            // Raw/direct humanlike meat is equally exact. Corpses deliberately stay out of this first
-            // slice because a corpse label is not an ingredient label.
+            // Raw/direct meat is equally exact. Corpses deliberately stay out because a corpse label
+            // is not an ingredient label and must never be repurposed as one.
             return food.def != null && !food.def.IsCorpse
-                && FoodUtility.GetMeatSourceCategory(food.def) == MeatSourceCategory.Humanlike
-                    ? FactFor(food.def)
+                && FoodUtility.GetMeatSourceCategory(food.def) == category
+                    ? FactFor(food.def, ingredientKind)
                     : null;
         }
 
-        private static FoodIngestionEvidenceFact FactFor(ThingDef ingredient)
+        private static FoodIngestionEvidenceFact FactFor(ThingDef ingredient, string ingredientKind)
         {
             string label = DiaryLineCleaner.CleanLine(ingredient.LabelCap.Resolve());
-            if (string.IsNullOrWhiteSpace(ingredient.defName) || string.IsNullOrWhiteSpace(label))
+            if (string.IsNullOrWhiteSpace(ingredientKind)
+                || string.IsNullOrWhiteSpace(ingredient.defName)
+                || string.IsNullOrWhiteSpace(label))
                 return null;
             return new FoodIngestionEvidenceFact
             {
-                ingredientKind = FoodIngestionEvidenceKindTokens.HumanlikeMeat,
+                ingredientKind = ingredientKind,
                 ingredientDefName = ingredient.defName,
                 ingredientLabel = label
             };

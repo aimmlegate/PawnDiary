@@ -2528,12 +2528,20 @@ namespace PawnDiary
                 new List<string> { "cannibalism", "human meat" }));
             builder.semanticAliases.Add(new BeliefSemanticAlias("meals",
                 new List<string> { "meal", "food", "ingredient" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("insect_meat",
+                new List<string> { "insect meat", "insect flesh" }));
             builder.eventEvidenceRules.Add(Rule("cannibal_meal", string.Empty,
                 "cannibal_meal", new[] { "cannibalism", "meals" },
                 new[] { "cannibalism" }));
+            builder.eventEvidenceRules.Add(Rule("insect_meal", string.Empty,
+                "insect_meal", new[] { "insect_meat", "meals" },
+                new[] { "insect_meat" }));
             builder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
                 "humanlike_meat", FoodIngestionEvidenceKindTokens.HumanlikeMeat,
                 "cannibal_meal", "ingredient_label"));
+            builder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
+                "insect_meat", FoodIngestionEvidenceKindTokens.InsectMeat,
+                "insect_meal", "ingredient_label"));
             BeliefPolicySnapshot policy = builder.Build();
             FoodIngestionEvidenceFact exactHumanMeat = new FoodIngestionEvidenceFact
             {
@@ -2588,6 +2596,44 @@ namespace PawnDiary
             contradictoryCannibal.description = "The thought of eating human meat is abhorrent and horrible.";
             AssertEmpty("contradictory same-issue cannibal stances fail closed",
                 Resolve(Snapshot(cannibal, contradictoryCannibal), exact, policy));
+
+            FoodIngestionEvidenceFact exactInsectMeat = new FoodIngestionEvidenceFact
+            {
+                ingredientKind = FoodIngestionEvidenceKindTokens.InsectMeat,
+                ingredientDefName = "Synthetic_Insect_Meat",
+                ingredientLabel = "insect meat"
+            };
+            BeliefEventEvidence exactInsect = BeliefEventEvidenceFactory.ForThought(
+                "SyntheticPawn", 12346, "AteFineMeal", "fine meal",
+                new BeliefSourcePreceptFact());
+            AssertTrue("exact insect-meat fact activates its XML food mapping",
+                FoodBeliefEvidencePolicy.TryEnrich(exactInsect, exactInsectMeat, true, policy));
+            AssertEqual("exact insect-meat mapping supplies the configured group", "insect_meal",
+                exactInsect.groupKey);
+            AssertEqual("exact insect-meat mapping preserves the thought field and adds one ingredient field", 2,
+                exactInsect.matchFields.Count);
+            AssertEqual("exact insect-meat field keeps the captured ingredient label", "insect meat",
+                exactInsect.matchFields[1].value);
+            ExpandedBeliefEvidence expandedInsect = BeliefEventEvidencePolicy.Expand(
+                exactInsect, policy);
+            AssertTrue("insect food rule expands the insect-meat topic",
+                Contains(expandedInsect.topics, "insect_meat"));
+            AssertTrue("insect food rule expands the shared meal topic",
+                Contains(expandedInsect.topics, "meals"));
+
+            // Mirror vanilla InsectMeatEating_Loved without treating its DefName as runtime policy.
+            // The issue and description, not the generic stance label "loved", carry the vocabulary.
+            BeliefPreceptFact insectLoved = Precept(
+                "InsectMeatEating_Loved", "InsectMeat", "loved", 2);
+            insectLoved.issue.label = "insect meat";
+            insectLoved.issue.description = string.Empty;
+            insectLoved.description =
+                "There is nothing more divine than the succulent, slimy flesh of an insect.";
+            AssertSelected("exact insect-meat evidence activates only the matching live stance",
+                Resolve(Snapshot(insectLoved, genericFood, unrelated), exactInsect, policy),
+                insectLoved.defName);
+            AssertEmpty("exact insect-meat evidence leaves unrelated doctrine silent",
+                Resolve(Snapshot(unrelated), exactInsect, policy));
 
             BeliefEventEvidence generic = Evidence(true);
             AssertTrue("generic meal without an exact ingredient stays unchanged",

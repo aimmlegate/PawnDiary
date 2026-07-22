@@ -224,6 +224,7 @@ namespace PawnDiary
     internal static class FoodIngestionEvidenceKindTokens
     {
         public const string HumanlikeMeat = "humanlike_meat";
+        public const string InsectMeat = "insect_meat";
     }
 
     /// <summary>

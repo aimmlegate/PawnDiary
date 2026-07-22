@@ -2,7 +2,7 @@
 
 Status: Phases 0–1 and Narrative N3-I are code-complete; Phase 2 infrastructure, exact interaction consumers,
 exact Counsel, the exact `IdeoChange` crisis slice, exact completed-conversion ritual enrichment, exact
-throne/leader authority-speech enrichment, and exact humanlike-meat thought enrichment are partially
+throne/leader authority-speech enrichment, and exact humanlike-/insect-meat thought enrichment are partially
 implemented; Phases 3–6 remain pending. Guarded
 mutation capture/coalescing, exact downstream Ability ownership, existing PlayLog conversion/
 reassurance enrichment, Counsel context, the existing solo crisis page's truthful mutation/current-state

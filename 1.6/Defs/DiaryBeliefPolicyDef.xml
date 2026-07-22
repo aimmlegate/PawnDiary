@@ -133,6 +133,7 @@
       <li><topicToken>violence</topicToken><aliases><li>violence</li><li>combat</li></aliases></li>
       <li><topicToken>charity</topicToken><aliases><li>charity</li><li>aid</li><li>refugee</li></aliases></li>
       <li><topicToken>authority_speech</topicToken><aliases><li>authority leadership</li><li>leader social role</li><li>slavery social structure</li><li>social hierarchy</li><li>ranked authority</li><li>slavery normal part life</li></aliases></li>
+      <li><topicToken>insect_meat</topicToken><aliases><li>insect meat</li><li>insect flesh</li></aliases></li>
     </semanticAliases>
 
     <!-- Exact adapter groups. A broad raid adds violence, never charity without an aid fact. -->
@@ -142,6 +143,7 @@
       <!-- sourceDomain is intentionally absent: ThoughtSignal stays in the thought domain while the
            exact food policy sets groupKey=cannibal_meal before this rule expands its topics. -->
       <li><key>cannibal_meal</key><groupKey>cannibal_meal</groupKey><addTopics><li>cannibalism</li><li>meals</li></addTopics><addSemanticAliases><li>cannibalism</li></addSemanticAliases></li>
+      <li><key>insect_meal</key><groupKey>insect_meal</groupKey><addTopics><li>insect_meat</li><li>meals</li></addTopics><addSemanticAliases><li>insect_meat</li></addSemanticAliases></li>
       <li><key>known_meal</key><sourceDomain>food</sourceDomain><groupKey>meal</groupKey><addTopics><li>meals</li></addTopics></li>
       <li><key>raid_visible</key><sourceDomain>combat</sourceDomain><groupKey>raid</groupKey><addTopics><li>raids</li><li>violence</li></addTopics></li>
       <li><key>aid_visible</key><sourceDomain>social</sourceDomain><groupKey>aid</groupKey><addTopics><li>charity</li></addTopics><addSemanticAliases><li>charity</li></addSemanticAliases></li>
@@ -151,6 +153,7 @@
     <!-- Mechanical ingredient categories only: no required precept, issue, meme, meal, or meat Def IDs. -->
     <foodEvidenceRules>
       <li><key>humanlike_meat</key><ingredientKind>humanlike_meat</ingredientKind><groupKey>cannibal_meal</groupKey><matchField>ingredient_label</matchField></li>
+      <li><key>insect_meat</key><ingredientKind>insect_meat</ingredientKind><groupKey>insect_meal</groupKey><matchField>ingredient_label</matchField></li>
     </foodEvidenceRules>
 
     <!-- Schema/prompt labels only; language-specific common words are suppressed per live snapshot. -->
