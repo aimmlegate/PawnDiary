@@ -167,6 +167,23 @@
       <li><sourceDomain>thought</sourceDomain><sourceDefName>CounselFailed</sourceDefName><downstreamGroupDefName>counsel</downstreamGroupDefName></li>
     </canonicalEventOwnershipRules>
 
+    <!-- Exact context-only outcomes from vanilla's already-authorized Counsel PlayLog rows. These
+         tokens describe mood mechanics only; they do not request doctrine resolution or mutation. -->
+    <counselEventRules>
+      <li>
+        <sourceDefName>Counsel_Success</sourceDefName>
+        <downstreamGroupDefName>counsel</downstreamGroupDefName>
+        <resultToken>success</resultToken>
+        <moodEffectToken>relief_or_boost</moodEffectToken>
+      </li>
+      <li>
+        <sourceDefName>Counsel_Failure</sourceDefName>
+        <downstreamGroupDefName>counsel</downstreamGroupDefName>
+        <resultToken>failure</resultToken>
+        <moodEffectToken>penalty</moodEffectToken>
+      </li>
+    </counselEventRules>
+
     <!-- Exact already-authorized mutation consumers. Interaction recipients own the four mechanics;
          the breaking pawn initiates IdeoChange. Shape checks prevent an adjacent same-tick action from
          lending the wrong success/failure or certainty direction to a page. Counsel remains absent:

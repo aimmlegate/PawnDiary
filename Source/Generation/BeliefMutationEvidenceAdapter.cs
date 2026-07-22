@@ -1,5 +1,5 @@
-// Main-thread adapter between existing authorized pages and pure Ideology event evidence. Mutation
-// consumers read the transient detached cache; exact Counsel uses only already-visible PlayLog facts.
+// Main-thread adapter between existing authorized pages and pure Ideology event policy. Mutation
+// consumers read the transient detached cache; exact Counsel reads only its XML-authored outcome rule.
 // The adapter reads no live Ideology object and cannot authorize, create, queue, or persist a page.
 using System;
 using Verse;
@@ -10,8 +10,8 @@ namespace PawnDiary
     internal static class BeliefMutationEvidenceAdapter
     {
         /// <summary>
-        /// Returns exact Counsel or conversion/reassurance evidence for one authorized PlayLog
-        /// interaction, or null when DLC, policy, XML mapping, ownership, identity, time, or mechanics differ.
+        /// Returns conversion/reassurance evidence for one authorized PlayLog interaction, or null
+        /// when DLC, policy, XML mapping, ownership, identity, time, or mechanics differ.
         /// </summary>
         public static BeliefEventEvidence ForInteraction(
             string interactionDefName,
@@ -20,24 +20,11 @@ namespace PawnDiary
             string recipientPawnId,
             int eventTick,
             string initiatorLabel = null,
-            string recipientLabel = null,
-            string interactionLabel = null)
+            string recipientLabel = null)
         {
             try
             {
                 if (!ModsConfig.IdeologyActive || !DiaryGameComponent.GamePlaying) return null;
-
-                // Counsel's verified PlayLog result is itself the mechanical boundary: vanilla has
-                // already applied the listener's mood thought, and no ideology mutation exists to peek.
-                BeliefEventEvidence counsel = CounselEventPolicy.ForInteraction(
-                    interactionDefName,
-                    effectiveGroupDefName,
-                    ideologyActive: true,
-                    recipientPawnId,
-                    eventTick,
-                    recipientLabel,
-                    interactionLabel);
-                if (counsel != null) return counsel;
 
                 BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
                 BeliefMutationEventRule rule = BeliefMutationEventSelector.RuleFor(
@@ -64,6 +51,33 @@ namespace PawnDiary
             catch (Exception exception)
             {
                 WarnAndKeepOrdinaryPage("interaction", exception);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Returns a context-only Counsel rule for an already-authorized exact PlayLog page. Keeping
+        /// this separate from BeliefEventEvidence avoids live doctrine snapshot/resolver work when
+        /// Counsel supplies no structural stance evidence.
+        /// </summary>
+        public static CounselEventRule ForCounselInteraction(
+            string interactionDefName,
+            string effectiveGroupDefName)
+        {
+            try
+            {
+                if (!ModsConfig.IdeologyActive || !DiaryGameComponent.GamePlaying) return null;
+                BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
+                return CounselEventPolicy.RuleFor(
+                    interactionDefName,
+                    effectiveGroupDefName,
+                    ideologyActive: true,
+                    policyEnabled: policy.enabled,
+                    policy.counselEventRules);
+            }
+            catch (Exception exception)
+            {
+                WarnAndKeepOrdinaryPage("counsel", exception);
                 return null;
             }
         }

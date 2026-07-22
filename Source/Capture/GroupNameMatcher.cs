@@ -4,9 +4,9 @@
 // as `matchTokens`), but substring tokens are easy to misfire: the token "Good" claims the negative
 // grief thought "PawnWithGoodOpinionDied", and "Bad" claims the positive "PawnWithBadOpinionDied".
 //
-// The matchers here give XML policy three precise alternatives — prefix, suffix, and CamelCase
-// SEGMENT equality — so a group can claim a defName only when a whole word matches, not when a few
-// letters happen to appear inside another word. They are deliberately pure (plain strings in,
+// The matchers here give XML policy four precise alternatives — ordinal exact, prefix, suffix, and
+// CamelCase SEGMENT equality — so a group can claim a defName only when the intended identifier or
+// whole word matches, not when a few letters happen to appear inside another word. They are pure (plain strings in,
 // bool out, no RimWorld/Verse/Unity types) so the test harness can exercise them without loading
 // the game. DiaryInteractionGroupDef.Matches is the only runtime caller; it forwards its loaded
 // XML lists to these helpers.
@@ -25,6 +25,30 @@ namespace PawnDiary.Capture
     /// </summary>
     internal static class GroupNameMatcher
     {
+        /// <summary>
+        /// True if <paramref name="defName"/> exactly equals one configured identifier, including
+        /// case. Use this for verified framework/DLC outcome names where a case variant must not be
+        /// classified more broadly than the downstream policy which interprets it.
+        /// </summary>
+        internal static bool MatchesOrdinalExact(string defName, IReadOnlyList<string> exactNames)
+        {
+            if (string.IsNullOrEmpty(defName) || exactNames == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < exactNames.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(exactNames[i])
+                    && string.Equals(defName, exactNames[i], StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// True if <paramref name="defName"/> starts with any of the <paramref name="prefixes"/>
         /// (case-insensitive, ordinal). Empty/null inputs never match. Use this for defName families

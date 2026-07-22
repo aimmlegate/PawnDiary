@@ -32,7 +32,7 @@ namespace PawnDiary
             TestPhase1EvidencePersistenceAndCorrelation();
             TestPhase2MutationCoalescingCorrelationAndOwnership();
             TestPhase2MutationEvidenceSelection();
-            TestCounselExactOutcomeEvidenceAndOptionalStance();
+            TestCounselExactOutcomeContextPolicy();
             TestN3IIdeologyInterpretationProvider();
             Console.WriteLine("BeliefContextTests passed " + assertions + " assertions.");
             return 0;
@@ -626,91 +626,86 @@ namespace PawnDiary
                     && fallbackContext.IndexOf("conversion result:", StringComparison.Ordinal) < 0);
         }
 
-        private static void TestCounselExactOutcomeEvidenceAndOptionalStance()
+        private static void TestCounselExactOutcomeContextPolicy()
         {
-            BeliefEventEvidence success = CounselEventPolicy.ForInteraction(
-                "Counsel_Success", "counsel", true, "ListenerPawn", 700,
-                "Listener", "successful counsel");
-            AssertTrue("exact Counsel success produces detached evidence", success != null);
-            AssertEqual("Counsel success keeps exact source", "Counsel_Success",
-                success.narrative.sourceDefName);
-            AssertEqual("Counsel success keeps exact recipient subject", "ListenerPawn",
-                success.narrative.subjectId);
-            AssertEqual("Counsel success keeps recipient label", "Listener",
-                success.narrative.subjectLabel);
-            AssertEqual("Counsel success keeps exact group", "counsel", success.groupKey);
-            AssertEqual("Counsel success phase is truthful", "counsel_succeeded",
-                success.narrative.phase);
-            AssertTrue("Counsel success carries visible localized evidence",
-                success.matchFields.Count == 1
-                    && success.matchFields[0].field == "event_label"
-                    && success.matchFields[0].value == "successful counsel");
-            AssertTrue("Counsel success fabricates no belief mutation or current-certainty request",
-                success.mutation == null && !success.currentBeliefFactsRelevant);
+            CounselEventRule successRule = new CounselEventRule(
+                "Counsel_Success", "counsel", "success", "relief_or_boost");
+            CounselEventRule failureRule = new CounselEventRule(
+                "Counsel_Failure", "counsel", "failure", "penalty");
+            List<CounselEventRule> rules = new List<CounselEventRule>
+            {
+                successRule,
+                failureRule
+            };
 
+            CounselEventRule success = CounselEventPolicy.RuleFor(
+                "Counsel_Success", "counsel", true, true, rules);
+            AssertTrue("exact Counsel success selects its XML rule",
+                object.ReferenceEquals(successRule, success));
             string successContext = CounselEventPolicy.AppendGameContext(
                 "interaction=Counsel_Success", success);
             AssertContains("Counsel success appends exact mood context", successContext,
-                CounselEventPolicy.SuccessContext);
+                "counsel_result=success; counsel_mood_effect=relief_or_boost");
             AssertEqual("Counsel success context append is idempotent", successContext,
                 CounselEventPolicy.AppendGameContext(successContext, success));
             AssertTrue("Counsel success context contains no conversion or certainty schema",
                 successContext.IndexOf("belief_event=conversion", StringComparison.Ordinal) < 0
                     && successContext.IndexOf("certainty", StringComparison.Ordinal) < 0);
 
-            BeliefEventEvidence failure = CounselEventPolicy.ForInteraction(
-                "Counsel_Failure", "counsel", true, "ListenerPawn", 701,
-                "Listener", "failed counsel");
-            AssertTrue("exact Counsel failure produces detached evidence", failure != null);
-            AssertEqual("Counsel failure phase is truthful", "counsel_failed",
-                failure.narrative.phase);
+            CounselEventRule failure = CounselEventPolicy.RuleFor(
+                "Counsel_Failure", "counsel", true, true, rules);
+            AssertTrue("exact Counsel failure selects its XML rule",
+                object.ReferenceEquals(failureRule, failure));
             AssertContains("Counsel failure appends exact mood penalty context",
                 CounselEventPolicy.AppendGameContext(string.Empty, failure),
-                CounselEventPolicy.FailureContext);
-            AssertTrue("Counsel failure fabricates no belief mutation or current-certainty request",
-                failure.mutation == null && !failure.currentBeliefFactsRelevant);
+                "counsel_result=failure; counsel_mood_effect=penalty");
 
             AssertTrue("case-variant Counsel success remains silent",
-                CounselEventPolicy.ForInteraction(
-                    "counsel_success", "counsel", true, "P", 1, "P", "label") == null);
+                CounselEventPolicy.RuleFor(
+                    "counsel_success", "counsel", true, true, rules) == null);
             AssertTrue("wrong Counsel group remains silent",
-                CounselEventPolicy.ForInteraction(
-                    "Counsel_Success", "conversion", true, "P", 1, "P", "label") == null);
+                CounselEventPolicy.RuleFor(
+                    "Counsel_Success", "conversion", true, true, rules) == null);
             AssertTrue("unknown modded Counsel event remains silent",
-                CounselEventPolicy.ForInteraction(
-                    "ModdedCounsel_Success", "counsel", true, "P", 1, "P", "label") == null);
+                CounselEventPolicy.RuleFor(
+                    "ModdedCounsel_Success", "counsel", true, true, rules) == null);
             AssertTrue("inactive Ideology makes exact Counsel inert",
-                CounselEventPolicy.ForInteraction(
-                    "Counsel_Success", "counsel", false, "P", 1, "P", "label") == null);
+                CounselEventPolicy.RuleFor(
+                    "Counsel_Success", "counsel", false, true, rules) == null);
+            AssertTrue("disabled belief policy makes exact Counsel inert",
+                CounselEventPolicy.RuleFor(
+                    "Counsel_Success", "counsel", true, false, rules) == null);
+            AssertTrue("missing XML Counsel policy fails closed",
+                CounselEventPolicy.RuleFor(
+                    "Counsel_Success", "counsel", true, true, null) == null);
+            AssertTrue("unsafe XML marker token fails closed",
+                CounselEventPolicy.RuleFor(
+                    "Counsel_Success", "counsel", true, true,
+                    new List<CounselEventRule> {
+                        new CounselEventRule("Counsel_Success", "counsel", "success; forged=1", "boost")
+                    }) == null);
 
-            BeliefEventEvidence counselorPov = BeliefEventEvidenceFactory.ForPov(
-                success, "CounselEvent", 700, "CounselorPawn", "initiator");
-            BeliefEventEvidence listenerPov = BeliefEventEvidenceFactory.ForPov(
-                success, "CounselEvent", 700, "ListenerPawn", "recipient");
-            AssertEqual("Counselor POV keeps initiator role", "initiator",
-                counselorPov.narrative.povRole);
-            AssertEqual("Listener POV keeps recipient role", "recipient",
-                listenerPov.narrative.povRole);
-            AssertEqual("both POVs keep the listener as the mechanical subject", "ListenerPawn",
-                counselorPov.narrative.subjectId);
-            AssertEqual("listener POV keeps the same mechanical subject", "ListenerPawn",
-                listenerPov.narrative.subjectId);
+            BeliefPolicyBuilder builder = BeliefPolicyBuilder.CreateDefault();
+            AssertEqual("fallback Counsel outcome list stays empty", 0, builder.counselEventRules.Count);
+            builder.counselEventRules.Add(successRule);
+            BeliefPolicySnapshot frozen = builder.Build();
+            builder.counselEventRules.Clear();
+            AssertEqual("snapshot deep-copies Counsel outcome rules", 1, frozen.counselEventRules.Count);
 
-            BeliefPolicySnapshot policy = VocabularyPolicy();
-            AssertEmpty("unrelated current doctrine leaves ordinary Counsel unchanged",
-                Resolve(
-                    Snapshot(Precept("UnrelatedTrees", "TreesIssue", "revere ancient trees", 2)),
-                    success,
-                    policy));
-            BeliefStanceResolution relevant = Resolve(
-                Snapshot(Precept(
-                    "VisibleCounselSupport", "SupportIssue", "successful counsel", 3)),
-                success,
-                policy);
-            AssertSelected("visible relevant doctrine may enrich Counsel", relevant,
-                "VisibleCounselSupport");
-            AssertTrue("optional Counsel stance still carries no fabricated mutation",
-                relevant.mutation == null && !relevant.currentBeliefFactsRelevant);
+            AssertTrue("missing Counsel override inherits explicit disabled conversion intent",
+                !CounselSettingsInheritance.Enabled(null, false, true));
+            AssertTrue("missing Counsel override inherits explicit enabled conversion intent",
+                CounselSettingsInheritance.Enabled(null, true, false));
+            AssertTrue("explicit Counsel override wins over legacy conversion intent",
+                !CounselSettingsInheritance.Enabled(false, true, true));
+            AssertTrue("no saved intent uses the Counsel XML default",
+                CounselSettingsInheritance.Enabled(null, null, true));
+            AssertTrue("default-equal Counsel choice is stored against opposite legacy intent",
+                CounselSettingsInheritance.ShouldStoreOverride(true, true, false));
+            AssertTrue("default-equal Counsel choice is redundant without legacy intent",
+                !CounselSettingsInheritance.ShouldStoreOverride(true, true, null));
+            AssertTrue("non-default Counsel choice is always stored",
+                CounselSettingsInheritance.ShouldStoreOverride(false, true, true));
         }
 
         private static void TestN3IIdeologyInterpretationProvider()

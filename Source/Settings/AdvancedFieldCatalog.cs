@@ -1609,6 +1609,7 @@ namespace PawnDiary
                     .StringList("instructions")
                     .Text("tone")
                     .StringList("tones")
+                    .StringList("matchOrdinalDefNames")
                     .StringList("matchDefNames")
                     .StringList("matchTokens")
                     .StringList("matchPrefixes")

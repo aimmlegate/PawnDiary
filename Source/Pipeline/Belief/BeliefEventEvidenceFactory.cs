@@ -57,36 +57,6 @@ namespace PawnDiary
             return result;
         }
 
-        /// <summary>
-        /// Builds exact Counsel evidence from already-visible PlayLog facts. Success proves mood relief
-        /// or a short boost but not which branch occurred; failure proves a mood penalty. Neither outcome
-        /// is an ideology mutation, so this row deliberately carries no certainty or conversion fields.
-        /// </summary>
-        public static BeliefEventEvidence ForCounsel(
-            string recipientPawnId,
-            int tick,
-            string interactionDefName,
-            string recipientLabel,
-            string interactionLabel,
-            bool succeeded)
-        {
-            BeliefEventEvidence result = ForEvent(
-                recipientPawnId,
-                tick,
-                BeliefMutationEventSourceTokens.Interaction,
-                interactionDefName,
-                BeliefMutationSubjectRoleTokens.Recipient,
-                recipientLabel,
-                CounselEventPolicy.GroupDefName);
-            result.narrative.facet = NarrativeFacetTokens.AmbientPressure;
-            result.narrative.phase = succeeded ? "counsel_succeeded" : "counsel_failed";
-            result.narrative.subjectKind = NarrativeSubjectKindTokens.Pawn;
-            result.narrative.subjectId = SafeId(recipientPawnId);
-            result.narrative.salience = NarrativeSalienceTokens.Meaningful;
-            AddField(result, "event_label", interactionLabel);
-            return result;
-        }
-
         public static BeliefEventEvidence ForEvent(
             string pawnId,
             int tick,
