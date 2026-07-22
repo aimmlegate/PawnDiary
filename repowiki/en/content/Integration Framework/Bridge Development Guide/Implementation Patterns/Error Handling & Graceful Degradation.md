@@ -1,7 +1,5 @@
 # Error Handling & Graceful Degradation
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryErrorReporter.cs](../../../../../../Source/Diagnostics/DiaryErrorReporter.cs)
 - [DiaryLogReportPatch.cs](../../../../../../Source/Diagnostics/DiaryLogReportPatch.cs)
 - [ErrorFingerprint.cs](../../../../../../Source/Diagnostics/Pure/ErrorFingerprint.cs)
@@ -29,8 +27,6 @@
 - [Personalities123GameComponent.cs](../../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/Personalities123GameComponent.cs)
 - [PowerfulAiBridgeGameComponent.cs](../../../../../../integrations/PawnDiary.PowerfulAiBridge/Source/PowerfulAiBridgeGameComponent.cs)
 - [RimTalkBridgeApi.cs](../../../../../../integrations/PawnDiary.RimTalkBridge/Source/PawnDiaryRimTalkBridgeApi.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

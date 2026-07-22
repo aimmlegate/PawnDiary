@@ -1,7 +1,5 @@
 # Variant Generation System
 
-<cite>
-**Referenced Files in This Document**
 - [PromptVariants.cs](../../../../../Source/Generation/PromptVariants.cs)
 - [HumorCues.cs](../../../../../Source/Generation/HumorCues.cs)
 - [DiaryHumorCueDefs.xml](../../../../../1.6/Defs/DiaryHumorCueDefs.xml)
@@ -15,8 +13,6 @@
 - [PromptTextSanitizer.cs](../../../../../Source/Pipeline/PromptTextSanitizer.cs)
 - [PromptTestSuite.cs](../../../../../Source/Core/DiaryGameComponent.PromptTestSuite.cs)
 - [PromptPreview.cs](../../../../../Source/Core/DiaryGameComponent.PromptPreview.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

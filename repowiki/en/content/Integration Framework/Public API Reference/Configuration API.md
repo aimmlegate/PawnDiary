@@ -1,7 +1,5 @@
 # Configuration API
 
-<cite>
-**Referenced Files in This Document**
 - [PawnDiarySettings.cs](../../../../../Source/Settings/PawnDiarySettings.cs)
 - [TuningOverrideStore.cs](../../../../../Source/Settings/TuningOverrideStore.cs)
 - [TuningOverrideMigration.cs](../../../../../Source/Settings/TuningOverrideMigration.cs)
@@ -29,8 +27,6 @@
 - [ExternalApiBudgetPolicy.cs](../../../../../Source/Pipeline/ExternalApiBudgetPolicy.cs)
 - [DiaryGameComponent.PublicApi.cs](../../../../../Source/Core/DiaryGameComponent.PublicApi.cs)
 - [DiaryGameComponent.PromptPreview.cs](../../../../../Source/Core/DiaryGameComponent.PromptPreview.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

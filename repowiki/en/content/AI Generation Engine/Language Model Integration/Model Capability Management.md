@@ -1,15 +1,11 @@
 # Model Capability Management
 
-<cite>
-**Referenced Files in This Document**
 - [ModelListClient.cs](../../../../../Source/Settings/ModelListClient.cs)
 - [ModelCapabilityCache.cs](../../../../../Source/Settings/ModelCapabilityCache.cs)
 - [ModelReasoningCapability.cs](../../../../../Source/Pipeline/ModelReasoningCapability.cs)
 - [LlmClient.cs](../../../../../Source/Generation/LlmClient.cs)
 - [ExternalLlmCompletionService.cs](../../../../../Source/Integration/ExternalLlmCompletionService.cs)
 - [ApiConnectionController.cs](../../../../../Source/Settings/ApiConnectionController.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

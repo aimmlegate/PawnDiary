@@ -1,7 +1,5 @@
 # Performance & Debugging
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryGameComponent.cs](../../../../../Source/Core/DiaryGameComponent.cs)
 - [DiaryGameComponent.Dispatch.cs](../../../../../Source/Core/DiaryGameComponent.Dispatch.cs)
 - [DiaryGameComponent.EventRetention.cs](../../../../../Source/Core/DiaryGameComponent.EventRetention.cs)
@@ -50,8 +48,6 @@
 - [RecentEventExpiry.cs](../../../../../Source/Capture/RecentEventExpiry.cs)
 - [GenericEventTypeDedup.cs](../../../../../Source/Capture/GenericEventTypeDedup.cs)
 - [DiarySaveNormalization.cs](../../../../../Source/Pipeline/DiarySaveNormalization.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,7 +1,5 @@
 # Event Catalog and Types
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryEventCatalog.cs](../../../../Source/Capture/Catalog/DiaryEventCatalog.cs)
 - [DiaryEventSpec.cs](../../../../Source/Capture/Catalog/DiaryEventSpec.cs)
 - [DiaryEventType.cs](../../../../Source/Capture/DiaryEventType.cs)
@@ -13,8 +11,6 @@
 - [ListenerRegistry.cs](../../../../Source/Pipeline/ListenerRegistry.cs)
 - [DiaryEventRepository.cs](../../../../Source/Core/DiaryEventRepository.cs)
 - [DiaryArchiveRepository.cs](../../../../Source/Core/DiaryArchiveRepository.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

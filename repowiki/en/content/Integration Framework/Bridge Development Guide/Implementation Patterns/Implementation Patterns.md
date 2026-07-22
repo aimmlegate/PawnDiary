@@ -1,7 +1,5 @@
 # Implementation Patterns
 
-<cite>
-**Referenced Files in This Document**
 - [CaptureCapabilities.cs](../../../../../../Source/Integration/CaptureCapabilities.cs)
 - [DiaryContextBundleSnapshot.cs](../../../../../../Source/Integration/DiaryContextBundleSnapshot.cs)
 - [DiaryContextSnapshot.cs](../../../../../../Source/Integration/DiaryContextSnapshot.cs)
@@ -40,8 +38,6 @@
 - [PersonaChattinessPolicyDef.cs](../../../../../../integrations/PawnDiary.RimTalkBridge/Source/PersonaChattinessPolicyDef.cs)
 - [ConversationAssessmentCoordinator.cs](../../../../../../integrations/PawnDiary.RimTalkBridge/Source/ConversationAssessmentCoordinator.cs)
 - [RecentDiaryEventCache.cs](../../../../../../integrations/PawnDiary.RimTalkBridge/Source/RecentDiaryEventCache.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

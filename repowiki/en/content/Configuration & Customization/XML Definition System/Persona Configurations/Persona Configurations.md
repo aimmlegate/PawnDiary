@@ -1,7 +1,5 @@
 # Persona Configurations
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryPersonaDef.cs](../../../../../../Source/Defs/DiaryPersonaDef.cs)
 - [DiaryHediffPersonaOverrideDef.cs](../../../../../../Source/Defs/DiaryHediffPersonaOverrideDef.cs)
 - [PersonaAffinity.cs](../../../../../../Source/Generation/PersonaAffinity.cs)
@@ -22,8 +20,6 @@
 - [PromptAssembler.cs](../../../../../../Source/Generation/PromptAssembler.cs)
 - [NarrativeContextBuilder.cs](../../../../../../Source/Generation/NarrativeContextBuilder.cs)
 - [DiaryResponsePostprocessor.cs](../../../../../../Source/Pipeline/DiaryResponsePostprocessor.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

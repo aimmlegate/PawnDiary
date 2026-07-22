@@ -1,7 +1,5 @@
 # Data Management Layer
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryEventRepository.cs](../../../../../Source/Core/DiaryEventRepository.cs)
 - [DiaryArchiveRepository.cs](../../../../../Source/Core/DiaryArchiveRepository.cs)
 - [DiaryGameComponent.cs](../../../../../Source/Core/DiaryGameComponent.cs)
@@ -17,8 +15,6 @@
 - [DiaryListText.cs](../../../../../Source/Pipeline/DiaryListText.cs)
 - [DiaryEntryStatsAccumulator.cs](../../../../../Source/Pipeline/DiaryEntryStatsAccumulator.cs)
 - [DiaryEntryTitleFilter.cs](../../../../../Source/Pipeline/DiaryEntryTitleFilter.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

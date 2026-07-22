@@ -1,7 +1,5 @@
 # Contribution Guidelines
 
-<cite>
-**Referenced Files in This Document**
 - [README.md](../../../../README.md)
 - [About/About.xml](../../../../About/About.xml)
 - [LoadFolders.xml](../../../../LoadFolders.xml)
@@ -12,8 +10,6 @@
 - [integrations/README.md](../../../../integrations/README.md)
 - [EXTERNAL_API.md](../../../../EXTERNAL_API.md)
 - [DOCUMENTATION.md](../../../../DOCUMENTATION.md)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Overview](#project-overview)

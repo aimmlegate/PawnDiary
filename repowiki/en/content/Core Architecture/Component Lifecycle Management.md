@@ -1,7 +1,5 @@
 # Component Lifecycle Management
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryGameComponent.cs](../../../../Source/Core/DiaryGameComponent.cs)
 - [DiaryGameComponent.EventFactory.cs](../../../../Source/Core/DiaryGameComponent.EventFactory.cs)
 - [DiaryGameComponent.Generation.cs](../../../../Source/Core/DiaryGameComponent.Generation.cs)
@@ -9,8 +7,6 @@
 - [DiaryModStartup.cs](../../../../Source/Patches/DiaryModStartup.cs)
 - [DiaryPatchRegistrar.cs](../../../../Source/Patches/DiaryPatchRegistrar.cs)
 - [PawnDiaryMod.cs](../../../../Source/Settings/PawnDiaryMod.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

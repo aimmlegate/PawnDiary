@@ -1,7 +1,5 @@
 # Getting Started
 
-<cite>
-**Referenced Files in This Document**
 - [About.xml](../../../About/About.xml)
 - [LoadFolders.xml](../../../LoadFolders.xml)
 - [README.md](../../../README.md)
@@ -18,8 +16,6 @@
 - [DiaryEntry.cs](../../../Source/Models/DiaryEntry.cs)
 - [DiaryArchiveRepository.cs](../../../Source/Core/DiaryArchiveRepository.cs)
 - [DiaryErrorReporter.cs](../../../Source/Diagnostics/DiaryErrorReporter.cs)
-</cite>
-
 ## Table of Contents
 1. Introduction
 2. Project Structure

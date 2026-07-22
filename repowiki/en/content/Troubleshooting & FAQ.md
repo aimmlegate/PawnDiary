@@ -1,7 +1,5 @@
 # Troubleshooting & FAQ
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryErrorReporter.cs](../../../Source/Diagnostics/DiaryErrorReporter.cs)
 - [DiaryLogReportPatch.cs](../../../Source/Diagnostics/DiaryLogReportPatch.cs)
 - [ErrorFingerprint.cs](../../../Source/Diagnostics/Pure/ErrorFingerprint.cs)
@@ -25,8 +23,6 @@
 - [ITab_Pawn_Diary.cs](../../../Source/UI/ITab_Pawn_Diary.cs)
 - [PawnDiaryDebugActions.cs](../../../Source/Dev/PawnDiaryDebugActions.cs)
 - [README.md](../../../README.md)
-</cite>
-
 ## Table of Contents
 1. Introduction
 2. Project Structure

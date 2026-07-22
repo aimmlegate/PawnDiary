@@ -1,7 +1,5 @@
 # API Reference
 
-<cite>
-**Referenced Files in This Document**
 - [PawnDiaryApi.cs](../../../../Source/Integration/PawnDiaryApi.cs)
 - [ExternalEventRequest.cs](../../../../Source/Integration/ExternalEventRequest.cs)
 - [ExternalDirectEntryRequest.cs](../../../../Source/Integration/ExternalDirectEntryRequest.cs)
@@ -34,8 +32,6 @@
 - [ExternalPsychotypeGenerators.cs](../../../../Source/Integration/ExternalPsychotypeGenerators.cs)
 - [PawnContextProviders.cs](../../../../Source/Integration/PawnContextProviders.cs)
 - [SubmitEventOutcome.cs](../../../../Source/Integration/SubmitEventOutcome.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

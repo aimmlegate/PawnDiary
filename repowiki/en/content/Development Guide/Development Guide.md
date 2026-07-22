@@ -1,7 +1,5 @@
 # Development Guide
 
-<cite>
-**Referenced Files in This Document**
 - [README.md](../../../../README.md)
 - [LoadFolders.xml](../../../../LoadFolders.xml)
 - [About/About.xml](../../../../About/About.xml)
@@ -21,8 +19,6 @@
 - [tests/PawnDiary.RimTest/PawnDiaryDefSmokeTests.cs](../../../../tests/PawnDiary.RimTest/PawnDiaryDefSmokeTests.cs)
 - [integrations/README.md](../../../../integrations/README.md)
 - [services/error-endpoint/README.md](../../../../services/error-endpoint/README.md)
-</cite>
-
 ## Update Summary
 **Changes Made**
 - Enhanced testing strategy documentation with improved fixture validation and associative memory system behavior

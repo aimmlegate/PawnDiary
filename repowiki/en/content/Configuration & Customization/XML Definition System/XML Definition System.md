@@ -1,7 +1,5 @@
 # XML Definition System
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryTuningDef.xml](../../../../../1.6/Defs/DiaryTuningDef.xml)
 - [DiaryPromptTemplateDefs.xml](../../../../../1.6/Defs/DiaryPromptTemplateDefs.xml)
 - [DiaryPersonaDefs.xml](../../../../../1.6/Defs/DiaryPersonaDefs.xml)
@@ -41,8 +39,6 @@
 - [DiaryPromptPlanner.cs](../../../../../Source/Pipeline/DiaryPromptPlanner.cs)
 - [PsychotypeResolutionPolicy.cs](../../../../../Source/Pipeline/PsychotypeResolutionPolicy.cs)
 - [EventWindowPolicy.cs](../../../../../Source/Pipeline/EventWindowPolicy.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

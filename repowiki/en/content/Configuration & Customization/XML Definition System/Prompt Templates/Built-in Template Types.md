@@ -1,7 +1,5 @@
 # Built-in Template Types
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryPromptTemplateDefs.xml](../../../../../../1.6/Defs/DiaryPromptTemplateDefs.xml)
 - [DiaryPromptDef.cs](../../../../../../Source/Defs/DiaryPromptDef.cs)
 - [DiaryPromptBuilder.cs](../../../../../../Source/Generation/DiaryPromptBuilder.cs)
@@ -10,8 +8,6 @@
 - SoloTemplateFixtureTests.cs
 - PairTemplateFixtureTests.cs
 - ReflectionTemplateFixtureTests.cs
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

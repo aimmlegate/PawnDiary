@@ -1,7 +1,5 @@
 # Quality Control Mechanisms
 
-<cite>
-**Referenced Files in This Document**
 - [MoodImpact.cs](../../../../Source/Generation/MoodImpact.cs)
 - [MoodImpactClassifier.cs](../../../../Source/Generation/MoodImpactClassifier.cs)
 - [PromptTextSanitizer.cs](../../../../Source/Pipeline/PromptTextSanitizer.cs)
@@ -16,8 +14,6 @@
 - [DiaryEntryTitleFilter.cs](../../../../Source/Pipeline/DiaryEntryTitleFilter.cs)
 - [DiaryTextDecorations.cs](../../../../Source/Pipeline/DiaryTextDecorations.cs)
 - [DiaryRichTextDecorators.cs](../../../../Source/Pipeline/DiaryRichTextDecorators.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

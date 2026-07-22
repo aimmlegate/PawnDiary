@@ -1,7 +1,5 @@
 # Royal Progression & Milestones
 
-<cite>
-**Referenced Files in This Document**
 - [PersonaMilestonePolicy.cs](../../../../../Source/Pipeline/Royalty/PersonaMilestonePolicy.cs)
 - [RoyalAscentPolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalAscentPolicy.cs)
 - [RoyalTitleObservationPolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalTitleObservationPolicy.cs)
@@ -19,8 +17,6 @@
 - [DiaryEventType.cs](../../../../../Source/Capture/DiaryEventType.cs)
 - [DiaryEventRepository.cs](../../../../../Source/Core/DiaryEventRepository.cs)
 - [DiaryEntry.cs](../../../../../Source/Models/DiaryEntry.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

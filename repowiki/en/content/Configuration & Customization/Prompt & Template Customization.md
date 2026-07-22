@@ -1,7 +1,5 @@
 # Prompt & Template Customization
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryPromptDef.cs](../../../../Source/Defs/DiaryPromptDef.cs)
 - [DiaryPromptTemplateDefs.xml](../../../../1.6/Defs/DiaryPromptTemplateDefs.xml)
 - [PromptAssembler.cs](../../../../Source/Generation/PromptAssembler.cs)
@@ -16,8 +14,6 @@
 - [LlmRequestJsonBuilder.cs](../../../../Source/Pipeline/LlmRequestJsonBuilder.cs)
 - [PromptSettingsMenuPolicy.cs](../../../../Source/Settings/PromptSettingsMenuPolicy.cs)
 - [PawnDiaryMod.PromptStudio.cs](../../../../Source/Settings/PawnDiaryMod.PromptStudio.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

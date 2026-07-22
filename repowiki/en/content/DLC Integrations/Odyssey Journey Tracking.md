@@ -1,7 +1,5 @@
 # Odyssey Journey Tracking
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryGameComponent.Odyssey.cs](../../../../Source/Core/DiaryGameComponent.Odyssey.cs)
 - [GravshipJourneyEventData.cs](../../../../Source/Capture/Events/GravshipJourneyEventData.cs)
 - [GravshipJourneyEventSpec.cs](../../../../Source/Capture/Specs/GravshipJourneyEventSpec.cs)
@@ -16,8 +14,6 @@
 - [OdysseyContextFormatter.cs](../../../../Source/Pipeline/OdysseyContextFormatter.cs)
 - [OdysseyJourneyState.cs](../../../../Source/Models/OdysseyJourneyState.cs)
 - [DiaryOdysseyPolicyDefs.xml](../../../../1.6/Defs/DiaryOdysseyPolicyDefs.xml)
-</cite>
-
 ## Update Summary
 **Changes Made**
 - Enhanced narrative continuity with environmental narrative providers for improved storytelling consistency

@@ -1,7 +1,5 @@
 # Template Syntax & Variables
 
-<cite>
-**Referenced Files in This Document**
 - [PromptTextTemplate.cs](../../../../../../Source/Util/PromptTextTemplate.cs)
 - [DiaryPromptBuilder.cs](../../../../../../Source/Generation/DiaryPromptBuilder.cs)
 - [DiaryContextBuilder.cs](../../../../../../Source/Generation/DiaryContextBuilder.cs)
@@ -19,8 +17,6 @@
 - [DiaryEventRepository.cs](../../../../../../Source/Core/DiaryEventRepository.cs)
 - [DiaryGameComponent.PromptPreview.cs](../../../../../../Source/Core/DiaryGameComponent.PromptPreview.cs)
 - [PawnDiaryMod.PromptStudio.cs](../../../../../../Source/Settings/PawnDiaryMod.PromptStudio.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

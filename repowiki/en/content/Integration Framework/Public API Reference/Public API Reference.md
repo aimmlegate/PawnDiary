@@ -1,7 +1,5 @@
 # Public API Reference
 
-<cite>
-**Referenced Files in This Document**
 - [PawnDiaryApi.cs](../../../../../Source/Integration/PawnDiaryApi.cs)
 - [ExternalEventRequest.cs](../../../../../Source/Integration/ExternalEventRequest.cs)
 - [ExternalDirectEntryRequest.cs](../../../../../Source/Integration/ExternalDirectEntryRequest.cs)
@@ -41,8 +39,6 @@
 - [ApiRequestAuth.cs](../../../../../Source/Settings/ApiRequestAuth.cs)
 - [IntegrationApiSettings.cs](../../../../../Source/Settings/IntegrationApiSettings.cs)
 - [ExternalSourceLoadOrder.cs](../../../../../Source/Util/ExternalSourceLoadOrder.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

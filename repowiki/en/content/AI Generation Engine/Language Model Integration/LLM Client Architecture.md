@@ -1,15 +1,11 @@
 # LLM Client Architecture
 
-<cite>
-**Referenced Files in This Document**
 - [LlmClient.cs](../../../../../Source/Generation/LlmClient.cs)
 - [LlmResponseParser.cs](../../../../../Source/Generation/LlmResponseParser.cs)
 - [LlmRequestJsonBuilder.cs](../../../../../Source/Pipeline/LlmRequestJsonBuilder.cs)
 - [ExternalLlmCompletionService.cs](../../../../../Source/Integration/ExternalLlmCompletionService.cs)
 - [ApiConnectionController.cs](../../../../../Source/Settings/ApiConnectionController.cs)
 - [ModelListClient.cs](../../../../../Source/Settings/ModelListClient.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

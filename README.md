@@ -9,23 +9,11 @@ that pawn's point of view.
 Pawn Diary is for storytelling only. It does not add needs, jobs, hediffs, memories, weapons,
 buildings, or gameplay pressure.
 
-## What It Adds
+## Repository Wiki
 
-- A **Diary** tab for eligible colonists, including colonist corpses.
-- First-person pages for social interactions, fights, mental breaks, raids, quests, rituals,
-  abilities, inspirations, thoughts, mood events, medicine, health changes, work, crafting,
-  arrivals, deaths, and end-of-day reflections.
-- Paired points of view for two-pawn events, so both pawns can write about the same moment
-  differently.
-- Neutral arrival and death pages, giving a pawn's diary a beginning and an end.
-- Optional generated entry titles.
-- Display-only atmospheric formatting for some intense or strange entries.
-- Writing-style presets that can be tuned in the mod settings.
-- Per-pawn **psychotypes** — an independent "outlook" layer (what a pawn notices, values, and fears)
-  that colors their diary alongside the writing style, rolled from their skill passions. Children keep
-  a diary in a naive voice, and both layers re-roll when a pawn grows up. Edited from the same per-pawn
-  editor as the writing style; toggle it off in settings if you prefer.
-- Prompt Studio for editing shared and event-specific prompt text.
+See the [Pawn Diary Repository Wiki](repowiki/README.md) for the detailed documentation, including
+the architecture, event system, AI generation pipeline, configuration, integrations, DLC behavior,
+and development guide.
 
 ## Model And API Support
 

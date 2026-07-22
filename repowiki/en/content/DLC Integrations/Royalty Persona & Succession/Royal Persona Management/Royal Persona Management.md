@@ -1,7 +1,5 @@
 # Royal Persona Management
 
-<cite>
-**Referenced Files in This Document**
 - [PersonaLifecyclePolicy.cs](../../../../../../Source/Pipeline/Royalty/PersonaLifecyclePolicy.cs)
 - [PersonaTraitPolicy.cs](../../../../../../Source/Pipeline/Royalty/PersonaTraitPolicy.cs)
 - [PersonaMilestoneContextFormatter.cs](../../../../../../Source/Pipeline/Royalty/PersonaMilestoneContextFormatter.cs)
@@ -33,8 +31,6 @@
 - [PersonaThoughtOwnershipPolicy.cs](../../../../../../Source/Pipeline/Royalty/PersonaThoughtOwnershipPolicy.cs)
 - [RoyalMutationOwnershipPolicy.cs](../../../../../../Source/Pipeline/Royalty/RoyalMutationOwnershipPolicy.cs)
 - [RoyalTitleThoughtOwnershipPolicy.cs](../../../../../../Source/Pipeline/Royalty/RoyalTitleThoughtOwnershipPolicy.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

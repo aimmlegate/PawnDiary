@@ -1,7 +1,5 @@
 # Template Management
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryPromptBuilder.cs](../../../../../Source/Generation/DiaryPromptBuilder.cs)
 - [PromptTextTemplate.cs](../../../../../Source/Util/PromptTextTemplate.cs)
 - [DiaryPromptTemplateDefs.xml](../../../../../1.6/Defs/DiaryPromptTemplateDefs.xml)
@@ -13,8 +11,6 @@
 - [PromptSettingsMenuPolicy.cs](../../../../../Source/Settings/PromptSettingsMenuPolicy.cs)
 - [PawnDiaryMod.PromptStudio.cs](../../../../../Source/Settings/PawnDiaryMod.PromptStudio.cs)
 - [DiaryErrorReporter.cs](../../../../../Source/Diagnostics/DiaryErrorReporter.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

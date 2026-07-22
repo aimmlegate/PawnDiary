@@ -1,7 +1,5 @@
 # Event Management API
 
-<cite>
-**Referenced Files in This Document**
 - [ExternalEventRequest.cs](../../../../../Source/Integration/ExternalEventRequest.cs)
 - [SubmitEventOutcome.cs](../../../../../Source/Integration/SubmitEventOutcome.cs)
 - [DiaryEventSubmissionResult.cs](../../../../../Source/Integration/DiaryEventSubmissionResult.cs)
@@ -25,8 +23,6 @@
 - [ExternalApiBudgetPolicy.cs](../../../../../Source/Pipeline/ExternalApiBudgetPolicy.cs)
 - [ExternalEventRequestText.cs](../../../../../Source/Pipeline/ExternalEventRequestText.cs)
 - [ExternalOverrideArbitration.cs](../../../../../Source/Pipeline/ExternalOverrideArbitration.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

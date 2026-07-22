@@ -1,7 +1,5 @@
 # Response Processing Pipeline
 
-<cite>
-**Referenced Files in This Document**
 - [LlmResponseParser.cs](../../../../../Source/Generation/LlmResponseParser.cs)
 - [DiaryResponsePostprocessor.cs](../../../../../Source/Pipeline/DiaryResponsePostprocessor.cs)
 - [PromptTextSanitizer.cs](../../../../../Source/Pipeline/PromptTextSanitizer.cs)
@@ -14,8 +12,6 @@
 - [DiaryParagraphReflow.cs](../../../../../Source/Pipeline/DiaryParagraphReflow.cs)
 - [LlmClient.cs](../../../../../Source/Generation/LlmClient.cs)
 - [MiniJson.cs](../../../../../Source/Util/MiniJson.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

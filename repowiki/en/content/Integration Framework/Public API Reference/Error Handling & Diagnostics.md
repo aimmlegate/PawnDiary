@@ -1,7 +1,5 @@
 # Error Handling & Diagnostics
 
-<cite>
-**Referenced Files in This Document**
 - [SubmitEventOutcome.cs](../../../../../Source/Integration/SubmitEventOutcome.cs)
 - [DiaryErrorReporter.cs](../../../../../Source/Diagnostics/DiaryErrorReporter.cs)
 - [DiaryLogReportPatch.cs](../../../../../Source/Diagnostics/DiaryLogReportPatch.cs)
@@ -57,8 +55,6 @@
 - [PsychotypeText.cs](../../../../../Source/Pipeline/PsychotypeText.cs)
 - [PsychotypeTraitAffinities.cs](../../../../../Source/Pipeline/PsychotypeTraitAffinities.cs)
 - [WritingStyleResolutionPolicy.cs](../../../../../Source/Pipeline/WritingStyleResolutionPolicy.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,7 +1,5 @@
 # Prompt Construction System
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryPromptBuilder.cs](../../../../../Source/Generation/DiaryPromptBuilder.cs)
 - [PromptAssembler.cs](../../../../../Source/Generation/PromptAssembler.cs)
 - [PromptTextTemplate.cs](../../../../../Source/Util/PromptTextTemplate.cs)
@@ -13,8 +11,6 @@
 - [DiaryPromptTemplateDefs.xml](../../../../../1.6/Defs/DiaryPromptTemplateDefs.xml)
 - [DiaryPromptEnchantmentDefs.xml](../../../../../1.6/Defs/DiaryPromptEnchantmentDefs.xml)
 - [DiaryHumorCueDefs.xml](../../../../../1.6/Defs/DiaryHumorCueDefs.xml)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

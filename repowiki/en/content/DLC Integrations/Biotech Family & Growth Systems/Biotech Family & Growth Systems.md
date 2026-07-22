@@ -1,7 +1,5 @@
 # Biotech Family & Growth Systems
 
-<cite>
-**Referenced Files in This Document**
 - [FamilyArcPolicy.cs](../../../../../Source/Capture/Biotech/FamilyArcPolicy.cs)
 - [BirthRecordPolicy.cs](../../../../../Source/Capture/Biotech/BirthRecordPolicy.cs)
 - [GrowthMomentPolicy.cs](../../../../../Source/Capture/Biotech/GrowthMomentPolicy.cs)
@@ -18,8 +16,6 @@
 - [GeneIdentityObservationState.cs](../../../../../Source/Models/GeneIdentityObservationState.cs)
 - [DiaryBiotechPatches.cs](../../../../../Source/Patches/DiaryBiotechPatches.cs)
 - [DiaryBiotechPolicyDefs.xml](../../../../../1.6/Defs/DiaryBiotechPolicyDefs.xml)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

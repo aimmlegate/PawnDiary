@@ -1,7 +1,5 @@
 # Data Models & Types
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryEntry.cs](../../../../Source/Models/DiaryEntry.cs)
 - [DiaryEvent.cs](../../../../Source/Models/DiaryEvent.cs)
 - [ArchivedDiaryEntry.cs](../../../../Source/Models/ArchivedDiaryEntry.cs)
@@ -51,8 +49,6 @@
 - [DiaryEventType.cs](../../../../Source/Capture/DiaryEventType.cs)
 - [DiarySignal.cs](../../../../Source/Ingestion/DiarySignal.cs)
 - [DiaryEvents.cs](../../../../Source/Ingestion/DiaryEvents.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

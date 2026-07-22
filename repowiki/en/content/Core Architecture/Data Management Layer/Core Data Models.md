@@ -3,16 +3,12 @@
 <docs>
 # Core Data Models
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryEvent.cs](../../../../../Source/Models/DiaryEvent.cs)
 - [DiaryEntry.cs](../../../../../Source/Models/DiaryEntry.cs)
 - [PawnDiaryRecord.cs](../../../../../Source/Models/PawnDiaryRecord.cs)
 - [DiaryRenderToken.cs](../../../../../Source/Models/DiaryRenderToken.cs)
 - [ArchivedDiaryEntry.cs](../../../../../Source/Models/ArchivedDiaryEntry.cs)
 - [MemoryFragment.cs](../../../../../Source/Models/MemoryFragment.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,8 +1,5 @@
 # Pawn Diary Repository Wiki
 
-This is the committed, GitHub-readable repository wiki for Pawn Diary. It preserves the page
-hierarchy produced by the original `.qoder` export under [`en/content`](en/content/).
-
 ## Start here
 
 - [Getting Started](en/content/Getting%20Started.md) — installation, configuration, and the main
@@ -21,15 +18,3 @@ hierarchy produced by the original `.qoder` export under [`en/content`](en/conte
 - [Development Guide](en/content/Development%20Guide/Development%20Guide.md) — setup, testing, and
   contribution workflow.
 - [Troubleshooting & FAQ](en/content/Troubleshooting%20%26%20FAQ.md) — common problems and fixes.
-
-## Snapshot status
-
-The pages were manually migrated from the local `.qoder` export on 2026-07-23. The source export
-was generated on 2026-07-21, so this is a checked-in documentation snapshot, not a live generated
-view. New behavior and structure changes must be reflected here manually; see the
-[`repo-wiki-maintenance` skill](../skills/repo-wiki-maintenance/SKILL.md) for the maintenance
-workflow.
-
-Generated `file://` citations were converted to repository-relative links so GitHub can open source
-files directly. The original page and directory names are intentionally retained to make future
-manual refreshes diffable.

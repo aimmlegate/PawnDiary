@@ -1,7 +1,5 @@
 # Affinity & Relationship System
 
-<cite>
-**Referenced Files in This Document**
 - [PersonaAffinity.cs](../../../../../../Source/Generation/PersonaAffinity.cs)
 - [PsychotypeTraitAffinities.cs](../../../../../../Source/Pipeline/PsychotypeTraitAffinities.cs)
 - [DiaryPromptDef.cs](../../../../../../Source/Defs/DiaryPromptDef.cs)
@@ -34,8 +32,6 @@
 - DiaryEventWindows_Hospitality.xml
 - DiaryEventWindows_VEE.xml
 - DiaryObservedConditions_VEE.xml
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

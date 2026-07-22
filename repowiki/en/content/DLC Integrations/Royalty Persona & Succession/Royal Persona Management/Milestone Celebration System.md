@@ -1,7 +1,5 @@
 # Milestone Celebration System
 
-<cite>
-**Referenced Files in This Document**
 - [PersonaMilestoneContextFormatter.cs](../../../../../../Source/Pipeline/Royalty/PersonaMilestoneContextFormatter.cs)
 - [PersonaMilestonePolicy.cs](../../../../../../Source/Pipeline/Royalty/PersonaMilestonePolicy.cs)
 - [RoyalMutationContextFormatter.cs](../../../../../../Source/Pipeline/Royalty/RoyalMutationContextFormatter.cs)
@@ -12,8 +10,6 @@
 - [DiaryGameComponent.RoyaltyProgression.cs](../../../../../../Source/Core/DiaryGameComponent.RoyaltyProgression.cs)
 - DiaryEventSpec.cs
 - [DiaryEventCatalog.cs](../../../../../../Source/Capture/Catalog/DiaryEventCatalog.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

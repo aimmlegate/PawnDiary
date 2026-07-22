@@ -1,7 +1,5 @@
 # Persona Traits & Attributes
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryPersonaDefs.xml](../../../../../../1.6/Defs/DiaryPersonaDefs.xml)
 - [DiaryPsychotypeTraitPolicyDefs.xml](../../../../../../1.6/Defs/DiaryPsychotypeTraitPolicyDefs.xml)
 - [DiaryPromptDef.xml](../../../../../../1.6/Defs/DiaryPromptDef.xml)
@@ -21,8 +19,6 @@
 - [EnneagramSync.cs](../../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/EnneagramSync.cs)
 - [PawnDiaryMod.PersonaStudio.cs](../../../../../../Source/Settings/PawnDiaryMod.PersonaStudio.cs)
 - [PromptTestSuite.cs](../../../../../../Source/Core/DiaryGameComponent.PromptTestSuite.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

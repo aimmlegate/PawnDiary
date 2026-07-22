@@ -1,7 +1,5 @@
 # Response Postprocessor
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryResponsePostprocessor.cs](../../../../../Source/Pipeline/DiaryResponsePostprocessor.cs)
 - [PromptTextSanitizer.cs](../../../../../Source/Pipeline/PromptTextSanitizer.cs)
 - [DiaryParagraphReflow.cs](../../../../../Source/Pipeline/DiaryParagraphReflow.cs)
@@ -16,8 +14,6 @@
 - [DiaryEntry.cs](../../../../../Source/Models/DiaryEntry.cs)
 - [DiaryGameComponent.Generation.cs](../../../../../Source/Core/DiaryGameComponent.Generation.cs)
 - [DiaryGameComponent.Dispatch.cs](../../../../../Source/Core/DiaryGameComponent.Dispatch.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

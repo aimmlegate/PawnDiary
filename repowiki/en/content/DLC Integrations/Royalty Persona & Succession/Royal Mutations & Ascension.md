@@ -1,7 +1,5 @@
 # Royal Mutations & Ascension
 
-<cite>
-**Referenced Files in This Document**
 - [RoyalMutationContextFormatter.cs](../../../../../Source/Pipeline/Royalty/RoyalMutationContextFormatter.cs)
 - [RoyalMutationOwnershipPolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalMutationOwnershipPolicy.cs)
 - [RoyalMutationPageSelectionPolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalMutationPageSelectionPolicy.cs)
@@ -15,8 +13,6 @@
 - [RitualEventData.cs](../../../../../Source/Capture/Events/RitualEventData.cs)
 - [DiaryEventWindowDefs.xml](../../../../../1.6/Defs/DiaryEventWindowDefs.xml)
 - [DiaryPromptTemplateDefs.xml](../../../../../1.6/Defs/DiaryPromptTemplateDefs.xml)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

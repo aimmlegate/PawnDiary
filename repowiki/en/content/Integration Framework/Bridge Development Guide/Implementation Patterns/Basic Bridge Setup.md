@@ -1,7 +1,5 @@
 # Basic Bridge Setup
 
-<cite>
-**Referenced Files in This Document**
 - [PawnDiaryGameComponent.cs](../../../../../../Source/Core/DiaryGameComponent.cs)
 - [DiaryModStartup.cs](../../../../../../Source/Patches/DiaryModStartup.cs)
 - [ExampleAdapterGameComponent.cs](../../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExampleAdapterGameComponent.cs)
@@ -10,8 +8,6 @@
 - [CaptureCapabilities.cs](../../../../../../Source/Integration/CaptureCapabilities.cs)
 - [CaptureCapabilityRegistry.cs](../../../../../../Source/Pipeline/CaptureCapabilityRegistry.cs)
 - [About.xml](../../../../../../About/About.xml)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,7 +1,5 @@
 # Royalty Persona & Succession
 
-<cite>
-**Referenced Files in This Document**
 - [RoyalAscentPolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalAscentPolicy.cs)
 - [RoyalMutationContextFormatter.cs](../../../../../Source/Pipeline/Royalty/RoyalMutationContextFormatter.cs)
 - [RoyalSuccessionPolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalSuccessionPolicy.cs)
@@ -14,8 +12,6 @@
 - [DiaryGameComponent.RoyaltyPermits.cs](../../../../../Source/Core/DiaryGameComponent.RoyaltyPermits.cs)
 - [DiaryGameComponent.RoyaltyProgression.cs](../../../../../Source/Core/DiaryGameComponent.RoyaltyProgression.cs)
 - [DiaryGameComponent.RoyaltySuccession.cs](../../../../../Source/Core/DiaryGameComponent.RoyaltySuccession.cs)
-</cite>
-
 ## Update Summary
 **Changes Made**
 - Enhanced royal permit handling with improved state management and continuity tracking

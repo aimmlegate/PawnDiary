@@ -1,7 +1,5 @@
 # Bridge Development Guide
 
-<cite>
-**Referenced Files in This Document**
 - [PawnDiaryApi.cs](../../../../../Source/Integration/PawnDiaryApi.cs)
 - [CaptureContext.cs](../../../../../Source/Capture/CaptureContext.cs)
 - [CaptureCapabilityRegistry.cs](../../../../../Source/Pipeline/CaptureCapabilityRegistry.cs)
@@ -17,8 +15,6 @@
 - [ListenerRegistry.cs](../../../../../Source/Pipeline/ListenerRegistry.cs)
 - [ExternalDirectEntryRequest.cs](../../../../../Source/Integration/ExternalDirectEntryRequest.cs)
 - [ExternalPromptEntryRequest.cs](../../../../../Source/Integration/ExternalPromptEntryRequest.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

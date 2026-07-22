@@ -1,7 +1,5 @@
 # AI Generation Engine
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryGameComponent.Generation.cs](../../../../Source/Core/DiaryGameComponent.Generation.cs)
 - [DiaryGameComponent.GenerationDispatch.cs](../../../../Source/Core/DiaryGameComponent.GenerationDispatch.cs)
 - [PromptAssembler.cs](../../../../Source/Generation/PromptAssembler.cs)
@@ -24,8 +22,6 @@
 - [DiaryPromptPlanner.cs](../../../../Source/Pipeline/DiaryPromptPlanner.cs)
 - [DiaryContextBuilder.cs](../../../../Source/Generation/DiaryContextBuilder.cs)
 - [NarrativeContextBuilder.cs](../../../../Source/Generation/NarrativeContextBuilder.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

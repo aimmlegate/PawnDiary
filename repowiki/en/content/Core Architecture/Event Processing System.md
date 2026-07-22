@@ -1,7 +1,5 @@
 # Event Processing System
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryGameComponent.cs](../../../../Source/Core/DiaryGameComponent.cs)
 - [DiaryEventSignalPatches.cs](../../../../Source/Patches/DiaryEventSignalPatches.cs)
 - [DiaryPatchRegistrar.cs](../../../../Source/Patches/DiaryPatchRegistrar.cs)
@@ -61,8 +59,6 @@
 - [DiaryGameComponent.Work.cs](../../../../Source/Core/DiaryGameComponent.Work.cs)
 - [DiaryErrorReporter.cs](../../../../Source/Diagnostics/DiaryErrorReporter.cs)
 - [DiaryLogReportPatch.cs](../../../../Source/Diagnostics/DiaryLogReportPatch.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

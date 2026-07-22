@@ -1,7 +1,5 @@
 # Succession & Title Inheritance
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryGameComponent.RoyaltySuccession.cs](../../../../../Source/Core/DiaryGameComponent.RoyaltySuccession.cs)
 - [RoyalSuccessionPolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalSuccessionPolicy.cs)
 - [RoyalSuccessionContextFormatter.cs](../../../../../Source/Pipeline/Royalty/RoyalSuccessionContextFormatter.cs)
@@ -21,8 +19,6 @@
 - [DiaryRoyaltyPatches.cs](../../../../../Source/Patches/DiaryRoyaltyPatches.cs)
 - [DiaryRoyaltyPolicyDefs.xml](../../../../../1.6/Defs/DiaryRoyaltyPolicyDefs.xml)
 - [PawnDiary.DiaryRoyaltyPolicyDef](../../../../../Languages/English/DefInjected/PawnDiary.DiaryRoyaltyPolicyDef/DiaryRoyaltyPolicyDefs.xml)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

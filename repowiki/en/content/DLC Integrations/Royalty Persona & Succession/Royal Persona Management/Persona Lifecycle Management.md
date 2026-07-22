@@ -1,7 +1,5 @@
 # Persona Lifecycle Management
 
-<cite>
-**Referenced Files in This Document**
 - [PersonaLifecyclePolicy.cs](../../../../../../Source/Pipeline/Royalty/PersonaLifecyclePolicy.cs)
 - [RoyalSuccessionPolicy.cs](../../../../../../Source/Pipeline/Royalty/RoyalSuccessionPolicy.cs)
 - [RoyalTitleTransitionPolicy.cs](../../../../../../Source/Pipeline/Royalty/RoyalTitleTransitionPolicy.cs)
@@ -17,8 +15,6 @@
 - [RoyalMutationCorrelation.cs](../../../../../../Source/Generation/RoyalMutationCorrelation.cs)
 - [DiaryPersonaDef.cs](../../../../../../Source/Defs/DiaryPersonaDef.cs)
 - [DiaryRoyaltyPolicyDef.cs](../../../../../../Source/Defs/DiaryRoyaltyPolicyDef.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,7 +1,5 @@
 # Authentication & Security
 
-<cite>
-**Referenced Files in This Document**
 - [ApiRequestAuth.cs](../../../../Source/Settings/ApiRequestAuth.cs)
 - [IntegrationApiSettings.cs](../../../../Source/Settings/IntegrationApiSettings.cs)
 - [ExternalApiBudgetPolicy.cs](../../../../Source/Pipeline/ExternalApiBudgetPolicy.cs)
@@ -14,8 +12,6 @@
 - [EndpointUtility.cs](../../../../Source/Settings/EndpointUtility.cs)
 - [Diagnostics/DiaryErrorReporter.cs](../../../../Source/Diagnostics/DiaryErrorReporter.cs)
 - [Diagnostics/Pure/ErrorScrub.cs](../../../../Source/Diagnostics/Pure/ErrorScrub.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

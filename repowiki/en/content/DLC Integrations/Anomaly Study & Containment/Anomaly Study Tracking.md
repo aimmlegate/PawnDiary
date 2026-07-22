@@ -1,7 +1,5 @@
 # Anomaly Study Tracking
 
-<cite>
-**Referenced Files in This Document**
 - [AnomalyStudyPolicy.cs](../../../../../Source/Capture/Policies/AnomalyStudyPolicy.cs)
 - [AnomalyContracts.cs](../../../../../Source/Capture/Policies/AnomalyContracts.cs)
 - [DlcContext.Anomaly.cs](../../../../../Source/Generation/DlcContext.Anomaly.cs)
@@ -14,8 +12,6 @@
 - [AnomalyRecentStudyCache.cs](../../../../../Source/Generation/AnomalyRecentStudyCache.cs)
 - [AnomalyStudySuppressionCache.cs](../../../../../Source/Generation/AnomalyStudySuppressionCache.cs)
 - [AnomalyTransientState.cs](../../../../../Source/Generation/AnomalyTransientState.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

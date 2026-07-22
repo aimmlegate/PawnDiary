@@ -1,7 +1,5 @@
 # UI Personalization Options
 
-<cite>
-**Referenced Files in This Document**
 - [ITab_Pawn_Diary.cs](../../../../Source/UI/ITab_Pawn_Diary.cs)
 - [ITab_Pawn_Diary.Controls.cs](../../../../Source/UI/ITab_Pawn_Diary.Controls.cs)
 - [ITab_Pawn_Diary.EntryCards.cs](../../../../Source/UI/ITab_Pawn_Diary.EntryCards.cs)
@@ -35,8 +33,6 @@
 - [PawnDiary.xml](../../../../Languages/English/Keyed/PawnDiary.xml)
 - [PawnDiary_Hospitality.xml](../../../../Languages/English/Keyed/PawnDiary_Hospitality.xml)
 - [PawnDiary_VEE.xml](../../../../Languages/English/Keyed/PawnDiary_VEE.xml)
-</cite>
-
 ## Update Summary
 **Changes Made**
 - Enhanced Diary Tab Interface section to document CoreUI integration and modern iconography

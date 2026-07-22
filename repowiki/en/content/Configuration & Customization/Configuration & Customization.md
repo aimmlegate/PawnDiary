@@ -1,7 +1,5 @@
 # Configuration & Customization
 
-<cite>
-**Referenced Files in This Document**
 - [PawnDiarySettings.cs](../../../../Source/Settings/PawnDiarySettings.cs)
 - [PawnDiaryMod.cs](../../../../Source/Settings/PawnDiaryMod.cs)
 - [TuningOverrideStore.cs](../../../../Source/Settings/TuningOverrideStore.cs)
@@ -72,8 +70,6 @@
 - [PawnDiary.xml](../../../../Languages/English/Keyed/PawnDiary.xml)
 - [PawnDiary_Hospitality.xml](../../../../Languages/English/Keyed/PawnDiary_Hospitality.xml)
 - [PawnDiary_VEE.xml](../../../../Languages/English/Keyed/PawnDiary_VEE.xml)
-</cite>
-
 ## Update Summary
 **Changes Made**
 - Added comprehensive documentation for the new anti-repetition system tuning options

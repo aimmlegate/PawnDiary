@@ -1,7 +1,5 @@
 # Gene Identity & Genetic Modification Tracking
 
-<cite>
-**Referenced Files in This Document**
 - [GeneIdentityObservationPolicy.cs](../../../../../Source/Capture/Biotech/GeneIdentityObservationPolicy.cs)
 - [GeneIdentityTransitionPolicy.cs](../../../../../Source/Capture/Biotech/GeneIdentityTransitionPolicy.cs)
 - [GeneSaliencePolicy.cs](../../../../../Source/Capture/Biotech/GeneSaliencePolicy.cs)
@@ -21,8 +19,6 @@
 - [DiaryPipelineContracts.cs](../../../../../Source/Pipeline/DiaryPipelineContracts.cs)
 - [DiaryTuningDef.cs](../../../../../Source/Defs/DiaryTuningDef.cs)
 - [PawnDiarySettings.cs](../../../../../Source/Settings/PawnDiarySettings.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

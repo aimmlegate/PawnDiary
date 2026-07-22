@@ -1,7 +1,5 @@
 # Birth Record & Lineage Tracking
 
-<cite>
-**Referenced Files in This Document**
 - [BirthRecordPolicy.cs](../../../../../Source/Capture/Biotech/BirthRecordPolicy.cs)
 - [BirthCorrelationPolicy.cs](../../../../../Source/Capture/Biotech/BirthCorrelationPolicy.cs)
 - [BirthOwnershipPolicy.cs](../../../../../Source/Capture/Biotech/BirthOwnershipPolicy.cs)
@@ -17,8 +15,6 @@
 - [BiotechGeneMutationCorrelation.cs](../../../../../Source/Generation/BiotechGeneMutationCorrelation.cs)
 - [FamilyBirthEventSpec.cs](../../../../../Source/Capture/Specs/FamilyBirthEventSpec.cs)
 - [DiaryBiotechPolicyDef.cs](../../../../../Source/Defs/DiaryBiotechPolicyDef.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

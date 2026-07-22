@@ -1,7 +1,5 @@
 # Provider Abstraction Layer
 
-<cite>
-**Referenced Files in This Document**
 - [ApiConnectionController.cs](../../../../../Source/Settings/ApiConnectionController.cs)
 - [LlmClient.cs](../../../../../Source/Generation/LlmClient.cs)
 - [LlmRequestJsonBuilder.cs](../../../../../Source/Pipeline/LlmRequestJsonBuilder.cs)
@@ -10,8 +8,6 @@
 - [EndpointUtility.cs](../../../../../Source/Settings/EndpointUtility.cs)
 - [ModelCapabilityCache.cs](../../../../../Source/Settings/ModelCapabilityCache.cs)
 - [ModelListClient.cs](../../../../../Source/Settings/ModelListClient.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

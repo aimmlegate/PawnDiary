@@ -1,7 +1,5 @@
 # Prompt Templates
 
-<cite>
-**Referenced Files in This Document**
 - [PromptTextTemplate.cs](../../../../../../Source/Util/PromptTextTemplate.cs)
 - [DiaryPromptDef.cs](../../../../../../Source/Defs/DiaryPromptDef.cs)
 - [DiaryPromptTemplateDefs.xml](../../../../../../1.6/Defs/DiaryPromptTemplateDefs.xml)
@@ -11,8 +9,6 @@
 - [LlmClient.cs](../../../../../../Source/Generation/LlmClient.cs)
 - [DiaryGameComponent.PromptPreview.cs](../../../../../../Source/Core/DiaryGameComponent.PromptPreview.cs)
 - [PawnDiaryMod.PromptStudio.cs](../../../../../../Source/Settings/PawnDiaryMod.PromptStudio.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

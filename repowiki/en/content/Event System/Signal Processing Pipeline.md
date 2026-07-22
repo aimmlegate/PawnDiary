@@ -1,7 +1,5 @@
 # Signal Processing Pipeline
 
-<cite>
-**Referenced Files in This Document**
 - [DiarySignal.cs](../../../../Source/Ingestion/DiarySignal.cs)
 - [AbilitySignal.cs](../../../../Source/Ingestion/Sources/AbilitySignal.cs)
 - [DeathFallbackSignal.cs](../../../../Source/Ingestion/Sources/DeathFallbackSignal.cs)
@@ -16,8 +14,6 @@
 - [DiaryGameComponent.EventRetention.cs](../../../../Source/Core/DiaryGameComponent.EventRetention.cs)
 - [DiarySaveNormalization.cs](../../../../Source/Pipeline/DiarySaveNormalization.cs)
 - [MiniJson.cs](../../../../Source/Util/MiniJson.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

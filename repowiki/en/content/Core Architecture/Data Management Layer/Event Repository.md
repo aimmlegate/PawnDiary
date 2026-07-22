@@ -1,7 +1,5 @@
 # Event Repository
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryEventRepository.cs](../../../../../Source/Core/DiaryEventRepository.cs)
 - [DiaryArchiveRepository.cs](../../../../../Source/Core/DiaryArchiveRepository.cs)
 - [DiaryEvent.cs](../../../../../Source/Models/DiaryEvent.cs)
@@ -10,8 +8,6 @@
 - [DiaryGameComponent.cs](../../../../../Source/Core/DiaryGameComponent.cs)
 - [DiarySignal.cs](../../../../../Source/Ingestion/DiarySignal.cs)
 - [DiaryEvents.cs](../../../../../Source/Ingestion/DiaryEvents.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

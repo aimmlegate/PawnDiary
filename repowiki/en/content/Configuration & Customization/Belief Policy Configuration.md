@@ -1,12 +1,8 @@
 # Belief Policy Configuration
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryBeliefPolicyDef.cs](../../../../Source/Defs/DiaryBeliefPolicyDef.cs)
 - [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
 - [BeliefContextTests.cs](../../../../tests/BeliefContextTests/Program.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

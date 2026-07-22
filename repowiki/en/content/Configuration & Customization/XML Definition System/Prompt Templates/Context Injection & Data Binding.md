@@ -1,7 +1,5 @@
 # Context Injection & Data Binding
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryContextBuilder.cs](../../../../../../Source/Generation/DiaryContextBuilder.cs)
 - [NarrativeContextBuilder.cs](../../../../../../Source/Generation/NarrativeContextBuilder.cs)
 - [PromptAssembler.cs](../../../../../../Source/Generation/PromptAssembler.cs)
@@ -22,8 +20,6 @@
 - [DiaryContextSnapshot.cs](../../../../../../Source/Integration/DiaryContextSnapshot.cs)
 - [DiaryPromptEnchantmentCollector.cs](../../../../../../Source/Generation/PromptEnchantmentCollector.cs)
 - [PromptEnchantments.cs](../../../../../../Source/Generation/PromptEnchantments.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

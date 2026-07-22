@@ -1,7 +1,5 @@
 # Context Providers & Capture
 
-<cite>
-**Referenced Files in This Document**
 - [ContextProviderRegistry.cs](../../../../../../Source/Pipeline/ContextProviderRegistry.cs)
 - [DiarySignal.cs](../../../../../../Source/Ingestion/DiarySignal.cs)
 - [ExternalEventSignal.cs](../../../../../../Source/Ingestion/Sources/ExternalEventSignal.cs)
@@ -32,8 +30,6 @@
 - [ConversationTracker.cs](../../../../../../integrations/PawnDiary.RimTalkBridge/Source/ConversationTracker.cs)
 - [PersonaSync.cs](../../../../../../integrations/PawnDiary.RimTalkBridge/Source/PersonaSync.cs)
 - [DiaryContextInjector.cs](../../../../../../integrations/PawnDiary.RimTalkBridge/Source/DiaryContextInjector.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

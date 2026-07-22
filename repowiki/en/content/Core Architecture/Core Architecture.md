@@ -1,7 +1,5 @@
 # Core Architecture
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryGameComponent.cs](../../../../Source/Core/DiaryGameComponent.cs)
 - [DiaryEventCatalog.cs](../../../../Source/Capture/Catalog/DiaryEventCatalog.cs)
 - [DiaryEventSpec.cs](../../../../Source/Capture/Catalog/DiaryEventSpec.cs)
@@ -176,8 +174,6 @@
 - [DiaryGameComponent.RoyaltySuccession.cs](../../../../Source/Core/DiaryGameComponent.RoyaltySuccession.cs)
 - [DiaryGameComponent.ThoughtProgression.cs](../../../../Source/Core/DiaryGameComponent.ThoughtProgression.cs)
 - [DiaryGameComponent.Work.cs](../../../../Source/Core/DiaryGameComponent.Work.cs)
-</cite>
-
 ## Table of Contents
 1. Introduction
 2. Project Structure

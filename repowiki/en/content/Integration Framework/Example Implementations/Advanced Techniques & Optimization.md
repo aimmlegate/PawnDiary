@@ -1,7 +1,5 @@
 # Advanced Techniques & Optimization
 
-<cite>
-**Referenced Files in This Document**
 - [PowerfulAiBridgeGameComponent.cs](../../../../../integrations/PawnDiary.PowerfulAiBridge/Source/PowerfulAiBridgeGameComponent.cs)
 - PowerfulAiBridgeMod.cs
 - [PowerfulAiReflection.cs](../../../../../integrations/PawnDiary.PowerfulAiBridge/Source/PowerfulAiReflection.cs)
@@ -21,8 +19,6 @@
 - [DiaryArchiveCompactionPlanner.cs](../../../../../Source/Pipeline/DiaryArchiveCompactionPlanner.cs)
 - [DiaryErrorReporter.cs](../../../../../Source/Diagnostics/DiaryErrorReporter.cs)
 - [DiaryLogReportPatch.cs](../../../../../Source/Diagnostics/DiaryLogReportPatch.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

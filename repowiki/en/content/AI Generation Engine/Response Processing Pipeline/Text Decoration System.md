@@ -1,7 +1,5 @@
 # Text Decoration System
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryTextDecorationDef.cs](../../../../../Source/Defs/DiaryTextDecorationDef.cs)
 - [DiaryTextDecorationContracts.cs](../../../../../Source/Pipeline/DiaryTextDecorationContracts.cs)
 - [DiaryTextDecorations.cs](../../../../../Source/Pipeline/DiaryTextDecorations.cs)
@@ -13,8 +11,6 @@
 - [DiaryTextDecorationDefs.xml](../../../../../1.6/Defs/DiaryTextDecorationDefs.xml)
 - [ITab_Pawn_Diary.NameHighlights.cs](../../../../../Source/UI/ITab_Pawn_Diary.NameHighlights.cs)
 - [DiaryRenderToken.cs](../../../../../Source/Models/DiaryRenderToken.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,7 +1,5 @@
 # Development Environment Setup
 
-<cite>
-**Referenced Files in This Document**
 - [LoadFolders.xml](../../../../LoadFolders.xml)
 - [About/About.xml](../../../../About/About.xml)
 - [Source/PawnDiary.csproj](../../../../Source/PawnDiary.csproj)
@@ -10,8 +8,6 @@
 - [integrations/README.md](../../../../integrations/README.md)
 - [tests/PawnDiary.RimTest/README.md](../../../../tests/PawnDiary.RimTest/README.md)
 - [services/error-endpoint/README.md](../../../../services/error-endpoint/README.md)
-</cite>
-
 ## Table of Contents
 1. Introduction
 2. Project Structure

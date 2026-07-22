@@ -1,7 +1,5 @@
 # Utility Functions
 
-<cite>
-**Referenced Files in This Document**
 - [ExternalSourceLoadOrder.cs](../../../../Source/Util/ExternalSourceLoadOrder.cs)
 - [MiniJson.cs](../../../../Source/Util/MiniJson.cs)
 - [PromptTextTemplate.cs](../../../../Source/Util/PromptTextTemplate.cs)
@@ -19,8 +17,6 @@
 - [DiaryTextDecorationFactCodec.cs](../../../../Source/Pipeline/DiaryTextDecorationFactCodec.cs)
 - [DiaryTextDecorationContracts.cs](../../../../Source/Pipeline/DiaryTextDecorationContracts.cs)
 - [DiaryTextDecorations.cs](../../../../Source/Pipeline/DiaryTextDecorations.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

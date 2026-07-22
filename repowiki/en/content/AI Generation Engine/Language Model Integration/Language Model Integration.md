@@ -1,7 +1,5 @@
 # Language Model Integration
 
-<cite>
-**Referenced Files in This Document**
 - [LlmClient.cs](../../../../../Source/Generation/LlmClient.cs)
 - [LlmResponseParser.cs](../../../../../Source/Generation/LlmResponseParser.cs)
 - [ExternalLlmCompletionService.cs](../../../../../Source/Integration/ExternalLlmCompletionService.cs)
@@ -17,8 +15,6 @@
 - [PromptTextSanitizer.cs](../../../../../Source/Pipeline/PromptTextSanitizer.cs)
 - [DiaryResponsePostprocessor.cs](../../../../../Source/Pipeline/DiaryResponsePostprocessor.cs)
 - [ExternalApiBudgetPolicy.cs](../../../../../Source/Pipeline/ExternalApiBudgetPolicy.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

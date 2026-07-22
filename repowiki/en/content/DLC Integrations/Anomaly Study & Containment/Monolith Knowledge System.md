@@ -1,7 +1,5 @@
 # Monolith Knowledge System
 
-<cite>
-**Referenced Files in This Document**
 - [AnomalyMonolithKnowledgePolicy.cs](../../../../../Source/Capture/Policies/AnomalyMonolithKnowledgePolicy.cs)
 - [MonolithActivationProvenancePolicy.cs](../../../../../Source/Capture/MonolithActivationProvenancePolicy.cs)
 - [AnomalyTransientState.cs](../../../../../Source/Generation/AnomalyTransientState.cs)
@@ -11,8 +9,6 @@
 - [AnomalyStudyPolicy.cs](../../../../../Source/Capture/Policies/AnomalyStudyPolicy.cs)
 - [AnomalyEventSpec.cs](../../../../../Source/Capture/Specs/AnomalyEventSpec.cs)
 - [AnomalyEventData.cs](../../../../../Source/Capture/Events/AnomalyEventData.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,7 +1,5 @@
 # Settings Management System
 
-<cite>
-**Referenced Files in This Document**
 - [PawnDiaryMod.cs](../../../../Source/Settings/PawnDiaryMod.cs)
 - [PawnDiarySettings.cs](../../../../Source/Settings/PawnDiarySettings.cs)
 - [PawnDiaryMod.SettingsWindow.cs](../../../../Source/Settings/PawnDiaryMod.SettingsWindow.cs)
@@ -20,8 +18,6 @@
 - [EndpointUtility.cs](../../../../Source/Settings/EndpointUtility.cs)
 - [ModelCapabilityCache.cs](../../../../Source/Settings/ModelCapabilityCache.cs)
 - [PromptSettingsMenuPolicy.cs](../../../../Source/Settings/PromptSettingsMenuPolicy.cs)
-</cite>
-
 ## Update Summary
 **Changes Made**
 - Added new Memory System Configuration section documenting the enableMemorySystem setting

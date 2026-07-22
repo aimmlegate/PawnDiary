@@ -1,7 +1,5 @@
 # Growth Moment & Development Tracking
 
-<cite>
-**Referenced Files in This Document**
 - [GrowthMomentPolicy.cs](../../../../../Source/Capture/Biotech/GrowthMomentPolicy.cs)
 - [GrowthRecordPolicy.cs](../../../../../Source/Capture/Biotech/GrowthRecordPolicy.cs)
 - [BiotechPawnProgressionState.cs](../../../../../Source/Models/BiotechPawnProgressionState.cs)
@@ -14,8 +12,6 @@
 - [BiotechGrowthCorrelation.cs](../../../../../Source/Generation/BiotechGrowthCorrelation.cs)
 - [DiaryBiotechPatches.cs](../../../../../Source/Patches/DiaryBiotechPatches.cs)
 - [DiaryBiotechPolicyDefs.xml](../../../../../1.6/Defs/DiaryBiotechPolicyDefs.xml)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

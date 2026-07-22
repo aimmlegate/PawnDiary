@@ -1,7 +1,5 @@
 # Context Details
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryContextDetailDef.cs](../../../../../Source/Defs/DiaryContextDetailDef.cs)
 - [PromptContextDetail.cs](../../../../../Source/Pipeline/PromptContextDetail.cs)
 - [PromptContextLines.cs](../../../../../Source/Pipeline/PromptContextLines.cs)
@@ -62,8 +60,6 @@
 - [DiaryEventPromptKeys.cs](../../../../../Source/Pipeline/DiaryEventPromptKeys.cs)
 - [DiaryGenerationStatus.cs](../../../../../Source/Pipeline/DiaryGenerationStatus.cs)
 - [DiaryEntryStatsAccumulator.cs](../../../../../Source/Pipeline/DiaryEntryStatsAccumulator.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

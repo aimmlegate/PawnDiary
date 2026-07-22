@@ -1,7 +1,5 @@
 # Data Access API
 
-<cite>
-**Referenced Files in This Document**
 - [PawnDiaryApi.cs](../../../../../Source/Integration/PawnDiaryApi.cs)
 - [DiaryEntrySnapshot.cs](../../../../../Source/Integration/DiaryEntrySnapshot.cs)
 - [DiaryEventFilterSnapshot.cs](../../../../../Source/Integration/DiaryEventFilterSnapshot.cs)
@@ -27,8 +25,6 @@
 - [ExternalEventRequest.cs](../../../../../Source/Integration/ExternalEventRequest.cs)
 - [SubmitEventOutcome.cs](../../../../../Source/Integration/SubmitEventOutcome.cs)
 - [DiaryEventSubmissionResult.cs](../../../../../Source/Integration/DiaryEventSubmissionResult.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

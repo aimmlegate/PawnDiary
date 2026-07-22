@@ -1,7 +1,5 @@
 # Event System
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryPatchRegistrar.cs](../../../../Source/Patches/DiaryPatchRegistrar.cs)
 - [DiaryModStartup.cs](../../../../Source/Patches/DiaryModStartup.cs)
 - [DiaryDeathPatches.cs](../../../../Source/Patches/DiaryDeathPatches.cs)
@@ -105,8 +103,6 @@
 - [DiaryTextDecorationText.cs](../../../../Source/Pipeline/DiaryTextDecorationText.cs)
 - [DiaryTextDecorationFactCodec.cs](../../../../Source/Pipeline/DiaryTextDecorationFactCodec.cs)
 - DiaryTextDecorationMatcher.cs
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

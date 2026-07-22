@@ -1,7 +1,5 @@
 # Creating Custom Templates
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryPromptTemplateDefs.xml](../../../../../../1.6/Defs/DiaryPromptTemplateDefs.xml)
 - [DiaryPromptDef.xml](../../../../../../1.6/Defs/DiaryPromptDef.xml)
 - [DiaryEventPromptDefs.xml](../../../../../../1.6/Defs/DiaryEventPromptDefs.xml)
@@ -22,8 +20,6 @@
 - [DiaryGameComponent.PromptTestSuite.cs](../../../../../../Source/Core/DiaryGameComponent.PromptTestSuite.cs)
 - [DiaryGameComponent.PromptPreview.cs](../../../../../../Source/Core/DiaryGameComponent.PromptPreview.cs)
 - [PromptArchitectureDefs.cs](../../../../../../Source/Defs/PromptArchitectureDefs.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

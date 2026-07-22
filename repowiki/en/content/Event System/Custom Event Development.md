@@ -1,7 +1,5 @@
 # Custom Event Development
 
-<cite>
-**Referenced Files in This Document**
 - [CaptureDecision.cs](../../../../Source/Capture/CaptureDecision.cs)
 - [BodyPartEventPolicy.cs](../../../../Source/Capture/BodyPartEventPolicy.cs)
 - [ThoughtCapturePolicy.cs](../../../../Source/Capture/ThoughtCapturePolicy.cs)
@@ -40,8 +38,6 @@
 - [DiaryHealthPatches.cs](../../../../Source/Patches/DiaryHealthPatches.cs)
 - [DiaryOdysseyPatches.cs](../../../../Source/Patches/DiaryOdysseyPatches.cs)
 - [DiaryBiotechMechanitorPatches.cs](../../../../Source/Patches/DiaryBiotechMechanitorPatches.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

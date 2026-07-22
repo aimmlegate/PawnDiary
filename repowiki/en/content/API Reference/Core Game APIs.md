@@ -1,7 +1,5 @@
 # Core Game APIs
 
-<cite>
-**Referenced Files in This Document**
 - [PawnDiaryApi.cs](../../../../Source/Integration/PawnDiaryApi.cs)
 - [ExternalEventRequest.cs](../../../../Source/Integration/ExternalEventRequest.cs)
 - [ExternalDirectEntryRequest.cs](../../../../Source/Integration/ExternalDirectEntryRequest.cs)
@@ -29,8 +27,6 @@
 - [DiaryGameComponent.PublicApi.cs](../../../../Source/Core/DiaryGameComponent.PublicApi.cs)
 - [DiaryGameComponent.ApiLanes.cs](../../../../Source/Core/DiaryGameComponent.ApiLanes.cs)
 - [DiaryGameComponent.ExternalApiBudget.cs](../../../../Source/Core/DiaryGameComponent.ExternalApiBudget.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

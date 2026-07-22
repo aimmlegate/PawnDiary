@@ -1,7 +1,5 @@
 # Complex Integration Patterns
 
-<cite>
-**Referenced Files in This Document**
 - [PawnDiaryRimTalkBridgeMod.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/PawnDiaryRimTalkBridgeMod.cs)
 - [ConversationTracker.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/ConversationTracker.cs)
 - [PersonaSync.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/PersonaSync.cs)
@@ -16,8 +14,6 @@
 - [Personalities123GameComponent.cs](../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/Personalities123GameComponent.cs)
 - [EnneagramSync.cs](../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/EnneagramSync.cs)
 - [BridgeIds.cs](../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/BridgeIds.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,7 +1,5 @@
 # Anomaly Study & Containment
 
-<cite>
-**Referenced Files in This Document**
 - [AnomalyStudyPolicy.cs](../../../../../Source/Capture/Policies/AnomalyStudyPolicy.cs)
 - [ContainmentBreachPolicy.cs](../../../../../Source/Capture/Policies/ContainmentBreachPolicy.cs)
 - [AnomalyMonolithKnowledgePolicy.cs](../../../../../Source/Capture/Policies/AnomalyMonolithKnowledgePolicy.cs)
@@ -27,8 +25,6 @@
 - [CreepJoinerOutcomeContextFormatter.cs](../../../../../Source/Capture/Policies/CreepJoinerOutcomeContextFormatter.cs)
 - [CreepJoinerSurgicalDisclosureContextFormatter.cs](../../../../../Source/Capture/Policies/CreepJoinerSurgicalDisclosureContextFormatter.cs)
 - [GhoulTransformationContextFormatter.cs](../../../../../Source/Capture/Policies/GhoulTransformationContextFormatter.cs)
-</cite>
-
 ## Update Summary
 **Changes Made**
 - Added comprehensive documentation for AnomalyNarrativeContextAdapter providing visible anomaly narrative continuity

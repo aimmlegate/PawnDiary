@@ -1,7 +1,5 @@
 # Example Implementations
 
-<cite>
-**Referenced Files in This Document**
 - [PawnDiaryExampleApi.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/PawnDiaryExampleApi.cs)
 - [ExampleAdapterGameComponent.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExampleAdapterGameComponent.cs)
 - [ExplorerMethodCatalog.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExplorerMethodCatalog.cs)
@@ -19,8 +17,6 @@
 - [DiaryGameComponent.cs](../../../../../Source/Core/DiaryGameComponent.cs)
 - [ExternalEventRequest.cs](../../../../../Source/Integration/ExternalEventRequest.cs)
 - [EntryStatusListeners.cs](../../../../../Source/Integration/EntryStatusListeners.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure Overview](#project-structure-overview)

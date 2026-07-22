@@ -1,5 +1,9 @@
 # Changelog
 
+- **2026-07-23 — Simplified the public wiki presentation.** Replaced the root README feature list
+  with a direct link to the wiki title page, removed migration/snapshot wording from the wiki
+  landing page, and removed generated citation headings while preserving their source links.
+
 - **2026-07-23 — Hardened exact food evidence after deduplicating two adversarial reviews.** Food
   Harmony registration now catches each target's failure independently, reports readiness, and cannot
   abort registration of later DLC or compatibility hooks. The factual scope remains intentionally

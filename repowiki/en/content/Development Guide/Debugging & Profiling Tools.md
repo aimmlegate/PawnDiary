@@ -1,7 +1,5 @@
 # Debugging & Profiling Tools
 
-<cite>
-**Referenced Files in This Document**
 - [PawnDiaryDebugActions.cs](../../../../Source/Dev/PawnDiaryDebugActions.cs)
 - [DiaryErrorReporter.cs](../../../../Source/Diagnostics/DiaryErrorReporter.cs)
 - [DiaryLogReportPatch.cs](../../../../Source/Diagnostics/DiaryLogReportPatch.cs)
@@ -33,8 +31,6 @@
 - [DiaryListText.cs](../../../../Source/Pipeline/DiaryListText.cs)
 - [DiaryParagraphReflow.cs](../../../../Source/Pipeline/DiaryParagraphReflow.cs)
 - [DiaryEntryStatsAccumulator.cs](../../../../Source/Pipeline/DiaryEntryStatsAccumulator.cs)
-</cite>
-
 ## Table of Contents
 1. Introduction
 2. Project Structure

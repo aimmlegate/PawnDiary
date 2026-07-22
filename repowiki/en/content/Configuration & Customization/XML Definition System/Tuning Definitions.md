@@ -1,7 +1,5 @@
 # Tuning Definitions
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryTuningDef.xml](../../../../../1.6/Defs/DiaryTuningDef.xml)
 - [DiaryTuningDef.cs](../../../../../Source/Defs/DiaryTuningDef.cs)
 - [DiaryMemoryTuningDef.xml](../../../../../1.6/Defs/DiaryMemoryTuningDef.xml)
@@ -14,8 +12,6 @@
 - [DiaryGameComponent.GenerationEligibility.cs](../../../../../Source/Core/DiaryGameComponent.GenerationEligibility.cs)
 - [ExternalApiBudgetPolicy.cs](../../../../../Source/Pipeline/ExternalApiBudgetPolicy.cs)
 - [LlmClient.cs](../../../../../Source/Generation/LlmClient.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

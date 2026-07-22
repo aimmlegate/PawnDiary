@@ -1,7 +1,5 @@
 # Context Building Engine
 
-<cite>
-**Referenced Files in This Document**
 - [CaptureContext.cs](../../../../Source/Capture/CaptureContext.cs)
 - [DiaryContextBuilder.cs](../../../../Source/Generation/DiaryContextBuilder.cs)
 - [NarrativeContextBuilder.cs](../../../../Source/Generation/NarrativeContextBuilder.cs)
@@ -14,8 +12,6 @@
 - [TextTruncation.cs](../../../../Source/Pipeline/TextTruncation.cs)
 - [PawnContextProviders.cs](../../../../Source/Integration/PawnContextProviders.cs)
 - [ContextProviderRegistry.cs](../../../../Source/Pipeline/ContextProviderRegistry.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

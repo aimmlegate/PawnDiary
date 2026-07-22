@@ -1,7 +1,5 @@
 # DLC Integrations
 
-<cite>
-**Referenced Files in This Document**
 - [DlcContext.cs](../../../../Source/Generation/DlcContext.cs)
 - [DlcContext.Anomaly.cs](../../../../Source/Generation/DlcContext.Anomaly.cs)
 - [DlcContext.Royalty.cs](../../../../Source/Generation/DlcContext.Royalty.cs)
@@ -38,8 +36,6 @@
 - [DiaryGameComponent.Dispatch.cs](../../../../Source/Core/DiaryGameComponent.Dispatch.cs)
 - [DiaryGameComponent.EventFactory.cs](../../../../Source/Core/DiaryGameComponent.EventFactory.cs)
 - [DiaryGameComponent.IntegrationSnapshots.cs](../../../../Source/Core/DiaryGameComponent.IntegrationSnapshots.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

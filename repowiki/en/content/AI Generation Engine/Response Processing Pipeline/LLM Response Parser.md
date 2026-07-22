@@ -1,15 +1,11 @@
 # LLM Response Parser
 
-<cite>
-**Referenced Files in This Document**
 - [LlmResponseParser.cs](../../../../../Source/Generation/LlmResponseParser.cs)
 - [LlmClient.cs](../../../../../Source/Generation/LlmClient.cs)
 - [DiaryResponsePostprocessor.cs](../../../../../Source/Pipeline/DiaryResponsePostprocessor.cs)
 - [PromptTextSanitizer.cs](../../../../../Source/Pipeline/PromptTextSanitizer.cs)
 - [MiniJson.cs](../../../../../Source/Util/MiniJson.cs)
 - [LlmResponseParserTests.cs](../../../../../tests/LlmResponseParserTests/Program.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,7 +1,5 @@
 # Integration Endpoints
 
-<cite>
-**Referenced Files in This Document**
 - [PawnDiaryApi.cs](../../../../Source/Integration/PawnDiaryApi.cs)
 - [ExternalEventRequest.cs](../../../../Source/Integration/ExternalEventRequest.cs)
 - [ExternalDirectEntryRequest.cs](../../../../Source/Integration/ExternalDirectEntryRequest.cs)
@@ -42,8 +40,6 @@
 - [ExternalPsychotypeGenerators.cs](../../../../Source/Integration/ExternalPsychotypeGenerators.cs)
 - [ExampleAdapterGameComponent.cs](../../../../integrations/PawnDiary.ExampleAdapter/Source/ExampleAdapterGameComponent.cs)
 - [PawnDiaryExampleApi.cs](../../../../integrations/PawnDiary.ExampleAdapter/Source/PawnDiaryExampleApi.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

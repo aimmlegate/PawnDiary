@@ -1,7 +1,5 @@
 # Testing Framework & Strategies
 
-<cite>
-**Referenced Files in This Document**
 - [README.md](../../../../README.md)
 - [TEST_COVERAGE_PLAN.md](../../../../TEST_COVERAGE_PLAN.md)
 - [SAVE_COMPATIBILITY_SMOKETEST.md](../../../../tests/SAVE_COMPATIBILITY_SMOKETEST.md)
@@ -46,8 +44,6 @@
 - [DiaryNarrativeContinuityDefs.xml](../../../../1.6/Defs/DiaryNarrativeContinuityDefs.xml)
 - [DiaryOdysseyPolicyDefs.xml](../../../../1.6/Defs/DiaryOdysseyPolicyDefs.xml)
 - [DiaryRoyaltyPolicyDefs.xml](../../../../1.6/Defs/DiaryRoyaltyPolicyDefs.xml)
-</cite>
-
 ## Update Summary
 **Changes Made**
 - Added comprehensive coverage for belief system functionality with new BeliefContextTests project containing extensive unit tests for belief processing components

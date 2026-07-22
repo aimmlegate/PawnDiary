@@ -1,7 +1,5 @@
 # Example Adapter Basics
 
-<cite>
-**Referenced Files in This Document**
 - [ExampleAdapterGameComponent.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExampleAdapterGameComponent.cs)
 - [ExplorerMethodCatalog.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExplorerMethodCatalog.cs)
 - [PawnDiaryApiExplorerWindow.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/PawnDiaryApiExplorerWindow.cs)
@@ -13,8 +11,6 @@
 - [ExplorerState.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExplorerState.cs)
 - [SnapshotFormatter.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/SnapshotFormatter.cs)
 - [PawnDiaryExampleDebugActions.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/PawnDiaryExampleDebugActions.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

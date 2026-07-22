@@ -1,7 +1,5 @@
 # Common Integration Scenarios
 
-<cite>
-**Referenced Files in This Document**
 - [README.md](../../../../../../README.md)
 - [EXTERNAL_API.md](../../../../../../EXTERNAL_API.md)
 - [DOCUMENTATION.md](../../../../../../DOCUMENTATION.md)
@@ -52,8 +50,6 @@
 - VsieGameComponent.cs
 - VsieMod.cs
 - VsieApi.cs
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

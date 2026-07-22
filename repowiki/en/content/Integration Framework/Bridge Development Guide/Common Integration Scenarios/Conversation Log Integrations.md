@@ -1,7 +1,5 @@
 # Conversation Log Integrations
 
-<cite>
-**Referenced Files in This Document**
 - [ConversationAssessmentCoordinator.cs](../../../../../../integrations/PawnDiary.RimTalkBridge/Source/ConversationAssessmentCoordinator.cs)
 - [ConversationTracker.cs](../../../../../../integrations/PawnDiary.RimTalkBridge/Source/ConversationTracker.cs)
 - [DiaryContextInjector.cs](../../../../../../integrations/PawnDiary.RimTalkBridge/Source/DiaryContextInjector.cs)
@@ -65,8 +63,6 @@
 - [DiaryTextDecorationFactCodec.cs](../../../../../../Source/Pipeline/DiaryTextDecorationFactCodec.cs)
 - [DiaryTextDecorationMatcher.cs](../../../../../../Source/Pipeline/DiaryTextDecorationMatcher.cs)
 - [DiaryTextDecorationText.cs](../../../../../../Source/Pipeline/DiaryTextDecorationText.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

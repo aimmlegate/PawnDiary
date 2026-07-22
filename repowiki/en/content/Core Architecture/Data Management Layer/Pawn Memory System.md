@@ -1,7 +1,5 @@
 # Pawn Memory System
 
-<cite>
-**Referenced Files in This Document**
 - [DiaryGameComponent.Memory.cs](../../../../../Source/Core/DiaryGameComponent.Memory.cs)
 - [PawnMemoryRepository.cs](../../../../../Source/Core/PawnMemoryRepository.cs)
 - [MemoryFragment.cs](../../../../../Source/Models/MemoryFragment.cs)
@@ -13,8 +11,6 @@
 - [DiaryEventRepository.cs](../../../../../Source/Core/DiaryEventRepository.cs)
 - [DiaryGameComponent.EventRetention.cs](../../../../../Source/Core/DiaryGameComponent.EventRetention.cs)
 - [RecentEventExpiry.cs](../../../../../Source/Capture/RecentEventExpiry.cs)
-</cite>
-
 ## Update Summary
 **Changes Made**
 - Added comprehensive memory subsystem implementation through DiaryGameComponent.Memory.cs (475 lines)

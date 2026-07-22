@@ -1,7 +1,5 @@
 # Context Assembly Engine
 
-<cite>
-**Referenced Files in This Document**
 - [PromptAssembler.cs](../../../../../Source/Generation/PromptAssembler.cs)
 - [DiaryContextBuilder.cs](../../../../../Source/Generation/DiaryContextBuilder.cs)
 - [NarrativeContextBuilder.cs](../../../../../Source/Generation/NarrativeContextBuilder.cs)
@@ -27,8 +25,6 @@
 - [ExternalApiLaneRequest.cs](../../../../../Source/Integration/ExternalApiLaneRequest.cs)
 - [DiaryContextBundleSnapshot.cs](../../../../../Source/Integration/DiaryContextBundleSnapshot.cs)
 - [DiaryContextSnapshot.cs](../../../../../Source/Integration/DiaryContextSnapshot.cs)
-</cite>
-
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
