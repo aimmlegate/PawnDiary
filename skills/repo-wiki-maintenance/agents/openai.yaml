@@ -1,4 +1,0 @@
-interface:
-  display_name: "Repository Wiki Maintenance"
-  short_description: "Maintain the committed GitHub repository wiki"
-  default_prompt: "Use $repo-wiki-maintenance to update the committed repowiki snapshot from the current repository while preserving its page structure and validating links."

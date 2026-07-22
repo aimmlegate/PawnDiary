@@ -1,4 +1,0 @@
-interface:
-  display_name: "Pawn Diary Prompt Workflow"
-  short_description: "Maintain event capture, prompt policy, and generation boundaries."
-  default_prompt: "Use the Pawn Diary prompt workflow skill when changing event capture, prompt planning, or XML-driven generation policy."
