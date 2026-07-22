@@ -425,8 +425,14 @@ and "Slavery is a normal, unremarkable part of life" description. It exposed tha
 admission requires two. The XML/EN/RU policy therefore adds a localized `slavery normal part life`
 keyword bag (with its Russian visible-word equivalent); this makes the intended installed stance
 eligible without naming a Precept Def in production code or weakening unrelated-doctrine rejection.
-The other failure in both runs was the unchanged N3-O positive fixture running without its required
-parked player gravship. A corrected loaded rerun is pending; 388/388 remains the latest all-green run.
+A third 389/391 run cleared the corrected doctrine and leader assertions, then exposed one final
+fixture collision: leader and throne fan-outs used the same three pawn ids in the same game tick, so
+the leader pages correctly occupied the generic 60-tick ritual type/subject dedup window and suppressed
+the throne children. The throne half now uses fresh disposable pawns assigned to the same explicitly
+relevant Ideology, isolating exact routing without changing production dedup or the live game clock.
+The other failure in all three runs was the unchanged N3-O positive fixture running without its
+required parked player gravship. A corrected loaded rerun is pending; 388/388 remains the latest
+all-green run.
 
 The first post-Counsel Ideology-active loaded run executed all 384 fixtures and reached 382/384. All
 three exact Counsel fixtures passed at the real vanilla boundary. One failure was a stale exhaustive

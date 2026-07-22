@@ -617,8 +617,11 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 > stopping at the leader branch. The positive fixture now installs `Slavery_Acceptable` through
 > vanilla's live precept APIs before both routes. A pure installed-shape audit also exposed the former
 > slavery alias below the two-token lexical threshold, so EN/RU XML now carries grounded visible-word
-> aliases for that stance. The other failure in both runs was the unchanged N3-O parked-gravship
-> prerequisite. A corrected all-green rerun and the base-only profile are still pending.
+> aliases for that stance. A third 389/391 run cleared those boundaries, then showed the same-tick leader
+> pages occupying generic ritual type/subject dedup keys for the reused throne pawns. The throne half now
+> uses fresh pawns under the same proven Ideology, preserving production dedup. The other failure in all
+> three runs was the unchanged N3-O parked-gravship prerequisite. A corrected all-green rerun and the
+> base-only profile are still pending.
 > Every deferred Royalty acceptance item remains unchanged.
 
 ### Implement in this exact order
@@ -644,8 +647,10 @@ Wave 10 remains open: original exact active-Counsel loaded coverage and the corr
 passed, and the corrected active completed-conversion suite passed 388/388. The first authority-speech
 run reached 389/391 at the throne branch, and a second reached 389/391 at the leader branch, proving
 both random doctrine assumptions needed an explicit relevant live stance. That fixture is corrected;
-an all-green rerun, the base-only profile, remaining Ideology-2 evidence-family work, and Ideology 3
-are pending.
+a third 389/391 run passed the doctrine boundary and exposed same-tick generic ritual dedup between the
+leader and reused throne pawn identities. The throne route now uses fresh pawns under the proven
+Ideology. An all-green rerun, the base-only profile, remaining Ideology-2 evidence-family work, and
+Ideology 3 are pending.
 
 ### Release checkpoint 10 — belief enrichment
 

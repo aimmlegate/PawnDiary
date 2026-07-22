@@ -719,19 +719,26 @@ namespace PawnDiary.RimTests
                 "Authority-speech event-time context did not survive a real Scribe round-trip.");
 
             if (!ModsConfig.RoyaltyActive) return;
-            // Reuse the profile whose leader-speech pages just proved that visible authority-related
-            // doctrine exists. A second generated Ideology is a doctrine lottery: it may truthfully
-            // contain no matching stance, in which case production must leave the speech ordinary.
-            // This half of the fixture is testing the exact throne route and retained Royal owner,
-            // not asking an unrelated random profile to satisfy the enrichment precondition again.
+            // Keep the explicitly relevant profile, but give the second ritual fresh pawn identities.
+            // Both fixtures execute in the same game tick; reusing the leader trio would correctly hit
+            // the generic 60-tick ritual type/subject dedup guard before the throne route could emit.
+            // Fresh disposable pawns isolate exact throne routing without changing the production guard,
+            // advancing the developer's live game clock, or taking another random-doctrine lottery.
+            Pawn throneSpeaker = scope.CreateAdultColonist();
+            Pawn throneWitness = scope.CreateAdultColonist();
+            Pawn throneSpectator = scope.CreateAdultColonist();
+            throneSpeaker.ideo.SetIdeo(shared);
+            throneWitness.ideo.SetIdeo(shared);
+            throneSpectator.ideo.SetIdeo(shared);
             HashSet<string> throneBefore = SnapshotEventIds();
             RitualFanoutSignal throneFanout = ExactAuthoritySpeechFixture(
-                true, firstPawn, witness, spectator);
+                true, throneSpeaker, throneWitness, throneSpectator);
             scope.Component.Dispatch(throneFanout);
             List<DiaryEvent> thronePages = NewEventsSince(throneBefore);
             PawnDiaryRimTestScope.Require(thronePages.Count == 3,
-                "Throne speech should emit one speaker and two witness pages without duplication.");
-            DiaryEvent thronePage = PageForPawn(thronePages, firstPawn);
+                "Throne speech should emit one speaker and two witness pages without duplication, got "
+                    + thronePages.Count + ".");
+            DiaryEvent thronePage = PageForPawn(thronePages, throneSpeaker);
             PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(
                     thronePage.BeliefContextForRole(DiaryEvent.InitiatorRole)),
                 "Exact throne speech did not attach relevant authority context.");

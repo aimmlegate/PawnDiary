@@ -1348,9 +1348,13 @@ the first random Ideology also contained no relevant stance. The positive fixtur
 `Slavery_Acceptable` through `PreceptMaker`/`Ideo.AddPrecept` before testing both routes. A pure audit of
 that installed projection found the original slavery alias below the two-distinctive-token threshold;
 localized EN/RU visible-word aliases now bridge the real "normal part of life" description without a
-production Precept-Def list. The unrelated N3-O positive fixture also ran without its required parked
-gravship in both runs. A corrected all-green authority-speech rerun, the remaining evidence-family
-matrix, and the required Ideology-inactive loaded profile must complete before Phase 2 can close.
+production Precept-Def list. A third 389/391 run cleared the doctrine/leader checks and exposed a final
+fixture-only collision: both ritual routes ran in one tick for the same pawns, so the first route's
+generic ritual type/subject keys correctly deduped the second. The throne route now uses fresh pawns
+under the same proven Ideology, without changing production dedup. The unrelated N3-O positive fixture
+also ran without its required parked gravship in all three runs. A corrected all-green authority-speech
+rerun, the remaining evidence-family matrix, and the required Ideology-inactive loaded profile must
+complete before Phase 2 can close.
 
 ### Phase 3 — Persistent passive belief tracking
 

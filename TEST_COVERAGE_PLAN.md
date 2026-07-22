@@ -1151,8 +1151,12 @@ the first random profile contained no related stance, proving reuse alone was in
 fixture now installs one exact relevant stance before exercising either route. Pure coverage also
 replaces its former alias-shaped synthetic stance with the installed `Slavery_Acceptable` issue/label/
 description shape and pins the added EN/RU visible-word alias needed to clear the two-distinctive-token
-threshold. The other failure in both runs was the unchanged N3-O parked-gravship host prerequisite. A
-corrected loaded rerun is pending; 388/388 remains the latest all-green result.
+threshold. A third 389/391 run cleared those corrected assertions and reached the throne fan-out count,
+where same-tick reuse of the leader trio correctly collided with the generic 60-tick ritual
+type/subject dedup guard. The throne half now attaches fresh disposable pawns to the same proven
+Ideology, preserving both positive doctrine and production dedup semantics. The other failure in all
+three runs was the unchanged N3-O parked-gravship host prerequisite. A corrected loaded rerun is
+pending; 388/388 remains the latest all-green result.
 
 The first 377-test execution exposed vanilla's nested silent companion page and completed 375/377; the
 other failure was the unrelated N3-O Odyssey host prerequisite. After the exact companion fix and a
@@ -1179,8 +1183,11 @@ active completed-conversion gate. The first active run of all three authority-sp
 corrected random-doctrine throne fixture assumption. A second 389/391 run stopped at the leader branch,
 confirming that the first random profile also needed an explicit relevant stance; the fixture now
 installs `Slavery_Acceptable` through vanilla's live precept APIs, while pure coverage mirrors its
-installed visible wording and the XML/EN/RU policy supplies enough grounded tokens for admission. Both
-runs' other failure was the expected N3-O host guard on a map without a parked player gravship.
+installed visible wording and the XML/EN/RU policy supplies enough grounded tokens for admission. A
+third 389/391 run passed that boundary and then revealed that the same-tick leader pages occupied the
+generic ritual type/subject dedup keys needed by the reused throne pawns. Fresh throne pawns now share
+the proven Ideology without sharing those identities. All three runs' other failure was the expected
+N3-O host guard on a map without a parked player gravship.
 Therefore 388/388 remains the latest all-green loaded result. A current 391-test base-only profile remains
 release-blocking under the matrix above because it is the only execution that reaches every
 `ModsConfig.IdeologyActive == false` branch.

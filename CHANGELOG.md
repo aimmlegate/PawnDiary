@@ -1,5 +1,17 @@
 # Changelog
 
+- **2026-07-22 — Isolated the same-tick throne fixture from generic ritual dedup.** The third
+  user-supplied active run again reached 389/391. The deterministic doctrine correction worked: the
+  combined authority case cleared its leader/context assertions and reached the throne fan-out count.
+  Both exact rituals were still dispatched in one game tick for the same three pawn ids, however, so
+  the leader pages correctly activated the XML-owned 60-tick generic ritual type/subject guard and the
+  throne children were suppressed before emission. The throne half now uses fresh disposable pawns
+  assigned to the same explicitly relevant Ideology. This isolates its exact route and Royal prompt
+  owner without advancing the developer's live clock or weakening production dedup. Its count failure
+  also reports the observed value. The other failure remains the strict N3-O prerequisite on a map
+  without a parked player gravship. No production, XML, localization, save, setting, RNG, fan-out,
+  dedup, hook, or DLC behavior changed; the rebuilt 391-test assembly compiles with zero warnings.
+
 - **2026-07-22 — Made the authority-speech positive fixture establish exact live doctrine.** The
   second user-supplied active run again reached 389/391, but the combined authority case now stopped
   at the leader branch: its first randomly generated Ideology contained no stance related to the
