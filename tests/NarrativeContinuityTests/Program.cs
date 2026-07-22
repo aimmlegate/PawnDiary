@@ -1083,6 +1083,18 @@ namespace NarrativeContinuityTests
             AssertEqual("fixed provider order places Ideology before Biotech", ideologyKey,
                 composed[0].candidateKey);
 
+            OdysseyNarrativeSnapshot odyssey = OdysseySnapshot();
+            odyssey.povPawnId = evidence.povPawnId;
+            odyssey.sourceTick = evidence.tick;
+            List<NarrativeLensCandidate> ideologyAtHome = NarrativeProviderOrchestrator.Collect(
+                new List<NarrativeEvidence> { evidence }, null, null, null, null, odyssey, ideology);
+            AssertEqual("Ideology composes with verified Odyssey home context", 2,
+                ideologyAtHome.Count);
+            AssertEqual("fixed provider order places Ideology before Odyssey", ideologyKey,
+                ideologyAtHome[0].candidateKey);
+            AssertEqual("Odyssey home remains the second category",
+                NarrativeCategoryTokens.Home, ideologyAtHome[1].category);
+
             NarrativePolicySnapshot policy = NarrativePolicySnapshot.CreateDefault();
             policy.maxSelectedCandidates = 2;
             Budget(policy, NarrativeDetailLevelTokens.Full).maxLenses = 2;
@@ -1103,6 +1115,15 @@ namespace NarrativeContinuityTests
             AssertTrue("Full detail can use Ideology beside another category",
                 first.selectedCandidates.Count == 2 && HasSelected(first, ideologyKey));
             AssertEqual("shared global lens budget remains two", 2, first.selectedCandidates.Count);
+
+            request.candidates = ideologyAtHome;
+            NarrativeContextSelection selectedAtHome = NarrativeContextSelector.Select(request);
+            AssertTrue("Full detail selects Ideology and Odyssey from the same request",
+                selectedAtHome.selectedCandidates.Count == 2
+                    && HasSelected(selectedAtHome, ideologyKey)
+                    && HasSelected(selectedAtHome, ideologyAtHome[1].candidateKey));
+            AssertTrue("composed prompt retains the selected mobile-home fact",
+                selectedAtHome.narrativeContext.IndexOf(odyssey.homeText, StringComparison.Ordinal) >= 0);
 
             NarrativeLensCandidate secondInterpretation = Candidate(
                 "synthetic-second-interpretation", NarrativeCategoryTokens.Interpretation,
@@ -1709,6 +1730,13 @@ namespace NarrativeContinuityTests
                 new List<string> { "first", "first", " second ", "third" }, 2);
             AssertEqual("selection-key policy applies requested bounded cap", 2, keys.Count);
             AssertEqual("selection-key policy trims whitespace", "second", keys[1]);
+            AssertEqual("recent-key store scan uses at least one slot", 1,
+                NarrativePersistencePolicy.RecentSelectionKeyScanCap(0));
+            AssertEqual("recent-key store scan honors a smaller configured cap", 4,
+                NarrativePersistencePolicy.RecentSelectionKeyScanCap(4));
+            AssertEqual("recent-key store scan never exceeds the persistence hard cap",
+                NarrativePersistencePolicy.HardSelectedCandidateKeyCap,
+                NarrativePersistencePolicy.RecentSelectionKeyScanCap(int.MaxValue));
             AssertEqual("subject index needs both identity parts", string.Empty,
                 NarrativePersistencePolicy.SubjectIndexKey(NarrativeSubjectKindTokens.Pawn, string.Empty));
             AssertEqual("subject index is stable", "pawn|pawn-1",

@@ -159,8 +159,8 @@ namespace PawnDiary
         // prompt-policy contract; pure/background code never calls Translate().
         public string promptFieldLabel = "belief context";
         public string promptFieldInstruction = string.Empty;
-        // Narrative N3-I factual prose. Missing/malformed localized formats disable only the optional
-        // interpretation candidate; no English fallback is allowed into another player language.
+        // Narrative N3-I factual prose. Missing/malformed reviewed formats disable only the optional
+        // interpretation candidate; shipped language rows must preserve the required placeholders.
         public string interpretationFactFormat = string.Empty;
         public string interpretationFactWithoutDescriptionFormat = string.Empty;
         public List<DiaryBeliefTokenScoreDef> tierScores;

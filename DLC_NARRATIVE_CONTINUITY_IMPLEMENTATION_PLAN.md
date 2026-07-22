@@ -567,22 +567,30 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 
 ### Phase N3 — Ideology interpretation and remaining providers
 
-> **N3-I progress (2026-07-22): code-complete; loaded acceptance pending.** The fixed provider list now
-> consumes a detached result derived from Phase 1's guarded per-POV event-time belief snapshot and its
-> single `EventRelativeStanceResolver` pass. Structural tiers and lexical results that repeat the XML
-> confidence/margin gates may propose one exact source/POV `interpretation` candidate; empty,
-> mutation-only, ambiguous, hidden, unsafe, unknown-facet, source-mismatched, or unavailable evidence
-> remains silent. Phase-1 thought/body evidence supplies the shared facet seam; partial Phase-2
-> conversion/crisis work is deliberately not broadened. Stable precept keys, DefInjected neutral prose,
-> shared deterministic ordering, repetition history, category/global budgets, and existing N1
-> persistence are reused with no hook, page, polling path, save field, or reflection scheduler. Provider
-> exceptions are isolated per fixed-list entry, preserving the canonical page and other DLC candidates.
-> Focused pure coverage passes 360 Belief and 345 Narrative Continuity assertions; 381 loaded tests
+> **N3-I progress (2026-07-22): code-complete, adversarially hardened, and active loaded acceptance
+> passed; base-only acceptance pending.**
+> The fixed provider list consumes a detached result derived from Phase 1's guarded per-POV event-time
+> belief snapshot and its single `EventRelativeStanceResolver` pass. Structural tiers and lexical results
+> that repeat the XML confidence/margin gates may propose one exact source/POV `interpretation`
+> candidate; empty, mutation-only, ambiguous, hidden, unsafe, unknown-facet, source-mismatched, or
+> unavailable evidence remains silent. Phase-1 thought/body evidence supplies the shared facet seam;
+> partial Phase-2 conversion/crisis work is deliberately not broadened. The review found and fixed the
+> live resolver-repetition disconnect: bounded existing N1 keys now project through only the current
+> ideology snapshot to precept DefNames, feed the same single resolver pass, and reset naturally after
+> ideology replacement without a new save field. The hot/archive lookup clamps before scanning to the
+> existing persistence hard cap. Localized formats must consume every required placeholder; an overlong
+> safe described fact uses a complete concise fact rather than truncation. Applicable Odyssey home and
+> N3-I candidates now share one atomic request/write, preserving the singular per-POV slot and global
+> category/two-lens policy. No hook, page, polling path, save field, or reflection scheduler was added.
+> Provider exceptions remain isolated per fixed-list entry, preserving the canonical page and other DLC
+> candidates. Focused pure coverage passes 380 Belief, 353 Narrative Continuity, and 2,849 pipeline
+> assertions; 381 loaded tests
 > compile. The first user-supplied loaded execution reached 379/381: the N3-I failure came from an
 > over-broad RimTest fault injector that patched the shared belief-policy snapshot and therefore also
 > poisoned ordinary prompt preflight, while the other failure was the existing N3-O parked-gravship
-> host prerequisite. The injector now targets the guarded crisis selector itself. This is not a green
-> acceptance result; corrected active and base-only execution remain pending.
+> host prerequisite. The injector now targets the guarded crisis selector itself. After the adversarial
+> fixes, the user-confirmed loaded rerun passed 381/381, closing the active N3-I runtime boundary. The
+> separate base-only execution remains pending.
 
 > **N3-B identity progress (2026-07-17): implemented; loaded acceptance passed.** The existing
 > `GeneIdentityChanged` page now supplies exact-subject identity evidence and one provider candidate

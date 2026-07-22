@@ -1179,8 +1179,9 @@ namespace PawnDiary
         /// hot pages first, then newest archive rows — so the pure selector can apply its XML
         /// repetition penalty instead of immediately reselecting the same lens for that pawn. The
         /// result stays inside the XML recent-key cap and the builder re-normalizes it, so a request
-        /// can never grow unbounded. Runs only when a narrative-capable source records a page (growth
-        /// moments, births, event windows), and both scans stop as soon as the cap is filled.
+        /// can never grow unbounded. Runs only when a narrative-capable source records a page (growth,
+        /// birth, event-window, journey, progression, or high-confidence belief enrichment), and both
+        /// scans stop as soon as the cap is filled.
         /// </summary>
         internal List<string> RecentNarrativeSelectedCandidateKeys(string pawnId)
         {
@@ -1190,7 +1191,8 @@ namespace PawnDiary
                 return keys;
             }
 
-            int cap = Math.Max(1, DiaryNarrativeContinuityPolicy.Snapshot().maxRecentSelectedCandidateKeys);
+            int cap = NarrativePersistencePolicy.RecentSelectionKeyScanCap(
+                DiaryNarrativeContinuityPolicy.Snapshot().maxRecentSelectedCandidateKeys);
             IReadOnlyList<DiaryEvent> live = events.AllEvents;
             for (int i = live.Count - 1; i >= 0 && keys.Count < cap; i--)
             {

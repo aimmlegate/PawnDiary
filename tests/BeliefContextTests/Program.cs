@@ -651,6 +651,11 @@ namespace PawnDiary
             AssertTrue("empty stance resolution yields no N3-I snapshot",
                 IdeologyNarrativeSnapshotFactory.Create(
                     new BeliefStanceResolution(), eventEvidence.narrative, policy, "unused") == null);
+            AssertTrue("null source evidence yields no N3-I snapshot",
+                IdeologyNarrativeSnapshotFactory.Create(resolved, null, policy, "unused") == null);
+            AssertTrue("null policy uses safe defaults",
+                IdeologyNarrativeSnapshotFactory.Create(
+                    resolved, eventEvidence.narrative, null, "safe default policy") != null);
             BeliefStanceResolution mutationOnly = new BeliefStanceResolution
             {
                 ideologyId = "SyntheticIdeology",
@@ -681,21 +686,42 @@ namespace PawnDiary
                 IdeologyNarrativeSnapshotFactory.Create(
                     ambiguous, eventEvidence.narrative, policy, "ambiguous") == null);
             ambiguous.stances[0].runnerUpGap = policy.lexicalRunnerUpMargin;
+            ambiguous.stances[0].confidenceScore = policy.minimumLexicalConfidence - 0.01f;
+            AssertTrue("below-confidence lexical result yields no N3-I snapshot even with a valid margin",
+                IdeologyNarrativeSnapshotFactory.Create(
+                    ambiguous, eventEvidence.narrative, policy, "below confidence") == null);
+            ambiguous.stances[0].confidenceScore = policy.minimumLexicalConfidence;
             AssertTrue("threshold-and-margin lexical result may enter N3-I",
                 IdeologyNarrativeSnapshotFactory.Create(
                     ambiguous, eventEvidence.narrative, policy, "high confidence") != null);
 
+            resolved.narrativeCategory = NarrativeCategoryTokens.Home;
+            AssertTrue("non-interpretation belief result cannot consume the N3-I slot",
+                IdeologyNarrativeSnapshotFactory.Create(
+                    resolved, eventEvidence.narrative, policy, "wrong category") == null);
+            resolved.narrativeCategory = NarrativeCategoryTokens.Interpretation;
+            precept.visible = false;
+            AssertTrue("a hidden top stance is rejected directly by the N3-I factory",
+                IdeologyNarrativeSnapshotFactory.Create(
+                    resolved, eventEvidence.narrative, policy, "hidden stance") == null);
+            precept.visible = true;
+
             AssertTrue("unknown facet yields no N3-I snapshot",
                 IdeologyNarrativeSnapshotFactory.Create(
                     resolved, Evidence(true).narrative, policy, "unused") == null);
-            NarrativeEvidence wrongPov = pageSnapshot.sourceEvidence;
-            wrongPov = new NarrativeEvidence
+            NarrativeEvidence wrongPov = new NarrativeEvidence
             {
-                eventId = wrongPov.eventId, tick = wrongPov.tick, povPawnId = "OtherPawn",
-                povRole = wrongPov.povRole, facet = wrongPov.facet, phase = wrongPov.phase,
-                subjectKind = wrongPov.subjectKind, subjectId = wrongPov.subjectId,
-                pawnCanKnow = true, sourceDomain = wrongPov.sourceDomain,
-                sourceDefName = wrongPov.sourceDefName
+                eventId = pageSnapshot.sourceEvidence.eventId,
+                tick = pageSnapshot.sourceEvidence.tick,
+                povPawnId = "OtherPawn",
+                povRole = pageSnapshot.sourceEvidence.povRole,
+                facet = pageSnapshot.sourceEvidence.facet,
+                phase = pageSnapshot.sourceEvidence.phase,
+                subjectKind = pageSnapshot.sourceEvidence.subjectKind,
+                subjectId = pageSnapshot.sourceEvidence.subjectId,
+                pawnCanKnow = true,
+                sourceDomain = pageSnapshot.sourceEvidence.sourceDomain,
+                sourceDefName = pageSnapshot.sourceEvidence.sourceDefName
             };
             AssertEqual("wrong POV cannot use the snapshot", 0,
                 IdeologyNarrativeProvider.Build(new List<NarrativeEvidence> { wrongPov }, pageSnapshot).Count);
@@ -719,6 +745,96 @@ namespace PawnDiary
             AssertTrue("wrong page POV cannot re-stamp a prepared snapshot",
                 IdeologyNarrativeSnapshotFactory.ForPage(
                     snapshot, "CanonicalEvent", 12345, "OtherPawn", "initiator") == null);
+            AssertTrue("wrong page tick cannot re-stamp a prepared snapshot",
+                IdeologyNarrativeSnapshotFactory.ForPage(
+                    snapshot, "CanonicalEvent", 12346, "SyntheticPawn", "initiator") == null);
+            AssertTrue("wrong page role cannot re-stamp a prepared snapshot",
+                IdeologyNarrativeSnapshotFactory.ForPage(
+                    snapshot, "CanonicalEvent", 12345, "SyntheticPawn", "recipient") == null);
+            AssertTrue("blank canonical page id cannot re-stamp a prepared snapshot",
+                IdeologyNarrativeSnapshotFactory.ForPage(
+                    snapshot, " ", 12345, "SyntheticPawn", "initiator") == null);
+
+            string described = IdeologyInterpretationFactFormatter.Format(
+                "Within {0}, {1}: {2}", "Within {0}, {1}.",
+                "Synthetic Ideoligion", "Body respect", "The exception remains explicit.", 240);
+            AssertEqual("N3-I formatter keeps one complete described fact",
+                "Within Synthetic Ideoligion, Body respect: The exception remains explicit.", described);
+            AssertEqual("N3-I formatter rejects a translation missing its description placeholder",
+                string.Empty,
+                IdeologyInterpretationFactFormatter.Format(
+                    "Within {0}, {1}.", "Within {0}, {1}.",
+                    "Synthetic Ideoligion", "Body respect", "Required description", 240));
+            AssertEqual("N3-I formatter rejects an out-of-range placeholder",
+                string.Empty,
+                IdeologyInterpretationFactFormatter.Format(
+                    "Within {0}, {1}: {3}", "Within {0}, {1}.",
+                    "Synthetic Ideoligion", "Body respect", "Description", 240));
+            AssertEqual("N3-I formatter rejects malformed braces",
+                string.Empty,
+                IdeologyInterpretationFactFormatter.Format(
+                    "Within {0, {1}: {2}", "Within {0}, {1}.",
+                    "Synthetic Ideoligion", "Body respect", "Description", 240));
+            AssertEqual("overlong described fact falls back to a complete concise fact",
+                "Within Synthetic Ideoligion, Body respect.",
+                IdeologyInterpretationFactFormatter.Format(
+                    "Within {0}, {1}: {2}", "Within {0}, {1}.",
+                    "Synthetic Ideoligion", "Body respect", new string('x', 240), 80));
+            AssertEqual("periods in names do not trigger assembled-sentence clipping",
+                "Within St. Synthetic v1.3, Body v2.0: Complete meaning.",
+                IdeologyInterpretationFactFormatter.Format(
+                    "Within {0}, {1}: {2}", "Within {0}, {1}.",
+                    "St. Synthetic v1.3", "Body v2.0", "Complete meaning.", 240));
+
+            BeliefPreceptFact otherPrecept = Precept(
+                "SyntheticOther", "SyntheticOtherIssue", "Another current view", 1);
+            BeliefSnapshot historySnapshot = Snapshot(precept, otherPrecept);
+            List<string> recentKeys = new List<string>
+            {
+                "odyssey|home|ship|place",
+                "ideology|interpretation|SyntheticPawn|SyntheticIdeology|instance|" + precept.instanceId,
+                "ideology|interpretation|SyntheticPawn|SyntheticIdeology|def|" + otherPrecept.defName,
+                "ideology|interpretation|OtherPawn|SyntheticIdeology|def|Ignored",
+                "ideology|interpretation|SyntheticPawn|OldIdeology|def|Ignored"
+            };
+            List<string> recentDefNames = IdeologyNarrativeSelectionHistory.PreceptDefNames(
+                recentKeys, historySnapshot, policy.maximumRecentSelections);
+            AssertEqual("saved N3-I keys recover two current precept DefNames", 2, recentDefNames.Count);
+            AssertEqual("instance key resolves through current doctrine", precept.defName, recentDefNames[0]);
+            AssertEqual("def key resolves only when still present", otherPrecept.defName, recentDefNames[1]);
+            AssertEqual("recent precept projection honors its requested result cap", 1,
+                IdeologyNarrativeSelectionHistory.PreceptDefNames(recentKeys, historySnapshot, 1).Count);
+
+            BeliefPreceptFact quietHistoryA = Precept(
+                "HistoryQuiet_A", "HistoryQuiet_Issue_A", "quiet history a", 3);
+            BeliefPreceptFact quietHistoryB = Precept(
+                "HistoryQuiet_B", "HistoryQuiet_Issue_B", "quiet history b", 3);
+            BeliefSnapshot quietHistorySnapshot = Snapshot(quietHistoryA, quietHistoryB);
+            BeliefEventEvidence quietHistoryEvidence = Evidence(true);
+            BeliefStanceResolution quietHistoryInitial = Resolve(
+                quietHistorySnapshot,
+                quietHistoryEvidence,
+                BeliefPolicySnapshot.CreateDefault(),
+                BeliefResolutionModeTokens.QuietReflection,
+                9);
+            string savedQuietKey = "ideology|interpretation|SyntheticPawn|SyntheticIdeology|instance|"
+                + quietHistoryInitial.stances[0].precept.instanceId;
+            List<string> projectedQuietHistory = IdeologyNarrativeSelectionHistory.PreceptDefNames(
+                new List<string> { savedQuietKey }, quietHistorySnapshot, 1);
+            BeliefStanceResolution quietHistoryRepeated = Resolve(
+                quietHistorySnapshot,
+                quietHistoryEvidence,
+                BeliefPolicySnapshot.CreateDefault(),
+                BeliefResolutionModeTokens.QuietReflection,
+                9,
+                projectedQuietHistory);
+            AssertTrue("saved N3-I key activates resolver-level doctrine diversity",
+                quietHistoryRepeated.stances[0].precept.defName
+                    != quietHistoryInitial.stances[0].precept.defName);
+            historySnapshot.ideologyId = "ChangedIdeology";
+            AssertEqual("ideology change naturally resets N3-I resolver repetition", 0,
+                IdeologyNarrativeSelectionHistory.PreceptDefNames(
+                    recentKeys, historySnapshot, policy.maximumRecentSelections).Count);
 
             BeliefEventEvidence thought = BeliefEventEvidenceFactory.ForThought(
                 "SyntheticPawn", 5, "ThoughtDef", "Thought", null);

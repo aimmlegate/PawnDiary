@@ -252,7 +252,8 @@ namespace PawnDiary
                     beliefEvidence,
                     "body|" + data.PawnId + "|" + data.Tick.ToString(CultureInfo.InvariantCulture),
                     data.Tick,
-                    DiaryEvent.InitiatorRole);
+                    DiaryEvent.InitiatorRole,
+                    RecentNarrativeSelectedCandidateKeys(data.PawnId));
                 data.AttitudeToken = BodyPartEventPolicy.ResolveAttitude(
                     data.PartKindToken,
                     data.PartTierToken,

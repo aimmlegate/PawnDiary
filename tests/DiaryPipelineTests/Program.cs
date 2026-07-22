@@ -5740,6 +5740,12 @@ namespace DiaryPipelineTests
             XDocument russianPrompts = XDocument.Load(RepoPath(
                 "Languages", "Russian (Русский)", "DefInjected",
                 "PawnDiary.DiaryEventPromptDef", "DiaryEventPromptDefs.xml"));
+            XDocument englishBelief = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryBeliefPolicyDef",
+                "DiaryBeliefPolicyDef.xml"));
+            XDocument russianBelief = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryBeliefPolicyDef", "DiaryBeliefPolicyDef.xml"));
             AssertTrue("English crisis group text is localized",
                 !string.IsNullOrWhiteSpace(ChildValue(englishGroups.Root, "beliefCrisis.instruction")));
             AssertTrue("Russian crisis group text is localized",
@@ -5750,6 +5756,29 @@ namespace DiaryPipelineTests
             AssertTrue("Russian exact crisis prompt is localized",
                 !string.IsNullOrWhiteSpace(ChildValue(
                     russianPrompts.Root, "DiaryEventPrompt_IdeoChange.enhancement")));
+
+            string englishInterpretation = ChildValue(
+                englishBelief.Root, "Diary_BeliefPolicy.interpretationFactFormat");
+            string russianInterpretation = ChildValue(
+                russianBelief.Root, "Diary_BeliefPolicy.interpretationFactFormat");
+            string englishConciseInterpretation = ChildValue(
+                englishBelief.Root, "Diary_BeliefPolicy.interpretationFactWithoutDescriptionFormat");
+            string russianConciseInterpretation = ChildValue(
+                russianBelief.Root, "Diary_BeliefPolicy.interpretationFactWithoutDescriptionFormat");
+            AssertTrue("English N3-I described format keeps all three placeholders",
+                englishInterpretation.Contains("{0}") && englishInterpretation.Contains("{1}")
+                    && englishInterpretation.Contains("{2}") && !englishInterpretation.Contains("{3}"));
+            AssertTrue("Russian N3-I described format keeps all three placeholders",
+                russianInterpretation.Contains("{0}") && russianInterpretation.Contains("{1}")
+                    && russianInterpretation.Contains("{2}") && !russianInterpretation.Contains("{3}"));
+            AssertTrue("English N3-I concise format keeps exactly the identity placeholders",
+                englishConciseInterpretation.Contains("{0}")
+                    && englishConciseInterpretation.Contains("{1}")
+                    && !englishConciseInterpretation.Contains("{2}"));
+            AssertTrue("Russian N3-I concise format keeps exactly the identity placeholders",
+                russianConciseInterpretation.Contains("{0}")
+                    && russianConciseInterpretation.Contains("{1}")
+                    && !russianConciseInterpretation.Contains("{2}"));
 
             string fallbackCrisisText = (ChildValue(crisis, "instruction") + " "
                 + ChildValue(exactPrompt, "enhancement")).ToLowerInvariant();

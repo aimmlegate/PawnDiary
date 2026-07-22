@@ -43,7 +43,7 @@ collector kind (hediff, capacity, Royal title, Ideology role, event window, obse
 | Manual visual checks | `tests/SAVE_COMPATIBILITY_SMOKETEST.md` plus a new UI checklist | Immediate-mode rendering, resolution/accessibility layouts, scroll behavior, and screenshots that are not stable enough for unit assertions. |
 
 `tests/BeliefContextTests` is the assembly-free Master Wave 10 / Ideology Phases 0–2 plus Narrative
-N3-I harness. Its 360
+N3-I harness. Its 380
 assertions lock missing/inactive/unknown-knowledge silence; exact source, thought, history, issue, and
 meme precedence; synthetic mod IDs; guarded phrase/token/fuzzy matching; dynamic common-token,
 confidence, explicit below-threshold diagnostics, and runner-up rejection; reused evidence expansion;
@@ -64,10 +64,12 @@ case-sensitive Def matching, inactive-policy silence, known/success/failure mech
 reassurance, cross-pawn/stale/future rejection, two-POV reuse, no backward search through sequential
 rows, malformed inputs, critical conversion-marker append/idempotence, subject-labeled mutation schema
 formatting, and target mutation not rewriting the converter's own certainty/trend.
-N3-I additionally pins structural and high-margin lexical admission; empty/mutation-only/ambiguous,
-unknown-facet, wrong-POV, hidden, source-mismatched, malformed, and inactive rejection; canonical page
-ID re-stamping for prepared body evidence; stable label-independent keys; and exact Phase-1 thought/body
-facet ownership.
+N3-I additionally pins structural and high-margin lexical admission; null/default, empty/mutation-only/
+ambiguous, below-confidence, non-interpretation-category, unknown-facet, wrong-POV/tick/role, hidden,
+source-mismatched, malformed, and inactive rejection; canonical page ID re-stamping for prepared body
+evidence; stable label-independent keys; complete-placeholder formatting and concise overlength fallback;
+current-ideology instance/Def history projection, ideology-change reset, and resolver-level diversity;
+and exact Phase-1 thought/body facet ownership.
 It file-links only plain Narrative/Belief source and has no RimWorld, Verse, Unity, or DLC reference.
 
 ### 2.1 `PawnDiaryRimTestScope`
@@ -645,7 +647,7 @@ Every fixture explicitly logs `SKIP` when Odyssey is inactive or a real player g
 and failure-safe cleanup restores component/controller state, time speed, the mask engine, world
 objects, spawned things, pawns, events, diary indexes, and temporary Harmony patches.
 
-Narrative N2-O, N3-B identity, N3-R, N3-I, N3-A, and N3-O extend `NarrativeContinuityTests` to 345
+Narrative N2-O, N3-B identity, N3-R, N3-I, N3-A, and N3-O extend `NarrativeContinuityTests` to 353
 assembly-free assertions. N3-R covers exact persona arc/weapon and title POV/domain/topic applicability,
 cross-DLC identity isolation, absent/unknown/unverified/null silence, stable candidate keys and
 ordering, defensive persona/duty caps, and deterministic duty-topic normalization. Its Wave-9 proof
@@ -667,8 +669,10 @@ corrected Odyssey-active run passed the integrated 354/354 tests across 57/57 su
 focused inactive path passed 1/1 with a clean no-Odyssey profile.
 N3-I adds exact interpretation-provider applicability, stable keys and fixed provider order,
 deterministic two-lens selection, repetition, the one-interpretation/global-two category budgets,
-composition with Biotech, provider-unavailable equivalence, and per-provider exception isolation that
-preserves prior and later candidates.
+composition with Biotech and Odyssey home through actual selection, bounded pre-scan key policy,
+provider-unavailable equivalence, and per-provider exception isolation that preserves prior and later
+candidates. `DiaryPipelineTests` passes 2,849 assertions and now pins English/Russian N3-I described
+and concise placeholder parity.
 
 The existing real succession and dramatic-permit RimTest fixtures now also compile assertions for
 their exact N3-R evidence, references, context, and selected current-title key. Their changed loaded
@@ -1046,7 +1050,11 @@ recorded as loaded-game passes and no manual/in-game acceptance row is closed.
 `PawnDiaryIdeologyPhase2InfrastructureTests` contains fifteen compiled loaded cases. Narrative N3-I
 extends the Phase-1 fixture with a real source-precept candidate assertion, an unavailable-provider
 composition case, and a provider-failure canonical-page case, bringing the whole RimTest assembly to
-381 tests. The Phase-2 cases inspect the three exact mutation Harmony targets, branch
+381 tests. The positive thought fixture now constructs a deterministic loaded typed precept and enters
+through the real Harmony-patched `TryGainMemory` boundary rather than directly emitting a signal; the
+approved/disapproved real `AddHediff` fixtures additionally require the canonical re-stamped N3-I
+evidence, key, and context. The user-confirmed 381/381 loaded rerun exercised these stronger assertions.
+The Phase-2 cases inspect the three exact mutation Harmony targets, branch
 truthfully for an inactive DLC profile, and assert that a synthetic base-game `IdeoChange` DefName
 falls back to the ordinary mental-break group while the package-gated crisis group is dormant. Real
 `SetIdeo`, `OffsetCertainty`, and `IdeoConversionAttempt` calls cover detached before/after/attempted/
@@ -1086,8 +1094,8 @@ fixture failed its precondition; no usable active or base-only acceptance result
 current N3-I assembly contains 381 tests. The first user-supplied Ideology-active execution reached
 379/381: its N3-I failure was the over-broad fault-injection seam corrected above, while the other
 failure was the existing N3-O positive acceptance precondition because the host map had no parked
-player gravship. This is not a green acceptance result; a corrected active rerun on the appropriate
-fixture and the base-only profile remain pending.
+player gravship. After the adversarial fixes, the user-confirmed loaded rerun passed 381/381 and closes
+the active N3-I runtime boundary; the base-only profile remains pending.
 The base-only run remains release-blocking under the
 matrix above because it is the only execution that reaches every `ModsConfig.IdeologyActive == false`
 branch.

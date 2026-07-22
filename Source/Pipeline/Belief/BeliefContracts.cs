@@ -365,6 +365,9 @@ namespace PawnDiary
         public bool currentBeliefFactsRelevant;
         public List<string> expandedTopicTokens = new List<string>();
         public List<string> selectionReasonTokens = new List<string>();
+        // N3-I is the only current consumer, but this remains an explicit discriminator because later
+        // quiet-reflection/mutation modes may return belief context that must not consume the singular
+        // interpretation slot. Providers fail closed when a future mode supplies another category.
         public string narrativeCategory = NarrativeCategoryTokens.Interpretation;
 
         public bool HasUsefulContext

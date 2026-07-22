@@ -1,5 +1,22 @@
 # Changelog
 
+- **2026-07-22 — Adversarially hardened Narrative N3-I after deduplicating three reviews.** Fixed the
+  one confirmed production disconnect: saved N3-I candidate keys were never projected into
+  `BeliefResolutionRequest.recentSelectionDefNames`, leaving the XML doctrine-repetition penalty inert.
+  Existing bounded hot/archive keys now resolve only through the POV pawn's current detached ideology;
+  old/removed doctrine and ideology replacements reset naturally, with no new Scribe field. The lookup
+  clamps before scanning to the existing twelve-key persistence cap. N3-I and an applicable verified
+  Odyssey mobile-home snapshot now enter one Narrative Continuity request and one atomic per-POV write,
+  so Full detail can compose both categories without last-writer loss. DefInjected fact formats must
+  consume every required placeholder; unsafe/malformed rows fail closed and overlong safe descriptions
+  use the complete concise form instead of truncating doctrine. Pure coverage now passes 380 Belief,
+  353 Narrative Continuity, and 2,849 pipeline assertions, including resolver-history integration,
+  ideology reset, selection-level Odyssey composition, cap, threshold, category, page-restamp, and EN/RU
+  placeholder cases. Existing loaded thought/body fixtures now require a deterministic real
+  `TryGainMemory` boundary and canonical `AddHediff` N3-I evidence/key/context. Core and the unchanged
+  381-test RimTest assembly rebuild with zero warnings/errors. The user-confirmed loaded rerun passed
+  381/381, closing the active N3-I runtime boundary; the separate base-only profile remains pending.
+
 - **2026-07-22 — Corrected the N3-I loaded fault-isolation fixture after the first 381-test run.** The
   user-supplied Ideology-active execution reached 379/381. Its Ideology failure was test contamination:
   the synthetic evidence error patched the shared `DiaryBeliefPolicy.Snapshot`, so the exception was

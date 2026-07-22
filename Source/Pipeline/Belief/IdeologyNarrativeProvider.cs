@@ -27,10 +27,221 @@ namespace PawnDiary
         public List<string> topicTokens = new List<string>();
     }
 
+    /// <summary>
+    /// Pure formatter for N3-I's localized factual sentence. Runtime code sanitizes the localized
+    /// components first; this helper then verifies that a translation actually consumes every required
+    /// numbered placeholder and returns only a complete single-line fact. A long described fact falls
+    /// back to the complete no-description form instead of cutting a doctrine sentence mid-caveat.
+    /// </summary>
+    internal static class IdeologyInterpretationFactFormatter
+    {
+        /// <summary>
+        /// Formats one complete described or concise fact after proving the localized format consumes
+        /// every supplied component and the resulting single line fits the caller's character cap.
+        /// </summary>
+        public static string Format(
+            string describedFormat,
+            string conciseFormat,
+            string ideologyName,
+            string preceptLabel,
+            string preceptDescription,
+            int maximumCharacters)
+        {
+            string ideology = Trim(ideologyName);
+            string label = Trim(preceptLabel);
+            string description = Trim(preceptDescription);
+            if (ideology.Length == 0 || label.Length == 0 || maximumCharacters <= 0)
+            {
+                return string.Empty;
+            }
+
+            if (description.Length > 0)
+            {
+                string described;
+                if (!TryFormat(describedFormat, new[] { ideology, label, description }, out described))
+                {
+                    return string.Empty;
+                }
+
+                if (SafeCompleteFact(described, maximumCharacters))
+                {
+                    return described.Trim();
+                }
+
+                // Only length may use the concise fallback. Unsafe control/newline output remains a
+                // hard failure so a malformed translation cannot smuggle a different prompt shape in.
+                if (!SafeCompleteFact(described, int.MaxValue))
+                {
+                    return string.Empty;
+                }
+            }
+
+            string concise;
+            return TryFormat(conciseFormat, new[] { ideology, label }, out concise)
+                && SafeCompleteFact(concise, maximumCharacters)
+                    ? concise.Trim()
+                    : string.Empty;
+        }
+
+        private static bool TryFormat(string format, string[] values, out string result)
+        {
+            result = string.Empty;
+            if (string.IsNullOrWhiteSpace(format) || values == null || values.Length == 0)
+            {
+                return false;
+            }
+
+            // Formatting once with private-use sentinels proves every required argument is really used.
+            // string.Format itself rejects malformed braces and any out-of-range placeholder index.
+            string[] markers = new string[values.Length];
+            object[] markerArguments = new object[values.Length];
+            object[] actualArguments = new object[values.Length];
+            for (int i = 0; i < values.Length; i++)
+            {
+                markers[i] = "\uE000PawnDiaryN3I" + i + "\uE001";
+                markerArguments[i] = markers[i];
+                actualArguments[i] = values[i];
+            }
+
+            try
+            {
+                string markerResult = string.Format(format, markerArguments);
+                for (int i = 0; i < markers.Length; i++)
+                {
+                    if (markerResult.IndexOf(markers[i], StringComparison.Ordinal) < 0)
+                    {
+                        return false;
+                    }
+                }
+
+                result = string.Format(format, actualArguments);
+                return true;
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+        }
+
+        private static bool SafeCompleteFact(string value, int maximumCharacters)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value.Trim().Length > maximumCharacters)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (char.IsControl(value[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static string Trim(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    /// <summary>
+    /// Projects saved N1 Ideology candidate keys back to current-doctrine precept DefNames. This
+    /// activates the resolver's XML repetition penalty without another save field: instance keys are
+    /// resolved only through the current detached snapshot, so an ideology change naturally resets the
+    /// history and never revives a precept that is no longer present.
+    /// </summary>
+    internal static class IdeologyNarrativeSelectionHistory
+    {
+        private const int HardInputScanCap = 64;
+
+        /// <summary>
+        /// Returns recent current-doctrine precept DefNames recovered from stable saved candidate keys.
+        /// Unknown providers, POVs, ideologies, removed instances, and duplicates are ignored.
+        /// </summary>
+        public static List<string> PreceptDefNames(
+            IList<string> recentCandidateKeys,
+            BeliefSnapshot currentSnapshot,
+            int maximumSelections)
+        {
+            List<string> result = new List<string>();
+            if (recentCandidateKeys == null || currentSnapshot?.precepts == null
+                || maximumSelections <= 0 || string.IsNullOrWhiteSpace(currentSnapshot.pawnId)
+                || string.IsNullOrWhiteSpace(currentSnapshot.ideologyId))
+            {
+                return result;
+            }
+
+            int resultCap = Math.Min(HardInputScanCap, maximumSelections);
+            int scanCap = Math.Min(HardInputScanCap, recentCandidateKeys.Count);
+            for (int i = 0; i < scanCap && result.Count < resultCap; i++)
+            {
+                string[] parts = (recentCandidateKeys[i] ?? string.Empty).Split('|');
+                if (parts.Length != 6 || parts[0] != NarrativeProviderTokens.Ideology
+                    || parts[1] != NarrativeCategoryTokens.Interpretation
+                    || !string.Equals(parts[2], currentSnapshot.pawnId, StringComparison.Ordinal)
+                    || !string.Equals(parts[3], currentSnapshot.ideologyId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                BeliefPreceptFact matched = FindCurrentPrecept(
+                    currentSnapshot.precepts, parts[4], parts[5]);
+                string defName = (matched?.defName ?? string.Empty).Trim();
+                if (defName.Length > 0 && !Contains(result, defName))
+                {
+                    result.Add(defName);
+                }
+            }
+
+            return result;
+        }
+
+        private static BeliefPreceptFact FindCurrentPrecept(
+            IList<BeliefPreceptFact> precepts,
+            string keyKind,
+            string stableId)
+        {
+            if ((keyKind != "instance" && keyKind != "def")
+                || string.IsNullOrWhiteSpace(stableId))
+            {
+                return null;
+            }
+
+            for (int i = 0; i < precepts.Count; i++)
+            {
+                BeliefPreceptFact precept = precepts[i];
+                string candidate = keyKind == "instance" ? precept?.instanceId : precept?.defName;
+                if (string.Equals((candidate ?? string.Empty).Trim(), stableId.Trim(),
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return precept;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool Contains(List<string> values, string value)
+        {
+            for (int i = 0; i < values.Count; i++)
+            {
+                if (string.Equals(values[i], value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
     /// <summary>Pure high-confidence gate and defensive copier for the Phase-1 resolver result.</summary>
     internal static class IdeologyNarrativeSnapshotFactory
     {
-        private const int MaximumNarrativeTextCharacters = 240;
+        internal const int MaximumNarrativeTextCharacters = 240;
         private const int MaximumTopics = 8;
 
         /// <summary>
@@ -45,7 +256,7 @@ namespace PawnDiary
             string formattedText)
         {
             BeliefPolicySnapshot effective = policy ?? BeliefPolicySnapshot.CreateDefault();
-            ResolvedBeliefStance stance = FirstUsableStance(resolution);
+            ResolvedBeliefStance stance = TopStanceIfUsable(resolution);
             NarrativeEvidence evidence = CopyEvidence(sourceEvidence);
             if (!effective.enabled || stance == null || evidence == null
                 || resolution.narrativeCategory != NarrativeCategoryTokens.Interpretation
@@ -73,7 +284,9 @@ namespace PawnDiary
                 ideologyId = resolution.ideologyId.Trim(),
                 preceptKeyKind = SafeKeyPart(stance.precept.instanceId) ? "instance" : "def",
                 preceptStableId = preceptId,
-                text = WholeWord(formattedText.Trim(), MaximumNarrativeTextCharacters),
+                // SafePromptText already proves this complete fact is inside the hard cap. Do not run
+                // it through another truncator: selected narrative facts are atomic units.
+                text = formattedText.Trim(),
                 sourceEvidence = evidence,
                 topicTokens = Topics(resolution.expandedTopicTokens, evidence.beliefTopics)
             };
@@ -116,7 +329,7 @@ namespace PawnDiary
             };
         }
 
-        private static ResolvedBeliefStance FirstUsableStance(BeliefStanceResolution resolution)
+        private static ResolvedBeliefStance TopStanceIfUsable(BeliefStanceResolution resolution)
         {
             if (resolution?.stances == null || resolution.stances.Count == 0) return null;
             ResolvedBeliefStance stance = resolution.stances[0];

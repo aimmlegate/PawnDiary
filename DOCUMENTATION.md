@@ -207,8 +207,10 @@ exists only in the unused future-reflection mode.
 
 `BeliefContextBuilder` runs only after the normal capture policy has authorized a POV. It receives
 explicit source evidence, takes one guarded `DlcContext.CaptureBeliefSnapshot`, merges nearby exact
-HistoryEvent Def identities for the same pawn, evaluates `EventRelativeStanceResolver` exactly once,
-and freezes the full sanitized result into that POV's `beliefContext`. Optional enrichment is
+HistoryEvent Def identities for the same pawn, and projects bounded saved N3-I selection keys back to
+precept DefNames only when they still match that pawn's current detached ideology snapshot. It then
+evaluates `EventRelativeStanceResolver` exactly once and freezes the full sanitized result into that
+POV's `beliefContext`. Optional enrichment is
 failure-isolated: a malformed modded getter/Def logs one bounded warning and the ordinary authorized
 page continues with empty belief context. `DlcContext.Ideology.cs` is the
 only Phase-1 adapter that reads live `Ideo`, `Precept`, `PreceptComp`, `Thought.sourcePrecept`, or
@@ -229,10 +231,19 @@ not expanded by this slice. A source that prepared body-mod belief context befor
 existed may re-stamp only the later canonical page ID—tick, POV, role, and source facts must already
 match. The pure provider emits one stable
 `ideology|interpretation|<povId>|<ideologyId>|<instance-or-def>|<preceptId>` key and XML/DefInjected,
-secular-safe bounded prose. The existing selector then owns deterministic order, repetition, the
-single `interpretation` category, the global two-lens/detail budgets, and unchanged N1 persistence.
-Fixed-list provider calls are isolated individually, so an Ideology failure preserves the canonical
-page plus candidates from every other available DLC provider.
+secular-safe bounded prose. Every localized described format must consume `{0}`, `{1}`, and `{2}`;
+the concise form must consume `{0}` and `{1}`. Malformed/missing-placeholder output disables only the
+optional lens, while an overlong otherwise-safe description falls back to the complete concise fact
+instead of truncating a selected doctrine sentence. Existing per-POV N1 keys from newest hot/archive
+rows feed both the shared selector and resolver-level doctrine diversity; the store scan is clamped to
+the existing twelve-key persistence hard cap, and ideology replacement naturally resets instance/Def
+history because old keys cannot map through the current snapshot. No Scribe field was added. The
+existing selector then owns deterministic order, the single `interpretation` category, and the global
+two-lens/detail budgets. N3-I and the verified current Odyssey mobile-home snapshot are collected in
+the same build request and written atomically, so Full detail can retain both categories without a
+later provider overwriting the singular POV slot. Fixed-list provider calls are isolated individually,
+so an Ideology failure preserves the canonical page plus candidates from every other available DLC
+provider.
 
 `ThoughtSignal` freezes exact `Thought.sourcePrecept` identity before emitting. Body-mod pages reuse
 the same one resolver result and map only matched mechanical correlation valence into their established

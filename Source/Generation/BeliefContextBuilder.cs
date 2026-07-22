@@ -2,6 +2,7 @@
 // pure resolver: it snapshots guarded doctrine through DlcContext, merges only plain recent history
 // evidence, resolves exactly once, and returns a frozen full context block.
 using System;
+using System.Collections.Generic;
 using RimWorld;
 using Verse;
 
@@ -14,6 +15,9 @@ namespace PawnDiary
         public string fullContext = string.Empty;
         public BeliefStanceResolution resolution = new BeliefStanceResolution();
         public IdeologyNarrativeSnapshot ideologyNarrative;
+        // The same bounded N1 history snapshot feeds both resolver-level precept diversity and the
+        // shared candidate selector. Carrying it with a prepared body result avoids a second store scan.
+        public List<string> recentSelectedCandidateKeys = new List<string>();
 
         public static BeliefContextBuildResult Empty(bool evaluated = false)
         {
@@ -29,7 +33,8 @@ namespace PawnDiary
             BeliefEventEvidence sourceEvidence,
             string eventId,
             int eventTick,
-            string povRole)
+            string povRole,
+            IList<string> recentSelectedCandidateKeys = null)
         {
             try
             {
@@ -51,7 +56,8 @@ namespace PawnDiary
                 BeliefSnapshot snapshot = DlcContext.CaptureBeliefSnapshot(pawn, policy);
                 if (!snapshot.ideologyActive) return BeliefContextBuildResult.Empty();
 
-                return Resolve(snapshot, evidence, eventId, pawnId, policy);
+                return Resolve(snapshot, evidence, eventId, pawnId, policy,
+                    recentSelectedCandidateKeys);
             }
             catch (Exception exception)
             {
@@ -82,7 +88,7 @@ namespace PawnDiary
             if (!effective.enabled || snapshot?.ideologyActive != true
                 || !BeliefEventEvidenceFactory.HasUsefulVisibleEvidence(evidence))
                 return BeliefContextBuildResult.Empty();
-            return Resolve(snapshot, evidence, eventId, pawnId, effective);
+            return Resolve(snapshot, evidence, eventId, pawnId, effective, null);
         }
 
         private static BeliefContextBuildResult Resolve(
@@ -90,8 +96,11 @@ namespace PawnDiary
             BeliefEventEvidence evidence,
             string eventId,
             string pawnId,
-            BeliefPolicySnapshot policy)
+            BeliefPolicySnapshot policy,
+            IList<string> recentSelectedCandidateKeys)
         {
+            List<string> boundedRecentKeys = NarrativePersistencePolicy.NormalizeSelectedCandidateKeys(
+                recentSelectedCandidateKeys);
             BeliefStanceResolution resolution = EventRelativeStanceResolver.Resolve(
                 new BeliefResolutionRequest
                 {
@@ -99,12 +108,15 @@ namespace PawnDiary
                     evidence = evidence,
                     policy = policy,
                     mode = BeliefResolutionModeTokens.EventEnrichment,
-                    deterministicSeed = HumorChancePolicy.StableSeed(eventId, pawnId)
+                    deterministicSeed = HumorChancePolicy.StableSeed(eventId, pawnId),
+                    recentSelectionDefNames = IdeologyNarrativeSelectionHistory.PreceptDefNames(
+                        boundedRecentKeys, snapshot, policy.maximumRecentSelections)
                 });
             return new BeliefContextBuildResult
             {
                 evaluated = true,
                 resolution = resolution,
+                recentSelectedCandidateKeys = boundedRecentKeys,
                 fullContext = BeliefContextFormatter.Format(
                     resolution, NarrativeDetailLevelTokens.Full, policy),
                 ideologyNarrative = IdeologyNarrativeSnapshotFactory.Create(
@@ -126,24 +138,18 @@ namespace PawnDiary
             string description = PromptTextSanitizer.LocalizedPromptText(precept?.description);
             if (ideology.Length == 0 || label.Length == 0) return string.Empty;
 
-            string format = description.Length > 0
-                ? DiaryBeliefPolicy.InterpretationFactFormat
-                : DiaryBeliefPolicy.InterpretationFactWithoutDescriptionFormat;
-            if (string.IsNullOrWhiteSpace(format)) return string.Empty;
-            try
-            {
-                string value = description.Length > 0
-                    ? string.Format(format, ideology, label, description)
-                    : string.Format(format, ideology, label);
-                return BeliefContextFormatter.WholeWord(
-                    PromptTextSanitizer.LocalizedPromptText(value),
-                    Math.Min(240, Math.Max(80, policy.maximumDescriptionCharacters)));
-            }
-            catch (FormatException)
-            {
-                // A broken DefInjected placeholder disables only this optional interpretation lens.
-                return string.Empty;
-            }
+            // Components and DefInjected formats are already sanitized separately. Format only after
+            // that step so periods in player-authored ideology/precept names cannot consume the shared
+            // two-sentence sanitizer budget and cut the assembled fact in the middle.
+            return IdeologyInterpretationFactFormatter.Format(
+                DiaryBeliefPolicy.InterpretationFactFormat,
+                DiaryBeliefPolicy.InterpretationFactWithoutDescriptionFormat,
+                ideology,
+                label,
+                description,
+                Math.Min(
+                    IdeologyNarrativeSnapshotFactory.MaximumNarrativeTextCharacters,
+                    policy.maximumDescriptionCharacters));
         }
     }
 }

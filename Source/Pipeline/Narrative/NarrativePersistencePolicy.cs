@@ -134,6 +134,16 @@ namespace PawnDiary
             return result;
         }
 
+        /// <summary>
+        /// Clamps the XML recent-key request before a runtime store scan begins. The selector cannot
+        /// consume more than the saved-key hard cap, so collecting additional rows would only allocate
+        /// and scan data that normalization immediately discards.
+        /// </summary>
+        public static int RecentSelectionKeyScanCap(int configuredCap)
+        {
+            return Math.Min(HardSelectedCandidateKeyCap, Math.Max(1, configuredCap));
+        }
+
         /// <summary>Builds the stable exact-subject index token, or empty when either identity part is absent.</summary>
         public static string SubjectIndexKey(string subjectKind, string subjectId)
         {

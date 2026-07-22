@@ -1189,20 +1189,27 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > 379 tests; the prior 377/377 active-Ideology run remains the latest loaded result, and a post-Phase-2
 > base-only run remains required before release sign-off.
 
-> **Narrative N3-I result (2026-07-22): code-complete; loaded acceptance pending.** Phase 1's guarded,
+> **Narrative N3-I result (2026-07-22): code-complete, adversarially hardened, and active loaded
+> acceptance passed; base-only acceptance pending.** Phase 1's guarded,
 > detached per-POV snapshot and single resolver result now feed one pure high-confidence gate and the
 > fixed shared provider list. Exact thought/body evidence can yield one `interpretation` candidate;
 > structural tiers are accepted directly and lexical tiers must retain both configured confidence and
 > runner-up separation. Exact event/POV/source/facet matching, stable IDs, localized DefInjected neutral
 > prose, deterministic selection, repetition, category/two-lens budgets, and N1 persistence are reused.
-> No live ideology rescan, hook, page, poll, save field, or scheduler was added, and partial Phase 2 did
-> not gain another consumer. Pure suites pass 360/345 belief/narrative assertions and 381 RimTests
+> Adversarial review found that production never populated the resolver's recent-precept list; bounded
+> saved N3-I keys now map through only the current detached ideology, activate the planned XML repetition
+> penalty, and reset on ideology replacement with no new save field. Required localized placeholders are
+> runtime-validated, overlong described facts fall back to a complete concise fact, and N3-I plus an
+> applicable Odyssey home are selected from one atomic request rather than competing writes. The shared
+> recent-key store scan now clamps before traversal. No live ideology rescan, hook, page, poll, save field,
+> or scheduler was added, and partial Phase 2 did not gain another consumer. Pure suites pass 380/353
+> belief/narrative assertions, pipeline localization coverage passes 2,849 assertions, and 381 RimTests
 > compile. The host's headless startup attempt did not load a game. The first later user-supplied loaded
 > run reached 379/381: the Ideology failure was an over-broad fault-injection fixture that patched the
 > shared belief-policy snapshot outside the intended guarded evidence boundary, and the other failure
 > was the existing N3-O parked-gravship host prerequisite. The injector now targets the guarded crisis
-> selector itself. This is not a green acceptance result, so 377/377 remains the latest valid active
-> pass and corrected active/base-only execution remains pending.
+> selector itself. After the adversarial fixes, the user-confirmed loaded rerun passed 381/381 and
+> closes the active N3-I runtime boundary. The separate base-only profile remains pending.
 
 1. Implement guarded/coalescing mutation patches and cache. **Implemented in the infrastructure slice.**
 2. Add conservative evidence adapters for the §7.5 families to existing captured thought, social,

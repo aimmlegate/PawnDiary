@@ -1270,7 +1270,9 @@ namespace PawnDiary
         /// <summary>
         /// Copies a completed Narrative Continuity build result into one first-person POV. This is the
         /// only model write boundary for the optional N1 payload, so a future DLC source cannot leave
-        /// partially written evidence, references, keys, and prompt context behind.
+        /// partially written evidence, references, keys, and prompt context behind. This intentionally
+        /// replaces the slot atomically: each source must collect every applicable provider into one
+        /// NarrativeContextBuildRequest and call this method once for that POV.
         /// </summary>
         internal void ApplyNarrativeContext(string povRole, NarrativeContextBuildResult result)
         {

@@ -373,10 +373,15 @@ namespace PawnDiary
             BeliefEventEvidence evidence,
             BeliefContextBuildResult prepared)
         {
-            if (diaryEvent == null || pawn == null || evidence == null && prepared == null)
+            if (diaryEvent == null || pawn == null || (evidence == null && prepared == null))
                 return;
+            string pawnId = pawn.GetUniqueLoadID();
+            List<string> recentSelectedCandidateKeys = prepared?.evaluated == true
+                ? prepared.recentSelectedCandidateKeys
+                : RecentNarrativeSelectedCandidateKeys(pawnId);
             BeliefContextBuildResult result = prepared ?? BeliefContextBuilder.Build(
-                pawn, evidence, diaryEvent.eventId, diaryEvent.tick, povRole);
+                pawn, evidence, diaryEvent.eventId, diaryEvent.tick, povRole,
+                recentSelectedCandidateKeys);
             diaryEvent.SetBeliefContext(povRole, result?.fullContext);
             try
             {
@@ -384,7 +389,7 @@ namespace PawnDiary
                     result?.ideologyNarrative,
                     diaryEvent.eventId,
                     diaryEvent.tick,
-                    pawn.GetUniqueLoadID(),
+                    pawnId,
                     povRole);
                 if (ideology == null) return;
 
@@ -393,16 +398,19 @@ namespace PawnDiary
                     {
                         eventId = diaryEvent.eventId,
                         eventTick = diaryEvent.tick,
-                        povPawnId = pawn.GetUniqueLoadID(),
+                        povPawnId = pawnId,
                         povRole = povRole,
                         evidence = new List<NarrativeEvidence> { ideology.sourceEvidence },
                         ideology = ideology,
-                        recentSelectedCandidateKeys = RecentNarrativeSelectedCandidateKeys(
-                            pawn.GetUniqueLoadID()),
+                        // Odyssey's verified current mobile home is applicable to any known POV facet.
+                        // Supplying it in the same request lets Full mode compose home + interpretation
+                        // without a second ApplyNarrativeContext write or another page owner.
+                        odyssey = OdysseyNarrativeSnapshotFor(pawn, diaryEvent.tick),
+                        recentSelectedCandidateKeys = result.recentSelectedCandidateKeys,
                         contextDetailLevel = PawnDiaryMod.Settings?.contextDetailLevel
                             ?? PromptContextDetailLevel.Full,
                         deterministicSeed = HumorChancePolicy.StableSeed(
-                            diaryEvent.eventId, pawn.GetUniqueLoadID())
+                            diaryEvent.eventId, pawnId)
                     });
                 if (narrative.evidence.Count > 0) diaryEvent.ApplyNarrativeContext(povRole, narrative);
             }

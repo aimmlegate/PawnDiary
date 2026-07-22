@@ -67,31 +67,31 @@ namespace PawnDiary.RimTests
 
             Precept sourcePrecept;
             ThoughtDef thoughtDef;
-            Ideo fixtureIdeo = FindIdeoWithThoughtPrecept(out sourcePrecept, out thoughtDef);
-            if (fixtureIdeo == null)
-            {
-                Log.Message(LogPrefix + "exact thought source: no loaded ideoligion exposed a typed "
-                    + "PreceptComp_Thought; guarded empty behavior remains covered.");
-                return;
-            }
+            Ideo fixtureIdeo = CreateIdeoWithThoughtPrecept(pawn, out sourcePrecept, out thoughtDef);
+            PawnDiaryRimTestScope.Require(fixtureIdeo != null && sourcePrecept != null && thoughtDef != null,
+                "The active-Ideology fixture could not create a typed PreceptComp_Thought.");
 
             PawnDiaryRimTestScope.Require(pawn.ideo != null,
                 "An Ideology-active colonist must have a Pawn_IdeoTracker.");
             pawn.ideo.SetIdeo(fixtureIdeo);
             Thought_Memory thought = ThoughtMaker.MakeThought(thoughtDef, sourcePrecept);
-            thought.pawn = pawn;
-            ThoughtSignal signal = new ThoughtSignal(pawn, thought);
-            BeliefEventEvidence evidence = signal.CapturedBeliefEvidence;
+            scope.RegisterCleanup(() => pawn?.needs?.mood?.thoughts?.memories
+                ?.RemoveMemoriesOfDef(thoughtDef));
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => pawn.needs.mood.thoughts.memories.TryGainMemory(thought, null),
+                thoughtDef.defName,
+                pawn,
+                null);
+            // Vanilla has now accepted and attached the memory. Constructing a detached signal without
+            // emitting it lets this fixture inspect the same source-precept projection the Harmony
+            // postfix used, while the event above proves the real TryGainMemory boundary fired once.
+            ThoughtSignal capturedSignal = new ThoughtSignal(pawn, thought);
+            BeliefEventEvidence evidence = capturedSignal.CapturedBeliefEvidence;
             PawnDiaryRimTestScope.Require(evidence != null
                     && evidence.sourcePreceptInstanceId == sourcePrecept.GetUniqueLoadID()
                     && evidence.sourcePreceptDefName == sourcePrecept.def.defName,
                 "ThoughtSignal did not freeze Thought.sourcePrecept's exact instance and Def identity.");
-
-            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
-                () => signal.Emit(scope.Component, CaptureDecision.GenerateSolo),
-                thoughtDef.defName,
-                pawn,
-                null);
             string context = diaryEvent.BeliefContextForRole(DiaryEvent.InitiatorRole);
             PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(context)
                     && context.Contains("relevant precept:")
@@ -278,12 +278,9 @@ namespace PawnDiary.RimTests
 
             Precept sourcePrecept;
             ThoughtDef thoughtDef;
-            Ideo fixtureIdeo = FindIdeoWithThoughtPrecept(out sourcePrecept, out thoughtDef);
-            if (fixtureIdeo == null)
-            {
-                Log.Message(LogPrefix + "provider failure isolation: no loaded thought precept fixture. ");
-                return;
-            }
+            Ideo fixtureIdeo = CreateIdeoWithThoughtPrecept(pawn, out sourcePrecept, out thoughtDef);
+            PawnDiaryRimTestScope.Require(fixtureIdeo != null && sourcePrecept != null && thoughtDef != null,
+                "The provider-failure fixture could not create a typed PreceptComp_Thought.");
             pawn.ideo.SetIdeo(fixtureIdeo);
             Thought_Memory thought = ThoughtMaker.MakeThought(thoughtDef, sourcePrecept);
             thought.pawn = pawn;
@@ -458,33 +455,72 @@ namespace PawnDiary.RimTests
             }
         }
 
-        private static Ideo FindIdeoWithThoughtPrecept(out Precept sourcePrecept, out ThoughtDef thoughtDef)
+        private static Ideo CreateIdeoWithThoughtPrecept(
+            Pawn targetPawn,
+            out Precept sourcePrecept,
+            out ThoughtDef thoughtDef)
         {
             sourcePrecept = null;
             thoughtDef = null;
-            List<Ideo> ideos = Find.IdeoManager?.IdeosListForReading;
-            if (ideos == null) return null;
-            for (int i = 0; i < ideos.Count; i++)
+            if (targetPawn?.ideo == null) return null;
+
+            List<PreceptDef> candidates = DefDatabase<PreceptDef>.AllDefsListForReading.Where(def =>
             {
-                Ideo ideo = ideos[i];
-                List<Precept> precepts = ideo?.PreceptsListForReading;
-                if (precepts == null) continue;
-                for (int j = 0; j < precepts.Count; j++)
+                List<PreceptComp> components = def?.comps;
+                if (components == null) return false;
+                for (int i = 0; i < components.Count; i++)
                 {
-                    Precept precept = precepts[j];
-                    List<PreceptComp> components = precept?.def?.comps;
-                    if (components == null) continue;
-                    for (int k = 0; k < components.Count; k++)
+                    PreceptComp_Thought thought = components[i] as PreceptComp_Thought;
+                    if (thought?.thought != null && thought.thought.durationDays > 0f
+                        && typeof(Thought_Memory).IsAssignableFrom(thought.thought.ThoughtClass)
+                        && InteractionGroups.ClassifyThought(thought.thought) != null)
                     {
-                        PreceptComp_Thought thought = components[k] as PreceptComp_Thought;
-                        if (thought?.thought == null || !typeof(Thought_Memory).IsAssignableFrom(
-                            thought.thought.ThoughtClass)) continue;
-                        sourcePrecept = precept;
-                        thoughtDef = thought.thought;
-                        return ideo;
+                        return true;
                     }
                 }
+
+                return false;
+            }).OrderBy(def => def.defName, StringComparer.Ordinal).ToList();
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                PreceptDef target = candidates[i];
+                PreceptComp_Thought thoughtComp = target.comps.OfType<PreceptComp_Thought>()
+                    .FirstOrDefault(comp => comp?.thought != null
+                        && comp.thought.durationDays > 0f
+                        && typeof(Thought_Memory).IsAssignableFrom(comp.thought.ThoughtClass)
+                        && InteractionGroups.ClassifyThought(comp.thought) != null);
+                if (target.issue == null || thoughtComp?.thought == null || Faction.OfPlayer == null)
+                    continue;
+
+                Ideo fixture = IdeoGenerator.GenerateIdeo(new IdeoGenerationParms
+                {
+                    forFaction = Faction.OfPlayer.def,
+                    fixedIdeo = true
+                });
+                if (fixture == null) continue;
+                Precept existing = fixture.PreceptsListForReading
+                    .FirstOrDefault(precept => precept?.def?.issue == target.issue);
+                if (existing != null) fixture.RemovePrecept(existing, false);
+                Precept candidatePrecept = PreceptMaker.MakePrecept(target);
+                fixture.AddPrecept(candidatePrecept, false, Faction.OfPlayer.def, null);
+                targetPawn.ideo.SetIdeo(fixture);
+
+                DiaryInteractionGroupDef group = InteractionGroups.ClassifyThought(thoughtComp.thought);
+                PawnDiaryMod.Settings.SetGroupEnabled(group.defName, true);
+                Thought_Memory probe = ThoughtMaker.MakeThought(thoughtComp.thought, candidatePrecept);
+                probe.pawn = targetPawn;
+                ThoughtSignal probeSignal = new ThoughtSignal(targetPawn, probe);
+                CaptureDecision decision = ThoughtEventData.Decide(
+                    probeSignal.Payload as ThoughtEventData,
+                    probeSignal.BuildContext());
+                if (decision != CaptureDecision.GenerateSolo) continue;
+
+                sourcePrecept = candidatePrecept;
+                thoughtDef = thoughtComp.thought;
+                return fixture;
             }
+
             return null;
         }
 
@@ -518,7 +554,8 @@ namespace PawnDiary.RimTests
             Precept existing = fixture.PreceptsListForReading
                 .FirstOrDefault(precept => precept?.def?.issue == target.issue);
             if (existing != null) fixture.RemovePrecept(existing, false);
-            fixture.AddPrecept(PreceptMaker.MakePrecept(target), false, Faction.OfPlayer.def, null);
+            Precept targetPrecept = PreceptMaker.MakePrecept(target);
+            fixture.AddPrecept(targetPrecept, false, Faction.OfPlayer.def, null);
 
             // Traits have stronger intentional precedence than ideology. Remove either vanilla body
             // trait from this disposable pawn so the assertion isolates the precept worker path. The
@@ -544,6 +581,20 @@ namespace PawnDiary.RimTests
                     StringComparison.Ordinal),
                 preceptDefName + " did not preserve body_attitude=" + expectedAttitude
                     + " through the real AddHediff capture path.");
+            BeliefSnapshot belief = DlcContext.CaptureBeliefSnapshot(pawn);
+            string expectedKey = "ideology|interpretation|" + pawn.GetUniqueLoadID() + "|"
+                + belief.ideologyId + "|instance|" + targetPrecept.GetUniqueLoadID();
+            List<NarrativeEvidence> frozenEvidence = diaryEvent.NarrativeEvidenceForRole(
+                DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(
+                frozenEvidence.Count == 1
+                    && frozenEvidence[0].eventId == diaryEvent.eventId
+                    && frozenEvidence[0].tick == diaryEvent.tick
+                    && diaryEvent.NarrativeSelectedCandidateKeysForRole(
+                        DiaryEvent.InitiatorRole).Contains(expectedKey)
+                    && !string.IsNullOrWhiteSpace(
+                        diaryEvent.NarrativeContextForRole(DiaryEvent.InitiatorRole)),
+                preceptDefName + " did not re-stamp and persist the prepared body N3-I lens.");
         }
     }
 }
