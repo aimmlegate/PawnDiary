@@ -29,6 +29,7 @@ namespace DiaryCapturePolicyTests
             TestInspirationBuildGameContextFormat();
             TestMoodEventDecide();
             TestMoodEventBuildGameContextFormat();
+            TestMentalStateNestedCompanionPolicy();
             TestMentalStateDecide();
             TestMentalStateBuildPairGameContextFormat();
             TestMentalStateBuildSoloGameContextFormat();
@@ -330,6 +331,34 @@ namespace DiaryCapturePolicyTests
         }
 
         // ── MentalState (first pair source) ──
+
+        private static void TestMentalStateNestedCompanionPolicy()
+        {
+            AssertTrue("IdeoChange silent sad wander companion is suppressed",
+                MentalStateEventData.ShouldSuppressNestedCompanion(
+                    "IdeoChange", "Wander_Sad", transitionSilently: true));
+            AssertTrue("IdeoChange silent own-room companion is suppressed",
+                MentalStateEventData.ShouldSuppressNestedCompanion(
+                    "IdeoChange", "Wander_OwnRoom", transitionSilently: true));
+            AssertTrue("non-silent IdeoChange wander remains capturable",
+                !MentalStateEventData.ShouldSuppressNestedCompanion(
+                    "IdeoChange", "Wander_Sad", transitionSilently: false));
+            AssertTrue("ordinary sad wander remains capturable",
+                !MentalStateEventData.ShouldSuppressNestedCompanion(
+                    "Berserk", "Wander_Sad", transitionSilently: true));
+            AssertTrue("unrelated nested mental state remains capturable",
+                !MentalStateEventData.ShouldSuppressNestedCompanion(
+                    "IdeoChange", "Berserk", transitionSilently: true));
+            AssertTrue("modded IdeoChange-like state remains capturable",
+                !MentalStateEventData.ShouldSuppressNestedCompanion(
+                    "ModdedIdeoChange", "Wander_Sad", transitionSilently: true));
+            AssertTrue("missing current state remains capturable",
+                !MentalStateEventData.ShouldSuppressNestedCompanion(
+                    null, "Wander_Sad", transitionSilently: true));
+            AssertTrue("missing requested state remains capturable",
+                !MentalStateEventData.ShouldSuppressNestedCompanion(
+                    "IdeoChange", null, transitionSilently: true));
+        }
 
         private static void TestMentalStateDecide()
         {

@@ -1,5 +1,7 @@
 // Loaded-game fixtures for Ideology Phase 2 mutation infrastructure, exact interaction consumers, and
-// the exact IdeoChange crisis consumer on the existing solo mental-state page.
+// the exact IdeoChange crisis consumer on the existing solo mental-state page. The real boundary
+// also proves vanilla's nested silent Wander_OwnRoom/Wander_Sad transition does not become a second
+// diary page.
 // These tests invoke real Pawn_IdeoTracker methods patched by production, inspect their detached
 // before/after facts, prove exact ability ownership leaves the enriched downstream PlayLog interaction
 // as the sole diary page, and force the real MentalState_IdeoChange.PreStart boundary once.
@@ -249,8 +251,9 @@ namespace PawnDiary.RimTests
 
         /// <summary>
         /// Forces the real IdeoChange mental-state boundary once. Vanilla PreStart performs its
-        /// conversion attempt before Pawn Diary's successful-start postfix, so the existing solo page
-        /// must freeze that exact mutation without consuming it or creating a second page.
+        /// conversion attempt and then silently transitions to a wander state before Pawn Diary's outer
+        /// successful-start postfix, so the existing crisis page must freeze the exact mutation while
+        /// suppressing only that nested implementation-detail page.
         /// </summary>
         [Test]
         public static void RealIdeoChangeBoundaryEnrichesItsSingleSoloPage()

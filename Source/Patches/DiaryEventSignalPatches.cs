@@ -97,11 +97,34 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Freezes whether this invocation is vanilla IdeoChange's nested silent wander transition.
+        /// Harmony gives each recursive TryStartMentalState call its own __state value, so the inner
+        /// Wander page can be dropped while the outer IdeoChange call still reaches the postfix.
+        /// </summary>
+        public static void Prefix(
+            MentalStateHandler __instance,
+            MentalStateDef stateDef,
+            bool transitionSilently,
+            ref bool __state)
+        {
+            __state = MentalStateEventData.ShouldSuppressNestedCompanion(
+                __instance?.CurStateDef?.defName,
+                stateDef?.defName,
+                transitionSilently);
+        }
+
+        /// <summary>
         /// Harmony Postfix for MentalStateHandler.TryStartMentalState. Forwards successful
         /// mental state transitions to DiaryGameComponent for diary recording.
         /// </summary>
-        public static void Postfix(bool __result, MentalStateHandler __instance, MentalStateDef stateDef, string reason, Pawn otherPawn)
+        public static void Postfix(bool __result, MentalStateHandler __instance, MentalStateDef stateDef,
+            string reason, Pawn otherPawn, bool __state)
         {
+            if (__state)
+            {
+                return;
+            }
+
             DiaryPatchSafety.Run("MentalStateStartPatch", () =>
             {
                 if (!__result || stateDef == null || __instance == null)

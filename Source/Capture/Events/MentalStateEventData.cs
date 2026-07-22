@@ -3,7 +3,9 @@
 // the Event Catalog and the FIRST pair source: a social fight (MentalStateDef "SocialFighting")
 // between two eligible pawns is recorded as a pairwise event with both POV entries, while every
 // other accepted break (berserk, sad wandering, insult spree, ...) is recorded as a solo event
-// from the breaking pawn's point of view.
+// from the breaking pawn's point of view. Vanilla IdeoChange is one special lifecycle: its PostStart
+// immediately replaces itself with a silent Wander_OwnRoom/Wander_Sad companion state. That nested
+// implementation detail is suppressed here so the outer crisis remains the one player-visible page.
 //
 // The decision logic mirrors the pre-refactor RecordMentalState body byte-for-byte:
 // 1. eligibility + user toggle gate,
@@ -31,6 +33,12 @@ namespace PawnDiary.Capture
         /// this is a specific vanilla defName we classify on, not an XML-tunable token.</summary>
         public const string SocialFightingDefName = "SocialFighting";
 
+        /// <summary>Exact vanilla lifecycle tokens used only to collapse IdeoChange's nested wander
+        /// implementation detail. They are strings so loading Pawn Diary never requires Ideology.</summary>
+        public const string IdeoChangeDefName = "IdeoChange";
+        public const string WanderOwnRoomDefName = "Wander_OwnRoom";
+        public const string WanderSadDefName = "Wander_Sad";
+
         public override DiaryEventType EventType => DiaryEventType.MentalState;
 
         /// <summary>The mental state's defName (e.g. "Berserk", "SocialFighting", "SadWander").</summary>
@@ -50,6 +58,29 @@ namespace PawnDiary.Capture
         /// the optional "target=" field. Empty for pair events and untargeted breaks. Pre-cleaned
         /// by the caller via DiaryLineCleaner.CleanLine.</summary>
         public string OtherPawnLabel;
+
+        /// <summary>
+        /// True only for vanilla's silent companion transition started inside
+        /// <c>MentalState_IdeoChange.PostStart</c>. Ordinary sad wandering, unrelated nested states,
+        /// non-silent transitions, and modded mental states remain normal capture candidates.
+        /// </summary>
+        public static bool ShouldSuppressNestedCompanion(
+            string currentDefName,
+            string requestedDefName,
+            bool transitionSilently)
+        {
+            if (!transitionSilently
+                || !string.Equals(currentDefName, IdeoChangeDefName,
+                    System.StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return string.Equals(requestedDefName, WanderOwnRoomDefName,
+                       System.StringComparison.Ordinal)
+                || string.Equals(requestedDefName, WanderSadDefName,
+                    System.StringComparison.Ordinal);
+        }
 
         /// <summary>
         /// Pure decision for a mental-state event. Order matches the pre-refactor RecordMentalState:

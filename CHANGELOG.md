@@ -1,5 +1,17 @@
 # Changelog
 
+- **2026-07-22 — Collapsed IdeoChange's vanilla companion transition into its crisis page.** The
+  first 377-test loaded run showed that `MentalState_IdeoChange.PostStart` recursively starts a silent
+  `Wander_OwnRoom`/`Wander_Sad` before the outer start returns, so both Harmony postfixes produced
+  pages. Mental-state capture now suppresses only that exact nested vanilla transition and retains the
+  enriched outer `IdeoChange` page. Ordinary wander, Berserk, non-silent, wrong-current, and modded
+  paths remain capturable. Pure capture-policy coverage now includes all of those boundaries, and the
+  real loaded fixture continues to require exactly one total new page without retrying randomness.
+  `DiaryCapturePolicyTests` passes 724 assertions; both tracked DLLs rebuild with 0 warnings/errors.
+  The first loaded 377-test run was 375/377: this duplicate was the Pawn Diary failure, while the
+  other result was the existing Odyssey host prerequisite for a parked player gravship. After this
+  correction and satisfying that host prerequisite, the loaded rerun passed 377/377.
+
 - **2026-07-22 — Integrated Ideology Phase 2 Crisis of Belief without adding a page.** Exact
   `IdeoChange` now resolves the Ideology-gated `beliefCrisis` mental-state group before the generic
   catchall and enriches its existing solo event by peeking the breaking pawn's detached mutation row.
@@ -11,8 +23,8 @@
   save field, polling path, or gameplay RNG draw was added; no-DLC/classic/modded mental states remain
   safe. Pure belief/pipeline coverage passes 338/2,842 assertions. A deterministic real-boundary
   fixture raises the tracked RimTest assembly to 377 compiled tests and restores pawn, mental state,
-  PlayLog invariant, mutation cache, settings, and RNG; it has not yet been executed in-game. Both
-  tracked DLLs build with 0 warnings/errors.
+  PlayLog invariant, mutation cache, settings, and RNG; its first execution exposed and motivated the
+  exact nested-companion correction above. Both tracked DLLs build with 0 warnings/errors.
 
 - **2026-07-22 — Closed the remaining adversarial Ideology consumer test gaps.** The loaded Phase-2
   fixture now asserts every mechanical field of all four shipped `mutationEventRules`, drives the real

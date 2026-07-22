@@ -781,7 +781,10 @@ events and exactly one canonical downstream interaction/ritual event.
 > and appends `belief_event=crisis`. Missing or rejected mutation evidence carries only a typed request
 > for guarded current identity/certainty; no old ideology is reconstructed. The exact localized
 > `DiaryEventPrompt_IdeoChange` wins by normal prompt-key precedence. No new page, hook, save field,
-> polling path, or gameplay RNG draw was added.
+> polling path, or gameplay RNG draw was added. The first loaded run confirmed vanilla's outer
+> lifecycle recursively starts a silent `Wander_OwnRoom`/`Wander_Sad` in `PostStart`; the existing
+> mental-state hook now drops only that exact nested companion transition so the crisis contract truly
+> remains one page.
 
 - Add an exact mental-state group for `IdeoChange` before the generic mental-state catchall.
 - Peek the mutation created during `MentalState_IdeoChange.PreStart` and attach it to the event.
@@ -1350,6 +1353,9 @@ existing solo page and one non-consumed coalesced mutation row, checks exact pre
 and certainty mechanics, verifies PlayLog is unchanged, and reports inactive-DLC/classic-mode branches
 as not applicable. Pure fixtures cover changed/unchanged results plus wrong-pawn, stale, future, and
 missing-evidence fallbacks; the existing real Berserk fixture remains the unrelated-state regression.
+The first loaded run exposed vanilla's nested silent wander transition as a second captured page; the
+exact companion suppression above fixes the production path while preserving the fixture's original
+one-total-page assertion. The corrected loaded rerun passed the complete 377/377 suite.
 
 Never retry chance-driven cases until they happen. Override XML-effective chance to `0`/`1` or inject
 a deterministic pure decision.

@@ -310,7 +310,12 @@ certainty without reconstructing any former faith. Exact crisis pages append onl
 DefInjected text explicitly distinguishes actual conversion from challenged/falling certainty and
 forbids invented former or attempted faiths. No-DLC/package-inactive paths return null, classic mode
 cannot naturally start vanilla's break, and unrelated or modded mental states retain their prior
-groups, prompts, page count, and empty optional evidence behavior.
+groups, prompts, page count, and empty optional evidence behavior. Vanilla then calls
+`MentalState_IdeoChange.PostStart`, which recursively starts a silent `Wander_OwnRoom` or
+`Wander_Sad` companion state before the outer Harmony postfix. The mental-state capture prefix
+freezes that exact current/requested/silent triple and drops only the nested companion; the outer
+`IdeoChange` postfix still creates the single crisis page. Ordinary wander starts, non-silent
+transitions, other current states, and modded DefNames are not suppressed.
 
 The frozen value flows through `DiaryPovPayload.beliefContext` → `PromptValues.beliefContext` →
 `PromptAssembler.ResolveSource("BeliefContext")`. Full/Balanced/Compact detail projection is applied

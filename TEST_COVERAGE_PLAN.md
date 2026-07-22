@@ -1067,9 +1067,16 @@ non-consumed conversion mutation, and verifies that PlayLog does not change. It 
 and classic mode as not applicable; teardown restores the mental state, pawn, generated alternative
 Ideo when needed, cache, group/settings state, and RNG. Standalone belief/pipeline fixtures prove exact
 group/prompt priority, ordinary Berserk ownership, wrong-pawn/stale/future evidence rejection,
-changed-versus-unchanged truth, and current-only fallback without reconstructing an old faith. This
-new 377th fixture is compiled but has not yet been executed in-game; the recorded 376/376 baseline
-below remains the latest loaded result.
+changed-versus-unchanged truth, and current-only fallback without reconstructing an old faith. The
+new fixture's first in-game execution produced the
+truthful `IdeoChange` page plus vanilla's nested silent `Wander_Sad` companion page. Capture-policy
+coverage now proves that only `IdeoChange` -> silent `Wander_Sad`/`Wander_OwnRoom` is suppressed;
+ordinary wander, Berserk, non-silent, wrong-current, missing, and modded paths remain capturable. The
+same real-boundary fixture still requires exactly one total new page, so the regression cannot be
+masked by filtering its assertion or retrying RNG. That run completed 375/377; the other failure was
+the existing N3-O Odyssey acceptance guard on a host without a parked player gravship, not an Ideology
+or Pawn Diary capture regression. After the exact companion fix and satisfying the Odyssey host
+precondition, the complete loaded suite passed 377/377; that is the latest in-game result.
 The first user-observed 376-test loaded run completed 374/376. It exposed the dedicated worker
 fixture's disabled `ConversionPower`/unspawned-recipient prerequisites, while the other failure was the
 unrelated N3-O acceptance guard on a host without a parked player gravship. After correcting the
