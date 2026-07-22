@@ -135,16 +135,21 @@
       <li><topicToken>authority_speech</topicToken><aliases><li>authority leadership</li><li>leader social role</li><li>slavery social structure</li><li>social hierarchy</li><li>ranked authority</li><li>slavery normal part life</li></aliases></li>
     </semanticAliases>
 
-    <!-- Exact future adapter groups. A broad raid adds violence, never charity without an aid fact. -->
+    <!-- Exact adapter groups. A broad raid adds violence, never charity without an aid fact. -->
     <eventEvidenceRules>
       <li><key>body_modification</key><sourceDomain>medical</sourceDomain><groupKey>body_modification</groupKey><addTopics><li>body_modification</li></addTopics><addSemanticAliases><li>body_modification</li></addSemanticAliases></li>
       <li><key>organ_use</key><sourceDomain>medical</sourceDomain><groupKey>organ_use</groupKey><addTopics><li>organ_use</li></addTopics><addSemanticAliases><li>organ_use</li></addSemanticAliases></li>
-      <li><key>cannibal_meal</key><sourceDomain>food</sourceDomain><groupKey>cannibal_meal</groupKey><addTopics><li>cannibalism</li><li>meals</li></addTopics><addSemanticAliases><li>cannibalism</li></addSemanticAliases></li>
+      <li><key>cannibal_meal</key><groupKey>cannibal_meal</groupKey><addTopics><li>cannibalism</li><li>meals</li></addTopics><addSemanticAliases><li>cannibalism</li></addSemanticAliases></li>
       <li><key>known_meal</key><sourceDomain>food</sourceDomain><groupKey>meal</groupKey><addTopics><li>meals</li></addTopics></li>
       <li><key>raid_visible</key><sourceDomain>combat</sourceDomain><groupKey>raid</groupKey><addTopics><li>raids</li><li>violence</li></addTopics></li>
       <li><key>aid_visible</key><sourceDomain>social</sourceDomain><groupKey>aid</groupKey><addTopics><li>charity</li></addTopics><addSemanticAliases><li>charity</li></addSemanticAliases></li>
       <li><key>ritual_visible</key><sourceDomain>ritual</sourceDomain><groupKey>ritual</groupKey><addTopics><li>rituals</li></addTopics><addSemanticAliases><li>rituals</li></addSemanticAliases></li>
     </eventEvidenceRules>
+
+    <!-- Mechanical ingredient categories only: no required precept, issue, meme, meal, or meat Def IDs. -->
+    <foodEvidenceRules>
+      <li><key>humanlike_meat</key><ingredientKind>humanlike_meat</ingredientKind><groupKey>cannibal_meal</groupKey><matchField>ingredient_label</matchField></li>
+    </foodEvidenceRules>
 
     <!-- Schema/prompt labels only; language-specific common words are suppressed per live snapshot. -->
     <lexicalExclusions>

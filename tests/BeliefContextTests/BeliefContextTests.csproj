@@ -18,6 +18,7 @@
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefActiveThoughtPolicy.cs" Link="BeliefActiveThoughtPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefReflectionPolicy.cs" Link="BeliefReflectionPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefEventEvidenceFactory.cs" Link="BeliefEventEvidenceFactory.cs" />
+    <Compile Include="..\..\Source\Pipeline\Belief\FoodBeliefEvidencePolicy.cs" Link="FoodBeliefEvidencePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\CounselEventPolicy.cs" Link="CounselEventPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\ConversionRitualPolicy.cs" Link="ConversionRitualPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\AuthoritySpeechPolicy.cs" Link="AuthoritySpeechPolicy.cs" />

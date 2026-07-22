@@ -52,11 +52,11 @@ repo for development, but the Workshop payload omits source code and other devel
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including exact-author Anomaly study, containment-breach, visible creepjoiner-outcome, and surgical-disclosure signals, Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, exact completed-conversion and authority-speech evidence fan-out, lossless quick-aid raid ownership, and exact-root Royal Ascent quest fanout. |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue, associative-memory recall/deposit/eviction (`DiaryGameComponent.Memory.cs`), and additive Anomaly study/monolith/visible-creepjoiner persistence plus detached transaction owners and conservative pre-A1/pre-A2 baselining. Also `PawnMemoryRepository` (per-pawn memory store). |
-| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including the Ideology event-time builder, guarded doctrine/mutation projection, bounded plain HistoryEvent sidecar, transient mutation cache, and exact interaction/mental-state/conversion-ritual/authority-speech evidence adapters; guarded Anomaly study/codex/containment/monolith/creepjoiner capture; the visible-only N3-A context adapter; Odyssey location/mobile-home/lifecycle; and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including bounded visible-only N3-A and exact-map N3-O providers), Ideology detached belief contracts, explicit-source evidence constructors, bounded HistoryEvent correlation and mutation-coalescing storage, exact canonical-event ownership, interaction/mental-state mutation selection, completed-conversion and authority-speech ritual selection with POV isolation, structural/lexical stance resolver, formatter, and future reflection-policy shell under `Pipeline/Belief/`, Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/`. |
-| `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the active Ideology belief-policy boundary, exact completed-conversion and authority-speech ritual policies, and the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
+| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including the Ideology event-time builder, guarded doctrine/mutation projection, bounded plain HistoryEvent sidecar, transient mutation cache, and exact interaction/mental-state/conversion-ritual/authority-speech/food evidence adapters; guarded Anomaly study/codex/containment/monolith/creepjoiner capture; the visible-only N3-A context adapter; Odyssey location/mobile-home/lifecycle; and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including bounded visible-only N3-A and exact-map N3-O providers), Ideology detached belief contracts, explicit-source evidence constructors, bounded HistoryEvent correlation and mutation-coalescing storage, exact canonical-event ownership, interaction/mental-state mutation selection, exact food-evidence selection, completed-conversion and authority-speech ritual selection with POV isolation, structural/lexical stance resolver, formatter, and future reflection-policy shell under `Pipeline/Belief/`, Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/`. |
+| `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the active Ideology belief-policy boundary, exact food, completed-conversion, and authority-speech ritual policies, and the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including event-time per-POV `beliefContext`, detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, the optional Anomaly monolith-knowledge snapshot, visible-only creepjoiner arc rows, and the `MemoryFragment` pawn-memory row. |
-| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, the non-emitting Ideology HistoryEvent observer plus exact mutation boundaries, defensive exact Anomaly study/containment/creepjoiner/ghoul seams, guarded Odyssey lifecycle seams, and defensively registered Royalty persona/title/succession/permit and Quest lifecycle hooks. |
+| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, the non-emitting Ideology HistoryEvent observer plus exact mutation and bounded food-ingestion boundaries, defensive exact Anomaly study/containment/creepjoiner/ghoul seams, guarded Odyssey lifecycle seams, and defensively registered Royalty persona/title/succession/permit and Quest lifecycle hooks. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper projects plus the optional in-game `PawnDiary.RimTest` smoke suite. |
@@ -187,7 +187,7 @@ Generation starts only after an event exists in the saved hot store.
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
 
-**Ideology Phases 0–1, Narrative N3-I, plus Phase-2 mutation infrastructure and exact interaction/Counsel/completed-conversion-ritual enrichment
+**Ideology Phases 0–1, Narrative N3-I, plus Phase-2 mutation infrastructure and exact interaction/Counsel/completed-conversion-ritual/authority-speech/food enrichment
 (Master Wave 10)** keep the Phase-0
 pure policy contract and Phase-1 event-time runtime seam. `BeliefResolutionRequest` embeds the existing per-POV `NarrativeEvidence`, so shared facet,
 salience, knowledge, source, topic, interpretation-category, and deterministic-seed semantics are not
@@ -252,7 +252,24 @@ queries only that selected precept's currently active, non-social situational Th
 projected mechanical valence. Memory ThoughtDefs are never passed to vanilla's situational handler
 (whose worker is null), and social ThoughtDefs are never evaluated without their required other pawn.
 This preserves vanilla/modded approval and rejection without precept-name or localized-text allowlists.
-The old approve/despise Def-name lists are gone. The guarded
+The old approve/despise Def-name lists are gone.
+
+The bounded food client also enriches only that existing `ThoughtSignal` page. Installed RimWorld
+1.6.9676 shows that `MemoryThoughtHandler.TryGainMemory` receives the accepted memory but no food
+`Thing`, while `Thing.Ingested` synchronously calls `FoodUtility.ThoughtsFromIngesting` and then gains
+each returned thought. The guarded ingestion prefix therefore captures a primitive fact only when the
+direct food Def or one of the meal's exact `CompIngredients` Defs has
+`MeatSourceCategory.Humanlike`; the result postfix binds that fact to the exact returned thought
+DefNames, and the ingestion postfix/finalizer clears the short-lived scope. The pure
+`FoodBeliefEvidencePolicy` maps only the XML-owned `humanlike_meat` selector to the existing
+`cannibal_meal` group and exact `ingredient_label`. Generic meals, quality, broad eating labels,
+unknown ingredients, malformed/duplicate policy, inactive Ideology, and adapter failure add nothing.
+Direct `Thought.sourcePrecept` and exact projected thought correlations retain resolver precedence.
+The bridge is base-game fact capture, performs no Def lookup or reflection on the hot path, creates no
+page, consumes no `Rand`, changes no dedup key, and adds no save field; the already-authorized page
+freezes the resulting belief context normally.
+
+The guarded
 `HistoryEventsManager.RecordEvent` postfix only stores a short-lived, bounded pawn/tick/Def-name
 observation and can neither authorize nor create a page. Its hot hook uses the state-passing safety
 wrapper, and the deep-copied belief policy snapshot is shared per active language instead of rebuilt
@@ -1945,7 +1962,7 @@ it onto the bus.
 
 | Event type | Observed by | Ingestion | Shape |
 |---|---|---|---|
-| Thought | `MemoryThoughtHandler.TryGainMemory` | `ThoughtSignal` | solo (+ ambient) |
+| Thought | `MemoryThoughtHandler.TryGainMemory`; optional exact food correlation from `Thing.Ingested` / `FoodUtility.ThoughtsFromIngesting` | `ThoughtSignal` | solo (+ ambient); food evidence never owns a page |
 | Inspiration | `InspirationHandler.TryStartInspiration` | `InspirationSignal` | solo |
 | Ability | `Ability.Activate` overloads | `AbilitySignal` | solo (sampled) |
 | Romance | `Pawn_RelationsTracker.AddDirectRelation` | `RomanceSignal` | pair |
@@ -1977,7 +1994,7 @@ it onto the bus.
 | Arrivals | Starting-colonist scan and `Pawn.SetFaction` | Neutral first page. |
 | Deaths | `Pawn.Kill` plus XML death TaleDefs | Neutral final page. |
 | Mood events | `GameConditionManager.RegisterCondition` | One entry per eligible colonist on affected maps. |
-| Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. Memories vanilla rejects (accept-gates fire before `thought.pawn` is assigned) are ignored — never gained, so never recorded. If a malformed/modded `ThoughtDef` throws while resolving its localized label, capture continues with the stable `defName` as a technical fallback. |
+| Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. Memories vanilla rejects (accept-gates fire before `thought.pawn` is assigned) are ignored — never gained, so never recorded. If a malformed/modded `ThoughtDef` throws while resolving its localized label, capture continues with the stable `defName` as a technical fallback. An exact humanlike-meat ingredient may enrich the same accepted thought page through its synchronous ingestion scope; a generic or unknown meal never supplies ingredient evidence. |
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
 | Pawn progression | Periodic scan plus defensive Royalty exact hooks | Passion-only skill milestones, cause-aware psylink gains, xenotype changes, faction-aware royal-title gained/promoted/demoted/lost transitions, exact royal succession/explicit heir appointment, and newly gained personality traits. Exact Royalty hooks advance saved truth immediately; the scanner remains a loss-aware fallback and observes while output is disabled. Succession, bestowing, and anima owners suppress matching title progression, while neuroformer owns one progression page. Trait gains feed the trait's own character-card description (no stat/mechanic lines) into the prompt so any trait — vanilla or modded — is voiced as a felt personality shift without a hardcoded per-trait table. First observation baselines existing saves to avoid retroactive spam; major psylink/xenotype changes can request a rare arc reflection after the normal page records. |
 | Royalty persona weapons | Defensive `CompBladelinkWeapon` coding, equip/loss, destruction, map-removal, and `UnCode` hooks plus an independent elapsed scan | Exact coding/transfer creates one formation epoch; a short weapon swap is silent; one meaningful separation appears only after the XML threshold and only its accepted page authorizes recovery; destruction creates one standalone ending. State advances even when output is disabled, and late-visible old bonds baseline silently. Current narrative context requires the exact live coded weapon rather than saved state alone. Pawn death/map removal remain page-silent here, and all live reads no-op without Royalty. |

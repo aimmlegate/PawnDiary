@@ -209,6 +209,24 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// Exact detached food identity captured while vanilla still owns the ingested Thing. The kind is
+    /// a stable mechanical token; the Def identity and label are copied facts, never inferred from a
+    /// generic meal name or quality.
+    /// </summary>
+    internal sealed class FoodIngestionEvidenceFact
+    {
+        public string ingredientKind = string.Empty;
+        public string ingredientDefName = string.Empty;
+        public string ingredientLabel = string.Empty;
+    }
+
+    /// <summary>Stable mechanical food categories understood by XML food-evidence rules.</summary>
+    internal static class FoodIngestionEvidenceKindTokens
+    {
+        public const string HumanlikeMeat = "humanlike_meat";
+    }
+
+    /// <summary>
     /// One non-emitting history observation. Only stable identifiers leave the guarded runtime
     /// adapter; the bounded correlation buffer never owns a HistoryEvent, Pawn, or Def.
     /// </summary>
@@ -671,6 +689,30 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>
+    /// XML-owned mapping from one exact captured ingredient kind to resolver group/field vocabulary.
+    /// It names no precept, issue, meme, thought, meal, or ingredient Def.
+    /// </summary>
+    internal sealed class BeliefFoodEvidenceRule
+    {
+        public readonly string key;
+        public readonly string ingredientKind;
+        public readonly string groupKey;
+        public readonly string matchField;
+
+        public BeliefFoodEvidenceRule(
+            string key,
+            string ingredientKind,
+            string groupKey,
+            string matchField)
+        {
+            this.key = key ?? string.Empty;
+            this.ingredientKind = ingredientKind ?? string.Empty;
+            this.groupKey = groupKey ?? string.Empty;
+            this.matchField = matchField ?? string.Empty;
+        }
+    }
+
     /// <summary>Explicit compatibility correction for a proven metadata-poor Def. Defaults contain none.</summary>
     internal sealed class BeliefCorrelationCorrection
     {
@@ -818,6 +860,7 @@ namespace PawnDiary
         public List<BeliefCertaintyBand> certaintyBands = new List<BeliefCertaintyBand>();
         public List<BeliefSemanticAlias> semanticAliases = new List<BeliefSemanticAlias>();
         public List<BeliefEventEvidenceRule> eventEvidenceRules = new List<BeliefEventEvidenceRule>();
+        public List<BeliefFoodEvidenceRule> foodEvidenceRules = new List<BeliefFoodEvidenceRule>();
         public List<string> lexicalExclusions = new List<string>();
         public List<string> proselytizingPovRoles = new List<string>();
         public List<BeliefCanonicalEventOwnershipRule> canonicalEventOwnershipRules =
@@ -967,6 +1010,7 @@ namespace PawnDiary
         public readonly IReadOnlyList<BeliefCertaintyBand> certaintyBands;
         public readonly IReadOnlyList<BeliefSemanticAlias> semanticAliases;
         public readonly IReadOnlyList<BeliefEventEvidenceRule> eventEvidenceRules;
+        public readonly IReadOnlyList<BeliefFoodEvidenceRule> foodEvidenceRules;
         public readonly IReadOnlyList<string> lexicalExclusions;
         public readonly IReadOnlyList<string> proselytizingPovRoles;
         public readonly IReadOnlyList<BeliefCanonicalEventOwnershipRule> canonicalEventOwnershipRules;
@@ -1038,6 +1082,7 @@ namespace PawnDiary
             certaintyBands = CopyBands(value.certaintyBands);
             semanticAliases = CopyAliases(value.semanticAliases);
             eventEvidenceRules = CopyRules(value.eventEvidenceRules);
+            foodEvidenceRules = CopyFoodRules(value.foodEvidenceRules);
             lexicalExclusions = CopyStrings(value.lexicalExclusions);
             proselytizingPovRoles = CopyStrings(value.proselytizingPovRoles);
             canonicalEventOwnershipRules = CopyOwnershipRules(value.canonicalEventOwnershipRules);
@@ -1126,6 +1171,23 @@ namespace PawnDiary
                         row.mutationCauseToken, ToList(row.addTopics), ToList(row.addSemanticAliases)));
                 }
             return new ReadOnlyCollection<BeliefEventEvidenceRule>(copy);
+        }
+
+        private static IReadOnlyList<BeliefFoodEvidenceRule> CopyFoodRules(
+            IList<BeliefFoodEvidenceRule> source)
+        {
+            List<BeliefFoodEvidenceRule> copy = new List<BeliefFoodEvidenceRule>();
+            if (source != null)
+                for (int i = 0; i < source.Count; i++)
+                {
+                    BeliefFoodEvidenceRule row = source[i];
+                    // Preserve malformed and duplicate rows in the detached snapshot. The pure food
+                    // policy must see ambiguity and fail closed instead of silently blessing one row.
+                    if (row != null)
+                        copy.Add(new BeliefFoodEvidenceRule(
+                            row.key, row.ingredientKind, row.groupKey, row.matchField));
+                }
+            return new ReadOnlyCollection<BeliefFoodEvidenceRule>(copy);
         }
 
         private static IReadOnlyList<BeliefCanonicalEventOwnershipRule> CopyOwnershipRules(

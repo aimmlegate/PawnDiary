@@ -102,6 +102,12 @@ namespace PawnDiary.Ingestion
                 payload.DefName,
                 thoughtLabel,
                 DlcContext.CaptureThoughtSourcePrecept(thought));
+            // Thing.Ingested opens a short primitive correlation scope only for exact humanlike-meat
+            // food/ingredients and only for ThoughtDefs vanilla returned from that same ingestion.
+            // This runs after every established hot-path guard above; unrelated thoughts pay only the
+            // active-scope check and never trigger policy snapshots, reflection, scans, or Def lookups.
+            FoodThoughtEvidenceAdapter.TryEnrichCurrent(
+                beliefEvidence, payload.PawnId, payload.DefName, ModsConfig.IdeologyActive);
         }
 
         public override DiaryEventData Payload => payload;

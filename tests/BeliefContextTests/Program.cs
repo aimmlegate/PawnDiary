@@ -27,6 +27,7 @@ namespace PawnDiary
             TestLexicalCommonConfidenceAndAmbiguityRejection();
             TestLexicalFuzzyAndUnknownTopicBehavior();
             TestBodyOrganMealRaidAndRitualScenarios();
+            TestExactFoodEvidenceClient();
             TestLiveDoctrineIntersectionRedundancyAndCaps();
             TestSecondSlotIndependenceOrderingAndRepetition();
             TestCertaintyBoundariesAndTrends();
@@ -2518,6 +2519,142 @@ namespace PawnDiary
             builder.allowedMutationCauseTokens.Add(BeliefMutationCauseTokens.SetIdeology);
             builder.allowedMutationCauseTokens.Add(BeliefMutationCauseTokens.CertaintyOffset);
             return builder;
+        }
+
+        private static void TestExactFoodEvidenceClient()
+        {
+            BeliefPolicyBuilder builder = BeliefPolicyBuilder.CreateDefault();
+            builder.semanticAliases.Add(new BeliefSemanticAlias("cannibalism",
+                new List<string> { "cannibalism", "human meat" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("meals",
+                new List<string> { "meal", "food", "ingredient" }));
+            builder.eventEvidenceRules.Add(Rule("cannibal_meal", string.Empty,
+                "cannibal_meal", new[] { "cannibalism", "meals" },
+                new[] { "cannibalism" }));
+            builder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
+                "humanlike_meat", FoodIngestionEvidenceKindTokens.HumanlikeMeat,
+                "cannibal_meal", "ingredient_label"));
+            BeliefPolicySnapshot policy = builder.Build();
+            FoodIngestionEvidenceFact exactHumanMeat = new FoodIngestionEvidenceFact
+            {
+                ingredientKind = FoodIngestionEvidenceKindTokens.HumanlikeMeat,
+                ingredientDefName = "Synthetic_Human_Meat",
+                ingredientLabel = "human meat"
+            };
+
+            BeliefEventEvidence exact = Evidence(true);
+            string originalDomain = exact.narrative.sourceDomain;
+            AssertTrue("exact human-meat fact activates the XML food mapping",
+                FoodBeliefEvidencePolicy.TryEnrich(exact, exactHumanMeat, true, policy));
+            AssertEqual("food enrichment keeps thought page source ownership", originalDomain,
+                exact.narrative.sourceDomain);
+            AssertEqual("exact human-meat mapping supplies the configured group", "cannibal_meal",
+                exact.groupKey);
+            AssertEqual("exact human-meat mapping supplies one configured match field", 1,
+                exact.matchFields.Count);
+            AssertEqual("exact human-meat field keeps the captured ingredient label", "human meat",
+                exact.matchFields[0].value);
+            ExpandedBeliefEvidence expanded = BeliefEventEvidencePolicy.Expand(exact, policy);
+            AssertTrue("cannibal food rule expands the cannibalism topic",
+                Contains(expanded.topics, "cannibalism"));
+            AssertTrue("cannibal food rule expands the meal topic",
+                Contains(expanded.topics, "meals"));
+
+            BeliefPreceptFact cannibal = Precept(
+                "Cannibal_Food_Stance", "Cannibal_Food_Issue", "human meat", 1);
+            BeliefPreceptFact unrelated = Precept(
+                "Slavery_Unrelated", "Slavery_Issue", "slavery bondage", 3);
+            AssertSelected("exact human-meat evidence activates the cannibal rule only",
+                Resolve(Snapshot(cannibal, unrelated), exact, policy), "Cannibal_Food_Stance");
+            AssertEmpty("exact human-meat evidence leaves unrelated doctrine silent",
+                Resolve(Snapshot(unrelated), exact, policy));
+
+            BeliefEventEvidence generic = Evidence(true);
+            AssertTrue("generic meal without an exact ingredient stays unchanged",
+                !FoodBeliefEvidencePolicy.TryEnrich(generic, null, true, policy));
+            FoodIngestionEvidenceFact unknown = new FoodIngestionEvidenceFact
+            {
+                ingredientKind = "unknown",
+                ingredientDefName = "Synthetic_Unknown_Meal",
+                ingredientLabel = "mystery meal"
+            };
+            AssertTrue("unknown ingredient kind stays unchanged",
+                !FoodBeliefEvidencePolicy.TryEnrich(generic, unknown, true, policy));
+            AssertEqual("generic/unknown meal adds no group", string.Empty, generic.groupKey);
+            AssertEqual("generic/unknown meal adds no ingredient field", 0, generic.matchFields.Count);
+            AssertEqual("generic/unknown meal adds no topic evidence", 0,
+                BeliefEventEvidencePolicy.Expand(generic, policy).topics.Count);
+
+            BeliefEventEvidence sourceWins = Evidence(true);
+            AssertTrue("source-precedence fixture receives exact food evidence",
+                FoodBeliefEvidencePolicy.TryEnrich(sourceWins, exactHumanMeat, true, policy));
+            sourceWins.sourcePreceptInstanceId = unrelated.instanceId;
+            sourceWins.sourcePreceptDefName = unrelated.defName;
+            BeliefStanceResolution sourceResolution = Resolve(
+                Snapshot(cannibal, unrelated), sourceWins, policy);
+            AssertSelected("exact source precept retains precedence over food vocabulary",
+                sourceResolution, unrelated.defName);
+            AssertEqual("food enrichment does not replace source-precept diagnostics",
+                BeliefRelevanceSourceTokens.SourcePrecept,
+                sourceResolution.stances[0].relevanceSource);
+
+            BeliefPreceptFact correlated = CorrelatedPrecept(
+                "Exact_Thought_Food", "Exact_Thought_Issue", "SyntheticFoodThought");
+            BeliefEventEvidence correlationWins = Evidence(true);
+            correlationWins.thoughtDefNames.Add("SyntheticFoodThought");
+            AssertTrue("correlation-precedence fixture receives exact food evidence",
+                FoodBeliefEvidencePolicy.TryEnrich(
+                    correlationWins, exactHumanMeat, true, policy));
+            BeliefStanceResolution correlationResolution = Resolve(
+                Snapshot(cannibal, correlated), correlationWins, policy);
+            AssertSelected("exact thought correlation retains precedence over food vocabulary",
+                correlationResolution, correlated.defName);
+            AssertEqual("food enrichment does not replace correlation diagnostics",
+                BeliefRelevanceSourceTokens.ThoughtCorrelation,
+                correlationResolution.stances[0].relevanceSource);
+
+            BeliefPolicyBuilder malformedBuilder = BeliefPolicyBuilder.CreateDefault();
+            malformedBuilder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
+                "humanlike_meat", FoodIngestionEvidenceKindTokens.HumanlikeMeat,
+                string.Empty, "ingredient_label"));
+            BeliefEventEvidence malformedEvidence = Evidence(true);
+            AssertTrue("malformed exact food policy fails closed",
+                !FoodBeliefEvidencePolicy.TryEnrich(
+                    malformedEvidence, exactHumanMeat, true, malformedBuilder.Build()));
+            AssertEqual("malformed food policy leaves no partial group", string.Empty,
+                malformedEvidence.groupKey);
+            AssertEqual("malformed food policy leaves no partial field", 0,
+                malformedEvidence.matchFields.Count);
+
+            BeliefPolicyBuilder duplicateBuilder = BeliefPolicyBuilder.CreateDefault();
+            duplicateBuilder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
+                "humanlike_meat_first", FoodIngestionEvidenceKindTokens.HumanlikeMeat,
+                "cannibal_meal", "ingredient_label"));
+            duplicateBuilder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
+                "humanlike_meat_second", FoodIngestionEvidenceKindTokens.HumanlikeMeat,
+                "other_group", "ingredient_label"));
+            BeliefEventEvidence duplicateEvidence = Evidence(true);
+            AssertTrue("duplicate exact food mappings fail closed",
+                !FoodBeliefEvidencePolicy.TryEnrich(
+                    duplicateEvidence, exactHumanMeat, true, duplicateBuilder.Build()));
+            AssertEqual("duplicate food policy leaves no partial group", string.Empty,
+                duplicateEvidence.groupKey);
+            AssertEqual("duplicate food policy leaves no partial field", 0,
+                duplicateEvidence.matchFields.Count);
+
+            BeliefEventEvidence inactive = Evidence(true);
+            AssertTrue("Ideology-inactive food enrichment remains inert",
+                !FoodBeliefEvidencePolicy.TryEnrich(inactive, exactHumanMeat, false, policy));
+            BeliefPolicyBuilder disabledBuilder = BeliefPolicyBuilder.CreateDefault();
+            disabledBuilder.enabled = false;
+            disabledBuilder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
+                "humanlike_meat", FoodIngestionEvidenceKindTokens.HumanlikeMeat,
+                "cannibal_meal", "ingredient_label"));
+            AssertTrue("disabled belief policy leaves food enrichment inert",
+                !FoodBeliefEvidencePolicy.TryEnrich(
+                    inactive, exactHumanMeat, true, disabledBuilder.Build()));
+            AssertEqual("inactive/disabled food enrichment adds no field", 0,
+                inactive.matchFields.Count);
         }
 
         private static AuthoritySpeechPolicyBuilder AuthoritySpeechPolicyBuilderForTests()

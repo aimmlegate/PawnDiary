@@ -1,7 +1,9 @@
 # Pawn Diary — Ideoligion Support Implementation Plan
 
 Status: Phases 0–1 and Narrative N3-I are code-complete; Phase 2 infrastructure, exact interaction consumers,
-exact Counsel, the exact `IdeoChange` crisis slice, exact completed-conversion ritual enrichment, and exact throne/leader authority-speech enrichment are partially implemented; Phases 3–6 remain pending. Guarded
+exact Counsel, the exact `IdeoChange` crisis slice, exact completed-conversion ritual enrichment, exact
+throne/leader authority-speech enrichment, and exact humanlike-meat thought enrichment are partially
+implemented; Phases 3–6 remain pending. Guarded
 mutation capture/coalescing, exact downstream Ability ownership, existing PlayLog conversion/
 reassurance enrichment, Counsel context, the existing solo crisis page's truthful mutation/current-state
 context, and role-isolated completed-conversion ritual evidence are live; broader evidence, remaining
@@ -1070,6 +1072,9 @@ impure/pure boundary.
 | `Source/Generation/BeliefHistoryCorrelationCache.cs` | Runtime wrapper for the non-emitting bounded per-pawn/tick plain history-event correlation sidecar. |
 | `Source/Pipeline/Belief/BeliefHistoryCorrelationBuffer.cs` | Pure bounded/stale-pruned exact-pawn HistoryEvent storage. |
 | `Source/Pipeline/Belief/BeliefEventEvidenceFactory.cs` | Pure bounded constructors/copies for explicit source evidence and developer fixtures. |
+| `Source/Pipeline/Belief/FoodBeliefEvidencePolicy.cs` | Pure fail-closed selection of exact primitive ingredient evidence into XML-owned event evidence. |
+| `Source/Generation/FoodThoughtEvidenceAdapter.cs` | Short-lived primitive ingestion-to-thought correlation scope plus failure-isolated runtime adapter. |
+| `Source/Patches/DiaryFoodEvidencePatches.cs` | Guarded exact `Thing.Ingested` / `FoodUtility.ThoughtsFromIngesting` capture and cleanup boundaries. |
 | `Source/Defs/DiaryBeliefPolicyDef.cs` | XML schema, singleton resolution, defensive fallbacks, plain snapshot conversion. |
 | `1.6/Defs/DiaryBeliefPolicyDef.xml` | Runtime tuning and relevance policy. |
 | `tests/BeliefContextTests/` | Standalone pure test executable/project. |
@@ -1087,7 +1092,7 @@ impure/pure boundary.
 | day/reflection flush partial | Insert belief reflection in the priority chain. |
 | event factory/add-event partials | Optional plain evidence and per-POV event-time snapshot. |
 | `Source/Generation/BodyModContext.cs` | Remove precept-ID lists; delegate to shared structural/text resolution and map reliable correlation valence to existing stance tokens. |
-| `Source/Ingestion/Sources/ThoughtSignal.cs` | Snapshot direct `Thought.sourcePrecept` identity and guarded thought match fields. |
+| `Source/Ingestion/Sources/ThoughtSignal.cs` | Snapshot direct `Thought.sourcePrecept` identity and optionally attach exact bound food evidence after ordinary thought eligibility. |
 | `Source/Ingestion/Sources/InteractionSignal.cs` | Mutation match and role-aware conversion/reassurance evidence. |
 | `Source/Ingestion/Sources/AbilitySignal.cs` and `AbilityEventData.cs` | Pure downstream-covered drop before random roll. |
 | existing thought/body/tale/condition/event sources | Supply only exact visible §7.5 match fields their current payload actually knows; do not create a generic belief capture path. |
@@ -1303,6 +1308,23 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > separate Ideology-inactive/base-only profile and record both exact results. No new in-game run is
 > claimed; the latest recorded fully green loaded result remains 388/388.
 
+> **Exact humanlike-meat food slice (2026-07-22): code, XML, and automated fixtures complete; no
+> manual run claimed.** Installed RimWorld 1.6.9676 XML and decompiled `Assembly-CSharp.dll` establish
+> that the accepted `MemoryThoughtHandler.TryGainMemory` boundary has no food object, while
+> `Thing.Ingested` synchronously obtains `FoodUtility.ThoughtsFromIngesting` results and then gains
+> those exact memories. A guarded short-lived scope now captures only a direct food Def or bounded
+> `CompIngredients` entry whose base-game `MeatSourceCategory` is exactly `Humanlike`, freezes its
+> primitive DefName/label, and binds it only to the returned thought DefNames. The existing
+> `ThoughtSignal` remains the sole page owner. A pure policy maps XML's exact `humanlike_meat` selector
+> to `cannibal_meal` plus `ingredient_label`; XML continues to own the food vocabulary and no
+> precept/issue/meme catalog was added. Generic meals, quality, broad labels, unknown ingredients,
+> unrelated doctrine, malformed/duplicate policy, inactive Ideology, and adapter faults leave the
+> ordinary thought page unchanged. Direct source-precept and exact thought-correlation evidence retain
+> resolver precedence. The scope adds no page, save token, dedup change, global `Rand` use, reflection,
+> or irrelevant-thought Def lookup. Pure coverage reaches 546 assertions, and two compiled loaded
+> fixtures raise the RimTest assembly to 393 cases; they pin exact evidence, non-returned-thought
+> rejection, one-page ownership, frozen saved context, RNG/dedup invariants, and adapter fail-open.
+
 > **Narrative N3-I result (2026-07-22): code-complete, adversarially hardened, and active loaded
 > acceptance passed; base-only acceptance pending.** Phase 1's guarded,
 > detached per-POV snapshot and single resolver result now feed one pure high-confidence gate and the
@@ -1329,6 +1351,8 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 2. Add conservative evidence adapters for the §7.5 families to existing captured thought, social,
    body/medical, food, combat/prisoner, observed-condition, and ritual routes. Emit a topic only when
    that source has the exact visible fact needed; unavailable evidence leaves the route unchanged.
+   **The first exact food client is implemented for a directly observed humanlike-meat ingredient
+   bound to the exact thoughts returned by the same ingestion; all other food families remain pending.**
 3. Enrich conversion conversation, conversion success/failure, reassurance/counsel, `IdeoChange`,
    conversion ritual, and throne speech through the same resolver. **Exact conversion interaction,
    Reassure mechanics, exact Counsel result pages, the existing `IdeoChange` solo page, and exact
@@ -1348,8 +1372,9 @@ for each conversion ability/interaction/ritual path; representative body, meal, 
 ritual fixtures select only relevant live doctrine; unrelated event and ability behavior is unchanged.
 
 **Phase-2 exit-gate status:** partly closed at the automated boundary and still open overall. The
-standalone suites, production build, and compiled loaded fixtures are green, while the original exact
-active-Counsel sub-gate and corrected
+standalone suites, production build, and compiled loaded fixtures are green. Exact humanlike-meat
+evidence now closes the first bounded food client at the automated boundary, while other food families
+and the wider evidence matrix remain open. The original exact active-Counsel sub-gate and corrected
 384/384 suite are green, and the corrected active conversion-ritual suite passed 388/388. The first
 active authority-speech run reached 389/391: exact type/owner wiring, fail-open behavior, and the full
 leader branch passed, while the throne branch exposed a fixture-only second-random-doctrine assumption

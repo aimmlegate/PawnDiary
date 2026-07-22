@@ -38,6 +38,15 @@ namespace PawnDiary
         public List<string> addSemanticAliases;
     }
 
+    /// <summary>One exact ingredient-kind to belief-evidence vocabulary mapping.</summary>
+    public class DiaryBeliefFoodEvidenceRuleDef
+    {
+        public string key;
+        public string ingredientKind;
+        public string groupKey;
+        public string matchField;
+    }
+
     /// <summary>One exact generic-source to effective-downstream-group ownership rule.</summary>
     public class DiaryBeliefCanonicalEventOwnershipRuleDef
     {
@@ -178,6 +187,7 @@ namespace PawnDiary
         public List<DiaryBeliefCertaintyBandDef> certaintyBands;
         public List<DiaryBeliefSemanticAliasDef> semanticAliases;
         public List<DiaryBeliefEventEvidenceRuleDef> eventEvidenceRules;
+        public List<DiaryBeliefFoodEvidenceRuleDef> foodEvidenceRules;
         public List<string> lexicalExclusions;
         public List<string> proselytizingPovRoles;
         // Exact event-source ownership, not doctrine policy. The code fallback is intentionally empty
@@ -304,6 +314,7 @@ namespace PawnDiary
             CopyBands(source.certaintyBands, builder.certaintyBands);
             CopyAliases(source.semanticAliases, builder.semanticAliases);
             CopyRules(source.eventEvidenceRules, builder.eventEvidenceRules);
+            CopyFoodRules(source.foodEvidenceRules, builder.foodEvidenceRules);
             CopyStrings(source.lexicalExclusions, builder.lexicalExclusions, replaceWhenEmpty: false);
             CopyStrings(source.proselytizingPovRoles, builder.proselytizingPovRoles, replaceWhenEmpty: false);
             CopyOwnershipRules(source.canonicalEventOwnershipRules,
@@ -381,6 +392,23 @@ namespace PawnDiary
                 destination.Add(new BeliefCanonicalEventOwnershipRule(
                     row.sourceDomain.Trim(), row.sourceDefName.Trim(),
                     row.downstreamGroupDefName.Trim()));
+            }
+        }
+
+        private static void CopyFoodRules(
+            List<DiaryBeliefFoodEvidenceRuleDef> source,
+            List<BeliefFoodEvidenceRule> destination)
+        {
+            destination.Clear();
+            if (source == null) return;
+            for (int i = 0; i < source.Count; i++)
+            {
+                DiaryBeliefFoodEvidenceRuleDef row = source[i];
+                // Preserve every non-null row. The pure selector must observe malformed/duplicate
+                // exact mappings and fail closed instead of silently choosing by XML order.
+                if (row != null)
+                    destination.Add(new BeliefFoodEvidenceRule(
+                        row.key, row.ingredientKind, row.groupKey, row.matchField));
             }
         }
 

@@ -1,5 +1,23 @@
 # Changelog
 
+- **2026-07-22 — Added exact humanlike-meat evidence to existing thought pages.** Installed
+  RimWorld 1.6.9676 XML and `Assembly-CSharp.dll` show that the accepted thought hook has no food
+  object, but `Thing.Ingested` synchronously obtains the exact thoughts caused by the live food before
+  gaining them. A guarded, short-lived bridge now snapshots only a direct or `CompIngredients`
+  food Def whose base-game meat category is exactly humanlike, binds that primitive fact only to those
+  returned thought DefNames, and clears after ingestion. The existing `ThoughtSignal` remains the sole
+  page owner. Pure policy and XML map exact `humanlike_meat` evidence to the existing `cannibal_meal`
+  vocabulary with a factual `ingredient_label`; generic/unknown meals, unrelated doctrine,
+  malformed/duplicate policy, inactive Ideology, and adapter failures leave the ordinary page
+  unchanged. Direct source-precept and exact thought-correlation evidence retain precedence. The hot
+  path keeps its early eligibility gates and performs no reflection, scan, or extra Def lookup for
+  irrelevant thoughts. No DLC dependency, precept catalog, prompt/UI localization, save token, dedup
+  key, RNG use, or second page was added. `BeliefContextTests` passes 546 assertions, and two compiled
+  loaded fixtures raise the RimTest assembly to 393 cases with exact-correlation, one-page,
+  frozen-context, dedup/RNG, and fail-open coverage. The required builds and full verification hook
+  pass. The deferred authority-speech active-DLC and base-only manual runs were not performed or
+  claimed.
+
 - **2026-07-22 — Marked authority-speech acceptance partially closed and deferred its manual rows.**
   Automated evidence is green: all 15 standalone projects pass 7,340 assertions, the production DLL
   builds cleanly, and the 391-case loaded assembly compiles cleanly. The implementation plan and
