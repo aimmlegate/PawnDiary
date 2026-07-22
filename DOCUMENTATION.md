@@ -370,7 +370,9 @@ page. Independently proven assignment roles and role markers remain, but the tar
 before/after block, or conversion marker. A guarded adapter exception removes all optional conversion
 context, yet the exact structural match still keeps a live spectator in the spectator branch even
 though vanilla also includes spectators in `RitualRoleAssignments.Participants`. Event-time DTOs are
-frozen once and projected per POV: organizer receives role/proselytizing doctrine when available,
+frozen once and projected per POV. The organizer uses the ritual pipeline's established serialized
+`author` perspective token (not the human role name `organizer`), so the pure policy and live fan-out
+share one exact schema identity. The organizer receives role/proselytizing doctrine when available,
 target alone receives verified before/after mutation facts and `belief_event=conversion`, participants
 receive current doctrine within a smaller budget, and spectators receive no belief evidence. The group
 uses the normal important-entry accent rather than saving an undeclared color cue; older pages that
@@ -394,8 +396,11 @@ The completed-conversion slice adds three compiled ritual fixtures and raises th
 385 to 388 tests. They cover active versus dormant exact classification and setting migration, real
 patched `SetIdeo` mutation with four isolated/frozen POV pages plus Scribe retention, certainty-only
 quality non-proof, missing-mutation role-only fallback, live-shaped spectator membership, and guarded-
-adapter failure isolation. The 388-test active-Ideology and base-only loaded runs have not yet been
-recorded; the latest confirmed loaded result remains 384/384.
+adapter failure isolation. The first active-Ideology run reached 383/388 and a corrected fixture rerun
+reached 386/388. The remaining conversion failure exposed the `organizer` versus live `author` POV-token
+mismatch corrected above; the other failure is the unchanged N3-O prerequisite on a host without a
+parked player gravship. A corrected active rerun and the separate base-only profile remain pending; the
+latest complete accepted suite remains 384/384, while 386/388 is the latest partial 388-test evidence.
 
 An exact conversion consumer also appends only the stable `belief_event=conversion` routing marker to
 the ordinary interaction `gameContext`. Prompt-context selection uses that marker to rank the saved

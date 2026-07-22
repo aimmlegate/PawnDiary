@@ -1,12 +1,21 @@
 # Changelog
 
+- **2026-07-22 — Corrected the completed-conversion organizer POV token at the pure/runtime boundary.**
+  The second 386/388 loaded rerun proved that registered Ideology state was valid but the organizer
+  page still lacked `conversion_ritual_role=converter`. The ritual payload has always serialized its
+  organizer perspective as the stable schema token `author`, while the new pure conversion policy
+  expected `organizer`; target, participant, and spectator happened to use matching tokens. The policy
+  now consumes `author`, restoring the organizer's exact moral-guide evidence and role marker. Pure
+  coverage pins the literal live token, rejects the former alias, and checks that organizer context
+  receives no target result. No save field, XML policy, DLC gate, setting, Harmony hook, or hot-path
+  work changed. A corrected 388-test loaded rerun remains pending; the unchanged Odyssey N3-O case
+  still requires a parked player gravship.
+
 - **2026-07-22 — Made the exact conversion-ritual loaded fixture use real managed Ideology state.**
   The corrected rerun reached 386/388: every Counsel and role/dedup regression is now green, the
-  unchanged Odyssey N3-O prerequisite still correctly requires a parked player gravship, and the one
-  remaining conversion assertion exposed three `IdeoGenerator` results that were assigned to pawns but
-  never registered with the loaded `IdeoManager`. RimWorld consequently warned that those referenced
-  Ideologies were not deep-saved, and full event-time belief projection could legitimately fail open to
-  ordinary ritual context. The fixture now registers each generated Ideology, directly asserts the
+  unchanged Odyssey N3-O prerequisite still correctly requires a parked player gravship, and separate
+  Scribe diagnostics exposed generated `Ideo` fixtures that had never been registered with the loaded
+  `IdeoManager`. The fixture now registers each generated Ideology, directly asserts the
   production adapter's exact organizer-role and target-mutation projection, restores every affected
   pawn, removes the generated state during failure-isolated teardown, and then performs the Scribe
   round-trip. This changes tests only; production capture, DLC gates, saves, settings, and performance

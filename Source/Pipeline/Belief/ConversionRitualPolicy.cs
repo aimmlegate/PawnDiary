@@ -190,7 +190,10 @@ namespace PawnDiary
     {
         public const string GroupDefName = "ritualConversion";
         public const string LegacyGroupDefName = "ritualFinished";
-        public const string PerspectiveOrganizer = "organizer";
+        // RitualEventData's established serialized organizer POV is "author". Keep the detached
+        // policy on that same schema token: using the English role name "organizer" here silently
+        // dropped only the organizer's role marker and belief evidence at the runtime boundary.
+        public const string PerspectiveOrganizer = "author";
         public const string PerspectiveTarget = "target";
         public const string PerspectiveParticipant = "participant";
         public const string PerspectiveSpectator = "spectator";

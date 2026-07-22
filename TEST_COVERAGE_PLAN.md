@@ -1111,7 +1111,8 @@ and legacy `ritualFinished` setting inheritance with an explicit exact override.
 official-DLC catalog also lists `ritualConversion` under Ideology. The positive case
 uses the real patched `Pawn_IdeoTracker.SetIdeo` mutation before entering the production ritual fan-out
 fact seam, requires four unique organizer/target/participant/spectator pages without an RNG change,
-and proves only the target gets frozen changed-before/after mechanics plus the conversion marker. It
+pins the live serialized organizer POV token `author` through pure role/evidence/context selection, and
+proves only the target gets frozen changed-before/after mechanics plus the conversion marker. It
 also round-trips that saved evidence/game context through real Scribe and then changes live pawn state
 to prove event-time immutability. The final case supplies high ritual quality with only a real certainty
 mutation and requires non-conversion, then forces the guarded adapter to throw and requires four
@@ -1138,8 +1139,12 @@ passed through the real vanilla boundary. The remaining failures were the exhaus
 catalog's stale omission of `counsel`, now corrected, and the unchanged N3-O parked-gravship host
 prerequisite. The user-confirmed corrected rerun passed 384/384 on a valid parked-gravship host. This
 closes the original active-Ideology Counsel execution coverage; the 385-test hardening rerun was not
-recorded before the assembly advanced, and the new 388-test active/base-only profiles remain pending.
-The base-only run remains release-blocking under the
+recorded before the assembly advanced. The first 388-test active run reached 383/388; after correcting
+four fixture assumptions, the second reached 386/388 and isolated a real organizer POV-token mismatch
+(`organizer` in the pure policy versus the live serialized `author` token). That production boundary is
+now corrected; another active rerun and the 388-test base-only profile remain pending. The other active
+failure remains the N3-O host prerequisite until a parked player gravship is present. The base-only run
+remains release-blocking under the
 matrix above because it is the only execution that reaches every `ModsConfig.IdeologyActive == false`
 branch.
 The first user-observed 376-test loaded run completed 374/376. It exposed the dedicated worker

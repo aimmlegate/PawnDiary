@@ -844,9 +844,11 @@ namespace PawnDiary
                 instanceId = "PreceptRole_1",
                 defName = "IdeoRole_Moralist"
             };
+            AssertEqual("conversion organizer uses the live ritual POV schema token", "author",
+                ConversionRitualPolicy.PerspectiveOrganizer);
             BeliefEventEvidence organizerEvidence = ConversionRitualPolicy.EvidenceFor(
                 "Organizer", 500, "Conversion", "Organizer label",
-                ConversionRitualPolicy.PerspectiveOrganizer, role, converted, policy);
+                "author", role, converted, policy);
             AssertEqual("organizer gets exact proselytizing role identity", "IdeoRole_Moralist",
                 organizerEvidence.sourcePreceptDefName);
             AssertTrue("organizer gets no target mutation", organizerEvidence.mutation == null);
@@ -856,6 +858,10 @@ namespace PawnDiary
                     ConversionRitualPolicy.PerspectiveOrganizer,
                     new BeliefSourcePreceptFact { instanceId = "x", defName = "OtherRole" },
                     converted, policy) == null);
+            AssertTrue("non-schema organizer alias fails closed",
+                ConversionRitualPolicy.EvidenceFor(
+                    "Organizer", 500, "Conversion", "Organizer label",
+                    "organizer", role, converted, policy) == null);
 
             BeliefEventEvidence targetEvidence = ConversionRitualPolicy.EvidenceFor(
                 "Target", 500, "Conversion", "Target label",
@@ -878,6 +884,12 @@ namespace PawnDiary
                     "Spectator", 500, "Conversion", "Spectator label",
                     ConversionRitualPolicy.PerspectiveSpectator, role, converted, policy) == null);
 
+            string organizerContext = ConversionRitualPolicy.AppendGameContext(
+                "ritual=Conversion; quality=masterful", "author", null, policy);
+            AssertContains("live author context carries the converter role", organizerContext,
+                "conversion_ritual_role=converter");
+            AssertTrue("organizer context never receives target result",
+                organizerContext.IndexOf("conversion_ritual_result=", StringComparison.Ordinal) < 0);
             string targetContext = ConversionRitualPolicy.AppendGameContext(
                 "ritual=Conversion; quality=masterful", ConversionRitualPolicy.PerspectiveTarget,
                 converted, policy);
