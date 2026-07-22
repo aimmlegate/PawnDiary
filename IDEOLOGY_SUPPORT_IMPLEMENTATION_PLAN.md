@@ -1331,14 +1331,43 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > existing exact-evidence, non-returned-thought, one-page, frozen-context, RNG/dedup, and fail-open
 > contracts.
 > The first valid loaded run reached 391/393. Exact food capture and the adapter-failure case passed;
-> the positive case failed only after capture because its disposable Ideology used ordinary precept
-> removal. Vanilla inserted the issue's default stance, leaving it beside `Cannibalism_Preferred`, so
-> the resolver correctly failed closed on contradictory same-issue doctrine. The fixture now uses
-> replacement mode, asserts one retained intended stance, and its pure regression mirrors the full
-> live thought evidence plus a competing meat stance. A corrected 396-case loaded rerun remains
-> pending. The other failure is the known N3-O parked-gravship host prerequisite; the earlier main-menu invocation
-> had no loaded game and is not a loaded acceptance result. No deferred authority-speech run is
-> claimed.
+> the positive case initially retained contradictory same-issue doctrine, and the resolver correctly
+> failed closed. The requested corrected active-Ideology run was executed on 2026-07-23 and reached
+> **392/396 tests across 58/61 suites**. Its four failures were recorded separately: the synthetic
+> humanlike-food page still had no resolved context, the real `AteFineMeal` fixture produced no page,
+> the conversion-ritual fixture could not assign an exact moral-guide role, and N3-O lacked a parked
+> player gravship. The latter two were not food failures. Follow-up inspection established two
+> fixture prerequisites without weakening production: a random full disposable Ideology can supply a
+> legitimate lexical runner-up, so the positive food fixture now retains exactly its intended issue
+> stance and asserts a detached preview; and vanilla `AteFineMeal` is +5 while the shipped eating-page
+> threshold is 15, so the real fixture lowers only its test-owned loaded Def and restores it in
+> teardown. The earlier main-menu invocation had no loaded game and is not an acceptance result. No
+> deferred authority-speech run is claimed.
+
+> **Exact insect-meat food slice (2026-07-23): implemented and active loaded boundary green.**
+> Installed RimWorld 1.6 `FoodUtility.ThoughtsFromIngesting` and `Thing.Ingested` use
+> `FoodUtility.GetMeatSourceCategory(ingredient) == MeatSourceCategory.Insect` for the direct and
+> `CompIngredients` insect-meat branches, including the exact `AteInsectMeatAsIngredient` history
+> event. The existing guarded ingestion scope now projects the same primitive fact as
+> `ingredientKind=insect_meat`; it still binds only to the ThoughtDefs returned for that exact food
+> and still enriches the existing `ThoughtSignal` page through pure policy. XML owns the
+> `insect_meal` group, `ingredient_label`, `insect_meat` topic, and localized English/Russian semantic
+> aliases. Humanlike evidence is checked first, so an insect-first mixed modded ingredient list keeps
+> the already-shipped humanlike result. Direct insect meat and exact meal ingredients are accepted;
+> insect corpses, ingredient-free ordinary meals, unknown/ambiguous evidence, malformed policy, and
+> inactive Ideology remain inert. No precept/issue/meme catalog, DLC Def lookup, new page, save field,
+> dedup key, or `Rand` use was added.
+>
+> Focused pure coverage now reaches 556 `BeliefContextTests` assertions. Two new loaded cases bring
+> the assembly to 398: synthetic exact insect evidence covers existing-page ownership, negative
+> thought correlation, scope cleanup, dedup/Rand, and save-frozen context; a crafted megaspider-meat
+> fine meal crosses the installed `Thing.Ingested` and `ThoughtsFromIngesting` Harmony boundaries and
+> proves ingestion-wide evidence reaches `AteFineMeal`. The classifier fixture also covers direct and
+> ingredient insect meat, both corpse families, an ordinary meal, and deterministic humanlike
+> precedence. The first post-implementation loaded run reached 395/398 and exposed only the two
+> test-threshold prerequisites above plus N3-O. After the isolated fixture correction, the complete
+> active-Ideology suite reached **397/398 across 60/61 suites**: every food case passed, and the sole
+> failure was the known Odyssey parked-player-gravship prerequisite.
 
 > **Narrative N3-I result (2026-07-22): code-complete, adversarially hardened, and active loaded
 > acceptance passed; base-only acceptance pending.** Phase 1's guarded,
@@ -1366,8 +1395,9 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 2. Add conservative evidence adapters for the §7.5 families to existing captured thought, social,
    body/medical, food, combat/prisoner, observed-condition, and ritual routes. Emit a topic only when
    that source has the exact visible fact needed; unavailable evidence leaves the route unchanged.
-   **The first exact food client is implemented for a directly observed humanlike-meat ingredient
-   bound to the exact thoughts returned by the same ingestion; all other food families remain pending.**
+   **The first two exact food clients are implemented for directly observed humanlike- and insect-meat
+   ingredients bound to the exact thoughts returned by the same ingestion; ordinary meat, fungus,
+   nutrient paste, and the remaining food families stay pending.**
 3. Enrich conversion conversation, conversion success/failure, reassurance/counsel, `IdeoChange`,
    conversion ritual, and throne speech through the same resolver. **Exact conversion interaction,
    Reassure mechanics, exact Counsel result pages, the existing `IdeoChange` solo page, and exact
@@ -1387,9 +1417,11 @@ for each conversion ability/interaction/ritual path; representative body, meal, 
 ritual fixtures select only relevant live doctrine; unrelated event and ability behavior is unchanged.
 
 **Phase-2 exit-gate status:** partly closed at the automated boundary and still open overall. The
-standalone suites, production build, and compiled loaded fixtures are green. Exact humanlike-meat
-evidence now closes the first bounded food client at the automated boundary, while other food families
-and the wider evidence matrix remain open. The original exact active-Counsel sub-gate and corrected
+standalone suites, production build, and compiled loaded fixtures are green. Exact humanlike- and
+insect-meat evidence now close the first two bounded food clients at the automated boundary, while
+other food families and the wider evidence matrix remain open. The active-Ideology 398-case run is
+397/398 with every food fixture green; only N3-O's parked-player-gravship prerequisite remains. The
+original exact active-Counsel sub-gate and corrected
 384/384 suite are green, and the corrected active conversion-ritual suite passed 388/388. The first
 active authority-speech run reached 389/391: exact type/owner wiring, fail-open behavior, and the full
 leader branch passed, while the throne branch exposed a fixture-only second-random-doctrine assumption

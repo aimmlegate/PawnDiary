@@ -1,5 +1,21 @@
 # Changelog
 
+- **2026-07-23 — Added exact insect-meat belief evidence and executed the loaded food boundary.**
+  Vanilla 1.6's exact `CompIngredients`/`FoodUtility.GetMeatSourceCategory(...)=Insect` seam now
+  freezes one primitive `insect_meat` fact inside the existing short-lived ingestion scope; pure XML
+  policy maps it to `insect_meal` plus `ingredient_label`, with DefInjected English/Russian semantic
+  aliases and no doctrine catalog. `ThoughtSignal` remains the sole page owner, evidence remains
+  intentionally ingestion-wide for every thought returned by the same exact meal, and mixed modded
+  meals preserve the shipped humanlike-first result. Direct/ingredient insect meat, ordinary-meal and
+  corpse negatives, unknown/malformed policy, no-Ideology silence, scope cleanup, dedup/Rand, frozen
+  save context, and both real Harmony boundaries have focused pure and compiled loaded coverage.
+  `BeliefContextTests` passes 556 assertions and the RimTest assembly now contains 398 cases.
+  The requested corrected pre-slice suite ran first at 392/396: two food-fixture failures, one unrelated
+  moral-guide fixture, and the known Odyssey parked-gravship prerequisite. Deterministic issue-only
+  food ideologies and a teardown-restored test-only eating threshold corrected the fixture assumptions
+  without changing production. The final active-Ideology run reached **397/398 across 60/61 suites**;
+  every food test passed, and the sole failure was the explicitly separate parked-gravship prerequisite.
+
 - **2026-07-23 — Split oversized documentation into focused wiki pages and agent skills.** The
   root architecture, event-map, external-API, and integration files are now compact pointers;
   human flow diagrams and schema tables live in `repowiki/`, while prompt and integration
