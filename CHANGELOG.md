@@ -1,5 +1,17 @@
 # Changelog
 
+- **2026-07-22 — Corrected the N3-I loaded fault-isolation fixture after the first 381-test run.** The
+  user-supplied Ideology-active execution reached 379/381. Its Ideology failure was test contamination:
+  the synthetic evidence error patched the shared `DiaryBeliefPolicy.Snapshot`, so the exception was
+  correctly caught by the optional evidence adapter and then thrown again when ordinary prompt
+  preflight read the same policy. The fixture now throws from the exact guarded
+  `BeliefMutationEventSelector.SelectCrisisOrCurrent` seam, preserving the intended canonical-page
+  assertion without poisoning unrelated prompt construction. The other failure was the existing N3-O
+  positive acceptance guard on a host map without a parked player gravship; that test remains strict.
+  The 381-test RimTest assembly and unchanged runtime rebuild with zero warnings/errors; focused Belief
+  and Narrative suites pass 360/345 assertions. Corrected active and base-only 381/381 reruns remain
+  pending; no in-game pass is claimed here.
+
 - **2026-07-22 — Implemented Master Wave 10 Narrative N3-I without expanding Ideology Phase 2.** The
   existing guarded Phase-1 per-POV snapshot and single `EventRelativeStanceResolver` result now feed a
   pure high-confidence Ideology provider in the fixed Narrative Continuity list. Exact thought/body

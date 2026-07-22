@@ -1066,9 +1066,13 @@ The real Crisis-of-Belief coverage now drives both vanilla outcomes under fixed/
 certainty forces the nested successful conversion/`SetIdeo` path, while certainty above 50% forces a
 failed conversion with unchanged identity and an exact -50% delta. Both require one `IdeoChange` page,
 explicitly reject stored `Wander_Sad` and `Wander_OwnRoom` pages, leave PlayLog unchanged, and retain one
-truthful non-consumed mutation. A separate fault-injection case makes `DiaryBeliefPolicy.Snapshot`
-throw during mutation-evidence selection and proves the already-authorized ordinary page survives with
-no partial belief block/marker. Standalone belief/pipeline fixtures continue to cover wrong-pawn, stale,
+truthful non-consumed mutation. A separate fault-injection case makes
+`BeliefMutationEventSelector.SelectCrisisOrCurrent` throw inside the evidence adapter's guarded boundary
+and proves the already-authorized ordinary page survives with no partial belief block/marker. The first
+381-test loaded run exposed that this fixture had previously patched the shared
+`DiaryBeliefPolicy.Snapshot` seam, which also poisoned later prompt-template preflight; the precise
+selector seam now tests the intended optional-enrichment contract without affecting ordinary prompt
+construction. Standalone belief/pipeline fixtures continue to cover wrong-pawn, stale,
 future, malformed, changed/unchanged, and current-only selection; the prompt XML contract now also
 rejects religious `faith` framing in favor of secular-safe ideoligion/conviction wording.
 
@@ -1079,7 +1083,11 @@ new cases and the real-ability rewrites compile but have not yet received a 379/
 post-Phase-2 base-only profile run is recorded. Before N3-I, a headless startup attempt was made for
 the requested 379/379 profiles, but RimTest ran before `Current.Game` existed and every loaded-game
 fixture failed its precondition; no usable active or base-only acceptance result was produced. The
-current N3-I assembly contains 381 tests, and both its active-Ideology and base-only runs remain pending.
+current N3-I assembly contains 381 tests. The first user-supplied Ideology-active execution reached
+379/381: its N3-I failure was the over-broad fault-injection seam corrected above, while the other
+failure was the existing N3-O positive acceptance precondition because the host map had no parked
+player gravship. This is not a green acceptance result; a corrected active rerun on the appropriate
+fixture and the base-only profile remain pending.
 The base-only run remains release-blocking under the
 matrix above because it is the only execution that reaches every `ModsConfig.IdeologyActive == false`
 branch.

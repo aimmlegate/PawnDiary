@@ -1197,8 +1197,12 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > prose, deterministic selection, repetition, category/two-lens budgets, and N1 persistence are reused.
 > No live ideology rescan, hook, page, poll, save field, or scheduler was added, and partial Phase 2 did
 > not gain another consumer. Pure suites pass 360/345 belief/narrative assertions and 381 RimTests
-> compile. The host's headless startup attempt did not load a game, so 377/377 remains the latest valid
-> active result and current active/base-only execution remains pending.
+> compile. The host's headless startup attempt did not load a game. The first later user-supplied loaded
+> run reached 379/381: the Ideology failure was an over-broad fault-injection fixture that patched the
+> shared belief-policy snapshot outside the intended guarded evidence boundary, and the other failure
+> was the existing N3-O parked-gravship host prerequisite. The injector now targets the guarded crisis
+> selector itself. This is not a green acceptance result, so 377/377 remains the latest valid active
+> pass and corrected active/base-only execution remains pending.
 
 1. Implement guarded/coalescing mutation patches and cache. **Implemented in the infrastructure slice.**
 2. Add conservative evidence adapters for the §7.5 families to existing captured thought, social,

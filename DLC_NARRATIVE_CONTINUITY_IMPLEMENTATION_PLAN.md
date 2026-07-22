@@ -578,7 +578,11 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 > persistence are reused with no hook, page, polling path, save field, or reflection scheduler. Provider
 > exceptions are isolated per fixed-list entry, preserving the canonical page and other DLC candidates.
 > Focused pure coverage passes 360 Belief and 345 Narrative Continuity assertions; 381 loaded tests
-> compile but have not been validly executed for this checkpoint.
+> compile. The first user-supplied loaded execution reached 379/381: the N3-I failure came from an
+> over-broad RimTest fault injector that patched the shared belief-policy snapshot and therefore also
+> poisoned ordinary prompt preflight, while the other failure was the existing N3-O parked-gravship
+> host prerequisite. The injector now targets the guarded crisis selector itself. This is not a green
+> acceptance result; corrected active and base-only execution remain pending.
 
 > **N3-B identity progress (2026-07-17): implemented; loaded acceptance passed.** The existing
 > `GeneIdentityChanged` page now supplies exact-subject identity evidence and one provider candidate

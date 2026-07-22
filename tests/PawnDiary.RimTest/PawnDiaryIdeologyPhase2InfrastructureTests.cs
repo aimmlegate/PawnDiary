@@ -499,7 +499,7 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
-        /// Mutation evidence is optional enrichment. A policy/cache failure before event construction
+        /// Mutation evidence is optional enrichment. A selector failure before event construction
         /// must return null evidence and preserve the already-authorized ordinary mental-state page.
         /// </summary>
         [Test]
@@ -517,15 +517,23 @@ namespace PawnDiary.RimTests
                 "The Ideology-active fixture did not load IdeoChange for failure isolation.");
             EnsureCurrentIdeology();
             BeliefMutationCache.Reset();
-            MethodInfo target = AccessTools.Method(typeof(DiaryBeliefPolicy),
-                nameof(DiaryBeliefPolicy.Snapshot), Type.EmptyTypes);
+            MethodInfo target = AccessTools.Method(typeof(BeliefMutationEventSelector),
+                nameof(BeliefMutationEventSelector.SelectCrisisOrCurrent), new[]
+                {
+                    typeof(BeliefMutationEventRule),
+                    typeof(string),
+                    typeof(int),
+                    typeof(int),
+                    typeof(BeliefMutationSnapshot),
+                    typeof(string)
+                });
             PawnDiaryRimTestScope.Require(target != null,
-                "Could not resolve the belief-policy snapshot seam for failure isolation.");
+                "Could not resolve the crisis-evidence selector seam for failure isolation.");
             Harmony harmony = new Harmony("PawnDiary.RimTest.IdeologyEvidenceFailure."
                 + Guid.NewGuid().ToString("N"));
             harmony.Patch(target, prefix: new HarmonyMethod(
                 typeof(PawnDiaryIdeologyPhase2InfrastructureTests),
-                nameof(ThrowBeliefPolicySnapshot)));
+                nameof(ThrowBeliefEvidenceSelection)));
             try
             {
                 DiaryEvent page = scope.FireAndRequireEvent(
@@ -1127,9 +1135,9 @@ namespace PawnDiary.RimTests
             throw new InvalidOperationException("Synthetic Ideology mutation projection failure.");
         }
 
-        private static bool ThrowBeliefPolicySnapshot()
+        private static bool ThrowBeliefEvidenceSelection()
         {
-            throw new InvalidOperationException("Synthetic Ideology evidence-policy failure.");
+            throw new InvalidOperationException("Synthetic Ideology evidence-selection failure.");
         }
     }
 }

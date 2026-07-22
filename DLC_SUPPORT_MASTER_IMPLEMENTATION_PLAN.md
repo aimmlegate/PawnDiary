@@ -562,8 +562,11 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 > Phase-1 resolver result and the shared selection/persistence path; no new source, hook, poll, or save
 > field landed. The assembly now contains 381 compiled RimTests. A headless startup attempt could not
 > create/load a game and therefore produced only fixture precondition failures; it is not an acceptance
-> run. The 377/377 suite remains the latest valid active-Ideology result, while both the superseded
-> pre-slice 379/379 profiles and the current 381/381 active-Ideology/base-only profiles remain unrecorded.
+> run. A later user-supplied loaded execution reached 379/381: one failure exposed an over-broad N3-I
+> test injector (now narrowed to the guarded crisis-evidence selector), and the other was the existing
+> N3-O positive fixture running on a map without a parked player gravship. Neither is a green Wave-10
+> result. The 377/377 suite remains the latest valid active-Ideology pass, while corrected 381/381
+> active-Ideology and base-only profiles remain unrecorded.
 > Every deferred Royalty acceptance item remains unchanged.
 
 ### Implement in this exact order
