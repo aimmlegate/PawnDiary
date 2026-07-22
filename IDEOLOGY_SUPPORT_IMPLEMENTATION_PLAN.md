@@ -1,12 +1,12 @@
 # Pawn Diary — Ideoligion Support Implementation Plan
 
-Status: Phases 0–1 and Narrative N3-I are code-complete; Phase 2 infrastructure, exact interaction consumers, and
-the exact `IdeoChange` crisis slice are partially implemented; Phases 3–6 remain pending. Guarded
+Status: Phases 0–1 and Narrative N3-I are code-complete; Phase 2 infrastructure, exact interaction consumers,
+exact Counsel, and the exact `IdeoChange` crisis slice are partially implemented; Phases 3–6 remain pending. Guarded
 mutation capture/coalescing, exact downstream Ability ownership, existing PlayLog conversion/
-reassurance enrichment, and the existing solo crisis page's truthful mutation/current-state context
-are live; ritual, broader evidence, remaining exact prompts, and reflection work remains pending.
-N3-I closes the master schedule's ordering gap without broadening partial Phase 2; Counsel, rituals,
-throne speech, broader enrichment, passive tracking, and reflection scheduling remain deferred.
+reassurance/Counsel enrichment, and the existing solo crisis page's truthful mutation/current-state
+context are live; ritual, broader evidence, remaining exact prompts, and reflection work remain pending.
+N3-I closed the master schedule's ordering gap before the later narrow Counsel slice; rituals, throne
+speech, broader enrichment, passive tracking, and reflection scheduling remain deferred.
 
 Scheduling authority: implement Ideology phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Ideology.
@@ -607,7 +607,7 @@ doctrine from the pawn's loaded live data.
 
 | Family | Event evidence | Constraint |
 |---|---|---|
-| Belief change and authority | actual conversion/reassurance/crisis mutation, roles, speech/ritual labels | A title alone does not imply doctrine. |
+| Belief change and authority | actual conversion/reassurance/crisis mutation; exact Counsel mood result; roles and speech/ritual labels | Counsel is mood support, not a certainty or conversion mutation; a title alone does not imply doctrine. |
 | Body and medicine | exact operation, body-part, implant/organ/hediff, and nearby thought/history facts | Preserve body-mod behavior without configured precept IDs. |
 | Food | known ingredient/meal labels and directly caused thought | Never infer ingredients from a generic meal. |
 | Conflict and captivity | exact combat, raid, weapon, prisoner, execution, slavery, or outcome facts | A raid alone does not imply execution or slavery. |
@@ -665,7 +665,8 @@ Rules for the prompt and formatter:
 | Crisis of belief (`IdeoChange`) | Existing mental-state event | Before/after certainty, attempted/current ideology, relevant apostasy/diversity doctrine | Dedicated group/prompt before generic mental-break catchall. |
 | Random conversion conversation | Existing pair PlayLog interaction | Converter and target contexts, target before/after certainty, actual success flag | Two POVs; exact success/failure wording; no generic fallback battle-of-beliefs prose when facts are known. |
 | Convert ability | Existing `Convert_Success`/`Convert_Failure` pair PlayLog | Same as conversion interaction | Suppress generic Ability event covered by the later PlayLog row. |
-| Reassure/counsel | Existing pair interaction | Same-faith context and actual restored certainty | Support/reassurance language, never claim conversion. Move `Reassure` out of generic heartfelt handling. |
+| Reassure | Existing pair interaction | Same-faith context and actual restored certainty | Support/reassurance language, never claim conversion. Move `Reassure` out of generic heartfelt handling. |
+| Counsel | Existing `Counsel_Success`/`Counsel_Failure` pair PlayLog | Exact success/failure and mood relief/boost or penalty; optional relevant visible doctrine only | Counselor→listener roles; never claim certainty change, conversion, ideology mutation, or a battle of beliefs. |
 | Conversion ritual | Existing ritual fan-out | Target mutation, organizer/target/participant role, relevant memes/precepts | Dedicated conversion ritual group before generic ritual; role-specific context; one event per existing fan-out policy. |
 | Conversion ritual ability | Completed ritual event | Activation may identify pending ritual only | Suppress generic activation page when the downstream ritual is canonical. |
 | Throne speech | Existing Royal ritual/speech event | Speaker role/certainty plus authority-relevant doctrine when found; limited witness context | Royal authority remains primary. Do not force religion when the resolver finds no relevance. |
@@ -728,27 +729,35 @@ certainty drift that bypasses these methods.
 > direction, ideology-change shape, cause, effective group, exact pawn, and one-way tick age. The
 > existing saved belief block carries the stable mechanical fields for both authorized POVs and labels
 > cross-POV target mechanics explicitly. Exact conversions append only `belief_event=conversion` to
-> `gameContext` for prompt priority; numerical facts are not duplicated. Counsel and exact event prompt
-> Defs remain pending.
+> `gameContext` for prompt priority; numerical facts are not duplicated.
+>
+> **Exact Counsel implemented (2026-07-22).** The interaction adapter recognizes only
+> `Counsel_Success`/`Counsel_Failure` under the exact package-gated `counsel` group. It builds detached
+> listener evidence from the already-visible PlayLog result and appends only
+> `counsel_result`/`counsel_mood_effect`; it does not peek the mutation cache or add certainty,
+> conversion, or ideology-change facts. Optional N3-I resolution still requires relevant visible-label
+> evidence. Source-specific package-gated prompt Defs beat group/domain fallback in both EN and RU.
 
 Before `InteractionSignal` calls `AddSoloEvent`/`AddPairwiseEvent`:
 
 - classify conversion success, conversion failure, conversion attempt, reassurance, counsel, and
   related known defNames through XML strings;
-- peek the target pawn's recent mutation;
+- peek the target pawn's recent mutation only for mutation-backed routes; exact Counsel uses its
+  downstream result and mood classification instead;
 - append a stable event-class marker such as `belief_event=conversion` to `gameContext` so prompt
   selection can prioritize the typed block;
 - pass a `BeliefEventEvidence` containing the mutation, its visible subject, and each POV role to event
   creation; keep certainty/identity/result numbers in that typed evidence and saved belief block.
 
-Add exact `DiaryEventPromptDef` entries for success, failure, attempt, and reassurance/counsel so an
+Add exact `DiaryEventPromptDef` entries for success, failure, attempt, reassurance, and Counsel so an
 exact defName beats the broad conversion group. The event's saved game text remains the factual
 fallback.
 
 ### 10.3 Ability path and duplicate suppression
 
-Add an XML-owned “covered by downstream event” classification for vanilla `Convert` and `Reassure`
-ability defNames. Feed a plain boolean/reason token into `AbilityEventData.Decide`
+Add an XML-owned “covered by downstream event” classification for vanilla `Convert`, `Reassure`, and
+`Counsel` ability defNames. Counsel's exact success/boost/failure thoughts yield to that same downstream
+group. Feed a plain boolean/reason token into `AbilityEventData.Decide`
 so the pure policy also locks the drop contract. Because `AbilitySignal.Payload` currently draws the
 lazy `Rand.Value` before `Decide` runs, its getter must explicitly skip that draw when the payload is
 downstream-covered. This preserves both the no-page result and RimWorld's gameplay RNG state.
@@ -762,8 +771,9 @@ neither a PlayLog interaction nor a ritual should retain the existing generic ab
 receive belief evidence from its guarded label/context, mutation facts, or an optional event-evidence
 alias rule; it does not require a matching precept-ID entry.
 
-The focused Convert/Reassure integration tests must prove the ordering: activation generates zero
-generic Ability events and exactly one canonical downstream interaction event. A future ritual-owner
+The focused Convert/Reassure/Counsel integration tests must prove the ordering: activation generates
+zero generic Ability events and exactly one canonical downstream interaction event; Counsel also
+produces no thought-owned duplicate. A future ritual-owner
 test must require the same only after cancellation-safe pending/fallback behavior exists.
 
 ### 10.4 Conversion ritual and throne speech
@@ -1164,12 +1174,13 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 
 ### Phase 2 — Required event integrations and mutation capture
 
-> **Partial implementation status (2026-07-22): infrastructure, exact interactions, and crisis.** Exact guarded
+> **Partial implementation status (2026-07-22): infrastructure, exact interactions, crisis, and exact Counsel.** Exact guarded
 > `IdeoConversionAttempt`/`OffsetCertainty`/`SetIdeo` hooks project live state only through
 > `DlcContext`, and a bounded pure buffer coalesces overlapping nested calls while keeping sequential
 > same-tick actions distinct. The transient cache is reset per game, non-scribed, non-emitting, and
-> optional-DLC inert. XML now owns exact `Convert`/`Reassure` canonical ownership; their generic
-> Ability route drops before random sampling only while Ideology is active. `ConversionRitual` retains
+> optional-DLC inert. XML now owns exact `Convert`/`Reassure`/`Counsel` canonical ownership; generic
+> Ability routes drop before random sampling only while Ideology and their exact downstream groups are
+> active, and Counsel's three exact thought callbacks yield to the same result page. `ConversionRitual` retains
 > its generic start page until a cancel-aware fallback exists. Pure suites
 > and five compiled RimTests cover policy/correlation/coalescing, hook ownership, no-DLC behavior,
 > actual before/after boundaries, failure cleanup, and one Convert downstream page. Exact XML mutation
@@ -1188,6 +1199,26 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > per-path exit gate remain pending. The adversarial hardening cases raise the compiled assembly to
 > 379 tests; the prior 377/377 active-Ideology run remains the latest loaded result, and a post-Phase-2
 > base-only run remains required before release sign-off.
+
+> **Exact Counsel slice (2026-07-22): code, XML, and automated fixtures complete; loaded execution
+> pending.** Installed 1.6 evidence proves `CompAbilityEffect_Counsel.Apply` applies `Counselled` or
+> `Counselled_MoodBoost` before `Counsel_Success`, or `CounselFailed` before `Counsel_Failure`; it
+> changes mood thoughts and never ideology certainty. Those two exact case-sensitive PlayLog DefNames
+> now own the existing counselor → listener pair page through the package-gated `counsel` group. A pure
+> event policy adds only truthful outcome/mood context and optional visible-label N3-I evidence. Counsel
+> remains absent from mutation mappings and never emits conversion/certainty schema. Exact EN/RU
+> DefInjected prompts are secular-safe. Three deterministic loaded fixtures enter the real
+> `Ability.Activate`/Counsel effect boundary for success and failure plus the exact optional-evidence
+> failure seam; active prerequisites fail clearly, while the existing wiring fixture proves the
+> group/evidence route is inert when Ideology is inactive. The Phase-2 suite therefore contains eighteen
+> compiled cases and the whole assembly contains 384 RimTests. The first post-Counsel Ideology-active
+> loaded run reached 382/384, and all three exact Counsel fixtures passed at the real vanilla boundary.
+> One failure was the exhaustive official-DLC catalog fixture's stale expected set, now corrected to
+> include `counsel`; the other was the unchanged N3-O host prerequisite on a map without a parked player
+> gravship. The corrected full-suite rerun and separate base-only profile remain pending, so the 382/384
+> aggregate did not close Phase-2 acceptance. The user-confirmed corrected rerun subsequently passed
+> 384/384 on a valid parked-gravship host, closing the active-Ideology Counsel runtime sub-gate. The
+> separate base-only profile and deferred Phase-2 families remain pending.
 
 > **Narrative N3-I result (2026-07-22): code-complete, adversarially hardened, and active loaded
 > acceptance passed; base-only acceptance pending.** Phase 1's guarded,
@@ -1217,17 +1248,23 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
    that source has the exact visible fact needed; unavailable evidence leaves the route unchanged.
 3. Enrich conversion conversation, conversion success/failure, reassurance/counsel, `IdeoChange`,
    conversion ritual, and throne speech through the same resolver. **Exact conversion interaction,
-   Reassure mechanics, and the existing `IdeoChange` solo page are implemented; Counsel, ritual, and
-   throne speech remain pending.**
+   Reassure mechanics, exact Counsel result pages, and the existing `IdeoChange` solo page are
+   implemented; ritual and throne speech remain pending.**
 4. Add exact XML groups/prompts and role-specific evidence. **The exact IdeoChange group/prompt and
-   breaking-pawn evidence are implemented; remaining routes stay pending.**
+   breaking-pawn evidence plus exact Counsel success/failure group, prompts, and listener evidence are
+   implemented; remaining routes stay pending.**
 5. Drop downstream-covered generic abilities before their random roll. **Implemented for the two exact
-   interaction-backed vanilla routes (`Convert` and `Reassure`); `ConversionRitual` intentionally keeps
-   its start owner until cancellation-safe downstream ownership exists.**
+   mutation-backed vanilla routes (`Convert` and `Reassure`) and exact mood-backed `Counsel` while each
+   downstream group is enabled; `ConversionRitual` intentionally keeps its start owner until
+   cancellation-safe downstream ownership exists.**
 
 Exit gate: focused pure and RimTests prove correct before/after facts and exactly one canonical event
 for each conversion ability/interaction/ritual path; representative body, meal, raid, thought, and
 ritual fixtures select only relevant live doctrine; unrelated event and ability behavior is unchanged.
+
+**Phase-2 exit-gate status:** still open. The exact active-Counsel loaded sub-gate and corrected full
+384/384 suite are green. Conversion ritual, throne speech, the remaining evidence-family matrix, and
+the required Ideology-inactive loaded profile must complete before Phase 2 can close.
 
 ### Phase 3 — Persistent passive belief tracking
 

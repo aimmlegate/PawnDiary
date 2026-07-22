@@ -756,6 +756,7 @@ namespace PawnDiary.RimTests
                 { "royalPermitDramatic", RoyaltyPackageId },
                 { "questRoyalAscent", RoyaltyPackageId },
                 { "beliefCrisis", IdeologyPackageId },
+                { "counsel", IdeologyPackageId },
                 { "eventWindowVoidMonolith", AnomalyPackageId },
                 { "anomalyStudyBreakthrough", AnomalyPackageId },
                 { "anomalyContainmentBreach", AnomalyPackageId },

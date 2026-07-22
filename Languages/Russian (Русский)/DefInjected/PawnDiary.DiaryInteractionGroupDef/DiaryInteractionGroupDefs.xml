@@ -24,8 +24,11 @@
   <slavery.label>Рабство</slavery.label>
   <slavery.instruction>тяжесть цепей — подавление надсмотрщиком или первая искра неповиновения</slavery.instruction>
   <slavery.tone>с мрачной, гнетущей тревогой</slavery.tone>
+  <counsel.label>Утешение</counsel.label>
+  <counsel.instruction>точная попытка утешить собеседника: следуй переданному успеху или провалу, не путай утешающего и слушателя и считай итог только облегчением или ухудшением настроения и мыслей, а не переменой убеждений</counsel.instruction>
+  <counsel.tone>с внимательным теплом при успехе или неловким сожалением при провале</counsel.tone>
   <conversion.label>Идеология и обращение</conversion.label>
-  <conversion.instruction>битва убеждений: обращение, наставление, проповедь или давление веры на веру</conversion.instruction>
+  <conversion.instruction>битва убеждений: обращение, проповедь или давление веры на веру</conversion.instruction>
   <conversion.tone>с пылкой, напористой убеждённостью</conversion.tone>
   <trial.label>Суды и обвинения</trial.label>
   <trial.instruction>тяжесть приговора: обвинение, защита и свидетели вокруг</trial.instruction>

@@ -32,6 +32,7 @@ namespace PawnDiary
             TestPhase1EvidencePersistenceAndCorrelation();
             TestPhase2MutationCoalescingCorrelationAndOwnership();
             TestPhase2MutationEvidenceSelection();
+            TestCounselExactOutcomeEvidenceAndOptionalStance();
             TestN3IIdeologyInterpretationProvider();
             Console.WriteLine("BeliefContextTests passed " + assertions + " assertions.");
             return 0;
@@ -264,11 +265,19 @@ namespace PawnDiary
             policy.canonicalEventOwnershipRules.Add(new BeliefCanonicalEventOwnershipRule(
                 BeliefCanonicalEventSourceTokens.Thought,
                 "FailedConvertAbilityRecipient", "conversion"));
+            policy.canonicalEventOwnershipRules.Add(new BeliefCanonicalEventOwnershipRule(
+                BeliefCanonicalEventSourceTokens.Ability, "Counsel", "counsel"));
+            policy.canonicalEventOwnershipRules.Add(new BeliefCanonicalEventOwnershipRule(
+                BeliefCanonicalEventSourceTokens.Thought, "Counselled", "counsel"));
+            policy.canonicalEventOwnershipRules.Add(new BeliefCanonicalEventOwnershipRule(
+                BeliefCanonicalEventSourceTokens.Thought, "Counselled_MoodBoost", "counsel"));
+            policy.canonicalEventOwnershipRules.Add(new BeliefCanonicalEventOwnershipRule(
+                BeliefCanonicalEventSourceTokens.Thought, "CounselFailed", "counsel"));
             BeliefPolicySnapshot ownershipSnapshot = policy.Build();
             IReadOnlyList<BeliefCanonicalEventOwnershipRule> ownership =
                 ownershipSnapshot.canonicalEventOwnershipRules;
             policy.canonicalEventOwnershipRules.Clear();
-            AssertEqual("ownership snapshot deep-copies XML-style rows", 2, ownership.Count);
+            AssertEqual("ownership snapshot deep-copies XML-style rows", 6, ownership.Count);
             AssertEqual("exact active ability resolves its downstream group", "conversion",
                 BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
                     BeliefCanonicalEventSourceTokens.Ability, "Convert", true, true, ownership));
@@ -286,6 +295,26 @@ namespace PawnDiary
                 BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
                     BeliefCanonicalEventSourceTokens.Thought,
                     "FailedConvertAbilityRecipient", true, true, ownership));
+            AssertEqual("exact Counsel ability resolves its downstream owner", "counsel",
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Ability, "Counsel", true, true, ownership));
+            AssertEqual("exact Counsel success memory resolves its downstream owner", "counsel",
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Thought, "Counselled", true, true, ownership));
+            AssertEqual("exact Counsel mood-boost memory resolves its downstream owner", "counsel",
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Thought,
+                    "Counselled_MoodBoost", true, true, ownership));
+            AssertEqual("exact Counsel failure memory resolves its downstream owner", "counsel",
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Thought, "CounselFailed", true, true, ownership));
+            AssertEqual("case-variant Counsel ability remains unsuppressed", string.Empty,
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Ability, "counsel", true, true, ownership));
+            AssertEqual("modded Counsel-like thought remains unsuppressed", string.Empty,
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Thought,
+                    "CounselledByMod", true, true, ownership));
             AssertEqual("inactive Ideology never suppresses the generic route", string.Empty,
                 BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
                     BeliefCanonicalEventSourceTokens.Ability, "Convert", false, true, ownership));
@@ -595,6 +624,93 @@ namespace PawnDiary
                 fallbackContext.IndexOf("previous ideoligion:", StringComparison.Ordinal) < 0
                     && fallbackContext.IndexOf("attempted ideoligion:", StringComparison.Ordinal) < 0
                     && fallbackContext.IndexOf("conversion result:", StringComparison.Ordinal) < 0);
+        }
+
+        private static void TestCounselExactOutcomeEvidenceAndOptionalStance()
+        {
+            BeliefEventEvidence success = CounselEventPolicy.ForInteraction(
+                "Counsel_Success", "counsel", true, "ListenerPawn", 700,
+                "Listener", "successful counsel");
+            AssertTrue("exact Counsel success produces detached evidence", success != null);
+            AssertEqual("Counsel success keeps exact source", "Counsel_Success",
+                success.narrative.sourceDefName);
+            AssertEqual("Counsel success keeps exact recipient subject", "ListenerPawn",
+                success.narrative.subjectId);
+            AssertEqual("Counsel success keeps recipient label", "Listener",
+                success.narrative.subjectLabel);
+            AssertEqual("Counsel success keeps exact group", "counsel", success.groupKey);
+            AssertEqual("Counsel success phase is truthful", "counsel_succeeded",
+                success.narrative.phase);
+            AssertTrue("Counsel success carries visible localized evidence",
+                success.matchFields.Count == 1
+                    && success.matchFields[0].field == "event_label"
+                    && success.matchFields[0].value == "successful counsel");
+            AssertTrue("Counsel success fabricates no belief mutation or current-certainty request",
+                success.mutation == null && !success.currentBeliefFactsRelevant);
+
+            string successContext = CounselEventPolicy.AppendGameContext(
+                "interaction=Counsel_Success", success);
+            AssertContains("Counsel success appends exact mood context", successContext,
+                CounselEventPolicy.SuccessContext);
+            AssertEqual("Counsel success context append is idempotent", successContext,
+                CounselEventPolicy.AppendGameContext(successContext, success));
+            AssertTrue("Counsel success context contains no conversion or certainty schema",
+                successContext.IndexOf("belief_event=conversion", StringComparison.Ordinal) < 0
+                    && successContext.IndexOf("certainty", StringComparison.Ordinal) < 0);
+
+            BeliefEventEvidence failure = CounselEventPolicy.ForInteraction(
+                "Counsel_Failure", "counsel", true, "ListenerPawn", 701,
+                "Listener", "failed counsel");
+            AssertTrue("exact Counsel failure produces detached evidence", failure != null);
+            AssertEqual("Counsel failure phase is truthful", "counsel_failed",
+                failure.narrative.phase);
+            AssertContains("Counsel failure appends exact mood penalty context",
+                CounselEventPolicy.AppendGameContext(string.Empty, failure),
+                CounselEventPolicy.FailureContext);
+            AssertTrue("Counsel failure fabricates no belief mutation or current-certainty request",
+                failure.mutation == null && !failure.currentBeliefFactsRelevant);
+
+            AssertTrue("case-variant Counsel success remains silent",
+                CounselEventPolicy.ForInteraction(
+                    "counsel_success", "counsel", true, "P", 1, "P", "label") == null);
+            AssertTrue("wrong Counsel group remains silent",
+                CounselEventPolicy.ForInteraction(
+                    "Counsel_Success", "conversion", true, "P", 1, "P", "label") == null);
+            AssertTrue("unknown modded Counsel event remains silent",
+                CounselEventPolicy.ForInteraction(
+                    "ModdedCounsel_Success", "counsel", true, "P", 1, "P", "label") == null);
+            AssertTrue("inactive Ideology makes exact Counsel inert",
+                CounselEventPolicy.ForInteraction(
+                    "Counsel_Success", "counsel", false, "P", 1, "P", "label") == null);
+
+            BeliefEventEvidence counselorPov = BeliefEventEvidenceFactory.ForPov(
+                success, "CounselEvent", 700, "CounselorPawn", "initiator");
+            BeliefEventEvidence listenerPov = BeliefEventEvidenceFactory.ForPov(
+                success, "CounselEvent", 700, "ListenerPawn", "recipient");
+            AssertEqual("Counselor POV keeps initiator role", "initiator",
+                counselorPov.narrative.povRole);
+            AssertEqual("Listener POV keeps recipient role", "recipient",
+                listenerPov.narrative.povRole);
+            AssertEqual("both POVs keep the listener as the mechanical subject", "ListenerPawn",
+                counselorPov.narrative.subjectId);
+            AssertEqual("listener POV keeps the same mechanical subject", "ListenerPawn",
+                listenerPov.narrative.subjectId);
+
+            BeliefPolicySnapshot policy = VocabularyPolicy();
+            AssertEmpty("unrelated current doctrine leaves ordinary Counsel unchanged",
+                Resolve(
+                    Snapshot(Precept("UnrelatedTrees", "TreesIssue", "revere ancient trees", 2)),
+                    success,
+                    policy));
+            BeliefStanceResolution relevant = Resolve(
+                Snapshot(Precept(
+                    "VisibleCounselSupport", "SupportIssue", "successful counsel", 3)),
+                success,
+                policy);
+            AssertSelected("visible relevant doctrine may enrich Counsel", relevant,
+                "VisibleCounselSupport");
+            AssertTrue("optional Counsel stance still carries no fabricated mutation",
+                relevant.mutation == null && !relevant.currentBeliefFactsRelevant);
         }
 
         private static void TestN3IIdeologyInterpretationProvider()

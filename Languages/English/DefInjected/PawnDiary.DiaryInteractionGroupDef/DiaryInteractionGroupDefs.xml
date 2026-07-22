@@ -21,8 +21,11 @@
   <slavery.label>Slavery</slavery.label>
   <slavery.instruction>the weight of chains—suppression by an overseer or the first spark of defiance</slavery.instruction>
   <slavery.tone>with grim, heavy unease</slavery.tone>
+  <counsel.label>Counsel</counsel.label>
+  <counsel.instruction>an exact attempt to comfort a listener; follow the supplied success or failure, keep counselor and listener roles straight, and treat the result only as mood or thought relief or harm—not a change of doctrine or conviction</counsel.instruction>
+  <counsel.tone>with attentive warmth on success or awkward regret on failure</counsel.tone>
   <conversion.label>Ideology &amp; conversion</conversion.label>
-  <conversion.instruction>a battle of belief—conversion, counseling, preaching, or the pressure of faith on faith</conversion.instruction>
+  <conversion.instruction>a battle of belief—conversion, preaching, or the pressure of faith on faith</conversion.instruction>
   <conversion.tone>with fervent, pressing conviction</conversion.tone>
   <trial.label>Trials &amp; accusations</trial.label>
   <trial.instruction>the weight of judgment—an accusation hurled, a defense mounted, before watching eyes</trial.instruction>

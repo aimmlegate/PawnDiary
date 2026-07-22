@@ -138,7 +138,7 @@ namespace PawnDiary.Ingestion
                     eligibleText = "PawnDiary.Event.Interaction".Translate(eligiblePawn.LabelShortCap, interactionLabel, otherPawn.LabelShortCap);
                 }
 
-                string gameContext = BeliefMutationEventSelector.AppendGameContextMarker(
+                string gameContext = AppendBeliefGameContext(
                     DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel),
                     beliefEvidence);
                 DiaryEvent soloEvent = sink.AddSoloEvent(eligiblePawn, otherPawn, interactionDef.defName, interactionLabel,
@@ -173,7 +173,7 @@ namespace PawnDiary.Ingestion
             DiaryEvent diaryEvent = sink.AddPairwiseEvent(initiator, recipient, interactionDef.defName, interactionLabel,
                 initiatorText, recipientText,
                 InteractionGroups.InstructionFor(interactionDef),
-                BeliefMutationEventSelector.AppendGameContextMarker(
+                AppendBeliefGameContext(
                     DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel),
                     pairBeliefEvidence),
                 pairBeliefEvidence);
@@ -197,7 +197,18 @@ namespace PawnDiary.Ingestion
                 payload.RecipientPawnId,
                 payload.Tick,
                 initiator.LabelShort,
-                recipient.LabelShort);
+                recipient.LabelShort,
+                payload.Label);
+        }
+
+        /// <summary>Appends only the exact stable markers proved by optional detached evidence.</summary>
+        private static string AppendBeliefGameContext(
+            string gameContext,
+            BeliefEventEvidence beliefEvidence)
+        {
+            string mutationContext = BeliefMutationEventSelector.AppendGameContextMarker(
+                gameContext, beliefEvidence);
+            return CounselEventPolicy.AppendGameContext(mutationContext, beliefEvidence);
         }
     }
 }

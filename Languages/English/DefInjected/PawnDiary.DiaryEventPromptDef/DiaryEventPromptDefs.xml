@@ -9,6 +9,12 @@
   <DiaryEventPrompt_IdeoChange.label>crisis of belief</DiaryEventPrompt_IdeoChange.label>
   <DiaryEventPrompt_IdeoChange.prompt>Write the exact Crisis of Belief mental state from the breaking pawn&apos;s point of view.</DiaryEventPrompt_IdeoChange.prompt>
   <DiaryEventPrompt_IdeoChange.enhancement>Use only supplied mental-state and belief facts. A successful conversion or different previous/current ideoligion proves an actual change of ideoligion; a failed conversion or unchanged identity proves challenged convictions and falling certainty, not conversion. When no previous or mutation facts are present, mention only the visible current ideoligion and certainty. Never invent a former or attempted ideoligion.</DiaryEventPrompt_IdeoChange.enhancement>
+  <DiaryEventPrompt_CounselSuccess.label>successful counsel</DiaryEventPrompt_CounselSuccess.label>
+  <DiaryEventPrompt_CounselSuccess.prompt>Write the exact successful Counsel interaction from the supplied counselor or listener point of view.</DiaryEventPrompt_CounselSuccess.prompt>
+  <DiaryEventPrompt_CounselSuccess.enhancement>Use the supplied roles and PlayLog text. Success proves only that the listener&apos;s mood was relieved: either a sufficiently sad memory was offset for its remaining duration or a short mood boost was added. Do not invent the memory, dialogue, certainty, doctrine change, or a religious struggle.</DiaryEventPrompt_CounselSuccess.enhancement>
+  <DiaryEventPrompt_CounselFailure.label>failed counsel</DiaryEventPrompt_CounselFailure.label>
+  <DiaryEventPrompt_CounselFailure.prompt>Write the exact failed Counsel interaction from the supplied counselor or listener point of view.</DiaryEventPrompt_CounselFailure.prompt>
+  <DiaryEventPrompt_CounselFailure.enhancement>Use the supplied roles and PlayLog text. Failure proves only that the listener received a short negative mood memory because the attempt went badly. Do not invent advice, dialogue, certainty, doctrine change, or a religious struggle.</DiaryEventPrompt_CounselFailure.enhancement>
   <DiaryEventPrompt_Tale.label>tale</DiaryEventPrompt_Tale.label>
   <DiaryEventPrompt_Tale.prompt>Write a notable non-social RimWorld tale as something the pawn lived through or remembers.</DiaryEventPrompt_Tale.prompt>
   <DiaryEventPrompt_Tale.enhancement>Find the dramatic pressure in the tale facts: danger, pride, shame, relief, damage, or aftermath. Do not turn the entry into ordinary social chatter.</DiaryEventPrompt_Tale.enhancement>

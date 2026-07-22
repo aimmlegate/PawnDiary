@@ -1,5 +1,39 @@
 # Changelog
 
+- **2026-07-22 — Corrected the exhaustive DLC catalog after the first 384-test Counsel run.** The
+  Ideology-active loaded run reached 382/384, and all three new exact Counsel fixtures passed through
+  vanilla `Ability.Activate`/`CompAbilityEffect_Counsel`: success, failure, canonical counselor→listener
+  ownership, ability/thought duplicate suppression, truthful mood-only context, prompt selection, and
+  optional-evidence failure isolation are now execution-backed. One failure was the exhaustive
+  `OfficialDlcCatalogMatchesPackageFlagsAndSettingsVisibility` expected set omitting the newly
+  package-gated `counsel` row; the matrix now includes it under `Ludeon.RimWorld.Ideology`. The other
+  failure is the unchanged strict N3-O prerequisite because the host map had no parked player gravship;
+  that guard was not weakened. The corrected 384-test assembly rebuilds cleanly, and the user-confirmed
+  rerun passed 384/384 on a valid parked-gravship host. Active-Ideology Counsel runtime coverage is now
+  green; the separate Ideology-inactive profile and deferred Phase-2 families remain pending, so the
+  overall Phase-2 acceptance gate stays open.
+
+- **2026-07-22 — Implemented the exact Ideology Phase-2 Counsel slice without adding an event owner.**
+  Installed RimWorld 1.6 evidence confirms `CompAbilityEffect_Counsel` applies the positive
+  `Counselled`/`Counselled_MoodBoost` or negative `CounselFailed` mood memory, then emits exactly one
+  `Counsel_Success`/`Counsel_Failure` PlayLog interaction with counselor initiator and listener
+  recipient. A package-gated, ordinal exact `counsel` group now owns that existing pair page; XML
+  canonical ownership suppresses the generic `Counsel` ability and all three exact thought callbacks
+  only while that group is enabled. `CounselEventPolicy` adds detached listener evidence plus truthful
+  mood outcome context and permits optional N3-I enrichment only through the existing visible-evidence
+  resolver. Counsel remains absent from mutation mappings: it adds no certainty delta, ideology change,
+  conversion result, or `belief_event=conversion`. Exact secular-safe success/failure prompts and group
+  policy are localized through EN/RU DefInjected XML with placeholder parity. No Harmony hook, poll,
+  page source, save field, conversion ritual, throne-speech path, passive tracker, or reflection was
+  added. Pure coverage passes 413 Belief and 2,899 pipeline assertions; the full repository verifier,
+  XML/whitespace checks, runtime MSBuild, and the 384-test RimTest build pass with zero build warnings or
+  errors. Three deterministic compiled fixtures exercise real vanilla Counsel success/failure ownership
+  and optional-evidence failure isolation, while the shared wiring fixture covers Ideology-inactive
+  no-op. Both tracked DLLs were rebuilt and staged. These RimTests were compiled but not executed in a
+  loaded game, so the last recorded runtime result remains the pre-Counsel 381/381 active run and Phase-2
+  acceptance stays open pending active Counsel plus the base-only profile and the explicitly deferred
+  families.
+
 - **2026-07-22 — Adversarially hardened Narrative N3-I after deduplicating three reviews.** Fixed the
   one confirmed production disconnect: saved N3-I candidate keys were never projected into
   `BeliefResolutionRequest.recentSelectionDefNames`, leaving the XML doctrine-repetition penalty inert.

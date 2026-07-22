@@ -9,6 +9,12 @@
   <DiaryEventPrompt_IdeoChange.label>кризис убеждений</DiaryEventPrompt_IdeoChange.label>
   <DiaryEventPrompt_IdeoChange.prompt>Опиши точное психическое состояние «Кризис убеждений» с точки зрения сорвавшегося поселенца.</DiaryEventPrompt_IdeoChange.prompt>
   <DiaryEventPrompt_IdeoChange.enhancement>Используй только переданные факты о психическом состоянии и убеждениях. Успешное обращение или разные прежняя и текущая идеолигии доказывают настоящую смену идеолигии; неудачное обращение или неизменная идеолигия означают пошатнувшиеся убеждения и падение уверенности, а не обращение. Если прежних сведений или фактов изменения нет, упоминай только видимые текущую идеолигию и уверенность. Не выдумывай прежнюю или предложенную идеолигию.</DiaryEventPrompt_IdeoChange.enhancement>
+  <DiaryEventPrompt_CounselSuccess.label>успешное утешение</DiaryEventPrompt_CounselSuccess.label>
+  <DiaryEventPrompt_CounselSuccess.prompt>Опиши точное успешное утешение с переданной точки зрения утешающего или слушателя.</DiaryEventPrompt_CounselSuccess.prompt>
+  <DiaryEventPrompt_CounselSuccess.enhancement>Используй переданные роли и текст журнала общения. Успех доказывает лишь облегчение настроения слушателя: либо достаточно грустное воспоминание перестало влиять на оставшийся срок, либо добавилось краткое улучшение настроения. Не выдумывай само воспоминание, реплики, уверенность, перемену убеждений или религиозную борьбу.</DiaryEventPrompt_CounselSuccess.enhancement>
+  <DiaryEventPrompt_CounselFailure.label>неудачное утешение</DiaryEventPrompt_CounselFailure.label>
+  <DiaryEventPrompt_CounselFailure.prompt>Опиши точное неудачное утешение с переданной точки зрения утешающего или слушателя.</DiaryEventPrompt_CounselFailure.prompt>
+  <DiaryEventPrompt_CounselFailure.enhancement>Используй переданные роли и текст журнала общения. Провал доказывает лишь краткую отрицательную мысль у слушателя из-за неудачной попытки помочь. Не выдумывай советы, реплики, уверенность, перемену убеждений или религиозную борьбу.</DiaryEventPrompt_CounselFailure.enhancement>
   <DiaryEventPrompt_Tale.label>памятное событие</DiaryEventPrompt_Tale.label>
   <DiaryEventPrompt_Tale.prompt>Опиши значимое несоциальное событие RimWorld как личный опыт или память поселенца.</DiaryEventPrompt_Tale.prompt>
   <DiaryEventPrompt_Tale.enhancement>Ищи напряжение в самих фактах: опасность, гордость, стыд, облегчение, увечье или последствия. Не превращай запись в обычную болтовню.</DiaryEventPrompt_Tale.enhancement>

@@ -67,6 +67,7 @@ namespace DiaryPipelineTests
             TestRoyaltyPermitXmlContract();
             TestRoyaltyAscentXmlContract();
             TestIdeologyCrisisXmlContract();
+            TestIdeologyCounselXmlContract();
             TestProgressionMilestonePolicy();
             TestPsylinkProgressionLevelPolicy();
             TestArcReflectionSchedulePolicy();
@@ -5802,6 +5803,137 @@ namespace DiaryPipelineTests
                     && russianCrisisText.IndexOf(" вер", StringComparison.Ordinal) < 0);
         }
 
+        private static void TestIdeologyCounselXmlContract()
+        {
+            XDocument groups = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryInteractionGroupDefs.xml"));
+            XElement counsel = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "counsel");
+            XElement conversion = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "conversion");
+            AssertTrue("exact Counsel interaction group exists", counsel != null);
+            AssertEqual("Counsel interaction domain", "Interaction", ChildValue(counsel, "domain"));
+            AssertTrue("Counsel group uses only the two installed exact interaction DefNames",
+                counsel.Element("matchDefNames")?.Elements("li").Count() == 2
+                    && HasListValue(counsel, "matchDefNames", "Counsel_Success")
+                    && HasListValue(counsel, "matchDefNames", "Counsel_Failure")
+                    && counsel.Element("matchTokens") == null
+                    && counsel.Element("matchPrefixes") == null
+                    && counsel.Element("matchSegments") == null);
+            AssertTrue("Counsel group precedes conversion", InteractionGroupOrder(counsel)
+                < InteractionGroupOrder(conversion));
+            AssertTrue("Counsel group is package-gated to optional Ideology",
+                HasListValue(counsel, "enableWhenPackageIdsLoaded", "Ludeon.RimWorld.Ideology"));
+            AssertTrue("conversion group no longer claims Counsel names or token",
+                !HasListValue(conversion, "matchDefNames", "Counsel_Success")
+                    && !HasListValue(conversion, "matchDefNames", "Counsel_Failure")
+                    && !HasListValue(conversion, "matchTokens", "Counsel"));
+
+            XDocument prompts = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryEventPromptDefs.xml"));
+            string[] sources = { "Counsel_Success", "Counsel_Failure" };
+            string[] promptDefs = { "DiaryEventPrompt_CounselSuccess", "DiaryEventPrompt_CounselFailure" };
+            for (int i = 0; i < sources.Length; i++)
+            {
+                XElement prompt = FindDef(
+                    prompts, "PawnDiary.DiaryEventPromptDef", promptDefs[i]);
+                AssertTrue("exact Counsel prompt exists: " + sources[i], prompt != null);
+                AssertEqual("exact Counsel prompt key: " + sources[i], sources[i],
+                    ChildValue(prompt, "eventType"));
+                AssertTrue("exact Counsel prompt is package-gated: " + sources[i],
+                    HasListValue(prompt, "enableWhenPackageIdsLoaded", "Ludeon.RimWorld.Ideology"));
+                List<string> keys = DiaryEventPromptKeys.CandidateKeys(
+                    new DiaryEventPayload { defName = sources[i] },
+                    "counsel", sources[i], "Interaction");
+                AssertEqual("exact Counsel prompt key wins: " + sources[i], sources[i], keys[0]);
+                AssertEqual("Counsel group prompt remains second: " + sources[i], "counsel", keys[1]);
+                AssertEqual("Counsel Interaction fallback remains last: " + sources[i],
+                    "Interaction", keys[2]);
+            }
+
+            XDocument policy = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryBeliefPolicyDef.xml"));
+            List<XElement> ownership = policy.Descendants("canonicalEventOwnershipRules")
+                .Elements("li")
+                .Where(row => string.Equals(
+                    ChildValue(row, "downstreamGroupDefName"), "counsel", StringComparison.Ordinal))
+                .ToList();
+            AssertEqual("Counsel ships four exact downstream ownership rows", 4, ownership.Count);
+            AssertTrue("Counsel ability ownership is exact",
+                HasOwnership(ownership, "ability", "Counsel"));
+            AssertTrue("Counsel success-memory ownership is exact",
+                HasOwnership(ownership, "thought", "Counselled"));
+            AssertTrue("Counsel mood-boost ownership is exact",
+                HasOwnership(ownership, "thought", "Counselled_MoodBoost"));
+            AssertTrue("Counsel failure-memory ownership is exact",
+                HasOwnership(ownership, "thought", "CounselFailed"));
+            AssertTrue("Counsel has no ideology mutation rule",
+                !policy.Descendants("mutationEventRules").Elements("li")
+                    .Any(row => ChildValue(row, "sourceDefName")
+                        .StartsWith("Counsel", StringComparison.Ordinal)));
+
+            XDocument englishGroups = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryInteractionGroupDef",
+                "DiaryInteractionGroupDefs.xml"));
+            XDocument russianGroups = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryInteractionGroupDef", "DiaryInteractionGroupDefs.xml"));
+            XDocument englishPrompts = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryEventPromptDef",
+                "DiaryEventPromptDefs.xml"));
+            XDocument russianPrompts = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryEventPromptDef", "DiaryEventPromptDefs.xml"));
+            AssertPlaceholderParity("Counsel group label",
+                ChildValue(englishGroups.Root, "counsel.label"),
+                ChildValue(russianGroups.Root, "counsel.label"));
+            AssertPlaceholderParity("Counsel group instruction",
+                ChildValue(englishGroups.Root, "counsel.instruction"),
+                ChildValue(russianGroups.Root, "counsel.instruction"));
+            for (int i = 0; i < promptDefs.Length; i++)
+            {
+                string key = promptDefs[i];
+                AssertTrue("English Counsel prompt is localized: " + key,
+                    !string.IsNullOrWhiteSpace(ChildValue(englishPrompts.Root, key + ".prompt")));
+                AssertTrue("Russian Counsel prompt is localized: " + key,
+                    !string.IsNullOrWhiteSpace(ChildValue(russianPrompts.Root, key + ".prompt")));
+                AssertPlaceholderParity(key + " prompt",
+                    ChildValue(englishPrompts.Root, key + ".prompt"),
+                    ChildValue(russianPrompts.Root, key + ".prompt"));
+                AssertPlaceholderParity(key + " enhancement",
+                    ChildValue(englishPrompts.Root, key + ".enhancement"),
+                    ChildValue(russianPrompts.Root, key + ".enhancement"));
+            }
+
+            string fallbackText = (ChildValue(counsel, "instruction") + " "
+                + string.Join(" ", promptDefs.Select(key =>
+                    ChildValue(FindDef(prompts, "PawnDiary.DiaryEventPromptDef", key), "enhancement"))))
+                .ToLowerInvariant();
+            string englishText = (ChildValue(englishGroups.Root, "counsel.instruction") + " "
+                + string.Join(" ", promptDefs.Select(key =>
+                    ChildValue(englishPrompts.Root, key + ".enhancement"))))
+                .ToLowerInvariant();
+            string russianText = (ChildValue(russianGroups.Root, "counsel.instruction") + " "
+                + string.Join(" ", promptDefs.Select(key =>
+                    ChildValue(russianPrompts.Root, key + ".enhancement"))))
+                .ToLowerInvariant();
+            AssertTrue("fallback Counsel prose does not inherit conversion framing",
+                fallbackText.IndexOf("battle of belief", StringComparison.Ordinal) < 0
+                    && fallbackText.IndexOf("conversion", StringComparison.Ordinal) < 0
+                    && fallbackText.IndexOf("faith on faith", StringComparison.Ordinal) < 0);
+            AssertTrue("English Counsel prose does not inherit conversion framing",
+                englishText.IndexOf("battle of belief", StringComparison.Ordinal) < 0
+                    && englishText.IndexOf("conversion", StringComparison.Ordinal) < 0
+                    && englishText.IndexOf("faith on faith", StringComparison.Ordinal) < 0);
+            AssertTrue("Russian Counsel prose does not inherit conversion framing",
+                russianText.IndexOf("обращен", StringComparison.Ordinal) < 0
+                    && russianText.IndexOf("битва убеждений", StringComparison.Ordinal) < 0);
+            AssertTrue("Counsel prose is explicitly grounded in mood",
+                fallbackText.IndexOf("mood", StringComparison.Ordinal) >= 0
+                    && englishText.IndexOf("mood", StringComparison.Ordinal) >= 0
+                    && russianText.IndexOf("настроен", StringComparison.Ordinal) >= 0);
+        }
+
         private static void TestResponsePostprocessorRules()
         {
             DiaryResponsePlan main = DiaryResponsePostprocessor.ApplySuccess(
@@ -6598,6 +6730,17 @@ namespace DiaryPipelineTests
             return false;
         }
 
+        private static bool HasOwnership(
+            IEnumerable<XElement> rows,
+            string sourceDomain,
+            string sourceDefName)
+        {
+            return rows != null && rows.Any(row =>
+                string.Equals(ChildValue(row, "sourceDomain"), sourceDomain, StringComparison.Ordinal)
+                && string.Equals(ChildValue(row, "sourceDefName"), sourceDefName,
+                    StringComparison.Ordinal));
+        }
+
         private static bool HasStructuredListRow(
             XElement def,
             string listName,
@@ -6694,6 +6837,33 @@ namespace DiaryPipelineTests
 
             XElement child = element.Element(childName);
             return child == null ? string.Empty : (child.Value ?? string.Empty).Trim();
+        }
+
+        private static void AssertPlaceholderParity(string name, string english, string russian)
+        {
+            AssertTrue(name + " has English text", !string.IsNullOrWhiteSpace(english));
+            AssertTrue(name + " has Russian text", !string.IsNullOrWhiteSpace(russian));
+            AssertEqual(name + " keeps EN/RU placeholder parity",
+                PlaceholderSignature(english), PlaceholderSignature(russian));
+        }
+
+        private static string PlaceholderSignature(string value)
+        {
+            string text = value ?? string.Empty;
+            List<string> found = new List<string>();
+            for (int i = 0; i < 10; i++)
+            {
+                string token = "{" + i + "}";
+                int offset = 0;
+                int count = 0;
+                while ((offset = text.IndexOf(token, offset, StringComparison.Ordinal)) >= 0)
+                {
+                    count++;
+                    offset += token.Length;
+                }
+                if (count > 0) found.Add(token + "x" + count);
+            }
+            return string.Join(",", found);
         }
 
         private static string KeyedValue(XDocument document, string key)

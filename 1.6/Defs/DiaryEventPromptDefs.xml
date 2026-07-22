@@ -44,6 +44,30 @@
     <enhancement>Use only supplied mental-state and belief facts. A successful conversion or different previous/current ideoligion proves an actual change of ideoligion; a failed conversion or unchanged identity proves challenged convictions and falling certainty, not conversion. When no previous or mutation facts are present, mention only the visible current ideoligion and certainty. Never invent a former or attempted ideoligion.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
+  <!-- Exact Counsel outcomes win before the counsel group and Interaction fallbacks. Vanilla's
+       downstream PlayLog row proves mood/thought outcome only; neither policy requests belief mutation. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_CounselSuccess</defName>
+    <label>successful counsel</label>
+    <eventType>Counsel_Success</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the exact successful Counsel interaction from the supplied counselor or listener point of view.</prompt>
+    <enhancement>Use the supplied roles and PlayLog text. Success proves only that the listener&apos;s mood was relieved: either a sufficiently sad memory was offset for its remaining duration or a short mood boost was added. Do not invent the memory, dialogue, certainty, doctrine change, or a religious struggle.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_CounselFailure</defName>
+    <label>failed counsel</label>
+    <eventType>Counsel_Failure</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write the exact failed Counsel interaction from the supplied counselor or listener point of view.</prompt>
+    <enhancement>Use the supplied roles and PlayLog text. Failure proves only that the listener received a short negative mood memory because the attempt went badly. Do not invent advice, dialogue, certainty, doctrine change, or a religious struggle.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Tale</defName>
     <label>tale</label>

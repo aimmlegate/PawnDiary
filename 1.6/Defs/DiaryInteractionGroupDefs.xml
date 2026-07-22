@@ -196,13 +196,32 @@
     </matchTokens>
   </PawnDiary.DiaryInteractionGroupDef>
 
+  <!-- Exact vanilla Counsel PlayLog owner. The package gate keeps these ordinary strings inert when
+       Ideology is absent; no broad token matcher may claim a modded counseling interaction. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>counsel</defName>
+    <label>Counsel</label>
+    <order>45</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>an exact attempt to comfort a listener; follow the supplied success or failure, keep counselor and listener roles straight, and treat the result only as mood or thought relief or harm—not a change of doctrine or conviction</instruction>
+    <tone>with attentive warmth on success or awkward regret on failure</tone>
+    <matchDefNames>
+      <li>Counsel_Success</li>
+      <li>Counsel_Failure</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>conversion</defName>
     <label>Ideology &amp; conversion</label>
     <order>50</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>a battle of belief—conversion, counseling, preaching, or the pressure of faith on faith</instruction>
+    <instruction>a battle of belief—conversion, preaching, or the pressure of faith on faith</instruction>
     <tone>with fervent, pressing conviction</tone>
     <tones>
       <li>fervent and declarative, like belief under pressure</li>
@@ -212,8 +231,6 @@
       <li>ConvertIdeoAttempt</li>
       <li>Convert_Success</li>
       <li>Convert_Failure</li>
-      <li>Counsel_Success</li>
-      <li>Counsel_Failure</li>
       <li>PreachHealth</li>
       <li>WorkDrive</li>
       <li>Indoctrinate</li>
@@ -221,7 +238,6 @@
     </matchDefNames>
     <matchTokens>
       <li>Convert</li>
-      <li>Counsel</li>
       <li>Preach</li>
       <li>Indoctrinate</li>
       <li>Worship</li>

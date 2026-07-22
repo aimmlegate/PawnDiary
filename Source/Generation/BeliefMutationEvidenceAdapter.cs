@@ -1,6 +1,6 @@
-// Main-thread adapter between the transient detached mutation cache and pure event correlation.
-// It runs only after an existing source has already authorized a page. The adapter reads no live
-// Ideology object and cannot authorize, create, queue, or persist a DiaryEvent.
+// Main-thread adapter between existing authorized pages and pure Ideology event evidence. Mutation
+// consumers read the transient detached cache; exact Counsel uses only already-visible PlayLog facts.
+// The adapter reads no live Ideology object and cannot authorize, create, queue, or persist a page.
 using System;
 using Verse;
 
@@ -10,8 +10,8 @@ namespace PawnDiary
     internal static class BeliefMutationEvidenceAdapter
     {
         /// <summary>
-        /// Returns conversion/reassurance evidence for one exact authorized PlayLog interaction, or
-        /// null when DLC, policy, XML mapping, group ownership, pawn identity, time, or mechanics differ.
+        /// Returns exact Counsel or conversion/reassurance evidence for one authorized PlayLog
+        /// interaction, or null when DLC, policy, XML mapping, ownership, identity, time, or mechanics differ.
         /// </summary>
         public static BeliefEventEvidence ForInteraction(
             string interactionDefName,
@@ -20,11 +20,25 @@ namespace PawnDiary
             string recipientPawnId,
             int eventTick,
             string initiatorLabel = null,
-            string recipientLabel = null)
+            string recipientLabel = null,
+            string interactionLabel = null)
         {
             try
             {
                 if (!ModsConfig.IdeologyActive || !DiaryGameComponent.GamePlaying) return null;
+
+                // Counsel's verified PlayLog result is itself the mechanical boundary: vanilla has
+                // already applied the listener's mood thought, and no ideology mutation exists to peek.
+                BeliefEventEvidence counsel = CounselEventPolicy.ForInteraction(
+                    interactionDefName,
+                    effectiveGroupDefName,
+                    ideologyActive: true,
+                    recipientPawnId,
+                    eventTick,
+                    recipientLabel,
+                    interactionLabel);
+                if (counsel != null) return counsel;
+
                 BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
                 BeliefMutationEventRule rule = BeliefMutationEventSelector.RuleFor(
                     BeliefMutationEventSourceTokens.Interaction,
@@ -96,14 +110,14 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Optional mutation evidence must never unwind past the source which already authorized the
+        /// Optional belief evidence must never unwind past the source which already authorized the
         /// ordinary page. Log each source/exception kind once and let that page continue un-enriched.
         /// </summary>
         private static void WarnAndKeepOrdinaryPage(string sourceKind, Exception exception)
         {
             Type type = exception.GetType();
             Log.WarningOnce(
-                "[Pawn Diary] Ideology mutation-evidence enrichment failed for " + sourceKind
+                "[Pawn Diary] Ideology event-evidence enrichment failed for " + sourceKind
                     + "; this page keeps ordinary context: " + type.FullName + ": " + exception.Message,
                 ("PawnDiary.BeliefMutationEvidenceAdapter." + sourceKind + "." + type.FullName)
                     .GetHashCode());

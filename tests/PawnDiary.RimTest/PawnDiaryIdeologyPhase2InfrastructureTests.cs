@@ -1,5 +1,5 @@
-// Loaded-game fixtures for Ideology Phase 2 mutation infrastructure, exact interaction consumers, and
-// the exact IdeoChange crisis consumer on the existing solo mental-state page. The real boundary
+// Loaded-game fixtures for Ideology Phase 2 mutation infrastructure, exact interaction consumers,
+// exact Counsel mood outcomes, and the exact IdeoChange crisis consumer on the existing solo mental-state page. The real boundary
 // also proves vanilla's nested silent Wander_OwnRoom/Wander_Sad transition does not become a second
 // diary page.
 // These tests invoke real Pawn_IdeoTracker methods patched by production, inspect their detached
@@ -37,7 +37,7 @@ namespace PawnDiary.RimTests
         public static void SetUp()
         {
             scope = PawnDiaryRimTestScope.Begin(
-                "conversion", "heartfelt", "abilityUsed", "beliefCrisis");
+                "conversion", "heartfelt", "abilityUsed", "beliefCrisis", "counsel");
             pawn = scope.CreateAdultColonist();
             otherPawn = scope.CreateAdultColonist();
             BeliefMutationCache.Reset();
@@ -120,6 +120,27 @@ namespace PawnDiary.RimTests
 
             BeliefMutationState state;
             bool captured = DlcContext.TryCaptureBeliefMutationState(pawn.ideo, out state);
+            BeliefPolicySnapshot ownership = DiaryBeliefPolicy.Snapshot();
+            DiaryInteractionGroupDef counselGroup = InteractionGroups.ByKey(CounselEventPolicy.GroupDefName);
+            PawnDiaryRimTestScope.Require(counselGroup != null
+                    && counselGroup.MissingRequiredPackage() == !active
+                    && PawnDiaryMod.Settings.IsGroupEnabled(CounselEventPolicy.GroupDefName) == active,
+                "The exact Counsel group availability did not match ModsConfig.IdeologyActive.");
+            string expectedCounselOwner = active ? CounselEventPolicy.GroupDefName : string.Empty;
+            PawnDiaryRimTestScope.Require(
+                BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Ability, "Counsel", active, ownership.enabled,
+                    ownership.canonicalEventOwnershipRules) == expectedCounselOwner
+                && BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Thought, "Counselled", active, ownership.enabled,
+                    ownership.canonicalEventOwnershipRules) == expectedCounselOwner
+                && BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Thought, "Counselled_MoodBoost", active, ownership.enabled,
+                    ownership.canonicalEventOwnershipRules) == expectedCounselOwner
+                && BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
+                    BeliefCanonicalEventSourceTokens.Thought, "CounselFailed", active, ownership.enabled,
+                    ownership.canonicalEventOwnershipRules) == expectedCounselOwner,
+                "The loaded exact Counsel ability/thought ownership did not match DLC availability.");
             if (!active)
             {
                 PawnDiaryRimTestScope.Require(!captured && state == null && BeliefMutationCache.Count == 0,
@@ -128,6 +149,18 @@ namespace PawnDiary.RimTests
                         "Reassure", "heartfelt", pawn.GetUniqueLoadID(), otherPawn.GetUniqueLoadID(),
                         Find.TickManager.TicksGame) == null,
                     "The interaction evidence adapter must be inert without Ideology.");
+                PawnDiaryRimTestScope.Require(BeliefMutationEvidenceAdapter.ForInteraction(
+                        CounselEventPolicy.SuccessDefName, CounselEventPolicy.GroupDefName,
+                        pawn.GetUniqueLoadID(), otherPawn.GetUniqueLoadID(), Find.TickManager.TicksGame,
+                        pawn.LabelShort, otherPawn.LabelShort, "synthetic counsel") == null,
+                    "The Counsel evidence adapter must be inert without Ideology.");
+                InteractionDef syntheticCounsel = new InteractionDef
+                {
+                    defName = CounselEventPolicy.SuccessDefName,
+                    label = "synthetic inactive counsel"
+                };
+                scope.RequireNoNewEvent(() => DiaryEvents.Submit(new InteractionSignal(
+                    pawn, otherPawn, syntheticCounsel, string.Empty, string.Empty, 0)));
                 AssertNoDlcConvertAbilityKeepsOrdinaryRoute();
                 return;
             }
@@ -143,7 +176,6 @@ namespace PawnDiary.RimTests
                 PawnDiaryRimTestScope.Require(captured && state != null,
                     "An Ideology-active pawn did not project a detached mutation state.");
             }
-            BeliefPolicySnapshot ownership = DiaryBeliefPolicy.Snapshot();
             PawnDiaryRimTestScope.Require(
                 BeliefCanonicalEventOwnershipPolicy.DownstreamGroupFor(
                     BeliefCanonicalEventSourceTokens.Thought,
@@ -759,6 +791,147 @@ namespace PawnDiary.RimTests
                 "Two reassurance POVs consumed or duplicated the one certainty mutation row.");
         }
 
+        /// <summary>
+        /// Executes vanilla Counsel's real success branch. Its mood thought is applied first and its
+        /// Counsel_Success PlayLog row remains the sole pair page; neither the thought nor the generic
+        /// ability callback may create a second owner.
+        /// </summary>
+        [Test]
+        public static void CounselSuccessUsesOneDownstreamPageAndNoBeliefMutation()
+        {
+            if (!RequireCounselActive()) return;
+            Pawn caster = PrepareCounselCaster(socialLevel: 20);
+            PrepareCounselPair(caster, otherPawn);
+            Ability ability = BuildExecutableVanillaAbility(
+                caster, "Counsel", typeof(CompAbilityEffect_Counsel));
+            CompAbilityEffect_Counsel effect = ability.CompOfType<CompAbilityEffect_Counsel>();
+            PawnDiaryRimTestScope.Require(effect != null,
+                "The executable Counsel fixture did not instantiate CompAbilityEffect_Counsel.");
+            float chance = effect.ChanceForPawn(otherPawn);
+            int seed = FindCounselSeed(chance, expectedSuccess: true);
+            float beforeCertainty = otherPawn.ideo.Certainty;
+            Ideo beforeIdeology = otherPawn.ideo.Ideo;
+            List<LogEntry> addedPlayLogEntries = null;
+
+            DiaryEvent page;
+            Rand.PushState(seed);
+            try
+            {
+                page = scope.FireAndRequireEvent(
+                    () => addedPlayLogEntries = ActivateAndTrackPlayLog(ability, otherPawn),
+                    CounselEventPolicy.SuccessDefName, caster, otherPawn,
+                    rejectOtherTestPawnEvents: true);
+            }
+            finally
+            {
+                Rand.PopState();
+            }
+
+            Thought_Memory successMemory = FindCounselMemory(
+                otherPawn, "Counselled", "Counselled_MoodBoost");
+            PawnDiaryRimTestScope.Require(addedPlayLogEntries?.Count == 1
+                    && successMemory != null && successMemory.MoodOffset() > 0f
+                    && !HasAnyCounselMemory(otherPawn, "CounselFailed"),
+                "Vanilla Counsel success did not add exactly its downstream PlayLog row and success memory.");
+            AssertCounselPage(page, caster, otherPawn, beforeIdeology, beforeCertainty,
+                CounselEventPolicy.SuccessDefName, CounselEventPolicy.SuccessContext);
+        }
+
+        /// <summary>
+        /// Executes vanilla Counsel's real failure branch and proves the short negative mood memory is
+        /// reported truthfully without any fabricated certainty loss, conversion result, or duplicate page.
+        /// </summary>
+        [Test]
+        public static void CounselFailureUsesOneDownstreamPageAndNoBeliefMutation()
+        {
+            if (!RequireCounselActive()) return;
+            Pawn caster = PrepareCounselCaster(socialLevel: 0);
+            PrepareCounselPair(caster, otherPawn);
+            Ability ability = BuildExecutableVanillaAbility(
+                caster, "Counsel", typeof(CompAbilityEffect_Counsel));
+            CompAbilityEffect_Counsel effect = ability.CompOfType<CompAbilityEffect_Counsel>();
+            PawnDiaryRimTestScope.Require(effect != null,
+                "The executable Counsel fixture did not instantiate CompAbilityEffect_Counsel.");
+            float chance = effect.ChanceForPawn(otherPawn);
+            int seed = FindCounselSeed(chance, expectedSuccess: false);
+            float beforeCertainty = otherPawn.ideo.Certainty;
+            Ideo beforeIdeology = otherPawn.ideo.Ideo;
+            List<LogEntry> addedPlayLogEntries = null;
+
+            DiaryEvent page;
+            Rand.PushState(seed);
+            try
+            {
+                page = scope.FireAndRequireEvent(
+                    () => addedPlayLogEntries = ActivateAndTrackPlayLog(ability, otherPawn),
+                    CounselEventPolicy.FailureDefName, caster, otherPawn,
+                    rejectOtherTestPawnEvents: true);
+            }
+            finally
+            {
+                Rand.PopState();
+            }
+
+            Thought_Memory failureMemory = FindCounselMemory(otherPawn, "CounselFailed");
+            PawnDiaryRimTestScope.Require(addedPlayLogEntries?.Count == 1
+                    && failureMemory != null && failureMemory.MoodOffset() < 0f
+                    && !HasAnyCounselMemory(otherPawn, "Counselled", "Counselled_MoodBoost"),
+                "Vanilla Counsel failure did not add exactly its downstream PlayLog row and failure memory.");
+            AssertCounselPage(page, caster, otherPawn, beforeIdeology, beforeCertainty,
+                CounselEventPolicy.FailureDefName, CounselEventPolicy.FailureContext);
+        }
+
+        /// <summary>
+        /// Optional Counsel evidence may fail without losing the canonical PlayLog page. This patches
+        /// only the pure enrichment seam; the existing interaction route and pair ownership stay real.
+        /// </summary>
+        [Test]
+        public static void CounselEvidenceFailureKeepsOrdinaryCanonicalPage()
+        {
+            if (!RequireCounselActive()) return;
+            PrepareCounselPair(pawn, otherPawn);
+            InteractionDef interaction = DefDatabase<InteractionDef>.GetNamedSilentFail(
+                CounselEventPolicy.SuccessDefName);
+            PawnDiaryRimTestScope.Require(interaction != null,
+                "The Ideology-active fixture could not load Counsel_Success.");
+            PlayLogEntry_Interaction entry = GeneratedSpeechPlayLog.CreateInteractionEntry(
+                interaction, pawn, otherPawn);
+            PawnDiaryRimTestScope.Require(entry != null,
+                "Could not create the exact Counsel_Success PlayLog row for failure isolation.");
+            scope.TrackPlayLogEntry(entry);
+
+            MethodInfo target = AccessTools.Method(typeof(CounselEventPolicy),
+                nameof(CounselEventPolicy.ForInteraction), new[]
+                {
+                    typeof(string), typeof(string), typeof(bool), typeof(string),
+                    typeof(int), typeof(string), typeof(string)
+                });
+            PawnDiaryRimTestScope.Require(target != null,
+                "Could not resolve the Counsel evidence seam for failure isolation.");
+            Harmony harmony = new Harmony("PawnDiary.RimTest.CounselEvidenceFailure."
+                + Guid.NewGuid().ToString("N"));
+            harmony.Patch(target, prefix: new HarmonyMethod(
+                typeof(PawnDiaryIdeologyPhase2InfrastructureTests),
+                nameof(ThrowCounselEvidenceSelection)));
+            try
+            {
+                DiaryEvent page = scope.FireAndRequireEvent(
+                    () => Find.PlayLog.Add(entry), CounselEventPolicy.SuccessDefName,
+                    pawn, otherPawn, rejectOtherTestPawnEvents: true);
+                scope.RequirePairRefs(page, pawn, otherPawn);
+                PawnDiaryRimTestScope.Require(
+                    (page.gameContext ?? string.Empty).IndexOf(
+                        "counsel_result=", StringComparison.Ordinal) < 0
+                    && string.IsNullOrEmpty(page.BeliefContextForRole(DiaryEvent.InitiatorRole))
+                    && string.IsNullOrEmpty(page.BeliefContextForRole(DiaryEvent.RecipientRole)),
+                    "Failed optional Counsel evidence left partial enrichment on the ordinary page.");
+            }
+            finally
+            {
+                harmony.Unpatch(target, HarmonyPatchType.Prefix, harmony.Id);
+            }
+        }
+
         /// <summary>Real failed conversion mechanics enrich only the exact failure PlayLog row.</summary>
         [Test]
         public static void FailedConversionPlayLogKeepsActualFailureAndCertaintyLoss()
@@ -962,6 +1135,162 @@ namespace PawnDiary.RimTests
                     + context);
         }
 
+        /// <summary>
+        /// Counsel itself remains usable in classic Ideology mode because it changes mood, not the
+        /// mutable certainty model. Therefore an active profile must run the fixture or fail its exact
+        /// prerequisites; only a genuinely inactive DLC profile is not applicable.
+        /// </summary>
+        private static bool RequireCounselActive()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                PawnDiaryRimTestScope.Require(BeliefMutationCache.Count == 0,
+                    "The Counsel fixture found belief mutations while Ideology was inactive.");
+                Log.Message(LogPrefix + "Counsel mechanics: not applicable (Ideology inactive). ");
+                return false;
+            }
+
+            PawnDiaryRimTestScope.Require(pawn?.ideo != null && otherPawn?.ideo != null
+                    && pawn.needs?.mood?.thoughts?.memories != null
+                    && otherPawn.needs?.mood?.thoughts?.memories != null,
+                "The Ideology-active Counsel fixture lacked trackers or mood-memory handlers.");
+            PawnDiaryRimTestScope.Require(
+                DefDatabase<AbilityDef>.GetNamedSilentFail("Counsel") != null
+                    && DefDatabase<InteractionDef>.GetNamedSilentFail(
+                        CounselEventPolicy.SuccessDefName) != null
+                    && DefDatabase<InteractionDef>.GetNamedSilentFail(
+                        CounselEventPolicy.FailureDefName) != null,
+                "The Ideology-active profile did not load Counsel and both verified result Defs.");
+            return true;
+        }
+
+        /// <summary>Selects a bounded disposable caster whose real Social skill can drive Counsel.</summary>
+        private static Pawn PrepareCounselCaster(int socialLevel)
+        {
+            Pawn caster = pawn;
+            SkillRecord social = caster.skills?.GetSkill(SkillDefOf.Social);
+            for (int attempt = 0;
+                 (social == null || social.TotallyDisabled) && attempt < 8;
+                 attempt++)
+            {
+                caster = scope.CreateAdultColonist();
+                social = caster.skills?.GetSkill(SkillDefOf.Social);
+            }
+            PawnDiaryRimTestScope.Require(social != null && !social.TotallyDisabled,
+                "Could not generate a bounded Counsel caster with a usable Social skill.");
+            social.Level = socialLevel;
+            return caster;
+        }
+
+        /// <summary>
+        /// Establishes the real same-Ideo/healthy-target preconditions and removes only stale Counsel
+        /// memories from the disposable listener so the installed ability's Valid check is deterministic.
+        /// </summary>
+        private static void PrepareCounselPair(Pawn caster, Pawn listener)
+        {
+            PawnDiaryRimTestScope.Require(caster != null && listener != null
+                    && !ReferenceEquals(caster, listener)
+                    && caster.ideo != null && listener.ideo != null,
+                "The Counsel fixture requires two distinct pawns with Ideology trackers.");
+            if (!ReferenceEquals(caster.ideo.Ideo, listener.ideo.Ideo))
+            {
+                if (caster.ideo.Ideo != null)
+                    listener.ideo.SetIdeo(caster.ideo.Ideo);
+                else if (listener.ideo.Ideo != null)
+                    caster.ideo.SetIdeo(listener.ideo.Ideo);
+            }
+            PawnDiaryRimTestScope.Require(ReferenceEquals(caster.ideo.Ideo, listener.ideo.Ideo),
+                "The deterministic Counsel fixture could not establish vanilla's same-Ideo precondition.");
+
+            MemoryThoughtHandler memories = listener.needs?.mood?.thoughts?.memories;
+            PawnDiaryRimTestScope.Require(memories != null,
+                "The Counsel listener did not expose a mood-memory handler.");
+            foreach (string defName in new[] { "Counselled", "Counselled_MoodBoost", "CounselFailed" })
+            {
+                ThoughtDef thought = DefDatabase<ThoughtDef>.GetNamedSilentFail(defName);
+                PawnDiaryRimTestScope.Require(thought != null,
+                    "The Ideology-active profile did not load Counsel thought '" + defName + "'.");
+                memories.RemoveMemoriesOfDef(thought);
+            }
+
+            scope.SpawnAsLiveColonist(caster);
+            scope.SpawnAsLiveColonist(listener);
+            PawnDiaryRimTestScope.Require(caster.Map == listener.Map
+                    && caster.MentalStateDef == null && listener.MentalStateDef == null,
+                "The Counsel fixture could not establish a shared live map and healthy targets.");
+            BeliefMutationCache.Reset();
+        }
+
+        /// <summary>Finds a deterministic seed for vanilla's first Counsel success roll.</summary>
+        private static int FindCounselSeed(float chance, bool expectedSuccess)
+        {
+            PawnDiaryRimTestScope.Require(chance >= 0f && chance <= 1.3f,
+                "Vanilla Counsel returned an invalid success chance: " + chance + ".");
+            for (int seed = 1; seed <= 100000; seed++)
+            {
+                bool succeeded;
+                Rand.PushState(seed);
+                try
+                {
+                    succeeded = Rand.Chance(chance);
+                }
+                finally
+                {
+                    Rand.PopState();
+                }
+                if (succeeded == expectedSuccess) return seed;
+            }
+            throw new AssertionException("Could not find a bounded RNG seed for Counsel "
+                + (expectedSuccess ? "success" : "failure") + " at chance " + chance + ".");
+        }
+
+        private static Thought_Memory FindCounselMemory(Pawn listener, params string[] defNames)
+        {
+            return listener?.needs?.mood?.thoughts?.memories?.Memories?.FirstOrDefault(memory =>
+                memory?.def != null && defNames.Contains(memory.def.defName));
+        }
+
+        private static bool HasAnyCounselMemory(Pawn listener, params string[] defNames)
+        {
+            return FindCounselMemory(listener, defNames) != null;
+        }
+
+        /// <summary>Asserts exact ownership, roles, mood truth, prompt choice, and absent mutation facts.</summary>
+        private static void AssertCounselPage(
+            DiaryEvent page,
+            Pawn caster,
+            Pawn listener,
+            Ideo beforeIdeology,
+            float beforeCertainty,
+            string expectedDefName,
+            string expectedMoodContext)
+        {
+            scope.RequirePairRefs(page, caster, listener);
+            PawnDiaryRimTestScope.Require(ReferenceEquals(listener.ideo.Ideo, beforeIdeology)
+                    && Math.Abs(listener.ideo.Certainty - beforeCertainty) < 0.0001f,
+                "Counsel changed ideoligion or certainty even though vanilla only changes mood thoughts.");
+            PawnDiaryRimTestScope.Require(BeliefMutationCache.Count == 0,
+                "Counsel manufactured a belief mutation cache row.");
+            AssertGameContextContains(page, expectedMoodContext);
+            string allContext = (page.gameContext ?? string.Empty) + "\n"
+                + (page.BeliefContextForRole(DiaryEvent.InitiatorRole) ?? string.Empty) + "\n"
+                + (page.BeliefContextForRole(DiaryEvent.RecipientRole) ?? string.Empty);
+            PawnDiaryRimTestScope.Require(
+                allContext.IndexOf("belief_event=conversion", StringComparison.Ordinal) < 0
+                    && allContext.IndexOf("certainty delta:", StringComparison.Ordinal) < 0
+                    && allContext.IndexOf("conversion result:", StringComparison.Ordinal) < 0
+                    && allContext.IndexOf("mutation cause:", StringComparison.Ordinal) < 0,
+                "Counsel context fabricated conversion, certainty, or mutation mechanics: " + allContext);
+
+            DiaryPromptRequest request = DiaryPipelineAdapters.BuildPromptRequest(
+                page, DiaryEvent.InitiatorRole, string.Empty, string.Empty, string.Empty,
+                string.Empty, string.Empty, string.Empty, titleRequest: false, maxTokens: 512);
+            PawnDiaryRimTestScope.Require(request?.policy?.group != null
+                    && request.policy.group.defName == CounselEventPolicy.GroupDefName
+                    && request.policy.group.eventPromptKey == expectedDefName,
+                "The exact Counsel page did not select its group and source-specific prompt policy.");
+        }
+
         private static bool RequireActiveTracker()
         {
             if (ModsConfig.IdeologyActive)
@@ -1138,6 +1467,11 @@ namespace PawnDiary.RimTests
         private static bool ThrowBeliefEvidenceSelection()
         {
             throw new InvalidOperationException("Synthetic Ideology evidence-selection failure.");
+        }
+
+        private static bool ThrowCounselEvidenceSelection()
+        {
+            throw new InvalidOperationException("Synthetic Counsel evidence-selection failure.");
         }
     }
 }

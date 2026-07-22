@@ -159,14 +159,18 @@
     <canonicalEventOwnershipRules>
       <li><sourceDomain>ability</sourceDomain><sourceDefName>Convert</sourceDefName><downstreamGroupDefName>conversion</downstreamGroupDefName></li>
       <li><sourceDomain>ability</sourceDomain><sourceDefName>Reassure</sourceDefName><downstreamGroupDefName>heartfelt</downstreamGroupDefName></li>
+      <li><sourceDomain>ability</sourceDomain><sourceDefName>Counsel</sourceDefName><downstreamGroupDefName>counsel</downstreamGroupDefName></li>
       <li><sourceDomain>thought</sourceDomain><sourceDefName>FailedConvertAbilityInitiator</sourceDefName><downstreamGroupDefName>conversion</downstreamGroupDefName></li>
       <li><sourceDomain>thought</sourceDomain><sourceDefName>FailedConvertAbilityRecipient</sourceDefName><downstreamGroupDefName>conversion</downstreamGroupDefName></li>
+      <li><sourceDomain>thought</sourceDomain><sourceDefName>Counselled</sourceDefName><downstreamGroupDefName>counsel</downstreamGroupDefName></li>
+      <li><sourceDomain>thought</sourceDomain><sourceDefName>Counselled_MoodBoost</sourceDefName><downstreamGroupDefName>counsel</downstreamGroupDefName></li>
+      <li><sourceDomain>thought</sourceDomain><sourceDefName>CounselFailed</sourceDefName><downstreamGroupDefName>counsel</downstreamGroupDefName></li>
     </canonicalEventOwnershipRules>
 
-    <!-- Exact already-authorized consumers. Interaction recipients own the four existing mechanics;
+    <!-- Exact already-authorized mutation consumers. Interaction recipients own the four mechanics;
          the breaking pawn initiates IdeoChange. Shape checks prevent an adjacent same-tick action from
-         lending the wrong success/failure or certainty direction to a page. Counsel is intentionally
-         absent: it changes mood/thought state, not Ideology certainty. The code fallback list is empty. -->
+         lending the wrong success/failure or certainty direction to a page. Counsel remains absent:
+         its separate pure policy carries mood/thought outcome only. The code fallback list is empty. -->
     <mutationEventRules>
       <li>
         <sourceDomain>mental_state</sourceDomain>
