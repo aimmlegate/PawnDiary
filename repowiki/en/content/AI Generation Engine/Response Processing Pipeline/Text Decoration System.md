@@ -1,16 +1,5 @@
 # Text Decoration System
 
-- [DiaryTextDecorationDef.cs](../../../../../Source/Defs/DiaryTextDecorationDef.cs)
-- [DiaryTextDecorationContracts.cs](../../../../../Source/Pipeline/DiaryTextDecorationContracts.cs)
-- [DiaryTextDecorations.cs](../../../../../Source/Pipeline/DiaryTextDecorations.cs)
-- [DiaryRichTextDecorators.cs](../../../../../Source/Pipeline/DiaryRichTextDecorators.cs)
-- [DiaryNameHighlighter.cs](../../../../../Source/Pipeline/DiaryNameHighlighter.cs)
-- [DiaryTextDecorationMatcher.cs](../../../../../Source/Pipeline/DiaryTextDecorationMatcher.cs)
-- [DiaryTextDecorationFactCodec.cs](../../../../../Source/Pipeline/DiaryTextDecorationFactCodec.cs)
-- [DiaryTextDecorationText.cs](../../../../../Source/Pipeline/DiaryTextDecorationText.cs)
-- [DiaryTextDecorationDefs.xml](../../../../../1.6/Defs/DiaryTextDecorationDefs.xml)
-- [ITab_Pawn_Diary.NameHighlights.cs](../../../../../Source/UI/ITab_Pawn_Diary.NameHighlights.cs)
-- [DiaryRenderToken.cs](../../../../../Source/Models/DiaryRenderToken.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,16 +1,5 @@
 # Template Management
 
-- [DiaryPromptBuilder.cs](../../../../../Source/Generation/DiaryPromptBuilder.cs)
-- [PromptTextTemplate.cs](../../../../../Source/Util/PromptTextTemplate.cs)
-- [DiaryPromptTemplateDefs.xml](../../../../../1.6/Defs/DiaryPromptTemplateDefs.xml)
-- [DiaryPromptDef.xml](../../../../../1.6/Defs/DiaryPromptDef.xml)
-- [PromptAssembler.cs](../../../../../Source/Generation/PromptAssembler.cs)
-- [PromptVariants.cs](../../../../../Source/Generation/PromptVariants.cs)
-- [PromptEnchantmentCollector.cs](../../../../../Source/Generation/PromptEnchantmentCollector.cs)
-- [PromptEnchantments.cs](../../../../../Source/Generation/PromptEnchantments.cs)
-- [PromptSettingsMenuPolicy.cs](../../../../../Source/Settings/PromptSettingsMenuPolicy.cs)
-- [PawnDiaryMod.PromptStudio.cs](../../../../../Source/Settings/PawnDiaryMod.PromptStudio.cs)
-- [DiaryErrorReporter.cs](../../../../../Source/Diagnostics/DiaryErrorReporter.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

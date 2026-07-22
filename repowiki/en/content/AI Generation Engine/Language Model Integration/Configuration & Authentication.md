@@ -1,14 +1,5 @@
 # Configuration & Authentication
 
-- [ApiConnectionController.cs](../../../../../Source/Settings/ApiConnectionController.cs)
-- [ApiRequestAuth.cs](../../../../../Source/Settings/ApiRequestAuth.cs)
-- [EndpointUtility.cs](../../../../../Source/Settings/EndpointUtility.cs)
-- [IntegrationApiSettings.cs](../../../../../Source/Settings/IntegrationApiSettings.cs)
-- [ModelListClient.cs](../../../../../Source/Settings/ModelListClient.cs)
-- [ExternalLlmCompletionService.cs](../../../../../Source/Integration/ExternalLlmCompletionService.cs)
-- [LlmClient.cs](../../../../../Source/Generation/LlmClient.cs)
-- [PawnDiaryMod.ApiLanes.cs](../../../../../Source/Settings/PawnDiaryMod.ApiLanes.cs)
-- [ExternalApiBudgetPolicy.cs](../../../../../Source/Pipeline/ExternalApiBudgetPolicy.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

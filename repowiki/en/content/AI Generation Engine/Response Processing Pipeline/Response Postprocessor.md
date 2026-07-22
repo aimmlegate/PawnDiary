@@ -1,19 +1,5 @@
 # Response Postprocessor
 
-- [DiaryResponsePostprocessor.cs](../../../../../Source/Pipeline/DiaryResponsePostprocessor.cs)
-- [PromptTextSanitizer.cs](../../../../../Source/Pipeline/PromptTextSanitizer.cs)
-- [DiaryParagraphReflow.cs](../../../../../Source/Pipeline/DiaryParagraphReflow.cs)
-- [DiaryRichTextDecorators.cs](../../../../../Source/Pipeline/DiaryRichTextDecorators.cs)
-- [DiaryTextDecorationContracts.cs](../../../../../Source/Pipeline/DiaryTextDecorationContracts.cs)
-- [DiaryTextDecorationText.cs](../../../../../Source/Pipeline/DiaryTextDecorationText.cs)
-- [DiaryTextDecorationFactCodec.cs](../../../../../Source/Pipeline/DiaryTextDecorationFactCodec.cs)
-- [DiaryTextDecorationMatcher.cs](../../../../../Source/Pipeline/DiaryTextDecorationMatcher.cs)
-- [TextTruncation.cs](../../../../../Source/Pipeline/TextTruncation.cs)
-- [LlmResponseParser.cs](../../../../../Source/Generation/LlmResponseParser.cs)
-- [DiaryPipelineContracts.cs](../../../../../Source/Pipeline/DiaryPipelineContracts.cs)
-- [DiaryEntry.cs](../../../../../Source/Models/DiaryEntry.cs)
-- [DiaryGameComponent.Generation.cs](../../../../../Source/Core/DiaryGameComponent.Generation.cs)
-- [DiaryGameComponent.Dispatch.cs](../../../../../Source/Core/DiaryGameComponent.Dispatch.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,17 +1,5 @@
 # Authentication & Security
 
-- [ApiRequestAuth.cs](../../../../Source/Settings/ApiRequestAuth.cs)
-- [IntegrationApiSettings.cs](../../../../Source/Settings/IntegrationApiSettings.cs)
-- [ExternalApiBudgetPolicy.cs](../../../../Source/Pipeline/ExternalApiBudgetPolicy.cs)
-- [DiaryGameComponent.ExternalApiBudget.cs](../../../../Source/Core/DiaryGameComponent.ExternalApiBudget.cs)
-- [ExternalLlmCompletionService.cs](../../../../Source/Integration/ExternalLlmCompletionService.cs)
-- [ExternalEventRequest.cs](../../../../Source/Integration/ExternalEventRequest.cs)
-- [ExternalDirectEntryRequest.cs](../../../../Source/Integration/ExternalDirectEntryRequest.cs)
-- [ExternalApiLaneRequest.cs](../../../../Source/Integration/ExternalApiLaneRequest.cs)
-- [PawnDiaryMod.ApiLanes.cs](../../../../Source/Settings/PawnDiaryMod.ApiLanes.cs)
-- [EndpointUtility.cs](../../../../Source/Settings/EndpointUtility.cs)
-- [Diagnostics/DiaryErrorReporter.cs](../../../../Source/Diagnostics/DiaryErrorReporter.cs)
-- [Diagnostics/Pure/ErrorScrub.cs](../../../../Source/Diagnostics/Pure/ErrorScrub.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

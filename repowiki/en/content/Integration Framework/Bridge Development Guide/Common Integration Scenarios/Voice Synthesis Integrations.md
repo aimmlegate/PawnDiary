@@ -1,13 +1,5 @@
 # Voice Synthesis Integrations
 
-- [DiaryGameComponent.Voice.cs](../../../../../../Source/Core/DiaryGameComponent.Voice.cs)
-- [GeneratedSpeechPlayLog.cs](../../../../../../Source/Core/GeneratedSpeechPlayLog.cs)
-- [SpeakUpBridgeMod.cs](../../../../../../integrations/PawnDiary.SpeakUp/Source/SpeakUpBridgeMod.cs)
-- [VsieBridgeMod.cs](../../../../../../integrations/PawnDiary.Vsie/Source/VsieBridgeMod.cs)
-- [DiaryCompat_SpeakUp.xml](../../../../../../1.6/Defs/Compat/DiaryCompat_SpeakUp.xml)
-- [DiaryCompat_VEE.xml](../../../../../../1.6/Defs/Compat/DiaryCompat_VEE.xml)
-- [PawnDiaryMod.AdvancedTab.cs](../../../../../../Source/Settings/PawnDiaryMod.AdvancedTab.cs)
-- [ExternalLlmCompletionService.cs](../../../../../../Source/Integration/ExternalLlmCompletionService.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

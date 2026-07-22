@@ -1,15 +1,5 @@
 # Contribution Guidelines
 
-- [README.md](../../../../README.md)
-- [About/About.xml](../../../../About/About.xml)
-- [LoadFolders.xml](../../../../LoadFolders.xml)
-- [Source/PawnDiary.csproj](../../../../Source/PawnDiary.csproj)
-- [Source/PawnDiary.slnx](../../../../Source/PawnDiary.slnx)
-- [.github/workflows](../../../../.github/workflows)
-- [.githooks/verify.ps1](../../../../.githooks/verify.ps1)
-- [integrations/README.md](../../../../integrations/README.md)
-- [EXTERNAL_API.md](../../../../EXTERNAL_API.md)
-- [DOCUMENTATION.md](../../../../DOCUMENTATION.md)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Overview](#project-overview)

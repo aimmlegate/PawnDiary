@@ -1,19 +1,5 @@
 # Prompt & Template Customization
 
-- [DiaryPromptDef.cs](../../../../Source/Defs/DiaryPromptDef.cs)
-- [DiaryPromptTemplateDefs.xml](../../../../1.6/Defs/DiaryPromptTemplateDefs.xml)
-- [PromptAssembler.cs](../../../../Source/Generation/PromptAssembler.cs)
-- [DiaryPromptBuilder.cs](../../../../Source/Generation/DiaryPromptBuilder.cs)
-- [PromptTextTemplate.cs](../../../../Source/Util/PromptTextTemplate.cs)
-- [DiaryEventPromptDefs.xml](../../../../1.6/Defs/DiaryEventPromptDefs.xml)
-- [PromptEnchantmentCollector.cs](../../../../Source/Generation/PromptEnchantmentCollector.cs)
-- [PromptVariants.cs](../../../../Source/Generation/PromptVariants.cs)
-- [DiaryPipelineContracts.cs](../../../../Source/Pipeline/DiaryPipelineContracts.cs)
-- [PromptContextLines.cs](../../../../Source/Pipeline/PromptContextLines.cs)
-- [PromptContextDetail.cs](../../../../Source/Pipeline/PromptContextDetail.cs)
-- [LlmRequestJsonBuilder.cs](../../../../Source/Pipeline/LlmRequestJsonBuilder.cs)
-- [PromptSettingsMenuPolicy.cs](../../../../Source/Settings/PromptSettingsMenuPolicy.cs)
-- [PawnDiaryMod.PromptStudio.cs](../../../../Source/Settings/PawnDiaryMod.PromptStudio.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,17 +1,5 @@
 # Behavioral Patterns & Modifiers
 
-- [DiaryPersonaDef.cs](../../../../../../Source/Defs/DiaryPersonaDef.cs)
-- [DiaryTuningDef.cs](../../../../../../Source/Defs/DiaryTuningDef.cs)
-- [PsychotypeResolutionPolicy.cs](../../../../../../Source/Pipeline/PsychotypeResolutionPolicy.cs)
-- [HumorChancePolicy.cs](../../../../../../Source/Pipeline/HumorChancePolicy.cs)
-- [PromptAssembler.cs](../../../../../../Source/Generation/PromptAssembler.cs)
-- [DiaryGameComponent.Dispatch.cs](../../../../../../Source/Core/DiaryGameComponent.Dispatch.cs)
-- [DiaryEventRepository.cs](../../../../../../Source/Core/DiaryEventRepository.cs)
-- [DiaryPipelineContracts.cs](../../../../../../Source/Pipeline/DiaryPipelineContracts.cs)
-- [DiaryResponsePostprocessor.cs](../../../../../../Source/Pipeline/DiaryResponsePostprocessor.cs)
-- [DiaryTextDecorations.cs](../../../../../../Source/Pipeline/DiaryTextDecorations.cs)
-- [DiaryEntryStatsAccumulator.cs](../../../../../../Source/Pipeline/DiaryEntryStatsAccumulator.cs)
-- [PawnDiaryDebugActions.cs](../../../../../../Source/Dev/PawnDiaryDebugActions.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

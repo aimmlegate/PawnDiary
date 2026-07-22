@@ -1,16 +1,5 @@
 # Prompt Construction System
 
-- [DiaryPromptBuilder.cs](../../../../../Source/Generation/DiaryPromptBuilder.cs)
-- [PromptAssembler.cs](../../../../../Source/Generation/PromptAssembler.cs)
-- [PromptTextTemplate.cs](../../../../../Source/Util/PromptTextTemplate.cs)
-- [PromptVariants.cs](../../../../../Source/Generation/PromptVariants.cs)
-- [PromptEnchantmentCollector.cs](../../../../../Source/Generation/PromptEnchantmentCollector.cs)
-- [PromptEnchantments.cs](../../../../../Source/Generation/PromptEnchantments.cs)
-- [HumorCues.cs](../../../../../Source/Generation/HumorCues.cs)
-- [DiaryPromptDef.cs](../../../../../Source/Defs/DiaryPromptDef.cs)
-- [DiaryPromptTemplateDefs.xml](../../../../../1.6/Defs/DiaryPromptTemplateDefs.xml)
-- [DiaryPromptEnchantmentDefs.xml](../../../../../1.6/Defs/DiaryPromptEnchantmentDefs.xml)
-- [DiaryHumorCueDefs.xml](../../../../../1.6/Defs/DiaryHumorCueDefs.xml)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

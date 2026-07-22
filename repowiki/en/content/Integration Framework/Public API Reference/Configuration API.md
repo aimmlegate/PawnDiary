@@ -1,23 +1,5 @@
 # Configuration API
 
-- [PawnDiarySettings.cs](../../../../../Source/Settings/PawnDiarySettings.cs)
-- [TuningOverrideStore.cs](../../../../../Source/Settings/TuningOverrideStore.cs)
-- [TuningOverrideMigration.cs](../../../../../Source/Settings/TuningOverrideMigration.cs)
-- [PromptOverrideDictionary.cs](../../../../../Source/Settings/PromptOverrideDictionary.cs)
-- [ApiConnectionController.cs](../../../../../Source/Settings/ApiConnectionController.cs)
-- [IntegrationApiSettings.cs](../../../../../Source/Settings/IntegrationApiSettings.cs)
-- [ModelListClient.cs](../../../../../Source/Settings/ModelListClient.cs)
-- [ModelCapabilityCache.cs](../../../../../Source/Settings/ModelCapabilityCache.cs)
-- [ExternalLlmCompletionService.cs](../../../../../Source/Integration/ExternalLlmCompletionService.cs)
-- [AddApiLaneResult.cs](../../../../../Source/Integration/AddApiLaneResult.cs)
-- [DiaryGameComponent.ApiLanes.cs](../../../../../Source/Core/DiaryGameComponent.ApiLanes.cs)
-- [ApiEndpointPolicy.cs](../../../../../Source/Pipeline/ApiEndpointPolicy.cs)
-- [ApiLaneIdentity.cs](../../../../../Source/Pipeline/ApiLaneIdentity.cs)
-- [ApiLaneSelector.cs](../../../../../Source/Pipeline/ApiLaneSelector.cs)
-- [WritingStyleResolutionPolicy.cs](../../../../../Source/Pipeline/WritingStyleResolutionPolicy.cs)
-- [PlayerWritingStyleText.cs](../../../../../Source/Pipeline/PlayerWritingStyleText.cs)
-- [ExternalWritingStyleOverrideText.cs](../../../../../Source/Pipeline/ExternalWritingStyleOverrideText.cs)
-- [ExternalOverrideArbitration.cs](../../../../../Source/Pipeline/ExternalOverrideArbitration.cs)
 - PromptEnchantmentPlanner.cs
 - [PromptVariants.cs](../../../../../Source/Generation/PromptVariants.cs)
 - [PromptTextSanitizer.cs](../../../../../Source/Pipeline/PromptTextSanitizer.cs)

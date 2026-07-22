@@ -1,16 +1,5 @@
 # Pawn Memory System
 
-- [DiaryGameComponent.Memory.cs](../../../../../Source/Core/DiaryGameComponent.Memory.cs)
-- [PawnMemoryRepository.cs](../../../../../Source/Core/PawnMemoryRepository.cs)
-- [MemoryFragment.cs](../../../../../Source/Models/MemoryFragment.cs)
-- [MemoryEvictionPlanner.cs](../../../../../Source/Pipeline/Memory/MemoryEvictionPlanner.cs)
-- [MemoryRecallSelector.cs](../../../../../Source/Pipeline/Memory/MemoryRecallSelector.cs)
-- [MemoryExtraction.cs](../../../../../Source/Pipeline/Memory/MemoryExtraction.cs)
-- [MemoryContextPrompt.cs](../../../../../Source/Pipeline/Memory/MemoryContextPrompt.cs)
-- [MemoryContracts.cs](../../../../../Source/Pipeline/Memory/MemoryContracts.cs)
-- [DiaryEventRepository.cs](../../../../../Source/Core/DiaryEventRepository.cs)
-- [DiaryGameComponent.EventRetention.cs](../../../../../Source/Core/DiaryGameComponent.EventRetention.cs)
-- [RecentEventExpiry.cs](../../../../../Source/Capture/RecentEventExpiry.cs)
 ## Update Summary
 **Changes Made**
 - Added comprehensive memory subsystem implementation through DiaryGameComponent.Memory.cs (475 lines)

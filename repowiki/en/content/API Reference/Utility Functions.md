@@ -1,22 +1,5 @@
 # Utility Functions
 
-- [ExternalSourceLoadOrder.cs](../../../../Source/Util/ExternalSourceLoadOrder.cs)
-- [MiniJson.cs](../../../../Source/Util/MiniJson.cs)
-- [PromptTextTemplate.cs](../../../../Source/Util/PromptTextTemplate.cs)
-- [HumorCues.cs](../../../../Source/Generation/HumorCues.cs)
-- [MoodImpactClassifier.cs](../../../../Source/Generation/MoodImpactClassifier.cs)
-- [DiaryListText.cs](../../../../Source/Pipeline/DiaryListText.cs)
-- [DiaryParagraphReflow.cs](../../../../Source/Pipeline/DiaryParagraphReflow.cs)
-- [DiarySentenceExcerpt.cs](../../../../Source/Pipeline/DiarySentenceExcerpt.cs)
-- [TextTruncation.cs](../../../../Source/Pipeline/TextTruncation.cs)
-- [PromptTextSanitizer.cs](../../../../Source/Pipeline/PromptTextSanitizer.cs)
-- [DiaryRichTextDecorators.cs](../../../../Source/Pipeline/DiaryRichTextDecorators.cs)
-- [DiaryNameHighlighter.cs](../../../../Source/Pipeline/DiaryNameHighlighter.cs)
-- [DiaryTextDecorationText.cs](../../../../Source/Pipeline/DiaryTextDecorationText.cs)
-- [DiaryTextDecorationMatcher.cs](../../../../Source/Pipeline/DiaryTextDecorationMatcher.cs)
-- [DiaryTextDecorationFactCodec.cs](../../../../Source/Pipeline/DiaryTextDecorationFactCodec.cs)
-- [DiaryTextDecorationContracts.cs](../../../../Source/Pipeline/DiaryTextDecorationContracts.cs)
-- [DiaryTextDecorations.cs](../../../../Source/Pipeline/DiaryTextDecorations.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

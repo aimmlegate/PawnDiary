@@ -1,13 +1,5 @@
 # Milestone Celebration System
 
-- [PersonaMilestoneContextFormatter.cs](../../../../../../Source/Pipeline/Royalty/PersonaMilestoneContextFormatter.cs)
-- [PersonaMilestonePolicy.cs](../../../../../../Source/Pipeline/Royalty/PersonaMilestonePolicy.cs)
-- [RoyalMutationContextFormatter.cs](../../../../../../Source/Pipeline/Royalty/RoyalMutationContextFormatter.cs)
-- [RoyalPermitContextFormatter.cs](../../../../../../Source/Pipeline/Royalty/RoyalPermitContextFormatter.cs)
-- [RoyalSuccessionContextFormatter.cs](../../../../../../Source/Pipeline/Royalty/RoyalSuccessionContextFormatter.cs)
-- [DiaryGameComponent.RoyaltyMilestones.cs](../../../../../../Source/Core/DiaryGameComponent.RoyaltyMilestones.cs)
-- [DiaryGameComponent.RoyaltyPermits.cs](../../../../../../Source/Core/DiaryGameComponent.RoyaltyPermits.cs)
-- [DiaryGameComponent.RoyaltyProgression.cs](../../../../../../Source/Core/DiaryGameComponent.RoyaltyProgression.cs)
 - DiaryEventSpec.cs
 - [DiaryEventCatalog.cs](../../../../../../Source/Capture/Catalog/DiaryEventCatalog.cs)
 ## Table of Contents

@@ -1,11 +1,5 @@
 # LLM Response Parser
 
-- [LlmResponseParser.cs](../../../../../Source/Generation/LlmResponseParser.cs)
-- [LlmClient.cs](../../../../../Source/Generation/LlmClient.cs)
-- [DiaryResponsePostprocessor.cs](../../../../../Source/Pipeline/DiaryResponsePostprocessor.cs)
-- [PromptTextSanitizer.cs](../../../../../Source/Pipeline/PromptTextSanitizer.cs)
-- [MiniJson.cs](../../../../../Source/Util/MiniJson.cs)
-- [LlmResponseParserTests.cs](../../../../../tests/LlmResponseParserTests/Program.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

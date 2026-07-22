@@ -1,19 +1,5 @@
 # Signal Processing Pipeline
 
-- [DiarySignal.cs](../../../../Source/Ingestion/DiarySignal.cs)
-- [AbilitySignal.cs](../../../../Source/Ingestion/Sources/AbilitySignal.cs)
-- [DeathFallbackSignal.cs](../../../../Source/Ingestion/Sources/DeathFallbackSignal.cs)
-- [InteractionSignal.cs](../../../../Source/Ingestion/Sources/InteractionSignal.cs)
-- [MoodEventSignal.cs](../../../../Source/Ingestion/Sources/MoodEventSignal.cs)
-- [DiaryEvents.cs](../../../../Source/Ingestion/DiaryEvents.cs)
-- [DiaryGameComponent.Dispatch.cs](../../../../Source/Core/DiaryGameComponent.Dispatch.cs)
-- [DiaryPatchRegistrar.cs](../../../../Source/Patches/DiaryPatchRegistrar.cs)
-- [DiaryEventSignalPatches.cs](../../../../Source/Patches/DiaryEventSignalPatches.cs)
-- [DiaryGameComponent.Interactions.cs](../../../../Source/Core/DiaryGameComponent.Interactions.cs)
-- [DiaryGameComponent.TaleBatching.cs](../../../../Source/Core/DiaryGameComponent.TaleBatching.cs)
-- [DiaryGameComponent.EventRetention.cs](../../../../Source/Core/DiaryGameComponent.EventRetention.cs)
-- [DiarySaveNormalization.cs](../../../../Source/Pipeline/DiarySaveNormalization.cs)
-- [MiniJson.cs](../../../../Source/Util/MiniJson.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

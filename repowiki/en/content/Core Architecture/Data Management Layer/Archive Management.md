@@ -1,13 +1,5 @@
 # Archive Management
 
-- [DiaryArchiveRepository.cs](../../../../../Source/Core/DiaryArchiveRepository.cs)
-- [ArchivedDiaryEntry.cs](../../../../../Source/Models/ArchivedDiaryEntry.cs)
-- [DiaryEventRepository.cs](../../../../../Source/Core/DiaryEventRepository.cs)
-- [DiaryRetentionPlan.cs](../../../../../Source/Pipeline/DiaryRetentionPlan.cs)
-- [DiaryArchiveCompactionPlanner.cs](../../../../../Source/Pipeline/DiaryArchiveCompactionPlanner.cs)
-- [DiaryArchiveEligibility.cs](../../../../../Source/Pipeline/DiaryArchiveEligibility.cs)
-- [DiaryArchiveFallback.cs](../../../../../Source/Pipeline/DiaryArchiveFallback.cs)
-- [DiarySaveNormalization.cs](../../../../../Source/Pipeline/DiarySaveNormalization.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

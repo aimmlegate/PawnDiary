@@ -1,30 +1,5 @@
 # Anomaly Study & Containment
 
-- [AnomalyStudyPolicy.cs](../../../../../Source/Capture/Policies/AnomalyStudyPolicy.cs)
-- [ContainmentBreachPolicy.cs](../../../../../Source/Capture/Policies/ContainmentBreachPolicy.cs)
-- [AnomalyMonolithKnowledgePolicy.cs](../../../../../Source/Capture/Policies/AnomalyMonolithKnowledgePolicy.cs)
-- [AnomalyTransientState.cs](../../../../../Source/Generation/AnomalyTransientState.cs)
-- [DiaryGameComponent.Anomaly.cs](../../../../../Source/Core/DiaryGameComponent.Anomaly.cs)
-- [AnomalyEventSpec.cs](../../../../../Source/Capture/Specs/AnomalyEventSpec.cs)
-- [AnomalyEventData.cs](../../../../../Source/Capture/Events/AnomalyEventData.cs)
-- [AnomalyStudySignal.cs](../../../../../Source/Ingestion/Sources/AnomalyStudySignal.cs)
-- [AnomalyContainmentBreachSignal.cs](../../../../../Source/Ingestion/Sources/AnomalyContainmentBreachSignal.cs)
-- [DiaryAnomalyPatches.cs](../../../../../Source/Patches/DiaryAnomalyPatches.cs)
-- [DlcContext.Anomaly.cs](../../../../../Source/Generation/DlcContext.Anomaly.cs)
-- [AnomalyPersistencePolicy.cs](../../../../../Source/Capture/Policies/AnomalyPersistencePolicy.cs)
-- [AnomalyContracts.cs](../../../../../Source/Capture/Policies/AnomalyContracts.cs)
-- [AnomalyTaleOwnershipPolicy.cs](../../../../../Source/Capture/Policies/AnomalyTaleOwnershipPolicy.cs)
-- [AnomalyRecentStudyCache.cs](../../../../../Source/Generation/AnomalyRecentStudyCache.cs)
-- [AnomalyStudySuppressionCache.cs](../../../../../Source/Generation/AnomalyStudySuppressionCache.cs)
-- [DiaryAnomalyPolicyDef.cs](../../../../../Source/Defs/DiaryAnomalyPolicyDef.cs)
-- [DiaryAnomalyPolicyDefs.xml](../../../../../1.6/Defs/DiaryAnomalyPolicyDefs.xml)
-- [AnomalyNarrativeContextAdapter.cs](../../../../../Source/Generation/AnomalyNarrativeContextAdapter.cs)
-- [CreepJoinerOutcomePolicy.cs](../../../../../Source/Capture/Policies/CreepJoinerOutcomePolicy.cs)
-- [CreepJoinerSurgicalDisclosurePolicy.cs](../../../../../Source/Capture/Policies/CreepJoinerSurgicalDisclosurePolicy.cs)
-- [GhoulTransformationPolicy.cs](../../../../../Source/Capture/Policies/GhoulTransformationPolicy.cs)
-- [CreepJoinerOutcomeContextFormatter.cs](../../../../../Source/Capture/Policies/CreepJoinerOutcomeContextFormatter.cs)
-- [CreepJoinerSurgicalDisclosureContextFormatter.cs](../../../../../Source/Capture/Policies/CreepJoinerSurgicalDisclosureContextFormatter.cs)
-- [GhoulTransformationContextFormatter.cs](../../../../../Source/Capture/Policies/GhoulTransformationContextFormatter.cs)
 ## Update Summary
 **Changes Made**
 - Added comprehensive documentation for AnomalyNarrativeContextAdapter providing visible anomaly narrative continuity

@@ -1,6 +1,5 @@
 # Advanced Techniques & Optimization
 
-- [PowerfulAiBridgeGameComponent.cs](../../../../../integrations/PawnDiary.PowerfulAiBridge/Source/PowerfulAiBridgeGameComponent.cs)
 - PowerfulAiBridgeMod.cs
 - [PowerfulAiReflection.cs](../../../../../integrations/PawnDiary.PowerfulAiBridge/Source/PowerfulAiReflection.cs)
 - VsieBridgeGameComponent.cs

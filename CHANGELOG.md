@@ -1,5 +1,8 @@
 # Changelog
 
+- **2026-07-23 — Removed generated source-link blocks from wiki page headers.** Source links remain
+  in the relevant page bodies, while the repeated link lists immediately below each title are gone.
+
 - **2026-07-23 — Replaced the README body with the wiki title page.** Kept the mod description at
   the top and replaced the remaining README content with the repository wiki title and its main
   navigation links.

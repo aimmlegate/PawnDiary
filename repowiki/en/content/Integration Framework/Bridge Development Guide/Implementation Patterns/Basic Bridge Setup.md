@@ -1,13 +1,5 @@
 # Basic Bridge Setup
 
-- [PawnDiaryGameComponent.cs](../../../../../../Source/Core/DiaryGameComponent.cs)
-- [DiaryModStartup.cs](../../../../../../Source/Patches/DiaryModStartup.cs)
-- [ExampleAdapterGameComponent.cs](../../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExampleAdapterGameComponent.cs)
-- [Personalities123GameComponent.cs](../../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/Personalities123GameComponent.cs)
-- [PowerfulAiBridgeGameComponent.cs](../../../../../../integrations/PawnDiary.PowerfulAiBridge/Source/PowerfulAiBridgeGameComponent.cs)
-- [CaptureCapabilities.cs](../../../../../../Source/Integration/CaptureCapabilities.cs)
-- [CaptureCapabilityRegistry.cs](../../../../../../Source/Pipeline/CaptureCapabilityRegistry.cs)
-- [About.xml](../../../../../../About/About.xml)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

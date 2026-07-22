@@ -1,10 +1,5 @@
 # Built-in Template Types
 
-- [DiaryPromptTemplateDefs.xml](../../../../../../1.6/Defs/DiaryPromptTemplateDefs.xml)
-- [DiaryPromptDef.cs](../../../../../../Source/Defs/DiaryPromptDef.cs)
-- [DiaryPromptBuilder.cs](../../../../../../Source/Generation/DiaryPromptBuilder.cs)
-- [PromptAssembler.cs](../../../../../../Source/Generation/PromptAssembler.cs)
-- [DiaryEventDomainClassifier.cs](../../../../../../Source/Pipeline/DiaryEventDomainClassifier.cs)
 - SoloTemplateFixtureTests.cs
 - PairTemplateFixtureTests.cs
 - ReflectionTemplateFixtureTests.cs

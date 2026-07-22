@@ -1,16 +1,5 @@
 # Example Adapter Basics
 
-- [ExampleAdapterGameComponent.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExampleAdapterGameComponent.cs)
-- [ExplorerMethodCatalog.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExplorerMethodCatalog.cs)
-- [PawnDiaryApiExplorerWindow.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/PawnDiaryApiExplorerWindow.cs)
-- [About.xml](../../../../../integrations/PawnDiary.ExampleAdapter/About/About.xml)
-- [API_EXPLORER.md](../../../../../integrations/PawnDiary.ExampleAdapter/API_EXPLORER.md)
-- [PawnDiaryExampleApi.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/PawnDiaryExampleApi.cs)
-- [ExplorerParsing.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExplorerParsing.cs)
-- [ExplorerPawns.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExplorerPawns.cs)
-- [ExplorerState.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExplorerState.cs)
-- [SnapshotFormatter.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/SnapshotFormatter.cs)
-- [PawnDiaryExampleDebugActions.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/PawnDiaryExampleDebugActions.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

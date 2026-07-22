@@ -1,16 +1,5 @@
 # Persona Trait Tracking
 
-- [PersonaTraitPolicy.cs](../../../../../../Source/Pipeline/Royalty/PersonaTraitPolicy.cs)
-- [DiaryPersonaDef.cs](../../../../../../Source/Defs/DiaryPersonaDef.cs)
-- [DiaryPsychotypeTraitPolicyDef.cs](../../../../../../Source/Defs/DiaryPsychotypeTraitPolicyDef.cs)
-- [PsychotypeTraitAffinities.cs](../../../../../../Source/Pipeline/PsychotypeTraitAffinities.cs)
-- [DiaryContextBuilder.cs](../../../../../../Source/Generation/DiaryContextBuilder.cs)
-- [NarrativeContextBuilder.cs](../../../../../../Source/Generation/NarrativeContextBuilder.cs)
-- [DiaryPromptBuilder.cs](../../../../../../Source/Generation/DiaryPromptBuilder.cs)
-- [DiaryEventRepository.cs](../../../../../../Source/Core/DiaryEventRepository.cs)
-- [DiaryGameComponent.Generation.cs](../../../../../../Source/Core/DiaryGameComponent.Generation.cs)
-- [DiaryGameComponent.Dispatch.cs](../../../../../../Source/Core/DiaryGameComponent.Dispatch.cs)
-- [DiaryGameComponent.EventFactory.cs](../../../../../../Source/Core/DiaryGameComponent.EventFactory.cs)
 - DiaryEventSpec.cs
 - [DiaryEventData.cs](../../../../../../Source/Capture/DiaryEventData.cs)
 - [DiaryEventType.cs](../../../../../../Source/Capture/DiaryEventType.cs)

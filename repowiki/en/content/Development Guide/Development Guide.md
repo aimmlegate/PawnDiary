@@ -1,24 +1,5 @@
 # Development Guide
 
-- [README.md](../../../../README.md)
-- [LoadFolders.xml](../../../../LoadFolders.xml)
-- [About/About.xml](../../../../About/About.xml)
-- [Source/PawnDiary.csproj](../../../../Source/PawnDiary.csproj)
-- [Source/PawnDiary.slnx](../../../../Source/PawnDiary.slnx)
-- [Source/Core/DiaryGameComponent.cs](../../../../Source/Core/DiaryGameComponent.cs)
-- [Source/Patches/DiaryPatchRegistrar.cs](../../../../Source/Patches/DiaryPatchRegistrar.cs)
-- [Source/Ingestion/DiarySignal.cs](../../../../Source/Ingestion/DiarySignal.cs)
-- [Source/Capture/CaptureContext.cs](../../../../Source/Capture/CaptureContext.cs)
-- [Source/Generation/DiaryContextBuilder.cs](../../../../Source/Generation/DiaryContextBuilder.cs)
-- [Source/Generation/LlmClient.cs](../../../../Source/Generation/LlmClient.cs)
-- [Source/Integration/PawnDiaryApi.cs](../../../../Source/Integration/PawnDiaryApi.cs)
-- [Source/Settings/PawnDiaryMod.cs](../../../../Source/Settings/PawnDiaryMod.cs)
-- [Source/UI/ITab_Pawn_Diary.cs](../../../../Source/UI/ITab_Pawn_Diary.cs)
-- [tests/PawnDiary.RimTest/README.md](../../../../tests/PawnDiary.RimTest/README.md)
-- [tests/PawnDiary.RimTest/PawnDiaryRimTestScope.cs](../../../../tests/PawnDiary.RimTest/PawnDiaryRimTestScope.cs)
-- [tests/PawnDiary.RimTest/PawnDiaryDefSmokeTests.cs](../../../../tests/PawnDiary.RimTest/PawnDiaryDefSmokeTests.cs)
-- [integrations/README.md](../../../../integrations/README.md)
-- [services/error-endpoint/README.md](../../../../services/error-endpoint/README.md)
 ## Update Summary
 **Changes Made**
 - Enhanced testing strategy documentation with improved fixture validation and associative memory system behavior

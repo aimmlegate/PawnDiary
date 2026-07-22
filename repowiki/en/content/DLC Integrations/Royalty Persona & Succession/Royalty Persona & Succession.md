@@ -1,17 +1,5 @@
 # Royalty Persona & Succession
 
-- [RoyalAscentPolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalAscentPolicy.cs)
-- [RoyalMutationContextFormatter.cs](../../../../../Source/Pipeline/Royalty/RoyalMutationContextFormatter.cs)
-- [RoyalSuccessionPolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalSuccessionPolicy.cs)
-- [PersonaMilestonePolicy.cs](../../../../../Source/Pipeline/Royalty/PersonaMilestonePolicy.cs)
-- [DiaryGameComponent.Royalty.cs](../../../../../Source/Core/DiaryGameComponent.Royalty.cs)
-- [DlcContext.Royalty.cs](../../../../../Source/Generation/DlcContext.Royalty.cs)
-- [RoyalSuccessionState.cs](../../../../../Source/Models/RoyalSuccessionState.cs)
-- [DiaryRoyaltyPolicyDef.cs](../../../../../Source/Defs/DiaryRoyaltyPolicyDef.cs)
-- [DiaryGameComponent.RoyaltyMilestones.cs](../../../../../Source/Core/DiaryGameComponent.RoyaltyMilestones.cs)
-- [DiaryGameComponent.RoyaltyPermits.cs](../../../../../Source/Core/DiaryGameComponent.RoyaltyPermits.cs)
-- [DiaryGameComponent.RoyaltyProgression.cs](../../../../../Source/Core/DiaryGameComponent.RoyaltyProgression.cs)
-- [DiaryGameComponent.RoyaltySuccession.cs](../../../../../Source/Core/DiaryGameComponent.RoyaltySuccession.cs)
 ## Update Summary
 **Changes Made**
 - Enhanced royal permit handling with improved state management and continuity tracking

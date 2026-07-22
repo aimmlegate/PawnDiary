@@ -1,19 +1,5 @@
 # Odyssey Journey Tracking
 
-- [DiaryGameComponent.Odyssey.cs](../../../../Source/Core/DiaryGameComponent.Odyssey.cs)
-- [GravshipJourneyEventData.cs](../../../../Source/Capture/Events/GravshipJourneyEventData.cs)
-- [GravshipJourneyEventSpec.cs](../../../../Source/Capture/Specs/GravshipJourneyEventSpec.cs)
-- [GravshipJourneySignal.cs](../../../../Source/Ingestion/Sources/GravshipJourneySignal.cs)
-- [DiaryOdysseyPatches.cs](../../../../Source/Patches/DiaryOdysseyPatches.cs)
-- [DlcContext.Odyssey.cs](../../../../Source/Generation/DlcContext.Odyssey.cs)
-- [OdysseyLandingPolicy.cs](../../../../Source/Pipeline/OdysseyLandingPolicy.cs)
-- [OdysseyLifecyclePolicy.cs](../../../../Source/Pipeline/OdysseyLifecyclePolicy.cs)
-- [OdysseyLocationPolicy.cs](../../../../Source/Pipeline/OdysseyLocationPolicy.cs)
-- [OdysseyWriterPolicy.cs](../../../../Source/Pipeline/OdysseyWriterPolicy.cs)
-- [OdysseyJourneyContracts.cs](../../../../Source/Pipeline/OdysseyJourneyContracts.cs)
-- [OdysseyContextFormatter.cs](../../../../Source/Pipeline/OdysseyContextFormatter.cs)
-- [OdysseyJourneyState.cs](../../../../Source/Models/OdysseyJourneyState.cs)
-- [DiaryOdysseyPolicyDefs.xml](../../../../1.6/Defs/DiaryOdysseyPolicyDefs.xml)
 ## Update Summary
 **Changes Made**
 - Enhanced narrative continuity with environmental narrative providers for improved storytelling consistency

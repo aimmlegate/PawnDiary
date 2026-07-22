@@ -1,19 +1,5 @@
 # Quality Control Mechanisms
 
-- [MoodImpact.cs](../../../../Source/Generation/MoodImpact.cs)
-- [MoodImpactClassifier.cs](../../../../Source/Generation/MoodImpactClassifier.cs)
-- [PromptTextSanitizer.cs](../../../../Source/Pipeline/PromptTextSanitizer.cs)
-- [ExternalApiBudgetPolicy.cs](../../../../Source/Pipeline/ExternalApiBudgetPolicy.cs)
-- [DiaryGameComponent.ExternalApiBudget.cs](../../../../Source/Core/DiaryGameComponent.ExternalApiBudget.cs)
-- [TextTruncation.cs](../../../../Source/Pipeline/TextTruncation.cs)
-- [LlmClient.cs](../../../../Source/Generation/LlmClient.cs)
-- [DiaryResponsePostprocessor.cs](../../../../Source/Pipeline/DiaryResponsePostprocessor.cs)
-- [DiaryPipelineContracts.cs](../../../../Source/Pipeline/DiaryPipelineContracts.cs)
-- [DiaryEventDomainClassifier.cs](../../../../Source/Pipeline/DiaryEventDomainClassifier.cs)
-- [HumorChancePolicy.cs](../../../../Source/Pipeline/HumorChancePolicy.cs)
-- [DiaryEntryTitleFilter.cs](../../../../Source/Pipeline/DiaryEntryTitleFilter.cs)
-- [DiaryTextDecorations.cs](../../../../Source/Pipeline/DiaryTextDecorations.cs)
-- [DiaryRichTextDecorators.cs](../../../../Source/Pipeline/DiaryRichTextDecorators.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,17 +1,5 @@
 # Growth Moment & Development Tracking
 
-- [GrowthMomentPolicy.cs](../../../../../Source/Capture/Biotech/GrowthMomentPolicy.cs)
-- [GrowthRecordPolicy.cs](../../../../../Source/Capture/Biotech/GrowthRecordPolicy.cs)
-- [BiotechPawnProgressionState.cs](../../../../../Source/Models/BiotechPawnProgressionState.cs)
-- [PendingBiotechGrowthMoment.cs](../../../../../Source/Models/PendingBiotechGrowthMoment.cs)
-- [DiaryGameComponent.BiotechGrowth.cs](../../../../../Source/Core/DiaryGameComponent.BiotechGrowth.cs)
-- [GrowthMomentSignal.cs](../../../../../Source/Ingestion/Sources/GrowthMomentSignal.cs)
-- [GrowthMomentEventData.cs](../../../../../Source/Capture/Events/GrowthMomentEventData.cs)
-- [GrowthMomentEventSpec.cs](../../../../../Source/Capture/Specs/GrowthMomentEventSpec.cs)
-- [BiotechBirthCorrelation.cs](../../../../../Source/Generation/BiotechBirthCorrelation.cs)
-- [BiotechGrowthCorrelation.cs](../../../../../Source/Generation/BiotechGrowthCorrelation.cs)
-- [DiaryBiotechPatches.cs](../../../../../Source/Patches/DiaryBiotechPatches.cs)
-- [DiaryBiotechPolicyDefs.xml](../../../../../1.6/Defs/DiaryBiotechPolicyDefs.xml)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

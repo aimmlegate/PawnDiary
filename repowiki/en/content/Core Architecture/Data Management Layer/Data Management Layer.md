@@ -1,20 +1,5 @@
 # Data Management Layer
 
-- [DiaryEventRepository.cs](../../../../../Source/Core/DiaryEventRepository.cs)
-- [DiaryArchiveRepository.cs](../../../../../Source/Core/DiaryArchiveRepository.cs)
-- [DiaryGameComponent.cs](../../../../../Source/Core/DiaryGameComponent.cs)
-- [DiaryEvent.cs](../../../../../Source/Models/DiaryEvent.cs)
-- [DiaryEntry.cs](../../../../../Source/Models/DiaryEntry.cs)
-- [PawnDiaryRecord.cs](../../../../../Source/Models/PawnDiaryRecord.cs)
-- [ArchivedDiaryEntry.cs](../../../../../Source/Models/ArchivedDiaryEntry.cs)
-- [DiaryRetentionPlan.cs](../../../../../Source/Pipeline/DiaryRetentionPlan.cs)
-- [DiaryArchiveEligibility.cs](../../../../../Source/Pipeline/DiaryArchiveEligibility.cs)
-- [DiaryArchiveCompactionPlanner.cs](../../../../../Source/Pipeline/DiaryArchiveCompactionPlanner.cs)
-- [DiarySaveNormalization.cs](../../../../../Source/Pipeline/DiarySaveNormalization.cs)
-- [DiaryPipelineContracts.cs](../../../../../Source/Pipeline/DiaryPipelineContracts.cs)
-- [DiaryListText.cs](../../../../../Source/Pipeline/DiaryListText.cs)
-- [DiaryEntryStatsAccumulator.cs](../../../../../Source/Pipeline/DiaryEntryStatsAccumulator.cs)
-- [DiaryEntryTitleFilter.cs](../../../../../Source/Pipeline/DiaryEntryTitleFilter.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

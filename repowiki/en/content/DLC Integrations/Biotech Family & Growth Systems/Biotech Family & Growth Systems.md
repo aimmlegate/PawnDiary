@@ -1,21 +1,5 @@
 # Biotech Family & Growth Systems
 
-- [FamilyArcPolicy.cs](../../../../../Source/Capture/Biotech/FamilyArcPolicy.cs)
-- [BirthRecordPolicy.cs](../../../../../Source/Capture/Biotech/BirthRecordPolicy.cs)
-- [GrowthMomentPolicy.cs](../../../../../Source/Capture/Biotech/GrowthMomentPolicy.cs)
-- [GeneIdentityObservationPolicy.cs](../../../../../Source/Capture/Biotech/GeneIdentityObservationPolicy.cs)
-- [BiotechContracts.cs](../../../../../Source/Capture/Biotech/BiotechContracts.cs)
-- [FamilyBirthEventData.cs](../../../../../Source/Capture/Events/FamilyBirthEventData.cs)
-- [GrowthMomentEventData.cs](../../../../../Source/Capture/Events/GrowthMomentEventData.cs)
-- [GeneIdentityContracts.cs](../../../../../Source/Capture/Biotech/GeneIdentityContracts.cs)
-- [DiaryGameComponent.BiotechFamily.cs](../../../../../Source/Core/DiaryGameComponent.BiotechFamily.cs)
-- [DiaryGameComponent.BiotechGrowth.cs](../../../../../Source/Core/DiaryGameComponent.BiotechGrowth.cs)
-- [PendingBiotechBirthState.cs](../../../../../Source/Models/PendingBiotechBirthState.cs)
-- [PendingBiotechGrowthMoment.cs](../../../../../Source/Models/PendingBiotechGrowthMoment.cs)
-- [BiotechFamilyArcState.cs](../../../../../Source/Models/BiotechFamilyArcState.cs)
-- [GeneIdentityObservationState.cs](../../../../../Source/Models/GeneIdentityObservationState.cs)
-- [DiaryBiotechPatches.cs](../../../../../Source/Patches/DiaryBiotechPatches.cs)
-- [DiaryBiotechPolicyDefs.xml](../../../../../1.6/Defs/DiaryBiotechPolicyDefs.xml)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

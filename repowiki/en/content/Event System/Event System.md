@@ -1,23 +1,5 @@
 # Event System
 
-- [DiaryPatchRegistrar.cs](../../../../Source/Patches/DiaryPatchRegistrar.cs)
-- [DiaryModStartup.cs](../../../../Source/Patches/DiaryModStartup.cs)
-- [DiaryDeathPatches.cs](../../../../Source/Patches/DiaryDeathPatches.cs)
-- [DiaryArrivalPatches.cs](../../../../Source/Patches/DiaryArrivalPatches.cs)
-- [DiaryThoughtPatches.cs](../../../../Source/Patches/DiaryThoughtPatches.cs)
-- [DiarySocialLogPatches.cs](../../../../Source/Patches/DiarySocialLogPatches.cs)
-- [DiaryQuestPatches.cs](../../../../Source/Patches/DiaryQuestPatches.cs)
-- [DiaryRoyaltyPatches.cs](../../../../Source/Patches/DiaryRoyaltyPatches.cs)
-- [DiaryBiotechPatches.cs](../../../../Source/Patches/DiaryBiotechPatches.cs)
-- [DiaryAnomalyPatches.cs](../../../../Source/Patches/DiaryAnomalyPatches.cs)
-- [DiaryOdysseyPatches.cs](../../../../Source/Patches/DiaryOdysseyPatches.cs)
-- [DiarySignalPatches.cs](../../../../Source/Patches/DiaryEventSignalPatches.cs)
-- [DiaryGameComponent.Dispatch.cs](../../../../Source/Core/DiaryGameComponent.Dispatch.cs)
-- [DiaryGameComponent.EventFactory.cs](../../../../Source/Core/DiaryGameComponent.EventFactory.cs)
-- [DiaryGameComponent.InteractionBatching.cs](../../../../Source/Core/DiaryGameComponent.InteractionBatching.cs)
-- [DiaryGameComponent.TaleBatching.cs](../../../../Source/Core/DiaryGameComponent.TaleBatching.cs)
-- [DiaryEvents.cs](../../../../Source/Ingestion/DiaryEvents.cs)
-- [DiarySignal.cs](../../../../Source/Ingestion/DiarySignal.cs)
 - DeathSignal.cs
 - [ArrivalSignal.cs](../../../../Source/Ingestion/Sources/ArrivalSignal.cs)
 - [ThoughtSignal.cs](../../../../Source/Ingestion/Sources/ThoughtSignal.cs)

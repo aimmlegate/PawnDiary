@@ -1,19 +1,5 @@
 # Complex Integration Patterns
 
-- [PawnDiaryRimTalkBridgeMod.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/PawnDiaryRimTalkBridgeMod.cs)
-- [ConversationTracker.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/ConversationTracker.cs)
-- [PersonaSync.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/PersonaSync.cs)
-- [ColonyContextInjector.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/ColonyContextInjector.cs)
-- [DiaryContextInjector.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/DiaryContextInjector.cs)
-- [RecentDiaryEventCache.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/RecentDiaryEventCache.cs)
-- [ConversationAssessmentCoordinator.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/ConversationAssessmentCoordinator.cs)
-- [ConversationAssessmentPolicyDef.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/ConversationAssessmentPolicyDef.cs)
-- [PersonaChattinessPolicyDef.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/PersonaChattinessPolicyDef.cs)
-- [PawnDiaryRimTalkBridgeApi.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/PawnDiaryRimTalkBridgeApi.cs)
-- [Personalities123Mod.cs](../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/PawnDiaryPersonalities123Mod.cs)
-- [Personalities123GameComponent.cs](../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/Personalities123GameComponent.cs)
-- [EnneagramSync.cs](../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/EnneagramSync.cs)
-- [BridgeIds.cs](../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/BridgeIds.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

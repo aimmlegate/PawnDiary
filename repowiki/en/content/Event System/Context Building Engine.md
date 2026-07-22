@@ -1,17 +1,5 @@
 # Context Building Engine
 
-- [CaptureContext.cs](../../../../Source/Capture/CaptureContext.cs)
-- [DiaryContextBuilder.cs](../../../../Source/Generation/DiaryContextBuilder.cs)
-- [NarrativeContextBuilder.cs](../../../../Source/Generation/NarrativeContextBuilder.cs)
-- [PromptContextLines.cs](../../../../Source/Pipeline/PromptContextLines.cs)
-- [PromptContextDetail.cs](../../../../Source/Pipeline/PromptContextDetail.cs)
-- [DiaryContextDetailDef.cs](../../../../Source/Defs/DiaryContextDetailDef.cs)
-- [DiaryGameComponent.cs](../../../../Source/Core/DiaryGameComponent.cs)
-- [DiaryPipelineContracts.cs](../../../../Source/Pipeline/DiaryPipelineContracts.cs)
-- [MemoryExtraction.cs](../../../../Source/Pipeline/Memory/MemoryExtraction.cs)
-- [TextTruncation.cs](../../../../Source/Pipeline/TextTruncation.cs)
-- [PawnContextProviders.cs](../../../../Source/Integration/PawnContextProviders.cs)
-- [ContextProviderRegistry.cs](../../../../Source/Pipeline/ContextProviderRegistry.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

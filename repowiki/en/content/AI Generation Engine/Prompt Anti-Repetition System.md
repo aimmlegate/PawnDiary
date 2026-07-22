@@ -1,11 +1,5 @@
 # Prompt Anti-Repetition System
 
-- [DiaryGameComponent.PromptAntiRepeat.cs](../../../../Source/Core/DiaryGameComponent.PromptAntiRepeat.cs)
-- [DiaryGameComponent.cs](../../../../Source/Core/DiaryGameComponent.cs)
-- [DiaryPromptDef.cs](../../../../Source/Defs/DiaryPromptDef.cs)
-- [DiaryPipelineContracts.cs](../../../../Source/Pipeline/DiaryPipelineContracts.cs)
-- [DiaryEventRepository.cs](../../../../Source/Core/DiaryEventRepository.cs)
-- [DiaryArchiveRepository.cs](../../../../Source/Core/DiaryArchiveRepository.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

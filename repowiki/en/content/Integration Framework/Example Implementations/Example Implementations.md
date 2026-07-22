@@ -1,22 +1,5 @@
 # Example Implementations
 
-- [PawnDiaryExampleApi.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/PawnDiaryExampleApi.cs)
-- [ExampleAdapterGameComponent.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExampleAdapterGameComponent.cs)
-- [ExplorerMethodCatalog.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExplorerMethodCatalog.cs)
-- [ExplorerParsing.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExplorerParsing.cs)
-- [ExplorerPawns.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExplorerPawns.cs)
-- [ExplorerState.cs](../../../../../integrations/PawnDiary.ExampleAdapter/Source/ExplorerState.cs)
-- [PawnDiaryRimTalkBridgeApi.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/PawnDiaryRimTalkBridgeApi.cs)
-- [ConversationTracker.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/ConversationTracker.cs)
-- [PersonaSync.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/PersonaSync.cs)
-- [ColonyContextInjector.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/ColonyContextInjector.cs)
-- [Personalities123GameComponent.cs](../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/Personalities123GameComponent.cs)
-- [EnneagramSync.cs](../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/EnneagramSync.cs)
-- [BridgeIds.cs](../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/BridgeIds.cs)
-- [PawnDiaryApi.cs](../../../../../Source/Integration/PawnDiaryApi.cs)
-- [DiaryGameComponent.cs](../../../../../Source/Core/DiaryGameComponent.cs)
-- [ExternalEventRequest.cs](../../../../../Source/Integration/ExternalEventRequest.cs)
-- [EntryStatusListeners.cs](../../../../../Source/Integration/EntryStatusListeners.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure Overview](#project-structure-overview)

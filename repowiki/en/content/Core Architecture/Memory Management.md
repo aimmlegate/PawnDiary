@@ -1,14 +1,5 @@
 # Memory Management
 
-- [PawnMemoryRepository.cs](../../../../Source/Core/PawnMemoryRepository.cs)
-- [MemoryFragment.cs](../../../../Source/Models/MemoryFragment.cs)
-- [MemoryEvictionPlanner.cs](../../../../Source/Pipeline/Memory/MemoryEvictionPlanner.cs)
-- [DiaryEventRepository.cs](../../../../Source/Core/DiaryEventRepository.cs)
-- [DiaryRetentionPlan.cs](../../../../Source/Pipeline/DiaryRetentionPlan.cs)
-- [RecentEventExpiry.cs](../../../../Source/Capture/RecentEventExpiry.cs)
-- [DiaryGameComponent.EventRetention.cs](../../../../Source/Core/DiaryGameComponent.EventRetention.cs)
-- [DiaryContextBuilder.cs](../../../../Source/Generation/DiaryContextBuilder.cs)
-- [PromptAssembler.cs](../../../../Source/Generation/PromptAssembler.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

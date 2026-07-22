@@ -1,13 +1,5 @@
 # Provider Abstraction Layer
 
-- [ApiConnectionController.cs](../../../../../Source/Settings/ApiConnectionController.cs)
-- [LlmClient.cs](../../../../../Source/Generation/LlmClient.cs)
-- [LlmRequestJsonBuilder.cs](../../../../../Source/Pipeline/LlmRequestJsonBuilder.cs)
-- [ExternalLlmCompletionService.cs](../../../../../Source/Integration/ExternalLlmCompletionService.cs)
-- [ApiRequestAuth.cs](../../../../../Source/Settings/ApiRequestAuth.cs)
-- [EndpointUtility.cs](../../../../../Source/Settings/EndpointUtility.cs)
-- [ModelCapabilityCache.cs](../../../../../Source/Settings/ModelCapabilityCache.cs)
-- [ModelListClient.cs](../../../../../Source/Settings/ModelListClient.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

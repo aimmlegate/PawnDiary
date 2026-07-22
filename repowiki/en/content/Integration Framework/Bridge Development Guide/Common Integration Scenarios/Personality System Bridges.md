@@ -1,8 +1,5 @@
 # Personality System Bridges
 
-- [EnneagramSync.cs](../../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/EnneagramSync.cs)
-- [Personalities123GameComponent.cs](../../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/Personalities123GameComponent.cs)
-- [BridgeIds.cs](../../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/BridgeIds.cs)
 - PersonalityTrait.cs
 - [PawnDiaryPersonalities123Mod.cs](../../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/PawnDiaryPersonalities123Mod.cs)
 - [README.md](../../../../../../integrations/README.md)

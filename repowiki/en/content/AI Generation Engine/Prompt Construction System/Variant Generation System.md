@@ -1,18 +1,5 @@
 # Variant Generation System
 
-- [PromptVariants.cs](../../../../../Source/Generation/PromptVariants.cs)
-- [HumorCues.cs](../../../../../Source/Generation/HumorCues.cs)
-- [DiaryHumorCueDefs.xml](../../../../../1.6/Defs/DiaryHumorCueDefs.xml)
-- [DiaryPromptEnchantmentDefs.xml](../../../../../1.6/Defs/DiaryPromptEnchantmentDefs.xml)
-- [PromptEnchantments.cs](../../../../../Source/Generation/PromptEnchantments.cs)
-- [PromptEnchantmentCollector.cs](../../../../../Source/Generation/PromptEnchantmentCollector.cs)
-- [PromptEnchantmentPlanner.cs](../../../../../Source/Pipeline/PromptEnchantmentPlanner.cs)
-- [DiaryPromptDef.cs](../../../../../Source/Defs/DiaryPromptDef.cs)
-- [DiaryPromptTemplateDefs.xml](../../../../../1.6/Defs/DiaryPromptTemplateDefs.xml)
-- [PromptAssembler.cs](../../../../../Source/Generation/PromptAssembler.cs)
-- [PromptTextSanitizer.cs](../../../../../Source/Pipeline/PromptTextSanitizer.cs)
-- [PromptTestSuite.cs](../../../../../Source/Core/DiaryGameComponent.PromptTestSuite.cs)
-- [PromptPreview.cs](../../../../../Source/Core/DiaryGameComponent.PromptPreview.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,13 +1,5 @@
 # Development Environment Setup
 
-- [LoadFolders.xml](../../../../LoadFolders.xml)
-- [About/About.xml](../../../../About/About.xml)
-- [Source/PawnDiary.csproj](../../../../Source/PawnDiary.csproj)
-- [.githooks/verify.ps1](../../../../.githooks/verify.ps1)
-- [.github/workflows](../../../../.github/workflows)
-- [integrations/README.md](../../../../integrations/README.md)
-- [tests/PawnDiary.RimTest/README.md](../../../../tests/PawnDiary.RimTest/README.md)
-- [services/error-endpoint/README.md](../../../../services/error-endpoint/README.md)
 ## Table of Contents
 1. Introduction
 2. Project Structure

@@ -1,12 +1,5 @@
 # Containment Breach Events
 
-- [ContainmentBreachPolicy.cs](../../../../../Source/Capture/Policies/ContainmentBreachPolicy.cs)
-- [ContainmentBreachContextFormatter.cs](../../../../../Source/Capture/Policies/ContainmentBreachContextFormatter.cs)
-- [ContainmentEscapeScopeStack.cs](../../../../../Source/Generation/ContainmentEscapeScopeStack.cs)
-- [AnomalyContainmentBreachSignal.cs](../../../../../Source/Ingestion/Sources/AnomalyContainmentBreachSignal.cs)
-- [DiaryGameComponent.Anomaly.cs](../../../../../Source/Core/DiaryGameComponent.Anomaly.cs)
-- [DiaryEventSpec.cs](../../../../../Source/Capture/Catalog/DiaryEventSpec.cs)
-- [DiaryEvents.cs](../../../../../Source/Ingestion/DiaryEvents.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

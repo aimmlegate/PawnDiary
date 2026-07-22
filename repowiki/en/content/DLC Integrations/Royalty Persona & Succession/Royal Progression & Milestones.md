@@ -1,18 +1,5 @@
 # Royal Progression & Milestones
 
-- [PersonaMilestonePolicy.cs](../../../../../Source/Pipeline/Royalty/PersonaMilestonePolicy.cs)
-- [RoyalAscentPolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalAscentPolicy.cs)
-- [RoyalTitleObservationPolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalTitleObservationPolicy.cs)
-- [RoyalPermitPolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalPermitPolicy.cs)
-- [DiaryGameComponent.RoyaltyMilestones.cs](../../../../../Source/Core/DiaryGameComponent.RoyaltyMilestones.cs)
-- [DiaryGameComponent.RoyaltyProgression.cs](../../../../../Source/Core/DiaryGameComponent.RoyaltyProgression.cs)
-- [DiaryGameComponent.RoyaltyPermits.cs](../../../../../Source/Core/DiaryGameComponent.RoyaltyPermits.cs)
-- [DiaryRoyaltyPatches.cs](../../../../../Source/Patches/DiaryRoyaltyPatches.cs)
-- [DlcContext.Royalty.cs](../../../../../Source/Generation/DlcContext.Royalty.cs)
-- [RoyalSuccessionCorrelation.cs](../../../../../Source/Generation/RoyalSuccessionCorrelation.cs)
-- [RoyalTitleThoughtCorrelation.cs](../../../../../Source/Generation/RoyalTitleThoughtCorrelation.cs)
-- [RoyalMutationCorrelation.cs](../../../../../Source/Generation/RoyalMutationCorrelation.cs)
-- [RoyalPermitOwnerCache.cs](../../../../../Source/Generation/RoyalPermitOwnerCache.cs)
 - DiaryEventSpec.cs
 - [DiaryEventType.cs](../../../../../Source/Capture/DiaryEventType.cs)
 - [DiaryEventRepository.cs](../../../../../Source/Core/DiaryEventRepository.cs)

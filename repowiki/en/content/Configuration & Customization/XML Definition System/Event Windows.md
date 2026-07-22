@@ -1,14 +1,5 @@
 # Event Windows
 
-- [DiaryGameComponent.EventWindows.cs](../../../../../Source/Core/DiaryGameComponent.EventWindows.cs)
-- [DiaryEventWindowDef.cs](../../../../../Source/Defs/DiaryEventWindowDef.cs)
-- [EventWindowPolicy.cs](../../../../../Source/Pipeline/EventWindowPolicy.cs)
-- [ActiveEventWindowState.cs](../../../../../Source/Models/ActiveEventWindowState.cs)
-- [DiaryEventWindowDefs.xml](../../../../../1.6/Defs/DiaryEventWindowDefs.xml)
-- [DiaryEventCatalog.cs](../../../../../Source/Capture/Catalog/DiaryEventCatalog.cs)
-- [DiaryEventSpec.cs](../../../../../Source/Capture/Catalog/DiaryEventSpec.cs)
-- [DiarySignal.cs](../../../../../Source/Ingestion/DiarySignal.cs)
-- [DiaryEvents.cs](../../../../../Source/Ingestion/DiaryEvents.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

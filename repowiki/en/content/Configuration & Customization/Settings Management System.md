@@ -1,23 +1,5 @@
 # Settings Management System
 
-- [PawnDiaryMod.cs](../../../../Source/Settings/PawnDiaryMod.cs)
-- [PawnDiarySettings.cs](../../../../Source/Settings/PawnDiarySettings.cs)
-- [PawnDiaryMod.SettingsWindow.cs](../../../../Source/Settings/PawnDiaryMod.SettingsWindow.cs)
-- [PawnDiaryMod.EventFilters.cs](../../../../Source/Settings/PawnDiaryMod.EventFilters.cs)
-- [PawnDiaryMod.ApiLanes.cs](../../../../Source/Settings/PawnDiaryMod.ApiLanes.cs)
-- [TuningOverrideStore.cs](../../../../Source/Settings/TuningOverrideStore.cs)
-- [TuningOverrideMigration.cs](../../../../Source/Settings/TuningOverrideMigration.cs)
-- [ApiConnectionController.cs](../../../../Source/Settings/ApiConnectionController.cs)
-- [IntegrationApiSettings.cs](../../../../Source/Settings/IntegrationApiSettings.cs)
-- [ModelListClient.cs](../../../../Source/Settings/ModelListClient.cs)
-- [PromptOverrideDictionary.cs](../../../../Source/Settings/PromptOverrideDictionary.cs)
-- [PersonaPresetStore.cs](../../../../Source/Settings/PersonaPresetStore.cs)
-- [PsychotypePresetStore.cs](../../../../Source/Settings/PsychotypePresetStore.cs)
-- [AdvancedFieldCatalog.cs](../../../../Source/Settings/AdvancedFieldCatalog.cs)
-- [AdvancedRawSyntax.cs](../../../../Source/Settings/AdvancedRawSyntax.cs)
-- [EndpointUtility.cs](../../../../Source/Settings/EndpointUtility.cs)
-- [ModelCapabilityCache.cs](../../../../Source/Settings/ModelCapabilityCache.cs)
-- [PromptSettingsMenuPolicy.cs](../../../../Source/Settings/PromptSettingsMenuPolicy.cs)
 ## Update Summary
 **Changes Made**
 - Added new Memory System Configuration section documenting the enableMemorySystem setting

@@ -1,8 +1,5 @@
 # Ideology Belief & Stance System
 
-- [DiaryBeliefPolicyDef.cs](../../../../Source/Defs/DiaryBeliefPolicyDef.cs)
-- [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
-- [IdeologySupportImplementationPlan.md](../../../../IDEOLOGY_SUPPORT_IMPLEMENTATION_PLAN.md)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

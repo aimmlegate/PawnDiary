@@ -1,18 +1,5 @@
 # Psychotype System
 
-- [DiaryPsychotypeDefs.xml](../../../../../../1.6/Defs/DiaryPsychotypeDefs.xml)
-- [DiaryPsychotypeRollPolicyDefs.xml](../../../../../../1.6/Defs/DiaryPsychotypeRollPolicyDefs.xml)
-- [DiaryPsychotypeTraitPolicyDefs.xml](../../../../../../1.6/Defs/DiaryPsychotypeTraitPolicyDefs.xml)
-- [VtePsychotypeAffinities.xml](../../../../../../1.6/Patches/VtePsychotypeAffinities.xml)
-- [DiaryPsychotypeDef.cs](../../../../../../Source/Defs/DiaryPsychotypeDef.cs)
-- [PsychotypeResolutionPolicy.cs](../../../../../../Source/Pipeline/PsychotypeResolutionPolicy.cs)
-- [PsychotypeRollPolicy.cs](../../../../../../Source/Pipeline/PsychotypeRollPolicy.cs)
-- [PsychotypeText.cs](../../../../../../Source/Pipeline/PsychotypeText.cs)
-- [PsychotypeTraitAffinities.cs](../../../../../../Source/Pipeline/PsychotypeTraitAffinities.cs)
-- [ExternalPsychotypeGenerators.cs](../../../../../../Source/Integration/ExternalPsychotypeGenerators.cs)
-- [DiaryPsychotypeSnapshot.cs](../../../../../../Source/Integration/DiaryPsychotypeSnapshot.cs)
-- [PawnDiaryMod.PsychotypeStudio.cs](../../../../../../Source/Settings/PawnDiaryMod.PsychotypeStudio.cs)
-- [PsychotypePresetStore.cs](../../../../../../Source/Settings/PsychotypePresetStore.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

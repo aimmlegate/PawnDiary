@@ -1,28 +1,5 @@
 # Troubleshooting & FAQ
 
-- [DiaryErrorReporter.cs](../../../Source/Diagnostics/DiaryErrorReporter.cs)
-- [DiaryLogReportPatch.cs](../../../Source/Diagnostics/DiaryLogReportPatch.cs)
-- [ErrorFingerprint.cs](../../../Source/Diagnostics/Pure/ErrorFingerprint.cs)
-- [ErrorReportPayload.cs](../../../Source/Diagnostics/Pure/ErrorReportPayload.cs)
-- [ErrorScrub.cs](../../../Source/Diagnostics/Pure/ErrorScrub.cs)
-- [InstallSource.cs](../../../Source/Diagnostics/Pure/InstallSource.cs)
-- [ModErrorPrefixPolicy.cs](../../../Source/Diagnostics/Pure/ModErrorPrefixPolicy.cs)
-- [PawnDiaryMod.cs](../../../Source/Settings/PawnDiaryMod.cs)
-- [PawnDiarySettings.cs](../../../Source/Settings/PawnDiarySettings.cs)
-- [ApiConnectionController.cs](../../../Source/Settings/ApiConnectionController.cs)
-- [ExternalLlmCompletionService.cs](../../../Source/Integration/ExternalLlmCompletionService.cs)
-- [DiaryGameComponent.cs](../../../Source/Core/DiaryGameComponent.cs)
-- [DiaryEventRepository.cs](../../../Source/Core/DiaryEventRepository.cs)
-- [DiaryArchiveRepository.cs](../../../Source/Core/DiaryArchiveRepository.cs)
-- [DiaryPatchRegistrar.cs](../../../Source/Patches/DiaryPatchRegistrar.cs)
-- [DiaryPatchSafety.cs](../../../Source/Patches/DiaryPatchSafety.cs)
-- [DiaryDirectSpeechParser.cs](../../../Source/Pipeline/DiaryDirectSpeechParser.cs)
-- [TextTruncation.cs](../../../Source/Pipeline/TextTruncation.cs)
-- [PromptTextSanitizer.cs](../../../Source/Pipeline/PromptTextSanitizer.cs)
-- [DiaryRichTextDecorators.cs](../../../Source/Pipeline/DiaryRichTextDecorators.cs)
-- [ITab_Pawn_Diary.cs](../../../Source/UI/ITab_Pawn_Diary.cs)
-- [PawnDiaryDebugActions.cs](../../../Source/Dev/PawnDiaryDebugActions.cs)
-- [README.md](../../../README.md)
 ## Table of Contents
 1. Introduction
 2. Project Structure

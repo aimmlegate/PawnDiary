@@ -1,20 +1,5 @@
 # Language Model Integration
 
-- [LlmClient.cs](../../../../../Source/Generation/LlmClient.cs)
-- [LlmResponseParser.cs](../../../../../Source/Generation/LlmResponseParser.cs)
-- [ExternalLlmCompletionService.cs](../../../../../Source/Integration/ExternalLlmCompletionService.cs)
-- [LlmRequestJsonBuilder.cs](../../../../../Source/Pipeline/LlmRequestJsonBuilder.cs)
-- [ApiConnectionController.cs](../../../../../Source/Settings/ApiConnectionController.cs)
-- [ApiRequestAuth.cs](../../../../../Source/Settings/ApiRequestAuth.cs)
-- [EndpointUtility.cs](../../../../../Source/Settings/EndpointUtility.cs)
-- [ModelListClient.cs](../../../../../Source/Settings/ModelListClient.cs)
-- [DiaryGameComponent.ExternalApiBudget.cs](../../../../../Source/Core/DiaryGameComponent.ExternalApiBudget.cs)
-- [ExternalApiLaneRequest.cs](../../../../../Source/Integration/ExternalApiLaneRequest.cs)
-- [ExternalEventRequest.cs](../../../../../Source/Integration/ExternalEventRequest.cs)
-- [ExternalDirectEntryRequest.cs](../../../../../Source/Integration/ExternalDirectEntryRequest.cs)
-- [PromptTextSanitizer.cs](../../../../../Source/Pipeline/PromptTextSanitizer.cs)
-- [DiaryResponsePostprocessor.cs](../../../../../Source/Pipeline/DiaryResponsePostprocessor.cs)
-- [ExternalApiBudgetPolicy.cs](../../../../../Source/Pipeline/ExternalApiBudgetPolicy.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

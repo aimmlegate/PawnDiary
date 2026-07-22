@@ -1,17 +1,5 @@
 # Tuning Definitions
 
-- [DiaryTuningDef.xml](../../../../../1.6/Defs/DiaryTuningDef.xml)
-- [DiaryTuningDef.cs](../../../../../Source/Defs/DiaryTuningDef.cs)
-- [DiaryMemoryTuningDef.xml](../../../../../1.6/Defs/DiaryMemoryTuningDef.xml)
-- [DiaryMemoryTuningDef.cs](../../../../../Source/Defs/DiaryMemoryTuningDef.cs)
-- [PawnDiaryMod.SettingsWindow.cs](../../../../../Source/Settings/PawnDiaryMod.SettingsWindow.cs)
-- [TuningOverrideStore.cs](../../../../../Source/Settings/TuningOverrideStore.cs)
-- [TuningOverrideMigration.cs](../../../../../Source/Settings/TuningOverrideMigration.cs)
-- [DiaryGameComponent.Generation.cs](../../../../../Source/Core/DiaryGameComponent.Generation.cs)
-- [DiaryGameComponent.GenerationDispatch.cs](../../../../../Source/Core/DiaryGameComponent.GenerationDispatch.cs)
-- [DiaryGameComponent.GenerationEligibility.cs](../../../../../Source/Core/DiaryGameComponent.GenerationEligibility.cs)
-- [ExternalApiBudgetPolicy.cs](../../../../../Source/Pipeline/ExternalApiBudgetPolicy.cs)
-- [LlmClient.cs](../../../../../Source/Generation/LlmClient.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

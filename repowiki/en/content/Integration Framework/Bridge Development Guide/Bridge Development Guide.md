@@ -1,20 +1,5 @@
 # Bridge Development Guide
 
-- [PawnDiaryApi.cs](../../../../../Source/Integration/PawnDiaryApi.cs)
-- [CaptureContext.cs](../../../../../Source/Capture/CaptureContext.cs)
-- [CaptureCapabilityRegistry.cs](../../../../../Source/Pipeline/CaptureCapabilityRegistry.cs)
-- [Personalities123GameComponent.cs](../../../../../integrations/PawnDiary.PersonalitiesBridge/Source/Personalities123GameComponent.cs)
-- [PawnDiaryRimTalkBridgeMod.cs](../../../../../integrations/PawnDiary.RimTalkBridge/Source/PawnDiaryRimTalkBridgeMod.cs)
-- [ExternalEventRequest.cs](../../../../../Source/Integration/ExternalEventRequest.cs)
-- [DiaryEventSubmissionResult.cs](../../../../../Source/Integration/DiaryEventSubmissionResult.cs)
-- [DiarySignal.cs](../../../../../Source/Ingestion/DiarySignal.cs)
-- [DiaryEvents.cs](../../../../../Source/Ingestion/DiaryEvents.cs)
-- [DiaryGameComponent.cs](../../../../../Source/Core/DiaryGameComponent.cs)
-- [DiaryContextProviders.cs](../../../../../Source/Integration/PawnContextProviders.cs)
-- [ContextProviderRegistry.cs](../../../../../Source/Pipeline/ContextProviderRegistry.cs)
-- [ListenerRegistry.cs](../../../../../Source/Pipeline/ListenerRegistry.cs)
-- [ExternalDirectEntryRequest.cs](../../../../../Source/Integration/ExternalDirectEntryRequest.cs)
-- [ExternalPromptEntryRequest.cs](../../../../../Source/Integration/ExternalPromptEntryRequest.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

@@ -1,20 +1,5 @@
 # Birth Record & Lineage Tracking
 
-- [BirthRecordPolicy.cs](../../../../../Source/Capture/Biotech/BirthRecordPolicy.cs)
-- [BirthCorrelationPolicy.cs](../../../../../Source/Capture/Biotech/BirthCorrelationPolicy.cs)
-- [BirthOwnershipPolicy.cs](../../../../../Source/Capture/Biotech/BirthOwnershipPolicy.cs)
-- [PendingBiotechBirthState.cs](../../../../../Source/Models/PendingBiotechBirthState.cs)
-- [FamilyBirthEventData.cs](../../../../../Source/Capture/Events/FamilyBirthEventData.cs)
-- [DiaryGameComponent.BiotechFamily.cs](../../../../../Source/Core/DiaryGameComponent.BiotechFamily.cs)
-- [FamilyArcPolicy.cs](../../../../../Source/Capture/Biotech/FamilyArcPolicy.cs)
-- [FamilySupportPolicy.cs](../../../../../Source/Capture/Biotech/FamilySupportPolicy.cs)
-- [GeneIdentityObservationPolicy.cs](../../../../../Source/Capture/Biotech/GeneIdentityObservationPolicy.cs)
-- [GrowthMomentPolicy.cs](../../../../../Source/Capture/Biotech/GrowthMomentPolicy.cs)
-- [GrowthRecordPolicy.cs](../../../../../Source/Capture/Biotech/GrowthRecordPolicy.cs)
-- [BiotechBirthCorrelation.cs](../../../../../Source/Generation/BiotechBirthCorrelation.cs)
-- [BiotechGeneMutationCorrelation.cs](../../../../../Source/Generation/BiotechGeneMutationCorrelation.cs)
-- [FamilyBirthEventSpec.cs](../../../../../Source/Capture/Specs/FamilyBirthEventSpec.cs)
-- [DiaryBiotechPolicyDef.cs](../../../../../Source/Defs/DiaryBiotechPolicyDef.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

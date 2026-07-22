@@ -1,14 +1,5 @@
 # Affinity & Relationship System
 
-- [PersonaAffinity.cs](../../../../../../Source/Generation/PersonaAffinity.cs)
-- [PsychotypeTraitAffinities.cs](../../../../../../Source/Pipeline/PsychotypeTraitAffinities.cs)
-- [DiaryPromptDef.cs](../../../../../../Source/Defs/DiaryPromptDef.cs)
-- [DiaryPersonaDef.cs](../../../../../../Source/Defs/DiaryPersonaDef.cs)
-- [DiaryContextDetailDef.cs](../../../../../../Source/Defs/DiaryContextDetailDef.cs)
-- [DiaryTuningDef.cs](../../../../../../Source/Defs/DiaryTuningDef.cs)
-- [DiaryMemoryTuningDef.cs](../../../../../../Source/Defs/DiaryMemoryTuningDef.cs)
-- [DiaryObservedConditionDef.cs](../../../../../../Source/Defs/DiaryObservedConditionDef.cs)
-- [DiaryInteractionGroupDefs.cs](../../../../../../Source/Defs/InteractionGroups.cs)
 - DiaryEventWindowDefs.cs
 - DiaryNarrativeContinuityDefs.cs
 - [DiarySignalPolicyDef.cs](../../../../../../Source/Defs/DiarySignalPolicyDef.cs)

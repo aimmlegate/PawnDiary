@@ -1,21 +1,5 @@
 # Getting Started
 
-- [About.xml](../../../About/About.xml)
-- [LoadFolders.xml](../../../LoadFolders.xml)
-- [README.md](../../../README.md)
-- [DOCUMENTATION.md](../../../DOCUMENTATION.md)
-- [EXTERNAL_API.md](../../../EXTERNAL_API.md)
-- [PawnDiaryMod.cs](../../../Source/Settings/PawnDiaryMod.cs)
-- [PawnDiarySettings.cs](../../../Source/Settings/PawnDiarySettings.cs)
-- [ITab_Pawn_Diary.cs](../../../Source/UI/ITab_Pawn_Diary.cs)
-- [DiaryGameComponent.cs](../../../Source/Core/DiaryGameComponent.cs)
-- [LlmClient.cs](../../../Source/Generation/LlmClient.cs)
-- [PromptAssembler.cs](../../../Source/Generation/PromptAssembler.cs)
-- [DiaryEventCatalog.cs](../../../Source/Capture/Catalog/DiaryEventCatalog.cs)
-- [DiarySignal.cs](../../../Source/Ingestion/DiarySignal.cs)
-- [DiaryEntry.cs](../../../Source/Models/DiaryEntry.cs)
-- [DiaryArchiveRepository.cs](../../../Source/Core/DiaryArchiveRepository.cs)
-- [DiaryErrorReporter.cs](../../../Source/Diagnostics/DiaryErrorReporter.cs)
 ## Table of Contents
 1. Introduction
 2. Project Structure

@@ -1,14 +1,5 @@
 # Royal Mutations & Ascension
 
-- [RoyalMutationContextFormatter.cs](../../../../../Source/Pipeline/Royalty/RoyalMutationContextFormatter.cs)
-- [RoyalMutationOwnershipPolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalMutationOwnershipPolicy.cs)
-- [RoyalMutationPageSelectionPolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalMutationPageSelectionPolicy.cs)
-- [RoyalMutationRoutePolicy.cs](../../../../../Source/Pipeline/Royalty/RoyalMutationRoutePolicy.cs)
-- [DiaryGameComponent.Royalty.cs](../../../../../Source/Core/DiaryGameComponent.Royalty.cs)
-- [DiaryGameComponent.RoyaltyMilestones.cs](../../../../../Source/Core/DiaryGameComponent.RoyaltyMilestones.cs)
-- [DiaryGameComponent.RoyaltyProgression.cs](../../../../../Source/Core/DiaryGameComponent.RoyaltyProgression.cs)
-- [DiaryRoyaltyPatches.cs](../../../../../Source/Patches/DiaryRoyaltyPatches.cs)
-- [DlcContext.Royalty.cs](../../../../../Source/Generation/DlcContext.Royalty.cs)
 - DiaryEventSpec.cs
 - [RitualEventData.cs](../../../../../Source/Capture/Events/RitualEventData.cs)
 - [DiaryEventWindowDefs.xml](../../../../../1.6/Defs/DiaryEventWindowDefs.xml)

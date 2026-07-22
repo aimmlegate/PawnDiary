@@ -1,20 +1,5 @@
 # Persona Lifecycle Management
 
-- [PersonaLifecyclePolicy.cs](../../../../../../Source/Pipeline/Royalty/PersonaLifecyclePolicy.cs)
-- [RoyalSuccessionPolicy.cs](../../../../../../Source/Pipeline/Royalty/RoyalSuccessionPolicy.cs)
-- [RoyalTitleTransitionPolicy.cs](../../../../../../Source/Pipeline/Royalty/RoyalTitleTransitionPolicy.cs)
-- [RoyaltyStatePersistence.cs](../../../../../../Source/Pipeline/Royalty/RoyaltyStatePersistence.cs)
-- [DiaryGameComponent.Royalty.cs](../../../../../../Source/Core/DiaryGameComponent.Royalty.cs)
-- [DiaryGameComponent.RoyaltySuccession.cs](../../../../../../Source/Core/DiaryGameComponent.RoyaltySuccession.cs)
-- [DiaryGameComponent.RoyaltyPermits.cs](../../../../../../Source/Core/DiaryGameComponent.RoyaltyPermits.cs)
-- [DiaryGameComponent.RoyaltyMilestones.cs](../../../../../../Source/Core/DiaryGameComponent.RoyaltyMilestones.cs)
-- [DiaryGameComponent.RoyaltyProgression.cs](../../../../../../Source/Core/DiaryGameComponent.RoyaltyProgression.cs)
-- [DiaryRoyaltyPatches.cs](../../../../../../Source/Patches/DiaryRoyaltyPatches.cs)
-- [RoyalSuccessionCorrelation.cs](../../../../../../Source/Generation/RoyalSuccessionCorrelation.cs)
-- [RoyalTitleThoughtCorrelation.cs](../../../../../../Source/Generation/RoyalTitleThoughtCorrelation.cs)
-- [RoyalMutationCorrelation.cs](../../../../../../Source/Generation/RoyalMutationCorrelation.cs)
-- [DiaryPersonaDef.cs](../../../../../../Source/Defs/DiaryPersonaDef.cs)
-- [DiaryRoyaltyPolicyDef.cs](../../../../../../Source/Defs/DiaryRoyaltyPolicyDef.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)

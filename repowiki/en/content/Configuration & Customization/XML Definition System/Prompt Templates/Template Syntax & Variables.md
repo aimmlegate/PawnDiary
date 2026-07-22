@@ -1,22 +1,5 @@
 # Template Syntax & Variables
 
-- [PromptTextTemplate.cs](../../../../../../Source/Util/PromptTextTemplate.cs)
-- [DiaryPromptBuilder.cs](../../../../../../Source/Generation/DiaryPromptBuilder.cs)
-- [DiaryContextBuilder.cs](../../../../../../Source/Generation/DiaryContextBuilder.cs)
-- [DiaryContextFields.cs](../../../../../../Source/Generation/DiaryContextFields.cs)
-- [PromptAssembler.cs](../../../../../../Source/Generation/PromptAssembler.cs)
-- [DiaryPromptCapture.cs](../../../../../../Source/Pipeline/DiaryPromptCapture.cs)
-- [DiaryPromptPlanner.cs](../../../../../../Source/Pipeline/DiaryPromptPlanner.cs)
-- [DiaryRichTextDecorators.cs](../../../../../../Source/Pipeline/DiaryRichTextDecorators.cs)
-- [DiaryNameHighlighter.cs](../../../../../../Source/Pipeline/DiaryNameHighlighter.cs)
-- [DiaryParagraphReflow.cs](../../../../../../Source/Pipeline/DiaryParagraphReflow.cs)
-- [PromptVariants.cs](../../../../../../Source/Generation/PromptVariants.cs)
-- [PromptEnchantments.cs](../../../../../../Source/Generation/PromptEnchantments.cs)
-- [PromptEnchantmentCollector.cs](../../../../../../Source/Generation/PromptEnchantmentCollector.cs)
-- [PromptEnchantmentPlanner.cs](../../../../../../Source/Pipeline/PromptEnchantmentPlanner.cs)
-- [DiaryEventRepository.cs](../../../../../../Source/Core/DiaryEventRepository.cs)
-- [DiaryGameComponent.PromptPreview.cs](../../../../../../Source/Core/DiaryGameComponent.PromptPreview.cs)
-- [PawnDiaryMod.PromptStudio.cs](../../../../../../Source/Settings/PawnDiaryMod.PromptStudio.cs)
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
