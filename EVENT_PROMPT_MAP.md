@@ -262,6 +262,7 @@ Current shipped event-prompt rows in `DiaryEventPromptDefs.xml`:
 | `DiaryEventPrompt_Raid` | `Raid` | yes | yes | blank |
 | `DiaryEventPrompt_Quest` | `Quest` | yes | yes | blank |
 | `DiaryEventPrompt_RoyalAscent` | `questRoyalAscent` | yes | yes | blank |
+| `DiaryEventPrompt_RitualConversion` | `ritualConversion` | yes | yes | blank |
 | `DiaryEventPrompt_Ritual` | `Ritual` | yes | yes | blank |
 | `DiaryEventPrompt_Ability` | `Ability` | yes | yes | blank |
 | `DiaryEventPrompt_DayReflection` | `DayReflection` | yes | yes | blank |
@@ -447,6 +448,16 @@ their prior all-eligible fanout.
 Ritual fan-out keeps both layers of guidance: the matched XML group's instruction establishes the
 specific rite, then the localized participant-role instruction establishes what this pawn did. This
 is why Alpha/VIE ritual groups affect prompt content instead of only the settings label.
+
+Completed vanilla conversion uses the Ideology-gated order-`759` `ritualConversion` group before the
+generic order-`780` ritual catchall. Its ordinal classifier key is exactly
+`Conversion;RitualBehaviorWorker_Conversion`; the pure policy also verifies
+`RitualOutcomeEffectWorker_Conversion` before attaching optional evidence. The dedicated
+`DiaryEventPrompt_RitualConversion` owns role-separated instructions: organizer may use the assigned
+proselytizing moral-guide doctrine, target alone may use frozen before/after mutation facts,
+participants get smaller current-doctrine context, and spectators get none. Ritual quality remains a
+quality fact and never proves conversion. Missing/rejected evidence preserves the ordinary ritual page,
+and a dormant Ideology group falls through to the generic ritual prompt.
 
 Anomaly psychic rituals classify by the full saved key
 `PsychicRitual;<PsychicRitualDef.defName>`. Exact package-gated families precede the generic

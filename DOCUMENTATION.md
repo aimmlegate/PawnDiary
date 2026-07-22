@@ -49,12 +49,12 @@ repo for development, but the Workshop payload omits source code and other devel
 | `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
 | `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
 | `Source/Capture/` | Pure Event Catalog payloads and decisions, including Biotech B1 growth/family/birth contracts, Royalty persona/permit policy, and Anomaly study/context/monolith/containment/Tale-ownership plus visible creepjoiner continuity, surgical-disclosure, writer, and Tale-ownership policy and the shared catalog envelope. |
-| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including exact-author Anomaly study, containment-breach, visible creepjoiner-outcome, and surgical-disclosure signals, Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, lossless quick-aid raid ownership, and exact-root Royal Ascent quest fanout. |
+| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge), including exact-author Anomaly study, containment-breach, visible creepjoiner-outcome, and surgical-disclosure signals, Royalty persona lifecycle/Tale enrichment, ritual-owned title/psylink mutation context, exact completed-conversion ritual evidence fan-out, lossless quick-aid raid ownership, and exact-root Royal Ascent quest fanout. |
 | `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue, associative-memory recall/deposit/eviction (`DiaryGameComponent.Memory.cs`), and additive Anomaly study/monolith/visible-creepjoiner persistence plus detached transaction owners and conservative pre-A1/pre-A2 baselining. Also `PawnMemoryRepository` (per-pawn memory store). |
-| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including the Ideology event-time builder, guarded doctrine/mutation projection, bounded plain HistoryEvent sidecar, transient mutation cache, and exact interaction/mental-state evidence adapter; guarded Anomaly study/codex/containment/monolith/creepjoiner capture; the visible-only N3-A context adapter; Odyssey location/mobile-home/lifecycle; and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including bounded visible-only N3-A and exact-map N3-O providers), Ideology detached belief contracts, explicit-source evidence constructors, bounded HistoryEvent correlation and mutation-coalescing storage, exact canonical-event ownership and mutation-event selection, structural/lexical stance resolver, formatter, and future reflection-policy shell under `Pipeline/Belief/`, Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/`. |
-| `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the active Ideology Phase-1 belief-policy boundary and the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
+| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, and DLC-safe live reads, including the Ideology event-time builder, guarded doctrine/mutation projection, bounded plain HistoryEvent sidecar, transient mutation cache, and exact interaction/mental-state/conversion-ritual evidence adapters; guarded Anomaly study/codex/containment/monolith/creepjoiner capture; the visible-only N3-A context adapter; Odyssey location/mobile-home/lifecycle; and Royalty persona/title/psylink/succession/permit/court-pressure snapshots. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy, the DLC-neutral Narrative Continuity contracts/selector/reflection policy (including bounded visible-only N3-A and exact-map N3-O providers), Ideology detached belief contracts, explicit-source evidence constructors, bounded HistoryEvent correlation and mutation-coalescing storage, exact canonical-event ownership, interaction/mental-state mutation selection, completed-conversion ritual selection and POV isolation, structural/lexical stance resolver, formatter, and future reflection-policy shell under `Pipeline/Belief/`, Odyssey lifecycle/journey/location/history/writer/context policy, Royalty persona/title/psylink/succession/permit/Royal-Ascent decisions plus save normalization, and the pure pawn-memory extraction/recall/eviction layer under `Pipeline/Memory/`. |
+| `Source/Defs/` | XML schemas and detached snapshot adapters for tuning/policy Defs, including the active Ideology belief-policy boundary, the exact completed-conversion ritual policy, and the Odyssey, Royalty, and base-safe Anomaly policy rows plus DefInjected provider prose. |
 | `Source/Models/` | Scribe-facing saved models and conversions, including event-time per-POV `beliefContext`, detached Odyssey journey/history, Royalty persona/faction-title observation and committed succession state, the optional Anomaly monolith-knowledge snapshot, visible-only creepjoiner arc rows, and the `MemoryFragment` pawn-memory row. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches, the non-emitting Ideology HistoryEvent observer plus exact mutation boundaries, defensive exact Anomaly study/containment/creepjoiner/ghoul seams, guarded Odyssey lifecycle seams, and defensively registered Royalty persona/title/succession/permit and Quest lifecycle hooks. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
@@ -187,7 +187,7 @@ Generation starts only after an event exists in the saved hot store.
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
 
-**Ideology Phases 0–1, Narrative N3-I, plus Phase-2 mutation infrastructure and exact interaction/Counsel enrichment
+**Ideology Phases 0–1, Narrative N3-I, plus Phase-2 mutation infrastructure and exact interaction/Counsel/completed-conversion-ritual enrichment
 (Master Wave 10)** keep the Phase-0
 pure policy contract and Phase-1 event-time runtime seam. `BeliefResolutionRequest` embeds the existing per-POV `NarrativeEvidence`, so shared facet,
 salience, knowledge, source, topic, interpretation-category, and deterministic-seed semantics are not
@@ -294,7 +294,7 @@ PlayLog row. If the player disables the downstream group, the generic ability/th
 available instead of losing both owners.
 `ConversionRitual` deliberately keeps its generic start page because vanilla exposes no cancellation
 event from which a deferred fallback page could be emitted; a completed ritual may consequently also
-receive its normal finish page until a cancel-aware pending owner exists. Covered abilities still drop
+receive the exact enriched finish page described below. Covered interaction abilities still drop
 before `Rand.Value`. No-DLC profiles and unknown/modded sources retain ordinary pre-slice behavior.
 
 The first surgical Phase-2 consumer slice enriches only the existing synchronous PlayLog interaction
@@ -316,8 +316,9 @@ The saved belief block now exposes mechanics through stable schema fields: befor
 ideoligion, certainty before/after/delta, conversion result, and (Full detail only) method-boundary
 cause tokens. These labels/tokens are structured prompt schema, not player-facing prose. Counsel is
 deliberately absent from `mutationEventRules` because vanilla Counsel changes mood/thought state rather
-than Ideology certainty. Conversion-ritual fan-out and other broad Phase-2 evidence adapters remain
-deferred; the mutation observer/cache still cannot authorize or emit any page.
+than Ideology certainty. The exact completed-conversion ritual is the next narrow consumer described
+below; other broad Phase-2 evidence adapters remain deferred, and the mutation observer/cache still
+cannot authorize or emit any page.
 
 The exact Counsel slice reuses vanilla's one existing downstream PlayLog owner. Installed RimWorld 1.6
 applies either `Counselled`/`Counselled_MoodBoost` and then emits `Counsel_Success`, or applies
@@ -341,6 +342,30 @@ is absent and never receives Counsel context. Existing saves also preserve playe
 explicit Counsel choice wins, including an enabled value equal to the XML default; normalization keeps
 that otherwise-redundant value when it must override legacy `conversion=false`.
 
+The exact completed-conversion ritual slice reuses the existing postfix on
+`LordJob_Ritual.ApplyOutcome`; vanilla's `RitualOutcomeEffectWorker_Conversion.Apply` has already called
+`SetIdeo` or `OffsetCertainty` when the adapter runs, so no new Harmony hook, poll, page owner, or save
+field is required. The Ideology-gated order-759 `ritualConversion` group matches the ordinal-exact
+`Conversion` ritual plus `RitualBehaviorWorker_Conversion` before the generic ritual group. The pure
+policy additionally requires `RitualOutcomeEffectWorker_Conversion`, the exact group identity, active
+Ideology, and an enabled complete XML policy. Dormant-DLC exact-name collisions rescan to the ordinary
+ritual group. Organizer and target are taken from the installed `moralist` and `convertee` assignment
+ids because the ritual focus is not a reliable convertee identity.
+
+All live Ideology reads remain behind `DlcContext`: the organizer gets a detached current snapshot and,
+when present, the exact assigned moral-guide precept marked as proselytizing; the target gets only the
+newest exact pawn/tick mutation from the existing bounded cache. Conversion success is true only when
+that mutation changed the target into the organizer's exact ideoligion. A certainty-only mutation is
+recorded as non-conversion regardless of ritual quality, and missing, stale, future, foreign, or
+wrong-cause evidence leaves an ordinary completed-ritual page. Event-time DTOs are frozen once and
+projected per POV: organizer receives role/proselytizing doctrine, target alone receives before/after
+mutation facts and `belief_event=conversion`, participants receive current doctrine within a smaller
+budget, and spectators receive no belief evidence. The existing fan-out cap, pawn-id collapse, colony
+dedup, and deterministic cosmetic selection are unchanged. Saved target evidence survives the normal
+Scribe round-trip and later pawn changes cannot rewrite it. Until `ritualConversion` is explicitly
+touched, an explicit legacy `ritualFinished` setting is inherited; an explicit exact-group choice then
+wins even when equal to the XML default.
+
 The first post-Counsel Ideology-active loaded run executed all 384 fixtures and reached 382/384. All
 three exact Counsel fixtures passed at the real vanilla boundary. One failure was a stale exhaustive
 official-DLC catalog expectation which omitted the newly package-gated `counsel` row; the fixture matrix
@@ -349,6 +374,12 @@ parked player gravship. A corrected full-suite rerun and the separate Ideology-i
 required; the 382/384 aggregate is not recorded as full acceptance. The user-confirmed corrected rerun
 then passed all 384/384 fixtures on a valid parked-gravship host. This closes the active-Ideology Counsel
 runtime sub-gate; the separate Ideology-inactive profile and broader Phase-2 work remain open.
+
+The completed-conversion slice adds three compiled ritual fixtures and raises the RimTest assembly from
+385 to 388 tests. They cover active versus dormant exact classification and setting migration, real
+patched `SetIdeo` mutation with four isolated/frozen POV pages plus Scribe retention, certainty-only
+quality non-proof, and guarded-adapter failure isolation. The 388-test active-Ideology and base-only
+loaded runs have not yet been recorded; the latest confirmed loaded result remains 384/384.
 
 An exact conversion consumer also appends only the stable `belief_event=conversion` routing marker to
 the ordinary interaction `gameContext`. Prompt-context selection uses that marker to rank the saved
@@ -1850,7 +1881,7 @@ it onto the bus.
 | DayReflection | Sleep/rest flush | `DayReflectionSignal` (aggregation flush) | solo day/quadrum reflection |
 | ArcReflection | Sleep/rest flush + major psylink/xenotype progression trigger | `ArcReflectionSignal` (memory aggregation flush) | solo yearly arc reflection |
 | Quest | transition-guarded `Quest.Accept`/`End` + state scan | `QuestFanoutSignal` | ordinary completion/failure fan-out; exact Royal Ascent uses one stable witness and a start window |
-| Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out; XML group guidance plus role/perspective instruction. Anomaly's 16 installed psychic rituals route exactly into invitation, flesh/weather, predation, mind, abduction, or death-refusal guidance before the generic modded fallback. |
+| Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out; XML group guidance plus role/perspective instruction. Exact completed conversion adds event-time organizer/target/participant evidence while isolating the target mutation. Anomaly's 16 installed psychic rituals route exactly into invitation, flesh/weather, predation, mind, abduction, or death-refusal guidance before the generic modded fallback. |
 | AnomalyEvent | Exact study completion, containment escape, creepjoiner rejection/aggression/departure, and visible surgical-disclosure seams | `AnomalyStudySignal` / `ContainmentBreachSignal` / `CreepJoinerOutcomeSignal` / `CreepJoinerSurgicalDisclosureSignal` | one verified visible page, with source-specific ownership and deterministic witness selection |
 | Death | `Pawn.Kill` + death TaleDefs | `DeathFallbackSignal` (+ Tale death routes) | neutral description |
 | Arrival | Starting scan + `Pawn.SetFaction` | `ArrivalSignal` | neutral description |
@@ -2297,6 +2328,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; the main-thread builder snapshots it before fixed-order pure provider selection. The repetition policy is live: every narrative-capable source feeds the selector the POV pawn's most recent persisted selection keys (newest hot pages, then archive rows, bounded by `maxRecentSelectedCandidateKeys`), so `repetitionPenalty` dampens re-picking the same lens while exact-arc continuations stay exempt via `exactArcRepetitionPenalty` |
 | `DiaryBeliefPolicyDef.xml` | Active Ideology event-time policy: categorical structural/lexical scores, guarded field weights, confidence and runner-up margins, common/fuzzy-token limits, XML-owned default-one/maximum-two selection, certainty bands, formatter/detail budgets, bounded HistoryEvent and transient mutation correlation capacity/windows, localized prompt-field wording, selector-bearing exact event-evidence vocabulary, semantic aliases, exclusions, exact downstream-covered ability/thought ownership (including Counsel), four exact conversion/reassurance interaction-mutation mappings, two context-only Counsel outcome mappings, and an intentionally empty compatibility-correction list. Counsel has no mutation mapping or doctrine-evidence row. The Def contains no precept/issue/meme catalog or hard DLC Def reference; the guarded main-thread adapter copies it into a detached snapshot. Reflection thresholds remain reserved for later phases. |
+| `DiaryConversionRitualPolicyDef.xml` | Ideology-gated ordinal identities, assignment-role ids, POV evidence modes, stable role/result tokens, accepted mutation causes, exact correlation window, certainty epsilon, and bounded context cap for the completed conversion ritual. It contains only primitive strings/numbers, so it loads safely without Ideology; the pure snapshot is immutable and fail-closed when malformed. |
 | `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory plus mature-birth/miscarriage matchers, supporter thresholds/caps, naming timing, family retention, two-writer birth cap, pending-growth/pending-birth admission limits, Phase-5 gene category/theme/text/observation/fallback-significance policy, N3-B salient-gene identity prose, and Phase-6 mechanitor combat Tale roles/tenure/state caps; Phases 1–6, N2-B, and the first N3-B slice use these fields live |
 | `DiaryAnomalyPolicyDefs.xml` | A1 study/containment toggles, milestone rules, dedup/ownership/cache bounds, A2 visible creepjoiner/ghoul output and writer limits, plus N3-A factual formats for the three monolith chapters, containment breach, four visible creepjoiner outcomes, and ghoul transformation. Prose is DefInjected in English/Russian; no terminal/hidden format exists. All optional-DLC identifiers remain primitive strings, so the row loads safely without Anomaly. |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |

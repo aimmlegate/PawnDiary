@@ -68,6 +68,7 @@ namespace DiaryPipelineTests
             TestRoyaltyAscentXmlContract();
             TestIdeologyCrisisXmlContract();
             TestIdeologyCounselXmlContract();
+            TestIdeologyConversionRitualXmlContract();
             TestProgressionMilestonePolicy();
             TestPsylinkProgressionLevelPolicy();
             TestArcReflectionSchedulePolicy();
@@ -5954,6 +5955,130 @@ namespace DiaryPipelineTests
                 fallbackText.IndexOf("mood", StringComparison.Ordinal) >= 0
                     && englishText.IndexOf("mood", StringComparison.Ordinal) >= 0
                     && russianText.IndexOf("настроен", StringComparison.Ordinal) >= 0);
+        }
+
+        private static void TestIdeologyConversionRitualXmlContract()
+        {
+            XDocument groups = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryInteractionGroupDefs.xml"));
+            XElement exact = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "ritualConversion");
+            XElement generic = FindDef(
+                groups, "PawnDiary.DiaryInteractionGroupDef", "ritualFinished");
+            AssertTrue("exact conversion ritual group exists", exact != null);
+            AssertEqual("conversion ritual domain", "Ritual", ChildValue(exact, "domain"));
+            AssertTrue("conversion ritual uses one full ordinal classifier key",
+                exact.Element("matchOrdinalDefNames")?.Elements("li").Count() == 1
+                    && HasListValue(exact, "matchOrdinalDefNames",
+                        "Conversion;RitualBehaviorWorker_Conversion")
+                    && exact.Element("matchDefNames") == null
+                    && exact.Element("matchTokens") == null
+                    && exact.Element("matchPrefixes") == null
+                    && exact.Element("matchSegments") == null);
+            AssertTrue("conversion ritual group precedes generic ritual",
+                InteractionGroupOrder(exact) < InteractionGroupOrder(generic));
+            AssertTrue("conversion ritual group is Ideology-gated",
+                HasListValue(exact, "enableWhenPackageIdsLoaded", "Ludeon.RimWorld.Ideology"));
+            AssertTrue("conversion ritual owns rotating prompt tones",
+                exact.Element("tones")?.Elements("li").Count() >= 2);
+
+            XDocument conversionPolicy = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryConversionRitualPolicyDef.xml"));
+            XElement policy = FindDef(conversionPolicy,
+                "PawnDiary.DiaryConversionRitualPolicyDef", "Diary_ConversionRitualPolicy");
+            AssertTrue("conversion ritual policy Def exists", policy != null);
+            AssertEqual("policy ritual identity", "Conversion", ChildValue(policy, "ritualDefName"));
+            AssertEqual("policy behavior identity", "RitualBehaviorWorker_Conversion",
+                ChildValue(policy, "behaviorWorkerClassName"));
+            AssertEqual("policy outcome identity", "RitualOutcomeEffectWorker_Conversion",
+                ChildValue(policy, "outcomeWorkerClassName"));
+            AssertEqual("policy downstream group", "ritualConversion",
+                ChildValue(policy, "downstreamGroupDefName"));
+            AssertEqual("policy organizer assignment role", "moralist",
+                ChildValue(policy, "organizerRoleId"));
+            AssertEqual("policy target assignment role", "convertee",
+                ChildValue(policy, "targetRoleId"));
+            AssertEqual("policy organizer Ideology role", "IdeoRole_Moralist",
+                ChildValue(policy, "organizerIdeologyRoleDefName"));
+            AssertEqual("policy organizer evidence mode", "organizer_role",
+                ChildValue(policy, "organizerEvidenceMode"));
+            AssertEqual("policy target evidence mode", "target_mutation",
+                ChildValue(policy, "targetEvidenceMode"));
+            AssertEqual("policy participant evidence mode", "current_belief",
+                ChildValue(policy, "participantEvidenceMode"));
+            AssertEqual("policy spectator evidence mode", "none",
+                ChildValue(policy, "spectatorEvidenceMode"));
+            AssertEqual("policy exact same-tick mutation window", "0",
+                ChildValue(policy, "mutationCorrelationWindowTicks"));
+            AssertTrue("policy permits only tracker methods used by the ritual worker",
+                policy.Element("allowedMutationCauseTokens")?.Elements("li").Count() == 2
+                    && HasListValue(policy, "allowedMutationCauseTokens", "set_ideology")
+                    && HasListValue(policy, "allowedMutationCauseTokens", "certainty_offset")
+                    && !HasListValue(policy, "allowedMutationCauseTokens", "conversion_attempt"));
+
+            XDocument prompts = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryEventPromptDefs.xml"));
+            XElement prompt = FindDef(
+                prompts, "PawnDiary.DiaryEventPromptDef", "DiaryEventPrompt_RitualConversion");
+            AssertTrue("conversion ritual prompt exists", prompt != null);
+            AssertEqual("conversion ritual prompt is group-owned", "ritualConversion",
+                ChildValue(prompt, "eventType"));
+            AssertTrue("conversion ritual prompt is Ideology-gated",
+                HasListValue(prompt, "enableWhenPackageIdsLoaded", "Ludeon.RimWorld.Ideology"));
+            List<string> keys = DiaryEventPromptKeys.CandidateKeys(
+                new DiaryEventPayload { defName = "Conversion" }, "ritualConversion",
+                "Conversion;RitualBehaviorWorker_Conversion", "Ritual");
+            AssertEqual("conversion Def key remains first", "Conversion", keys[0]);
+            AssertEqual("conversion ritual group prompt is second", "ritualConversion", keys[1]);
+            AssertEqual("full classifier key remains a later candidate",
+                "Conversion;RitualBehaviorWorker_Conversion", keys[2]);
+            AssertEqual("generic ritual prompt remains last", "Ritual", keys[3]);
+
+            XDocument beliefPolicy = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryBeliefPolicyDef.xml"));
+            AssertTrue("generic ConversionRitual ability ownership remains unchanged",
+                !beliefPolicy.Descendants("canonicalEventOwnershipRules").Elements("li")
+                    .Any(row => ChildValue(row, "sourceDomain") == "ability"
+                        && ChildValue(row, "sourceDefName") == "ConversionRitual"));
+
+            XDocument englishGroups = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryInteractionGroupDef",
+                "DiaryInteractionGroupDefs.xml"));
+            XDocument russianGroups = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryInteractionGroupDef", "DiaryInteractionGroupDefs.xml"));
+            XDocument englishPrompts = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryEventPromptDef",
+                "DiaryEventPromptDefs.xml"));
+            XDocument russianPrompts = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryEventPromptDef", "DiaryEventPromptDefs.xml"));
+            string[] groupFields = { "label", "instruction", "tone", "tones.0", "tones.1" };
+            for (int i = 0; i < groupFields.Length; i++)
+            {
+                string key = "ritualConversion." + groupFields[i];
+                AssertPlaceholderParity("conversion ritual localized group field " + groupFields[i],
+                    ChildValue(englishGroups.Root, key), ChildValue(russianGroups.Root, key));
+            }
+            string[] promptFields = { "label", "prompt", "enhancement" };
+            for (int i = 0; i < promptFields.Length; i++)
+            {
+                string key = "DiaryEventPrompt_RitualConversion." + promptFields[i];
+                AssertPlaceholderParity("conversion ritual localized prompt field " + promptFields[i],
+                    ChildValue(englishPrompts.Root, key), ChildValue(russianPrompts.Root, key));
+            }
+
+            string fallback = (ChildValue(exact, "instruction") + " "
+                + ChildValue(prompt, "enhancement")).ToLowerInvariant();
+            string english = (ChildValue(englishGroups.Root, "ritualConversion.instruction") + " "
+                + ChildValue(englishPrompts.Root,
+                    "DiaryEventPrompt_RitualConversion.enhancement")).ToLowerInvariant();
+            AssertTrue("fallback conversion prose rejects quality as proof",
+                fallback.IndexOf("quality alone", StringComparison.Ordinal) >= 0
+                    || fallback.IndexOf("quality label", StringComparison.Ordinal) >= 0);
+            AssertTrue("English conversion prose rejects quality as proof",
+                english.IndexOf("quality alone", StringComparison.Ordinal) >= 0
+                    || english.IndexOf("quality label", StringComparison.Ordinal) >= 0);
         }
 
         private static void TestResponsePostprocessorRules()

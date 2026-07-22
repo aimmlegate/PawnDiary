@@ -589,8 +589,13 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 > runtime sub-gate. The hardening adds deterministic coverage for both success subbranches, Counsel's
 > covered-ability RNG preservation, DLC-off ordinary fallback, and settings inheritance; the assembly
 > now contains 385 compiled RimTests, whose new loaded rerun remains pending. The base-only profile also
-> remains pending. Conversion rituals, throne speech, broader evidence families, passive tracking, and
-> reflections remain deferred.
+> remains pending. The next narrow slice reuses the existing completed-ritual fan-out for exact vanilla
+> conversion: XML owns the ordinal identities, role modes, prompt/tone policy, correlation limits, and
+> tokens; the target alone receives frozen event-time mutation facts, organizer/participant evidence is
+> role-bounded, quality cannot prove conversion, and dormant Ideology rows fall through to the generic
+> ritual. No patch, page owner, poll, or save field was added. Three compiled fixtures raise the assembly
+> to 388 tests; their active/base-only loaded runs remain pending. Throne speech, broader evidence
+> families, passive tracking, and reflections remain deferred.
 > Every deferred Royalty acceptance item remains unchanged.
 
 ### Implement in this exact order
@@ -599,7 +604,7 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 2. **Ideology 1** — guarded live snapshot and saved event-time belief source.
 3. **Narrative N3-I (code-complete; active loaded acceptance passed, base-only pending)** — adapt high-confidence stance output
    into the single shared `interpretation` candidate category.
-4. **Ideology 2 (partial: mutation infrastructure, exact conversion/Reassure/Crisis/Counsel)** —
+4. **Ideology 2 (partial: mutation infrastructure, exact conversion/Reassure/Crisis/Counsel/completed conversion ritual)** —
    conversion/crisis/ritual/speech mutation capture and required event integrations.
 5. **Ideology 3** — bounded passive certainty/ideology tracking for future reflection evidence.
 6. Complete the common N3 selector/provider tests across Royalty, Biotech, Anomaly, and Odyssey.
@@ -613,8 +618,8 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 - No standalone belief reflection yet.
 
 Wave 10 remains open: original exact active-Counsel loaded coverage and the corrected 384/384 suite
-passed, but the compiled 385-test hardening rerun, base-only profile, remaining Ideology-2 ritual/
-speech/evidence-family work, and Ideology 3 are pending.
+passed, but the compiled 385-test hardening rerun, new 388-test conversion-ritual run, base-only profile,
+remaining Ideology-2 throne-speech/evidence-family work, and Ideology 3 are pending.
 
 ### Release checkpoint 10 — belief enrichment
 

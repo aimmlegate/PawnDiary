@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Exact installed Ideology conversion-ritual contract. Every identity is compared ordinally as a
+  plain string after LordJob_Ritual.ApplyOutcome; no XML node references a DLC Def directly.
+-->
+<Defs>
+  <PawnDiary.DiaryConversionRitualPolicyDef>
+    <defName>Diary_ConversionRitualPolicy</defName>
+    <enabled>true</enabled>
+    <ritualDefName>Conversion</ritualDefName>
+    <behaviorWorkerClassName>RitualBehaviorWorker_Conversion</behaviorWorkerClassName>
+    <outcomeWorkerClassName>RitualOutcomeEffectWorker_Conversion</outcomeWorkerClassName>
+    <downstreamGroupDefName>ritualConversion</downstreamGroupDefName>
+    <organizerRoleId>moralist</organizerRoleId>
+    <targetRoleId>convertee</targetRoleId>
+    <organizerIdeologyRoleDefName>IdeoRole_Moralist</organizerIdeologyRoleDefName>
+    <organizerEvidenceMode>organizer_role</organizerEvidenceMode>
+    <targetEvidenceMode>target_mutation</targetEvidenceMode>
+    <participantEvidenceMode>current_belief</participantEvidenceMode>
+    <spectatorEvidenceMode>none</spectatorEvidenceMode>
+    <evidenceGroupKey>conversion</evidenceGroupKey>
+    <organizerRoleToken>converter</organizerRoleToken>
+    <targetRoleToken>convertee</targetRoleToken>
+    <participantRoleToken>participant</participantRoleToken>
+    <spectatorRoleToken>spectator</spectatorRoleToken>
+    <convertedResultToken>converted</convertedResultToken>
+    <certaintyDecreasedResultToken>certainty_decreased</certaintyDecreasedResultToken>
+    <certaintyIncreasedResultToken>certainty_increased</certaintyIncreasedResultToken>
+    <allowedMutationCauseTokens>
+      <li>set_ideology</li>
+      <li>certainty_offset</li>
+    </allowedMutationCauseTokens>
+    <!-- The tracker mutation happens inside ApplyOutcome, so the existing postfix observes the same tick. -->
+    <mutationCorrelationWindowTicks>0</mutationCorrelationWindowTicks>
+    <certaintyDeltaEpsilon>0.0001</certaintyDeltaEpsilon>
+    <maximumAdditionalContextCharacters>192</maximumAdditionalContextCharacters>
+  </PawnDiary.DiaryConversionRitualPolicyDef>
+</Defs>

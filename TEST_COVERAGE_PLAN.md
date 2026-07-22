@@ -137,7 +137,7 @@ teardown.
 | EVT-14 | Mood event | Register a controlled `GameCondition` | Affected-map fan-out, mood classification, unaffected-map exclusion, disabled group. |
 | EVT-15 | Pawn progression | Mutate skill passion milestone, trait, and optional DLC state then scan | First-scan baseline, only upward/new milestones, exact context, major-change arc request; installed-Royalty real psylink/title positive paths and repeat suppression. |
 | EVT-16 | Quest | Accept/end controlled quest and run recovery scan | Accepted bookkeeping/no page, completed/failed fan-out, placeholder-label sanitation, duplicate scan drop. |
-| EVT-17 | Ritual | Submit production Ideology/psychic fan-outs through internal copied-fact fixtures | Organizer/invoker, target, participant, and spectator pages; duplicate-role pawn-ID collapse, colony dedup, per-perspective context/localization, all 16 Anomaly classifier keys and fallback, and clean no-DLC fields. Live DLC constructor signatures are checked separately. |
+| EVT-17 | Ritual | Submit production Ideology/psychic fan-outs through internal copied-fact fixtures | Organizer/invoker, target, participant, and spectator pages; duplicate-role pawn-ID collapse, colony dedup, per-perspective context/localization, exact completed-conversion classification/settings/evidence/Scribe/fail-open behavior, all 16 Anomaly classifier keys and fallback, and clean no-DLC fields. Live DLC constructor signatures are checked separately. |
 | EVT-18 | Arrival | `SetFaction` plus founding-arrival bootstrap | Neutral page, scenario/backstory facts, exactly-first ordering, one bad pawn cannot wedge bootstrap. |
 | EVT-19 | Day/quadrum reflection | Seed day signals and invoke sleep/rest flush | Highlight selection, once-per-day guard, quadrum substitution, evidence consumption, token limits. |
 | EVT-20 | Arc reflection | Seed hot/archive memories and invoke scheduled/major-event path | Year/gap limits, memory filtering/dedup, forced retry backoff, recent-memory tracking. |
@@ -1105,6 +1105,19 @@ context failure preserves the ordinary canonical page. The shared wiring case ad
 ordinal rule/tone policy, save-setting inheritance/explicit override, active exact classification, and
 DLC-off exact-name fallback to an ordinary pair page with no Counsel context.
 
+Three exact completed-conversion ritual cases extend `PawnDiaryRitualFlowTests`. The wiring case pins
+active exact versus DLC-off generic classification, exact loaded XML identities/modes/causes/timing,
+and legacy `ritualFinished` setting inheritance with an explicit exact override. The exhaustive loaded
+official-DLC catalog also lists `ritualConversion` under Ideology. The positive case
+uses the real patched `Pawn_IdeoTracker.SetIdeo` mutation before entering the production ritual fan-out
+fact seam, requires four unique organizer/target/participant/spectator pages without an RNG change,
+and proves only the target gets frozen changed-before/after mechanics plus the conversion marker. It
+also round-trips that saved evidence/game context through real Scribe and then changes live pawn state
+to prove event-time immutability. The final case supplies high ritual quality with only a real certainty
+mutation and requires non-conversion, then forces the guarded adapter to throw and requires four
+ordinary pages with no partial evidence. Standalone policy coverage adds ordinal/malformed/DLC/setting,
+immutable-cap, exact/stale/future/foreign/cause/result, POV-isolation, and idempotent-context cases.
+
 The first 377-test execution exposed vanilla's nested silent companion page and completed 375/377; the
 other failure was the unrelated N3-O Odyssey host prerequisite. After the exact companion fix and a
 valid parked-gravship host, the suite passed 377/377. That remains the latest in-game result: the two
@@ -1112,7 +1125,7 @@ new cases and the real-ability rewrites compile but have not yet received a 379/
 post-Phase-2 base-only profile run is recorded. Before N3-I, a headless startup attempt was made for
 the requested 379/379 profiles, but RimTest ran before `Current.Game` existed and every loaded-game
 fixture failed its precondition; no usable active or base-only acceptance result was produced. The
-current hardened post-Counsel assembly contains 385 tests. The first user-supplied pre-Counsel Ideology-active execution reached
+current completed-conversion assembly contains 388 tests. The first user-supplied pre-Counsel Ideology-active execution reached
 379/381: its N3-I failure was the over-broad fault-injection seam corrected above, while the other
 failure was the existing N3-O positive acceptance precondition because the host map had no parked
 player gravship. After the adversarial fixes, the user-confirmed loaded rerun passed 381/381 and closes
@@ -1120,8 +1133,8 @@ the active N3-I runtime boundary. The first post-Counsel run reached 382/384; al
 passed through the real vanilla boundary. The remaining failures were the exhaustive official-DLC
 catalog's stale omission of `counsel`, now corrected, and the unchanged N3-O parked-gravship host
 prerequisite. The user-confirmed corrected rerun passed 384/384 on a valid parked-gravship host. This
-closes the original active-Ideology Counsel execution coverage; the new 385-test hardening rerun and
-base-only profile remain pending.
+closes the original active-Ideology Counsel execution coverage; the 385-test hardening rerun was not
+recorded before the assembly advanced, and the new 388-test active/base-only profiles remain pending.
 The base-only run remains release-blocking under the
 matrix above because it is the only execution that reaches every `ModsConfig.IdeologyActive == false`
 branch.

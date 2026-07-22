@@ -832,6 +832,17 @@ namespace PawnDiary
                     group.defaultEnabled);
             }
 
+            if (string.Equals(group.defName, ConversionRitualPolicy.GroupDefName,
+                StringComparison.Ordinal))
+            {
+                // Completed conversion rituals split out of the older Ritual catch-all. Preserve an
+                // explicit ritualFinished choice until the player deliberately touches the new row.
+                return ConversionRitualSettingsInheritance.Enabled(
+                    GroupEnabledOverride(ConversionRitualPolicy.GroupDefName),
+                    GroupEnabledOverride(ConversionRitualPolicy.LegacyGroupDefName),
+                    group.defaultEnabled);
+            }
+
             bool saved;
             return groupEnabled.TryGetValue(group.defName, out saved) ? saved : group.defaultEnabled;
         }
@@ -881,7 +892,8 @@ namespace PawnDiary
 
         /// <summary>
         /// Stores a player override for one automatic-capture group. Matching the XML default normally
-        /// removes the override; Counsel keeps that value when needed to override inherited legacy intent.
+        /// removes the override; newly split Counsel/conversion-ritual rows keep it when needed to
+        /// override inherited legacy intent.
         /// </summary>
         public void SetGroupEnabled(string groupKey, bool enabled)
         {
@@ -896,7 +908,13 @@ namespace PawnDiary
                     CounselEventPolicy.GroupDefName, StringComparison.Ordinal)
                 && CounselSettingsInheritance.ShouldStoreOverride(
                     enabled, group.defaultEnabled, GroupEnabledOverride("conversion"));
-            if (enabled == group.defaultEnabled && !keepCounselOverride)
+            bool keepConversionRitualOverride = string.Equals(group.defName,
+                    ConversionRitualPolicy.GroupDefName, StringComparison.Ordinal)
+                && ConversionRitualSettingsInheritance.ShouldStoreOverride(
+                    enabled, group.defaultEnabled,
+                    GroupEnabledOverride(ConversionRitualPolicy.LegacyGroupDefName));
+            if (enabled == group.defaultEnabled
+                && !keepCounselOverride && !keepConversionRitualOverride)
             {
                 groupEnabled.Remove(group.defName);
                 return;
@@ -906,8 +924,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// True when the player has a saved group choice. Counsel may intentionally store its XML
-        /// default to override an opposite legacy conversion choice.
+        /// True when the player has a saved group choice. A newly split row may intentionally store
+        /// its XML default to override the opposite inherited legacy choice.
         /// </summary>
         public bool HasGroupEnabledOverride(string groupKey)
         {
@@ -1110,6 +1128,13 @@ namespace PawnDiary
                 {
                     redundant = !CounselSettingsInheritance.ShouldStoreOverride(
                         entry.Value, group.defaultEnabled, GroupEnabledOverride("conversion"));
+                }
+                if (redundant && string.Equals(group.defName,
+                    ConversionRitualPolicy.GroupDefName, StringComparison.Ordinal))
+                {
+                    redundant = !ConversionRitualSettingsInheritance.ShouldStoreOverride(
+                        entry.Value, group.defaultEnabled,
+                        GroupEnabledOverride(ConversionRitualPolicy.LegacyGroupDefName));
                 }
                 if (group == null || redundant)
                 {

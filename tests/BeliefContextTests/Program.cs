@@ -33,6 +33,7 @@ namespace PawnDiary
             TestPhase2MutationCoalescingCorrelationAndOwnership();
             TestPhase2MutationEvidenceSelection();
             TestCounselExactOutcomeContextPolicy();
+            TestConversionRitualExactCompletionPolicy();
             TestN3IIdeologyInterpretationProvider();
             Console.WriteLine("BeliefContextTests passed " + assertions + " assertions.");
             return 0;
@@ -706,6 +707,173 @@ namespace PawnDiary
                 !CounselSettingsInheritance.ShouldStoreOverride(true, true, null));
             AssertTrue("non-default Counsel choice is always stored",
                 CounselSettingsInheritance.ShouldStoreOverride(false, true, true));
+        }
+
+        private static void TestConversionRitualExactCompletionPolicy()
+        {
+            ConversionRitualPolicyBuilder builder = ConversionRitualPolicyBuilderForTests();
+            List<string> mutableCauses = builder.allowedMutationCauseTokens;
+            ConversionRitualPolicySnapshot policy = builder.Build();
+            mutableCauses.Add(BeliefMutationCauseTokens.ConversionAttempt);
+            AssertEqual("conversion ritual policy deep-copies allowed causes", 2,
+                policy.allowedMutationCauseTokens.Count);
+            AssertTrue("exact installed conversion ritual identity matches",
+                ConversionRitualPolicy.Matches(
+                    "Conversion", "RitualBehaviorWorker_Conversion",
+                    "RitualOutcomeEffectWorker_Conversion", "ritualConversion", true, policy));
+            AssertTrue("defName alone cannot match conversion ritual",
+                !ConversionRitualPolicy.Matches(
+                    "Conversion", string.Empty, "RitualOutcomeEffectWorker_Conversion",
+                    "ritualConversion", true, policy));
+            AssertTrue("case variant cannot match conversion ritual",
+                !ConversionRitualPolicy.Matches(
+                    "conversion", "RitualBehaviorWorker_Conversion",
+                    "RitualOutcomeEffectWorker_Conversion", "ritualConversion", true, policy));
+            AssertTrue("wrong behavior cannot match conversion ritual",
+                !ConversionRitualPolicy.Matches(
+                    "Conversion", "ModdedConversionWorker",
+                    "RitualOutcomeEffectWorker_Conversion", "ritualConversion", true, policy));
+            AssertTrue("wrong outcome worker cannot match conversion ritual",
+                !ConversionRitualPolicy.Matches(
+                    "Conversion", "RitualBehaviorWorker_Conversion", "ModdedOutcome",
+                    "ritualConversion", true, policy));
+            AssertTrue("generic ritual group cannot receive exact enrichment",
+                !ConversionRitualPolicy.Matches(
+                    "Conversion", "RitualBehaviorWorker_Conversion",
+                    "RitualOutcomeEffectWorker_Conversion", "ritualFinished", true, policy));
+            AssertTrue("DLC-off exact collision remains inert",
+                !ConversionRitualPolicy.Matches(
+                    "Conversion", "RitualBehaviorWorker_Conversion",
+                    "RitualOutcomeEffectWorker_Conversion", "ritualConversion", false, policy));
+
+            ConversionRitualPolicyBuilder malformedBuilder = ConversionRitualPolicyBuilderForTests();
+            malformedBuilder.enabled = false;
+            malformedBuilder.maximumAdditionalContextCharacters = 9999;
+            malformedBuilder.certaintyDeltaEpsilon = float.NaN;
+            ConversionRitualPolicySnapshot malformed = malformedBuilder.Build();
+            AssertTrue("disabled conversion ritual policy fails closed",
+                !ConversionRitualPolicy.Matches(
+                    "Conversion", "RitualBehaviorWorker_Conversion",
+                    "RitualOutcomeEffectWorker_Conversion", "ritualConversion", true, malformed));
+            AssertEqual("malformed conversion context cap uses bounded fallback", 192,
+                malformed.maximumAdditionalContextCharacters);
+            AssertNear("malformed conversion epsilon uses bounded fallback", 0.0001f,
+                malformed.certaintyDeltaEpsilon);
+
+            BeliefMutationSnapshot convertedInput = Mutation(
+                "Target", 500, "OldIdeo", "OrganizerIdeo", 0.2f, 0.5f,
+                BeliefMutationCauseTokens.SetIdeology, null, true);
+            BeliefMutationSnapshot converted = ConversionRitualPolicy.SelectTargetMutation(
+                "Target", "OrganizerIdeo", 500, convertedInput, policy);
+            AssertTrue("exact target transition into organizer ideology proves ritual conversion",
+                converted?.conversionSucceeded == true);
+            AssertTrue("conversion selection leaves cached source result untouched",
+                !convertedInput.conversionSucceeded.HasValue);
+            converted.causeTokens.Add("late_test_mutation");
+            AssertEqual("conversion selection deep-copies mutation causes", 1,
+                convertedInput.causeTokens.Count);
+
+            BeliefMutationSnapshot certaintyDownInput = Mutation(
+                "Target", 500, "OldIdeo", "OldIdeo", 0.8f, 0.5f,
+                BeliefMutationCauseTokens.CertaintyOffset, null, false);
+            BeliefMutationSnapshot certaintyDown = ConversionRitualPolicy.SelectTargetMutation(
+                "Target", "OrganizerIdeo", 500, certaintyDownInput, policy);
+            AssertTrue("certainty-only effective ritual is verified non-conversion",
+                certaintyDown?.conversionSucceeded == false && certaintyDown.certaintyChanged);
+            BeliefMutationSnapshot certaintyUp = ConversionRitualPolicy.SelectTargetMutation(
+                "Target", "OrganizerIdeo", 500,
+                Mutation("Target", 500, "OldIdeo", "OldIdeo", 0.4f, 0.6f,
+                    BeliefMutationCauseTokens.CertaintyOffset, null, false), policy);
+            AssertTrue("terrible ritual certainty increase is not called conversion",
+                certaintyUp?.conversionSucceeded == false);
+            AssertTrue("wrong target cannot borrow adjacent ritual mutation",
+                ConversionRitualPolicy.SelectTargetMutation(
+                    "Other", "OrganizerIdeo", 500, convertedInput, policy) == null);
+            AssertTrue("future mutation cannot explain completed ritual",
+                ConversionRitualPolicy.SelectTargetMutation(
+                    "Target", "OrganizerIdeo", 499, convertedInput, policy) == null);
+            AssertTrue("stale mutation cannot explain completed ritual",
+                ConversionRitualPolicy.SelectTargetMutation(
+                    "Target", "OrganizerIdeo", 501, convertedInput, policy) == null);
+            AssertTrue("transition to unrelated ideology is rejected",
+                ConversionRitualPolicy.SelectTargetMutation(
+                    "Target", "OrganizerIdeo", 500,
+                    Mutation("Target", 500, "OldIdeo", "ThirdIdeo", 0.2f, 0.5f,
+                        BeliefMutationCauseTokens.SetIdeology, null, true), policy) == null);
+            AssertTrue("adjacent conversion-attempt cause is rejected",
+                ConversionRitualPolicy.SelectTargetMutation(
+                    "Target", "OrganizerIdeo", 500,
+                    Mutation("Target", 500, "OldIdeo", "OrganizerIdeo", 0.2f, 0.5f,
+                        BeliefMutationCauseTokens.ConversionAttempt, true, true), policy) == null);
+            AssertTrue("quality cannot manufacture a result when no mutation exists",
+                ConversionRitualPolicy.SelectTargetMutation(
+                    "Target", "OrganizerIdeo", 500, null, policy) == null);
+
+            BeliefSourcePreceptFact role = new BeliefSourcePreceptFact
+            {
+                instanceId = "PreceptRole_1",
+                defName = "IdeoRole_Moralist"
+            };
+            BeliefEventEvidence organizerEvidence = ConversionRitualPolicy.EvidenceFor(
+                "Organizer", 500, "Conversion", "Organizer label",
+                ConversionRitualPolicy.PerspectiveOrganizer, role, converted, policy);
+            AssertEqual("organizer gets exact proselytizing role identity", "IdeoRole_Moralist",
+                organizerEvidence.sourcePreceptDefName);
+            AssertTrue("organizer gets no target mutation", organizerEvidence.mutation == null);
+            AssertTrue("wrong organizer role identity fails closed",
+                ConversionRitualPolicy.EvidenceFor(
+                    "Organizer", 500, "Conversion", "Organizer label",
+                    ConversionRitualPolicy.PerspectiveOrganizer,
+                    new BeliefSourcePreceptFact { instanceId = "x", defName = "OtherRole" },
+                    converted, policy) == null);
+
+            BeliefEventEvidence targetEvidence = ConversionRitualPolicy.EvidenceFor(
+                "Target", 500, "Conversion", "Target label",
+                ConversionRitualPolicy.PerspectiveTarget, role, converted, policy);
+            AssertTrue("target gets detached before/after mutation", targetEvidence.mutation != null
+                && targetEvidence.mutation.beforeIdeologyId == "OldIdeo"
+                && targetEvidence.mutation.afterIdeologyId == "OrganizerIdeo");
+            AssertTrue("another pawn cannot receive target mutation",
+                ConversionRitualPolicy.EvidenceFor(
+                    "Participant", 500, "Conversion", "Participant label",
+                    ConversionRitualPolicy.PerspectiveTarget, role, converted, policy) == null);
+            BeliefEventEvidence participantEvidence = ConversionRitualPolicy.EvidenceFor(
+                "Participant", 500, "Conversion", "Participant label",
+                ConversionRitualPolicy.PerspectiveParticipant, role, converted, policy);
+            AssertTrue("participant receives smaller current-belief context only",
+                participantEvidence.currentBeliefFactsRelevant && participantEvidence.mutation == null
+                    && participantEvidence.sourcePreceptDefName.Length == 0);
+            AssertTrue("spectator receives no belief enrichment",
+                ConversionRitualPolicy.EvidenceFor(
+                    "Spectator", 500, "Conversion", "Spectator label",
+                    ConversionRitualPolicy.PerspectiveSpectator, role, converted, policy) == null);
+
+            string targetContext = ConversionRitualPolicy.AppendGameContext(
+                "ritual=Conversion; quality=masterful", ConversionRitualPolicy.PerspectiveTarget,
+                converted, policy);
+            AssertContains("target context carries exact role", targetContext,
+                "conversion_ritual_role=convertee");
+            AssertContains("target context carries mechanically verified result", targetContext,
+                "conversion_ritual_result=converted");
+            AssertEqual("conversion ritual context append is idempotent", targetContext,
+                ConversionRitualPolicy.AppendGameContext(
+                    targetContext, ConversionRitualPolicy.PerspectiveTarget, converted, policy));
+            string participantContext = ConversionRitualPolicy.AppendGameContext(
+                "ritual=Conversion; quality=masterful",
+                ConversionRitualPolicy.PerspectiveParticipant, converted, policy);
+            AssertContains("participant context carries only own role", participantContext,
+                "conversion_ritual_role=participant");
+            AssertTrue("participant context never receives target result",
+                participantContext.IndexOf("conversion_ritual_result=", StringComparison.Ordinal) < 0);
+
+            AssertTrue("missing exact override inherits disabled generic ritual intent",
+                !ConversionRitualSettingsInheritance.Enabled(null, false, true));
+            AssertTrue("explicit exact override wins over legacy ritual intent",
+                ConversionRitualSettingsInheritance.Enabled(true, false, true));
+            AssertTrue("default-equal exact choice is stored against opposite legacy intent",
+                ConversionRitualSettingsInheritance.ShouldStoreOverride(true, true, false));
+            AssertTrue("default-equal exact choice is redundant without legacy intent",
+                !ConversionRitualSettingsInheritance.ShouldStoreOverride(true, true, null));
         }
 
         private static void TestN3IIdeologyInterpretationProvider()
@@ -2040,6 +2208,39 @@ namespace PawnDiary
                 certaintyDirection,
                 ideologyChange,
                 requireAttemptedIdeology);
+        }
+
+        private static ConversionRitualPolicyBuilder ConversionRitualPolicyBuilderForTests()
+        {
+            ConversionRitualPolicyBuilder builder = new ConversionRitualPolicyBuilder
+            {
+                enabled = true,
+                ritualDefName = "Conversion",
+                behaviorWorkerClassName = "RitualBehaviorWorker_Conversion",
+                outcomeWorkerClassName = "RitualOutcomeEffectWorker_Conversion",
+                downstreamGroupDefName = "ritualConversion",
+                organizerRoleId = "moralist",
+                targetRoleId = "convertee",
+                organizerIdeologyRoleDefName = "IdeoRole_Moralist",
+                organizerEvidenceMode = ConversionRitualEvidenceModeTokens.OrganizerRole,
+                targetEvidenceMode = ConversionRitualEvidenceModeTokens.TargetMutation,
+                participantEvidenceMode = ConversionRitualEvidenceModeTokens.CurrentBelief,
+                spectatorEvidenceMode = ConversionRitualEvidenceModeTokens.None,
+                evidenceGroupKey = "conversion",
+                organizerRoleToken = "converter",
+                targetRoleToken = "convertee",
+                participantRoleToken = "participant",
+                spectatorRoleToken = "spectator",
+                convertedResultToken = "converted",
+                certaintyDecreasedResultToken = "certainty_decreased",
+                certaintyIncreasedResultToken = "certainty_increased",
+                mutationCorrelationWindowTicks = 0,
+                certaintyDeltaEpsilon = 0.0001f,
+                maximumAdditionalContextCharacters = 192
+            };
+            builder.allowedMutationCauseTokens.Add(BeliefMutationCauseTokens.SetIdeology);
+            builder.allowedMutationCauseTokens.Add(BeliefMutationCauseTokens.CertaintyOffset);
+            return builder;
         }
 
         private static NarrativeEvidence CopyNarrative(NarrativeEvidence source)

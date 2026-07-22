@@ -42,6 +42,9 @@
   <DiaryEventPrompt_Quest.label>quest</DiaryEventPrompt_Quest.label>
   <DiaryEventPrompt_Quest.prompt>Write a quest lifecycle event as a colony promise, shared resolution, or shared loss.</DiaryEventPrompt_Quest.prompt>
   <DiaryEventPrompt_Quest.enhancement>Make the quest feel personal without assigning the work to this pawn alone. Use the lifecycle signal and supplied quest facts; for completed or failed quests, frame the outcome as the colony&apos;s common effort, relief, regret, or cost unless supplied facts explicitly say otherwise. Do not copy the quest name verbatim into the diary line, and do not invent rewards, blame, or consequences.</DiaryEventPrompt_Quest.enhancement>
+  <DiaryEventPrompt_RitualConversion.label>conversion ritual</DiaryEventPrompt_RitualConversion.label>
+  <DiaryEventPrompt_RitualConversion.prompt>Write a completed conversion ritual from this pawn&apos;s exact assigned perspective.</DiaryEventPrompt_RitualConversion.prompt>
+  <DiaryEventPrompt_RitualConversion.enhancement>Use only the supplied converter, convertee, participant, spectator, belief, certainty, and verified result fields. A quality label may shape ceremony and emotion but never proves conversion. Do not give the convertee&apos;s before-and-after belief facts to another pawn.</DiaryEventPrompt_RitualConversion.enhancement>
   <DiaryEventPrompt_Ritual.label>ritual</DiaryEventPrompt_Ritual.label>
   <DiaryEventPrompt_Ritual.prompt>Write a finished Ideology ritual from the pawn&apos;s assigned place in it.</DiaryEventPrompt_Ritual.prompt>
   <DiaryEventPrompt_Ritual.enhancement>Use the supplied ritual role, ritual title, behavior, quality, and pawn status fields. Let quality shape confidence, aftermath, and emotional weight, but do not name or explain the quality label directly. Keep the entry grounded in what completion would feel like from that role; do not invent ritual effects beyond the supplied outcome.</DiaryEventPrompt_Ritual.enhancement>

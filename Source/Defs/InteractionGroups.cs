@@ -713,12 +713,16 @@ namespace PawnDiary
             return ClassifyRequiredMatch(GroupDomain.Quest, questRootDefName);
         }
 
-        // First Ritual-domain group that matches the Precept_Ritual defName plus optional behavior
-        // worker class, else the Ritual catch-all. Ritual-specific packs can add exact
-        // defName/token groups without C# changes.
+        // First currently available Ritual-domain group that matches the Precept_Ritual defName plus
+        // optional behavior worker class, else the available Ritual catch-all. The rescan matters for
+        // exact package-gated DLC names: the same plain classifier string may be emitted by a mod when
+        // that DLC is absent, and must then fall through to the ordinary ritual row.
         public static DiaryInteractionGroupDef ClassifyRitual(string ritualClassifierKey)
         {
-            return ClassifyIn(GroupDomain.Ritual, ritualClassifierKey);
+            DiaryInteractionGroupDef result = ClassifyIn(GroupDomain.Ritual, ritualClassifierKey);
+            return result != null && result.UnavailableForCurrentRuntime()
+                ? ClassifyAvailableIn(GroupDomain.Ritual, ritualClassifierKey)
+                : result;
         }
 
         // First Ability-domain group that matches the AbilityDef classifier key, else the Ability

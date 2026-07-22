@@ -180,6 +180,11 @@
   <raid.instructions.1>the colony bracing for attackers — write the waiting, orders, doors, sandbags, breath, and fear before the fight fully starts</raid.instructions.1>
   <raid.instructions.2>a raid that may not have reached the defenders yet — use smoke, blood, injuries, or aftermath only if supplied; otherwise keep it to preparation, dread, and first sight of danger</raid.instructions.2>
   <raid.tone>with tense, fight-anticipated urgency</raid.tone>
+  <ritualConversion.label>Conversion rituals</ritualConversion.label>
+  <ritualConversion.instruction>a completed conversion ritual; keep the moral guide, convertee, participant, and spectator perspectives distinct, use only supplied event-time belief facts, and never treat ritual quality alone as proof of conversion</ritualConversion.instruction>
+  <ritualConversion.tone>with public conviction, private doubt, and exact spiritual consequence</ritualConversion.tone>
+  <ritualConversion.tones.0>intimate and doctrinal, centered on the writer&apos;s exact role and the belief facts supplied</ritualConversion.tones.0>
+  <ritualConversion.tones.1>ceremonial but restrained, never turning quality or atmosphere into an unsupported conversion</ritualConversion.tones.1>
   <ritualRoyal.label>Royal rituals</ritualRoyal.label>
   <ritualRoyal.instruction>a Royalty ritual completed; use any exact royal mutation pawn, faction, before/after title, psylink, and cause fields supplied, without explaining mechanics or inventing an effect</ritualRoyal.instruction>
   <ritualRoyal.tone>with formal rank and ritual authority</ritualRoyal.tone>

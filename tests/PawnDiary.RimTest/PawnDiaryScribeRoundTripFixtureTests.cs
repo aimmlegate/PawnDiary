@@ -1080,6 +1080,15 @@ namespace PawnDiary.RimTests
             return loaded;
         }
 
+        /// <summary>
+        /// Shared loaded-fixture seam for pages produced by another suite. It still uses this suite's
+        /// real Scribe saver/loader/finalizer implementation; callers cannot bypass normalization.
+        /// </summary>
+        internal static T ScribeRoundTripForTests<T>(T toSave) where T : class, IExposable
+        {
+            return ScribeRoundTrip(toSave);
+        }
+
         private static void DeleteTempFile(string path)
         {
             try

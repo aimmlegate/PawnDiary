@@ -1,8 +1,8 @@
 // Ritual ingestion signal — the impure capture+emit half of the "Ideology ritual finished" source
 // (LordJob_Ritual.ApplyOutcome). Replaces the old DiaryGameComponent.RecordRitualFinished. A
 // perspective FAN-OUT: one solo entry per organizer / target / participant / spectator, with a single
-// ritual-level dedup window. Each pawn's role label needs the live ritual job, so it is computed in
-// the per-pawn child constructor.
+// ritual-level dedup window. The exact completed conversion family also freezes organizer-role and
+// target-mutation DTOs here, after vanilla's outcome worker returned and before a page is persisted.
 //
 // Pure decision + game-context + quality-band math live in Source/Capture/Events/RitualEventData.cs.
 // New to C#/RimWorld? See AGENTS.md.
@@ -41,6 +41,9 @@ namespace PawnDiary.Ingestion
         private readonly List<Pawn> fixtureSpectators;
         private readonly bool odysseyLaunchAuthorized;
         private readonly int odysseyLaunchTick = -1;
+        private readonly ConversionRitualPolicySnapshot conversionPolicy;
+        private readonly BeliefSourcePreceptFact conversionOrganizerRolePrecept;
+        private readonly BeliefMutationSnapshot conversionTargetMutation;
         private RoyalMutationBatchSnapshot royaltyMutationBatch;
         private string royaltyMutationContext = string.Empty;
         // Ordinary rituals keep their unlimited existing fanout. Only the exact Odyssey launch
@@ -53,8 +56,10 @@ namespace PawnDiary.Ingestion
         internal string Title { get; }
         internal string Label { get; }
         internal string BehaviorClass { get; }
+        internal string OutcomeWorkerClass { get; }
         internal string Quality { get; }
         internal string GroupInstruction { get; }
+        internal int EventTick { get; }
 
         public RitualFanoutSignal(LordJob_Ritual ritualJob, float progress, bool cancelled)
         {
@@ -83,6 +88,7 @@ namespace PawnDiary.Ingestion
             if (!RoyaltyPolicyAllowsRitual(defName, DiaryRoyaltyPolicy.Snapshot())) return;
 
             BehaviorClass = RitualBehaviorClass(ritual);
+            OutcomeWorkerClass = ritual.outcomeEffect?.GetType().Name ?? string.Empty;
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyRitual(RitualClassifierKey(defName, BehaviorClass));
             if (group == null || !PawnDiaryMod.Settings.IsGroupEnabled(group.defName))
             {
@@ -90,6 +96,7 @@ namespace PawnDiary.Ingestion
             }
 
             int eventTick = Find.TickManager == null ? 0 : Find.TickManager.TicksGame;
+            EventTick = eventTick;
             bool odysseyLaunch = ModsConfig.OdysseyActive
                 && string.Equals(group.defName, OdysseyGroupDefNames.Launch, StringComparison.Ordinal);
             if (odysseyLaunch)
@@ -120,11 +127,36 @@ namespace PawnDiary.Ingestion
 
             RitualJob = ritualJob;
             DefName = defName;
-            organizer = ritualJob.Organizer;
-            targetPawn = RitualTargetPawn(ritualJob);
-            colonyDedupKey = "ritual|" + defName + "|" + PawnKey(organizer) + "|" + PawnKey(targetPawn)
-                + "|" + Find.TickManager.TicksGame;
             Assignments = RitualAssignments(ritualJob);
+            Pawn selectedOrganizer = ritualJob.Organizer;
+            Pawn selectedTargetPawn = RitualTargetPawn(ritualJob);
+            ConversionRitualPolicySnapshot candidatePolicy = DiaryConversionRitualPolicy.Snapshot();
+            bool exactConversion = ConversionRitualPolicy.Matches(
+                DefName, BehaviorClass, OutcomeWorkerClass, group.defName,
+                ModsConfig.IdeologyActive, candidatePolicy);
+            if (exactConversion)
+            {
+                // Conversion's selectedTarget is normally the ritual focus, not the convertee. The
+                // installed role ids therefore own the exact organizer and target identities.
+                selectedOrganizer = Assignments?.FirstAssignedPawn(candidatePolicy.organizerRoleId)
+                    ?? selectedOrganizer;
+                selectedTargetPawn = Assignments?.FirstAssignedPawn(candidatePolicy.targetRoleId)
+                    ?? selectedTargetPawn;
+                BeliefSourcePreceptFact rolePrecept;
+                BeliefMutationSnapshot targetMutation;
+                if (ConversionRitualEvidenceAdapter.TryCapture(
+                    selectedOrganizer, selectedTargetPawn, eventTick, candidatePolicy,
+                    out rolePrecept, out targetMutation))
+                {
+                    conversionPolicy = candidatePolicy;
+                    conversionOrganizerRolePrecept = rolePrecept;
+                    conversionTargetMutation = targetMutation;
+                }
+            }
+            organizer = selectedOrganizer;
+            targetPawn = selectedTargetPawn;
+            colonyDedupKey = "ritual|" + defName + "|" + PawnKey(organizer) + "|" + PawnKey(targetPawn)
+                + "|" + eventTick;
             Title = RitualTitle(ritualJob, ritual);
             Label = Title;
             Quality = RitualEventData.QualityLabel(progress, DiaryTuning.Current.ritualQualityBands);
@@ -162,7 +194,7 @@ namespace PawnDiary.Ingestion
             string title = DiaryLineCleaner.CleanLine("BestowingCeremonyLabel".Translate().Resolve());
             RitualFanoutSignal signal = new RitualFanoutSignal(
                 bestower, target, participants, new List<Pawn>(), defName, title,
-                behavior, progress, instruction);
+                behavior, string.Empty, progress, instruction);
             signal.AttachRoyalMutationOwner(
                 RoyalMutationCauseTokens.ImperialBestowing,
                 CandidatePawnIds(bestower, target, participants));
@@ -218,7 +250,8 @@ namespace PawnDiary.Ingestion
             string title,
             string behaviorClass,
             float progress,
-            string groupInstruction)
+            string groupInstruction,
+            string outcomeWorkerClass = "")
         {
             RitualFanoutSignal signal = new RitualFanoutSignal(
                 organizer,
@@ -228,6 +261,7 @@ namespace PawnDiary.Ingestion
                 defName,
                 title,
                 behaviorClass,
+                outcomeWorkerClass,
                 progress,
                 groupInstruction);
             // Keep this loaded-game seam on the production ownership path. A matching bestowing or
@@ -247,6 +281,7 @@ namespace PawnDiary.Ingestion
             string defName,
             string title,
             string behaviorClass,
+            string outcomeWorkerClass,
             float progress,
             string groupInstruction)
         {
@@ -264,11 +299,30 @@ namespace PawnDiary.Ingestion
             Title = string.IsNullOrWhiteSpace(title) ? RitualEventData.FallbackTitle : title;
             Label = Title;
             BehaviorClass = behaviorClass ?? string.Empty;
+            OutcomeWorkerClass = outcomeWorkerClass ?? string.Empty;
             Quality = RitualEventData.QualityLabel(progress, DiaryTuning.Current.ritualQualityBands);
             GroupInstruction = groupInstruction ?? string.Empty;
             int tick = Find.TickManager == null ? 0 : Find.TickManager.TicksGame;
+            EventTick = tick;
             colonyDedupKey = "ritual_fixture|" + defName + "|" + PawnKey(organizer) + "|"
                 + PawnKey(targetPawn) + "|" + tick;
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyRitual(
+                RitualClassifierKey(DefName, BehaviorClass));
+            ConversionRitualPolicySnapshot candidatePolicy = DiaryConversionRitualPolicy.Snapshot();
+            if (ConversionRitualPolicy.Matches(
+                DefName, BehaviorClass, OutcomeWorkerClass, group?.defName,
+                ModsConfig.IdeologyActive, candidatePolicy))
+            {
+                BeliefSourcePreceptFact rolePrecept;
+                BeliefMutationSnapshot targetMutation;
+                if (ConversionRitualEvidenceAdapter.TryCapture(
+                    organizer, targetPawn, tick, candidatePolicy, out rolePrecept, out targetMutation))
+                {
+                    conversionPolicy = candidatePolicy;
+                    conversionOrganizerRolePrecept = rolePrecept;
+                    conversionTargetMutation = targetMutation;
+                }
+            }
             valid = true;
         }
 
@@ -303,6 +357,10 @@ namespace PawnDiary.Ingestion
             {
                 for (int i = 0; i < participants.Count; i++)
                 {
+                    // Vanilla's Participants list includes spectators. Preserve generic ritual behavior,
+                    // but keep the exact conversion family's smaller spectator context on its real role.
+                    if (conversionPolicy != null && Assignments?.SpectatorsForReading != null
+                        && Assignments.SpectatorsForReading.Contains(participants[i])) continue;
                     foreach (DiarySignal s in PerPawn(participants[i], organizer, RitualEventData.PerspectiveParticipant, seen))
                     {
                         yield return s;
@@ -345,6 +403,33 @@ namespace PawnDiary.Ingestion
         internal string RoleLabelFor(Pawn pawn, string perspective)
         {
             return RitualRoleLabel(RitualJob, Assignments, pawn, perspective);
+        }
+
+        /// <summary>Builds a detached page-specific row; target mutation never crosses to other POVs.</summary>
+        internal BeliefEventEvidence ConversionEvidenceFor(
+            string pawnId, string pawnLabel, string perspective)
+        {
+            return conversionPolicy == null ? null : ConversionRitualPolicy.EvidenceFor(
+                pawnId, EventTick, DefName, pawnLabel, perspective,
+                conversionOrganizerRolePrecept,
+                string.Equals(perspective, RitualEventData.PerspectiveTarget, StringComparison.Ordinal)
+                    ? conversionTargetMutation
+                    : null,
+                conversionPolicy);
+        }
+
+        /// <summary>Adds exact role/result markers without copying target mechanics to another page.</summary>
+        internal string ConversionContextFor(
+            string gameContext, string perspective, BeliefEventEvidence evidence)
+        {
+            if (conversionPolicy == null) return gameContext ?? string.Empty;
+            BeliefMutationSnapshot mutation = string.Equals(
+                perspective, RitualEventData.PerspectiveTarget, StringComparison.Ordinal)
+                    ? conversionTargetMutation
+                    : null;
+            string context = ConversionRitualPolicy.AppendGameContext(
+                gameContext, perspective, mutation, conversionPolicy);
+            return BeliefMutationEventSelector.AppendGameContextMarker(context, evidence);
         }
 
         /// <summary>
@@ -591,6 +676,7 @@ namespace PawnDiary.Ingestion
         private readonly string perspective;
         private readonly string ritualRole;
         private readonly RitualEventData payload;
+        private readonly BeliefEventEvidence conversionEvidence;
 
         public RitualPawnSignal(RitualFanoutSignal source, Pawn pawn, Pawn otherPawn, string perspective, string pawnId)
         {
@@ -602,7 +688,7 @@ namespace PawnDiary.Ingestion
             payload = new RitualEventData
             {
                 PawnId = pawnId,
-                Tick = Find.TickManager.TicksGame,
+                Tick = source.EventTick,
                 DefName = source.DefName,
                 Title = source.Title,
                 BehaviorClass = source.BehaviorClass,
@@ -610,6 +696,8 @@ namespace PawnDiary.Ingestion
                 RitualRole = ritualRole,
                 Cancelled = false,
             };
+            conversionEvidence = source.ConversionEvidenceFor(
+                pawnId, pawn.LabelShortCap, perspective);
         }
 
         public override DiaryEventData Payload => payload;
@@ -634,6 +722,7 @@ namespace PawnDiary.Ingestion
             string royaltyMutationContext = source.RoyaltyMutationContextFor(payload.PawnId);
             if (!string.IsNullOrWhiteSpace(royaltyMutationContext))
                 context += "; " + royaltyMutationContext;
+            context = source.ConversionContextFor(context, perspective, conversionEvidence);
             string text = "PawnDiary.Event.RitualFinished"
                 .Translate(pawn.LabelShortCap, source.Title, RitualFanoutSignal.RitualPerspectiveLabel(perspective), ritualRole)
                 .Resolve();
@@ -641,7 +730,9 @@ namespace PawnDiary.Ingestion
                 source.GroupInstruction,
                 RitualFanoutSignal.RitualInstructionFor(perspective));
 
-            DiaryEvent ritualEvent = sink.AddSoloEvent(pawn, otherPawn, source.DefName, source.Label, text, instruction, context);
+            DiaryEvent ritualEvent = sink.AddSoloEvent(
+                pawn, otherPawn, source.DefName, source.Label, text, instruction, context,
+                conversionEvidence);
             if (ritualEvent == null)
             {
                 return;

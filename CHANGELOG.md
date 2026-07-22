@@ -12,6 +12,30 @@
   identities, or texture dimensions/format (128×128 `Format32bppArgb`) changed; only the nine PNGs
   under `Textures/UI/DiaryButtons/` and their `CREDITS.txt` provenance note were updated. In-game
   visual confirmation is still owed.
+- **2026-07-22 — Added exact completed-conversion ritual enrichment as the next Ideology Phase-2
+  slice.** Reused the existing `LordJob_Ritual.ApplyOutcome` postfix and ritual fan-out after verifying
+  installed RimWorld 1.6's exact `Conversion` / `RitualBehaviorWorker_Conversion` /
+  `RitualOutcomeEffectWorker_Conversion` identities, `moralist` and `convertee` assignments, and
+  outcome mechanics (`SetIdeo` for conversion or `OffsetCertainty` otherwise). A new primitive-only
+  policy Def owns those ordinal identities, role/evidence modes, safe context/result tokens, accepted
+  mutation causes, same-tick correlation, certainty epsilon, and context cap. The exact package-gated
+  order-759 group and dedicated EN/RU DefInjected prompt/tone policy run before generic ritual; dormant
+  DLC collisions fall through. Event-time projection remains behind `DlcContext` and the existing
+  bounded mutation cache: organizer receives assigned proselytizing moral-guide evidence, target alone
+  receives verified before/after mechanics and the conversion marker, participant receives smaller
+  current-doctrine evidence, and spectator receives none. Ritual quality cannot prove conversion;
+  missing/rejected evidence and guarded adapter failure preserve ordinary pages. Existing fan-out,
+  pawn-id collapse, colony dedup, cosmetic RNG, activation ownership, and save schema are unchanged.
+  Legacy explicit `ritualFinished` settings migrate until the new row is touched. Standalone belief and
+  pipeline suites pass 446 and 2,961 assertions; the repository verifier and 23/23 EVT coverage audit
+  pass, and the production and 388-test RimTest assemblies build with zero warnings. Three new loaded
+  fixtures cover active/DLC-off classification and settings,
+  real patched target mutation with POV isolation plus Scribe/event-time retention, quality non-proof,
+  and fail-open behavior. The exhaustive official-DLC catalog now includes the new Ideology row. The
+  388-test active/base-only loaded runs remain pending, so 384/384 remains
+  the latest confirmed runtime result. Architecture, prompt map, test plan, Ideology/master plans,
+  localization, and the tracked DLLs are updated.
+
 - **2026-07-22 — Adversarially hardened the Ideology Phase-2 Counsel slice.** Reconciled both external
   reviews with a fresh code/lore/DLC/save/performance audit and fixed three integration defects they did
   not identify. Live Interaction classification now skips a dormant package-gated first match, so an

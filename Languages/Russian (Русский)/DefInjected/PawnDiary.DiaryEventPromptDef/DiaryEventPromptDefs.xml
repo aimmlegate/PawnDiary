@@ -42,6 +42,9 @@
   <DiaryEventPrompt_Quest.label>задание</DiaryEventPrompt_Quest.label>
   <DiaryEventPrompt_Quest.prompt>Опиши этап задания как обещание, развязку или потерю.</DiaryEventPrompt_Quest.prompt>
   <DiaryEventPrompt_Quest.enhancement>Сделай задание личным, но не приписывай всю работу одному поселенцу. Используй этап и переданные факты; завершение или провал считай общим усилием, облегчением, сожалением или потерей поселения, если из фактов явно не следует обратное. Не копируй название задания в запись и не выдумывай награды, вину или последствия.</DiaryEventPrompt_Quest.enhancement>
+  <DiaryEventPrompt_RitualConversion.label>ритуал обращения</DiaryEventPrompt_RitualConversion.label>
+  <DiaryEventPrompt_RitualConversion.prompt>Опиши завершённый ритуал обращения с точки зрения точной назначенной роли этого поселенца.</DiaryEventPrompt_RitualConversion.prompt>
+  <DiaryEventPrompt_RitualConversion.enhancement>Используй только переданные поля обращающего, обращаемого, участника, зрителя, веры, уверенности и подтверждённого результата. Оценка качества может влиять на церемонию и эмоции, но никогда не доказывает обращение. Не приписывай другим поселенцам прежние и новые убеждения обращаемого.</DiaryEventPrompt_RitualConversion.enhancement>
   <DiaryEventPrompt_Ritual.label>ритуал</DiaryEventPrompt_Ritual.label>
   <DiaryEventPrompt_Ritual.prompt>Опиши завершённый ритуал идеологии с точки зрения поселенца и его роли в нём.</DiaryEventPrompt_Ritual.prompt>
   <DiaryEventPrompt_Ritual.enhancement>Используй роль, название ритуала, поведение, качество и состояние поселенца. Качество может влиять на уверенность, последствия и значимость события, но не называй и не объясняй его оценку напрямую. Передай завершение с точки зрения этой роли; не выдумывай эффектов сверх указанного исхода.</DiaryEventPrompt_Ritual.enhancement>

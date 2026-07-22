@@ -2587,6 +2587,30 @@
        when present, participants, and spectators. The per-pawn instruction comes from Keyed strings
        because it depends on that pawn's perspective; this group supplies the shared ritual tone. -->
 
+  <!-- Exact installed Ideology conversion family. Ordinal full-key matching prevents case variants,
+       similarly named modded rituals, and defName-only collisions from claiming mechanical facts. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualConversion</defName>
+    <label>Conversion rituals</label>
+    <order>759</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a completed conversion ritual; keep the moral guide, convertee, participant, and spectator perspectives distinct, use only supplied event-time belief facts, and never treat ritual quality alone as proof of conversion</instruction>
+    <tone>with public conviction, private doubt, and exact spiritual consequence</tone>
+    <tones>
+      <li>intimate and doctrinal, centered on the writer's exact role and the belief facts supplied</li>
+      <li>ceremonial but restrained, never turning quality or atmosphere into an unsupported conversion</li>
+    </tones>
+    <colorCue>ideology</colorCue>
+    <matchOrdinalDefNames>
+      <li>Conversion;RitualBehaviorWorker_Conversion</li>
+    </matchOrdinalDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualRoyal</defName>
     <label>Royal rituals</label>

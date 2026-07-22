@@ -141,6 +141,17 @@
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_RitualConversion</defName>
+    <label>conversion ritual</label>
+    <eventType>ritualConversion</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write a completed conversion ritual from this pawn's exact assigned perspective.</prompt>
+    <enhancement>Use only the supplied converter, convertee, participant, spectator, belief, certainty, and verified result fields. A quality label may shape ceremony and emotion but never proves conversion. Do not give the convertee's before-and-after belief facts to another pawn.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Ritual</defName>
     <label>ritual</label>
     <eventType>Ritual</eventType>

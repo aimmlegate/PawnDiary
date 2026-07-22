@@ -1,4 +1,5 @@
-// In-game ritual-capture tests for Pawn Diary's Ideology/psychic-ritual fan-out (EVT-17).
+// In-game ritual-capture tests for Pawn Diary's Ideology/psychic-ritual fan-out (EVT-17), including
+// the exact completed conversion-ritual Phase 2 slice.
 //
 // A finished ritual is a colony perspective FAN-OUT: RitualFanoutSignal (Ideology,
 // LordJob_Ritual.ApplyOutcome) and PsychicRitualFanoutSignal (Anomaly, psychic ritual) each emit one
@@ -25,6 +26,7 @@
 // Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-17 Ritual (DLC).
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using PawnDiary;
 using PawnDiary.Capture;
@@ -62,8 +64,16 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin();
+            scope = PawnDiaryRimTestScope.Begin(
+                ConversionRitualPolicy.GroupDefName, ConversionRitualPolicy.LegacyGroupDefName);
             firstPawn = scope.CreateAdultColonist();
+            BeliefMutationCache.Reset();
+            ConversionRitualEvidenceAdapter.SetFailureForTests(false);
+            scope.RegisterCleanup(() =>
+            {
+                ConversionRitualEvidenceAdapter.SetFailureForTests(false);
+                BeliefMutationCache.Reset();
+            });
         }
 
         /// <summary>
@@ -81,6 +91,7 @@ namespace PawnDiary.RimTests
             {
                 scope = null;
                 firstPawn = null;
+                ConversionRitualEvidenceAdapter.SetFailureForTests(false);
             }
         }
 
@@ -257,6 +268,260 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Ideology Phase 2. Proves the loaded package gate, full ordinal classifier identity, dedicated
+        /// prompt policy, and legacy ritual-setting inheritance without constructing a live LordJob.
+        /// </summary>
+        [Test]
+        public static void ConversionRitualClassificationAndSettingMigrationRespectDlcAvailability()
+        {
+            bool active = ModsConfig.IdeologyActive;
+            DiaryInteractionGroupDef exact = InteractionGroups.ByKey(ConversionRitualPolicy.GroupDefName);
+            PawnDiaryRimTestScope.Require(exact != null
+                    && exact.MissingRequiredPackage() == !active
+                    && exact.tones != null && exact.tones.Count >= 2,
+                "The loaded conversion-ritual group did not preserve its Ideology gate/tone contract.");
+            PawnDiaryRimTestScope.Require(
+                InteractionGroups.ClassifyRitual(
+                    "Conversion;RitualBehaviorWorker_Conversion")?.defName
+                    == (active ? ConversionRitualPolicy.GroupDefName
+                        : ConversionRitualPolicy.LegacyGroupDefName),
+                "The exact conversion ritual classifier did not respect DLC availability.");
+            PawnDiaryRimTestScope.Require(
+                InteractionGroups.ClassifyRitual("Conversion")?.defName
+                    == ConversionRitualPolicy.LegacyGroupDefName
+                && InteractionGroups.ClassifyRitual(
+                    "conversion;RitualBehaviorWorker_Conversion")?.defName
+                    == ConversionRitualPolicy.LegacyGroupDefName
+                && InteractionGroups.ClassifyRitual(
+                    "Conversion;ModdedConversionWorker")?.defName
+                    == ConversionRitualPolicy.LegacyGroupDefName,
+                "A def-only, case-variant, or modded conversion ritual escaped to the exact group.");
+
+            ConversionRitualPolicySnapshot policy = DiaryConversionRitualPolicy.Snapshot();
+            PawnDiaryRimTestScope.Require(
+                ConversionRitualPolicy.Matches(
+                    "Conversion", "RitualBehaviorWorker_Conversion",
+                    "RitualOutcomeEffectWorker_Conversion", ConversionRitualPolicy.GroupDefName,
+                    active, policy) == active,
+                "The loaded exact conversion policy did not match current DLC availability.");
+
+            if (!active)
+            {
+                PawnDiaryRimTestScope.Require(
+                    !PawnDiaryMod.Settings.IsGroupEnabled(ConversionRitualPolicy.GroupDefName),
+                    "The exact conversion ritual setting must be inert without Ideology.");
+                return;
+            }
+
+            PawnDiaryMod.Settings.groupEnabled.Remove(ConversionRitualPolicy.GroupDefName);
+            PawnDiaryMod.Settings.SetGroupEnabled(ConversionRitualPolicy.LegacyGroupDefName, false);
+            PawnDiaryRimTestScope.Require(
+                !PawnDiaryMod.Settings.IsGroupEnabled(ConversionRitualPolicy.GroupDefName),
+                "An upgraded ritualFinished=false save unexpectedly enabled conversion rituals.");
+            PawnDiaryMod.Settings.SetGroupEnabled(ConversionRitualPolicy.GroupDefName, true);
+            MethodInfo normalize = typeof(PawnDiarySettings).GetMethod(
+                "NormalizeGroupEnabledOverrides", BindingFlags.Instance | BindingFlags.NonPublic);
+            PawnDiaryRimTestScope.Require(normalize != null,
+                "Could not resolve conversion-ritual settings normalization.");
+            normalize.Invoke(PawnDiaryMod.Settings, null);
+            PawnDiaryRimTestScope.Require(
+                PawnDiaryMod.Settings.IsGroupEnabled(ConversionRitualPolicy.GroupDefName)
+                    && PawnDiaryMod.Settings.HasGroupEnabledOverride(
+                        ConversionRitualPolicy.GroupDefName),
+                "An explicit conversion-ritual enable did not survive legacy-setting normalization.");
+        }
+
+        /// <summary>
+        /// Ideology Phase 2. Uses the real patched SetIdeo mutation boundary, then the production
+        /// completed-ritual fan-out seam, to prove per-role evidence, target-only before/after facts,
+        /// prompt ownership, dedup, RNG neutrality, later-pawn independence, and real Scribe persistence.
+        /// </summary>
+        [Test]
+        public static void CompletedConversionRitualPerspectivesFreezeExactTargetMutation()
+        {
+            if (!RequireMutableIdeologyProfile()) return;
+
+            Pawn target = scope.CreateAdultColonist();
+            Pawn participant = scope.CreateAdultColonist();
+            Pawn spectator = scope.CreateAdultColonist();
+            Ideo organizerIdeology = GenerateDisposableIdeology();
+            Ideo oldTargetIdeology = GenerateDisposableIdeology();
+            Ideo laterTargetIdeology = GenerateDisposableIdeology();
+            firstPawn.ideo.SetIdeo(organizerIdeology);
+            target.ideo.SetIdeo(oldTargetIdeology);
+            participant.ideo.SetIdeo(organizerIdeology);
+            spectator.ideo.SetIdeo(organizerIdeology);
+
+            ConversionRitualPolicySnapshot policy = DiaryConversionRitualPolicy.Snapshot();
+            Precept_Role moralGuide = organizerIdeology.RolesListForReading.FirstOrDefault(role =>
+                role?.def?.defName == policy.organizerIdeologyRoleDefName
+                    && role.ChosenPawnSingle() == null && role.RequirementsMet(firstPawn));
+            PawnDiaryRimTestScope.Require(moralGuide != null,
+                "The disposable Ideology did not expose an assignable exact moral-guide role.");
+            moralGuide.Assign(firstPawn, false);
+            scope.RegisterCleanup(() =>
+            {
+                if (moralGuide.IsAssigned(firstPawn)) moralGuide.Unassign(firstPawn, false);
+            });
+
+            BeliefMutationCache.Reset();
+            target.ideo.SetIdeo(organizerIdeology);
+            BeliefMutationSnapshot captured = BeliefMutationCache.PeekLatest(
+                target.GetUniqueLoadID(), Find.TickManager.TicksGame, DiaryBeliefPolicy.Snapshot());
+            PawnDiaryRimTestScope.Require(captured != null && captured.ideologyChanged
+                    && captured.afterIdeologyId == organizerIdeology.GetUniqueLoadID(),
+                "The real SetIdeo completion mutation was not available to the ritual fan-out.");
+
+            RitualFanoutSignal fanout = null;
+            const int Seed = 730421;
+            Rand.PushState(Seed);
+            float expectedNext = Rand.Value;
+            Rand.PopState();
+            Rand.PushState(Seed);
+            try
+            {
+                fanout = ExactConversionFixture(
+                    target, participant, spectator, progress: 1f);
+                float actualNext = Rand.Value;
+                PawnDiaryRimTestScope.Require(Math.Abs(actualNext - expectedNext) < 0.000001f,
+                    "Conversion-ritual enrichment consumed global Rand for cosmetic selection.");
+            }
+            finally
+            {
+                Rand.PopState();
+            }
+
+            HashSet<string> before = SnapshotEventIds();
+            scope.Component.Dispatch(fanout);
+            List<DiaryEvent> emitted = NewEventsSince(before);
+            PawnDiaryRimTestScope.Require(emitted.Count == 4,
+                "The exact conversion ritual should emit four unique perspective pages, got "
+                    + emitted.Count + ".");
+            DiaryEvent organizerPage = PageForPerspective(
+                emitted, RitualEventData.PerspectiveOrganizer, firstPawn);
+            DiaryEvent targetPage = PageForPerspective(
+                emitted, RitualEventData.PerspectiveTarget, target);
+            DiaryEvent participantPage = PageForPerspective(
+                emitted, RitualEventData.PerspectiveParticipant, participant);
+            DiaryEvent spectatorPage = PageForPerspective(
+                emitted, RitualEventData.PerspectiveSpectator, spectator);
+
+            RequireContains(organizerPage.gameContext, "conversion_ritual_role=converter");
+            PawnDiaryRimTestScope.Require(
+                !string.IsNullOrWhiteSpace(organizerPage.BeliefContextForRole(DiaryEvent.InitiatorRole)),
+                "The organizer page did not freeze its exact moral-guide/proselytizing context.");
+            RequireContains(targetPage.gameContext, "conversion_ritual_role=convertee");
+            RequireContains(targetPage.gameContext, "conversion_ritual_result=converted");
+            RequireContains(targetPage.gameContext, "belief_event=conversion");
+            string frozenTargetBelief = targetPage.BeliefContextForRole(DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(frozenTargetBelief)
+                    && frozenTargetBelief.IndexOf(oldTargetIdeology.name,
+                        StringComparison.OrdinalIgnoreCase) >= 0
+                    && frozenTargetBelief.IndexOf(organizerIdeology.name,
+                        StringComparison.OrdinalIgnoreCase) >= 0,
+                "The target page did not persist its event-time before/after ideoligion facts: "
+                    + frozenTargetBelief);
+
+            RequireContains(participantPage.gameContext, "conversion_ritual_role=participant");
+            AssertNoTargetMutationLeak(participantPage);
+            RequireContains(spectatorPage.gameContext, "conversion_ritual_role=spectator");
+            AssertNoTargetMutationLeak(spectatorPage);
+            PawnDiaryRimTestScope.Require(string.IsNullOrEmpty(
+                    spectatorPage.BeliefContextForRole(DiaryEvent.InitiatorRole)),
+                "The spectator page received belief enrichment despite the XML 'none' mode.");
+
+            DiaryPromptRequest request = DiaryPipelineAdapters.BuildPromptRequest(
+                targetPage, DiaryEvent.InitiatorRole, string.Empty, string.Empty, string.Empty,
+                string.Empty, string.Empty, string.Empty, titleRequest: false, maxTokens: 512);
+            PawnDiaryRimTestScope.Require(request?.policy?.group?.defName
+                    == ConversionRitualPolicy.GroupDefName
+                    && request.policy.group.eventPromptKey == ConversionRitualPolicy.GroupDefName,
+                "The completed conversion page did not select the dedicated group prompt.");
+
+            int afterFirst = EventRepository().Count;
+            scope.Component.Dispatch(fanout);
+            PawnDiaryRimTestScope.Require(EventRepository().Count == afterFirst,
+                "A repeated exact conversion fan-out escaped the existing ritual dedup window.");
+
+            target.ideo.SetIdeo(laterTargetIdeology);
+            target.ideo.OffsetCertainty(target.ideo.Certainty > 0.5f ? -0.05f : 0.05f);
+            PawnDiaryRimTestScope.Require(
+                targetPage.BeliefContextForRole(DiaryEvent.InitiatorRole) == frozenTargetBelief,
+                "Later pawn belief changes rewrote the saved conversion-ritual context.");
+            DiaryEvent loaded = PawnDiaryScribeRoundTripFixtureTests
+                .ScribeRoundTripForTests(targetPage);
+            PawnDiaryRimTestScope.Require(
+                loaded.BeliefContextForRole(DiaryEvent.InitiatorRole) == frozenTargetBelief
+                    && loaded.gameContext == targetPage.gameContext,
+                "Conversion-ritual event-time facts did not survive a real Scribe round-trip.");
+        }
+
+        /// <summary>
+        /// A masterful-looking fixture with only a real certainty mutation must remain non-conversion,
+        /// and an optional adapter exception must leave the ordinary completed ritual page intact.
+        /// </summary>
+        [Test]
+        public static void ConversionRitualQualityCannotProveConversionAndFailureIsFailOpen()
+        {
+            if (!RequireMutableIdeologyProfile()) return;
+            Pawn target = scope.CreateAdultColonist();
+            Pawn participant = scope.CreateAdultColonist();
+            Pawn spectator = scope.CreateAdultColonist();
+            Ideo shared = GenerateDisposableIdeology();
+            firstPawn.ideo.SetIdeo(shared);
+            target.ideo.SetIdeo(shared);
+            participant.ideo.SetIdeo(shared);
+            spectator.ideo.SetIdeo(shared);
+            BeliefMutationCache.Reset();
+            float delta = target.ideo.Certainty > 0.2f ? -0.1f : 0.1f;
+            target.ideo.OffsetCertainty(delta);
+
+            HashSet<string> before = SnapshotEventIds();
+            scope.Component.Dispatch(ExactConversionFixture(
+                target, participant, spectator, progress: 1f));
+            DiaryEvent targetPage = PageForPerspective(
+                NewEventsSince(before), RitualEventData.PerspectiveTarget, target);
+            string expectedResult = delta < 0f ? "certainty_decreased" : "certainty_increased";
+            RequireContains(targetPage.gameContext,
+                "conversion_ritual_result=" + expectedResult);
+            PawnDiaryRimTestScope.Require(
+                targetPage.gameContext.IndexOf("conversion_ritual_result=converted",
+                    StringComparison.Ordinal) < 0,
+                "A high quality label manufactured conversion without an ideology transition.");
+
+            // A fresh scope/test is not needed for the fail-open branch: use a distinct target so the
+            // fixture dedup key differs even at the same tick.
+            Pawn failedTarget = scope.CreateAdultColonist();
+            Pawn failedParticipant = scope.CreateAdultColonist();
+            Pawn failedSpectator = scope.CreateAdultColonist();
+            failedTarget.ideo.SetIdeo(shared);
+            failedParticipant.ideo.SetIdeo(shared);
+            failedSpectator.ideo.SetIdeo(shared);
+            ConversionRitualEvidenceAdapter.SetFailureForTests(true);
+            try
+            {
+                HashSet<string> failureBefore = SnapshotEventIds();
+                scope.Component.Dispatch(ExactConversionFixture(
+                    failedTarget, failedParticipant, failedSpectator, progress: 1f));
+                List<DiaryEvent> ordinary = NewEventsSince(failureBefore);
+                PawnDiaryRimTestScope.Require(ordinary.Count == 4,
+                    "An optional enrichment failure suppressed the ordinary ritual fan-out.");
+                DiaryEvent ordinaryTarget = PageForPerspective(
+                    ordinary, RitualEventData.PerspectiveTarget, failedTarget);
+                PawnDiaryRimTestScope.Require(
+                    ordinaryTarget.gameContext.IndexOf("conversion_ritual_",
+                        StringComparison.Ordinal) < 0
+                        && string.IsNullOrEmpty(ordinaryTarget.BeliefContextForRole(
+                            DiaryEvent.InitiatorRole)),
+                    "A failed conversion adapter left partial or fabricated enrichment on the page.");
+            }
+            finally
+            {
+                ConversionRitualEvidenceAdapter.SetFailureForTests(false);
+            }
+        }
+
+        /// <summary>
         /// EVT-17 / Anomaly. Drives the production psychic-ritual fan-out through invoker, target,
         /// participant, and spectator pages without constructing or firing a real colony ritual.
         /// Duplicate assignment rows must collapse by pawn ID and the repeat dispatch must be inert.
@@ -355,6 +620,92 @@ namespace PawnDiary.RimTests
         }
 
         // ----- helpers ---------------------------------------------------------------------------
+
+        private static bool RequireMutableIdeologyProfile()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                PawnDiaryRimTestScope.Require(
+                    InteractionGroups.ClassifyRitual(
+                        "Conversion;RitualBehaviorWorker_Conversion")?.defName
+                        == ConversionRitualPolicy.LegacyGroupDefName
+                        && BeliefMutationCache.Count == 0,
+                    "The base-only conversion ritual path was not an inert generic fallback.");
+                return false;
+            }
+            if (Find.IdeoManager?.classicMode == true)
+            {
+                Log.Message("[PawnDiary RimTest Ritual] Conversion mutation fixture not applicable "
+                    + "in classic Ideology mode.");
+                return false;
+            }
+            PawnDiaryRimTestScope.Require(firstPawn?.ideo != null,
+                "The Ideology-active ritual fixture pawn did not expose a tracker.");
+            return true;
+        }
+
+        private static Ideo GenerateDisposableIdeology()
+        {
+            Ideo generated = IdeoGenerator.GenerateIdeo(new IdeoGenerationParms
+            {
+                forFaction = Faction.OfPlayer.def,
+                fixedIdeo = true
+            });
+            PawnDiaryRimTestScope.Require(generated != null,
+                "RimWorld could not generate a disposable conversion-ritual ideoligion.");
+            return generated;
+        }
+
+        private static RitualFanoutSignal ExactConversionFixture(
+            Pawn target, Pawn participant, Pawn spectator, float progress)
+        {
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey(
+                ConversionRitualPolicy.GroupDefName);
+            PawnDiaryRimTestScope.Require(group != null,
+                "The exact conversion ritual group was not loaded.");
+            RitualFanoutSignal signal = RitualFanoutSignal.CreateTestFixture(
+                firstPawn,
+                target,
+                new List<Pawn> { firstPawn, participant },
+                new List<Pawn> { participant, spectator },
+                "Conversion",
+                "conversion ritual",
+                "RitualBehaviorWorker_Conversion",
+                progress,
+                group.instruction,
+                "RitualOutcomeEffectWorker_Conversion");
+            PawnDiaryRimTestScope.Require(signal != null
+                    && !string.IsNullOrWhiteSpace(signal.ColonyDedupKey),
+                "The exact conversion ritual fixture did not build a valid fan-out.");
+            return signal;
+        }
+
+        private static DiaryEvent PageForPerspective(
+            List<DiaryEvent> events, string perspective, Pawn expectedPawn)
+        {
+            string marker = "ritual_perspective=" + perspective;
+            DiaryEvent match = events.SingleOrDefault(candidate => candidate?.gameContext != null
+                && candidate.gameContext.IndexOf(marker, StringComparison.Ordinal) >= 0);
+            PawnDiaryRimTestScope.Require(match != null,
+                "No exact conversion ritual page carried '" + marker + "'.");
+            scope.RequireSoloRef(match, expectedPawn);
+            return match;
+        }
+
+        private static void AssertNoTargetMutationLeak(DiaryEvent page)
+        {
+            string context = (page?.gameContext ?? string.Empty) + "\n"
+                + (page?.BeliefContextForRole(DiaryEvent.InitiatorRole) ?? string.Empty);
+            PawnDiaryRimTestScope.Require(
+                context.IndexOf("conversion_ritual_result=", StringComparison.Ordinal) < 0
+                    && context.IndexOf("belief_event=conversion", StringComparison.Ordinal) < 0
+                    && context.IndexOf("before ideoligion:", StringComparison.OrdinalIgnoreCase) < 0
+                    && context.IndexOf("after ideoligion:", StringComparison.OrdinalIgnoreCase) < 0
+                    && context.IndexOf("conversion result:", StringComparison.OrdinalIgnoreCase) < 0
+                    && context.IndexOf("mutation cause:", StringComparison.OrdinalIgnoreCase) < 0,
+                "A non-target conversion ritual page received the convertee's mutation facts: "
+                    + context);
+        }
 
         private static HashSet<string> SnapshotEventIds()
         {
