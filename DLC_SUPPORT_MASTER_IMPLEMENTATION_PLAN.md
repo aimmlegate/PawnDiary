@@ -610,8 +610,11 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 > are ordinary pages. Speaker role/certainty is isolated from smaller witness context, target mode is
 > none, and all optional failure paths fail open. No hook, page, poll, save field, setting, RNG, fan-out,
 > or dedup behavior changed. Pure belief coverage passes 511 assertions and three compiled cases raise
-> the assembly to 391 RimTests. No new in-game execution is claimed; 388/388 remains the latest loaded
-> result and the base-only profile is still pending.
+> the assembly to 391 RimTests. The first active loaded execution reached 389/391: exact wiring,
+> fail-open behavior, and the full leader branch passed; the throne branch exposed a fixture-only
+> assumption that a second random Ideology would contain related doctrine. It now reuses the already-
+> proven relevant profile. The other failure was the unchanged N3-O parked-gravship prerequisite.
+> A corrected all-green rerun and the base-only profile are still pending.
 > Every deferred Royalty acceptance item remains unchanged.
 
 ### Implement in this exact order
@@ -634,9 +637,9 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 - No standalone belief reflection yet.
 
 Wave 10 remains open: original exact active-Counsel loaded coverage and the corrected 384/384 suite
-passed, and the corrected active completed-conversion suite passed 388/388. The base-only profile,
-the loaded authority-speech fixtures, remaining Ideology-2 evidence-family work, and Ideology 3 are
-pending.
+passed, and the corrected active completed-conversion suite passed 388/388. The first authority-speech
+run reached 389/391 and its fixture-only random-doctrine assumption is corrected; an all-green rerun,
+the base-only profile, remaining Ideology-2 evidence-family work, and Ideology 3 are pending.
 
 ### Release checkpoint 10 — belief enrichment
 

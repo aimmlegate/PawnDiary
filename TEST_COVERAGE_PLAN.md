@@ -1129,17 +1129,23 @@ assignment and DLC gates, and proves `ThroneSpeech` keeps `ritualRoyal` while `L
 `ritualFinished`. The positive case enters the production fan-out copied-fact seam with registered
 Ideology state: leader speech runs when Ideology is active, throne speech additionally runs when
 Royalty is active, each pawn receives at most one page, global `Rand` is unchanged, repeat dispatch is
-deduped, and the original group owns the prompt. Speaker belief context may contain its own current role
-and certainty; participant/spectator context is independently bounded and contains neither, nor meme,
-structure, deity, or N3-I projection. The saved speaker block survives a later certainty change and a
-real Scribe round-trip. The fault case throws at the optional adapter boundary and still requires the
-three ordinary pages with empty belief blocks. Inactive Ideology/Royalty match branches are asserted
-without constructing DLC content. Standalone policy coverage adds exact/case/FQN/group/role/duplicate
+deduped, and the original group owns the prompt. The throne branch reuses the profile whose leader
+branch already proved related visible doctrine, so exact route coverage cannot be invalidated by a
+second random Ideology correctly resolving to no context. Speaker belief context may contain its own
+current role and certainty; participant/spectator context is independently bounded and contains
+neither, nor meme, structure, deity, or N3-I projection. The saved speaker block survives a later
+certainty change and a real Scribe round-trip. The fault case throws at the optional adapter boundary
+and still requires the three ordinary pages with empty belief blocks. Inactive Ideology/Royalty match
+branches are asserted without constructing DLC content. Standalone policy coverage adds exact/case/
+FQN/group/role/duplicate
 rejection, missing/malformed/cap fallback, relevant versus unrelated/hidden/secular doctrine,
 speaker/witness/target isolation, deep-copy mutation resistance, bounded/idempotent formatting, and
 optional presentation. These cases raise `BeliefContextTests` to 511 assertions and the compiled
-RimTest assembly from 388 to 391 cases. They have not been run in-game; 388/388 remains the latest
-recorded loaded result.
+RimTest assembly from 388 to 391 cases. The first loaded run reached 389/391: the exact wiring and
+fail-open cases passed, and the positive case cleared its full leader branch before a second randomly
+generated doctrine profile truthfully left the throne page ordinary. That fixture-only lottery is now
+removed. The other failure was the unchanged N3-O parked-gravship host prerequisite. A corrected
+loaded rerun is pending; 388/388 remains the latest all-green result.
 
 The first 377-test execution exposed vanilla's nested silent companion page and completed 375/377; the
 other failure was the unrelated N3-O Odyssey host prerequisite. After the exact companion fix and a
@@ -1161,8 +1167,11 @@ recorded before the assembly advanced. The first 388-test active run reached 383
 four fixture assumptions, the second reached 386/388 and isolated a real organizer POV-token mismatch
 (`organizer` in the pure policy versus the live serialized `author` token). That production boundary is
 now corrected. The user-confirmed rerun passed 388/388 on a valid parked-gravship host, closing the
-active completed-conversion gate. The three authority-speech cases compile but have not been executed;
-therefore 388/388 remains the latest valid loaded result. A current 391-test base-only profile remains
+active completed-conversion gate. The first active run of all three authority-speech cases reached
+389/391, passed the exact wiring/fail-open cases and the full leader branch, and exposed the now-
+corrected random-doctrine throne fixture assumption. Its other failure was the expected N3-O host
+guard on a map without a parked player gravship. Therefore 388/388 remains the latest all-green loaded
+result. A current 391-test base-only profile remains
 release-blocking under the matrix above because it is the only execution that reaches every
 `ModsConfig.IdeologyActive == false` branch.
 The first user-observed 376-test loaded run completed 374/376. It exposed the dedicated worker

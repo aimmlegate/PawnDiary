@@ -718,23 +718,19 @@ namespace PawnDiary.RimTests
                 "Authority-speech event-time context did not survive a real Scribe round-trip.");
 
             if (!ModsConfig.RoyaltyActive) return;
-            Pawn throneSpeaker = scope.CreateAdultColonist();
-            Pawn throneWitness = scope.CreateAdultColonist();
-            Pawn throneSpectator = scope.CreateAdultColonist();
-            Ideo throneIdeology = GenerateRegisteredIdeology(
-                throneSpeaker, throneWitness, throneSpectator);
-            throneSpeaker.ideo.SetIdeo(throneIdeology);
-            throneWitness.ideo.SetIdeo(throneIdeology);
-            throneSpectator.ideo.SetIdeo(throneIdeology);
-            AssignExactLeader(throneIdeology, throneSpeaker);
+            // Reuse the profile whose leader-speech pages just proved that visible authority-related
+            // doctrine exists. A second generated Ideology is a doctrine lottery: it may truthfully
+            // contain no matching stance, in which case production must leave the speech ordinary.
+            // This half of the fixture is testing the exact throne route and retained Royal owner,
+            // not asking an unrelated random profile to satisfy the enrichment precondition again.
             HashSet<string> throneBefore = SnapshotEventIds();
             RitualFanoutSignal throneFanout = ExactAuthoritySpeechFixture(
-                true, throneSpeaker, throneWitness, throneSpectator);
+                true, firstPawn, witness, spectator);
             scope.Component.Dispatch(throneFanout);
             List<DiaryEvent> thronePages = NewEventsSince(throneBefore);
             PawnDiaryRimTestScope.Require(thronePages.Count == 3,
                 "Throne speech should emit one speaker and two witness pages without duplication.");
-            DiaryEvent thronePage = PageForPawn(thronePages, throneSpeaker);
+            DiaryEvent thronePage = PageForPawn(thronePages, firstPawn);
             PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(
                     thronePage.BeliefContextForRole(DiaryEvent.InitiatorRole)),
                 "Exact throne speech did not attach relevant authority context.");

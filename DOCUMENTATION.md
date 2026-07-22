@@ -410,8 +410,14 @@ all return null evidence and preserve ordinary Royal/generic ritual behavior. Ex
 spectator membership, pawn-id collapse, colony dedup, cosmetic RNG, settings, save fields, and policy
 snapshots are unchanged. Three compiled RimTests raise the assembly from 388 to 391 cases; they verify
 loaded type/owner wiring, leader and conditional throne fan-outs, speaker/witness isolation, RNG and
-dedup invariants, Scribe/later-state freezing, inactive routing, and adapter fail-open behavior. They
-are compiled only in this change; the last recorded in-game result remains 388/388.
+dedup invariants, Scribe/later-state freezing, inactive routing, and adapter fail-open behavior. The
+first user-supplied active-Ideology/Royalty run reached 389/391: exact owner/type wiring, the complete
+leader branch, and adapter failure passed, while the throne branch exposed a fixture-only assumption
+that a second randomly generated Ideology would contain related authority doctrine. Production
+correctly omitted context for that unrelated profile. The fixture now reuses the authority-relevant
+profile already proved by the leader branch, isolating throne route/owner coverage from random doctrine
+generation. The other failure was the unchanged N3-O positive fixture running without its required
+parked player gravship. A corrected loaded rerun is pending; 388/388 remains the latest all-green run.
 
 The first post-Counsel Ideology-active loaded run executed all 384 fixtures and reached 382/384. All
 three exact Counsel fixtures passed at the real vanilla boundary. One failure was a stale exhaustive

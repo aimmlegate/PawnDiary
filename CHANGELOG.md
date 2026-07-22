@@ -1,5 +1,18 @@
 # Changelog
 
+- **2026-07-22 — Hardened the authority-speech loaded fixture after its first 391-test run.** The
+  user-supplied Ideology/Royalty execution reached 389/391. Exact installed worker/owner routing,
+  leader-speech POV isolation, RNG/dedup/persistence behavior, and the adapter fail-open case all
+  passed before the combined positive case reached its throne branch. That branch generated a second
+  random Ideology and incorrectly assumed it would contain authority-related doctrine; production
+  correctly left the throne page ordinary when the resolver found none. The fixture now reuses the
+  already-proven relevant speaker/witness profile for the throne route, so it tests exact Royal route
+  wiring without turning doctrine generation into a lottery. The other failure is the unchanged N3-O
+  positive-acceptance prerequisite on a map without a parked player gravship. No production, XML,
+  localization, save, setting, RNG, fan-out, dedup, or DLC behavior changed. The corrected 391-test
+  RimTest assembly builds with zero warnings; an all-green loaded rerun and the Ideology-inactive
+  profile remain pending.
+
 - **2026-07-22 — Added exact throne/leader authority-speech enrichment as the next bounded Ideology
   Phase-2 slice.** Verified the installed 1.6 Royalty/Ideology Defs and decompiled runtime: exact
   `ThroneSpeech` and `LeaderSpeech` behavior workers share `RitualOutcomeEffectWorker_Speech`, use the

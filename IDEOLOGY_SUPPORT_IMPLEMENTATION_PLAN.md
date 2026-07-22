@@ -1340,10 +1340,13 @@ for each conversion ability/interaction/ritual path; representative body, meal, 
 ritual fixtures select only relevant live doctrine; unrelated event and ability behavior is unchanged.
 
 **Phase-2 exit-gate status:** still open. The original exact active-Counsel sub-gate and corrected
-384/384 suite are green, and the corrected active conversion-ritual suite passed 388/388. Exact
-authority-speech code/compiled fixtures are complete but not yet run in-game; the remaining
-evidence-family matrix and the required Ideology-inactive loaded profile must
-complete before Phase 2 can close.
+384/384 suite are green, and the corrected active conversion-ritual suite passed 388/388. The first
+active authority-speech run reached 389/391: exact type/owner wiring, fail-open behavior, and the full
+leader branch passed, while the throne branch exposed a fixture-only second-random-doctrine assumption
+that is now removed by reusing the already-proven relevant profile. The unrelated N3-O positive fixture
+also ran without its required parked gravship. A corrected all-green authority-speech rerun, the
+remaining evidence-family matrix, and the required Ideology-inactive loaded profile must complete
+before Phase 2 can close.
 
 ### Phase 3 — Persistent passive belief tracking
 
