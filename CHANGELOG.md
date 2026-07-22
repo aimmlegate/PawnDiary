@@ -1,5 +1,18 @@
 # Changelog
 
+- **2026-07-22 — Thickened the Diary button icons and gave them a native-style dark contour.** The
+  nine CoreUI-derived glyphs (Filter, Copy, Regenerate, Favorite, WritingStyle, and the four season
+  dividers) were reported as too thin and indistinct at button size. Each 128×128 white glyph was
+  reprocessed by dilating its alpha channel to thicken the strokes and baking a pure-black contour
+  around the shape, so the icons read crisply both on the dark diary panel and on the lighter
+  hover/tag-chip backgrounds where thin white lines previously washed out — matching the outlined
+  look of RimWorld's own UI icons. The contour is pure black, so it survives `GUI.color` tinting
+  (an RGB multiply) unchanged, and the fully-transparent border pixels carry the contour color to
+  avoid any light halo under RimWorld's bilinear/mipmap sampling. No code, draw sites, glyph
+  identities, or texture dimensions/format (128×128 `Format32bppArgb`) changed; only the nine PNGs
+  under `Textures/UI/DiaryButtons/` and their `CREDITS.txt` provenance note were updated. In-game
+  visual confirmation is still owed.
+
 - **2026-07-22 — Corrected the exhaustive DLC catalog after the first 384-test Counsel run.** The
   Ideology-active loaded run reached 382/384, and all three new exact Counsel fixtures passed through
   vanilla `Ability.Activate`/`CompAbilityEffect_Counsel`: success, failure, canonical counselor→listener

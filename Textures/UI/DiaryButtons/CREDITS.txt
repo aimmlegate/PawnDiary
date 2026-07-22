@@ -3,7 +3,12 @@ Diary UI button icons
 
 These icons are derived from CoreUI Icons (Free set), recolored to solid white
 with a transparent background and rasterized to PNG for use as tintable RimWorld
-UI textures. No glyph shapes were altered.
+UI textures. The original thin CoreUI line strokes were thickened (morphological
+dilation of the alpha channel) and a dark contour was baked around each glyph so
+they read crisply at small sizes and on light/hover backgrounds, matching the
+outlined look of RimWorld's own UI icons. The baked contour is pure black, which
+survives GUI.color tinting (RGB multiply) unchanged. The underlying glyph shapes
+are otherwise unmodified. This is a permitted modification under the MIT license.
 
 Source:  https://github.com/coreui/coreui-icons  (svg/free)
 License: MIT
