@@ -586,11 +586,12 @@ namespace PawnDiary
             return ClassifyIn(GroupDomain.Interaction, interactionDef);
         }
 
-        // First MentalState-domain group that matches the state, else the MentalState catch-all
-        // ("Mental breaks").
+        // First currently available MentalState-domain group that matches the state, else the available
+        // MentalState catch-all ("Mental breaks"). Live capture intentionally skips dormant DLC rows;
+        // saved-event display recovery still uses ClassifyDefName so an old page keeps its original group.
         public static DiaryInteractionGroupDef ClassifyMentalState(MentalStateDef stateDef)
         {
-            return ClassifyIn(GroupDomain.MentalState, stateDef?.defName);
+            return ClassifyAvailableIn(GroupDomain.MentalState, stateDef?.defName);
         }
 
         // First Tale-domain group that matches the tale, else the Tale catch-all.
@@ -811,6 +812,34 @@ namespace PawnDiary
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Live-capture classifier for domains where a dormant exact DLC row must yield to an available
+        /// catch-all. This deliberately is not memoized: capture-capability readiness can change while a
+        /// game is running, whereas the ordinary classifier's catalog-only result is safely immutable.
+        /// </summary>
+        private static DiaryInteractionGroupDef ClassifyAvailableIn(GroupDomain domain, string defName)
+        {
+            List<DiaryInteractionGroupDef> all = All;
+            DiaryInteractionGroupDef fallback = null;
+            for (int i = 0; i < all.Count; i++)
+            {
+                DiaryInteractionGroupDef group = all[i];
+                if (group.domain != domain || group.UnavailableForCurrentRuntime())
+                {
+                    continue;
+                }
+
+                if (group.Matches(defName))
+                {
+                    return group;
+                }
+
+                fallback = group;
+            }
+
+            return fallback;
         }
 
         private static DiaryInteractionGroupDef ClassifyIn(GroupDomain domain, string defName)

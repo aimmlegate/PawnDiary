@@ -672,6 +672,35 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Requires that no currently stored event with the given exact DefName references any pawn
+        /// owned by this scope. Fresh fixture pawns begin with blank diaries, so this makes a specific
+        /// forbidden companion/duplicate route explicit instead of relying only on a total-count check.
+        /// </summary>
+        public void RequireNoEventForTestPawns(string interactionDefName)
+        {
+            string forbidden = interactionDefName ?? string.Empty;
+            HashSet<string> pawnIds = TestPawnIdSet();
+            IReadOnlyList<DiaryEvent> allEvents = EventRepository().AllEvents;
+            for (int i = 0; i < allEvents.Count; i++)
+            {
+                DiaryEvent diaryEvent = allEvents[i];
+                if (diaryEvent == null
+                    || !string.Equals(diaryEvent.interactionDefName, forbidden,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (pawnIds.Contains(diaryEvent.initiatorPawnId)
+                    || pawnIds.Contains(diaryEvent.recipientPawnId))
+                {
+                    throw new AssertionException(
+                        "Unexpected '" + forbidden + "' diary event referenced a fixture pawn.");
+                }
+            }
+        }
+
+        /// <summary>
         /// Asserts a two-POV event: it is not solo, its initiator/recipient ids match the two pawns,
         /// and BOTH pawns' diary indexes reference it.
         /// </summary>

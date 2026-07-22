@@ -19,6 +19,10 @@ namespace PawnDiary
             BeliefEventEvidence result = ForEvent(
                 pawnId, tick, "thought", thoughtDefName, "initiator",
                 thoughtLabel, string.Empty);
+            result.narrative.facet = NarrativeFacetTokens.AmbientPressure;
+            result.narrative.phase = "thought_gained";
+            result.narrative.subjectKind = NarrativeSubjectKindTokens.Pawn;
+            result.narrative.subjectId = SafeId(pawnId);
             AddUnique(result.thoughtDefNames, thoughtDefName, 32);
             AddField(result, "event_label", thoughtLabel);
             if (sourcePrecept != null)
@@ -41,6 +45,11 @@ namespace PawnDiary
             BeliefEventEvidence result = ForEvent(
                 pawnId, tick, "medical", hediffDefName, "initiator",
                 hediffLabel, "body_modification");
+            result.narrative.facet = NarrativeFacetTokens.IdentityTransition;
+            result.narrative.phase = "body_modified";
+            result.narrative.subjectKind = NarrativeSubjectKindTokens.Pawn;
+            result.narrative.subjectId = SafeId(pawnId);
+            result.narrative.salience = NarrativeSalienceTokens.Meaningful;
             AddUnique(result.narrative.beliefTopics, "body_modification", 16);
             AddField(result, "hediff_label", hediffLabel);
             AddField(result, "body_part_label", bodyPartLabel);

@@ -42,7 +42,8 @@ collector kind (hediff, capacity, Royal title, Ideology role, event window, obse
 | Save/load scenario | Disposable test save plus two-phase RimTest suite | Real Scribe round trip, index rebuilds, pending-state normalization, archive persistence, and session reset. |
 | Manual visual checks | `tests/SAVE_COMPATIBILITY_SMOKETEST.md` plus a new UI checklist | Immediate-mode rendering, resolution/accessibility layouts, scroll behavior, and screenshots that are not stable enough for unit assertions. |
 
-`tests/BeliefContextTests` is the assembly-free Master Wave 10 / Ideology Phases 0–2 harness. Its 317
+`tests/BeliefContextTests` is the assembly-free Master Wave 10 / Ideology Phases 0–2 plus Narrative
+N3-I harness. Its 360
 assertions lock missing/inactive/unknown-knowledge silence; exact source, thought, history, issue, and
 meme precedence; synthetic mod IDs; guarded phrase/token/fuzzy matching; dynamic common-token,
 confidence, explicit below-threshold diagnostics, and runner-up rejection; reused evidence expansion;
@@ -63,6 +64,10 @@ case-sensitive Def matching, inactive-policy silence, known/success/failure mech
 reassurance, cross-pawn/stale/future rejection, two-POV reuse, no backward search through sequential
 rows, malformed inputs, critical conversion-marker append/idempotence, subject-labeled mutation schema
 formatting, and target mutation not rewriting the converter's own certainty/trend.
+N3-I additionally pins structural and high-margin lexical admission; empty/mutation-only/ambiguous,
+unknown-facet, wrong-POV, hidden, source-mismatched, malformed, and inactive rejection; canonical page
+ID re-stamping for prepared body evidence; stable label-independent keys; and exact Phase-1 thought/body
+facet ownership.
 It file-links only plain Narrative/Belief source and has no RimWorld, Verse, Unity, or DLC reference.
 
 ### 2.1 `PawnDiaryRimTestScope`
@@ -640,7 +645,7 @@ Every fixture explicitly logs `SKIP` when Odyssey is inactive or a real player g
 and failure-safe cleanup restores component/controller state, time speed, the mask engine, world
 objects, spawned things, pawns, events, diary indexes, and temporary Harmony patches.
 
-Narrative N2-O, N3-B identity, N3-R, N3-A, and N3-O extend `NarrativeContinuityTests` to 330
+Narrative N2-O, N3-B identity, N3-R, N3-I, N3-A, and N3-O extend `NarrativeContinuityTests` to 345
 assembly-free assertions. N3-R covers exact persona arc/weapon and title POV/domain/topic applicability,
 cross-DLC identity isolation, absent/unknown/unverified/null silence, stable candidate keys and
 ordering, defensive persona/duty caps, and deterministic duty-topic normalization. Its Wave-9 proof
@@ -660,6 +665,10 @@ precondition, and all three prompt detail budgets. The fixture now requires a sp
 gravship and chooses a standable cell accepted by vanilla's exact onboard predicate. The user-confirmed
 corrected Odyssey-active run passed the integrated 354/354 tests across 57/57 suites; the separately
 focused inactive path passed 1/1 with a clean no-Odyssey profile.
+N3-I adds exact interpretation-provider applicability, stable keys and fixed provider order,
+deterministic two-lens selection, repetition, the one-interpretation/global-two category budgets,
+composition with Biotech, provider-unavailable equivalence, and per-provider exception isolation that
+preserves prior and later candidates.
 
 The existing real succession and dramatic-permit RimTest fixtures now also compile assertions for
 their exact N3-R evidence, references, context, and selected current-title key. Their changed loaded
@@ -1034,49 +1043,46 @@ assembly is now 362 tests and builds with 0 warnings/errors into the tracked dep
 RimWorld has not been launched for this follow-up, so its new cases are not
 recorded as loaded-game passes and no manual/in-game acceptance row is closed.
 
-Ideology Phase 2 infrastructure and exact interaction enrichment add twelve compiled loaded cases in
-`PawnDiaryIdeologyPhase2InfrastructureTests`. Together with two non-rendering filter lifecycle cases in
-`PawnDiaryDiaryTabFilterFixtureTests`, the assembly contains 376 tests. They resolve and inspect the exact three
-production Harmony targets, branch truthfully for an inactive DLC profile, call real `SetIdeo` and
-`OffsetCertainty` boundaries plus `IdeoConversionAttempt` for detached before/after/attempted/result
-facts and nested/sequential ownership (forcing zero certainty so the real conversion deterministically
-enters its nested success/`SetIdeo` path), inject a finally-removed projection failure to prove vanilla
-mutation and cache cleanup, and combine a dropped
-exact `Convert` Ability signal with a real `Find.PlayLog.Add(Convert_Success)` downstream hook to require
-one canonical pair page and no random draw. Added adversarial cases pin equivalent `Reassure` ownership,
-release the generic Convert page when the downstream conversion group is disabled, and retain the
-generic `ConversionRitual` start page because cancellation has no downstream owner. The interaction
-consumer follow-up proves a real mutation/cache write alone emits no page; validates every field of all
-four exact XML consumer rules; runs deterministic real conversion success and failure plus real
-reassurance certainty
-gain before the real `PlayLog.Add` boundary; requires both existing pair POVs to receive the mechanical
-result/delta while one non-consuming cache row remains; requires a one-eligible-pawn solo conversion to
-label its ineligible target and carry the critical marker; and rejects conversion wording on reassurance.
-A dedicated case selects a bounded, tracked initiator with enabled `ConversionPower`, spawns both
-harness pawns as live colonists, asserts their interaction trackers, and calls vanilla
-`InteractionWorker_ConvertIdeoAttempt.Interacted` under a restored deterministic RNG scope. That
-preserves the normal stat/certainty-factor path before requiring its observed known result on the exact
-pair PlayLog page.
-Live mutation cases skip explicitly in Ideology classic mode, where vanilla disables tracker mechanics.
-A disposable second Ideo is generated when the loaded game exposes only one, preserving the
-deterministic conversion fixture and single-Ideo fallback.
-The exact Crisis-of-Belief follow-up adds one compiled case to the same suite, bringing the RimTest
-assembly to 377 tests. It spawns a disposable pawn, forces the real `IdeoChange` mental-state boundary
-under a fixed/restored nested Verse RNG state, requires one existing solo page and one truthful,
-non-consumed conversion mutation, and verifies that PlayLog does not change. It reports inactive DLC
-and classic mode as not applicable; teardown restores the mental state, pawn, generated alternative
-Ideo when needed, cache, group/settings state, and RNG. Standalone belief/pipeline fixtures prove exact
-group/prompt priority, ordinary Berserk ownership, wrong-pawn/stale/future evidence rejection,
-changed-versus-unchanged truth, and current-only fallback without reconstructing an old faith. The
-new fixture's first in-game execution produced the
-truthful `IdeoChange` page plus vanilla's nested silent `Wander_Sad` companion page. Capture-policy
-coverage now proves that only `IdeoChange` -> silent `Wander_Sad`/`Wander_OwnRoom` is suppressed;
-ordinary wander, Berserk, non-silent, wrong-current, missing, and modded paths remain capturable. The
-same real-boundary fixture still requires exactly one total new page, so the regression cannot be
-masked by filtering its assertion or retrying RNG. That run completed 375/377; the other failure was
-the existing N3-O Odyssey acceptance guard on a host without a parked player gravship, not an Ideology
-or Pawn Diary capture regression. After the exact companion fix and satisfying the Odyssey host
-precondition, the complete loaded suite passed 377/377; that is the latest in-game result.
+`PawnDiaryIdeologyPhase2InfrastructureTests` contains fifteen compiled loaded cases. Narrative N3-I
+extends the Phase-1 fixture with a real source-precept candidate assertion, an unavailable-provider
+composition case, and a provider-failure canonical-page case, bringing the whole RimTest assembly to
+381 tests. The Phase-2 cases inspect the three exact mutation Harmony targets, branch
+truthfully for an inactive DLC profile, and assert that a synthetic base-game `IdeoChange` DefName
+falls back to the ordinary mental-break group while the package-gated crisis group is dormant. Real
+`SetIdeo`, `OffsetCertainty`, and `IdeoConversionAttempt` calls cover detached before/after/attempted/
+result facts, nested coalescing, sequential separation, and finally-cleaned projection failure.
+
+The Convert and Reassure ownership cases no longer synthesize `AbilitySignal` plus a hand-added PlayLog
+row. Each clones only the installed vanilla Def's real effect-comp policy into a zero-cooldown fixture,
+spawns its pawns, and executes through the production-patched `Ability.Activate` boundary. The real
+`CompAbilityEffect_Convert`/`CompAbilityEffect_Reassure` creates the tracker mutation and downstream
+PlayLog interaction; the fixture requires exactly one total pair page, one actual PlayLog row, the
+correct result/delta for both POVs, one non-consuming cache row, and no generic-ability RNG draw. The
+clone omits the loaded cooldown group so the test cannot alter unrelated role abilities or ritual
+cooldowns. Separate cases still release generic Convert when its downstream group is disabled and keep
+the generic `ConversionRitual` start owner because vanilla exposes no cancellation event.
+
+The real Crisis-of-Belief coverage now drives both vanilla outcomes under fixed/restored RNG: zero
+certainty forces the nested successful conversion/`SetIdeo` path, while certainty above 50% forces a
+failed conversion with unchanged identity and an exact -50% delta. Both require one `IdeoChange` page,
+explicitly reject stored `Wander_Sad` and `Wander_OwnRoom` pages, leave PlayLog unchanged, and retain one
+truthful non-consumed mutation. A separate fault-injection case makes `DiaryBeliefPolicy.Snapshot`
+throw during mutation-evidence selection and proves the already-authorized ordinary page survives with
+no partial belief block/marker. Standalone belief/pipeline fixtures continue to cover wrong-pawn, stale,
+future, malformed, changed/unchanged, and current-only selection; the prompt XML contract now also
+rejects religious `faith` framing in favor of secular-safe ideoligion/conviction wording.
+
+The first 377-test execution exposed vanilla's nested silent companion page and completed 375/377; the
+other failure was the unrelated N3-O Odyssey host prerequisite. After the exact companion fix and a
+valid parked-gravship host, the suite passed 377/377. That remains the latest in-game result: the two
+new cases and the real-ability rewrites compile but have not yet received a 379/379 loaded rerun, and no
+post-Phase-2 base-only profile run is recorded. Before N3-I, a headless startup attempt was made for
+the requested 379/379 profiles, but RimTest ran before `Current.Game` existed and every loaded-game
+fixture failed its precondition; no usable active or base-only acceptance result was produced. The
+current N3-I assembly contains 381 tests, and both its active-Ideology and base-only runs remain pending.
+The base-only run remains release-blocking under the
+matrix above because it is the only execution that reaches every `ModsConfig.IdeologyActive == false`
+branch.
 The first user-observed 376-test loaded run completed 374/376. It exposed the dedicated worker
 fixture's disabled `ConversionPower`/unspawned-recipient prerequisites, while the other failure was the
 unrelated N3-O acceptance guard on a host without a parked player gravship. After correcting the

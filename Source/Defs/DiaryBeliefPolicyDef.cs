@@ -159,6 +159,10 @@ namespace PawnDiary
         // prompt-policy contract; pure/background code never calls Translate().
         public string promptFieldLabel = "belief context";
         public string promptFieldInstruction = string.Empty;
+        // Narrative N3-I factual prose. Missing/malformed localized formats disable only the optional
+        // interpretation candidate; no English fallback is allowed into another player language.
+        public string interpretationFactFormat = string.Empty;
+        public string interpretationFactWithoutDescriptionFormat = string.Empty;
         public List<DiaryBeliefTokenScoreDef> tierScores;
         public List<DiaryBeliefTokenScoreDef> eventFieldWeights;
         public List<DiaryBeliefTokenScoreDef> beliefFieldWeights;
@@ -364,6 +368,26 @@ namespace PawnDiary
                 destination.Add(new BeliefCanonicalEventOwnershipRule(
                     row.sourceDomain.Trim(), row.sourceDefName.Trim(),
                     row.downstreamGroupDefName.Trim()));
+            }
+        }
+
+        /// <summary>Localized N3-I format with ideoligion, precept label, and description slots.</summary>
+        public static string InterpretationFactFormat
+        {
+            get
+            {
+                DiaryBeliefPolicyDef source = DefDatabase<DiaryBeliefPolicyDef>.GetNamedSilentFail(DefName);
+                return PromptTextSanitizer.OneLine(source?.interpretationFactFormat);
+            }
+        }
+
+        /// <summary>Localized N3-I format used when the live precept has no safe description.</summary>
+        public static string InterpretationFactWithoutDescriptionFormat
+        {
+            get
+            {
+                DiaryBeliefPolicyDef source = DefDatabase<DiaryBeliefPolicyDef>.GetNamedSilentFail(DefName);
+                return PromptTextSanitizer.OneLine(source?.interpretationFactWithoutDescriptionFormat);
             }
         }
 

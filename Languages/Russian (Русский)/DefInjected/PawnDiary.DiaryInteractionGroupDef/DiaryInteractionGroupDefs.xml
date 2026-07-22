@@ -99,8 +99,8 @@
   <mentalbreak.instructions.1>нервный срыв: пиши через тело и движение — руки, ноги, дыхание и указанное действие</mentalbreak.instructions.1>
   <mentalbreak.instructions.2>нервный срыв: мир сужается — одно простое ощущение, затем состояние берёт верх</mentalbreak.instructions.2>
   <mentalbreak.tone>с издёрганной, захлёстывающей силой</mentalbreak.tone>
-  <beliefCrisis.label>Кризис веры</beliefCrisis.label>
-  <beliefCrisis.instruction>точный кризис веры: по переданным фактам отличай настоящую смену идеолигии от падения уверенности под натиском сомнений и никогда не выдумывай прежнюю веру</beliefCrisis.instruction>
+  <beliefCrisis.label>Кризис убеждений</beliefCrisis.label>
+  <beliefCrisis.instruction>точный кризис убеждений: по переданным фактам отличай настоящую смену идеолигии от пошатнувшихся под сомнениями убеждений и никогда не выдумывай прежнюю идеолигию</beliefCrisis.instruction>
   <beliefCrisis.tone>с потрясённой убеждённостью и мучительным внутренним сомнением</beliefCrisis.tone>
   <talecombat.label>Бой, ранения и смерть</talecombat.label>
   <talecombat.instruction>кровь и опасность: бой, ранение, смерть или спасение. Пиши, каково было это пережить</talecombat.instruction>

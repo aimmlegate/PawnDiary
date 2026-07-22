@@ -13,6 +13,7 @@ namespace PawnDiary
         public bool evaluated;
         public string fullContext = string.Empty;
         public BeliefStanceResolution resolution = new BeliefStanceResolution();
+        public IdeologyNarrativeSnapshot ideologyNarrative;
 
         public static BeliefContextBuildResult Empty(bool evaluated = false)
         {
@@ -105,8 +106,44 @@ namespace PawnDiary
                 evaluated = true,
                 resolution = resolution,
                 fullContext = BeliefContextFormatter.Format(
-                    resolution, NarrativeDetailLevelTokens.Full, policy)
+                    resolution, NarrativeDetailLevelTokens.Full, policy),
+                ideologyNarrative = IdeologyNarrativeSnapshotFactory.Create(
+                    resolution,
+                    evidence.narrative,
+                    policy,
+                    FormatInterpretationFact(resolution, policy))
             };
+        }
+
+        private static string FormatInterpretationFact(
+            BeliefStanceResolution resolution,
+            BeliefPolicySnapshot policy)
+        {
+            if (resolution?.stances == null || resolution.stances.Count == 0) return string.Empty;
+            BeliefPreceptFact precept = resolution.stances[0]?.precept;
+            string ideology = PromptTextSanitizer.LocalizedPromptText(resolution.ideologyName);
+            string label = PromptTextSanitizer.LocalizedPromptText(precept?.displayLabel);
+            string description = PromptTextSanitizer.LocalizedPromptText(precept?.description);
+            if (ideology.Length == 0 || label.Length == 0) return string.Empty;
+
+            string format = description.Length > 0
+                ? DiaryBeliefPolicy.InterpretationFactFormat
+                : DiaryBeliefPolicy.InterpretationFactWithoutDescriptionFormat;
+            if (string.IsNullOrWhiteSpace(format)) return string.Empty;
+            try
+            {
+                string value = description.Length > 0
+                    ? string.Format(format, ideology, label, description)
+                    : string.Format(format, ideology, label);
+                return BeliefContextFormatter.WholeWord(
+                    PromptTextSanitizer.LocalizedPromptText(value),
+                    Math.Min(240, Math.Max(80, policy.maximumDescriptionCharacters)));
+            }
+            catch (FormatException)
+            {
+                // A broken DefInjected placeholder disables only this optional interpretation lens.
+                return string.Empty;
+            }
         }
     }
 }

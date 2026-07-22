@@ -107,10 +107,17 @@ namespace PawnDiary
             bool transitionSilently,
             ref bool __state)
         {
-            __state = MentalStateEventData.ShouldSuppressNestedCompanion(
-                __instance?.CurStateDef?.defName,
-                stateDef?.defName,
-                transitionSilently);
+            // This prefix runs inside vanilla's state transition. Resolve the small pure predicate
+            // through the shared fail-open guard so even a surprising modded CurStateDef getter cannot
+            // prevent RimWorld from starting the requested mental state.
+            __state = DiaryPatchSafety.Run(
+                "MentalStateStartPatch.Prefix",
+                (__instance, stateDef, transitionSilently),
+                input => MentalStateEventData.ShouldSuppressNestedCompanion(
+                    input.__instance?.CurStateDef?.defName,
+                    input.stateDef?.defName,
+                    input.transitionSilently),
+                fallback: false);
         }
 
         /// <summary>

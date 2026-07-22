@@ -32,6 +32,7 @@ namespace PawnDiary
             TestPhase1EvidencePersistenceAndCorrelation();
             TestPhase2MutationCoalescingCorrelationAndOwnership();
             TestPhase2MutationEvidenceSelection();
+            TestN3IIdeologyInterpretationProvider();
             Console.WriteLine("BeliefContextTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -594,6 +595,139 @@ namespace PawnDiary
                 fallbackContext.IndexOf("previous ideoligion:", StringComparison.Ordinal) < 0
                     && fallbackContext.IndexOf("attempted ideoligion:", StringComparison.Ordinal) < 0
                     && fallbackContext.IndexOf("conversion result:", StringComparison.Ordinal) < 0);
+        }
+
+        private static void TestN3IIdeologyInterpretationProvider()
+        {
+            BeliefPolicySnapshot policy = VocabularyPolicy();
+            BeliefPreceptFact precept = Precept(
+                "SyntheticBodyRespect", "SyntheticBodyIssue", "Respect the changed body", 2);
+            BeliefEventEvidence eventEvidence = SourceEvidence(precept.instanceId, precept.defName);
+            eventEvidence.narrative.eventId = "body|SyntheticPawn|12345";
+            eventEvidence.narrative.facet = NarrativeFacetTokens.IdentityTransition;
+            eventEvidence.narrative.phase = "body_modified";
+            eventEvidence.narrative.subjectKind = NarrativeSubjectKindTokens.Pawn;
+            eventEvidence.narrative.subjectId = "SyntheticPawn";
+            eventEvidence.narrative.beliefTopics.Add("body_modification");
+
+            BeliefStanceResolution resolved = Resolve(Snapshot(precept), eventEvidence, policy);
+            IdeologyNarrativeSnapshot snapshot = IdeologyNarrativeSnapshotFactory.Create(
+                resolved,
+                eventEvidence.narrative,
+                policy,
+                "Within Synthetic Ideoligion, this event directly engaged Respect the changed body.");
+            AssertTrue("N3-I admits an exact source-precept result", snapshot != null);
+            AssertEqual("N3-I freezes the shared interpretation category",
+                NarrativeCategoryTokens.Interpretation, resolved.narrativeCategory);
+            AssertEqual("N3-I snapshot keeps the exact POV", "SyntheticPawn", snapshot.povPawnId);
+            AssertTrue("N3-I snapshot retains bounded belief topics",
+                snapshot.topicTokens.Contains("body_modification"));
+
+            IdeologyNarrativeSnapshot pageSnapshot = IdeologyNarrativeSnapshotFactory.ForPage(
+                snapshot, "CanonicalEvent", 12345, "SyntheticPawn", "initiator");
+            List<NarrativeLensCandidate> candidates = IdeologyNarrativeProvider.Build(
+                new List<NarrativeEvidence> { pageSnapshot.sourceEvidence }, pageSnapshot);
+            AssertEqual("N3-I creates exactly one candidate", 1, candidates.Count);
+            AssertEqual("N3-I candidate uses the Ideology provider", NarrativeProviderTokens.Ideology,
+                candidates[0].provider);
+            AssertEqual("N3-I candidate consumes interpretation", NarrativeCategoryTokens.Interpretation,
+                candidates[0].category);
+            AssertEqual("N3-I key is stable and prose-free",
+                "ideology|interpretation|SyntheticPawn|SyntheticIdeology|instance|"
+                    + precept.instanceId,
+                candidates[0].candidateKey);
+            AssertEqual("N3-I candidate points at the canonical source page", "CanonicalEvent",
+                candidates[0].sourceEventId);
+
+            IdeologyNarrativeSnapshot repeated = IdeologyNarrativeSnapshotFactory.Create(
+                resolved, eventEvidence.narrative, policy,
+                "Localized labels may change without changing the key.");
+            repeated = IdeologyNarrativeSnapshotFactory.ForPage(
+                repeated, "CanonicalEvent", 12345, "SyntheticPawn", "initiator");
+            AssertEqual("localized prose does not change the stable key", candidates[0].candidateKey,
+                IdeologyNarrativeProvider.Build(
+                    new List<NarrativeEvidence> { repeated.sourceEvidence }, repeated)[0].candidateKey);
+
+            AssertTrue("empty stance resolution yields no N3-I snapshot",
+                IdeologyNarrativeSnapshotFactory.Create(
+                    new BeliefStanceResolution(), eventEvidence.narrative, policy, "unused") == null);
+            BeliefStanceResolution mutationOnly = new BeliefStanceResolution
+            {
+                ideologyId = "SyntheticIdeology",
+                ideologyName = "Synthetic Ideoligion",
+                mutation = new BeliefMutationSnapshot
+                {
+                    pawnId = "SyntheticPawn", capturedTick = 12345, observedMutation = true,
+                    certaintyChanged = true
+                }
+            };
+            AssertTrue("mutation-only Phase-2 context is not promoted by N3-I",
+                IdeologyNarrativeSnapshotFactory.Create(
+                    mutationOnly, eventEvidence.narrative, policy, "unused") == null);
+
+            BeliefStanceResolution ambiguous = new BeliefStanceResolution
+            {
+                ideologyId = "SyntheticIdeology",
+                ideologyName = "Synthetic Ideoligion"
+            };
+            ambiguous.stances.Add(new ResolvedBeliefStance
+            {
+                precept = precept,
+                relevanceTier = BeliefRelevanceTierTokens.GeneralText,
+                confidenceScore = policy.minimumLexicalConfidence,
+                runnerUpGap = policy.lexicalRunnerUpMargin - 0.01f
+            });
+            AssertTrue("ambiguous lexical result yields no N3-I snapshot",
+                IdeologyNarrativeSnapshotFactory.Create(
+                    ambiguous, eventEvidence.narrative, policy, "ambiguous") == null);
+            ambiguous.stances[0].runnerUpGap = policy.lexicalRunnerUpMargin;
+            AssertTrue("threshold-and-margin lexical result may enter N3-I",
+                IdeologyNarrativeSnapshotFactory.Create(
+                    ambiguous, eventEvidence.narrative, policy, "high confidence") != null);
+
+            AssertTrue("unknown facet yields no N3-I snapshot",
+                IdeologyNarrativeSnapshotFactory.Create(
+                    resolved, Evidence(true).narrative, policy, "unused") == null);
+            NarrativeEvidence wrongPov = pageSnapshot.sourceEvidence;
+            wrongPov = new NarrativeEvidence
+            {
+                eventId = wrongPov.eventId, tick = wrongPov.tick, povPawnId = "OtherPawn",
+                povRole = wrongPov.povRole, facet = wrongPov.facet, phase = wrongPov.phase,
+                subjectKind = wrongPov.subjectKind, subjectId = wrongPov.subjectId,
+                pawnCanKnow = true, sourceDomain = wrongPov.sourceDomain,
+                sourceDefName = wrongPov.sourceDefName
+            };
+            AssertEqual("wrong POV cannot use the snapshot", 0,
+                IdeologyNarrativeProvider.Build(new List<NarrativeEvidence> { wrongPov }, pageSnapshot).Count);
+            NarrativeEvidence hidden = CopyNarrative(pageSnapshot.sourceEvidence);
+            bool? knowledge = hidden.pawnCanKnow;
+            hidden.pawnCanKnow = false;
+            AssertEqual("hidden evidence cannot use the snapshot", 0,
+                IdeologyNarrativeProvider.Build(new List<NarrativeEvidence> { hidden }, pageSnapshot).Count);
+            hidden.pawnCanKnow = knowledge;
+            string sourceDef = hidden.sourceDefName;
+            hidden.sourceDefName = "UnrelatedSource";
+            AssertEqual("unrelated source cannot use the snapshot", 0,
+                IdeologyNarrativeProvider.Build(new List<NarrativeEvidence> { hidden }, pageSnapshot).Count);
+            hidden.sourceDefName = sourceDef;
+            string validText = pageSnapshot.text;
+            pageSnapshot.text = "malformed\nsecond line";
+            AssertEqual("malformed provider prose yields no candidate", 0,
+                IdeologyNarrativeProvider.Build(
+                    new List<NarrativeEvidence> { pageSnapshot.sourceEvidence }, pageSnapshot).Count);
+            pageSnapshot.text = validText;
+            AssertTrue("wrong page POV cannot re-stamp a prepared snapshot",
+                IdeologyNarrativeSnapshotFactory.ForPage(
+                    snapshot, "CanonicalEvent", 12345, "OtherPawn", "initiator") == null);
+
+            BeliefEventEvidence thought = BeliefEventEvidenceFactory.ForThought(
+                "SyntheticPawn", 5, "ThoughtDef", "Thought", null);
+            BeliefEventEvidence body = BeliefEventEvidenceFactory.ForBodyModification(
+                "SyntheticPawn", 5, "HediffDef", "Implant", "arm", "artificial", "simple");
+            AssertEqual("Phase-1 thought evidence owns an ambient-pressure facet",
+                NarrativeFacetTokens.AmbientPressure, thought.narrative.facet);
+            AssertEqual("Phase-1 body-mod evidence owns an identity-transition facet",
+                NarrativeFacetTokens.IdentityTransition, body.narrative.facet);
         }
 
         private static void TestMissingInactiveEmptyAndKnowledgeGates()
@@ -1679,6 +1813,29 @@ namespace PawnDiary
                 certaintyDirection,
                 ideologyChange,
                 requireAttemptedIdeology);
+        }
+
+        private static NarrativeEvidence CopyNarrative(NarrativeEvidence source)
+        {
+            return new NarrativeEvidence
+            {
+                eventId = source.eventId,
+                tick = source.tick,
+                povPawnId = source.povPawnId,
+                povRole = source.povRole,
+                facet = source.facet,
+                phase = source.phase,
+                subjectKind = source.subjectKind,
+                subjectId = source.subjectId,
+                subjectLabel = source.subjectLabel,
+                arcKey = source.arcKey,
+                relatedEventId = source.relatedEventId,
+                beliefTopics = new List<string>(source.beliefTopics),
+                salience = source.salience,
+                pawnCanKnow = source.pawnCanKnow,
+                sourceDomain = source.sourceDomain,
+                sourceDefName = source.sourceDefName
+            };
         }
 
         private static BeliefMutationSnapshot Mutation(

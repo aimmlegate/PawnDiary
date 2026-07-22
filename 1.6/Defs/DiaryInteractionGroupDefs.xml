@@ -881,7 +881,7 @@
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Ideology</li>
     </enableWhenPackageIdsLoaded>
-    <instruction>an exact crisis of belief; use supplied belief facts to distinguish an actual change of faith from certainty breaking under doubt, and never invent a former ideoligion</instruction>
+    <instruction>an exact crisis of belief; use supplied belief facts to distinguish an actual change of ideoligion from convictions breaking under doubt, and never invent a former ideoligion</instruction>
     <tone>with shaken conviction and raw inward doubt</tone>
     <colorCue>mentalBreak</colorCue>
     <matchDefNames>

@@ -567,11 +567,18 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 
 ### Phase N3 — Ideology interpretation and remaining providers
 
-> **N3-I dependency status (2026-07-21): Ideology Phase 0 complete; N3-I itself remains pending.** The
-> pure belief resolver now reuses `NarrativeEvidence` for facet, salience, knowledge, source/topic, and
-> deterministic-seed input and freezes `interpretation` as its future candidate category. It does not
-> yet construct or submit a `NarrativeLensCandidate`; that live adapter belongs after Ideology Phase 1,
-> so provider routing, shared-lens selection, persistence, and prompt behavior are unchanged.
+> **N3-I progress (2026-07-22): code-complete; loaded acceptance pending.** The fixed provider list now
+> consumes a detached result derived from Phase 1's guarded per-POV event-time belief snapshot and its
+> single `EventRelativeStanceResolver` pass. Structural tiers and lexical results that repeat the XML
+> confidence/margin gates may propose one exact source/POV `interpretation` candidate; empty,
+> mutation-only, ambiguous, hidden, unsafe, unknown-facet, source-mismatched, or unavailable evidence
+> remains silent. Phase-1 thought/body evidence supplies the shared facet seam; partial Phase-2
+> conversion/crisis work is deliberately not broadened. Stable precept keys, DefInjected neutral prose,
+> shared deterministic ordering, repetition history, category/global budgets, and existing N1
+> persistence are reused with no hook, page, polling path, save field, or reflection scheduler. Provider
+> exceptions are isolated per fixed-list entry, preserving the canonical page and other DLC candidates.
+> Focused pure coverage passes 360 Belief and 345 Narrative Continuity assertions; 381 loaded tests
+> compile but have not been validly executed for this checkpoint.
 
 > **N3-B identity progress (2026-07-17): implemented; loaded acceptance passed.** The existing
 > `GeneIdentityChanged` page now supplies exact-subject identity evidence and one provider candidate
@@ -643,8 +650,8 @@ landing may select an exact family/home lens; unrelated colonists/events remain 
 > spam.
 
 1. Route high-confidence `EventRelativeStanceResolver` output through the shared interpretation
-   category for ordinary event enrichment. **Pending; the Phase-0 pure output contract is ready, but no
-   live provider candidate is created yet.**
+   category for ordinary event enrichment. **Implemented for the Phase-1 exact thought/body seams;
+   broader Phase-2 evidence remains scheduled in its own phase.**
 2. Add Royalty persona/title/court candidates with exact applicability gates. **Implemented, including
    the Wave-9 succession, permit-authority, Royal Ascent journey, and court-pressure extension; changed
    loaded assertions remain pending.**

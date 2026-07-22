@@ -555,20 +555,23 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 
 ## 15. Wave 10 — Ideology stance and conversion foundation
 
-> **Implementation status (2026-07-21): Ideology Phase 0 automated exit gate complete; the rest of
-> Wave 10 remains pending.** The assembly-free contract now provides exact structural precedence,
-> conservative lexical fallback, immutable XML policy, bounded formatting/reflection shells, and 172
-> focused assertions with synthetic mod identities. The correction list is empty; XML and Debug build
-> pass. No live adapter, event/prompt/save route, page, scanner, or N3-I candidate was added, and no
-> loaded-game/manual acceptance is claimed. Ideology Phase 1 is next. Every deferred Royalty acceptance
-> item and Phase 5's recorded 354/354 result across 57/57 suites remain unchanged.
+> **Implementation status (2026-07-22): Ideology Phases 0–1 and Narrative N3-I are code-complete;
+> Phase 2 mutation, interaction-ownership, and exact Crisis-of-Belief work remains partial.** N3-I
+> closes the scheduling dependency without extending Phase 2 to Counsel, rituals, throne speech,
+> broader enrichment, passive tracking, or reflections. The provider reuses the single detached
+> Phase-1 resolver result and the shared selection/persistence path; no new source, hook, poll, or save
+> field landed. The assembly now contains 381 compiled RimTests. A headless startup attempt could not
+> create/load a game and therefore produced only fixture precondition failures; it is not an acceptance
+> run. The 377/377 suite remains the latest valid active-Ideology result, while both the superseded
+> pre-slice 379/379 profiles and the current 381/381 active-Ideology/base-only profiles remain unrecorded.
+> Every deferred Royalty acceptance item remains unchanged.
 
 ### Implement in this exact order
 
 1. **Ideology 0 (complete; pure tests/XML/Debug build green)** — complete pure correlation/lexical resolver and belief policy.
 2. **Ideology 1** — guarded live snapshot and saved event-time belief source.
-3. **Narrative N3-I** — adapt high-confidence stance output into the single shared
-   `interpretation` candidate category.
+3. **Narrative N3-I (code-complete; loaded acceptance pending)** — adapt high-confidence stance output
+   into the single shared `interpretation` candidate category.
 4. **Ideology 2** — conversion/crisis/ritual/speech mutation capture and required event integrations.
 5. **Ideology 3** — bounded passive certainty/ideology tracking for future reflection evidence.
 6. Complete the common N3 selector/provider tests across Royalty, Biotech, Anomaly, and Odyssey.

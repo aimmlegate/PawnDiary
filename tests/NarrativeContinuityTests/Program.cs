@@ -28,6 +28,7 @@ namespace NarrativeContinuityTests
             TestAnomalyProviderVisibleMappingsAndGates();
             TestOdysseyProviderEvidenceAndCrossDlcGates();
             TestOdysseyEnvironmentalPressureGatesAndComposition();
+            TestIdeologyInterpretationCompositionAndIsolation();
             TestReflectionPriorityAndDeferredConsumption();
             Console.WriteLine("NarrativeContinuityTests passed " + assertions + " assertions.");
             return 0;
@@ -1040,6 +1041,140 @@ namespace NarrativeContinuityTests
                 OdysseyNarrativeEvidenceFactory.Departure(
                     "bad", 1, "pawn-1", "crew", snapshot.journeyId,
                     string.Empty, string.Empty, "Ritual", true).Count);
+        }
+
+        private static void TestIdeologyInterpretationCompositionAndIsolation()
+        {
+            NarrativeEvidence evidence = Evidence();
+            evidence.arcKey = string.Empty;
+            IdeologyNarrativeSnapshot ideology = new IdeologyNarrativeSnapshot
+            {
+                providerAvailable = true,
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true,
+                povPawnId = evidence.povPawnId,
+                ideologyId = "Ideo_17",
+                preceptKeyKind = "instance",
+                preceptStableId = "Precept_42",
+                text = "Within Ari's worldview, this event directly engaged bodily change.",
+                sourceEvidence = evidence,
+                topicTokens = new List<string> { "body_modification" }
+            };
+            List<NarrativeLensCandidate> ideologyCandidates = IdeologyNarrativeProvider.Build(
+                new List<NarrativeEvidence> { evidence }, ideology);
+            AssertEqual("N3-I provider creates one exact candidate", 1, ideologyCandidates.Count);
+            string ideologyKey = ideologyCandidates[0].candidateKey;
+
+            BiotechNarrativeSnapshot biotech = new BiotechNarrativeSnapshot
+            {
+                providerAvailable = true,
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true,
+                povPawnId = evidence.povPawnId,
+                childId = evidence.subjectId,
+                identityStableKey = "gene|SyntheticGene",
+                identityText = "A visible inherited trait changed.",
+                identityTopicTokens = new List<string> { "identity" },
+                sourceTick = evidence.tick
+            };
+            List<NarrativeLensCandidate> composed = NarrativeProviderOrchestrator.Collect(
+                new List<NarrativeEvidence> { evidence }, null, null, biotech, null, null, ideology);
+            AssertEqual("Ideology composes with an existing provider", 2, composed.Count);
+            AssertEqual("fixed provider order places Ideology before Biotech", ideologyKey,
+                composed[0].candidateKey);
+
+            NarrativePolicySnapshot policy = NarrativePolicySnapshot.CreateDefault();
+            policy.maxSelectedCandidates = 2;
+            Budget(policy, NarrativeDetailLevelTokens.Full).maxLenses = 2;
+            Budget(policy, NarrativeDetailLevelTokens.Full).characterBudget = 1000;
+            NarrativeContextRequest request = new NarrativeContextRequest
+            {
+                evidence = new List<NarrativeEvidence> { evidence },
+                candidates = composed,
+                policy = policy,
+                currentTick = evidence.tick,
+                detailLevel = NarrativeDetailLevelTokens.Full,
+                deterministicSeed = 91
+            };
+            NarrativeContextSelection first = NarrativeContextSelector.Select(request);
+            NarrativeContextSelection second = NarrativeContextSelector.Select(request);
+            AssertEqual("N3-I selection is deterministic", first.narrativeContext,
+                second.narrativeContext);
+            AssertTrue("Full detail can use Ideology beside another category",
+                first.selectedCandidates.Count == 2 && HasSelected(first, ideologyKey));
+            AssertEqual("shared global lens budget remains two", 2, first.selectedCandidates.Count);
+
+            NarrativeLensCandidate secondInterpretation = Candidate(
+                "synthetic-second-interpretation", NarrativeCategoryTokens.Interpretation,
+                NarrativeFacetTokens.IdentityTransition, sourceTick: evidence.tick);
+            request.candidates = new List<NarrativeLensCandidate>
+            {
+                ideologyCandidates[0], secondInterpretation, composed[1]
+            };
+            NarrativeContextSelection capped = NarrativeContextSelector.Select(request);
+            int interpretationCount = 0;
+            for (int i = 0; i < capped.selectedCandidates.Count; i++)
+                if (capped.selectedCandidates[i].category == NarrativeCategoryTokens.Interpretation)
+                    interpretationCount++;
+            AssertEqual("shared category budget admits one interpretation", 1, interpretationCount);
+            AssertTrue("category cap still leaves room for another provider",
+                capped.selectedCandidates.Count <= 2 && HasSelected(capped, composed[1].candidateKey));
+
+            NarrativeLensCandidate fresh = Candidate(
+                "fresh-chapter", NarrativeCategoryTokens.Chapter,
+                NarrativeFacetTokens.IdentityTransition,
+                topics: new List<string> { "bonding" },
+                sourceTick: evidence.tick);
+            Budget(policy, NarrativeDetailLevelTokens.Full).maxLenses = 1;
+            policy.repetitionPenalty = 1000f;
+            request.candidates = new List<NarrativeLensCandidate> { ideologyCandidates[0], fresh };
+            request.recentSelectedCandidateKeys = new List<string>();
+            NarrativeContextSelection unrepeated = NarrativeContextSelector.Select(request);
+            request.recentSelectedCandidateKeys = new List<string> { ideologyKey };
+            NarrativeContextSelection repeated = NarrativeContextSelector.Select(request);
+            AssertEqual("N3-I wins before repetition", ideologyKey,
+                unrepeated.selectedCandidates.Count == 0
+                    ? string.Empty
+                    : unrepeated.selectedCandidates[0].candidateKey);
+            AssertEqual("N3-I key participates in ordinary repetition history", fresh.candidateKey,
+                repeated.selectedCandidates.Count == 0
+                    ? string.Empty
+                    : repeated.selectedCandidates[0].candidateKey);
+
+            List<NarrativeLensCandidate> withoutIdeology = NarrativeProviderOrchestrator.Collect(
+                new List<NarrativeEvidence> { evidence }, null, null, biotech, null, null, null);
+            ideology.providerAvailable = false;
+            List<NarrativeLensCandidate> inactiveIdeology = NarrativeProviderOrchestrator.Collect(
+                new List<NarrativeEvidence> { evidence }, null, null, biotech, null, null, ideology);
+            AssertEqual("inactive Ideology leaves other provider count unchanged",
+                withoutIdeology.Count, inactiveIdeology.Count);
+            AssertEqual("inactive Ideology leaves other provider ordering unchanged",
+                withoutIdeology[0].candidateKey, inactiveIdeology[0].candidateKey);
+
+            List<NarrativeLensCandidate> isolated = new List<NarrativeLensCandidate>
+            {
+                Candidate("before-failure", NarrativeCategoryTokens.Home,
+                    NarrativeFacetTokens.IdentityTransition)
+            };
+            string failedProvider = string.Empty;
+            NarrativeProviderOrchestrator.AddSafely(
+                isolated,
+                NarrativeProviderTokens.Ideology,
+                () => throw new InvalidOperationException("synthetic provider failure"),
+                (provider, exception) => failedProvider = provider);
+            NarrativeProviderOrchestrator.AddSafely(
+                isolated,
+                NarrativeProviderTokens.Biotech,
+                () => new List<NarrativeLensCandidate>
+                {
+                    Candidate("after-failure", NarrativeCategoryTokens.Identity,
+                        NarrativeFacetTokens.IdentityTransition)
+                });
+            AssertEqual("provider failure callback identifies Ideology",
+                NarrativeProviderTokens.Ideology, failedProvider);
+            AssertEqual("provider failure preserves prior and later candidates", 2, isolated.Count);
+            AssertEqual("provider failure preserves deterministic continuation", "after-failure",
+                isolated[1].candidateKey);
         }
 
         private static void TestOdysseyEnvironmentalPressureGatesAndComposition()

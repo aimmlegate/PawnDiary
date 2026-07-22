@@ -26,6 +26,7 @@ namespace PawnDiary
         // Core fixture candidates remain a narrow test seam beside the fixed provider list.
         public List<NarrativeLensCandidate> coreCandidates = new List<NarrativeLensCandidate>();
         public RoyaltyNarrativeSnapshot royalty;
+        public IdeologyNarrativeSnapshot ideology;
         public BiotechNarrativeSnapshot biotech;
         public AnomalyNarrativeSnapshot anomaly;
         public OdysseyNarrativeSnapshot odyssey;
@@ -96,7 +97,9 @@ namespace PawnDiary
                     request.royalty,
                     request.biotech,
                     request.anomaly,
-                    request.odyssey);
+                    request.odyssey,
+                    request.ideology,
+                    ProviderFailed);
                 result.selection = NarrativeContextSelector.Select(new NarrativeContextRequest
                 {
                     evidence = result.evidence,
@@ -121,6 +124,19 @@ namespace PawnDiary
             }
 
             return result;
+        }
+
+        private static void ProviderFailed(string provider, Exception exception)
+        {
+            string providerToken = string.IsNullOrWhiteSpace(provider) ? "unknown" : provider;
+            Type type = exception?.GetType();
+            string typeName = type == null ? "unknown" : type.FullName;
+            Log.WarningOnce(
+                "[Pawn Diary] Narrative Continuity provider '" + providerToken
+                + "' failed; this page keeps ordinary context and other providers: "
+                + typeName + ": " + (exception?.Message ?? string.Empty),
+                ("PawnDiary.NarrativeContextBuilder.Provider." + providerToken + "." + typeName)
+                    .GetHashCode());
         }
 
         private static string DetailLevelFor(PromptContextDetailLevel detailLevel)

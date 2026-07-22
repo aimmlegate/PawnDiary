@@ -41,7 +41,7 @@
       <li>Ludeon.RimWorld.Ideology</li>
     </enableWhenPackageIdsLoaded>
     <prompt>Write the exact Crisis of Belief mental state from the breaking pawn&apos;s point of view.</prompt>
-    <enhancement>Use only supplied mental-state and belief facts. A successful conversion or different previous/current ideoligion proves an actual change of faith; a failed conversion or unchanged identity proves challenged faith and falling certainty, not conversion. When no previous or mutation facts are present, mention only the visible current ideoligion and certainty. Never invent a former or attempted faith.</enhancement>
+    <enhancement>Use only supplied mental-state and belief facts. A successful conversion or different previous/current ideoligion proves an actual change of ideoligion; a failed conversion or unchanged identity proves challenged convictions and falling certainty, not conversion. When no previous or mutation facts are present, mention only the visible current ideoligion and certainty. Never invent a former or attempted ideoligion.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>

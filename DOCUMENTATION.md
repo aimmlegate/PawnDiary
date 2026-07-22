@@ -187,7 +187,7 @@ Generation starts only after an event exists in the saved hot store.
 into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
 responses, clean generated text, and decide title behavior.
 
-**Ideology Phases 0–1 plus Phase-2 mutation infrastructure and exact interaction enrichment
+**Ideology Phases 0–1, Narrative N3-I, plus Phase-2 mutation infrastructure and exact interaction enrichment
 (Master Wave 10)** keep the Phase-0
 pure policy contract and Phase-1 event-time runtime seam. `BeliefResolutionRequest` embeds the existing per-POV `NarrativeEvidence`, so shared facet,
 salience, knowledge, source, topic, interpretation-category, and deterministic-seed semantics are not
@@ -217,6 +217,22 @@ null checks, projects active ideology/certainty/role, memes/structure, issues/pr
 history correlations, and mechanical thought-offset valence, and returns only bounded plain DTOs.
 `PreceptComp_Thought` uses its typed API; conservative cached inspection is limited to public
 `thought`/`thoughts`/`eventDef`/`eventDefs` fields of the expected Def types on component subclasses.
+
+Narrative N3-I derives one optional `IdeologyNarrativeSnapshot` from that same detached evidence and
+the same single resolver result; it performs no second snapshot, resolver pass, or live-ideology read.
+Source-precept, exact-correlation, and direct-identity tiers are admitted structurally, while lexical
+tiers must repeat the XML minimum-confidence and runner-up-margin gates. Empty, mutation-only,
+unknown-facet, hidden, mismatched-POV/source, unsafe, or unavailable results propose no candidate.
+Phase-1 exact thoughts attach `ambient_pressure` / `thought_gained` evidence and body modifications
+attach `identity_transition` / `body_modified`; the partial Phase-2 conversion/crisis consumers are
+not expanded by this slice. A source that prepared body-mod belief context before its `DiaryEvent`
+existed may re-stamp only the later canonical page ID—tick, POV, role, and source facts must already
+match. The pure provider emits one stable
+`ideology|interpretation|<povId>|<ideologyId>|<instance-or-def>|<preceptId>` key and XML/DefInjected,
+secular-safe bounded prose. The existing selector then owns deterministic order, repetition, the
+single `interpretation` category, the global two-lens/detail budgets, and unchanged N1 persistence.
+Fixed-list provider calls are isolated individually, so an Ideology failure preserves the canonical
+page plus candidates from every other available DLC provider.
 
 `ThoughtSignal` freezes exact `Thought.sourcePrecept` identity before emitting. Body-mod pages reuse
 the same one resolver result and map only matched mechanical correlation valence into their established
@@ -301,21 +317,27 @@ that exact DefName at order 199, before the generic mental-state catchall, and t
 `DiaryEventPrompt_IdeoChange` key wins before group/classifier/domain fallbacks. After ordinary mental-
 state capture authorizes the page, `MentalStateSignal` passes its frozen exact group/Def/pawn/tick to
 `BeliefMutationEvidenceAdapter.ForMentalState`. The adapter peeks, never consumes, the newest exact-
-pawn cache row and uses the same pure ordering/age/mechanical-shape checks as interactions. A match
+pawn cache row and uses the same pure ordering/age/mechanical-shape checks as interactions. Evidence
+selection is optional and fail-open: a policy/cache exception logs once, returns null, and preserves
+the ordinary already-authorized page. A match
 freezes the observed old/new/attempted identity, result, and before/after certainty on the existing
 initiator POV; a wrong-pawn, stale, future, malformed, or missing row sets only the typed
 `currentBeliefFactsRelevant` flag, allowing `DlcContext` to snapshot visible current ideoligion and
-certainty without reconstructing any former faith. Exact crisis pages append only
+certainty when available without reconstructing any former ideoligion. Exact crisis pages append only
 `belief_event=crisis`; all detailed facts remain in the saved belief block. English and Russian
-DefInjected text explicitly distinguishes actual conversion from challenged/falling certainty and
-forbids invented former or attempted faiths. No-DLC/package-inactive paths return null, classic mode
-cannot naturally start vanilla's break, and unrelated or modded mental states retain their prior
-groups, prompts, page count, and empty optional evidence behavior. Vanilla then calls
+DefInjected text uses secular-safe ideoligion/conviction wording, explicitly distinguishes actual
+conversion from challenged/falling certainty, and forbids invented former or attempted ideoligions.
+No-DLC/package-inactive evidence paths return null, classic mode cannot naturally start vanilla's
+break, and the live mental-state classifier skips a dormant package-gated exact row so even a modded
+base-game state reusing `IdeoChange` falls back to the ordinary mental-break group instead of losing
+its page. Vanilla then calls
 `MentalState_IdeoChange.PostStart`, which recursively starts a silent `Wander_OwnRoom` or
 `Wander_Sad` companion state before the outer Harmony postfix. The mental-state capture prefix
-freezes that exact current/requested/silent triple and drops only the nested companion; the outer
-`IdeoChange` postfix still creates the single crisis page. Ordinary wander starts, non-silent
-transitions, other current states, and modded DefNames are not suppressed.
+freezes that exact current/requested/silent signature and treats it as the companion during vanilla's
+normal synchronous lifecycle; the outer `IdeoChange` postfix still creates the single crisis page.
+The prefix is fail-open, ordinary wander starts, non-silent transitions, other current states, and
+different modded DefNames are not suppressed. An external mod deliberately issuing the identical
+signature while `IdeoChange` is current is intentionally treated as the same implementation detail.
 
 The frozen value flows through `DiaryPovPayload.beliefContext` → `PromptValues.beliefContext` →
 `PromptAssembler.ResolveSource("BeliefContext")`. Full/Balanced/Compact detail projection is applied
@@ -394,8 +416,8 @@ source domain/Def, facet, phase, and exact subject or arc found in the page evid
 only safe IDs and canonical nonnegative map/tick/epoch segments; output is deduplicated, sorted, and
 independently capped at four identity, three chapter, and one pressure candidates before shared policy
 caps apply. Arrival, Gleaming, terminal void choices, benefit/downside, infection, infiltrator, and
-unresolved creepjoiner state have no accepted mapping. The Ideology provider slot remains empty until
-its source wave. Provider absence, no relevant DLC, unconnected POVs, child-only
+unresolved creepjoiner state have no accepted mapping. The Ideology slot now accepts only N3-I's
+high-confidence, exact-event/POV Phase-1 snapshot. Provider absence, no relevant DLC, unconnected POVs, child-only
 arcs, unknown locations/knowledge, or malformed translated format strings preserve the ordinary prompt
 with no narrative-context field.
 
@@ -406,7 +428,7 @@ so Full/Balanced/Compact budgets choose complete factual lenses before text is s
 never truncates a selected fact. Archive compaction copies
 only references and selection keys, and `DiaryArchiveRepository` rebuilds bounded pawn-scoped exact-arc
 and exact-subject indexes after load or retention. Source-specific pages remain their own sole capture
-owners; N2-B/N2-O/N3-A/N3-O only enrich already-authorized pages and cannot create another event.
+owners; N2-B/N2-O/N3-I/N3-A/N3-O only enrich already-authorized pages and cannot create another event.
 
 N0 froze exactly four evidence facets—`identity_transition`, `bond_lifecycle`,
 `journey_chapter`, and `ambient_pressure`—rather than creating generic DLC events. They cover the

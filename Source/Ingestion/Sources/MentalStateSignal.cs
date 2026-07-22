@@ -27,7 +27,7 @@ namespace PawnDiary.Ingestion
         private readonly string reason;
         private readonly string otherPawnLabel;
         private readonly bool isPair;
-        private readonly string effectiveGroupDefName;
+        private readonly string effectiveGroupDefName = string.Empty;
         private readonly MentalStateEventData payload;
 
         public MentalStateSignal(Pawn pawn, MentalStateDef stateDef, Pawn otherPawn, string reason)

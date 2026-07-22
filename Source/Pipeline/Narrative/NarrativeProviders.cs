@@ -1276,9 +1276,9 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Fixed provider list. Royalty, Biotech, Odyssey, and visible-only Anomaly facts have guarded
-    /// implementations; remaining empty calls are intentional stubs. Any absent DLC/provider is the
-    /// ordinary zero-candidate path.
+    /// Fixed provider list. Royalty, Ideology, Biotech, Odyssey, and visible-only Anomaly facts have
+    /// guarded implementations. Any absent DLC/provider is the ordinary zero-candidate path, and one
+    /// provider failure cannot discard candidates already returned by another provider.
     /// </summary>
     internal static class NarrativeProviderOrchestrator
     {
@@ -1288,19 +1288,41 @@ namespace PawnDiary
             RoyaltyNarrativeSnapshot royalty,
             BiotechNarrativeSnapshot biotech,
             AnomalyNarrativeSnapshot anomaly,
-            OdysseyNarrativeSnapshot odyssey)
+            OdysseyNarrativeSnapshot odyssey,
+            IdeologyNarrativeSnapshot ideology = null,
+            Action<string, Exception> providerFailure = null)
         {
             List<NarrativeLensCandidate> result = new List<NarrativeLensCandidate>();
             Add(result, coreCandidates); // Core/synthetic fixtures remain first and deterministic.
-            Add(result, RoyaltyNarrativeProvider.Build(evidence, royalty));
-            Add(result, IdeologyCandidates());
-            Add(result, BiotechNarrativeProvider.Build(evidence, biotech));
-            Add(result, AnomalyNarrativeProvider.Build(evidence, anomaly));
-            Add(result, OdysseyNarrativeProvider.Build(evidence, odyssey));
+            AddSafely(result, NarrativeProviderTokens.Royalty,
+                () => RoyaltyNarrativeProvider.Build(evidence, royalty), providerFailure);
+            AddSafely(result, NarrativeProviderTokens.Ideology,
+                () => IdeologyNarrativeProvider.Build(evidence, ideology), providerFailure);
+            AddSafely(result, NarrativeProviderTokens.Biotech,
+                () => BiotechNarrativeProvider.Build(evidence, biotech), providerFailure);
+            AddSafely(result, NarrativeProviderTokens.Anomaly,
+                () => AnomalyNarrativeProvider.Build(evidence, anomaly), providerFailure);
+            AddSafely(result, NarrativeProviderTokens.Odyssey,
+                () => OdysseyNarrativeProvider.Build(evidence, odyssey), providerFailure);
             return result;
         }
 
-        private static List<NarrativeLensCandidate> IdeologyCandidates() => new List<NarrativeLensCandidate>();
+        internal static void AddSafely(
+            List<NarrativeLensCandidate> destination,
+            string provider,
+            Func<List<NarrativeLensCandidate>> build,
+            Action<string, Exception> providerFailure = null)
+        {
+            try
+            {
+                Add(destination, build == null ? null : build());
+            }
+            catch (Exception exception)
+            {
+                providerFailure?.Invoke(provider, exception);
+            }
+        }
+
         private static void Add(List<NarrativeLensCandidate> destination, List<NarrativeLensCandidate> source)
         {
             if (source == null) return;

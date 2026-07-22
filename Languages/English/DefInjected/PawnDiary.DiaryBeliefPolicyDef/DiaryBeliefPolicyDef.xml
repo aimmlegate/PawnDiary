@@ -2,6 +2,8 @@
 <LanguageData>
   <Diary_BeliefPolicy.promptFieldLabel>belief context</Diary_BeliefPolicy.promptFieldLabel>
   <Diary_BeliefPolicy.promptFieldInstruction>Beliefs I held at the time. Let them color my reaction and word choice; do not invent doctrine beyond them or claim they caused what happened.</Diary_BeliefPolicy.promptFieldInstruction>
+  <Diary_BeliefPolicy.interpretationFactFormat>Within {0}, the view most relevant to this event was {1}: {2}</Diary_BeliefPolicy.interpretationFactFormat>
+  <Diary_BeliefPolicy.interpretationFactWithoutDescriptionFormat>Within {0}, the view most relevant to this event was {1}.</Diary_BeliefPolicy.interpretationFactWithoutDescriptionFormat>
   <Diary_BeliefPolicy.certaintyBands.0.phrase>Write with firm conviction, staying inside the supplied facts.</Diary_BeliefPolicy.certaintyBands.0.phrase>
   <Diary_BeliefPolicy.certaintyBands.1.phrase>Write with quiet assurance; do not escalate into zeal or extremism.</Diary_BeliefPolicy.certaintyBands.1.phrase>
   <Diary_BeliefPolicy.certaintyBands.2.phrase>Let unease and small reservations show; the belief itself still holds.</Diary_BeliefPolicy.certaintyBands.2.phrase>

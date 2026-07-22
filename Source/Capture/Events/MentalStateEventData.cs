@@ -60,9 +60,11 @@ namespace PawnDiary.Capture
         public string OtherPawnLabel;
 
         /// <summary>
-        /// True only for vanilla's silent companion transition started inside
-        /// <c>MentalState_IdeoChange.PostStart</c>. Ordinary sad wandering, unrelated nested states,
-        /// non-silent transitions, and modded mental states remain normal capture candidates.
+        /// Recognizes vanilla's exact current/requested/silent signature for the companion transition
+        /// normally started inside <c>MentalState_IdeoChange.PostStart</c>. The predicate cannot inspect
+        /// the caller stack, so an external mod deliberately issuing that identical transition while
+        /// IdeoChange is current is accepted as the same companion. Ordinary sad wandering, unrelated
+        /// nested states, non-silent transitions, and different modded DefNames remain candidates.
         /// </summary>
         public static bool ShouldSuppressNestedCompanion(
             string currentDefName,

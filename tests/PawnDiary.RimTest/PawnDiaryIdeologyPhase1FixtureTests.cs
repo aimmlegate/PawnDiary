@@ -100,6 +100,98 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(
                 context == BeliefContextFormatter.NormalizeSaved(context, DiaryBeliefPolicy.Snapshot()),
                 "The event-time belief block was not already in its stable saved form.");
+            BeliefSnapshot snapshot = DlcContext.CaptureBeliefSnapshot(
+                pawn, DiaryBeliefPolicy.Snapshot());
+            string expectedKey = "ideology|interpretation|" + pawn.GetUniqueLoadID() + "|"
+                + snapshot.ideologyId + "|instance|" + sourcePrecept.GetUniqueLoadID();
+            List<NarrativeEvidence> narrativeEvidence = diaryEvent.NarrativeEvidenceForRole(
+                DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(
+                narrativeEvidence.Count == 1
+                    && narrativeEvidence[0].eventId == diaryEvent.eventId
+                    && narrativeEvidence[0].povPawnId == pawn.GetUniqueLoadID()
+                    && narrativeEvidence[0].sourceDomain == "thought"
+                    && narrativeEvidence[0].sourceDefName == thoughtDef.defName
+                    && narrativeEvidence[0].facet == NarrativeFacetTokens.AmbientPressure
+                    && diaryEvent.NarrativeSelectedCandidateKeysForRole(
+                        DiaryEvent.InitiatorRole).Contains(expectedKey)
+                    && !string.IsNullOrWhiteSpace(
+                        diaryEvent.NarrativeContextForRole(DiaryEvent.InitiatorRole)),
+                "The real Phase-1 source snapshot did not produce one exact N3-I interpretation lens.");
+        }
+
+        /// <summary>
+        /// Proves the fixed provider list treats an unavailable Ideology provider as an empty result,
+        /// leaving a non-Ideology candidate byte-for-byte unchanged. The base-only profile also checks
+        /// the real guarded DlcContext inactive snapshot.
+        /// </summary>
+        [Test]
+        public static void IdeologyUnavailableLeavesOtherNarrativeProvidersUnchanged()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                PawnDiaryRimTestScope.Require(!DlcContext.CaptureBeliefSnapshot(pawn).ideologyActive,
+                    "The real base-only belief snapshot must remain inactive.");
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            int tick = Find.TickManager.TicksGame;
+            NarrativeEvidence evidence = new NarrativeEvidence
+            {
+                eventId = "ideology-inactive-composition",
+                tick = tick,
+                povPawnId = pawnId,
+                povRole = DiaryEvent.InitiatorRole,
+                facet = NarrativeFacetTokens.IdentityTransition,
+                phase = "fixture",
+                subjectKind = NarrativeSubjectKindTokens.Pawn,
+                subjectId = pawnId,
+                beliefTopics = new List<string> { "identity" },
+                salience = NarrativeSalienceTokens.Meaningful,
+                pawnCanKnow = true,
+                sourceDomain = "fixture",
+                sourceDefName = "OtherProvider"
+            };
+            NarrativeLensCandidate other = new NarrativeLensCandidate
+            {
+                candidateKey = "core|fixture|other-provider",
+                provider = NarrativeProviderTokens.Core,
+                category = NarrativeCategoryTokens.Identity,
+                text = "A bounded non-Ideology fixture remains available.",
+                facet = evidence.facet,
+                subjectKind = evidence.subjectKind,
+                subjectId = evidence.subjectId,
+                sourceEventId = evidence.eventId,
+                sourceTick = tick,
+                salience = evidence.salience,
+                pawnCanKnow = true,
+                providerAvailable = true,
+                hasVerifiedPovConnection = true
+            };
+            NarrativeContextBuildRequest baselineRequest = new NarrativeContextBuildRequest
+            {
+                eventId = evidence.eventId,
+                eventTick = tick,
+                povPawnId = pawnId,
+                povRole = DiaryEvent.InitiatorRole,
+                evidence = new List<NarrativeEvidence> { evidence },
+                coreCandidates = new List<NarrativeLensCandidate> { other },
+                contextDetailLevel = PromptContextDetailLevel.Full
+            };
+            NarrativeContextBuildResult baseline = NarrativeContextBuilder.Build(baselineRequest);
+            baselineRequest.ideology = new IdeologyNarrativeSnapshot
+            {
+                providerAvailable = false,
+                sourceEvidence = evidence
+            };
+            NarrativeContextBuildResult unavailable = NarrativeContextBuilder.Build(baselineRequest);
+            PawnDiaryRimTestScope.Require(
+                baseline.selection.narrativeContext == unavailable.selection.narrativeContext
+                    && baseline.selection.selectedCandidates.Count == 1
+                    && unavailable.selection.selectedCandidates.Count == 1
+                    && baseline.selection.selectedCandidates[0].candidateKey
+                        == unavailable.selection.selectedCandidates[0].candidateKey,
+                "An unavailable Ideology provider changed another provider's ordinary selection.");
         }
 
         /// <summary>Locks the shared same-language policy snapshot used by frequent history hooks.</summary>
@@ -159,6 +251,69 @@ namespace PawnDiary.RimTests
                 PawnDiaryRimTestScope.Require(
                     string.IsNullOrEmpty(diaryEvent.BeliefContextForRole(DiaryEvent.InitiatorRole)),
                     "A failed optional belief snapshot left partial context on the ordinary page.");
+                PawnDiaryRimTestScope.Require(
+                    string.IsNullOrEmpty(diaryEvent.NarrativeContextForRole(DiaryEvent.InitiatorRole))
+                        && diaryEvent.NarrativeSelectedCandidateKeysForRole(
+                            DiaryEvent.InitiatorRole).Count == 0,
+                    "A failed resolver snapshot left a partial N3-I candidate on the ordinary page.");
+            }
+            finally
+            {
+                harmony.Unpatch(target, HarmonyPatchType.Prefix, harmony.Id);
+            }
+        }
+
+        /// <summary>
+        /// Forces only the pure Ideology provider to fail after the real Phase-1 resolver succeeds.
+        /// The canonical thought page and its saved belief block must survive with no partial lens.
+        /// </summary>
+        [Test]
+        public static void IdeologyProviderFailureKeepsTheCanonicalThoughtPage()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                Log.Message(LogPrefix + "provider failure isolation: not applicable (Ideology inactive). ");
+                return;
+            }
+
+            Precept sourcePrecept;
+            ThoughtDef thoughtDef;
+            Ideo fixtureIdeo = FindIdeoWithThoughtPrecept(out sourcePrecept, out thoughtDef);
+            if (fixtureIdeo == null)
+            {
+                Log.Message(LogPrefix + "provider failure isolation: no loaded thought precept fixture. ");
+                return;
+            }
+            pawn.ideo.SetIdeo(fixtureIdeo);
+            Thought_Memory thought = ThoughtMaker.MakeThought(thoughtDef, sourcePrecept);
+            thought.pawn = pawn;
+            ThoughtSignal signal = new ThoughtSignal(pawn, thought);
+
+            System.Reflection.MethodInfo target = AccessTools.Method(
+                typeof(IdeologyNarrativeProvider),
+                nameof(IdeologyNarrativeProvider.Build),
+                new[] { typeof(List<NarrativeEvidence>), typeof(IdeologyNarrativeSnapshot) });
+            PawnDiaryRimTestScope.Require(target != null,
+                "Could not resolve the pure Ideology provider for failure isolation.");
+            Harmony harmony = new Harmony(
+                "PawnDiary.RimTest.IdeologyProviderFailure." + Guid.NewGuid().ToString("N"));
+            harmony.Patch(target, prefix: new HarmonyMethod(
+                typeof(PawnDiaryIdeologyPhase1FixtureTests), nameof(ThrowIdeologyProviderFixture)));
+            try
+            {
+                DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                    () => signal.Emit(scope.Component, CaptureDecision.GenerateSolo),
+                    thoughtDef.defName,
+                    pawn,
+                    null);
+                PawnDiaryRimTestScope.Require(
+                    !string.IsNullOrWhiteSpace(
+                        diaryEvent.BeliefContextForRole(DiaryEvent.InitiatorRole))
+                        && string.IsNullOrWhiteSpace(
+                            diaryEvent.NarrativeContextForRole(DiaryEvent.InitiatorRole))
+                        && diaryEvent.NarrativeSelectedCandidateKeysForRole(
+                            DiaryEvent.InitiatorRole).Count == 0,
+                    "An Ideology provider exception cancelled the page or left a partial lens.");
             }
             finally
             {
@@ -336,6 +491,11 @@ namespace PawnDiary.RimTests
         private static bool ThrowBeliefSnapshotFixture()
         {
             throw new InvalidOperationException("Synthetic belief snapshot failure.");
+        }
+
+        private static bool ThrowIdeologyProviderFixture()
+        {
+            throw new InvalidOperationException("Synthetic Ideology narrative-provider failure.");
         }
 
         private static void AssertBodyModificationAttitude(string preceptDefName, string expectedAttitude)

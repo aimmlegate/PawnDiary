@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
+using PawnDiary.Capture;
 using PawnDiary.Ingestion;
 using RimTestRedux;
 using RimWorld;
@@ -103,6 +104,19 @@ namespace PawnDiary.RimTests
             AssertOwnedPatchState(conversion, active);
             AssertOwnedPatchState(offset, active);
             AssertOwnedPatchState(setIdeology, active);
+
+            // A third-party base-game MentalStateDef can legally reuse a DLC DefName while the DLC is
+            // absent. Live classification must skip the dormant beliefCrisis row and retain the ordinary
+            // mental-break fallback instead of silently losing that modded page.
+            MentalStateDef syntheticIdeoChange = new MentalStateDef
+            {
+                defName = MentalStateEventData.IdeoChangeDefName
+            };
+            string expectedMentalStateGroup = active ? "beliefCrisis" : "mentalbreak";
+            PawnDiaryRimTestScope.Require(
+                InteractionGroups.ClassifyMentalState(syntheticIdeoChange)?.defName
+                    == expectedMentalStateGroup,
+                "Live IdeoChange classification did not respect the current DLC availability boundary.");
 
             BeliefMutationState state;
             bool captured = DlcContext.TryCaptureBeliefMutationState(pawn.ideo, out state);
@@ -339,6 +353,8 @@ namespace PawnDiary.RimTests
             }
 
             scope.RequireSoloRef(page, pawn);
+            scope.RequireNoEventForTestPawns(MentalStateEventData.WanderOwnRoomDefName);
+            scope.RequireNoEventForTestPawns(MentalStateEventData.WanderSadDefName);
             AssertGameContextContains(page, "mental_state=IdeoChange");
             AssertGameContextContains(page, BeliefMutationEventSelector.CrisisGameContextMarker);
             PawnDiaryRimTestScope.Require((Find.PlayLog?.AllEntries?.Count ?? 0) == playLogCount,
@@ -366,6 +382,84 @@ namespace PawnDiary.RimTests
             AssertContextContains(page, DiaryEvent.InitiatorRole, "certainty after:");
             PawnDiaryRimTestScope.Require(BeliefMutationCache.Count == 1,
                 "The existing solo crisis page consumed or duplicated its mutation cache row.");
+        }
+
+        /// <summary>
+        /// Forces vanilla's real IdeoChange attempt to fail by starting above its fixed 50% certainty
+        /// reduction. The one crisis page must report challenged convictions and falling certainty,
+        /// never a conversion or a nested wander page.
+        /// </summary>
+        [Test]
+        public static void RealIdeoChangeFailureKeepsOneTruthfulCrisisPage()
+        {
+            if (!RequireActiveTracker()) return;
+            MentalStateDef stateDef = DefDatabase<MentalStateDef>.GetNamedSilentFail("IdeoChange");
+            MentalBreakDef breakDef = DefDatabase<MentalBreakDef>.GetNamedSilentFail("IdeoChange");
+            PawnDiaryRimTestScope.Require(stateDef != null && breakDef?.Worker != null,
+                "The Ideology-active fixture did not load the real IdeoChange mental-state boundary.");
+
+            scope.SpawnAsLiveColonist(pawn);
+            Ideo beforeIdeology = EnsureCurrentIdeology();
+            EnsureRegisteredAlternativeIdeology(beforeIdeology);
+            for (int attempt = 0; pawn.ideo.Certainty <= 0.5f && attempt < 4; attempt++)
+                pawn.ideo.OffsetCertainty(1f);
+            PawnDiaryRimTestScope.Require(pawn.ideo.Certainty > 0.5f,
+                "The fixture could not raise certainty above vanilla IdeoChange's fixed reduction.");
+            BeliefMutationCache.Reset();
+            float beforeCertainty = pawn.ideo.Certainty;
+            int playLogCount = Find.PlayLog?.AllEntries?.Count ?? 0;
+
+            DiaryEvent page;
+            Rand.PushState(913547);
+            try
+            {
+                page = scope.FireAndRequireEvent(
+                    () =>
+                    {
+                        bool started = pawn.mindState.mentalStateHandler.TryStartMentalState(
+                            stateDef,
+                            "Pawn Diary RimTest IdeoChange failure boundary",
+                            forced: true);
+                        PawnDiaryRimTestScope.Require(started,
+                            "Vanilla refused to start the forced failed IdeoChange mental state.");
+                    },
+                    "IdeoChange",
+                    pawn,
+                    null,
+                    rejectOtherTestPawnEvents: true);
+            }
+            finally
+            {
+                Rand.PopState();
+            }
+
+            scope.RequireSoloRef(page, pawn);
+            scope.RequireNoEventForTestPawns(MentalStateEventData.WanderOwnRoomDefName);
+            scope.RequireNoEventForTestPawns(MentalStateEventData.WanderSadDefName);
+            PawnDiaryRimTestScope.Require((Find.PlayLog?.AllEntries?.Count ?? 0) == playLogCount,
+                "The failed IdeoChange boundary unexpectedly changed PlayLog.");
+
+            BeliefMutationSnapshot mutation = BeliefMutationCache.PeekLatest(
+                pawn.GetUniqueLoadID(), Find.TickManager.TicksGame, DiaryBeliefPolicy.Snapshot());
+            PawnDiaryRimTestScope.Require(mutation != null
+                    && mutation.conversionSucceeded == false
+                    && !mutation.ideologyChanged
+                    && mutation.beforeIdeologyId == beforeIdeology.GetUniqueLoadID()
+                    && mutation.afterIdeologyId == mutation.beforeIdeologyId
+                    && mutation.attemptedIdeologyId.Length > 0
+                    && mutation.attemptedIdeologyId != mutation.beforeIdeologyId
+                    && Math.Abs(mutation.beforeCertainty - beforeCertainty) < 0.0001f
+                    && Math.Abs(mutation.afterCertainty - (beforeCertainty - 0.5f)) < 0.0001f
+                    && mutation.causeTokens.Contains(BeliefMutationCauseTokens.ConversionAttempt)
+                    && !mutation.causeTokens.Contains(BeliefMutationCauseTokens.SetIdeology),
+                "The real failed IdeoChange page did not retain its unchanged-identity mutation facts.");
+            AssertGameContextContains(page, BeliefMutationEventSelector.CrisisGameContextMarker);
+            AssertContextContains(page, DiaryEvent.InitiatorRole, "conversion result: failure");
+            AssertContextContains(page, DiaryEvent.InitiatorRole, "certainty delta: -50%");
+            AssertContextContains(page, DiaryEvent.InitiatorRole,
+                "current ideoligion: " + mutation.afterIdeologyName);
+            PawnDiaryRimTestScope.Require(BeliefMutationCache.Count == 1,
+                "The failed crisis page consumed or duplicated its mutation cache row.");
         }
 
         /// <summary>
@@ -405,6 +499,55 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Mutation evidence is optional enrichment. A policy/cache failure before event construction
+        /// must return null evidence and preserve the already-authorized ordinary mental-state page.
+        /// </summary>
+        [Test]
+        public static void EvidenceSelectionFailureKeepsOrdinaryCrisisPage()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                Log.Message(LogPrefix
+                    + "evidence failure isolation: not applicable (Ideology inactive). ");
+                return;
+            }
+
+            MentalStateDef stateDef = DefDatabase<MentalStateDef>.GetNamedSilentFail("IdeoChange");
+            PawnDiaryRimTestScope.Require(stateDef != null,
+                "The Ideology-active fixture did not load IdeoChange for failure isolation.");
+            EnsureCurrentIdeology();
+            BeliefMutationCache.Reset();
+            MethodInfo target = AccessTools.Method(typeof(DiaryBeliefPolicy),
+                nameof(DiaryBeliefPolicy.Snapshot), Type.EmptyTypes);
+            PawnDiaryRimTestScope.Require(target != null,
+                "Could not resolve the belief-policy snapshot seam for failure isolation.");
+            Harmony harmony = new Harmony("PawnDiary.RimTest.IdeologyEvidenceFailure."
+                + Guid.NewGuid().ToString("N"));
+            harmony.Patch(target, prefix: new HarmonyMethod(
+                typeof(PawnDiaryIdeologyPhase2InfrastructureTests),
+                nameof(ThrowBeliefPolicySnapshot)));
+            try
+            {
+                DiaryEvent page = scope.FireAndRequireEvent(
+                    () => DiaryEvents.Submit(new MentalStateSignal(
+                        pawn, stateDef, null, "synthetic optional-enrichment failure")),
+                    "IdeoChange", pawn, null, rejectOtherTestPawnEvents: true);
+                scope.RequireSoloRef(page, pawn);
+                AssertGameContextContains(page, "mental_state=IdeoChange");
+                PawnDiaryRimTestScope.Require(
+                    string.IsNullOrEmpty(page.BeliefContextForRole(DiaryEvent.InitiatorRole))
+                        && (page.gameContext ?? string.Empty).IndexOf(
+                            BeliefMutationEventSelector.CrisisGameContextMarker,
+                            StringComparison.Ordinal) < 0,
+                    "A failed mutation-evidence selection left partial crisis enrichment on the page.");
+            }
+            finally
+            {
+                harmony.Unpatch(target, HarmonyPatchType.Prefix, harmony.Id);
+            }
+        }
+
+        /// <summary>
         /// The exact Convert ability route is dropped before random sampling, while its real vanilla
         /// Convert_Success PlayLog row creates exactly one pair page through the existing Harmony hook.
         /// </summary>
@@ -412,9 +555,8 @@ namespace PawnDiary.RimTests
         public static void ConvertAbilityAndDownstreamInteractionProduceOneCanonicalPage()
         {
             if (!RequireActiveTracker()) return;
-            InteractionDef interaction = DefDatabase<InteractionDef>.GetNamedSilentFail("Convert_Success");
-            PawnDiaryRimTestScope.Require(interaction != null,
-                "The Ideology-active fixture could not load Convert_Success.");
+            scope.SpawnAsLiveColonist(pawn);
+            scope.SpawnAsLiveColonist(otherPawn);
             Ideo beforeIdeology = EnsureCurrentIdeology(otherPawn);
             Ideo attemptedIdeology = EnsureCurrentIdeology(pawn);
             if (ReferenceEquals(beforeIdeology, attemptedIdeology))
@@ -424,23 +566,16 @@ namespace PawnDiary.RimTests
             }
             otherPawn.ideo.OffsetCertainty(-otherPawn.ideo.Certainty);
             BeliefMutationCache.Reset();
-            Ability ability = new Ability(pawn, BuildSyntheticAbilityDef("Convert"));
-            PlayLogEntry_Interaction entry = GeneratedSpeechPlayLog.CreateInteractionEntry(
-                interaction, pawn, otherPawn);
-            PawnDiaryRimTestScope.Require(entry != null,
-                "Could not create the downstream Convert_Success PlayLog row.");
-            scope.TrackPlayLogEntry(entry);
+            Ability ability = BuildExecutableVanillaAbility(
+                pawn, "Convert", typeof(CompAbilityEffect_Convert));
+            List<LogEntry> addedPlayLogEntries = null;
 
-            DiaryEvent page = scope.FireAndRequireEvent(() =>
-            {
-                DiaryEvents.Submit(new AbilitySignal(
-                    ability, new LocalTargetInfo(otherPawn), LocalTargetInfo.Invalid));
-                bool converted = otherPawn.ideo.IdeoConversionAttempt(
-                    0.05f, attemptedIdeology, applyCertaintyFactor: false);
-                PawnDiaryRimTestScope.Require(converted,
-                    "The deterministic zero-certainty fixture did not convert the target.");
-                Find.PlayLog.Add(entry);
-            }, "Convert_Success", pawn, otherPawn, rejectOtherTestPawnEvents: true);
+            DiaryEvent page = scope.FireAndRequireEvent(
+                () => addedPlayLogEntries = ActivateAndTrackPlayLog(ability, otherPawn),
+                "Convert_Success", pawn, otherPawn, rejectOtherTestPawnEvents: true);
+            PawnDiaryRimTestScope.Require(ReferenceEquals(otherPawn.ideo.Ideo, attemptedIdeology)
+                    && addedPlayLogEntries?.Count == 1,
+                "The real Convert ability did not convert the target and add one downstream PlayLog row.");
             scope.RequirePairRefs(page, pawn, otherPawn);
             AssertGameContextContains(page, BeliefMutationEventSelector.ConversionGameContextMarker);
             AssertContextContains(page, DiaryEvent.InitiatorRole,
@@ -572,29 +707,40 @@ namespace PawnDiary.RimTests
         public static void ReassureAbilityAndDownstreamInteractionProduceOneCanonicalPage()
         {
             if (!RequireActiveTracker()) return;
-            InteractionDef interaction = DefDatabase<InteractionDef>.GetNamedSilentFail("Reassure");
-            PawnDiaryRimTestScope.Require(interaction != null,
-                "The Ideology-active fixture could not load Reassure.");
-            EnsureCurrentIdeology(otherPawn);
-            otherPawn.ideo.OffsetCertainty(0.4f - otherPawn.ideo.Certainty);
-            BeliefMutationCache.Reset();
-            Ability ability = new Ability(pawn, BuildSyntheticAbilityDef("Reassure"));
-            PlayLogEntry_Interaction entry = GeneratedSpeechPlayLog.CreateInteractionEntry(
-                interaction, pawn, otherPawn);
-            PawnDiaryRimTestScope.Require(entry != null,
-                "Could not create the downstream Reassure PlayLog row.");
-            scope.TrackPlayLogEntry(entry);
-
-            DiaryEvent page = scope.FireAndRequireEvent(() =>
+            Pawn caster = pawn;
+            for (int attempt = 0;
+                 caster.GetStatValue(StatDefOf.NegotiationAbility) <= 0.0001f && attempt < 8;
+                 attempt++)
             {
-                DiaryEvents.Submit(new AbilitySignal(
-                    ability, new LocalTargetInfo(otherPawn), LocalTargetInfo.Invalid));
-                otherPawn.ideo.OffsetCertainty(0.1f);
-                Find.PlayLog.Add(entry);
-            }, "Reassure", pawn, otherPawn, rejectOtherTestPawnEvents: true);
-            scope.RequirePairRefs(page, pawn, otherPawn);
-            AssertContextContains(page, DiaryEvent.InitiatorRole, "certainty delta: +10%");
-            AssertContextContains(page, DiaryEvent.RecipientRole, "certainty delta: +10%");
+                caster = scope.CreateAdultColonist();
+            }
+            PawnDiaryRimTestScope.Require(
+                caster.GetStatValue(StatDefOf.NegotiationAbility) > 0.0001f,
+                "Could not generate a bounded Reassure caster with positive NegotiationAbility.");
+            Ideo sharedIdeology = EnsureCurrentIdeology(caster);
+            EnsureCurrentIdeology(otherPawn);
+            if (!ReferenceEquals(otherPawn.ideo.Ideo, sharedIdeology))
+                otherPawn.ideo.SetIdeo(sharedIdeology);
+            scope.SpawnAsLiveColonist(caster);
+            scope.SpawnAsLiveColonist(otherPawn);
+            otherPawn.ideo.OffsetCertainty(-1f);
+            BeliefMutationCache.Reset();
+            float beforeCertainty = otherPawn.ideo.Certainty;
+            Ability ability = BuildExecutableVanillaAbility(
+                caster, "Reassure", typeof(CompAbilityEffect_Reassure));
+            List<LogEntry> addedPlayLogEntries = null;
+
+            DiaryEvent page = scope.FireAndRequireEvent(
+                () => addedPlayLogEntries = ActivateAndTrackPlayLog(ability, otherPawn),
+                "Reassure", caster, otherPawn, rejectOtherTestPawnEvents: true);
+            float certaintyDelta = otherPawn.ideo.Certainty - beforeCertainty;
+            PawnDiaryRimTestScope.Require(certaintyDelta > 0.0001f
+                    && addedPlayLogEntries?.Count == 1,
+                "The real Reassure ability did not increase certainty and add one PlayLog row.");
+            scope.RequirePairRefs(page, caster, otherPawn);
+            string expectedDelta = "certainty delta: " + FormatSignedPercent(certaintyDelta);
+            AssertContextContains(page, DiaryEvent.InitiatorRole, expectedDelta);
+            AssertContextContains(page, DiaryEvent.RecipientRole, expectedDelta);
             AssertContextContains(page, DiaryEvent.InitiatorRole,
                 BeliefMutationCauseTokens.CertaintyOffset);
             PawnDiaryRimTestScope.Require(
@@ -917,9 +1063,73 @@ namespace PawnDiary.RimTests
             };
         }
 
+        /// <summary>
+        /// Builds an executable test Ability from the installed vanilla Def's real effect-comp policy.
+        /// The clone deliberately omits its cooldown group so a direct test activation cannot mutate
+        /// unrelated role abilities or ritual cooldowns in the loaded player's colony.
+        /// </summary>
+        private static Ability BuildExecutableVanillaAbility(
+            Pawn caster,
+            string defName,
+            Type expectedEffectCompType)
+        {
+            AbilityDef source = DefDatabase<AbilityDef>.GetNamedSilentFail(defName);
+            PawnDiaryRimTestScope.Require(source?.comps != null
+                    && source.verbProperties != null
+                    && source.comps.Any(properties => properties?.compClass == expectedEffectCompType),
+                "The installed Ideology AbilityDef '" + defName
+                    + "' did not expose its expected vanilla effect comp.");
+            AbilityDef executable = new AbilityDef
+            {
+                defName = source.defName,
+                label = source.label,
+                abilityClass = typeof(Ability),
+                comps = new List<AbilityCompProperties>(source.comps),
+                cooldownTicksRange = new IntRange(0, 0),
+                hostile = source.hostile,
+                verbProperties = source.verbProperties
+            };
+            return new Ability(caster, executable);
+        }
+
+        /// <summary>
+        /// Activates the real vanilla effect comps through the production Ability.Activate Harmony
+        /// boundary, captures exactly the PlayLog rows that call created, and registers them for cleanup.
+        /// </summary>
+        private static List<LogEntry> ActivateAndTrackPlayLog(Ability ability, Pawn target)
+        {
+            List<LogEntry> existing = new List<LogEntry>(Find.PlayLog.AllEntries);
+            bool activated = ability.Activate(
+                new LocalTargetInfo(target), LocalTargetInfo.Invalid);
+            PawnDiaryRimTestScope.Require(activated,
+                "Vanilla Ability.Activate rejected the executable Ideology fixture.");
+            List<LogEntry> added = Find.PlayLog.AllEntries
+                .Where(entry => entry != null && !existing.Contains(entry))
+                .ToList();
+            for (int i = 0; i < added.Count; i++) scope.TrackPlayLogEntry(added[i]);
+            PawnDiaryRimTestScope.Require(added.Count == 1
+                    && added[0] is PlayLogEntry_Interaction
+                    && added[0].Concerns(ability.pawn)
+                    && added[0].Concerns(target),
+                "The vanilla Ideology ability did not create exactly one pair interaction PlayLog row.");
+            return added;
+        }
+
+        private static string FormatSignedPercent(float value)
+        {
+            float clamped = Math.Max(-1f, Math.Min(1f, value));
+            return Math.Round(clamped * 100f, MidpointRounding.AwayFromZero)
+                .ToString("+0;-0;0", System.Globalization.CultureInfo.InvariantCulture) + "%";
+        }
+
         private static bool ThrowMutationProjection()
         {
             throw new InvalidOperationException("Synthetic Ideology mutation projection failure.");
+        }
+
+        private static bool ThrowBeliefPolicySnapshot()
+        {
+            throw new InvalidOperationException("Synthetic Ideology evidence-policy failure.");
         }
     }
 }

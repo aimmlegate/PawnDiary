@@ -75,6 +75,8 @@
          after Full/Balanced/Compact filtering at prompt-build time. -->
     <promptFieldLabel>belief context</promptFieldLabel>
     <promptFieldInstruction>Beliefs I held at the time. Let them color my reaction and word choice; do not invent doctrine beyond them or claim they caused what happened.</promptFieldInstruction>
+    <interpretationFactFormat>Within {0}, the view most relevant to this event was {1}: {2}</interpretationFactFormat>
+    <interpretationFactWithoutDescriptionFormat>Within {0}, the view most relevant to this event was {1}.</interpretationFactWithoutDescriptionFormat>
 
     <!-- Categorical precedence. Lower-tier bonuses can never cross these stages in pure code. -->
     <tierScores>

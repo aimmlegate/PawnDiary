@@ -300,9 +300,10 @@ namespace PawnDiary
     {
         public NarrativeEvidence narrative = new NarrativeEvidence();
         public string groupKey = string.Empty;
-        // Exact belief-crisis pages may truthfully show the pawn's visible current ideoligion and
-        // certainty even when the transient mutation row is unavailable. This flag never authorizes
-        // a page and never permits reconstruction of an earlier ideoligion.
+        // Exact belief-crisis pages may request the pawn's visible current ideoligion and certainty
+        // even when the transient mutation row is unavailable. The guarded runtime builder still emits
+        // nothing when no live snapshot exists. This flag never authorizes a page and never permits
+        // reconstruction of an earlier ideoligion.
         public bool currentBeliefFactsRelevant;
         public string sourcePreceptInstanceId = string.Empty;
         public string sourcePreceptDefName = string.Empty;

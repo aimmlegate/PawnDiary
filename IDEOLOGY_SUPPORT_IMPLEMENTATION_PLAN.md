@@ -1,10 +1,12 @@
 # Pawn Diary — Ideoligion Support Implementation Plan
 
-Status: Phases 0–1 completed on 2026-07-21; Phase 2 infrastructure, exact interaction consumers, and
+Status: Phases 0–1 and Narrative N3-I are code-complete; Phase 2 infrastructure, exact interaction consumers, and
 the exact `IdeoChange` crisis slice are partially implemented; Phases 3–6 remain pending. Guarded
 mutation capture/coalescing, exact downstream Ability ownership, existing PlayLog conversion/
 reassurance enrichment, and the existing solo crisis page's truthful mutation/current-state context
 are live; ritual, broader evidence, remaining exact prompts, and reflection work remains pending.
+N3-I closes the master schedule's ordering gap without broadening partial Phase 2; Counsel, rituals,
+throne speech, broader enrichment, passive tracking, and reflection scheduling remain deferred.
 
 Scheduling authority: implement Ideology phases only in the waves assigned by
 `DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`; this file remains the technical authority for Ideology.
@@ -745,19 +747,24 @@ fallback.
 
 ### 10.3 Ability path and duplicate suppression
 
-Add an XML-owned “covered by downstream event” classification for vanilla `Convert`, `Reassure`, and
-`ConversionRitual` ability defNames. Feed a plain boolean/reason token into `AbilityEventData.Decide`
+Add an XML-owned “covered by downstream event” classification for vanilla `Convert` and `Reassure`
+ability defNames. Feed a plain boolean/reason token into `AbilityEventData.Decide`
 so the pure policy also locks the drop contract. Because `AbilitySignal.Payload` currently draws the
 lazy `Rand.Value` before `Decide` runs, its getter must explicitly skip that draw when the payload is
 downstream-covered. This preserves both the no-page result and RimWorld's gameplay RNG state.
+
+`ConversionRitual` must retain its generic activation page until a cancel-aware pending/fallback route
+exists: vanilla exposes no cancellation event, so suppressing activation immediately could lose the
+only page when the ritual never completes. Its completed ritual remains future enrichment work.
 
 Do not globally drop every ability with “Convert” in its name. A modded conversion ability that emits
 neither a PlayLog interaction nor a ritual should retain the existing generic ability route and may
 receive belief evidence from its guarded label/context, mutation facts, or an optional event-evidence
 alias rule; it does not require a matching precept-ID entry.
 
-The focused integration test must prove the ordering: activation generates zero generic Ability
-events and exactly one canonical downstream interaction/ritual event.
+The focused Convert/Reassure integration tests must prove the ordering: activation generates zero
+generic Ability events and exactly one canonical downstream interaction event. A future ritual-owner
+test must require the same only after cancellation-safe pending/fallback behavior exists.
 
 ### 10.4 Conversion ritual and throne speech
 
@@ -780,15 +787,17 @@ events and exactly one canonical downstream interaction/ritual event.
 > catchall, peeks the matching breaking-pawn mutation, freezes observed changed/unchanged mechanics,
 > and appends `belief_event=crisis`. Missing or rejected mutation evidence carries only a typed request
 > for guarded current identity/certainty; no old ideology is reconstructed. The exact localized
-> `DiaryEventPrompt_IdeoChange` wins by normal prompt-key precedence. No new page, hook, save field,
+> `DiaryEventPrompt_IdeoChange` wins by normal prompt-key precedence. No new page, patch target, save field,
 > polling path, or gameplay RNG draw was added. The first loaded run confirmed vanilla's outer
 > lifecycle recursively starts a silent `Wander_OwnRoom`/`Wander_Sad` in `PostStart`; the existing
-> mental-state hook now drops only that exact nested companion transition so the crisis contract truly
-> remains one page.
+> mental-state hook now treats that exact current/requested/silent signature as the companion so the
+> crisis contract truly remains one page. The prefix and optional evidence adapter fail open, dormant
+> package rows yield to the live fallback classifier, and model-facing prose stays neutral for secular
+> ideoligions.
 
 - Add an exact mental-state group for `IdeoChange` before the generic mental-state catchall.
 - Peek the mutation created during `MentalState_IdeoChange.PreStart` and attach it to the event.
-- If the attempt did not change ideology, say certainty fell or faith was challenged, not that the
+- If the attempt did not change ideology, say certainty fell or convictions were challenged, not that the
   pawn converted.
 - If no mutation is available, use current ideology/certainty and the mental-state facts only. Never
   infer an old ideology from the current one.
@@ -1159,21 +1168,37 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > `IdeoConversionAttempt`/`OffsetCertainty`/`SetIdeo` hooks project live state only through
 > `DlcContext`, and a bounded pure buffer coalesces overlapping nested calls while keeping sequential
 > same-tick actions distinct. The transient cache is reset per game, non-scribed, non-emitting, and
-> optional-DLC inert. XML now owns exact `Convert`/`Reassure`/`ConversionRitual` canonical ownership;
-> their generic Ability route drops before random sampling only while Ideology is active. Pure suites
+> optional-DLC inert. XML now owns exact `Convert`/`Reassure` canonical ownership; their generic
+> Ability route drops before random sampling only while Ideology is active. `ConversionRitual` retains
+> its generic start page until a cancel-aware fallback exists. Pure suites
 > and five compiled RimTests cover policy/correlation/coalescing, hook ownership, no-DLC behavior,
 > actual before/after boundaries, failure cleanup, and one Convert downstream page. Exact XML mutation
 > rules now enrich existing conversion success/failure/attempt and reassurance PlayLog pages with one
 > non-consuming target fact shared by both authorized POVs; pure selection fails closed on wrong pawn,
-> time direction/age, mechanics, or a newer mismatched sequential row. Twelve compiled Phase-2 RimTests
+> time direction/age, mechanics, or a newer mismatched sequential row. Fifteen compiled Phase-2 RimTests
 > add real success/failure/reassurance tracker + PlayLog boundaries, exercise the vanilla random-
 > conversion worker with a conversion-capable spawned initiator and its normal stat/certainty factors,
-> validate every shipped consumer-rule field, and prove cache-only non-emission. Classic Ideology mode
+> run the real Convert/Reassure effect comps through `Ability.Activate`, cover both successful and failed
+> real `IdeoChange` boundaries, validate optional-evidence failure isolation and every shipped consumer-
+> rule field, and prove cache-only non-emission. Classic Ideology mode
 > skips only live mutation mechanics while keeping patch and XML-policy ownership checks active.
 > The first loaded 376-test run completed 374/376; after correcting the conversion-worker fixture and
 > satisfying the unrelated N3-O parked-gravship host guard, the rerun passed all 376/376 tests. Broader
 > step 2, ritual/throne-speech parts of step 3, remaining step 4 prompt/group work, and the complete
-> per-path exit gate remain pending.
+> per-path exit gate remain pending. The adversarial hardening cases raise the compiled assembly to
+> 379 tests; the prior 377/377 active-Ideology run remains the latest loaded result, and a post-Phase-2
+> base-only run remains required before release sign-off.
+
+> **Narrative N3-I result (2026-07-22): code-complete; loaded acceptance pending.** Phase 1's guarded,
+> detached per-POV snapshot and single resolver result now feed one pure high-confidence gate and the
+> fixed shared provider list. Exact thought/body evidence can yield one `interpretation` candidate;
+> structural tiers are accepted directly and lexical tiers must retain both configured confidence and
+> runner-up separation. Exact event/POV/source/facet matching, stable IDs, localized DefInjected neutral
+> prose, deterministic selection, repetition, category/two-lens budgets, and N1 persistence are reused.
+> No live ideology rescan, hook, page, poll, save field, or scheduler was added, and partial Phase 2 did
+> not gain another consumer. Pure suites pass 360/345 belief/narrative assertions and 381 RimTests
+> compile. The host's headless startup attempt did not load a game, so 377/377 remains the latest valid
+> active result and current active/base-only execution remains pending.
 
 1. Implement guarded/coalescing mutation patches and cache. **Implemented in the infrastructure slice.**
 2. Add conservative evidence adapters for the §7.5 families to existing captured thought, social,
@@ -1185,8 +1210,9 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
    throne speech remain pending.**
 4. Add exact XML groups/prompts and role-specific evidence. **The exact IdeoChange group/prompt and
    breaking-pawn evidence are implemented; remaining routes stay pending.**
-5. Drop downstream-covered generic abilities before their random roll. **Implemented for the three
-   exact XML-owned vanilla routes; full interaction/ritual enrichment coverage remains pending.**
+5. Drop downstream-covered generic abilities before their random roll. **Implemented for the two exact
+   interaction-backed vanilla routes (`Convert` and `Reassure`); `ConversionRitual` intentionally keeps
+   its start owner until cancellation-safe downstream ownership exists.**
 
 Exit gate: focused pure and RimTests prove correct before/after facts and exactly one canonical event
 for each conversion ability/interaction/ritual path; representative body, meal, raid, thought, and
@@ -1324,7 +1350,8 @@ failure. Gate Ideology/Royalty cases and report not-applicable when the DLC is i
 
 1. Live snapshot returns the current ideoligion name, certainty, structure, a precept/meme, projected
    thought/history correlations with offset valence, and a valid related/key deity when present.
-2. `IdeoChange` mental state produces one dedicated crisis event with truthful mutation data.
+2. `IdeoChange` mental state produces one dedicated crisis event with truthful success and failure
+   mutation data.
 3. Random conversion interaction success/failure produces a pair event with distinct POV contexts.
 4. Convert ability produces the PlayLog pair event and no generic Ability event.
 5. Reassure restores certainty, uses support wording, and produces no generic duplicate.

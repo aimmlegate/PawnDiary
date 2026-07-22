@@ -1,5 +1,40 @@
 # Changelog
 
+- **2026-07-22 — Implemented Master Wave 10 Narrative N3-I without expanding Ideology Phase 2.** The
+  existing guarded Phase-1 per-POV snapshot and single `EventRelativeStanceResolver` result now feed a
+  pure high-confidence Ideology provider in the fixed Narrative Continuity list. Exact thought/body
+  evidence may propose one shared `interpretation` lens; structural tiers are accepted directly and
+  lexical tiers must repeat the configured confidence and runner-up margin. Exact event/POV/source/
+  facet gates, stable precept keys, deterministic ordering, repetition history, one-category/global-
+  two budgets, and existing N1 persistence are reused. XML/DefInjected owns bounded secular-safe EN/RU
+  prose. Empty, mutation-only, ambiguous, hidden, malformed, inactive, or mismatched evidence stays
+  silent, while per-provider exception isolation preserves the canonical page and other DLC candidates.
+  No page source, Harmony hook, poll, save field, or reflection scheduler was added; Counsel, conversion
+  ritual, throne speech, broader Phase-2 enrichment, passive tracking, and reflections remain deferred.
+  Focused pure suites pass 360 Belief and 345 Narrative assertions; 381 RimTests compile, including real
+  Phase-1 candidate, inactive-composition, resolver-failure, and provider-failure fixtures. Both DLLs
+  rebuild with zero warnings/errors. A pre-slice headless 379-test startup attempt never loaded a game
+  and is invalid, so 377/377 remains the latest valid active result and current active/base-only runs
+  remain pending.
+
+- **2026-07-22 — Closed the combined adversarial review of Master Wave 10 / Ideology Phase 2.** Optional mutation-
+  evidence selection and the mental-state prefix now fail open, preserving vanilla and the ordinary
+  already-authorized page on an unexpected policy/cache/getter failure. Live mental-state
+  classification skips dormant package-gated rows, so a base-game mod reusing exact `IdeoChange`
+  falls back to the ordinary mental-break group when Ideology is absent; saved-event display recovery
+  remains unchanged. The exact companion documentation now states the honest current/requested/silent
+  signature boundary, while the loaded fixture explicitly rejects both wander DefNames. Crisis prompt
+  prose and EN/RU DefInjected copies now use secular-safe ideoligion/conviction wording. Convert and
+  Reassure ownership fixtures execute the installed vanilla effect comps through the production-
+  patched `Ability.Activate` path instead of synthesizing signals/PlayLog rows; new loaded cases cover
+  the real failed `IdeoChange` branch and mutation-evidence failure isolation. The suite now compiles
+  15 Phase-2 cases / 379 RimTests. Belief, capture-policy, and pipeline suites pass 338 / 724 / 2,845
+  assertions; both tracked DLLs build with 0 warnings/errors. The implementation/test plans now record
+  the deliberate `ConversionRitual` start owner and the still-required 379/379 plus base-only loaded
+  runs; no new in-game pass is claimed. The review also found that partial Phase 2 had advanced before
+  the master schedule's still-pending N3-I prerequisite. The master and Ideology plans now record that
+  ordering gap and make N3-I the next slice before any further Phase-2 expansion.
+
 - **2026-07-22 — Collapsed IdeoChange's vanilla companion transition into its crisis page.** The
   first 377-test loaded run showed that `MentalState_IdeoChange.PostStart` recursively starts a silent
   `Wander_OwnRoom`/`Wander_Sad` before the outer start returns, so both Harmony postfixes produced

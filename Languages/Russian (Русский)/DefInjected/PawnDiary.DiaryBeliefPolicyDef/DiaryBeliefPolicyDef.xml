@@ -2,6 +2,8 @@
 <LanguageData>
   <Diary_BeliefPolicy.promptFieldLabel>контекст убеждений</Diary_BeliefPolicy.promptFieldLabel>
   <Diary_BeliefPolicy.promptFieldInstruction>Мои убеждения на тот момент. Пусть они окрашивают реакцию и выбор слов; не выдумывай новых догм и не выставляй убеждения причиной случившегося.</Diary_BeliefPolicy.promptFieldInstruction>
+  <Diary_BeliefPolicy.interpretationFactFormat>В рамках {0} самым уместным для этого события было убеждение «{1}»: {2}</Diary_BeliefPolicy.interpretationFactFormat>
+  <Diary_BeliefPolicy.interpretationFactWithoutDescriptionFormat>В рамках {0} самым уместным для этого события было убеждение «{1}».</Diary_BeliefPolicy.interpretationFactWithoutDescriptionFormat>
   <Diary_BeliefPolicy.certaintyBands.0.phrase>Пиши с твёрдой убеждённостью, не выходя за рамки переданных фактов.</Diary_BeliefPolicy.certaintyBands.0.phrase>
   <Diary_BeliefPolicy.certaintyBands.1.phrase>Пиши со спокойной уверенностью, не скатываясь в фанатизм и крайности.</Diary_BeliefPolicy.certaintyBands.1.phrase>
   <Diary_BeliefPolicy.certaintyBands.2.phrase>Дай проступить сомнениям и оговоркам, но не превращай их в отказ от веры.</Diary_BeliefPolicy.certaintyBands.2.phrase>

@@ -5750,6 +5750,27 @@ namespace DiaryPipelineTests
             AssertTrue("Russian exact crisis prompt is localized",
                 !string.IsNullOrWhiteSpace(ChildValue(
                     russianPrompts.Root, "DiaryEventPrompt_IdeoChange.enhancement")));
+
+            string fallbackCrisisText = (ChildValue(crisis, "instruction") + " "
+                + ChildValue(exactPrompt, "enhancement")).ToLowerInvariant();
+            string englishCrisisText = (ChildValue(englishGroups.Root, "beliefCrisis.label") + " "
+                + ChildValue(englishGroups.Root, "beliefCrisis.instruction") + " "
+                + ChildValue(englishPrompts.Root, "DiaryEventPrompt_IdeoChange.label") + " "
+                + ChildValue(englishPrompts.Root, "DiaryEventPrompt_IdeoChange.enhancement"))
+                .ToLowerInvariant();
+            string russianCrisisText = (ChildValue(russianGroups.Root, "beliefCrisis.label") + " "
+                + ChildValue(russianGroups.Root, "beliefCrisis.instruction") + " "
+                + ChildValue(russianPrompts.Root, "DiaryEventPrompt_IdeoChange.label") + " "
+                + ChildValue(russianPrompts.Root, "DiaryEventPrompt_IdeoChange.prompt") + " "
+                + ChildValue(russianPrompts.Root, "DiaryEventPrompt_IdeoChange.enhancement"))
+                .ToLowerInvariant();
+            AssertTrue("fallback crisis prose stays neutral for secular ideoligions",
+                fallbackCrisisText.IndexOf("faith", StringComparison.Ordinal) < 0);
+            AssertTrue("English crisis prose stays neutral for secular ideoligions",
+                englishCrisisText.IndexOf("faith", StringComparison.Ordinal) < 0);
+            AssertTrue("Russian crisis prose avoids standalone faith framing",
+                !russianCrisisText.StartsWith("вер", StringComparison.Ordinal)
+                    && russianCrisisText.IndexOf(" вер", StringComparison.Ordinal) < 0);
         }
 
         private static void TestResponsePostprocessorRules()

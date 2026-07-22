@@ -366,7 +366,7 @@ namespace PawnDiary
             return diaryEvent;
         }
 
-        private static void ApplyBeliefContext(
+        private void ApplyBeliefContext(
             DiaryEvent diaryEvent,
             string povRole,
             Pawn pawn,
@@ -378,6 +378,44 @@ namespace PawnDiary
             BeliefContextBuildResult result = prepared ?? BeliefContextBuilder.Build(
                 pawn, evidence, diaryEvent.eventId, diaryEvent.tick, povRole);
             diaryEvent.SetBeliefContext(povRole, result?.fullContext);
+            try
+            {
+                IdeologyNarrativeSnapshot ideology = IdeologyNarrativeSnapshotFactory.ForPage(
+                    result?.ideologyNarrative,
+                    diaryEvent.eventId,
+                    diaryEvent.tick,
+                    pawn.GetUniqueLoadID(),
+                    povRole);
+                if (ideology == null) return;
+
+                NarrativeContextBuildResult narrative = NarrativeContextBuilder.Build(
+                    new NarrativeContextBuildRequest
+                    {
+                        eventId = diaryEvent.eventId,
+                        eventTick = diaryEvent.tick,
+                        povPawnId = pawn.GetUniqueLoadID(),
+                        povRole = povRole,
+                        evidence = new List<NarrativeEvidence> { ideology.sourceEvidence },
+                        ideology = ideology,
+                        recentSelectedCandidateKeys = RecentNarrativeSelectedCandidateKeys(
+                            pawn.GetUniqueLoadID()),
+                        contextDetailLevel = PawnDiaryMod.Settings?.contextDetailLevel
+                            ?? PromptContextDetailLevel.Full,
+                        deterministicSeed = HumorChancePolicy.StableSeed(
+                            diaryEvent.eventId, pawn.GetUniqueLoadID())
+                    });
+                if (narrative.evidence.Count > 0) diaryEvent.ApplyNarrativeContext(povRole, narrative);
+            }
+            catch (Exception exception)
+            {
+                // The source page and Phase-1 belief block already exist. Any N3-I adapter failure is
+                // optional and must not unwind through event registration.
+                Type type = exception.GetType();
+                Log.WarningOnce(
+                    "[Pawn Diary] Ideology Narrative Continuity enrichment failed; this page keeps "
+                    + "ordinary context: " + type.FullName + ": " + exception.Message,
+                    ("PawnDiary.IdeologyNarrative." + type.FullName).GetHashCode());
+            }
         }
 
         private static BirthWriterContextSnapshot FindBirthWriterContext(
