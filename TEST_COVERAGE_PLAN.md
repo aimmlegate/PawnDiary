@@ -1142,9 +1142,8 @@ closes the original active-Ideology Counsel execution coverage; the 385-test har
 recorded before the assembly advanced. The first 388-test active run reached 383/388; after correcting
 four fixture assumptions, the second reached 386/388 and isolated a real organizer POV-token mismatch
 (`organizer` in the pure policy versus the live serialized `author` token). That production boundary is
-now corrected; another active rerun and the 388-test base-only profile remain pending. The other active
-failure remains the N3-O host prerequisite until a parked player gravship is present. The base-only run
-remains release-blocking under the
+now corrected. The user-confirmed rerun passed 388/388 on a valid parked-gravship host, closing the
+active completed-conversion gate. The 388-test base-only profile remains release-blocking under the
 matrix above because it is the only execution that reaches every `ModsConfig.IdeologyActive == false`
 branch.
 The first user-observed 376-test loaded run completed 374/376. It exposed the dedicated worker

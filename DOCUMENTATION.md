@@ -399,8 +399,9 @@ quality non-proof, missing-mutation role-only fallback, live-shaped spectator me
 adapter failure isolation. The first active-Ideology run reached 383/388 and a corrected fixture rerun
 reached 386/388. The remaining conversion failure exposed the `organizer` versus live `author` POV-token
 mismatch corrected above; the other failure is the unchanged N3-O prerequisite on a host without a
-parked player gravship. A corrected active rerun and the separate base-only profile remain pending; the
-latest complete accepted suite remains 384/384, while 386/388 is the latest partial 388-test evidence.
+parked player gravship. The user-confirmed corrected active rerun then passed all 388/388 fixtures on a
+valid host, closing the exact completed-conversion active loaded gate. The separate base-only profile
+remains pending.
 
 An exact conversion consumer also appends only the stable `belief_event=conversion` routing marker to
 the ordinary interaction `gameContext`. Prompt-context selection uses that marker to rank the saved

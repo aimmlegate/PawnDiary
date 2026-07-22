@@ -1,5 +1,14 @@
 # Changelog
 
+- **2026-07-22 — Recorded the corrected exact-conversion loaded suite all green at 388/388.**
+  The user-confirmed Ideology-active rerun passed every compiled RimTest after aligning the pure
+  conversion policy with the ritual pipeline's stable organizer POV token `author`. This closes the
+  active loaded acceptance gate for the exact completed-conversion ritual, including organizer role
+  evidence, target-only mutation/result facts, participant/spectator isolation, Scribe retention,
+  adapter fail-open behavior, and the previously host-gated Odyssey case. The separate Ideology-
+  inactive profile and deferred Phase-2 throne-speech/evidence-family work remain open. No runtime,
+  XML, save, settings, localization, or performance behavior changed in this acceptance-only update.
+
 - **2026-07-22 — Corrected the completed-conversion organizer POV token at the pure/runtime boundary.**
   The second 386/388 loaded rerun proved that registered Ideology state was valid but the organizer
   page still lacked `conversion_ritual_role=converter`. The ritual payload has always serialized its
@@ -8,8 +17,7 @@
   now consumes `author`, restoring the organizer's exact moral-guide evidence and role marker. Pure
   coverage pins the literal live token, rejects the former alias, and checks that organizer context
   receives no target result. No save field, XML policy, DLC gate, setting, Harmony hook, or hot-path
-  work changed. A corrected 388-test loaded rerun remains pending; the unchanged Odyssey N3-O case
-  still requires a parked player gravship.
+  work changed. The corrected loaded rerun subsequently passed 388/388 on a valid Odyssey host.
 
 - **2026-07-22 — Made the exact conversion-ritual loaded fixture use real managed Ideology state.**
   The corrected rerun reached 386/388: every Counsel and role/dedup regression is now green, the

@@ -598,9 +598,9 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 > missing target mutation evidence role-only. No patch, page owner, poll, or save field was added. Three
 > compiled fixtures raise the assembly to 388 tests. Active runs reached 383/388 and then 386/388,
 > exposing a real organizer schema mismatch (`organizer` in the pure policy versus the ritual payload's
-> stable `author` token); that boundary is now corrected. Another active rerun and the base-only profile
-> remain pending. Throne speech, broader evidence families, passive tracking, and reflections remain
-> deferred.
+> stable `author` token); that boundary is now corrected. The user-confirmed rerun passed 388/388 on a
+> valid parked-gravship host, closing the active completed-conversion gate. The base-only profile,
+> throne speech, broader evidence families, passive tracking, and reflections remain deferred.
 > Every deferred Royalty acceptance item remains unchanged.
 
 ### Implement in this exact order
@@ -623,9 +623,8 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 - No standalone belief reflection yet.
 
 Wave 10 remains open: original exact active-Counsel loaded coverage and the corrected 384/384 suite
-passed, while the partial 388-test active run reached 386/388 and drove the organizer `author`-token
-correction. A corrected active rerun, the base-only profile, remaining Ideology-2 throne-speech/
-evidence-family work, and Ideology 3 are pending.
+passed, and the corrected active completed-conversion suite passed 388/388. The base-only profile,
+remaining Ideology-2 throne-speech/evidence-family work, and Ideology 3 are pending.
 
 ### Release checkpoint 10 — belief enrichment
 

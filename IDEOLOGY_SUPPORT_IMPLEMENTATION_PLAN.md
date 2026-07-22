@@ -1261,8 +1261,8 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > compiled ritual fixtures raise the full assembly to 388 tests. Active-Ideology runs reached 383/388
 > and then 386/388, isolating a real organizer POV-token mismatch: the ritual payload emits the stable
 > `author` token while the pure policy expected `organizer`. That boundary and its pure regression
-> coverage are corrected. Another active rerun and the separate base-only profile remain pending; the
-> unrelated N3-O host case still requires a parked player gravship.
+> coverage are corrected. The user-confirmed rerun passed 388/388 on a valid parked-gravship host,
+> closing this active loaded gate. The separate base-only profile remains pending.
 
 > **Narrative N3-I result (2026-07-22): code-complete, adversarially hardened, and active loaded
 > acceptance passed; base-only acceptance pending.** Phase 1's guarded,
@@ -1308,10 +1308,9 @@ for each conversion ability/interaction/ritual path; representative body, meal, 
 ritual fixtures select only relevant live doctrine; unrelated event and ability behavior is unchanged.
 
 **Phase-2 exit-gate status:** still open. The original exact active-Counsel sub-gate and corrected
-384/384 suite are green; the partial active conversion-ritual run reached 386/388 and drove the
-organizer `author`-token correction above. A corrected 388-test active rerun, throne speech, the
-remaining evidence-family matrix, and the required Ideology-inactive loaded profile must complete
-before Phase 2 can close.
+384/384 suite are green, and the corrected active conversion-ritual suite passed 388/388. Throne
+speech, the remaining evidence-family matrix, and the required Ideology-inactive loaded profile must
+complete before Phase 2 can close.
 
 ### Phase 3 — Persistent passive belief tracking
 
