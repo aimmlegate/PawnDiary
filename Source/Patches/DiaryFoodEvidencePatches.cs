@@ -17,29 +17,76 @@ namespace PawnDiary
         // large modded CompIngredients list from turning one ingestion into unbounded hot-path work.
         private const int MaximumIngredientsInspected = 32;
 
+        /// <summary>True only when both sides of the exact ingestion bridge registered successfully.</summary>
+        internal static bool HooksReady { get; private set; }
+
         /// <summary>Defensively registers the two installed RimWorld 1.6 ingestion boundaries.</summary>
         internal static void TryRegister(Harmony harmony)
         {
+            HooksReady = false;
+            if (harmony == null) return;
+
             MethodBase ingested = AccessTools.Method(
                 typeof(Thing), nameof(Thing.Ingested), new[] { typeof(Pawn), typeof(float) });
             MethodBase thoughts = AccessTools.Method(
                 typeof(FoodUtility), nameof(FoodUtility.ThoughtsFromIngesting),
                 new[] { typeof(Pawn), typeof(Thing), typeof(ThingDef) });
-            if (ingested == null || thoughts == null)
+
+            bool ingestedReady = TryPatch(
+                harmony,
+                ingested,
+                "Thing.Ingested(Pawn, float)",
+                nameof(IngestedPrefix),
+                nameof(IngestedPostfix),
+                nameof(IngestedFinalizer));
+            bool thoughtsReady = TryPatch(
+                harmony,
+                thoughts,
+                "FoodUtility.ThoughtsFromIngesting(Pawn, Thing, ThingDef)",
+                null,
+                nameof(ThoughtsPostfix),
+                null);
+            HooksReady = ingestedReady && thoughtsReady;
+        }
+
+        private static bool TryPatch(
+            Harmony harmony,
+            MethodBase target,
+            string targetName,
+            string prefixName,
+            string postfixName,
+            string finalizerName)
+        {
+            if (target == null)
             {
-                Log.Warning("[Pawn Diary] Could not find the RimWorld food-ingestion evidence "
-                    + "boundaries; optional food belief enrichment is disabled.");
-                return;
+                Log.Warning("[Pawn Diary] Could not find " + targetName
+                    + "; optional food belief enrichment is disabled.");
+                return false;
             }
 
-            harmony.Patch(
-                ingested,
-                prefix: new HarmonyMethod(typeof(FoodIngestionEvidencePatch), nameof(IngestedPrefix)),
-                postfix: new HarmonyMethod(typeof(FoodIngestionEvidencePatch), nameof(IngestedPostfix)),
-                finalizer: new HarmonyMethod(typeof(FoodIngestionEvidencePatch), nameof(IngestedFinalizer)));
-            harmony.Patch(
-                thoughts,
-                postfix: new HarmonyMethod(typeof(FoodIngestionEvidencePatch), nameof(ThoughtsPostfix)));
+            try
+            {
+                harmony.Patch(
+                    target,
+                    prefix: prefixName == null
+                        ? null
+                        : new HarmonyMethod(typeof(FoodIngestionEvidencePatch), prefixName),
+                    postfix: postfixName == null
+                        ? null
+                        : new HarmonyMethod(typeof(FoodIngestionEvidencePatch), postfixName),
+                    finalizer: finalizerName == null
+                        ? null
+                        : new HarmonyMethod(typeof(FoodIngestionEvidencePatch), finalizerName));
+                return true;
+            }
+            catch (Exception exception)
+            {
+                // One changed signature or incompatible patch must disable only this optional bridge;
+                // registration then continues to every later DLC/compatibility hook in the registrar.
+                Log.Warning("[Pawn Diary] Could not register " + targetName
+                    + "; optional food belief enrichment is disabled. " + exception);
+                return false;
+            }
         }
 
         /// <summary>
@@ -72,7 +119,7 @@ namespace PawnDiary
         }
 
         /// <summary>Closes the primitive window when vanilla or another patch throws.</summary>
-        private static Exception IngestedFinalizer(
+        internal static Exception IngestedFinalizer(
             Exception __exception,
             FoodIngestionEvidenceScope __state)
         {
@@ -119,7 +166,7 @@ namespace PawnDiary
                 pawn.GetUniqueLoadID(), food.GetUniqueLoadID(), fact);
         }
 
-        private static FoodIngestionEvidenceFact ExactHumanlikeMeatFact(Thing food)
+        internal static FoodIngestionEvidenceFact ExactHumanlikeMeatFact(Thing food)
         {
             CompIngredients ingredients = food.TryGetComp<CompIngredients>();
             if (ingredients?.ingredients != null)

@@ -1315,22 +1315,28 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > those exact memories. A guarded short-lived scope now captures only a direct food Def or bounded
 > `CompIngredients` entry whose base-game `MeatSourceCategory` is exactly `Humanlike`, freezes its
 > primitive DefName/label, and binds it only to the returned thought DefNames. The existing
-> `ThoughtSignal` remains the sole page owner. A pure policy maps XML's exact `humanlike_meat` selector
+> `ThoughtSignal` remains the sole page owner. Every thought returned by that ingestion intentionally
+> receives the same factual meal evidence; doctrine still appears only when the shared resolver finds
+> it relevant. Each fragile Harmony registration catches its own failure so one changed signature
+> cannot abort later optional registrations. A pure policy maps XML's exact `humanlike_meat` selector
 > to `cannibal_meal` plus `ingredient_label`; XML continues to own the food vocabulary and no
 > precept/issue/meme catalog was added. Generic meals, quality, broad labels, unknown ingredients,
 > unrelated doctrine, malformed/duplicate policy, inactive Ideology, and adapter faults leave the
 > ordinary thought page unchanged. Direct source-precept and exact thought-correlation evidence retain
 > resolver precedence. The scope adds no page, save token, dedup change, global `Rand` use, reflection,
-> or irrelevant-thought Def lookup. Pure coverage reaches 547 assertions, and two compiled loaded
-> fixtures raise the RimTest assembly to 393 cases; they pin exact evidence, non-returned-thought
-> rejection, one-page ownership, frozen saved context, RNG/dedup invariants, and adapter fail-open.
+> or irrelevant-thought Def lookup. Pure coverage reaches 547 assertions. The original two loaded
+> fixtures raised the cumulative Ideology RimTest assembly to 393 cases; three hardening fixtures now
+> bring the compiled assembly to 396 and add the real `Thing.Ingested` Harmony path,
+> direct/ingredient/corpse classification, first-result sealing, and mismatched-scope recovery to the
+> existing exact-evidence, non-returned-thought, one-page, frozen-context, RNG/dedup, and fail-open
+> contracts.
 > The first valid loaded run reached 391/393. Exact food capture and the adapter-failure case passed;
 > the positive case failed only after capture because its disposable Ideology used ordinary precept
 > removal. Vanilla inserted the issue's default stance, leaving it beside `Cannibalism_Preferred`, so
 > the resolver correctly failed closed on contradictory same-issue doctrine. The fixture now uses
 > replacement mode, asserts one retained intended stance, and its pure regression mirrors the full
-> live thought evidence plus a competing meat stance. A corrected loaded rerun remains pending. The
-> other failure is the known N3-O parked-gravship host prerequisite; the earlier main-menu invocation
+> live thought evidence plus a competing meat stance. A corrected 396-case loaded rerun remains
+> pending. The other failure is the known N3-O parked-gravship host prerequisite; the earlier main-menu invocation
 > had no loaded game and is not a loaded acceptance result. No deferred authority-speech run is
 > claimed.
 

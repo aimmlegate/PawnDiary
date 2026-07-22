@@ -139,6 +139,8 @@
     <eventEvidenceRules>
       <li><key>body_modification</key><sourceDomain>medical</sourceDomain><groupKey>body_modification</groupKey><addTopics><li>body_modification</li></addTopics><addSemanticAliases><li>body_modification</li></addSemanticAliases></li>
       <li><key>organ_use</key><sourceDomain>medical</sourceDomain><groupKey>organ_use</groupKey><addTopics><li>organ_use</li></addTopics><addSemanticAliases><li>organ_use</li></addSemanticAliases></li>
+      <!-- sourceDomain is intentionally absent: ThoughtSignal stays in the thought domain while the
+           exact food policy sets groupKey=cannibal_meal before this rule expands its topics. -->
       <li><key>cannibal_meal</key><groupKey>cannibal_meal</groupKey><addTopics><li>cannibalism</li><li>meals</li></addTopics><addSemanticAliases><li>cannibalism</li></addSemanticAliases></li>
       <li><key>known_meal</key><sourceDomain>food</sourceDomain><groupKey>meal</groupKey><addTopics><li>meals</li></addTopics></li>
       <li><key>raid_visible</key><sourceDomain>combat</sourceDomain><groupKey>raid</groupKey><addTopics><li>raids</li><li>violence</li></addTopics></li>

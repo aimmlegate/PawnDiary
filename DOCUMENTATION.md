@@ -260,7 +260,12 @@ The bounded food client also enriches only that existing `ThoughtSignal` page. I
 each returned thought. The guarded ingestion prefix therefore captures a primitive fact only when the
 direct food Def or one of the meal's exact `CompIngredients` Defs has
 `MeatSourceCategory.Humanlike`; the result postfix binds that fact to the exact returned thought
-DefNames, and the ingestion postfix/finalizer clears the short-lived scope. The pure
+DefNames, and the ingestion postfix/finalizer clears the short-lived scope. That attachment is
+intentionally per ingestion rather than limited to the cannibalism-specific thought: a meal-quality
+thought from the same meal may carry the factual "this meal contained humanlike meat" evidence, but
+the resolver still emits doctrine only when the pawn's live beliefs are relevant. Each fragile
+Harmony registration catches its own failure, so a changed food signature disables this optional
+bridge without preventing later DLC/compatibility hooks from registering. The pure
 `FoodBeliefEvidencePolicy` maps only the XML-owned `humanlike_meat` selector to the existing
 `cannibal_meal` group and exact `ingredient_label`. Generic meals, quality, broad eating labels,
 unknown ingredients, malformed/duplicate policy, inactive Ideology, and adapter failure add nothing.
@@ -269,14 +274,18 @@ The bridge is base-game fact capture, performs no Def lookup or reflection on th
 page, consumes no `Rand`, changes no dedup key, and adds no save field; the already-authorized page
 freezes the resulting belief context normally.
 
-The first valid loaded run reached 391/393. The food adapter fail-open case passed, and the positive
+At introduction, the two food fixtures raised the cumulative Ideology RimTest assembly to 393 cases;
+the first valid loaded run reached 391/393. The food adapter fail-open case passed, and the positive
 case reached its exact group and `ingredient_label` assertions before returning empty doctrine. That
 was a disposable-fixture error: ordinary `Ideo.RemovePrecept` installs the issue's default stance, so
 the fixture accidentally retained two cannibalism stances and the resolver correctly failed closed.
 The fixture now removes in replacement mode and requires exactly one `Cannibalism_Preferred` stance;
 the pure regression also uses the full live thought evidence shape and a competing generic meat
-stance. A corrected loaded rerun remains pending. The other valid-run failure is the separately known
-Odyssey parked-gravship prerequisite, not food evidence.
+stance. Three additional compiled fixtures now bring the cumulative assembly to 396 cases and cover
+the real `Thing.Ingested` Harmony path, direct/ingredient/corpse classification, first-result sealing,
+and mismatched nested-scope recovery. Their loaded execution and the corrected original rerun remain
+pending. The other valid-run failure is the separately known Odyssey parked-gravship prerequisite,
+not food evidence.
 
 The guarded
 `HistoryEventsManager.RecordEvent` postfix only stores a short-lived, bounded pawn/tick/Def-name

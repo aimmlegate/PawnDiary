@@ -1,6 +1,6 @@
 // Loaded-game contract coverage for the bounded Ideology Phase 2 food client. These fixtures keep
-// page ownership in ThoughtSignal, drive the exact primitive correlation scope directly, and leave
-// full meal ingestion/manual DLC profiles to the explicitly deferred playtest matrix.
+// page ownership in ThoughtSignal, drive the primitive scope's defensive branches, and exercise one
+// real human-meat meal through the installed Harmony boundaries. Manual DLC profiles stay deferred.
 using System;
 using System.Linq;
 using PawnDiary.Ingestion;
@@ -21,7 +21,7 @@ namespace PawnDiary.RimTests
         [BeforeEach]
         public static void SetUp()
         {
-            scope = PawnDiaryRimTestScope.Begin("hediffPartGainedArtificial");
+            scope = PawnDiaryRimTestScope.Begin("hediffPartGainedArtificial", "thoughtPositive");
             pawn = scope.CreateAdultColonist();
             FoodThoughtEvidenceAdapter.SetFailureForTests(false);
             scope.RegisterCleanup(() => FoodThoughtEvidenceAdapter.SetFailureForTests(false));
@@ -169,6 +169,128 @@ namespace PawnDiary.RimTests
                 rejectOtherTestPawnEvents: true);
         }
 
+        /// <summary>The sealed first result set and a mismatched nested close both fail closed.</summary>
+        [Test]
+        public static void ScopeSealingAndMismatchRecoveryRejectStaleEvidence()
+        {
+            FoodIngestionEvidenceScope outer = null;
+            FoodIngestionEvidenceScope inner = null;
+            try
+            {
+                outer = FoodIngestionEvidenceContext.Begin(
+                    "FoodEvidenceOuterPawn",
+                    "FoodEvidenceOuterThing",
+                    HumanMeatFact());
+                inner = FoodIngestionEvidenceContext.Begin(
+                    "FoodEvidenceInnerPawn",
+                    "FoodEvidenceInnerThing",
+                    HumanMeatFact());
+                FoodIngestionEvidenceContext.CaptureDirectThought(
+                    "FoodEvidenceInnerPawn", "FoodEvidenceInnerThing", "AteFineMeal");
+                FoodIngestionEvidenceContext.SealDirectThoughts(
+                    "FoodEvidenceInnerPawn", "FoodEvidenceInnerThing");
+
+                // A second ThoughtsFromIngesting-shaped result set must not extend the sealed set.
+                FoodIngestionEvidenceContext.CaptureDirectThought(
+                    "FoodEvidenceInnerPawn", "FoodEvidenceInnerThing", "AteLavishMeal");
+                PawnDiaryRimTestScope.Require(
+                    FoodIngestionEvidenceContext.CaptureForThought(
+                        "FoodEvidenceInnerPawn", "AteFineMeal") != null
+                        && FoodIngestionEvidenceContext.CaptureForThought(
+                            "FoodEvidenceInnerPawn", "AteLavishMeal") == null,
+                    "A second food-thought result set changed the sealed direct-thought identities.");
+
+                // Closing the non-current parent is an impossible vanilla order, but compatibility
+                // patches can mis-nest. The defensive branch must clear every ambient fact.
+                FoodIngestionEvidenceContext.End(outer);
+                PawnDiaryRimTestScope.Require(
+                    !FoodIngestionEvidenceContext.HasOpenScope
+                        && FoodIngestionEvidenceContext.CaptureForThought(
+                            "FoodEvidenceInnerPawn", "AteFineMeal") == null,
+                    "A mismatched food-scope close leaked the nested exact ingredient fact.");
+
+                FoodIngestionEvidenceScope failing = FoodIngestionEvidenceContext.Begin(
+                    "FoodEvidenceFailingPawn",
+                    "FoodEvidenceFailingThing",
+                    HumanMeatFact());
+                Exception expected = new InvalidOperationException("food finalizer fixture");
+                Exception actual = FoodIngestionEvidencePatch.IngestedFinalizer(expected, failing);
+                PawnDiaryRimTestScope.Require(
+                    ReferenceEquals(actual, expected) && !FoodIngestionEvidenceContext.HasOpenScope,
+                    "The ingestion finalizer changed the original exception or leaked its scope.");
+            }
+            finally
+            {
+                FoodIngestionEvidenceContext.End(inner);
+                FoodIngestionEvidenceContext.End(outer);
+            }
+        }
+
+        /// <summary>Classifier coverage pins meal ingredients, direct meat, and corpse rejection.</summary>
+        [Test]
+        public static void ExactClassifierAcceptsIngredientAndRawMeatButRejectsCorpse()
+        {
+            ThingDef humanMeat;
+            Thing meal = CreateHumanMeatMeal(out humanMeat);
+            Thing rawMeat = ThingMaker.MakeThing(humanMeat);
+            ThingDef human = DefDatabase<ThingDef>.GetNamedSilentFail("Human");
+            PawnDiaryRimTestScope.Require(human?.race?.corpseDef != null,
+                "The exact food classifier fixture needs the base-game human corpse Def.");
+            Thing corpse = ThingMaker.MakeThing(human.race.corpseDef);
+            TrackThing(meal);
+            TrackThing(rawMeat);
+            TrackThing(corpse);
+
+            FoodIngestionEvidenceFact mealFact =
+                FoodIngestionEvidencePatch.ExactHumanlikeMeatFact(meal);
+            FoodIngestionEvidenceFact rawFact =
+                FoodIngestionEvidencePatch.ExactHumanlikeMeatFact(rawMeat);
+            PawnDiaryRimTestScope.Require(
+                mealFact?.ingredientDefName == humanMeat.defName
+                    && rawFact?.ingredientDefName == humanMeat.defName,
+                "The exact food classifier did not accept human meat as an ingredient and direct food.");
+            PawnDiaryRimTestScope.Require(
+                FoodIngestionEvidencePatch.ExactHumanlikeMeatFact(corpse) == null,
+                "The exact food classifier treated a corpse label as an ingredient label.");
+        }
+
+        /// <summary>A real fine meal proves both registered Harmony boundaries and evidence handoff.</summary>
+        [Test]
+        public static void RealHumanMeatMealRunsInstalledHarmonyBoundaries()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                Log.Message(LogPrefix + "real human-meat meal: not applicable (Ideology inactive). ");
+                return;
+            }
+
+            PawnDiaryRimTestScope.Require(FoodIngestionEvidencePatch.HooksReady,
+                "The complete RimWorld 1.6 food-ingestion Harmony bridge was not registered.");
+            InstallCannibalismStance();
+            ThingDef humanMeat;
+            Thing meal = CreateHumanMeatMeal(out humanMeat);
+            TrackThing(meal);
+            ThoughtDef fineMeal = DefDatabase<ThoughtDef>.GetNamedSilentFail("AteFineMeal");
+            PawnDiaryRimTestScope.Require(fineMeal != null,
+                "The real food fixture needs the base-game AteFineMeal thought.");
+            PawnDiaryRimTestScope.Require(
+                FoodUtility.ThoughtsFromIngesting(pawn, meal, meal.def)
+                    .Any(row => row.thought == fineMeal),
+                "Vanilla did not return AteFineMeal for the crafted fine-meal fixture.");
+
+            DiaryEvent diaryEvent = scope.FireAndRequireEvent(
+                () => meal.Ingested(pawn, 999f),
+                fineMeal.defName,
+                pawn,
+                null);
+            PawnDiaryRimTestScope.Require(
+                !string.IsNullOrWhiteSpace(
+                    diaryEvent.BeliefContextForRole(DiaryEvent.InitiatorRole)),
+                "The real Thing.Ingested path did not carry human-meat evidence into the thought page.");
+            PawnDiaryRimTestScope.Require(!FoodIngestionEvidenceContext.HasOpenScope,
+                "The real Thing.Ingested path left its exact food scope open.");
+        }
+
         private static FoodIngestionEvidenceScope OpenExactFoodScope(string thoughtDefName)
         {
             string pawnId = pawn.GetUniqueLoadID();
@@ -186,6 +308,39 @@ namespace PawnDiary.RimTests
                 pawnId, FoodThingId, thoughtDefName);
             FoodIngestionEvidenceContext.SealDirectThoughts(pawnId, FoodThingId);
             return result;
+        }
+
+        private static FoodIngestionEvidenceFact HumanMeatFact()
+        {
+            return new FoodIngestionEvidenceFact
+            {
+                ingredientKind = FoodIngestionEvidenceKindTokens.HumanlikeMeat,
+                ingredientDefName = "Meat_Human",
+                ingredientLabel = "human meat"
+            };
+        }
+
+        private static Thing CreateHumanMeatMeal(out ThingDef humanMeat)
+        {
+            ThingDef mealDef = DefDatabase<ThingDef>.GetNamedSilentFail("MealFine");
+            humanMeat = DefDatabase<ThingDef>.GetNamedSilentFail("Meat_Human");
+            PawnDiaryRimTestScope.Require(mealDef != null && humanMeat != null,
+                "The real food fixture needs the base-game MealFine and Meat_Human Defs.");
+            Thing meal = ThingMaker.MakeThing(mealDef);
+            CompIngredients ingredients = meal?.TryGetComp<CompIngredients>();
+            PawnDiaryRimTestScope.Require(meal != null && ingredients != null,
+                "The crafted fine meal did not expose vanilla CompIngredients.");
+            ingredients.RegisterIngredient(humanMeat);
+            meal.stackCount = 1;
+            return meal;
+        }
+
+        private static void TrackThing(Thing thing)
+        {
+            scope.RegisterCleanup(() =>
+            {
+                if (thing != null && !thing.Destroyed) thing.Destroy(DestroyMode.Vanish);
+            });
         }
 
         private static void InstallCannibalismStance()

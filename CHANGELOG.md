@@ -1,5 +1,19 @@
 # Changelog
 
+- **2026-07-23 — Hardened exact food evidence after deduplicating two adversarial reviews.** Food
+  Harmony registration now catches each target's failure independently, reports readiness, and cannot
+  abort registration of later DLC or compatibility hooks. The factual scope remains intentionally
+  ingestion-wide: every thought vanilla returns for one human-meat meal may carry the ingredient fact,
+  while unrelated doctrine still resolves to nothing. An XML comment records why `cannibal_meal`
+  intentionally omits `sourceDomain`. Three new compiled RimTests exercise a real crafted
+  `Thing.Ingested` meal through both installed Harmony boundaries, the ingredient/direct-meat/corpse
+  classifier branches, the sealed-second-result guard, and mismatched nested-scope cleanup. Together
+  with the original two food fixtures they bring the cumulative RimTest assembly to 396 cases. The
+  historical 391/393 run is now labeled as the cumulative assembly result; a corrected loaded rerun,
+  including the three new fixtures, remains pending. No page ownership, save data, dedup key, RNG,
+  localization, policy selector, or no-DLC behavior changed. The full 15-project verifier passes all
+  7,373 assertions; runtime and 396-case RimTest assemblies build with 0 warnings and 0 errors.
+
 - **2026-07-23 — Committed the repository wiki for GitHub browsing.** Migrated the readable
   `.qoder` wiki pages into `repowiki/en/content/` while preserving their existing hierarchy,
   converted generated `file://` citations to repository-relative links, added a root landing page,
