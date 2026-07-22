@@ -1,5 +1,17 @@
 # Changelog
 
+- **2026-07-22 — Made the exact conversion-ritual loaded fixture use real managed Ideology state.**
+  The corrected rerun reached 386/388: every Counsel and role/dedup regression is now green, the
+  unchanged Odyssey N3-O prerequisite still correctly requires a parked player gravship, and the one
+  remaining conversion assertion exposed three `IdeoGenerator` results that were assigned to pawns but
+  never registered with the loaded `IdeoManager`. RimWorld consequently warned that those referenced
+  Ideologies were not deep-saved, and full event-time belief projection could legitimately fail open to
+  ordinary ritual context. The fixture now registers each generated Ideology, directly asserts the
+  production adapter's exact organizer-role and target-mutation projection, restores every affected
+  pawn, removes the generated state during failure-isolated teardown, and then performs the Scribe
+  round-trip. This changes tests only; production capture, DLC gates, saves, settings, and performance
+  are unchanged. A corrected loaded rerun remains pending.
+
 - **2026-07-22 — Corrected four loaded-test fixture assumptions exposed by the first 388-test
   conversion-ritual run.** The run reached 383/388: the unchanged Odyssey N3-O guard correctly
   reported that its host map had no parked player gravship, while the other four failures were test

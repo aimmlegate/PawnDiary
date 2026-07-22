@@ -351,9 +351,10 @@ namespace PawnDiary.RimTests
             Pawn target = scope.CreateAdultColonist();
             Pawn participant = scope.CreateAdultColonist();
             Pawn spectator = scope.CreateAdultColonist();
-            Ideo organizerIdeology = GenerateDisposableIdeology();
-            Ideo oldTargetIdeology = GenerateDisposableIdeology();
-            Ideo laterTargetIdeology = GenerateDisposableIdeology();
+            Ideo organizerIdeology = GenerateRegisteredIdeology(
+                firstPawn, target, participant, spectator);
+            Ideo oldTargetIdeology = GenerateRegisteredIdeology(target);
+            Ideo laterTargetIdeology = GenerateRegisteredIdeology(target);
             firstPawn.ideo.SetIdeo(organizerIdeology);
             target.ideo.SetIdeo(oldTargetIdeology);
             participant.ideo.SetIdeo(organizerIdeology);
@@ -378,6 +379,16 @@ namespace PawnDiary.RimTests
             PawnDiaryRimTestScope.Require(captured != null && captured.ideologyChanged
                     && captured.afterIdeologyId == organizerIdeology.GetUniqueLoadID(),
                 "The real SetIdeo completion mutation was not available to the ritual fan-out.");
+            BeliefSourcePreceptFact capturedRole;
+            BeliefMutationSnapshot capturedTarget;
+            bool adapterCaptured = ConversionRitualEvidenceAdapter.TryCapture(
+                firstPawn, target, Find.TickManager.TicksGame, policy,
+                out capturedRole, out capturedTarget);
+            PawnDiaryRimTestScope.Require(adapterCaptured
+                    && capturedRole?.defName == policy.organizerIdeologyRoleDefName
+                    && capturedTarget != null,
+                "The registered conversion fixture did not project its exact organizer role and "
+                    + "target mutation through the production evidence adapter.");
 
             RitualFanoutSignal fanout = null;
             const int Seed = 730421;
@@ -474,7 +485,20 @@ namespace PawnDiary.RimTests
             Pawn target = scope.CreateAdultColonist();
             Pawn participant = scope.CreateAdultColonist();
             Pawn spectator = scope.CreateAdultColonist();
-            Ideo shared = GenerateDisposableIdeology();
+            Pawn roleOnlyOrganizer = scope.CreateAdultColonist();
+            Pawn roleOnlyTarget = scope.CreateAdultColonist();
+            Pawn roleOnlyParticipant = scope.CreateAdultColonist();
+            Pawn roleOnlySpectator = scope.CreateAdultColonist();
+            Pawn failedOrganizer = scope.CreateAdultColonist();
+            Pawn failedTarget = scope.CreateAdultColonist();
+            Pawn failedParticipant = scope.CreateAdultColonist();
+            Pawn failedSpectator = scope.CreateAdultColonist();
+            Ideo shared = GenerateRegisteredIdeology(new[]
+            {
+                firstPawn, target, participant, spectator,
+                roleOnlyOrganizer, roleOnlyTarget, roleOnlyParticipant, roleOnlySpectator,
+                failedOrganizer, failedTarget, failedParticipant, failedSpectator
+            });
             firstPawn.ideo.SetIdeo(shared);
             target.ideo.SetIdeo(shared);
             participant.ideo.SetIdeo(shared);
@@ -499,10 +523,6 @@ namespace PawnDiary.RimTests
             // Missing mutation evidence is a role-only fallback, not an all-or-nothing adapter fault.
             // The exact assignment still determines each page's POV, while no result or before/after
             // belief facts may be invented for the target.
-            Pawn roleOnlyOrganizer = scope.CreateAdultColonist();
-            Pawn roleOnlyTarget = scope.CreateAdultColonist();
-            Pawn roleOnlyParticipant = scope.CreateAdultColonist();
-            Pawn roleOnlySpectator = scope.CreateAdultColonist();
             roleOnlyOrganizer.ideo.SetIdeo(shared);
             roleOnlyTarget.ideo.SetIdeo(shared);
             roleOnlyParticipant.ideo.SetIdeo(shared);
@@ -532,10 +552,6 @@ namespace PawnDiary.RimTests
             // Each same-tick fixture uses a fresh organizer as well as a fresh target. This preserves
             // the production 60-tick per-pawn event-type dedup instead of making it suppress the reused
             // organizer page and falsely attributing that expected suppression to optional enrichment.
-            Pawn failedOrganizer = scope.CreateAdultColonist();
-            Pawn failedTarget = scope.CreateAdultColonist();
-            Pawn failedParticipant = scope.CreateAdultColonist();
-            Pawn failedSpectator = scope.CreateAdultColonist();
             failedOrganizer.ideo.SetIdeo(shared);
             failedTarget.ideo.SetIdeo(shared);
             failedParticipant.ideo.SetIdeo(shared);
@@ -691,15 +707,53 @@ namespace PawnDiary.RimTests
             return true;
         }
 
-        private static Ideo GenerateDisposableIdeology()
+        /// <summary>
+        /// Generates an Ideology, registers it with the loaded game's manager, and restores every named
+        /// user before removing it. Registration matters here: the test exercises full belief projection
+        /// and a Scribe round-trip, both of which require the Ideology to be real managed save state.
+        /// </summary>
+        private static Ideo GenerateRegisteredIdeology(params Pawn[] users)
         {
+            IdeoManager manager = Find.IdeoManager;
+            PawnDiaryRimTestScope.Require(manager != null,
+                "The conversion-ritual fixture did not expose a loaded IdeoManager.");
             Ideo generated = IdeoGenerator.GenerateIdeo(new IdeoGenerationParms
             {
                 forFaction = Faction.OfPlayer.def,
                 fixedIdeo = true
             });
-            PawnDiaryRimTestScope.Require(generated != null,
-                "RimWorld could not generate a disposable conversion-ritual ideoligion.");
+            PawnDiaryRimTestScope.Require(generated != null && manager.Add(generated),
+                "RimWorld could not register a conversion-ritual ideoligion fixture.");
+
+            List<Pawn> restorePawns = new List<Pawn>();
+            List<Ideo> originalIdeologies = new List<Ideo>();
+            if (users != null)
+            {
+                for (int i = 0; i < users.Length; i++)
+                {
+                    Pawn user = users[i];
+                    if (user == null || restorePawns.Contains(user)) continue;
+                    restorePawns.Add(user);
+                    originalIdeologies.Add(user.ideo?.Ideo);
+                }
+            }
+
+            scope.RegisterCleanup(() =>
+            {
+                Ideo fallback = manager.IdeosListForReading.FirstOrDefault(value =>
+                    value != null && !ReferenceEquals(value, generated));
+                for (int i = 0; i < restorePawns.Count; i++)
+                {
+                    Pawn user = restorePawns[i];
+                    if (!ReferenceEquals(user?.ideo?.Ideo, generated)) continue;
+                    Ideo restore = originalIdeologies[i] ?? fallback;
+                    if (restore != null) user.ideo.SetIdeo(restore);
+                }
+
+                BeliefMutationCache.Reset();
+                if (manager.IdeosListForReading.Contains(generated)) manager.Remove(generated);
+                BeliefMutationCache.Reset();
+            });
             return generated;
         }
 
