@@ -54,4 +54,8 @@ About/PublishedFileId.txt
 /AGENTS.md
 /CLAUDE.md
 /CODEX.md
-/skills/
+/skills/*
+!/skills/repo-wiki-maintenance/
+!/skills/repo-wiki-maintenance/SKILL.md
+!/skills/repo-wiki-maintenance/agents/
+!/skills/repo-wiki-maintenance/agents/openai.yaml

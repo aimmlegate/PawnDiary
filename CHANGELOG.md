@@ -1,5 +1,11 @@
 # Changelog
 
+- **2026-07-23 — Committed the repository wiki for GitHub browsing.** Migrated the readable
+  `.qoder` wiki pages into `repowiki/en/content/` while preserving their existing hierarchy,
+  converted generated `file://` citations to repository-relative links, added a root landing page,
+  and added the `repo-wiki-maintenance` skill for manual, low-token refreshes. Opaque `.qoder`
+  metadata and knowledge caches remain local-only.
+
 - **2026-07-22 — Corrected the exact-food loaded doctrine fixture after its first run.** The valid
   loaded-game run reached 391/393: exact `humanlike_meat` capture, page ownership, dedup/RNG, and the
   adapter fail-open case passed, but the positive fixture produced empty context. Vanilla

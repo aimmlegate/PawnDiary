@@ -90,3 +90,10 @@ when that content is present.
 - RimWorld 1.6
 - Harmony
 - A local or hosted OpenAI-compatible model endpoint
+
+## Repository Documentation
+
+The detailed, GitHub-readable repository wiki is maintained under
+[`repowiki/`](repowiki/README.md). It preserves the generated page structure while remaining a
+manual, reviewable documentation snapshot. `DOCUMENTATION.md` remains the authoritative compact
+architecture and maintainer guide.

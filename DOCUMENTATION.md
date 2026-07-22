@@ -4180,3 +4180,15 @@ duplicated inside the metadata description.
 - Keep live RimWorld objects at adapter/UI/transport edges; pure helpers should use DTOs/primitives.
 - Add or update focused pure tests when changing pure logic.
 - Update `DOCUMENTATION.md` and `CHANGELOG.md` for behavior, structure, release, or workflow changes.
+
+## 14. Repository Wiki
+
+The detailed GitHub-readable repository wiki is committed under `repowiki/`. Its original
+generated page hierarchy is preserved below `repowiki/en/content/`, while `repowiki/README.md`
+provides the public entry point and links to the major sections. The wiki is a manually maintained
+snapshot and may lag behind the authoritative current-state guide in this file.
+
+When source behavior or repository structure changes, update the affected wiki page(s), keep their
+links repository-relative, update the snapshot note in `repowiki/README.md` when appropriate, and
+add a dated `CHANGELOG.md` entry. Use `skills/repo-wiki-maintenance/SKILL.md` for the focused
+workflow and validation checklist. Do not commit `.qoder` metadata or generator caches.
