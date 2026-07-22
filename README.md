@@ -9,79 +9,25 @@ that pawn's point of view.
 Pawn Diary is for storytelling only. It does not add needs, jobs, hediffs, memories, weapons,
 buildings, or gameplay pressure.
 
-## Repository Wiki
+## Pawn Diary Repository Wiki
 
-See the [Pawn Diary Repository Wiki](repowiki/README.md) for the detailed documentation, including
-the architecture, event system, AI generation pipeline, configuration, integrations, DLC behavior,
-and development guide.
+### Start here
 
-## Model And API Support
-
-Pawn Diary can use local models, hosted APIs, or several configured models at the same time.
-
-Supported request styles:
-
-- OpenAI-compatible Chat Completions
-- OpenAI Responses API
-- Local OpenAI-compatible servers, including LM Studio, llama.cpp, text-generation-webui, and
-  Ollama's OpenAI-compatible endpoint
-
-The settings menu supports multiple **API lanes**. Each lane can have its own endpoint URL, model
-name, API key behavior, compatibility mode, and reasoning setting. Lanes can be enabled, disabled,
-reordered, tested, and used for failover.
-
-Routing options let you spread requests across models, prefer the top configured rows, or keep extra
-models as backups. Event prompts can also prefer a specific configured model when you want certain
-diary types handled separately.
-
-Reasoning-model support is experimental. If you use a reasoning model, start with reasoning effort
-set to **low**. Higher reasoning settings can be slower, use more tokens, and produce less consistent
-short diary entries.
-
-By default Pawn Diary expects a local server at:
-
-```text
-http://localhost:1234
-```
-
-Output quality depends heavily on the model and settings. Models that follow instructions well and
-stay close to supplied facts usually produce better diary pages.
-
-## For Other Mods (Integration API)
-
-Other mods can read or write a colonist's diary through a stable public C# surface in the
-`PawnDiary.Integration` namespace — push events, inject your own prose, read diary state back, or
-contribute pawn context to Pawn Diary's prompts.
-
-- **Short guide** — [`EXTERNAL_API.md`](EXTERNAL_API.md) (overview + 30-second quickstart)
-- **Full contract** — [`INTEGRATIONS.md`](INTEGRATIONS.md) (every member, field, and rule)
-- **Buildable template** — [`integrations/PawnDiary.ExampleAdapter/`](integrations/PawnDiary.ExampleAdapter/)
-
-## Save Safety
-
-Pawn Diary is safe to add to an existing save. It starts recording future events after the mod is
-loaded.
-
-Removing the mod stops diary capture and hides the Diary UI/history. It does not leave custom
-gameplay defs, needs, hediffs, jobs, pawn components, or map components behind.
-
-## Current Status
-
-This is the first public release, so bugs are expected. Please report issues with the RimWorld log,
-your model/API setup, and a short description of what happened.
-
-The mod targets base RimWorld 1.6. Paid DLC is not required. Optional DLC events can be recognized
-when that content is present.
-
-## Requirements
-
-- RimWorld 1.6
-- Harmony
-- A local or hosted OpenAI-compatible model endpoint
-
-## Repository Documentation
-
-The detailed, GitHub-readable repository wiki is maintained under
-[`repowiki/`](repowiki/README.md). It preserves the generated page structure while remaining a
-manual, reviewable documentation snapshot. `DOCUMENTATION.md` remains the authoritative compact
-architecture and maintainer guide.
+- [Getting Started](repowiki/en/content/Getting%20Started.md) — installation, configuration, and
+  the main runtime pieces.
+- [Core Architecture](repowiki/en/content/Core%20Architecture/Core%20Architecture.md) — lifecycle,
+  layers, and data flow.
+- [Event System](repowiki/en/content/Event%20System/Event%20System.md) — event capture and signal
+  handling.
+- [AI Generation Engine](repowiki/en/content/AI%20Generation%20Engine/AI%20Generation%20Engine.md)
+  — prompt, model, response, and decoration stages.
+- [Configuration & Customization](repowiki/en/content/Configuration%20%26%20Customization/Configuration%20%26%20Customization.md)
+  — settings and XML-driven policy.
+- [DLC Integrations](repowiki/en/content/DLC%20Integrations/DLC%20Integrations.md) — optional DLC
+  behavior and no-DLC safety.
+- [Integration Framework](repowiki/en/content/Integration%20Framework/Integration%20Framework.md)
+  — public adapters and external integrations.
+- [Development Guide](repowiki/en/content/Development%20Guide/Development%20Guide.md) — setup,
+  testing, and contribution workflow.
+- [Troubleshooting & FAQ](repowiki/en/content/Troubleshooting%20%26%20FAQ.md) — common problems
+  and fixes.

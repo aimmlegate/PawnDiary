@@ -1,5 +1,9 @@
 # Changelog
 
+- **2026-07-23 — Replaced the README body with the wiki title page.** Kept the mod description at
+  the top and replaced the remaining README content with the repository wiki title and its main
+  navigation links.
+
 - **2026-07-23 — Simplified the public wiki presentation.** Replaced the root README feature list
   with a direct link to the wiki title page, removed migration/snapshot wording from the wiki
   landing page, and removed generated citation headings while preserving their source links.
