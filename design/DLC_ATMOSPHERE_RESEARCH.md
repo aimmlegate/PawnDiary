@@ -7,11 +7,11 @@
 > personal, continuous, and atmospheric without filling it with mechanical notifications.
 >
 > **Implementation handoff:** the shared architecture proposed by this research is frozen in
-> [`DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md`](../DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md).
+> [`design/DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md`](../design/DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md).
 > The standalone DLC plans own their game hooks and pages; the continuity plan owns their common
 > evidence, selection, persistence, prompt, and reflection contract.
 > The strict implementation and release order is
-> [`DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`](../DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md); its
+> [`design/DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`](../design/DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md); its
 > wave order supersedes the research priority table below.
 
 ## Executive conclusion
@@ -550,7 +550,7 @@ deserves participant perspectives and an arc reflection afterward.
 The implementation should avoid five disconnected feature pipelines. Four small reusable story
 primitives cover most high-value opportunities. These are stable **evidence facets**, not generic
 capture types, base event classes, or page owners. Their concrete contract and implementation order
-live in `../DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md`.
+live in `../design/DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md`.
 
 ### `IdentityTransition`
 
@@ -711,7 +711,7 @@ All future implementation should follow the repository's existing safety rules:
 6. Add pure tests for salience, merge, order, cooldown, novelty, and perspective selection.
 7. Preserve no-DLC operation. Every feature must cleanly no-op when its content pack is inactive.
 8. Localize all prompt prose through Keyed or DefInjected text according to
-   [`DOCUMENTATION.md` §12](../DOCUMENTATION.md#12-localization).
+   [`repowiki/README.md` §12](../repowiki/README.md#12-localization).
 
 ## Deduplication requirements
 

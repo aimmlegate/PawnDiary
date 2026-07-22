@@ -105,4 +105,4 @@ RimTests: two related events a day apart → second slot has frozen `memoryConte
 - In-game smoke (W2+): with a loaded model, force two related events (same other-pawn or
   weapon keyword) a day apart, confirm the second prompt contains the MemoryContext field
   via the prompt-capture seam; confirm quiet/ambient events deposit nothing.
-- `CHANGELOG.md` + `DOCUMENTATION.md` updated per standing rules.
+- `CHANGELOG.md` + `repowiki/README.md` updated per standing rules.

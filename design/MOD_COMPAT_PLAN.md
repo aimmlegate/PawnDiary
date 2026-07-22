@@ -1,7 +1,7 @@
 # Mod compatibility patches — 1-2-3 Personalities, Psychology, Vanilla Social Interactions Expanded
 
 > Status: planned 2026-07-10; not yet implemented. This is a working plan, not a contract —
-> shipped behavior lands in `../DOCUMENTATION.md`, the public API contract in `../EXTERNAL_API.md`.
+> shipped behavior lands in `../repowiki/README.md`, the public API contract in `../EXTERNAL_API.md`.
 > Research facts below were gathered from the target mods' published source (GitHub) on the plan
 > date; re-verify anything marked as a risk before coding against it.
 

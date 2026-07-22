@@ -2,7 +2,7 @@
 
 > Status: planned 2026-07-12; not implemented. Written for a coding agent. Ranked #1 in
 > [`MOD_SUPPORT_RESEARCH.md`](MOD_SUPPORT_RESEARCH.md). Shipped behavior lands in
-> `../DOCUMENTATION.md`; the API contract is `../EXTERNAL_API.md` / `../INTEGRATIONS.md`.
+> `../repowiki/README.md`; the API contract is `../EXTERNAL_API.md` / `../INTEGRATIONS.md`.
 > **Nothing here extends the public API** — every piece reuses a shipped mechanism, and the
 > whole adapter is a structural clone of `integrations/PawnDiary.PersonalitiesBridge/`.
 

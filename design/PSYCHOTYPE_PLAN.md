@@ -1,7 +1,7 @@
 # Psychotype layer — detailed implementation plan
 
 > Status: planned 2026-07-08; not yet implemented. This is a working plan, not a contract —
-> shipped behavior lands in `../DOCUMENTATION.md`, the public API contract in `../EXTERNAL_API.md`.
+> shipped behavior lands in `../repowiki/README.md`, the public API contract in `../EXTERNAL_API.md`.
 > Written to be executable step by step: follow phases in order, don't improvise beyond marked
 > decision points.
 
@@ -280,7 +280,7 @@ invalidation via a `DiaryPsychotypes.InvalidateCache` mirroring styles' merge-wi
 
 ## Phase 8 — Docs, save smoketest, version
 
-`DOCUMENTATION.md` (player-facing layer description + settings), `EXTERNAL_API.md` (overrides),
+`repowiki/README.md` (player-facing layer description + settings), `EXTERNAL_API.md` (overrides),
 `CHANGELOG.md`, `README.md` feature list. Extend `tests/SAVE_COMPATIBILITY_SMOKETEST.md`:
 old save loads → adults with entries read Neutral + unchanged voice; entry-less records roll;
 child crosses 13 → both layers re-roll and band stamps; pinned picks survive; RimTalk Tier B

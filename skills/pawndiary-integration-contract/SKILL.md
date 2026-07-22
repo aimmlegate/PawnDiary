@@ -32,8 +32,10 @@ Treat `PawnDiary.Integration` as a versioned contract for other mods. Read the [
 1. Define failure values for no game, off-thread, disabled integration, invalid request, ineligible pawn, and budget pressure.
 2. Sanitize and cap all adapter-controlled strings before they enter save data or prompts.
 3. Add pure tests for DTO mapping/outcome logic and RimWorld tests for lifecycle behavior where needed.
-4. Update the adapter example and curated wiki tables; keep `INTEGRATIONS.md` as a short pointer only.
-5. Update `CHANGELOG.md`, build, and verify the public assembly/API version.
+4. Update a committed skill only if the contract change introduces important reusable agent
+   knowledge; do not create routine root documentation updates.
+5. Build and verify the public assembly/API version. Add only a short compact changelog line when
+   the contract change is notable.
 
 ## XML and no-DLC safety
 

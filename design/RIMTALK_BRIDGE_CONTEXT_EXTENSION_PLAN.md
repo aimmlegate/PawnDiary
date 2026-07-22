@@ -4,7 +4,7 @@
 > bridge with the two remaining features from the 2026-07-09 research handoff. It is written to be
 > executed by a coding agent on a machine that can build against RimWorld + RimTalk (this repo's
 > `.csproj` files reference Windows Steam paths; the plan author could not compile or playtest).
-> Companion docs: `RIMTALK_BRIDGE_PLAN.md` (the original, shipped, steps 0–8), `../DOCUMENTATION.md`
+> Companion docs: `RIMTALK_BRIDGE_PLAN.md` (the original, shipped, steps 0–8), `../repowiki/README.md`
 > (shipped behavior), `../EXTERNAL_API.md` / `../INTEGRATIONS.md` (public API contract).
 
 Follow steps in order. Do not improvise beyond the marked decision points. Read `AGENTS.md` and
@@ -275,7 +275,7 @@ them explicitly — check the `.csproj`).
    `Languages/Russian (Русский)/Keyed/PawnDiaryRimTalkBridge.xml` — **author native RU, do not calque**
    (handoff ⚠️ U4); flag in the PR for the maintainer's native pass. Schema keys in prompt text stay
    English (carve-out, comment why); the pawn perspective must never mention "RimTalk"/"AI".
-3. **Docs (part of done):** `../DOCUMENTATION.md` integrations section — add the two variables
+3. **Docs (part of done):** `../repowiki/README.md` integrations section — add the two variables
    (`{{colony_events}}`, `{{diary_shared}}`), their toggles, the pair-cache/threading design, and the
    U1 in-game outcome for `InjectEnvironmentSection`. Dated `../CHANGELOG.md` entry. If
    `../EXTERNAL_API.md` / `../INTEGRATIONS.md` enumerate consumer-facing variables, add rows.

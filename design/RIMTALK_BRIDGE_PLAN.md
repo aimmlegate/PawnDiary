@@ -4,7 +4,7 @@
 > sharing, bounded conversation selection, and pairwise diary submission are implemented. The original
 > Steps 1/2/5/6/7 below are retained as implementation history; their ambient-plus-importance split and
 > RimTalk-engine writing path are explicitly superseded by the revision section immediately below.
-> Current behavior is authoritative in `../DOCUMENTATION.md`; the public core contract remains in
+> Current behavior is authoritative in `../repowiki/README.md`; the public core contract remains in
 > `../INTEGRATIONS.md`.
 >
 > **Context-extension record** — global `{{colony_events}}` and `{{diary_shared}}` pair shared memory
@@ -253,7 +253,7 @@ entry is accepted by design (background vs standout).
     (find MSBuild via `vswhere -latest -find MSBuild\**\Bin\MSBuild.exe` if not on PATH).
   - Stage the rebuilt `integrations/PawnDiary.RimTalkBridge/1.6/Assemblies/*.dll` like the core DLL.
 - Deploy for in-game testing: `powershell -ExecutionPolicy Bypass -File scripts\deploy-integrations.ps1`.
-- Docs are part of done: `DOCUMENTATION.md` section + dated `CHANGELOG.md` line **in the same change**.
+- Docs are part of done: `repowiki/README.md` section + dated `CHANGELOG.md` line **in the same change**.
 - **RimTalk-type isolation:** any class that mentions `RimTalk.*` types in signatures/bodies must
   only be entered through a guard (`ModsConfig.IsActive("cj.rimtalk")` check +
   `[MethodImpl(MethodImplOptions.NoInlining)]` on the entry method) so a missing RimTalk never
@@ -267,11 +267,11 @@ entry is accepted by design (background vs standout).
 `1.6/Defs/Compat/DiaryCompat_RimTalk.xml` with the `rimtalk_chatter` group gated on packageId
 `cj.rimtalk`, matching `RimTalkInteraction`, capturing rendered text, and using SpeakUp's
 `AmbientDayNote` batch + promotion policy. Added EN/RU `DiaryInteractionGroupDef` DefInjected rows,
-updated `DOCUMENTATION.md`, `EVENT_PROMPT_MAP.md`, and `CHANGELOG.md`. XML parse and core build are
+updated `repowiki/README.md`, `repowiki/en/content/Event%20System/Event-to-Prompt%20Map.md`, and `CHANGELOG.md`. XML parse and core build are
 the required local verification; in-game RimTalk/without-RimTalk matrix remains a manual smoke test.
 
 **Files:** NEW `1.6/Defs/Compat/DiaryCompat_RimTalk.xml`; RU DefInjected rows;
-`DOCUMENTATION.md`, `CHANGELOG.md`.
+`repowiki/README.md`, `CHANGELOG.md`.
 
 1. Create `1.6/Defs/Compat/DiaryCompat_RimTalk.xml` (Defs load recursively — no registration
    needed). Content — clone of `speakup_chitchat` with these values:
@@ -332,8 +332,8 @@ the required local verification; in-game RimTalk/without-RimTalk matrix remains 
 2. RU: add DefInjected rows for `rimtalk_chatter` (label/instruction/instructions.N/tone/tones.N)
    — find the existing core RU DefInjected file for `DiaryInteractionGroupDef` under
    `Languages/Russian/DefInjected/` and mirror its structure exactly. ⚠️ U4.
-3. Docs: `DOCUMENTATION.md` (compat/integrations section — add the group + why), `CHANGELOG.md`
-   dated entry. If `EVENT_PROMPT_MAP.md` lists Interaction groups, add a row there too.
+3. Docs: `repowiki/README.md` (compat/integrations section — add the group + why), `CHANGELOG.md`
+   dated entry. If `repowiki/en/content/Event%20System/Event-to-Prompt%20Map.md` lists Interaction groups, add a row there too.
 
 **Verify:** core build passes; `.githooks/verify.ps1` XML checks pass. In-game with RimTalk
 loaded: the settings row "RimTalk conversations" appears; chats no longer create per-line
@@ -436,7 +436,7 @@ public static class ContextFormat
    prompt. If the injected section does NOT appear: switch primary mechanism to
    `ContextHookRegistry.RegisterPawnHook(ContextCategories.Pawn.Thoughts, HookOperation.Append,
    ModId, (pawn, current) => current + "\n" + SectionFor(pawn), 100)` and keep `InjectPawnSection`
-   removed. Record the outcome in DOCUMENTATION.md.
+   removed. Record the outcome in repowiki/README.md.
 
 **Verify:** with L1 + a pawn that has ≥1 completed entry, RimTalk's prompt shows the section; L0
 shows nothing; a pawn with no entries contributes "" (no empty header).
@@ -641,7 +641,7 @@ appears with a title; kill the API key in RimTalk → fallback path fires; toggl
    (⚠️ U4 — flag for the user's native pass in the summary; never calque).
 2. `About/About.xml` description rewrite (it still says "minimal developer bridge").
 3. `integrations/README.md` — replace the log-only description with levels overview.
-4. `DOCUMENTATION.md` — integrations section: bridge architecture (levels, tiers, data flow,
+4. `repowiki/README.md` — integrations section: bridge architecture (levels, tiers, data flow,
    U1 outcome), compat group; §2 file map additions. `CHANGELOG.md` dated entries per step (or one
    consolidated). `INTEGRATIONS.md`: no contract change; optionally point at the bridge as the
    reference adapter in the roadmap paragraph.

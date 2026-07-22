@@ -316,7 +316,7 @@ Roslyn): `MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug`; rebu
 
 ### Step 9 — Docs
 
-`DOCUMENTATION.md` §7 "Settings And UI" (~line 2797): reader window, `useDiaryReaderWindow`,
+`repowiki/README.md` §7 "Settings And UI" (~line 2797): reader window, `useDiaryReaderWindow`,
 interaction with `showDiaryInspectTab`, the `DiaryJournalView` extraction, `reader*` style
 knobs, main-bar button. `CHANGELOG.md`: dated entry. Both in the same change as the code.
 
@@ -343,7 +343,7 @@ Modify: `Source\UI\ITab_Pawn_Diary*.cs` (rename → `DiaryJournalView.*`),
 `Source\Patches\DiarySocialLogPatches.cs`, `Source\Settings\PawnDiarySettings.cs`,
 `Source\Settings\PawnDiaryMod.SettingsWindow.cs`, `Source\Settings\PawnDiaryMod.cs`,
 `Source\Defs\DiaryUiStyleDef.cs`, `1.6\Defs\DiaryUiStyleDef.xml`, both Keyed XMLs,
-`DOCUMENTATION.md`, `CHANGELOG.md`.
+`repowiki/README.md`, `CHANGELOG.md`.
 
 New: `Source\UI\DiaryReaderSubject.cs`, `Source\UI\Dialog_DiaryReader.cs`,
 `Source\UI\DiaryReaderPawnDirectory.cs`, `Source\UI\DiaryUiRouter.cs`,

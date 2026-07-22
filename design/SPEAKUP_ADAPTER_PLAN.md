@@ -5,7 +5,7 @@
 > plumbing); this plan extracts the content support into a **dedicated, explicitly-installed
 > adapter mod** `integrations/PawnDiary.SpeakUp/`, following the exact supersede pattern the
 > RimTalk integration already shipped (core fallback group + `disableWhenPackageIdsLoaded` on
-> the adapter's packageId — see `DOCUMENTATION.md` on `rimtalk_chatter`). **No public-API
+> the adapter's packageId — see `repowiki/README.md` on `rimtalk_chatter`). **No public-API
 > change; no new core mechanism.**
 
 ## Verified SpeakUp facts (2026-07-12 — re-verify About.xml/source at build time)
@@ -68,8 +68,8 @@ Move `speakup_chitchat` verbatim into `1.6/Defs/Compat/DiaryCompat_SpeakUp.xml` 
   names means a no-adapter player sees zero behavior change from this refactor.
 - The header comment documents the supersede contract, mirroring the `rimtalk_chatter` wording
   in `DiaryCompat_RimTalk.xml`.
-- Update `DOCUMENTATION.md`'s compat section (it currently describes SpeakUp as ambient
-  batching in core) and `EVENT_PROMPT_MAP.md` if it lists the group's file location.
+- Update `repowiki/README.md`'s compat section (it currently describes SpeakUp as ambient
+  batching in core) and `repowiki/en/content/Event%20System/Event-to-Prompt%20Map.md` if it lists the group's file location.
 
 ## Step 2 — the adapter (`integrations/PawnDiary.SpeakUp/`)
 
@@ -150,7 +150,7 @@ public state:
 ## Step 3 — release wiring
 
 - Add the adapter to `scripts/publish.ps1` packaging the same way the other adapters are
-  built/deployed (note: `DOCUMENTATION.md` references `scripts/deploy-integrations.ps1`, which
+  built/deployed (note: `repowiki/README.md` references `scripts/deploy-integrations.ps1`, which
   does not exist in the repo — fix the doc or the script name while touching this).
 - `integrations/README.md`: add the adapter row (target mod, packageId, tiers, settings).
 - CHANGELOG entry describing the supersede semantics: SpeakUp alone = unchanged fallback;

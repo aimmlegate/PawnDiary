@@ -2,7 +2,7 @@
 
 Status: APPROVED 2026-07-22 · Quality review confirmed 2026-07-22 · Owner: coding agent · Scope: 10 features (A5, B1, B2, B6, C4, H1, H2, H3, H5, H6)
 
-Companion docs: `AGENTS.md` (rules), `DOCUMENTATION.md` (architecture), `skills/pawndiary-engineering/SKILL.md` (workflow).
+Companion docs: `AGENTS.md` (rules), `repowiki/README.md` (architecture), `skills/pawndiary-engineering/SKILL.md` (workflow).
 
 ## How to use this document
 
@@ -37,13 +37,13 @@ Companion docs: `AGENTS.md` (rules), `DOCUMENTATION.md` (architecture), `skills/
 
 - **Architecture barrier:** impure capture/freeze (signals, `DiaryGameComponent.*`, `DiaryContextBuilder`) → plain DTO/save strings → pure policy (`Source/Pipeline/**`, no Verse/Rand/DefDatabase/Translate) → impure transport/UI. New cross-layer data = extend the typed contract (`PromptValues`, `DiaryPovPayload`, `PovSlot`), never pass live `Pawn`/`Def` into pure code.
 - **Template XML is append-only.** Existing `fields` row order in `1.6/Defs/DiaryPromptTemplateDefs.xml` is frozen (DefInjected labels are indexed `fields.N.label`). New fields go at the END of each template's list.
-- **Localization:** every new player-facing/prompt string lands in `Languages/English/Keyed/PawnDiary.xml` AND `Languages/Russian (Русский)/Keyed/PawnDiary.xml`; Def text via DefInjected in both languages. Structured schema tokens (`key=` in gameContext, `mood=`, `none`/`n/a`) stay English (carve-out, DOCUMENTATION.md §12). `.Translate()` main-thread only.
+- **Localization:** every new player-facing/prompt string lands in `Languages/English/Keyed/PawnDiary.xml` AND `Languages/Russian (Русский)/Keyed/PawnDiary.xml`; Def text via DefInjected in both languages. Structured schema tokens (`key=` in gameContext, `mood=`, `none`/`n/a`) stay English (carve-out, repowiki/README.md §12). `.Translate()` main-thread only.
 - **Tunables in XML** (`DiaryTuningDef.xml` or the feature's Def) with code fallbacks.
 - **DLC-safety:** string defNames + `GetNamedSilentFail` only; no DLC types referenced.
 - **Save schema:** new saved fields are additive with normalization that treats missing as empty/zero; old saves must load unchanged.
 - **Exact ownership/no duplicates:** derived context or anniversary features never repeat a story already owned by a direct diary event. Use stable identity/typed category ownership, never fuzzy prose matching. Purposeful later remembrance (for example a death anniversary) is not a same-event duplicate.
 - **New-wave randomness:** do not add `Rand.Chance`. Prefer deterministic hash sampling from saved/stable identities so reloads and repeated callbacks cannot reroll and the mod does not perturb RimWorld's gameplay RNG.
-- **After EACH feature/internal release:** `MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug`; stage rebuilt `1.6/Assemblies/PawnDiary.dll`; run touched pure tests (`dotnet run --project tests/DiaryPipelineTests/...` etc.); XML-parse edited Defs; update `DOCUMENTATION.md` + dated `CHANGELOG.md` line; commit only that verified feature. Apply the same gate to the shared Phase-2 contract migration.
+- **After EACH feature/internal release:** `MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug`; stage rebuilt `1.6/Assemblies/PawnDiary.dll`; run touched pure tests (`dotnet run --project tests/DiaryPipelineTests/...` etc.); XML-parse edited Defs; update `repowiki/README.md` + dated `CHANGELOG.md` line; commit only that verified feature. Apply the same gate to the shared Phase-2 contract migration.
 
 ## 2. Phase map
 
@@ -268,7 +268,7 @@ Both add additive `PovSlot` string fields. First land one behavior-free shared c
 - [ ] RimTest rows added for new behavior (§12); suite run, pass counts reported.
 - [ ] XML parsed for every touched Def; append-only template rule honored.
 - [ ] EN + RU Keyed/DefInjected parity for new strings.
-- [ ] `DOCUMENTATION.md` section(s) updated; dated `CHANGELOG.md` entry.
+- [ ] `repowiki/README.md` section(s) updated; dated `CHANGELOG.md` entry.
 - [ ] No-DLC profile: feature inert, no errors.
 - [ ] Old-save load: new fields normalize empty; no retroactive pages.
 - [ ] Commit contains only this verified feature (or the shared Phase-2 contract migration), including its rebuilt DLL when C# changed; no public tag/version bump.
@@ -300,7 +300,7 @@ Every feature ships three layers of proof, cheapest first:
    - **Fixture tests** (`PawnDiary*FixtureTests.cs`): assert loaded-game state — save/load
      round-trips of new fields, normalization of old saves (new fields empty), template/Def
      wiring, prompt field projection.
-   Register new rows in `TEST_COVERAGE_PLAN.md` per its matrix convention. The suite builds via
+   Register new rows in `design/TEST_COVERAGE_PLAN.md` per its matrix convention. The suite builds via
    the LoadFolders RimTest gate; report pass counts in the phase changelog entry.
 3. **Hands-on rows** — only for what automation cannot see (visual tint checks, LLM prose
    quality). Append explicit rows to `tests/SAVE_COMPATIBILITY_SMOKETEST.md`; never claim them

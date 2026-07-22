@@ -553,7 +553,7 @@ the only player-facing context-size choice.
 
 Each implementation phase runs relevant pure tests, RimTest coverage where applicable, XML parsing,
 the Debug MSBuild build, and the repository verification hook. Each behavior/structure phase updates
-`DOCUMENTATION.md` and adds a dated `CHANGELOG.md` entry.
+`repowiki/README.md` and adds a dated `CHANGELOG.md` entry.
 
 ## 15. Phased implementation plan
 
@@ -650,4 +650,4 @@ This is a planning map, not permission to broaden a phase unnecessarily.
 | `tests/PawnMemoryTests` | Pure planner, timing, fitting, parity, reachability tests |
 | `tests/DiaryPipelineTests` | Prompt detail/projectability/primer composition tests |
 | `tests/PawnDiary.RimTest` | Save/load, lifecycle, toggle, reflection, progression fixtures |
-| `DOCUMENTATION.md`, `CHANGELOG.md` | Updated in every implementation phase that changes behavior/structure |
+| `repowiki/README.md`, `CHANGELOG.md` | Updated in every implementation phase that changes behavior/structure |

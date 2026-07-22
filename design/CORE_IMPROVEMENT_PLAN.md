@@ -2,13 +2,13 @@
 
 > Status: planned 2026-07-17; not yet started. To be worked **after DLC integration lands**
 > (Wave C1 is collision-free and can slot between DLC waves as a breather). This is a working
-> plan, not a contract — shipped behavior lands in `../DOCUMENTATION.md`. Grounded in a full
+> plan, not a contract — shipped behavior lands in `../repowiki/README.md`. Grounded in a full
 > code-exploration pass and competitor research on the plan date; `file:line` references are to
 > that snapshot — re-verify any load-bearing seam before coding against it. Competitor facts come
 > from workshop pages/READMEs, not their source.
 
 Scope: the **core mod only** — DLC event depth has its own master plan
-(`../DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`), external-mod compatibility its own track
+(`../design/DLC_SUPPORT_MASTER_IMPLEMENTATION_PLAN.md`), external-mod compatibility its own track
 (`MOD_COMPAT_PLAN.md`). Hard constraints, restated so no wave drifts:
 
 - **No gameplay effects, no new mechanics.** Read-only against game state; the product is text
@@ -118,7 +118,7 @@ G4 build+test CI mirroring `verify.ps1` (11 pure suites + XML well-formedness on
 
 C3 full-screen reading dialog · custom fonts · F4 Progress Renderer hook · B3 structured-output
 JSON · G3 internal daily budget · A3/A4 open-threads & narrative-continuity providers (belongs
-to the DLC narrative-continuity track — `../DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md`
+to the DLC narrative-continuity track — `../design/DLC_NARRATIVE_CONTINUITY_IMPLEMENTATION_PLAN.md`
 N-waves — not here).
 
 ---

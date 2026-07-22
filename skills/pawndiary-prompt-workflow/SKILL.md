@@ -14,7 +14,9 @@ Use this skill for changes that connect a RimWorld event to a diary prompt.
 3. Route new producers through `DiaryEvents.Submit`; do not write storage or queue generation directly.
 4. Prefer XML matchers, groups, prompt Defs, windows, observed conditions, and tuning over new hardcoded policy. Preserve safe code fallbacks.
 5. Add or extend a standalone pure test when the changed behavior can be tested without RimWorld.
-6. Update the relevant human wiki page, concise root pointer, and `CHANGELOG.md` when structure or behavior changes. Build with `MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug` after code changes.
+6. Do not update root documentation or event maps as routine bookkeeping. Update a committed skill
+   only when the change introduces important reusable knowledge. Build with `MSBuild
+   Source\PawnDiary.csproj /t:Build /p:Configuration=Debug` after code changes.
 
 ## Policy invariants
 
@@ -34,5 +36,5 @@ Use the smallest relevant Def file: `DiaryInteractionGroupDefs.xml` for event gr
 - [ ] Signal is plain and submitted through `DiaryEvents.Submit`.
 - [ ] Classification/dedup/batching behavior is covered by a pure test where practical.
 - [ ] XML/localization policy is updated and no-DLC loading remains safe.
-- [ ] Wiki map and root pointer remain accurate.
-- [ ] `CHANGELOG.md` has a dated entry and the Debug build passes.
+- [ ] A skill was updated only if the change created important reusable agent knowledge.
+- [ ] The Debug build passes after code changes.

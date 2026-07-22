@@ -575,7 +575,6 @@ function New-ExampleAdapterPayload {
     Copy-PathFromRoot $AdapterSourceRoot "API_EXPLORER.md" -Required -DestinationRoot $DestinationRoot | Out-Null
     Remove-BuildIntermediates (Join-Path $DestinationRoot "Source")
 
-    Copy-Payload "INTEGRATIONS.md" -Required -DestinationRoot $DestinationRoot | Out-Null
     Copy-Payload "EXTERNAL_API.md" -Required -DestinationRoot $DestinationRoot | Out-Null
     foreach ($doc in @("LICENSE", "LICENSE.txt", "LICENSE.md")) {
         Copy-Payload $doc -DestinationRoot $DestinationRoot | Out-Null
@@ -650,7 +649,6 @@ function New-SpeakUpAdapterPayload {
     Copy-PathFromRoot $AdapterSourceRoot "Source" -DestinationRoot $DestinationRoot | Out-Null
     Remove-BuildIntermediates (Join-Path $DestinationRoot "Source")
 
-    Copy-Payload "INTEGRATIONS.md" -Required -DestinationRoot $DestinationRoot | Out-Null
     Copy-Payload "EXTERNAL_API.md" -Required -DestinationRoot $DestinationRoot | Out-Null
     foreach ($doc in @("LICENSE", "LICENSE.txt", "LICENSE.md")) {
         Copy-Payload $doc -DestinationRoot $DestinationRoot | Out-Null
@@ -733,7 +731,6 @@ function New-RuntimeAdapterPayload {
         Remove-BuildIntermediates (Join-Path $DestinationRoot "Source")
     }
 
-    Copy-Payload "INTEGRATIONS.md" -Required -DestinationRoot $DestinationRoot | Out-Null
     Copy-Payload "EXTERNAL_API.md" -Required -DestinationRoot $DestinationRoot | Out-Null
     foreach ($doc in @("LICENSE", "LICENSE.txt", "LICENSE.md")) {
         Copy-Payload $doc -DestinationRoot $DestinationRoot | Out-Null
@@ -1343,11 +1340,9 @@ if (Test-Path -LiteralPath $bundledHarmony) {
     Write-Host "  assemblies: removed stray 0Harmony.dll from payload"
 }
 
-# Ship reference docs with the Workshop payload, but keep development source/tests out of releases.
+# Ship player-facing reference docs with the Workshop payload, but keep development source/tests out.
 Copy-Payload "README.md" | Out-Null
-Copy-Payload "DOCUMENTATION.md" -Required | Out-Null
 Copy-Payload "CHANGELOG.md" -Required | Out-Null
-Copy-Payload "EVENT_PROMPT_MAP.md" -Required | Out-Null
 foreach ($doc in @("LICENSE", "LICENSE.txt", "LICENSE.md")) {
     Copy-Payload $doc | Out-Null
 }
