@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pawn Diary Integration Contract"
+  short_description: "Protect the public API and adapter compatibility rules."
+  default_prompt: "Use the Pawn Diary integration contract skill when changing PawnDiaryApi, public DTOs, or adapter integrations."

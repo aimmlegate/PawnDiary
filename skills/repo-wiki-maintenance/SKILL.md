@@ -19,7 +19,8 @@ and page names stable so links and review history remain useful.
 4. Keep citations GitHub-relative. A page directly under `en/content/` needs `../../../` to reach
    the repository root; each additional page subdirectory adds one more `../`.
 5. Update `repowiki/README.md` when the page map, snapshot date, or maintenance workflow changes.
-6. Update `DOCUMENTATION.md` for repository structure/workflow changes and add a dated entry to
+6. Keep `DOCUMENTATION.md` as a compact root index, put human explanations and tables in focused
+   wiki pages, put coding invariants in the relevant committed skill, and add a dated entry to
    `CHANGELOG.md`.
 
 ## Validation
@@ -33,7 +34,7 @@ and page names stable so links and review history remain useful.
 
 ## Refresh boundaries
 
-The root `DOCUMENTATION.md` is the authoritative current-state architecture guide. The committed
-wiki is a navigable, detailed companion and may lag between manual refreshes. If a wiki page and
-the current source disagree, correct the wiki and record the date; do not preserve stale generated
-claims merely because they came from the old export.
+The source and XML remain authoritative for behavior. `DOCUMENTATION.md` is the compact maintainer
+index; focused wiki pages are the human-readable explanation; committed skills hold agent-only
+workflow and invariants. If a page and the current source disagree, correct the page and record
+the date; do not preserve stale generated claims merely because they came from the old export.

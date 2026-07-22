@@ -1,5 +1,10 @@
 # Changelog
 
+- **2026-07-23 — Split oversized documentation into focused wiki pages and agent skills.** The
+  root architecture, event-map, external-API, and integration files are now compact pointers;
+  human flow diagrams and schema tables live in `repowiki/`, while prompt and integration
+  invariants live in committed `skills/` guides.
+
 - **2026-07-23 — Removed generated source-link blocks from wiki page headers.** Source links remain
   in the relevant page bodies, while the repeated link lists immediately below each title are gone.
 
