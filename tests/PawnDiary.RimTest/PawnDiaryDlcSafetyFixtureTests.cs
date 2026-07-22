@@ -851,7 +851,10 @@ namespace PawnDiary.RimTests
                 }
                 else
                 {
-                    PawnDiaryRimTestScope.Require(group.matchDefNames != null && group.matchDefNames.Count > 0,
+                    PawnDiaryRimTestScope.Require(
+                        (group.matchDefNames != null && group.matchDefNames.Count > 0)
+                            || (group.matchOrdinalDefNames != null
+                                && group.matchOrdinalDefNames.Count > 0),
                         "Official DLC group '" + expected.Key + "' has no exact classifier keys.");
                 }
             }

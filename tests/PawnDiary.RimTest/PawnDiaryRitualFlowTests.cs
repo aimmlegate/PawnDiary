@@ -499,19 +499,23 @@ namespace PawnDiary.RimTests
             // Missing mutation evidence is a role-only fallback, not an all-or-nothing adapter fault.
             // The exact assignment still determines each page's POV, while no result or before/after
             // belief facts may be invented for the target.
+            Pawn roleOnlyOrganizer = scope.CreateAdultColonist();
             Pawn roleOnlyTarget = scope.CreateAdultColonist();
             Pawn roleOnlyParticipant = scope.CreateAdultColonist();
             Pawn roleOnlySpectator = scope.CreateAdultColonist();
+            roleOnlyOrganizer.ideo.SetIdeo(shared);
             roleOnlyTarget.ideo.SetIdeo(shared);
             roleOnlyParticipant.ideo.SetIdeo(shared);
             roleOnlySpectator.ideo.SetIdeo(shared);
             BeliefMutationCache.Reset();
             HashSet<string> roleOnlyBefore = SnapshotEventIds();
             scope.Component.Dispatch(ExactConversionFixture(
-                roleOnlyTarget, roleOnlyParticipant, roleOnlySpectator, progress: 1f));
+                roleOnlyTarget, roleOnlyParticipant, roleOnlySpectator, progress: 1f,
+                organizer: roleOnlyOrganizer));
             List<DiaryEvent> roleOnly = NewEventsSince(roleOnlyBefore);
             PawnDiaryRimTestScope.Require(roleOnly.Count == 4,
-                "Missing target mutation evidence suppressed the exact ritual fan-out.");
+                "Missing target mutation evidence suppressed the exact ritual fan-out; got "
+                    + roleOnly.Count + " pages.");
             DiaryEvent roleOnlyTargetPage = PageForPerspective(
                 roleOnly, RitualEventData.PerspectiveTarget, roleOnlyTarget);
             PageForPerspective(
@@ -525,11 +529,14 @@ namespace PawnDiary.RimTests
                         DiaryEvent.InitiatorRole)),
                 "Missing target mutation evidence fabricated conversion mechanics.");
 
-            // A fresh scope/test is not needed for the fail-open branch: use a distinct target so the
-            // fixture dedup key differs even at the same tick.
+            // Each same-tick fixture uses a fresh organizer as well as a fresh target. This preserves
+            // the production 60-tick per-pawn event-type dedup instead of making it suppress the reused
+            // organizer page and falsely attributing that expected suppression to optional enrichment.
+            Pawn failedOrganizer = scope.CreateAdultColonist();
             Pawn failedTarget = scope.CreateAdultColonist();
             Pawn failedParticipant = scope.CreateAdultColonist();
             Pawn failedSpectator = scope.CreateAdultColonist();
+            failedOrganizer.ideo.SetIdeo(shared);
             failedTarget.ideo.SetIdeo(shared);
             failedParticipant.ideo.SetIdeo(shared);
             failedSpectator.ideo.SetIdeo(shared);
@@ -538,10 +545,12 @@ namespace PawnDiary.RimTests
             {
                 HashSet<string> failureBefore = SnapshotEventIds();
                 scope.Component.Dispatch(ExactConversionFixture(
-                    failedTarget, failedParticipant, failedSpectator, progress: 1f));
+                    failedTarget, failedParticipant, failedSpectator, progress: 1f,
+                    organizer: failedOrganizer));
                 List<DiaryEvent> ordinary = NewEventsSince(failureBefore);
                 PawnDiaryRimTestScope.Require(ordinary.Count == 4,
-                    "An optional enrichment failure suppressed the ordinary ritual fan-out.");
+                    "An optional enrichment failure suppressed the ordinary ritual fan-out; got "
+                        + ordinary.Count + " pages.");
                 DiaryEvent ordinaryTarget = PageForPerspective(
                     ordinary, RitualEventData.PerspectiveTarget, failedTarget);
                 PageForPerspective(
@@ -695,19 +704,20 @@ namespace PawnDiary.RimTests
         }
 
         private static RitualFanoutSignal ExactConversionFixture(
-            Pawn target, Pawn participant, Pawn spectator, float progress)
+            Pawn target, Pawn participant, Pawn spectator, float progress, Pawn organizer = null)
         {
             DiaryInteractionGroupDef group = InteractionGroups.ByKey(
                 ConversionRitualPolicy.GroupDefName);
             PawnDiaryRimTestScope.Require(group != null,
                 "The exact conversion ritual group was not loaded.");
+            Pawn effectiveOrganizer = organizer ?? firstPawn;
             RitualFanoutSignal signal = RitualFanoutSignal.CreateTestFixture(
-                firstPawn,
+                effectiveOrganizer,
                 target,
                 // Live RitualRoleAssignments.Participants contains spectators too. Mirroring that
                 // membership here makes adapter-failure coverage exercise the real role-order trap.
-                new List<Pawn> { firstPawn, participant, spectator },
-                new List<Pawn> { participant, spectator },
+                new List<Pawn> { effectiveOrganizer, participant, spectator },
+                new List<Pawn> { spectator },
                 "Conversion",
                 "conversion ritual",
                 "RitualBehaviorWorker_Conversion",

@@ -137,6 +137,12 @@ namespace PawnDiary.RimTests
                 "The exact Counsel group availability/tone policy did not match the loaded profile.");
             InteractionDef exactCounsel = new InteractionDef { defName = CounselSuccessDefName };
             InteractionDef caseVariantCounsel = new InteractionDef { defName = "counsel_success" };
+            // Loaded Defs receive this hash during RimWorld's normal resolve lifecycle. Synthetic Defs
+            // must do the same before entering the production Def-keyed classification memo; otherwise
+            // Verse considers every unresolved InteractionDef (hash 0) equal and the second assertion
+            // merely reuses the first synthetic Def's cached result.
+            exactCounsel.ResolveDefNameHash();
+            caseVariantCounsel.ResolveDefNameHash();
             PawnDiaryRimTestScope.Require(
                 InteractionGroups.Classify(exactCounsel)?.defName
                     == (active ? CounselEventPolicy.GroupDefName : "other")

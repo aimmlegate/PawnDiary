@@ -1,5 +1,19 @@
 # Changelog
 
+- **2026-07-22 — Corrected four loaded-test fixture assumptions exposed by the first 388-test
+  conversion-ritual run.** The run reached 383/388: the unchanged Odyssey N3-O guard correctly
+  reported that its host map had no parked player gravship, while the other four failures were test
+  defects rather than production regressions. The exhaustive DLC catalog now recognizes both
+  case-insensitive and ordinal exact classifier lists. Synthetic Counsel `InteractionDef` rows now run
+  RimWorld's normal `ResolveDefNameHash` lifecycle before entering the production Def-keyed memo, so
+  the case-variant assertion cannot alias the exact row through Verse's unresolved hash-zero identity.
+  The conversion fixture now models vanilla role membership precisely (spectators are present in
+  `Participants` but only actual spectators are present in `SpectatorsForReading`) and gives each
+  same-tick subcase a fresh organizer so the real 60-tick per-pawn event-type dedup does not suppress a
+  page and masquerade as an enrichment failure. Failure messages now include observed page counts. No
+  production logic, XML policy, save data, settings, performance path, or player-facing behavior
+  changed; the corrected loaded rerun remains pending.
+
 - **2026-07-22 — Adversarially hardened exact completed-conversion ritual enrichment after
   reconciling two external reviews.** Vanilla 1.6 decompilation confirms that
   `RitualRoleAssignments.Participants` includes spectators; exact conversion fan-out now retains its
