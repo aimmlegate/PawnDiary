@@ -98,7 +98,8 @@ namespace PawnDiary
                 currentBeliefFactsRelevant = source.currentBeliefFactsRelevant,
                 sourcePreceptInstanceId = SafeId(source.sourcePreceptInstanceId),
                 sourcePreceptDefName = SafeId(source.sourcePreceptDefName),
-                mutation = source.mutation
+                mutation = source.mutation,
+                projection = BeliefContextProjection.Copy(source.projection)
             };
             CopyIds(source.thoughtDefNames, result.thoughtDefNames, 32);
             CopyIds(source.historyEventDefNames, result.historyEventDefNames, 32);

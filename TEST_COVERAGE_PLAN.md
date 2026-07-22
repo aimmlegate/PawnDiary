@@ -137,7 +137,7 @@ teardown.
 | EVT-14 | Mood event | Register a controlled `GameCondition` | Affected-map fan-out, mood classification, unaffected-map exclusion, disabled group. |
 | EVT-15 | Pawn progression | Mutate skill passion milestone, trait, and optional DLC state then scan | First-scan baseline, only upward/new milestones, exact context, major-change arc request; installed-Royalty real psylink/title positive paths and repeat suppression. |
 | EVT-16 | Quest | Accept/end controlled quest and run recovery scan | Accepted bookkeeping/no page, completed/failed fan-out, placeholder-label sanitation, duplicate scan drop. |
-| EVT-17 | Ritual | Submit production Ideology/psychic fan-outs through internal copied-fact fixtures | Organizer/invoker, target, participant, and spectator pages; duplicate-role pawn-ID collapse, colony dedup, per-perspective context/localization, exact completed-conversion classification/settings/evidence/Scribe/fail-open behavior, all 16 Anomaly classifier keys and fallback, and clean no-DLC fields. Live DLC constructor signatures are checked separately. |
+| EVT-17 | Ritual | Submit production Ideology/psychic fan-outs through internal copied-fact fixtures | Organizer/invoker, target, participant, and spectator pages; duplicate-role pawn-ID collapse, colony dedup, per-perspective context/localization, exact completed-conversion classification/settings/evidence/Scribe/fail-open behavior, exact throne/leader owner/type routing with bounded authority speaker/witness context and inactive/fault fallback, all 16 Anomaly classifier keys and fallback, and clean no-DLC fields. Live DLC constructor signatures are checked separately. |
 | EVT-18 | Arrival | `SetFaction` plus founding-arrival bootstrap | Neutral page, scenario/backstory facts, exactly-first ordering, one bad pawn cannot wedge bootstrap. |
 | EVT-19 | Day/quadrum reflection | Seed day signals and invoke sleep/rest flush | Highlight selection, once-per-day guard, quadrum substitution, evidence consumption, token limits. |
 | EVT-20 | Arc reflection | Seed hot/archive memories and invoke scheduled/major-event path | Year/gap limits, memory filtering/dedup, forced retry backoff, recent-memory tracking. |
@@ -1123,6 +1123,24 @@ fully-qualified worker collision rejection, ordinal/malformed/DLC/setting, immut
 window clamps, identity/token sanitization, exact/stale/future/foreign/cause/result, POV isolation, and
 idempotent-context cases. Pipeline XML coverage rejects an unsupported conversion-group color cue.
 
+Three exact authority-speech cases extend the same ritual suite. The wiring case resolves the installed
+1.6 fully-qualified throne/leader behavior and shared speech-outcome types, pins the `speaker`
+assignment and DLC gates, and proves `ThroneSpeech` keeps `ritualRoyal` while `LeaderSpeech` keeps
+`ritualFinished`. The positive case enters the production fan-out copied-fact seam with registered
+Ideology state: leader speech runs when Ideology is active, throne speech additionally runs when
+Royalty is active, each pawn receives at most one page, global `Rand` is unchanged, repeat dispatch is
+deduped, and the original group owns the prompt. Speaker belief context may contain its own current role
+and certainty; participant/spectator context is independently bounded and contains neither, nor meme,
+structure, deity, or N3-I projection. The saved speaker block survives a later certainty change and a
+real Scribe round-trip. The fault case throws at the optional adapter boundary and still requires the
+three ordinary pages with empty belief blocks. Inactive Ideology/Royalty match branches are asserted
+without constructing DLC content. Standalone policy coverage adds exact/case/FQN/group/role/duplicate
+rejection, missing/malformed/cap fallback, relevant versus unrelated/hidden/secular doctrine,
+speaker/witness/target isolation, deep-copy mutation resistance, bounded/idempotent formatting, and
+optional presentation. These cases raise `BeliefContextTests` to 511 assertions and the compiled
+RimTest assembly from 388 to 391 cases. They have not been run in-game; 388/388 remains the latest
+recorded loaded result.
+
 The first 377-test execution exposed vanilla's nested silent companion page and completed 375/377; the
 other failure was the unrelated N3-O Odyssey host prerequisite. After the exact companion fix and a
 valid parked-gravship host, the suite passed 377/377. That remains the latest in-game result: the two
@@ -1130,7 +1148,7 @@ new cases and the real-ability rewrites compile but have not yet received a 379/
 post-Phase-2 base-only profile run is recorded. Before N3-I, a headless startup attempt was made for
 the requested 379/379 profiles, but RimTest ran before `Current.Game` existed and every loaded-game
 fixture failed its precondition; no usable active or base-only acceptance result was produced. The
-current completed-conversion assembly contains 388 tests. The first user-supplied pre-Counsel Ideology-active execution reached
+current authority-speech assembly contains 391 tests. The first user-supplied pre-Counsel Ideology-active execution reached
 379/381: its N3-I failure was the over-broad fault-injection seam corrected above, while the other
 failure was the existing N3-O positive acceptance precondition because the host map had no parked
 player gravship. After the adversarial fixes, the user-confirmed loaded rerun passed 381/381 and closes
@@ -1143,9 +1161,10 @@ recorded before the assembly advanced. The first 388-test active run reached 383
 four fixture assumptions, the second reached 386/388 and isolated a real organizer POV-token mismatch
 (`organizer` in the pure policy versus the live serialized `author` token). That production boundary is
 now corrected. The user-confirmed rerun passed 388/388 on a valid parked-gravship host, closing the
-active completed-conversion gate. The 388-test base-only profile remains release-blocking under the
-matrix above because it is the only execution that reaches every `ModsConfig.IdeologyActive == false`
-branch.
+active completed-conversion gate. The three authority-speech cases compile but have not been executed;
+therefore 388/388 remains the latest valid loaded result. A current 391-test base-only profile remains
+release-blocking under the matrix above because it is the only execution that reaches every
+`ModsConfig.IdeologyActive == false` branch.
 The first user-observed 376-test loaded run completed 374/376. It exposed the dedicated worker
 fixture's disabled `ConversionPower`/unspawned-recipient prerequisites, while the other failure was the
 unrelated N3-O acceptance guard on a host without a parked player gravship. After correcting the

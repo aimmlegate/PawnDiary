@@ -12,6 +12,8 @@ namespace PawnDiary
             "RimWorld.RitualBehaviorWorker_Conversion";
         private const string ConversionOutcomeTypeName =
             "RimWorld.RitualOutcomeEffectWorker_Conversion";
+        private const string SpeechOutcomeTypeName =
+            "RimWorld.RitualOutcomeEffectWorker_Speech";
         private static int assertions;
 
         private static int Main()
@@ -38,6 +40,7 @@ namespace PawnDiary
             TestPhase2MutationEvidenceSelection();
             TestCounselExactOutcomeContextPolicy();
             TestConversionRitualExactCompletionPolicy();
+            TestAuthoritySpeechExactEnrichmentPolicy();
             TestN3IIdeologyInterpretationProvider();
             Console.WriteLine("BeliefContextTests passed " + assertions + " assertions.");
             return 0;
@@ -924,6 +927,206 @@ namespace PawnDiary
                 ConversionRitualSettingsInheritance.ShouldStoreOverride(true, true, false));
             AssertTrue("default-equal exact choice is redundant without legacy intent",
                 !ConversionRitualSettingsInheritance.ShouldStoreOverride(true, true, null));
+        }
+
+        private static void TestAuthoritySpeechExactEnrichmentPolicy()
+        {
+            AuthoritySpeechPolicyBuilder builder = AuthoritySpeechPolicyBuilderForTests();
+            List<AuthoritySpeechRouteBuilder> mutableRoutes = builder.routes;
+            AuthoritySpeechPolicySnapshot policy = builder.Build();
+            mutableRoutes[0].ritualDefName = "LateMutation";
+            mutableRoutes.Clear();
+            AssertEqual("authority policy deep-copies exact routes", 2, policy.routes.Count);
+            AssertEqual("authority policy route copy is isolated", "ThroneSpeech",
+                policy.routes[0].ritualDefName);
+
+            AuthoritySpeechRouteSnapshot throne = AuthoritySpeechPolicy.Match(
+                "ThroneSpeech", "RimWorld.RitualBehaviorWorker_ThroneSpeech",
+                SpeechOutcomeTypeName, "ritualRoyal", "speaker", true, true, policy);
+            AssertTrue("exact installed throne speech route matches", throne != null);
+            AuthoritySpeechRouteSnapshot leader = AuthoritySpeechPolicy.Match(
+                "LeaderSpeech", "RimWorld.RitualBehaviorWorker_Speech",
+                SpeechOutcomeTypeName, "ritualFinished", "speaker", true, false, policy);
+            AssertTrue("exact installed leader speech route matches without Royalty", leader != null);
+            AssertTrue("Royalty-off throne route remains inert",
+                AuthoritySpeechPolicy.Match(
+                    "ThroneSpeech", "RimWorld.RitualBehaviorWorker_ThroneSpeech",
+                    SpeechOutcomeTypeName, "ritualRoyal", "speaker", true, false, policy) == null);
+            AssertTrue("Ideology-off speech enrichment remains inert",
+                AuthoritySpeechPolicy.Match(
+                    "LeaderSpeech", "RimWorld.RitualBehaviorWorker_Speech",
+                    SpeechOutcomeTypeName, "ritualFinished", "speaker", false, true, policy) == null);
+            AssertTrue("short worker names cannot claim authority speech",
+                AuthoritySpeechPolicy.Match(
+                    "ThroneSpeech", "RitualBehaviorWorker_ThroneSpeech",
+                    "RitualOutcomeEffectWorker_Speech", "ritualRoyal", "speaker",
+                    true, true, policy) == null);
+            AssertTrue("namespaced behavior collision cannot claim authority speech",
+                AuthoritySpeechPolicy.Match(
+                    "ThroneSpeech", "SomeMod.RitualBehaviorWorker_ThroneSpeech",
+                    SpeechOutcomeTypeName, "ritualRoyal", "speaker", true, true, policy) == null);
+            AssertTrue("wrong page owner cannot claim throne enrichment",
+                AuthoritySpeechPolicy.Match(
+                    "ThroneSpeech", "RimWorld.RitualBehaviorWorker_ThroneSpeech",
+                    SpeechOutcomeTypeName, "ritualFinished", "speaker", true, true, policy) == null);
+            AssertTrue("wrong assigned organizer role cannot claim speech enrichment",
+                AuthoritySpeechPolicy.Match(
+                    "ThroneSpeech", "RimWorld.RitualBehaviorWorker_ThroneSpeech",
+                    SpeechOutcomeTypeName, "ritualRoyal", "audience", true, true, policy) == null);
+            AssertTrue("case variants fail exact authority routing",
+                AuthoritySpeechPolicy.Match(
+                    "thronespeech", "RimWorld.RitualBehaviorWorker_ThroneSpeech",
+                    SpeechOutcomeTypeName, "ritualRoyal", "speaker", true, true, policy) == null);
+
+            AuthoritySpeechPolicyBuilder duplicateBuilder = AuthoritySpeechPolicyBuilderForTests();
+            duplicateBuilder.routes.Add(new AuthoritySpeechRouteBuilder
+            {
+                ritualDefName = "ThroneSpeech",
+                behaviorWorkerClassName = "RimWorld.RitualBehaviorWorker_ThroneSpeech",
+                outcomeWorkerClassName = SpeechOutcomeTypeName,
+                downstreamGroupDefName = "ritualRoyal",
+                speakerRoleId = "speaker",
+                requiresRoyalty = true
+            });
+            AssertTrue("duplicate exact authority routes fail closed",
+                AuthoritySpeechPolicy.Match(
+                    "ThroneSpeech", "RimWorld.RitualBehaviorWorker_ThroneSpeech",
+                    SpeechOutcomeTypeName, "ritualRoyal", "speaker", true, true,
+                    duplicateBuilder.Build()) == null);
+
+            AuthoritySpeechPolicyBuilder malformedBuilder = AuthoritySpeechPolicyBuilderForTests();
+            malformedBuilder.enabled = false;
+            malformedBuilder.speakerMaximumSelectedStances = 99;
+            malformedBuilder.witnessMaximumSupportingMemes = -4;
+            malformedBuilder.witnessMaximumContextCharacters = 9000;
+            malformedBuilder.speakerPromptInstruction = "bad\nsecond line";
+            AuthoritySpeechPolicySnapshot malformed = malformedBuilder.Build();
+            AssertTrue("disabled authority policy fails closed",
+                AuthoritySpeechPolicy.Match(
+                    "ThroneSpeech", "RimWorld.RitualBehaviorWorker_ThroneSpeech",
+                    SpeechOutcomeTypeName, "ritualRoyal", "speaker", true, true, malformed) == null);
+            AssertEqual("malformed authority stance cap is bounded", 1,
+                malformed.speakerProjection.maximumSelectedStances);
+            AssertEqual("malformed authority meme cap is bounded", 0,
+                malformed.witnessProjection.maximumSupportingMemes);
+            AssertEqual("malformed authority character cap is bounded", 320,
+                malformed.witnessProjection.maximumContextCharacters);
+            AssertEqual("multiline authority prompt instruction is sanitized", "bad second line",
+                malformed.speakerProjection.promptInstruction);
+            AssertTrue("missing authority policy is inert",
+                AuthoritySpeechPolicy.Match(
+                    "ThroneSpeech", "RimWorld.RitualBehaviorWorker_ThroneSpeech",
+                    SpeechOutcomeTypeName, "ritualRoyal", "speaker", true, true,
+                    AuthoritySpeechPolicySnapshot.CreateDefault()) == null);
+
+            BeliefEventEvidence speaker = AuthoritySpeechPolicy.EvidenceFor(
+                "Speaker", 880, "ThroneSpeech", "Speaker label",
+                AuthoritySpeechPolicy.PerspectiveSpeaker, throne, policy);
+            BeliefEventEvidence witness = AuthoritySpeechPolicy.EvidenceFor(
+                "Witness", 880, "ThroneSpeech", "Witness label",
+                AuthoritySpeechPolicy.PerspectiveParticipant, throne, policy);
+            BeliefEventEvidence spectator = AuthoritySpeechPolicy.EvidenceFor(
+                "Spectator", 880, "ThroneSpeech", "Spectator label",
+                AuthoritySpeechPolicy.PerspectiveSpectator, throne, policy);
+            AssertTrue("speaker receives authority topic", speaker != null
+                && Contains(speaker.narrative.beliefTopics, "authority_speech"));
+            AssertTrue("participant receives smaller shared authority topic", witness != null
+                && Contains(witness.narrative.beliefTopics, "authority_speech"));
+            AssertTrue("spectator receives the same bounded witness mode", spectator != null
+                && !spectator.projection.includeCertainty);
+            AssertTrue("selected target receives no authority enrichment",
+                AuthoritySpeechPolicy.EvidenceFor(
+                    "Target", 880, "ThroneSpeech", "Target label",
+                    AuthoritySpeechPolicy.PerspectiveTarget, throne, policy) == null);
+            AssertTrue("unknown POV receives no authority enrichment",
+                AuthoritySpeechPolicy.EvidenceFor(
+                    "Other", 880, "ThroneSpeech", "Other label",
+                    "organizer", throne, policy) == null);
+            AssertTrue("speaker projection keeps role and certainty",
+                speaker.projection.includeRole && speaker.projection.includeCertainty);
+            AssertTrue("witness projection cannot inherit speaker role or certainty",
+                !witness.projection.includeRole && !witness.projection.includeCertainty);
+            speaker.narrative.beliefTopics.Add("late_mutation");
+            speaker.projection.maximumContextCharacters = 64;
+            AssertTrue("speaker topic mutation cannot leak to witness",
+                !Contains(witness.narrative.beliefTopics, "late_mutation"));
+            AssertEqual("speaker projection mutation cannot leak to witness", 320,
+                witness.projection.maximumContextCharacters);
+            AssertEqual("evidence mutation cannot leak back to frozen policy", 640,
+                policy.speakerProjection.maximumContextCharacters);
+
+            BeliefPolicyBuilder resolverBuilder = BeliefPolicyBuilder.CreateDefault();
+            resolverBuilder.semanticAliases.Add(new BeliefSemanticAlias(
+                "authority_speech", new List<string>
+                {
+                    "authority leadership", "leader social role",
+                    "slavery social structure", "social hierarchy"
+                }));
+            BeliefPolicySnapshot resolverPolicy = resolverBuilder.Build();
+            BeliefPreceptFact authority = Precept(
+                "Slavery_Acceptable", "Slavery", "slavery social structure", 2);
+            authority.associatedMemeDefNames.Add("HierarchyMeme");
+            BeliefPreceptFact unrelated = Precept(
+                "TreeWorship", "Trees", "trees forests natural reverence", 3);
+            BeliefSnapshot authoritySnapshot = Snapshot(authority, unrelated);
+            authoritySnapshot.roleName = "Leader";
+            authoritySnapshot.memes.Add(Meme("HierarchyMeme", "Social hierarchy", 2));
+            authoritySnapshot.structure = Meme("StructureMeme", "Collectivist structure", 2);
+            authoritySnapshot.deities.Add(new BeliefDeityFact { name = "Synthetic deity", isKeyDeity = true });
+
+            BeliefEventEvidence speakerFresh = AuthoritySpeechPolicy.EvidenceFor(
+                "Speaker", 880, "ThroneSpeech", "Speaker label",
+                AuthoritySpeechPolicy.PerspectiveSpeaker, throne, policy);
+            BeliefStanceResolution speakerResolution = Resolve(
+                authoritySnapshot, speakerFresh, resolverPolicy);
+            AssertSelected("authority speech selects only relevant visible doctrine",
+                speakerResolution, "Slavery_Acceptable");
+            AssertEqual("speaker retains current role", "Leader", speakerResolution.roleName);
+            AssertTrue("speaker retains current certainty", speakerResolution.hasCertainty);
+            AssertEqual("speaker stance cap is enforced", 1, speakerResolution.stances.Count);
+            AssertEqual("speaker supporting-meme cap is enforced", 1,
+                speakerResolution.supportingMemes.Count);
+            AssertTrue("speaker optional structure is permitted", speakerResolution.structure != null);
+            AssertTrue("speaker deity remains omitted by policy", speakerResolution.deity == null);
+            string speakerContext = BeliefContextFormatter.Format(
+                speakerResolution, NarrativeDetailLevelTokens.Full, resolverPolicy);
+            AssertContains("speaker context contains current role", speakerContext, "role: Leader");
+            AssertContains("speaker context contains current certainty", speakerContext, "certainty:");
+            AssertTrue("speaker context obeys event character cap", speakerContext.Length <= 640);
+            AssertEqual("authority formatting is idempotent", speakerContext,
+                BeliefContextFormatter.Format(
+                    speakerResolution, NarrativeDetailLevelTokens.Full, resolverPolicy));
+
+            BeliefStanceResolution witnessResolution = Resolve(
+                authoritySnapshot, witness, resolverPolicy);
+            AssertSelected("witness may receive the shared relevant authority doctrine",
+                witnessResolution, "Slavery_Acceptable");
+            AssertEqual("witness receives no role", string.Empty, witnessResolution.roleName);
+            AssertTrue("witness receives no certainty", !witnessResolution.hasCertainty);
+            AssertEqual("witness receives no supporting meme", 0,
+                witnessResolution.supportingMemes.Count);
+            AssertTrue("witness receives no structure", witnessResolution.structure == null);
+            AssertTrue("witness receives no deity", witnessResolution.deity == null);
+            AssertTrue("witness does not create narrative interpretation",
+                !witnessResolution.includeNarrativeInterpretation);
+            string witnessContext = BeliefContextFormatter.Format(
+                witnessResolution, NarrativeDetailLevelTokens.Full, resolverPolicy);
+            AssertTrue("witness context contains no speaker role",
+                witnessContext.IndexOf("role:", StringComparison.Ordinal) < 0);
+            AssertTrue("witness context contains no speaker certainty",
+                witnessContext.IndexOf("certainty:", StringComparison.Ordinal) < 0);
+            AssertTrue("witness context obeys smaller event cap", witnessContext.Length <= 320);
+
+            BeliefSnapshot unrelatedSnapshot = Snapshot(unrelated);
+            AssertEmpty("unrelated doctrine leaves authority speech unenriched",
+                Resolve(unrelatedSnapshot, speakerFresh, resolverPolicy));
+            BeliefSnapshot hiddenSnapshot = Snapshot(
+                Precept("HiddenAuthority", "Authority", "authority leadership", 3, false));
+            AssertEmpty("hidden authority doctrine cannot enrich speech",
+                Resolve(hiddenSnapshot, speakerFresh, resolverPolicy));
+            BeliefSnapshot secular = new BeliefSnapshot();
+            AssertEmpty("secular or unavailable belief snapshot leaves speech ordinary",
+                Resolve(secular, speakerFresh, resolverPolicy));
         }
 
         private static void TestN3IIdeologyInterpretationProvider()
@@ -2290,6 +2493,57 @@ namespace PawnDiary
             };
             builder.allowedMutationCauseTokens.Add(BeliefMutationCauseTokens.SetIdeology);
             builder.allowedMutationCauseTokens.Add(BeliefMutationCauseTokens.CertaintyOffset);
+            return builder;
+        }
+
+        private static AuthoritySpeechPolicyBuilder AuthoritySpeechPolicyBuilderForTests()
+        {
+            AuthoritySpeechPolicyBuilder builder = new AuthoritySpeechPolicyBuilder
+            {
+                enabled = true,
+                evidenceGroupKey = "authority_speech",
+                topicToken = "authority_speech",
+                speakerEvidenceMode = AuthoritySpeechEvidenceModeTokens.SpeakerAuthority,
+                targetEvidenceMode = AuthoritySpeechEvidenceModeTokens.None,
+                participantEvidenceMode = AuthoritySpeechEvidenceModeTokens.SharedAuthority,
+                spectatorEvidenceMode = AuthoritySpeechEvidenceModeTokens.SharedAuthority,
+                speakerMaximumSelectedStances = 1,
+                speakerMaximumSupportingMemes = 1,
+                speakerMaximumContextCharacters = 640,
+                speakerIncludeRole = true,
+                speakerIncludeCertainty = true,
+                speakerIncludeStructure = true,
+                speakerIncludeDeity = false,
+                speakerIncludeNarrativeInterpretation = true,
+                witnessMaximumSelectedStances = 1,
+                witnessMaximumSupportingMemes = 0,
+                witnessMaximumContextCharacters = 320,
+                witnessIncludeRole = false,
+                witnessIncludeCertainty = false,
+                witnessIncludeStructure = false,
+                witnessIncludeDeity = false,
+                witnessIncludeNarrativeInterpretation = false,
+                speakerPromptInstruction = "Use only speaker authority facts.",
+                witnessPromptInstruction = "Use only shared witness doctrine."
+            };
+            builder.routes.Add(new AuthoritySpeechRouteBuilder
+            {
+                ritualDefName = "ThroneSpeech",
+                behaviorWorkerClassName = "RimWorld.RitualBehaviorWorker_ThroneSpeech",
+                outcomeWorkerClassName = SpeechOutcomeTypeName,
+                downstreamGroupDefName = "ritualRoyal",
+                speakerRoleId = "speaker",
+                requiresRoyalty = true
+            });
+            builder.routes.Add(new AuthoritySpeechRouteBuilder
+            {
+                ritualDefName = "LeaderSpeech",
+                behaviorWorkerClassName = "RimWorld.RitualBehaviorWorker_Speech",
+                outcomeWorkerClassName = SpeechOutcomeTypeName,
+                downstreamGroupDefName = "ritualFinished",
+                speakerRoleId = "speaker",
+                requiresRoyalty = false
+            });
             return builder;
         }
 

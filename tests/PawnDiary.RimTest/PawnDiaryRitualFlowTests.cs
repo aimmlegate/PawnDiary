@@ -1,5 +1,5 @@
 // In-game ritual-capture tests for Pawn Diary's Ideology/psychic-ritual fan-out (EVT-17), including
-// the exact completed conversion-ritual Phase 2 slice.
+// the exact completed conversion-ritual and authority-speech Phase 2 slices.
 //
 // A finished ritual is a colony perspective FAN-OUT: RitualFanoutSignal (Ideology,
 // LordJob_Ritual.ApplyOutcome) and PsychicRitualFanoutSignal (Anomaly, psychic ritual) each emit one
@@ -69,9 +69,11 @@ namespace PawnDiary.RimTests
             firstPawn = scope.CreateAdultColonist();
             BeliefMutationCache.Reset();
             ConversionRitualEvidenceAdapter.SetFailureForTests(false);
+            AuthoritySpeechEvidenceAdapter.SetFailureForTests(false);
             scope.RegisterCleanup(() =>
             {
                 ConversionRitualEvidenceAdapter.SetFailureForTests(false);
+                AuthoritySpeechEvidenceAdapter.SetFailureForTests(false);
                 BeliefMutationCache.Reset();
             });
         }
@@ -92,6 +94,7 @@ namespace PawnDiary.RimTests
                 scope = null;
                 firstPawn = null;
                 ConversionRitualEvidenceAdapter.SetFailureForTests(false);
+                AuthoritySpeechEvidenceAdapter.SetFailureForTests(false);
             }
         }
 
@@ -585,6 +588,199 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Ideology Phase 2. Confirms the loaded XML identities against the installed runtime types and
+        /// proves that throne ownership remains Royal while leader speech remains the ordinary ritual owner.
+        /// </summary>
+        [Test]
+        public static void AuthoritySpeechLoadedPolicyMatchesInstalledRoutesAndOwners()
+        {
+            AuthoritySpeechPolicySnapshot policy = DiaryAuthoritySpeechPolicy.Snapshot();
+            Type throneBehavior = typeof(LordJob_Ritual).Assembly.GetType(
+                "RimWorld.RitualBehaviorWorker_ThroneSpeech", false);
+            Type leaderBehavior = typeof(LordJob_Ritual).Assembly.GetType(
+                "RimWorld.RitualBehaviorWorker_Speech", false);
+            Type speechOutcome = typeof(LordJob_Ritual).Assembly.GetType(
+                "RimWorld.RitualOutcomeEffectWorker_Speech", false);
+            PawnDiaryRimTestScope.Require(
+                throneBehavior != null && leaderBehavior != null && speechOutcome != null,
+                "Installed RimWorld 1.6 speech worker types could not be resolved.");
+
+            DiaryInteractionGroupDef throneOwner = InteractionGroups.ClassifyRitual(
+                "ThroneSpeech;RitualBehaviorWorker_ThroneSpeech");
+            DiaryInteractionGroupDef leaderOwner = InteractionGroups.ClassifyRitual(
+                "LeaderSpeech;RitualBehaviorWorker_Speech");
+            PawnDiaryRimTestScope.Require(
+                leaderOwner?.defName == ConversionRitualPolicy.LegacyGroupDefName,
+                "Leader speech no longer kept the ordinary ritual page owner.");
+            if (ModsConfig.RoyaltyActive)
+                PawnDiaryRimTestScope.Require(throneOwner?.defName == "ritualRoyal",
+                    "Throne speech no longer kept the Royal ritual page owner.");
+
+            AuthoritySpeechRouteSnapshot leader = AuthoritySpeechPolicy.Match(
+                "LeaderSpeech", leaderBehavior.FullName, speechOutcome.FullName,
+                leaderOwner?.defName, "speaker", ModsConfig.IdeologyActive,
+                ModsConfig.RoyaltyActive, policy);
+            PawnDiaryRimTestScope.Require((leader != null) == ModsConfig.IdeologyActive,
+                "Loaded leader-speech enrichment did not follow Ideology availability.");
+            AuthoritySpeechRouteSnapshot throne = AuthoritySpeechPolicy.Match(
+                "ThroneSpeech", throneBehavior.FullName, speechOutcome.FullName,
+                throneOwner?.defName, "speaker", ModsConfig.IdeologyActive,
+                ModsConfig.RoyaltyActive, policy);
+            PawnDiaryRimTestScope.Require((throne != null)
+                    == (ModsConfig.IdeologyActive && ModsConfig.RoyaltyActive),
+                "Loaded throne-speech enrichment did not require both owning DLCs.");
+            PawnDiaryRimTestScope.Require(
+                !string.IsNullOrWhiteSpace(policy.speakerProjection.promptInstruction)
+                    && !string.IsNullOrWhiteSpace(policy.witnessProjection.promptInstruction),
+                "Authority-speech DefInjected prompt policy was not loaded.");
+        }
+
+        /// <summary>
+        /// Ideology Phase 2. Drives the production ritual fan-out for exact leader speech and, when
+        /// available, throne speech. It proves per-POV isolation, no duplicate page, RNG neutrality,
+        /// original group ownership, frozen later-state behavior, and a real Scribe round-trip.
+        /// </summary>
+        [Test]
+        public static void AuthoritySpeechPerspectivesAreBoundedFrozenAndKeepExistingOwners()
+        {
+            if (!RequireAuthorityIdeologyProfile()) return;
+
+            Pawn witness = scope.CreateAdultColonist();
+            Pawn spectator = scope.CreateAdultColonist();
+            Ideo shared = GenerateRegisteredIdeology(firstPawn, witness, spectator);
+            firstPawn.ideo.SetIdeo(shared);
+            witness.ideo.SetIdeo(shared);
+            spectator.ideo.SetIdeo(shared);
+            AssignExactLeader(shared, firstPawn);
+
+            RitualFanoutSignal leaderFanout = null;
+            const int Seed = 481237;
+            Rand.PushState(Seed);
+            float expectedNext = Rand.Value;
+            Rand.PopState();
+            Rand.PushState(Seed);
+            try
+            {
+                leaderFanout = ExactAuthoritySpeechFixture(
+                    false, firstPawn, witness, spectator);
+                float actualNext = Rand.Value;
+                PawnDiaryRimTestScope.Require(Math.Abs(actualNext - expectedNext) < 0.000001f,
+                    "Authority-speech enrichment consumed global Rand.");
+            }
+            finally
+            {
+                Rand.PopState();
+            }
+
+            HashSet<string> before = SnapshotEventIds();
+            scope.Component.Dispatch(leaderFanout);
+            List<DiaryEvent> emitted = NewEventsSince(before);
+            PawnDiaryRimTestScope.Require(emitted.Count == 3,
+                "Leader speech should emit one unique speaker and two witness pages, got "
+                    + emitted.Count + ".");
+            DiaryEvent speakerPage = PageForPawn(emitted, firstPawn);
+            DiaryEvent witnessPage = PageForPawn(emitted, witness);
+            DiaryEvent spectatorPage = PageForPawn(emitted, spectator);
+            string frozenSpeaker = speakerPage.BeliefContextForRole(DiaryEvent.InitiatorRole);
+            string witnessContext = witnessPage.BeliefContextForRole(DiaryEvent.InitiatorRole);
+            string spectatorContext = spectatorPage.BeliefContextForRole(DiaryEvent.InitiatorRole);
+            PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(frozenSpeaker)
+                    && frozenSpeaker.IndexOf("role:", StringComparison.Ordinal) >= 0
+                    && frozenSpeaker.IndexOf("certainty:", StringComparison.Ordinal) >= 0,
+                "Exact leader speaker did not freeze bounded current role/certainty context: "
+                    + frozenSpeaker);
+            RequireWitnessAuthorityIsolation(witnessContext, "participant witness");
+            RequireWitnessAuthorityIsolation(spectatorContext, "spectator witness");
+
+            AuthoritySpeechPolicySnapshot policy = DiaryAuthoritySpeechPolicy.Snapshot();
+            RequireContains(speakerPage.instruction, policy.speakerProjection.promptInstruction);
+            RequireContains(witnessPage.instruction, policy.witnessProjection.promptInstruction);
+            DiaryPromptRequest leaderRequest = DiaryPipelineAdapters.BuildPromptRequest(
+                speakerPage, DiaryEvent.InitiatorRole, string.Empty, string.Empty, string.Empty,
+                string.Empty, string.Empty, string.Empty, titleRequest: false, maxTokens: 512);
+            PawnDiaryRimTestScope.Require(
+                leaderRequest?.policy?.group?.defName == ConversionRitualPolicy.LegacyGroupDefName,
+                "Leader speech moved away from the ordinary ritual prompt/page owner.");
+
+            int afterFirst = EventRepository().Count;
+            scope.Component.Dispatch(leaderFanout);
+            PawnDiaryRimTestScope.Require(EventRepository().Count == afterFirst,
+                "A repeated authority-speech fan-out escaped the existing ritual dedup window.");
+            firstPawn.ideo.OffsetCertainty(firstPawn.ideo.Certainty > 0.5f ? -0.05f : 0.05f);
+            PawnDiaryRimTestScope.Require(
+                speakerPage.BeliefContextForRole(DiaryEvent.InitiatorRole) == frozenSpeaker,
+                "Later speaker certainty rewrote saved authority-speech context.");
+            DiaryEvent loaded = PawnDiaryScribeRoundTripFixtureTests
+                .ScribeRoundTripForTests(speakerPage);
+            PawnDiaryRimTestScope.Require(
+                loaded.BeliefContextForRole(DiaryEvent.InitiatorRole) == frozenSpeaker
+                    && loaded.gameContext == speakerPage.gameContext,
+                "Authority-speech event-time context did not survive a real Scribe round-trip.");
+
+            if (!ModsConfig.RoyaltyActive) return;
+            Pawn throneSpeaker = scope.CreateAdultColonist();
+            Pawn throneWitness = scope.CreateAdultColonist();
+            Pawn throneSpectator = scope.CreateAdultColonist();
+            Ideo throneIdeology = GenerateRegisteredIdeology(
+                throneSpeaker, throneWitness, throneSpectator);
+            throneSpeaker.ideo.SetIdeo(throneIdeology);
+            throneWitness.ideo.SetIdeo(throneIdeology);
+            throneSpectator.ideo.SetIdeo(throneIdeology);
+            AssignExactLeader(throneIdeology, throneSpeaker);
+            HashSet<string> throneBefore = SnapshotEventIds();
+            RitualFanoutSignal throneFanout = ExactAuthoritySpeechFixture(
+                true, throneSpeaker, throneWitness, throneSpectator);
+            scope.Component.Dispatch(throneFanout);
+            List<DiaryEvent> thronePages = NewEventsSince(throneBefore);
+            PawnDiaryRimTestScope.Require(thronePages.Count == 3,
+                "Throne speech should emit one speaker and two witness pages without duplication.");
+            DiaryEvent thronePage = PageForPawn(thronePages, throneSpeaker);
+            PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(
+                    thronePage.BeliefContextForRole(DiaryEvent.InitiatorRole)),
+                "Exact throne speech did not attach relevant authority context.");
+            DiaryPromptRequest throneRequest = DiaryPipelineAdapters.BuildPromptRequest(
+                thronePage, DiaryEvent.InitiatorRole, string.Empty, string.Empty, string.Empty,
+                string.Empty, string.Empty, string.Empty, titleRequest: false, maxTokens: 512);
+            PawnDiaryRimTestScope.Require(throneRequest?.policy?.group?.defName == "ritualRoyal",
+                "Throne speech moved away from the Royal ritual prompt/page owner.");
+        }
+
+        /// <summary>Optional authority enrichment faults must preserve ordinary ritual pages.</summary>
+        [Test]
+        public static void AuthoritySpeechAdapterFailureKeepsOrdinaryRitualFanout()
+        {
+            if (!RequireAuthorityIdeologyProfile()) return;
+            Pawn organizer = scope.CreateAdultColonist();
+            Pawn witness = scope.CreateAdultColonist();
+            Pawn spectator = scope.CreateAdultColonist();
+            Ideo shared = GenerateRegisteredIdeology(organizer, witness, spectator);
+            organizer.ideo.SetIdeo(shared);
+            witness.ideo.SetIdeo(shared);
+            spectator.ideo.SetIdeo(shared);
+            AssignExactLeader(shared, organizer);
+
+            AuthoritySpeechEvidenceAdapter.SetFailureForTests(true);
+            try
+            {
+                HashSet<string> before = SnapshotEventIds();
+                RitualFanoutSignal fanout = ExactAuthoritySpeechFixture(
+                    false, organizer, witness, spectator);
+                scope.Component.Dispatch(fanout);
+                List<DiaryEvent> ordinary = NewEventsSince(before);
+                PawnDiaryRimTestScope.Require(ordinary.Count == 3,
+                    "Authority adapter failure suppressed the ordinary ritual fan-out.");
+                for (int i = 0; i < ordinary.Count; i++)
+                    PawnDiaryRimTestScope.Require(string.IsNullOrEmpty(
+                            ordinary[i].BeliefContextForRole(DiaryEvent.InitiatorRole)),
+                        "Authority adapter failure left partial belief enrichment.");
+            }
+            finally
+            {
+                AuthoritySpeechEvidenceAdapter.SetFailureForTests(false);
+            }
+        }
+
+        /// <summary>
         /// EVT-17 / Anomaly. Drives the production psychic-ritual fan-out through invoker, target,
         /// participant, and spectator pages without constructing or firing a real colony ritual.
         /// Duplicate assignment rows must collapse by pawn ID and the repeat dispatch must be inert.
@@ -683,6 +879,105 @@ namespace PawnDiary.RimTests
         }
 
         // ----- helpers ---------------------------------------------------------------------------
+
+        private static bool RequireAuthorityIdeologyProfile()
+        {
+            if (!ModsConfig.IdeologyActive)
+            {
+                AuthoritySpeechPolicySnapshot policy = DiaryAuthoritySpeechPolicy.Snapshot();
+                PawnDiaryRimTestScope.Require(
+                    AuthoritySpeechPolicy.Match(
+                        "LeaderSpeech", "RimWorld.RitualBehaviorWorker_Speech",
+                        "RimWorld.RitualOutcomeEffectWorker_Speech",
+                        ConversionRitualPolicy.LegacyGroupDefName, "speaker",
+                        false, ModsConfig.RoyaltyActive, policy) == null,
+                    "The no-Ideology authority-speech route did not fail closed.");
+                return false;
+            }
+            if (Find.IdeoManager?.classicMode == true)
+            {
+                Log.Message("[PawnDiary RimTest Ritual] Authority-speech doctrine fixture not "
+                    + "applicable in classic Ideology mode.");
+                return false;
+            }
+            PawnDiaryRimTestScope.Require(firstPawn?.ideo != null,
+                "The Ideology-active authority-speech fixture pawn did not expose a tracker.");
+            return true;
+        }
+
+        private static void AssignExactLeader(Ideo ideology, Pawn pawn)
+        {
+            Precept_Role leader = ideology?.RolesListForReading.FirstOrDefault(role =>
+                role?.def?.defName == "IdeoRole_Leader"
+                    && role.ChosenPawnSingle() == null && role.RequirementsMet(pawn));
+            PawnDiaryRimTestScope.Require(leader != null,
+                "The registered authority-speech Ideology exposed no assignable leader role.");
+            leader.Assign(pawn, false);
+            scope.RegisterCleanup(() =>
+            {
+                if (leader.IsAssigned(pawn)) leader.Unassign(pawn, false);
+            });
+        }
+
+        private static RitualFanoutSignal ExactAuthoritySpeechFixture(
+            bool throne, Pawn speaker, Pawn witness, Pawn spectator)
+        {
+            string groupKey = throne ? "ritualRoyal" : ConversionRitualPolicy.LegacyGroupDefName;
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey(groupKey);
+            PawnDiaryRimTestScope.Require(group != null,
+                "The existing authority-speech owner group was not loaded: " + groupKey);
+            string defName = throne ? "ThroneSpeech" : "LeaderSpeech";
+            string behavior = throne
+                ? "RitualBehaviorWorker_ThroneSpeech"
+                : "RitualBehaviorWorker_Speech";
+            string behaviorType = throne
+                ? "RimWorld.RitualBehaviorWorker_ThroneSpeech"
+                : "RimWorld.RitualBehaviorWorker_Speech";
+            RitualFanoutSignal signal = RitualFanoutSignal.CreateTestFixture(
+                speaker,
+                null,
+                // Vanilla Participants also contains spectators. Keeping that membership proves the
+                // existing order/dedup behavior is unchanged; both non-speaker modes are equally bounded.
+                new List<Pawn> { speaker, witness, spectator },
+                new List<Pawn> { spectator },
+                defName,
+                throne ? "throne speech" : "leader speech",
+                behavior,
+                0.9f,
+                group.instruction,
+                "RitualOutcomeEffectWorker_Speech",
+                behaviorType,
+                "RimWorld.RitualOutcomeEffectWorker_Speech",
+                "speaker");
+            PawnDiaryRimTestScope.Require(signal != null
+                    && !string.IsNullOrWhiteSpace(signal.ColonyDedupKey),
+                "The exact authority-speech fixture did not build a valid fan-out.");
+            return signal;
+        }
+
+        private static DiaryEvent PageForPawn(List<DiaryEvent> events, Pawn expectedPawn)
+        {
+            string pawnId = expectedPawn?.GetUniqueLoadID() ?? string.Empty;
+            DiaryEvent match = events.SingleOrDefault(candidate =>
+                string.Equals(candidate?.initiatorPawnId, pawnId, StringComparison.Ordinal));
+            PawnDiaryRimTestScope.Require(match != null,
+                "No unique ritual page belonged to pawn '" + pawnId + "'.");
+            scope.RequireSoloRef(match, expectedPawn);
+            return match;
+        }
+
+        private static void RequireWitnessAuthorityIsolation(string context, string label)
+        {
+            PawnDiaryRimTestScope.Require(!string.IsNullOrWhiteSpace(context),
+                "The " + label + " received no shared authority doctrine.");
+            PawnDiaryRimTestScope.Require(context.Length <= 320
+                    && context.IndexOf("role:", StringComparison.Ordinal) < 0
+                    && context.IndexOf("certainty:", StringComparison.Ordinal) < 0
+                    && context.IndexOf("relevant meme:", StringComparison.Ordinal) < 0
+                    && context.IndexOf("structure:", StringComparison.Ordinal) < 0
+                    && context.IndexOf("deity:", StringComparison.Ordinal) < 0,
+                "The " + label + " inherited speaker-only or oversized authority context: " + context);
+        }
 
         private static bool RequireMutableIdeologyProfile()
         {

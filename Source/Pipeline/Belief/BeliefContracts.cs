@@ -293,6 +293,41 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// Optional event-owned output limits. Null preserves the established global belief policy; exact
+    /// speech adapters use a detached copy so a witness can never inherit speaker-only presentation.
+    /// </summary>
+    internal sealed class BeliefContextProjection
+    {
+        public int maximumSelectedStances = 2;
+        public int maximumSupportingMemes = 2;
+        public int maximumContextCharacters;
+        public bool includeRole = true;
+        public bool includeCertainty = true;
+        public bool includeStructure = true;
+        public bool includeDeity = true;
+        public bool includeNarrativeInterpretation = true;
+        public string promptInstruction = string.Empty;
+
+        /// <summary>Returns a deep detached copy; null remains null.</summary>
+        public static BeliefContextProjection Copy(BeliefContextProjection source)
+        {
+            if (source == null) return null;
+            return new BeliefContextProjection
+            {
+                maximumSelectedStances = source.maximumSelectedStances,
+                maximumSupportingMemes = source.maximumSupportingMemes,
+                maximumContextCharacters = source.maximumContextCharacters,
+                includeRole = source.includeRole,
+                includeCertainty = source.includeCertainty,
+                includeStructure = source.includeStructure,
+                includeDeity = source.includeDeity,
+                includeNarrativeInterpretation = source.includeNarrativeInterpretation,
+                promptInstruction = source.promptInstruction ?? string.Empty
+            };
+        }
+    }
+
+    /// <summary>
     /// Belief-specific evidence around the canonical NarrativeEvidence row. The shared row remains the
     /// one owner of POV knowledge, facets, salience, source identity, role, and belief-topic tokens.
     /// </summary>
@@ -314,6 +349,7 @@ namespace PawnDiary
         public List<string> semanticAliasTokens = new List<string>();
         public List<BeliefEvidenceTextFact> matchFields = new List<BeliefEvidenceTextFact>();
         public BeliefMutationSnapshot mutation;
+        public BeliefContextProjection projection;
     }
 
     /// <summary>Input to the pure resolver. No field may contain a live game object.</summary>
@@ -369,6 +405,8 @@ namespace PawnDiary
         // quiet-reflection/mutation modes may return belief context that must not consume the singular
         // interpretation slot. Providers fail closed when a future mode supplies another category.
         public string narrativeCategory = NarrativeCategoryTokens.Interpretation;
+        public int maximumContextCharacters;
+        public bool includeNarrativeInterpretation = true;
 
         public bool HasUsefulContext
         {

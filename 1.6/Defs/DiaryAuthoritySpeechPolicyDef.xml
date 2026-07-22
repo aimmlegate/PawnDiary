@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Installed RimWorld 1.6 speech identities verified from Royalty/Ideology Defs and Assembly-CSharp.
+  These are plain strings, not DLC Def references; absent DLC content leaves the routes inert.
+-->
+<Defs>
+  <PawnDiary.DiaryAuthoritySpeechPolicyDef>
+    <defName>Diary_AuthoritySpeechPolicy</defName>
+    <enabled>true</enabled>
+    <routes>
+      <li>
+        <ritualDefName>ThroneSpeech</ritualDefName>
+        <behaviorWorkerClassName>RimWorld.RitualBehaviorWorker_ThroneSpeech</behaviorWorkerClassName>
+        <outcomeWorkerClassName>RimWorld.RitualOutcomeEffectWorker_Speech</outcomeWorkerClassName>
+        <downstreamGroupDefName>ritualRoyal</downstreamGroupDefName>
+        <speakerRoleId>speaker</speakerRoleId>
+        <requiresRoyalty>true</requiresRoyalty>
+      </li>
+      <li>
+        <ritualDefName>LeaderSpeech</ritualDefName>
+        <behaviorWorkerClassName>RimWorld.RitualBehaviorWorker_Speech</behaviorWorkerClassName>
+        <outcomeWorkerClassName>RimWorld.RitualOutcomeEffectWorker_Speech</outcomeWorkerClassName>
+        <downstreamGroupDefName>ritualFinished</downstreamGroupDefName>
+        <speakerRoleId>speaker</speakerRoleId>
+        <requiresRoyalty>false</requiresRoyalty>
+      </li>
+    </routes>
+    <evidenceGroupKey>authority_speech</evidenceGroupKey>
+    <topicToken>authority_speech</topicToken>
+    <speakerEvidenceMode>speaker_authority</speakerEvidenceMode>
+    <targetEvidenceMode>none</targetEvidenceMode>
+    <participantEvidenceMode>shared_authority</participantEvidenceMode>
+    <spectatorEvidenceMode>shared_authority</spectatorEvidenceMode>
+    <speakerMaximumSelectedStances>1</speakerMaximumSelectedStances>
+    <speakerMaximumSupportingMemes>1</speakerMaximumSupportingMemes>
+    <speakerMaximumContextCharacters>640</speakerMaximumContextCharacters>
+    <speakerIncludeRole>true</speakerIncludeRole>
+    <speakerIncludeCertainty>true</speakerIncludeCertainty>
+    <speakerIncludeStructure>true</speakerIncludeStructure>
+    <speakerIncludeDeity>false</speakerIncludeDeity>
+    <speakerIncludeNarrativeInterpretation>true</speakerIncludeNarrativeInterpretation>
+    <witnessMaximumSelectedStances>1</witnessMaximumSelectedStances>
+    <witnessMaximumSupportingMemes>0</witnessMaximumSupportingMemes>
+    <witnessMaximumContextCharacters>320</witnessMaximumContextCharacters>
+    <witnessIncludeRole>false</witnessIncludeRole>
+    <witnessIncludeCertainty>false</witnessIncludeCertainty>
+    <witnessIncludeStructure>false</witnessIncludeStructure>
+    <witnessIncludeDeity>false</witnessIncludeDeity>
+    <witnessIncludeNarrativeInterpretation>false</witnessIncludeNarrativeInterpretation>
+    <speakerPromptInstruction>When belief context is present, let the speaker reflect on authority through only the supplied current role, certainty, and doctrine. Do not make the speech religious when that evidence is absent.</speakerPromptInstruction>
+    <witnessPromptInstruction>When belief context is present, use only the witness's supplied shared doctrine. Do not attribute the speaker's role or certainty to the witness.</witnessPromptInstruction>
+  </PawnDiary.DiaryAuthoritySpeechPolicyDef>
+</Defs>

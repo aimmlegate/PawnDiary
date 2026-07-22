@@ -3,6 +3,7 @@
 // perspective FAN-OUT: one solo entry per organizer / target / participant / spectator, with a single
 // ritual-level dedup window. The exact completed conversion family also freezes organizer-role and
 // target-mutation DTOs here, after vanilla's outcome worker returned and before a page is persisted.
+// Exact throne/leader speeches keep their existing page owner and add only detached per-POV belief evidence.
 //
 // Pure decision + game-context + quality-band math live in Source/Capture/Events/RitualEventData.cs.
 // New to C#/RimWorld? See AGENTS.md.
@@ -47,6 +48,8 @@ namespace PawnDiary.Ingestion
         private readonly ConversionRitualPolicySnapshot conversionPolicy;
         private readonly BeliefSourcePreceptFact conversionOrganizerRolePrecept;
         private readonly BeliefMutationSnapshot conversionTargetMutation;
+        private readonly AuthoritySpeechPolicySnapshot authoritySpeechPolicy;
+        private readonly AuthoritySpeechRouteSnapshot authoritySpeechRoute;
         private RoyalMutationBatchSnapshot royaltyMutationBatch;
         private string royaltyMutationContext = string.Empty;
         // Ordinary rituals keep their unlimited existing fanout. Only the exact Odyssey launch
@@ -139,6 +142,17 @@ namespace PawnDiary.Ingestion
             Assignments = RitualAssignments(ritualJob);
             Pawn selectedOrganizer = ritualJob.Organizer;
             Pawn selectedTargetPawn = RitualTargetPawn(ritualJob);
+            AuthoritySpeechPolicySnapshot speechPolicy;
+            AuthoritySpeechRouteSnapshot speechRoute;
+            if (AuthoritySpeechEvidenceAdapter.TryMatch(
+                DefName, behaviorType?.FullName, outcomeWorkerType?.FullName, group.defName,
+                RitualRoleId(ritualJob, Assignments, selectedOrganizer),
+                ModsConfig.IdeologyActive, ModsConfig.RoyaltyActive,
+                out speechPolicy, out speechRoute))
+            {
+                authoritySpeechPolicy = speechPolicy;
+                authoritySpeechRoute = speechRoute;
+            }
             ConversionRitualPolicySnapshot candidatePolicy = DiaryConversionRitualPolicy.Snapshot();
             exactConversion = ConversionRitualPolicy.Matches(
                 DefName, behaviorType?.FullName, outcomeWorkerType?.FullName, group.defName,
@@ -262,7 +276,8 @@ namespace PawnDiary.Ingestion
             string groupInstruction,
             string outcomeWorkerClass = "",
             string behaviorWorkerTypeName = "",
-            string outcomeWorkerTypeName = "")
+            string outcomeWorkerTypeName = "",
+            string assignedSpeakerRoleId = "")
         {
             RitualFanoutSignal signal = new RitualFanoutSignal(
                 organizer,
@@ -276,7 +291,8 @@ namespace PawnDiary.Ingestion
                 progress,
                 groupInstruction,
                 behaviorWorkerTypeName,
-                outcomeWorkerTypeName);
+                outcomeWorkerTypeName,
+                assignedSpeakerRoleId);
             // Keep this loaded-game seam on the production ownership path. A matching bestowing or
             // anima fixture must claim the same completed mutation batch that a live ritual would;
             // unrelated ritual fixtures simply resolve to the "unknown" route and attach nothing.
@@ -298,7 +314,8 @@ namespace PawnDiary.Ingestion
             float progress,
             string groupInstruction,
             string behaviorWorkerTypeName = "",
-            string outcomeWorkerTypeName = "")
+            string outcomeWorkerTypeName = "",
+            string assignedSpeakerRoleId = "")
         {
             if (!DiaryGameComponent.GamePlaying || string.IsNullOrWhiteSpace(defName))
             {
@@ -323,6 +340,16 @@ namespace PawnDiary.Ingestion
                 + PawnKey(targetPawn) + "|" + tick;
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyRitual(
                 RitualClassifierKey(DefName, BehaviorClass));
+            AuthoritySpeechPolicySnapshot speechPolicy;
+            AuthoritySpeechRouteSnapshot speechRoute;
+            if (AuthoritySpeechEvidenceAdapter.TryMatch(
+                DefName, behaviorWorkerTypeName, outcomeWorkerTypeName, group?.defName,
+                assignedSpeakerRoleId, ModsConfig.IdeologyActive, ModsConfig.RoyaltyActive,
+                out speechPolicy, out speechRoute))
+            {
+                authoritySpeechPolicy = speechPolicy;
+                authoritySpeechRoute = speechRoute;
+            }
             ConversionRitualPolicySnapshot candidatePolicy = DiaryConversionRitualPolicy.Snapshot();
             exactConversion = ConversionRitualPolicy.Matches(
                 DefName, behaviorWorkerTypeName, outcomeWorkerTypeName, group?.defName,
@@ -433,6 +460,17 @@ namespace PawnDiary.Ingestion
                     ? conversionTargetMutation
                     : null,
                 conversionPolicy);
+        }
+
+        /// <summary>Builds one isolated authority-speech query row for this saved POV.</summary>
+        internal BeliefEventEvidence AuthoritySpeechEvidenceFor(
+            string pawnId, string pawnLabel, string perspective)
+        {
+            return authoritySpeechPolicy == null || authoritySpeechRoute == null
+                ? null
+                : AuthoritySpeechEvidenceAdapter.Capture(
+                    pawnId, EventTick, DefName, pawnLabel, perspective,
+                    authoritySpeechRoute, authoritySpeechPolicy);
         }
 
         /// <summary>Adds exact role/result markers without copying target mechanics to another page.</summary>
@@ -637,6 +675,22 @@ namespace PawnDiary.Ingestion
             return perspectiveLabel + " (" + assignedRole + ")";
         }
 
+        private static string RitualRoleId(
+            LordJob_Ritual ritualJob, RitualRoleAssignments assignments, Pawn pawn)
+        {
+            if (pawn == null) return string.Empty;
+            RitualRole role = null;
+            try
+            {
+                role = ritualJob?.RoleFor(pawn, true);
+            }
+            catch
+            {
+                role = assignments?.RoleForPawn(pawn, true);
+            }
+            return role?.id ?? string.Empty;
+        }
+
         internal static string RitualPerspectiveLabel(string perspective)
         {
             if (string.Equals(perspective, RitualEventData.PerspectiveOrganizer, StringComparison.OrdinalIgnoreCase))
@@ -692,7 +746,7 @@ namespace PawnDiary.Ingestion
         private readonly string perspective;
         private readonly string ritualRole;
         private readonly RitualEventData payload;
-        private readonly BeliefEventEvidence conversionEvidence;
+        private readonly BeliefEventEvidence beliefEvidence;
 
         public RitualPawnSignal(RitualFanoutSignal source, Pawn pawn, Pawn otherPawn, string perspective, string pawnId)
         {
@@ -712,8 +766,10 @@ namespace PawnDiary.Ingestion
                 RitualRole = ritualRole,
                 Cancelled = false,
             };
-            conversionEvidence = source.ConversionEvidenceFor(
-                pawnId, pawn.LabelShortCap, perspective);
+            beliefEvidence = source.ConversionEvidenceFor(
+                pawnId, pawn.LabelShortCap, perspective)
+                ?? source.AuthoritySpeechEvidenceFor(
+                    pawnId, pawn.LabelShortCap, perspective);
         }
 
         public override DiaryEventData Payload => payload;
@@ -738,7 +794,7 @@ namespace PawnDiary.Ingestion
             string royaltyMutationContext = source.RoyaltyMutationContextFor(payload.PawnId);
             if (!string.IsNullOrWhiteSpace(royaltyMutationContext))
                 context += "; " + royaltyMutationContext;
-            context = source.ConversionContextFor(context, perspective, conversionEvidence);
+            context = source.ConversionContextFor(context, perspective, beliefEvidence);
             string text = "PawnDiary.Event.RitualFinished"
                 .Translate(pawn.LabelShortCap, source.Title, RitualFanoutSignal.RitualPerspectiveLabel(perspective), ritualRole)
                 .Resolve();
@@ -748,7 +804,7 @@ namespace PawnDiary.Ingestion
 
             DiaryEvent ritualEvent = sink.AddSoloEvent(
                 pawn, otherPawn, source.DefName, source.Label, text, instruction, context,
-                conversionEvidence);
+                beliefEvidence);
             if (ritualEvent == null)
             {
                 return;

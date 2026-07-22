@@ -35,6 +35,9 @@ namespace PawnDiary
             bool compact = normalizedDetail == NarrativeDetailLevelTokens.Compact;
             int maximumLines = Math.Min(effective.maximumTotalLines, Math.Max(1, budget.maximumLines));
             int maximumCharacters = Math.Min(effective.maximumTotalCharacters, Math.Max(64, budget.maximumCharacters));
+            if (resolution.maximumContextCharacters > 0)
+                maximumCharacters = Math.Min(maximumCharacters,
+                    Math.Max(64, resolution.maximumContextCharacters));
             List<string> lines = new List<string>();
 
             Add(lines, "ideoligion", resolution.ideologyName, effective, maximumLines);

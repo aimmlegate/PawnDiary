@@ -1,12 +1,12 @@
 # Pawn Diary — Ideoligion Support Implementation Plan
 
 Status: Phases 0–1 and Narrative N3-I are code-complete; Phase 2 infrastructure, exact interaction consumers,
-exact Counsel, the exact `IdeoChange` crisis slice, and exact completed-conversion ritual enrichment are partially implemented; Phases 3–6 remain pending. Guarded
+exact Counsel, the exact `IdeoChange` crisis slice, exact completed-conversion ritual enrichment, and exact throne/leader authority-speech enrichment are partially implemented; Phases 3–6 remain pending. Guarded
 mutation capture/coalescing, exact downstream Ability ownership, existing PlayLog conversion/
 reassurance enrichment, Counsel context, the existing solo crisis page's truthful mutation/current-state
 context, and role-isolated completed-conversion ritual evidence are live; broader evidence, remaining
 exact prompts, and reflection work remain pending. N3-I closed the master schedule's ordering gap before
-the later narrow Counsel and conversion-ritual slices; throne speech, broader enrichment, passive
+the later narrow Counsel, conversion-ritual, and authority-speech slices; broader enrichment, passive
 tracking, and reflection scheduling remain deferred.
 
 Scheduling authority: implement Ideology phases only in the waves assigned by
@@ -782,7 +782,7 @@ test must require the same only after cancellation-safe pending/fallback behavio
 
 ### 10.4 Conversion ritual and throne speech
 
-> **Conversion-ritual portion implemented (2026-07-22); throne speech remains pending.** The existing
+> **Conversion-ritual and exact throne/leader speech portions implemented (2026-07-22).** The existing
 > `LordJob_Ritual.ApplyOutcome` postfix runs after the installed conversion outcome worker has performed
 > its `SetIdeo` or `OffsetCertainty` mutation. An Ideology-gated ordinal-exact group and a separate
 > primitive-only policy Def verify ritual, behavior-worker, outcome-worker, group, assignment-role,
@@ -793,6 +793,19 @@ test must require the same only after cancellation-safe pending/fallback behavio
 > preserve the ordinary page, dormant-DLC classification falls through, and the existing activation
 > page remains until cancellation-safe ownership exists. No new patch, page owner, poll, save field, or
 > fan-out limit was introduced.
+>
+> Installed 1.6 Defs and decompiled code additionally verify exact `ThroneSpeech` /
+> `RitualBehaviorWorker_ThroneSpeech` and `LeaderSpeech` / `RitualBehaviorWorker_Speech` routes, their
+> shared `RitualOutcomeEffectWorker_Speech`, and `speaker` assignment. The ordinary postfix runs after
+> participant thoughts and any speech-owned conversion effect. A primitive-only XML policy now checks
+> the fully-qualified types, owner group, role, and DLC state before supplying `authority_speech` to
+> the existing resolver. Throne speech stays in `ritualRoyal`; leader speech stays in
+> `ritualFinished`. Relevant visible authority/leadership/social-role/slavery/social-structure doctrine
+> may enrich the existing page. Unrelated, hidden, or secular doctrine is a no-op. Speaker context may
+> include current role/certainty and optional structure; independently copied witness context omits
+> speaker-only role/certainty, memes, structure, deity, and N3-I. Target mode is none. Malformed/missing
+> policy, collisions, inactive DLC, and adapter faults preserve the ordinary page. No new hook, page,
+> poll, save field, setting, RNG use, fan-out rule, or dedup rule was added.
 
 - Add a dedicated conversion ritual group matching exact ritual/behavior-worker strings and place it
   before the ritual catchall. **Implemented for exact vanilla `Conversion`.**
@@ -804,7 +817,8 @@ test must require the same only after cancellation-safe pending/fallback behavio
   conversion unless the mutation snapshot says the ideoligion changed.
 - Keep throne speech in its existing Royal group. Supply an `authority_speech` hint; let XML relevance
   choose leader/authority/slavery/etc. doctrine if actually present. Structure and deity are flavor,
-  not mandatory facts.
+  not mandatory facts. **Implemented for exact throne and leader speech with separate speaker/witness
+  projections and secular/unrelated no-op behavior.**
 
 ### 10.5 Crisis of belief
 
@@ -1190,7 +1204,7 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 
 ### Phase 2 — Required event integrations and mutation capture
 
-> **Partial implementation status (2026-07-22): infrastructure, exact interactions, crisis, exact Counsel, and completed conversion ritual.** Exact guarded
+> **Partial implementation status (2026-07-22): infrastructure, exact interactions, crisis, exact Counsel, completed conversion ritual, and exact authority speeches.** Exact guarded
 > `IdeoConversionAttempt`/`OffsetCertainty`/`SetIdeo` hooks project live state only through
 > `DlcContext`, and a bounded pure buffer coalesces overlapping nested calls while keeping sequential
 > same-tick actions distinct. The transient cache is reset per game, non-scribed, non-emitting, and
@@ -1211,7 +1225,7 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > skips only live mutation mechanics while keeping patch and XML-policy ownership checks active.
 > The first loaded 376-test run completed 374/376; after correcting the conversion-worker fixture and
 > satisfying the unrelated N3-O parked-gravship host guard, the rerun passed all 376/376 tests. Broader
-> step 2, throne-speech part of step 3, remaining step 4 prompt/group work, and the complete
+> step 2, remaining step 4 prompt/group work, and the complete
 > per-path exit gate remain pending. The adversarial hardening cases raise the compiled assembly to
 > 379 tests; the prior 377/377 active-Ideology run remains the latest loaded result, and a post-Phase-2
 > base-only run remains required before release sign-off.
@@ -1264,6 +1278,23 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > coverage are corrected. The user-confirmed rerun passed 388/388 on a valid parked-gravship host,
 > closing this active loaded gate. The separate base-only profile remains pending.
 
+> **Exact throne/leader authority-speech slice (2026-07-22): code, XML, localization, and automated
+> fixtures complete; loaded execution pending.** Installed Defs and decompiled 1.6 code confirm the
+> exact ritual/behavior/outcome/assignment identities and that the existing postfix observes
+> post-outcome state. A deep immutable XML snapshot owns two exact routes, DLC requirements,
+> `authority_speech` evidence modes, speaker/witness caps and presentation, and EN/RU DefInjected
+> guidance. The throne route retains the Royal ritual group/page; the leader route retains the generic
+> ritual group/page. Evidence is a detached query only: the existing resolver must find related visible
+> live doctrine, so secular, hidden, and unrelated profiles emit no belief context or extra guidance.
+> Speaker role/certainty never crosses into witness projections. Target enrichment is disabled. Policy
+> absence/malformed values, ordinal/FQN/group/role collisions, DLC inactivity, and adapter faults all
+> fall back to the ordinary ritual page. Fan-out, dedup, cosmetic RNG, settings, policy snapshots, and
+> saves are unchanged. Pure coverage raises `BeliefContextTests` to 511 assertions; three compiled
+> loaded cases raise the RimTest assembly to 391. They cover installed identities/owners and inactive
+> routing, leader plus conditional throne speaker/witness isolation with RNG/dedup/Scribe/later-state
+> invariants, and adapter fail-open behavior. No in-game run is claimed; the latest recorded full loaded
+> result remains 388/388.
+
 > **Narrative N3-I result (2026-07-22): code-complete, adversarially hardened, and active loaded
 > acceptance passed; base-only acceptance pending.** Phase 1's guarded,
 > detached per-POV snapshot and single resolver result now feed one pure high-confidence gate and the
@@ -1293,11 +1324,12 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 3. Enrich conversion conversation, conversion success/failure, reassurance/counsel, `IdeoChange`,
    conversion ritual, and throne speech through the same resolver. **Exact conversion interaction,
    Reassure mechanics, exact Counsel result pages, the existing `IdeoChange` solo page, and exact
-   completed-conversion ritual role/mutation evidence are implemented; throne speech remains pending.**
+   completed-conversion ritual role/mutation evidence and exact throne/leader speech authority evidence
+   are implemented.**
 4. Add exact XML groups/prompts and role-specific evidence. **The exact IdeoChange group/prompt and
    breaking-pawn evidence, exact Counsel success/failure group/prompts/context rules, and exact
-   completed-conversion ritual group/prompt/policy/POV rules are implemented; remaining routes stay
-   pending.**
+   completed-conversion ritual and authority-speech policy/POV rules are implemented; remaining routes
+   stay pending.**
 5. Drop downstream-covered generic abilities before their random roll. **Implemented for the two exact
    mutation-backed vanilla routes (`Convert` and `Reassure`) and exact mood-backed `Counsel` while each
    downstream group is enabled; `ConversionRitual` intentionally keeps its start owner until
@@ -1308,8 +1340,9 @@ for each conversion ability/interaction/ritual path; representative body, meal, 
 ritual fixtures select only relevant live doctrine; unrelated event and ability behavior is unchanged.
 
 **Phase-2 exit-gate status:** still open. The original exact active-Counsel sub-gate and corrected
-384/384 suite are green, and the corrected active conversion-ritual suite passed 388/388. Throne
-speech, the remaining evidence-family matrix, and the required Ideology-inactive loaded profile must
+384/384 suite are green, and the corrected active conversion-ritual suite passed 388/388. Exact
+authority-speech code/compiled fixtures are complete but not yet run in-game; the remaining
+evidence-family matrix and the required Ideology-inactive loaded profile must
 complete before Phase 2 can close.
 
 ### Phase 3 — Persistent passive belief tracking

@@ -119,11 +119,13 @@ namespace PawnDiary
                 recentSelectedCandidateKeys = boundedRecentKeys,
                 fullContext = BeliefContextFormatter.Format(
                     resolution, NarrativeDetailLevelTokens.Full, policy),
-                ideologyNarrative = IdeologyNarrativeSnapshotFactory.Create(
-                    resolution,
-                    evidence.narrative,
-                    policy,
-                    FormatInterpretationFact(resolution, policy))
+                ideologyNarrative = resolution.includeNarrativeInterpretation
+                    ? IdeologyNarrativeSnapshotFactory.Create(
+                        resolution,
+                        evidence.narrative,
+                        policy,
+                        FormatInterpretationFact(resolution, policy))
+                    : null
             };
         }
 

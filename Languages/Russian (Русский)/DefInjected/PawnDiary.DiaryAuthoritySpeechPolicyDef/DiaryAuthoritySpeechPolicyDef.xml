@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <Diary_AuthoritySpeechPolicy.speakerPromptInstruction>Если присутствует контекст убеждений, пусть оратор осмысливает власть только через указанные текущую роль, уверенность и доктрину. Не делайте речь религиозной, если таких свидетельств нет.</Diary_AuthoritySpeechPolicy.speakerPromptInstruction>
+  <Diary_AuthoritySpeechPolicy.witnessPromptInstruction>Если присутствует контекст убеждений, используйте только указанную общую доктрину свидетеля. Не приписывайте свидетелю роль или уверенность оратора.</Diary_AuthoritySpeechPolicy.witnessPromptInstruction>
+</LanguageData>

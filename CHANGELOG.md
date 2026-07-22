@@ -1,5 +1,24 @@
 # Changelog
 
+- **2026-07-22 — Added exact throne/leader authority-speech enrichment as the next bounded Ideology
+  Phase-2 slice.** Verified the installed 1.6 Royalty/Ideology Defs and decompiled runtime: exact
+  `ThroneSpeech` and `LeaderSpeech` behavior workers share `RitualOutcomeEffectWorker_Speech`, use the
+  `speaker` assignment, and finish their outcome work before the existing `LordJob_Ritual.ApplyOutcome`
+  postfix. The existing fan-out now snapshots a primitive-only XML policy once and attaches a detached
+  `authority_speech` query only after exact ritual, fully-qualified worker, group-owner, assignment-role,
+  and DLC checks. Throne pages remain `ritualRoyal`; leader pages remain `ritualFinished`. Visible
+  authority/leadership/role/slavery/social-structure doctrine may enrich the page, while unrelated,
+  hidden, or secular profiles remain ordinary. Speaker role/certainty and optional structure are
+  isolated from smaller witness context; target mode is none. EN/RU DefInjected prompt guidance and
+  semantic aliases are complete. Missing/malformed policy, namespace/group/role collision, inactive
+  DLC, and injected adapter faults fail open. No Harmony hook, page, poll, setting, save field, RNG draw,
+  fan-out, or dedup behavior was added or changed. `BeliefContextTests` passes 511 assertions; production
+  and the 391-test RimTest assembly build with zero warnings; the full verification hook passes all 15
+  pure projects at 7,337 assertions. Three loaded fixtures compile for exact
+  owner/type wiring, leader plus conditional throne POV/persistence/RNG/dedup behavior, inactive routing,
+  and adapter failure. They were not run in-game; 388/388 remains the latest recorded loaded result,
+  and the Ideology-inactive profile plus remaining Phase-2 evidence matrix remain open.
+
 - **2026-07-22 — Recorded the corrected exact-conversion loaded suite all green at 388/388.**
   The user-confirmed Ideology-active rerun passed every compiled RimTest after aligning the pure
   conversion policy with the ritual pipeline's stable organizer POV token `author`. This closes the

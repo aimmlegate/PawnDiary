@@ -556,9 +556,10 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 ## 15. Wave 10 — Ideology stance and conversion foundation
 
 > **Implementation status (2026-07-22): Ideology Phases 0–1 and Narrative N3-I are code-complete;
-> Phase 2 mutation, interaction-ownership, exact Crisis-of-Belief, and exact Counsel work remains
-> partial.** N3-I closed the scheduling dependency before the later narrow Counsel slice; rituals,
-> throne speech, broader enrichment, passive tracking, and reflections remain deferred. The provider reuses the single detached
+> Phase 2 mutation, interaction-ownership, exact Crisis-of-Belief, exact Counsel, completed conversion,
+> and exact authority-speech work remains partial.** N3-I closed the scheduling dependency before the
+> later narrow consumer slices; broader evidence enrichment, passive tracking, and reflections remain
+> deferred. The provider reuses the single detached
 > Phase-1 resolver result and the shared selection/persistence path; no new source, hook, poll, or save
 > field landed. Adversarial hardening connected saved current-ideology N1 keys to the resolver's XML
 > repetition penalty, validates all localized fact placeholders without truncating selected facts,
@@ -600,7 +601,17 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 > exposing a real organizer schema mismatch (`organizer` in the pure policy versus the ritual payload's
 > stable `author` token); that boundary is now corrected. The user-confirmed rerun passed 388/388 on a
 > valid parked-gravship host, closing the active completed-conversion gate. The base-only profile,
-> throne speech, broader evidence families, passive tracking, and reflections remain deferred.
+> broader evidence families, passive tracking, and reflections remain deferred.
+> The next bounded slice verifies installed 1.6 throne/leader speech identities and reuses that same
+> ritual fan-out without transferring ownership: `ThroneSpeech` remains `ritualRoyal`, and
+> `LeaderSpeech` remains `ritualFinished`. One primitive-only XML policy supplies an
+> `authority_speech` query only after exact fully-qualified worker, group, `speaker` assignment, and
+> DLC checks. The resolver still requires related visible live doctrine; unrelated/secular profiles
+> are ordinary pages. Speaker role/certainty is isolated from smaller witness context, target mode is
+> none, and all optional failure paths fail open. No hook, page, poll, save field, setting, RNG, fan-out,
+> or dedup behavior changed. Pure belief coverage passes 511 assertions and three compiled cases raise
+> the assembly to 391 RimTests. No new in-game execution is claimed; 388/388 remains the latest loaded
+> result and the base-only profile is still pending.
 > Every deferred Royalty acceptance item remains unchanged.
 
 ### Implement in this exact order
@@ -609,7 +620,7 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 2. **Ideology 1** — guarded live snapshot and saved event-time belief source.
 3. **Narrative N3-I (code-complete; active loaded acceptance passed, base-only pending)** — adapt high-confidence stance output
    into the single shared `interpretation` candidate category.
-4. **Ideology 2 (partial: mutation infrastructure, exact conversion/Reassure/Crisis/Counsel/completed conversion ritual)** —
+4. **Ideology 2 (partial: mutation infrastructure, exact conversion/Reassure/Crisis/Counsel/completed conversion ritual/authority speech)** —
    conversion/crisis/ritual/speech mutation capture and required event integrations.
 5. **Ideology 3** — bounded passive certainty/ideology tracking for future reflection evidence.
 6. Complete the common N3 selector/provider tests across Royalty, Biotech, Anomaly, and Odyssey.
@@ -624,7 +635,8 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 
 Wave 10 remains open: original exact active-Counsel loaded coverage and the corrected 384/384 suite
 passed, and the corrected active completed-conversion suite passed 388/388. The base-only profile,
-remaining Ideology-2 throne-speech/evidence-family work, and Ideology 3 are pending.
+the loaded authority-speech fixtures, remaining Ideology-2 evidence-family work, and Ideology 3 are
+pending.
 
 ### Release checkpoint 10 — belief enrichment
 

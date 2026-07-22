@@ -383,6 +383,12 @@ namespace PawnDiary
                 pawn, evidence, diaryEvent.eventId, diaryEvent.tick, povRole,
                 recentSelectedCandidateKeys);
             diaryEvent.SetBeliefContext(povRole, result?.fullContext);
+            // Event-owned guidance is appended only when the resolver found relevant live doctrine.
+            // Thus a secular/unrelated authority speech stays byte-for-byte on the ordinary ritual path.
+            if (!string.IsNullOrWhiteSpace(result?.fullContext)
+                && !string.IsNullOrWhiteSpace(evidence?.projection?.promptInstruction))
+                diaryEvent.instruction = Capture.RitualEventData.CombineInstructions(
+                    diaryEvent.instruction, evidence.projection.promptInstruction);
             try
             {
                 IdeologyNarrativeSnapshot ideology = IdeologyNarrativeSnapshotFactory.ForPage(

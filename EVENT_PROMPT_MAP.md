@@ -463,6 +463,20 @@ context without inventing a result; a guarded adapter exception preserves the or
 still routing spectators as spectators. A dormant Ideology group falls through to the generic ritual
 prompt.
 
+Exact authority speeches deliberately add no prompt/page owner. Installed 1.6 routes are matched by
+ordinal ritual identity, fully-qualified behavior/outcome worker type, effective group, and `speaker`
+assignment: `ThroneSpeech` /
+`RimWorld.RitualBehaviorWorker_ThroneSpeech` stays in `ritualRoyal`, while `LeaderSpeech` /
+`RimWorld.RitualBehaviorWorker_Speech` stays in `ritualFinished`; both require
+`RimWorld.RitualOutcomeEffectWorker_Speech`. The XML-owned `authority_speech` query reaches the existing
+belief resolver only after DLC gates pass. It contributes context and DefInjected guidance only when
+visible current doctrine actually relates to authority, leadership, social role, slavery, or social
+structure. Speaker projection may include that pawn's current role/certainty and optional structure;
+participant/spectator projection is smaller and omits role, certainty, memes, structure, deity, and
+N3-I. Target mode is none. Missing/malformed policy, inactive DLC, collisions, or adapter failure leave
+the ordinary Royal/generic ritual prompt untouched. Fan-out, dedup, RNG, settings, and save ownership
+are unchanged.
+
 Anomaly psychic rituals classify by the full saved key
 `PsychicRitual;<PsychicRitualDef.defName>`. Exact package-gated families precede the generic
 order-`776` fallback and leave page count and role fan-out unchanged:

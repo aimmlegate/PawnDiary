@@ -134,6 +134,7 @@ namespace PawnDiary
             BeliefPolicySnapshot policy = request.policy ?? BeliefPolicySnapshot.CreateDefault();
             BeliefSnapshot snapshot = request.snapshot;
             BeliefEventEvidence evidence = request.evidence;
+            BeliefContextProjection projection = evidence.projection;
             if (!policy.enabled || !BeliefResolutionModeTokens.IsKnown(request.mode)
                 || !snapshot.ideologyActive || SafeId(snapshot.ideologyId, policy).Length == 0
                 || evidence.narrative == null || evidence.narrative.pawnCanKnow != true)
@@ -164,7 +165,9 @@ namespace PawnDiary
             BeliefStanceResolution result = new BeliefStanceResolution();
             result.ideologyId = snapshot.ideologyId ?? string.Empty;
             result.ideologyName = snapshot.ideologyName ?? string.Empty;
-            result.roleName = snapshot.roleName ?? string.Empty;
+            result.roleName = projection == null || projection.includeRole
+                ? snapshot.roleName ?? string.Empty
+                : string.Empty;
             result.currentBeliefFactsRelevant = evidence.currentBeliefFactsRelevant;
             result.expandedTopicTokens.AddRange(expanded.topics);
             result.mutation = evidence.mutation != null && evidence.mutation.HasUsefulFact ? evidence.mutation : null;
@@ -174,13 +177,28 @@ namespace PawnDiary
             result.mutationSubjectIsPov = result.mutation != null
                 && string.Equals(snapshot.pawnId, result.mutation.pawnId, StringComparison.Ordinal);
             List<Candidate> selected = Select(candidates, evidence, request, policy);
+            int selectedCap = projection == null
+                ? selected.Count
+                : Math.Min(selected.Count, Math.Max(1, Math.Min(2, projection.maximumSelectedStances)));
+            if (selected.Count > selectedCap) selected.RemoveRange(selectedCap, selected.Count - selectedCap);
             for (int i = 0; i < selected.Count; i++) result.stances.Add(ToResolved(selected[i]));
 
-            AddSupportingMemes(result, selected, directlyMatchedMemes, liveMemes, policy);
+            if (projection == null || projection.maximumSupportingMemes > 0)
+            {
+                AddSupportingMemes(result, selected, directlyMatchedMemes, liveMemes, policy);
+                if (projection != null && result.supportingMemes.Count > projection.maximumSupportingMemes)
+                    result.supportingMemes.RemoveRange(
+                        projection.maximumSupportingMemes,
+                        result.supportingMemes.Count - projection.maximumSupportingMemes);
+            }
             if (!result.HasUsefulContext) return empty;
 
-            result.structure = policy.includeStructure ? NormalizeMeme(snapshot.structure, policy) : null;
-            result.deity = SelectDeity(snapshot.deities, result.supportingMemes, request.deterministicSeed, policy);
+            result.structure = policy.includeStructure && (projection == null || projection.includeStructure)
+                ? NormalizeMeme(snapshot.structure, policy)
+                : null;
+            result.deity = projection == null || projection.includeDeity
+                ? SelectDeity(snapshot.deities, result.supportingMemes, request.deterministicSeed, policy)
+                : null;
             // A pair page may share the recipient's mechanical mutation with the converter's POV.
             // Keep that event fact in result.mutation, but only let it rewrite the current/trend
             // certainty fields when this live snapshot belongs to the exact mutated pawn.
@@ -188,7 +206,13 @@ namespace PawnDiary
                 && string.Equals(snapshot.pawnId, evidence.mutation.pawnId, StringComparison.Ordinal)
                 ? evidence.mutation
                 : null;
-            BeliefCertaintyPolicy.Apply(snapshot.certainty, ownMutation, policy, result);
+            if (projection == null || projection.includeCertainty)
+                BeliefCertaintyPolicy.Apply(snapshot.certainty, ownMutation, policy, result);
+            result.maximumContextCharacters = projection == null
+                ? 0
+                : Math.Max(64, projection.maximumContextCharacters);
+            result.includeNarrativeInterpretation = projection == null
+                || projection.includeNarrativeInterpretation;
             for (int i = 0; i < selected.Count; i++) AddUnique(result.selectionReasonTokens, selected[i].relevanceSource);
             for (int i = 0; i < expanded.matchedRuleKeys.Count; i++) AddUnique(result.selectionReasonTokens, expanded.matchedRuleKeys[i]);
             return result;
