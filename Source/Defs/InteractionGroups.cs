@@ -320,8 +320,14 @@ namespace PawnDiary
         // the current all-eligible fanout for every existing quest group and old compatibility Def.
         public QuestFanoutScope questFanoutScope = QuestFanoutScope.AllEligible;
 
-        // Exact defName matches (case-insensitive). Optional in XML.
+        // Exact defName matches (case-insensitive). Optional in XML and retained for broad catalog
+        // compatibility. Verified outcome routes should use matchOrdinalDefNames below instead.
         public List<string> matchDefNames;
+
+        // Exact defName matches (case-sensitive, ordinal). Optional in XML. This lets a classifier
+        // share the same identity contract as a strict downstream outcome policy; a case variant then
+        // falls through to the ordinary group instead of receiving only half of the enrichment.
+        public List<string> matchOrdinalDefNames;
 
         // Substring tokens: a defName that contains any token (case-insensitive) matches. Optional.
         // BLUNT by design — a token like "Good" also claims "PawnWithGoodOpinionDied". Prefer the
@@ -392,6 +398,11 @@ namespace PawnDiary
             if (batch != null
                 && !string.IsNullOrWhiteSpace(batch.syntheticDefName)
                 && string.Equals(batch.syntheticDefName, defName, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (GroupNameMatcher.MatchesOrdinalExact(defName, matchOrdinalDefNames))
             {
                 return true;
             }
@@ -579,11 +590,15 @@ namespace PawnDiary
             }
         }
 
-        // First Interaction-domain group that matches the interaction, else the Interaction
-        // catch-all ("Other").
+        // First currently available Interaction-domain group that matches the interaction, else the
+        // available catch-all ("Other"). The cached catalog-only result is still the hot path; only
+        // a dormant DLC row triggers the availability-aware rescan.
         public static DiaryInteractionGroupDef Classify(InteractionDef interactionDef)
         {
-            return ClassifyIn(GroupDomain.Interaction, interactionDef);
+            DiaryInteractionGroupDef result = ClassifyIn(GroupDomain.Interaction, interactionDef);
+            return result != null && result.UnavailableForCurrentRuntime()
+                ? ClassifyAvailableIn(GroupDomain.Interaction, interactionDef)
+                : result;
         }
 
         // First currently available MentalState-domain group that matches the state, else the available
@@ -832,6 +847,34 @@ namespace PawnDiary
                 }
 
                 if (group.Matches(defName))
+                {
+                    return group;
+                }
+
+                fallback = group;
+            }
+
+            return fallback;
+        }
+
+        /// <summary>
+        /// Availability-aware live-Def variant. Keeping the Def preserves package-ID matching for
+        /// third-party interactions while allowing an unavailable DLC-specific exact row to yield to
+        /// the ordinary catch-all.
+        /// </summary>
+        private static DiaryInteractionGroupDef ClassifyAvailableIn(GroupDomain domain, Def sourceDef)
+        {
+            List<DiaryInteractionGroupDef> all = All;
+            DiaryInteractionGroupDef fallback = null;
+            for (int i = 0; i < all.Count; i++)
+            {
+                DiaryInteractionGroupDef group = all[i];
+                if (group.domain != domain || group.UnavailableForCurrentRuntime())
+                {
+                    continue;
+                }
+
+                if (group.Matches(sourceDef))
                 {
                     return group;
                 }

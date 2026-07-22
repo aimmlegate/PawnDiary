@@ -61,6 +61,15 @@ namespace PawnDiary
         public bool requireAttemptedIdeology;
     }
 
+    /// <summary>One exact Counsel PlayLog outcome and its stable prompt-context tokens.</summary>
+    public class DiaryCounselEventRuleDef
+    {
+        public string sourceDefName;
+        public string downstreamGroupDefName;
+        public string resultToken;
+        public string moodEffectToken;
+    }
+
     /// <summary>Optional explicit compatibility correction. The shipped list remains empty.</summary>
     public class DiaryBeliefCorrelationCorrectionDef
     {
@@ -177,6 +186,9 @@ namespace PawnDiary
         // Exact enrichment mappings. The code fallback is empty so missing/malformed XML attaches no
         // transient mutation to an unrelated event.
         public List<DiaryBeliefMutationEventRuleDef> mutationEventRules;
+        // Exact context-only Counsel outcomes. The code fallback is empty, so missing or malformed
+        // XML can never guess a result or classify a similarly named third-party interaction.
+        public List<DiaryCounselEventRuleDef> counselEventRules;
         public List<DiaryBeliefCorrelationCorrectionDef> correlationOverrides;
         public List<DiaryBeliefDetailBudgetDef> detailBudgets;
     }
@@ -297,6 +309,7 @@ namespace PawnDiary
             CopyOwnershipRules(source.canonicalEventOwnershipRules,
                 builder.canonicalEventOwnershipRules);
             CopyMutationEventRules(source.mutationEventRules, builder.mutationEventRules);
+            CopyCounselEventRules(source.counselEventRules, builder.counselEventRules);
             CopyCorrections(source.correlationOverrides, builder.correlationOverrides);
             CopyBudgets(source.detailBudgets, builder.detailBudgets);
             cached = builder.Build();
@@ -416,6 +429,26 @@ namespace PawnDiary
                     row.evidenceGroupKey.Trim(), row.requiredCauseToken.Trim(),
                     row.conversionResult.Trim(), row.certaintyDirection.Trim(),
                     row.ideologyChange.Trim(), row.requireAttemptedIdeology));
+            }
+        }
+
+        private static void CopyCounselEventRules(
+            List<DiaryCounselEventRuleDef> source,
+            List<CounselEventRule> destination)
+        {
+            destination.Clear();
+            if (source == null) return;
+            for (int i = 0; i < source.Count && i < 32; i++)
+            {
+                DiaryCounselEventRuleDef row = source[i];
+                if (row == null || string.IsNullOrWhiteSpace(row.sourceDefName)
+                    || string.IsNullOrWhiteSpace(row.downstreamGroupDefName)
+                    || string.IsNullOrWhiteSpace(row.resultToken)
+                    || string.IsNullOrWhiteSpace(row.moodEffectToken))
+                    continue;
+                destination.Add(new CounselEventRule(
+                    row.sourceDefName.Trim(), row.downstreamGroupDefName.Trim(),
+                    row.resultToken.Trim(), row.moodEffectToken.Trim()));
             }
         }
 

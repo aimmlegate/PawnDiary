@@ -5813,13 +5813,16 @@ namespace DiaryPipelineTests
                 groups, "PawnDiary.DiaryInteractionGroupDef", "conversion");
             AssertTrue("exact Counsel interaction group exists", counsel != null);
             AssertEqual("Counsel interaction domain", "Interaction", ChildValue(counsel, "domain"));
-            AssertTrue("Counsel group uses only the two installed exact interaction DefNames",
-                counsel.Element("matchDefNames")?.Elements("li").Count() == 2
-                    && HasListValue(counsel, "matchDefNames", "Counsel_Success")
-                    && HasListValue(counsel, "matchDefNames", "Counsel_Failure")
+            AssertTrue("Counsel group uses only the two ordinal-exact interaction DefNames",
+                counsel.Element("matchOrdinalDefNames")?.Elements("li").Count() == 2
+                    && HasListValue(counsel, "matchOrdinalDefNames", "Counsel_Success")
+                    && HasListValue(counsel, "matchOrdinalDefNames", "Counsel_Failure")
+                    && counsel.Element("matchDefNames") == null
                     && counsel.Element("matchTokens") == null
                     && counsel.Element("matchPrefixes") == null
                     && counsel.Element("matchSegments") == null);
+            AssertTrue("Counsel group supplies tone-rotation parity",
+                counsel.Element("tones")?.Elements("li").Count() >= 2);
             AssertTrue("Counsel group precedes conversion", InteractionGroupOrder(counsel)
                 < InteractionGroupOrder(conversion));
             AssertTrue("Counsel group is package-gated to optional Ideology",
@@ -5871,6 +5874,19 @@ namespace DiaryPipelineTests
                 !policy.Descendants("mutationEventRules").Elements("li")
                     .Any(row => ChildValue(row, "sourceDefName")
                         .StartsWith("Counsel", StringComparison.Ordinal)));
+            List<XElement> counselRules = policy.Descendants("counselEventRules")
+                .Elements("li").ToList();
+            AssertEqual("Counsel ships two exact context-only outcome rules", 2, counselRules.Count);
+            AssertTrue("Counsel success context rule is XML-owned",
+                counselRules.Any(row => ChildValue(row, "sourceDefName") == "Counsel_Success"
+                    && ChildValue(row, "downstreamGroupDefName") == "counsel"
+                    && ChildValue(row, "resultToken") == "success"
+                    && ChildValue(row, "moodEffectToken") == "relief_or_boost"));
+            AssertTrue("Counsel failure context rule is XML-owned",
+                counselRules.Any(row => ChildValue(row, "sourceDefName") == "Counsel_Failure"
+                    && ChildValue(row, "downstreamGroupDefName") == "counsel"
+                    && ChildValue(row, "resultToken") == "failure"
+                    && ChildValue(row, "moodEffectToken") == "penalty"));
 
             XDocument englishGroups = XDocument.Load(RepoPath(
                 "Languages", "English", "DefInjected", "PawnDiary.DiaryInteractionGroupDef",
@@ -5890,6 +5906,12 @@ namespace DiaryPipelineTests
             AssertPlaceholderParity("Counsel group instruction",
                 ChildValue(englishGroups.Root, "counsel.instruction"),
                 ChildValue(russianGroups.Root, "counsel.instruction"));
+            AssertTrue("English Counsel tone variants are localized",
+                !string.IsNullOrWhiteSpace(ChildValue(englishGroups.Root, "counsel.tones.0"))
+                    && !string.IsNullOrWhiteSpace(ChildValue(englishGroups.Root, "counsel.tones.1")));
+            AssertTrue("Russian Counsel tone variants are localized",
+                !string.IsNullOrWhiteSpace(ChildValue(russianGroups.Root, "counsel.tones.0"))
+                    && !string.IsNullOrWhiteSpace(ChildValue(russianGroups.Root, "counsel.tones.1")));
             for (int i = 0; i < promptDefs.Length; i++)
             {
                 string key = promptDefs[i];

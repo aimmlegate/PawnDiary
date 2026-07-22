@@ -209,10 +209,14 @@
     </enableWhenPackageIdsLoaded>
     <instruction>an exact attempt to comfort a listener; follow the supplied success or failure, keep counselor and listener roles straight, and treat the result only as mood or thought relief or harm—not a change of doctrine or conviction</instruction>
     <tone>with attentive warmth on success or awkward regret on failure</tone>
-    <matchDefNames>
+    <tones>
+      <li>with relieved warmth, centered on the listener feeling steadier</li>
+      <li>with awkward regret, centered on comfort that failed to land</li>
+    </tones>
+    <matchOrdinalDefNames>
       <li>Counsel_Success</li>
       <li>Counsel_Failure</li>
-    </matchDefNames>
+    </matchOrdinalDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>

@@ -43,7 +43,7 @@ collector kind (hediff, capacity, Royal title, Ideology role, event window, obse
 | Manual visual checks | `tests/SAVE_COMPATIBILITY_SMOKETEST.md` plus a new UI checklist | Immediate-mode rendering, resolution/accessibility layouts, scroll behavior, and screenshots that are not stable enough for unit assertions. |
 
 `tests/BeliefContextTests` is the assembly-free Master Wave 10 / Ideology Phases 0–2 plus Narrative
-N3-I harness. Its 413
+N3-I harness. Its 408
 assertions lock missing/inactive/unknown-knowledge silence; exact source, thought, history, issue, and
 meme precedence; synthetic mod IDs; guarded phrase/token/fuzzy matching; dynamic common-token,
 confidence, explicit below-threshold diagnostics, and runner-up rejection; reused evidence expansion;
@@ -64,13 +64,13 @@ case-sensitive Def matching, inactive-policy silence, known/success/failure mech
 reassurance, cross-pawn/stale/future rejection, two-POV reuse, no backward search through sequential
 rows, malformed inputs, critical conversion-marker append/idempotence, subject-labeled mutation schema
 formatting, and target mutation not rewriting the converter's own certainty/trend.
-Exact Counsel coverage pins ordinal/case-sensitive success/failure matching, wrong-group/modded/inactive
-silence, listener subject and both POV roles, positive/negative mood classification, no mutation/current-
-certainty request, idempotent mood markers without conversion schema, ordinary-page behavior when no
-visible doctrine matches, optional relevant visible-label doctrine, and exact canonical ownership of the
-ability plus all three vanilla Counsel thoughts. Pipeline XML tests pin the two-name-only package-gated
-group, removal from broad conversion matching, source-specific prompt precedence, no mutation rule,
-secular-safe mood prose, and EN/RU placeholder parity/failure isolation.
+Exact Counsel coverage pins XML-owned ordinal/case-sensitive success/failure matching, wrong-group/
+modded/inactive/disabled-policy silence, safe context tokens, empty-fallback and immutable-policy behavior,
+idempotent mood markers without conversion schema, legacy conversion-setting inheritance/override storage,
+and exact canonical ownership of the ability plus all three vanilla Counsel thoughts. Pipeline XML tests
+pin the two-name-only `matchOrdinalDefNames` package-gated group, removal from broad conversion matching,
+two exact context-only policy rows, source-specific prompt precedence, no mutation/doctrine-evidence rule,
+secular-safe mood prose, and EN/RU prompt plus tone localization/failure isolation.
 N3-I additionally pins structural and high-margin lexical admission; null/default, empty/mutation-only/
 ambiguous, below-confidence, non-interpretation-category, unknown-facet, wrong-POV/tick/role, hidden,
 source-mismatched, malformed, and inactive rejection; canonical page ID re-stamping for prepared body
@@ -1054,10 +1054,10 @@ assembly is now 362 tests and builds with 0 warnings/errors into the tracked dep
 RimWorld has not been launched for this follow-up, so its new cases are not
 recorded as loaded-game passes and no manual/in-game acceptance row is closed.
 
-`PawnDiaryIdeologyPhase2InfrastructureTests` contains eighteen compiled loaded cases. Narrative N3-I
+`PawnDiaryIdeologyPhase2InfrastructureTests` contains nineteen compiled loaded cases. Narrative N3-I
 extends the Phase-1 fixture with a real source-precept candidate assertion, an unavailable-provider
-composition case, and a provider-failure canonical-page case; the exact Counsel slice brings the whole
-RimTest assembly to 384 tests. The positive thought fixture now constructs a deterministic loaded typed precept and enters
+composition case, and a provider-failure canonical-page case; the hardened Counsel slice brings the whole
+RimTest assembly to 385 tests. The positive thought fixture now constructs a deterministic loaded typed precept and enters
 through the real Harmony-patched `TryGainMemory` boundary rather than directly emitting a signal; the
 approved/disapproved real `AddHediff` fixtures additionally require the canonical re-stamped N3-I
 evidence, key, and context. The user-confirmed 381/381 loaded rerun exercised these stronger assertions.
@@ -1091,16 +1091,19 @@ construction. Standalone belief/pipeline fixtures continue to cover wrong-pawn, 
 future, malformed, changed/unchanged, and current-only selection; the prompt XML contract now also
 rejects religious `faith` framing in favor of secular-safe ideoligion/conviction wording.
 
-Three exact Counsel cases use the installed `CompAbilityEffect_Counsel` through the real
-`Ability.Activate` boundary. They choose a usable Social pawn, set deterministic success/failure inputs,
-derive a bounded seed from vanilla `ChanceForPawn`, and fail with a clear active-profile prerequisite if
-the ability/result/thought Defs or live target cannot be constructed. Success requires a positive
-`Counselled`/`Counselled_MoodBoost` memory; failure requires negative `CounselFailed`. Both require one
-PlayLog row, one counselor→listener pair page, unchanged Ideo/certainty, no mutation cache row, exact
-source prompt policy, and no generic ability/thought page. A precise `CounselEventPolicy.ForInteraction`
-fault injection proves optional N3-I evidence failure preserves the ordinary canonical page. The shared
-wiring case additionally proves exact group/ownership/evidence no-op behavior in an Ideology-inactive
-loaded profile.
+Four exact Counsel cases use the installed `CompAbilityEffect_Counsel` through the real
+`Ability.Activate` boundary or its exact context seam. They choose a usable Social pawn, set deterministic
+success/failure inputs, derive a bounded seed from vanilla `ChanceForPawn`, and fail with a clear active-
+profile prerequisite if the ability/result/thought Defs or live target cannot be constructed. Separate
+success fixtures remove every eligible negative memory to require `Counselled_MoodBoost`, or add one
+synthetic eligible negative memory to require the exact compensating `Counselled` offset; failure requires
+negative `CounselFailed`. Each real effect requires one PlayLog row, one counselor→listener pair page,
+unchanged Ideo/certainty, no mutation cache or saved belief block, exact source prompt policy, and no
+generic ability/thought page. The fixed-boost case also asserts that the downstream-covered generic
+AbilitySignal consumes no RNG. A precise `CounselEventPolicy.RuleFor` fault injection proves optional
+context failure preserves the ordinary canonical page. The shared wiring case additionally proves loaded
+ordinal rule/tone policy, save-setting inheritance/explicit override, active exact classification, and
+DLC-off exact-name fallback to an ordinary pair page with no Counsel context.
 
 The first 377-test execution exposed vanilla's nested silent companion page and completed 375/377; the
 other failure was the unrelated N3-O Odyssey host prerequisite. After the exact companion fix and a
@@ -1109,15 +1112,16 @@ new cases and the real-ability rewrites compile but have not yet received a 379/
 post-Phase-2 base-only profile run is recorded. Before N3-I, a headless startup attempt was made for
 the requested 379/379 profiles, but RimTest ran before `Current.Game` existed and every loaded-game
 fixture failed its precondition; no usable active or base-only acceptance result was produced. The
-current post-Counsel assembly contains 384 tests. The first user-supplied pre-Counsel Ideology-active execution reached
+current hardened post-Counsel assembly contains 385 tests. The first user-supplied pre-Counsel Ideology-active execution reached
 379/381: its N3-I failure was the over-broad fault-injection seam corrected above, while the other
 failure was the existing N3-O positive acceptance precondition because the host map had no parked
 player gravship. After the adversarial fixes, the user-confirmed loaded rerun passed 381/381 and closes
-the active N3-I runtime boundary. The first post-Counsel run reached 382/384; all three new Counsel cases
+the active N3-I runtime boundary. The first post-Counsel run reached 382/384; all three original Counsel cases
 passed through the real vanilla boundary. The remaining failures were the exhaustive official-DLC
 catalog's stale omission of `counsel`, now corrected, and the unchanged N3-O parked-gravship host
 prerequisite. The user-confirmed corrected rerun passed 384/384 on a valid parked-gravship host. This
-closes active-Ideology Counsel execution coverage; the base-only profile remains pending.
+closes the original active-Ideology Counsel execution coverage; the new 385-test hardening rerun and
+base-only profile remain pending.
 The base-only run remains release-blocking under the
 matrix above because it is the only execution that reaches every `ModsConfig.IdeologyActive == false`
 branch.

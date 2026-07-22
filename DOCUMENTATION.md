@@ -322,15 +322,24 @@ deferred; the mutation observer/cache still cannot authorize or emit any page.
 The exact Counsel slice reuses vanilla's one existing downstream PlayLog owner. Installed RimWorld 1.6
 applies either `Counselled`/`Counselled_MoodBoost` and then emits `Counsel_Success`, or applies
 `CounselFailed` and then emits `Counsel_Failure`; the caster is the counselor/initiator and the target is
-the listener/recipient. The package-gated `counsel` group matches only those two result DefNames with
-ordinal, case-sensitive strings. `CounselEventPolicy` attaches detached listener evidence and the stable
-`counsel_result`/`counsel_mood_effect` marker only after `InteractionSignal` has authorized that existing
-page. It never reads live Pawn/Ideo/Thought state, creates a mutation row, reports certainty, or emits
-`belief_event=conversion`. Current doctrine remains optional N3-I enrichment: the existing guarded
-resolver can add it only when the visible event label supplies relevant evidence; no match leaves the
-ordinary Counsel page unchanged. Exact package-gated `Counsel_Success`/`Counsel_Failure` prompt Defs and
-EN/RU DefInjected prose describe mood relief/boost or a short mood penalty in secular-safe terms. No page
-owner, Harmony hook, polling path, or save field was added.
+the listener/recipient. The package-gated `counsel` group uses `matchOrdinalDefNames` for only those two
+case-sensitive result identities. XML `counselEventRules` own the matching DefNames plus their stable
+`counsel_result`/`counsel_mood_effect` tokens; the code fallback is empty. After ordinary capture
+authorization, `CounselEventPolicy` appends that context only. It does not create
+`BeliefEventEvidence`, snapshot live doctrine, run N3-I, read Pawn/Ideo/Thought state, create a mutation
+row, report certainty, or emit `belief_event=conversion`. Structural doctrine correlation for Counsel
+is deferred until a real mechanical source exists; a localized PlayLog label alone is not treated as
+doctrine evidence. Exact package-gated prompt Defs plus EN/RU DefInjected instruction/tone pools describe
+mood relief/boost or a short mood penalty in secular-safe terms. No page owner, Harmony hook, polling
+path, or save field was added.
+
+Live Interaction classification is availability-aware when its cached first match is a dormant DLC
+row: it rescans only that exceptional path, skips unavailable groups, and falls through to the ordinary
+catch-all. Thus a third-party base-game Def named `Counsel_Success` still records normally when Ideology
+is absent and never receives Counsel context. Existing saves also preserve player intent: until the new
+`counsel` row is explicitly changed, an explicit legacy `conversion` override is inherited. A later
+explicit Counsel choice wins, including an enabled value equal to the XML default; normalization keeps
+that otherwise-redundant value when it must override legacy `conversion=false`.
 
 The first post-Counsel Ideology-active loaded run executed all 384 fixtures and reached 382/384. All
 three exact Counsel fixtures passed at the real vanilla boundary. One failure was a stale exhaustive
@@ -2287,7 +2296,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeRollPolicyDefs.xml` | numeric tuning for the psychotype roll: family bases, bonuses, wildcard chance, jitter range, duplicate penalty |
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; the main-thread builder snapshots it before fixed-order pure provider selection. The repetition policy is live: every narrative-capable source feeds the selector the POV pawn's most recent persisted selection keys (newest hot pages, then archive rows, bounded by `maxRecentSelectedCandidateKeys`), so `repetitionPenalty` dampens re-picking the same lens while exact-arc continuations stay exempt via `exactArcRepetitionPenalty` |
-| `DiaryBeliefPolicyDef.xml` | Active Ideology event-time policy: categorical structural/lexical scores, guarded field weights, confidence and runner-up margins, common/fuzzy-token limits, XML-owned default-one/maximum-two selection, certainty bands, formatter/detail budgets, bounded HistoryEvent and transient mutation correlation capacity/windows, localized prompt-field wording, selector-bearing exact event-evidence vocabulary, semantic aliases, exclusions, exact downstream-covered ability/thought ownership (including Counsel), four exact conversion/reassurance interaction-mutation mappings, and an intentionally empty compatibility-correction list. Counsel has no mutation mapping. The Def contains no precept/issue/meme catalog or hard DLC Def reference; the guarded main-thread adapter copies it into a detached snapshot. Reflection thresholds remain reserved for later phases. |
+| `DiaryBeliefPolicyDef.xml` | Active Ideology event-time policy: categorical structural/lexical scores, guarded field weights, confidence and runner-up margins, common/fuzzy-token limits, XML-owned default-one/maximum-two selection, certainty bands, formatter/detail budgets, bounded HistoryEvent and transient mutation correlation capacity/windows, localized prompt-field wording, selector-bearing exact event-evidence vocabulary, semantic aliases, exclusions, exact downstream-covered ability/thought ownership (including Counsel), four exact conversion/reassurance interaction-mutation mappings, two context-only Counsel outcome mappings, and an intentionally empty compatibility-correction list. Counsel has no mutation mapping or doctrine-evidence row. The Def contains no precept/issue/meme catalog or hard DLC Def reference; the guarded main-thread adapter copies it into a detached snapshot. Reflection thresholds remain reserved for later phases. |
 | `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory plus mature-birth/miscarriage matchers, supporter thresholds/caps, naming timing, family retention, two-writer birth cap, pending-growth/pending-birth admission limits, Phase-5 gene category/theme/text/observation/fallback-significance policy, N3-B salient-gene identity prose, and Phase-6 mechanitor combat Tale roles/tenure/state caps; Phases 1–6, N2-B, and the first N3-B slice use these fields live |
 | `DiaryAnomalyPolicyDefs.xml` | A1 study/containment toggles, milestone rules, dedup/ownership/cache bounds, A2 visible creepjoiner/ghoul output and writer limits, plus N3-A factual formats for the three monolith chapters, containment breach, four visible creepjoiner outcomes, and ghoul transformation. Prose is DefInjected in English/Russian; no terminal/hidden format exists. All optional-DLC identifiers remain primitive strings, so the row loads safely without Anomaly. |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
@@ -2306,7 +2315,8 @@ and shrinks back to the journal-only width instead of leaving the journal in the
 is ever too narrow to fit both, the panel hides and the journal takes the full width.
 
 Interaction groups match by domain, exact `defName`, optional package id, and ordered token matchers.
-Prefer exact names, `matchPrefixes`, `matchSuffixes`, and `matchSegments`; use legacy
+Prefer `matchOrdinalDefNames` for strict framework outcome identity; otherwise prefer exact
+case-insensitive `matchDefNames`, `matchPrefixes`, `matchSuffixes`, and `matchSegments`; use legacy
 substring-style `matchTokens` only when broad matching is truly intended. Lower `order` wins, so put
 specific groups before broad groups. The pure matcher lives in `Source/Capture/GroupNameMatcher.cs`.
 Three runtime gates control availability: `disableWhenPackageIdsLoaded` silences a group while a
@@ -3572,10 +3582,11 @@ Never rename a key "for cleanliness" alone.
   Ideology and never emit. Exact mutation hooks are registered only while the DLC is active, and the
   exact ability-ownership policy is likewise gated before it can suppress a generic route. The exact
   interaction-evidence adapter gates on active Ideology before any exact evidence path; mutation-backed
-  branches additionally require enabled belief policy before reading the detached cache. Counsel uses
-  only its already-authorized exact PlayLog result and reads no live DLC state. Inactive profiles never
-  attach either mutation or Counsel evidence. No-DLC profiles keep their pre-Ideology capture and prompt
-  behavior.
+  branches additionally require enabled belief policy before reading the detached cache. Counsel checks
+  its cached XML policy only after the exact group route, appends context without building belief evidence,
+  and therefore performs no live-doctrine snapshot or N3-I resolver pass. Inactive profiles skip that
+  context path, while an exact-name third-party interaction falls through to the available ordinary group.
+  No-DLC profiles keep their pre-Ideology capture and prompt behavior.
 - `PawnDiaryDlcSafetyFixtureTests` exercises this boundary in both directions: absent/null state must
   disappear from the final prompt/public summary, while installed DLC uses disposable real xenotype,
   title, ideoligion/precept/eligible-role, and creepjoiner pawn state. The CreepJoiner positive path

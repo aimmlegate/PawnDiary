@@ -2322,6 +2322,18 @@ namespace DiaryCapturePolicyTests
 
         private static void TestGroupNameMatcher()
         {
+            // ---- MatchesOrdinalExact: verified outcome identity ----
+            List<string> counselOutcomes = new List<string> { "Counsel_Success", "Counsel_Failure" };
+            AssertTrue("ordinal exact: verified Counsel outcome matches",
+                GroupNameMatcher.MatchesOrdinalExact("Counsel_Success", counselOutcomes));
+            AssertTrue("ordinal exact: case variant does not match",
+                !GroupNameMatcher.MatchesOrdinalExact("counsel_success", counselOutcomes));
+            AssertTrue("ordinal exact: similar modded name does not match",
+                !GroupNameMatcher.MatchesOrdinalExact("ModdedCounsel_Success", counselOutcomes));
+            AssertTrue("ordinal exact: null inputs do not match",
+                !GroupNameMatcher.MatchesOrdinalExact(null, counselOutcomes)
+                    && !GroupNameMatcher.MatchesOrdinalExact("Counsel_Success", null));
+
             // ---- MatchesPrefix ----
             List<string> negPrefixes = new List<string> { "Terrible", "Banished" };
             AssertTrue("prefix: matches leading word (Terrible)",

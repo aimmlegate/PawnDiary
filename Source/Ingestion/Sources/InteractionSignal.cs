@@ -8,6 +8,7 @@
 // The patch-side preflight (ShouldCaptureInteractionFromPlayLog / ShouldRenderInteractionTextFromPlayLog)
 // stays on the component. Pure decision + game-context format live in
 // Source/Capture/Events/InteractionEventData.cs. New to C#/RimWorld? See AGENTS.md.
+using System;
 using PawnDiary.Capture;
 using RimWorld;
 using Verse;
@@ -129,7 +130,9 @@ namespace PawnDiary.Ingestion
 
             if (shape == InteractionEventData.InteractionEmitShape.Solo)
             {
-                BeliefEventEvidence beliefEvidence = BeliefEvidenceForPage();
+                bool counselPage = IsCounselPage();
+                CounselEventRule counselRule = counselPage ? CounselRuleForPage() : null;
+                BeliefEventEvidence beliefEvidence = counselPage ? null : BeliefEvidenceForPage();
                 Pawn eligiblePawn = initiatorEligible ? initiator : recipient;
                 Pawn otherPawn = initiatorEligible ? recipient : initiator;
                 string eligibleText = initiatorEligible ? initiatorText : recipientText;
@@ -140,7 +143,8 @@ namespace PawnDiary.Ingestion
 
                 string gameContext = AppendBeliefGameContext(
                     DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel),
-                    beliefEvidence);
+                    beliefEvidence,
+                    counselRule);
                 DiaryEvent soloEvent = sink.AddSoloEvent(eligiblePawn, otherPawn, interactionDef.defName, interactionLabel,
                     eligibleText, InteractionGroups.InstructionFor(interactionDef), gameContext, beliefEvidence);
                 soloEvent.AddPlayLogEntryId(playLogEntryId);
@@ -169,13 +173,16 @@ namespace PawnDiary.Ingestion
             }
 
             // Pair.
-            BeliefEventEvidence pairBeliefEvidence = BeliefEvidenceForPage();
+            bool pairCounselPage = IsCounselPage();
+            CounselEventRule pairCounselRule = pairCounselPage ? CounselRuleForPage() : null;
+            BeliefEventEvidence pairBeliefEvidence = pairCounselPage ? null : BeliefEvidenceForPage();
             DiaryEvent diaryEvent = sink.AddPairwiseEvent(initiator, recipient, interactionDef.defName, interactionLabel,
                 initiatorText, recipientText,
                 InteractionGroups.InstructionFor(interactionDef),
                 AppendBeliefGameContext(
                     DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel),
-                    pairBeliefEvidence),
+                    pairBeliefEvidence,
+                    pairCounselRule),
                 pairBeliefEvidence);
             diaryEvent.playLogInteractionDefName = interactionDef.defName;
             diaryEvent.AddPlayLogEntryId(playLogEntryId);
@@ -197,18 +204,34 @@ namespace PawnDiary.Ingestion
                 payload.RecipientPawnId,
                 payload.Tick,
                 initiator.LabelShort,
-                recipient.LabelShort,
-                payload.Label);
+                recipient.LabelShort);
+        }
+
+        /// <summary>
+        /// Resolves context-only Counsel policy after ordinary capture authorization. The caller's
+        /// group check keeps every non-Counsel interaction off the policy-snapshot path.
+        /// </summary>
+        private CounselEventRule CounselRuleForPage()
+        {
+            return BeliefMutationEvidenceAdapter.ForCounselInteraction(
+                payload.DefName, effectiveGroupDefName);
+        }
+
+        private bool IsCounselPage()
+        {
+            return string.Equals(effectiveGroupDefName, CounselEventPolicy.GroupDefName,
+                StringComparison.Ordinal);
         }
 
         /// <summary>Appends only the exact stable markers proved by optional detached evidence.</summary>
         private static string AppendBeliefGameContext(
             string gameContext,
-            BeliefEventEvidence beliefEvidence)
+            BeliefEventEvidence beliefEvidence,
+            CounselEventRule counselRule)
         {
             string mutationContext = BeliefMutationEventSelector.AppendGameContextMarker(
                 gameContext, beliefEvidence);
-            return CounselEventPolicy.AppendGameContext(mutationContext, beliefEvidence);
+            return CounselEventPolicy.AppendGameContext(mutationContext, counselRule);
         }
     }
 }

@@ -1,5 +1,24 @@
 # Changelog
 
+- **2026-07-22 — Adversarially hardened the Ideology Phase-2 Counsel slice.** Reconciled both external
+  reviews with a fresh code/lore/DLC/save/performance audit and fixed three integration defects they did
+  not identify. Live Interaction classification now skips a dormant package-gated first match, so an
+  exact-name third-party `Counsel_Success` still reaches the ordinary group/page without Ideology instead
+  of being dropped. The new `counsel` setting inherits an explicit legacy `conversion` override until
+  touched, while a default-equal explicit Counsel enable is retained when needed to override legacy
+  `conversion=false`. Counsel classification and outcome enrichment now share XML-owned ordinal-exact
+  DefNames; XML also owns the bounded safe mood-result tokens, with an empty code fallback and enabled-
+  policy gate. Counsel is context-only: localized PlayLog labels no longer trigger speculative N3-I,
+  `BeliefEventEvidence`, live-doctrine snapshots, or resolver work. Added localized EN/RU tone pools.
+  Pure tests cover ordinal matching, fail-closed rule policy, immutable snapshots, token safety, and
+  settings inheritance. The loaded fixture now covers DLC-off ordinary fallback, loaded rule/tone and
+  settings behavior, covered-ability RNG preservation, and both real vanilla success subbranches
+  (`Counselled` relief versus `Counselled_MoodBoost`) separately. The compiled RimTest assembly grows
+  from 384 to 385 cases. The repository verifier passes, including XML/whitespace checks, all configured
+  pure projects (focused totals: 408 Belief, 728 capture, and 2,905 pipeline assertions), and a zero-warning
+  production build; the tracked RimTest DLL also builds with zero warnings. Its new active/base-only
+  execution remains pending, so the prior confirmed 384/384 active run remains the latest runtime result.
+
 - **2026-07-22 — Corrected the exhaustive DLC catalog after the first 384-test Counsel run.** The
   Ideology-active loaded run reached 382/384, and all three new exact Counsel fixtures passed through
   vanilla `Ability.Activate`/`CompAbilityEffect_Counsel`: success, failure, canonical counselor→listener

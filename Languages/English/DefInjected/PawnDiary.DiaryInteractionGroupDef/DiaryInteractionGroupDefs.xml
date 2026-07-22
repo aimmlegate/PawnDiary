@@ -24,6 +24,8 @@
   <counsel.label>Counsel</counsel.label>
   <counsel.instruction>an exact attempt to comfort a listener; follow the supplied success or failure, keep counselor and listener roles straight, and treat the result only as mood or thought relief or harm—not a change of doctrine or conviction</counsel.instruction>
   <counsel.tone>with attentive warmth on success or awkward regret on failure</counsel.tone>
+  <counsel.tones.0>with relieved warmth, centered on the listener feeling steadier</counsel.tones.0>
+  <counsel.tones.1>with awkward regret, centered on comfort that failed to land</counsel.tones.1>
   <conversion.label>Ideology &amp; conversion</conversion.label>
   <conversion.instruction>a battle of belief—conversion, preaching, or the pressure of faith on faith</conversion.instruction>
   <conversion.tone>with fervent, pressing conviction</conversion.tone>

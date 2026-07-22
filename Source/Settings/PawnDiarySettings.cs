@@ -821,6 +821,17 @@ namespace PawnDiary
                 return false;
             }
 
+            if (string.Equals(group.defName, CounselEventPolicy.GroupDefName,
+                StringComparison.Ordinal))
+            {
+                // Counsel split out of the older broad conversion row in Phase 2. Until the player
+                // touches the new row, preserve an explicit legacy conversion choice across upgrades.
+                return CounselSettingsInheritance.Enabled(
+                    GroupEnabledOverride(CounselEventPolicy.GroupDefName),
+                    GroupEnabledOverride("conversion"),
+                    group.defaultEnabled);
+            }
+
             bool saved;
             return groupEnabled.TryGetValue(group.defName, out saved) ? saved : group.defaultEnabled;
         }
@@ -869,8 +880,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Stores a player override for one automatic-capture group. Matching the XML default removes
-        /// the override so future XML edits can still become the inherited value.
+        /// Stores a player override for one automatic-capture group. Matching the XML default normally
+        /// removes the override; Counsel keeps that value when needed to override inherited legacy intent.
         /// </summary>
         public void SetGroupEnabled(string groupKey, bool enabled)
         {
@@ -881,7 +892,11 @@ namespace PawnDiary
                 return;
             }
 
-            if (enabled == group.defaultEnabled)
+            bool keepCounselOverride = string.Equals(group.defName,
+                    CounselEventPolicy.GroupDefName, StringComparison.Ordinal)
+                && CounselSettingsInheritance.ShouldStoreOverride(
+                    enabled, group.defaultEnabled, GroupEnabledOverride("conversion"));
+            if (enabled == group.defaultEnabled && !keepCounselOverride)
             {
                 groupEnabled.Remove(group.defName);
                 return;
@@ -891,7 +906,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// True when the player has changed one group from its XML default.
+        /// True when the player has a saved group choice. Counsel may intentionally store its XML
+        /// default to override an opposite legacy conversion choice.
         /// </summary>
         public bool HasGroupEnabledOverride(string groupKey)
         {
@@ -1088,7 +1104,14 @@ namespace PawnDiary
             foreach (KeyValuePair<string, bool> entry in groupEnabled)
             {
                 DiaryInteractionGroupDef group = InteractionGroups.ByKey(entry.Key);
-                if (group == null || entry.Value == group.defaultEnabled)
+                bool redundant = group != null && entry.Value == group.defaultEnabled;
+                if (redundant && string.Equals(group.defName,
+                    CounselEventPolicy.GroupDefName, StringComparison.Ordinal))
+                {
+                    redundant = !CounselSettingsInheritance.ShouldStoreOverride(
+                        entry.Value, group.defaultEnabled, GroupEnabledOverride("conversion"));
+                }
+                if (group == null || redundant)
                 {
                     if (removeKeys == null)
                     {

@@ -575,15 +575,22 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 > `CompAbilityEffect_Counsel` applies a positive/negative mood memory and emits exactly one
 > `Counsel_Success`/`Counsel_Failure` PlayLog interaction; the package-gated exact group keeps that
 > counselor→listener pair page canonical while the generic ability and three exact thought callbacks
-> yield only when the group is enabled. Pure detached policy adds truthful mood outcome plus optional
-> visible-evidence N3-I context without certainty, mutation, conversion, a hook, poll, page owner, or
-> save field. Exact secular-safe EN/RU prompts and deterministic real-boundary RimTests compile. The
+> yield only when the group is enabled. Adversarial hardening moved both exact identities and mood-result
+> tokens to XML, aligned group classification through ordinal matching, removed localized-label N3-I
+> inference and its unnecessary live snapshot/resolver work, and preserved legacy `conversion` settings.
+> A dormant no-DLC Counsel row now falls through to the ordinary interaction group instead of dropping
+> an exact-name third-party page. The context-only policy adds no certainty, mutation, conversion, hook,
+> poll, page owner, or save field. Secular-safe EN/RU prompt/tone variants and deterministic real-boundary
+> RimTests compile. The
 > first post-Counsel Ideology-active run reached 382/384, with all three exact Counsel fixtures passing.
 > Its remaining failures were the exhaustive official-DLC catalog's stale omission of the new `counsel`
 > row (now corrected) and the unchanged N3-O parked-gravship host prerequisite. A corrected full rerun
 > subsequently passed 384/384 on a valid parked-gravship host, closing the active-Ideology Counsel
-> runtime sub-gate. The base-only profile remains pending. Conversion rituals, throne speech, broader
-> evidence families, passive tracking, and reflections remain deferred.
+> runtime sub-gate. The hardening adds deterministic coverage for both success subbranches, Counsel's
+> covered-ability RNG preservation, DLC-off ordinary fallback, and settings inheritance; the assembly
+> now contains 385 compiled RimTests, whose new loaded rerun remains pending. The base-only profile also
+> remains pending. Conversion rituals, throne speech, broader evidence families, passive tracking, and
+> reflections remain deferred.
 > Every deferred Royalty acceptance item remains unchanged.
 
 ### Implement in this exact order
@@ -605,8 +612,9 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 - Other DLC combinations still integrate with Ideology inactive.
 - No standalone belief reflection yet.
 
-Wave 10 remains open: exact active-Counsel loaded coverage and the corrected 384/384 suite passed, but
-the base-only profile, remaining Ideology-2 ritual/speech/evidence-family work, and Ideology 3 are pending.
+Wave 10 remains open: original exact active-Counsel loaded coverage and the corrected 384/384 suite
+passed, but the compiled 385-test hardening rerun, base-only profile, remaining Ideology-2 ritual/
+speech/evidence-family work, and Ideology 3 are pending.
 
 ### Release checkpoint 10 — belief enrichment
 

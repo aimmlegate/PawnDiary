@@ -523,6 +523,30 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>
+    /// One exact already-authorized Counsel interaction and the stable mood-result tokens it may add
+    /// to game context. This is event policy only: it carries no doctrine, Pawn, Thought, or Def.
+    /// </summary>
+    internal sealed class CounselEventRule
+    {
+        public readonly string sourceDefName;
+        public readonly string downstreamGroupDefName;
+        public readonly string resultToken;
+        public readonly string moodEffectToken;
+
+        public CounselEventRule(
+            string sourceDefName,
+            string downstreamGroupDefName,
+            string resultToken,
+            string moodEffectToken)
+        {
+            this.sourceDefName = sourceDefName ?? string.Empty;
+            this.downstreamGroupDefName = downstreamGroupDefName ?? string.Empty;
+            this.resultToken = resultToken ?? string.Empty;
+            this.moodEffectToken = moodEffectToken ?? string.Empty;
+        }
+    }
+
     /// <summary>One localized semantic concept and its equivalent guarded matching phrases.</summary>
     internal sealed class BeliefSemanticAlias
     {
@@ -762,6 +786,7 @@ namespace PawnDiary
             new List<BeliefCanonicalEventOwnershipRule>();
         public List<BeliefMutationEventRule> mutationEventRules =
             new List<BeliefMutationEventRule>();
+        public List<CounselEventRule> counselEventRules = new List<CounselEventRule>();
         public List<BeliefCorrelationCorrection> correlationOverrides = new List<BeliefCorrelationCorrection>();
         public List<BeliefDetailBudget> detailBudgets = new List<BeliefDetailBudget>();
 
@@ -908,6 +933,7 @@ namespace PawnDiary
         public readonly IReadOnlyList<string> proselytizingPovRoles;
         public readonly IReadOnlyList<BeliefCanonicalEventOwnershipRule> canonicalEventOwnershipRules;
         public readonly IReadOnlyList<BeliefMutationEventRule> mutationEventRules;
+        public readonly IReadOnlyList<CounselEventRule> counselEventRules;
         public readonly IReadOnlyList<BeliefCorrelationCorrection> correlationOverrides;
         public readonly IReadOnlyList<BeliefDetailBudget> detailBudgets;
 
@@ -978,6 +1004,7 @@ namespace PawnDiary
             proselytizingPovRoles = CopyStrings(value.proselytizingPovRoles);
             canonicalEventOwnershipRules = CopyOwnershipRules(value.canonicalEventOwnershipRules);
             mutationEventRules = CopyMutationEventRules(value.mutationEventRules);
+            counselEventRules = CopyCounselEventRules(value.counselEventRules);
             correlationOverrides = CopyCorrections(value.correlationOverrides);
             detailBudgets = CopyBudgets(value.detailBudgets);
         }
@@ -1106,6 +1133,24 @@ namespace PawnDiary
                         row.requireAttemptedIdeology));
                 }
             return new ReadOnlyCollection<BeliefMutationEventRule>(copy);
+        }
+
+        private static IReadOnlyList<CounselEventRule> CopyCounselEventRules(
+            IList<CounselEventRule> source)
+        {
+            List<CounselEventRule> copy = new List<CounselEventRule>();
+            if (source != null)
+                for (int i = 0; i < source.Count && i < 32; i++)
+                {
+                    CounselEventRule row = source[i];
+                    if (row != null && !string.IsNullOrWhiteSpace(row.sourceDefName)
+                        && !string.IsNullOrWhiteSpace(row.downstreamGroupDefName)
+                        && !string.IsNullOrWhiteSpace(row.resultToken)
+                        && !string.IsNullOrWhiteSpace(row.moodEffectToken))
+                        copy.Add(new CounselEventRule(row.sourceDefName, row.downstreamGroupDefName,
+                            row.resultToken, row.moodEffectToken));
+                }
+            return new ReadOnlyCollection<CounselEventRule>(copy);
         }
 
         private static IReadOnlyList<BeliefCorrelationCorrection> CopyCorrections(IList<BeliefCorrelationCorrection> source)
