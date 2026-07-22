@@ -1115,8 +1115,12 @@ and proves only the target gets frozen changed-before/after mechanics plus the c
 also round-trips that saved evidence/game context through real Scribe and then changes live pawn state
 to prove event-time immutability. The final case supplies high ritual quality with only a real certainty
 mutation and requires non-conversion, then forces the guarded adapter to throw and requires four
-ordinary pages with no partial evidence. Standalone policy coverage adds ordinal/malformed/DLC/setting,
-immutable-cap, exact/stale/future/foreign/cause/result, POV-isolation, and idempotent-context cases.
+ordinary-context pages with no partial evidence while preserving the spectator's real role even though
+the live-shaped participant list contains that spectator. The same fixture now proves missing mutation
+evidence retains exact role-only context without a result/belief block. Standalone policy coverage adds
+fully-qualified worker collision rejection, ordinal/malformed/DLC/setting, immutable/small-cap and
+window clamps, identity/token sanitization, exact/stale/future/foreign/cause/result, POV isolation, and
+idempotent-context cases. Pipeline XML coverage rejects an unsupported conversion-group color cue.
 
 The first 377-test execution exposed vanilla's nested silent companion page and completed 375/377; the
 other failure was the unrelated N3-O Odyssey host prerequisite. After the exact companion fix and a

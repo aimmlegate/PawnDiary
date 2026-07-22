@@ -2587,8 +2587,9 @@
        when present, participants, and spectators. The per-pawn instruction comes from Keyed strings
        because it depends on that pawn's perspective; this group supplies the shared ritual tone. -->
 
-  <!-- Exact installed Ideology conversion family. Ordinal full-key matching prevents case variants,
-       similarly named modded rituals, and defName-only collisions from claiming mechanical facts. -->
+  <!-- Candidate prompt family for installed Ideology conversion. This established classifier key uses
+       the short worker name; the separate conversion policy requires fully-qualified runtime worker
+       identities before any mechanical facts are attached. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualConversion</defName>
     <label>Conversion rituals</label>
@@ -2605,7 +2606,6 @@
       <li>intimate and doctrinal, centered on the writer's exact role and the belief facts supplied</li>
       <li>ceremonial but restrained, never turning quality or atmosphere into an unsupported conversion</li>
     </tones>
-    <colorCue>ideology</colorCue>
     <matchOrdinalDefNames>
       <li>Conversion;RitualBehaviorWorker_Conversion</li>
     </matchOrdinalDefNames>

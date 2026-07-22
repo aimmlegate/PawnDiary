@@ -451,13 +451,17 @@ is why Alpha/VIE ritual groups affect prompt content instead of only the setting
 
 Completed vanilla conversion uses the Ideology-gated order-`759` `ritualConversion` group before the
 generic order-`780` ritual catchall. Its ordinal classifier key is exactly
-`Conversion;RitualBehaviorWorker_Conversion`; the pure policy also verifies
-`RitualOutcomeEffectWorker_Conversion` before attaching optional evidence. The dedicated
+`Conversion;RitualBehaviorWorker_Conversion`; this short key selects the candidate prompt family, while
+the pure mechanical gate separately verifies fully-qualified
+`RimWorld.RitualBehaviorWorker_Conversion` and
+`RimWorld.RitualOutcomeEffectWorker_Conversion` before attaching optional evidence. The dedicated
 `DiaryEventPrompt_RitualConversion` owns role-separated instructions: organizer may use the assigned
 proselytizing moral-guide doctrine, target alone may use frozen before/after mutation facts,
 participants get smaller current-doctrine context, and spectators get none. Ritual quality remains a
-quality fact and never proves conversion. Missing/rejected evidence preserves the ordinary ritual page,
-and a dormant Ideology group falls through to the generic ritual prompt.
+quality fact and never proves conversion. Missing/rejected mutation evidence preserves exact role-only
+context without inventing a result; a guarded adapter exception preserves the ordinary context while
+still routing spectators as spectators. A dormant Ideology group falls through to the generic ritual
+prompt.
 
 Anomaly psychic rituals classify by the full saved key
 `PsychicRitual;<PsychicRitualDef.defName>`. Exact package-gated families precede the generic

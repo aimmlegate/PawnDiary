@@ -590,11 +590,13 @@ Royalty Phase 8 final compatibility remains in Wave 13 so it covers the complete
 > covered-ability RNG preservation, DLC-off ordinary fallback, and settings inheritance; the assembly
 > now contains 385 compiled RimTests, whose new loaded rerun remains pending. The base-only profile also
 > remains pending. The next narrow slice reuses the existing completed-ritual fan-out for exact vanilla
-> conversion: XML owns the ordinal identities, role modes, prompt/tone policy, correlation limits, and
+> conversion: XML owns the ordinal ritual/group identities, fully-qualified runtime worker identities,
+> role modes, prompt/tone policy, correlation limits, and
 > tokens; the target alone receives frozen event-time mutation facts, organizer/participant evidence is
 > role-bounded, quality cannot prove conversion, and dormant Ideology rows fall through to the generic
-> ritual. No patch, page owner, poll, or save field was added. Three compiled fixtures raise the assembly
-> to 388 tests; their active/base-only loaded runs remain pending. Throne speech, broader evidence
+> ritual. Adversarial follow-up also preserves spectator POV through optional adapter failure and keeps
+> missing target mutation evidence role-only. No patch, page owner, poll, or save field was added. Three
+> compiled fixtures raise the assembly to 388 tests; their active/base-only loaded runs remain pending. Throne speech, broader evidence
 > families, passive tracking, and reflections remain deferred.
 > Every deferred Royalty acceptance item remains unchanged.
 

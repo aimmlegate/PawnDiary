@@ -8,8 +8,8 @@
     <defName>Diary_ConversionRitualPolicy</defName>
     <enabled>true</enabled>
     <ritualDefName>Conversion</ritualDefName>
-    <behaviorWorkerClassName>RitualBehaviorWorker_Conversion</behaviorWorkerClassName>
-    <outcomeWorkerClassName>RitualOutcomeEffectWorker_Conversion</outcomeWorkerClassName>
+    <behaviorWorkerClassName>RimWorld.RitualBehaviorWorker_Conversion</behaviorWorkerClassName>
+    <outcomeWorkerClassName>RimWorld.RitualOutcomeEffectWorker_Conversion</outcomeWorkerClassName>
     <downstreamGroupDefName>ritualConversion</downstreamGroupDefName>
     <organizerRoleId>moralist</organizerRoleId>
     <targetRoleId>convertee</targetRoleId>
@@ -30,6 +30,11 @@
       <li>set_ideology</li>
       <li>certainty_offset</li>
     </allowedMutationCauseTokens>
+    <!--
+      Vanilla 1.6 calls SetIdeo/OffsetCertainty directly here. Keep conversion_attempt excluded:
+      accepting it could borrow an unrelated same-tick social attempt. If routing changes, role-only
+      context remains safe until the new installed mechanics are reviewed and this contract is updated.
+    -->
     <!-- The tracker mutation happens inside ApplyOutcome, so the existing postfix observes the same tick. -->
     <mutationCorrelationWindowTicks>0</mutationCorrelationWindowTicks>
     <certaintyDeltaEpsilon>0.0001</certaintyDeltaEpsilon>

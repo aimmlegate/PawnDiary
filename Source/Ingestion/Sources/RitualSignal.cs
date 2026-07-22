@@ -41,6 +41,9 @@ namespace PawnDiary.Ingestion
         private readonly List<Pawn> fixtureSpectators;
         private readonly bool odysseyLaunchAuthorized;
         private readonly int odysseyLaunchTick = -1;
+        // Exact structural identity survives optional evidence-adapter failure. It therefore owns
+        // role ordering even when no belief DTO can be attached to the already-authorized page.
+        private readonly bool exactConversion;
         private readonly ConversionRitualPolicySnapshot conversionPolicy;
         private readonly BeliefSourcePreceptFact conversionOrganizerRolePrecept;
         private readonly BeliefMutationSnapshot conversionTargetMutation;
@@ -87,8 +90,14 @@ namespace PawnDiary.Ingestion
             // un-enriched route.
             if (!RoyaltyPolicyAllowsRitual(defName, DiaryRoyaltyPolicy.Snapshot())) return;
 
-            BehaviorClass = RitualBehaviorClass(ritual);
-            OutcomeWorkerClass = ritual.outcomeEffect?.GetType().Name ?? string.Empty;
+            object behavior = RitualBehavior(ritual);
+            Type behaviorType = behavior?.GetType();
+            Type outcomeWorkerType = ritual.outcomeEffect?.GetType();
+            // Short names remain the established prompt-classifier/schema value. Fully qualified
+            // names below are reserved for the exact mechanical gate, where namespace collisions
+            // from another mod must fail closed.
+            BehaviorClass = behaviorType?.Name ?? string.Empty;
+            OutcomeWorkerClass = outcomeWorkerType?.Name ?? string.Empty;
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyRitual(RitualClassifierKey(defName, BehaviorClass));
             if (group == null || !PawnDiaryMod.Settings.IsGroupEnabled(group.defName))
             {
@@ -131,8 +140,8 @@ namespace PawnDiary.Ingestion
             Pawn selectedOrganizer = ritualJob.Organizer;
             Pawn selectedTargetPawn = RitualTargetPawn(ritualJob);
             ConversionRitualPolicySnapshot candidatePolicy = DiaryConversionRitualPolicy.Snapshot();
-            bool exactConversion = ConversionRitualPolicy.Matches(
-                DefName, BehaviorClass, OutcomeWorkerClass, group.defName,
+            exactConversion = ConversionRitualPolicy.Matches(
+                DefName, behaviorType?.FullName, outcomeWorkerType?.FullName, group.defName,
                 ModsConfig.IdeologyActive, candidatePolicy);
             if (exactConversion)
             {
@@ -251,7 +260,9 @@ namespace PawnDiary.Ingestion
             string behaviorClass,
             float progress,
             string groupInstruction,
-            string outcomeWorkerClass = "")
+            string outcomeWorkerClass = "",
+            string behaviorWorkerTypeName = "",
+            string outcomeWorkerTypeName = "")
         {
             RitualFanoutSignal signal = new RitualFanoutSignal(
                 organizer,
@@ -263,7 +274,9 @@ namespace PawnDiary.Ingestion
                 behaviorClass,
                 outcomeWorkerClass,
                 progress,
-                groupInstruction);
+                groupInstruction,
+                behaviorWorkerTypeName,
+                outcomeWorkerTypeName);
             // Keep this loaded-game seam on the production ownership path. A matching bestowing or
             // anima fixture must claim the same completed mutation batch that a live ritual would;
             // unrelated ritual fixtures simply resolve to the "unknown" route and attach nothing.
@@ -283,7 +296,9 @@ namespace PawnDiary.Ingestion
             string behaviorClass,
             string outcomeWorkerClass,
             float progress,
-            string groupInstruction)
+            string groupInstruction,
+            string behaviorWorkerTypeName = "",
+            string outcomeWorkerTypeName = "")
         {
             if (!DiaryGameComponent.GamePlaying || string.IsNullOrWhiteSpace(defName))
             {
@@ -309,9 +324,10 @@ namespace PawnDiary.Ingestion
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyRitual(
                 RitualClassifierKey(DefName, BehaviorClass));
             ConversionRitualPolicySnapshot candidatePolicy = DiaryConversionRitualPolicy.Snapshot();
-            if (ConversionRitualPolicy.Matches(
-                DefName, BehaviorClass, OutcomeWorkerClass, group?.defName,
-                ModsConfig.IdeologyActive, candidatePolicy))
+            exactConversion = ConversionRitualPolicy.Matches(
+                DefName, behaviorWorkerTypeName, outcomeWorkerTypeName, group?.defName,
+                ModsConfig.IdeologyActive, candidatePolicy);
+            if (exactConversion)
             {
                 BeliefSourcePreceptFact rolePrecept;
                 BeliefMutationSnapshot targetMutation;
@@ -352,15 +368,17 @@ namespace PawnDiary.Ingestion
                 if (++yielded >= maximumWriters) yield break;
             }
 
+            List<Pawn> spectators = Assignments?.SpectatorsForReading ?? fixtureSpectators;
             List<Pawn> participants = Assignments?.Participants ?? fixtureParticipants;
             if (participants != null)
             {
                 for (int i = 0; i < participants.Count; i++)
                 {
                     // Vanilla's Participants list includes spectators. Preserve generic ritual behavior,
-                    // but keep the exact conversion family's smaller spectator context on its real role.
-                    if (conversionPolicy != null && Assignments?.SpectatorsForReading != null
-                        && Assignments.SpectatorsForReading.Contains(participants[i])) continue;
+                    // but keep the exact conversion family's smaller spectator context on its real role,
+                    // even when its optional evidence adapter failed and conversionPolicy stayed null.
+                    if (exactConversion && spectators != null
+                        && spectators.Contains(participants[i])) continue;
                     foreach (DiarySignal s in PerPawn(participants[i], organizer, RitualEventData.PerspectiveParticipant, seen))
                     {
                         yield return s;
@@ -369,7 +387,6 @@ namespace PawnDiary.Ingestion
                 }
             }
 
-            List<Pawn> spectators = Assignments?.SpectatorsForReading ?? fixtureSpectators;
             if (spectators != null)
             {
                 for (int i = 0; i < spectators.Count; i++)
@@ -551,10 +568,9 @@ namespace PawnDiary.Ingestion
             return string.IsNullOrWhiteSpace(title) ? RitualEventData.FallbackTitle : title;
         }
 
-        private static string RitualBehaviorClass(Precept_Ritual ritual)
+        private static object RitualBehavior(Precept_Ritual ritual)
         {
-            object behavior = RitualBehaviorField?.GetValue(ritual);
-            return behavior == null ? string.Empty : behavior.GetType().Name;
+            return RitualBehaviorField?.GetValue(ritual);
         }
 
         private static string RitualClassifierKey(string defName, string behaviorClass)

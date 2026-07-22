@@ -1,5 +1,26 @@
 # Changelog
 
+- **2026-07-22 — Adversarially hardened exact completed-conversion ritual enrichment after
+  reconciling two external reviews.** Vanilla 1.6 decompilation confirms that
+  `RitualRoleAssignments.Participants` includes spectators; exact conversion fan-out now retains its
+  structural match independently of the optional evidence adapter, so an adapter exception cannot
+  emit a spectator as a participant and let pawn-id dedup suppress the real spectator branch. The
+  loaded fixture mirrors vanilla membership and asserts the spectator POV in both enriched and
+  fail-open paths. Mechanical enrichment now compares fully-qualified runtime worker identities while
+  preserving the established short-name key for generic prompt classification, closing namespace
+  collisions with mod classes named like vanilla workers. The XML policy and loaded RimTest pin the
+  installed `RimWorld.*` identities. Missing target mutation evidence is explicitly role-only—no result,
+  before/after block, or conversion marker—while a guarded adapter exception remains ordinary context.
+  The direct vanilla `set_ideology`/`certainty_offset` allowlist intentionally still excludes
+  `conversion_attempt`, which could otherwise borrow an unrelated same-tick social conversion. Removed
+  the undeclared `ideology` color cue (the same generic important accent remains, and old saved cues
+  already fail-soft to it), documented the save-compatible fallback, and added a focused XML regression.
+  Pure coverage now includes namespace collisions, correlation-window and context-cap bounds, and
+  identity/token sanitization: `BeliefContextTests` passes 453 assertions and `DiaryPipelineTests`
+  passes 2,962. Production and 388-test RimTest assemblies rebuild with zero warnings/errors. No patch,
+  page owner, poll, setting key, or Scribe field changed; the active-Ideology and base-only 388-test
+  loaded runs remain pending, so 384/384 is still the latest confirmed runtime result.
+
 - **2026-07-22 — Thickened the Diary button icons and gave them a native-style dark contour.** The
   nine CoreUI-derived glyphs (Filter, Copy, Regenerate, Favorite, WritingStyle, and the four season
   dividers) were reported as too thin and indistinct at button size. Each 128×128 white glyph was

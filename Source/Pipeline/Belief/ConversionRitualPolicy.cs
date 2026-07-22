@@ -195,7 +195,7 @@ namespace PawnDiary
         public const string PerspectiveParticipant = "participant";
         public const string PerspectiveSpectator = "spectator";
 
-        /// <summary>Matches only the fully reviewed installed ritual/worker/group identity.</summary>
+        /// <summary>Matches only the reviewed ritual, fully-qualified worker, and group identity.</summary>
         public static bool Matches(
             string ritualDefName,
             string behaviorWorkerClassName,
@@ -368,6 +368,8 @@ namespace PawnDiary
         private static string ResultToken(
             BeliefMutationSnapshot mutation, ConversionRitualPolicySnapshot policy)
         {
+            // SelectTargetMutation re-derived this nullable value from the exact transition into the
+            // organizer's ideoligion; it is not trusting an adjacent conversion-attempt result.
             if (mutation.conversionSucceeded == true) return policy.convertedResultToken;
             if (!mutation.certaintyChanged || !mutation.hasBeforeCertainty
                 || !mutation.hasAfterCertainty) return string.Empty;

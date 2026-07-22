@@ -299,9 +299,16 @@ namespace PawnDiary.RimTests
 
             ConversionRitualPolicySnapshot policy = DiaryConversionRitualPolicy.Snapshot();
             PawnDiaryRimTestScope.Require(
+                policy.behaviorWorkerClassName
+                    == typeof(RitualBehaviorWorker_Conversion).FullName
+                    && policy.outcomeWorkerClassName
+                    == typeof(RitualOutcomeEffectWorker_Conversion).FullName,
+                "The loaded conversion policy did not match the installed fully-qualified worker types.");
+            PawnDiaryRimTestScope.Require(
                 ConversionRitualPolicy.Matches(
-                    "Conversion", "RitualBehaviorWorker_Conversion",
-                    "RitualOutcomeEffectWorker_Conversion", ConversionRitualPolicy.GroupDefName,
+                    "Conversion", typeof(RitualBehaviorWorker_Conversion).FullName,
+                    typeof(RitualOutcomeEffectWorker_Conversion).FullName,
+                    ConversionRitualPolicy.GroupDefName,
                     active, policy) == active,
                 "The loaded exact conversion policy did not match current DLC availability.");
 
@@ -489,6 +496,35 @@ namespace PawnDiary.RimTests
                     StringComparison.Ordinal) < 0,
                 "A high quality label manufactured conversion without an ideology transition.");
 
+            // Missing mutation evidence is a role-only fallback, not an all-or-nothing adapter fault.
+            // The exact assignment still determines each page's POV, while no result or before/after
+            // belief facts may be invented for the target.
+            Pawn roleOnlyTarget = scope.CreateAdultColonist();
+            Pawn roleOnlyParticipant = scope.CreateAdultColonist();
+            Pawn roleOnlySpectator = scope.CreateAdultColonist();
+            roleOnlyTarget.ideo.SetIdeo(shared);
+            roleOnlyParticipant.ideo.SetIdeo(shared);
+            roleOnlySpectator.ideo.SetIdeo(shared);
+            BeliefMutationCache.Reset();
+            HashSet<string> roleOnlyBefore = SnapshotEventIds();
+            scope.Component.Dispatch(ExactConversionFixture(
+                roleOnlyTarget, roleOnlyParticipant, roleOnlySpectator, progress: 1f));
+            List<DiaryEvent> roleOnly = NewEventsSince(roleOnlyBefore);
+            PawnDiaryRimTestScope.Require(roleOnly.Count == 4,
+                "Missing target mutation evidence suppressed the exact ritual fan-out.");
+            DiaryEvent roleOnlyTargetPage = PageForPerspective(
+                roleOnly, RitualEventData.PerspectiveTarget, roleOnlyTarget);
+            PageForPerspective(
+                roleOnly, RitualEventData.PerspectiveSpectator, roleOnlySpectator);
+            RequireContains(roleOnlyTargetPage.gameContext,
+                "conversion_ritual_role=convertee");
+            PawnDiaryRimTestScope.Require(
+                roleOnlyTargetPage.gameContext.IndexOf("conversion_ritual_result=",
+                    StringComparison.Ordinal) < 0
+                    && string.IsNullOrEmpty(roleOnlyTargetPage.BeliefContextForRole(
+                        DiaryEvent.InitiatorRole)),
+                "Missing target mutation evidence fabricated conversion mechanics.");
+
             // A fresh scope/test is not needed for the fail-open branch: use a distinct target so the
             // fixture dedup key differs even at the same tick.
             Pawn failedTarget = scope.CreateAdultColonist();
@@ -508,6 +544,8 @@ namespace PawnDiary.RimTests
                     "An optional enrichment failure suppressed the ordinary ritual fan-out.");
                 DiaryEvent ordinaryTarget = PageForPerspective(
                     ordinary, RitualEventData.PerspectiveTarget, failedTarget);
+                PageForPerspective(
+                    ordinary, RitualEventData.PerspectiveSpectator, failedSpectator);
                 PawnDiaryRimTestScope.Require(
                     ordinaryTarget.gameContext.IndexOf("conversion_ritual_",
                         StringComparison.Ordinal) < 0
@@ -666,14 +704,18 @@ namespace PawnDiary.RimTests
             RitualFanoutSignal signal = RitualFanoutSignal.CreateTestFixture(
                 firstPawn,
                 target,
-                new List<Pawn> { firstPawn, participant },
+                // Live RitualRoleAssignments.Participants contains spectators too. Mirroring that
+                // membership here makes adapter-failure coverage exercise the real role-order trap.
+                new List<Pawn> { firstPawn, participant, spectator },
                 new List<Pawn> { participant, spectator },
                 "Conversion",
                 "conversion ritual",
                 "RitualBehaviorWorker_Conversion",
                 progress,
                 group.instruction,
-                "RitualOutcomeEffectWorker_Conversion");
+                "RitualOutcomeEffectWorker_Conversion",
+                typeof(RitualBehaviorWorker_Conversion).FullName,
+                typeof(RitualOutcomeEffectWorker_Conversion).FullName);
             PawnDiaryRimTestScope.Require(signal != null
                     && !string.IsNullOrWhiteSpace(signal.ColonyDedupKey),
                 "The exact conversion ritual fixture did not build a valid fan-out.");

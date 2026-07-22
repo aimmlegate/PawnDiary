@@ -2396,6 +2396,9 @@ namespace DiaryPipelineTests
                 GroupColorCue(groups, "ritualRoyal"));
 
             XDocument style = XDocument.Load(RepoPath("1.6", "Defs", "DiaryUiStyleDef.xml"));
+            string conversionCue = GroupColorCue(groups, "ritualConversion");
+            AssertTrue("conversion ritual does not save an unsupported color cue",
+                string.IsNullOrWhiteSpace(conversionCue) || HasCueColor(style, conversionCue));
             string[] expectedCues =
             {
                 "bodyPartAnomalous",
@@ -5988,9 +5991,9 @@ namespace DiaryPipelineTests
                 "PawnDiary.DiaryConversionRitualPolicyDef", "Diary_ConversionRitualPolicy");
             AssertTrue("conversion ritual policy Def exists", policy != null);
             AssertEqual("policy ritual identity", "Conversion", ChildValue(policy, "ritualDefName"));
-            AssertEqual("policy behavior identity", "RitualBehaviorWorker_Conversion",
+            AssertEqual("policy behavior identity", "RimWorld.RitualBehaviorWorker_Conversion",
                 ChildValue(policy, "behaviorWorkerClassName"));
-            AssertEqual("policy outcome identity", "RitualOutcomeEffectWorker_Conversion",
+            AssertEqual("policy outcome identity", "RimWorld.RitualOutcomeEffectWorker_Conversion",
                 ChildValue(policy, "outcomeWorkerClassName"));
             AssertEqual("policy downstream group", "ritualConversion",
                 ChildValue(policy, "downstreamGroupDefName"));

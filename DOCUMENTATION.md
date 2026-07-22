@@ -346,25 +346,40 @@ The exact completed-conversion ritual slice reuses the existing postfix on
 `LordJob_Ritual.ApplyOutcome`; vanilla's `RitualOutcomeEffectWorker_Conversion.Apply` has already called
 `SetIdeo` or `OffsetCertainty` when the adapter runs, so no new Harmony hook, poll, page owner, or save
 field is required. The Ideology-gated order-759 `ritualConversion` group matches the ordinal-exact
-`Conversion` ritual plus `RitualBehaviorWorker_Conversion` before the generic ritual group. The pure
-policy additionally requires `RitualOutcomeEffectWorker_Conversion`, the exact group identity, active
-Ideology, and an enabled complete XML policy. Dormant-DLC exact-name collisions rescan to the ordinary
-ritual group. Organizer and target are taken from the installed `moralist` and `convertee` assignment
-ids because the ritual focus is not a reliable convertee identity.
+`Conversion` ritual plus the established short classifier key `RitualBehaviorWorker_Conversion` before
+the generic ritual group. That key selects a candidate prompt family only. Before attaching mechanics,
+the pure policy separately requires the fully-qualified runtime identities
+`RimWorld.RitualBehaviorWorker_Conversion` and
+`RimWorld.RitualOutcomeEffectWorker_Conversion`, the exact group identity, active Ideology, and an
+enabled complete XML policy; a mod type with the same short class name therefore cannot claim vanilla
+facts. Dormant-DLC exact-name collisions rescan to the ordinary ritual group. Organizer and target are
+taken from the installed `moralist` and `convertee` assignment ids because the ritual focus is not a
+reliable convertee identity.
 
 All live Ideology reads remain behind `DlcContext`: the organizer gets a detached current snapshot and,
 when present, the exact assigned moral-guide precept marked as proselytizing; the target gets only the
 newest exact pawn/tick mutation from the existing bounded cache. Conversion success is true only when
 that mutation changed the target into the organizer's exact ideoligion. A certainty-only mutation is
-recorded as non-conversion regardless of ritual quality, and missing, stale, future, foreign, or
-wrong-cause evidence leaves an ordinary completed-ritual page. Event-time DTOs are frozen once and
-projected per POV: organizer receives role/proselytizing doctrine, target alone receives before/after
-mutation facts and `belief_event=conversion`, participants receive current doctrine within a smaller
-budget, and spectators receive no belief evidence. The existing fan-out cap, pawn-id collapse, colony
-dedup, and deterministic cosmetic selection are unchanged. Saved target evidence survives the normal
-Scribe round-trip and later pawn changes cannot rewrite it. Until `ritualConversion` is explicitly
-touched, an explicit legacy `ritualFinished` setting is inherited; an explicit exact-group choice then
-wins even when equal to the XML default.
+recorded as non-conversion regardless of ritual quality. The cause allowlist intentionally contains
+only vanilla 1.6's direct `set_ideology`/`certainty_offset` paths: accepting
+`conversion_attempt` could borrow an unrelated same-tick social attempt, so any future routing change
+fails safely to role-only context until reverified.
+
+Missing, stale, future, foreign, or wrong-cause target evidence never suppresses the completed-ritual
+page. Independently proven assignment roles and role markers remain, but the target receives no result,
+before/after block, or conversion marker. A guarded adapter exception removes all optional conversion
+context, yet the exact structural match still keeps a live spectator in the spectator branch even
+though vanilla also includes spectators in `RitualRoleAssignments.Participants`. Event-time DTOs are
+frozen once and projected per POV: organizer receives role/proselytizing doctrine when available,
+target alone receives verified before/after mutation facts and `belief_event=conversion`, participants
+receive current doctrine within a smaller budget, and spectators receive no belief evidence. The group
+uses the normal important-entry accent rather than saving an undeclared color cue; older pages that
+already contain the former `ideology` cue continue to render through the same default-color fallback.
+The existing fan-out cap, pawn-id collapse, colony dedup, deterministic cosmetic selection, and save
+schema are unchanged. Saved target evidence survives the normal Scribe round-trip and later pawn
+changes cannot rewrite it. Until `ritualConversion` is explicitly touched, an explicit legacy
+`ritualFinished` setting is inherited; an explicit exact-group choice then wins even when equal to the
+XML default.
 
 The first post-Counsel Ideology-active loaded run executed all 384 fixtures and reached 382/384. All
 three exact Counsel fixtures passed at the real vanilla boundary. One failure was a stale exhaustive
@@ -378,8 +393,9 @@ runtime sub-gate; the separate Ideology-inactive profile and broader Phase-2 wor
 The completed-conversion slice adds three compiled ritual fixtures and raises the RimTest assembly from
 385 to 388 tests. They cover active versus dormant exact classification and setting migration, real
 patched `SetIdeo` mutation with four isolated/frozen POV pages plus Scribe retention, certainty-only
-quality non-proof, and guarded-adapter failure isolation. The 388-test active-Ideology and base-only
-loaded runs have not yet been recorded; the latest confirmed loaded result remains 384/384.
+quality non-proof, missing-mutation role-only fallback, live-shaped spectator membership, and guarded-
+adapter failure isolation. The 388-test active-Ideology and base-only loaded runs have not yet been
+recorded; the latest confirmed loaded result remains 384/384.
 
 An exact conversion consumer also appends only the stable `belief_event=conversion` routing marker to
 the ordinary interaction `gameContext`. Prompt-context selection uses that marker to rank the saved
@@ -2328,7 +2344,7 @@ XML owns policy that designers should be able to change without recompiling.
 | `DiaryPsychotypeTraitPolicyDefs.xml` | canonical trait/degree mappings, family/member roll bonuses, and gated takeover chance |
 | `DiaryNarrativeContinuityDefs.xml` | DLC-neutral evidence/lens/reflection caps, score precedence, compact budgets, repetition/age policy, category coexistence, reflection priority, and localized optional prompt wording; the main-thread builder snapshots it before fixed-order pure provider selection. The repetition policy is live: every narrative-capable source feeds the selector the POV pawn's most recent persisted selection keys (newest hot pages, then archive rows, bounded by `maxRecentSelectedCandidateKeys`), so `repetitionPenalty` dampens re-picking the same lens while exact-arc continuations stay exempt via `exactArcRepetitionPenalty` |
 | `DiaryBeliefPolicyDef.xml` | Active Ideology event-time policy: categorical structural/lexical scores, guarded field weights, confidence and runner-up margins, common/fuzzy-token limits, XML-owned default-one/maximum-two selection, certainty bands, formatter/detail budgets, bounded HistoryEvent and transient mutation correlation capacity/windows, localized prompt-field wording, selector-bearing exact event-evidence vocabulary, semantic aliases, exclusions, exact downstream-covered ability/thought ownership (including Counsel), four exact conversion/reassurance interaction-mutation mappings, two context-only Counsel outcome mappings, and an intentionally empty compatibility-correction list. Counsel has no mutation mapping or doctrine-evidence row. The Def contains no precept/issue/meme catalog or hard DLC Def reference; the guarded main-thread adapter copies it into a detached snapshot. Reflection thresholds remain reserved for later phases. |
-| `DiaryConversionRitualPolicyDef.xml` | Ideology-gated ordinal identities, assignment-role ids, POV evidence modes, stable role/result tokens, accepted mutation causes, exact correlation window, certainty epsilon, and bounded context cap for the completed conversion ritual. It contains only primitive strings/numbers, so it loads safely without Ideology; the pure snapshot is immutable and fail-closed when malformed. |
+| `DiaryConversionRitualPolicyDef.xml` | Ideology-gated ordinal ritual/group identities, fully-qualified runtime worker identities, assignment-role ids, POV evidence modes, stable role/result tokens, accepted direct mutation causes, exact correlation window, certainty epsilon, and bounded context cap for the completed conversion ritual. It contains only primitive strings/numbers, so it loads safely without Ideology; the pure snapshot is immutable and fail-closed when malformed. |
 | `DiaryBiotechPolicyDefs.xml` | B1 growth/family/birth thresholds, growth-tier opportunity bands, localized passion/upbringing and N2-B family/current-identity prose, pending/fallback/correlation timing, exact pregnancy/labor/activity/memory plus mature-birth/miscarriage matchers, supporter thresholds/caps, naming timing, family retention, two-writer birth cap, pending-growth/pending-birth admission limits, Phase-5 gene category/theme/text/observation/fallback-significance policy, N3-B salient-gene identity prose, and Phase-6 mechanitor combat Tale roles/tenure/state caps; Phases 1–6, N2-B, and the first N3-B slice use these fields live |
 | `DiaryAnomalyPolicyDefs.xml` | A1 study/containment toggles, milestone rules, dedup/ownership/cache bounds, A2 visible creepjoiner/ghoul output and writer limits, plus N3-A factual formats for the three monolith chapters, containment breach, four visible creepjoiner outcomes, and ghoul transformation. Prose is DefInjected in English/Russian; no terminal/hidden format exists. All optional-DLC identifiers remain primitive strings, so the row loads safely without Anomaly. |
 | `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |

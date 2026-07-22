@@ -8,6 +8,10 @@ namespace PawnDiary
 {
     internal static class Program
     {
+        private const string ConversionBehaviorTypeName =
+            "RimWorld.RitualBehaviorWorker_Conversion";
+        private const string ConversionOutcomeTypeName =
+            "RimWorld.RitualOutcomeEffectWorker_Conversion";
         private static int assertions;
 
         private static int Main()
@@ -719,46 +723,72 @@ namespace PawnDiary
                 policy.allowedMutationCauseTokens.Count);
             AssertTrue("exact installed conversion ritual identity matches",
                 ConversionRitualPolicy.Matches(
-                    "Conversion", "RitualBehaviorWorker_Conversion",
-                    "RitualOutcomeEffectWorker_Conversion", "ritualConversion", true, policy));
+                    "Conversion", ConversionBehaviorTypeName,
+                    ConversionOutcomeTypeName, "ritualConversion", true, policy));
             AssertTrue("defName alone cannot match conversion ritual",
                 !ConversionRitualPolicy.Matches(
-                    "Conversion", string.Empty, "RitualOutcomeEffectWorker_Conversion",
+                    "Conversion", string.Empty, ConversionOutcomeTypeName,
                     "ritualConversion", true, policy));
             AssertTrue("case variant cannot match conversion ritual",
                 !ConversionRitualPolicy.Matches(
-                    "conversion", "RitualBehaviorWorker_Conversion",
+                    "conversion", ConversionBehaviorTypeName,
+                    ConversionOutcomeTypeName, "ritualConversion", true, policy));
+            AssertTrue("legacy short worker names cannot claim exact ritual mechanics",
+                !ConversionRitualPolicy.Matches(
+                    "Conversion", "RitualBehaviorWorker_Conversion",
                     "RitualOutcomeEffectWorker_Conversion", "ritualConversion", true, policy));
+            AssertTrue("namespaced behavior collision cannot claim exact ritual mechanics",
+                !ConversionRitualPolicy.Matches(
+                    "Conversion", "SomeMod.RitualBehaviorWorker_Conversion",
+                    ConversionOutcomeTypeName, "ritualConversion", true, policy));
+            AssertTrue("namespaced outcome collision cannot claim exact ritual mechanics",
+                !ConversionRitualPolicy.Matches(
+                    "Conversion", ConversionBehaviorTypeName,
+                    "SomeMod.RitualOutcomeEffectWorker_Conversion",
+                    "ritualConversion", true, policy));
             AssertTrue("wrong behavior cannot match conversion ritual",
                 !ConversionRitualPolicy.Matches(
                     "Conversion", "ModdedConversionWorker",
-                    "RitualOutcomeEffectWorker_Conversion", "ritualConversion", true, policy));
+                    ConversionOutcomeTypeName, "ritualConversion", true, policy));
             AssertTrue("wrong outcome worker cannot match conversion ritual",
                 !ConversionRitualPolicy.Matches(
-                    "Conversion", "RitualBehaviorWorker_Conversion", "ModdedOutcome",
+                    "Conversion", ConversionBehaviorTypeName, "ModdedOutcome",
                     "ritualConversion", true, policy));
             AssertTrue("generic ritual group cannot receive exact enrichment",
                 !ConversionRitualPolicy.Matches(
-                    "Conversion", "RitualBehaviorWorker_Conversion",
-                    "RitualOutcomeEffectWorker_Conversion", "ritualFinished", true, policy));
+                    "Conversion", ConversionBehaviorTypeName,
+                    ConversionOutcomeTypeName, "ritualFinished", true, policy));
             AssertTrue("DLC-off exact collision remains inert",
                 !ConversionRitualPolicy.Matches(
-                    "Conversion", "RitualBehaviorWorker_Conversion",
-                    "RitualOutcomeEffectWorker_Conversion", "ritualConversion", false, policy));
+                    "Conversion", ConversionBehaviorTypeName,
+                    ConversionOutcomeTypeName, "ritualConversion", false, policy));
 
             ConversionRitualPolicyBuilder malformedBuilder = ConversionRitualPolicyBuilderForTests();
             malformedBuilder.enabled = false;
             malformedBuilder.maximumAdditionalContextCharacters = 9999;
             malformedBuilder.certaintyDeltaEpsilon = float.NaN;
+            malformedBuilder.mutationCorrelationWindowTicks = 11;
             ConversionRitualPolicySnapshot malformed = malformedBuilder.Build();
             AssertTrue("disabled conversion ritual policy fails closed",
                 !ConversionRitualPolicy.Matches(
-                    "Conversion", "RitualBehaviorWorker_Conversion",
-                    "RitualOutcomeEffectWorker_Conversion", "ritualConversion", true, malformed));
+                    "Conversion", ConversionBehaviorTypeName,
+                    ConversionOutcomeTypeName, "ritualConversion", true, malformed));
             AssertEqual("malformed conversion context cap uses bounded fallback", 192,
                 malformed.maximumAdditionalContextCharacters);
             AssertNear("malformed conversion epsilon uses bounded fallback", 0.0001f,
                 malformed.certaintyDeltaEpsilon);
+            AssertEqual("malformed conversion correlation window uses same-tick fallback", 0,
+                malformed.mutationCorrelationWindowTicks);
+
+            ConversionRitualPolicyBuilder unsafeIdentityBuilder =
+                ConversionRitualPolicyBuilderForTests();
+            unsafeIdentityBuilder.behaviorWorkerClassName = "RimWorld.Bad Worker";
+            unsafeIdentityBuilder.organizerRoleToken = "bad-token";
+            ConversionRitualPolicySnapshot unsafeIdentity = unsafeIdentityBuilder.Build();
+            AssertEqual("unsafe conversion worker identity is rejected", string.Empty,
+                unsafeIdentity.behaviorWorkerClassName);
+            AssertEqual("unsafe conversion role token is rejected", string.Empty,
+                unsafeIdentity.organizerRoleToken);
 
             BeliefMutationSnapshot convertedInput = Mutation(
                 "Target", 500, "OldIdeo", "OrganizerIdeo", 0.2f, 0.5f,
@@ -865,6 +895,14 @@ namespace PawnDiary
                 "conversion_ritual_role=participant");
             AssertTrue("participant context never receives target result",
                 participantContext.IndexOf("conversion_ritual_result=", StringComparison.Ordinal) < 0);
+            ConversionRitualPolicyBuilder tinyContextBuilder =
+                ConversionRitualPolicyBuilderForTests();
+            tinyContextBuilder.maximumAdditionalContextCharacters = 32;
+            AssertEqual("small conversion context cap omits an oversized role/result suffix",
+                "ritual=Conversion",
+                ConversionRitualPolicy.AppendGameContext(
+                    "ritual=Conversion", ConversionRitualPolicy.PerspectiveTarget,
+                    converted, tinyContextBuilder.Build()));
 
             AssertTrue("missing exact override inherits disabled generic ritual intent",
                 !ConversionRitualSettingsInheritance.Enabled(null, false, true));
@@ -2216,8 +2254,8 @@ namespace PawnDiary
             {
                 enabled = true,
                 ritualDefName = "Conversion",
-                behaviorWorkerClassName = "RitualBehaviorWorker_Conversion",
-                outcomeWorkerClassName = "RitualOutcomeEffectWorker_Conversion",
+                behaviorWorkerClassName = ConversionBehaviorTypeName,
+                outcomeWorkerClassName = ConversionOutcomeTypeName,
                 downstreamGroupDefName = "ritualConversion",
                 organizerRoleId = "moralist",
                 targetRoleId = "convertee",

@@ -1246,15 +1246,18 @@ not launched for the follow-up, so its new live fixtures are compiled but not re
 > `RitualBehaviorWorker_Conversion`, roles `moralist`/`convertee`, and
 > `RitualOutcomeEffectWorker_Conversion`; its `Apply` changes the target before the existing
 > `LordJob_Ritual.ApplyOutcome` postfix runs. The order-759 package-gated group precedes the generic
-> ritual and uses ordinal matching. A dedicated immutable XML policy owns exact identities, role modes,
+> ritual and uses ordinal candidate matching. A dedicated immutable XML policy owns fully-qualified
+> runtime worker identities, role modes,
 > stable context tokens, accepted mutation causes, zero-tick correlation, certainty epsilon, and the
 > context cap. Live projection remains in `DlcContext` plus one guarded adapter. The pure selector
 > accepts only the exact target mutation and proves conversion only when the target changed into the
 > organizer's ideoligion; certainty-only outcomes remain non-conversions regardless of quality.
 > Organizer, target, participant, and spectator pages receive successively smaller isolated evidence,
 > and event-time mutation/context survives Scribe while later pawn state cannot rewrite it. Existing
-> fan-out/dedup/cosmetic behavior is unchanged, missing evidence is ordinary, DLC-off exact collisions
-> fall through, and the new setting inherits explicit `ritualFinished` intent until touched. Three
+> fan-out/dedup/cosmetic behavior is unchanged. Adversarial follow-up keeps spectators on their real
+> branch even when optional capture throws, rejects namespaced short-name worker collisions, and makes
+> missing target evidence an explicit role-only fallback. DLC-off exact collisions fall through, and
+> the new setting inherits explicit `ritualFinished` intent until touched. Three
 > compiled ritual fixtures raise the full assembly to 388 tests. The active-Ideology 388-test run and
 > separate base-only profile are pending; 384/384 remains the latest confirmed loaded result.
 
