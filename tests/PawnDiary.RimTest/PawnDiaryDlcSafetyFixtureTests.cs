@@ -788,6 +788,7 @@ namespace PawnDiary.RimTests
             {
                 { "ritualGravship", OdysseyPackageId },
                 { "odysseyGravshipLanding", OdysseyPackageId },
+                { "odysseyMechhiveOutcome", OdysseyPackageId },
                 { "ritualRoyal", RoyaltyPackageId },
                 { "progressionRoyalTitle", RoyaltyPackageId },
                 { "progressionPsylink", RoyaltyPackageId },
