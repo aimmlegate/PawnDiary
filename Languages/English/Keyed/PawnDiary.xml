@@ -160,6 +160,8 @@
   <PawnDiary.Dev.EventPanel.NoGame>Load a map and enable dev mode before opening Pawn Diary event tests.</PawnDiary.Dev.EventPanel.NoGame>
   <PawnDiary.Dev.EventPanel.NoPawn>No eligible colonist is available for diary event tests.</PawnDiary.Dev.EventPanel.NoPawn>
   <PawnDiary.Dev.NoActiveEventWindows>No active event windows to close.</PawnDiary.Dev.NoActiveEventWindows>
+  <PawnDiary.Dev.BeliefState.NoPawn>Select a pawn before logging belief state.</PawnDiary.Dev.BeliefState.NoPawn>
+  <PawnDiary.Dev.BeliefState.Logged>Belief-state diagnostics were written to the dev log.</PawnDiary.Dev.BeliefState.Logged>
   <PawnDiary.Dev.EventWindowForceClosed>Force-closed "{0}".</PawnDiary.Dev.EventWindowForceClosed>
   <PawnDiary.Dev.ForceCloseEventWindow.Tooltip>defName: {0}\nstart: {1}</PawnDiary.Dev.ForceCloseEventWindow.Tooltip>
   <PawnDiary.Dev.ExternalTestSummary>{0} noticed something odd — a test signal arrived through the mod integration API.</PawnDiary.Dev.ExternalTestSummary>

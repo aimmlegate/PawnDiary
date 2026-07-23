@@ -475,6 +475,12 @@ namespace PawnDiary.Ingestion
                     authoritySpeechRoute, authoritySpeechPolicy);
         }
 
+        /// <summary>
+        /// Exact conversion/speech routes own every POV, including an explicit XML `none` mode and
+        /// adapter-failure silence. A broad configured ritual fallback must not bypass that ownership.
+        /// </summary>
+        internal bool OwnsExactBeliefEvidencePolicy => exactConversion || authoritySpeechRoute != null;
+
         /// <summary>Adds exact role/result markers without copying target mechanics to another page.</summary>
         internal string ConversionContextFor(
             string gameContext, string perspective, BeliefEventEvidence evidence)
@@ -771,8 +777,10 @@ namespace PawnDiary.Ingestion
             beliefEvidence = source.ConversionEvidenceFor(
                 pawnId, pawn.LabelShortCap, perspective)
                 ?? source.AuthoritySpeechEvidenceFor(
-                    pawnId, pawn.LabelShortCap, perspective)
-                ?? ConfiguredBeliefEventPolicy.Capture(
+                    pawnId, pawn.LabelShortCap, perspective);
+            if (beliefEvidence == null && !source.OwnsExactBeliefEvidencePolicy)
+            {
+                beliefEvidence = ConfiguredBeliefEventPolicy.Capture(
                     new ConfiguredBeliefEventRequest
                     {
                         pawnId = pawnId,
@@ -789,6 +797,7 @@ namespace PawnDiary.Ingestion
                     },
                     ModsConfig.IdeologyActive,
                     DiaryBeliefPolicy.Snapshot());
+            }
         }
 
         public override DiaryEventData Payload => payload;

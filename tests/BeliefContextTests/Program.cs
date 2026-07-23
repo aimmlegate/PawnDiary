@@ -2401,6 +2401,15 @@ namespace PawnDiary
             AssertTrue("restored tracker baselines instead of catching up",
                 restored.decision.recordBaseline && !restored.decision.createReflectionDebt);
 
+            BeliefPolicyBuilder disabledBuilder = BeliefPolicyBuilder.CreateDefault();
+            disabledBuilder.enabled = false;
+            BeliefObservationTransition disabled = BeliefReflectionPolicy.Advance(
+                accumulated.state, Tracker("IdeoA", "First", 0.40f), true, 900,
+                disabledBuilder.Build());
+            AssertTrue("disabled policy clears debt and requires a later baseline",
+                disabled.state.baselineOnNextScan && !disabled.state.hasPendingCertainty
+                    && !disabled.state.pendingIdeologyChange);
+
             BeliefPolicyBuilder shortAgeBuilder = BeliefPolicyBuilder.CreateDefault();
             shortAgeBuilder.pendingBeliefEvidenceMaxAgeTicks = 60000;
             BeliefPolicySnapshot shortAge = shortAgeBuilder.Build();
@@ -2414,6 +2423,25 @@ namespace PawnDiary
                 afterAge.state.pendingCertaintyBefore);
             AssertEqual("stale reanchored movement remains minor", BeliefObservationActionTokens.NoChange,
                 afterAge.decision.action);
+
+            BeliefScanState future = new BeliefScanState
+            {
+                baselineOnNextScan = false,
+                hasLastObservation = true,
+                lastIdeologyId = "IdeoA",
+                lastCertainty = 0.50f,
+                lastScanTick = 2000,
+                hasPendingCertainty = true,
+                pendingCertaintyBefore = 0.50f,
+                pendingCertaintyAfter = 0.30f,
+                pendingCertaintyFirstTick = 100,
+                pendingCertaintyLastTick = 200
+            };
+            BeliefObservationTransition repairedFuture = BeliefReflectionPolicy.Advance(
+                future, Tracker("IdeoA", "First", 0.20f), true, 1000, policy);
+            AssertTrue("future scan ticks discard debt and force a silent baseline",
+                repairedFuture.decision.recordBaseline && !repairedFuture.decision.createReflectionDebt
+                    && !repairedFuture.state.hasPendingCertainty);
 
             BeliefReflectionRequest request = ReflectionRequest();
             request.pendingIdeologyChange = true;

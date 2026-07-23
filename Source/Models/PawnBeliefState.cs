@@ -100,6 +100,8 @@ namespace PawnDiary
                 lastScanTick = -1;
                 hasLastObservation = false;
                 baselineOnNextScan = true;
+                ClearPendingCertainty();
+                ClearPendingIdeologyChange();
             }
             if (!hasLastObservation || lastIdeologyId.Length == 0)
             {
@@ -108,7 +110,9 @@ namespace PawnDiary
             }
             if (!hasPendingCertainty || pendingCertaintyFirstTick < 0
                 || pendingCertaintyLastTick < pendingCertaintyFirstTick
-                || pendingCertaintyFirstTick > now || pendingCertaintyLastTick > now)
+                || pendingCertaintyFirstTick > now || pendingCertaintyLastTick > now
+                || (long)now - pendingCertaintyLastTick
+                    > effective.pendingBeliefEvidenceMaxAgeTicks)
                 ClearPendingCertainty();
             if (!pendingIdeologyChange || pendingPreviousIdeologyId.Length == 0
                 || pendingCurrentIdeologyId.Length == 0)

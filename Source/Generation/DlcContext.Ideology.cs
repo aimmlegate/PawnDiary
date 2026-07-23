@@ -74,6 +74,31 @@ namespace PawnDiary
             return true;
         }
 
+        /// <summary>
+        /// Projects only the identity/name/certainty row needed by the passive Phase 3 scanner. This
+        /// deliberately avoids precept, meme, deity, role, or history enumeration on the scheduled path.
+        /// </summary>
+        internal static bool TryCaptureBeliefTrackerObservation(
+            Pawn pawn,
+            out BeliefTrackerObservation observation)
+        {
+            observation = null;
+            if (!ModsConfig.IdeologyActive || pawn?.ideo == null || pawn.ideo.Ideo == null)
+                return false;
+
+            BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
+            string ideologyId = SafeBeliefId(pawn.ideo.Ideo.GetUniqueLoadID(), policy);
+            if (ideologyId.Length == 0) return false;
+            observation = new BeliefTrackerObservation
+            {
+                hasCurrent = true,
+                ideologyId = ideologyId,
+                ideologyName = SafeBeliefText(pawn.ideo.Ideo.name, policy.maximumFieldCharacters),
+                certainty = Clamp01(pawn.ideo.Certainty)
+            };
+            return true;
+        }
+
         /// <summary>Projects the attempted conversion Ideo without leaking the live object.</summary>
         internal static BeliefMutationState CaptureAttemptedBeliefMutationState(Ideo attemptedIdeology)
         {

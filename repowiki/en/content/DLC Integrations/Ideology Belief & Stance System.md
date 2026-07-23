@@ -33,7 +33,9 @@ mining work and tales; rescue, captivity, darkness, and connected-tree thoughts;
 unnatural-darkness transition pages. Broad neighboring events remain unchanged: a raid does not imply
 charity or slavery, `PlantCutting` does not prove that a tree was cut, and an unconfigured Tale cannot
 become a belief event. Ideology inactivity, missing labels, unsafe fields, and unmatched policy all
-return no evidence.
+return no evidence. Exact conversion-ritual and authority-speech policies own every perspective,
+including explicit `none` modes and adapter-failure silence; generic ritual evidence cannot bypass
+those contracts.
 
 ### Persistent passive belief state
 
@@ -43,12 +45,18 @@ without creating reflection debt. The assembly-free reducer merges small certain
 their earliest pending value, preserves the earliest and latest identities across successive ideology
 changes, expires stale certainty evidence, and resets to a fresh baseline when Ideology or the pawn's
 tracker is unavailable. Saved reflection source IDs and recent doctrine selections are deduplicated
-and capped by XML policy. Phase 3 tracks this state only; standalone belief pages remain Phase 4 work.
+and capped by XML policy. An elapsed rotating scanner reads only identity, name, and certainty through
+the guarded `DlcContext` adapter, processing at most the XML work cap per pass; it does not enumerate
+precepts or memes. The dev action logs mechanical IDs, bands, trends, cooldown decisions, and counts,
+but no authored ideology name or description. Phase 3 tracks this state only; standalone belief pages
+remain Phase 4 work.
 
 **Section sources**
 - [PawnBeliefState.cs](../../../../Source/Models/PawnBeliefState.cs)
 - [PawnDiaryRecord.cs](../../../../Source/Models/PawnDiaryRecord.cs)
 - [BeliefReflectionPolicy.cs](../../../../Source/Pipeline/Belief/BeliefReflectionPolicy.cs)
+- [DiaryGameComponent.Belief.cs](../../../../Source/Core/DiaryGameComponent.Belief.cs)
+- [DlcContext.Ideology.cs](../../../../Source/Generation/DlcContext.Ideology.cs)
 - [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
 
 ## Project Structure

@@ -138,6 +138,8 @@ namespace PawnDiary.RimTests
             List<string> preceptDefNames;
             BeliefSnapshot beliefSnapshot;
             BeliefSourcePreceptFact nullThoughtSource;
+            BeliefTrackerObservation beliefTrackerObservation;
+            bool beliefTrackerCaptured;
             GrowthPawnSnapshot growthSnapshot;
             bool growthCaptured;
             HashSet<string> disabledGrowthWorkTypes;
@@ -179,6 +181,8 @@ namespace PawnDiary.RimTests
                 preceptDefNames = DlcContext.IdeologyPreceptDefNames(pawn);
                 beliefSnapshot = DlcContext.CaptureBeliefSnapshot(pawn);
                 nullThoughtSource = DlcContext.CaptureThoughtSourcePrecept(null);
+                beliefTrackerCaptured = DlcContext.TryCaptureBeliefTrackerObservation(
+                    pawn, out beliefTrackerObservation);
                 growthCaptured = DlcContext.TryCaptureGrowthPawn(
                     pawn,
                     birthdayAge: 13,
@@ -280,6 +284,7 @@ namespace PawnDiary.RimTests
                 emptyExpected: ideoligion.Length == 0 && ideologicalRole.Length == 0
                     && preceptDefNames.Count == 0 && !beliefSnapshot.ideologyActive
                     && beliefSnapshot.precepts.Count == 0 && beliefSnapshot.memes.Count == 0
+                    && !beliefTrackerCaptured && beliefTrackerObservation == null
                     && nullThoughtSource.instanceId.Length == 0 && nullThoughtSource.defName.Length == 0,
                 emptyMessage: "Without Ideology, the ideoligion / role / precept and Phase 1 snapshot accessors must be empty.");
 
@@ -328,6 +333,11 @@ namespace PawnDiary.RimTests
                     && !DlcContext.CaptureBeliefSnapshot(null).ideologyActive
                     && DlcContext.CaptureThoughtSourcePrecept(null).instanceId.Length == 0,
                 "Ideology accessors must return empty for a null pawn.");
+            BeliefTrackerObservation beliefTrackerObservation;
+            PawnDiaryRimTestScope.Require(
+                !DlcContext.TryCaptureBeliefTrackerObservation(null, out beliefTrackerObservation)
+                    && beliefTrackerObservation == null,
+                "The passive Ideology tracker adapter must return false/null for a null pawn.");
             OdysseyLocationSnapshot odysseyLocation;
             OdysseyMobileHomeSnapshot odysseyMobileHome;
             PawnDiaryRimTestScope.Require(!DlcContext.TryCaptureOdysseyLocation((Pawn)null, out odysseyLocation)

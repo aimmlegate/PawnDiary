@@ -439,6 +439,7 @@ namespace PawnDiary
                 result.lastScanTick = -1;
                 result.hasLastObservation = false;
                 result.baselineOnNextScan = true;
+                ClearPending(result);
             }
             if (!result.hasLastObservation || result.lastIdeologyId.Length == 0)
             {
@@ -447,7 +448,9 @@ namespace PawnDiary
             }
             if (!result.hasPendingCertainty || result.pendingCertaintyFirstTick < 0
                 || result.pendingCertaintyLastTick < result.pendingCertaintyFirstTick
-                || result.pendingCertaintyFirstTick > now || result.pendingCertaintyLastTick > now)
+                || result.pendingCertaintyFirstTick > now || result.pendingCertaintyLastTick > now
+                || (long)now - result.pendingCertaintyLastTick
+                    > policy.pendingBeliefEvidenceMaxAgeTicks)
                 ClearPendingCertainty(result);
             if (!result.pendingIdeologyChange || result.pendingPreviousIdeologyId.Length == 0
                 || result.pendingCurrentIdeologyId.Length == 0)
