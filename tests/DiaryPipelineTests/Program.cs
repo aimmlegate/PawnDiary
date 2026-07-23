@@ -128,6 +128,9 @@ namespace DiaryPipelineTests
             TestInstallSourceClassifier();
             TestModErrorPrefixPolicyCoversSubmods();
 
+            // Prompt-footprint baselines and catalog guards (PROMPT_FOOTPRINT plan, P0+).
+            assertions += PromptFootprintTests.RunAll();
+
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
         }
