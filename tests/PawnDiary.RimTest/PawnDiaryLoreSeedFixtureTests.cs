@@ -68,37 +68,61 @@ namespace PawnDiary.RimTests
                     "Reflection handle for a DiaryGameComponent memory/lore field is null — a field was renamed.");
             }
 
+            // ORDER MATTERS: CreateAdultColonist fires a real ARRIVAL event through the funnel
+            // (SetFaction patch -> ArrivalSignal -> AddSoloEvent), which runs the lazy lore-seed
+            // lifecycle. The shipped L3 catalog must be hidden and the settings pinned BEFORE any
+            // pawn exists, or SetUp itself plans rosters from the 40 shipped seeds and every
+            // exact roster/count assertion below goes non-deterministic. The test Def registers
+            // AFTER pawn creation so the arrival events plan nothing (empty catalog) and each
+            // test body's first event is genuinely the pawn's first eligible one.
+            PawnDiaryMod.Settings.enableMemorySystem = true;
+            PawnDiaryMod.Settings.enableLoreSeeds = true;
+            HideShippedCatalog();
+            registeredTestDefNames = new List<string>();
+
             pawnA = scope.CreateAdultColonist();
             pawnB = scope.CreateAdultColonist();
 
-            PawnDiaryMod.Settings.enableMemorySystem = true;
-            PawnDiaryMod.Settings.enableLoreSeeds = true;
-
-            // Isolate from the shipped L3 catalog: these fixtures assert exact rosters and
-            // fragment counts, which only stay deterministic against the injected test Defs.
-            HideShippedCatalog();
-            registeredTestDefNames = new List<string>();
             RegisterTestSeedDef();
         }
 
         [AfterEach]
         public static void TearDown()
         {
+            // Each restore step runs even if an earlier one throws: leaving the shipped catalog
+            // hidden or the scope un-torn-down would poison every later suite in the run.
             try
             {
-                CleanupLoreForTestPawns();
-                RemoveDefIfPresent(TestSeedDefName);
-                RemoveDefIfPresent(TestProgressionSeedDefName);
-                if (registeredTestDefNames != null)
+                try
                 {
-                    for (int i = 0; i < registeredTestDefNames.Count; i++)
+                    CleanupLoreForTestPawns();
+                }
+                finally
+                {
+                    try
                     {
-                        RemoveDefIfPresent(registeredTestDefNames[i]);
+                        RemoveDefIfPresent(TestSeedDefName);
+                        RemoveDefIfPresent(TestProgressionSeedDefName);
+                        if (registeredTestDefNames != null)
+                        {
+                            for (int i = 0; i < registeredTestDefNames.Count; i++)
+                            {
+                                RemoveDefIfPresent(registeredTestDefNames[i]);
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            RestoreShippedCatalog();
+                        }
+                        finally
+                        {
+                            scope?.TearDown();
+                        }
                     }
                 }
-
-                RestoreShippedCatalog();
-                scope?.TearDown();
             }
             finally
             {
@@ -756,9 +780,17 @@ namespace PawnDiary.RimTests
             return state;
         }
 
-        /// <summary>Creates one raw pair page with an arbitrary event defName (progression seam).</summary>
+        /// <summary>
+        /// Creates one raw pair page with an arbitrary progression event defName. The gameContext
+        /// carries the production "progression=" marker so the event classifies into the real
+        /// Progression domain group (important, non-quiet cue) and the ordinary lived deposit
+        /// clears the noise gate — a bare defName with empty context lands in the default quiet
+        /// interaction group and deposits nothing, which would mask the progression attachment.
+        /// </summary>
         private static DiaryEvent AddRawPairEvent(Pawn initiator, Pawn recipient, string defName, string label)
         {
+            string gameContext = "progression=" + defName
+                + "; progression_kind=test; previous_value=Baseliner; new_value=Sanguophage";
             DiaryEvent diaryEvent = scope.Component.AddPairwiseEvent(
                 initiator,
                 recipient,
@@ -767,7 +799,7 @@ namespace PawnDiary.RimTests
                 initiator.LabelShortCap + " went through " + label + ".",
                 recipient.LabelShortCap + " watched " + label + ".",
                 string.Empty,
-                string.Empty);
+                gameContext);
             if (diaryEvent == null)
             {
                 throw new AssertionException(
