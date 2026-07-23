@@ -3427,80 +3427,53 @@ pre-release version ladder for project history.
 
 ## 2026-06-28
 
-- **Russian localization shipped; prompt, condition, and dev/UI fixes.** A full Russian Keyed/DefInjected
-  translation (plus a separate Workshop payload) landed alongside hediff prompt/style cleanup, XML-driven
-  event windows (birthdays, heart attacks, prison breaks), and dev-mode export/reliability fixes.
+- **Localization and prompt polish.** Shipped full Russian localization, tightened hediff prompt/style
+  handling, added XML event windows, and fixed dev/export reliability.
 
 ## 2026-06-27
 
-- **Event windows, Anomaly/hediff prompt routing, and history performance.** `DiaryEventWindowDef` added
-  start/end/timeout entries for incidents, quests, and letters (metalhorror, ancient dangers, void
-  monolith); Anomaly/hediff prompt routing improved; and history retention moved to a per-pawn cap with
-  a virtualized, cached Diary tab.
+- **Event windows and history performance.** Added XML-driven event windows, refined Anomaly/hediff
+  prompt routing, and moved history retention to a virtualized per-pawn cap.
 
 ## 2026-06-26
 
-- **Docs, generation reliability, prompt fallback, and runtime hardening.** Localization/packaging docs
-  were cleaned up, catch-up/orphan recovery and paused-game LLM draining improved reliability, prompt
-  lookup gained modded-compatibility fallbacks, and diary hooks/ticks/save-load/UI drawing were isolated
-  against failures.
+- **Docs and reliability hardening.** Cleaned up docs, improved generation/retention reliability, added
+  prompt fallback compatibility, and isolated runtime/UI failures.
 
 ## 2026-06-25
 
-- **Diary tab became the default entry point.** Fresh settings now use the pawn inspect tab (with unread
-  markers); generation controls, humor cues, and raid tuning were expanded.
-- **Major structural refactor and hardening.** Per-POV state moved to `PovSlot`, saved events to
-  `DiaryEventRepository`, generation/Harmony/settings code split into focused files, tab rendering
-  cached/virtualized, and XML/localization boundaries and pure-test coverage broadened ahead of release.
+- **Diary tab became default; major refactor.** Made the pawn inspect tab the default entry point and
+  split generation, Harmony, and settings code into focused, cached, better-tested files.
 
 ## 2026-06-24
 
-- **New event sources: abilities, psychic rituals, and Ideology rituals.** Successful ability
-  activations, completed psychic rituals, and finished Ideology rituals now generate context-aware
-  entries, plus optional Royalty/Ideology status flavor for important events.
-- **API and platform hardening.** Native Ollama API mode was removed for OpenAI-compatible lanes
-  (Harmony became a declared dependency); free-tier lane routing, auth, cooldowns, and failover were
-  hardened; and personas were reframed as writing styles with per-event-type prompt variation.
-- **UI, reliability, and docs polish.** Older diary cards collapse by default, save-time cleanup
-  improved, startup/cooldown/query-key reliability fixes landed, and save-compatibility and
-  hook-validation docs were added.
+- **New event sources and platform hardening.** Added ability, psychic ritual, and Ideology ritual
+  events; dropped native Ollama for OpenAI-compatible lanes; and hardened API routing and UI reliability.
 
 ## 2026-06-23
 
-- **Settings compacted and Diary moved to pawn selection.** The settings window was reorganized into a
-  smaller surface, the Diary entry point moved to a pawn-selection command button, and a mod icon was
-  added.
-- **Prompt, parsing, and reflection fixes.** Save-time tag sanitizing, thinking-model response parsing,
-  and important-signal-gated day reflections were fixed, and Prompt Studio gained per-event-source
-  guidance editing plus expanded prompt-lab coverage.
+- **Settings compacted; pawn-selection entry point.** Reorganized settings, moved the Diary entry point
+  to pawn selection, added a mod icon, and fixed prompt/parsing/reflection bugs.
 
 ## 2026-06-22
 
-- **Quest and raid event sources added; prompt structure split.** Accepted/ended quests and raid
-  incidents now generate entries, shared prompts were shortened with guidance moved to
-  `DiaryEventPromptDef`, prose was nudged toward sensory immediacy, and the Diary tab/Prompt suite got UI
-  polish.
+- **Quest and raid events added.** Added quest and raid event sources, split prompt structure into
+  `DiaryEventPromptDef`, and nudged prose toward sensory immediacy.
 
 ## 2026-06-21
 
-- **Formatting, event catalog, and romance events matured.** Dev previews, staggered speech, mood/
-  conflict page washes, and status-aware name highlighting landed; the Event Catalog now covers all live
-  sources; and Romance relation changes (lover/spouse/ex) route through their own domain.
-- **Hardening pass.** Work sampling, catalog dispatch, recorders, age/consciousness gating, save/load,
-  parsing, caching, and provider support were tightened.
+- **Formatting and romance events matured.** Matured formatting/staggered speech, completed the Event
+  Catalog, added Romance relation events, and tightened core hardening.
 
 ## 2026-06-19 - 2026-06-20
 
-- **Generated speech Social-log injection prototyped.** Direct-speech rows can be generated for
-  initiator entries, but Social tab display remains unreliable, so the setting stays hidden and off.
+- **Generated speech prototyped.** Direct-speech Social-log rows can be generated, but display remains
+  unreliable, so the setting stays hidden and off.
 
 ## 2026-06-17 - 2026-06-18
 
-- **Workshop release prep and pipeline extraction.** Workshop metadata/publish script, broadened LLM
-  compatibility (Chat Completions, OpenAI Responses, native Ollama — later removed), and a pure-contract
-  pipeline extraction (planning, parsing, decorations, recovery) landed.
-- **Capture expanded.** Hediff progression, combat/insult batching, direct-speech POV rules, and key
-  health/capacity cues were added.
+- **Workshop prep and pipeline extraction.** Prepared Workshop release tooling, broadened LLM
+  compatibility, extracted the pipeline into pure contracts, and expanded health/combat/social capture.
 
 ## 2026-06-16
 
