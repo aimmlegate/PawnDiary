@@ -1928,6 +1928,19 @@ namespace DiaryAnomalyPolicyTests
             AssertEqual("unknown branch expects no level", string.Empty,
                 AnomalyVoidOutcomePolicy.ExpectedLevelDefName("ascended"));
 
+            // Quest-success ownership prediction: the monolith quest ends inside vanilla before the
+            // postfix verifies, so the prediction may claim that page only when every gate the page
+            // itself depends on is already true. Any single false gate must leave the generic
+            // quest-completed fan-out alone (a wrong claim permanently loses that page).
+            AssertTrue("quest ownership predicted only when every page gate holds",
+                AnomalyVoidOutcomePolicy.PredictsDedicatedPage(true, true, true));
+            for (int mask = 0; mask < 7; mask++)
+            {
+                AssertTrue("quest ownership never predicted with a false page gate (case " + mask + ")",
+                    !AnomalyVoidOutcomePolicy.PredictsDedicatedPage(
+                        (mask & 1) != 0, (mask & 2) != 0, (mask & 4) != 0));
+            }
+
             AssertTrue("null void facts drop", !AnomalyVoidOutcomePolicy.Plan(null, null).valid);
             foreach (Action<VoidOutcomeFacts> corrupt in new Action<VoidOutcomeFacts>[]
             {

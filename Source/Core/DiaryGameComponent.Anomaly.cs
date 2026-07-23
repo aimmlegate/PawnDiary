@@ -439,13 +439,16 @@ namespace PawnDiary
             // Commit the saved terminal outcome first. It is the replay barrier and remains committed
             // even when output is disabled, the group/transport is unavailable, or the sole author
             // cannot write; the event ID is attached only after the canonical page actually exists.
+            string committedActorId = (facts.actorPawnId ?? string.Empty).Trim();
             if (!HasCommittedVoidOutcome)
             {
                 AnomalyPersistentStateSnapshot committed = AnomalyStateSnapshot();
                 committed.terminalOutcome = plan.outcomeToken;
-                committed.terminalActorPawnId = facts.actorPawnId;
+                committed.terminalActorPawnId = committedActorId;
                 committed.terminalEventId = string.Empty;
-                ApplyAnomalyState(committed);
+                // Commit through the same normalization the load path applies, so the in-session
+                // replay barrier and the reloaded barrier can never disagree about the same row.
+                ApplyAnomalyState(AnomalyPersistencePolicy.Normalize(committed));
             }
 
             if (!plan.writePage || plan.selectedWriter == null) return plan;
@@ -459,23 +462,38 @@ namespace PawnDiary
             if (signal.CreatedEvent == null) return plan;
             dedicatedEventCreated = true;
 
-            // Attach the canonical event ID to the already-committed terminal outcome. A defensive
-            // re-read guards against an unexpected concurrent change to the committed identity.
-            AnomalyPersistentStateSnapshot afterEvent = AnomalyStateSnapshot();
-            if (string.Equals(
-                    afterEvent.terminalOutcome, plan.outcomeToken, StringComparison.Ordinal)
-                && string.Equals(
-                    afterEvent.terminalActorPawnId, facts.actorPawnId, StringComparison.Ordinal))
+            try
             {
-                afterEvent.terminalEventId = signal.CreatedEvent.eventId ?? string.Empty;
-                ApplyAnomalyState(afterEvent);
-            }
+                // Attach the canonical event ID to the already-committed terminal outcome. A defensive
+                // re-read guards against an unexpected concurrent change to the committed identity.
+                AnomalyPersistentStateSnapshot afterEvent = AnomalyStateSnapshot();
+                if (string.Equals(
+                        afterEvent.terminalOutcome, plan.outcomeToken, StringComparison.Ordinal)
+                    && string.Equals(
+                        afterEvent.terminalActorPawnId, committedActorId, StringComparison.Ordinal))
+                {
+                    afterEvent.terminalEventId = signal.CreatedEvent.eventId ?? string.Empty;
+                    ApplyAnomalyState(afterEvent);
+                }
 
-            // Reason anomaly_void_outcome: after the ending page records, optionally request the
-            // existing rare arc-reflection scheduler pointed at this canonical event so the reflection
-            // does not merely recap the terminal page (avoid_related_event_recap). The scheduler still
-            // obeys its own rate limits/settings and no-ops when the actor cannot write.
-            ConsiderArcReflectionAfterMajorEvent(writer, signal.CreatedEvent.eventId);
+                // Reason anomaly_void_outcome: after the ending page records, optionally request the
+                // existing rare arc-reflection scheduler pointed at this canonical event so the
+                // reflection does not merely recap the terminal page (avoid_related_event_recap). The
+                // scheduler still obeys its own rate limits/settings and no-ops when the actor cannot
+                // write.
+                ConsiderArcReflectionAfterMajorEvent(writer, signal.CreatedEvent.eventId);
+            }
+            catch (Exception exception)
+            {
+                // The dedicated ending page already exists and the terminal token is committed. If
+                // this bookkeeping escaped, the postfix would observe a null plan while
+                // dedicatedEventCreated is already true, fail the ownership proof, and release the
+                // deferred vanilla Tale — a second ending page. Contain it here instead.
+                Log.ErrorOnce(
+                    "[Pawn Diary] Terminal void bookkeeping after the ending page failed; the "
+                    + "dedicated page remains the sole ending: " + exception,
+                    "PawnDiary.VoidOutcome.PostPage".GetHashCode());
+            }
             return plan;
         }
 

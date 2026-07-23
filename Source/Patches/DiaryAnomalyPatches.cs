@@ -729,8 +729,15 @@ namespace PawnDiary
                 }
                 // The dedicated terminal event owns the monolith quest-success page only when it will
                 // actually author one; a disabled group or an ineligible actor leaves that fan-out.
-                captured.suppressesQuestSuccess =
-                    captured.facts.actorEligible && policy.voidOutcomeEnabled;
+                // The player's interaction-group toggle must be part of this prediction: the quest
+                // ends inside vanilla before the postfix runs, so claiming a page a disabled group
+                // will never author would silently lose the quest-completed restatement.
+                DiaryInteractionGroupDef voidGroup = InteractionGroups.ClassifyAnomalyEvent(
+                    AnomalyEventDefNames.VoidOutcome);
+                bool groupEnabled = voidGroup != null && PawnDiaryMod.Settings != null
+                    && PawnDiaryMod.Settings.IsGroupEnabled(voidGroup.defName);
+                captured.suppressesQuestSuccess = AnomalyVoidOutcomePolicy.PredictsDedicatedPage(
+                    captured.facts.actorEligible, policy.voidOutcomeEnabled, groupEnabled);
             });
             state = captured;
         }

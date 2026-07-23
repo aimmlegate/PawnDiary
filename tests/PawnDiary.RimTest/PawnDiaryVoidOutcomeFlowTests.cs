@@ -279,6 +279,80 @@ namespace PawnDiary.RimTests
                 "A repeat terminal call changed the committed terminal identity.");
         }
 
+        /// <summary>
+        /// An active terminal frame owns the monolith quest-success restatement for its exact quest id
+        /// only, RecordQuestEnded emits nothing for that owned success, and a closed scope owns nothing.
+        /// </summary>
+        [Test]
+        public static void QuestSuccessSuppressionIsExactAndScopeBounded()
+        {
+            if (!RequireAnomalyOrReport(nameof(QuestSuccessSuppressionIsExactAndScopeBounded))) return;
+            Pawn actor = CreateEligiblePawn();
+            DlcContext.SetMonolithLevelOverrideForTests(
+                () => AnomalyVoidOutcomePolicy.EmbracedLevelDefName);
+
+            object[] prefixArgs = { actor, null };
+            EmbracePrefixMethod.Invoke(null, prefixArgs);
+            VoidOutcomeCapture capture = prefixArgs[1] as VoidOutcomeCapture;
+            PawnDiaryRimTestScope.Require(capture != null,
+                "The quest-suppression fixture did not open an exact void scope.");
+            PawnDiaryRimTestScope.Require(capture.suppressesQuestSuccess,
+                "An eligible actor with void output and the group enabled did not predict a page.");
+
+            // The fixture game has no live terminal monolith quest, so inject the exact id the prefix
+            // would have captured from Find.Anomaly.monolith.quest into the already-open frame.
+            capture.monolithQuestId = 941001;
+            PawnDiaryRimTestScope.Require(VoidOutcomeScope.OwnsQuestId(941001),
+                "The active terminal frame did not own its exact monolith quest id.");
+            PawnDiaryRimTestScope.Require(
+                !VoidOutcomeScope.OwnsQuestId(941002) && !VoidOutcomeScope.OwnsQuestId(0),
+                "Terminal quest ownership leaked beyond the exact captured quest id.");
+
+            Quest owned = new Quest { id = 941001 };
+            scope.RequireNoNewEvent(
+                () => scope.Component.RecordQuestEnded(owned, QuestEndOutcome.Success));
+
+            // Fail-open closure: an aborted frame stops owning the quest id immediately.
+            FinalizerMethod.Invoke(null, new object[] { null, capture });
+            PawnDiaryRimTestScope.Require(VoidOutcomeScope.CountForTests == 0,
+                "The quest-suppression fixture leaked its terminal frame.");
+            PawnDiaryRimTestScope.Require(!VoidOutcomeScope.OwnsQuestId(941001),
+                "A closed terminal scope kept owning the monolith quest id.");
+        }
+
+        /// <summary>
+        /// A disabled void interaction group predicts no dedicated page at prefix time, so the frame
+        /// never claims the monolith quest-success restatement it would not replace.
+        /// </summary>
+        [Test]
+        public static void DisabledGroupNeverClaimsQuestSuccess()
+        {
+            if (!RequireAnomalyOrReport(nameof(DisabledGroupNeverClaimsQuestSuccess))) return;
+            Pawn actor = CreateEligiblePawn();
+            DlcContext.SetMonolithLevelOverrideForTests(
+                () => AnomalyVoidOutcomePolicy.EmbracedLevelDefName);
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyAnomalyEvent(
+                AnomalyEventDefNames.VoidOutcome);
+            PawnDiaryRimTestScope.Require(group != null,
+                "The void outcome interaction group was not loaded.");
+            PawnDiaryMod.Settings.SetGroupEnabled(group.defName, false);
+
+            object[] prefixArgs = { actor, null };
+            EmbracePrefixMethod.Invoke(null, prefixArgs);
+            VoidOutcomeCapture capture = prefixArgs[1] as VoidOutcomeCapture;
+            PawnDiaryRimTestScope.Require(capture != null,
+                "A disabled group must still open the Tale-ownership scope (fail-open release).");
+            PawnDiaryRimTestScope.Require(!capture.suppressesQuestSuccess,
+                "A disabled void group wrongly claimed the monolith quest-success restatement.");
+            capture.monolithQuestId = 941003;
+            PawnDiaryRimTestScope.Require(!VoidOutcomeScope.OwnsQuestId(941003),
+                "An unclaiming terminal frame still owned its monolith quest id.");
+
+            FinalizerMethod.Invoke(null, new object[] { null, capture });
+            PawnDiaryRimTestScope.Require(VoidOutcomeScope.CountForTests == 0,
+                "The disabled-group fixture leaked its terminal frame.");
+        }
+
         /// <summary>A committed terminal token round-trips and an old-save bootstrap never replays it.</summary>
         [Test]
         public static void SaveRoundTripAndOldSaveBootstrapDoNotReplay()

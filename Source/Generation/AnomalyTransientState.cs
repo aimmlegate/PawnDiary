@@ -14,6 +14,9 @@ namespace PawnDiary
             CreepJoinerSurgicalInspectionScope.Clear();
             GhoulInfusionScope.Clear();
             VoidOutcomeScope.Clear();
+            // The loaded-test monolith-level seam is process-static; a crashed fixture must not leave
+            // it installed for a real game session, so every lifecycle boundary clears it too.
+            DlcContext.SetMonolithLevelOverrideForTests(null);
         }
     }
 }

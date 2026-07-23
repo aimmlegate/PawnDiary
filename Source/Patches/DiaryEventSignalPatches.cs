@@ -70,9 +70,9 @@ namespace PawnDiary
                 // A3.0 delays only an exact single-pawn EmbracedTheVoid/ClosedTheVoid Tale inside one
                 // active terminal-void method. Vanilla's Tale stays recorded; a mismatch, expiry,
                 // failed verification, disabled output, exception, or hook drift keeps this route.
-                if (AnomalyVoidTaleOwnershipPolicy.IsTerminalVoidTale(def.defName)
-                    && DiaryAnomalyPatches.VoidOutcomeHookReady
-                    && VoidOutcomeScope.HasActiveFrame)
+                if (DiaryAnomalyPatches.VoidOutcomeHookReady
+                    && VoidOutcomeScope.HasActiveFrame
+                    && AnomalyVoidTaleOwnershipPolicy.IsTerminalVoidTale(def.defName))
                 {
                     int tick = Find.TickManager?.TicksGame ?? 0;
                     int expiryTicks = DiaryAnomalyPolicy.Snapshot().taleOwnershipExpiryTicks;

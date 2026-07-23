@@ -76,6 +76,24 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
+        /// Predicts at prefix time whether a dedicated ending page will actually be authored, so the
+        /// terminal event only claims the monolith quest-success restatement it will really replace.
+        /// The monolith quest ends inside vanilla before the postfix verifies anything, so a wrong
+        /// true here permanently loses the generic quest-completed page; every gate the page itself
+        /// depends on (eligible sole author, policy output, the player's interaction-group setting)
+        /// must be included. Verification/dispatch failure after a true prediction still loses that
+        /// page — an accepted trade-off, because re-emitting it after vanilla returned would require
+        /// replaying a quest-end we chose to skip.
+        /// </summary>
+        public static bool PredictsDedicatedPage(
+            bool actorEligible,
+            bool voidOutcomeEnabled,
+            bool groupEnabled)
+        {
+            return actorEligible && voidOutcomeEnabled && groupEnabled;
+        }
+
+        /// <summary>
         /// True only when this plan proves ownership of the terminal single-pawn Tale. Final
         /// suppression additionally requires a deferred Tale and an actually created replacement page.
         /// </summary>
