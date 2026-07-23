@@ -134,6 +134,9 @@
       <li><topicToken>charity</topicToken><aliases><li>charity</li><li>aid</li><li>refugee</li></aliases></li>
       <li><topicToken>authority_speech</topicToken><aliases><li>authority leadership</li><li>leader social role</li><li>slavery social structure</li><li>social hierarchy</li><li>ranked authority</li><li>slavery normal part life</li></aliases></li>
       <li><topicToken>insect_meat</topicToken><aliases><li>insect meat</li><li>insect flesh</li></aliases></li>
+      <li><topicToken>animal_meat</topicToken><aliases><li>animal meat</li><li>meat eating</li><li>carnivore diet</li></aliases></li>
+      <li><topicToken>fungus</topicToken><aliases><li>fungus food</li><li>fungus eating</li><li>dark-grown fungus</li></aliases></li>
+      <li><topicToken>nutrient_paste</topicToken><aliases><li>nutrient paste</li><li>synthetic meal</li><li>efficient healthy paste</li></aliases></li>
     </semanticAliases>
 
     <!-- Exact adapter groups. A broad raid adds violence, never charity without an aid fact. -->
@@ -144,6 +147,9 @@
            exact food policy sets groupKey=cannibal_meal before this rule expands its topics. -->
       <li><key>cannibal_meal</key><groupKey>cannibal_meal</groupKey><addTopics><li>cannibalism</li><li>meals</li></addTopics><addSemanticAliases><li>cannibalism</li></addSemanticAliases></li>
       <li><key>insect_meal</key><groupKey>insect_meal</groupKey><addTopics><li>insect_meat</li><li>meals</li></addTopics><addSemanticAliases><li>insect_meat</li></addSemanticAliases></li>
+      <li><key>animal_meat_meal</key><groupKey>animal_meat_meal</groupKey><addTopics><li>animal_meat</li><li>meals</li></addTopics><addSemanticAliases><li>animal_meat</li></addSemanticAliases></li>
+      <li><key>fungus_meal</key><groupKey>fungus_meal</groupKey><addTopics><li>fungus</li><li>meals</li></addTopics><addSemanticAliases><li>fungus</li></addSemanticAliases></li>
+      <li><key>nutrient_paste_meal</key><groupKey>nutrient_paste_meal</groupKey><addTopics><li>nutrient_paste</li><li>meals</li></addTopics><addSemanticAliases><li>nutrient_paste</li></addSemanticAliases></li>
       <li><key>known_meal</key><sourceDomain>food</sourceDomain><groupKey>meal</groupKey><addTopics><li>meals</li></addTopics></li>
       <li><key>raid_visible</key><sourceDomain>combat</sourceDomain><groupKey>raid</groupKey><addTopics><li>raids</li><li>violence</li></addTopics></li>
       <li><key>aid_visible</key><sourceDomain>social</sourceDomain><groupKey>aid</groupKey><addTopics><li>charity</li></addTopics><addSemanticAliases><li>charity</li></addSemanticAliases></li>
@@ -154,6 +160,9 @@
     <foodEvidenceRules>
       <li><key>humanlike_meat</key><ingredientKind>humanlike_meat</ingredientKind><groupKey>cannibal_meal</groupKey><matchField>ingredient_label</matchField></li>
       <li><key>insect_meat</key><ingredientKind>insect_meat</ingredientKind><groupKey>insect_meal</groupKey><matchField>ingredient_label</matchField></li>
+      <li><key>animal_meat</key><ingredientKind>animal_meat</ingredientKind><groupKey>animal_meat_meal</groupKey><matchField>ingredient_label</matchField></li>
+      <li><key>fungus</key><ingredientKind>fungus</ingredientKind><groupKey>fungus_meal</groupKey><matchField>ingredient_label</matchField></li>
+      <li><key>nutrient_paste</key><ingredientKind>nutrient_paste</ingredientKind><groupKey>nutrient_paste_meal</groupKey><matchField>ingredient_label</matchField></li>
     </foodEvidenceRules>
 
     <!-- Schema/prompt labels only; language-specific common words are suppressed per live snapshot. -->

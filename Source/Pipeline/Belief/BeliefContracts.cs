@@ -225,6 +225,9 @@ namespace PawnDiary
     {
         public const string HumanlikeMeat = "humanlike_meat";
         public const string InsectMeat = "insect_meat";
+        public const string AnimalMeat = "animal_meat";
+        public const string Fungus = "fungus";
+        public const string NutrientPaste = "nutrient_paste";
     }
 
     /// <summary>

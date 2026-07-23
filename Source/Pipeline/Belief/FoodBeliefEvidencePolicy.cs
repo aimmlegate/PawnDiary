@@ -13,6 +13,59 @@ namespace PawnDiary
     internal static class FoodBeliefEvidencePolicy
     {
         /// <summary>
+        /// Chooses one captured mechanical fact in XML rule order. Runtime collection may observe more
+        /// than one exact category in a modded meal; policy order owns which single bounded fact crosses
+        /// the existing ingestion scope. Duplicate or malformed rules for an observed kind fail closed.
+        /// </summary>
+        public static FoodIngestionEvidenceFact SelectFact(
+            IList<FoodIngestionEvidenceFact> facts,
+            BeliefPolicySnapshot policy)
+        {
+            if (policy == null || !policy.enabled || facts == null || facts.Count == 0
+                || policy.foodEvidenceRules == null)
+                return null;
+
+            for (int ruleIndex = 0; ruleIndex < policy.foodEvidenceRules.Count; ruleIndex++)
+            {
+                BeliefFoodEvidenceRule rule = policy.foodEvidenceRules[ruleIndex];
+                string wantedKind = SafeToken(rule?.ingredientKind);
+                if (wantedKind.Length == 0) continue;
+
+                FoodIngestionEvidenceFact selected = null;
+                for (int factIndex = 0; factIndex < facts.Count; factIndex++)
+                {
+                    FoodIngestionEvidenceFact fact = facts[factIndex];
+                    if (fact == null || !string.Equals(
+                            SafeToken(fact.ingredientKind), wantedKind, StringComparison.Ordinal))
+                        continue;
+                    if (selected == null) selected = fact;
+                }
+                if (selected == null) continue;
+
+                // If the observed kind has more than one XML row, TryEnrich would reject it later.
+                // Reject it here too so the short-lived scope never carries policy-ambiguous evidence.
+                if (!ValidRule(rule)) return null;
+                for (int duplicateIndex = ruleIndex + 1;
+                    duplicateIndex < policy.foodEvidenceRules.Count;
+                    duplicateIndex++)
+                {
+                    BeliefFoodEvidenceRule duplicate = policy.foodEvidenceRules[duplicateIndex];
+                    if (string.Equals(
+                            SafeToken(duplicate?.ingredientKind), wantedKind, StringComparison.Ordinal))
+                        return null;
+                }
+
+                return new FoodIngestionEvidenceFact
+                {
+                    ingredientKind = selected.ingredientKind ?? string.Empty,
+                    ingredientDefName = selected.ingredientDefName ?? string.Empty,
+                    ingredientLabel = selected.ingredientLabel ?? string.Empty
+                };
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Applies one uniquely matching XML rule. Exact source-precept and correlation fields remain
         /// untouched, so the shared resolver retains its established structural precedence.
         /// </summary>

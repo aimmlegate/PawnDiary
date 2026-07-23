@@ -15,6 +15,15 @@
 ## Introduction
 This document describes the Ideology Belief & Stance System as implemented within the project. It explains how beliefs and stances are modeled, captured, and integrated into the diary pipeline to influence narrative generation and UI presentation. The system is designed to be extensible via definitions and policies, enabling modders to tailor belief-related behavior without modifying core logic.
 
+### Exact food evidence
+
+Food belief context enriches an existing ingestion thought page; it never creates a page. The
+ingestion bridge reads vanilla metadata synchronously and recognizes humanlike meat, insect meat,
+ordinary animal meat, fungus, and nutrient paste. If a meal contains several recognized kinds,
+`foodEvidenceRules` order in `DiaryBeliefPolicyDef.xml` selects one deterministic fact. Missing,
+disabled, malformed, or duplicate policy rows leave the ordinary thought page unchanged. The
+bridge names no DLC Def in C# and remains inert when Ideology is inactive.
+
 ## Project Structure
 The ideology subsystem is primarily defined through:
 - A policy definition type for beliefs

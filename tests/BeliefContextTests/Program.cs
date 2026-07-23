@@ -2530,18 +2530,42 @@ namespace PawnDiary
                 new List<string> { "meal", "food", "ingredient" }));
             builder.semanticAliases.Add(new BeliefSemanticAlias("insect_meat",
                 new List<string> { "insect meat", "insect flesh" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("animal_meat",
+                new List<string> { "animal meat", "meat eating" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("fungus",
+                new List<string> { "fungus food", "fungus eating" }));
+            builder.semanticAliases.Add(new BeliefSemanticAlias("nutrient_paste",
+                new List<string> { "nutrient paste", "synthetic meal" }));
             builder.eventEvidenceRules.Add(Rule("cannibal_meal", string.Empty,
                 "cannibal_meal", new[] { "cannibalism", "meals" },
                 new[] { "cannibalism" }));
             builder.eventEvidenceRules.Add(Rule("insect_meal", string.Empty,
                 "insect_meal", new[] { "insect_meat", "meals" },
                 new[] { "insect_meat" }));
+            builder.eventEvidenceRules.Add(Rule("animal_meat_meal", string.Empty,
+                "animal_meat_meal", new[] { "animal_meat", "meals" },
+                new[] { "animal_meat" }));
+            builder.eventEvidenceRules.Add(Rule("fungus_meal", string.Empty,
+                "fungus_meal", new[] { "fungus", "meals" },
+                new[] { "fungus" }));
+            builder.eventEvidenceRules.Add(Rule("nutrient_paste_meal", string.Empty,
+                "nutrient_paste_meal", new[] { "nutrient_paste", "meals" },
+                new[] { "nutrient_paste" }));
             builder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
                 "humanlike_meat", FoodIngestionEvidenceKindTokens.HumanlikeMeat,
                 "cannibal_meal", "ingredient_label"));
             builder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
                 "insect_meat", FoodIngestionEvidenceKindTokens.InsectMeat,
                 "insect_meal", "ingredient_label"));
+            builder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
+                "animal_meat", FoodIngestionEvidenceKindTokens.AnimalMeat,
+                "animal_meat_meal", "ingredient_label"));
+            builder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
+                "fungus", FoodIngestionEvidenceKindTokens.Fungus,
+                "fungus_meal", "ingredient_label"));
+            builder.foodEvidenceRules.Add(new BeliefFoodEvidenceRule(
+                "nutrient_paste", FoodIngestionEvidenceKindTokens.NutrientPaste,
+                "nutrient_paste_meal", "ingredient_label"));
             BeliefPolicySnapshot policy = builder.Build();
             FoodIngestionEvidenceFact exactHumanMeat = new FoodIngestionEvidenceFact
             {
@@ -2635,6 +2659,40 @@ namespace PawnDiary
             AssertEmpty("exact insect-meat evidence leaves unrelated doctrine silent",
                 Resolve(Snapshot(unrelated), exactInsect, policy));
 
+            FoodIngestionEvidenceFact exactAnimalMeat = FoodFact(
+                FoodIngestionEvidenceKindTokens.AnimalMeat, "Meat_Muffalo", "muffalo meat");
+            FoodIngestionEvidenceFact exactFungus = FoodFact(
+                FoodIngestionEvidenceKindTokens.Fungus, "RawFungus", "raw fungus");
+            FoodIngestionEvidenceFact exactPaste = FoodFact(
+                FoodIngestionEvidenceKindTokens.NutrientPaste,
+                "MealNutrientPaste", "nutrient paste meal");
+            FoodIngestionEvidenceFact[] remainingFacts =
+                { exactAnimalMeat, exactFungus, exactPaste };
+            string[] remainingGroups =
+                { "animal_meat_meal", "fungus_meal", "nutrient_paste_meal" };
+            for (int i = 0; i < remainingFacts.Length; i++)
+            {
+                BeliefEventEvidence remaining = BeliefEventEvidenceFactory.ForThought(
+                    "SyntheticPawn", 12400 + i, "AteFineMeal", "fine meal",
+                    new BeliefSourcePreceptFact());
+                AssertTrue("remaining exact food kind activates XML mapping " + remainingGroups[i],
+                    FoodBeliefEvidencePolicy.TryEnrich(
+                        remaining, remainingFacts[i], true, policy));
+                AssertEqual("remaining exact food kind supplies its configured group",
+                    remainingGroups[i], remaining.groupKey);
+            }
+
+            // A meal can contain several exact categories. Selection follows XML policy order,
+            // never ingredient registration order, so modded mixed meals remain deterministic.
+            FoodIngestionEvidenceFact selected = FoodBeliefEvidencePolicy.SelectFact(
+                new List<FoodIngestionEvidenceFact>
+                {
+                    exactPaste, exactFungus, exactAnimalMeat, exactInsectMeat, exactHumanMeat
+                },
+                policy);
+            AssertEqual("XML food policy order chooses humanlike meat from a mixed meal",
+                FoodIngestionEvidenceKindTokens.HumanlikeMeat, selected?.ingredientKind);
+
             BeliefEventEvidence generic = Evidence(true);
             AssertTrue("generic meal without an exact ingredient stays unchanged",
                 !FoodBeliefEvidencePolicy.TryEnrich(generic, null, true, policy));
@@ -2707,6 +2765,10 @@ namespace PawnDiary
                 duplicateEvidence.groupKey);
             AssertEqual("duplicate food policy leaves no partial field", 0,
                 duplicateEvidence.matchFields.Count);
+            AssertTrue("duplicate food policy also rejects scope selection",
+                FoodBeliefEvidencePolicy.SelectFact(
+                    new List<FoodIngestionEvidenceFact> { exactHumanMeat },
+                    duplicateBuilder.Build()) == null);
 
             BeliefEventEvidence inactive = Evidence(true);
             AssertTrue("Ideology-inactive food enrichment remains inert",
@@ -2721,6 +2783,19 @@ namespace PawnDiary
                     inactive, exactHumanMeat, true, disabledBuilder.Build()));
             AssertEqual("inactive/disabled food enrichment adds no field", 0,
                 inactive.matchFields.Count);
+        }
+
+        private static FoodIngestionEvidenceFact FoodFact(
+            string kind,
+            string defName,
+            string label)
+        {
+            return new FoodIngestionEvidenceFact
+            {
+                ingredientKind = kind,
+                ingredientDefName = defName,
+                ingredientLabel = label
+            };
         }
 
         private static AuthoritySpeechPolicyBuilder AuthoritySpeechPolicyBuilderForTests()
