@@ -1247,20 +1247,31 @@ namespace PawnDiary
 
             int maxNearbyToPick = Mathf.Min(2, candidates.Count);
             int minNearbyToPick = Mathf.Min(1, maxNearbyToPick);
+            // Prompt flavor must not consume either of RimWorld's global random streams. A local,
+            // tick-scoped generator keeps repeated builds for the same live snapshot identical while
+            // still allowing later diary moments to choose a different nearby detail.
+            int stableSeed = HumorChancePolicy.StableSeed(
+                pawn.GetUniqueLoadID(),
+                "nearby|" + (Find.TickManager?.TicksGame ?? 0));
+            System.Random random = new System.Random(stableSeed);
             int nearbyToPick = maxNearbyToPick == minNearbyToPick
                 ? maxNearbyToPick
-                : UnityEngine.Random.Range(minNearbyToPick, maxNearbyToPick + 1);
+                : random.Next(minNearbyToPick, maxNearbyToPick + 1);
 
-            List<string> selectedLabels = PickWeightedNearbyThings(candidates, nearbyToPick);
+            List<string> selectedLabels = PickWeightedNearbyThings(
+                candidates, nearbyToPick, random);
             return string.Join(", ", selectedLabels.ToArray());
         }
 
         // Picks 1-2 nearby things with weighted random and no replacement, so high-value objects like
         // fire/corpse/buildings appear more often across repeated diary entries while still keeping
         // variety.
-        private static List<string> PickWeightedNearbyThings(List<Thing> candidates, int maxCount)
+        private static List<string> PickWeightedNearbyThings(
+            List<Thing> candidates,
+            int maxCount,
+            System.Random random)
         {
-            if (candidates == null || candidates.Count == 0 || maxCount <= 0)
+            if (candidates == null || candidates.Count == 0 || maxCount <= 0 || random == null)
             {
                 return new List<string>();
             }
@@ -1282,7 +1293,7 @@ namespace PawnDiary
                     break;
                 }
 
-                float roll = UnityEngine.Random.value * totalWeight;
+                float roll = (float)random.NextDouble() * totalWeight;
                 float cumulative = 0f;
                 int selectedIndex = pool.Count - 1;
                 for (int i = 0; i < pool.Count; i++)

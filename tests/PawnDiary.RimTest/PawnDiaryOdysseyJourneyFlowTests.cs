@@ -951,29 +951,40 @@ namespace PawnDiary.RimTests
                     Rand.PopState();
                 }
 
+                UnityEngine.Random.State originalUnityState = UnityEngine.Random.state;
+                float expectedUnityNext;
+                UnityEngine.Random.InitState(seed);
+                expectedUnityNext = UnityEngine.Random.value;
+                UnityEngine.Random.state = originalUnityState;
+
                 string first;
                 string second;
                 float actualNext;
+                float actualUnityNext;
                 Rand.PushState(seed);
+                UnityEngine.Random.InitState(seed);
                 try
                 {
                     first = DiaryContextBuilder.BuildSurroundingsSummary(pawn);
                     actualNext = Rand.Value;
+                    actualUnityNext = UnityEngine.Random.value;
 
-                    // Shift the outer test stream before the second build. Stable seeding inside the
-                    // context builder must make the cosmetic weather decision independent of it.
+                    // Shift both outer test streams before the second build. Local stable seeding inside
+                    // the context builder must make weather and nearby-detail choices independent of them.
                     Rand.Chance(0.5f);
+                    _ = UnityEngine.Random.value;
                     second = DiaryContextBuilder.BuildSurroundingsSummary(pawn);
                 }
                 finally
                 {
+                    UnityEngine.Random.state = originalUnityState;
                     Rand.PopState();
                 }
 
-                Require(actualNext == expectedNext,
-                    "Building visible surroundings advanced RimWorld's gameplay RNG stream.");
+                Require(actualNext == expectedNext && actualUnityNext == expectedUnityNext,
+                    "Building visible surroundings advanced a RimWorld/Unity gameplay RNG stream.");
                 Require(first == second,
-                    "The same live surroundings changed when only the outer RNG cursor changed.");
+                    "The same live surroundings changed when only the outer RNG cursors changed.");
             }
             finally
             {
