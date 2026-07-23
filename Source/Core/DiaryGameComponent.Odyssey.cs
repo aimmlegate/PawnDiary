@@ -216,6 +216,12 @@ namespace PawnDiary
                     odysseyMechhiveOutcome = OdysseyMechhiveOutcomeState.FromSnapshot(
                         OdysseyMechhivePersistencePolicy.Normalize(afterEvent));
                 }
+
+                // Reason odyssey_mechhive_outcome: after the canonical ending page records,
+                // optionally request the existing rare arc-reflection scheduler while excluding
+                // that page from immediate recap. The scheduler retains all of its own cadence,
+                // settings, memory-sufficiency, and writer-eligibility gates.
+                ConsiderArcReflectionAfterMajorEvent(actor, signal.CreatedEvent.eventId);
             }
             catch (Exception exception)
             {

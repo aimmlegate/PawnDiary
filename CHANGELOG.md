@@ -9,7 +9,7 @@ pre-release version ladder for project history.
 ## 2026-07-23
 
 - **Lore-memory prompt trim.** Removed the world-lore primer and its setting; authored lore now reaches prompts only through relevant memory recall.
-- **Odyssey Phase O3 Mechhive ending.** Verified and patched the exact private Cerebrex-core destroy/scavenge owner, transactionally defers the matching generic Quest page, commits normalized replay state, and writes one operator-only EN/RU ending while failing open on every missing gate.
+- **Odyssey Phase O3 Mechhive ending.** Verified and patched the exact private Cerebrex-core destroy/scavenge owner, transactionally defers the matching generic Quest page, commits normalized replay state, writes one operator-only EN/RU ending while failing open on every missing gate, and offers that major event to the existing rate-limited arc-reflection scheduler.
 - **Odyssey Phase O3 exploration.** Extended exact visible asteroid/station/Mechhive destination categories and enriched the existing Quest route for all nine installed gravcore roots without guessing recovery or the terminal choice.
 - **Lore memory — post-review fixes.** Retargeted the `LoreSeed_Prog_Xenotype` progression seed onto
   the `GeneIdentityChanged` token the runtime actually emits (Biotech Phase 5 consolidated xenotype
