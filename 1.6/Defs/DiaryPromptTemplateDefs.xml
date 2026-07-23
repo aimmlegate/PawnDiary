@@ -63,6 +63,14 @@
       <li><label>pollution transition</label><source>GameContext</source><contextKey>pollution_transition</contextKey></li>
       <li><label>map</label><source>GameContext</source><contextKey>map_label</contextKey></li>
       <li><label>context facet</label><source>GameContext</source><contextKey>facet</contextKey></li>
+      <!-- Biotech Phase 8 prompt-safe projection. Stable IDs/epochs stay event-internal; an
+           unproved rupture or wake cause is omitted by the source adapter. -->
+      <li><label>psychic bond</label><source>GameContext</source><contextKey>psychic_bond</contextKey></li>
+      <li><label>first bonded pawn</label><source>GameContext</source><contextKey>bond_first_pawn_name</contextKey></li>
+      <li><label>second bonded pawn</label><source>GameContext</source><contextKey>bond_second_pawn_name</contextKey></li>
+      <li><label>verified rupture cause</label><source>GameContext</source><contextKey>cause</contextKey></li>
+      <li><label>deathrest</label><source>GameContext</source><contextKey>deathrest</contextKey></li>
+      <li><label>deathrest severity</label><source>GameContext</source><contextKey>completion_band</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -181,6 +189,13 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>pollution transition</label><source>GameContext</source><contextKey>pollution_transition</contextKey></li>
       <li><label>map</label><source>GameContext</source><contextKey>map_label</contextKey></li>
       <li><label>context facet</label><source>GameContext</source><contextKey>facet</contextKey></li>
+      <!-- Phase 8 append-only fields; unknown causes remain absent. -->
+      <li><label>psychic bond</label><source>GameContext</source><contextKey>psychic_bond</contextKey></li>
+      <li><label>first bonded pawn</label><source>GameContext</source><contextKey>bond_first_pawn_name</contextKey></li>
+      <li><label>second bonded pawn</label><source>GameContext</source><contextKey>bond_second_pawn_name</contextKey></li>
+      <li><label>verified rupture cause</label><source>GameContext</source><contextKey>cause</contextKey></li>
+      <li><label>deathrest</label><source>GameContext</source><contextKey>deathrest</contextKey></li>
+      <li><label>deathrest severity</label><source>GameContext</source><contextKey>completion_band</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -338,6 +353,13 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>pollution transition</label><source>GameContext</source><contextKey>pollution_transition</contextKey></li>
       <li><label>map</label><source>GameContext</source><contextKey>map_label</contextKey></li>
       <li><label>context facet</label><source>GameContext</source><contextKey>facet</contextKey></li>
+      <!-- Biotech Phase 8 prompt-safe projection; see PairDefault above. -->
+      <li><label>psychic bond</label><source>GameContext</source><contextKey>psychic_bond</contextKey></li>
+      <li><label>first bonded pawn</label><source>GameContext</source><contextKey>bond_first_pawn_name</contextKey></li>
+      <li><label>second bonded pawn</label><source>GameContext</source><contextKey>bond_second_pawn_name</contextKey></li>
+      <li><label>verified rupture cause</label><source>GameContext</source><contextKey>cause</contextKey></li>
+      <li><label>deathrest</label><source>GameContext</source><contextKey>deathrest</contextKey></li>
+      <li><label>deathrest severity</label><source>GameContext</source><contextKey>completion_band</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -506,6 +528,13 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>pollution transition</label><source>GameContext</source><contextKey>pollution_transition</contextKey></li>
       <li><label>map</label><source>GameContext</source><contextKey>map_label</contextKey></li>
       <li><label>context facet</label><source>GameContext</source><contextKey>facet</contextKey></li>
+      <!-- Phase 8 append-only fields; routine completed wakes and unknown causes stay omitted. -->
+      <li><label>psychic bond</label><source>GameContext</source><contextKey>psychic_bond</contextKey></li>
+      <li><label>first bonded pawn</label><source>GameContext</source><contextKey>bond_first_pawn_name</contextKey></li>
+      <li><label>second bonded pawn</label><source>GameContext</source><contextKey>bond_second_pawn_name</contextKey></li>
+      <li><label>verified rupture cause</label><source>GameContext</source><contextKey>cause</contextKey></li>
+      <li><label>deathrest</label><source>GameContext</source><contextKey>deathrest</contextKey></li>
+      <li><label>deathrest severity</label><source>GameContext</source><contextKey>completion_band</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

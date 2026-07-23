@@ -44,6 +44,7 @@
     <familyBaselineNarrativeFormat>This growth belongs to {0}&apos;s exact known family continuity.</familyBaselineNarrativeFormat>
     <identityNarrativeFormat>{0}&apos;s current visible xenotype is {1}; treat it as present identity, never as a prediction about genes.</identityNarrativeFormat>
     <geneIdentityNarrativeFormat>The visible gene-identity change affecting {0} centered on {1}; keep it as one bounded theme, never a gene list.</geneIdentityNarrativeFormat>
+    <psychicBondNarrativeFormat>{0} and {1} have a verified psychic-bond phase: {2}; do not infer romance, consent, destiny, or permanence.</psychicBondNarrativeFormat>
 
     <familyActivityExactDefNames>
       <li>BabyPlay</li>
@@ -155,5 +156,13 @@
     <mechanitorCombatSecondPawnDefNames>
       <li>KilledBy</li>
     </mechanitorCombatSecondPawnDefNames>
+
+    <!-- Phase 8 psychic-bond/deathrest policy. All values are primitives; no Biotech Def is
+         resolved while loading a no-DLC game. -->
+    <deathrestSevereCompletionThreshold>0.5</deathrestSevereCompletionThreshold>
+    <deathrestCooldownTicks>900000</deathrestCooldownTicks>
+    <deathrestLifetimePageLimit>1</deathrestLifetimePageLimit>
+    <psychicBondCorrelationExpiryTicks>2500</psychicBondCorrelationExpiryTicks>
+    <maximumBondObservationRows>16</maximumBondObservationRows>
   </PawnDiary.DiaryBiotechPolicyDef>
 </Defs>

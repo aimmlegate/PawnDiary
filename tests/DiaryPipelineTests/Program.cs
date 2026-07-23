@@ -1421,6 +1421,61 @@ namespace DiaryPipelineTests
                 }
             }
 
+            DiaryEventPayload bond = PairPayload(
+                "e-biotech-bond",
+                "psychic bond ruptured",
+                "Alice's psychic bond with Bob ruptured.",
+                "Bob's psychic bond with Alice ruptured.");
+            bond.gameContext = "psychic_bond=ruptured; bond_first_pawn_id=Thing_Alice_1; "
+                + "bond_first_pawn_name=Alice; bond_second_pawn_id=Thing_Bob_2; "
+                + "bond_second_pawn_name=Bob; bond_epoch=4; cause=death";
+            DiaryEventPayload deathrest = SoloPayload(
+                "e-biotech-deathrest",
+                "interrupted deathrest",
+                "Alice's deathrest was interrupted while still severely incomplete.");
+            deathrest.gameContext = "deathrest=interrupted; completion_band=severe";
+
+            for (int i = 0; i < levels.Length; i++)
+            {
+                PromptContextDetailLevel level = levels[i];
+                string suffix = " (" + level + ")";
+                DiaryPromptPlan bondPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = bond,
+                    policy = Policy(combat: false, important: true),
+                    povRole = DiaryPipelineRoles.Initiator,
+                    contextDetailLevel = level,
+                    contextBudgets = tinyBudgets
+                });
+                AssertContains("psychic-bond phase survives detail budget" + suffix,
+                    bondPlan.userPrompt, "psychic bond: ruptured");
+                AssertContains("first bonded pawn survives detail budget" + suffix,
+                    bondPlan.userPrompt, "first bonded pawn: Alice");
+                AssertContains("second bonded pawn survives detail budget" + suffix,
+                    bondPlan.userPrompt, "second bonded pawn: Bob");
+                AssertContains("verified rupture cause survives detail budget" + suffix,
+                    bondPlan.userPrompt, "verified rupture cause: death");
+                AssertTrue("bond IDs and epoch stay private" + suffix,
+                    !bondPlan.userPrompt.Contains("Thing_Alice_1")
+                        && !bondPlan.userPrompt.Contains("Thing_Bob_2")
+                        && !bondPlan.userPrompt.Contains("bond_epoch"));
+
+                DiaryPromptPlan deathrestPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = deathrest,
+                    policy = Policy(combat: false, important: true),
+                    povRole = DiaryPipelineRoles.Initiator,
+                    contextDetailLevel = level,
+                    contextBudgets = tinyBudgets
+                });
+                AssertContains("deathrest phase survives detail budget" + suffix,
+                    deathrestPlan.userPrompt, "deathrest: interrupted");
+                AssertContains("deathrest severe band survives detail budget" + suffix,
+                    deathrestPlan.userPrompt, "deathrest severity: severe");
+                AssertTrue("deathrest prompt invents no cause field" + suffix,
+                    !deathrestPlan.userPrompt.Contains("cause:"));
+            }
+
         }
 
         private static void TestPollutionContextFormatting()
@@ -1616,6 +1671,8 @@ namespace DiaryPipelineTests
                 "supporter_role", "initiator_family_role", "recipient_family_role", "child_name",
                 "birth_outcome", "birth_method", "birther_name", "genetic_mother_name",
                 "father_name", "doctor_name", "birther_died", "ritual_birth"
+                , "psychic_bond", "bond_first_pawn_name", "bond_second_pawn_name",
+                "cause", "deathrest", "completion_band"
             };
             string[] templateDefNames =
             {
@@ -4610,8 +4667,8 @@ namespace DiaryPipelineTests
                 "persona_trait_description_2", "persona_milestone", "tale_source_def",
                 "tale_source_label", "tale_killer_role", "tale_victim_role"
             };
-            AssertEqual("SoloImportant pollution projection extends the append-only list to 129 fields",
-                129, new List<XElement>(solo.Element("fields").Elements("li")).Count);
+            AssertEqual("SoloImportant Phase-8 projection extends the append-only list to 135 fields",
+                135, new List<XElement>(solo.Element("fields").Elements("li")).Count);
             for (int i = 0; i < contextKeys.Length; i++)
             {
                 AssertTrue("SoloImportant persona prompt field exists: " + contextKeys[i],
@@ -6845,6 +6902,12 @@ namespace DiaryPipelineTests
                     ContextField("pollution transition", "pollution_transition"),
                     ContextField("map", "map_label"),
                     ContextField("context facet", "facet"),
+                    ContextField("psychic bond", "psychic_bond"),
+                    ContextField("first bonded pawn", "bond_first_pawn_name"),
+                    ContextField("second bonded pawn", "bond_second_pawn_name"),
+                    ContextField("verified rupture cause", "cause"),
+                    ContextField("deathrest", "deathrest"),
+                    ContextField("deathrest severity", "completion_band"),
                     Field("weapon", "Weapon"),
                     Field("important context", "PromptEnchantment"),
                     Field("previous diary ending (continue from this)", "PreviousEntryEnding"),

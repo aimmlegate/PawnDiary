@@ -349,7 +349,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Keeps the small, event-defining Biotech B1 facts in every prompt-detail preset. These are
+        /// Keeps the small, event-defining Biotech facts in every prompt-detail preset. These are
         /// stable context-schema tokens (not tunable prose): Compact may discard supporting descriptions,
         /// participant lists, and continuity, but it must not turn a growth choice or birth into an
         /// ambiguous generic event. Internal IDs, raw band tokens, numeric tiers, ticks, and family-arc
@@ -371,7 +371,13 @@ namespace PawnDiary
                 || Eq(contextKey, "birth_outcome")
                 || Eq(contextKey, "birth_method")
                 || Eq(contextKey, "birther_died")
-                || Eq(contextKey, "ritual_birth");
+                || Eq(contextKey, "ritual_birth")
+                || Eq(contextKey, "psychic_bond")
+                || Eq(contextKey, "bond_first_pawn_name")
+                || Eq(contextKey, "bond_second_pawn_name")
+                || Eq(contextKey, "cause")
+                || Eq(contextKey, "deathrest")
+                || Eq(contextKey, "completion_band");
         }
 
         /// <summary>

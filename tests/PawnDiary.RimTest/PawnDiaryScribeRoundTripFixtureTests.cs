@@ -847,6 +847,22 @@ namespace PawnDiary.RimTests
                 calledTick = 456,
                 defeatedObserved = true
             });
+            biotechProgression.bondObservationVersion =
+                PsychicBondLifecyclePolicy.CurrentObservationVersion;
+            biotechProgression.EnsurePsychicBondObservations().Add(
+                new PsychicBondObservationRow
+                {
+                    partnerPawnId = "Thing_Human_BondPartner",
+                    bondEpoch = 3,
+                    bonded = false,
+                    lastTransitionTick = 789
+                });
+            DeathrestObservationState deathrest =
+                biotechProgression.EnsureDeathrestObservation();
+            deathrest.observationVersion =
+                DeathrestInterruptionPolicy.CurrentObservationVersion;
+            deathrest.severeInterruptionsRecorded = 1;
+            deathrest.lastRecordedTick = 987;
 
             PawnArcScheduleState arc = new PawnArcScheduleState
             {
@@ -961,6 +977,28 @@ namespace PawnDiary.RimTests
                 "record nested boss Def");
             AssertStr("Thing_Boss_Diabolus_42", loadedMechanitor.bossCalls[0].bossPawnId,
                 "record nested exact boss pawn ID");
+            BiotechPawnProgressionState loadedBiotech =
+                loaded.progressionState.EnsureBiotechState();
+            AssertInt(PsychicBondLifecyclePolicy.CurrentObservationVersion,
+                loadedBiotech.bondObservationVersion,
+                "record nested psychic-bond observation version");
+            Require(loadedBiotech.psychicBondObservations.Count == 1
+                    && !loadedBiotech.psychicBondObservations[0].bonded,
+                "record nested psychic-bond row should survive load.");
+            AssertStr("Thing_Human_BondPartner",
+                loadedBiotech.psychicBondObservations[0].partnerPawnId,
+                "record nested psychic-bond partner");
+            AssertInt(3, loadedBiotech.psychicBondObservations[0].bondEpoch,
+                "record nested psychic-bond epoch");
+            DeathrestObservationState loadedDeathrest =
+                loadedBiotech.EnsureDeathrestObservation();
+            AssertInt(DeathrestInterruptionPolicy.CurrentObservationVersion,
+                loadedDeathrest.observationVersion,
+                "record nested deathrest observation version");
+            AssertInt(1, loadedDeathrest.severeInterruptionsRecorded,
+                "record nested deathrest lifetime count");
+            AssertInt(987, loadedDeathrest.lastRecordedTick,
+                "record nested deathrest cooldown tick");
 
             Require(loaded.arcSchedule != null, "record arcSchedule should be non-null after load.");
             AssertInt(1234, loaded.arcSchedule.lastArcEntryTick, "record arc lastArcEntryTick");
@@ -1058,6 +1096,17 @@ namespace PawnDiary.RimTests
                     && oldSaveMechanitor.observedMechs.Count == 0
                     && oldSaveMechanitor.bossCalls.Count == 0,
                 "an old save with no mechanitor keys should remain an uninitialized silent row.");
+            BiotechPawnProgressionState oldSaveBiotech =
+                nullLoaded.progressionState.EnsureBiotechState();
+            DeathrestObservationState oldSaveDeathrest =
+                oldSaveBiotech.EnsureDeathrestObservation();
+            Require(oldSaveBiotech.bondObservationVersion == 0
+                    && oldSaveBiotech.psychicBondObservations.Count == 0,
+                "an old save with no bond keys should remain an uninitialized silent row.");
+            Require(oldSaveDeathrest.observationVersion == 0
+                    && oldSaveDeathrest.severeInterruptionsRecorded == 0
+                    && oldSaveDeathrest.lastRecordedTick == -1,
+                "an old save with no deathrest keys should remain an uninitialized silent row.");
 
             // A real pre-Biotech record can already have populated scalar progression state while its
             // additive nested Biotech row is absent. Prove that exact shape preserves the old fields

@@ -34,6 +34,8 @@ namespace DiaryBiotechPolicyTests
             TestGeneObservationBaselineAndNormalization();
             TestGeneTransitionDiffFallbackAndContext();
             TestMechanitorLifecyclePolicy();
+            TestPsychicBondLifecyclePolicy();
+            TestDeathrestInterruptionPolicy();
             TestShippedXmlPolicyAndLocalization();
             Console.WriteLine("DiaryBiotechPolicyTests passed " + assertions + " assertions.");
             return 0;
@@ -1617,6 +1619,225 @@ namespace DiaryBiotechPolicyTests
             };
         }
 
+        private static void TestPsychicBondLifecyclePolicy()
+        {
+            PsychicBondPair sorted = PsychicBondPairPolicy.Create("Pawn_Z", " Pawn_A ");
+            AssertNotNull("distinct bond IDs form a pair", sorted);
+            AssertEqual("bond pair sorts first ID", "Pawn_A", sorted.firstPawnId);
+            AssertEqual("bond pair sorts second ID", "Pawn_Z", sorted.secondPawnId);
+            AssertEqual("bond pair key is stable", "Pawn_A|Pawn_Z", sorted.Key);
+            AssertTrue("blank bond ID is rejected",
+                PsychicBondPairPolicy.Create(string.Empty, "Pawn_A") == null);
+            AssertTrue("self bond is rejected",
+                PsychicBondPairPolicy.Create("Pawn_A", "Pawn_A") == null);
+            AssertTrue("separator-bearing IDs are rejected",
+                PsychicBondPairPolicy.Create("Pawn|A", "Pawn_B") == null);
+            AssertEqual("bond arc includes sorted pair and epoch",
+                "biotech-psychic-bond|Pawn_A|Pawn_Z|3",
+                PsychicBondPairPolicy.ArcKey(sorted, 3));
+            AssertTrue("same sorted pair and phase is recursive secondary",
+                PsychicBondLifecyclePolicy.IsRecursiveSecondary(
+                    PsychicBondPairPolicy.Create("Pawn_Z", "Pawn_A"),
+                    PsychicBondPhaseTokens.Formed,
+                    sorted.Key,
+                    PsychicBondPhaseTokens.Formed));
+            AssertTrue("different phase cannot steal recursive ownership",
+                !PsychicBondLifecyclePolicy.IsRecursiveSecondary(
+                    sorted,
+                    PsychicBondPhaseTokens.Ruptured,
+                    sorted.Key,
+                    PsychicBondPhaseTokens.Formed));
+            AssertTrue("different pair cannot steal recursive ownership",
+                !PsychicBondLifecyclePolicy.IsRecursiveSecondary(
+                    PsychicBondPairPolicy.Create("Pawn_A", "Pawn_B"),
+                    PsychicBondPhaseTokens.Formed,
+                    sorted.Key,
+                    PsychicBondPhaseTokens.Formed));
+            AssertTrue("formation owns only nested PsychicBond",
+                PsychicBondLifecyclePolicy.OwnsNestedSignalDef(
+                    PsychicBondPhaseTokens.Formed,
+                    "PsychicBond")
+                && !PsychicBondLifecyclePolicy.OwnsNestedSignalDef(
+                    PsychicBondPhaseTokens.Formed,
+                    "PsychicBondTorn"));
+            AssertTrue("rupture owns only nested PsychicBondTorn",
+                PsychicBondLifecyclePolicy.OwnsNestedSignalDef(
+                    PsychicBondPhaseTokens.Ruptured,
+                    "PsychicBondTorn")
+                && !PsychicBondLifecyclePolicy.OwnsNestedSignalDef(
+                    PsychicBondPhaseTokens.Ruptured,
+                    "PsychicBond"));
+
+            PsychicBondMutationSnapshot formed = new PsychicBondMutationSnapshot
+            {
+                firstPawnId = "Pawn_Z",
+                secondPawnId = "Pawn_A",
+                phase = PsychicBondPhaseTokens.Formed,
+                bondEpoch = 1,
+                mutuallyBondedBefore = false,
+                mutuallyBondedAfter = true
+            };
+            AssertTrue("verified new mutual bond is owned",
+                PsychicBondLifecyclePolicy.ShouldOwnFormation(formed));
+            formed.mutuallyBondedBefore = true;
+            AssertTrue("prior mutual bond suppresses formation replay",
+                !PsychicBondLifecyclePolicy.ShouldOwnFormation(formed));
+            formed.mutuallyBondedBefore = false;
+            formed.mutuallyBondedAfter = false;
+            AssertTrue("failed mutual verification suppresses formation",
+                !PsychicBondLifecyclePolicy.ShouldOwnFormation(formed));
+
+            PsychicBondMutationSnapshot ruptured = new PsychicBondMutationSnapshot
+            {
+                firstPawnId = "Pawn_A",
+                secondPawnId = "Pawn_Z",
+                phase = PsychicBondPhaseTokens.Ruptured,
+                bondEpoch = 4,
+                mutuallyBondedBefore = true,
+                mutuallyBondedAfter = false
+            };
+            AssertTrue("verified mutual rupture is owned",
+                PsychicBondLifecyclePolicy.ShouldOwnRupture(ruptured));
+            ruptured.mutuallyBondedAfter = true;
+            AssertTrue("still-mutual pair suppresses rupture",
+                !PsychicBondLifecyclePolicy.ShouldOwnRupture(ruptured));
+
+            AssertEqual("exact death outranks gene-removal scope",
+                PsychicBondCauseTokens.Death,
+                PsychicBondLifecyclePolicy.ExactRuptureCause(true, true));
+            AssertEqual("owning gene-removal scope is truthful",
+                PsychicBondCauseTokens.GeneRemoved,
+                PsychicBondLifecyclePolicy.ExactRuptureCause(false, true));
+            AssertEqual("unproved rupture cause stays unknown",
+                PsychicBondCauseTokens.Unknown,
+                PsychicBondLifecyclePolicy.ExactRuptureCause(false, false));
+            AssertTrue("unknown cause is not prompt-safe",
+                !PsychicBondCauseTokens.IsPromptSafe(PsychicBondCauseTokens.Unknown));
+
+            List<PsychicBondObservationRow> firstRows = new List<PsychicBondObservationRow>
+            {
+                new PsychicBondObservationRow
+                {
+                    partnerPawnId = "Pawn_Z",
+                    bondEpoch = 2,
+                    lastTransitionTick = 50
+                }
+            };
+            List<PsychicBondObservationRow> secondRows = new List<PsychicBondObservationRow>
+            {
+                new PsychicBondObservationRow
+                {
+                    partnerPawnId = "Pawn_A",
+                    bondEpoch = 3,
+                    lastTransitionTick = 60
+                }
+            };
+            AssertEqual("reformation increments the greatest persisted pair epoch", 4,
+                PsychicBondLifecyclePolicy.NextEpoch("Pawn_A", "Pawn_Z", firstRows, secondRows));
+            AssertEqual("new pair starts at epoch one", 1,
+                PsychicBondLifecyclePolicy.NextEpoch("Pawn_A", "Pawn_B", firstRows, null));
+
+            List<PsychicBondObservationRow> malformed = new List<PsychicBondObservationRow>
+            {
+                null,
+                new PsychicBondObservationRow { partnerPawnId = "", bondEpoch = -2, lastTransitionTick = -4 },
+                new PsychicBondObservationRow
+                    { partnerPawnId = "Pawn_A", bondEpoch = 1, lastTransitionTick = 10 },
+                new PsychicBondObservationRow
+                    { partnerPawnId = "Pawn_Z", bondEpoch = 1, lastTransitionTick = 20 },
+                new PsychicBondObservationRow
+                    { partnerPawnId = " Pawn_Z ", bondEpoch = 2, lastTransitionTick = 30 },
+                new PsychicBondObservationRow
+                    { partnerPawnId = "Pawn_B", bondEpoch = 1, lastTransitionTick = 999 }
+            };
+            PsychicBondLifecyclePolicy.NormalizeRows(malformed, "Pawn_A", 100, 2);
+            AssertEqual("normalization rejects invalid/self rows and applies cap", 2, malformed.Count);
+            AssertSequence("normalization is deterministic by partner ID",
+                new[] { "Pawn_B", "Pawn_Z" },
+                malformed.Select(row => row.partnerPawnId));
+            AssertEqual("newest duplicate bond row survives", 2,
+                malformed.Single(row => row.partnerPawnId == "Pawn_Z").bondEpoch);
+            AssertEqual("future transition tick clamps to now", 100,
+                malformed.Single(row => row.partnerPawnId == "Pawn_B").lastTransitionTick);
+        }
+
+        private static void TestDeathrestInterruptionPolicy()
+        {
+            BiotechBondDeathrestPolicySnapshot policy =
+                BiotechBondDeathrestPolicySnapshot.CreateDefault();
+            policy.deathrestLifetimePageLimit = 2;
+            policy.deathrestCooldownTicks = 100;
+            DeathrestObservationState state = new DeathrestObservationState();
+            DeathrestMutationSnapshot snapshot = new DeathrestMutationSnapshot
+            {
+                pawnId = "Pawn_A",
+                pawnEligible = true,
+                activeDeathrestBefore = true,
+                interruptedHediffAfter = true,
+                deathrestPercentBefore = 0.5f,
+                observedTick = 1000
+            };
+            AssertEqual("severe threshold boundary records",
+                DeathrestInterruptionDecision.OwnAndRecord,
+                DeathrestInterruptionPolicy.Decide(snapshot, state, policy));
+            snapshot.deathrestPercentBefore = 0.5001f;
+            AssertEqual("above severe threshold owns silently",
+                DeathrestInterruptionDecision.OwnSilently,
+                DeathrestInterruptionPolicy.Decide(snapshot, state, policy));
+            snapshot.deathrestPercentBefore = 0.2f;
+            DeathrestInterruptionPolicy.Record(state, 1000);
+            snapshot.observedTick = 1099;
+            AssertEqual("cooldown just before boundary is silent",
+                DeathrestInterruptionDecision.OwnSilently,
+                DeathrestInterruptionPolicy.Decide(snapshot, state, policy));
+            snapshot.observedTick = 1100;
+            AssertEqual("cooldown boundary is inclusive",
+                DeathrestInterruptionDecision.OwnAndRecord,
+                DeathrestInterruptionPolicy.Decide(snapshot, state, policy));
+            DeathrestInterruptionPolicy.Record(state, 1100);
+            snapshot.observedTick = 2000;
+            AssertEqual("lifetime cap keeps later severe wake silent",
+                DeathrestInterruptionDecision.OwnSilently,
+                DeathrestInterruptionPolicy.Decide(snapshot, state, policy));
+
+            DeathrestMutationSnapshot inactive = new DeathrestMutationSnapshot
+            {
+                pawnId = "Pawn_A",
+                pawnEligible = true,
+                activeDeathrestBefore = false,
+                interruptedHediffAfter = true,
+                deathrestPercentBefore = 0.1f
+            };
+            AssertEqual("inactive deathrest is dropped",
+                DeathrestInterruptionDecision.Drop,
+                DeathrestInterruptionPolicy.Decide(inactive, new DeathrestObservationState(), policy));
+            inactive.activeDeathrestBefore = true;
+            inactive.interruptedHediffAfter = false;
+            AssertEqual("unconfirmed interrupted hediff is dropped",
+                DeathrestInterruptionDecision.Drop,
+                DeathrestInterruptionPolicy.Decide(inactive, new DeathrestObservationState(), policy));
+            inactive.interruptedHediffAfter = true;
+            inactive.deathrestPercentBefore = 1f;
+            AssertEqual("completed wake is silent and unowned",
+                DeathrestInterruptionDecision.Drop,
+                DeathrestInterruptionPolicy.Decide(inactive, new DeathrestObservationState(), policy));
+            inactive.deathrestPercentBefore = float.NaN;
+            AssertEqual("invalid completion percent is dropped",
+                DeathrestInterruptionDecision.Drop,
+                DeathrestInterruptionPolicy.Decide(inactive, new DeathrestObservationState(), policy));
+
+            DeathrestObservationState malformed = new DeathrestObservationState
+            {
+                observationVersion = -1,
+                severeInterruptionsRecorded = -3,
+                lastRecordedTick = 999
+            };
+            DeathrestInterruptionPolicy.Normalize(malformed, 100);
+            AssertEqual("deathrest version clamps", 0, malformed.observationVersion);
+            AssertEqual("deathrest count clamps", 0, malformed.severeInterruptionsRecorded);
+            AssertEqual("deathrest future tick clamps", 100, malformed.lastRecordedTick);
+        }
+
         private static void TestShippedXmlPolicyAndLocalization()
         {
             string root = RepositoryRoot();
@@ -1684,6 +1905,16 @@ namespace DiaryBiotechPolicyTests
                 Values(def.Element("miscarriageBirtherThoughtDefNames")));
             AssertSequence("policy partner miscarriage Thought Defs", new[] { "PartnerMiscarried" },
                 Values(def.Element("miscarriagePartnerThoughtDefNames")));
+            AssertEqual("deathrest severe threshold", "0.5",
+                Value(def, "deathrestSevereCompletionThreshold"));
+            AssertEqual("deathrest cooldown", "900000", Value(def, "deathrestCooldownTicks"));
+            AssertEqual("deathrest lifetime cap", "1", Value(def, "deathrestLifetimePageLimit"));
+            AssertEqual("psychic-bond correlation expiry", "2500",
+                Value(def, "psychicBondCorrelationExpiryTicks"));
+            AssertEqual("psychic-bond saved-row cap", "16",
+                Value(def, "maximumBondObservationRows"));
+            AssertTrue("psychic-bond narrative prose is XML-owned",
+                Value(def, "psychicBondNarrativeFormat").Length > 0);
 
             List<XElement> opportunity = def.Element("opportunityBands").Elements("li").ToList();
             AssertEqual("four opportunity bands", 4, opportunity.Count);
@@ -1707,6 +1938,8 @@ namespace DiaryBiotechPolicyTests
             XElement birth = Group(groups, "biotechFamilyBirth");
             XElement geneIdentity = Group(groups, "progressionXenotype");
             XElement mechanitor = Group(groups, "progressionMechanitorLifecycle");
+            XElement psychicBond = Group(groups, "biotechPsychicBondLifecycle");
+            XElement deathrest = Group(groups, "biotechDeathrestInterrupted");
             AssertEqual("growth group order", "800", Value(growth, "order"));
             AssertEqual("growth domain", "Progression", Value(growth, "domain"));
             AssertSequence("growth exact classifier", new[] { "BiotechGrowthMoment" },
@@ -1738,6 +1971,26 @@ namespace DiaryBiotechPolicyTests
             }, Values(mechanitor.Element("matchDefNames")));
             AssertSequence("mechanitor package gate", new[] { "Ludeon.RimWorld.Biotech" },
                 Values(mechanitor.Element("enableWhenPackageIdsLoaded")));
+            AssertEqual("psychic-bond group order", "796", Value(psychicBond, "order"));
+            AssertSequence("psychic-bond exact classifiers", new[]
+            {
+                BiotechBondDeathrestEventDefNames.PsychicBondFormed,
+                BiotechBondDeathrestEventDefNames.PsychicBondRuptured
+            }, Values(psychicBond.Element("matchDefNames")));
+            AssertSequence("psychic-bond package gate", new[] { "Ludeon.RimWorld.Biotech" },
+                Values(psychicBond.Element("enableWhenPackageIdsLoaded")));
+            AssertTrue("psychic-bond prompt forbids unsupported relationship claims",
+                Value(psychicBond, "instruction").Contains("never infer romance, consent, destiny")
+                    && Value(psychicBond, "instruction").Contains("permanence"));
+            AssertEqual("deathrest group order", "797", Value(deathrest, "order"));
+            AssertSequence("deathrest exact classifier",
+                new[] { BiotechBondDeathrestEventDefNames.DeathrestInterrupted },
+                Values(deathrest.Element("matchDefNames")));
+            AssertSequence("deathrest package gate", new[] { "Ludeon.RimWorld.Biotech" },
+                Values(deathrest.Element("enableWhenPackageIdsLoaded")));
+            AssertTrue("deathrest prompt omits unproved causes and routine wakes",
+                Value(deathrest, "instruction").Contains("without inventing")
+                    && Value(deathrest, "instruction").Contains("routine completed wake"));
             AssertTrue("growth has no token/catch-all matcher",
                 growth.Element("matchTokens") == null && Value(growth, "catchAll") != "true");
             AssertTrue("birth has no token/catch-all matcher",
@@ -1778,7 +2031,17 @@ namespace DiaryBiotechPolicyTests
                 "progressionMechanitorLifecycle.instruction",
                 "progressionMechanitorLifecycle.tone",
                 "progressionMechanitorLifecycle.tones.0",
-                "progressionMechanitorLifecycle.tones.1"
+                "progressionMechanitorLifecycle.tones.1",
+                "biotechPsychicBondLifecycle.label",
+                "biotechPsychicBondLifecycle.instruction",
+                "biotechPsychicBondLifecycle.tone",
+                "biotechPsychicBondLifecycle.tones.0",
+                "biotechPsychicBondLifecycle.tones.1",
+                "biotechDeathrestInterrupted.label",
+                "biotechDeathrestInterrupted.instruction",
+                "biotechDeathrestInterrupted.tone",
+                "biotechDeathrestInterrupted.tones.0",
+                "biotechDeathrestInterrupted.tones.1"
             };
             foreach (string key in groupKeys)
             {
@@ -1795,6 +2058,8 @@ namespace DiaryBiotechPolicyTests
                 Value(policy.Root, "Diary_BiotechPolicy.deepenedInterestDescription").Length > 0);
             AssertTrue(language + " N3-B gene-identity narrative format",
                 Value(policy.Root, "Diary_BiotechPolicy.geneIdentityNarrativeFormat").Length > 0);
+            AssertTrue(language + " N3-B psychic-bond narrative format",
+                Value(policy.Root, "Diary_BiotechPolicy.psychicBondNarrativeFormat").Length > 0);
             for (int i = 0; i < 4; i++)
             {
                 AssertTrue(language + " opportunity description " + i,
@@ -1843,6 +2108,15 @@ namespace DiaryBiotechPolicyTests
                 "PawnDiary.Event.Biotech.Mechanitor.BossCalled.Text",
                 "PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Label",
                 "PawnDiary.Event.Biotech.Mechanitor.BossDefeated.Text",
+                "PawnDiary.Event.Biotech.Bond.Formed.Label",
+                "PawnDiary.Event.Biotech.Bond.Formed.Text",
+                "PawnDiary.Event.Biotech.Bond.Formed.Phase",
+                "PawnDiary.Event.Biotech.Bond.Ruptured.Label",
+                "PawnDiary.Event.Biotech.Bond.Ruptured.Text",
+                "PawnDiary.Event.Biotech.Bond.Ruptured.Phase",
+                "PawnDiary.Event.Biotech.Deathrest.Label",
+                "PawnDiary.Event.Biotech.Deathrest.Text",
+                "PawnDiary.Event.Biotech.Deathrest.Phase.Interrupted",
                 "PawnDiary.Dev.PromptSuite.BiotechGrowth.Label",
                 "PawnDiary.Dev.PromptSuite.BiotechGrowth.Markers",
                 "PawnDiary.Dev.PromptSuite.BiotechGrowth.Initiator",

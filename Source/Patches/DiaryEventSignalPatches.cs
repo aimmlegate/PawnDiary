@@ -145,7 +145,19 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryEvents.Submit(new MentalStateSignal(pawn, stateDef, otherPawn, reason));
+                MentalStateSignal signal = new MentalStateSignal(pawn, stateDef, otherPawn, reason);
+                int now = Find.TickManager?.TicksGame ?? 0;
+                if (ModsConfig.BiotechActive
+                    && BiotechPsychicBondCorrelation.TryStageMentalState(
+                        pawn,
+                        signal,
+                        now,
+                        DiaryBiotechPolicy.Snapshot()
+                            .bondDeathrest.psychicBondCorrelationExpiryTicks))
+                {
+                    return;
+                }
+                DiaryEvents.Submit(signal);
             });
         }
     }

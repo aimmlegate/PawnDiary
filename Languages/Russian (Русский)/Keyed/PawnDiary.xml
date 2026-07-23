@@ -1617,4 +1617,13 @@
   <PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Description>Сохраняй кризис общим для всей карты, описывай его качественно и ограничивайся видимыми последствиями.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Description>
   <PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Cue.Critical>Сосредоточься на тяжести жизни в критически загрязнённом доме, не раскрывая проценты или игровые механики.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Cue.Critical>
 
+  <PawnDiary.Event.Biotech.Bond.Formed.Label>Психическая связь образована</PawnDiary.Event.Biotech.Bond.Formed.Label>
+  <PawnDiary.Event.Biotech.Bond.Formed.Text>{0} образует психическую связь с {1}.</PawnDiary.Event.Biotech.Bond.Formed.Text>
+  <PawnDiary.Event.Biotech.Bond.Formed.Phase>образована</PawnDiary.Event.Biotech.Bond.Formed.Phase>
+  <PawnDiary.Event.Biotech.Bond.Ruptured.Label>Психическая связь разрушена</PawnDiary.Event.Biotech.Bond.Ruptured.Label>
+  <PawnDiary.Event.Biotech.Bond.Ruptured.Text>Психическая связь между {0} и {1} разрушена.</PawnDiary.Event.Biotech.Bond.Ruptured.Text>
+  <PawnDiary.Event.Biotech.Bond.Ruptured.Phase>разрушена</PawnDiary.Event.Biotech.Bond.Ruptured.Phase>
+  <PawnDiary.Event.Biotech.Deathrest.Label>Прерванный смертопокой</PawnDiary.Event.Biotech.Deathrest.Label>
+  <PawnDiary.Event.Biotech.Deathrest.Text>Смертопокой {0} был прерван, пока восстановление оставалось крайне неполным.</PawnDiary.Event.Biotech.Deathrest.Text>
+  <PawnDiary.Event.Biotech.Deathrest.Phase.Interrupted>смертопокой был прерван до достаточного восстановления</PawnDiary.Event.Biotech.Deathrest.Phase.Interrupted>
 </LanguageData>

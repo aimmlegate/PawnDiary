@@ -1637,4 +1637,13 @@
   <PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Condition>Critical pollution has made the map itself feel hostile to ordinary life.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Condition>
   <PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Description>Keep the crisis map-wide, qualitative, and limited to visible consequences.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Description>
   <PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Cue.Critical>Center the pressure of living amid a critically contaminated home without exposing percentages or mechanics.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Cue.Critical>
+  <PawnDiary.Event.Biotech.Bond.Formed.Label>Psychic bond formed</PawnDiary.Event.Biotech.Bond.Formed.Label>
+  <PawnDiary.Event.Biotech.Bond.Formed.Text>{0} formed a psychic bond with {1}.</PawnDiary.Event.Biotech.Bond.Formed.Text>
+  <PawnDiary.Event.Biotech.Bond.Formed.Phase>formed</PawnDiary.Event.Biotech.Bond.Formed.Phase>
+  <PawnDiary.Event.Biotech.Bond.Ruptured.Label>Psychic bond ruptured</PawnDiary.Event.Biotech.Bond.Ruptured.Label>
+  <PawnDiary.Event.Biotech.Bond.Ruptured.Text>{0}&apos;s psychic bond with {1} ruptured.</PawnDiary.Event.Biotech.Bond.Ruptured.Text>
+  <PawnDiary.Event.Biotech.Bond.Ruptured.Phase>ruptured</PawnDiary.Event.Biotech.Bond.Ruptured.Phase>
+  <PawnDiary.Event.Biotech.Deathrest.Label>Interrupted deathrest</PawnDiary.Event.Biotech.Deathrest.Label>
+  <PawnDiary.Event.Biotech.Deathrest.Text>{0}&apos;s deathrest was interrupted while still severely incomplete.</PawnDiary.Event.Biotech.Deathrest.Text>
+  <PawnDiary.Event.Biotech.Deathrest.Phase.Interrupted>deathrest was interrupted before adequate recovery</PawnDiary.Event.Biotech.Deathrest.Phase.Interrupted>
 </LanguageData>

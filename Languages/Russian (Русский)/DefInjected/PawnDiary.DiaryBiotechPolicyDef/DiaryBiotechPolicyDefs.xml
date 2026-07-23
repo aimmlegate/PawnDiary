@@ -12,6 +12,7 @@
   <Diary_BiotechPolicy.familyBaselineNarrativeFormat>Это взросление относится к точно известной семейной истории {0}.</Diary_BiotechPolicy.familyBaselineNarrativeFormat>
   <Diary_BiotechPolicy.identityNarrativeFormat>Текущий видимый ксенотип {0} — {1}; это факт настоящей идентичности, а не предсказание генов.</Diary_BiotechPolicy.identityNarrativeFormat>
   <Diary_BiotechPolicy.geneIdentityNarrativeFormat>Видимое изменение генной идентичности {0} было сосредоточено на теме «{1}»; это одна ограниченная тема, а не список генов.</Diary_BiotechPolicy.geneIdentityNarrativeFormat>
+  <Diary_BiotechPolicy.psychicBondNarrativeFormat>{0} и {1}: подтверждённая стадия психической связи — {2}; не делай выводов о романтике, согласии, судьбе или постоянстве.</Diary_BiotechPolicy.psychicBondNarrativeFormat>
   <Diary_BiotechPolicy.observationBands.0.description>сохранилось несколько точно замеченных эпизодов, когда этот взрослый учил ребёнка или играл с ним</Diary_BiotechPolicy.observationBands.0.description>
   <Diary_BiotechPolicy.observationBands.1.description>этот взрослый постоянно и явно участвовал в обучении ребёнка</Diary_BiotechPolicy.observationBands.1.description>
   <Diary_BiotechPolicy.observationBands.2.description>этого взрослого связывает с воспитанием ребёнка множество явно замеченных уроков и игр</Diary_BiotechPolicy.observationBands.2.description>
