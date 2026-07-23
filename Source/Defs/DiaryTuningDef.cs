@@ -523,6 +523,14 @@ namespace PawnDiary
             "Disturbing",
         };
 
+        // ---- Output-language directive ----
+        // When true, every LLM request ends its system prompt with one localized line naming the
+        // active RimWorld language ("Write the diary entry in Русский."), so the model is told the
+        // output language instead of guessing it from the prompt's own wording. Set false to fall
+        // back to the old implicit behavior (for example when testing a model that copes badly with
+        // an extra trailing instruction).
+        public bool outputLanguageDirectiveEnabled = true;
+
         // ---- Prompt anti-repetition guard (queue-time prompt similarity check) ----
         // Master toggle. When true, a first-person prompt that looks too similar to the pawn's
         // recent prompts has its rerollable enhancements (instruction/tone variants, prompt
@@ -848,6 +856,15 @@ namespace PawnDiary
                         : tuning.promptEnchantmentMaxImpactCues
                 };
             }
+        }
+
+        /// <summary>
+        /// Master toggle for the trailing "write the entry in &lt;language&gt;" system-prompt line.
+        /// XML-authored; the def field initializer (true) applies when the tuning def is absent.
+        /// </summary>
+        public static bool OutputLanguageDirectiveEnabled
+        {
+            get { return Current.outputLanguageDirectiveEnabled; }
         }
 
         /// <summary>

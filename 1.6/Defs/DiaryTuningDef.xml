@@ -463,6 +463,11 @@
       <li>Disturbing</li>     <!-- Anomaly; inert without DLC -->
     </humorReducedTraitKeys>
 
+    <!-- Output-language directive. When true, every request's system prompt ends with one localized
+         line naming the active RimWorld language, so the model is told what to write in instead of
+         guessing it from the prompt wording. Set false to restore the old implicit behavior. -->
+    <outputLanguageDirectiveEnabled>true</outputLanguageDirectiveEnabled>
+
     <!-- Prompt anti-repetition guard (queue-time). When a freshly assembled first-person prompt
          looks too similar to the pawn's recent stored prompts, its rerollable enhancements
          (instruction/tone variant, prompt enchantment, humor cue) are re-picked before dispatch.

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -120,6 +120,7 @@ namespace DiaryPipelineTests
             TestSurrogateSafeTruncation();
             TestRedactSecrets();
             TestWritingStyleReachesSystemPrompt();
+            TestOutputLanguageDirectiveReachesSystemPrompt();
             TestPsychotypeVoiceReachesSystemPrompt();
             TestShippedTemplatesWritingStyleContract();
             TestErrorScrubRemovesPersonalData();
@@ -2783,7 +2784,6 @@ namespace DiaryPipelineTests
                 AssertTrue("UI style defines color cue " + expectedCues[i],
                     HasCueColor(style, expectedCues[i]));
             }
-
         }
 
         private static void TestPromptTextSanitizer()
@@ -8416,6 +8416,110 @@ namespace DiaryPipelineTests
                 !plan.userPrompt.Contains("How this pawn tends to write"));
             AssertTrue("persona never appears as a user-prompt field by source token",
                 !ContainsUserPromptField(plan.userPrompt, "writing style"));
+        }
+
+        // B1 (Quality Wave): every request whose adapter resolved an active language must end its SYSTEM
+        // prompt with one localized "write in <language>" line — entries and titles alike, so a page and
+        // its title can never disagree about language. The adapter's language lookup and .Translate() are
+        // main-thread-only, so this test pins the load-bearing planner seam with an already-resolved
+        // directive string, exactly as the writing-style test does for the voice block.
+        private static void TestOutputLanguageDirectiveReachesSystemPrompt()
+        {
+            const string englishDirective = "Write the diary entry in English.";
+            const string russianDirective = "Пиши дневниковую запись на этом языке: Русский.";
+            const string voiceBlock = "How this pawn writes: spare-iceberg: short concrete sentences.";
+
+            // English is named too (locked decision §0.9): an explicit instruction beats an implied one
+            // in every language, including the one the base prompts happen to be written in.
+            DiaryPromptPlan english = BuildPlanWithDirective(englishDirective, voiceBlock, titleRequest: false);
+            AssertTrue("english directive is the last line of the system prompt",
+                english.systemPrompt.EndsWith("\n" + englishDirective, StringComparison.Ordinal));
+            AssertEqual("english directive appears exactly once", 1,
+                CountOccurrences(english.systemPrompt, englishDirective));
+            AssertContains("directive does not displace the voice block", english.systemPrompt, voiceBlock);
+            AssertTrue("directive never leaks into the user prompt",
+                !english.userPrompt.Contains(englishDirective));
+
+            // The Russian build failure mode this feature exists for: without the line the model infers
+            // the output language from the prompt's own wording and answers in English.
+            DiaryPromptPlan russian = BuildPlanWithDirective(russianDirective, voiceBlock, titleRequest: false);
+            AssertTrue("non-english directive is the last line of the system prompt",
+                russian.systemPrompt.EndsWith("\n" + russianDirective, StringComparison.Ordinal));
+            AssertEqual("non-english directive appears exactly once", 1,
+                CountOccurrences(russian.systemPrompt, russianDirective));
+
+            // Titles must match the entry's language, so the Title template carries the directive even
+            // though it opts out of persona text entirely (includePersona: false).
+            DiaryPromptPlan title = BuildPlanWithDirective(englishDirective, voiceBlock, titleRequest: true);
+            AssertEqual("title system prompt carries the directive",
+                "Title system\n" + englishDirective, title.systemPrompt);
+
+            // Empty/blank directive = "say nothing": the composed prompt must come through byte-identical,
+            // with no dangling newline. This is the no-active-language and toggle-off path, and it is what
+            // keeps every existing prompt-footprint baseline valid.
+            DiaryPromptPlan silent = BuildPlanWithDirective(null, voiceBlock, titleRequest: false);
+            AssertEqual("null directive leaves the composed system prompt untouched",
+                PromptAssembler.ComposeSystem("System " + DiaryPipelineTemplates.SoloImportant, voiceBlock,
+                    includePersona: true),
+                silent.systemPrompt);
+            AssertEqual("blank directive leaves the composed system prompt untouched",
+                silent.systemPrompt,
+                BuildPlanWithDirective("   \n ", voiceBlock, titleRequest: false).systemPrompt);
+
+            // A pawn with no resolved writing style still gets the directive, and it must not arrive with
+            // a leading blank line left behind by the absent voice block.
+            DiaryPromptPlan noVoice = BuildPlanWithDirective(englishDirective, string.Empty, titleRequest: false);
+            AssertEqual("directive appends cleanly when there is no voice block",
+                "System " + DiaryPipelineTemplates.SoloImportant + "\n" + englishDirective,
+                noVoice.systemPrompt);
+
+            // Both shipped languages must define the frame, and each must keep the {0} slot the adapter
+            // splices the language name into. A frame that lost its placeholder would silently ship a
+            // directive that names no language at all.
+            XDocument englishKeyed = XDocument.Load(RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
+            XDocument russianKeyed = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
+            string englishFrame = KeyedValue(englishKeyed, "PawnDiary.Prompt.OutputLanguage");
+            string russianFrame = KeyedValue(russianKeyed, "PawnDiary.Prompt.OutputLanguage");
+            AssertTrue("english output-language frame is defined", !string.IsNullOrWhiteSpace(englishFrame));
+            AssertTrue("russian output-language frame is defined", !string.IsNullOrWhiteSpace(russianFrame));
+            AssertTrue("english output-language frame keeps its {0} language slot",
+                englishFrame.Contains("{0}"));
+            AssertTrue("russian output-language frame keeps its {0} language slot",
+                russianFrame.Contains("{0}"));
+        }
+
+        private static DiaryPromptPlan BuildPlanWithDirective(string directive, string voiceBlock, bool titleRequest)
+        {
+            return DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = SoloPayload("e-language", "quiet work", "Alice repaired the generator alone."),
+                policy = Policy(combat: false, important: true),
+                povRole = DiaryPipelineRoles.Initiator,
+                personaVoiceBlock = voiceBlock,
+                outputLanguageDirective = directive,
+                titleRequest = titleRequest,
+                entryText = titleRequest ? "Alice repaired the generator alone." : null,
+                maxTokens = 30
+            });
+        }
+
+        private static int CountOccurrences(string text, string fragment)
+        {
+            if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(fragment))
+            {
+                return 0;
+            }
+
+            int count = 0;
+            int index = text.IndexOf(fragment, StringComparison.Ordinal);
+            while (index >= 0)
+            {
+                count++;
+                index = text.IndexOf(fragment, index + fragment.Length, StringComparison.Ordinal);
+            }
+
+            return count;
         }
 
         // The psychotype (outlook) block travels the SAME seam as the writing style: it is merged into

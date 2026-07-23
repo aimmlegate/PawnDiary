@@ -53,6 +53,10 @@ namespace PawnDiary
                 priorInitiatorEntry = priorInitiatorEntry,
                 entryText = entryText,
                 directSpeechInstruction = titleRequest ? string.Empty : DirectSpeechInstructionFor(diaryEvent, normalizedRole),
+                // Resolve the "write in <language>" sentence here, on the main thread, and freeze it on
+                // the request. The pure planner only appends the finished string, and LlmClient (which
+                // runs on a background thread, where .Translate() is unsafe) never resolves it at all.
+                outputLanguageDirective = OutputLanguageDirective(),
                 contextDetailLevel = normalizedLevel,
                 // Snapshot the XML-tuned budgets on the main thread (DefDatabase read); the pure planner
                 // and off-thread worker only ever see the resulting plain data.
@@ -377,6 +381,57 @@ namespace PawnDiary
             }
 
             return parts.Count == 0 ? string.Empty : string.Join("\n\n", parts);
+        }
+
+        /// <summary>
+        /// One localized sentence naming the language the model must write the entry in, or empty when
+        /// there is nothing to say (feature switched off in XML, or no active language). Returned to
+        /// <c>BuildPromptRequest</c> and appended by the pure planner as the system prompt's last line.
+        ///
+        /// Without this line a small model infers the output language from the prompt's own wording,
+        /// which is why a Russian install could still receive English diary pages. English is named
+        /// too — an explicit instruction is more reliable than an implied one in every language.
+        ///
+        /// Main thread only: <c>.Translate()</c> is not thread-safe.
+        /// </summary>
+        private static string OutputLanguageDirective()
+        {
+            if (!DiaryTuning.OutputLanguageDirectiveEnabled)
+            {
+                return string.Empty;
+            }
+
+            LoadedLanguage language = LanguageDatabase.activeLanguage;
+            if (language == null)
+            {
+                return string.Empty;
+            }
+
+            // The language's own name for itself ("Русский") is what a model responds to best. RimWorld
+            // already falls back to the folder name inside FriendlyNameNative/FriendlyNameEnglish, but a
+            // partial/modded language pack can still leave both blank, so fall through defensively and
+            // simply say nothing rather than naming a blank language.
+            string name = language.FriendlyNameNative;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                name = language.FriendlyNameEnglish;
+            }
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                name = language.LegacyFolderName;
+            }
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return string.Empty;
+            }
+
+            // Same reason as InjectVoiceRule above: vanilla's args-Translate path sentence-cases the
+            // whole resolved string after every ':', and the Russian frame reads "...на этом языке: {0}."
+            // — so a natively lowercase endonym ("français") would be silently rewritten. Resolve the
+            // frame arg-free (which skips the grammar resolver) and splice the name in ourselves.
+            return "PawnDiary.Prompt.OutputLanguage".Translate().Resolve().Replace("{0}", name.Trim());
         }
 
         private static string EventNoun(DiaryEvent diaryEvent)

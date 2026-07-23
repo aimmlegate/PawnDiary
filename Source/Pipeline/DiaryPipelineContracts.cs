@@ -246,6 +246,11 @@ namespace PawnDiary
         public string priorInitiatorEntry;
         public string entryText;
         public string directSpeechInstruction;
+        // One already-localized sentence naming the language the model must write in, resolved by the
+        // impure adapter on the main thread (.Translate() is not thread-safe). Empty means "say
+        // nothing" — no active language, or the feature is switched off in XML — and the system
+        // prompt is then left exactly as ComposeSystem produced it.
+        public string outputLanguageDirective;
         public PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full;
         // Optional XML-backed Balanced/Compact budgets; null makes the selector use its code defaults.
         public PromptContextBudgets contextBudgets;

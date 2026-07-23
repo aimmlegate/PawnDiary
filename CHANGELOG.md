@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-07-24
 
+- **Quality Wave B1 — output-language directive.** Every LLM request now ends its system prompt with one localized line naming the active RimWorld language (entries and titles alike), instead of letting the model guess the output language from the prompt wording — the failure mode that could leave a Russian install with English pages. The line is resolved on the main thread from the language's own endonym and frozen on the request, so the pure planner only appends it and `LlmClient` never touches localization; a missing language or `outputLanguageDirectiveEnabled=false` leaves prompts byte-identical to before.
 - **Master Wave 12 / Narrative N4 complete.** Added deterministic exact-reference cross-arc selection across hot and compacted pages plus Ideology belief reflections, preserving one-rest priority, success-only consumption, cooldown/debt bounds, silent upgrade baselines, DLC-off safety, and dedicated EN/RU prompt policy.
 
 ## 2026-07-23

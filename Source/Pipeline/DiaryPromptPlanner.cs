@@ -41,10 +41,12 @@ namespace PawnDiary
                 values,
                 finalInstruction);
 
-            string systemPrompt = PromptAssembler.ComposeSystem(
-                template.systemPrompt,
-                request.personaVoiceBlock,
-                template.includePersona);
+            string systemPrompt = AppendOutputLanguageDirective(
+                PromptAssembler.ComposeSystem(
+                    template.systemPrompt,
+                    request.personaVoiceBlock,
+                    template.includePersona),
+                request.outputLanguageDirective);
 
             int responseMaxTokens = request.maxTokens > 0 ? request.maxTokens : template.maxTokens;
             return new DiaryPromptPlan
@@ -172,6 +174,32 @@ namespace PawnDiary
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Puts the already-localized output-language sentence on the LAST line of the system prompt.
+        /// Small instruction-following models weight the final instruction most, and without it they
+        /// guess the output language from the prompt's own wording — which is how a Russian build ends
+        /// up with English diary pages. Applied to EVERY template key including <c>Title</c>, so a page
+        /// and its title never disagree about language.
+        ///
+        /// A blank directive returns the composed prompt untouched (no dangling newline), so a game
+        /// with no active language or the XML toggle off produces byte-identical prompts to before.
+        /// </summary>
+        private static string AppendOutputLanguageDirective(string systemPrompt, string directive)
+        {
+            if (string.IsNullOrWhiteSpace(directive))
+            {
+                return systemPrompt;
+            }
+
+            string trimmedDirective = directive.Trim();
+            if (string.IsNullOrWhiteSpace(systemPrompt))
+            {
+                return trimmedDirective;
+            }
+
+            return systemPrompt.TrimEnd() + "\n" + trimmedDirective;
         }
 
         private static DiaryPromptPlan EmptyPlan()

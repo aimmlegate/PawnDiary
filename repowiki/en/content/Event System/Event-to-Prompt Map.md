@@ -56,6 +56,19 @@ Common template keys:
 | Reflection | `SoloDayReflection`, `SoloQuadrumReflection`, `SoloArcReflection` |
 | Special | `DeathDescription`, `ArrivalDescription` |
 
+### Output-language directive
+
+Every template — including `Title`, so a page and its title cannot disagree — ends its **system**
+prompt with one localized line naming the active RimWorld language ("Write the diary entry in
+Русский."). Without it a small model infers the output language from the prompt's own wording, which
+is how a Russian install could receive English pages.
+
+`DiaryPipelineAdapters.OutputLanguageDirective` resolves the line on the main thread (`.Translate()` is
+not thread-safe) from `LanguageDatabase.activeLanguage.FriendlyNameNative`, and freezes it on
+`DiaryPromptRequest.outputLanguageDirective`; the pure planner only appends it. No active language, no
+resolvable language name, or `outputLanguageDirectiveEnabled=false` in `DiaryTuningDef.xml` leaves the
+composed system prompt byte-identical to before.
+
 ## XML ownership
 
 | File | Owns |

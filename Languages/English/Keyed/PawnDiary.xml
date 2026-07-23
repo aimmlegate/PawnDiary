@@ -1105,6 +1105,9 @@
   <!-- Per-entry humor cue (hidden, always-on). {0} is one structural sentence-shape license
        chosen by stakes flavor. Appended after the writing-style block on eligible entries only. -->
   <PawnDiary.Prompt.HumorVoice>Optional, only if it fits the facts: {0} At most one sentence; never break the writing style or force a joke.</PawnDiary.Prompt.HumorVoice>
+  <!-- Last line of every system prompt (entries AND titles). {0} is the active RimWorld language's
+       own name for itself, e.g. "English" or "Русский". Translate the sentence, never the name. -->
+  <PawnDiary.Prompt.OutputLanguage>Write the diary entry in {0}.</PawnDiary.Prompt.OutputLanguage>
   <PawnDiary.Prompt.SocialEvent>social event</PawnDiary.Prompt.SocialEvent>
   <PawnDiary.Prompt.Colony>colony</PawnDiary.Prompt.Colony>
   <PawnDiary.Prompt.Health.HighPriority>high priority</PawnDiary.Prompt.Health.HighPriority>
