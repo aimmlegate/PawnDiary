@@ -47,7 +47,7 @@
     <witnessIncludeStructure>false</witnessIncludeStructure>
     <witnessIncludeDeity>false</witnessIncludeDeity>
     <witnessIncludeNarrativeInterpretation>false</witnessIncludeNarrativeInterpretation>
-    <speakerPromptInstruction>When belief context is present, let the speaker reflect on authority through only the supplied current role, certainty, and doctrine. Do not make the speech religious when that evidence is absent.</speakerPromptInstruction>
+    <speakerPromptInstruction>When belief context is present, let the speaker reflect on authority only through the supplied current role, certainty, and doctrine. Do not make the speech religious when that evidence is absent.</speakerPromptInstruction>
     <witnessPromptInstruction>When belief context is present, use only the witness's supplied shared doctrine. Do not attribute the speaker's role or certainty to the witness.</witnessPromptInstruction>
   </PawnDiary.DiaryAuthoritySpeechPolicyDef>
 </Defs>

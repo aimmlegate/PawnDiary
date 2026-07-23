@@ -22,7 +22,7 @@
   <slavery.instruction>the weight of chains—suppression by an overseer or the first spark of defiance</slavery.instruction>
   <slavery.tone>with grim, heavy unease</slavery.tone>
   <counsel.label>Counsel</counsel.label>
-  <counsel.instruction>an exact attempt to comfort a listener; follow the supplied success or failure, keep counselor and listener roles straight, and treat the result only as mood or thought relief or harm—not a change of doctrine or conviction</counsel.instruction>
+  <counsel.instruction>an attempt to comfort a listener; follow the supplied success or failure, keep counselor and listener roles straight, and treat the result only as relief or harm to mood and thoughts—never a change of doctrine or conviction</counsel.instruction>
   <counsel.tone>with attentive warmth on success or awkward regret on failure</counsel.tone>
   <counsel.tones.0>with relieved warmth, centered on the listener feeling steadier</counsel.tones.0>
   <counsel.tones.1>with awkward regret, centered on comfort that failed to land</counsel.tones.1>
@@ -81,7 +81,7 @@
   <mentalbreak.instructions.2>a mental break — write the world narrowing: one simple sensation, then the state taking over</mentalbreak.instructions.2>
   <mentalbreak.tone>with frayed, overwhelmed intensity</mentalbreak.tone>
   <beliefCrisis.label>Crisis of belief</beliefCrisis.label>
-  <beliefCrisis.instruction>an exact crisis of belief; use supplied belief facts to distinguish an actual change of ideoligion from convictions breaking under doubt, and never invent a former ideoligion</beliefCrisis.instruction>
+  <beliefCrisis.instruction>a crisis of belief; use supplied belief facts to distinguish an actual change of ideoligion from convictions breaking under doubt, and never invent a former ideoligion</beliefCrisis.instruction>
   <beliefCrisis.tone>with shaken conviction and raw inward doubt</beliefCrisis.tone>
   <talecombat.label>Combat, injuries &amp; death</talecombat.label>
   <talecombat.instruction>blood and danger—combat, injury, death, or rescue. Write what it felt like to live through it</talecombat.instruction>
@@ -182,8 +182,8 @@
   <raid.tone>with tense, fight-anticipated urgency</raid.tone>
   <ritualConversion.label>Conversion rituals</ritualConversion.label>
   <ritualConversion.instruction>a completed conversion ritual; keep the moral guide, convertee, participant, and spectator perspectives distinct, use only supplied event-time belief facts, and never treat ritual quality alone as proof of conversion</ritualConversion.instruction>
-  <ritualConversion.tone>with public conviction, private doubt, and exact spiritual consequence</ritualConversion.tone>
-  <ritualConversion.tones.0>intimate and doctrinal, centered on the writer&apos;s exact role and the belief facts supplied</ritualConversion.tones.0>
+  <ritualConversion.tone>with public conviction, private doubt, and grounded spiritual consequence</ritualConversion.tone>
+  <ritualConversion.tones.0>intimate and doctrinal, centered on the writer&apos;s assigned role and the belief facts supplied</ritualConversion.tones.0>
   <ritualConversion.tones.1>ceremonial but restrained, never turning quality or atmosphere into an unsupported conversion</ritualConversion.tones.1>
   <ritualRoyal.label>Royal rituals</ritualRoyal.label>
   <ritualRoyal.instruction>a Royalty ritual completed; use any exact royal mutation pawn, faction, before/after title, psylink, and cause fields supplied, without explaining mechanics or inventing an effect</ritualRoyal.instruction>
@@ -201,7 +201,7 @@
   <ritualGravship.tones.0>technical and procedural, centered on checks, systems, countdown, and readiness</ritualGravship.tones.0>
   <ritualGravship.tones.1>tense and crew-minded, with launch discipline and restrained anticipation</ritualGravship.tones.1>
   <odysseyGravshipLanding.label>Gravship landing</odysseyGravshipLanding.label>
-  <odysseyGravshipLanding.instruction>a gravship has successfully arrived—write the supplied journey reason, duration, POV role, ship, origin, and destination as first-person experience; when an exact landing outcome is supplied, weave only that visible consequence into the same landing; treat a quest site only as an arrival, never as quest completion, and invent no hazards or outcomes beyond the supplied facts</odysseyGravshipLanding.instruction>
+  <odysseyGravshipLanding.instruction>a gravship has arrived—write the supplied journey reason, duration, POV role, ship, origin, and destination as first-person experience; weave in a supplied landing outcome as the only visible consequence; treat a quest site as an arrival, never quest completion, and invent no hazards</odysseyGravshipLanding.instruction>
   <odysseyGravshipLanding.tone>with arrival relief, crew focus, and the weight of a mobile home coming down</odysseyGravshipLanding.tone>
   <odysseyGravshipLanding.tones.0>grounded and sensory, centered on descent, touchdown, and what this destination means</odysseyGravshipLanding.tones.0>
   <odysseyGravshipLanding.tones.1>crew-minded and reflective, weighing the completed passage without inventing what follows</odysseyGravshipLanding.tones.1>
@@ -528,11 +528,11 @@
   <personaWeaponMilestone.tones.1>close and uneasy, weighing what changed between wielder and weapon after this exact first kill</personaWeaponMilestone.tones.1>
   <royalPermitDramatic.label>Dramatic royal permits</royalPermitDramatic.label>
   <questRoyalAscent.label>Royal Ascent</questRoyalAscent.label>
-  <questRoyalAscent.instruction>the exact Royal Ascent quest lifecycle chapter; branch only on quest_signal: accepted means the colony committed to preparation and does not prove the Stellarch arrived, completed means vanilla ended the hosting quest successfully but does not prove who boarded or escaped, and failed means vanilla ended it in failure without proving the exact cause; write the colony-wide duty and pressure from this one witness without inventing arrival, dialogue, boarding, escape, rewards, or blame</questRoyalAscent.instruction>
+  <questRoyalAscent.instruction>the Royal Ascent quest lifecycle; branch only on quest_signal: accepted proves preparation only, not that the Stellarch arrived; completed or failed means the hosting quest ended, never proving who boarded, escaped, or why; write shared duty; invent no arrival, boarding, escape, rewards, or blame</questRoyalAscent.instruction>
   <questRoyalAscent.tone>with ceremonial pressure, collective duty, and consequences larger than one pawn</questRoyalAscent.tone>
   <questRoyalAscent.tones.0>formal but personal, the colony's shared obligation felt through one witness</questRoyalAscent.tones.0>
   <questRoyalAscent.tones.1>tense and status-aware, keeping every unobserved imperial detail uncertain</questRoyalAscent.tones.1>
-  <royalPermitDramatic.instruction>a successful dramatic royal-permit use; preserve the exact permit family, faction, title, and setting supplied, describe only the pawn calling in or exercising the permit, and never claim that aid arrived, a shuttle completed its trip, an orbital attack hit a target, or a particular favor amount was spent</royalPermitDramatic.instruction>
+  <royalPermitDramatic.instruction>a successful dramatic royal-permit use; preserve the exact permit family, faction, title, and setting supplied; describe only the pawn calling in the permit, never claiming aid arrived, a shuttle finished its trip, an orbital strike hit, or favor was spent</royalPermitDramatic.instruction>
   <royalPermitDramatic.tone>with the weight of authority being turned into immediate action</royalPermitDramatic.tone>
   <royalPermitDramatic.tones.0>decisive and personal, grounded in what it felt like to invoke hard-won authority</royalPermitDramatic.tones.0>
   <royalPermitDramatic.tones.1>tense and status-aware, preserving uncertainty about every effect not yet observed</royalPermitDramatic.tones.1>
@@ -547,7 +547,7 @@
   <anomalyContainmentBreach.tones.0>urgent and grounded in what broke free, without assigning cause or fault</anomalyContainmentBreach.tones.0>
   <anomalyContainmentBreach.tones.1>watchful and bodily tense, holding to the writer&apos;s actual relationship to the breach</anomalyContainmentBreach.tones.1>
   <anomalyCreepJoinerOutcome.label>Visible strange-arrival outcomes</anomalyCreepJoinerOutcome.label>
-  <anomalyCreepJoinerOutcome.instruction>a strange arrival reached one exact player-visible outcome; describe only the supplied generic disclosure, rejection, aggression, or departure and the writer&apos;s verified role; for surgical disclosure keep the surgeon as examiner and the subject as patient, never identify what secret was found, quote inspection text, or reveal a hidden downside, infection, host identity, timer, future transformation, or unobserved motive</anomalyCreepJoinerOutcome.instruction>
+  <anomalyCreepJoinerOutcome.instruction>a strange arrival reached a visible outcome; describe only the supplied disclosure, rejection, aggression, or departure and the writer&apos;s verified role; in surgical disclosure the surgeon examines the subject; never reveal what was found, a hidden downside, infection, host identity, timer, or motive</anomalyCreepJoinerOutcome.instruction>
   <anomalyCreepJoinerOutcome.tone>with shaken recognition and strict uncertainty about everything still concealed</anomalyCreepJoinerOutcome.tone>
   <anomalyCreepJoinerOutcome.tones.0>intimate and unnerved, stopping exactly where visible knowledge ends</anomalyCreepJoinerOutcome.tones.0>
   <anomalyCreepJoinerOutcome.tones.1>tense and observant, refusing to turn suspicion into secret certainty</anomalyCreepJoinerOutcome.tones.1>

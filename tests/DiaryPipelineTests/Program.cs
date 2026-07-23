@@ -2695,16 +2695,20 @@ namespace DiaryPipelineTests
                 AssertEqual("metalhorror infection has NO artificial cap", string.Empty, ChildValue(infection, "maxActiveTicks"));
             }
 
+            // The model sees the assembled priority + condition + description bundle, so the
+            // imitator-fear/no-item-name contract holds over all three parts together (the P4
+            // distillation moved the imitation wording into priority/condition).
             XDocument englishKeyed = XDocument.Load(RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
-            string description = KeyedValue(
-                englishKeyed,
-                "PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description");
+            string grayFleshPromptParts =
+                KeyedValue(englishKeyed, "PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority")
+                + "; " + KeyedValue(englishKeyed, "PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition")
+                + "; " + KeyedValue(englishKeyed, "PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description");
             AssertTrue(
                 "gray flesh prompt avoids item name",
-                description.IndexOf("gray flesh", StringComparison.OrdinalIgnoreCase) < 0);
+                grayFleshPromptParts.IndexOf("gray flesh", StringComparison.OrdinalIgnoreCase) < 0);
             AssertTrue(
                 "gray flesh prompt names imitator fear",
-                description.IndexOf("imitat", StringComparison.OrdinalIgnoreCase) >= 0);
+                grayFleshPromptParts.IndexOf("imitat", StringComparison.OrdinalIgnoreCase) >= 0);
 
             // The infection tone must never name the hediff/host (reveal-protection lives in the prompt
             // text, not just the empty evidence label), in BOTH shipped languages. The contract is
@@ -5004,8 +5008,8 @@ namespace DiaryPipelineTests
                 groupInstruction.Contains("quest_signal") && groupInstruction.Contains("completed")
                 && groupInstruction.Contains("failed"));
             AssertTrue("Royal Ascent instruction forbids guessed arrival/escape",
-                groupInstruction.Contains("does not prove the stellarch arrived")
-                && groupInstruction.Contains("does not prove who boarded or escaped"));
+                groupInstruction.Contains("not that the stellarch arrived")
+                && groupInstruction.Contains("never proving who boarded, escaped, or why"));
 
             XDocument windows = XDocument.Load(RepoPath("1.6", "Defs", "DiaryEventWindowDefs.xml"));
             XElement window = FindDef(windows, "PawnDiary.DiaryEventWindowDef", "RoyalAscent");
@@ -5064,9 +5068,9 @@ namespace DiaryPipelineTests
                 HasListValue(prompt, "enableWhenPackageIdsLoaded", royaltyPackage));
             string enhancement = ChildValue(prompt, "enhancement").ToLowerInvariant();
             AssertTrue("Royal Ascent prompt forbids unproved terminal semantics",
-                enhancement.Contains("never claim that the stellarch arrived")
-                && enhancement.Contains("exact failure cause") && enhancement.Contains("who boarded")
-                && enhancement.Contains("colony escaped"));
+                enhancement.Contains("never claim the stellarch arrived")
+                && enhancement.Contains("name a failure cause")
+                && enhancement.Contains("who boarded or escaped"));
 
             XDocument englishPrompt = XDocument.Load(RepoPath(
                 "Languages", "English", "DefInjected", "PawnDiary.DiaryEventPromptDef",

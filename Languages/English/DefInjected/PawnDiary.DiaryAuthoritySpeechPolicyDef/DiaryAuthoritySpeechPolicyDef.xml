@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
-  <Diary_AuthoritySpeechPolicy.speakerPromptInstruction>When belief context is present, let the speaker reflect on authority through only the supplied current role, certainty, and doctrine. Do not make the speech religious when that evidence is absent.</Diary_AuthoritySpeechPolicy.speakerPromptInstruction>
+  <Diary_AuthoritySpeechPolicy.speakerPromptInstruction>When belief context is present, let the speaker reflect on authority only through the supplied current role, certainty, and doctrine. Do not make the speech religious when that evidence is absent.</Diary_AuthoritySpeechPolicy.speakerPromptInstruction>
   <Diary_AuthoritySpeechPolicy.witnessPromptInstruction>When belief context is present, use only the witness's supplied shared doctrine. Do not attribute the speaker's role or certainty to the witness.</Diary_AuthoritySpeechPolicy.witnessPromptInstruction>
 </LanguageData>

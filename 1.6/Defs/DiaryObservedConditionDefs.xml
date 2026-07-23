@@ -175,8 +175,6 @@
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description</promptDescriptionKey>
     <promptCueKeys>
-      <li>PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh</li>
-      <li>PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease</li>
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
@@ -267,7 +265,6 @@
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Description</promptDescriptionKey>
     <promptCueKeys>
-      <li>PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Dread</li>
       <li>PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Distrust</li>
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
@@ -409,7 +406,6 @@
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Description</promptDescriptionKey>
     <promptCueKeys>
-      <li>PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Cue.Paths</li>
       <li>PawnDiary.Prompt.ObservedCondition.SeasonalFloodActive.Cue.Recede</li>
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
@@ -477,8 +473,6 @@
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.DeathPallActive.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.DeathPallActive.Description</promptDescriptionKey>
     <promptCueKeys>
-      <li>PawnDiary.Prompt.ObservedCondition.DeathPallActive.Cue.Dead</li>
-      <li>PawnDiary.Prompt.ObservedCondition.DeathPallActive.Cue.Graves</li>
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
@@ -595,7 +589,6 @@
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Description</promptDescriptionKey>
     <promptCueKeys>
-      <li>PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Cue.Growth</li>
       <li>PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Cue.Sound</li>
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
@@ -635,7 +628,6 @@
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Description</promptDescriptionKey>
     <promptCueKeys>
       <li>PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Cue.Stillness</li>
-      <li>PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Cue.Pull</li>
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
@@ -743,7 +735,6 @@
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description</promptDescriptionKey>
     <promptCueKeys>
-      <li>PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position</li>
       <li>PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched</li>
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
@@ -851,7 +842,6 @@
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.CropBlightActive.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.CropBlightActive.Description</promptDescriptionKey>
     <promptCueKeys>
-      <li>PawnDiary.Prompt.ObservedCondition.CropBlightActive.Cue.Winter</li>
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
@@ -886,7 +876,6 @@
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Description</promptDescriptionKey>
     <promptCueKeys>
-      <li>PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Cue.Temptation</li>
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
@@ -923,14 +912,13 @@
     <recordEndEvent>true</recordEndEvent>
     <startTextKey>PawnDiary.Event.ObservedCondition.BiotechPollutionMeaningful.Start</startTextKey>
     <endTextKey>PawnDiary.Event.ObservedCondition.BiotechPollutionMeaningful.End</endTextKey>
-    <instruction>write this as one sampled colonist's perspective on pollution becoming part of daily life across the map; never imply this pawn is the only person affected, never quote percentages or cell counts, and keep causes limited to what the pawn could observe</instruction>
+    <instruction>write this as one colonist's perspective on pollution becoming part of daily life across the map; never imply this pawn is the only person affected, never quote percentages or cell counts, and keep causes limited to what the pawn could observe</instruction>
     <promptWeight>5</promptWeight>
     <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
     <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Priority</promptPriorityKey>
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Description</promptDescriptionKey>
     <promptCueKeys>
-      <li>PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Cue.Home</li>
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
@@ -943,14 +931,13 @@
     <recordStartEvent>true</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
     <startTextKey>PawnDiary.Event.ObservedCondition.BiotechPollutionSevere.Start</startTextKey>
-    <instruction>write this as one sampled colonist recognizing that pollution across the map has escalated into a severe pressure on home and routine; never imply this pawn is uniquely affected, never quote percentages or cell counts, and do not invent a specific pollution incident</instruction>
+    <instruction>write this as one colonist recognizing that pollution across the map has escalated into a severe pressure on home and routine; never imply this pawn is uniquely affected, never quote percentages or cell counts, and do not invent a specific pollution incident</instruction>
     <promptWeight>8</promptWeight>
     <normalPromptWeightMultiplier>0.9</normalPromptWeightMultiplier>
     <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Priority</promptPriorityKey>
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Description</promptDescriptionKey>
     <promptCueKeys>
-      <li>PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Cue.Pressure</li>
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
@@ -963,14 +950,13 @@
     <recordStartEvent>true</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
     <startTextKey>PawnDiary.Event.ObservedCondition.BiotechPollutionCritical.Start</startTextKey>
-    <instruction>write this as one sampled colonist confronting critical pollution across the map and what that ambient pressure means for calling this place home; never imply this pawn is uniquely affected, never quote percentages or cell counts, and do not invent hidden causes or a completed reclamation</instruction>
+    <instruction>write this as one colonist confronting critical pollution across the map and what that ambient pressure means for calling this place home; never imply this pawn is uniquely affected, never quote percentages or cell counts, and do not invent hidden causes or a completed reclamation</instruction>
     <promptWeight>12</promptWeight>
     <normalPromptWeightMultiplier>0.75</normalPromptWeightMultiplier>
     <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Priority</promptPriorityKey>
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Description</promptDescriptionKey>
     <promptCueKeys>
-      <li>PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Cue.Critical</li>
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 

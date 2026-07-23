@@ -421,7 +421,6 @@
     <promptConditionKey>PawnDiary.Prompt.EventWindow.RoyalAscent.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.EventWindow.RoyalAscent.Description</promptDescriptionKey>
     <promptCueKeys>
-      <li>PawnDiary.Prompt.EventWindow.RoyalAscent.Cue.Duty</li>
     </promptCueKeys>
   </PawnDiary.DiaryEventWindowDef>
 
@@ -478,7 +477,6 @@
     <promptConditionKey>PawnDiary.Prompt.EventWindow.MechClusterLanded.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.EventWindow.MechClusterLanded.Description</promptDescriptionKey>
     <promptCueKeys>
-      <li>PawnDiary.Prompt.EventWindow.MechClusterLanded.Cue.Dormant</li>
     </promptCueKeys>
   </PawnDiary.DiaryEventWindowDef>
 

@@ -59,6 +59,10 @@ namespace DiaryPipelineTests
             TestP2VoiceRuleCaps(catalog);
             TestP2CompactOmitsHumor(catalog);
             TestP3ContinuityDuplicateSuppression(catalog);
+            TestP4CatalogCaps(catalog);
+            TestP4GenericInteractionPolicy(catalog);
+            TestP4GrayFleshFirewall(catalog);
+            TestP4CanonicalCeilings(catalog);
             PrintBaselineReport(catalog);
 
             Console.WriteLine("PromptFootprintTests passed " + assertions + " assertions.");
@@ -822,6 +826,103 @@ namespace DiaryPipelineTests
         private static int Combined(DiaryPromptPlan plan)
         {
             return plan.systemPrompt.Length + plan.userPrompt.Length;
+        }
+
+        // =========================================================================================
+        // P4 — event/context/policy catalog caps (plan §5.5, §10)
+        // =========================================================================================
+
+        /// <summary>
+        /// Every shipped English event/group/policy instruction and every assembled
+        /// observed-condition/event-window bundle stays within 300 characters.
+        /// </summary>
+        private static void TestP4CatalogCaps(EnglishPromptCatalog catalog)
+        {
+            string[] cappedCategories =
+            {
+                "eventPrompt", "eventEnhancement", "groupInstruction", "groupTone",
+                "observedConditionInstruction", "eventWindowInstruction", "policyInstruction",
+                "enchantmentText", "observedConditionBundle", "eventWindowBundle", "humorRule"
+            };
+            List<string> over = new List<string>();
+            int checkedEntries = 0;
+            foreach (CatalogEntry entry in catalog.Entries)
+            {
+                if (Array.IndexOf(cappedCategories, entry.category) < 0)
+                {
+                    continue;
+                }
+
+                checkedEntries++;
+                if (entry.chars > 300)
+                {
+                    over.Add(entry.category + " " + entry.id + " (" + entry.chars + ")");
+                }
+            }
+
+            AssertTrue("catalog cap sweep covered the full catalog (" + checkedEntries + ")",
+                checkedEntries > 800);
+            AssertTrue(
+                "every event/group/policy instruction and assembled bundle is <= 300 chars"
+                + (over.Count > 0 ? ":\n  " + string.Join("\n  ", over.ToArray()) : string.Empty),
+                over.Count == 0);
+        }
+
+        /// <summary>
+        /// The generic Interaction policy no longer ships a redundant prompt (event/pov/role/with/
+        /// what-you-saw plus the group instruction already define the interaction), and its short
+        /// enhancement authorizes no unsupplied gestures or dialogue. Specialized event prompts
+        /// keep their own text.
+        /// </summary>
+        private static void TestP4GenericInteractionPolicy(EnglishPromptCatalog catalog)
+        {
+            AssertEqual("generic Interaction ships no event prompt", string.Empty,
+                catalog.EventPrompt("Interaction"));
+            string enhancement = catalog.EventEnhancement("Interaction");
+            AssertTrue("generic Interaction keeps one short enhancement",
+                !string.IsNullOrWhiteSpace(enhancement) && enhancement.Length <= 300);
+            AssertContains("generic enhancement stays inside supplied text", enhancement, "supplied social text");
+            AssertContains("generic enhancement forbids invented gestures", enhancement, "gestures");
+            AssertContains("generic enhancement forbids invented dialogue", enhancement, "dialogue");
+            AssertTrue("specialized event prompts still carry their own text",
+                catalog.Entries.Count(e => e.category == "eventPrompt") >= 40);
+        }
+
+        /// <summary>
+        /// Gray-flesh suspicion stays compact and spoiler-safe: visible imitation suspicion with
+        /// uncertainty, and never the hidden mechanic name or a host identity (plan §10.2).
+        /// </summary>
+        private static void TestP4GrayFleshFirewall(EnglishPromptCatalog catalog)
+        {
+            string bundle = catalog.ObservedConditionBundle("AnomalyGrayFleshEvidence");
+            AssertTrue("gray-flesh bundle exists", !string.IsNullOrWhiteSpace(bundle));
+            AssertTrue("gray-flesh bundle within 300 (" + bundle.Length + ")", bundle.Length <= 300);
+            AssertContains("bundle keeps the imitation suspicion", bundle, "imitat");
+            AssertContains("bundle keeps suspicion-not-knowledge", bundle, "suspicion, not knowledge");
+            AssertContains("bundle keeps the no-mechanics/no-host firewall", bundle,
+                "never name who is infected or any hidden mechanic");
+            AssertTrue("bundle never names the hidden mechanic",
+                bundle.IndexOf("metalhorror", StringComparison.OrdinalIgnoreCase) < 0);
+
+            XElement def;
+            AssertTrue("gray-flesh def exists", catalog.DefsByName.TryGetValue("AnomalyGrayFleshEvidence", out def));
+            string instruction = def.Element("instruction")?.Value ?? string.Empty;
+            AssertContains("page instruction keeps the no-host/no-mechanics firewall", instruction,
+                "never explain hidden game mechanics or identify a host");
+            AssertTrue("page instruction never names the hidden mechanic",
+                instruction.IndexOf("metalhorror", StringComparison.OrdinalIgnoreCase) < 0);
+        }
+
+        /// <summary>Canonical combined-input ceilings (plan §5.1): fixture-only gates, not runtime caps.</summary>
+        private static void TestP4CanonicalCeilings(EnglishPromptCatalog catalog)
+        {
+            CanonicalPlans plans = BuildCanonicalPlans(catalog);
+            int full = Combined(plans.full);
+            int balanced = Combined(plans.balanced);
+            int compact = Combined(plans.compact);
+            AssertTrue("canonical Full <= 4000 (" + full + ")", full <= 4000);
+            AssertTrue("canonical Balanced <= 3250 (" + balanced + ")", balanced <= 3250);
+            AssertTrue("canonical Compact <= 2650 (" + compact + ")", compact <= 2650);
         }
 
         // =========================================================================================

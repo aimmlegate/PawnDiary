@@ -207,7 +207,7 @@
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Ideology</li>
     </enableWhenPackageIdsLoaded>
-    <instruction>an exact attempt to comfort a listener; follow the supplied success or failure, keep counselor and listener roles straight, and treat the result only as mood or thought relief or harm—not a change of doctrine or conviction</instruction>
+    <instruction>an attempt to comfort a listener; follow the supplied success or failure, keep counselor and listener roles straight, and treat the result only as relief or harm to mood and thoughts—never a change of doctrine or conviction</instruction>
     <tone>with attentive warmth on success or awkward regret on failure</tone>
     <tones>
       <li>with relieved warmth, centered on the listener feeling steadier</li>
@@ -901,7 +901,7 @@
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Ideology</li>
     </enableWhenPackageIdsLoaded>
-    <instruction>an exact crisis of belief; use supplied belief facts to distinguish an actual change of ideoligion from convictions breaking under doubt, and never invent a former ideoligion</instruction>
+    <instruction>a crisis of belief; use supplied belief facts to distinguish an actual change of ideoligion from convictions breaking under doubt, and never invent a former ideoligion</instruction>
     <tone>with shaken conviction and raw inward doubt</tone>
     <colorCue>mentalBreak</colorCue>
     <matchDefNames>
@@ -2516,7 +2516,7 @@
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Royalty</li>
     </enableWhenPackageIdsLoaded>
-    <instruction>the exact Royal Ascent quest lifecycle chapter; branch only on quest_signal: accepted means the colony committed to preparation and does not prove the Stellarch arrived, completed means vanilla ended the hosting quest successfully but does not prove who boarded or escaped, and failed means vanilla ended it in failure without proving the exact cause; write the colony-wide duty and pressure from this one witness without inventing arrival, dialogue, boarding, escape, rewards, or blame</instruction>
+    <instruction>the Royal Ascent quest lifecycle; branch only on quest_signal: accepted proves preparation only, not that the Stellarch arrived; completed or failed means the hosting quest ended, never proving who boarded, escaped, or why; write shared duty; invent no arrival, boarding, escape, rewards, or blame</instruction>
     <tone>with ceremonial pressure, collective duty, and consequences larger than one pawn</tone>
     <tones>
       <li>formal but personal, the colony's shared obligation felt through one witness</li>
@@ -2601,9 +2601,9 @@
       <li>Ludeon.RimWorld.Ideology</li>
     </enableWhenPackageIdsLoaded>
     <instruction>a completed conversion ritual; keep the moral guide, convertee, participant, and spectator perspectives distinct, use only supplied event-time belief facts, and never treat ritual quality alone as proof of conversion</instruction>
-    <tone>with public conviction, private doubt, and exact spiritual consequence</tone>
+    <tone>with public conviction, private doubt, and grounded spiritual consequence</tone>
     <tones>
-      <li>intimate and doctrinal, centered on the writer's exact role and the belief facts supplied</li>
+      <li>intimate and doctrinal, centered on the writer's assigned role and the belief facts supplied</li>
       <li>ceremonial but restrained, never turning quality or atmosphere into an unsupported conversion</li>
     </tones>
     <matchOrdinalDefNames>
@@ -2719,7 +2719,7 @@
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Royalty</li>
     </enableWhenPackageIdsLoaded>
-    <instruction>a successful dramatic royal-permit use; preserve the exact permit family, faction, title, and setting supplied, describe only the pawn calling in or exercising the permit, and never claim that aid arrived, a shuttle completed its trip, an orbital attack hit a target, or a particular favor amount was spent</instruction>
+    <instruction>a successful dramatic royal-permit use; preserve the exact permit family, faction, title, and setting supplied; describe only the pawn calling in the permit, never claiming aid arrived, a shuttle finished its trip, an orbital strike hit, or favor was spent</instruction>
     <tone>with the weight of authority being turned into immediate action</tone>
     <tones>
       <li>decisive and personal, grounded in what it felt like to invoke hard-won authority</li>
@@ -2746,7 +2746,7 @@
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Odyssey</li>
     </enableWhenPackageIdsLoaded>
-    <instruction>a gravship has successfully arrived—write the supplied journey reason, duration, POV role, ship, origin, and destination as first-person experience; when an exact landing outcome is supplied, weave only that visible consequence into the same landing; treat a quest site only as an arrival, never as quest completion, and invent no hazards or outcomes beyond the supplied facts</instruction>
+    <instruction>a gravship has arrived—write the supplied journey reason, duration, POV role, ship, origin, and destination as first-person experience; weave in a supplied landing outcome as the only visible consequence; treat a quest site as an arrival, never quest completion, and invent no hazards</instruction>
     <tone>with arrival relief, crew focus, and the weight of a mobile home coming down</tone>
     <tones>
       <li>grounded and sensory, centered on descent, touchdown, and what this destination means</li>
@@ -2840,7 +2840,7 @@
     <enableWhenPackageIdsLoaded>
       <li>Ludeon.RimWorld.Anomaly</li>
     </enableWhenPackageIdsLoaded>
-    <instruction>a strange arrival reached one exact player-visible outcome; describe only the supplied generic disclosure, rejection, aggression, or departure and the writer&apos;s verified role; for surgical disclosure keep the surgeon as examiner and the subject as patient, never identify what secret was found, quote inspection text, or reveal a hidden downside, infection, host identity, timer, future transformation, or unobserved motive</instruction>
+    <instruction>a strange arrival reached a visible outcome; describe only the supplied disclosure, rejection, aggression, or departure and the writer&apos;s verified role; in surgical disclosure the surgeon examines the subject; never reveal what was found, a hidden downside, infection, host identity, timer, or motive</instruction>
     <tone>with shaken recognition and strict uncertainty about everything still concealed</tone>
     <tones>
       <li>intimate and unnerved, stopping exactly where visible knowledge ends</li>
