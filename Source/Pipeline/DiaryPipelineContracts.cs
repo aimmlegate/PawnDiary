@@ -207,27 +207,6 @@ namespace PawnDiary
         // Copied from DiaryMemoryTuningDef on the main thread. The pure planner uses this string
         // only to prefix the already-frozen memory recall; it never reads a live Def.
         public string memoryContextInstruction = string.Empty;
-        // Localized lore-primer prose per context-detail level (LORE_MEMORY_SEED_PLAN §12),
-        // resolved from Keyed strings on the main thread. Empty (the default and the
-        // primer-disabled state) appends nothing. The planner picks by effective detail level;
-        // it never translates.
-        public string lorePrimerCompact = string.Empty;
-        public string lorePrimerBalanced = string.Empty;
-        public string lorePrimerFull = string.Empty;
-
-        /// <summary>The authored primer paragraph for one effective context-detail level.</summary>
-        public string LorePrimerFor(PromptContextDetailLevel level)
-        {
-            switch (level)
-            {
-                case PromptContextDetailLevel.Compact:
-                    return lorePrimerCompact ?? string.Empty;
-                case PromptContextDetailLevel.Balanced:
-                    return lorePrimerBalanced ?? string.Empty;
-                default:
-                    return lorePrimerFull ?? string.Empty;
-            }
-        }
         // Copied from DiaryBeliefPolicyDef on the main thread. The immutable resolver policy is also
         // captured once so prompt-detail projection never rereads live Defs.
         public string beliefContextFieldLabel = "belief context";

@@ -130,12 +130,6 @@ namespace PawnDiary
                 narrativeContextFieldLabel = narrativePolicy.promptFieldLabel,
                 narrativeContextInstruction = narrativePolicy.promptFieldInstruction,
                 memoryContextInstruction = memoryPolicy.memoryContextInstruction,
-                // Lore primer (LORE_MEMORY_SEED_PLAN §12): localized on the main thread, blank
-                // when the independent primer setting is off. The pure planner only selects and
-                // appends; it never translates.
-                lorePrimerCompact = LorePrimerText("PawnDiary.Prompt.LorePrimer.Compact"),
-                lorePrimerBalanced = LorePrimerText("PawnDiary.Prompt.LorePrimer.Balanced"),
-                lorePrimerFull = LorePrimerText("PawnDiary.Prompt.LorePrimer.Full"),
                 beliefContextFieldLabel = DiaryBeliefPolicy.PromptFieldLabel,
                 beliefContextInstruction = DiaryBeliefPolicy.PromptFieldInstruction,
                 beliefPolicy = beliefPolicy,
@@ -170,22 +164,6 @@ namespace PawnDiary
             AddTemplate(snapshot, DiaryPipelineTemplates.ArrivalDescription);
             AddTemplate(snapshot, DiaryPipelineTemplates.Title);
             return snapshot;
-        }
-
-        /// <summary>
-        /// Resolves one localized primer tier, or empty when the independent enableLorePrimer
-        /// setting is off. A missing translation resolves to the raw key, which is still appended
-        /// verbatim — translators see exactly which key is absent instead of silent English.
-        /// </summary>
-        private static string LorePrimerText(string key)
-        {
-            PawnDiarySettings settings = PawnDiaryMod.Settings;
-            if (settings != null && !settings.enableLorePrimer)
-            {
-                return string.Empty;
-            }
-
-            return key.Translate().Resolve();
         }
 
         private static string ResolveEventPromptField(IList<string> keys,

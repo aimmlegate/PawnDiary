@@ -214,10 +214,6 @@ namespace PawnDiary
                     ref Settings.enableLoreSeeds,
                     "PawnDiary.Settings.EnableLoreSeedsTip".Translate());
                 listing.CheckboxLabeled(
-                    "PawnDiary.Settings.EnableLorePrimer".Translate(),
-                    ref Settings.enableLorePrimer,
-                    "PawnDiary.Settings.EnableLorePrimerTip".Translate());
-                listing.CheckboxLabeled(
                     "PawnDiary.Settings.AllowExternalIntegrations".Translate(),
                     ref Settings.allowExternalIntegrations,
                     "PawnDiary.Settings.AllowExternalIntegrationsTip".Translate());

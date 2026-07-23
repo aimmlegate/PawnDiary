@@ -15,12 +15,8 @@
   (`raid`, `faction`, `hediff`, `mood_event`, `observed_condition`) so language-neutral
   identifiers can never be crowded out of the keyword cap; catalog QA lives in PawnMemoryTests
   (frozen vocabulary, reachability, reserved-slot fixtures, RU parity, recall smokes)
-- Lore L4 (design/LORE_MEMORY_SEED_PLAN.md §12): independent `enableLorePrimer` setting appends a
-  Keyed-localized world-model paragraph as the final system-prompt paragraph of the 11
-  first-person templates (`PromptAssembler.ComposeSystem` fourth argument,
-  `DiaryPromptPlanner.TemplateReceivesLorePrimer`), tier chosen by the effective context-detail
-  level; neutral death/arrival/title never receive it, and supplied facts override default canon
-  via the primer's own preamble
+- Lore L4's always-on world primer was removed from final prompts to reduce prompt inflation;
+  authored lore now enters prompts only when the memory recall system selects a relevant lore seed
 - Lore L2 (design/LORE_MEMORY_SEED_PLAN.md): `DiaryLoreSeedDef` + pure deterministic
   `LoreSeedPlanner.PlanInitial` (Source/Pipeline/Memory/LoreSeedPlanner.cs) build a one-time
   per-pawn roster persisted in `PawnLoreSeedState` beside the repository; the EventFactory
