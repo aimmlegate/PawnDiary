@@ -25,6 +25,7 @@
 //   DiaryGameComponent.InteractionBatching.cs — XML-configured batching for quick social logs
 //   DiaryGameComponent.TaleBatching.cs   — delayed solo batches for bursty Tale events
 //   DiaryGameComponent.AmbientThoughts.cs — day-note batching for low-impact temporary thoughts
+//   DiaryGameComponent.ReflectionCoordination.cs — one rest-time arc/quadrum/day arbitration + acknowledgement
 //   DiaryGameComponent.Odyssey.cs         — guarded Odyssey journey/history save state + baselines
 //   DiaryGameComponent.Royalty.cs         — guarded Royalty state, baselines, persona reconciliation/pages
 //   ──
@@ -852,13 +853,17 @@ namespace PawnDiary
         {
             bool daySummary = DiaryTuning.Current.daySummaryEnabled;
             bool arcReflection = DiaryTuning.Current.arcReflectionEnabled;
+            bool quadrumReflection = DiaryTuning.Current.quadrumReflectionEnabled;
+            bool anyReflectionSource = daySummary || arcReflection || quadrumReflection;
+            bool pendingMajorReflection = !anyReflectionSource && HasPendingMajorReflection();
 
-            // When both reflection paths are off we only have work if filler notes are pending. When a
-            // reflection is on, it can be due with no pending filler, so scan resting pawns idempotently.
-            if (!daySummary
-                && !arcReflection
+            // A reflection can be due with no pending filler. A queued major request also needs one final
+            // rest arbitration if the player disabled every reflection source after the canonical event.
+            if (!anyReflectionSource
+                && !pendingMajorReflection
                 && pendingAmbientInteractionNotes.Count == 0
-                && pendingAmbientThoughtNotes.Count == 0)
+                && pendingAmbientThoughtNotes.Count == 0
+                && pendingDayHediffs.Count == 0)
             {
                 return;
             }
@@ -872,22 +877,21 @@ namespace PawnDiary
                     continue;
                 }
 
+                bool reflectionWritten = ArbitrateReflectionsForPawn(pawn);
                 if (daySummary)
                 {
-                    // The reflection folds the filler in and writes one richer end-of-day entry.
-                    FlushDaySummaryForPawn(pawn);
+                    // Day-summary mode owns the filler even when the pure planner finds no eligible page.
+                    // The selected day candidate consumes it only after successful Dispatch.
+                    continue;
                 }
-                else
-                {
-                    if (arcReflection && TryFlushArcReflectionForPawn(
-                        pawn, pawn.GetUniqueLoadID(), CurrentDayIndex, majorEventTrigger: false))
-                    {
-                        continue;
-                    }
 
-                    FlushAmbientInteractionNotesForPawn(pawn);
-                    FlushAmbientThoughtNotesForPawn(pawn);
+                if (reflectionWritten)
+                {
+                    continue;
                 }
+
+                FlushAmbientInteractionNotesForPawn(pawn);
+                FlushAmbientThoughtNotesForPawn(pawn);
             }
         }
 

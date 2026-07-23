@@ -1005,7 +1005,9 @@ namespace PawnDiary
                 // disabled layer defers the roll and leaves this empty until re-enabled).
                 psychotypeDefName = PsychotypesEnabled ? RollPsychotypeFor(pawn, band, null, pawnId) : string.Empty,
                 voiceStageBand = band,
-                diaryGenerationEnabled = true
+                diaryGenerationEnabled = true,
+                // This record was created under N4, so it has no historical cadence debt to baseline.
+                reflectionState = new PawnReflectionState { baselineOnNextOpportunity = false }
             };
             diaries.Add(diary);
             IndexDiaryRecord(diary);
@@ -1173,6 +1175,7 @@ namespace PawnDiary
             diary.EnsureProgressionState();
             diary.EnsureArcSchedule();
             diary.EnsureBeliefState();
+            diary.EnsureReflectionState();
         }
 
         /// <summary>

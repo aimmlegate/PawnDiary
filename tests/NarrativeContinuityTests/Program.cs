@@ -1808,6 +1808,30 @@ namespace NarrativeContinuityTests
             AssertEqual("selected reflection carries one state instruction", 1, plan.stateInstructions.Count);
             AssertEqual("only one reflection is selected", 1, CountSelected(plan.diagnostics));
 
+            ReflectionOpportunity quadrum = Opportunity(NarrativeReflectionKindTokens.Quadrum);
+            ReflectionOpportunity day = Opportunity(NarrativeReflectionKindTokens.Day);
+            ReflectionPlan existingSources = ReflectionCoordinator.Plan(new ReflectionPlanningRequest
+            {
+                policy = policy,
+                currentTick = 200000,
+                opportunities = new List<ReflectionOpportunity> { day, quadrum, major }
+            });
+            AssertEqual("major arc beats simultaneous quadrum and day work",
+                NarrativeReflectionKindTokens.MajorArc, existingSources.selectedOpportunity.kind);
+            AssertEqual("major/quadrum/day arbitration still selects exactly one", 1,
+                CountSelected(existingSources.diagnostics));
+
+            ReflectionPlan shorterCadences = ReflectionCoordinator.Plan(new ReflectionPlanningRequest
+            {
+                policy = policy,
+                currentTick = 200000,
+                opportunities = new List<ReflectionOpportunity> { day, quadrum }
+            });
+            AssertEqual("quadrum beats a simultaneous day reflection",
+                NarrativeReflectionKindTokens.Quadrum, shorterCadences.selectedOpportunity.kind);
+            AssertEqual("quadrum/day arbitration still selects exactly one", 1,
+                CountSelected(shorterCadences.diagnostics));
+
             major.alreadyWritten = true;
             ReflectionPlan fallback = ReflectionCoordinator.Plan(new ReflectionPlanningRequest
             {
@@ -1846,6 +1870,69 @@ namespace NarrativeContinuityTests
                 disabledPlan.stateInstructions[0].advanceDebtWhenGroupDisabled);
             AssertTrue("disabled group instruction never claims a successful dispatch",
                 !disabledPlan.stateInstructions[0].consumeAfterSuccessfulDispatch);
+
+            ReflectionPlan disabledDuringGlobalCooldown = ReflectionCoordinator.Plan(
+                new ReflectionPlanningRequest
+                {
+                    policy = policy,
+                    currentTick = 200000,
+                    lastReflectionTick = 199999,
+                    opportunities = new List<ReflectionOpportunity> { disabled }
+                });
+            AssertTrue("global cooldown still bounds a disabled group's debt",
+                HasDebtInstruction(disabledDuringGlobalCooldown, NarrativeReflectionKindTokens.Day));
+
+            NarrativePolicySnapshot disabledPolicy = NarrativePolicySnapshot.CreateDefault();
+            disabledPolicy.enabled = false;
+            ReflectionPlan policyDisabled = ReflectionCoordinator.Plan(new ReflectionPlanningRequest
+            {
+                policy = disabledPolicy,
+                currentTick = 200000,
+                opportunities = new List<ReflectionOpportunity>
+                {
+                    Opportunity(NarrativeReflectionKindTokens.Day)
+                }
+            });
+            AssertTrue("disabling the shared reflection policy also bounds cadence debt",
+                HasDebtInstruction(policyDisabled, NarrativeReflectionKindTokens.Day));
+
+            ReflectionOpportunity disabledMajor = Opportunity(NarrativeReflectionKindTokens.MajorArc);
+            disabledMajor.groupEnabled = false;
+            ReflectionOpportunity eligibleDay = Opportunity(NarrativeReflectionKindTokens.Day);
+            ReflectionPlan disabledHigherFallback = ReflectionCoordinator.Plan(new ReflectionPlanningRequest
+            {
+                policy = policy,
+                currentTick = 200000,
+                opportunities = new List<ReflectionOpportunity> { disabledMajor, eligibleDay }
+            });
+            AssertEqual("disabled higher priority does not block an eligible lower reflection",
+                NarrativeReflectionKindTokens.Day, disabledHigherFallback.selectedOpportunity.kind);
+            AssertTrue("disabled higher priority still receives its debt-bounding instruction",
+                HasDebtInstruction(disabledHigherFallback, NarrativeReflectionKindTokens.MajorArc));
+
+            ReflectionPlan perKindCooldown = ReflectionCoordinator.Plan(new ReflectionPlanningRequest
+            {
+                policy = policy,
+                currentTick = 200000,
+                opportunities = new List<ReflectionOpportunity> { quadrum, day },
+                history = new List<ReflectionHistoryEntry>
+                {
+                    new ReflectionHistoryEntry
+                    {
+                        kind = NarrativeReflectionKindTokens.Quadrum,
+                        writtenTick = 199999
+                    }
+                }
+            });
+            AssertEqual("quadrum kind cooldown allows the eligible day fallback",
+                NarrativeReflectionKindTokens.Day, perKindCooldown.selectedOpportunity.kind);
+            AssertDiagnostic(perKindCooldown, NarrativeReflectionKindTokens.Quadrum,
+                NarrativeDiagnosticTokens.ReflectionCooldown);
+
+            AssertTrue("failed dispatch cannot acknowledge selected cadence state",
+                !ReflectionCoordinator.CanConsumeAfterDispatch(shorterCadences, false));
+            AssertTrue("successful dispatch acknowledges only the selected cadence state",
+                ReflectionCoordinator.CanConsumeAfterDispatch(shorterCadences, true));
         }
 
         private static NarrativeLensCandidate AssertAnomalyMapping(
@@ -2107,6 +2194,23 @@ namespace NarrativeContinuityTests
             }
 
             return count;
+        }
+
+        private static bool HasDebtInstruction(ReflectionPlan plan, string kind)
+        {
+            for (int i = 0; i < plan.stateInstructions.Count; i++)
+            {
+                ReflectionStateConsumption instruction = plan.stateInstructions[i];
+                if (instruction != null
+                    && instruction.kind == kind
+                    && instruction.advanceDebtWhenGroupDisabled
+                    && !instruction.consumeAfterSuccessfulDispatch)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool HasSelected(NarrativeContextSelection selection, string candidateKey)

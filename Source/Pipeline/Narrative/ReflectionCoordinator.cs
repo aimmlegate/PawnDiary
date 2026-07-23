@@ -33,12 +33,16 @@ namespace PawnDiary
             if (!policy.enabled)
             {
                 AddPolicyDisabledDiagnostics(result, request.opportunities);
+                AddPolicyDisabledStateInstructions(result, request.opportunities);
                 return result;
             }
 
-            if (InGlobalCooldown(request, policy))
+            if (IsGlobalCooldownActive(request.currentTick, request.lastReflectionTick, policy))
             {
                 AddGlobalCooldownDiagnostics(result, request.opportunities);
+                // Cooldown blocks dispatch, not source debt maintenance. A group switched off during
+                // another kind's cooldown must still advance/bound its current cadence window.
+                AddDisabledGroupInstructions(result, request.opportunities);
                 return result;
             }
 
@@ -93,6 +97,59 @@ namespace PawnDiary
             return result;
         }
 
+        /// <summary>
+        /// Confirms whether the impure scheduler may acknowledge the selected state instruction. Keeping
+        /// this check pure makes the dispatch-failure invariant explicit and independently testable.
+        /// </summary>
+        public static bool CanConsumeAfterDispatch(ReflectionPlan plan, bool dispatchSucceeded)
+        {
+            return dispatchSucceeded
+                && plan != null
+                && plan.selectedOpportunity != null
+                && plan.consumption != null
+                && plan.consumption.consumeAfterSuccessfulDispatch;
+        }
+
+        /// <summary>Reports the global reflection cooldown using only detached tick/policy data.</summary>
+        public static bool IsGlobalCooldownActive(
+            int currentTick,
+            int lastReflectionTick,
+            NarrativePolicySnapshot policy)
+        {
+            NarrativePolicySnapshot effective = policy ?? NarrativePolicySnapshot.CreateDefault();
+            return lastReflectionTick >= 0 && currentTick >= lastReflectionTick
+                && currentTick - lastReflectionTick
+                    < Math.Max(0, effective.reflectionGlobalCooldownTicks);
+        }
+
+        /// <summary>Reports one kind's cooldown so the runtime adapter can skip expensive collection.</summary>
+        public static bool IsKindCooldownActive(
+            string kind,
+            int currentTick,
+            List<ReflectionHistoryEntry> history,
+            NarrativePolicySnapshot policy)
+        {
+            NarrativePolicySnapshot effective = policy ?? NarrativePolicySnapshot.CreateDefault();
+            int cooldown = CooldownFor(kind, effective);
+            if (cooldown <= 0 || history == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < history.Count; i++)
+            {
+                ReflectionHistoryEntry prior = history[i];
+                if (prior != null && prior.writtenTick >= 0 && EqualsOrdinal(prior.kind, kind)
+                    && currentTick >= prior.writtenTick
+                    && currentTick - prior.writtenTick < cooldown)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static bool IsEligible(
             ReflectionOpportunity opportunity,
             ReflectionPlanningRequest request,
@@ -118,7 +175,8 @@ namespace PawnDiary
                 return false;
             }
 
-            if (!opportunity.cooldownSatisfied || InKindCooldown(opportunity.kind, request, policy))
+            if (!opportunity.cooldownSatisfied
+                || IsKindCooldownActive(opportunity.kind, request.currentTick, request.history, policy))
             {
                 rejection = NarrativeDiagnosticTokens.ReflectionCooldown;
                 return false;
@@ -146,37 +204,6 @@ namespace PawnDiary
             }
 
             return true;
-        }
-
-        private static bool InGlobalCooldown(ReflectionPlanningRequest request, NarrativePolicySnapshot policy)
-        {
-            return request.lastReflectionTick >= 0 && request.currentTick >= request.lastReflectionTick
-                && request.currentTick - request.lastReflectionTick < Math.Max(0, policy.reflectionGlobalCooldownTicks);
-        }
-
-        private static bool InKindCooldown(
-            string kind,
-            ReflectionPlanningRequest request,
-            NarrativePolicySnapshot policy)
-        {
-            int cooldown = CooldownFor(kind, policy);
-            if (cooldown <= 0 || request.history == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < request.history.Count; i++)
-            {
-                ReflectionHistoryEntry prior = request.history[i];
-                if (prior != null && prior.writtenTick >= 0 && EqualsOrdinal(prior.kind, kind)
-                    && request.currentTick >= prior.writtenTick
-                    && request.currentTick - prior.writtenTick < cooldown)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private static int PriorityFor(string kind, NarrativePolicySnapshot policy)
@@ -280,6 +307,43 @@ namespace PawnDiary
                 consumeAfterSuccessfulDispatch = false,
                 advanceDebtWhenGroupDisabled = true
             };
+        }
+
+        private static void AddDisabledGroupInstructions(
+            ReflectionPlan result,
+            List<ReflectionOpportunity> opportunities)
+        {
+            if (opportunities == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < opportunities.Count; i++)
+            {
+                ReflectionOpportunity opportunity = opportunities[i];
+                if (opportunity != null && !opportunity.groupEnabled)
+                {
+                    result.stateInstructions.Add(DisabledGroupInstruction(opportunity));
+                }
+            }
+        }
+
+        private static void AddPolicyDisabledStateInstructions(
+            ReflectionPlan result,
+            List<ReflectionOpportunity> opportunities)
+        {
+            if (opportunities == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < opportunities.Count; i++)
+            {
+                if (opportunities[i] != null)
+                {
+                    result.stateInstructions.Add(DisabledGroupInstruction(opportunities[i]));
+                }
+            }
         }
 
         private static void AddDiagnostic(ReflectionPlan result, ReflectionOpportunity opportunity, string reason)

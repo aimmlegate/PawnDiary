@@ -47,38 +47,63 @@ namespace PawnDiary
         private readonly HashSet<string> writtenQuadrumReflections = new HashSet<string>();
 
         /// <summary>
-        /// Sleep-path entry point: writes this pawn's reflection for the current day (once), weaving
-        /// together a weighted-random selection of the day's most notable signals. Quiet days with
-        /// nothing worth noting produce no entry. Used in place of the per-source ambient note flush
-        /// when the day-summary feature is enabled.
+        /// Loaded-fixture-compatible sleep-path seam. Production rest scans call the same unified
+        /// arbitration directly; a selected daily candidate still uses this file's unchanged collectors,
+        /// weighted highlight selection, text, and signal.
         /// </summary>
         private void FlushDaySummaryForPawn(Pawn pawn)
         {
-            if (pawn == null || !IsDiaryEligible(pawn))
-            {
-                return;
-            }
+            ArbitrateReflectionsForPawn(pawn);
+        }
 
-            int day = CurrentDayIndex;
-            string pawnId = pawn.GetUniqueLoadID();
-            // Try the rare yearly life-arc reflection first. If it emits, skip the shorter seasonal
-            // and daily reflections for this rest moment so the pawn writes only one reflective page.
-            if (TryFlushArcReflectionForPawn(pawn, pawnId, day, majorEventTrigger: false))
-            {
-                return;
-            }
-
-            // Then try the rare, longer quadrum reflection. If it emits, skip the ordinary day
-            // reflection for this sleep/rest moment so the player and model see only one summary.
-            if (TryFlushQuadrumReflectionForPawn(pawn, pawnId, day))
-            {
-                return;
-            }
-
+        /// <summary>
+        /// Collects the ordinary daily reflection without consuming its filler/hediff batches. The
+        /// selected runtime candidate acknowledges those batches only after Dispatch succeeds.
+        /// </summary>
+        private ReflectionRuntimeCandidate PrepareDayReflectionCandidate(
+            Pawn pawn,
+            string pawnId,
+            int day,
+            bool collectEvidence)
+        {
             string dayKey = DaySummaryKey(pawnId, day);
-            if (writtenDayReflections.Contains(dayKey))
+            bool alreadyWritten = writtenDayReflections.Contains(dayKey);
+            bool groupEnabled = DiaryTuning.Current.daySummaryEnabled
+                && IsReflectionGroupEnabled(DayReflectionEventData.DefNameToken);
+            ReflectionRuntimeCandidate runtime = new ReflectionRuntimeCandidate
             {
-                return;
+                opportunity = new ReflectionOpportunity
+                {
+                    kind = NarrativeReflectionKindTokens.Day,
+                    pawnId = pawnId,
+                    nowTick = Find.TickManager.TicksGame,
+                    candidateMemoryCount = 1,
+                    importance = NarrativeSalienceTokens.Minor,
+                    due = !alreadyWritten,
+                    alreadyWritten = alreadyWritten,
+                    cooldownSatisfied = true,
+                    groupEnabled = groupEnabled
+                }
+            };
+            if (alreadyWritten)
+            {
+                return runtime;
+            }
+
+            runtime.advanceDisabledDebt = () =>
+            {
+                writtenDayReflections.Add(dayKey);
+                ConsumePawnDayFiller(pawnId, day);
+                pendingDayHediffs.Remove(dayKey);
+            };
+            if (!groupEnabled)
+            {
+                return runtime;
+            }
+
+            if (!collectEvidence)
+            {
+                return runtime;
             }
 
             // Gather candidates from every source, then keep only the most important few.
@@ -89,12 +114,39 @@ namespace PawnDiary
             int fillerCount = CollectFillerSignal(pawnId, day, candidates);
             int importantCandidateCount = CountImportantSignals(candidates);
 
-            // Always release this pawn/day's filler + hediffs so they never separately emit, even
-            // when nothing is selected. (Consuming filler also keeps the old fallback path from
-            // re-emitting it on day change or save.)
-            ConsumePawnDayFiller(pawnId, day);
-            pendingDayHediffs.Remove(dayKey);
+            runtime.opportunity.candidateMemoryCount = candidates.Count;
+            runtime.opportunity.due = candidates.Count > 0 && importantCandidateCount > 0;
+            if (!runtime.opportunity.due)
+            {
+                // Preserve the old quiet-day behavior: evidence that cannot justify a page is released
+                // now, while a selected page's evidence remains strictly success-acknowledged below.
+                runtime.settleIneligible = () =>
+                {
+                    ConsumePawnDayFiller(pawnId, day);
+                    pendingDayHediffs.Remove(dayKey);
+                };
+                return runtime;
+            }
 
+            runtime.dispatch = () => DispatchPreparedDayReflection(
+                pawn, pawnId, day, candidates, fillerCount, importantCandidateCount);
+            runtime.consumeAfterDispatch = () =>
+            {
+                ConsumePawnDayFiller(pawnId, day);
+                pendingDayHediffs.Remove(dayKey);
+                writtenDayReflections.Add(dayKey);
+            };
+            return runtime;
+        }
+
+        private bool DispatchPreparedDayReflection(
+            Pawn pawn,
+            string pawnId,
+            int day,
+            List<DaySummarySignal> candidates,
+            int fillerCount,
+            int importantCandidateCount)
+        {
             List<DaySummarySignal> highlights = SelectHighlights(candidates, DaySummaryMaxHighlights);
             EnsureImportantHighlight(highlights, candidates);
             highlights.Sort((a, b) => b.weight.CompareTo(a.weight));
@@ -129,12 +181,7 @@ namespace PawnDiary
             string gameContext = DayReflectionEventData.BuildGameContext(
                 data.Day, data.HighlightCount, data.CandidateCount, data.FillerMomentCount, data.SignalTags);
 
-            // Dispatch through the bus; record this pawn/day as written only if the catalog actually
-            // emitted the reflection — the same coupling the old inline Decide + writtenDayReflections had.
-            if (Dispatch(new DayReflectionSignal(data, pawn, label, text, instruction, gameContext)))
-            {
-                writtenDayReflections.Add(dayKey);
-            }
+            return Dispatch(new DayReflectionSignal(data, pawn, label, text, instruction, gameContext));
         }
 
         /// <summary>
@@ -144,27 +191,72 @@ namespace PawnDiary
         /// </summary>
         private bool TryFlushQuadrumReflectionForPawn(Pawn pawn, string pawnId, int day)
         {
-            if (pawn == null
-                || string.IsNullOrWhiteSpace(pawnId)
-                || !DiaryTuning.Current.quadrumReflectionEnabled)
+            if (pawn == null || string.IsNullOrWhiteSpace(pawnId))
             {
                 return false;
             }
 
+            ReflectionRuntimeCandidate candidate = PrepareQuadrumReflectionCandidate(
+                pawn, pawnId, day, collectEvidence: true);
+            if (candidate?.opportunity == null
+                || !candidate.opportunity.groupEnabled
+                || !candidate.opportunity.due
+                || !candidate.Dispatch())
+            {
+                return false;
+            }
+
+            candidate.ConsumeAfterDispatch();
+            return true;
+        }
+
+        /// <summary>Collects one detached quadrum opportunity without advancing its once-per-window guard.</summary>
+        private ReflectionRuntimeCandidate PrepareQuadrumReflectionCandidate(
+            Pawn pawn,
+            string pawnId,
+            int day,
+            bool collectEvidence)
+        {
             int daysPerQuadrum = GenDate.DaysPerQuadrum;
             int quadrum = QuadrumIndexForDay(day);
             int dayInQuadrum = DayInQuadrum(day);
             int timingWindowDays = DiaryTuning.QuadrumReflectionTimingWindowDays;
-            if (!QuadrumReflectionPolicy.IsDueForPawn(pawnId, quadrum, dayInQuadrum,
-                daysPerQuadrum, timingWindowDays))
+            bool cadenceDue = QuadrumReflectionPolicy.IsDueForPawn(
+                pawnId, quadrum, dayInQuadrum, daysPerQuadrum, timingWindowDays);
+            string quadrumKey = QuadrumSummaryKey(pawnId, quadrum);
+            bool alreadyWritten = writtenQuadrumReflections.Contains(quadrumKey);
+            bool groupEnabled = DiaryTuning.Current.daySummaryEnabled
+                && DiaryTuning.Current.quadrumReflectionEnabled
+                && IsReflectionGroupEnabled(DayReflectionEventData.QuadrumDefNameToken);
+            ReflectionRuntimeCandidate runtime = new ReflectionRuntimeCandidate
             {
-                return false;
+                opportunity = new ReflectionOpportunity
+                {
+                    kind = NarrativeReflectionKindTokens.Quadrum,
+                    pawnId = pawnId,
+                    nowTick = Find.TickManager.TicksGame,
+                    candidateMemoryCount = 1,
+                    importance = NarrativeSalienceTokens.Meaningful,
+                    due = cadenceDue && !alreadyWritten,
+                    alreadyWritten = alreadyWritten,
+                    cooldownSatisfied = true,
+                    groupEnabled = groupEnabled
+                }
+            };
+            if (!runtime.opportunity.due)
+            {
+                return runtime;
             }
 
-            string quadrumKey = QuadrumSummaryKey(pawnId, quadrum);
-            if (writtenQuadrumReflections.Contains(quadrumKey))
+            runtime.advanceDisabledDebt = () => writtenQuadrumReflections.Add(quadrumKey);
+            if (!groupEnabled)
             {
-                return false;
+                return runtime;
+            }
+
+            if (!collectEvidence)
+            {
+                return runtime;
             }
 
             int quadrumStartDay = QuadrumStartDay(quadrum);
@@ -174,16 +266,43 @@ namespace PawnDiary
             if (!QuadrumReflectionPolicy.HasEnoughHighValueEntries(candidates.Count,
                 DiaryTuning.QuadrumReflectionMinImportantEntries))
             {
-                return false;
+                runtime.opportunity.due = false;
+                runtime.opportunity.candidateMemoryCount = candidates.Count;
+                return runtime;
             }
 
+            runtime.opportunity.candidateMemoryCount = candidates.Count;
+            runtime.dispatch = () => DispatchPreparedQuadrumReflection(
+                pawn,
+                pawnId,
+                day,
+                quadrum,
+                quadrumStartDay,
+                evidenceEndDay,
+                daysPerQuadrum,
+                timingWindowDays,
+                candidates);
+            runtime.consumeAfterDispatch = () => writtenQuadrumReflections.Add(quadrumKey);
+            return runtime;
+        }
+
+        private bool DispatchPreparedQuadrumReflection(
+            Pawn pawn,
+            string pawnId,
+            int day,
+            int quadrum,
+            int quadrumStartDay,
+            int evidenceEndDay,
+            int daysPerQuadrum,
+            int timingWindowDays,
+            List<QuadrumReflectionSignal> candidates)
+        {
             List<QuadrumReflectionSignal> highlights =
                 SelectQuadrumHighlights(candidates, QuadrumReflectionMaxPromptEvents);
             if (highlights.Count == 0)
             {
                 return false;
             }
-
             highlights.Sort((left, right) => left.tick.CompareTo(right.tick));
             string signalTags = QuadrumSignalTags(highlights);
             string quadrumDates = QuadrumDateRangeText(quadrumStartDay, evidenceEndDay);
@@ -218,13 +337,7 @@ namespace PawnDiary
                 data.CandidateCount,
                 data.SignalTags);
 
-            if (Dispatch(new DayReflectionSignal(data, pawn, label, text, instruction, gameContext)))
-            {
-                writtenQuadrumReflections.Add(quadrumKey);
-                return true;
-            }
-
-            return false;
+            return Dispatch(new DayReflectionSignal(data, pawn, label, text, instruction, gameContext));
         }
 
         /// <summary>

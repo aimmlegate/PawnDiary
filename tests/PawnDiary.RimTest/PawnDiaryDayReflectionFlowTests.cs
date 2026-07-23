@@ -173,6 +173,60 @@ namespace PawnDiary.RimTests
                 "The flush did not consume the pending day-evidence batch for this pawn/day.");
         }
 
+        /// <summary>
+        /// N4. A disabled Reflection group advances the current day window without creating a page.
+        /// Re-enabling in that same window cannot dump the evidence accumulated while disabled.
+        /// </summary>
+        [Test]
+        public static void DisabledReflectionGroupBoundsDayDebtAcrossReenable()
+        {
+            int day = CurrentDayIndex();
+            string dayKey = DaySummaryKey(pawn, day);
+            SeedPendingDayHediff(day);
+
+            PawnDiaryMod.Settings.SetGroupEnabled("reflection", false);
+            scope.RequireNoNewEvent(() => InvokeFlush(pawn));
+            PawnDiaryRimTestScope.Require(
+                !PendingDayHediffContains(dayKey),
+                "A disabled day-reflection group should consume/bound the current day evidence debt.");
+
+            PawnDiaryMod.Settings.SetGroupEnabled("reflection", true);
+            SeedPendingDayHediff(day);
+            scope.RequireNoNewEvent(() => InvokeFlush(pawn));
+            PawnDiaryRimTestScope.Require(
+                PendingDayHediffContains(dayKey),
+                "Re-enabling should not bypass the day guard or consume fresh evidence without a page.");
+        }
+
+        /// <summary>
+        /// N4. A record that lacks the additive runtime row baselines its current cadence window silently.
+        /// Repeated scans in that same rest/day cannot turn the pre-upgrade evidence into a catch-up page.
+        /// </summary>
+        [Test]
+        public static void OldSaveReflectionStateBaselinesSilently()
+        {
+            int day = CurrentDayIndex();
+            string dayKey = DaySummaryKey(pawn, day);
+            PawnDiaryRecord diary = DiaryRecord();
+            diary.reflectionState = new PawnReflectionState();
+            SeedPendingDayHediff(day);
+
+            scope.RequireNoNewEvent(() => InvokeFlush(pawn));
+            PawnDiaryRimTestScope.Require(
+                !diary.reflectionState.baselineOnNextOpportunity
+                    && diary.reflectionState.lastReflectionTick >= 0,
+                "The first N4 opportunity should establish a silent cooldown baseline.");
+            PawnDiaryRimTestScope.Require(
+                !PendingDayHediffContains(dayKey),
+                "The silent baseline should bound pre-upgrade day evidence.");
+
+            SeedPendingDayHediff(day);
+            scope.RequireNoNewEvent(() => InvokeFlush(pawn));
+            PawnDiaryRimTestScope.Require(
+                PendingDayHediffContains(dayKey),
+                "A repeated scan in the baselined window should remain idempotent.");
+        }
+
         // ----- production seam invocation ---------------------------------------------------------
 
         // Invokes the private per-pawn sleep-path flush directly. This is the exact per-colonist unit
@@ -188,6 +242,19 @@ namespace PawnDiary.RimTests
             }
 
             flush.Invoke(scope.Component, new object[] { target });
+        }
+
+        private static PawnDiaryRecord DiaryRecord()
+        {
+            MethodInfo method = typeof(DiaryGameComponent).GetMethod("FindDiary", NonPublicInstance);
+            PawnDiaryRecord diary = method?.Invoke(scope.Component, new object[] { pawn, true })
+                as PawnDiaryRecord;
+            if (diary == null)
+            {
+                throw new AssertionException("Could not resolve the test pawn's diary record.");
+            }
+
+            return diary;
         }
 
         // ----- day-evidence seeding ---------------------------------------------------------------

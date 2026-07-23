@@ -895,6 +895,18 @@ namespace PawnDiary.RimTests
                 recentSelectedMemeDefNames = new List<string> { "SyntheticMeme" },
             };
 
+            PawnReflectionState reflection = new PawnReflectionState
+            {
+                baselineOnNextOpportunity = false,
+                lastReflectionTick = observedTick,
+                lastMajorArcTick = Math.Max(0, observedTick - 30),
+                lastQuadrumTick = Math.Max(0, observedTick - 20),
+                lastDayTick = Math.Max(0, observedTick - 10),
+                pendingMajorArc = true,
+                pendingMajorArcRequestedTick = observedTick,
+                pendingMajorArcAvoidEventId = "evt_terminal_owner"
+            };
+
             PawnDiaryRecord original = new PawnDiaryRecord
             {
                 pawnId = "Thing_Human_Record",
@@ -907,6 +919,7 @@ namespace PawnDiary.RimTests
                 progressionState = progression,
                 arcSchedule = arc,
                 beliefState = belief,
+                reflectionState = reflection,
             };
 
             PawnDiaryRecord loaded = ScribeRoundTrip(original);
@@ -1032,6 +1045,24 @@ namespace PawnDiary.RimTests
                 loaded.beliefState.recentSelectedMemeDefNames,
                 "record belief recent memes");
 
+            Require(loaded.reflectionState != null,
+                "record reflectionState should be non-null after load.");
+            Require(!loaded.reflectionState.baselineOnNextOpportunity
+                    && loaded.reflectionState.pendingMajorArc,
+                "record active/pending N4 reflection flags should survive load.");
+            AssertInt(observedTick, loaded.reflectionState.lastReflectionTick,
+                "record reflection global cooldown tick");
+            AssertInt(Math.Max(0, observedTick - 30), loaded.reflectionState.lastMajorArcTick,
+                "record reflection major-arc cooldown tick");
+            AssertInt(Math.Max(0, observedTick - 20), loaded.reflectionState.lastQuadrumTick,
+                "record reflection quadrum cooldown tick");
+            AssertInt(Math.Max(0, observedTick - 10), loaded.reflectionState.lastDayTick,
+                "record reflection day cooldown tick");
+            AssertInt(observedTick, loaded.reflectionState.pendingMajorArcRequestedTick,
+                "record pending major request tick");
+            AssertStr("evt_terminal_owner", loaded.reflectionState.pendingMajorArcAvoidEventId,
+                "record pending major avoid-related event ID");
+
             // Null list + null nested state normalize to non-null on load.
             PawnDiaryRecord nullOriginal = new PawnDiaryRecord
             {
@@ -1042,6 +1073,7 @@ namespace PawnDiary.RimTests
                 progressionState = null,
                 arcSchedule = null,
                 beliefState = null,
+                reflectionState = null,
             };
             PawnDiaryRecord nullLoaded = ScribeRoundTrip(nullOriginal);
             Require(
@@ -1084,6 +1116,11 @@ namespace PawnDiary.RimTests
                     && !nullLoaded.beliefState.hasPendingCertainty
                     && !nullLoaded.beliefState.pendingIdeologyChange,
                 "an old save with no belief state should load a silent baseline-pending row.");
+            Require(nullLoaded.reflectionState != null
+                    && nullLoaded.reflectionState.baselineOnNextOpportunity
+                    && !nullLoaded.reflectionState.pendingMajorArc
+                    && nullLoaded.reflectionState.lastReflectionTick < 0,
+                "an old save with no N4 state should load a silent baseline-pending row.");
             GeneIdentityObservationState oldSaveGeneObservation = nullLoaded.progressionState
                 .EnsureBiotechState().EnsureGeneIdentityObservation();
             Require(oldSaveGeneObservation.geneObservationVersion == 0

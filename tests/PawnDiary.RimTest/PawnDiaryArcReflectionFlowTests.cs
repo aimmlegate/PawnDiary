@@ -29,6 +29,7 @@
 // Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-20 Arc reflection.
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using PawnDiary.Capture;
 using PawnDiary.Ingestion;
 using RimTestRedux;
@@ -198,6 +199,30 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// N4. A major canonical page may request a later arc reflection, but the callback itself must not
+        /// emit a second page. The pending row is bounded to one request and preserves the avoid-related ID.
+        /// </summary>
+        [Test]
+        public static void MajorEventQueuesOneDeferredArcWithoutImmediatePage()
+        {
+            const string firstOwner = "evt_terminal_owner_1";
+            const string latestOwner = "evt_terminal_owner_2";
+
+            scope.RequireNoNewEvent(() => InvokeConsiderAfterMajorEvent(firstOwner));
+            PawnReflectionState state = DiaryRecord().EnsureReflectionState();
+            PawnDiaryRimTestScope.Require(
+                state.pendingMajorArc
+                    && string.Equals(state.pendingMajorArcAvoidEventId, firstOwner, StringComparison.Ordinal),
+                "The major event should queue one deferred arc request with its avoid-related event ID.");
+
+            scope.RequireNoNewEvent(() => InvokeConsiderAfterMajorEvent(latestOwner));
+            PawnDiaryRimTestScope.Require(
+                state.pendingMajorArc
+                    && string.Equals(state.pendingMajorArcAvoidEventId, latestOwner, StringComparison.Ordinal),
+                "A second major event should replace the bounded pending row instead of creating a page/list.");
+        }
+
+        /// <summary>
         /// EVT-20. When the pawn has already written the year's full allowance of arc entries, the cadence policy
         /// blocks a further major-event arc with the year-cap reason — the deterministic year-limit gate.
         /// </summary>
@@ -353,6 +378,35 @@ namespace PawnDiary.RimTests
         }
 
         // ----- helpers ----------------------------------------------------------------------------
+
+        private static void InvokeConsiderAfterMajorEvent(string avoidRelatedEventId)
+        {
+            MethodInfo method = typeof(DiaryGameComponent).GetMethod(
+                "ConsiderArcReflectionAfterMajorEvent",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            if (method == null)
+            {
+                throw new InvalidOperationException(
+                    "Could not locate DiaryGameComponent.ConsiderArcReflectionAfterMajorEvent.");
+            }
+
+            method.Invoke(scope.Component, new object[] { reflectingPawn, avoidRelatedEventId });
+        }
+
+        private static PawnDiaryRecord DiaryRecord()
+        {
+            MethodInfo method = typeof(DiaryGameComponent).GetMethod(
+                "FindDiary",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            PawnDiaryRecord diary = method?.Invoke(scope.Component, new object[] { reflectingPawn, true })
+                as PawnDiaryRecord;
+            if (diary == null)
+            {
+                throw new InvalidOperationException("Could not resolve the test pawn's diary record.");
+            }
+
+            return diary;
+        }
 
         /// <summary>
         /// Builds an arc-schedule tuning with the shipped default cadence knobs, independent of the loaded XML so

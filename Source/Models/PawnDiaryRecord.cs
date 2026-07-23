@@ -91,6 +91,10 @@ namespace PawnDiary
         // requests a silent baseline, so old saves never receive catch-up belief pages.
         public PawnBeliefState beliefState;
 
+        // Unified N4 reflection cooldown and one-request major-arc queue. A missing deep row means this
+        // record predates N4 and must baseline silently at its first natural reflection opportunity.
+        public PawnReflectionState reflectionState;
+
         /// <summary>
         /// Serialises/deserialises this record into the RimWorld save file.
         /// PostLoadInit keeps list fields non-null and recovers gracefully if a style Def was
@@ -121,6 +125,7 @@ namespace PawnDiary
             Scribe_Deep.Look(ref progressionState, "progressionState");
             Scribe_Deep.Look(ref arcSchedule, "arcSchedule");
             Scribe_Deep.Look(ref beliefState, "beliefState");
+            Scribe_Deep.Look(ref reflectionState, "reflectionState");
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -180,6 +185,7 @@ namespace PawnDiary
                 EnsureProgressionState();
                 EnsureArcSchedule();
                 EnsureBeliefState();
+                EnsureReflectionState();
             }
         }
 
@@ -216,6 +222,18 @@ namespace PawnDiary
             int now = Find.TickManager?.TicksGame ?? int.MaxValue;
             beliefState.Normalize(now, DiaryBeliefPolicy.Snapshot());
             return beliefState;
+        }
+
+        /// <summary>Returns normalized N4 runtime state, creating an old-save silent baseline if absent.</summary>
+        public PawnReflectionState EnsureReflectionState()
+        {
+            if (reflectionState == null)
+            {
+                reflectionState = new PawnReflectionState();
+            }
+
+            reflectionState.Normalize();
+            return reflectionState;
         }
     }
 }

@@ -14,19 +14,37 @@ namespace PawnDiary
     public partial class DiaryGameComponent
     {
         /// <summary>
-        /// Major progression moments call this after their normal diary page records. Cadence policy
-        /// decides whether the moment warrants a rare extra arc reflection.
+        /// Major progression moments call this after their normal diary page records. N4 stores one
+        /// bounded request for the pawn's next natural rest arbitration instead of creating an immediate
+        /// second page beside the canonical source event.
         /// </summary>
         private void ConsiderArcReflectionAfterMajorEvent(Pawn pawn, string avoidRelatedEventId = null)
         {
-            if (pawn == null || !IsDiaryEligible(pawn))
+            if (pawn == null
+                || !IsDiaryEligible(pawn)
+                || !DiaryTuning.Current.arcReflectionEnabled
+                || !IsReflectionGroupEnabled(ArcReflectionEventData.DefNameToken))
             {
                 return;
             }
 
-            TryFlushArcReflectionForPawn(
-                pawn, pawn.GetUniqueLoadID(), CurrentDayIndex, majorEventTrigger: true,
-                avoidRelatedEventId);
+            string pawnId = pawn.GetUniqueLoadID();
+            PawnDiaryRecord diary = FindDiary(pawn, true);
+            if (diary == null)
+            {
+                return;
+            }
+
+            PawnReflectionState reflectionState = diary.EnsureReflectionState();
+            if (reflectionState.baselineOnNextOpportunity)
+            {
+                // A real post-upgrade event establishes the N4 boundary immediately, so its new pending
+                // request is preserved without allowing older annual/day/quadrum debt to catch up.
+                BaselineReflectionState(
+                    diary, pawnId, CurrentDayIndex, Find.TickManager.TicksGame, reflectionState);
+            }
+
+            reflectionState.QueueMajorArc(Find.TickManager.TicksGame, avoidRelatedEventId);
         }
 
         /// <summary>
@@ -37,9 +55,7 @@ namespace PawnDiary
         private bool TryFlushArcReflectionForPawn(Pawn pawn, string pawnId, int day,
             bool majorEventTrigger, string avoidRelatedEventId = null)
         {
-            if (pawn == null
-                || string.IsNullOrWhiteSpace(pawnId)
-                || !DiaryTuning.Current.arcReflectionEnabled)
+            if (pawn == null || string.IsNullOrWhiteSpace(pawnId))
             {
                 return false;
             }
@@ -50,13 +66,56 @@ namespace PawnDiary
                 return false;
             }
 
+            ReflectionRuntimeCandidate candidate = PrepareArcReflectionCandidate(
+                pawn,
+                diary,
+                pawnId,
+                day,
+                majorEventTrigger,
+                avoidRelatedEventId,
+                pendingOwner: null,
+                collectEvidence: true);
+            if (candidate?.opportunity == null
+                || !candidate.opportunity.groupEnabled
+                || !candidate.opportunity.due)
+            {
+                candidate?.SettleIneligible();
+                return false;
+            }
+
+            if (!candidate.Dispatch())
+            {
+                return false;
+            }
+
+            candidate.ConsumeAfterDispatch();
+            return true;
+        }
+
+        /// <summary>
+        /// Collects one detached annual/major opportunity and retains the existing selected memories only
+        /// in this impure runtime candidate. No cadence/pending state is consumed during collection.
+        /// </summary>
+        private ReflectionRuntimeCandidate PrepareArcReflectionCandidate(
+            Pawn pawn,
+            PawnDiaryRecord diary,
+            string pawnId,
+            int day,
+            bool majorEventTrigger,
+            string avoidRelatedEventId,
+            PawnReflectionState pendingOwner,
+            bool collectEvidence)
+        {
             int currentYear = CurrentRimYear();
             int dayOfYear = CurrentRimYearDay();
             int recentCap = Math.Max(0, DiaryTuning.Current.arcReflectionRecentlyUsedMemoryCap);
             PawnArcScheduleState schedule = diary.EnsureArcSchedule();
-            schedule.NormalizeForYear(currentYear, recentCap);
 
             int nowTick = Find.TickManager.TicksGame;
+            ArcReflectionScheduleTuning cadence = ArcScheduleTuning();
+            // Evaluate the underlying cadence even while the source/group is disabled so the coordinator
+            // can issue an explicit debt-bounding instruction without scanning any memory archive.
+            cadence.enabled = true;
             ArcReflectionScheduleDecision scheduleDecision = ArcReflectionSchedulePolicy.Evaluate(
                 new ArcReflectionScheduleSnapshot
                 {
@@ -65,22 +124,69 @@ namespace PawnDiary
                     arcEntriesThisYear = schedule.arcEntriesThisYear,
                     forcedArcYear = schedule.forcedArcYear
                 },
-                ArcScheduleTuning(),
+                cadence,
                 nowTick,
                 currentYear,
                 dayOfYear,
                 majorEventTrigger);
-            if (!scheduleDecision.allowed)
+
+            bool groupEnabled = DiaryTuning.Current.arcReflectionEnabled
+                && IsReflectionGroupEnabled(ArcReflectionEventData.DefNameToken);
+            ReflectionRuntimeCandidate runtime = new ReflectionRuntimeCandidate
             {
-                return false;
-            }
+                opportunity = new ReflectionOpportunity
+                {
+                    kind = NarrativeReflectionKindTokens.MajorArc,
+                    pawnId = pawnId,
+                    nowTick = nowTick,
+                    candidateMemoryCount = 1,
+                    importance = majorEventTrigger
+                        ? NarrativeSalienceTokens.Major
+                        : NarrativeSalienceTokens.Meaningful,
+                    due = scheduleDecision.allowed,
+                    alreadyWritten = false,
+                    cooldownSatisfied = true,
+                    groupEnabled = groupEnabled
+                }
+            };
 
             if (!majorEventTrigger && schedule.IsMemoryShortfallBackoffActive(
                 nowTick,
                 currentYear,
                 Math.Max(0, DiaryTuning.Current.arcReflectionMemoryShortfallRetryTicks)))
             {
-                return false;
+                runtime.opportunity.due = false;
+            }
+
+            if (!runtime.opportunity.due)
+            {
+                if (majorEventTrigger && pendingOwner != null)
+                {
+                    runtime.settleIneligible = pendingOwner.ClearPendingMajorArc;
+                }
+
+                return runtime;
+            }
+
+            runtime.advanceDisabledDebt = () =>
+            {
+                if (majorEventTrigger)
+                {
+                    pendingOwner?.ClearPendingMajorArc();
+                }
+                else if (scheduleDecision.forced)
+                {
+                    schedule.forcedArcYear = currentYear;
+                }
+            };
+            if (!groupEnabled)
+            {
+                return runtime;
+            }
+
+            if (!collectEvidence)
+            {
+                return runtime;
             }
 
             List<ArcMemoryCandidate> candidates = CollectArcMemoryCandidates(diary, pawnId, currentYear, day);
@@ -105,18 +211,57 @@ namespace PawnDiary
                     ? Math.Max(1, DiaryTuning.Current.arcReflectionMinMemoriesForced)
                     : Math.Max(1, DiaryTuning.Current.arcReflectionMinMemoriesPreferred),
                 sameDomainGroupCap = 2,
-                seed = ArcSelectionSeed(pawnId, currentYear, schedule.arcEntriesThisYear, majorEventTrigger)
+                seed = ArcSelectionSeed(
+                    pawnId, currentYear, scheduleDecision.normalizedEntriesThisYear, majorEventTrigger)
             });
             if (!selection.hasEnoughMemories)
             {
-                if (!majorEventTrigger)
+                runtime.opportunity.due = false;
+                if (majorEventTrigger && pendingOwner != null)
                 {
-                    schedule.MarkMemoryShortfall(nowTick, currentYear);
+                    runtime.settleIneligible = pendingOwner.ClearPendingMajorArc;
                 }
-
-                return false;
+                else if (!majorEventTrigger)
+                {
+                    runtime.settleIneligible = () => schedule.MarkMemoryShortfall(nowTick, currentYear);
+                }
+                return runtime;
             }
 
+            List<string> selectedIds = SelectedArcMemoryIds(selection.selected);
+            runtime.opportunity.candidateMemoryCount = selection.candidateCount;
+            runtime.opportunity.sourceEventIds = selectedIds;
+            runtime.dispatch = () => DispatchPreparedArcReflection(
+                pawn,
+                pawnId,
+                nowTick,
+                currentYear,
+                scheduleDecision,
+                selection);
+            runtime.consumeAfterDispatch = () =>
+            {
+                schedule.MarkArcEntry(
+                    nowTick,
+                    currentYear,
+                    scheduleDecision.forced,
+                    selectedIds,
+                    recentCap);
+                if (majorEventTrigger)
+                {
+                    pendingOwner?.ClearPendingMajorArc();
+                }
+            };
+            return runtime;
+        }
+
+        private bool DispatchPreparedArcReflection(
+            Pawn pawn,
+            string pawnId,
+            int nowTick,
+            int currentYear,
+            ArcReflectionScheduleDecision scheduleDecision,
+            ArcMemorySelectionResult selection)
+        {
             ArcReflectionEventData data = new ArcReflectionEventData
             {
                 PawnId = pawnId,
@@ -125,7 +270,7 @@ namespace PawnDiary
                 ArcYear = currentYear,
                 CandidateMemoryCount = selection.candidateCount,
                 SelectedMemoryCount = selection.selected.Count,
-                EntriesThisYear = schedule.arcEntriesThisYear,
+                EntriesThisYear = scheduleDecision.normalizedEntriesThisYear,
                 Forced = scheduleDecision.forced,
                 AlreadyWritten = false
             };
@@ -139,20 +284,9 @@ namespace PawnDiary
                 scheduleDecision.forced,
                 selection.selected.Count,
                 selection.candidateCount,
-                schedule.arcEntriesThisYear);
+                scheduleDecision.normalizedEntriesThisYear);
 
-            if (Dispatch(new ArcReflectionSignal(data, pawn, label, text, instruction, gameContext)))
-            {
-                schedule.MarkArcEntry(
-                    nowTick,
-                    currentYear,
-                    scheduleDecision.forced,
-                    SelectedArcMemoryIds(selection.selected),
-                    recentCap);
-                return true;
-            }
-
-            return false;
+            return Dispatch(new ArcReflectionSignal(data, pawn, label, text, instruction, gameContext));
         }
 
         private List<ArcMemoryCandidate> CollectArcMemoryCandidates(PawnDiaryRecord diary, string pawnId,
