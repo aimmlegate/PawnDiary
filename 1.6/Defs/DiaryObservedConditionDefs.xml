@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <Defs>
 
   <!--
@@ -161,7 +161,7 @@
     <recordStartEvent>true</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
     <recordScope>MapColonists</recordScope>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <instruction>write this as paranoia and fear that some unknown thing may be infecting people and imitating them; keep it grounded in what the pawn could suspect, make ordinary faces and voices feel untrustworthy, and never explain hidden game mechanics or identify a host</instruction>
     <startTextKey>PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start</startTextKey>
 
@@ -206,7 +206,7 @@
     <recordStartEvent>false</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
     <recordScope>MapColonists</recordScope>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
 
     <promptEnabled>true</promptEnabled>
     <promptWeight>60</promptWeight>
@@ -251,7 +251,7 @@
     <recordStartEvent>false</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
     <recordScope>MapColonists</recordScope>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
 
     <promptEnabled>true</promptEnabled>
     <promptWeight>40</promptWeight>
@@ -429,7 +429,7 @@
 
     <recordStartEvent>false</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
 
     <promptEnabled>true</promptEnabled>
     <promptWeight>20</promptWeight>
@@ -462,7 +462,7 @@
 
     <recordStartEvent>false</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
 
     <promptEnabled>true</promptEnabled>
     <promptWeight>20</promptWeight>
@@ -493,7 +493,7 @@
 
     <recordStartEvent>false</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
 
     <promptEnabled>true</promptEnabled>
     <promptWeight>25</promptWeight>
@@ -535,7 +535,7 @@
     <recordStartEvent>true</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
     <recordScope>MapColonists</recordScope>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <instruction>write the pawn seeing the pit gate torn open in the colony's ground: a hole that goes down farther than it should, heat and sound from below, and things that climb out of it; keep it grounded in what can be seen and heard, and never explain what is at the bottom</instruction>
     <startTextKey>PawnDiary.Event.ObservedCondition.PitGatePresence.Start</startTextKey>
 
@@ -576,7 +576,7 @@
     <recordStartEvent>true</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
     <recordScope>MapColonists</recordScope>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <instruction>write the pawn realizing a heart of living flesh has erupted nearby and is growing toward the colony: the sound of it, the ground changing, the need to cut it back; write revulsion and urgency without explaining its biology or inventing a resolved fight</instruction>
     <startTextKey>PawnDiary.Event.ObservedCondition.FleshmassHeartPresence.Start</startTextKey>
 
@@ -616,7 +616,7 @@
 
     <recordStartEvent>false</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
 
     <promptEnabled>true</promptEnabled>
     <promptWeight>15</promptWeight>
@@ -653,7 +653,7 @@
 
     <recordStartEvent>false</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
 
     <promptEnabled>true</promptEnabled>
     <promptWeight>8</promptWeight>
@@ -686,7 +686,7 @@
 
     <recordStartEvent>false</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
 
     <promptEnabled>true</promptEnabled>
     <promptWeight>25</promptWeight>
@@ -724,7 +724,7 @@
 
     <recordStartEvent>false</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
 
     <promptEnabled>true</promptEnabled>
     <promptWeight>20</promptWeight>

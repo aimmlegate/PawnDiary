@@ -35,19 +35,50 @@ namespace PawnDiary
         public const string SocialFightColorCue = "socialFight";
         public const string MentalBreakColorCue = "mentalBreak";
         public const string DazeColorCue = "daze";
-        public const string ExtremeDarkColorCue = "extremeDark";
         public const string StrangeChatColorCue = "strangeChat";
+        // Retired cues. No shipped group stamps these any more — Anomaly dread moved to the anomalyDeep
+        // family and the mixed Biotech/Odyssey "eventful" bucket was split into per-DLC families. They
+        // stay defined, and keep their rows in DiaryUiStyleDef, because colorCue is PERSISTED: every
+        // page written before that change still carries one of these strings and must still render.
+        public const string ExtremeDarkColorCue = "extremeDark";
+        public const string EventfulColorCue = "eventful";
         public const string WhiteColorCue = "white";
         public const string BodyPartAnomalousColorCue = "bodyPartAnomalous";
         public const string BodyPartArtificialColorCue = "bodyPartArtificial";
         public const string BodyPartLostColorCue = "bodyPartLost";
-        // Psychic events (psylink gains, psycast abilities): a bright violet, distinct from the dark
-        // blood-red extremeDark cue used by Anomaly dread content (void monolith, metalhorror, etc.).
+        // Psychic events (psycast abilities): a bright violet, distinct from the Anomaly family below.
         public const string PsychicColorCue = "psychic";
-        // Royal-title gains and royal rituals: a gold, distinct from the generic warm-white cue that
-        // heartfelt moments, birthdays, and skill passions share.
-        public const string RoyaltyColorCue = "royalty";
         public const string QuietColorCue = "quiet";
+
+        // ---- DLC families ----
+        //
+        // Each paid DLC owns one hue, taken from its store/wiki icon, so a page's color says which
+        // expansion it came from at a glance. Within a hue, the shade says how heavy the page is:
+        //
+        //   <dlc>Deep    dread, loss, crisis        (the only shade that also draws a header rule)
+        //   <dlc>        the DLC's own brand color  (ordinary events)
+        //   <dlc>Bright  triumph, wonder, birth
+        //
+        // This keeps horror pages heavy through VALUE while still reading as their DLC through HUE —
+        // an Anomaly void page is deep olive, not a generic dark red that could be anything.
+        //
+        // The core names are plain ("royalty", "anomaly") rather than suffixed, so the already-shipped
+        // "royalty" saved string keeps working unchanged.
+        public const string RoyaltyDeepColorCue = "royaltyDeep";
+        public const string RoyaltyColorCue = "royalty";
+        public const string RoyaltyBrightColorCue = "royaltyBright";
+        public const string IdeologyDeepColorCue = "ideologyDeep";
+        public const string IdeologyColorCue = "ideology";
+        public const string IdeologyBrightColorCue = "ideologyBright";
+        public const string BiotechDeepColorCue = "biotechDeep";
+        public const string BiotechColorCue = "biotech";
+        public const string BiotechBrightColorCue = "biotechBright";
+        public const string AnomalyDeepColorCue = "anomalyDeep";
+        public const string AnomalyColorCue = "anomaly";
+        public const string AnomalyBrightColorCue = "anomalyBright";
+        public const string OdysseyDeepColorCue = "odysseyDeep";
+        public const string OdysseyColorCue = "odyssey";
+        public const string OdysseyBrightColorCue = "odysseyBright";
         private const int MaxPersistedRawResponseChars = 4000;
 
         // ---------------------------------------------------------------------------------------------
@@ -1618,9 +1649,12 @@ namespace PawnDiary
                 }
             }
 
-            if (IsExtremeDarkDefName(defName))
+            // Anomaly's unnatural-darkness content is matched by keyword rather than by an XML group
+            // row, so it has to be routed here too — otherwise a darkness page would keep the retired
+            // blood-red while every other Anomaly page reads olive.
+            if (IsAnomalyDarknessDefName(defName))
             {
-                return ExtremeDarkColorCue;
+                return AnomalyDeepColorCue;
             }
 
             DiaryInteractionGroupDef group = GroupForDisplay(context, defName);
@@ -1817,7 +1851,7 @@ namespace PawnDiary
                     || defName.IndexOf("Wander", StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
-        private static bool IsExtremeDarkDefName(string defName)
+        private static bool IsAnomalyDarknessDefName(string defName)
         {
             return !string.IsNullOrWhiteSpace(defName)
                 && (defName.IndexOf("UnnaturalDarkness", StringComparison.OrdinalIgnoreCase) >= 0

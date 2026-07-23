@@ -158,7 +158,98 @@ namespace PawnDiary.RimTests
                 style.PageTintForCue(DiaryEvent.CombatColorCue.ToUpperInvariant()));
         }
 
+        /// <summary>
+        /// Each DLC owns one hue and three shades of it. Within a family the accents must differ from
+        /// each other (a copy-paste that left two shades identical erases the weight distinction), and
+        /// only the deep shade draws its own header rule — except Royalty's core, which shipped with
+        /// one before the families existed.
+        /// </summary>
+        [Test]
+        public static void EachDlcFamilyResolvesThreeDistinctShades()
+        {
+            DiaryUiStyleDef style = DiaryUiStyles.Current;
+            string[] families =
+            {
+                DiaryEvent.RoyaltyColorCue,
+                DiaryEvent.IdeologyColorCue,
+                DiaryEvent.BiotechColorCue,
+                DiaryEvent.AnomalyColorCue,
+                DiaryEvent.OdysseyColorCue
+            };
+
+            foreach (string core in families)
+            {
+                string deep = core + "Deep";
+                string bright = core + "Bright";
+                Color deepAccent = style.ColorForCue(deep, important: true);
+                Color coreAccent = style.ColorForCue(core, important: true);
+                Color brightAccent = style.ColorForCue(bright, important: true);
+
+                PawnDiaryRimTestScope.Require(
+                    !ColorsEqual(deepAccent, coreAccent) && !ColorsEqual(coreAccent, brightAccent),
+                    "DLC family '" + core + "' does not resolve three distinct accents: "
+                    + Describe(deepAccent) + " / " + Describe(coreAccent) + " / " + Describe(brightAccent));
+
+                // Value orders deep < core < bright; that ordering IS the emotional-weight axis.
+                PawnDiaryRimTestScope.Require(
+                    Value(deepAccent) < Value(coreAccent) && Value(coreAccent) < Value(brightAccent),
+                    "DLC family '" + core + "' shades are not ordered dark to light.");
+
+                // Every shade tints its page, so no DLC page falls back to plain parchment.
+                foreach (string cue in new[] { deep, core, bright })
+                {
+                    PawnDiaryRimTestScope.Require(
+                        !ColorsEqual(style.PageTintForCue(cue), style.PageTintColor),
+                        "Cue '" + cue + "' has no page tint of its own.");
+                }
+
+                PawnDiaryRimTestScope.Require(
+                    !ColorsEqual(style.HeaderRuleForCue(deep), style.HeaderRuleColor),
+                    "The deep shade of '" + core + "' should draw its own header rule.");
+                PawnDiaryRimTestScope.Require(
+                    ColorsEqual(style.HeaderRuleForCue(bright), style.HeaderRuleColor),
+                    "The bright shade of '" + core + "' should inherit the shared header rule.");
+            }
+        }
+
+        /// <summary>
+        /// The retired cues still resolve. <c>DiaryEvent.colorCue</c> is persisted, so every page
+        /// written before the DLC families carries one of these strings; losing their rows would
+        /// flatten a whole colony's back catalogue to plain parchment on load.
+        /// </summary>
+        [Test]
+        public static void RetiredCuesStillResolveForOldSaves()
+        {
+            DiaryUiStyleDef style = DiaryUiStyles.Current;
+
+            foreach (string cue in new[] { DiaryEvent.ExtremeDarkColorCue, DiaryEvent.EventfulColorCue })
+            {
+                PawnDiaryRimTestScope.Require(
+                    !ColorsEqual(style.PageTintForCue(cue), style.PageTintColor),
+                    "Retired cue '" + cue + "' lost its page tint, so old pages would render as plain "
+                    + "parchment after loading.");
+                PawnDiaryRimTestScope.Require(
+                    !ColorsEqual(style.ColorForCue(cue, important: true), style.DefaultCueColor),
+                    "Retired cue '" + cue + "' lost its accent.");
+            }
+
+            // No shipped group stamps them any more — that is what makes them retired rather than live.
+            foreach (string cue in LiveGroupCues())
+            {
+                PawnDiaryRimTestScope.Require(
+                    !string.Equals(cue, DiaryEvent.ExtremeDarkColorCue, StringComparison.OrdinalIgnoreCase)
+                        && !string.Equals(cue, DiaryEvent.EventfulColorCue, StringComparison.OrdinalIgnoreCase),
+                    "Group cue '" + cue + "' still uses a retired cue; it should belong to a DLC family.");
+            }
+        }
+
         // ----- helpers ----------------------------------------------------------------------------------
+
+        // Rough perceived brightness, used only to order three shades that share a hue by construction.
+        private static float Value(Color color)
+        {
+            return (color.r + color.g + color.b) / 3f;
+        }
 
         // Every distinct colorCue the loaded interaction groups can stamp on a saved DiaryEvent.
         private static List<string> LiveGroupCues()

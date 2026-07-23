@@ -145,8 +145,11 @@ namespace PawnDiary
                     intensity = 3,
                     when = new DiaryTextDecorationCondition
                     {
+                        // anomalyDeep is what new dread pages carry; extremeDark is the retired cue
+                        // that every page written before the DLC color families still holds.
                         anyColorCue = new List<string>
                         {
+                            DiaryEvent.AnomalyDeepColorCue,
                             DiaryEvent.ExtremeDarkColorCue
                         }
                     }

@@ -73,8 +73,10 @@
         </when>
       </li>
 
-      <!-- Extreme darkness dims direct speech. Some event-specific rules may layer another
-           formatter on top, but the card color cue stays dark. -->
+      <!-- Anomaly dread dims direct speech. Some event-specific rules may layer another formatter on
+           top, but the card color cue stays dark. Both cues are listed: anomalyDeep is what new pages
+           carry, and extremeDark is the retired cue every page written before the DLC color families
+           still holds — dropping it would silently un-dim a whole colony's back catalogue. -->
       <li>
         <decoration>DimmedWords</decoration>
         <scope>DirectSpeech</scope>
@@ -82,6 +84,7 @@
         <intensity>3</intensity>
         <when>
           <anyColorCue>
+            <li>anomalyDeep</li>
             <li>extremeDark</li>
           </anyColorCue>
         </when>

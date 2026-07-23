@@ -38,6 +38,25 @@
 
     <!-- Base importance by colorCue (design §7.3); empty/unknown cues use fallbackCueImportance. -->
     <cueImportance>
+      <!-- DLC families. Values carry over what each event's PREVIOUS cue gave it, so splitting the
+           cues by expansion did not quietly change what pawns remember. anomalyDeep inherits
+           extremeDark's 0.9 exactly; birth/landing rose from the 0.3 fallback the old mixed
+           "eventful" bucket left them on. -->
+      <li><cue>anomalyDeep</cue><importance>0.9</importance></li>
+      <li><cue>anomaly</cue><importance>0.8</importance></li>
+      <li><cue>anomalyBright</cue><importance>0.65</importance></li>
+      <li><cue>odysseyDeep</cue><importance>0.8</importance></li>
+      <li><cue>odyssey</cue><importance>0.5</importance></li>
+      <li><cue>odysseyBright</cue><importance>0.6</importance></li>
+      <li><cue>biotechDeep</cue><importance>0.75</importance></li>
+      <li><cue>biotech</cue><importance>0.65</importance></li>
+      <li><cue>biotechBright</cue><importance>0.6</importance></li>
+      <li><cue>ideologyDeep</cue><importance>0.7</importance></li>
+      <li><cue>ideology</cue><importance>0.4</importance></li>
+      <li><cue>ideologyBright</cue><importance>0.55</importance></li>
+      <li><cue>royaltyDeep</cue><importance>0.65</importance></li>
+      <li><cue>royaltyBright</cue><importance>0.65</importance></li>
+      <!-- Retired cue: no group stamps it any more, but saved pages still carry it. -->
       <li><cue>extremeDark</cue><importance>0.9</importance></li>
       <li><cue>bodyPartLost</cue><importance>0.85</importance></li>
       <li><cue>danger</cue><importance>0.8</importance></li>
@@ -61,6 +80,22 @@
       <li><cue>danger</cue><tags><li>combat</li><li>danger</li></tags></li>
       <li><cue>socialFight</cue><tags><li>conflict</li><li>social</li></tags></li>
       <li><cue>mentalBreak</cue><tags><li>breakdown</li></tags></li>
+      <!-- DLC families, same carry-over rule as the importance list above. -->
+      <li><cue>anomalyDeep</cue><tags><li>dread</li></tags></li>
+      <li><cue>anomaly</cue><tags><li>dread</li><li>danger</li></tags></li>
+      <li><cue>anomalyBright</cue><tags><li>psychic</li></tags></li>
+      <li><cue>odysseyDeep</cue><tags><li>danger</li></tags></li>
+      <li><cue>odyssey</cue><tags /></li>
+      <li><cue>odysseyBright</cue><tags><li>joy</li></tags></li>
+      <li><cue>biotechDeep</cue><tags><li>illness</li></tags></li>
+      <li><cue>biotech</cue><tags><li>body</li></tags></li>
+      <li><cue>biotechBright</cue><tags><li>family</li><li>joy</li></tags></li>
+      <li><cue>ideologyDeep</cue><tags><li>breakdown</li></tags></li>
+      <li><cue>ideology</cue><tags><li>ritual</li></tags></li>
+      <li><cue>ideologyBright</cue><tags><li>ritual</li><li>social</li></tags></li>
+      <li><cue>royaltyDeep</cue><tags><li>royalty</li></tags></li>
+      <li><cue>royaltyBright</cue><tags><li>royalty</li></tags></li>
+      <!-- Retired cue: no group stamps it any more, but saved pages still carry it. -->
       <li><cue>extremeDark</cue><tags><li>dread</li></tags></li>
       <li><cue>strangeChat</cue><tags><li>dread</li><li>social</li></tags></li>
       <li><cue>bodyPartLost</cue><tags><li>body</li><li>illness</li></tags></li>

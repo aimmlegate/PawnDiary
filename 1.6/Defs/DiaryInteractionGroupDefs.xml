@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
   The interaction-group catalog. Each <PawnDiary.DiaryInteractionGroupDef> is one themed
   bucket of events with an enable-by-default flag and a diary-prompt instruction. RimWorld
@@ -24,10 +24,20 @@
     disableWhenPackageIdsLoaded
                    - optional list of mod package IDs. When any is loaded, this group is treated as
                      disabled even if defaultEnabled is true.
-    colorCue       - optional stable Diary tab color cue saved on new entries. Current cue names:
-                     combat, danger, socialFight, mentalBreak, daze, extremeDark, strangeChat,
-                     white, bodyPartAnomalous, bodyPartArtificial, bodyPartLost, psychic,
-                     royalty, quadrumReflection, quiet
+    colorCue       - optional stable Diary tab color cue saved on new entries. Colors for each cue
+                     live in DiaryUiStyleDef.xml. Current cue names:
+                     base game -  combat, danger, socialFight, mentalBreak, daze, strangeChat,
+                                  white, bodyPartAnomalous, bodyPartArtificial, bodyPartLost,
+                                  psychic, quadrumReflection, quiet
+                     DLC        - one hue per expansion, three shades by emotional weight
+                                  (Deep = dread/loss, plain = ordinary, Bright = triumph):
+                                  royaltyDeep / royalty / royaltyBright
+                                  ideologyDeep / ideology / ideologyBright
+                                  biotechDeep / biotech / biotechBright
+                                  anomalyDeep / anomaly / anomalyBright
+                                  odysseyDeep / odyssey / odysseyBright
+                     retired    - extremeDark, eventful. Do NOT use on new rows: they are kept only
+                                  so pages saved before the DLC families still render.
     batch          - optional Interaction/Tale batching policy:
                      enabled, mode (PairEvent or AmbientDayNote), windowTicks, maxEvents,
                      scope (Pair or Def), syntheticDefName, labelKey, briefKey, headerKey,
@@ -221,6 +231,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>conversion</defName>
+    <colorCue>ideologyBright</colorCue>
     <label>Ideology &amp; conversion</label>
     <order>50</order>
     <domain>Interaction</domain>
@@ -334,7 +345,7 @@
       <li>skin-prickling and sensory, one ordinary detail made wrong</li>
       <li>cold and alien, focused on what the pawn cannot make fit</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>DarkDialogue</li>
       <li>CreepyWords</li>
@@ -404,6 +415,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritual</defName>
+    <colorCue>ideology</colorCue>
     <label>Rituals &amp; speeches</label>
     <order>90</order>
     <domain>Interaction</domain>
@@ -701,7 +713,7 @@
       <li>quietly unnerved, as if the colony has crossed a threshold</li>
       <li>watchful and uneasy, treating the moment as bigger than one ordinary day</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>VoidMonolithDiscovery</li>
       <li>VoidMonolithActivation</li>
@@ -823,7 +835,7 @@
       <li>hushed and wary, the ground itself no longer trusted</li>
       <li>tight and alert, every sound from below counted</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>PitGatePresence</li>
     </matchDefNames>
@@ -842,7 +854,7 @@
       <li>sickened and practical, cutting back what keeps growing</li>
       <li>unnerved and bodily, the sound of it hard to unhear</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>FleshmassHeartPresence</li>
     </matchDefNames>
@@ -904,7 +916,7 @@
     </enableWhenPackageIdsLoaded>
     <instruction>a crisis of belief; use supplied belief facts to distinguish an actual change of ideoligion from convictions breaking under doubt, and never invent a former ideoligion</instruction>
     <tone>with shaken conviction and raw inward doubt</tone>
-    <colorCue>mentalBreak</colorCue>
+    <colorCue>ideologyDeep</colorCue>
     <matchDefNames>
       <li>IdeoChange</li>
     </matchDefNames>
@@ -1093,7 +1105,7 @@
       <li>immediate and consequential, grounded in the exact death and the weapon&apos;s established traits without invented speech</li>
       <li>close and uneasy, weighing what changed between wielder and weapon after this exact first kill</li>
     </tones>
-    <colorCue>royalty</colorCue>
+    <colorCue>royaltyBright</colorCue>
     <matchDefNames>
       <li>PersonaWeaponFirstConsequentialKill</li>
     </matchDefNames>
@@ -1210,7 +1222,7 @@
       <li>close to the body and the immediate outcome, without assigning feelings the writer did not supply</li>
       <li>family-centered but unsentimental, careful about distinct birther, mother, and father roles</li>
     </tones>
-    <colorCue>eventful</colorCue>
+    <colorCue>biotechBright</colorCue>
     <matchDefNames>
       <li>BiotechFamilyBirth</li>
     </matchDefNames>
@@ -1302,7 +1314,7 @@
     <order>335</order>
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <instruction>anomaly, mutation, void contact, or unnatural aftermath; write dread as something witnessed up close - smell, light, skin, memory - and never explain the source</instruction>
     <tone>with dread and the uncanny, close enough to contaminate the page</tone>
     <tones>
@@ -2051,7 +2063,7 @@
       <li>close and sensory, dread coming through the work itself</li>
       <li>quietly contaminated, curiosity feeling like a mistake</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>PawnDiary_WorkDarkStudy</li>
     </matchDefNames>
@@ -2286,6 +2298,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>hediffAnomalyCompulsion</defName>
+    <colorCue>anomalyDeep</colorCue>
     <label>Anomaly compulsions</label>
     <order>690</order>
     <domain>Hediff</domain>
@@ -2444,7 +2457,7 @@
     <domain>Raid</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <instruction>inhuman things attacking the colony - write survival under dread, bodies refusing what they see, not a normal battle; never explain what the creatures are</instruction>
     <instructions>
       <li>inhuman attackers - open on the first wrong detail: shape, gait, wet sound, impossible silence, or a familiar space made unsafe; do not name what they are beyond the supplied label</li>
@@ -2523,7 +2536,7 @@
       <li>formal but personal, the colony's shared obligation felt through one witness</li>
       <li>tense and status-aware, keeping every unobserved imperial detail uncertain</li>
     </tones>
-    <colorCue>royalty</colorCue>
+    <colorCue>royaltyBright</colorCue>
     <matchDefNames>
       <li>EndGame_RoyalAscent</li>
     </matchDefNames>
@@ -2593,6 +2606,7 @@
        identities before any mechanical facts are attached. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualConversion</defName>
+    <colorCue>ideologyBright</colorCue>
     <label>Conversion rituals</label>
     <order>759</order>
     <domain>Ritual</domain>
@@ -2641,6 +2655,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualChildbirth</defName>
+    <colorCue>biotechBright</colorCue>
     <label>Childbirth ritual</label>
     <order>762</order>
     <domain>Ritual</domain>
@@ -2660,6 +2675,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualGravship</defName>
+    <colorCue>odyssey</colorCue>
     <label>Gravship launch</label>
     <order>764</order>
     <domain>Ritual</domain>
@@ -2699,7 +2715,7 @@
       <li>intimate and uncanny, treating the bond as a lived relationship without giving the weapon invented dialogue</li>
       <li>close and reflective, grounded in loyalty, absence, return, or finality shown by the exact lifecycle facts</li>
     </tones>
-    <colorCue>royalty</colorCue>
+    <colorCue>royaltyDeep</colorCue>
     <matchDefNames>
       <li>PersonaWeaponBondFormed</li>
       <li>PersonaWeaponBondSeparated</li>
@@ -2753,7 +2769,7 @@
       <li>grounded and sensory, centered on descent, touchdown, and what this destination means</li>
       <li>crew-minded and reflective, weighing the completed passage without inventing what follows</li>
     </tones>
-    <colorCue>eventful</colorCue>
+    <colorCue>odysseyBright</colorCue>
     <matchDefNames>
       <li>OdysseyGravshipLanding</li>
     </matchDefNames>
@@ -2777,7 +2793,7 @@
       <li>final and grounded, centered on the operator&apos;s exact destroy-or-scavenge choice</li>
       <li>vast but personal, refusing to turn visible machinery into unsupported control or conquest</li>
     </tones>
-    <colorCue>eventful</colorCue>
+    <colorCue>odysseyDeep</colorCue>
     <matchDefNames>
       <li>PawnDiary_OdysseyMechhiveOutcome</li>
     </matchDefNames>
@@ -2803,7 +2819,7 @@
       <li>curious and unsettled, centered on the exact breakthrough rather than hidden mechanics</li>
       <li>intellectually absorbed but wary, keeping every unknown consequence genuinely unknown</li>
     </tones>
-    <colorCue>psychic</colorCue>
+    <colorCue>anomalyBright</colorCue>
     <matchDefNames>
       <li>PawnDiary_AnomalyStudyBreakthrough</li>
     </matchDefNames>
@@ -2825,7 +2841,7 @@
       <li>urgent and grounded in what broke free, without assigning cause or fault</li>
       <li>watchful and bodily tense, holding to the writer&apos;s actual relationship to the breach</li>
     </tones>
-    <colorCue>danger</colorCue>
+    <colorCue>anomaly</colorCue>
     <matchDefNames>
       <li>PawnDiary_ContainmentBreach</li>
     </matchDefNames>
@@ -2847,7 +2863,7 @@
       <li>intimate and unnerved, stopping exactly where visible knowledge ends</li>
       <li>tense and observant, refusing to turn suspicion into secret certainty</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>PawnDiary_CreepJoinerOutcome</li>
     </matchDefNames>
@@ -2869,7 +2885,7 @@
       <li>visceral and grave, grounded in the exact subject and surgeon roles</li>
       <li>intimate and final, without explaining the game mechanics behind the change</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>PawnDiary_GhoulTransformation</li>
     </matchDefNames>
@@ -2891,7 +2907,7 @@
       <li>final and lucid, centered on the actor&apos;s exact committed choice</li>
       <li>cosmic but personal, never drifting beyond the visible outcome supplied</li>
     </tones>
-    <colorCue>psychic</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>PawnDiary_VoidOutcome</li>
     </matchDefNames>
@@ -2916,7 +2932,7 @@
       <li>expectant and uneasy, listening for an answer without deciding what answered</li>
       <li>ritual-focused and watchful, dwelling on the choice to call rather than an unverified result</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>PsychicRitual;VoidProvocation</li>
       <li>PsychicRitual;SummonAnimals</li>
@@ -2940,7 +2956,7 @@
       <li>visceral and apprehensive, focused on choosing to make the world less safe</li>
       <li>heavy with hostile weather or fleshly expectation, without inventing the aftermath</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>PsychicRitual;SummonPitGate</li>
       <li>PsychicRitual;SummonFleshbeasts</li>
@@ -2965,7 +2981,7 @@
       <li>close and predatory, attentive to who acted and who endured without swapping their experiences</li>
       <li>morally tense and bodily strange, stopping at the facts the captured perspective can know</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>PsychicRitual;Philophagy</li>
       <li>PsychicRitual;Chronophagy</li>
@@ -2989,7 +3005,7 @@
       <li>invasive and disorienting, careful about whose mind the supplied facts describe</li>
       <li>psychically close but epistemically restrained, never inventing inaccessible memories or feelings</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>PsychicRitual;Brainwipe</li>
       <li>PsychicRitual;PleasurePulse</li>
@@ -3013,7 +3029,7 @@
       <li>tense across impossible distance, with identity and outcome left uncertain unless supplied</li>
       <li>focused on the act of reaching and pulling, not an invented arrival or aftermath</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>PsychicRitual;SkipAbduction</li>
       <li>PsychicRitual;SkipAbductionPlayer</li>
@@ -3036,7 +3052,7 @@
       <li>solemn and unnatural, treating the ritual as preparation rather than resurrection</li>
       <li>quietly defiant toward death, while leaving any future death or return unclaimed</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchDefNames>
       <li>PsychicRitual;ImbueDeathRefusal</li>
     </matchDefNames>
@@ -3058,7 +3074,7 @@
       <li>unsettling and watchful, grounded in the role and facts that were actually supplied</li>
       <li>fragmentary and uncertain, refusing to explain or predict an unknown ritual's consequence</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <matchTokens>
       <li>PsychicRitual</li>
     </matchTokens>
@@ -3066,6 +3082,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>ritualFinished</defName>
+    <colorCue>ideology</colorCue>
     <label>Rituals</label>
     <order>780</order>
     <domain>Ritual</domain>
@@ -3157,7 +3174,7 @@
       <li>close and unsettled, aware of another mind without defining the relationship</li>
       <li>plainly consequential, preserving uncertainty about meaning, choice, and what follows</li>
     </tones>
-    <colorCue>psychic</colorCue>
+    <colorCue>biotech</colorCue>
     <matchDefNames>
       <li>BiotechPsychicBondFormed</li>
       <li>BiotechPsychicBondRuptured</li>
@@ -3181,7 +3198,7 @@
       <li>disoriented and bodily, centered on rest ending before recovery</li>
       <li>quietly alarming, preserving the unknown cause instead of filling it in</li>
     </tones>
-    <colorCue>danger</colorCue>
+    <colorCue>biotechDeep</colorCue>
     <matchDefNames>
       <li>BiotechDeathrestInterrupted</li>
     </matchDefNames>
@@ -3204,7 +3221,7 @@
       <li>intimate and accountable, centered on the controller&apos;s bond with command</li>
       <li>technological but personal, keeping exact machines and threats grounded in lived consequence</li>
     </tones>
-    <colorCue>eventful</colorCue>
+    <colorCue>biotech</colorCue>
     <matchDefNames>
       <li>BiotechMechlinkInstalled</li>
       <li>BiotechMechlinkRemoved</li>
@@ -3234,7 +3251,7 @@
       <li>personal and forward-looking, grounded in the trait or interests that actually changed</li>
       <li>aware that new choices opened without turning opportunity into a score or inventing who caused it</li>
     </tones>
-    <colorCue>eventful</colorCue>
+    <colorCue>biotechBright</colorCue>
     <matchDefNames>
       <li>BiotechGrowthMoment</li>
     </matchDefNames>
@@ -3275,7 +3292,7 @@
       <li>awed and uneasy, aware of power settling into the mind</li>
       <li>focused and intimate, describing the change from inside the body</li>
     </tones>
-    <colorCue>psychic</colorCue>
+    <colorCue>royaltyBright</colorCue>
     <matchDefNames>
       <li>PsylinkLevel</li>
     </matchDefNames>
@@ -3297,7 +3314,7 @@
       <li>changed and watchful, noticing the self becoming unfamiliar</li>
       <li>visceral and private, focused on what the new body means tonight</li>
     </tones>
-    <colorCue>danger</colorCue>
+    <colorCue>biotech</colorCue>
     <matchDefNames>
       <li>XenotypeChanged</li>
       <li>GeneIdentityChanged</li>
@@ -3320,7 +3337,7 @@
       <li>measured and self-conscious, aware that a title changes how others look</li>
       <li>quietly burdened, treating rank as both honor and obligation</li>
     </tones>
-    <colorCue>royalty</colorCue>
+    <colorCue>royaltyBright</colorCue>
     <matchDefNames>
       <li>RoyalTitleChanged</li>
       <li>RoyalTitleGained</li>

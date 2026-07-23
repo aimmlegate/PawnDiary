@@ -230,12 +230,6 @@
         <pageTint><r>0.10</r><g>0.30</g><b>0.28</b><a>0.08</a></pageTint>
       </li>
       <li>
-        <cue>extremeDark</cue>
-        <color><r>0.58</r><g>0.05</g><b>0.08</b><a>1</a></color>
-        <pageTint><r>0.25</r><g>0.02</g><b>0.05</b><a>0.12</a></pageTint>
-        <headerRule><r>0.45</r><g>0.05</g><b>0.10</b><a>0.60</a></headerRule>
-      </li>
-      <li>
         <cue>strangeChat</cue>
         <color><r>0.42</r><g>0.96</g><b>0.50</b><a>1</a></color>
         <pageTint><r>0.05</r><g>0.25</g><b>0.10</b><a>0.10</a></pageTint>
@@ -266,27 +260,13 @@
         <color><r>0.95</r><g>0.40</g><b>0.30</b><a>1</a></color>
         <pageTint><r>0.95</r><g>0.40</g><b>0.30</b><a>0.08</a></pageTint>
       </li>
-      <!-- Psychic events (psylink gains, psycast abilities): bright violet, distinct from the dark
-           blood-red extremeDark cue used by Anomaly dread content. -->
+      <!-- Psycast abilities: bright violet. Anomaly and Royalty psychic content lives in the DLC
+           families below. -->
       <li>
         <cue>psychic</cue>
         <color><r>0.78</r><g>0.42</g><b>1</b><a>1</a></color>
         <pageTint><r>0.25</r><g>0.10</g><b>0.40</b><a>0.08</a></pageTint>
         <headerRule><r>0.55</r><g>0.30</g><b>0.80</b><a>0.45</a></headerRule>
-      </li>
-      <!-- Royal-title gains and royal rituals: gold, distinct from the warm-white cue shared by
-           heartfelt moments, birthdays, and skill passions. -->
-      <li>
-        <cue>royalty</cue>
-        <color><r>0.96</r><g>0.80</g><b>0.32</b><a>1</a></color>
-        <pageTint><r>0.40</r><g>0.30</g><b>0.08</b><a>0.08</a></pageTint>
-        <headerRule><r>0.75</r><g>0.60</g><b>0.20</b><a>0.45</a></headerRule>
-      </li>
-      <!-- Busy incident days ("eventful") had no row at all and fell back to the default accent. -->
-      <li>
-        <cue>eventful</cue>
-        <color><r>0.90</r><g>0.65</g><b>0.25</b><a>1</a></color>
-        <pageTint><r>0.35</r><g>0.25</g><b>0.08</b><a>0.06</a></pageTint>
       </li>
       <!-- The end-of-quadrum look-back reads as a calm blue page rather than an incident. -->
       <li>
@@ -298,6 +278,123 @@
         <cue>quiet</cue>
         <color><r>0.74</r><g>0.74</g><b>0.70</b><a>1</a></color>
         <pageTint><r>0.30</r><g>0.30</g><b>0.28</b><a>0.05</a></pageTint>
+      </li>
+
+      <!-- ===== DLC families: one hue per expansion, three shades by emotional weight =====
+           Hues are taken from each DLC's own icon, so a page's color says which expansion it came
+           from at a glance. Within a hue the shade says how heavy the page is:
+             <dlc>Deep    dread, loss, crisis        (the only shade that also draws a header rule)
+             <dlc>        the DLC's own brand color  (ordinary events)
+             <dlc>Bright  triumph, wonder, birth
+           This keeps horror pages heavy through VALUE while still reading as their DLC through HUE.
+           To retune one DLC, change its three accents and their matching tints together. -->
+
+      <!-- Royalty — crown gold. The core shade keeps the header rule it shipped with. -->
+      <li>
+        <cue>royaltyDeep</cue>
+        <color><r>0.541</r><g>0.459</g><b>0.220</b><a>1</a></color>
+        <pageTint><r>0.541</r><g>0.459</g><b>0.220</b><a>0.10</a></pageTint>
+        <headerRule><r>0.541</r><g>0.459</g><b>0.220</b><a>0.55</a></headerRule>
+      </li>
+      <li>
+        <cue>royalty</cue>
+        <color><r>0.851</r><g>0.757</g><b>0.475</b><a>1</a></color>
+        <pageTint><r>0.851</r><g>0.757</g><b>0.475</b><a>0.08</a></pageTint>
+        <headerRule><r>0.75</r><g>0.60</g><b>0.20</b><a>0.45</a></headerRule>
+      </li>
+      <li>
+        <cue>royaltyBright</cue>
+        <color><r>0.941</r><g>0.882</g><b>0.675</b><a>1</a></color>
+        <pageTint><r>0.941</r><g>0.882</g><b>0.675</b><a>0.07</a></pageTint>
+      </li>
+
+      <!-- Ideology — the flame's coral red. -->
+      <li>
+        <cue>ideologyDeep</cue>
+        <color><r>0.557</r><g>0.180</g><b>0.157</b><a>1</a></color>
+        <pageTint><r>0.557</r><g>0.180</g><b>0.157</b><a>0.10</a></pageTint>
+        <headerRule><r>0.557</r><g>0.180</g><b>0.157</b><a>0.55</a></headerRule>
+      </li>
+      <li>
+        <cue>ideology</cue>
+        <color><r>0.882</r><g>0.329</g><b>0.294</b><a>1</a></color>
+        <pageTint><r>0.882</r><g>0.329</g><b>0.294</b><a>0.08</a></pageTint>
+      </li>
+      <li>
+        <cue>ideologyBright</cue>
+        <color><r>0.957</r><g>0.569</g><b>0.537</b><a>1</a></color>
+        <pageTint><r>0.957</r><g>0.569</g><b>0.537</b><a>0.07</a></pageTint>
+      </li>
+
+      <!-- Biotech — the hexagon's teal. -->
+      <li>
+        <cue>biotechDeep</cue>
+        <color><r>0.173</r><g>0.376</g><b>0.369</b><a>1</a></color>
+        <pageTint><r>0.173</r><g>0.376</g><b>0.369</b><a>0.10</a></pageTint>
+        <headerRule><r>0.173</r><g>0.376</g><b>0.369</b><a>0.55</a></headerRule>
+      </li>
+      <li>
+        <cue>biotech</cue>
+        <color><r>0.310</r><g>0.647</g><b>0.635</b><a>1</a></color>
+        <pageTint><r>0.310</r><g>0.647</g><b>0.635</b><a>0.08</a></pageTint>
+      </li>
+      <li>
+        <cue>biotechBright</cue>
+        <color><r>0.545</r><g>0.835</g><b>0.824</b><a>1</a></color>
+        <pageTint><r>0.545</r><g>0.835</g><b>0.824</b><a>0.07</a></pageTint>
+      </li>
+
+      <!-- Anomaly — the arrowhead's olive. Dread pages stay heavy through the DEEP shade rather than
+           through a separate blood-red cue, so they read as Anomaly and as dread at once. -->
+      <li>
+        <cue>anomalyDeep</cue>
+        <color><r>0.373</r><g>0.431</g><b>0.200</b><a>1</a></color>
+        <pageTint><r>0.373</r><g>0.431</g><b>0.200</b><a>0.10</a></pageTint>
+        <headerRule><r>0.373</r><g>0.431</g><b>0.200</b><a>0.55</a></headerRule>
+      </li>
+      <li>
+        <cue>anomaly</cue>
+        <color><r>0.647</r><g>0.714</g><b>0.384</b><a>1</a></color>
+        <pageTint><r>0.647</r><g>0.714</g><b>0.384</b><a>0.08</a></pageTint>
+      </li>
+      <li>
+        <cue>anomalyBright</cue>
+        <color><r>0.824</r><g>0.871</g><b>0.588</b><a>1</a></color>
+        <pageTint><r>0.824</r><g>0.871</g><b>0.588</b><a>0.07</a></pageTint>
+      </li>
+
+      <!-- Odyssey — the star's violet. -->
+      <li>
+        <cue>odysseyDeep</cue>
+        <color><r>0.341</r><g>0.235</g><b>0.502</b><a>1</a></color>
+        <pageTint><r>0.341</r><g>0.235</g><b>0.502</b><a>0.10</a></pageTint>
+        <headerRule><r>0.341</r><g>0.235</g><b>0.502</b><a>0.55</a></headerRule>
+      </li>
+      <li>
+        <cue>odyssey</cue>
+        <color><r>0.604</r><g>0.431</g><b>0.824</b><a>1</a></color>
+        <pageTint><r>0.604</r><g>0.431</g><b>0.824</b><a>0.08</a></pageTint>
+      </li>
+      <li>
+        <cue>odysseyBright</cue>
+        <color><r>0.769</r><g>0.651</g><b>0.933</b><a>1</a></color>
+        <pageTint><r>0.769</r><g>0.651</g><b>0.933</b><a>0.07</a></pageTint>
+      </li>
+
+      <!-- ===== Retired cues, kept for old saves =====
+           No shipped group stamps these any more, but colorCue is PERSISTED: pages written before the
+           DLC families existed still carry these strings. Deleting the rows would flatten every one of
+           those pages to plain parchment, so they keep their original colors forever. -->
+      <li>
+        <cue>extremeDark</cue>
+        <color><r>0.58</r><g>0.05</g><b>0.08</b><a>1</a></color>
+        <pageTint><r>0.25</r><g>0.02</g><b>0.05</b><a>0.12</a></pageTint>
+        <headerRule><r>0.45</r><g>0.05</g><b>0.10</b><a>0.60</a></headerRule>
+      </li>
+      <li>
+        <cue>eventful</cue>
+        <color><r>0.90</r><g>0.65</g><b>0.25</b><a>1</a></color>
+        <pageTint><r>0.35</r><g>0.25</g><b>0.08</b><a>0.06</a></pageTint>
       </li>
     </cueColors>
   </PawnDiary.DiaryUiStyleDef>

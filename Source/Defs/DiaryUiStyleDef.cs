@@ -313,8 +313,6 @@ namespace PawnDiary
             // Daze and strange chat keep the shared rule: they are "something is off" moods, not the
             // loud events that earn a colored header line.
             Cue(DiaryEvent.DazeColorCue, Preset("gene"), Color(0.10f, 0.30f, 0.28f, 0.08f), null),
-            Cue(DiaryEvent.ExtremeDarkColorCue, Color(0.58f, 0.05f, 0.08f, 1f),
-                Color(0.25f, 0.02f, 0.05f, 0.12f), Color(0.45f, 0.05f, 0.10f, 0.60f)),
             Cue(DiaryEvent.StrangeChatColorCue, Color(0.42f, 0.96f, 0.50f, 1f),
                 Color(0.05f, 0.25f, 0.10f, 0.10f), null),
             // The warm-white cue carries romance, heartfelt moments, birthdays, and skill passions, so
@@ -329,27 +327,73 @@ namespace PawnDiary
                 Color(0.36f, 0.78f, 0.84f, 0.08f), null),
             Cue(DiaryEvent.BodyPartLostColorCue, Color(0.95f, 0.40f, 0.30f, 1f),
                 Color(0.95f, 0.40f, 0.30f, 0.08f), null),
-            // Psychic events (psylink gains, psycast abilities) get a bright violet, distinct from the
-            // dark blood-red extremeDark cue used by Anomaly dread content.
+            // Psycast abilities get a bright violet. Anomaly and Royalty psychic content lives in their
+            // own DLC families below.
             Cue(DiaryEvent.PsychicColorCue, Color(0.78f, 0.42f, 1f, 1f),
                 Color(0.25f, 0.10f, 0.40f, 0.08f), Color(0.55f, 0.30f, 0.80f, 0.45f)),
-            // Royal-title gains and royal rituals get a gold, distinct from the warm-white cue shared
-            // by heartfelt moments, birthdays, and skill passions.
-            Cue(DiaryEvent.RoyaltyColorCue, Color(0.96f, 0.80f, 0.32f, 1f),
-                Color(0.40f, 0.30f, 0.08f, 0.08f), Color(0.75f, 0.60f, 0.20f, 0.45f)),
-            // Busy incident days ("eventful") had no row at all and fell back to the default accent.
-            Cue(EventfulColorCue, Color(0.90f, 0.65f, 0.25f, 1f),
-                Color(0.35f, 0.25f, 0.08f, 0.06f), null),
             // The end-of-quadrum look-back reads as a calm blue page rather than an incident.
             Cue(QuadrumReflectionColorCue, Color(0.66f, 0.86f, 0.95f, 1f),
                 Color(0.15f, 0.20f, 0.35f, 0.07f), null),
             Cue(DiaryEvent.QuietColorCue, Color(0.74f, 0.74f, 0.70f, 1f),
-                Color(0.30f, 0.30f, 0.28f, 0.05f), null)
+                Color(0.30f, 0.30f, 0.28f, 0.05f), null),
+
+            // ---- DLC families: one hue per expansion, three shades by emotional weight ----
+            // Hues come from each DLC's own icon. Only the Deep shade draws a header rule, so the
+            // heaviest page in a family is the one that gets a colored line under its title.
+
+            // Royalty — crown gold. The core shade keeps the rule it shipped with.
+            Cue(DiaryEvent.RoyaltyDeepColorCue, Color(0.541f, 0.459f, 0.220f, 1f),
+                Color(0.541f, 0.459f, 0.220f, 0.10f), Color(0.541f, 0.459f, 0.220f, 0.55f)),
+            Cue(DiaryEvent.RoyaltyColorCue, Color(0.851f, 0.757f, 0.475f, 1f),
+                Color(0.851f, 0.757f, 0.475f, 0.08f), Color(0.75f, 0.60f, 0.20f, 0.45f)),
+            Cue(DiaryEvent.RoyaltyBrightColorCue, Color(0.941f, 0.882f, 0.675f, 1f),
+                Color(0.941f, 0.882f, 0.675f, 0.07f), null),
+
+            // Ideology — the flame's coral red.
+            Cue(DiaryEvent.IdeologyDeepColorCue, Color(0.557f, 0.180f, 0.157f, 1f),
+                Color(0.557f, 0.180f, 0.157f, 0.10f), Color(0.557f, 0.180f, 0.157f, 0.55f)),
+            Cue(DiaryEvent.IdeologyColorCue, Color(0.882f, 0.329f, 0.294f, 1f),
+                Color(0.882f, 0.329f, 0.294f, 0.08f), null),
+            Cue(DiaryEvent.IdeologyBrightColorCue, Color(0.957f, 0.569f, 0.537f, 1f),
+                Color(0.957f, 0.569f, 0.537f, 0.07f), null),
+
+            // Biotech — the hexagon's teal.
+            Cue(DiaryEvent.BiotechDeepColorCue, Color(0.173f, 0.376f, 0.369f, 1f),
+                Color(0.173f, 0.376f, 0.369f, 0.10f), Color(0.173f, 0.376f, 0.369f, 0.55f)),
+            Cue(DiaryEvent.BiotechColorCue, Color(0.310f, 0.647f, 0.635f, 1f),
+                Color(0.310f, 0.647f, 0.635f, 0.08f), null),
+            Cue(DiaryEvent.BiotechBrightColorCue, Color(0.545f, 0.835f, 0.824f, 1f),
+                Color(0.545f, 0.835f, 0.824f, 0.07f), null),
+
+            // Anomaly — the arrowhead's olive. Dread pages stay heavy through the DEEP shade rather
+            // than through a separate blood-red cue, so they read as Anomaly and as dread at once.
+            Cue(DiaryEvent.AnomalyDeepColorCue, Color(0.373f, 0.431f, 0.200f, 1f),
+                Color(0.373f, 0.431f, 0.200f, 0.10f), Color(0.373f, 0.431f, 0.200f, 0.55f)),
+            Cue(DiaryEvent.AnomalyColorCue, Color(0.647f, 0.714f, 0.384f, 1f),
+                Color(0.647f, 0.714f, 0.384f, 0.08f), null),
+            Cue(DiaryEvent.AnomalyBrightColorCue, Color(0.824f, 0.871f, 0.588f, 1f),
+                Color(0.824f, 0.871f, 0.588f, 0.07f), null),
+
+            // Odyssey — the star's violet.
+            Cue(DiaryEvent.OdysseyDeepColorCue, Color(0.341f, 0.235f, 0.502f, 1f),
+                Color(0.341f, 0.235f, 0.502f, 0.10f), Color(0.341f, 0.235f, 0.502f, 0.55f)),
+            Cue(DiaryEvent.OdysseyColorCue, Color(0.604f, 0.431f, 0.824f, 1f),
+                Color(0.604f, 0.431f, 0.824f, 0.08f), null),
+            Cue(DiaryEvent.OdysseyBrightColorCue, Color(0.769f, 0.651f, 0.933f, 1f),
+                Color(0.769f, 0.651f, 0.933f, 0.07f), null),
+
+            // ---- Retired cues, kept for old saves ----
+            // No shipped group stamps these any more, but colorCue is PERSISTED: pages written before
+            // the DLC families existed still carry these strings. Deleting the rows would flatten every
+            // one of those pages to plain parchment, so they keep their original colors forever.
+            Cue(DiaryEvent.ExtremeDarkColorCue, Color(0.58f, 0.05f, 0.08f, 1f),
+                Color(0.25f, 0.02f, 0.05f, 0.12f), Color(0.45f, 0.05f, 0.10f, 0.60f)),
+            Cue(DiaryEvent.EventfulColorCue, Color(0.90f, 0.65f, 0.25f, 1f),
+                Color(0.35f, 0.25f, 0.08f, 0.06f), null)
         };
 
-        // Cue keys owned by XML group rows rather than DiaryEvent constants. They are plain saved
-        // strings, so they live here only to keep this list and the XML spelling in sync.
-        private const string EventfulColorCue = "eventful";
+        // Cue key owned by an XML group row rather than a DiaryEvent constant. It is a plain saved
+        // string, so it lives here only to keep this list and the XML spelling in sync.
         private const string QuadrumReflectionColorCue = "quadrumReflection";
 
         public float CollapsedEntryHeight => entryTitleHeight + collapsedEntryChromePadding;

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <Defs>
 
   <!--
@@ -65,7 +65,7 @@
     <recordEndWithoutActive>false</recordEndWithoutActive>
     <recordTimeoutEvent>false</recordTimeoutEvent>
     <instruction>write the pawn's first discovery of the void monolith as extreme dark anomaly dread; make the structure feel inhuman and psychic, but keep the moment grounded in what the pawn can see and feel</instruction>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <startTextKey>PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start</startTextKey>
 
     <startSignals>
@@ -100,7 +100,7 @@
     <recordEndWithoutActive>false</recordEndWithoutActive>
     <recordTimeoutEvent>false</recordTimeoutEvent>
     <instruction>write the pawn's deliberate first stirring of the void monolith as a threshold crossed; focus on the activator's visible and psychic experience, and do not invent what the monolith will cause next</instruction>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <startTextKey>PawnDiary.Event.EventWindow.VoidMonolithActivation.Start</startTextKey>
 
     <startSignals>
@@ -150,7 +150,7 @@
     <recordEndWithoutActive>false</recordEndWithoutActive>
     <recordTimeoutEvent>false</recordTimeoutEvent>
     <instruction>write the pawn's deliberate waking of the void monolith as a second escalation; focus on the activator's visible and psychic experience, and do not invent hidden knowledge or later consequences</instruction>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <startTextKey>PawnDiary.Event.EventWindow.VoidMonolithWaking.Start</startTextKey>
 
     <startSignals>
@@ -197,7 +197,7 @@
     <recordEndWithoutActive>false</recordEndWithoutActive>
     <recordTimeoutEvent>false</recordTimeoutEvent>
     <instruction>write the pawn's deliberate awakening of the active void chapter as a final escalation of the monolith; stay with the activator's visible and psychic experience, without claiming either terminal choice or outcome</instruction>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>anomalyDeep</colorCue>
     <startTextKey>PawnDiary.Event.EventWindow.VoidMonolithVoidAwakened.Start</startTextKey>
 
     <startSignals>

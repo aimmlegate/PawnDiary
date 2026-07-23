@@ -2759,14 +2759,30 @@ namespace DiaryPipelineTests
                 GroupColorCue(groups, "hediffPartGainedArtificial"));
             AssertEqual("lost body parts use their own cue", "bodyPartLost",
                 GroupColorCue(groups, "hediffPartLostNatural"));
-            AssertEqual("psylink progression stays psychic", "psychic",
+            // Psylink and royal titles are Royalty content, so they belong to that DLC's hue rather
+            // than to the generic psychic violet; a psycast is the one page that stays psychic, since
+            // it is the ability itself and not a Royalty milestone.
+            AssertEqual("psylink progression joins the Royalty family", "royaltyBright",
                 GroupColorCue(groups, "progressionPsylink"));
             AssertEqual("psycast abilities stay psychic", "psychic",
                 GroupColorCue(groups, "abilityPsycast"));
-            AssertEqual("royal title progression stays royalty", "royalty",
+            AssertEqual("royal title progression is a Royalty triumph", "royaltyBright",
                 GroupColorCue(groups, "progressionRoyalTitle"));
-            AssertEqual("royal rituals stay royalty", "royalty",
+            AssertEqual("royal rituals stay on the Royalty core shade", "royalty",
                 GroupColorCue(groups, "ritualRoyal"));
+
+            // Each DLC's heaviest page uses the deep shade of its own hue, so dread reads as dread AND
+            // as its expansion. Anomaly is the load-bearing case: it used to be a generic blood-red.
+            AssertEqual("Anomaly dread uses the deep Anomaly shade", "anomalyDeep",
+                GroupColorCue(groups, "anomalyVoidOutcome"));
+            AssertEqual("Anomaly study breakthrough is the bright Anomaly shade", "anomalyBright",
+                GroupColorCue(groups, "anomalyStudyBreakthrough"));
+            AssertEqual("belief crisis uses the deep Ideology shade", "ideologyDeep",
+                GroupColorCue(groups, "beliefCrisis"));
+            AssertEqual("birth is the bright Biotech shade", "biotechBright",
+                GroupColorCue(groups, "biotechFamilyBirth"));
+            AssertEqual("the Mechhive ending uses the deep Odyssey shade", "odysseyDeep",
+                GroupColorCue(groups, "odysseyMechhiveOutcome"));
 
             XDocument style = XDocument.Load(RepoPath("1.6", "Defs", "DiaryUiStyleDef.xml"));
             string conversionCue = GroupColorCue(groups, "ritualConversion");
@@ -2842,21 +2858,90 @@ namespace DiaryPipelineTests
                 AssertAlphaWithin("page tint for cue '" + cue + "'", row.Element("pageTint"), 0.05f, 0.12f);
                 AssertAlphaWithin("header rule for cue '" + cue + "'", row.Element("headerRule"), 0.35f, 0.65f);
             }
+
+            // Retired cues carry no group any more, but colorCue is PERSISTED — a page written before
+            // the DLC families existed still holds one of these strings. Losing the row would flatten
+            // every one of those pages to plain parchment on load.
+            string[] retiredCues = { "extremeDark", "eventful" };
+            for (int i = 0; i < retiredCues.Length; i++)
+            {
+                AssertTrue("retired cue '" + retiredCues[i] + "' keeps its row for old saves",
+                    declaredCues.Contains(retiredCues[i]));
+            }
+
+            // Each DLC family is a complete deep/core/bright set, and each shade must differ from its
+            // siblings — a copy-paste that left two shades identical would silently erase the weight
+            // distinction the family exists for.
+            string[] families = { "royalty", "ideology", "biotech", "anomaly", "odyssey" };
+            for (int i = 0; i < families.Length; i++)
+            {
+                string core = families[i];
+                string deep = core + "Deep";
+                string bright = core + "Bright";
+                AssertTrue("DLC family '" + core + "' declares its deep shade", declaredCues.Contains(deep));
+                AssertTrue("DLC family '" + core + "' declares its core shade", declaredCues.Contains(core));
+                AssertTrue("DLC family '" + core + "' declares its bright shade", declaredCues.Contains(bright));
+
+                // Only the deep shade draws a colored line under the title. Royalty's core is the one
+                // exception: it shipped with a rule before the families existed and keeps it.
+                AssertTrue("DLC family '" + core + "' gives its deep shade a header rule",
+                    CueSpec(style, deep, "headerRule") != null);
+                if (!string.Equals(core, "royalty", StringComparison.Ordinal))
+                {
+                    AssertTrue("DLC family '" + core + "' leaves its core shade on the shared rule",
+                        CueSpec(style, core, "headerRule") == null);
+                }
+
+                AssertTrue("DLC family '" + core + "' leaves its bright shade on the shared rule",
+                    CueSpec(style, bright, "headerRule") == null);
+
+                // Deep is darker than core, and core darker than bright: the shade axis is value.
+                float deepValue = CueAccentValue(style, deep);
+                float coreValue = CueAccentValue(style, core);
+                float brightValue = CueAccentValue(style, bright);
+                AssertTrue("DLC family '" + core + "' orders deep darker than core", deepValue < coreValue);
+                AssertTrue("DLC family '" + core + "' orders core darker than bright", coreValue < brightValue);
+            }
+        }
+
+        private static XElement CueRow(XDocument style, string cue)
+        {
+            foreach (XElement row in style.Descendants("cueColors").Elements("li"))
+            {
+                if (string.Equals(ChildValue(row, "cue"), cue, StringComparison.OrdinalIgnoreCase))
+                {
+                    return row;
+                }
+            }
+
+            return null;
+        }
+
+        private static XElement CueSpec(XDocument style, string cue, string specName)
+        {
+            XElement row = CueRow(style, cue);
+            return row?.Element(specName);
+        }
+
+        // Rough perceived brightness of a cue's accent. Only used to order shades within one hue, so a
+        // simple channel average is enough — the three shades of a family share a hue by construction.
+        private static float CueAccentValue(XDocument style, string cue)
+        {
+            XElement color = CueSpec(style, cue, "color");
+            if (color == null)
+            {
+                return float.NaN;
+            }
+
+            return (ParseFloat(ChildValue(color, "r"))
+                + ParseFloat(ChildValue(color, "g"))
+                + ParseFloat(ChildValue(color, "b"))) / 3f;
         }
 
         private static void AssertCueColorSpec(XDocument style, string cue, string specName,
             float r, float g, float b, float a)
         {
-            XElement spec = null;
-            foreach (XElement row in style.Descendants("cueColors").Elements("li"))
-            {
-                if (string.Equals(ChildValue(row, "cue"), cue, StringComparison.OrdinalIgnoreCase))
-                {
-                    spec = row.Element(specName);
-                    break;
-                }
-            }
-
+            XElement spec = CueSpec(style, cue, specName);
             AssertTrue("cue '" + cue + "' declares a " + specName, spec != null);
             AssertNear(cue + " " + specName + " r", r, ParseFloat(ChildValue(spec, "r")));
             AssertNear(cue + " " + specName + " g", g, ParseFloat(ChildValue(spec, "g")));

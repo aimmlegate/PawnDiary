@@ -924,6 +924,21 @@ claimed as covered until a human runs them.
 5. Delete (or rename) `1.6/Defs/DiaryUiStyleDef.xml`, restart, and confirm the tab renders the same —
    the C# fallback list mirrors the XML row for row.
 
+### DLC color families (visual + save compatibility)
+
+1. Confirm each expansion reads as its own hue: Royalty gold, Ideology coral red, Biotech teal,
+   Anomaly olive, Odyssey violet.
+2. Confirm the shade axis is legible — a deep page (void awakening, belief crisis, mechhive ending,
+   deathrest interrupted, persona weapon lost) should feel heavier than its bright sibling (study
+   breakthrough, conversion, landfall, a birth, a royal title).
+3. **Watch the two dimmest accents**: Biotech deep and Odyssey deep are dark stripes on a dark card.
+   If either reads as "no accent", lift its `color` in `DiaryUiStyleDef.xml`.
+4. Anomaly dread pages must still show dimmed direct speech — the decoration keys off the cue string
+   and was re-pointed from `extremeDark` to `anomalyDeep`.
+5. **Load a save made before this change.** Its old Anomaly pages still carry `extremeDark` and its
+   birth/landing pages still carry `eventful`: both must keep their original colors, and the old
+   Anomaly pages must keep their dimmed speech. New pages in the same colony use the DLC families.
+
 ### B1 — output-language directive (prose quality)
 
 1. With a real model configured, generate entries in English and confirm no behavior change beyond one

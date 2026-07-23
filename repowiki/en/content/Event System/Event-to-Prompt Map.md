@@ -56,6 +56,29 @@ Common template keys:
 | Reflection | `SoloDayReflection`, `SoloQuadrumReflection`, `SoloArcReflection` |
 | Special | `DeathDescription`, `ArrivalDescription` |
 
+### Color cues
+
+A group's `colorCue` is a stable string saved on the entry; `DiaryUiStyleDef.xml` maps it to an accent
+stripe, page tint and header rule. Each paid expansion owns one hue taken from its own icon, split
+into three shades by emotional weight:
+
+| DLC | hue | cues |
+|---|---|---|
+| Royalty | crown gold | `royaltyDeep` · `royalty` · `royaltyBright` |
+| Ideology | flame coral | `ideologyDeep` · `ideology` · `ideologyBright` |
+| Biotech | hexagon teal | `biotechDeep` · `biotech` · `biotechBright` |
+| Anomaly | arrowhead olive | `anomalyDeep` · `anomaly` · `anomalyBright` |
+| Odyssey | star violet | `odysseyDeep` · `odyssey` · `odysseyBright` |
+
+`Deep` is dread/loss and is the only shade that draws its own header rule; `Bright` is triumph. Anomaly
+dread therefore stays heavy through *value* while still reading as its expansion through *hue*.
+
+**The cue string is persisted and load-bearing beyond color.** `DiaryMemoryTuningDef.xml` maps it to
+memory importance and tags, and `DiaryTextDecorationDefs.xml` keys the dimmed-speech decoration off it.
+Changing which cue a group stamps therefore changes what pawns remember — move those rows together.
+`extremeDark` and `eventful` are retired: no group stamps them, but their rows stay forever so pages
+saved before the DLC families still render and still dim correctly.
+
 ### Output-language directive
 
 Every template — including `Title`, so a page and its title cannot disagree — ends its **system**

@@ -118,11 +118,23 @@ namespace PawnMemoryTests
             AssertEqual("default memoryEvictionScanIntervalTicks", 150000, policy.memoryEvictionScanIntervalTicks);
             AssertEqual("default instruction empty (XML supplies it)", string.Empty, policy.memoryContextInstruction);
 
-            AssertEqual("fourteen cue importance rows", 14, policy.cueImportance.Count);
-            AssertNear("extremeDark importance", 0.9f, CueImportance(policy, "extremeDark"), 0.0001f);
+            // 14 base cues plus the 14 DLC-family cues (5 families minus "royalty", which is a base
+            // cue the Royalty family reuses as its core shade).
+            AssertEqual("twenty-eight cue importance rows", 28, policy.cueImportance.Count);
             AssertNear("bodyPartLost importance", 0.85f, CueImportance(policy, "bodyPartLost"), 0.0001f);
             AssertNear("quiet importance", 0.2f, CueImportance(policy, "quiet"), 0.0001f);
-            AssertEqual("fourteen cue tag rows", 14, policy.cueTags.Count);
+            // Anomaly dread moved from the retired extremeDark cue to its DLC family's deep shade and
+            // must weigh exactly the same, or a colour change would silently alter what pawns recall.
+            AssertNear("anomalyDeep inherits extremeDark's weight", 0.9f,
+                CueImportance(policy, "anomalyDeep"), 0.0001f);
+            AssertNear("retired extremeDark keeps its weight for old saves", 0.9f,
+                CueImportance(policy, "extremeDark"), 0.0001f);
+            // Birth and landing used to fall through the mixed "eventful" bucket to the 0.3 fallback.
+            AssertTrue("biotechBright outweighs the unknown-cue fallback",
+                CueImportance(policy, "biotechBright") > policy.fallbackCueImportance);
+            AssertTrue("odysseyBright outweighs the unknown-cue fallback",
+                CueImportance(policy, "odysseyBright") > policy.fallbackCueImportance);
+            AssertEqual("twenty-eight cue tag rows", 28, policy.cueTags.Count);
             AssertEqual("three context marker rows", 3, policy.contextMarkerTags.Count);
             AssertTrue("weapon keyword key present", policy.contextKeywordKeys.Contains("weapon"));
             AssertEqual("four age bands", 4, policy.ageBands.Count);

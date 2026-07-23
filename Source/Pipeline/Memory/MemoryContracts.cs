@@ -258,6 +258,25 @@ namespace PawnDiary
             MemoryPolicySnapshot policy = new MemoryPolicySnapshot();
 
             // Importance table (design §7.3). Unknown/empty cues use fallbackCueImportance.
+            // DLC families first. Each value carries over what that event's PREVIOUS cue gave it, so
+            // splitting the cues by expansion did not quietly change what pawns remember: anomalyDeep
+            // inherits extremeDark's 0.9 exactly, while birth and landing rose off the 0.3 fallback
+            // that the old mixed "eventful" bucket left them on.
+            AddCueImportance(policy, "anomalyDeep", 0.9f);
+            AddCueImportance(policy, "anomaly", 0.8f);
+            AddCueImportance(policy, "anomalyBright", 0.65f);
+            AddCueImportance(policy, "odysseyDeep", 0.8f);
+            AddCueImportance(policy, "odyssey", 0.5f);
+            AddCueImportance(policy, "odysseyBright", 0.6f);
+            AddCueImportance(policy, "biotechDeep", 0.75f);
+            AddCueImportance(policy, "biotech", 0.65f);
+            AddCueImportance(policy, "biotechBright", 0.6f);
+            AddCueImportance(policy, "ideologyDeep", 0.7f);
+            AddCueImportance(policy, "ideology", 0.4f);
+            AddCueImportance(policy, "ideologyBright", 0.55f);
+            AddCueImportance(policy, "royaltyDeep", 0.65f);
+            AddCueImportance(policy, "royaltyBright", 0.65f);
+            // Retired cue: no group stamps it any more, but saved pages still carry it.
             AddCueImportance(policy, "extremeDark", 0.9f);
             AddCueImportance(policy, "bodyPartLost", 0.85f);
             AddCueImportance(policy, "danger", 0.8f);
@@ -279,6 +298,22 @@ namespace PawnDiary
             AddCueTags(policy, "danger", MemoryTagTokens.Combat, MemoryTagTokens.Danger);
             AddCueTags(policy, "socialFight", MemoryTagTokens.Conflict, MemoryTagTokens.Social);
             AddCueTags(policy, "mentalBreak", MemoryTagTokens.Breakdown);
+            // DLC families, same carry-over rule as the importance table above.
+            AddCueTags(policy, "anomalyDeep", MemoryTagTokens.Dread);
+            AddCueTags(policy, "anomaly", MemoryTagTokens.Dread, MemoryTagTokens.Danger);
+            AddCueTags(policy, "anomalyBright", MemoryTagTokens.Psychic);
+            AddCueTags(policy, "odysseyDeep", MemoryTagTokens.Danger);
+            AddCueTags(policy, "odyssey");
+            AddCueTags(policy, "odysseyBright", MemoryTagTokens.Joy);
+            AddCueTags(policy, "biotechDeep", MemoryTagTokens.Illness);
+            AddCueTags(policy, "biotech", MemoryTagTokens.Body);
+            AddCueTags(policy, "biotechBright", MemoryTagTokens.Family, MemoryTagTokens.Joy);
+            AddCueTags(policy, "ideologyDeep", MemoryTagTokens.Breakdown);
+            AddCueTags(policy, "ideology", MemoryTagTokens.Ritual);
+            AddCueTags(policy, "ideologyBright", MemoryTagTokens.Ritual, MemoryTagTokens.Social);
+            AddCueTags(policy, "royaltyDeep", MemoryTagTokens.Royalty);
+            AddCueTags(policy, "royaltyBright", MemoryTagTokens.Royalty);
+            // Retired cue: no group stamps it any more, but saved pages still carry it.
             AddCueTags(policy, "extremeDark", MemoryTagTokens.Dread);
             AddCueTags(policy, "strangeChat", MemoryTagTokens.Dread, MemoryTagTokens.Social);
             AddCueTags(policy, "bodyPartLost", MemoryTagTokens.Body, MemoryTagTokens.Illness);
