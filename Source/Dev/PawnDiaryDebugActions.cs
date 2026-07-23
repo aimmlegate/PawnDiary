@@ -77,7 +77,7 @@ namespace PawnDiary
                 options.Add(new FloatMenuOption(capturedPawn.LabelShortCap, delegate
                 {
                     // Built exactly like an adapter mod would build it, so this path is a live
-                    // sample of the documented contract (see INTEGRATIONS.md).
+                    // sample of the documented contract (see the Adapter Contract wiki page).
                     ExternalEventRequest request = new ExternalEventRequest
                     {
                         sourceId = "PawnDiary.DevTest",

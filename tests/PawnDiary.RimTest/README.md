@@ -6,8 +6,8 @@ projects under `tests/`, these suites run *inside RimWorld* through the optional
 they can drive real vanilla APIs and Harmony hooks and assert the `DiaryEvent` the production pipeline
 actually persists.
 
-`TEST_COVERAGE_PLAN.md` (repo root) is the roadmap this suite is being built out against. This README
-is the operator's guide for the assembly itself.
+The local, untracked `design/TEST_COVERAGE_PLAN.md` is the long-form roadmap. This tracked README is
+the operator's guide for the assembly itself.
 
 ## Why a separate assembly
 
@@ -44,7 +44,7 @@ finds RimTest Redux relative to `RimWorldManaged`; if the framework lives elsewh
 ## Suites
 
 `PawnDiaryDefSmokeTests` (read-only, main-menu safe) checks Def registration. Loaded-game event-flow
-suites map to `TEST_COVERAGE_PLAN.md §3` EVT rows; supplemental B1 suites exercise Biotech composite
+suites map to `design/TEST_COVERAGE_PLAN.md §3` EVT rows; supplemental B1 suites exercise Biotech composite
 owners. Both use the shared harness:
 
 | Suite | EVT | Covers |
@@ -156,7 +156,7 @@ on purpose:
 Doing it right needs a separate, reviewed production change: either a bounded in-game loopback HTTP
 endpoint pointed at by test-only lanes, or a narrow internal request-executor interface in `LlmClient`
 (production stays HTTP; the test double lives in this assembly). That belongs in its own PR, not a
-blind edit to the transport core — see `TEST_COVERAGE_PLAN.md §2.2 / §6.3`.
+blind edit to the transport core — see `design/TEST_COVERAGE_PLAN.md §2.2 / §6.3`.
 
 ## The shared harness — `PawnDiaryRimTestScope`
 
@@ -191,7 +191,7 @@ Two guarantees make this safe:
    skip cleanup.
 2. **No-leak audit.** After cleanup, `TearDown` asserts that *no* event, diary index, Social-log row,
    or transient key referencing a test pawn survived — turning a silent leak into a visible test
-   failure. This is the machine check behind `TEST_COVERAGE_PLAN.md §9`'s "zero marked state" gate.
+   failure. This is the machine check behind `design/TEST_COVERAGE_PLAN.md §9`'s "zero marked state" gate.
 
 ### Helpers
 
@@ -210,7 +210,7 @@ Two guarantees make this safe:
 
 ### Extending for later phases
 
-The harness deliberately restores only what today's suites touch. Later `TEST_COVERAGE_PLAN.md` phases
+The harness deliberately restores only what today's suites touch. Later `design/TEST_COVERAGE_PLAN.md` phases
 add more state (hediffs, jobs, conditions, quests, event/observed-condition windows, LLM queues and
 lane cooldowns, map spawns, deliberate tick changes, child pawns behind a Biotech gate). Add each as a
 new snapshot/restore pair in `PawnDiaryRimTestScope` — or, for one-off per-test state, via
@@ -218,10 +218,9 @@ new snapshot/restore pair in `PawnDiaryRimTestScope` — or, for one-off per-tes
 
 ## Coverage audit
 
-`scripts/verify-coverage.ps1` is the one-command audit (`TEST_COVERAGE_PLAN.md §8`): it validates all
-XML, runs every standalone pure test project, builds the core mod, builds this RimTest assembly when
-RimTest Redux is available (skips with a warning otherwise — the assembly is optional), and prints the
-EVT-01…EVT-23 requirement matrix, exiting non-zero if any row is uncovered.
+When the local developer script `scripts/verify-coverage.ps1` is present, it validates all XML, runs
+every standalone pure test project, builds the core mod, builds this RimTest assembly when RimTest
+Redux is available, and prints the EVT-01…EVT-23 requirement matrix.
 
 ```powershell
 scripts\verify-coverage.ps1              # full audit (build + pure tests + matrix)

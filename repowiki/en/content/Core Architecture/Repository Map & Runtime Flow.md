@@ -1,7 +1,6 @@
 # Repository Map & Runtime Flow
 
 This is the short human guide to where Pawn Diary lives and how one diary item moves through the mod.
-For coding-agent rules, see [`skills/pawndiary-prompt-workflow/SKILL.md`](../../../../skills/pawndiary-prompt-workflow/SKILL.md).
 
 ## Repository map
 

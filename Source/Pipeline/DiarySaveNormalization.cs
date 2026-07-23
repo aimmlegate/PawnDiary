@@ -9,7 +9,7 @@
 // Extraction contract: every behavior change here is a save-compat decision. The exact output
 // shapes ("def=...; label=...", "name: text\nname: text", the "unknown"/"none" sentinels, the
 // 0..4 staggered range, int.MinValue for unknown year) are part of the persisted/prompt contract
-// and must not drift. See DOCUMENTATION.md §9 (Save Data And Compatibility) for the full Scribe-key
+// and must not drift. See the data-model pages in repowiki/ for the full Scribe-key
 // stability contract, and AGENTS.md ("IExposable").
 using System;
 

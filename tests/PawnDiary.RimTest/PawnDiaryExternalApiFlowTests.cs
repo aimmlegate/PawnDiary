@@ -1,4 +1,4 @@
-// In-game tests for Pawn Diary's PUBLIC integration API event path (EVT-21, TEST_COVERAGE_PLAN.md §3).
+// In-game tests for Pawn Diary's PUBLIC integration API event path (EVT-21, design/TEST_COVERAGE_PLAN.md §3).
 //
 // Other mods submit factual moments through PawnDiary.Integration.PawnDiaryApi.SubmitEvent. That call
 // validates the request, reserves a rolling token budget, and dispatches an ExternalEventSignal through
@@ -22,7 +22,7 @@
 //     controlled sourceId carrying a forged ";external_prompt_instruction=" field is flattened by
 //     ExternalEventData.BuildGameContext (";" -> ",") so it can never forge a first-match protected field.
 //
-// Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-21 External API.
+// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-21 External API.
 using System;
 using System.Collections.Generic;
 using PawnDiary.Integration;

@@ -23,7 +23,7 @@
 //   * the DLC-gated context fields the ritual marker embeds (royal title, ideological role) stay
 //     base-game safe: absent DLC yields empty accessors and a clean "none" fallback, never a crash.
 //
-// Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-17 Ritual (DLC).
+// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-17 Ritual (DLC).
 using System;
 using System.Collections.Generic;
 using System.Linq;

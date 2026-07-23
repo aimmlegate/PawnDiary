@@ -1,4 +1,4 @@
-// In-game death-capture tests for Pawn Diary's Pawn.Kill Harmony hook (EVT-10, TEST_COVERAGE_PLAN.md §3).
+// In-game death-capture tests for Pawn Diary's Pawn.Kill Harmony hook (EVT-10, design/TEST_COVERAGE_PLAN.md §3).
 //
 // A colonist death has no vanilla death Tale when it carries no DamageInfo (the condition/need death
 // path), so `pawn.Kill(null)` flows through PawnKillPatch.Postfix → DeathFallbackSignal, which records a

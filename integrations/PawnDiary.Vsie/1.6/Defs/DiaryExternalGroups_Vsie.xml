@@ -3,7 +3,7 @@
   The adapter's half of the Pawn Diary contract for the gathering bridge: External-domain groups that
   CLAIM the eventKeys VsieGatheringBridge submits. Without a claiming group, SubmitEvent records nothing
   (Pawn Diary logs one warning naming the source). label/instruction/tones are DefInjected-localizable
-  inside this adapter mod, exactly like Pawn Diary's own groups. See INTEGRATIONS.md in the Pawn Diary repo.
+  inside this adapter mod, exactly like Pawn Diary's own groups. See the Adapter Contract wiki page in the Pawn Diary repo.
 
   matchDefNames MUST stay in sync with VsieGatheringMap's eventKeys ("vsie_birthday" / "vsie_funeral").
   These are frozen save tokens — never rename them after release.

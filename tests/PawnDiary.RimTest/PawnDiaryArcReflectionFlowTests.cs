@@ -1,4 +1,4 @@
-// In-game flow tests for Pawn Diary's rare pawn life-arc reflection path (TEST_COVERAGE_PLAN.md §3, EVT-20).
+// In-game flow tests for Pawn Diary's rare pawn life-arc reflection path (design/TEST_COVERAGE_PLAN.md §3, EVT-20).
 //
 // The live orchestration is DiaryGameComponent.TryFlushArcReflectionForPawn (DiaryGameComponent.ArcReflection.cs):
 // once a year (forced after a calendar day) or after a major progression event it snapshots the pawn's saved
@@ -21,12 +21,12 @@
 // to remove the resulting DiaryEvent + diary index, and never enables per-pawn generation, so no LLM request
 // can leave the game.
 //
-// Determinism (TEST_COVERAGE_PLAN.md §3): the selector is seeded with a fixed RNG seed and given candidates
+// Determinism (design/TEST_COVERAGE_PLAN.md §3): the selector is seeded with a fixed RNG seed and given candidates
 // whose filtering outcome is unambiguous regardless of sample order; the schedule policy is fed an explicit
 // ArcReflectionScheduleTuning built in code (independent of XML); the arc signal is enabled by forcing
 // DiaryTuning.Current.arcReflectionEnabled, snapshotted and restored in failure-safe cleanup.
 //
-// Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-20 Arc reflection.
+// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-20 Arc reflection.
 using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;

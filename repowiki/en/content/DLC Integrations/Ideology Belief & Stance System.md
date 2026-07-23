@@ -37,12 +37,10 @@ DBPD --> PLAN
 **Diagram sources**
 - [DiaryBeliefPolicyDef.cs](../../../../Source/Defs/DiaryBeliefPolicyDef.cs)
 - [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
-- [IdeologySupportImplementationPlan.md](../../../../IDEOLOGY_SUPPORT_IMPLEMENTATION_PLAN.md)
 
 **Section sources**
 - [DiaryBeliefPolicyDef.cs](../../../../Source/Defs/DiaryBeliefPolicyDef.cs)
 - [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
-- [IdeologySupportImplementationPlan.md](../../../../IDEOLOGY_SUPPORT_IMPLEMENTATION_PLAN.md)
 
 ## Core Components
 - DiaryBeliefPolicyDef: Defines the schema and behavior hooks for belief-related policies used by the diary pipeline.
@@ -57,7 +55,6 @@ Key responsibilities:
 **Section sources**
 - [DiaryBeliefPolicyDef.cs](../../../../Source/Defs/DiaryBeliefPolicyDef.cs)
 - [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
-- [IdeologySupportImplementationPlan.md](../../../../IDEOLOGY_SUPPORT_IMPLEMENTATION_PLAN.md)
 
 ## Architecture Overview
 The ideology belief and stance system integrates into the diary pipeline through a policy-driven approach. Beliefs are represented as configurable entities that can influence event capture, context enrichment, and prompt assembly.
@@ -80,7 +77,6 @@ Prompt-->>Game : "Generated diary entry"
 **Diagram sources**
 - [DiaryBeliefPolicyDef.cs](../../../../Source/Defs/DiaryBeliefPolicyDef.cs)
 - [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
-- [IdeologySupportImplementationPlan.md](../../../../IDEOLOGY_SUPPORT_IMPLEMENTATION_PLAN.md)
 
 ## Detailed Component Analysis
 
@@ -136,9 +132,6 @@ Operational flow:
 - Enrich diary context with belief state snapshots
 - Adjust prompt construction based on belief affinity and salience
 
-**Section sources**
-- [IdeologySupportImplementationPlan.md](../../../../IDEOLOGY_SUPPORT_IMPLEMENTATION_PLAN.md)
-
 ## Dependency Analysis
 The ideology subsystem depends on:
 - Definition loader infrastructure to parse XML into DiaryBeliefPolicyDef instances
@@ -157,12 +150,10 @@ Policy --> Prompt["Prompt Assembly"]
 **Diagram sources**
 - [DiaryBeliefPolicyDef.cs](../../../../Source/Defs/DiaryBeliefPolicyDef.cs)
 - [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
-- [IdeologySupportImplementationPlan.md](../../../../IDEOLOGY_SUPPORT_IMPLEMENTATION_PLAN.md)
 
 **Section sources**
 - [DiaryBeliefPolicyDef.cs](../../../../Source/Defs/DiaryBeliefPolicyDef.cs)
 - [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
-- [IdeologySupportImplementationPlan.md](../../../../IDEOLOGY_SUPPORT_IMPLEMENTATION_PLAN.md)
 
 ## Performance Considerations
 - Minimize repeated lookups of belief policies by caching resolved instances where appropriate.
@@ -184,7 +175,6 @@ Validation steps:
 
 **Section sources**
 - [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
-- [IdeologySupportImplementationPlan.md](../../../../IDEOLOGY_SUPPORT_IMPLEMENTATION_PLAN.md)
 
 ## Conclusion
 The Ideology Belief & Stance System provides a flexible, policy-driven mechanism to integrate belief and stance data into the diary pipeline. By defining clear contracts and leveraging configuration-driven setups, the system enables rich, context-aware narrative generation while remaining accessible to modders and maintainers.
@@ -206,4 +196,3 @@ Assemble --> Entry(["Diary Entry"])
 **Diagram sources**
 - [DiaryBeliefPolicyDef.cs](../../../../Source/Defs/DiaryBeliefPolicyDef.cs)
 - [DiaryBeliefPolicyDef.xml](../../../../1.6/Defs/DiaryBeliefPolicyDef.xml)
-- [IdeologySupportImplementationPlan.md](../../../../IDEOLOGY_SUPPORT_IMPLEMENTATION_PLAN.md)

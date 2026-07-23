@@ -12,7 +12,7 @@
       GameCondition active while map.gameConditionManager holds a matching condition defName
       ThingPresent  active while matching spawned things/filth remain on a map (observable evidence)
       PawnHediff    active while a matching visible hediff is on a colonist (scope = Pawn)
-      RecentEvidence reserved fallback; no live feed yet (see DOCUMENTATION.md §13)
+      RecentEvidence reserved fallback; no live feed yet (see the Event System pages in repowiki/)
 
     DLC / mod safety: every matcher below is a PLAIN STRING (matchDefNames). A def that names content
     from a DLC you don't own simply never matches — no crash, no null-check, no MayRequire. Never put a

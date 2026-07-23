@@ -6,7 +6,7 @@
 // a trigger, asserts the outcome, and registers cleanup for the one thing the harness does not own: the
 // historical Tale that RecordTale adds to Find.TaleManager.
 //
-// Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-09 Tale. This suite covers the non-combat, non-death
+// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-09 Tale. This suite covers the non-combat, non-death
 // slice — single-pawn shape, two-pawn shape + participant extraction, and the XML group toggle. Combat
 // batching and death tales belong to EVT-10 and are intentionally out of scope here.
 using System;

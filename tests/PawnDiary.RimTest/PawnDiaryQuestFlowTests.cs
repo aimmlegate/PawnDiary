@@ -1,4 +1,4 @@
-// In-game quest-lifecycle tests for Pawn Diary's quest capture path (EVT-16, TEST_COVERAGE_PLAN.md §3).
+// In-game quest-lifecycle tests for Pawn Diary's quest capture path (EVT-16, design/TEST_COVERAGE_PLAN.md §3).
 //
 // Quests are colony-wide: RimWorld's Quest.Accept / Quest.End Harmony hooks (DiaryQuestPatches.cs) call
 // DiaryGameComponent.RecordQuestAccepted / RecordQuestEnded (DiaryGameComponent.Quests.cs), which submit
@@ -23,7 +23,7 @@
 // submit in the same synchronous frame reliably collapses instead of racing the XML default. No per-pawn
 // generation is ever enabled, so no LLM request can leave the game.
 //
-// Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-16 Quest.
+// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-16 Quest.
 using System;
 using System.Collections.Generic;
 using System.Reflection;

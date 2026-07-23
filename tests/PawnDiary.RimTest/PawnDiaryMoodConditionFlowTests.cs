@@ -1,5 +1,5 @@
 // In-game mood-event tests for Pawn Diary's mood-affecting GameCondition source (EVT-14,
-// TEST_COVERAGE_PLAN.md §3).
+// design/TEST_COVERAGE_PLAN.md §3).
 //
 // The production trigger is GameConditionManager.RegisterCondition -> GameConditionStartPatch ->
 // DiaryEvents.Submit(new MoodEventFanoutSignal(cond)). The fan-out is colony-wide: its PerPawnSignals()
@@ -21,7 +21,7 @@
 // disabled-group test, which asserts the fan-out's constructor gate (an empty ColonyDedupKey) — the exact
 // point where a disabled mood group stops every colonist from getting a page.
 //
-// Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-14 Mood event — affected-map fan-out (one page per
+// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-14 Mood event — affected-map fan-out (one page per
 // colonist), mood classification (positive / negative / gender-unaffected neutral), unaffected exclusion
 // (the per-pawn gender gate stands in for the map exclusion in this mapless harness), and disabled group.
 // These tests require a loaded game because the capture pipeline ignores events at the main menu; they

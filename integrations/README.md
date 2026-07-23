@@ -1,7 +1,7 @@
 # integrations/ — adapter mods for Pawn Diary
 
 Each folder here is a **separate RimWorld mod** (its own `About/About.xml`) that integrates another
-mod with Pawn Diary through the public API (`INTEGRATIONS.md` at the repo root is the contract).
+mod with Pawn Diary through the public API ([Adapter Contract](../repowiki/en/content/Integration%20Framework/Public%20API%20Reference/Adapter%20Contract.md)).
 Adapters compile against `1.6/Assemblies/PawnDiary.dll` and touch only the
 `PawnDiary.Integration` namespace — never core internals.
 
@@ -68,7 +68,7 @@ registers, through `PawnDiaryExampleApi.RegisterHooksOnce()`:
 
 `PawnDiary.RimTalkBridge/` is the first real adapter target: a two-way bridge between Pawn Diary and
 RimTalk, gated by an **integration-level** dropdown in its own mod settings (see
-`design/RIMTALK_BRIDGE_PLAN.md` for the full design and `DOCUMENTATION.md` for shipped behavior):
+`design/RIMTALK_BRIDGE_PLAN.md` for the full design and `repowiki/README.md` for shipped behavior):
 
 - **Off** — no data flows in either direction.
 - **Shared context** (default, level 1) — recent diary memories are injected into RimTalk's chat

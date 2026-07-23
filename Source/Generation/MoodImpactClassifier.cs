@@ -7,7 +7,7 @@
 //
 // Split out of DiaryContextBuilder.cs (Run Card 6) so DiaryContextBuilder is left with only impure
 // Pawn/Map context collection. The shared direction tokens and the ±0.5 threshold live on MoodImpact.
-// See DOCUMENTATION.md. New to C#/RimWorld? See AGENTS.md.
+// See repowiki/README.md. New to C#/RimWorld? See AGENTS.md.
 using System;
 using System.Collections.Generic;
 using System.Reflection;

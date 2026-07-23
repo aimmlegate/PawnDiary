@@ -1,4 +1,4 @@
-// DLC + optional-mod safety fixture for Pawn Diary (TEST_COVERAGE_PLAN.md §7.3).
+// DLC + optional-mod safety fixture for Pawn Diary (design/TEST_COVERAGE_PLAN.md §7.3).
 //
 // The base-game-only run is release-blocking: a player who owns none of the paid DLCs (Royalty,
 // Ideology, Biotech, Anomaly, Odyssey) and runs no optional compatibility mods must never hit a crash or a
@@ -37,7 +37,7 @@
 // prompt-enchantment and capability-fallback Defs are constructed in memory and never registered, so
 // the DefDatabase stays untouched; process-global capability readiness is cleared in a finally block.
 //
-// Coverage-matrix area (TEST_COVERAGE_PLAN.md §7.3): DLC + optional-mod base-game safety.
+// Coverage-matrix area (design/TEST_COVERAGE_PLAN.md §7.3): DLC + optional-mod base-game safety.
 using System;
 using System.Collections.Generic;
 using System.Linq;

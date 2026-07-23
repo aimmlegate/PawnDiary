@@ -496,7 +496,7 @@ All public APIs must include XML documentation:
 - **Translation Updates**: Keep documentation synchronized with translations
 
 **Section sources**
-- [DOCUMENTATION.md](../../../../DOCUMENTATION.md)
+- [repowiki/README.md](../../../../repowiki/README.md)
 - [EXTERNAL_API.md](../../../../EXTERNAL_API.md)
 
 ## Translation Processes

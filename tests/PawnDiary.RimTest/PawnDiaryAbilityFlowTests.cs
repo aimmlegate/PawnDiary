@@ -1,4 +1,4 @@
-// In-game flow tests for Pawn Diary's ability-activation source (TEST_COVERAGE_PLAN.md §3, EVT-06).
+// In-game flow tests for Pawn Diary's ability-activation source (design/TEST_COVERAGE_PLAN.md §3, EVT-06).
 //
 // The production hook is a Harmony patch on Ability.Activate that does exactly one thing:
 //   DiaryEvents.Submit(new AbilitySignal(ability, target, destination));
@@ -15,7 +15,7 @@
 // a valid verbProperties + empty comps list because RimWorld's Ability.Initialize builds the primary
 // verb and enumerates comps during construction; a null comps list or a missing verb would NullRef.
 //
-// Determinism (TEST_COVERAGE_PLAN.md §3, "inject a known seed or set effective chance to 0/1"): the
+// Determinism (design/TEST_COVERAGE_PLAN.md §3, "inject a known seed or set effective chance to 0/1"): the
 // sampled record chance is CooldownWeightedChance(cooldown, min, max, ref) * generationChanceWeight.
 // SetUp pins generationChanceWeight to 1 and each test pins the tuning min/max chance to 0 or 1, so the
 // gate is forced without any retry-until-random loop. Originals are restored in failure-safe cleanup.

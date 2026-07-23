@@ -379,9 +379,9 @@ By following the patterns demonstrated in the existing bridges—clear lifecycle
 ### API References and Documentation
 - High-level overview and usage: [README.md](../../../../../../README.md)
 - External API specification: [EXTERNAL_API.md](../../../../../../EXTERNAL_API.md)
-- Additional documentation: [DOCUMENTATION.md](../../../../../../DOCUMENTATION.md)
+- Additional documentation: [repowiki/README.md](../../../../../../repowiki/README.md)
 
 **Section sources**
 - [README.md](../../../../../../README.md)
 - [EXTERNAL_API.md](../../../../../../EXTERNAL_API.md)
-- [DOCUMENTATION.md](../../../../../../DOCUMENTATION.md)
+- [repowiki/README.md](../../../../../../repowiki/README.md)

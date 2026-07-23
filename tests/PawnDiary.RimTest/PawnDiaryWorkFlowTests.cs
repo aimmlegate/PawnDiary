@@ -1,4 +1,4 @@
-// In-game work-sampling tests for Pawn Diary's periodic work scanner (EVT-12, TEST_COVERAGE_PLAN.md §3).
+// In-game work-sampling tests for Pawn Diary's periodic work scanner (EVT-12, design/TEST_COVERAGE_PLAN.md §3).
 //
 // RimWorld work is long-running and repetitive, so there is no one-shot Harmony hook: the component's
 // ScanPawnWorkForDiaryEvents (DiaryGameComponent.Work.cs) periodically samples each free colonist and
@@ -15,7 +15,7 @@
 // teardown. Work state is injected by setting the pawn's current job to one whose fabricated WorkGiverDef
 // points at a chosen WorkTypeDef, so the exact production reader (TryGetCurrentWork) sees it.
 //
-// Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-12 Work.
+// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-12 Work.
 using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;

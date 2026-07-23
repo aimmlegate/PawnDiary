@@ -1,5 +1,5 @@
 // In-game observed-condition lifecycle tests for Pawn Diary's live-scan system (EVT-23,
-// TEST_COVERAGE_PLAN.md §3). Observed conditions are NOT a one-shot Harmony hook: the component's
+// design/TEST_COVERAGE_PLAN.md §3). Observed conditions are NOT a one-shot Harmony hook: the component's
 // private ScanObservedConditions (DiaryGameComponent.ObservedConditions.cs) periodically reads live
 // game state (map danger, active game conditions, spawned evidence, pawn hediffs) for every home-map
 // colonist, snapshots what it sees into plain ObservedConditionObservation DTOs, hands them to the pure
@@ -27,7 +27,7 @@
 // are scrubbed by pawn id. No diary page is ever written (pages are either disabled or the mapless pawn
 // has no on-map recipient), so the harness's own event/diary leak audit stays green.
 //
-// Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-23 Observed conditions.
+// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-23 Observed conditions.
 using System;
 using System.Collections.Generic;
 using System.Reflection;

@@ -1,4 +1,4 @@
-// Prompt-capture fixture for Pawn Diary's §4.2 NEUTRAL templates (TEST_COVERAGE_PLAN.md §4).
+// Prompt-capture fixture for Pawn Diary's §4.2 NEUTRAL templates (design/TEST_COVERAGE_PLAN.md §4).
 //
 // Three "chronicle" shapes deliberately opt out of the first-person voice machinery so their output
 // is a factual note rather than a diary entry in someone's style:

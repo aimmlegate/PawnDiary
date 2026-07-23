@@ -123,7 +123,7 @@ S1 --> I1
 
 **Section sources**
 - [README.md](../../../../README.md)
-- [TEST_COVERAGE_PLAN.md](../../../../TEST_COVERAGE_PLAN.md)
+- [PawnDiary.RimTest operator guide](../../../../tests/PawnDiary.RimTest/README.md)
 - [SAVE_COMPATIBILITY_SMOKETEST.md](../../../../tests/SAVE_COMPATIBILITY_SMOKETEST.md)
 - [PawnDiary.RimTest.csproj](../../../../tests/PawnDiary.RimTest/PawnDiary.RimTest.csproj)
 - [BeliefContextTests.csproj](../../../../tests/BeliefContextTests/BeliefContextTests.csproj)
@@ -857,7 +857,7 @@ Guidelines:
 - **New**: Royalty scenario coverage should achieve 85%+ for succession mechanics and royal system integration.
 
 **Section sources**
-- [TEST_COVERAGE_PLAN.md](../../../../TEST_COVERAGE_PLAN.md)
+- [PawnDiary.RimTest operator guide](../../../../tests/PawnDiary.RimTest/README.md)
 - [PawnDiaryMemoryFlowTests.cs](../../../../tests/PawnDiary.RimTest/PawnDiaryMemoryFlowTests.cs)
 - [BeliefContextTests.csproj](../../../../tests/BeliefContextTests/BeliefContextTests.csproj)
 - [Program.cs](../../../../tests/BeliefContextTests/Program.cs)

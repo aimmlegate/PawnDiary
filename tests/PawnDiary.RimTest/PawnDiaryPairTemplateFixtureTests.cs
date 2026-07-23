@@ -1,5 +1,5 @@
 // Prompt-only template-selection fixture for Pawn Diary's PAIR prompt shapes
-// (TEST_COVERAGE_PLAN.md §4.2 — PairDefault, PairImportant, PairCombat, PairBatched).
+// (design/TEST_COVERAGE_PLAN.md §4.2 — PairDefault, PairImportant, PairCombat, PairBatched).
 //
 // This suite pins the load-bearing facts about the pairwise prompt matrix: which template key the
 // production planner picks for a two-POV event, which structured fields each shape carries

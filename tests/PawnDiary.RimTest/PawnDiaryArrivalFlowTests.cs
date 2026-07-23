@@ -1,4 +1,4 @@
-// In-game arrival-capture tests for Pawn Diary's colonist-arrival first page (EVT-18, TEST_COVERAGE_PLAN.md §3).
+// In-game arrival-capture tests for Pawn Diary's colonist-arrival first page (EVT-18, design/TEST_COVERAGE_PLAN.md §3).
 //
 // A colonist's diary opens with one neutral "how I joined" description. Two production paths build it:
 // the Pawn.SetFaction postfix (joins after game start) and the founding-colonist bootstrap scan
@@ -21,7 +21,7 @@
 //      settings' API-endpoint list with a single disabled row (snapshotted and restored in teardown); with
 //      no active endpoint QueuePrompt marks the neutral role failed and returns before LlmClient.Enqueue.
 //
-// Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-18 Arrival.
+// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-18 Arrival.
 using System;
 using System.Collections.Generic;
 using System.Reflection;

@@ -267,7 +267,7 @@ namespace PawnDiary
         // Post-load cleanup. Every field is a plain string/int/bool null-coalesce plus status
         // normalization (DiaryGenerationStatus) and year extraction. All of it delegates to the pure
         // DiarySaveNormalization helpers so the regression-prone default/derive branches can be tested
-        // without RimWorld. See DOCUMENTATION.md §9.
+        // without RimWorld. See the data-model pages in repowiki/.
         private void NormalizeOnLoad()
         {
             eventId = DiarySaveNormalization.NormalizeString(eventId);

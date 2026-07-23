@@ -169,7 +169,7 @@ namespace PawnDiary
                     CollectMapHiddenHediffObservations(def, observations);
                     break;
                 case ObservedConditionObserverType.RecentEvidence:
-                    // No live feed yet (see DOCUMENTATION.md §5.1). Intentionally a no-op.
+                    // No live feed yet (see the Event System pages in repowiki/). Intentionally a no-op.
                     break;
             }
         }

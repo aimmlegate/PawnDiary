@@ -1,4 +1,4 @@
-// Prompt-capture fixture for Pawn Diary's §5.1 PROMPT ENCHANTMENTS (TEST_COVERAGE_PLAN.md §5).
+// Prompt-capture fixture for Pawn Diary's §5.1 PROMPT ENCHANTMENTS (design/TEST_COVERAGE_PLAN.md §5).
 //
 // A prompt enchantment adds ONE optional "important context" line to a first-person diary prompt,
 // carrying a live health/status hint (a hediff, a low capacity, or a DLC-safe royal/ideoligion status).

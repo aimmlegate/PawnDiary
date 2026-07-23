@@ -3,7 +3,7 @@
 // the one helper from the old DiaryContextBuilder that is genuinely free of RimWorld/Verse state —
 // it only touches System.String — so it lives in its own file where a pure test project can link it
 // without pulling in the game assemblies. Split out of DiaryContextBuilder.cs (Run Card 6). See
-// DOCUMENTATION.md. New to C#/RimWorld? See AGENTS.md.
+// repowiki/README.md. New to C#/RimWorld? See AGENTS.md.
 using System;
 using System.Text.RegularExpressions;
 

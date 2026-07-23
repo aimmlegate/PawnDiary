@@ -1,5 +1,5 @@
 // The request object other mods hand to PawnDiaryApi.SubmitEvent — one plain bag of fields, no
-// behavior. This file is part of the PUBLIC integration surface (see INTEGRATIONS.md): adapter mods
+// behavior. This file is part of the PUBLIC integration surface (see the Adapter Contract wiki page): adapter mods
 // compile against it, so fields are only ever ADDED here, never renamed or removed.
 //
 // New to C#/RimWorld? See AGENTS.md. (TS analogy: this is the options object of an exported API

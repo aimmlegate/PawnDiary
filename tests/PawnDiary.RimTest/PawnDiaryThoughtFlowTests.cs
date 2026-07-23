@@ -8,7 +8,7 @@
 // PawnDiaryRimTestScope harness; each test only fires a real vanilla trigger and asserts the
 // persisted DiaryEvent.
 //
-// Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-03 Thought immediate/ambient. This suite proves
+// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-03 Thought immediate/ambient. This suite proves
 // the solo page for a vanilla-accepted configured memory (with its mood/context facts), the
 // below-threshold negative gate (a thought Pawn Diary is configured to ignore), and that gaining the
 // same thought twice inside the dedup window does not double the diary event.
@@ -52,7 +52,7 @@ namespace PawnDiary.RimTests
 
         // The Thought signal policy Def whose minMoodOffset the below-threshold case raises. Its fields
         // are public and read live by DiarySignalPolicies.ForKey, so setting one is a valid, restorable
-        // determinism lever (TEST_COVERAGE_PLAN.md §3 guidance).
+        // determinism lever (design/TEST_COVERAGE_PLAN.md §3 guidance).
         private const string ThoughtPolicyDefName = "DiarySignalPolicy_Thought";
 
         private static PawnDiaryRimTestScope scope;

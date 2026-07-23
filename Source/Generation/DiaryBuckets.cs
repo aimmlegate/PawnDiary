@@ -4,7 +4,7 @@
 // localized via ".Translate()", so this file is intentionally free of live Pawn/Map reads but is
 // NOT free of Verse — it produces player-language strings. The truly pure text cleaner
 // (DiaryLineCleaner) is kept in its own file so it can be unit-tested without the game.
-// Split out of DiaryContextBuilder.cs (Run Card 6). See DOCUMENTATION.md.
+// Split out of DiaryContextBuilder.cs (Run Card 6). See repowiki/README.md.
 // New to C#/RimWorld? See AGENTS.md.
 using Verse;
 

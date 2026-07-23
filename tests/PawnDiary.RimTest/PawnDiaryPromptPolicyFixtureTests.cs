@@ -1,4 +1,4 @@
-// Prompt-policy / key-resolution fixture for Pawn Diary (TEST_COVERAGE_PLAN.md §4.1: domain/policy +
+// Prompt-policy / key-resolution fixture for Pawn Diary (design/TEST_COVERAGE_PLAN.md §4.1: domain/policy +
 // key resolution). §4.1 is about which XML prompt policy a captured event resolves to — NOT how the
 // final prose reads. The resolver tries an ORDERED candidate list and uses the first key that has a
 // loaded DiaryEventPromptDef:

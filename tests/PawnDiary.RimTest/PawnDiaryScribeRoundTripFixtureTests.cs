@@ -1,4 +1,4 @@
-// In-game save/load fixture for Pawn Diary's persisted model objects (TEST_COVERAGE_PLAN.md §6.4).
+// In-game save/load fixture for Pawn Diary's persisted model objects (design/TEST_COVERAGE_PLAN.md §6.4).
 // RimTest Redux discovers this static suite by reflection after RimWorld has loaded all active mods.
 //
 // Unlike the flow suites, these tests need NO colony and create NO pawns: they build representative

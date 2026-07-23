@@ -6,4 +6,5 @@ This root file is a compatibility pointer. The readable adapter guide is now in 
 - [Adapter Contract](repowiki/en/content/Integration%20Framework/Public%20API%20Reference/Adapter%20Contract.md) — versioning, lifecycle, budgets, ownership, and no-DLC compatibility.
 - [Buildable example adapter](integrations/PawnDiary.ExampleAdapter/) — use `Source/PawnDiaryExampleApi.cs` as the starting point.
 
-Implementation guidance is in [`skills/pawndiary-integration-contract/SKILL.md`](skills/pawndiary-integration-contract/SKILL.md). The supported public namespace is `PawnDiary.Integration`; current `PawnDiaryApi.ApiVersion` is 8.
+The supported public namespace is `PawnDiary.Integration`; current `PawnDiaryApi.ApiVersion` is 8.
+Implementation guidance lives in the linked Adapter Contract and buildable example.

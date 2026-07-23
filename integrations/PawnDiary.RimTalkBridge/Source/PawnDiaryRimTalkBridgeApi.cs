@@ -6,7 +6,7 @@
 // or double-registers hooks, so choose once and never change (see design/RIMTALK_BRIDGE_PLAN.md
 // Step 0, "Save-data tokens are frozen once shipped").
 //
-// New to C#/RimWorld? See AGENTS.md. For the public contract, see INTEGRATIONS.md / EXTERNAL_API.md.
+// New to C#/RimWorld? See AGENTS.md. For the public contract, see the Adapter Contract wiki page / EXTERNAL_API.md.
 namespace PawnDiaryRimTalkBridge
 {
     /// <summary>

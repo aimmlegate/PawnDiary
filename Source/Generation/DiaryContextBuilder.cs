@@ -3,7 +3,7 @@
 // Pawn/Map/Archive state; the pure one-line text cleaner (DiaryLineCleaner), the localized bucket
 // formatters (DiaryBuckets), and the GameCondition mood-impact policy (MoodImpactClassifier) were
 // split out so each concern has its own home and the pure pieces can be tested without the game.
-// Static helpers, no state. Split out of DiaryGameComponent.cs. See DOCUMENTATION.md.
+// Static helpers, no state. Split out of DiaryGameComponent.cs. See repowiki/README.md.
 using System;
 using System.Collections.Generic;
 using System.Linq;

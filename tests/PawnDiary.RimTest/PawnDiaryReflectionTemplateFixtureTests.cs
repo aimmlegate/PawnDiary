@@ -1,5 +1,5 @@
 // Prompt-capture fixture for Pawn Diary's §4.2 reflection templates: SoloDayReflection,
-// SoloQuadrumReflection, and SoloArcReflection (TEST_COVERAGE_PLAN.md §4.2).
+// SoloQuadrumReflection, and SoloArcReflection (design/TEST_COVERAGE_PLAN.md §4.2).
 //
 // With Prompt Test Mode enabled (harness EnablePromptCapture) a fired reflection on a generating
 // colonist runs the real resolver: it picks the reflection template, renders the system + user prompt,
@@ -27,7 +27,7 @@
 // gates the arc signal) live on the shared DiaryTuning def, which the harness does NOT auto-restore, so
 // they are snapshotted and restored in failure-safe cleanup.
 //
-// Coverage area (TEST_COVERAGE_PLAN.md §4.2): reflection prompt templates.
+// Coverage area (design/TEST_COVERAGE_PLAN.md §4.2): reflection prompt templates.
 using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;

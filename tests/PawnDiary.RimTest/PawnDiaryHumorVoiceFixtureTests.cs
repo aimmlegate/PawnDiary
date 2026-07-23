@@ -1,4 +1,4 @@
-// Prompt-capture fixture for Pawn Diary's §5.3 HUMOR cue system (TEST_COVERAGE_PLAN.md §5).
+// Prompt-capture fixture for Pawn Diary's §5.3 HUMOR cue system (design/TEST_COVERAGE_PLAN.md §5).
 //
 // Humor is a hidden, always-on feature: on some fraction of eligible first-person entries the
 // production pipeline folds ONE structural "writing-license" sentence (a humor cue) into the same
@@ -19,7 +19,7 @@
 // effective chance collapses to 0. Every mutated tuning field is snapshotted in SetUp and restored via
 // RegisterCleanup; the temperament changes live on the test-owned pawn, which the harness destroys.
 //
-// Coverage (TEST_COVERAGE_PLAN.md §5.3): base forced-on emits a cue; forced-off emits none; an
+// Coverage (design/TEST_COVERAGE_PLAN.md §5.3): base forced-on emits a cue; forced-off emits none; an
 // elevated-temperament writer's multiplier raises the effective chance to certainty; a reduced
 // writer's multiplier suppresses it; and a template that opts out of persona (ArrivalDescription)
 // carries no humor cue even with the chance forced to 1.

@@ -1,21 +1,8 @@
 # Changelog
 
-- **2026-07-23 — Added exact insect-meat belief evidence and executed the loaded food boundary.**
-  Vanilla 1.6's exact `CompIngredients`/`FoodUtility.GetMeatSourceCategory(...)=Insect` seam now
-  freezes one primitive `insect_meat` fact inside the existing short-lived ingestion scope; pure XML
-  policy maps it to `insect_meal` plus `ingredient_label`, with DefInjected English/Russian semantic
-  aliases and no doctrine catalog. `ThoughtSignal` remains the sole page owner, evidence remains
-  intentionally ingestion-wide for every thought returned by the same exact meal, and mixed modded
-  meals preserve the shipped humanlike-first result. Direct/ingredient insect meat, ordinary-meal and
-  corpse negatives, unknown/malformed policy, no-Ideology silence, scope cleanup, dedup/Rand, frozen
-  save context, and both real Harmony boundaries have focused pure and compiled loaded coverage.
-  `BeliefContextTests` passes 556 assertions; the full 15-project verifier passes 7,382 assertions;
-  and the runtime plus final 398-case RimTest assemblies build with zero warnings or errors.
-  The requested corrected pre-slice suite ran first at 392/396: two food-fixture failures, one unrelated
-  moral-guide fixture, and the known Odyssey parked-gravship prerequisite. Deterministic issue-only
-  food ideologies and a teardown-restored test-only eating threshold corrected the fixture assumptions
-  without changing production. The final active-Ideology run reached **397/398 across 60/61 suites**;
-  every food test passed, and the sole failure was the explicitly separate parked-gravship prerequisite.
+- **2026-07-23 — Consolidated human documentation under `repowiki/` and moved development-only plans and tooling to ignored local folders.**
+
+- **2026-07-23 — Added exact insect-meat belief evidence and loaded coverage.**
 
 - **2026-07-23 — Split oversized documentation into focused wiki pages and agent skills.** The
   root architecture, event-map, external-API, and integration files are now compact pointers;
@@ -2426,7 +2413,7 @@
   through the live pipeline with deterministic (non-RNG-luck) forcing; no production code changed.
 
 - **2026-07-15 — RimTest event coverage (plan Phases 1–2).** Added 20 in-game RimTest suites on the
-  `PawnDiaryRimTestScope` harness covering every event source in `TEST_COVERAGE_PLAN.md §3`, EVT-02
+  `PawnDiaryRimTestScope` harness covering every event source in `design/TEST_COVERAGE_PLAN.md §3`, EVT-02
   through EVT-23 (interaction batch/ambient, thought immediate + progression, inspiration, ability,
   tale, death, hediff, work, raid fan-out, mood condition, pawn progression, quest, ritual, arrival,
   day/quadrum + arc reflection, external API, event windows, observed conditions) — 77 new test
@@ -2443,7 +2430,7 @@
 
 - **2026-07-15 — RimTest harness (coverage plan Phase 0).** Extracted the reaction suite's setup and
   teardown into a shared `PawnDiary.RimTest` harness, `PawnDiaryRimTestScope`, per
-  `TEST_COVERAGE_PLAN.md §2.1/§8`. One scope now owns isolated non-generating colonists, the settings
+  `design/TEST_COVERAGE_PLAN.md §2.1/§8`. One scope now owns isolated non-generating colonists, the settings
   and RNG state a test touches, and failure-safe teardown of events, diary indexes, `diariesById`,
   Social-log rows, relation/mental state, transient dedup/command keys, and the pawns — plus a no-leak
   audit that fails the test if any test-owned state survives cleanup (the plan's "zero marked state"
@@ -2452,7 +2439,7 @@
   cases are tagged EVT-01/EVT-07/EVT-08. Added `tests/PawnDiary.RimTest/README.md` as the suite's
   operator guide. No production code or runtime behavior changed; this is a test-assembly refactor.
 
-- **2026-07-15 — Planned comprehensive automated coverage.** Added `TEST_COVERAGE_PLAN.md`, a staged
+- **2026-07-15 — Planned comprehensive automated coverage.** Added `design/TEST_COVERAGE_PLAN.md`, a staged
   requirement-to-test roadmap covering every documented event source, prompt policy/template,
   enchantment and voice layer, humor/forced-model route, asynchronous LLM lifecycle, save/load path,
   integration/UI contract, and base-only/DLC configuration. The plan defines a shared failure-safe
@@ -2482,7 +2469,7 @@
   assertions) passes unmodified. `WeightFloor` stays a code constant (a defensive floor, not a
   tunable) and the combo-signature count thresholds stay in the policy (structural matching rules
   deferred per `design/PSYCHOTYPE_PLAN.md` "Out of scope"). Updated `DiaryPsychotypeDefs.xml` and
-  `DOCUMENTATION.md` to point at the new owner.
+  `repowiki/README.md` to point at the new owner.
 
 - **2026-07-14 — Powerful AI Integration persona bridge.** Added the separate reflection-only
   `Pawn Diary: Powerful AI Integration` adapter, which reads the full enabled, pawn-bound PAI persona
@@ -2634,7 +2621,7 @@
 
 Milestone history of Pawn Diary, newest first. Grouped by milestone, not by commit; routine
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
-Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The public integration
+Companion: [repowiki/README.md](repowiki/README.md) describes the current state. The public integration
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
@@ -2656,7 +2643,7 @@ pre-release version ladder for project history.
   to a `Talk` first seen past its opening reply (via SpeakUp's `Statement.Iteration`), preventing
   inverted subject/partner roles and partial line sampling when capture is toggled on mid-conversation.
   The Rimpsyche mod constructor now wraps `new Harmony(...)` in the same try/catch the SpeakUp adapter
-  uses, so a Harmony static-init failure can never abort play-data load. `EVENT_PROMPT_MAP.md` corrects
+  uses, so a Harmony static-init failure can never abort play-data load. `repowiki/en/content/Event%20System/Event-to-Prompt%20Map.md` corrects
   the Tier-C alignment gate to strictly `> 0.55`. Both adapter DLLs were rebuilt; all pure suites pass
   (SpeakUp 21, Rimpsyche 121, core 605).
 - **Six source-verified, no-hard-dependency compatibility packs.** Alpha Memes gets funeral/ritual,
@@ -2974,7 +2961,7 @@ pre-release version ladder for project history.
     the prompt-entry API all present — no degrade needed). Full EN + native RU strings (RU flagged for a
     human pass); new pure tests in `RimTalkBridgeLogicTests` (98 assertions green). Bridge builds clean.
     **In-game matrix + the `InjectEnvironmentSection` render question (U1) are pending a maintainer
-    playtest** — see DOCUMENTATION.md.
+    playtest** — see repowiki/README.md.
 
 ## 2026-07-08
 
@@ -3106,7 +3093,7 @@ pre-release version ladder for project history.
   masks paths/keys and live colony/colonist names; reports carry a stable anonymous install id, the
   real `About.xml` version (new `StampVersionFromAbout` MSBuild target replaces the hardcoded
   `1.0.0.0`), and a Workshop-vs-local `installSource`. EN/RU strings; schema in
-  `DOCUMENTATION.md §8.1`.
+  the error-diagnostics wiki page.
 - **Fixed a thought-capture NRE on animals / not-fully-built pawns** (user-reported; log refs
   `A2D21F2A`, `74E0E9CE`). `ThoughtSignal` called `Thought_Memory.MoodOffset()` before checking
   eligibility, throwing inside RimWorld's nullifier checks for pawns without `story`/`health`;
@@ -3201,7 +3188,7 @@ pre-release version ladder for project history.
   every public `PawnDiaryApi` method (searchable method tree, prefilled forms, color-coded result
   log, `[DebugAction]` quick actions, three demo External groups covering all submit paths), with
   `Source/PawnDiaryExampleApi.cs` as the single copyable facade and its pure parsing helpers under
-  test. Added the one-page `EXTERNAL_API.md` guide and collapsed the API docs to `INTEGRATIONS.md`
+  test. Added the one-page `EXTERNAL_API.md` guide and collapsed the API docs to the adapter contract
   (shipped contract) + `design/EXTERNAL_API_CAPABILITIES.md` (planned).
 - **Integration hardening (review follow-ups).** Adapter input can no longer forge internal
   `gameContext` (reserved-key rejection; flattened, length-capped `eventKey`/`sourceId`); budget
@@ -3302,7 +3289,7 @@ pre-release version ladder for project history.
   validated, crash-isolated, main-thread-guarded, routed through the normal bus as a new `External`
   source. Prompt policy stays in XML (an External-domain group claims the `eventKey`); new
   `externalEventDedupTicks` knob and `enableWhenPackageIdsLoaded` group flag, EN/RU strings, the
-  `INTEGRATIONS.md` contract, and a buildable adapter template in
+  adapter contract, and a buildable adapter template in
   `integrations/PawnDiary.ExampleAdapter/`.
 - **Reasoning handling matured.** A per-lane "Reasoning tag" dropdown pins the wrapper tag a model
   emits; endpoints advertising reasoning capability constrain the effort dropdown and clamp outgoing
@@ -3374,8 +3361,8 @@ pre-release version ladder for project history.
   `scripts/publish.ps1` stamps that version into both the main and Russian localization payloads.
   `-Version <value>` can override the payload version for a release.
 - **Workshop/docs cleanup.** `scripts/publish.ps1` no longer ships `Source/` or other
-  development-only folders to Workshop, while maintainer docs remain included. `DOCUMENTATION.md` was
-  shortened around current architecture and policy, and `EVENT_PROMPT_MAP.md` now uses current-state
+  development-only folders to Workshop, while maintainer docs remain included. `repowiki/README.md` was
+  shortened around current architecture and policy, and `repowiki/en/content/Event%20System/Event-to-Prompt%20Map.md` now uses current-state
   Mermaid diagrams for capture, prompt policy, overrides, and active weights.
 - **Generation and diary UI polish.** Quest acceptance now only marks quests seen; completed/failed
   outcomes generate colony-effort pages. Rare quadrum reflections add long end-of-quadrum pages from
@@ -3479,7 +3466,7 @@ pre-release version ladder for project history.
 
 - **Localization, packaging, and maintainer docs cleaned up.** DefInjected folder names were fixed,
   the Workshop preview was replaced with human-made art, publish output now includes source and
-  reference docs, and `DOCUMENTATION.md` was condensed into a current-state guide.
+  reference docs, and `repowiki/README.md` was condensed into a current-state guide.
 
 - **Generation and retention reliability improved.** Catch-up scans became demand-driven, orphan
   recovery moved to its own pass, retained diary events gained a settings cap, and completed LLM

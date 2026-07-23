@@ -78,7 +78,7 @@ namespace PawnDiaryRimTalkBridge
             // Zero-config: inject the block right after the Weather line of the environment section.
             // ⚠️ U1 — verify in-game that RimTalk renders injected environment sections into the default
             // prompt; if not, switch to RegisterEnvironmentHook(Environment.Weather, Append, ...). Same
-            // open question the shipped Feature 2 carries for InjectPawnSection (see DOCUMENTATION.md).
+            // open question the shipped Feature 2 carries for InjectPawnSection (see repowiki/README.md).
             ContextHookRegistry.InjectEnvironmentSection(
                 BridgeIds.ColonyEventsVariableName,
                 BridgeIds.ModId,

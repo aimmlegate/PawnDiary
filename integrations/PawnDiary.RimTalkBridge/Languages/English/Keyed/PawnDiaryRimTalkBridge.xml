@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- All player-facing / LLM-facing strings for the RimTalk bridge. Structured prompt schema
      labels (chat_persona=, talk_type=, exchanges=, said_N=) intentionally stay English in code —
-     they are machine-readable keys, not prose (see DOCUMENTATION.md §12 carve-outs). -->
+     they are machine-readable keys, not prose (see the repository wiki's localization guidance). -->
 <LanguageData>
 
   <!-- Mod settings window -->

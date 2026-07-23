@@ -1,4 +1,4 @@
-// Prompt-capture fixture for Pawn Diary's psychotype (outlook) voice layer (TEST_COVERAGE_PLAN.md §5.2).
+// Prompt-capture fixture for Pawn Diary's psychotype (outlook) voice layer (design/TEST_COVERAGE_PLAN.md §5.2).
 //
 // The psychotype layer contributes ONE optional block to the first-person system prompt: a 1-2 sentence
 // "outlook" rule describing how a pawn judges events. Three sources can supply that rule, and the pure

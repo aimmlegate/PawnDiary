@@ -1,5 +1,5 @@
 // In-game fixture for Pawn Diary's non-visual Diary-tab view-model contracts
-// (TEST_COVERAGE_PLAN.md §7.2, "UI / view-model deterministic contracts"). These tests drive the
+// (design/TEST_COVERAGE_PLAN.md §7.2, "UI / view-model deterministic contracts"). These tests drive the
 // read-only surface the pawn Diary tab queries every frame — the year index builder
 // (DiaryGameComponent.BeginTabYearIndexBuild -> DiaryTabYearIndex), the hot-vs-archived dedup, the
 // visibility filters, the per-pawn command-status badge cache, the POV/entry-role selection

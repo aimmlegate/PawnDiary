@@ -3,7 +3,7 @@
 A tiny [Cloudflare Worker](https://developers.cloudflare.com/workers/) + [D1](https://developers.cloudflare.com/d1/)
 database that receives the mod's opt-out error reports and aggregates them for triage.
 
-It is the server side of the reporter documented in `DOCUMENTATION.md §8.1`. The mod only sends when
+It is the server side of the reporter documented in the repository wiki. The mod only sends when
 `DiaryErrorReporter.ErrorReportEndpoint` is set — until you deploy this and paste the URL there, the
 reporter is inert.
 

@@ -911,7 +911,7 @@ Any of:
 - a status, title, surroundings, neutral-text, year, or settings-override value that differs from
   the same save loaded on the previous Pawn Diary version,
 - a Scribe-key rename visible in the raw save XML (see the stable-key contract in
-  `DOCUMENTATION.md §9`).
+  the repository wiki's data-model documentation).
 
 If you intended to rename a stable Scribe key, the migration plan must be in the change card and the
 old key must still be read during a transition window — that is the one carve-out from the

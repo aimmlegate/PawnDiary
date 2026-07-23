@@ -1,6 +1,6 @@
 // The PUBLIC integration facade — the ONE class other mods are allowed to call. Everything else in
 // this assembly is an internal implementation detail and may change between versions; this surface
-// only ever evolves additively (new members, never renames/removals). See INTEGRATIONS.md for the
+// only ever evolves additively (new members, never renames/removals). See the Adapter Contract wiki page for the
 // full contract, eventKey conventions, and the group-XML an adapter must ship.
 //
 // Design rules for this file:

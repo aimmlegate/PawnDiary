@@ -1,4 +1,4 @@
-// In-game health-condition capture tests for Pawn Diary's hediff signal path (TEST_COVERAGE_PLAN.md
+// In-game health-condition capture tests for Pawn Diary's hediff signal path (design/TEST_COVERAGE_PLAN.md
 // §3, EVT-11). The AddHediff Harmony hook (HealthTrackerAddHediffPatch) forwards colonist hediffs to
 // HediffSignal, which classifies each against the XML Hediff-domain groups and either writes an
 // immediate solo diary page or defers the change to the end-of-day reflection (a "day-signal"). These

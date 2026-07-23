@@ -1,5 +1,5 @@
 // Prompt-only template-selection fixture for Pawn Diary's SOLO prompt shapes
-// (TEST_COVERAGE_PLAN.md §4.2 — SoloDefault, SoloImportant, SoloInternalState, SoloBatched).
+// (design/TEST_COVERAGE_PLAN.md §4.2 — SoloDefault, SoloImportant, SoloInternalState, SoloBatched).
 //
 // This suite asserts the single most load-bearing thing about the solo prompt matrix: which template
 // key the production planner picks for a given solo event, and the token rule that key carries. The

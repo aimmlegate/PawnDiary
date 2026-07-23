@@ -3,7 +3,7 @@
 // in three PovSlot value-typed fields and is reached through SlotFor(role), the single place that
 // maps a role to its storage; the historical public field names survive as facade properties. Pure
 // model: fields, save/load, and prompt/result plumbing. Split out of DiaryGameComponent.cs. See
-// DOCUMENTATION.md.
+// the repository wiki.
 using System;
 using System.Collections.Generic;
 using RimWorld;
@@ -282,7 +282,7 @@ namespace PawnDiary
         // The pure default/merge/clamp logic lives in DiarySaveNormalization so it can be tested
         // without RimWorld. Two impure steps stay here: minting a fresh eventId for pre-id saves
         // (Guid is non-deterministic) and resolving the color cue (ResolveColorCue hits DefDatabase
-        // via GroupForDisplay). See DOCUMENTATION.md §9.
+        // via GroupForDisplay). See the data-model pages in repowiki/.
         private void NormalizeOnLoad()
         {
             // Keep loaded event-level fields non-null and derive fallback context/instruction.

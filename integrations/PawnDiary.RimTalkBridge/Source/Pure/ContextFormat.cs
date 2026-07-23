@@ -1,7 +1,7 @@
 // Pure text formatting for the bridge. NO RimWorld / RimTalk / Verse usings live here: this file is
 // file-linked into the pure test project (tests/RimTalkBridgeLogicTests) and must compile without
 // the game. All localized label/format strings are passed in ALREADY TRANSLATED by the caller —
-// pure code never calls .Translate() (see AGENTS.md and DOCUMENTATION.md §12).
+// pure code never calls .Translate() (see AGENTS.md and the repository wiki's localization guidance).
 //
 // New to C#/RimWorld? See AGENTS.md. Analogy for JS/TS: this is a plain module of string helpers
 // that take primitives in and return a string out — no I/O, no globals, trivially testable.

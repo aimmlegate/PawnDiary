@@ -1,5 +1,5 @@
 // In-game tests for Pawn Diary's PUBLIC integration API surface + the settings gates in front of it
-// (TEST_COVERAGE_PLAN.md §7.1: settings + external API). Companion to PawnDiaryExternalApiFlowTests,
+// (design/TEST_COVERAGE_PLAN.md §7.1: settings + external API). Companion to PawnDiaryExternalApiFlowTests,
 // which proves the SubmitEvent RECORD path end to end. This suite instead exercises the rest of the
 // PawnDiary.Integration.PawnDiaryApi facade — the readiness/eligibility probes, the per-pawn
 // generation toggle, the source-owned writing-style and psychotype override setters, the process-global
@@ -26,7 +26,7 @@
 //     this suite only asserts its leak-free reject-invalid-input guards and deliberately does NOT perform
 //     a live registration that would persist into the developer's process. See gotchas in the report.
 //
-// Coverage-matrix area (TEST_COVERAGE_PLAN.md §7.1): integration API surface + settings gates.
+// Coverage-matrix area (design/TEST_COVERAGE_PLAN.md §7.1): integration API surface + settings gates.
 using System;
 using PawnDiary.Integration;
 using RimTestRedux;

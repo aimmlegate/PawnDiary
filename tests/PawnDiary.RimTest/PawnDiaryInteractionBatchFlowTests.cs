@@ -11,7 +11,7 @@
 //     day note ("SmallTalkAmbientDay") using the chatter as background texture.
 // Plus the negative gate: a disabled group drops the rows entirely (no batch, no page).
 //
-// Determinism (TEST_COVERAGE_PLAN.md §3, EVT-02): real storyteller timing is never used. Each test
+// Determinism (design/TEST_COVERAGE_PLAN.md §3, EVT-02): real storyteller timing is never used. Each test
 // lowers the group's XML <maxEvents> threshold to a tiny value so the count route flushes exactly
 // when we add the last row, and the smalltalk <promotion> roll (a per-row RNG that can promote a
 // batched moment to its own pairwise page) is disabled so ambient routing is deterministic. Every

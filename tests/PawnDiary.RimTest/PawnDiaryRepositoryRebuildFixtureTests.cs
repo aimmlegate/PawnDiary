@@ -1,5 +1,5 @@
 // In-game save/load fixture for Pawn Diary's repository index rebuilds and retention
-// (TEST_COVERAGE_PLAN.md §6.4, "repository/diary/archive index rebuilds ... retention"). This suite
+// (design/TEST_COVERAGE_PLAN.md §6.4, "repository/diary/archive index rebuilds ... retention"). This suite
 // needs NO colony and creates NO pawns: it builds DiaryEventRepository / DiaryArchiveRepository /
 // PawnMemoryRepository model objects directly, round-trips their SAVED lists through RimWorld's real
 // Scribe to a temp file, and proves transient indexes rebuild correctly, memory registration remains

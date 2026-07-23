@@ -3,7 +3,7 @@
   The adapter's half of the Pawn Diary contract: External-domain groups that CLAIM the eventKeys
   this adapter submits. Without a claiming group a SubmitEvent records nothing (Pawn Diary logs one
   warning naming the adapter). label/instruction/tone are DefInjected-localizable inside the adapter
-  mod, exactly like Pawn Diary's own groups. See INTEGRATIONS.md in the Pawn Diary repo.
+  mod, exactly like Pawn Diary's own groups. See the Adapter Contract wiki page in the Pawn Diary repo.
 
   Three groups, one per submission path the explorer exercises:
     • exampleadapter_quiet_moment   — SubmitEvent (the canonical minimal example)

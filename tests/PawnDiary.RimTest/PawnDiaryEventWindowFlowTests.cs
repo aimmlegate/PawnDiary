@@ -1,4 +1,4 @@
-// In-game event-window tests for Pawn Diary's XML-driven narrative windows (EVT-22, TEST_COVERAGE_PLAN.md §3).
+// In-game event-window tests for Pawn Diary's XML-driven narrative windows (EVT-22, design/TEST_COVERAGE_PLAN.md §3).
 //
 // Event windows turn broad, source-agnostic game signals (incidents, letters, birthdays, spawned things,
 // prison breaks, ...) into either a one-shot diary page or a long-lived active window that biases prompt

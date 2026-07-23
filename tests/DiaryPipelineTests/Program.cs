@@ -6566,8 +6566,8 @@ namespace DiaryPipelineTests
             string directory = AppContext.BaseDirectory;
             while (!string.IsNullOrEmpty(directory))
             {
-                if (File.Exists(Path.Combine(directory, "DOCUMENTATION.md"))
-                    && Directory.Exists(Path.Combine(directory, "1.6")))
+                if (Directory.Exists(Path.Combine(directory, "1.6"))
+                    && Directory.Exists(Path.Combine(directory, "Source")))
                 {
                     string path = directory;
                     for (int i = 0; i < parts.Length; i++)

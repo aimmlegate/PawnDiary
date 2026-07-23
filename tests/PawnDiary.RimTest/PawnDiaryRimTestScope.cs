@@ -1,4 +1,4 @@
-// Shared setup/teardown harness for Pawn Diary's in-game RimTest suites (TEST_COVERAGE_PLAN.md §2.1).
+// Shared setup/teardown harness for Pawn Diary's in-game RimTest suites (design/TEST_COVERAGE_PLAN.md §2.1).
 //
 // Every loaded-game test needs the same fragile scaffolding: build isolated colonists that can never
 // fire an LLM request, mutate a few settings, drive a real vanilla choke point, assert the persisted
@@ -773,7 +773,7 @@ namespace PawnDiary.RimTests
             TryCleanup(DestroyTestPawns, ref firstFailure);
 
             // Prove the colony is clean. If a step above silently failed to remove something, this is
-            // what turns "leaked state" into a visible test failure (TEST_COVERAGE_PLAN.md §9).
+            // what turns "leaked state" into a visible test failure (design/TEST_COVERAGE_PLAN.md §9).
             TryCleanup(AuditNoLeakedState, ref firstFailure);
 
             // Balance the RNG push last, no matter what else failed.

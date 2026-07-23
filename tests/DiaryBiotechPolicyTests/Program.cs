@@ -2050,7 +2050,8 @@ namespace DiaryBiotechPolicyTests
             DirectoryInfo directory = new DirectoryInfo(Directory.GetCurrentDirectory());
             while (directory != null)
             {
-                if (File.Exists(Path.Combine(directory.FullName, "BIOTECH_SUPPORT_IMPLEMENTATION_PLAN.md")))
+                if (Directory.Exists(Path.Combine(directory.FullName, "1.6"))
+                    && Directory.Exists(Path.Combine(directory.FullName, "Source")))
                 {
                     return directory.FullName;
                 }

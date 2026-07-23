@@ -1,4 +1,4 @@
-// In-game flow tests for Pawn Diary's pawn-progression scanner (EVT-15, TEST_COVERAGE_PLAN.md §3).
+// In-game flow tests for Pawn Diary's pawn-progression scanner (EVT-15, design/TEST_COVERAGE_PLAN.md §3).
 //
 // EVT-15 is the skill/trait milestone tracker — distinct from EVT-04 (situational thought-stage
 // progression). The component periodically scans each free colonist and, for a genuine forward step
@@ -31,7 +31,7 @@
 // pawn's PawnDiaryRecord (its default progressionState + arcSchedule live there and are dropped when
 // the harness removes the test pawn's diary). No separate store is dirtied — see the integration report.
 //
-// Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-15 Pawn progression.
+// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-15 Pawn progression.
 using System;
 using System.Collections.Generic;
 using System.Reflection;

@@ -1,4 +1,4 @@
-// In-game raid-capture tests for Pawn Diary's colony raid source (EVT-13, TEST_COVERAGE_PLAN.md §3).
+// In-game raid-capture tests for Pawn Diary's colony raid source (EVT-13, design/TEST_COVERAGE_PLAN.md §3).
 //
 // A raid is a colony-wide FAN-OUT: the RaidExecutePatch builds one RaidFanoutSignal from the incident's
 // IncidentParms + IncidentDef and submits it, and the shared DiaryFanoutSignal dispatch turns it into one

@@ -3,7 +3,7 @@
 // fragile scaffolding — isolated non-generating pawns, snapshots, and failure-safe teardown — lives in
 // the shared PawnDiaryRimTestScope harness, so a test body only fires a trigger and asserts an outcome.
 //
-// Coverage-matrix IDs (TEST_COVERAGE_PLAN.md §3): EVT-01 interaction pair, EVT-07 romance,
+// Coverage-matrix IDs (design/TEST_COVERAGE_PLAN.md §3): EVT-01 interaction pair, EVT-07 romance,
 // EVT-08 mental state. Later phases add the remaining EVT rows on this same harness.
 using System;
 using RimWorld;

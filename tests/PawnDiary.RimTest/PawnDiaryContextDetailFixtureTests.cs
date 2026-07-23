@@ -1,4 +1,4 @@
-// Prompt-capture fixture for Pawn Diary's context-detail presets (TEST_COVERAGE_PLAN.md §4.3).
+// Prompt-capture fixture for Pawn Diary's context-detail presets (design/TEST_COVERAGE_PLAN.md §4.3).
 //
 // This suite exercises the harness prompt-capture seam end to end: with Prompt Test Mode enabled the
 // production generation pipeline resolves the template, renders the real system + user prompt, stamps

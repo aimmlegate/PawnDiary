@@ -301,5 +301,5 @@ If integrating with external systems, consult the external API documentation for
 For comprehensive reference material, including architecture details and advanced topics, see the project documentation.
 
 **Section sources**
-- [DOCUMENTATION.md](../../../DOCUMENTATION.md)
+- [repowiki/README.md](../../../repowiki/README.md)
 - [README.md](../../../README.md)

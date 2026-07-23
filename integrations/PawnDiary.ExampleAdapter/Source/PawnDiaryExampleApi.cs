@@ -7,7 +7,7 @@
 // The rest of the API Explorer is UI/test harness code. Keeping every core API touch in this file
 // makes the contract easy to audit and gives other mod authors one clear example to copy.
 //
-// New to C#/RimWorld? See AGENTS.md. For the public contract, see INTEGRATIONS.md / EXTERNAL_API.md.
+// New to C#/RimWorld? See AGENTS.md. For the public contract, see the Adapter Contract wiki page / EXTERNAL_API.md.
 using System;
 using System.Collections.Generic;
 using System.Text;

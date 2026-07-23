@@ -6,7 +6,7 @@
 // All isolation/teardown lives in the shared PawnDiaryRimTestScope harness; each test only fires a
 // real vanilla trigger and asserts the persisted DiaryEvent.
 //
-// Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-05 Inspiration. This suite proves the solo page
+// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-05 Inspiration. This suite proves the solo page
 // with reason/context, the disabled-group negative gate, and that ending the inspiration in cleanup
 // leaves no test state behind (the harness no-leak audit is the machine check).
 using System;

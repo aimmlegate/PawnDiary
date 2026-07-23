@@ -32,7 +32,7 @@ namespace PawnDiary
     internal static class DiaryErrorReporter
     {
         // The deployed Cloudflare Worker ingest endpoint (services/error-endpoint/, see
-        // DOCUMENTATION.md "Error reporting"). Compile-time, not a setting, so it is never
+        // the Error Handling & Diagnostics wiki page). Compile-time, not a setting, so it is never
         // player-editable — players cannot redirect it. Set to "" to make the reporter inert again.
         private const string ErrorReportEndpoint = "https://pawndiary-error-endpoint.pawn-diary-aimm-error-reports.workers.dev";
 

@@ -35,7 +35,7 @@ namespace PawnDiary
         // colony is/isn't in this state", not "who has it".
         MapHiddenHediff,
         // Bounded fallback: a recent signal/letter, given a TTL and labelled "recent evidence".
-        // Defined for completeness; no live scanner feeds it yet (see DOCUMENTATION.md §5.1).
+        // Defined for completeness; no live scanner feeds it yet (see the Event System pages in repowiki/).
         RecentEvidence
     }
 

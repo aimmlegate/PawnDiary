@@ -16,7 +16,7 @@
 // rarer arc/quadrum reflections that would otherwise pre-empt the daily one) is snapshotted and
 // forced to known values, then restored in teardown.
 //
-// Coverage-matrix ID (TEST_COVERAGE_PLAN.md §3): EVT-19.
+// Coverage-matrix ID (design/TEST_COVERAGE_PLAN.md §3): EVT-19.
 using System;
 using System.Collections;
 using System.Collections.Generic;

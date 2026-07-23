@@ -1,6 +1,6 @@
 // Impure edge for the external-override arbitration (see Source/Pipeline/ExternalOverrideArbitration.cs):
 // resolves an integration sourceId to the owning mod's LOAD-ORDER index, so "the later-loading mod wins"
-// can be decided. A sourceId is a packageId only BY CONVENTION (INTEGRATIONS.md recommends it), so a
+// can be decided. A sourceId is a packageId only BY CONVENTION (the Adapter Contract recommends it), so a
 // string that matches no active mod resolves to UnknownLoadOrder and arbitration falls back to
 // last-writer-wins.
 //

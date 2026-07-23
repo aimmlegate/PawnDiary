@@ -1,4 +1,4 @@
-// Prompt-capture fixture for Pawn Diary's writing-style precedence (TEST_COVERAGE_PLAN.md §5.2).
+// Prompt-capture fixture for Pawn Diary's writing-style precedence (design/TEST_COVERAGE_PLAN.md §5.2).
 //
 // The writing-style (persona) layer resolves through a fixed priority:
 //     External API override > Hediff override > Pawn custom prompt > Base style Def.

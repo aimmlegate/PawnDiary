@@ -1,5 +1,5 @@
 // Public read-filter DTO for integration adapters. Keep this class plain: fields only,
-// strings/ints/bools only, no live RimWorld objects. See INTEGRATIONS.md.
+// strings/ints/bools only, no live RimWorld objects. See the Adapter Contract wiki page.
 //
 // New to C#/RimWorld? See AGENTS.md.
 namespace PawnDiary.Integration

@@ -101,7 +101,7 @@ Vsie --> ExtSvc
 **Section sources**
 - [README.md](../../../../../../README.md)
 - [EXTERNAL_API.md](../../../../../../EXTERNAL_API.md)
-- [DOCUMENTATION.md](../../../../../../DOCUMENTATION.md)
+- [repowiki/README.md](../../../../../../repowiki/README.md)
 
 ## Core Components
 - LLM Client and Response Parsing
