@@ -51,6 +51,10 @@ namespace PawnMemoryTests
             TestCoreLoreCooldownGate();
             TestEvictionLoreSuppression();
             TestAuthoredKeywordNormalization();
+            TestLoreCatalogContract();
+            TestLoreCatalogReachabilityAndReservation();
+            TestLoreCatalogRussianParity();
+            TestLoreCatalogRecallSmoke();
             Console.WriteLine("PawnMemoryTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -1505,6 +1509,332 @@ namespace PawnMemoryTests
 
             AssertEqual("null input yields an empty list", 0,
                 MemoryExtraction.NormalizeAuthoredKeywords(null, 8).Count);
+        }
+
+        // ---------------------------------------------------------------------------------------------
+        // Lore catalog QA (LORE_MEMORY_SEED_PLAN §11 pass 4 / §14.2)
+        // ---------------------------------------------------------------------------------------------
+
+        // The frozen matcher vocabulary from the pass-1 audit. Every catalog keyword must be one
+        // of these audited stable identifiers; growing this list requires re-auditing the query
+        // path (§10) and updating the catalog header comment.
+        private static readonly string[] AuditedKeywordVocabulary =
+        {
+            "RaidEnemy", "Infestation", "MechCluster",
+            "Mechanoid", "Insect", "Empire", "Pirate",
+            "Plague", "Flu", "Malaria", "LuciferiumHigh", "PsychicAmplifier", "MechlinkImplant",
+            "PsychicDrone", "PsychicSoothe", "ToxicFallout", "SolarFlare", "Eclipse",
+            "ToxicFalloutActive", "SolarFlareActive", "ThrumboVisit"
+        };
+
+        private static readonly string[] KnownMutexGroups =
+        {
+            "distance", "cryptosleep", "glitterworld", "homeworld", "archotech", "psychic",
+            "mechanoid_origin", "insectoid", "xeno_identity", "empire", "void", "legends",
+            "vatgrown", "outlaw", "tribal_root", "rim_life", "weather_lore", "trade"
+        };
+
+        private sealed class CatalogRow
+        {
+            public string defName;
+            public string label;
+            public string text;
+            public List<string> rawKeywords = new List<string>();
+            public LoreSeedCandidate candidate;
+        }
+
+        private static List<CatalogRow> catalogCache;
+
+        private static void TestLoreCatalogContract()
+        {
+            List<CatalogRow> catalog = LoadCatalog();
+            AssertTrue("catalog is substantial (30-40 seeds)",
+                catalog.Count >= 30 && catalog.Count <= 40);
+
+            List<string> seen = new List<string>();
+            for (int i = 0; i < catalog.Count; i++)
+            {
+                CatalogRow row = catalog[i];
+                string id = row.defName;
+                AssertTrue(id + " defName prefix", id.StartsWith("LoreSeed_", StringComparison.Ordinal));
+                AssertTrue(id + " unique defName", !seen.Contains(id));
+                seen.Add(id);
+                AssertTrue(id + " label authored", !string.IsNullOrWhiteSpace(row.label));
+                AssertTrue(id + " text authored within 200 chars",
+                    !string.IsNullOrWhiteSpace(row.text) && row.text.Trim().Length <= 200);
+                AssertTrue(id + " usage is initial for the L3 catalog",
+                    row.candidate.usage == "initial");
+                AssertTrue(id + " retention tier token",
+                    row.candidate.retentionTier == "ordinary" || row.candidate.retentionTier == "core");
+                AssertTrue(id + " positive finite weight",
+                    row.candidate.weight > 0f && row.candidate.weight <= 1f);
+                AssertTrue(id + " declares a known mutex group",
+                    IndexOfOrdinal(KnownMutexGroups, row.candidate.mutexGroup) >= 0);
+                AssertTrue(id + " has at least one tag", row.candidate.tags.Count > 0);
+                for (int j = 0; j < row.candidate.tags.Count; j++)
+                {
+                    AssertTrue(id + " tag known: " + row.candidate.tags[j],
+                        MemoryTagTokens.IsKnown(row.candidate.tags[j]));
+                }
+
+                AssertTrue(id + " keyword count within cap", row.rawKeywords.Count <= 8);
+                for (int j = 0; j < row.rawKeywords.Count; j++)
+                {
+                    AssertTrue(id + " keyword in audited vocabulary: " + row.rawKeywords[j],
+                        IndexOfOrdinal(AuditedKeywordVocabulary, row.rawKeywords[j]) >= 0);
+                }
+
+                if (row.candidate.retentionTier == "core")
+                {
+                    AssertTrue(id + " core seed carries exact high-confidence evidence",
+                        row.candidate.backstoryDefNames.Count > 0
+                        || row.candidate.xenotypeDefNames.Count > 0
+                        || row.candidate.hediffDefNames.Count > 0);
+                }
+            }
+        }
+
+        private static void TestLoreCatalogReachabilityAndReservation()
+        {
+            List<CatalogRow> catalog = LoadCatalog();
+            List<LoreSeedCandidate> candidates = new List<LoreSeedCandidate>();
+            for (int i = 0; i < catalog.Count; i++)
+            {
+                candidates.Add(catalog[i].candidate);
+            }
+
+            // Supported base-game pawn fixtures (§7.1): each must reach a full roster with the
+            // reserved pawn-specific slot satisfied.
+            List<LoreSeedPawnFacts> fixtures = new List<LoreSeedPawnFacts>
+            {
+                LoreFacts(cats: Tags("Offworld")),
+                LoreFacts(cats: Tags("Tribal", "ChildTribal")),
+                LoreFacts(cats: Tags("ImperialCommon")),
+                LoreFacts(cats: Tags("Outlander", "Civil")),
+                LoreFacts(cats: Tags("Pirate")),
+                LoreFacts(cats: Tags("Trader")),
+                LoreFacts(cats: Tags("VatGrown")),
+                LoreFacts(cats: Tags("Offworld"), backstories: Tags("GlitterworldSurgeon15")),
+                LoreFacts(cats: Tags("Offworld"), backstories: Tags("MedievalLord57")),
+                LoreFacts(cats: Tags("Civil"), hediffs: Tags("MechlinkImplant")),
+                LoreFacts(cats: Tags("Civil"), hediffs: Tags("PsychicAmplifier")),
+                LoreFacts(cats: Tags("Civil"), xeno: "Hussar"),
+                LoreFacts(cats: Tags("Civil"), xeno: "Sanguophage"),
+                LoreFacts(cats: Tags("Civil"), xeno: "Neanderthal"),
+                LoreFacts(cats: Tags("Civil"), xeno: "Waster")
+            };
+
+            LoreSeedPolicy policy = new LoreSeedPolicy();
+            for (int i = 0; i < fixtures.Count; i++)
+            {
+                List<LoreSeedPick> picks = LoreSeedPlanner.PlanInitial(candidates, fixtures[i], policy, 100 + i);
+                AssertEqual("fixture " + i + " fills the full default roster", 4, picks.Count);
+                bool specific = false;
+                for (int j = 0; j < picks.Count; j++)
+                {
+                    specific = specific || picks[j].specific;
+                }
+
+                AssertTrue("fixture " + i + " satisfies the reserved specific slot", specific);
+            }
+
+            // Every catalog seed is reachable by at least one supported fixture (§14.2).
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                bool reachable = false;
+                for (int j = 0; j < fixtures.Count && !reachable; j++)
+                {
+                    reachable = LoreSeedPlanner.IsEligible(candidates[i], fixtures[j]);
+                }
+
+                AssertTrue("seed reachable by a supported fixture: " + candidates[i].seedDefName,
+                    reachable);
+            }
+        }
+
+        private static void TestLoreCatalogRussianParity()
+        {
+            List<CatalogRow> catalog = LoadCatalog();
+            string path = FindRepositoryFile(Path.Combine(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryLoreSeedDef", "DiaryLoreSeedDefs.xml"));
+            XDocument document = XDocument.Load(path);
+            XElement root = document.Root;
+            AssertTrue("RU lore DefInjected root", root != null && root.Name.LocalName == "LanguageData");
+
+            for (int i = 0; i < catalog.Count; i++)
+            {
+                string id = catalog[i].defName;
+                string text = root.Element(id + ".text")?.Value;
+                string label = root.Element(id + ".label")?.Value;
+                AssertTrue("RU text authored for " + id, !string.IsNullOrWhiteSpace(text));
+                AssertTrue("RU text length for " + id,
+                    text != null && text.Trim().Length <= 200);
+                AssertTrue("RU label authored for " + id, !string.IsNullOrWhiteSpace(label));
+                AssertTrue("RU text is not a raw copy of the English for " + id,
+                    !string.Equals(text, catalog[i].text, StringComparison.Ordinal));
+            }
+
+            int injectedCount = 0;
+            foreach (XElement element in root.Elements())
+            {
+                if (element.Name.LocalName.EndsWith(".text", StringComparison.Ordinal))
+                {
+                    injectedCount++;
+                    string defName = element.Name.LocalName.Substring(
+                        0, element.Name.LocalName.Length - ".text".Length);
+                    bool known = false;
+                    for (int i = 0; i < catalog.Count && !known; i++)
+                    {
+                        known = catalog[i].defName == defName;
+                    }
+
+                    AssertTrue("RU injection matches a shipped seed: " + defName, known);
+                }
+            }
+
+            AssertEqual("RU covers every seed exactly once", catalog.Count, injectedCount);
+        }
+
+        /// <summary>
+        /// End-to-end recall smoke (§14.3): three representative seeds deposited as fragments
+        /// (frozen tags + normalized keywords + implied lore tag) surface for their topical
+        /// family's query and render their authored prose. Deliberately only three — per-row
+        /// snapshots would be fragile; the contract/reachability tests cover the rest.
+        /// </summary>
+        private static void TestLoreCatalogRecallSmoke()
+        {
+            RunCatalogSmoke("LoreSeed_Mechanoid_Tribal",
+                Tags("combat", "danger"), Tags("mechanoid"), "mechanoid raid");
+            RunCatalogSmoke("LoreSeed_Psychic_Weather",
+                Tags("psychic"), Tags("psychicdrone"), "psychic drone");
+            RunCatalogSmoke("LoreSeed_Empire_Outsider",
+                Tags("royalty"), Tags("empire"), "imperial event");
+        }
+
+        private static void RunCatalogSmoke(string seedDefName, string[] queryTags,
+            string[] queryKeywords, string family)
+        {
+            CatalogRow row = null;
+            List<CatalogRow> catalog = LoadCatalog();
+            for (int i = 0; i < catalog.Count; i++)
+            {
+                if (catalog[i].defName == seedDefName)
+                {
+                    row = catalog[i];
+                }
+            }
+
+            AssertTrue("smoke seed exists: " + seedDefName, row != null);
+
+            MemoryFragmentSnapshot seed = new MemoryFragmentSnapshot
+            {
+                memoryId = "smoke-" + seedDefName,
+                pawnId = "pawn1",
+                sourceEventId = LoreSeedProvenance.InitialSourceEventId(seedDefName),
+                tags = new List<string>(row.candidate.tags) { MemoryTagTokens.Lore },
+                keywords = row.candidate.keywords,
+                importance = 0.35f,
+                createdTick = 0,
+                lastRecalledTick = 0,
+                text = row.text,
+                loreSeedDefName = seedDefName,
+                narrativeAgeOffsetTicks = 7200000
+            };
+
+            List<MemoryFragmentSnapshot> store = new List<MemoryFragmentSnapshot>
+            {
+                seed,
+                Frag("f1", 0, Tags("work"), Tags("fields"), 0.4f, "Working the fields."),
+                Frag("f2", 0, Tags("romance"), Tags("kisses"), 0.4f, "A shy first kiss."),
+                Frag("f3", 0, Tags("arrival"), Tags("greeting"), 0.4f, "A stranger joined us.")
+            };
+
+            MemoryRecallResult result = MemoryRecallSelector.Recall(
+                Query(queryTags, queryKeywords, 100000), store, RecallPolicy());
+            AssertEqual(family + " smoke surfaces the lore seed", 1, result.picks.Count);
+            AssertEqual(family + " smoke picks the seed row", seed.memoryId, result.picks[0].memoryId);
+            AssertTrue(family + " smoke renders the authored prose",
+                result.memoryContext.Contains(row.text));
+        }
+
+        private static List<CatalogRow> LoadCatalog()
+        {
+            if (catalogCache != null)
+            {
+                return catalogCache;
+            }
+
+            string path = FindRepositoryFile(Path.Combine("1.6", "Defs", "DiaryLoreSeedDefs.xml"));
+            XDocument document = XDocument.Load(path);
+            List<CatalogRow> catalog = new List<CatalogRow>();
+            foreach (XElement def in document.Root.Elements("PawnDiary.DiaryLoreSeedDef"))
+            {
+                LoreSeedCandidate candidate = new LoreSeedCandidate
+                {
+                    seedDefName = def.Element("defName")?.Value ?? string.Empty,
+                    fallbackText = def.Element("text")?.Value ?? string.Empty,
+                    usage = def.Element("usage")?.Value ?? string.Empty,
+                    retentionTier = def.Element("retentionTier")?.Value ?? string.Empty,
+                    weight = float.Parse(def.Element("weight")?.Value ?? "0",
+                        CultureInfo.InvariantCulture),
+                    mutexGroup = def.Element("mutexGroup")?.Value ?? string.Empty,
+                    tags = XmlListValues(def, "tags"),
+                    backstoryCategories = XmlListValues(def, "backstoryCategories"),
+                    excludeBackstoryCategories = XmlListValues(def, "excludeBackstoryCategories"),
+                    backstoryDefNames = XmlListValues(def, "backstoryDefNames"),
+                    excludeBackstoryDefNames = XmlListValues(def, "excludeBackstoryDefNames"),
+                    xenotypeDefNames = XmlListValues(def, "xenotypeDefNames"),
+                    hediffDefNames = XmlListValues(def, "hediffDefNames"),
+                    progressionEventDefNames = XmlListValues(def, "progressionEventDefNames")
+                };
+                List<string> rawKeywords = XmlListValues(def, "keywords");
+                candidate.keywords = MemoryExtraction.NormalizeAuthoredKeywords(rawKeywords, 8);
+                catalog.Add(new CatalogRow
+                {
+                    defName = candidate.seedDefName,
+                    label = def.Element("label")?.Value ?? string.Empty,
+                    text = candidate.fallbackText.Trim(),
+                    rawKeywords = rawKeywords,
+                    candidate = candidate
+                });
+            }
+
+            catalogCache = catalog;
+            return catalog;
+        }
+
+        private static List<string> XmlListValues(XElement parent, string listName)
+        {
+            List<string> values = new List<string>();
+            XElement list = parent.Element(listName);
+            if (list == null)
+            {
+                return values;
+            }
+
+            foreach (XElement li in list.Elements("li"))
+            {
+                if (!string.IsNullOrWhiteSpace(li.Value))
+                {
+                    values.Add(li.Value.Trim());
+                }
+            }
+
+            return values;
+        }
+
+        private static int IndexOfOrdinal(string[] values, string target)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (string.Equals(values[i], target, StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         private static LoreSeedCandidate LoreSeed(string name, string usage = "initial",

@@ -8,6 +8,15 @@ pre-release version ladder for project history.
 
 ## 2026-07-23
 
+- **Lore memory L3 — the full EN/RU seed catalog.** Shipped all four §11 passes as one gate:
+  the stable-keyword audit added five Def-name-valued context keys (`raid`, `faction`, `hediff`,
+  `mood_event`, `observed_condition`) ahead of the localized keys in `contextKeywordKeys`; a
+  34-seed `DiaryLoreSeedDefs.xml` catalog across 18 mutex groups built on verified base-game
+  backstory categories/defNames, xenotypes, hediffs, and incident/condition tokens (6 core
+  identity seeds with exact evidence); an independently authored native-Russian DefInjected pass;
+  and QA fixtures enforcing the frozen vocabulary, per-seed reachability, the reserved specific
+  slot on 15 supported pawn fixtures, EN/RU parity, and three end-to-end recall smokes. The lore
+  seed layer is now live rather than a no-op; with L1/L2/L4 this completes the releasable feature.
 - **Lore memory L4 — context-detail lore primer.** New independent default-true `enableLorePrimer`
   setting (EN/RU) appends a localized world-model paragraph — no FTL, no aliens, mixed tech,
   political isolation, each tier opening with the explicit-facts override — as the LAST

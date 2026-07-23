@@ -293,6 +293,15 @@ namespace PawnDiary
             AddContextMarkerTags(policy, "royal_title=", MemoryTagTokens.Royalty);
 
             // gameContext keys whose VALUES become association keywords (design §7.3 step 2).
+            // The stable-identifier keys come FIRST (LORE_MEMORY_SEED_PLAN §10): their values are
+            // Def names / closed condition keys (raid incident, faction, hediff, mood-affecting
+            // game condition, observed-condition key), never localized labels, and list order is
+            // extraction priority — they must never be crowded out of the keyword cap by prose.
+            policy.contextKeywordKeys.Add("raid");
+            policy.contextKeywordKeys.Add("faction");
+            policy.contextKeywordKeys.Add("hediff");
+            policy.contextKeywordKeys.Add("mood_event");
+            policy.contextKeywordKeys.Add("observed_condition");
             policy.contextKeywordKeys.Add("weapon");
             policy.contextKeywordKeys.Add("royal_title");
             policy.contextKeywordKeys.Add("ideological_role");

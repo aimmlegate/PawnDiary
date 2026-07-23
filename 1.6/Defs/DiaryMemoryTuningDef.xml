@@ -83,6 +83,13 @@
 
     <!-- gameContext keys whose VALUES become association keywords (design §7.3 step 2). -->
     <contextKeywordKeys>
+      <!-- Stable identifier keys FIRST (LORE_MEMORY_SEED_PLAN §10): their values are Def names /
+           closed condition keys, never localized labels, and list order is extraction priority. -->
+      <li>raid</li>
+      <li>faction</li>
+      <li>hediff</li>
+      <li>mood_event</li>
+      <li>observed_condition</li>
       <li>weapon</li>
       <li>royal_title</li>
       <li>ideological_role</li>

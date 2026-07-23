@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <!-- Тексты заготовленных «воспоминаний о прошлом мире» (LORE_MEMORY_SEED_PLAN §11, проход 3).
+       Авторский русский текст, не калька с английского; воспоминание от первого лица о прошлом,
+       не более 200 символов. Совпадающие поля (теги, ключевые слова, условия отбора) остаются
+       в Def и НЕ переводятся. -->
+
+  <LoreSeed_Distance_Offworld.label>звезда, на которую не показать</LoreSeed_Distance_Offworld.label>
+  <LoreSeed_Distance_Offworld.text>Дом — звезда, которую я больше не найду на небе. Все, кого я оставил, — в десятилетиях тишины, и ни одно моё слово не обгонит темноту.</LoreSeed_Distance_Offworld.text>
+
+  <LoreSeed_Distance_Letters.label>письмо, которое не успеет</LoreSeed_Distance_Letters.label>
+  <LoreSeed_Distance_Letters.text>В год отлёта я отправил домой письмо. Если оно дойдёт, его прочтёт старуха с именем моей матери — и без единого воспоминания обо мне.</LoreSeed_Distance_Letters.text>
+
+  <LoreSeed_Cryptosleep_ColdSleep.label>один долгий холодный миг</LoreSeed_Cryptosleep_ColdSleep.label>
+  <LoreSeed_Cryptosleep_ColdSleep.text>Однажды я пересёк пустоту в криосне. Один долгий холодный миг — и все мои долги, друзья и враги устарели на целый век.</LoreSeed_Cryptosleep_ColdSleep.text>
+
+  <LoreSeed_Cryptosleep_Awakening.label>пересчитать годы</LoreSeed_Cryptosleep_Awakening.label>
+  <LoreSeed_Cryptosleep_Awakening.text>О пробуждении из криосна предупреждают: пересчитай пальцы, потом пересчитай годы. Пальцы всегда оказываются на месте.</LoreSeed_Cryptosleep_Awakening.text>
+
+  <LoreSeed_Glitterworld_Myth.label>сказка для детей</LoreSeed_Glitterworld_Myth.label>
+  <LoreSeed_Glitterworld_Myth.text>Говорят, на глиттермирах умирают только те, кто устал жить, а медицина лечит всё. Я долго считал это сказкой для детей.</LoreSeed_Glitterworld_Myth.text>
+
+  <LoreSeed_Glitterworld_Origin.label>где болезнь была опиской</LoreSeed_Glitterworld_Origin.label>
+  <LoreSeed_Glitterworld_Origin.text>Я вырос там, где болезнь считалась канцелярской ошибкой, а улицы мыли себя сами. Каждый шрам с тех пор кажется мне опечаткой в документах.</LoreSeed_Glitterworld_Origin.text>
+
+  <LoreSeed_Homeworld_Medieval.label>мир плуга и молитвы</LoreSeed_Homeworld_Medieval.label>
+  <LoreSeed_Homeworld_Medieval.text>Мой мир пахал, молился и хоронил по временам года. Говорящую машину у нас сожгли бы как демона — и я сам нёс бы факел.</LoreSeed_Homeworld_Medieval.text>
+
+  <LoreSeed_Homeworld_Midworld.label>города как этот</LoreSeed_Homeworld_Midworld.label>
+  <LoreSeed_Homeworld_Midworld.text>Я вырос в городках, похожих на этот: пыльные дороги, радио, слухи о звёздах. Окраина не показалась мне чужой — только дальней.</LoreSeed_Homeworld_Midworld.text>
+
+  <LoreSeed_Archotech_Tribal.label>железные боги под землёй</LoreSeed_Archotech_Tribal.label>
+  <LoreSeed_Archotech_Tribal.text>Старейшины говорили: под миром думают железные боги, и мысль у них шириной в человеческую жизнь. Мы носили дары к руинам и никогда там не копали.</LoreSeed_Archotech_Tribal.text>
+
+  <LoreSeed_Archotech_Educated.label>жить внутри их погоды</LoreSeed_Archotech_Educated.label>
+  <LoreSeed_Archotech_Educated.text>Я читал, что архотехи думают мысли шириной в тысячу лет, а мы живём внутри их погоды, так и не увидев самой бури.</LoreSeed_Archotech_Educated.text>
+
+  <LoreSeed_Psychic_Weather.label>погода из мыслей</LoreSeed_Psychic_Weather.label>
+  <LoreSeed_Psychic_Weather.text>Там, откуда я родом, у разума была своя погода. Иногда гул ниоткуда заставлял весь лагерь плакать или петь, и его пережидали, как дождь.</LoreSeed_Psychic_Weather.text>
+
+  <LoreSeed_Psychic_Sensitive.label>когда открылась связь</LoreSeed_Psychic_Sensitive.label>
+  <LoreSeed_Psychic_Sensitive.text>Когда в моей голове впервые открылась связь, у тишины появилась фактура. Первую псионическую бурю я помню, как моряки помнят первое крушение.</LoreSeed_Psychic_Sensitive.text>
+
+  <LoreSeed_Mechanoid_Tribal.label>старые машины под горами</LoreSeed_Mechanoid_Tribal.label>
+  <LoreSeed_Mechanoid_Tribal.text>Старейшины говорили: старые машины спят под горами, и однажды, разбуженные, они уже стоили предкам целого мира.</LoreSeed_Mechanoid_Tribal.text>
+
+  <LoreSeed_Mechanoid_Educated.label>война, которая затихла</LoreSeed_Mechanoid_Educated.label>
+  <LoreSeed_Mechanoid_Educated.text>Война с машинами нигде не закончилась. Она лишь затихает на поколение — а потом чей-нибудь сканер находит что-то тёплое.</LoreSeed_Mechanoid_Educated.text>
+
+  <LoreSeed_Mechanoid_Mechanitor.label>сталь, обученная слушать</LoreSeed_Mechanoid_Mechanitor.label>
+  <LoreSeed_Mechanoid_Mechanitor.text>Когда мех впервые отозвался на мою мысль, я понял старую войну иначе: кто-то давным-давно научил сталь слушать.</LoreSeed_Mechanoid_Mechanitor.text>
+
+  <LoreSeed_Insectoid_Book.label>о чём молчат книги</LoreSeed_Insectoid_Book.label>
+  <LoreSeed_Insectoid_Book.text>В книгах писали: инсектоидов вывели как живое оружие для туннелей, где не пройдёт ни один мех. О звуке, который они издают, книги молчат.</LoreSeed_Insectoid_Book.text>
+
+  <LoreSeed_Insectoid_Deep.label>правило шахтёров</LoreSeed_Insectoid_Deep.label>
+  <LoreSeed_Insectoid_Deep.text>У всех шахтёров, с кем я пил, было одно правило: если бур проваливается в тёплую пустоту — беги раньше, чем посмотришь.</LoreSeed_Insectoid_Deep.text>
+
+  <LoreSeed_Xeno_Hussar.label>созданный для войны</LoreSeed_Xeno_Hussar.label>
+  <LoreSeed_Xeno_Hussar.text>Мою линию создали для войны: твёрдые руки, тихая кровь, приказы, которые зудят, пока не исполнишь. Кем бы я ни стал, это было первым.</LoreSeed_Xeno_Hussar.text>
+
+  <LoreSeed_Xeno_Sanguophage.label>века как зимы</LoreSeed_Xeno_Sanguophage.label>
+  <LoreSeed_Xeno_Sanguophage.text>Я помню века, как другие помнят зимы, и жажда всегда была частью сделки. Долгая жизнь ведёт свои счета чужими жизнями.</LoreSeed_Xeno_Sanguophage.text>
+
+  <LoreSeed_Xeno_Neanderthal.label>кровь старше городов</LoreSeed_Xeno_Neanderthal.label>
+  <LoreSeed_Xeno_Neanderthal.text>Моя кровь старше городов. Быстрые люди говорят мимо меня, но холод, голод и горе из них вывели, а из меня — нет.</LoreSeed_Xeno_Neanderthal.text>
+
+  <LoreSeed_Xeno_Waster.label>рождённый в отравленном воздухе</LoreSeed_Xeno_Waster.label>
+  <LoreSeed_Xeno_Waster.text>Я родился в отравленном воздухе, в семье, где зелёные миры считали сказкой. Чистый дождь до сих пор кажется чужой удачей.</LoreSeed_Xeno_Waster.text>
+
+  <LoreSeed_Empire_Insider.label>церемония — это тяготение</LoreSeed_Empire_Insider.label>
+  <LoreSeed_Empire_Insider.text>Я вырос под титулами Империи, где поклон, отмеренный в градусах, мог возвысить или похоронить. Церемония — своего рода тяготение.</LoreSeed_Empire_Insider.text>
+
+  <LoreSeed_Empire_Outsider.label>слишком вежливый флот</LoreSeed_Empire_Outsider.label>
+  <LoreSeed_Empire_Outsider.text>Когда Империя пришла в наше небо, она принесла копья, ливреи и манеры. Старики говорили: настолько вежливый флот даром не приходит.</LoreSeed_Empire_Outsider.text>
+
+  <LoreSeed_Void_Rumor.label>куда уходят сигналы</LoreSeed_Void_Rumor.label>
+  <LoreSeed_Void_Rumor.text>Один грузовой лётчик рассказывал, что между звёздами есть места, где умирают сигналы. Что там слушает — он не сказал, а я не спросил.</LoreSeed_Void_Rumor.text>
+
+  <LoreSeed_Legend_Luciferium.label>сделка с дьяволом</LoreSeed_Legend_Luciferium.label>
+  <LoreSeed_Legend_Luciferium.text>Я видел, как человек принял люциферий, чтобы спасти ноги. Ноги он спас. Больше он не болел никогда — и никогда больше не принадлежал себе.</LoreSeed_Legend_Luciferium.text>
+
+  <LoreSeed_Legend_Thrumbo.label>гора, которая ходит</LoreSeed_Legend_Thrumbo.label>
+  <LoreSeed_Legend_Thrumbo.text>Однажды на рассвете я видел трумбо — ростом с амбар и спокойного, как снегопад. Самые громкие охотники в тот день притихли.</LoreSeed_Legend_Thrumbo.text>
+
+  <LoreSeed_Legend_PersonaWeapon.label>клинки, которые шепчут</LoreSeed_Legend_PersonaWeapon.label>
+  <LoreSeed_Legend_PersonaWeapon.text>Рассказывают о клинках, что шепчут своим владельцам и оплакивают их после. Я поверил в тот день, когда дуэлянт поблагодарил свой меч.</LoreSeed_Legend_PersonaWeapon.text>
+
+  <LoreSeed_Vatgrown.label>память из вторых рук</LoreSeed_Vatgrown.label>
+  <LoreSeed_Vatgrown.text>Я не родился — меня, скорее, разлили. Первые воспоминания достались мне подержанными, и слову «детство» я так и не научился верить.</LoreSeed_Vatgrown.text>
+
+  <LoreSeed_Pirate_Fleets.label>закон добычи</LoreSeed_Pirate_Fleets.label>
+  <LoreSeed_Pirate_Fleets.text>Я ходил с флотами окраины, где закон добычи писали ожогами на обшивке. Каждый корабль, что я любил, был краден минимум дважды.</LoreSeed_Pirate_Fleets.text>
+
+  <LoreSeed_Tribal_FirstFire.label>звёзды падают горящими</LoreSeed_Tribal_FirstFire.label>
+  <LoreSeed_Tribal_FirstFire.text>У первого зимнего костра старейшины рассказывали, как звёзды падают горящими и из них выходят чужаки. Половина наших орудий начиналась чьей-то упавшей звездой.</LoreSeed_Tribal_FirstFire.text>
+
+  <LoreSeed_Rim_Disease.label>кашель считают, как патроны</LoreSeed_Rim_Disease.label>
+  <LoreSeed_Rim_Disease.text>Здесь кашель считают, как патроны. Каждый, с кем я шёл, мог назвать того, кого у него забрала чума.</LoreSeed_Rim_Disease.text>
+
+  <LoreSeed_Rim_ToxicSky.label>ветер со вкусом металла</LoreSeed_Rim_ToxicSky.label>
+  <LoreSeed_Rim_ToxicSky.text>Я видел, как небо становится цвета старых синяков, а трава умирает за неделю. Учишься рано: если ветер отдаёт металлом — уходи под крышу.</LoreSeed_Rim_ToxicSky.text>
+
+  <LoreSeed_Rim_ColdDark.label>свечи не просто так</LoreSeed_Rim_ColdDark.label>
+  <LoreSeed_Rim_ColdDark.text>Хуже всего были ночи, когда отказывало само небо: солнце гасло или машины замирали разом. Старики держали свечи не просто так.</LoreSeed_Rim_ColdDark.text>
+
+  <LoreSeed_Trader_Roads.label>спать под скрип колёс</LoreSeed_Trader_Roads.label>
+  <LoreSeed_Trader_Roads.text>Я научился засыпать под скрип колёс и просыпаться от чужих колоколов. Всё, что есть на окраине, кто-то усталый однажды принёс.</LoreSeed_Trader_Roads.text>
+</LanguageData>

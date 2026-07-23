@@ -2,6 +2,12 @@
 
 ## Update Summary
 **Changes Made**
+- Lore L3 (design/LORE_MEMORY_SEED_PLAN.md §11): shipped the 34-seed EN/RU catalog
+  (`1.6/Defs/DiaryLoreSeedDefs.xml`, 18 mutex groups, 6 exact-evidence core seeds) plus the
+  pass-1 vocabulary audit — `contextKeywordKeys` now leads with five stable Def-name-valued keys
+  (`raid`, `faction`, `hediff`, `mood_event`, `observed_condition`) so language-neutral
+  identifiers can never be crowded out of the keyword cap; catalog QA lives in PawnMemoryTests
+  (frozen vocabulary, reachability, reserved-slot fixtures, RU parity, recall smokes)
 - Lore L4 (design/LORE_MEMORY_SEED_PLAN.md §12): independent `enableLorePrimer` setting appends a
   Keyed-localized world-model paragraph as the final system-prompt paragraph of the 11
   first-person templates (`PromptAssembler.ComposeSystem` fourth argument,
