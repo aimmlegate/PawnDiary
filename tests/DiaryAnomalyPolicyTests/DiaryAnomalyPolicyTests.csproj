@@ -22,6 +22,9 @@
     <Compile Include="..\..\Source\Capture\Policies\AnomalySurgeryTaleOwnershipPolicy.cs" Link="AnomalySurgeryTaleOwnershipPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\GhoulTransformationPolicy.cs" Link="GhoulTransformationPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\GhoulTransformationContextFormatter.cs" Link="GhoulTransformationContextFormatter.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\AnomalyVoidOutcomePolicy.cs" Link="AnomalyVoidOutcomePolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\AnomalyVoidTaleOwnershipPolicy.cs" Link="AnomalyVoidTaleOwnershipPolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Policies\VoidOutcomeContextFormatter.cs" Link="VoidOutcomeContextFormatter.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyTaleOwnershipPolicy.cs" Link="AnomalyTaleOwnershipPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyPersistencePolicy.cs" Link="AnomalyPersistencePolicy.cs" />
     <Compile Include="..\..\Source\Generation\AnomalyStudySuppressionCache.cs" Link="AnomalyStudySuppressionCache.cs" />
