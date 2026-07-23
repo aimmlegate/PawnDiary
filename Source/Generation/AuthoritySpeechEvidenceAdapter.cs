@@ -20,10 +20,12 @@ namespace PawnDiary
             bool ideologyActive,
             bool royaltyActive,
             out AuthoritySpeechPolicySnapshot policy,
-            out AuthoritySpeechRouteSnapshot route)
+            out AuthoritySpeechRouteSnapshot route,
+            out bool failed)
         {
             policy = null;
             route = null;
+            failed = false;
             try
             {
                 if (failForTests) throw new InvalidOperationException("authority speech adapter test fault");
@@ -39,6 +41,7 @@ namespace PawnDiary
             }
             catch (Exception exception)
             {
+                failed = true;
                 Warn(exception);
                 return false;
             }

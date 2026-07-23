@@ -283,6 +283,59 @@ namespace PawnDiary.RimTests
                 "An identity still in restart cooldown must be filtered before it can re-record.");
         }
 
+        /// <summary>Old saves silently baseline active pollution into the existing condition store.</summary>
+        [Test]
+        public static void PollutionOldSaveBaselineMarksObservedRowsStarted()
+        {
+            List<ObservedConditionStateSnapshot> rows = ObservedConditionBaselinePolicy.BuildStartedRows(
+                60000,
+                new List<ObservedConditionObservation>
+                {
+                    new ObservedConditionObservation
+                    {
+                        conditionDefName = "BiotechPollutionCritical",
+                        conditionKey = "biotech_pollution_critical",
+                        scope = ObservedConditionScope.Map,
+                        mapUniqueId = 3,
+                        evidenceCount = 3
+                    }
+                });
+
+            PawnDiaryRimTestScope.Require(
+                rows.Count == 1 && rows[0].startRecorded && !rows[0].endRecorded
+                    && rows[0].firstObservedTick == 60000,
+                "Loaded pollution must become an already-started observed-condition row with no catch-up page.");
+        }
+
+        /// <summary>Pollution fanout is bounded while the old zero cap keeps legacy behavior.</summary>
+        [Test]
+        public static void PollutionWitnessSelectionIsBoundedAndLegacyDefaultsStayNeutral()
+        {
+            List<ObservedConditionWitnessCandidate> candidates = new List<ObservedConditionWitnessCandidate>
+            {
+                new ObservedConditionWitnessCandidate { pawnId = "Pawn_A" },
+                new ObservedConditionWitnessCandidate { pawnId = "Pawn_B", hasVisibleRelevantHealth = true },
+                new ObservedConditionWitnessCandidate { pawnId = "Pawn_C" }
+            };
+            List<string> bounded = ObservedConditionWitnessPolicy.SelectPawnIds(
+                "biotech_pollution_severe", 7, 70000, candidates, 2);
+            List<string> legacy = ObservedConditionWitnessPolicy.SelectPawnIds(
+                "ordinary_condition", 7, 70000, candidates, 0);
+            DiaryObservedConditionDef defaults = new DiaryObservedConditionDef();
+
+            PawnDiaryRimTestScope.Require(
+                bounded.Count == 2 && bounded.Contains("Pawn_B"),
+                "The two-pawn cap must hold and prefer a visibly pollution-relevant pawn.");
+            PawnDiaryRimTestScope.Require(
+                legacy.Count == 3 && legacy[0] == "Pawn_A" && legacy[2] == "Pawn_C",
+                "A zero cap must preserve the old all-recipient order.");
+            PawnDiaryRimTestScope.Require(
+                defaults.maxPagePawns == 0 && defaults.severityRank == 0
+                    && defaults.minPollutionFraction == 0f && defaults.maxPollutionFraction < 0f
+                    && string.IsNullOrEmpty(defaults.exclusiveFamilyKey),
+                "New observed-condition fields must retain neutral defaults for unchanged Defs.");
+        }
+
         // ----- production-unit drivers ------------------------------------------------------------
 
         // Runs the exact per-scan processing the private ScanObservedConditions does after gathering

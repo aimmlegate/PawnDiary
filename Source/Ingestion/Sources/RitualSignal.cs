@@ -50,6 +50,9 @@ namespace PawnDiary.Ingestion
         private readonly BeliefMutationSnapshot conversionTargetMutation;
         private readonly AuthoritySpeechPolicySnapshot authoritySpeechPolicy;
         private readonly AuthoritySpeechRouteSnapshot authoritySpeechRoute;
+        // A fault cannot prove that this ritual is not an exact authority route. Preserve that
+        // uncertainty so the already-authorized ordinary page cannot acquire unrelated fallback belief.
+        private readonly bool authoritySpeechMatchFailed;
         private RoyalMutationBatchSnapshot royaltyMutationBatch;
         private string royaltyMutationContext = string.Empty;
         // Ordinary rituals keep their unlimited existing fanout. Only the exact Odyssey launch
@@ -144,15 +147,17 @@ namespace PawnDiary.Ingestion
             Pawn selectedTargetPawn = RitualTargetPawn(ritualJob);
             AuthoritySpeechPolicySnapshot speechPolicy;
             AuthoritySpeechRouteSnapshot speechRoute;
+            bool speechMatchFailed;
             if (AuthoritySpeechEvidenceAdapter.TryMatch(
                 DefName, behaviorType?.FullName, outcomeWorkerType?.FullName, group.defName,
                 RitualRoleId(ritualJob, Assignments, selectedOrganizer),
                 ModsConfig.IdeologyActive, ModsConfig.RoyaltyActive,
-                out speechPolicy, out speechRoute))
+                out speechPolicy, out speechRoute, out speechMatchFailed))
             {
                 authoritySpeechPolicy = speechPolicy;
                 authoritySpeechRoute = speechRoute;
             }
+            authoritySpeechMatchFailed = speechMatchFailed;
             ConversionRitualPolicySnapshot candidatePolicy = DiaryConversionRitualPolicy.Snapshot();
             exactConversion = ConversionRitualPolicy.Matches(
                 DefName, behaviorType?.FullName, outcomeWorkerType?.FullName, group.defName,
@@ -342,14 +347,16 @@ namespace PawnDiary.Ingestion
                 RitualClassifierKey(DefName, BehaviorClass));
             AuthoritySpeechPolicySnapshot speechPolicy;
             AuthoritySpeechRouteSnapshot speechRoute;
+            bool speechMatchFailed;
             if (AuthoritySpeechEvidenceAdapter.TryMatch(
                 DefName, behaviorWorkerTypeName, outcomeWorkerTypeName, group?.defName,
                 assignedSpeakerRoleId, ModsConfig.IdeologyActive, ModsConfig.RoyaltyActive,
-                out speechPolicy, out speechRoute))
+                out speechPolicy, out speechRoute, out speechMatchFailed))
             {
                 authoritySpeechPolicy = speechPolicy;
                 authoritySpeechRoute = speechRoute;
             }
+            authoritySpeechMatchFailed = speechMatchFailed;
             ConversionRitualPolicySnapshot candidatePolicy = DiaryConversionRitualPolicy.Snapshot();
             exactConversion = ConversionRitualPolicy.Matches(
                 DefName, behaviorWorkerTypeName, outcomeWorkerTypeName, group?.defName,
@@ -479,7 +486,8 @@ namespace PawnDiary.Ingestion
         /// Exact conversion/speech routes own every POV, including an explicit XML `none` mode and
         /// adapter-failure silence. A broad configured ritual fallback must not bypass that ownership.
         /// </summary>
-        internal bool OwnsExactBeliefEvidencePolicy => exactConversion || authoritySpeechRoute != null;
+        internal bool OwnsExactBeliefEvidencePolicy =>
+            exactConversion || authoritySpeechRoute != null || authoritySpeechMatchFailed;
 
         /// <summary>Adds exact role/result markers without copying target mechanics to another page.</summary>
         internal string ConversionContextFor(

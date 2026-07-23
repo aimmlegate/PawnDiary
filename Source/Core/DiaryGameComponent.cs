@@ -263,6 +263,7 @@ namespace PawnDiary
             archive.Clear();
             ResetBiotechGrowthForNewGame();
             ResetBiotechFamilyForNewGame();
+            pollutionObservationVersion = CurrentPollutionObservationVersion;
             ResetOdysseyForNewGame();
             ResetAnomalyForNewGame();
             ResetMemoryForNewGame();
@@ -314,6 +315,9 @@ namespace PawnDiary
             ResetBiotechFamilyTransientState();
             nextBiotechBirthNamingPollTick = 0;
             BootstrapBiotechFamilyArcsForLoadedSave();
+            // Pollution uses the ordinary activeObservedConditions rows. Old saves migrate current tile
+            // state once; later reloads leave saved debounce/decay progress untouched.
+            BaselineMapPollutionConditionsOnLoad();
             InvalidateBiotechGeneObservationsWithoutDlc();
             NormalizeBeliefStatesForLoadedSave();
             // Do this synchronously at load, not only on the periodic scanner: a paused game may be
@@ -394,6 +398,8 @@ namespace PawnDiary
             Scribe_Collections.Look(ref observedConditionCooldownUntilTick,
                 "observedConditionCooldownUntilTick", LookMode.Value, LookMode.Value,
                 ref observedConditionCooldownKeys, ref observedConditionCooldownValues);
+            Scribe_Values.Look(ref pollutionObservationVersion,
+                "pollutionObservationVersion", 0);
             ExposeBiotechGrowthData();
             ExposeBiotechFamilyData();
             ExposeOdysseyData();

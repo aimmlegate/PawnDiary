@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-07-23
 
+- **Master Wave 11 / Biotech Phase 7.** Added DLC-safe pollution thresholds, strongest-band bounded transitions, reload-safe reclamation/decay, qualitative ambient-pressure context, and EN/RU parity.
 - **Lore memory L5 — progression lore seeds.** Identity-changing events (psylink, xenotype, gene
   identity, mechlink, royal titles — the six audited registered event Def tokens, XML-owned in
   `progressionLoreSeedEventDefNames`) now attach at most one owner-only authored memory

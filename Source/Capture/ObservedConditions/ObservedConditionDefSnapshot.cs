@@ -19,6 +19,13 @@ namespace PawnDiary
         // (0 means "act on the first scan"). 60000 ticks is one RimWorld day.
         public int startDebounceTicks;
         public int endDebounceTicks;
+        // Optional pollution/family/page policy. Defaults are deliberately neutral so every existing
+        // observed-condition Def behaves exactly as it did before MapPollution existed.
+        public float minPollutionFraction;
+        public float maxPollutionFraction = -1f;
+        public string exclusiveFamilyKey;
+        public int severityRank;
+        public int maxPagePawns;
 
         /// <summary>
         /// Builds a snapshot with both debounce values clamped to a safe non-negative range. The policy
@@ -26,14 +33,30 @@ namespace PawnDiary
         /// condition start/end "in the past".
         /// </summary>
         public static ObservedConditionDefSnapshot Create(string conditionKey, int startDebounceTicks,
-            int endDebounceTicks)
+            int endDebounceTicks, float minPollutionFraction = 0f, float maxPollutionFraction = -1f,
+            string exclusiveFamilyKey = null, int severityRank = 0, int maxPagePawns = 0)
         {
             return new ObservedConditionDefSnapshot
             {
                 conditionKey = conditionKey,
                 startDebounceTicks = startDebounceTicks < 0 ? 0 : startDebounceTicks,
-                endDebounceTicks = endDebounceTicks < 0 ? 0 : endDebounceTicks
+                endDebounceTicks = endDebounceTicks < 0 ? 0 : endDebounceTicks,
+                minPollutionFraction = Clamp01(minPollutionFraction),
+                maxPollutionFraction = maxPollutionFraction < 0f ? -1f : Clamp01(maxPollutionFraction),
+                exclusiveFamilyKey = (exclusiveFamilyKey ?? string.Empty).Trim(),
+                severityRank = severityRank < 0 ? 0 : severityRank,
+                maxPagePawns = maxPagePawns < 0 ? 0 : maxPagePawns
             };
+        }
+
+        private static float Clamp01(float value)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value))
+            {
+                return 0f;
+            }
+
+            return value < 0f ? 0f : value > 1f ? 1f : value;
         }
     }
 }

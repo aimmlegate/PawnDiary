@@ -29,6 +29,8 @@ namespace DiaryPipelineTests
             TestQuestPromptPlanFields();
             TestProgressionPromptPlanFields();
             TestBiotechPromptPlanFields();
+            TestPollutionContextFormatting();
+            TestPollutionLocalizationAndTemplateRoutingXmlContract();
             TestBiotechPromptTemplateXmlContract();
             TestOdysseyPromptPlanFields();
             TestRoyaltyPersonaPromptPlanFields();
@@ -1419,6 +1421,176 @@ namespace DiaryPipelineTests
                 }
             }
 
+        }
+
+        private static void TestPollutionContextFormatting()
+        {
+            string storedContext = PollutionContextFormatter.Format(
+                PollutionContextTokens.Critical,
+                PollutionContextTokens.Escalated,
+                "Ash Flats",
+                NarrativeDetailLevelTokens.Full);
+            PromptContextDetailLevel[] levels =
+            {
+                PromptContextDetailLevel.Full,
+                PromptContextDetailLevel.Balanced,
+                PromptContextDetailLevel.Compact
+            };
+
+            for (int i = 0; i < levels.Length; i++)
+            {
+                PromptContextDetailLevel level = levels[i];
+                DiaryEventPayload payload = SoloPayload(
+                    "e-pollution-" + level,
+                    "pollution threshold",
+                    "The colony could no longer ignore the spreading contamination.");
+                payload.gameContext = storedContext;
+                DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+                {
+                    payload = payload,
+                    policy = Policy(combat: false, important: true),
+                    povRole = DiaryPipelineRoles.Initiator,
+                    contextDetailLevel = level
+                });
+
+                string suffix = " (" + level + ")";
+                AssertContains("pollution band reaches prompt" + suffix, plan.userPrompt,
+                    "pollution band: critical");
+                AssertContains("pollution transition reaches prompt" + suffix, plan.userPrompt,
+                    "pollution transition: escalated");
+                AssertContains("pollution ambient facet reaches prompt" + suffix, plan.userPrompt,
+                    "context facet: ambient_pressure");
+                AssertTrue("pollution prompt contains no raw fraction or implementation facts" + suffix,
+                    !plan.userPrompt.Contains("%")
+                    && !plan.userPrompt.Contains("cell")
+                    && !plan.userPrompt.Contains("tick")
+                    && !plan.userPrompt.Contains("severityRank")
+                    && !plan.userPrompt.Contains("map_id"));
+
+                if (level == PromptContextDetailLevel.Compact)
+                {
+                    AssertTrue("compact pollution context omits map label",
+                        !plan.userPrompt.Contains("map: Ash Flats"));
+                }
+                else
+                {
+                    AssertContains("non-compact pollution context keeps map label" + suffix,
+                        plan.userPrompt, "map: Ash Flats");
+                }
+            }
+
+            AssertEqual("non-pollution context passes through detail projection",
+                "weather=rain", PollutionContextFormatter.ProjectForDetail(
+                    "weather=rain", NarrativeDetailLevelTokens.Compact));
+
+            DiaryEventPayload ordinaryPayload = SoloPayload(
+                "e-pollution-default",
+                "pollution threshold",
+                "The colony could no longer ignore the spreading contamination.");
+            ordinaryPayload.gameContext = storedContext;
+            DiaryPromptPlan ordinaryPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = ordinaryPayload,
+                policy = Policy(combat: false, important: false),
+                povRole = DiaryPipelineRoles.Initiator,
+                contextDetailLevel = PromptContextDetailLevel.Full
+            });
+            AssertEqual("non-important pollution route selects SoloDefault",
+                DiaryPipelineTemplates.SoloDefault, ordinaryPlan.templateKey);
+            AssertContains("SoloDefault still renders pollution band",
+                ordinaryPlan.userPrompt, "pollution band: critical");
+            AssertContains("SoloDefault still renders pollution transition",
+                ordinaryPlan.userPrompt, "pollution transition: escalated");
+        }
+
+        private static void TestPollutionLocalizationAndTemplateRoutingXmlContract()
+        {
+            XDocument templates = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
+            XDocument englishLabels = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryPromptTemplateDef",
+                "DiaryPromptTemplateDefs.xml"));
+            XDocument russianLabels = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplateDefs.xml"));
+            XDocument russianKeyed = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
+            XDocument russianConditions = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryObservedConditionDef", "DiaryObservedConditionDefs.xml"));
+
+            string[] templateDefNames =
+            {
+                "DiaryPromptTemplate_PairDefault",
+                "DiaryPromptTemplate_PairImportant",
+                "DiaryPromptTemplate_SoloDefault",
+                "DiaryPromptTemplate_SoloImportant"
+            };
+            string[] pollutionContextKeys =
+            {
+                "pollution_band", "pollution_transition", "map_label", "facet"
+            };
+            for (int templateIndex = 0; templateIndex < templateDefNames.Length; templateIndex++)
+            {
+                string defName = templateDefNames[templateIndex];
+                XElement template = FindDef(
+                    templates, "PawnDiary.DiaryPromptTemplateDef", defName);
+                List<XElement> fields =
+                    new List<XElement>(template.Element("fields").Elements("li"));
+                for (int keyIndex = 0; keyIndex < pollutionContextKeys.Length; keyIndex++)
+                {
+                    string contextKey = pollutionContextKeys[keyIndex];
+                    int fieldIndex = fields.FindIndex(field =>
+                        string.Equals(ChildValue(field, "contextKey"),
+                            contextKey, StringComparison.Ordinal));
+                    AssertTrue(defName + " keeps pollution context key " + contextKey,
+                        fieldIndex >= 0);
+
+                    string localizationKey = defName + ".fields." + fieldIndex + ".label";
+                    AssertEqual("English pollution label stays index-aligned: " + localizationKey,
+                        ChildValue(fields[fieldIndex], "label"),
+                        ChildValue(englishLabels.Root, localizationKey));
+                    AssertTrue("Russian pollution label exists: " + localizationKey,
+                        !string.IsNullOrWhiteSpace(
+                            ChildValue(russianLabels.Root, localizationKey)));
+                }
+            }
+
+            string[] keyedSuffixes =
+            {
+                "Meaningful.Start", "Meaningful.End", "Severe.Start", "Critical.Start",
+                "Meaningful.Priority", "Meaningful.Condition", "Meaningful.Description",
+                "Meaningful.Cue.Home", "Severe.Priority", "Severe.Condition",
+                "Severe.Description", "Severe.Cue.Pressure", "Critical.Priority",
+                "Critical.Condition", "Critical.Description", "Critical.Cue.Critical"
+            };
+            for (int i = 0; i < keyedSuffixes.Length; i++)
+            {
+                string suffix = keyedSuffixes[i];
+                string key = suffix.EndsWith(".Start", StringComparison.Ordinal)
+                    || suffix.EndsWith(".End", StringComparison.Ordinal)
+                    ? "PawnDiary.Event.ObservedCondition.BiotechPollution" + suffix
+                    : "PawnDiary.Prompt.ObservedCondition.BiotechPollution" + suffix;
+                AssertTrue("Russian pollution Keyed text exists: " + key,
+                    !string.IsNullOrWhiteSpace(ChildValue(russianKeyed.Root, key)));
+            }
+
+            string[] conditionDefNames =
+            {
+                "BiotechPollutionMeaningful",
+                "BiotechPollutionSevere",
+                "BiotechPollutionCritical"
+            };
+            for (int i = 0; i < conditionDefNames.Length; i++)
+            {
+                string defName = conditionDefNames[i];
+                AssertTrue("Russian pollution Def label exists: " + defName,
+                    !string.IsNullOrWhiteSpace(
+                        ChildValue(russianConditions.Root, defName + ".label")));
+                AssertTrue("Russian pollution Def instruction exists: " + defName,
+                    !string.IsNullOrWhiteSpace(
+                        ChildValue(russianConditions.Root, defName + ".instruction")));
+            }
         }
 
         // The template-field lists are DefInjected by numeric index. Appending a field to the wrong
@@ -4438,8 +4610,8 @@ namespace DiaryPipelineTests
                 "persona_trait_description_2", "persona_milestone", "tale_source_def",
                 "tale_source_label", "tale_killer_role", "tale_victim_role"
             };
-            AssertEqual("SoloImportant Ideology Phase 1 projection remains append-only at 125 fields",
-                125, new List<XElement>(solo.Element("fields").Elements("li")).Count);
+            AssertEqual("SoloImportant pollution projection extends the append-only list to 129 fields",
+                129, new List<XElement>(solo.Element("fields").Elements("li")).Count);
             for (int i = 0; i < contextKeys.Length; i++)
             {
                 AssertTrue("SoloImportant persona prompt field exists: " + contextKeys[i],
@@ -6669,6 +6841,10 @@ namespace DiaryPipelineTests
                     ContextField("permit title", "permit_title"),
                     ContextField("permit setting", "permit_setting"),
                     ContextField("used during cooldown", "used_during_cooldown"),
+                    ContextField("pollution band", "pollution_band"),
+                    ContextField("pollution transition", "pollution_transition"),
+                    ContextField("map", "map_label"),
+                    ContextField("context facet", "facet"),
                     Field("weapon", "Weapon"),
                     Field("important context", "PromptEnchantment"),
                     Field("previous diary ending (continue from this)", "PreviousEntryEnding"),

@@ -328,6 +328,7 @@ namespace PawnDiary
                     || Eq(contextKey, "arc_year")
                     || IsRequiredQuestContextKey(contextKey)
                     || IsRequiredBiotechContextKey(contextKey)
+                    || IsRequiredPollutionContextKey(contextKey)
                     || IsRequiredRoyaltyContextKey(contextKey)
                     || IsRequiredOdysseyContextKey(contextKey)))
             {
@@ -371,6 +372,17 @@ namespace PawnDiary
                 || Eq(contextKey, "birth_method")
                 || Eq(contextKey, "birther_died")
                 || Eq(contextKey, "ritual_birth");
+        }
+
+        /// <summary>
+        /// Keeps the pollution band, exact lifecycle edge, and qualitative ambient-pressure facet in
+        /// every detail preset. The map label is deliberately optional so Compact can omit it.
+        /// </summary>
+        private static bool IsRequiredPollutionContextKey(string contextKey)
+        {
+            return Eq(contextKey, "pollution_band")
+                || Eq(contextKey, "pollution_transition")
+                || Eq(contextKey, "facet");
         }
 
         /// <summary>

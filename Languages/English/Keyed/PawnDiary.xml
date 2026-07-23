@@ -1616,4 +1616,25 @@
   <PawnDiary.Dev.PromptSuite.BeliefStructural.Text>{0} turned over a small moment that echoed one of their ideoligion's teachings.</PawnDiary.Dev.PromptSuite.BeliefStructural.Text>
   <PawnDiary.Dev.PromptSuite.BeliefLexical.Label>Belief context — lexical match</PawnDiary.Dev.PromptSuite.BeliefLexical.Label>
   <PawnDiary.Dev.PromptSuite.BeliefLexical.Text>{0} caught themself thinking in the very phrases of their ideoligion.</PawnDiary.Dev.PromptSuite.BeliefLexical.Text>
+
+  <!-- Master Wave 11 / Biotech Phase 7 — qualitative pollution transitions and active pressure. -->
+  <PawnDiary.Event.ObservedCondition.BiotechPollutionMeaningful.Start>{0} saw pollution become impossible to ignore around {1}.</PawnDiary.Event.ObservedCondition.BiotechPollutionMeaningful.Start>
+  <PawnDiary.Event.ObservedCondition.BiotechPollutionMeaningful.End>{0} saw {1} reclaimed from the pollution that had settled over it.</PawnDiary.Event.ObservedCondition.BiotechPollutionMeaningful.End>
+  <PawnDiary.Event.ObservedCondition.BiotechPollutionSevere.Start>{0} recognized that pollution around {1} had become a severe pressure on daily life.</PawnDiary.Event.ObservedCondition.BiotechPollutionSevere.Start>
+  <PawnDiary.Event.ObservedCondition.BiotechPollutionCritical.Start>{0} faced the fact that pollution around {1} had reached a critical state.</PawnDiary.Event.ObservedCondition.BiotechPollutionCritical.Start>
+
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Priority>Let the pollution shaping this home influence the entry.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Priority>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Condition>Pollution is now a meaningful part of daily life on this map.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Condition>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Description>Keep the environmental pressure qualitative and grounded in what the pawn can notice.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Description>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Cue.Home>Consider how a changed landscape alters the feeling of home without quoting measurements.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Cue.Home>
+
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Priority>Let severe pollution across the map press strongly on the entry.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Priority>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Condition>Severe pollution is constraining routine and the sense of home.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Condition>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Description>Write the ambient environmental strain without inventing a single cause or uniquely affected pawn.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Description>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Cue.Pressure>Let contaminated surroundings color plans, work, and uncertainty in the background.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Cue.Pressure>
+
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Priority>Let critical pollution across the map dominate the environmental pressure in the entry.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Priority>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Condition>Critical pollution has made the map itself feel hostile to ordinary life.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Condition>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Description>Keep the crisis map-wide, qualitative, and limited to visible consequences.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Description>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Cue.Critical>Center the pressure of living amid a critically contaminated home without exposing percentages or mechanics.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Cue.Critical>
 </LanguageData>

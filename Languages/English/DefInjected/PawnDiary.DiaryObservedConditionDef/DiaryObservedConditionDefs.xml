@@ -56,4 +56,14 @@
 
   <AmbrosiaSprouted.label>ambrosia grove</AmbrosiaSprouted.label>
 
+  <!-- Master Wave 11 / Biotech Phase 7 -->
+  <BiotechPollutionMeaningful.label>meaningful pollution</BiotechPollutionMeaningful.label>
+  <BiotechPollutionMeaningful.instruction>write this as one sampled colonist's perspective on pollution becoming part of daily life across the map; never imply this pawn is the only person affected, never quote percentages or cell counts, and keep causes limited to what the pawn could observe</BiotechPollutionMeaningful.instruction>
+
+  <BiotechPollutionSevere.label>severe pollution</BiotechPollutionSevere.label>
+  <BiotechPollutionSevere.instruction>write this as one sampled colonist recognizing that pollution across the map has escalated into a severe pressure on home and routine; never imply this pawn is uniquely affected, never quote percentages or cell counts, and do not invent a specific pollution incident</BiotechPollutionSevere.instruction>
+
+  <BiotechPollutionCritical.label>critical pollution</BiotechPollutionCritical.label>
+  <BiotechPollutionCritical.instruction>write this as one sampled colonist confronting critical pollution across the map and what that ambient pressure means for calling this place home; never imply this pawn is uniquely affected, never quote percentages or cell counts, and do not invent hidden causes or a completed reclamation</BiotechPollutionCritical.instruction>
+
 </LanguageData>

@@ -518,10 +518,18 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <!-- Ideology Phase 1 additive field; indices append to preserve every existing translation. -->
   <DiaryPromptTemplate_PairDefault.fields.29.label>belief context</DiaryPromptTemplate_PairDefault.fields.29.label>
   <DiaryPromptTemplate_PairImportant.fields.76.label>belief context</DiaryPromptTemplate_PairImportant.fields.76.label>
+  <DiaryPromptTemplate_PairImportant.fields.77.label>pollution band</DiaryPromptTemplate_PairImportant.fields.77.label>
+  <DiaryPromptTemplate_PairImportant.fields.78.label>pollution transition</DiaryPromptTemplate_PairImportant.fields.78.label>
+  <DiaryPromptTemplate_PairImportant.fields.79.label>map</DiaryPromptTemplate_PairImportant.fields.79.label>
+  <DiaryPromptTemplate_PairImportant.fields.80.label>context facet</DiaryPromptTemplate_PairImportant.fields.80.label>
   <DiaryPromptTemplate_PairCombat.fields.32.label>belief context</DiaryPromptTemplate_PairCombat.fields.32.label>
   <DiaryPromptTemplate_PairBatched.fields.28.label>belief context</DiaryPromptTemplate_PairBatched.fields.28.label>
   <DiaryPromptTemplate_SoloDefault.fields.44.label>belief context</DiaryPromptTemplate_SoloDefault.fields.44.label>
   <DiaryPromptTemplate_SoloImportant.fields.124.label>belief context</DiaryPromptTemplate_SoloImportant.fields.124.label>
+  <DiaryPromptTemplate_SoloImportant.fields.125.label>pollution band</DiaryPromptTemplate_SoloImportant.fields.125.label>
+  <DiaryPromptTemplate_SoloImportant.fields.126.label>pollution transition</DiaryPromptTemplate_SoloImportant.fields.126.label>
+  <DiaryPromptTemplate_SoloImportant.fields.127.label>map</DiaryPromptTemplate_SoloImportant.fields.127.label>
+  <DiaryPromptTemplate_SoloImportant.fields.128.label>context facet</DiaryPromptTemplate_SoloImportant.fields.128.label>
   <DiaryPromptTemplate_SoloInternalState.fields.40.label>belief context</DiaryPromptTemplate_SoloInternalState.fields.40.label>
   <DiaryPromptTemplate_SoloBatched.fields.40.label>belief context</DiaryPromptTemplate_SoloBatched.fields.40.label>
   <!-- Lore L1: reflections gained a memory row BEFORE belief context, shifting the belief index
@@ -532,4 +540,13 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.14.label>belief context</DiaryPromptTemplate_SoloQuadrumReflection.fields.14.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.16.label>memory</DiaryPromptTemplate_SoloArcReflection.fields.16.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.17.label>belief context</DiaryPromptTemplate_SoloArcReflection.fields.17.label>
+  <!-- Master Wave 11 review hardening: pollution facts survive default/non-important routing. -->
+  <DiaryPromptTemplate_PairDefault.fields.30.label>pollution band</DiaryPromptTemplate_PairDefault.fields.30.label>
+  <DiaryPromptTemplate_PairDefault.fields.31.label>pollution transition</DiaryPromptTemplate_PairDefault.fields.31.label>
+  <DiaryPromptTemplate_PairDefault.fields.32.label>map</DiaryPromptTemplate_PairDefault.fields.32.label>
+  <DiaryPromptTemplate_PairDefault.fields.33.label>context facet</DiaryPromptTemplate_PairDefault.fields.33.label>
+  <DiaryPromptTemplate_SoloDefault.fields.45.label>pollution band</DiaryPromptTemplate_SoloDefault.fields.45.label>
+  <DiaryPromptTemplate_SoloDefault.fields.46.label>pollution transition</DiaryPromptTemplate_SoloDefault.fields.46.label>
+  <DiaryPromptTemplate_SoloDefault.fields.47.label>map</DiaryPromptTemplate_SoloDefault.fields.47.label>
+  <DiaryPromptTemplate_SoloDefault.fields.48.label>context facet</DiaryPromptTemplate_SoloDefault.fields.48.label>
 </LanguageData>

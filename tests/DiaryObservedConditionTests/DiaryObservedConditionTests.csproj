@@ -18,5 +18,6 @@
     <Compile Include="..\..\Source\Capture\ObservedConditions\ObservedConditionDecision.cs" Link="ObservedConditionDecision.cs" />
     <Compile Include="..\..\Source\Capture\ObservedConditions\ObservedConditionPolicy.cs" Link="ObservedConditionPolicy.cs" />
     <Compile Include="..\..\Source\Capture\ObservedConditions\ObservedConditionPromptActivity.cs" Link="ObservedConditionPromptActivity.cs" />
+    <Compile Include="..\..\Source\Capture\ObservedConditions\ObservedConditionSelectionPolicy.cs" Link="ObservedConditionSelectionPolicy.cs" />
   </ItemGroup>
 </Project>

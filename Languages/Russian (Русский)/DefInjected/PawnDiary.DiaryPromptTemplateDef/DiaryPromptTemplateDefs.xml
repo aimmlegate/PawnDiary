@@ -563,10 +563,18 @@
   <!-- Ideology Phase 1 additive field; indices append to preserve every existing translation. -->
   <DiaryPromptTemplate_PairDefault.fields.29.label>контекст убеждений</DiaryPromptTemplate_PairDefault.fields.29.label>
   <DiaryPromptTemplate_PairImportant.fields.76.label>контекст убеждений</DiaryPromptTemplate_PairImportant.fields.76.label>
+  <DiaryPromptTemplate_PairImportant.fields.77.label>уровень загрязнения</DiaryPromptTemplate_PairImportant.fields.77.label>
+  <DiaryPromptTemplate_PairImportant.fields.78.label>изменение загрязнения</DiaryPromptTemplate_PairImportant.fields.78.label>
+  <DiaryPromptTemplate_PairImportant.fields.79.label>карта</DiaryPromptTemplate_PairImportant.fields.79.label>
+  <DiaryPromptTemplate_PairImportant.fields.80.label>аспект контекста</DiaryPromptTemplate_PairImportant.fields.80.label>
   <DiaryPromptTemplate_PairCombat.fields.32.label>контекст убеждений</DiaryPromptTemplate_PairCombat.fields.32.label>
   <DiaryPromptTemplate_PairBatched.fields.28.label>контекст убеждений</DiaryPromptTemplate_PairBatched.fields.28.label>
   <DiaryPromptTemplate_SoloDefault.fields.44.label>контекст убеждений</DiaryPromptTemplate_SoloDefault.fields.44.label>
   <DiaryPromptTemplate_SoloImportant.fields.124.label>контекст убеждений</DiaryPromptTemplate_SoloImportant.fields.124.label>
+  <DiaryPromptTemplate_SoloImportant.fields.125.label>уровень загрязнения</DiaryPromptTemplate_SoloImportant.fields.125.label>
+  <DiaryPromptTemplate_SoloImportant.fields.126.label>изменение загрязнения</DiaryPromptTemplate_SoloImportant.fields.126.label>
+  <DiaryPromptTemplate_SoloImportant.fields.127.label>карта</DiaryPromptTemplate_SoloImportant.fields.127.label>
+  <DiaryPromptTemplate_SoloImportant.fields.128.label>аспект контекста</DiaryPromptTemplate_SoloImportant.fields.128.label>
   <DiaryPromptTemplate_SoloInternalState.fields.40.label>контекст убеждений</DiaryPromptTemplate_SoloInternalState.fields.40.label>
   <DiaryPromptTemplate_SoloBatched.fields.40.label>контекст убеждений</DiaryPromptTemplate_SoloBatched.fields.40.label>
   <!-- Lore L1: у трёх шаблонов-рефлексий появилось поле памяти ПЕРЕД контекстом убеждений,
@@ -577,4 +585,13 @@
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.14.label>контекст убеждений</DiaryPromptTemplate_SoloQuadrumReflection.fields.14.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.16.label>воспоминания</DiaryPromptTemplate_SoloArcReflection.fields.16.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.17.label>контекст убеждений</DiaryPromptTemplate_SoloArcReflection.fields.17.label>
+  <!-- Усиление после ревью Master Wave 11: факты о загрязнении доступны и обычным шаблонам. -->
+  <DiaryPromptTemplate_PairDefault.fields.30.label>уровень загрязнения</DiaryPromptTemplate_PairDefault.fields.30.label>
+  <DiaryPromptTemplate_PairDefault.fields.31.label>изменение загрязнения</DiaryPromptTemplate_PairDefault.fields.31.label>
+  <DiaryPromptTemplate_PairDefault.fields.32.label>карта</DiaryPromptTemplate_PairDefault.fields.32.label>
+  <DiaryPromptTemplate_PairDefault.fields.33.label>аспект контекста</DiaryPromptTemplate_PairDefault.fields.33.label>
+  <DiaryPromptTemplate_SoloDefault.fields.45.label>уровень загрязнения</DiaryPromptTemplate_SoloDefault.fields.45.label>
+  <DiaryPromptTemplate_SoloDefault.fields.46.label>изменение загрязнения</DiaryPromptTemplate_SoloDefault.fields.46.label>
+  <DiaryPromptTemplate_SoloDefault.fields.47.label>карта</DiaryPromptTemplate_SoloDefault.fields.47.label>
+  <DiaryPromptTemplate_SoloDefault.fields.48.label>аспект контекста</DiaryPromptTemplate_SoloDefault.fields.48.label>
 </LanguageData>

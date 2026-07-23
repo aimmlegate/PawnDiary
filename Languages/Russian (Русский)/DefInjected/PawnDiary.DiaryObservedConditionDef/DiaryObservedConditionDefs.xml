@@ -56,4 +56,14 @@
 
   <AmbrosiaSprouted.label>роща амброзии</AmbrosiaSprouted.label>
 
+  <!-- Master Wave 11 / Biotech Phase 7 — уровни загрязнения карты. -->
+  <BiotechPollutionMeaningful.label>значимое загрязнение</BiotechPollutionMeaningful.label>
+  <BiotechPollutionMeaningful.instruction>напиши от лица одного выбранного поселенца о том, как загрязнение становится частью повседневной жизни на всей карте; не утверждай, что оно затронуло только этого персонажа, не приводи проценты или число клеток и ограничивай причины тем, что персонаж мог наблюдать</BiotechPollutionMeaningful.instruction>
+
+  <BiotechPollutionSevere.label>сильное загрязнение</BiotechPollutionSevere.label>
+  <BiotechPollutionSevere.instruction>напиши от лица одного выбранного поселенца о том, как загрязнение всей карты усилилось и стало серьёзно давить на дом и привычный уклад; не утверждай, что оно затронуло только этого персонажа, не приводи проценты или число клеток и не выдумывай конкретный случай загрязнения</BiotechPollutionSevere.instruction>
+
+  <BiotechPollutionCritical.label>критическое загрязнение</BiotechPollutionCritical.label>
+  <BiotechPollutionCritical.instruction>напиши от лица одного выбранного поселенца о критическом загрязнении всей карты и о том, как это давление среды меняет смысл слова «дом»; не утверждай, что оно затронуло только этого персонажа, не приводи проценты или число клеток и не выдумывай скрытые причины или уже завершённую очистку</BiotechPollutionCritical.instruction>
+
 </LanguageData>

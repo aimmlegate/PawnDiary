@@ -890,4 +890,88 @@
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
+  <!-- Master Wave 11 / Biotech Phase 7: world-tile pollution pressure. All three thresholds stay
+       active together so the meaningful row can later produce reclamation; pure prompt selection
+       exposes only the highest active severity in this family for each map. -->
+  <PawnDiary.DiaryObservedConditionDef Name="BiotechPollutionBase" Abstract="True">
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>MapPollution</observerType>
+    <pollIntervalTicks>2500</pollIntervalTicks>
+    <startDebounceTicks>15000</startDebounceTicks>
+    <endDebounceTicks>15000</endDebounceTicks>
+    <dedupTicks>60000</dedupTicks>
+    <restartCooldownTicks>30000</restartCooldownTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <includeNonPlayerMaps>false</includeNonPlayerMaps>
+    <exclusiveFamilyKey>BiotechMapPollution</exclusiveFamilyKey>
+    <maxPagePawns>2</maxPagePawns>
+    <recordScope>MapColonists</recordScope>
+    <colorCue>negative</colorCue>
+    <promptEnabled>true</promptEnabled>
+    <promptDecayTicks>180000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.5</promptDecayMinMultiplier>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef ParentName="BiotechPollutionBase">
+    <defName>BiotechPollutionMeaningful</defName>
+    <label>meaningful pollution</label>
+    <conditionKey>BiotechPollutionMeaningful</conditionKey>
+    <minPollutionFraction>0.10</minPollutionFraction>
+    <severityRank>1</severityRank>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>true</recordEndEvent>
+    <startTextKey>PawnDiary.Event.ObservedCondition.BiotechPollutionMeaningful.Start</startTextKey>
+    <endTextKey>PawnDiary.Event.ObservedCondition.BiotechPollutionMeaningful.End</endTextKey>
+    <instruction>write this as one sampled colonist's perspective on pollution becoming part of daily life across the map; never imply this pawn is the only person affected, never quote percentages or cell counts, and keep causes limited to what the pawn could observe</instruction>
+    <promptWeight>5</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Cue.Home</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef ParentName="BiotechPollutionBase">
+    <defName>BiotechPollutionSevere</defName>
+    <label>severe pollution</label>
+    <conditionKey>BiotechPollutionSevere</conditionKey>
+    <minPollutionFraction>0.35</minPollutionFraction>
+    <severityRank>2</severityRank>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <startTextKey>PawnDiary.Event.ObservedCondition.BiotechPollutionSevere.Start</startTextKey>
+    <instruction>write this as one sampled colonist recognizing that pollution across the map has escalated into a severe pressure on home and routine; never imply this pawn is uniquely affected, never quote percentages or cell counts, and do not invent a specific pollution incident</instruction>
+    <promptWeight>8</promptWeight>
+    <normalPromptWeightMultiplier>0.9</normalPromptWeightMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Cue.Pressure</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef ParentName="BiotechPollutionBase">
+    <defName>BiotechPollutionCritical</defName>
+    <label>critical pollution</label>
+    <conditionKey>BiotechPollutionCritical</conditionKey>
+    <minPollutionFraction>0.65</minPollutionFraction>
+    <severityRank>3</severityRank>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <startTextKey>PawnDiary.Event.ObservedCondition.BiotechPollutionCritical.Start</startTextKey>
+    <instruction>write this as one sampled colonist confronting critical pollution across the map and what that ambient pressure means for calling this place home; never imply this pawn is uniquely affected, never quote percentages or cell counts, and do not invent hidden causes or a completed reclamation</instruction>
+    <promptWeight>12</promptWeight>
+    <normalPromptWeightMultiplier>0.75</normalPromptWeightMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Cue.Critical</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
 </Defs>

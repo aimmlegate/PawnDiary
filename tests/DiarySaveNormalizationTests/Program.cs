@@ -59,9 +59,34 @@ namespace DiarySaveNormalizationTests
             TestAnomalyCreepJoinerNormalization();
             TestAnomalyCreepJoinerLegacyBaseline();
             TestAnomalyCreepJoinerSurgicalRevealCompatibility();
+            TestPollutionBaselineUsesObservedConditionRows();
 
             Console.WriteLine("DiarySaveNormalizationTests passed " + assertions + " assertions.");
             return 0;
+        }
+
+        private static void TestPollutionBaselineUsesObservedConditionRows()
+        {
+            List<ObservedConditionStateSnapshot> rows = ObservedConditionBaselinePolicy.BuildStartedRows(
+                42000,
+                new List<ObservedConditionObservation>
+                {
+                    new ObservedConditionObservation
+                    {
+                        conditionDefName = "BiotechPollutionSevere",
+                        conditionKey = "biotech_pollution_severe",
+                        scope = ObservedConditionScope.Map,
+                        mapUniqueId = 17,
+                        evidenceLabel = "Severe",
+                        evidenceCount = 2
+                    }
+                });
+
+            AssertEqual("pollution baseline reuses the observed-condition row list", 1, rows.Count);
+            AssertEqual("pollution baseline keeps map identity", 17, rows[0].mapUniqueId);
+            AssertEqual("pollution baseline starts at the load boundary", 42000, rows[0].firstObservedTick);
+            AssertTrue("pollution baseline is already started and emits no catch-up start",
+                rows[0].startRecorded && !rows[0].endRecorded);
         }
 
         // ------------------------------------------------------------------------------------------

@@ -31,6 +31,14 @@ namespace DiaryObservedConditionTests
             TestObservationForUnknownDefIgnored();
             TestPromptActivityStopsAfterMissingDebounce();
             TestPromptActivitySkipsUnstartedAndEndedRows();
+            TestPollutionThresholdEntryEscalationAndReclamation();
+            TestExclusiveFamilyKeepsHighestBandPerMap();
+            TestPollutionContractDefaultsPreserveExistingDefs();
+            TestDeterministicCappedPollutionWitnesses();
+            TestZeroWitnessCapPreservesExistingFanOut();
+            TestUnavailablePollutionProducesNoBaselineRows();
+            TestOldSavePollutionBaselineIsSilent();
+            TestPollutionBaselinePreservesSavedLifecycleProgress();
 
             Console.WriteLine("DiaryObservedConditionTests passed " + assertions + " assertions.");
             return 0;
@@ -347,6 +355,149 @@ namespace DiaryObservedConditionTests
                     endDebounceTicks: 500));
         }
 
+        private static void TestPollutionThresholdEntryEscalationAndReclamation()
+        {
+            ObservedConditionDefSnapshot meaningful = ObservedConditionDefSnapshot.Create(
+                "meaningful", 0, 0, 0.10f, -1f, "pollution", 1, 2);
+            ObservedConditionDefSnapshot severe = ObservedConditionDefSnapshot.Create(
+                "severe", 0, 0, 0.35f, -1f, "pollution", 2, 2);
+            ObservedConditionDefSnapshot critical = ObservedConditionDefSnapshot.Create(
+                "critical", 0, 0, 0.65f, -1f, "pollution", 3, 2);
+            List<ObservedConditionDefSnapshot> defs = Defs(meaningful, severe, critical);
+
+            ObservedConditionPlan entry = ObservedConditionPolicy.Plan(
+                100, States(), PollutionObservations(0.20f), defs);
+            AssertEqual("meaningful threshold enters once", 1, entry.decisions.Count);
+            AssertEqual("meaningful entry records start",
+                ObservedConditionDecisionKind.StartRecorded, entry.decisions[0].kind);
+
+            ObservedConditionPlan escalation = ObservedConditionPolicy.Plan(
+                200, States(entry.decisions[0].state), PollutionObservations(0.40f), defs);
+            AssertEqual("meaningful remains while severe starts", 2, escalation.decisions.Count);
+            AssertEqual("severe crossing is a new start",
+                ObservedConditionDecisionKind.StartRecorded,
+                ForIdentity(escalation, "severe", ObservedConditionScope.Map, 1, "").kind);
+
+            List<ObservedConditionStateSnapshot> active = NextStates(escalation);
+            ObservedConditionPlan reclamation = ObservedConditionPolicy.Plan(
+                300, active, PollutionObservations(0.05f), defs);
+            AssertEqual("both active threshold rows end below meaningful", 2, reclamation.decisions.Count);
+            AssertEqual("meaningful end is the reclamation edge",
+                ObservedConditionDecisionKind.EndRecorded,
+                ForIdentity(reclamation, "meaningful", ObservedConditionScope.Map, 1, "").kind);
+        }
+
+        private static void TestExclusiveFamilyKeepsHighestBandPerMap()
+        {
+            List<ObservedConditionInfluenceRow> rows = new List<ObservedConditionInfluenceRow>
+            {
+                Influence(0, "meaningful", "pollution", 1, 7),
+                Influence(1, "severe", "pollution", 2, 7),
+                Influence(2, "critical", "pollution", 3, 7),
+                Influence(3, "ordinary", string.Empty, 0, 7),
+                Influence(4, "severe-map-two", "pollution", 2, 8)
+            };
+            List<int> selected = ObservedConditionExclusiveFamilyPolicy.SelectSourceIndexes(rows);
+            AssertEqual("highest family row plus ordinary and other map survive", 3, selected.Count);
+            AssertEqual("critical wins map one family", true, selected.Contains(2));
+            AssertEqual("ordinary condition is unchanged", true, selected.Contains(3));
+            AssertEqual("family is independent on map two", true, selected.Contains(4));
+        }
+
+        private static void TestPollutionContractDefaultsPreserveExistingDefs()
+        {
+            ObservedConditionDefSnapshot legacy = ObservedConditionDefSnapshot.Create("legacy", 10, 20);
+            AssertEqual("legacy minimum defaults neutral", 0f, legacy.minPollutionFraction);
+            AssertEqual("legacy maximum defaults absent", -1f, legacy.maxPollutionFraction);
+            AssertEqual("legacy family defaults empty", string.Empty, legacy.exclusiveFamilyKey);
+            AssertEqual("legacy severity defaults zero", 0, legacy.severityRank);
+            AssertEqual("legacy witness cap defaults unlimited", 0, legacy.maxPagePawns);
+        }
+
+        private static void TestDeterministicCappedPollutionWitnesses()
+        {
+            List<ObservedConditionWitnessCandidate> candidates = new List<ObservedConditionWitnessCandidate>
+            {
+                Witness("Pawn_A", false),
+                Witness("Pawn_B", true),
+                Witness("Pawn_C", false),
+                Witness("Pawn_D", true)
+            };
+            List<string> first = ObservedConditionWitnessPolicy.SelectPawnIds(
+                "critical", 9, 12345, candidates, 2);
+            List<string> second = ObservedConditionWitnessPolicy.SelectPawnIds(
+                "critical", 9, 12345, candidates, 2);
+            AssertEqual("pollution witnesses are capped", 2, first.Count);
+            AssertEqual("same detached facts select deterministically",
+                string.Join("|", first.ToArray()), string.Join("|", second.ToArray()));
+            AssertEqual("visible health relevance fills the bounded sample first",
+                true, first.Contains("Pawn_B") && first.Contains("Pawn_D"));
+        }
+
+        private static void TestZeroWitnessCapPreservesExistingFanOut()
+        {
+            List<ObservedConditionWitnessCandidate> candidates = new List<ObservedConditionWitnessCandidate>
+            {
+                Witness("Pawn_C", false),
+                Witness("Pawn_A", true),
+                Witness("Pawn_B", false)
+            };
+            List<string> all = ObservedConditionWitnessPolicy.SelectPawnIds(
+                "legacy", 1, 77, candidates, 0);
+            AssertEqual("zero cap keeps every existing recipient", 3, all.Count);
+            AssertEqual("zero cap keeps existing input order",
+                "Pawn_C|Pawn_A|Pawn_B", string.Join("|", all.ToArray()));
+        }
+
+        private static void TestUnavailablePollutionProducesNoBaselineRows()
+        {
+            AssertEqual("invalid unavailable fraction is inactive", false,
+                ObservedConditionPollutionPolicy.IsActive(float.NaN, 0.1f, -1f));
+            AssertEqual("no available map observations create no baseline rows", 0,
+                ObservedConditionBaselinePolicy.BuildStartedRows(100, Observations()).Count);
+        }
+
+        private static void TestOldSavePollutionBaselineIsSilent()
+        {
+            List<ObservedConditionStateSnapshot> rows =
+                ObservedConditionBaselinePolicy.BuildStartedRows(
+                    400, Observations(ObsMap("meaningful", 12), ObsMap("severe", 12)));
+            AssertEqual("old-save baseline retains all active threshold rows", 2, rows.Count);
+            AssertEqual("baseline marks current pollution already started", true,
+                rows[0].startRecorded && rows[1].startRecorded);
+            AssertEqual("baseline never marks a catch-up end", false,
+                rows[0].endRecorded || rows[1].endRecorded);
+            AssertEqual("baseline anchors current transition-free tick", 400, rows[0].firstObservedTick);
+        }
+
+        private static void TestPollutionBaselinePreservesSavedLifecycleProgress()
+        {
+            ObservedConditionStateSnapshot pendingStart =
+                Started("meaningful", firstObserved: 100, mapId: 12);
+            pendingStart.startRecorded = false;
+            pendingStart.lastObservedTick = 250;
+
+            ObservedConditionStateSnapshot pendingEnd =
+                Started("severe", firstObserved: 20, mapId: 12);
+            pendingEnd.lastObservedTick = 300;
+            pendingEnd.firstMissingTick = 350;
+
+            List<ObservedConditionStateSnapshot> rows =
+                ObservedConditionBaselinePolicy.MergeStartedRows(
+                    500,
+                    States(pendingStart, pendingEnd),
+                    Observations(
+                        ObsMap("meaningful", 12),
+                        ObsMap("critical", 12)));
+
+            AssertEqual("load migration retains saved rows and adds only missing active bands", 3, rows.Count);
+            AssertEqual("load migration preserves pending start flag", false, rows[0].startRecorded);
+            AssertEqual("load migration preserves first-observed decay anchor", 100, rows[0].firstObservedTick);
+            AssertEqual("load migration preserves pending end debounce anchor", 350, rows[1].firstMissingTick);
+            AssertEqual("newly discovered old-save band is silently started", true, rows[2].startRecorded);
+            AssertEqual("newly discovered old-save band anchors at migration tick", 500, rows[2].firstObservedTick);
+        }
+
         // ----- builders / helpers -----
 
         private static ObservedConditionDefSnapshot Def(string key, int startDeb, int endDeb)
@@ -385,6 +536,61 @@ namespace DiaryObservedConditionTests
                 scope = ObservedConditionScope.Pawn,
                 mapUniqueId = -1,
                 subjectPawnId = pawnId
+            };
+        }
+
+        private static List<ObservedConditionObservation> PollutionObservations(float fraction)
+        {
+            List<ObservedConditionObservation> observations = new List<ObservedConditionObservation>();
+            if (ObservedConditionPollutionPolicy.IsActive(fraction, 0.10f, -1f))
+            {
+                observations.Add(ObsMap("meaningful", 1));
+            }
+            if (ObservedConditionPollutionPolicy.IsActive(fraction, 0.35f, -1f))
+            {
+                observations.Add(ObsMap("severe", 1));
+            }
+            if (ObservedConditionPollutionPolicy.IsActive(fraction, 0.65f, -1f))
+            {
+                observations.Add(ObsMap("critical", 1));
+            }
+
+            return observations;
+        }
+
+        private static List<ObservedConditionStateSnapshot> NextStates(ObservedConditionPlan plan)
+        {
+            List<ObservedConditionStateSnapshot> states = new List<ObservedConditionStateSnapshot>();
+            for (int i = 0; i < plan.decisions.Count; i++)
+            {
+                if (!plan.decisions[i].removeState)
+                {
+                    states.Add(plan.decisions[i].state);
+                }
+            }
+
+            return states;
+        }
+
+        private static ObservedConditionInfluenceRow Influence(int index, string key, string family,
+            int severity, int mapId)
+        {
+            return new ObservedConditionInfluenceRow
+            {
+                sourceIndex = index,
+                conditionKey = key,
+                exclusiveFamilyKey = family,
+                severityRank = severity,
+                mapUniqueId = mapId
+            };
+        }
+
+        private static ObservedConditionWitnessCandidate Witness(string pawnId, bool relevant)
+        {
+            return new ObservedConditionWitnessCandidate
+            {
+                pawnId = pawnId,
+                hasVisibleRelevantHealth = relevant
             };
         }
 
