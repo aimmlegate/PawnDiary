@@ -66,6 +66,7 @@ namespace PawnDiary.RimTests
             pawn = scope.CreateAdultColonist();
 
             ForceDeterministicReflectionTuning();
+            MarkOrdinaryFixtureAsAlreadyBaselined();
             RegisterReflectionGuardCleanup();
         }
 
@@ -303,6 +304,17 @@ namespace PawnDiary.RimTests
             }
 
             return diary;
+        }
+
+        // Ordinary EVT-19 tests seed current-day evidence and expect to exercise selection immediately.
+        // N4's default-true flags instead model an upgraded save's first rest, so clear both boundaries
+        // here. The two old-save tests below replace reflectionState after setup and therefore still drive
+        // the real silent-baseline branches explicitly.
+        private static void MarkOrdinaryFixtureAsAlreadyBaselined()
+        {
+            PawnReflectionState state = DiaryRecord().EnsureReflectionState();
+            state.baselineOnNextOpportunity = false;
+            state.linkedBaselineOnNextOpportunity = false;
         }
 
         // ----- day-evidence seeding ---------------------------------------------------------------
