@@ -510,6 +510,10 @@ namespace PawnDiary
         // performance/room-role mods are also patching that recalculation) can therefore throw. The role
         // is optional prompt flavor, so omit only that fragment instead of aborting the diary event or the
         // component tick. Do not log here: the same broken room can be sampled by many events in one tick.
+        //
+        // Role-less rooms (outdoors, corridors) resolve to RoomRoleDefOf.None, whose label is the
+        // no-signal word "none" — structurally omit it here (both surroundings builders share this
+        // helper) instead of ever string-matching the localized label.
         private static string TryReadRoomRoleLabel(Room room)
         {
             if (room == null)
@@ -519,6 +523,11 @@ namespace PawnDiary
 
             try
             {
+                if (room.Role == null || room.Role == RoomRoleDefOf.None)
+                {
+                    return string.Empty;
+                }
+
                 return ExternalText(room.GetRoomRoleLabel());
             }
             catch (Exception)

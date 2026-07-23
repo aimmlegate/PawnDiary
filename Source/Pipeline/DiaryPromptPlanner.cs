@@ -242,7 +242,12 @@ namespace PawnDiary
                     request.policy?.beliefPolicy,
                     request.policy?.beliefContextInstruction),
                 lastOpener = pov?.lastOpener,
-                previousEntryEnding = pov?.previousEntryEnding,
+                // For one-sentence entries the previous ending IS the last opener; sending the same
+                // sentence twice wastes tokens and models repetition. Only the per-request
+                // projection drops the duplicate — the saved event keeps both snapshots untouched.
+                previousEntryEnding = PromptRedundancyPolicy.SameNormalizedText(pov?.lastOpener, pov?.previousEntryEnding)
+                    ? string.Empty
+                    : pov?.previousEntryEnding,
                 weapon = pov?.weapon,
                 initiatorEntry = request.priorInitiatorEntry,
                 deathVictim = string.IsNullOrWhiteSpace(victimName) ? NameForContextRole(payload, victimRole) : victimName,

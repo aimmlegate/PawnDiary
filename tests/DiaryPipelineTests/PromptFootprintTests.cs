@@ -58,6 +58,7 @@ namespace DiaryPipelineTests
             TestP1TemplateFieldRowsFrozen(catalog);
             TestP2VoiceRuleCaps(catalog);
             TestP2CompactOmitsHumor(catalog);
+            TestP3ContinuityDuplicateSuppression(catalog);
             PrintBaselineReport(catalog);
 
             Console.WriteLine("PromptFootprintTests passed " + assertions + " assertions.");
@@ -320,12 +321,12 @@ namespace DiaryPipelineTests
             AssertContains("Full keeps the gray-flesh important context", full.userPrompt,
                 "important context: " + plans.grayFleshBundle);
 
-            // P0 baseline: continuity duplicates are still rendered twice (lastOpener AND the
-            // identical previousEntryEnding). P3 flips this to exact-duplicate suppression.
+            // P3: the identical previous ending is suppressed at projection time; the opener stays.
             AssertContains("Full renders the last opener", full.userPrompt, CanonicalFacts.LastOpener);
-            AssertContains("Full still renders the duplicate previous ending (pre-P3 baseline)",
-                full.userPrompt,
-                "how my previous entry ended (continuity; do not retell it): " + CanonicalFacts.PreviousEntryEnding);
+            AssertTrue("Full omits the duplicate previous-ending line",
+                !full.userPrompt.Contains("how my previous entry ended"));
+            AssertEqual("canonical continuity text appears exactly once in the user prompt",
+                1, CountToken(full.userPrompt, CanonicalFacts.LastOpener));
 
             // Size ordering must hold at every stage of the plan (plan §5.1).
             int fullChars = Combined(full);
@@ -641,6 +642,42 @@ namespace DiaryPipelineTests
         }
 
         // =========================================================================================
+        // P3 — exact continuity duplicate suppression (plan §9.1)
+        // =========================================================================================
+
+        private static void TestP3ContinuityDuplicateSuppression(EnglishPromptCatalog catalog)
+        {
+            // Pure equality policy: normalized-exact only, nothing fuzzy.
+            AssertTrue("exact duplicate matches",
+                PromptRedundancyPolicy.SameNormalizedText("The frost held.", "The frost held."));
+            AssertTrue("case and whitespace noise still matches",
+                PromptRedundancyPolicy.SameNormalizedText("The  frost\nheld.", "the frost held. "));
+            AssertTrue("CRLF noise still matches",
+                PromptRedundancyPolicy.SameNormalizedText("The frost\r\nheld.", "The frost held."));
+            AssertTrue("two blanks are not a meaningful duplicate",
+                !PromptRedundancyPolicy.SameNormalizedText("  ", null));
+            AssertTrue("punctuation difference is preserved",
+                !PromptRedundancyPolicy.SameNormalizedText("It held.", "It held!"));
+            AssertTrue("substring is not a duplicate",
+                !PromptRedundancyPolicy.SameNormalizedText("The frost held.", "The frost held all night."));
+            AssertTrue("different ending is preserved",
+                !PromptRedundancyPolicy.SameNormalizedText("The frost held.", "The thaw came early."));
+
+            // Planner projection: a genuinely different ending still renders.
+            DiaryPromptRequest request = CanonicalRequest(catalog, PromptContextDetailLevel.Full);
+            request.payload.initiator.previousEntryEnding = "I went to bed before the lamp died.";
+            DiaryPromptPlan differentEnding = DiaryPromptPlanner.Build(request);
+            AssertContains("different previous ending still renders", differentEnding.userPrompt,
+                "how my previous entry ended (continuity; do not retell it): I went to bed before the lamp died.");
+
+            // The suppression is per-request projection only: the source payload keeps its snapshot.
+            DiaryPromptRequest duplicateRequest = CanonicalRequest(catalog, PromptContextDetailLevel.Full);
+            DiaryPromptPlanner.Build(duplicateRequest);
+            AssertEqual("payload previous-ending snapshot is untouched by projection",
+                CanonicalFacts.PreviousEntryEnding, duplicateRequest.payload.initiator.previousEntryEnding);
+        }
+
+        // =========================================================================================
         // Canonical fixture assembly (plan §5.1)
         // =========================================================================================
 
@@ -656,8 +693,8 @@ namespace DiaryPipelineTests
             public const string MemoryRecall =
                 "The long talk with Ia about history stayed with me; trading ideas felt like the room got warmer.";
             public const string LastOpener = "The frost held through the morning.";
-            // Deliberately identical to LastOpener: the P3 release suppresses this duplicate at
-            // projection time; until then it renders twice and the fixture pins that baseline.
+            // Deliberately identical to LastOpener: PromptRedundancyPolicy suppresses the duplicate
+            // previous-ending at projection time (P3), so the canonical prompt carries it once.
             public const string PreviousEntryEnding = "The frost held through the morning.";
         }
 
