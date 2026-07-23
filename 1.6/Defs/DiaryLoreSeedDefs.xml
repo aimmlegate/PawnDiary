@@ -10,7 +10,10 @@
     FROZEN MATCHER VOCABULARY (§10/§11 pass 1 audit; QA tests enforce this list):
     - tags: the closed MemoryTagTokens vocabulary ('lore' is implied and added at deposit).
     - keywords: ONLY values the audited query path produces via the stable contextKeywordKeys —
-        raid=               incident defNames: RaidEnemy, Infestation, MechCluster
+        raid=               incident defNames: RaidEnemy, Infestation
+                            (MechCluster lands via IncidentWorker_MechCluster, which is NOT
+                            raid-like, so raid= never carries it — do not author it as a keyword;
+                            mechanoid seeds reach recall via faction=Mechanoid instead)
         faction=            faction defNames:  Mechanoid, Insect, Empire, Pirate
         hediff=             hediff defNames:   Plague, Flu, Malaria, LuciferiumHigh,
                                                PsychicAmplifier, MechlinkImplant
@@ -210,7 +213,7 @@
     <weight>1.0</weight>
     <mutexGroup>mechanoid_origin</mutexGroup>
     <tags><li>combat</li><li>danger</li><li>dread</li></tags>
-    <keywords><li>Mechanoid</li><li>MechCluster</li></keywords>
+    <keywords><li>Mechanoid</li></keywords>
     <backstoryCategories><li>Tribal</li><li>AdultTribal</li><li>ChildTribal</li><li>TribalHunter</li></backstoryCategories>
   </PawnDiary.DiaryLoreSeedDef>
 
@@ -223,7 +226,7 @@
     <weight>1.0</weight>
     <mutexGroup>mechanoid_origin</mutexGroup>
     <tags><li>combat</li><li>danger</li></tags>
-    <keywords><li>Mechanoid</li><li>MechCluster</li></keywords>
+    <keywords><li>Mechanoid</li></keywords>
     <excludeBackstoryCategories><li>Tribal</li><li>AdultTribal</li><li>ChildTribal</li></excludeBackstoryCategories>
   </PawnDiary.DiaryLoreSeedDef>
 
@@ -494,7 +497,12 @@
     <weight>1.0</weight>
     <mutexGroup>prog_xenotype</mutexGroup>
     <tags><li>body</li></tags>
-    <progressionEventDefNames><li>XenotypeChanged</li></progressionEventDefNames>
+    <!-- Biotech Phase 5 consolidated xenotype/gene identity transitions to emit the
+         GeneIdentityChanged token (its gameContext still carries major_xenotype/xenotype_def), so
+         this "woke another kind of human" memory attaches on GeneIdentityChanged. XenotypeChanged
+         is retained for forward-compat: it is an audited token and would fire again if a distinct
+         pure-xenotype emit is ever restored. -->
+    <progressionEventDefNames><li>XenotypeChanged</li><li>GeneIdentityChanged</li></progressionEventDefNames>
   </PawnDiary.DiaryLoreSeedDef>
 
   <PawnDiary.DiaryLoreSeedDef>

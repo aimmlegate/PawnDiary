@@ -54,6 +54,7 @@ namespace PawnMemoryTests
             TestAuthoredKeywordNormalization();
             TestLoreCatalogContract();
             TestLoreCatalogReachabilityAndReservation();
+            TestProgressionSeedsTargetEmittedTokens();
             TestLoreCatalogRussianParity();
             TestLoreCatalogRecallSmoke();
             Console.WriteLine("PawnMemoryTests passed " + assertions + " assertions.");
@@ -1628,9 +1629,22 @@ namespace PawnMemoryTests
         private static void TestAuthoredKeywordNormalization()
         {
             List<string> normalized = MemoryExtraction.NormalizeAuthoredKeywords(
-                new List<string> { "MechanoidCluster", "Mechanoid", "mechanoid", "The", "Ur" }, 8);
+                new List<string> { "MechlinkImplant", "Mechanoid", "mechanoid", "The", "Ur" }, 8);
             AssertSequence("identity tokenization keeps short and stopword-like tokens",
-                new[] { "mechanoidcluster", "mechanoid", "the", "ur" }, normalized);
+                new[] { "mechlinkimplant", "mechanoid", "the", "ur" }, normalized);
+
+            // Guard mirror (LORE_MEMORY_SEED_PLAN §10): the identity path KEEPS "the"/"ur", but the
+            // query path would DROP them, so IsQueryReachableToken flags exactly those as unmatchable.
+            AssertTrue("query-reachable: long non-stopword token",
+                MemoryExtraction.IsQueryReachableToken("mechlinkimplant"));
+            AssertTrue("query-reachable: three-char token (flu)",
+                MemoryExtraction.IsQueryReachableToken("flu"));
+            AssertTrue("NOT query-reachable: two-char token",
+                !MemoryExtraction.IsQueryReachableToken("ur"));
+            AssertTrue("NOT query-reachable: stopword token",
+                !MemoryExtraction.IsQueryReachableToken("the"));
+            AssertTrue("NOT query-reachable: empty token",
+                !MemoryExtraction.IsQueryReachableToken(""));
 
             List<string> capped = MemoryExtraction.NormalizeAuthoredKeywords(
                 new List<string> { "Alpha", "Beta", "Gamma" }, 2);
@@ -1652,9 +1666,14 @@ namespace PawnMemoryTests
         // The frozen matcher vocabulary from the pass-1 audit. Every catalog keyword must be one
         // of these audited stable identifiers; growing this list requires re-auditing the query
         // path (§10) and updating the catalog header comment.
+        // MechCluster is deliberately ABSENT: the MechCluster incident lands via
+        // IncidentWorker_MechCluster, which is not raid-like, so no capture path emits raid=MechCluster
+        // (and no observed_condition/faction path emits a value normalizing to "mechcluster"). Mechanoid
+        // seeds reach recall through faction=Mechanoid instead. Re-adding it here requires proving a
+        // capture path actually emits it (LORE_MEMORY_SEED_PLAN §10).
         private static readonly string[] AuditedKeywordVocabulary =
         {
-            "RaidEnemy", "Infestation", "MechCluster",
+            "RaidEnemy", "Infestation",
             "Mechanoid", "Insect", "Empire", "Pirate",
             "Plague", "Flu", "Malaria", "LuciferiumHigh", "PsychicAmplifier", "MechlinkImplant",
             "PsychicDrone", "PsychicSoothe", "ToxicFallout", "SolarFlare", "Eclipse",
@@ -1738,6 +1757,14 @@ namespace PawnMemoryTests
                 {
                     AssertTrue(id + " keyword in audited vocabulary: " + row.rawKeywords[j],
                         IndexOfOrdinal(AuditedKeywordVocabulary, row.rawKeywords[j]) >= 0);
+                }
+
+                // §10: every normalized keyword token must survive the prose query tokenizer, or it
+                // is dead weight the live query can never match.
+                for (int j = 0; j < row.candidate.keywords.Count; j++)
+                {
+                    AssertTrue(id + " keyword token is query-reachable: " + row.candidate.keywords[j],
+                        MemoryExtraction.IsQueryReachableToken(row.candidate.keywords[j]));
                 }
 
                 if (row.candidate.retentionTier == "core")
@@ -1840,6 +1867,48 @@ namespace PawnMemoryTests
                     500 + t);
                 AssertTrue("progression token yields a catalog pick: "
                     + AuditedProgressionEventTokens[t], pick != null);
+            }
+        }
+
+        // The progression event Def tokens ACTUALLY dispatched by live runtime scanners. This is the
+        // ground truth a progression seed must key on to ever fire in play — distinct from the tuning
+        // Def's progressionLoreSeedEventDefNames GATE, which may list a superset for forward-compat.
+        //
+        // Emit sites (verified against Source): PsylinkLevel (RoyaltyProgression), GeneIdentityChanged
+        // (Progression gene-identity scanner — carries xenotype changes too, since Biotech Phase 5
+        // commit 7aaf13c1 consolidated them), BiotechMechlinkInstalled (BiotechMechanitor), and
+        // RoyalTitleGained / RoyalTitlePromoted (RoyaltyProgression). XenotypeChanged is INTENTIONALLY
+        // ABSENT: no scanner emits it, so a seed keying ONLY on it is permanently inert.
+        private static readonly string[] EmittedProgressionEventTokens =
+        {
+            "PsylinkLevel", "GeneIdentityChanged", "BiotechMechlinkInstalled",
+            "RoyalTitleGained", "RoyalTitlePromoted"
+        };
+
+        // Regression guard for the L5 stale-token defect: a progression seed that keys only on a
+        // whitelisted-but-never-emitted token (e.g. the retired XenotypeChanged) can never fire from
+        // live gameplay. Every progression/both seed must target at least one EMITTED token.
+        private static void TestProgressionSeedsTargetEmittedTokens()
+        {
+            List<CatalogRow> catalog = LoadCatalog();
+            for (int i = 0; i < catalog.Count; i++)
+            {
+                LoreSeedCandidate candidate = catalog[i].candidate;
+                if (candidate.usage != "progression" && candidate.usage != "both")
+                {
+                    continue;
+                }
+
+                bool targetsEmitted = false;
+                for (int j = 0; j < candidate.progressionEventDefNames.Count && !targetsEmitted; j++)
+                {
+                    targetsEmitted = IndexOfOrdinal(
+                        EmittedProgressionEventTokens, candidate.progressionEventDefNames[j]) >= 0;
+                }
+
+                AssertTrue(candidate.seedDefName
+                    + " targets at least one runtime-EMITTED progression token (not just a gate token)",
+                    targetsEmitted);
             }
         }
 

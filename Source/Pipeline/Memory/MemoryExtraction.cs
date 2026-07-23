@@ -268,9 +268,10 @@ namespace PawnDiary
         /// <summary>
         /// Normalizes AUTHORED lore-seed keywords (LORE_MEMORY_SEED_PLAN §5/§10) with the exact
         /// identity tokenizer used for deposit/query values — never a copy of its rules. Values
-        /// are stable Def names or closed tokens ("MechanoidCluster"), so the identity path keeps
+        /// are stable Def names or closed tokens ("MechlinkImplant"), so the identity path keeps
         /// short tokens and stopword-lookalikes intact. Order preserved, duplicates dropped,
-        /// bounded by the caller's keyword cap.
+        /// bounded by the caller's keyword cap. Callers that need a live-query match should also
+        /// gate each token through <see cref="IsQueryReachableToken"/> (see §10).
         /// </summary>
         public static List<string> NormalizeAuthoredKeywords(List<string> values, int maxKeywords)
         {
@@ -391,6 +392,19 @@ namespace PawnDiary
             }
 
             target.Add(tag.Trim());
+        }
+
+        /// <summary>
+        /// True when a normalized token would SURVIVE the prose query tokenizer (length &gt;= 3 and
+        /// not a stopword) and can therefore be matched by a live query value (LORE_MEMORY_SEED_PLAN
+        /// §10). Authored keywords normalize through the lenient identity tokenizer, but live query
+        /// values from contextKeywordKeys normalize through the prose tokenizer, which drops short
+        /// and stopword tokens. An authored token that fails this is deposited but can never match,
+        /// so the Def config-error path uses this to warn authors instead of shipping dead keywords.
+        /// </summary>
+        public static bool IsQueryReachableToken(string token)
+        {
+            return !string.IsNullOrEmpty(token) && token.Length >= 3 && !IsStopword(token);
         }
 
         private static bool IsStopword(string token)

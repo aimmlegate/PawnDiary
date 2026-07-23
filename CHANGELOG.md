@@ -8,6 +8,16 @@ pre-release version ladder for project history.
 
 ## 2026-07-23
 
+- **Lore memory — post-review fixes.** Retargeted the `LoreSeed_Prog_Xenotype` progression seed onto
+  the `GeneIdentityChanged` token the runtime actually emits (Biotech Phase 5 consolidated xenotype
+  transitions into it); it was keyed only on the retired `XenotypeChanged` token and could never fire
+  from live gameplay. Dropped the unreachable `MechCluster` keyword from the two mechanoid seeds (mech
+  clusters land via `IncidentWorker_MechCluster`, which is not raid-like, so `raid=MechCluster` is
+  never emitted; those seeds still reach recall via `faction=Mechanoid`). Added a `DiaryLoreSeedDef`
+  config-error and a `MemoryExtraction.IsQueryReachableToken` guard so an authored keyword the prose
+  query tokenizer would drop (under three chars or a stopword) is reported at load instead of shipped
+  dead. New pure regression tests: progression seeds must target a runtime-emitted token, and every
+  catalog keyword token must be query-reachable.
 - **Master Wave 11 / Biotech Phase 8.** Added DLC-safe psychic-bond lifecycle pages and XML-tuned severe interrupted-deathrest capture with exact nested-signal ownership and EN/RU parity.
 - **Master Wave 11 / Biotech Phase 7.** Added DLC-safe pollution thresholds, strongest-band bounded transitions, reload-safe reclamation/decay, qualitative ambient-pressure context, and EN/RU parity.
 - **Lore memory L5 — progression lore seeds.** Identity-changing events (psylink, xenotype, gene

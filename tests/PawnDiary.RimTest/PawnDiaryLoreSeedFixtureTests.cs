@@ -293,11 +293,11 @@ namespace PawnDiary.RimTests
             string pawnAId = pawnA.GetUniqueLoadID();
             string pawnBId = pawnB.GetUniqueLoadID();
 
-            DiaryEvent progressionEvent = AddRawPairEvent(pawnA, pawnB, "XenotypeChanged", "identity shift");
+            DiaryEvent progressionEvent = AddRawPairEvent(pawnA, pawnB, "GeneIdentityChanged", "identity shift");
 
             MemoryFragment seed = FindProgressionFragment(pawnAId);
             Require(seed != null,
-                "A registered XenotypeChanged event must attach a progression lore seed to the owner.");
+                "A registered GeneIdentityChanged event must attach a progression lore seed to the owner.");
             Require(seed.sourceEventId ==
                 "loreseed-progression:" + progressionEvent.eventId + ":" + TestProgressionSeedDefName,
                 "The progression sentinel must be eventId + seed Def, got '" + seed.sourceEventId + "'.");
@@ -317,7 +317,7 @@ namespace PawnDiary.RimTests
                 "The progression lifetime history must record the actual deposit.");
 
             int countAfterFirst = CountProgressionFragments(pawnAId);
-            AddRawPairEvent(pawnA, pawnB, "XenotypeChanged", "identity shift again");
+            AddRawPairEvent(pawnA, pawnB, "GeneIdentityChanged", "identity shift again");
             Require(CountProgressionFragments(pawnAId) == countAfterFirst,
                 "Exact-Def lifetime uniqueness must block a second deposit of the same seed.");
         }
@@ -341,7 +341,7 @@ namespace PawnDiary.RimTests
             RegisterProgressionSeedDef();
             string pawnAId = pawnA.GetUniqueLoadID();
 
-            DiaryEvent progressionEvent = AddRawPairEvent(pawnA, pawnB, "XenotypeChanged", "identity shift");
+            DiaryEvent progressionEvent = AddRawPairEvent(pawnA, pawnB, "GeneIdentityChanged", "identity shift");
             Require(CountProgressionFragments(pawnAId) == 1,
                 "Setup: the first pass must attach exactly one progression seed.");
 
@@ -364,7 +364,7 @@ namespace PawnDiary.RimTests
             string pawnAId = pawnA.GetUniqueLoadID();
 
             PawnDiaryMod.Settings.enableLoreSeeds = false;
-            DiaryEvent progressionEvent = AddRawPairEvent(pawnA, pawnB, "XenotypeChanged", "identity shift");
+            DiaryEvent progressionEvent = AddRawPairEvent(pawnA, pawnB, "GeneIdentityChanged", "identity shift");
             Require(GetMemories().HasDeposit(pawnAId, progressionEvent.eventId),
                 "The ordinary lived memory must still deposit while lore is disabled.");
             Require(CountProgressionFragments(pawnAId) == 0,
@@ -393,7 +393,7 @@ namespace PawnDiary.RimTests
             string pawnAId = pawnA.GetUniqueLoadID();
             for (int i = 0; i < 5; i++)
             {
-                AddRawPairEvent(pawnA, pawnB, "XenotypeChanged", "identity shift " + i);
+                AddRawPairEvent(pawnA, pawnB, "GeneIdentityChanged", "identity shift " + i);
             }
 
             Require(CountProgressionFragments(pawnAId) == 4,
@@ -430,7 +430,7 @@ namespace PawnDiary.RimTests
             string pawnAId = pawnA.GetUniqueLoadID();
             for (int i = 0; i < 3; i++)
             {
-                AddRawPairEvent(pawnA, pawnB, "XenotypeChanged", "identity shift " + i);
+                AddRawPairEvent(pawnA, pawnB, "GeneIdentityChanged", "identity shift " + i);
             }
 
             Require(CountProgressionFragments(pawnAId) == 2,
@@ -754,7 +754,7 @@ namespace PawnDiary.RimTests
                 weight = 1f,
                 tags = new List<string> { "body" },
                 hediffDefNames = hediffDefNames,
-                progressionEventDefNames = new List<string> { "XenotypeChanged" }
+                progressionEventDefNames = new List<string> { "GeneIdentityChanged" }
             });
         }
 

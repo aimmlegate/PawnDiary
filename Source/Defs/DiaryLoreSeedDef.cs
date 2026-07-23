@@ -94,6 +94,22 @@ namespace PawnDiary
                 yield return "lore seed declares more than " + MaxKeywords + " keywords";
             }
 
+            // §10: authored keywords match live queries only through the shared tokenizer. The
+            // identity path keeps short/stopword tokens, but the prose query path drops anything
+            // under three characters or in the stopword list, so such a keyword is deposited yet can
+            // never match. Report it here (matching the unknown-tag philosophy) instead of shipping
+            // a silently dead keyword. Reachability of the token's VALUE (whether any capture path
+            // emits it) is a separate authoring concern documented in DiaryLoreSeedDefs.xml.
+            List<string> normalizedKeywords = MemoryExtraction.NormalizeAuthoredKeywords(keywords, MaxKeywords);
+            for (int i = 0; i < normalizedKeywords.Count; i++)
+            {
+                if (!MemoryExtraction.IsQueryReachableToken(normalizedKeywords[i]))
+                {
+                    yield return "lore seed keyword token '" + normalizedKeywords[i]
+                        + "' is under three characters or a stopword and can never match a live query";
+                }
+            }
+
             bool progressionUsage = usage == LoreSeedTokens.UsageProgression
                 || usage == LoreSeedTokens.UsageBoth;
             if (progressionUsage && (progressionEventDefNames == null || progressionEventDefNames.Count == 0))
