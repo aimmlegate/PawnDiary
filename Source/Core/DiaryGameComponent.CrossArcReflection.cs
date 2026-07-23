@@ -55,7 +55,12 @@ namespace PawnDiary
                     changeOrConsequenceFacets =
                         new List<string>(policy.reflectionChangeOrConsequenceFacets
                             ?? new List<string>()),
-                    candidates = CollectCrossArcMemoryCandidates(diary, pawnId)
+                    candidates = CollectCrossArcMemoryCandidates(
+                        diary,
+                        pawnId,
+                        nowTick,
+                        state?.lastCrossArcTick ?? -1,
+                        policy.reflectionCandidateScanCap)
                 });
 
             runtime.opportunity.candidateMemoryCount = selection.candidateCount;
@@ -82,13 +87,19 @@ namespace PawnDiary
 
         private List<CrossArcMemoryCandidate> CollectCrossArcMemoryCandidates(
             PawnDiaryRecord diary,
-            string pawnId)
+            string pawnId,
+            int currentTick,
+            int eligibleAfterTick,
+            int candidateCap)
         {
-            List<CrossArcMemoryCandidate> result = new List<CrossArcMemoryCandidate>();
+            int cap = Math.Max(2, candidateCap);
+            List<CrossArcMemoryCandidate> hot = new List<CrossArcMemoryCandidate>();
             List<string> hotIds = diary?.eventIds;
             if (hotIds != null)
             {
-                for (int i = 0; i < hotIds.Count; i++)
+                // Diary refs are appended in event order. Walk newest-first and stop once this source
+                // has supplied a bounded slice; the final merge below applies the global newest cap.
+                for (int i = hotIds.Count - 1; i >= 0 && hot.Count < cap; i--)
                 {
                     DiaryEvent diaryEvent = events.FindEvent(hotIds[i]);
                     string role;
@@ -99,18 +110,89 @@ namespace PawnDiary
 
                     CrossArcMemoryCandidate candidate = CrossArcCandidateFromEvent(
                         diaryEvent, pawnId, role);
-                    if (candidate != null) result.Add(candidate);
+                    if (UsableCrossArcProjection(candidate, currentTick, eligibleAfterTick))
+                    {
+                        hot.Add(candidate);
+                    }
                 }
             }
 
-            IReadOnlyList<ArchivedDiaryEntry> archived = archive.EntriesForPawn(pawnId);
-            for (int i = 0; i < archived.Count; i++)
+            List<CrossArcMemoryCandidate> cold = new List<CrossArcMemoryCandidate>();
+            IReadOnlyList<ArchivedDiaryEntry> archived = archive.NarrativeEntriesForPawn(pawnId);
+            for (int i = archived.Count - 1; i >= 0 && cold.Count < cap; i--)
             {
-                CrossArcMemoryCandidate candidate = CrossArcCandidateFromArchive(archived[i]);
-                if (candidate != null) result.Add(candidate);
+                ArchivedDiaryEntry entry = archived[i];
+                if (entry == null)
+                {
+                    continue;
+                }
+                // This index is oldest-first. Once its newest-to-oldest walk reaches the already-used
+                // boundary, all remaining rows are ineligible and no full archive scan is needed.
+                if (entry.tick <= eligibleAfterTick)
+                {
+                    break;
+                }
+
+                CrossArcMemoryCandidate candidate = CrossArcCandidateFromArchive(entry);
+                if (UsableCrossArcProjection(candidate, currentTick, eligibleAfterTick))
+                {
+                    cold.Add(candidate);
+                }
             }
 
+            List<CrossArcMemoryCandidate> result = new List<CrossArcMemoryCandidate>(hot.Count + cold.Count);
+            result.AddRange(hot);
+            result.AddRange(cold);
+            result.Sort(CompareNewestCrossArcProjection);
+            if (result.Count > cap)
+            {
+                result.RemoveRange(cap, result.Count - cap);
+            }
             return result;
+        }
+
+        /// <summary>
+        /// Cheap adapter-side prefilter used only to bound projection before the pure selector repeats
+        /// the complete source-of-truth qualification.
+        /// </summary>
+        private static bool UsableCrossArcProjection(
+            CrossArcMemoryCandidate candidate,
+            int currentTick,
+            int eligibleAfterTick)
+        {
+            if (candidate == null
+                || candidate.reflection
+                || candidate.recap
+                || candidate.tick <= eligibleAfterTick
+                || candidate.tick > currentTick
+                || string.IsNullOrWhiteSpace(CrossArcReflectionMemorySelector.MemoryText(candidate))
+                || candidate.references == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < candidate.references.Count; i++)
+            {
+                NarrativeReference reference = candidate.references[i];
+                if (reference != null
+                    && (!string.IsNullOrWhiteSpace(reference.arcKey)
+                        || (!string.IsNullOrWhiteSpace(reference.subjectKind)
+                            && !string.IsNullOrWhiteSpace(reference.subjectId))))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static int CompareNewestCrossArcProjection(
+            CrossArcMemoryCandidate left,
+            CrossArcMemoryCandidate right)
+        {
+            int tick = right.tick.CompareTo(left.tick);
+            return tick != 0
+                ? tick
+                : string.Compare(left.eventId, right.eventId, StringComparison.Ordinal);
         }
 
         /// <summary>Projects one hot POV page, including its own exact source evidence, for RimTests.</summary>
@@ -137,6 +219,7 @@ namespace PawnDiary
             {
                 eventId = diaryEvent.eventId,
                 pawnId = pawnId,
+                povRole = role,
                 tick = diaryEvent.tick,
                 date = diaryEvent.date,
                 text = diaryEvent.TextForRole(role),
@@ -164,6 +247,7 @@ namespace PawnDiary
             {
                 eventId = entry.eventId,
                 pawnId = entry.pawnId,
+                povRole = entry.povRole,
                 tick = entry.tick,
                 date = entry.date,
                 text = entry.text,
@@ -194,7 +278,9 @@ namespace PawnDiary
                 {
                     eventId = source.eventId,
                     pawnId = source.pawnId,
-                    povRole = DiaryEvent.InitiatorRole,
+                    povRole = string.IsNullOrWhiteSpace(source.povRole)
+                        ? DiaryEvent.InitiatorRole
+                        : source.povRole,
                     tick = source.tick,
                     date = source.date,
                     label = source.label,

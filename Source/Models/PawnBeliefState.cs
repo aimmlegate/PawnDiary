@@ -208,35 +208,54 @@ namespace PawnDiary
         /// Silently establishes the N4 reflection boundary and clears pre-feature pending debt.
         /// Observation fields remain intact so the next scan compares against the real current baseline.
         /// </summary>
-        internal void BaselineReflection(int day, int tick, BeliefPolicySnapshot policy)
+        internal void BaselineReflection(int tick, BeliefPolicySnapshot policy)
         {
-            int normalizedDay = Math.Max(0, day);
-            lastReflectionTick = Math.Max(0, tick);
+            int normalizedTick = Math.Max(0, tick);
+            int normalizedDay = normalizedTick / GenDate.TicksPerDay;
+            lastReflectionTick = normalizedTick;
             lastReflectionDay = normalizedDay;
             lastReflectionQuadrum = normalizedDay / GenDate.DaysPerQuadrum;
             reflectionsThisQuadrum = 0;
             lastReflectedSourceIds.Clear();
             ClearPendingCertainty();
             ClearPendingIdeologyChange();
-            Normalize(Math.Max(0, tick), policy);
+            Normalize(normalizedTick, policy);
+        }
+
+        /// <summary>
+        /// Bounds disabled reflection debt on the game-tick clock without forgetting source/precept
+        /// repetition history. Migration baselines intentionally clear that history; a settings toggle
+        /// must not make an already-used source eligible again.
+        /// </summary>
+        internal void AdvanceDisabledReflectionDebt(int tick, BeliefPolicySnapshot policy)
+        {
+            int normalizedTick = Math.Max(0, tick);
+            int normalizedDay = normalizedTick / GenDate.TicksPerDay;
+            lastReflectionTick = normalizedTick;
+            lastReflectionDay = normalizedDay;
+            lastReflectionQuadrum = normalizedDay / GenDate.DaysPerQuadrum;
+            reflectionsThisQuadrum = 0;
+            ClearPendingCertainty();
+            ClearPendingIdeologyChange();
+            Normalize(normalizedTick, policy);
         }
 
         /// <summary>Consumes only the belief facts used by a successfully created reflection page.</summary>
         internal void MarkReflection(
-            int day,
             int tick,
             IList<string> sourceEventIds,
             BeliefStanceResolution resolution,
             BeliefPolicySnapshot policy)
         {
             BeliefPolicySnapshot effective = policy ?? BeliefPolicySnapshot.CreateDefault();
-            int normalizedDay = Math.Max(0, day);
+            int normalizedTick = Math.Max(0, tick);
+            int normalizedDay = normalizedTick / GenDate.TicksPerDay;
             int quadrum = normalizedDay / GenDate.DaysPerQuadrum;
             if (lastReflectionQuadrum != quadrum)
             {
                 reflectionsThisQuadrum = 0;
             }
-            lastReflectionTick = Math.Max(0, tick);
+            lastReflectionTick = normalizedTick;
             lastReflectionDay = normalizedDay;
             lastReflectionQuadrum = quadrum;
             reflectionsThisQuadrum = Math.Min(
@@ -268,7 +287,7 @@ namespace PawnDiary
                 effective.maximumRecentSelections, effective.maximumIdentifierCharacters);
             ClearPendingCertainty();
             ClearPendingIdeologyChange();
-            Normalize(Math.Max(0, tick), effective);
+            Normalize(normalizedTick, effective);
         }
 
         private void ClearPendingCertainty()

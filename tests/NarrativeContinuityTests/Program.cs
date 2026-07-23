@@ -1993,6 +1993,24 @@ namespace NarrativeContinuityTests
             AssertTrue("different DLC memories without an exact shared arc or subject do not qualify",
                 !unrelatedDlcPages.qualified);
 
+            CrossArcMemorySelection selfSubjectOnly = CrossArcReflectionMemorySelector.Select(
+                CrossRequest(
+                    CrossSubjectMemory(
+                        "royalty-self", 100, NarrativeSubjectKindTokens.Pawn, "pawn-1", "granted"),
+                    CrossSubjectMemory(
+                        "biotech-self", 200, NarrativeSubjectKindTokens.Pawn, "pawn-1", "implanted")));
+            AssertTrue("the POV pawn's own subject id cannot link otherwise unrelated DLC memories",
+                !selfSubjectOnly.qualified);
+
+            CrossArcMemorySelection sharedOtherSubject = CrossArcReflectionMemorySelector.Select(
+                CrossRequest(
+                    CrossSubjectMemory(
+                        "bond-start", 100, NarrativeSubjectKindTokens.Pawn, "pawn-2", "formed"),
+                    CrossSubjectMemory(
+                        "bond-end", 200, NarrativeSubjectKindTokens.Pawn, "pawn-2", "ruptured")));
+            AssertTrue("an exact non-self subject still links two genuine phases",
+                sharedOtherSubject.qualified);
+
             CrossArcMemoryCandidate priorReflection =
                 CrossMemory("reflection-page", 200, "family|7", "changed");
             priorReflection.reflection = true;
@@ -2002,6 +2020,70 @@ namespace NarrativeContinuityTests
                     priorReflection));
             AssertTrue("prior reflection pages are excluded from linked memory selection",
                 !reflectionsExcluded.qualified);
+
+            CrossArcMemoryCandidate priorRecap =
+                CrossMemory("recap-page", 200, "family|7", "changed");
+            priorRecap.recap = true;
+            AssertTrue("unrelated recap pages are excluded from linked memory selection",
+                !CrossArcReflectionMemorySelector.Select(
+                    CrossRequest(
+                        CrossMemory("event-start", 100, "family|7", "began"),
+                        priorRecap)).qualified);
+
+            AssertTrue("future memories are excluded",
+                !CrossArcReflectionMemorySelector.Select(
+                    CrossRequest(
+                        CrossMemory("event-start", 100, "family|7", "began"),
+                        CrossMemory("future-change", 1001, "family|7", "changed"))).qualified);
+
+            CrossArcMemorySelectionRequest boundaryRequest = CrossRequest(
+                CrossMemory("boundary-start", 100, "family|7", "began"),
+                CrossMemory("later-change", 200, "family|7", "changed"));
+            boundaryRequest.eligibleAfterTick = 100;
+            AssertTrue("the prior cross-arc boundary is exclusive",
+                !CrossArcReflectionMemorySelector.Select(boundaryRequest).qualified);
+
+            CrossArcMemoryCandidate missingReference =
+                CrossMemory("missing-ref", 200, "family|7", "changed");
+            missingReference.references.Clear();
+            AssertTrue("a page without an exact saved reference is excluded",
+                !CrossArcReflectionMemorySelector.Select(
+                    CrossRequest(
+                        CrossMemory("event-start", 100, "family|7", "began"),
+                        missingReference)).qualified);
+
+            CrossArcMemorySelectionRequest cappedRequest = CrossRequest(
+                CrossMemory("cap-old", 100, "family|7", "began"),
+                CrossMemory("cap-middle", 200, "family|7", "changed"),
+                CrossMemory("cap-new", 300, "family|7", "settled"));
+            cappedRequest.candidateScanCap = 2;
+            CrossArcMemorySelection capped = CrossArcReflectionMemorySelector.Select(cappedRequest);
+            AssertTrue("candidate scan cap keeps the newest bounded linked set",
+                capped.qualified && capped.candidateCount == 2);
+            AssertEqual("candidate scan cap drops the oldest row", "cap-middle",
+                capped.sourceEventIds[0]);
+
+            AssertTrue("configured change-or-consequence gate rejects neutral linked phases",
+                !CrossArcReflectionMemorySelector.Select(
+                    CrossRequest(
+                        CrossMemory("neutral-start", 100, "family|7", "began", "neutral"),
+                        CrossMemory("neutral-end", 200, "family|7", "ended", "neutral"))).qualified);
+
+            CrossArcMemoryCandidate multiReference =
+                CrossMemory("multi-reference", 200, "family|7", "began", "neutral");
+            multiReference.references.Add(new NarrativeReference
+            {
+                arcKey = "family|7",
+                phase = "changed",
+                facet = NarrativeFacetTokens.IdentityTransition,
+                sourceEventId = "multi-reference",
+                sourceTick = 200
+            });
+            AssertTrue("all facts on duplicate exact-link rows contribute to phase and change gates",
+                CrossArcReflectionMemorySelector.Select(
+                    CrossRequest(
+                        CrossMemory("single-phase", 100, "family|7", "began", "neutral"),
+                        multiReference)).qualified);
 
             // Runtime archive rows project their saved NarrativeReference into this same DTO. No hot
             // DiaryEvent or provider object is required for the exact link to remain selectable.
@@ -2294,7 +2376,8 @@ namespace NarrativeContinuityTests
             string eventId,
             int tick,
             string arcKey,
-            string phase)
+            string phase,
+            string facet = NarrativeFacetTokens.IdentityTransition)
         {
             return new CrossArcMemoryCandidate
             {
@@ -2309,12 +2392,25 @@ namespace NarrativeContinuityTests
                     {
                         arcKey = arcKey,
                         phase = phase,
-                        facet = NarrativeFacetTokens.IdentityTransition,
+                        facet = facet,
                         sourceEventId = eventId,
                         sourceTick = tick
                     }
                 }
             };
+        }
+
+        private static CrossArcMemoryCandidate CrossSubjectMemory(
+            string eventId,
+            int tick,
+            string subjectKind,
+            string subjectId,
+            string phase)
+        {
+            CrossArcMemoryCandidate candidate = CrossMemory(eventId, tick, string.Empty, phase);
+            candidate.references[0].subjectKind = subjectKind;
+            candidate.references[0].subjectId = subjectId;
+            return candidate;
         }
 
         private static NarrativeDetailBudget Budget(NarrativePolicySnapshot policy, string level)

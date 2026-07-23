@@ -28,9 +28,14 @@ namespace PawnDiary
         {
             int nowTick = Find.TickManager.TicksGame;
             BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
-            PawnBeliefState belief = diary.EnsureBeliefState();
-            belief.Normalize(nowTick, policy);
-            bool groupEnabled = ModsConfig.IdeologyActive
+            bool ideologyActive = ModsConfig.IdeologyActive;
+            PawnBeliefState belief = diary?.beliefState;
+            if (belief == null && ideologyActive && policy.enabled)
+            {
+                belief = diary.EnsureBeliefState();
+            }
+            belief?.Normalize(nowTick, policy);
+            bool groupEnabled = ideologyActive
                 && policy.enabled
                 && IsReflectionGroupEnabled(BeliefReflectionEventData.DefNameToken);
             ReflectionRuntimeCandidate runtime = new ReflectionRuntimeCandidate
@@ -42,7 +47,7 @@ namespace PawnDiary
                     nowTick = nowTick,
                     candidateMemoryCount = 1,
                     linkedMemoryCount = 1,
-                    importance = belief.pendingIdeologyChange
+                    importance = belief?.pendingIdeologyChange == true
                         ? NarrativeSalienceTokens.Major
                         : NarrativeSalienceTokens.Meaningful,
                     due = false,
@@ -50,9 +55,12 @@ namespace PawnDiary
                     groupEnabled = groupEnabled
                 }
             };
-            runtime.advanceDisabledDebt = () =>
-                belief.BaselineReflection(day, nowTick, policy);
-            if (!groupEnabled || !collectEvidence || belief.baselineOnNextScan
+            if (belief != null)
+            {
+                runtime.advanceDisabledDebt = () =>
+                    belief.AdvanceDisabledReflectionDebt(nowTick, policy);
+            }
+            if (belief == null || !groupEnabled || !collectEvidence || belief.baselineOnNextScan
                 || !belief.hasLastObservation)
             {
                 return runtime;
@@ -117,7 +125,7 @@ namespace PawnDiary
             runtime.dispatch = () => DispatchPreparedBeliefReflection(
                 pawn, pawnId, nowTick, decision, prepared);
             runtime.consumeAfterDispatch = () =>
-                belief.MarkReflection(day, nowTick, sourceIds, prepared.resolution, policy);
+                belief.MarkReflection(nowTick, sourceIds, prepared.resolution, policy);
             return runtime;
         }
 

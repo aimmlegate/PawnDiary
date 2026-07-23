@@ -26,6 +26,10 @@ namespace PawnDiary
             new Dictionary<string, List<ArchivedDiaryEntry>>(StringComparer.Ordinal);
         private readonly Dictionary<string, List<ArchivedDiaryEntry>> entriesByNarrativeSubject =
             new Dictionary<string, List<ArchivedDiaryEntry>>(StringComparer.Ordinal);
+        // Cross-arc reflection asks only for pages that carry exact saved references. Keeping that
+        // per-pawn subset indexed prevents each rest opportunity from projecting the full archive.
+        private readonly Dictionary<string, List<ArchivedDiaryEntry>> narrativeEntriesByPawnId =
+            new Dictionary<string, List<ArchivedDiaryEntry>>(StringComparer.Ordinal);
 
         public int Count
         {
@@ -45,6 +49,7 @@ namespace PawnDiary
             entriesByEventAndRole.Clear();
             entriesByNarrativeArc.Clear();
             entriesByNarrativeSubject.Clear();
+            narrativeEntriesByPawnId.Clear();
         }
 
         public IReadOnlyList<ArchivedDiaryEntry> EntriesForPawn(string pawnId)
@@ -61,6 +66,24 @@ namespace PawnDiary
         public int CountForPawn(string pawnId)
         {
             return EntriesForPawn(pawnId).Count;
+        }
+
+        /// <summary>
+        /// Returns only archived POV pages that carry exact narrative references, oldest first. This
+        /// transient index is rebuilt from saved rows and lets rest-time selection read a bounded newest
+        /// slice without scanning unrelated archive pages.
+        /// </summary>
+        public IReadOnlyList<ArchivedDiaryEntry> NarrativeEntriesForPawn(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return EmptyArchiveEntries.List;
+            }
+
+            List<ArchivedDiaryEntry> entries;
+            return narrativeEntriesByPawnId.TryGetValue(pawnId, out entries)
+                ? entries
+                : EmptyArchiveEntries.List;
         }
 
         /// <summary>
@@ -340,6 +363,7 @@ namespace PawnDiary
             entriesByEventAndRole.Clear();
             entriesByNarrativeArc.Clear();
             entriesByNarrativeSubject.Clear();
+            narrativeEntriesByPawnId.Clear();
             for (int i = 0; i < archiveEntries.Count; i++)
             {
                 ArchivedDiaryEntry entry = archiveEntries[i];
@@ -408,6 +432,10 @@ namespace PawnDiary
             entries.Add(entry);
 
             List<NarrativeReference> references = NarrativeStatePersistence.ToReferences(entry.narrativeReferences);
+            if (references.Count > 0)
+            {
+                AddToNarrativePawnIndex(entry);
+            }
             for (int i = 0; i < references.Count; i++)
             {
                 NarrativeReference reference = references[i];
@@ -452,6 +480,32 @@ namespace PawnDiary
             {
                 entries.Add(entry);
             }
+        }
+
+        private void AddToNarrativePawnIndex(ArchivedDiaryEntry entry)
+        {
+            List<ArchivedDiaryEntry> entries;
+            if (!narrativeEntriesByPawnId.TryGetValue(entry.pawnId, out entries))
+            {
+                entries = new List<ArchivedDiaryEntry>();
+                narrativeEntriesByPawnId[entry.pawnId] = entries;
+            }
+
+            int insertAt = entries.Count;
+            while (insertAt > 0 && CompareNarrativeArchiveOrder(entry, entries[insertAt - 1]) < 0)
+            {
+                insertAt--;
+            }
+            entries.Insert(insertAt, entry);
+        }
+
+        private static int CompareNarrativeArchiveOrder(
+            ArchivedDiaryEntry left,
+            ArchivedDiaryEntry right)
+        {
+            int tick = left.tick.CompareTo(right.tick);
+            if (tick != 0) return tick;
+            return string.Compare(left.ArchiveKey, right.ArchiveKey, StringComparison.Ordinal);
         }
 
         // Stable composite key for the (eventId, povRole) lookup. The unit separator (\x1F) cannot

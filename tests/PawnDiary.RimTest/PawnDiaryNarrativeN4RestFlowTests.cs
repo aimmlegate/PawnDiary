@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using PawnDiary.Capture;
+using RimWorld;
 using RimTestRedux;
 using Verse;
 
@@ -218,6 +219,45 @@ namespace PawnDiary.RimTests
                 "The global cooldown allowed a second belief reflection in the same rest.");
         }
 
+        /// <summary>
+        /// Belief cadence is persisted on the same TicksGame clock used by Normalize. Disabled debt
+        /// advances that boundary without erasing the source ids that prevent repetition after re-enable.
+        /// </summary>
+        [Test]
+        public static void BeliefCadenceUsesGameTickClockAndDisabledDebtKeepsDedupHistory()
+        {
+            int nowTick = Find.TickManager.TicksGame;
+            BeliefPolicySnapshot policy = DiaryBeliefPolicy.Snapshot();
+            PawnBeliefState belief = new PawnBeliefState();
+            belief.MarkReflection(
+                nowTick,
+                new List<string> { "rimtest-belief-source" },
+                new BeliefStanceResolution(),
+                policy);
+
+            int expectedGameDay = nowTick / GenDate.TicksPerDay;
+            PawnDiaryRimTestScope.Require(
+                belief.lastReflectionTick == nowTick
+                    && belief.lastReflectionDay == expectedGameDay
+                    && belief.lastReflectionQuadrum == expectedGameDay / GenDate.DaysPerQuadrum
+                    && belief.reflectionsThisQuadrum == 1,
+                "Belief reflection cadence was not recorded in TicksGame-derived day units.");
+
+            belief.Normalize(nowTick, policy);
+            PawnDiaryRimTestScope.Require(
+                belief.lastReflectionTick == nowTick && belief.reflectionsThisQuadrum == 1,
+                "Normalize erased a valid belief cooldown/quadrum counter after MarkReflection.");
+
+            belief.pendingIdeologyChange = true;
+            belief.pendingPreviousIdeologyId = "rimtest-belief-before";
+            belief.pendingCurrentIdeologyId = "rimtest-belief-after";
+            belief.AdvanceDisabledReflectionDebt(nowTick, policy);
+            PawnDiaryRimTestScope.Require(
+                !belief.pendingIdeologyChange
+                    && belief.lastReflectedSourceIds.Contains("rimtest-belief-source"),
+                "Disabled belief debt did not clear pending work while preserving source dedup history.");
+        }
+
         private static PawnReflectionState AlreadyBaselined(PawnDiaryRecord diary)
         {
             PawnReflectionState reflection = diary.EnsureReflectionState();
@@ -310,34 +350,59 @@ namespace PawnDiary.RimTests
             EventRepository().Register(hot);
             diary.eventIds.Add(hotEventId);
 
-            ArchivedDiaryEntry archived = new ArchivedDiaryEntry
+            DiaryEvent archiveSource = new DiaryEvent
             {
                 eventId = archiveEventId,
-                pawnId = pawnId,
-                povRole = DiaryEvent.InitiatorRole,
                 tick = Math.Max(0, nowTick - 1),
                 date = "RimTest later phase",
-                text = "The fixture journey reached its destination.",
                 interactionDefName = "RimTestNarrativePhase",
                 interactionLabel = "later journey phase",
-                narrativeReferences = NarrativeStatePersistence.FromReferences(
-                    new List<NarrativeReference>
-                    {
-                        new NarrativeReference
-                        {
-                            facet = NarrativeFacetTokens.JourneyChapter,
-                            phase = "landed",
-                            subjectKind = NarrativeSubjectKindTokens.Ship,
-                            subjectId = subjectId,
-                            arcKey = arcKey,
-                            sourceEventId = archiveEventId,
-                            sourceTick = Math.Max(0, nowTick - 1)
-                        }
-                    })
+                solo = true,
+                initiatorPawnId = pawnId,
+                initiatorName = pawn.LabelShortCap,
+                initiatorText = "The fixture journey reached its destination."
             };
+            archiveSource.ApplyNarrativeContext(DiaryEvent.InitiatorRole, new NarrativeContextBuildResult
+            {
+                evidence = new List<NarrativeEvidence>
+                {
+                    ExactJourneyEvidence(
+                        archiveEventId,
+                        pawnId,
+                        archiveSource.tick,
+                        "landed",
+                        arcKey,
+                        subjectId)
+                },
+                selection = new NarrativeContextSelection()
+            });
+
+            // Exercise the production compaction constructor, then remove the source from the hot store
+            // exactly as retention does. The cross-arc collector must recover its references only from
+            // the compact row and the archive's transient narrative index.
+            EventRepository().Register(archiveSource);
+            diary.eventIds.Add(archiveEventId);
+            DiaryEntryView archiveView = archiveSource.ToViewFor(pawnId, archivedForScans: true);
+            ArchivedDiaryEntry archived = ArchivedDiaryEntry.FromEvent(
+                archiveSource,
+                pawnId,
+                archiveView,
+                forceFallback: false);
+            PawnDiaryRimTestScope.Require(
+                archived != null
+                    && archived.narrativeReferences != null
+                    && archived.narrativeReferences.Count > 0,
+                "The real compaction constructor dropped the source page's exact references.");
             PawnDiaryRimTestScope.Require(
                 ArchiveRepository().AddOrKeep(archived),
                 "The fixture could not insert its compact archive-only memory.");
+            diary.eventIds.Remove(archiveEventId);
+            EventRepository().RemoveEvent(archiveEventId);
+
+            PawnDiaryRimTestScope.Require(
+                EventRepository().FindEvent(archiveEventId) == null
+                    && ArchiveRepository().NarrativeEntriesForPawn(pawnId).Count > 0,
+                "The fixture did not become archive-only through the indexed compaction path.");
             return archiveEventId;
         }
 

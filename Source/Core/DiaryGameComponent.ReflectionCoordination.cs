@@ -88,7 +88,7 @@ namespace PawnDiary
             }
             if (state.linkedBaselineOnNextOpportunity)
             {
-                BaselineLinkedReflectionState(diary, day, nowTick, state);
+                BaselineLinkedReflectionState(diary, nowTick, state);
                 return false;
             }
 
@@ -191,7 +191,7 @@ namespace PawnDiary
             state.MarkWritten(NarrativeReflectionKindTokens.Quadrum, nowTick);
             state.MarkWritten(NarrativeReflectionKindTokens.Day, nowTick);
             diary.EnsureBeliefState().BaselineReflection(
-                day, nowTick, DiaryBeliefPolicy.Snapshot());
+                nowTick, DiaryBeliefPolicy.Snapshot());
 
             PawnArcScheduleState schedule = diary.EnsureArcSchedule();
             schedule.forcedArcYear = CurrentRimYear();
@@ -210,14 +210,13 @@ namespace PawnDiary
         /// </summary>
         private static void BaselineLinkedReflectionState(
             PawnDiaryRecord diary,
-            int day,
             int nowTick,
             PawnReflectionState state)
         {
             state.linkedBaselineOnNextOpportunity = false;
             state.MarkWritten(NarrativeReflectionKindTokens.CrossArc, nowTick);
             state.MarkWritten(NarrativeReflectionKindTokens.Belief, nowTick);
-            diary?.EnsureBeliefState()?.BaselineReflection(day, nowTick, DiaryBeliefPolicy.Snapshot());
+            diary?.EnsureBeliefState()?.BaselineReflection(nowTick, DiaryBeliefPolicy.Snapshot());
         }
 
         private static ReflectionRuntimeCandidate FindRuntimeCandidate(

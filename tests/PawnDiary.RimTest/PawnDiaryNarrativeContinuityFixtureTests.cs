@@ -195,7 +195,7 @@ namespace PawnDiary.RimTests
             {
                 eventId = "rimtest-cross-archive",
                 pawnId = pawnId,
-                povRole = DiaryEvent.InitiatorRole,
+                povRole = DiaryEvent.RecipientRole,
                 tick = 200,
                 date = "2nd Aprimay 5502",
                 text = "Mira reached the destination.",
@@ -225,6 +225,9 @@ namespace PawnDiary.RimTests
                 "The hot-page projection dropped its own exact source evidence.");
             Require(archiveCandidate != null && archiveCandidate.references.Count == 1,
                 "The compact archive projection dropped its saved exact reference.");
+            Require(hotCandidate.povRole == DiaryEvent.InitiatorRole
+                    && archiveCandidate.povRole == DiaryEvent.RecipientRole,
+                "Cross-arc projection did not preserve each source page's real POV role.");
 
             CrossArcMemorySelection selected = CrossArcReflectionMemorySelector.Select(
                 new CrossArcMemorySelectionRequest

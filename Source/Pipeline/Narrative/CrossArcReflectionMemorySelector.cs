@@ -11,6 +11,7 @@ namespace PawnDiary
     {
         public string eventId = string.Empty;
         public string pawnId = string.Empty;
+        public string povRole = string.Empty;
         public int tick;
         public string date = string.Empty;
         public string text = string.Empty;
@@ -65,9 +66,9 @@ namespace PawnDiary
         private sealed class LinkedCandidate
         {
             public CrossArcMemoryCandidate candidate;
-            public string phase = string.Empty;
-            public string facet = string.Empty;
-            public string arcKey = string.Empty;
+            public List<string> phases = new List<string>();
+            public List<string> facets = new List<string>();
+            public List<string> arcKeys = new List<string>();
         }
 
         private sealed class LinkGroup
@@ -93,7 +94,7 @@ namespace PawnDiary
                 return empty;
             }
 
-            Dictionary<string, LinkGroup> groups = BuildGroups(usable);
+            Dictionary<string, LinkGroup> groups = BuildGroups(usable, request.pawnId);
             List<LinkGroup> qualified = new List<LinkGroup>();
             foreach (KeyValuePair<string, LinkGroup> pair in groups)
             {
@@ -163,7 +164,9 @@ namespace PawnDiary
             return ordered;
         }
 
-        private static Dictionary<string, LinkGroup> BuildGroups(List<CrossArcMemoryCandidate> candidates)
+        private static Dictionary<string, LinkGroup> BuildGroups(
+            List<CrossArcMemoryCandidate> candidates,
+            string pawnId)
         {
             Dictionary<string, LinkGroup> groups = new Dictionary<string, LinkGroup>(StringComparer.Ordinal);
             for (int i = 0; i < candidates.Count; i++)
@@ -175,7 +178,7 @@ namespace PawnDiary
                 {
                     NarrativeReference reference = references[r];
                     AddGroup(groups, ArcLinkKey(reference), candidate, reference);
-                    AddGroup(groups, SubjectLinkKey(reference), candidate, reference);
+                    AddGroup(groups, SubjectLinkKey(reference, pawnId), candidate, reference);
                 }
             }
 
@@ -200,24 +203,17 @@ namespace PawnDiary
             {
                 if (string.Equals(group.candidates[i].candidate.eventId, candidate.eventId, StringComparison.Ordinal))
                 {
-                    // Keep the lexically first phase/facet for a candidate that carries duplicate link rows.
-                    if (CompareReference(reference, group.candidates[i]) < 0)
-                    {
-                        group.candidates[i].phase = Clean(reference.phase);
-                        group.candidates[i].facet = Clean(reference.facet);
-                        group.candidates[i].arcKey = Clean(reference.arcKey);
-                    }
+                    MergeReferenceFacts(group.candidates[i], reference);
                     return;
                 }
             }
 
-            group.candidates.Add(new LinkedCandidate
+            LinkedCandidate linked = new LinkedCandidate
             {
-                candidate = candidate,
-                phase = Clean(reference.phase),
-                facet = Clean(reference.facet),
-                arcKey = Clean(reference.arcKey)
-            });
+                candidate = candidate
+            };
+            MergeReferenceFacts(linked, reference);
+            group.candidates.Add(linked);
         }
 
         private static CrossArcMemorySelection SelectFromGroup(
@@ -247,14 +243,17 @@ namespace PawnDiary
                 if (row?.candidate == null || !ids.Add(row.candidate.eventId)) continue;
                 result.selected.Add(row.candidate);
                 result.sourceEventIds.Add(row.candidate.eventId);
-                if (!string.IsNullOrEmpty(row.arcKey) && arcs.Add(row.arcKey))
+                for (int a = 0; a < row.arcKeys.Count; a++)
                 {
-                    result.arcKeys.Add(row.arcKey);
+                    if (arcs.Add(row.arcKeys[a])) result.arcKeys.Add(row.arcKeys[a]);
                 }
-                if (!string.IsNullOrEmpty(row.phase)) phases.Add(row.phase);
-                if (ContainsOrdinal(request.changeOrConsequenceFacets, row.facet))
+                for (int p = 0; p < row.phases.Count; p++) phases.Add(row.phases[p]);
+                for (int f = 0; f < row.facets.Count; f++)
                 {
-                    changeOrConsequence = true;
+                    if (ContainsOrdinal(request.changeOrConsequenceFacets, row.facets[f]))
+                    {
+                        changeOrConsequence = true;
+                    }
                 }
                 earliest = Math.Min(earliest, row.candidate.tick);
                 latest = Math.Max(latest, row.candidate.tick);
@@ -266,6 +265,7 @@ namespace PawnDiary
             result.hasCoherentLink = result.linkedMemoryCount >= Math.Max(2, request.minimumLinkedMemories);
             result.hasPhaseChange = result.distinctPhaseCount >= Math.Max(2, request.minimumDistinctPhases);
             result.hasChangeOrConsequence = changeOrConsequence;
+            result.arcKeys.Sort(StringComparer.Ordinal);
             result.qualified = result.hasCoherentLink
                 && result.hasPhaseChange
                 && (!request.requireChangeOrConsequence || result.hasChangeOrConsequence)
@@ -314,19 +314,43 @@ namespace PawnDiary
             return arc.Length == 0 ? string.Empty : "arc|" + arc;
         }
 
-        private static string SubjectLinkKey(NarrativeReference reference)
+        private static string SubjectLinkKey(NarrativeReference reference, string pawnId)
         {
             string kind = Clean(reference?.subjectKind);
             string id = Clean(reference?.subjectId);
-            return kind.Length == 0 || id.Length == 0 ? string.Empty : "subject|" + kind + "|" + id;
+            if (kind.Length == 0 || id.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            // Every candidate already belongs to pawnId. A reference back to that same POV pawn is
+            // therefore a tautology, not a relationship between memories: otherwise an unrelated title
+            // change, xenotype change, and belief thought could all join merely because each names "self".
+            if (string.Equals(kind, NarrativeSubjectKindTokens.Pawn, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(id, Clean(pawnId), StringComparison.Ordinal))
+            {
+                return string.Empty;
+            }
+
+            return "subject|" + kind + "|" + id;
         }
 
-        private static int CompareReference(NarrativeReference left, LinkedCandidate right)
+        private static void MergeReferenceFacts(LinkedCandidate target, NarrativeReference reference)
         {
-            int phase = string.Compare(Clean(left?.phase), right?.phase ?? string.Empty, StringComparison.Ordinal);
-            return phase != 0
-                ? phase
-                : string.Compare(Clean(left?.facet), right?.facet ?? string.Empty, StringComparison.Ordinal);
+            if (target == null || reference == null) return;
+            AddUnique(target.phases, Clean(reference.phase));
+            AddUnique(target.facets, Clean(reference.facet));
+            AddUnique(target.arcKeys, Clean(reference.arcKey));
+        }
+
+        private static void AddUnique(List<string> target, string value)
+        {
+            if (target == null || value.Length == 0) return;
+            for (int i = 0; i < target.Count; i++)
+            {
+                if (string.Equals(target[i], value, StringComparison.Ordinal)) return;
+            }
+            target.Add(value);
         }
 
         private static int CompareNewestCandidate(CrossArcMemoryCandidate left, CrossArcMemoryCandidate right)
