@@ -10,19 +10,18 @@ namespace PawnDiary
     // DiaryPrompts.Current (which falls back to safe defaults if the Def is absent).
     public class DiaryPromptDef : Def
     {
-        // Wrapped instruction appended after the structured context lines in a single-entry prompt.
-        // Kept short on purpose: the system prompt already carries the voice/atmosphere/truthfulness
-        // rules, so this only restates the task to anchor short-context models.
-        public string singlePovInstruction = "Write one to three first-person diary sentences as this colonist, about the event above. If the notes are thin, react specifically to what happened rather than inventing detail. Output only the diary entry.";
+        // Final instructions are short LAST-POSITION anchors: they restate only the task and length.
+        // The system prompt owns every truth/POV/style/output rule; fallbacks mirror the XML text.
+        public string singlePovInstruction = "Write 1-3 first-person diary sentences about the event above. Output only the entry.";
 
         // Wrapped instruction for the recipient's second request in paired sequential mode.
-        public string recipientFollowupInstruction = "Write one to three first-person diary sentences from the recipient's point of view, about the event above. The initiator's diary entry is hidden continuity context — do not write as if the recipient read it. If the notes are thin, react specifically to what happened rather than inventing detail. Output only the diary entry.";
+        public string recipientFollowupInstruction = "Write 1-3 first-person diary sentences from the recipient's point of view. The initiator's entry is hidden context — never mention or answer it. Output only the entry.";
 
         // Neutral, non-writing-style instruction for colonist death summaries.
-        public string deathDescriptionInstruction = "Write one to three complete third-person death-description sentences. Keep it brief. State how the colonist died using only the supplied facts: cause, weapon or illness, destroyed organ/body part if known, and nearby context. Do not use the pawn's writing style or write from first person. Prefer a shorter complete note over covering every detail. Output only the death description.";
+        public string deathDescriptionInstruction = "Write 1-3 third-person sentences describing how the colonist died, using only the supplied facts: cause, weapon or illness, lost parts, nearby context. Prefer a shorter complete note. Output only the death description.";
 
         // Neutral, non-writing-style instruction for the first diary entry describing how a pawn joined.
-        public string arrivalDescriptionInstruction = "Write one to three complete third-person colony-arrival sentences. Keep it brief. Explain how this pawn joined the colony using only the supplied scenario, pawn, joining facts, and backstory facts. For starting colonists, connect the scenario details with the pawn's childhood/adulthood descriptions and backstory effects to explain how they plausibly reached this beginning. For later colonists, use the join facts. Do not use the pawn's writing style or write from first person. Prefer a shorter complete note over covering every detail. Output only the arrival description.";
+        public string arrivalDescriptionInstruction = "Write 1-3 third-person sentences explaining how this pawn joined the colony, using only the supplied scenario, join, and backstory facts. For starting colonists, connect scenario and backstory into how they reached this beginning; for later joiners, use the join facts. Output only the arrival description.";
 
         // Default writing-style Def for new/existing pawns that do not have an explicit saved choice.
         // The field name is kept for save/XML compatibility with older Pawn Diary releases.
@@ -36,25 +35,23 @@ namespace PawnDiary
 
         // Diary voice: first-person entries (interactions, mental states, tales,
         // mood events, thoughts).
-        public string systemPrompt = "Write 1-3 first-person diary sentences using the POV colonist's writing style.\n"
-            + "You are the colonist named in \"pov\"; the notes may describe you in third person by that name. Write as \"I\" — never refer to yourself by name or in third person.\n"
-            + "Use only supplied fields. Do not invent people, places, dialogue, motives, outcomes, treatment, or time skips.\n"
-            + "Let event prompt, event enhancement, instruction, tone, setting, relationship, health, and the writing style's concrete mechanics shape mood and wording.\n"
-            + "Make the supplied facts feel immediate: use one concrete sensory detail, one emotional beat, and one small consequence or tension already implied by the context. Avoid flat summaries.\n"
-            + "Direct speech only when explicitly allowed: put the POV pawn's own words in [[speech]]words[[/speech]] and paraphrase everyone else.\n"
-            + "Output only diary text. End with normal sentence punctuation.";
+        public string systemPrompt = "You are the colonist named in \"pov\". Write 1-3 first-person diary sentences as \"I\", even where the notes describe you by name.\n"
+            + "Use only supplied facts: event first, event/group instruction second, tone and writing style last.\n"
+            + "Add at most one reaction of your own — an emotion, impression, or interpretation. Invent nothing else: no new events, people, places, actions, dialogue, motives, treatment, outcomes, or time skips.\n"
+            + "Open differently: never with weather, \"Today\", or your last opening line. Avoid stock phrases like \"heart skipped a beat\" or \"I couldn't help but\".\n"
+            + "Direct speech only for the POV pawn's own quoted words, as [[speech]]words[[/speech]]; paraphrase everyone else.\n"
+            + "Output only the diary entry. End with normal punctuation.";
 
         // Day reflection: first-person, looking back on the whole day, weaving the day's highlights.
-        public string systemPromptReflection = "Write 2-4 first-person end-of-day diary sentences using the colonist's writing style.\n"
-            + "You are the colonist named in \"pov\"; the notes may describe you in third person by that name. Write as \"I\" — never refer to yourself by name or in third person.\n"
-            + "Use only supplied day moments; choose the ones that still matter tonight instead of listing everything.\n"
-            + "Let mood, health, setting, and the writing style's concrete mechanics shape the reflection.\n"
-            + "Output only diary text. End with normal sentence punctuation.";
+        public string systemPromptReflection = "You are the colonist named in \"pov\". Write 2-4 first-person end-of-day diary sentences as \"I\", never your name.\n"
+            + "Choose one to three supplied day moments that still matter tonight — do not list everything. Connect them into one private thought, then apply mood, health, setting, and writing style. Invent nothing new.\n"
+            + "Begin differently from your last opening line. Avoid stock phrases like \"I couldn't help but\".\n"
+            + "Output only the diary entry. End with normal punctuation.";
 
         // Neutral chronicle: third-person, factual, no writing style (colonist death + arrival descriptions).
         public string systemPromptNeutral = "Write 1-3 short third-person factual RimWorld colony notes.\n"
-            + "Use only supplied facts. Do not invent names, causes, places, motives, outcomes, or details.\n"
-            + "Do not use writing style or first person. Output only note text. End with normal sentence punctuation.";
+            + "Use only supplied facts; invent no names, causes, motives, or outcomes.\n"
+            + "No writing style, no first person. Output only the note, with normal punctuation.";
 
         // Title generation: short chat-style subject for an existing diary entry.
         // Used only by the "Generate LLM titles" flow. The system prompt stays minimal so a small
@@ -62,8 +59,8 @@ namespace PawnDiary
         public string titleSystemPrompt = "Return a 3-8 word title for a RimWorld diary entry. "
             + "Output only the title: no quotes, period, markdown, labels, or commentary.";
 
-        public string titleUserInstruction = "Return one short title of three to eight words for this diary entry. "
-            + "Output only the title \u2014 no quotes, no period, no labels, no commentary.";
+        public string titleUserInstruction = "Return one title of three to eight words for the diary entry above \u2014 "
+            + "no quotes, period, labels, or commentary. Do not continue or rewrite the entry.";
     }
 
     // Accessor for the single DiaryPromptDef. Caches the lookup and falls back to a default

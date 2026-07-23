@@ -928,9 +928,9 @@
   <PawnDiary.Event.AmbientThoughtHeader>Small feelings and impressions colored the day:</PawnDiary.Event.AmbientThoughtHeader>
   <PawnDiary.Event.AmbientThoughtFallback>{0} carried a few passing feelings through the day.</PawnDiary.Event.AmbientThoughtFallback>
   <PawnDiary.Event.AmbientThoughtInstruction>write one natural diary paragraph about the emotional texture these passing feelings left behind; do not list each thought, do not mention counts, and only name the source of a feeling if it would matter to the pawn</PawnDiary.Event.AmbientThoughtInstruction>
-  <PawnDiary.Prompt.PairDirectSpeechInstruction.Initiator>Initiator POV for {0} — default: no speech block. The notes almost never contain {0}'s actual spoken words; when they do not, write {0}'s private reaction only, with no [[speech]] markup anywhere. Only if the notes quote or directly report words {0} said, put those exact words in one short [[speech]]...[[/speech]] line of its own, with no narration inside. Never quote {1}, never tag a thought as speech, never turn an interaction label into a quote, never invent a line.</PawnDiary.Prompt.PairDirectSpeechInstruction.Initiator>
-  <PawnDiary.Prompt.PairDirectSpeechInstruction.Recipient>Recipient POV for {0}: do not use [[speech]] blocks in this second-perspective entry. Paraphrase any spoken words as {0}'s private reaction to {1}; do not quote {1}, do not tag thoughts as speech, and do not invent words for {0} to say.</PawnDiary.Prompt.PairDirectSpeechInstruction.Recipient>
-  <PawnDiary.Prompt.SoloInteractionDirectSpeechInstruction>Single-POV interaction for {0} — default: no speech block. The notes almost never contain {0}'s actual spoken words; when they do not, write {0}'s private reaction only, with no [[speech]] markup anywhere. Only if the notes quote or directly report words {0} said, put those exact words in one short [[speech]]...[[/speech]] line of its own, with no narration inside. Never tag another pawn's words or a thought as speech, never turn an interaction label into a quote, never invent a line.</PawnDiary.Prompt.SoloInteractionDirectSpeechInstruction>
+  <PawnDiary.Prompt.PairDirectSpeechInstruction.Initiator>No [[speech]] block unless the notes quote {0}'s exact words; then put only those words in one [[speech]]...[[/speech]] line. Never quote {1}, never invent a line.</PawnDiary.Prompt.PairDirectSpeechInstruction.Initiator>
+  <PawnDiary.Prompt.PairDirectSpeechInstruction.Recipient>No [[speech]] blocks. Paraphrase {1}'s words as {0}'s private reaction; never quote or invent speech.</PawnDiary.Prompt.PairDirectSpeechInstruction.Recipient>
+  <PawnDiary.Prompt.SoloInteractionDirectSpeechInstruction>Use one [[speech]]...[[/speech]] line only for {0}'s exact quoted words from the notes; otherwise no speech markup. Never tag a thought as speech.</PawnDiary.Prompt.SoloInteractionDirectSpeechInstruction>
   <!-- Day reflection (end-of-day summary woven from the day's selected highlights) -->
   <PawnDiary.Event.DayReflectionLabel>Looking back on the day</PawnDiary.Event.DayReflectionLabel>
   <PawnDiary.Event.DayReflectionHeader>Of everything today, these stayed with {0}:</PawnDiary.Event.DayReflectionHeader>
@@ -1096,13 +1096,13 @@
   <!-- ===== Prompt context: descriptive words the model reads (the field KEYS stay English) ===== -->
   <!-- Writing-style block appended to the first-person system prompt at dispatch. {0} is the
        style label plus rule (e.g. "three-line-note: This pawn tends to write..."). -->
-  <PawnDiary.Prompt.PersonaVoice>How this pawn tends to write: {0} Preserve the event facts first, then follow the rule's concrete sentence shape, opening move, punctuation, and detail choice. Do not roleplay a chat persona, add catchphrases, or invent dialogue.</PawnDiary.Prompt.PersonaVoice>
+  <PawnDiary.Prompt.PersonaVoice>How this pawn writes: {0} Facts first, then this rule's sentence shape and detail choice. No chat persona.</PawnDiary.Prompt.PersonaVoice>
   <!-- Psychotype (outlook) block, placed BEFORE the writing-style block on eligible first-person
        entries. {0} is the psychotype rule ONLY (no label — the outlook is never named). -->
-  <PawnDiary.Prompt.PsychotypeLens>How this pawn tends to see things: {0} Let this color what the entry notices, what it worries over, and how it judges — never what happened. Build only from the supplied facts, and never describe or judge the pawn's personality; let it show through the entry.</PawnDiary.Prompt.PsychotypeLens>
+  <PawnDiary.Prompt.PsychotypeLens>How this pawn sees things: {0} Color what the entry notices and judges, never the facts; never name the outlook.</PawnDiary.Prompt.PsychotypeLens>
   <!-- Per-entry humor cue (hidden, always-on). {0} is one structural sentence-shape license
        chosen by stakes flavor. Appended after the writing-style block on eligible entries only. -->
-  <PawnDiary.Prompt.HumorVoice>For this one entry, an optional extra license is granted: {0} Use it only if it fits the supplied facts. Keep it to a single sentence and do not break the writing style above. Never force a joke, add a punchline, or invent comic dialogue.</PawnDiary.Prompt.HumorVoice>
+  <PawnDiary.Prompt.HumorVoice>Optional, only if it fits the facts: {0} At most one sentence; never break the writing style or force a joke.</PawnDiary.Prompt.HumorVoice>
   <PawnDiary.Prompt.SocialEvent>social event</PawnDiary.Prompt.SocialEvent>
   <PawnDiary.Prompt.Colony>colony</PawnDiary.Prompt.Colony>
   <PawnDiary.Prompt.Health.HighPriority>high priority</PawnDiary.Prompt.Health.HighPriority>

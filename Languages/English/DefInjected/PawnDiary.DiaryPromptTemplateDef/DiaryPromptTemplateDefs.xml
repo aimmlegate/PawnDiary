@@ -287,12 +287,10 @@
   <DiaryPromptTemplate_SoloDayReflection.fields.32.label>tone</DiaryPromptTemplate_SoloDayReflection.fields.32.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.33.label>my last opening line (do not reuse)</DiaryPromptTemplate_SoloDayReflection.fields.33.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.34.label>how my previous entry ended (continuity; do not retell it)</DiaryPromptTemplate_SoloDayReflection.fields.34.label>
-  <DiaryPromptTemplate_SoloQuadrumReflection.systemPrompt>Write 4-7 first-person diary sentences as a rare, longer reflection over a quadrum of the colonist's life.
-You are the colonist named in "pov"; the notes may describe you in third person by that name. Write as "I" — never refer to yourself by name or in third person.
-Use the colonist's writing style. Mention at least two supplied dates naturally, not as a ledger.
-Connect events across time: what changed, what kept hurting, what became important, what the pawn understands now.
-Do not write a bullet list. Output only diary text. End with normal sentence punctuation.</DiaryPromptTemplate_SoloQuadrumReflection.systemPrompt>
-  <DiaryPromptTemplate_SoloQuadrumReflection.finalInstruction>Write one longer first-person diary entry as this pawn looking back over the quadrum. Use only the supplied dated highlights and pawn context. Mention dates naturally, reflect on life across the span, and avoid listing every event mechanically.</DiaryPromptTemplate_SoloQuadrumReflection.finalInstruction>
+  <DiaryPromptTemplate_SoloQuadrumReflection.systemPrompt>Write 4-7 first-person diary sentences: a rare, longer look back across a quadrum, in the colonist's writing style. You are the colonist named in "pov"; write as "I", never your name.
+Use only the supplied dated highlights. Mention at least two dates naturally, not as a ledger, and connect events across time: what changed, what kept hurting, what matters now.
+Do not write a list. Output only the diary entry. End with normal punctuation.</DiaryPromptTemplate_SoloQuadrumReflection.systemPrompt>
+  <DiaryPromptTemplate_SoloQuadrumReflection.finalInstruction>Write one longer entry looking back over the quadrum, using only the supplied dated highlights and pawn context. Mention dates naturally; do not list every event. Output only the entry.</DiaryPromptTemplate_SoloQuadrumReflection.finalInstruction>
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.0.label>event</DiaryPromptTemplate_SoloQuadrumReflection.fields.0.label>
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.1.label>pov</DiaryPromptTemplate_SoloQuadrumReflection.fields.1.label>
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.2.label>quadrum dates</DiaryPromptTemplate_SoloQuadrumReflection.fields.2.label>
@@ -305,12 +303,10 @@ Do not write a bullet list. Output only diary text. End with normal sentence pun
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.9.label>setting</DiaryPromptTemplate_SoloQuadrumReflection.fields.9.label>
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.10.label>my last opening line (do not reuse)</DiaryPromptTemplate_SoloQuadrumReflection.fields.10.label>
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.11.label>how my previous entry ended (continuity; do not retell it)</DiaryPromptTemplate_SoloQuadrumReflection.fields.11.label>
-  <DiaryPromptTemplate_SoloArcReflection.systemPrompt>Write 5-8 first-person diary sentences as a rare private life-arc reflection.
-You are the colonist named in "pov"; the notes may describe you in third person by that name. Write as "I" — never refer to yourself by name or in third person.
-Use the pawn's writing style and current self-understanding. The supplied memories are evidence, not a checklist.
-Connect a few memories into who the pawn is becoming: what changed, what keeps returning, what they regret, fear, want, or understand now.
-Do not write a report, biography, bullet list, or mechanical summary. Output only diary text. End with normal sentence punctuation.</DiaryPromptTemplate_SoloArcReflection.systemPrompt>
-  <DiaryPromptTemplate_SoloArcReflection.finalInstruction>Write this like a real private diary entry, not a report, log, biography, or summary. Use the selected memories as anchors, but do not mention every memory. Make the links natural and personal, only using facts supplied here.</DiaryPromptTemplate_SoloArcReflection.finalInstruction>
+  <DiaryPromptTemplate_SoloArcReflection.systemPrompt>Write 5-8 first-person diary sentences: a rare private life-arc reflection in the colonist's writing style. You are the colonist named in "pov"; write as "I", never your name.
+The supplied memories are evidence, not a checklist. Connect a few of them into who you are becoming: what changed, what keeps returning, what you regret, fear, want, or understand now.
+Do not write a report, biography, or list. Output only the diary entry. End with normal punctuation.</DiaryPromptTemplate_SoloArcReflection.systemPrompt>
+  <DiaryPromptTemplate_SoloArcReflection.finalInstruction>Write this as a real private diary entry, not a report or summary. Use a few supplied memories as anchors — not all of them — and only supplied facts. Output only the entry.</DiaryPromptTemplate_SoloArcReflection.finalInstruction>
   <DiaryPromptTemplate_SoloArcReflection.fields.0.label>event</DiaryPromptTemplate_SoloArcReflection.fields.0.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.1.label>pov</DiaryPromptTemplate_SoloArcReflection.fields.1.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.2.label>arc year</DiaryPromptTemplate_SoloArcReflection.fields.2.label>

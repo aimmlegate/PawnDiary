@@ -51,6 +51,11 @@ namespace DiaryPipelineTests
             TestCanonicalDeepTalkFixture(catalog);
             TestRecipientAndSoloSpeechPathsUseKeyedTails(catalog);
             TestNeutralAndTitleTemplatesDropVoice(catalog);
+            TestP1SystemAndFinalFamilyCaps(catalog);
+            TestP1WrapperAndTailCaps(catalog);
+            TestP1SentenceCountAnchorsAgree(catalog);
+            TestP1VoiceBlockSeparators(catalog);
+            TestP1TemplateFieldRowsFrozen(catalog);
             PrintBaselineReport(catalog);
 
             Console.WriteLine("PromptFootprintTests passed " + assertions + " assertions.");
@@ -386,6 +391,179 @@ namespace DiaryPipelineTests
                 "diary entry to title: " + titleRequest.entryText);
             AssertContains("title user prompt ends on the title instruction", titlePlan.userPrompt,
                 catalog.TemplateFinalInstruction(DiaryPipelineTemplates.Title));
+        }
+
+        // =========================================================================================
+        // P1 — system/final family caps (plan §5.2) and fixed wrapper/tail caps (plan §5.4)
+        // =========================================================================================
+
+        /// <summary>Every shipped English system prompt and final instruction meets its family cap.</summary>
+        private static void TestP1SystemAndFinalFamilyCaps(EnglishPromptCatalog catalog)
+        {
+            AssertCap(catalog, "ordinary system", 750, catalog.PromptDefText("systemPrompt"));
+            foreach (string key in new[]
+            {
+                DiaryPipelineTemplates.PairImportant,
+                DiaryPipelineTemplates.PairCombat,
+                DiaryPipelineTemplates.SoloImportant
+            })
+            {
+                AssertCap(catalog, key + " system", 850, catalog.TemplateSystemPrompt(key));
+            }
+
+            AssertCap(catalog, "day-reflection system", 600, catalog.PromptDefText("systemPromptReflection"));
+            AssertCap(catalog, "quadrum-reflection system", 550,
+                catalog.TemplateSystemPrompt(DiaryPipelineTemplates.SoloQuadrumReflection));
+            AssertCap(catalog, "arc-reflection system", 550,
+                catalog.TemplateSystemPrompt(DiaryPipelineTemplates.SoloArcReflection));
+            AssertCap(catalog, "neutral system", 220, catalog.PromptDefText("systemPromptNeutral"));
+            AssertCap(catalog, "title system", 220, catalog.PromptDefText("titleSystemPrompt"));
+
+            AssertCap(catalog, "ordinary final", 100, catalog.PromptDefText("singlePovInstruction"));
+            foreach (string key in new[]
+            {
+                DiaryPipelineTemplates.PairImportant,
+                DiaryPipelineTemplates.PairCombat,
+                DiaryPipelineTemplates.SoloImportant
+            })
+            {
+                AssertCap(catalog, key + " final", 120, catalog.TemplateFinalInstruction(key));
+            }
+
+            AssertCap(catalog, "ordinary recipient final", 200, catalog.PromptDefText("recipientFollowupInstruction"));
+            AssertCap(catalog, "PairImportant recipient final", 200,
+                catalog.TemplateRecipientFinalInstruction(DiaryPipelineTemplates.PairImportant));
+            AssertCap(catalog, "PairCombat recipient final", 200,
+                catalog.TemplateRecipientFinalInstruction(DiaryPipelineTemplates.PairCombat));
+            AssertCap(catalog, "death final", 250, catalog.PromptDefText("deathDescriptionInstruction"));
+            AssertCap(catalog, "arrival final", 330, catalog.PromptDefText("arrivalDescriptionInstruction"));
+            AssertCap(catalog, "quadrum-reflection final", 200,
+                catalog.TemplateFinalInstruction(DiaryPipelineTemplates.SoloQuadrumReflection));
+            AssertCap(catalog, "arc-reflection final", 200,
+                catalog.TemplateFinalInstruction(DiaryPipelineTemplates.SoloArcReflection));
+            AssertCap(catalog, "title final", 150, catalog.PromptDefText("titleUserInstruction"));
+        }
+
+        /// <summary>Fixed wrapper/tail prose (placeholders removed) meets the §5.4 caps.</summary>
+        private static void TestP1WrapperAndTailCaps(EnglishPromptCatalog catalog)
+        {
+            AssertFixedProseCap(catalog, "psychotype wrapper", 110, "PawnDiary.Prompt.PsychotypeLens");
+            AssertFixedProseCap(catalog, "writing-style wrapper", 110, "PawnDiary.Prompt.PersonaVoice");
+            AssertFixedProseCap(catalog, "humor wrapper", 110, "PawnDiary.Prompt.HumorVoice");
+            AssertFixedProseCap(catalog, "pair-initiator speech tail", 160,
+                "PawnDiary.Prompt.PairDirectSpeechInstruction.Initiator");
+            AssertFixedProseCap(catalog, "pair-recipient speech tail", 105,
+                "PawnDiary.Prompt.PairDirectSpeechInstruction.Recipient");
+            AssertFixedProseCap(catalog, "solo speech tail", 150,
+                "PawnDiary.Prompt.SoloInteractionDirectSpeechInstruction");
+        }
+
+        /// <summary>
+        /// The sentence-count anchors of each family's system and final must agree, because small
+        /// models obey the last length instruction they read (plan §7.6).
+        /// </summary>
+        private static void TestP1SentenceCountAnchorsAgree(EnglishPromptCatalog catalog)
+        {
+            AssertContains("ordinary system anchors 1-3", catalog.PromptDefText("systemPrompt"), "1-3");
+            AssertContains("ordinary final anchors 1-3", catalog.PromptDefText("singlePovInstruction"), "1-3");
+            AssertContains("ordinary recipient final anchors 1-3",
+                catalog.PromptDefText("recipientFollowupInstruction"), "1-3");
+            foreach (string key in new[]
+            {
+                DiaryPipelineTemplates.PairImportant,
+                DiaryPipelineTemplates.PairCombat,
+                DiaryPipelineTemplates.SoloImportant
+            })
+            {
+                AssertContains(key + " system anchors 2-5", catalog.TemplateSystemPrompt(key), "2-5");
+                AssertContains(key + " final anchors 2-5", catalog.TemplateFinalInstruction(key), "2-5");
+            }
+
+            AssertContains("PairImportant recipient final anchors 2-5",
+                catalog.TemplateRecipientFinalInstruction(DiaryPipelineTemplates.PairImportant), "2-5");
+        }
+
+        /// <summary>
+        /// The voice block joins to the system with exactly one blank line, and blank voice parts
+        /// never leave an empty paragraph behind.
+        /// </summary>
+        private static void TestP1VoiceBlockSeparators(EnglishPromptCatalog catalog)
+        {
+            DiaryPromptPlan full = DiaryPromptPlanner.Build(CanonicalRequest(catalog, PromptContextDetailLevel.Full));
+            AssertTrue("composed system never contains an empty paragraph (no triple newline)",
+                !full.systemPrompt.Contains("\n\n\n"));
+
+            string noHumor = BuildVoiceBlock(catalog, false);
+            AssertTrue("voice block without humor has no trailing separator",
+                !noHumor.EndsWith("\n") && !noHumor.Contains("\n\n\n"));
+
+            DiaryPromptRequest request = CanonicalRequest(catalog, PromptContextDetailLevel.Full);
+            request.personaVoiceBlock = noHumor;
+            DiaryPromptPlan plan = DiaryPromptPlanner.Build(request);
+            AssertTrue("system with humor-free voice block has no empty paragraph",
+                !plan.systemPrompt.Contains("\n\n\n"));
+        }
+
+        /// <summary>
+        /// Template field rows may not be removed or reordered (indexed DefInjected labels depend
+        /// on their positions, plan §3.2). This freezes each template's row count and disabled-row
+        /// indexes; appending new rows requires updating this snapshot deliberately.
+        /// </summary>
+        private static void TestP1TemplateFieldRowsFrozen(EnglishPromptCatalog catalog)
+        {
+            Dictionary<string, string> expected = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                { "PairDefault", "40|18" },
+                { "PairImportant", "87|18" },
+                { "PairCombat", "33|18" },
+                { "PairBatched", "29|18" },
+                { "SoloDefault", "57|32" },
+                { "SoloImportant", "137|33" },
+                { "SoloInternalState", "41|28" },
+                { "SoloBatched", "41|28" },
+                { "SoloDayReflection", "40|27" },
+                { "SoloQuadrumReflection", "15|" },
+                { "SoloArcReflection", "18|" },
+                { "DeathDescription", "15|" },
+                { "ArrivalDescription", "8|" },
+                { "Title", "1|" }
+            };
+
+            DiaryPolicySnapshot snapshot = catalog.BuildPolicySnapshot();
+            AssertEqual("frozen template count", expected.Count, snapshot.templates.Count);
+            foreach (DiaryTemplatePolicy template in snapshot.templates)
+            {
+                List<string> disabled = new List<string>();
+                for (int i = 0; i < template.fields.Count; i++)
+                {
+                    if (!template.fields[i].enabled)
+                    {
+                        disabled.Add(i.ToString());
+                    }
+                }
+
+                string signature = template.fields.Count + "|" + string.Join(",", disabled.ToArray());
+                string want;
+                AssertTrue("template " + template.templateKey + " is a known frozen template",
+                    expected.TryGetValue(template.templateKey, out want));
+                AssertEqual("template " + template.templateKey + " field rows unchanged (count|disabled)",
+                    want, signature);
+            }
+        }
+
+        private static void AssertCap(EnglishPromptCatalog catalog, string name, int cap, string text)
+        {
+            AssertTrue(name + " has text", !string.IsNullOrWhiteSpace(text));
+            AssertTrue(name + " within cap (" + text.Length + " <= " + cap + ")", text.Length <= cap);
+        }
+
+        private static void AssertFixedProseCap(EnglishPromptCatalog catalog, string name, int cap, string key)
+        {
+            string text = catalog.Keyed(key);
+            AssertTrue(name + " has text", !string.IsNullOrWhiteSpace(text));
+            string fixedProse = text.Replace("{0}", string.Empty).Replace("{1}", string.Empty);
+            AssertTrue(name + " fixed prose within cap (" + fixedProse.Length + " <= " + cap + ")",
+                fixedProse.Length <= cap);
         }
 
         // =========================================================================================
