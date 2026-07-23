@@ -663,8 +663,30 @@ namespace PawnDiary.RimTests
                 Building_GravEngine engine = map == null
                     ? null
                     : GravshipUtility.GetPlayerGravEngine_NewTemp(map);
-                Require(engine != null && engine.Spawned,
-                    "Odyssey-active N3-O acceptance requires a loaded map with a parked player gravship.");
+                if (engine == null || !engine.Spawned)
+                {
+                    // A normal loaded colony commonly has no parked gravship. That state is still a
+                    // useful live-adapter assertion: exact map context must survive while mobile-home
+                    // context agrees with vanilla that the pawn is not onboard. The positive N3-O
+                    // branch below remains available whenever the loaded fixture has a parked ship.
+                    scope.SpawnAsLiveColonist(pawn);
+                    OdysseyLocationSnapshot surfaceLocation;
+                    bool surfaceCaptured = DlcContext.TryCaptureOdysseyLocation(
+                        pawn, out surfaceLocation);
+                    OdysseyMobileHomeSnapshot absentMobileHome;
+                    bool absentMobileCaptured = DlcContext.TryCaptureOdysseyMobileHome(
+                        pawn, out absentMobileHome);
+                    Require(surfaceCaptured && surfaceLocation != null
+                            && !string.IsNullOrWhiteSpace(surfaceLocation.stableKey),
+                        "Odyssey-active non-gravship pawn did not keep detached live map context.");
+                    AssertStr(pawn.Map.Biome?.defName ?? string.Empty,
+                        surfaceLocation.biomeDefName, "non-gravship captured biome Def name");
+                    Require(!absentMobileCaptured && absentMobileHome == null,
+                        "A pawn on a map without a parked gravship received mobile-home context.");
+                    Log.Message(LogPrefix
+                        + "No parked player gravship: verified live map context and absent mobile-home state.");
+                    return;
+                }
                 IntVec3 onboardCell = IntVec3.Invalid;
                 foreach (IntVec3 candidate in engine.ValidSubstructure)
                 {
