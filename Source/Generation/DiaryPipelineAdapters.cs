@@ -174,8 +174,9 @@ namespace PawnDiary
 
         /// <summary>
         /// Resolves one localized primer tier, or empty when the independent enableLorePrimer
-        /// setting is off. A missing translation resolves to the raw key, which is still appended
-        /// verbatim — translators see exactly which key is absent instead of silent English.
+        /// setting is off. A key missing in the active language falls back to the English string
+        /// (Translate() consults LanguageDatabase.defaultLanguage); the raw key is appended verbatim
+        /// only when the key is absent in English too, which never happens for the shipped primer keys.
         /// </summary>
         private static string LorePrimerText(string key)
         {
