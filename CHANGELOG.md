@@ -1,5 +1,7 @@
 # Changelog
 
+- **2026-07-23 — Completed XML-gated Phase 2 belief evidence across raid, captivity, aid, work, ritual, tale, thought, and observed-condition pages.**
+
 - **2026-07-23 — Completed exact XML-gated food evidence for animal meat, fungus, and nutrient paste.**
 
 - **2026-07-23 — Consolidated human documentation under `repowiki/` and moved development-only plans and tooling to ignored local folders.**

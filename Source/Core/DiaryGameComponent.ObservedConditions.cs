@@ -676,7 +676,23 @@ namespace PawnDiary
                 }
 
                 string text = ObservedConditionPhaseText(def, phase, pawn.LabelShortCap, signalLabel);
-                DiaryEvent diaryEvent = AddSoloEvent(pawn, null, def.defName, label, text, instruction, gameContext);
+                BeliefEventEvidence beliefEvidence = ConfiguredBeliefEventPolicy.Capture(
+                    new ConfiguredBeliefEventRequest
+                    {
+                        pawnId = pawn.GetUniqueLoadID(),
+                        tick = decision.state.lastObservedTick,
+                        sourceDomain = "condition",
+                        sourceDefName = def.defName,
+                        groupKey = "condition",
+                        povRole = DiaryEvent.InitiatorRole,
+                        visibleLabel = signalLabel,
+                        visibleField = "condition_label",
+                        phase = phase
+                    },
+                    ModsConfig.IdeologyActive,
+                    DiaryBeliefPolicy.Snapshot());
+                DiaryEvent diaryEvent = AddSoloEvent(
+                    pawn, null, def.defName, label, text, instruction, gameContext, beliefEvidence);
                 if (diaryEvent == null)
                 {
                     continue;

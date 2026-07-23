@@ -34,6 +34,7 @@ namespace PawnDiary
             TestFormatterBudgetsSanitationAndWorldviewFacts();
             TestMutationOnlyContextAndFormatting();
             TestEvidenceRulesAndOptionalCorrections();
+            TestConfiguredExistingPageEvidenceClients();
             TestObservationBaselineAndReflectionShell();
             TestMalformedUnsafeAndOversizedInputs();
             TestPhase1EvidencePersistenceAndCorrelation();
@@ -2179,6 +2180,124 @@ namespace PawnDiary
             forceEvidence.issueDefNames.Add("Correction_Issue");
             AssertEmpty("optional exclude correction removes only targeted live candidate",
                 Resolve(Snapshot(target), forceEvidence, excludeBuilder.Build()));
+        }
+
+        private static void TestConfiguredExistingPageEvidenceClients()
+        {
+            BeliefPolicyBuilder builder = BeliefPolicyBuilder.CreateDefault();
+            builder.eventEvidenceRules.Add(Rule(
+                "raid_visible", "combat", "raid", new[] { "raids", "violence" }, new string[0]));
+            builder.eventEvidenceRules.Add(new BeliefEventEvidenceRule(
+                "enslave_attempt", "interaction", "EnslaveAttempt", "recruit",
+                string.Empty, string.Empty, string.Empty, string.Empty,
+                new[] { "slavery", "captivity" }, new[] { "slavery" }));
+            builder.eventEvidenceRules.Add(new BeliefEventEvidenceRule(
+                "mining_work", "work", "Mining", string.Empty,
+                string.Empty, string.Empty, string.Empty, string.Empty,
+                new[] { "mining" }, new[] { "mining" }));
+            builder.eventEvidenceRules.Add(Rule(
+                "ritual_visible", "ritual", "ritual", new[] { "rituals" },
+                new[] { "rituals" }));
+            builder.eventEvidenceRules.Add(new BeliefEventEvidenceRule(
+                "dark_condition", "condition", "UnnaturalDarknessActive", "condition",
+                string.Empty, string.Empty, string.Empty, string.Empty,
+                new[] { "darkness" }, new[] { "darkness" }));
+            builder.eventEvidenceRules.Add(new BeliefEventEvidenceRule(
+                "rescue_thought", "thought", "RescuedMe", string.Empty,
+                string.Empty, string.Empty, string.Empty, string.Empty,
+                new[] { "charity" }, new[] { "charity" }));
+            BeliefPolicySnapshot policy = builder.Build();
+
+            BeliefEventEvidence raid = ConfiguredBeliefEventPolicy.Capture(
+                ConfiguredRequest("combat", "RaidEnemy", "raid", "enemy raid"), true, policy);
+            AssertTrue("configured raid client admits an XML-owned existing page", raid != null);
+            ExpandedBeliefEvidence raidExpanded = BeliefEventEvidencePolicy.Expand(raid, policy);
+            AssertTrue("configured raid client adds only its visible combat topics",
+                Contains(raidExpanded.topics, "raids") && Contains(raidExpanded.topics, "violence")
+                    && !Contains(raidExpanded.topics, "charity"));
+
+            BeliefEventEvidence slavery = ConfiguredBeliefEventPolicy.Capture(
+                ConfiguredRequest("interaction", "EnslaveAttempt", "recruit", "enslave attempt"),
+                true, policy);
+            AssertTrue("exact slavery interaction route is admitted", slavery != null);
+            AssertTrue("exact slavery route retains bounded visible event text",
+                slavery.matchFields.Count == 1 && slavery.matchFields[0].field == "event_label");
+            AssertTrue("same group with a different interaction stays unchanged",
+                ConfiguredBeliefEventPolicy.Capture(
+                    ConfiguredRequest("interaction", "RecruitAttempt", "recruit", "recruit attempt"),
+                    true, policy) == null);
+
+            BeliefEventEvidence mining = ConfiguredBeliefEventPolicy.Capture(
+                ConfiguredRequest("work", "Mining", "workPositive", "mining steel"), true, policy);
+            AssertTrue("exact mining work is admitted independently of its diary mood group",
+                mining != null);
+            BeliefEventEvidence ritual = ConfiguredBeliefEventPolicy.Capture(
+                new ConfiguredBeliefEventRequest
+                {
+                    pawnId = "SyntheticPawn",
+                    tick = 500,
+                    sourceDomain = "ritual",
+                    sourceDefName = "SyntheticRitual",
+                    groupKey = "ritual",
+                    povRole = "initiator",
+                    visibleLabel = "synthetic ceremony",
+                    visibleField = "ritual_label",
+                    detailLabel = "participant",
+                    detailField = "subject_label",
+                    phase = "finished"
+                }, true, policy);
+            AssertTrue("generic completed ritual supplies exact family and visible label evidence",
+                ritual != null && ritual.matchFields[0].field == "ritual_label"
+                    && ritual.matchFields[1].field == "subject_label"
+                    && ritual.matchFields[1].value == "participant");
+            BeliefEventEvidence condition = ConfiguredBeliefEventPolicy.Capture(
+                ConfiguredRequest("condition", "UnnaturalDarknessActive", "condition",
+                    "unnatural darkness began", "condition_label"), true, policy);
+            AssertTrue("configured observed condition enriches only its existing transition page",
+                condition != null && condition.matchFields[0].field == "condition_label");
+
+            BeliefEventEvidence rescue = BeliefEventEvidenceFactory.ForThought(
+                "SyntheticPawn", 500, "RescuedMe", "rescued me", new BeliefSourcePreceptFact());
+            AssertTrue("existing thought evidence gains exact aid vocabulary without another hook",
+                Contains(BeliefEventEvidencePolicy.Expand(rescue, policy).topics, "charity"));
+
+            AssertTrue("inactive Ideology leaves configured clients inert",
+                ConfiguredBeliefEventPolicy.Capture(
+                    ConfiguredRequest("combat", "RaidEnemy", "raid", "enemy raid"), false, policy)
+                    == null);
+            AssertTrue("unconfigured events cannot become belief clients",
+                ConfiguredBeliefEventPolicy.Capture(
+                    ConfiguredRequest("tale", "BuiltFurniture", string.Empty, "built furniture"),
+                    true, policy) == null);
+            AssertTrue("missing visible facts fail closed",
+                ConfiguredBeliefEventPolicy.Capture(
+                    ConfiguredRequest("work", "Mining", string.Empty, string.Empty), true, policy)
+                    == null);
+            AssertTrue("unsafe field names fail closed",
+                ConfiguredBeliefEventPolicy.Capture(
+                    ConfiguredRequest("work", "Mining", string.Empty, "mining", "arbitrary_field"),
+                    true, policy) == null);
+        }
+
+        private static ConfiguredBeliefEventRequest ConfiguredRequest(
+            string domain,
+            string defName,
+            string group,
+            string label,
+            string field = "event_label")
+        {
+            return new ConfiguredBeliefEventRequest
+            {
+                pawnId = "SyntheticPawn",
+                tick = 500,
+                sourceDomain = domain,
+                sourceDefName = defName,
+                groupKey = group,
+                povRole = "initiator",
+                visibleLabel = label,
+                visibleField = field,
+                phase = "fixture"
+            };
         }
 
         private static void TestObservationBaselineAndReflectionShell()

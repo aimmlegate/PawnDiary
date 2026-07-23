@@ -197,7 +197,7 @@ namespace PawnDiary.Ingestion
         {
             // This lookup deliberately happens after the existing capture decision. Detached cache
             // evidence can decorate an authorized page, but it cannot make an interaction eligible.
-            return BeliefMutationEvidenceAdapter.ForInteraction(
+            BeliefEventEvidence mutation = BeliefMutationEvidenceAdapter.ForInteraction(
                 payload.DefName,
                 effectiveGroupDefName,
                 payload.InitiatorPawnId,
@@ -205,6 +205,21 @@ namespace PawnDiary.Ingestion
                 payload.Tick,
                 initiator.LabelShort,
                 recipient.LabelShort);
+            return mutation ?? ConfiguredBeliefEventPolicy.Capture(
+                new ConfiguredBeliefEventRequest
+                {
+                    pawnId = payload.InitiatorPawnId,
+                    tick = payload.Tick,
+                    sourceDomain = "interaction",
+                    sourceDefName = payload.DefName,
+                    groupKey = effectiveGroupDefName,
+                    povRole = DiaryEvent.InitiatorRole,
+                    visibleLabel = interactionDef.LabelCap.Resolve(),
+                    visibleField = "event_label",
+                    phase = "interaction"
+                },
+                ModsConfig.IdeologyActive,
+                DiaryBeliefPolicy.Snapshot());
         }
 
         /// <summary>

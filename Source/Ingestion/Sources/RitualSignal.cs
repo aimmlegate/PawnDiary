@@ -771,7 +771,24 @@ namespace PawnDiary.Ingestion
             beliefEvidence = source.ConversionEvidenceFor(
                 pawnId, pawn.LabelShortCap, perspective)
                 ?? source.AuthoritySpeechEvidenceFor(
-                    pawnId, pawn.LabelShortCap, perspective);
+                    pawnId, pawn.LabelShortCap, perspective)
+                ?? ConfiguredBeliefEventPolicy.Capture(
+                    new ConfiguredBeliefEventRequest
+                    {
+                        pawnId = pawnId,
+                        tick = source.EventTick,
+                        sourceDomain = "ritual",
+                        sourceDefName = source.DefName,
+                        groupKey = "ritual",
+                        povRole = perspective,
+                        visibleLabel = source.Title,
+                        visibleField = "ritual_label",
+                        detailLabel = ritualRole,
+                        detailField = "subject_label",
+                        phase = RitualFanoutSignal.RitualOutcomeFinished
+                    },
+                    ModsConfig.IdeologyActive,
+                    DiaryBeliefPolicy.Snapshot());
         }
 
         public override DiaryEventData Payload => payload;

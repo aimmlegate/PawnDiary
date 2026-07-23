@@ -24,6 +24,17 @@ ordinary animal meat, fungus, and nutrient paste. If a meal contains several rec
 disabled, malformed, or duplicate policy rows leave the ordinary thought page unchanged. The
 bridge names no DLC Def in C# and remains inert when Ideology is inactive.
 
+### Existing-page evidence clients
+
+The shared configured client accepts primitive source domain, exact Def identity, visible label,
+role, phase, and group facts only after an existing listener has authorized a solo or pair page. XML
+rules currently cover raids; completed rituals; enslavement attempts; prisoner execution and sale;
+mining work and tales; rescue, captivity, darkness, and connected-tree thoughts; and configured
+unnatural-darkness transition pages. Broad neighboring events remain unchanged: a raid does not imply
+charity or slavery, `PlantCutting` does not prove that a tree was cut, and an unconfigured Tale cannot
+become a belief event. Ideology inactivity, missing labels, unsafe fields, and unmatched policy all
+return no evidence.
+
 ## Project Structure
 The ideology subsystem is primarily defined through:
 - A policy definition type for beliefs
