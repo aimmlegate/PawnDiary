@@ -556,4 +556,14 @@
   <anomalyVoidOutcome.tone>with terminal choice, accumulated dread, and the weight of an answer that cannot be recalled</anomalyVoidOutcome.tone>
   <anomalyVoidOutcome.tones.0>final and lucid, centered on the actor&apos;s exact committed choice</anomalyVoidOutcome.tones.0>
   <anomalyVoidOutcome.tones.1>cosmic but personal, never drifting beyond the visible outcome supplied</anomalyVoidOutcome.tones.1>
+  <biotechPsychicBondLifecycle.label>Psychic-bond lifecycle</biotechPsychicBondLifecycle.label>
+  <biotechPsychicBondLifecycle.instruction>a verified psychic bond formed or ruptured between the two supplied pawns; state only that psychic fact, mention a cause only when supplied, and never infer romance, consent, destiny, betrayal, or permanence</biotechPsychicBondLifecycle.instruction>
+  <biotechPsychicBondLifecycle.tone>with intimate psychic consequence and strict factual restraint</biotechPsychicBondLifecycle.tone>
+  <biotechPsychicBondLifecycle.tones.0>close and unsettled, aware of another mind without defining the relationship</biotechPsychicBondLifecycle.tones.0>
+  <biotechPsychicBondLifecycle.tones.1>plainly consequential, preserving uncertainty about meaning, choice, and what follows</biotechPsychicBondLifecycle.tones.1>
+  <biotechDeathrestInterrupted.label>Interrupted deathrest</biotechDeathrestInterrupted.label>
+  <biotechDeathrestInterrupted.instruction>a confirmed severe interruption of active deathrest; write the incomplete waking and bodily consequence without inventing who or what caused it, and never describe a routine completed wake as an interruption</biotechDeathrestInterrupted.instruction>
+  <biotechDeathrestInterrupted.tone>with abruptly broken stillness and physical unease</biotechDeathrestInterrupted.tone>
+  <biotechDeathrestInterrupted.tones.0>disoriented and bodily, centered on rest ending before recovery</biotechDeathrestInterrupted.tones.0>
+  <biotechDeathrestInterrupted.tones.1>quietly alarming, preserving the unknown cause instead of filling it in</biotechDeathrestInterrupted.tones.1>
 </LanguageData>

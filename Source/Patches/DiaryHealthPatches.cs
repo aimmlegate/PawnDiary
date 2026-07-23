@@ -2,6 +2,7 @@
 // rules, per-day accumulation, and progression scans live in DiaryGameComponent and XML policy.
 // New to this? See AGENTS.md ("Harmony patches").
 using HarmonyLib;
+using PawnDiary.Capture;
 using PawnDiary.Ingestion;
 using RimWorld;
 using Verse;
@@ -46,11 +47,34 @@ namespace PawnDiary
                     return;
                 }
 
+                HediffSignal signal = new HediffSignal(
+                    s.pawn,
+                    s.hediff,
+                    HediffSignalSource.Appeared);
+                int now = Find.TickManager?.TicksGame ?? 0;
+                BiotechBondDeathrestPolicySnapshot biotechPolicy =
+                    DiaryBiotechPolicy.Snapshot().bondDeathrest;
+                if (ModsConfig.BiotechActive
+                    && (BiotechDeathrestCorrelation.TryStageHediff(
+                            s.pawn,
+                            s.hediff,
+                            signal,
+                            now)
+                        || BiotechPsychicBondCorrelation.TryStageHediff(
+                            s.pawn,
+                            s.hediff,
+                            signal,
+                            now,
+                            biotechPolicy.psychicBondCorrelationExpiryTicks)))
+                {
+                    return;
+                }
+
                 // Isolate the optional event-window signal so a failure there cannot skip the mature
                 // hediff capture below (both ran in this one DiaryPatchSafety.Run lambda before).
                 DiaryPatchSafety.Run("HealthTrackerAddHediffPatch.EventWindow", (component, s.pawn, s.hediff),
                     eventState => eventState.component.RecordEventWindowHediffAdded(eventState.pawn, eventState.hediff));
-                DiaryEvents.Submit(new HediffSignal(s.pawn, s.hediff, HediffSignalSource.Appeared));
+                DiaryEvents.Submit(signal);
             });
         }
     }

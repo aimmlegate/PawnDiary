@@ -58,6 +58,8 @@ namespace PawnDiary.Capture
         // growth-letter boundary; FamilyBirth is owned by Phase 3's canonical ApplyBirthOutcome hook.
         GrowthMoment,
         FamilyBirth,
+        // Biotech Phase 8's canonical sorted-pair psychic-bond lifecycle.
+        BiotechBond,
         // Odyssey's canonical successful-landing chapter. Takeoff and travel remain state-only;
         // one landing payload chooses a solo page or one pair-shaped event with at most two POVs.
         GravshipJourney,

@@ -3,6 +3,7 @@
 // New to this? See AGENTS.md ("Harmony patches").
 using System.Reflection;
 using HarmonyLib;
+using PawnDiary.Capture;
 using PawnDiary.Ingestion;
 using RimWorld;
 using Verse;
@@ -69,6 +70,17 @@ namespace PawnDiary
                 DiaryGameComponent.Instance?.ObserveBiotechFamilyMemory(s.pawn, s.memory);
                 ThoughtSignal signal = new ThoughtSignal(s.pawn, s.memory);
                 int now = Find.TickManager?.TicksGame ?? 0;
+                if (ModsConfig.BiotechActive
+                    && BiotechPsychicBondCorrelation.TryStageThought(
+                        s.pawn,
+                        s.memory,
+                        signal,
+                        now,
+                        DiaryBiotechPolicy.Snapshot()
+                            .bondDeathrest.psychicBondCorrelationExpiryTicks))
+                {
+                    return;
+                }
                 RoyalTitleThoughtSnapshot royalTitleThought;
                 if (DlcContext.TryCaptureRoyalTitleThought(
                         s.pawn, s.memory, now, out royalTitleThought))

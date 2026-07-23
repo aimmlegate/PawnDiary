@@ -1677,6 +1677,40 @@ namespace DiaryCapturePolicyTests
             AssertEqual("birth invalid snapshot drops", CaptureDecision.Drop,
                 FamilyBirthEventData.Decide(birth, Ctx()));
             AssertEqual("birth stable dedup", "birth|biotech-family|Child_1", birth.DedupKey());
+
+            BiotechBondEventData bond = new BiotechBondEventData
+            {
+                FirstPawnId = "Pawn_Z",
+                SecondPawnId = "Pawn_A",
+                BondEpoch = 2,
+                Phase = PsychicBondPhaseTokens.Formed,
+                FirstPawnEligible = true,
+                SecondPawnEligible = true,
+                HasVerifiedTransition = true
+            };
+            AssertEqual("bond two eligible pawns produce one pair event",
+                CaptureDecision.GeneratePair,
+                BiotechBondEventData.Decide(bond, Ctx()));
+            bond.FirstPawnEligible = false;
+            AssertEqual("bond one eligible pawn produces one solo event",
+                CaptureDecision.GenerateSolo,
+                BiotechBondEventData.Decide(bond, Ctx()));
+            bond.SecondPawnEligible = false;
+            AssertEqual("bond without an eligible POV drops",
+                CaptureDecision.Drop,
+                BiotechBondEventData.Decide(bond, Ctx()));
+            bond.SecondPawnEligible = true;
+            bond.HasVerifiedTransition = false;
+            AssertEqual("unverified bond transition drops",
+                CaptureDecision.Drop,
+                BiotechBondEventData.Decide(bond, Ctx()));
+            bond.HasVerifiedTransition = true;
+            AssertEqual("bond disabled group drops",
+                CaptureDecision.Drop,
+                BiotechBondEventData.Decide(bond, Ctx(user: false)));
+            AssertEqual("bond dedup sorts pair and includes epoch/phase",
+                "biotech-bond|Pawn_A|Pawn_Z|2|formed",
+                bond.DedupKey());
         }
 
         private static void TestGravshipJourneyCatalogDecisions()

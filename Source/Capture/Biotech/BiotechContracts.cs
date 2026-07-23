@@ -33,6 +33,12 @@ namespace PawnDiary.Capture
         public const string GeneObservedMembershipTruncated = "geneObservedMembershipTruncated";
         public const string MechanitorObservationState = "mechanitorObservationState";
         public const string MechanitorObservationVersion = "mechanitorObservationVersion";
+        public const string BondObservationVersion = "bondObservationVersion";
+        public const string PsychicBondObservations = "psychicBondObservations";
+        public const string DeathrestObservationState = "deathrestObservationState";
+        public const string DeathrestObservationVersion = "deathrestObservationVersion";
+        public const string DeathrestSevereInterruptionsRecorded = "severeInterruptionsRecorded";
+        public const string DeathrestLastRecordedTick = "lastRecordedTick";
     }
 
     /// <summary>Stable semicolon-context keys. These are schema labels, not localized prompt prose.</summary>
@@ -409,6 +415,7 @@ namespace PawnDiary.Capture
         public string familyBaselineNarrativeFormat = string.Empty;
         public string identityNarrativeFormat = string.Empty;
         public string geneIdentityNarrativeFormat = string.Empty;
+        public string psychicBondNarrativeFormat = string.Empty;
         public List<string> familyActivityExactDefNames = new List<string>();
         public List<string> familyActivityPrefixes = new List<string>();
         public List<string> familyPregnancyHediffDefNames = new List<string>();
@@ -426,6 +433,8 @@ namespace PawnDiary.Capture
         public int mechanitorMaximumBossCalls = 16;
         public List<string> mechanitorCombatFirstPawnDefNames = new List<string>();
         public List<string> mechanitorCombatSecondPawnDefNames = new List<string>();
+        public BiotechBondDeathrestPolicySnapshot bondDeathrest =
+            BiotechBondDeathrestPolicySnapshot.CreateDefault();
 
         /// <summary>Creates a complete safe policy whose fallback bands contain no prompt prose.</summary>
         public static BiotechPolicySnapshot CreateDefault()

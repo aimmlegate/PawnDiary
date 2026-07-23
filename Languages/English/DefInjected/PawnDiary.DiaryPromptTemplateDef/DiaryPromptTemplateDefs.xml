@@ -549,4 +549,29 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_SoloDefault.fields.46.label>pollution transition</DiaryPromptTemplate_SoloDefault.fields.46.label>
   <DiaryPromptTemplate_SoloDefault.fields.47.label>map</DiaryPromptTemplate_SoloDefault.fields.47.label>
   <DiaryPromptTemplate_SoloDefault.fields.48.label>context facet</DiaryPromptTemplate_SoloDefault.fields.48.label>
+  <!-- Biotech Phase 8 append-only prompt labels. -->
+  <DiaryPromptTemplate_PairDefault.fields.34.label>psychic bond</DiaryPromptTemplate_PairDefault.fields.34.label>
+  <DiaryPromptTemplate_PairDefault.fields.35.label>first bonded pawn</DiaryPromptTemplate_PairDefault.fields.35.label>
+  <DiaryPromptTemplate_PairDefault.fields.36.label>second bonded pawn</DiaryPromptTemplate_PairDefault.fields.36.label>
+  <DiaryPromptTemplate_PairDefault.fields.37.label>verified rupture cause</DiaryPromptTemplate_PairDefault.fields.37.label>
+  <DiaryPromptTemplate_PairDefault.fields.38.label>deathrest</DiaryPromptTemplate_PairDefault.fields.38.label>
+  <DiaryPromptTemplate_PairDefault.fields.39.label>deathrest severity</DiaryPromptTemplate_PairDefault.fields.39.label>
+  <DiaryPromptTemplate_PairImportant.fields.81.label>psychic bond</DiaryPromptTemplate_PairImportant.fields.81.label>
+  <DiaryPromptTemplate_PairImportant.fields.82.label>first bonded pawn</DiaryPromptTemplate_PairImportant.fields.82.label>
+  <DiaryPromptTemplate_PairImportant.fields.83.label>second bonded pawn</DiaryPromptTemplate_PairImportant.fields.83.label>
+  <DiaryPromptTemplate_PairImportant.fields.84.label>verified rupture cause</DiaryPromptTemplate_PairImportant.fields.84.label>
+  <DiaryPromptTemplate_PairImportant.fields.85.label>deathrest</DiaryPromptTemplate_PairImportant.fields.85.label>
+  <DiaryPromptTemplate_PairImportant.fields.86.label>deathrest severity</DiaryPromptTemplate_PairImportant.fields.86.label>
+  <DiaryPromptTemplate_SoloDefault.fields.49.label>psychic bond</DiaryPromptTemplate_SoloDefault.fields.49.label>
+  <DiaryPromptTemplate_SoloDefault.fields.50.label>first bonded pawn</DiaryPromptTemplate_SoloDefault.fields.50.label>
+  <DiaryPromptTemplate_SoloDefault.fields.51.label>second bonded pawn</DiaryPromptTemplate_SoloDefault.fields.51.label>
+  <DiaryPromptTemplate_SoloDefault.fields.52.label>verified rupture cause</DiaryPromptTemplate_SoloDefault.fields.52.label>
+  <DiaryPromptTemplate_SoloDefault.fields.53.label>deathrest</DiaryPromptTemplate_SoloDefault.fields.53.label>
+  <DiaryPromptTemplate_SoloDefault.fields.54.label>deathrest severity</DiaryPromptTemplate_SoloDefault.fields.54.label>
+  <DiaryPromptTemplate_SoloImportant.fields.129.label>psychic bond</DiaryPromptTemplate_SoloImportant.fields.129.label>
+  <DiaryPromptTemplate_SoloImportant.fields.130.label>first bonded pawn</DiaryPromptTemplate_SoloImportant.fields.130.label>
+  <DiaryPromptTemplate_SoloImportant.fields.131.label>second bonded pawn</DiaryPromptTemplate_SoloImportant.fields.131.label>
+  <DiaryPromptTemplate_SoloImportant.fields.132.label>verified rupture cause</DiaryPromptTemplate_SoloImportant.fields.132.label>
+  <DiaryPromptTemplate_SoloImportant.fields.133.label>deathrest</DiaryPromptTemplate_SoloImportant.fields.133.label>
+  <DiaryPromptTemplate_SoloImportant.fields.134.label>deathrest severity</DiaryPromptTemplate_SoloImportant.fields.134.label>
 </LanguageData>

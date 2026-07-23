@@ -51,6 +51,8 @@ namespace PawnDiary
         public string familyBaselineNarrativeFormat;
         public string identityNarrativeFormat;
         public string geneIdentityNarrativeFormat;
+        // N3-B bond prose. {0}/{1} are visible pawn names and {2} is localized phase wording.
+        public string psychicBondNarrativeFormat;
         public List<string> familyActivityExactDefNames = new List<string>();
         public List<string> familyActivityPrefixes = new List<string>();
         public List<string> familyPregnancyHediffDefNames = new List<string>();
@@ -96,6 +98,13 @@ namespace PawnDiary
         public int mechanitorMaximumBossCalls = 16;
         public List<string> mechanitorCombatFirstPawnDefNames = new List<string>();
         public List<string> mechanitorCombatSecondPawnDefNames = new List<string>();
+        // Phase 8 psychic-bond/deathrest policy. These are primitives only, so this Def stays safe
+        // when Biotech content is absent and the guarded live adapters simply never run.
+        public float deathrestSevereCompletionThreshold = 0.5f;
+        public int deathrestCooldownTicks = 900000;
+        public int deathrestLifetimePageLimit = 1;
+        public int psychicBondCorrelationExpiryTicks = 2500;
+        public int maximumBondObservationRows = 16;
 
         /// <summary>Reports malformed XML policy at Def load instead of failing inside a later hook.</summary>
         public override IEnumerable<string> ConfigErrors()
@@ -125,6 +134,8 @@ namespace PawnDiary
                 yield return "identityNarrativeFormat must contain DefInjected prompt prose.";
             if (string.IsNullOrWhiteSpace(geneIdentityNarrativeFormat))
                 yield return "geneIdentityNarrativeFormat must contain DefInjected prompt prose.";
+            if (string.IsNullOrWhiteSpace(psychicBondNarrativeFormat))
+                yield return "psychicBondNarrativeFormat must contain DefInjected prompt prose.";
             if (familyActivityPairDedupTicks < 0) yield return "familyActivityPairDedupTicks cannot be negative.";
             if (supporterMinimumEvidence <= 0) yield return "supporterMinimumEvidence must be positive.";
             if (maximumSupporterRows <= 0) yield return "maximumSupporterRows must be positive.";
@@ -181,6 +192,19 @@ namespace PawnDiary
             if (!HasNonBlankMatcher(mechanitorCombatFirstPawnDefNames)
                 && !HasNonBlankMatcher(mechanitorCombatSecondPawnDefNames))
                 yield return "mechanitor combat Tale ownership requires at least one exact Def name.";
+            if (deathrestSevereCompletionThreshold <= 0f
+                || deathrestSevereCompletionThreshold >= 1f)
+                yield return "deathrestSevereCompletionThreshold must be greater than zero and less than one.";
+            if (deathrestCooldownTicks < 0)
+                yield return "deathrestCooldownTicks cannot be negative.";
+            if (deathrestLifetimePageLimit < 1)
+                yield return "deathrestLifetimePageLimit must be positive.";
+            if (psychicBondCorrelationExpiryTicks <= 0)
+                yield return "psychicBondCorrelationExpiryTicks must be positive.";
+            if (maximumBondObservationRows < 1
+                || maximumBondObservationRows > PsychicBondLifecyclePolicy.HardMaximumObservationRows)
+                yield return "maximumBondObservationRows must stay between one and the defensive "
+                    + PsychicBondLifecyclePolicy.HardMaximumObservationRows + "-row cap.";
 
             foreach (string error in OpportunityBandErrors(opportunityBands)) yield return error;
             foreach (string error in ObservationBandErrors(observationBands)) yield return error;
@@ -354,6 +378,7 @@ namespace PawnDiary
             result.familyBaselineNarrativeFormat = source.familyBaselineNarrativeFormat ?? string.Empty;
             result.identityNarrativeFormat = source.identityNarrativeFormat ?? string.Empty;
             result.geneIdentityNarrativeFormat = source.geneIdentityNarrativeFormat ?? string.Empty;
+            result.psychicBondNarrativeFormat = source.psychicBondNarrativeFormat ?? string.Empty;
             result.geneSalience = CopyGeneSalience(source, result.geneSalience);
             result.mechanitorLongServiceTicks = Positive(
                 source.mechanitorLongServiceTicks,
@@ -364,6 +389,26 @@ namespace PawnDiary
             result.mechanitorMaximumBossCalls = source.mechanitorMaximumBossCalls < 1
                 || source.mechanitorMaximumBossCalls > MechanitorObservationState.HardMaximumBossCalls
                 ? result.mechanitorMaximumBossCalls : source.mechanitorMaximumBossCalls;
+            result.bondDeathrest.deathrestSevereCompletionThreshold =
+                source.deathrestSevereCompletionThreshold <= 0f
+                || source.deathrestSevereCompletionThreshold >= 1f
+                    ? result.bondDeathrest.deathrestSevereCompletionThreshold
+                    : source.deathrestSevereCompletionThreshold;
+            result.bondDeathrest.deathrestCooldownTicks =
+                Math.Max(0, source.deathrestCooldownTicks);
+            result.bondDeathrest.deathrestLifetimePageLimit =
+                Positive(
+                    source.deathrestLifetimePageLimit,
+                    result.bondDeathrest.deathrestLifetimePageLimit);
+            result.bondDeathrest.psychicBondCorrelationExpiryTicks =
+                Positive(
+                    source.psychicBondCorrelationExpiryTicks,
+                    result.bondDeathrest.psychicBondCorrelationExpiryTicks);
+            result.bondDeathrest.maximumBondObservationRows =
+                source.maximumBondObservationRows < 1
+                || source.maximumBondObservationRows > PsychicBondLifecyclePolicy.HardMaximumObservationRows
+                    ? result.bondDeathrest.maximumBondObservationRows
+                    : source.maximumBondObservationRows;
             CopyOpportunityBands(source.opportunityBands, result);
             CopyObservationBands(source.observationBands, result);
             CopyStrings(source.familyActivityExactDefNames, result.familyActivityExactDefNames);

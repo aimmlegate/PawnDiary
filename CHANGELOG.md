@@ -8,6 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-07-23
 
+- **Master Wave 11 / Biotech Phase 8.** Added DLC-safe psychic-bond lifecycle pages and XML-tuned severe interrupted-deathrest capture with exact nested-signal ownership and EN/RU parity.
 - **Master Wave 11 / Biotech Phase 7.** Added DLC-safe pollution thresholds, strongest-band bounded transitions, reload-safe reclamation/decay, qualitative ambient-pressure context, and EN/RU parity.
 - **Lore memory L5 — progression lore seeds.** Identity-changing events (psylink, xenotype, gene
   identity, mechlink, royal titles — the six audited registered event Def tokens, XML-owned in

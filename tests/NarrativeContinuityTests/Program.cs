@@ -135,6 +135,46 @@ namespace NarrativeContinuityTests
                     && geneIdentity.topicTokens.Contains("gene")
                     && geneIdentity.topicTokens.Count == 2);
 
+            string bondArc = "biotech-psychic-bond|pawn-1|pawn-2|3";
+            NarrativeEvidence bondEvidence = Evidence();
+            bondEvidence.povPawnId = "pawn-1";
+            bondEvidence.facet = NarrativeFacetTokens.BondLifecycle;
+            bondEvidence.subjectKind = NarrativeSubjectKindTokens.Pawn;
+            bondEvidence.subjectId = "pawn-2";
+            bondEvidence.arcKey = bondArc;
+            BiotechNarrativeSnapshot bondSnapshot = new BiotechNarrativeSnapshot
+            {
+                providerAvailable = true,
+                povPawnId = "pawn-1",
+                bondPartnerId = "pawn-2",
+                bondArcKey = bondArc,
+                bondPhase = PsychicBondPhaseTokens.Ruptured,
+                bondText = "A verified psychic bond ruptured.",
+                sourceTick = 1000,
+                pawnCanKnow = true,
+                hasVerifiedPovConnection = true
+            };
+            List<NarrativeLensCandidate> bondCandidates = BiotechNarrativeProvider.Build(
+                new List<NarrativeEvidence> { bondEvidence },
+                bondSnapshot);
+            AssertEqual("exact psychic-bond arc yields one N3-B candidate", 1,
+                bondCandidates.Count);
+            AssertEqual("psychic-bond candidate uses exact partner subject", "pawn-2",
+                bondCandidates[0].subjectId);
+            AssertEqual("psychic-bond candidate uses BondLifecycle facet",
+                NarrativeFacetTokens.BondLifecycle, bondCandidates[0].facet);
+            bondEvidence.arcKey = "biotech-psychic-bond|pawn-1|pawn-2|4";
+            AssertEqual("different psychic-bond epoch cannot pull continuity", 0,
+                BiotechNarrativeProvider.Build(
+                    new List<NarrativeEvidence> { bondEvidence },
+                    bondSnapshot).Count);
+            bondEvidence.arcKey = bondArc;
+            bondEvidence.povPawnId = "pawn-9";
+            AssertEqual("different POV cannot receive psychic-bond continuity", 0,
+                BiotechNarrativeProvider.Build(
+                    new List<NarrativeEvidence> { bondEvidence },
+                    bondSnapshot).Count);
+
             NarrativePolicySnapshot repetitionPolicy = NarrativePolicySnapshot.CreateDefault();
             repetitionPolicy.maxSelectedCandidates = 2;
             Budget(repetitionPolicy, NarrativeDetailLevelTokens.Full).maxLenses = 2;

@@ -667,4 +667,14 @@
   <anomalyVoidOutcome.tone>с окончательным выбором, накопленным ужасом и тяжестью ответа, который нельзя отозвать</anomalyVoidOutcome.tone>
   <anomalyVoidOutcome.tones.0>окончательно и ясно, вокруг точного совершённого выбора участника</anomalyVoidOutcome.tones.0>
   <anomalyVoidOutcome.tones.1>космически, но лично, не выходя за переданный видимый исход</anomalyVoidOutcome.tones.1>
+  <biotechPsychicBondLifecycle.label>Жизненный цикл психической связи</biotechPsychicBondLifecycle.label>
+  <biotechPsychicBondLifecycle.instruction>подтверждённое образование или разрушение психической связи между двумя указанными пешками; сообщай только этот психический факт, называй причину лишь когда она указана и не додумывай романтику, согласие, судьбу, предательство или постоянство</biotechPsychicBondLifecycle.instruction>
+  <biotechPsychicBondLifecycle.tone>с личным психическим последствием и строгой фактической сдержанностью</biotechPsychicBondLifecycle.tone>
+  <biotechPsychicBondLifecycle.tones.0>близко и тревожно, ощущая другой разум, но не определяя отношения</biotechPsychicBondLifecycle.tones.0>
+  <biotechPsychicBondLifecycle.tones.1>явно и весомо, сохраняя неопределённость смысла, выбора и будущего</biotechPsychicBondLifecycle.tones.1>
+  <biotechDeathrestInterrupted.label>Прерванный смертопокой</biotechDeathrestInterrupted.label>
+  <biotechDeathrestInterrupted.instruction>подтверждённое тяжёлое прерывание активного смертопокоя; опиши незавершённое пробуждение и телесные последствия, не выдумывая виновника или причину, и не называй обычное завершённое пробуждение прерыванием</biotechDeathrestInterrupted.instruction>
+  <biotechDeathrestInterrupted.tone>с резко нарушенной тишиной и телесной тревогой</biotechDeathrestInterrupted.tone>
+  <biotechDeathrestInterrupted.tones.0>дезориентированно и телесно, сосредоточившись на отдыхе, оборванном до восстановления</biotechDeathrestInterrupted.tones.0>
+  <biotechDeathrestInterrupted.tones.1>тихо и тревожно, сохраняя неизвестную причину вместо догадок</biotechDeathrestInterrupted.tones.1>
 </LanguageData>

@@ -217,6 +217,8 @@ namespace PawnDiary
             ResetBiotechGrowthTransientState();
             ResetBiotechFamilyTransientState();
             BiotechGeneMutationCorrelation.Clear();
+            BiotechPsychicBondCorrelation.Clear();
+            BiotechDeathrestCorrelation.Clear();
             ResetAnomalyTransientState();
             BeliefHistoryCorrelationCache.Reset();
             BeliefMutationCache.Reset();
@@ -315,6 +317,7 @@ namespace PawnDiary
             ResetBiotechFamilyTransientState();
             nextBiotechBirthNamingPollTick = 0;
             BootstrapBiotechFamilyArcsForLoadedSave();
+            BaselineBiotechPsychicBondsOnLoad();
             // Pollution uses the ordinary activeObservedConditions rows. Old saves migrate current tile
             // state once; later reloads leave saved debounce/decay progress untouched.
             BaselineMapPollutionConditionsOnLoad();
@@ -373,6 +376,8 @@ namespace PawnDiary
                     // unmatched Thought release are synchronous and belong in this same save.
                     FlushRoyalTitleThoughtsBeforeSave();
                     FlushRoyalPermitRaidsBeforeSave();
+                    BiotechPsychicBondCorrelation.FlushPending();
+                    BiotechDeathrestCorrelation.FlushPending();
                     FlushAllInteractionBatches();
                     FlushAllTaleBatches();
                     FlushAllAmbientThoughtNotes();

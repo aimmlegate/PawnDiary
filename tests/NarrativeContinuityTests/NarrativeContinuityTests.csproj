@@ -10,6 +10,7 @@
   <!-- Link only plain source. This project must compile with no RimWorld, Verse, Unity, or DLC assembly. -->
   <ItemGroup>
     <Compile Include="..\..\Source\Capture\Policies\AnomalyContracts.cs" Link="AnomalyContracts.cs" />
+    <Compile Include="..\..\Source\Capture\Biotech\BiotechBondDeathrestPolicy.cs" Link="BiotechBondDeathrestPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContracts.cs" Link="NarrativeContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeReferencePolicy.cs" Link="NarrativeReferencePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContextSelector.cs" Link="NarrativeContextSelector.cs" />

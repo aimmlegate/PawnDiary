@@ -17,6 +17,10 @@ namespace PawnDiary
         public List<int> consumedGrowthAges = new List<int>();
         public GeneIdentityObservationState geneIdentityObservation = new GeneIdentityObservationState();
         internal MechanitorObservationState mechanitorObservation = new MechanitorObservationState();
+        internal int bondObservationVersion;
+        internal List<PsychicBondObservationRow> psychicBondObservations =
+            new List<PsychicBondObservationRow>();
+        internal DeathrestObservationState deathrestObservation = new DeathrestObservationState();
 
         public void ExposeData()
         {
@@ -31,6 +35,17 @@ namespace PawnDiary
             Scribe_Deep.Look(
                 ref mechanitorObservation,
                 BiotechSaveKeys.MechanitorObservationState);
+            Scribe_Values.Look(
+                ref bondObservationVersion,
+                BiotechSaveKeys.BondObservationVersion,
+                0);
+            Scribe_Collections.Look(
+                ref psychicBondObservations,
+                BiotechSaveKeys.PsychicBondObservations,
+                LookMode.Deep);
+            Scribe_Deep.Look(
+                ref deathrestObservation,
+                BiotechSaveKeys.DeathrestObservationState);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -71,6 +86,21 @@ namespace PawnDiary
             mechanitorObservation.Normalize(
                 MechanitorObservationState.HardMaximumMechs,
                 MechanitorObservationState.HardMaximumBossCalls);
+            bondObservationVersion = Math.Max(0, bondObservationVersion);
+            if (psychicBondObservations == null)
+            {
+                psychicBondObservations = new List<PsychicBondObservationRow>();
+            }
+            PsychicBondLifecyclePolicy.NormalizeRows(
+                psychicBondObservations,
+                string.Empty,
+                int.MaxValue,
+                PsychicBondLifecyclePolicy.HardMaximumObservationRows);
+            if (deathrestObservation == null)
+            {
+                deathrestObservation = new DeathrestObservationState();
+            }
+            DeathrestInterruptionPolicy.Normalize(deathrestObservation, int.MaxValue);
         }
 
         /// <summary>Returns whether canonical ownership for this age was already consumed.</summary>
@@ -121,6 +151,27 @@ namespace PawnDiary
                 MechanitorObservationState.HardMaximumMechs,
                 MechanitorObservationState.HardMaximumBossCalls);
             return mechanitorObservation;
+        }
+
+        /// <summary>Returns the normalized bounded psychic-bond partner history.</summary>
+        internal List<PsychicBondObservationRow> EnsurePsychicBondObservations()
+        {
+            if (psychicBondObservations == null)
+            {
+                psychicBondObservations = new List<PsychicBondObservationRow>();
+            }
+            return psychicBondObservations;
+        }
+
+        /// <summary>Returns the normalized interrupted-deathrest lifetime/cooldown row.</summary>
+        internal DeathrestObservationState EnsureDeathrestObservation()
+        {
+            if (deathrestObservation == null)
+            {
+                deathrestObservation = new DeathrestObservationState();
+            }
+            DeathrestInterruptionPolicy.Normalize(deathrestObservation, int.MaxValue);
+            return deathrestObservation;
         }
     }
 }

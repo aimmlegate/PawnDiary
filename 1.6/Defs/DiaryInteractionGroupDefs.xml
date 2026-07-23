@@ -3115,6 +3115,53 @@
 
   <!-- ===== Progression domain: synthetic pawn-development signals ===== -->
 
+  <!-- Biotech Phase 8 canonical recursive owner for psychic-bond formation and rupture. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>biotechPsychicBondLifecycle</defName>
+    <label>Psychic-bond lifecycle</label>
+    <order>796</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Biotech</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a verified psychic bond formed or ruptured between the two supplied pawns; state only that psychic fact, mention a cause only when supplied, and never infer romance, consent, destiny, betrayal, or permanence</instruction>
+    <tone>with intimate psychic consequence and strict factual restraint</tone>
+    <tones>
+      <li>close and unsettled, aware of another mind without defining the relationship</li>
+      <li>plainly consequential, preserving uncertainty about meaning, choice, and what follows</li>
+    </tones>
+    <colorCue>psychic</colorCue>
+    <matchDefNames>
+      <li>BiotechPsychicBondFormed</li>
+      <li>BiotechPsychicBondRuptured</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- Biotech Phase 8 first severe interrupted deathrest; completed wakes remain silent. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>biotechDeathrestInterrupted</defName>
+    <label>Interrupted deathrest</label>
+    <order>797</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Biotech</li>
+    </enableWhenPackageIdsLoaded>
+    <instruction>a confirmed severe interruption of active deathrest; write the incomplete waking and bodily consequence without inventing who or what caused it, and never describe a routine completed wake as an interruption</instruction>
+    <tone>with abruptly broken stillness and physical unease</tone>
+    <tones>
+      <li>disoriented and bodily, centered on rest ending before recovery</li>
+      <li>quietly alarming, preserving the unknown cause instead of filling it in</li>
+    </tones>
+    <colorCue>danger</colorCue>
+    <matchDefNames>
+      <li>BiotechDeathrestInterrupted</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <!-- Biotech Phase 6 canonical controller POV for mechanitor lifecycle chapters. -->
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>progressionMechanitorLifecycle</defName>

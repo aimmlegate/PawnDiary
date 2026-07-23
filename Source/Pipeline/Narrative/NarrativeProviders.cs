@@ -5,6 +5,7 @@
 // New to C#/RimWorld? See AGENTS.md ("architecture barriers" and "DLC-safety").
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 
 namespace PawnDiary
 {
@@ -35,6 +36,12 @@ namespace PawnDiary
         public string identityStableKey = string.Empty;
         public string identityText = string.Empty;
         public List<string> identityTopicTokens = new List<string>();
+        // N3-B psychic-bond continuity is pair/epoch scoped. The runtime adapter proves this POV is
+        // one endpoint; the pure provider still requires exact BondLifecycle evidence for the arc.
+        public string bondPartnerId = string.Empty;
+        public string bondArcKey = string.Empty;
+        public string bondPhase = string.Empty;
+        public string bondText = string.Empty;
         public int sourceTick;
         public bool pawnCanKnow;
         public bool hasVerifiedPovConnection;
@@ -1233,6 +1240,33 @@ namespace PawnDiary
                 });
             }
 
+            if (!string.IsNullOrWhiteSpace(snapshot.povPawnId)
+                && !string.IsNullOrWhiteSpace(snapshot.bondPartnerId)
+                && !string.IsNullOrWhiteSpace(snapshot.bondArcKey)
+                && PsychicBondPhaseTokens.IsKnown(snapshot.bondPhase)
+                && !string.IsNullOrWhiteSpace(snapshot.bondText)
+                && BondApplies(evidence, snapshot))
+            {
+                result.Add(new NarrativeLensCandidate
+                {
+                    candidateKey = "biotech|psychic-bond|" + snapshot.bondArcKey,
+                    provider = NarrativeProviderTokens.Biotech,
+                    category = NarrativeCategoryTokens.Bond,
+                    text = snapshot.bondText.Trim(),
+                    facet = NarrativeFacetTokens.BondLifecycle,
+                    subjectKind = NarrativeSubjectKindTokens.Pawn,
+                    subjectId = snapshot.bondPartnerId.Trim(),
+                    arcKey = snapshot.bondArcKey.Trim(),
+                    topicTokens = new List<string> { "bonding", "psychic" },
+                    sourceTick = snapshot.sourceTick,
+                    salience = NarrativeSalienceTokens.Meaningful,
+                    relationship = NarrativeRelationshipTokens.ExactArc,
+                    pawnCanKnow = true,
+                    providerAvailable = true,
+                    hasVerifiedPovConnection = true
+                });
+            }
+
             return result;
         }
 
@@ -1255,22 +1289,55 @@ namespace PawnDiary
             for (int i = 0; i < evidence.Count; i++)
             {
                 NarrativeEvidence row = evidence[i];
-                if (row == null || row.pawnCanKnow != true
-                    || row.facet != NarrativeFacetTokens.IdentityTransition)
+                if (row == null || row.pawnCanKnow != true)
                 {
                     continue;
                 }
 
-                if ((!string.IsNullOrWhiteSpace(snapshot.familyArcId)
-                        && row.arcKey == snapshot.familyArcId)
-                    || (!string.IsNullOrWhiteSpace(snapshot.childId)
-                        && row.subjectKind == NarrativeSubjectKindTokens.Pawn
-                        && row.subjectId == snapshot.childId))
+                if (row.facet == NarrativeFacetTokens.IdentityTransition
+                    && ((!string.IsNullOrWhiteSpace(snapshot.familyArcId)
+                            && row.arcKey == snapshot.familyArcId)
+                        || (!string.IsNullOrWhiteSpace(snapshot.childId)
+                            && row.subjectKind == NarrativeSubjectKindTokens.Pawn
+                            && row.subjectId == snapshot.childId)))
+                {
+                    return true;
+                }
+                if (row.facet == NarrativeFacetTokens.BondLifecycle
+                    && string.Equals(row.povPawnId, snapshot.povPawnId, StringComparison.Ordinal)
+                    && string.Equals(row.arcKey, snapshot.bondArcKey, StringComparison.Ordinal)
+                    && row.subjectKind == NarrativeSubjectKindTokens.Pawn
+                    && string.Equals(
+                        row.subjectId,
+                        snapshot.bondPartnerId,
+                        StringComparison.Ordinal))
                 {
                     return true;
                 }
             }
 
+            return false;
+        }
+
+        private static bool BondApplies(
+            List<NarrativeEvidence> evidence,
+            BiotechNarrativeSnapshot snapshot)
+        {
+            if (evidence == null || snapshot == null) return false;
+            for (int i = 0; i < evidence.Count; i++)
+            {
+                NarrativeEvidence row = evidence[i];
+                if (row != null
+                    && row.pawnCanKnow == true
+                    && string.Equals(row.povPawnId, snapshot.povPawnId, StringComparison.Ordinal)
+                    && row.facet == NarrativeFacetTokens.BondLifecycle
+                    && row.subjectKind == NarrativeSubjectKindTokens.Pawn
+                    && string.Equals(row.subjectId, snapshot.bondPartnerId, StringComparison.Ordinal)
+                    && string.Equals(row.arcKey, snapshot.bondArcKey, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
             return false;
         }
     }

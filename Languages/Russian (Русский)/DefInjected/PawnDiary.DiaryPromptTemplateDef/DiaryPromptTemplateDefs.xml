@@ -594,4 +594,29 @@
   <DiaryPromptTemplate_SoloDefault.fields.46.label>изменение загрязнения</DiaryPromptTemplate_SoloDefault.fields.46.label>
   <DiaryPromptTemplate_SoloDefault.fields.47.label>карта</DiaryPromptTemplate_SoloDefault.fields.47.label>
   <DiaryPromptTemplate_SoloDefault.fields.48.label>аспект контекста</DiaryPromptTemplate_SoloDefault.fields.48.label>
+  <!-- Biotech Phase 8: добавленные в конец локализованные подписи полей. -->
+  <DiaryPromptTemplate_PairDefault.fields.34.label>психическая связь</DiaryPromptTemplate_PairDefault.fields.34.label>
+  <DiaryPromptTemplate_PairDefault.fields.35.label>первая связанная пешка</DiaryPromptTemplate_PairDefault.fields.35.label>
+  <DiaryPromptTemplate_PairDefault.fields.36.label>вторая связанная пешка</DiaryPromptTemplate_PairDefault.fields.36.label>
+  <DiaryPromptTemplate_PairDefault.fields.37.label>подтверждённая причина разрыва</DiaryPromptTemplate_PairDefault.fields.37.label>
+  <DiaryPromptTemplate_PairDefault.fields.38.label>смертопокой</DiaryPromptTemplate_PairDefault.fields.38.label>
+  <DiaryPromptTemplate_PairDefault.fields.39.label>тяжесть прерывания смертопокоя</DiaryPromptTemplate_PairDefault.fields.39.label>
+  <DiaryPromptTemplate_PairImportant.fields.81.label>психическая связь</DiaryPromptTemplate_PairImportant.fields.81.label>
+  <DiaryPromptTemplate_PairImportant.fields.82.label>первая связанная пешка</DiaryPromptTemplate_PairImportant.fields.82.label>
+  <DiaryPromptTemplate_PairImportant.fields.83.label>вторая связанная пешка</DiaryPromptTemplate_PairImportant.fields.83.label>
+  <DiaryPromptTemplate_PairImportant.fields.84.label>подтверждённая причина разрыва</DiaryPromptTemplate_PairImportant.fields.84.label>
+  <DiaryPromptTemplate_PairImportant.fields.85.label>смертопокой</DiaryPromptTemplate_PairImportant.fields.85.label>
+  <DiaryPromptTemplate_PairImportant.fields.86.label>тяжесть прерывания смертопокоя</DiaryPromptTemplate_PairImportant.fields.86.label>
+  <DiaryPromptTemplate_SoloDefault.fields.49.label>психическая связь</DiaryPromptTemplate_SoloDefault.fields.49.label>
+  <DiaryPromptTemplate_SoloDefault.fields.50.label>первая связанная пешка</DiaryPromptTemplate_SoloDefault.fields.50.label>
+  <DiaryPromptTemplate_SoloDefault.fields.51.label>вторая связанная пешка</DiaryPromptTemplate_SoloDefault.fields.51.label>
+  <DiaryPromptTemplate_SoloDefault.fields.52.label>подтверждённая причина разрыва</DiaryPromptTemplate_SoloDefault.fields.52.label>
+  <DiaryPromptTemplate_SoloDefault.fields.53.label>смертопокой</DiaryPromptTemplate_SoloDefault.fields.53.label>
+  <DiaryPromptTemplate_SoloDefault.fields.54.label>тяжесть прерывания смертопокоя</DiaryPromptTemplate_SoloDefault.fields.54.label>
+  <DiaryPromptTemplate_SoloImportant.fields.129.label>психическая связь</DiaryPromptTemplate_SoloImportant.fields.129.label>
+  <DiaryPromptTemplate_SoloImportant.fields.130.label>первая связанная пешка</DiaryPromptTemplate_SoloImportant.fields.130.label>
+  <DiaryPromptTemplate_SoloImportant.fields.131.label>вторая связанная пешка</DiaryPromptTemplate_SoloImportant.fields.131.label>
+  <DiaryPromptTemplate_SoloImportant.fields.132.label>подтверждённая причина разрыва</DiaryPromptTemplate_SoloImportant.fields.132.label>
+  <DiaryPromptTemplate_SoloImportant.fields.133.label>смертопокой</DiaryPromptTemplate_SoloImportant.fields.133.label>
+  <DiaryPromptTemplate_SoloImportant.fields.134.label>тяжесть прерывания смертопокоя</DiaryPromptTemplate_SoloImportant.fields.134.label>
 </LanguageData>
