@@ -27,6 +27,7 @@ namespace DiaryPipelineTests
             TestProgressionPromptPlanFields();
             TestBiotechPromptPlanFields();
             TestPollutionContextFormatting();
+            TestPollutionLocalizationAndTemplateRoutingXmlContract();
             TestBiotechPromptTemplateXmlContract();
             TestOdysseyPromptPlanFields();
             TestRoyaltyPersonaPromptPlanFields();
@@ -1263,6 +1264,115 @@ namespace DiaryPipelineTests
             AssertEqual("non-pollution context passes through detail projection",
                 "weather=rain", PollutionContextFormatter.ProjectForDetail(
                     "weather=rain", NarrativeDetailLevelTokens.Compact));
+
+            DiaryEventPayload ordinaryPayload = SoloPayload(
+                "e-pollution-default",
+                "pollution threshold",
+                "The colony could no longer ignore the spreading contamination.");
+            ordinaryPayload.gameContext = storedContext;
+            DiaryPromptPlan ordinaryPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = ordinaryPayload,
+                policy = Policy(combat: false, important: false),
+                povRole = DiaryPipelineRoles.Initiator,
+                contextDetailLevel = PromptContextDetailLevel.Full
+            });
+            AssertEqual("non-important pollution route selects SoloDefault",
+                DiaryPipelineTemplates.SoloDefault, ordinaryPlan.templateKey);
+            AssertContains("SoloDefault still renders pollution band",
+                ordinaryPlan.userPrompt, "pollution band: critical");
+            AssertContains("SoloDefault still renders pollution transition",
+                ordinaryPlan.userPrompt, "pollution transition: escalated");
+        }
+
+        private static void TestPollutionLocalizationAndTemplateRoutingXmlContract()
+        {
+            XDocument templates = XDocument.Load(
+                RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
+            XDocument englishLabels = XDocument.Load(RepoPath(
+                "Languages", "English", "DefInjected", "PawnDiary.DiaryPromptTemplateDef",
+                "DiaryPromptTemplateDefs.xml"));
+            XDocument russianLabels = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryPromptTemplateDef", "DiaryPromptTemplateDefs.xml"));
+            XDocument russianKeyed = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
+            XDocument russianConditions = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "DefInjected",
+                "PawnDiary.DiaryObservedConditionDef", "DiaryObservedConditionDefs.xml"));
+
+            string[] templateDefNames =
+            {
+                "DiaryPromptTemplate_PairDefault",
+                "DiaryPromptTemplate_PairImportant",
+                "DiaryPromptTemplate_SoloDefault",
+                "DiaryPromptTemplate_SoloImportant"
+            };
+            string[] pollutionContextKeys =
+            {
+                "pollution_band", "pollution_transition", "map_label", "facet"
+            };
+            for (int templateIndex = 0; templateIndex < templateDefNames.Length; templateIndex++)
+            {
+                string defName = templateDefNames[templateIndex];
+                XElement template = FindDef(
+                    templates, "PawnDiary.DiaryPromptTemplateDef", defName);
+                List<XElement> fields =
+                    new List<XElement>(template.Element("fields").Elements("li"));
+                for (int keyIndex = 0; keyIndex < pollutionContextKeys.Length; keyIndex++)
+                {
+                    string contextKey = pollutionContextKeys[keyIndex];
+                    int fieldIndex = fields.FindIndex(field =>
+                        string.Equals(ChildValue(field, "contextKey"),
+                            contextKey, StringComparison.Ordinal));
+                    AssertTrue(defName + " keeps pollution context key " + contextKey,
+                        fieldIndex >= 0);
+
+                    string localizationKey = defName + ".fields." + fieldIndex + ".label";
+                    AssertEqual("English pollution label stays index-aligned: " + localizationKey,
+                        ChildValue(fields[fieldIndex], "label"),
+                        ChildValue(englishLabels.Root, localizationKey));
+                    AssertTrue("Russian pollution label exists: " + localizationKey,
+                        !string.IsNullOrWhiteSpace(
+                            ChildValue(russianLabels.Root, localizationKey)));
+                }
+            }
+
+            string[] keyedSuffixes =
+            {
+                "Meaningful.Start", "Meaningful.End", "Severe.Start", "Critical.Start",
+                "Meaningful.Priority", "Meaningful.Condition", "Meaningful.Description",
+                "Meaningful.Cue.Home", "Severe.Priority", "Severe.Condition",
+                "Severe.Description", "Severe.Cue.Pressure", "Critical.Priority",
+                "Critical.Condition", "Critical.Description", "Critical.Cue.Critical"
+            };
+            for (int i = 0; i < keyedSuffixes.Length; i++)
+            {
+                string suffix = keyedSuffixes[i];
+                string key = suffix.EndsWith(".Start", StringComparison.Ordinal)
+                    || suffix.EndsWith(".End", StringComparison.Ordinal)
+                    ? "PawnDiary.Event.ObservedCondition.BiotechPollution" + suffix
+                    : "PawnDiary.Prompt.ObservedCondition.BiotechPollution" + suffix;
+                AssertTrue("Russian pollution Keyed text exists: " + key,
+                    !string.IsNullOrWhiteSpace(ChildValue(russianKeyed.Root, key)));
+            }
+
+            string[] conditionDefNames =
+            {
+                "BiotechPollutionMeaningful",
+                "BiotechPollutionSevere",
+                "BiotechPollutionCritical"
+            };
+            for (int i = 0; i < conditionDefNames.Length; i++)
+            {
+                string defName = conditionDefNames[i];
+                AssertTrue("Russian pollution Def label exists: " + defName,
+                    !string.IsNullOrWhiteSpace(
+                        ChildValue(russianConditions.Root, defName + ".label")));
+                AssertTrue("Russian pollution Def instruction exists: " + defName,
+                    !string.IsNullOrWhiteSpace(
+                        ChildValue(russianConditions.Root, defName + ".instruction")));
+            }
         }
 
         // The template-field lists are DefInjected by numeric index. Appending a field to the wrong

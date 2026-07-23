@@ -17,6 +17,12 @@ namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
+        // Version 1 separates the one-time old-save pollution baseline from ordinary reloads. New games
+        // start at this version; old saves migrate once after Biotech is available, then preserve their
+        // lifecycle ticks/flags on every later load.
+        private const int CurrentPollutionObservationVersion = 1;
+        private int pollutionObservationVersion;
+
         // Saved active observed conditions (the "diaryArchive"-style runtime list). Serialized in
         // DiaryGameComponent.cs ExposeData under "activeObservedConditions". Each row is one lasting
         // state currently believed active, so a reload mid-state does not lose or re-announce it.
@@ -230,20 +236,21 @@ namespace PawnDiary
                     continue;
                 }
 
-                // severityRank is detached integer evidence for policy/debugging only. The prompt
-                // formatter emits a qualitative band token and never exposes this rank.
+                // Pollution is map-wide state, not countable evidence. The Def's detached severityRank
+                // owns family ordering; keeping evidenceCount at zero avoids pretending it is a count.
                 observations.Add(NewObservation(def, map.uniqueID, null,
-                    string.Empty, string.Empty, Math.Max(0, def.severityRank)));
+                    string.Empty, string.Empty, 0));
             }
         }
 
         /// <summary>
-        /// Silently reconciles pollution rows to the loaded world. Existing rows remain the only save
-        /// model; no transition page or cooldown is created at a load boundary.
+        /// Migrates an old save's current pollution into already-started lifecycle rows exactly once.
+        /// Existing rows are preserved so reload cannot erase pending debounce or restart prompt decay.
         /// </summary>
         private void BaselineMapPollutionConditionsOnLoad()
         {
-            if (!ModsConfig.BiotechActive)
+            if (!ModsConfig.BiotechActive
+                || pollutionObservationVersion >= CurrentPollutionObservationVersion)
             {
                 return;
             }
@@ -273,6 +280,24 @@ namespace PawnDiary
                 activeObservedConditions = new List<ActiveObservedConditionState>();
             }
 
+            List<ObservedConditionStateSnapshot> savedPollutionRows =
+                new List<ObservedConditionStateSnapshot>();
+            for (int i = 0; i < activeObservedConditions.Count; i++)
+            {
+                ActiveObservedConditionState row = activeObservedConditions[i];
+                DiaryObservedConditionDef def = ObservedConditionDefFor(row);
+                if (row != null && (pollutionKeys.Contains(row.conditionKey)
+                    || def != null && def.observerType == ObservedConditionObserverType.MapPollution))
+                {
+                    // Preserve only rows still backed by an enabled pollution Def. Disabled/removed rows
+                    // are retired silently at this migration boundary, just like the normal scanner.
+                    if (pollutionKeys.Contains(row.conditionKey))
+                    {
+                        savedPollutionRows.Add(row.ToSnapshot());
+                    }
+                }
+            }
+
             for (int i = activeObservedConditions.Count - 1; i >= 0; i--)
             {
                 ActiveObservedConditionState row = activeObservedConditions[i];
@@ -286,11 +311,14 @@ namespace PawnDiary
 
             int now = Find.TickManager?.TicksGame ?? 0;
             List<ObservedConditionStateSnapshot> baseline =
-                ObservedConditionBaselinePolicy.BuildStartedRows(now, observations);
+                ObservedConditionBaselinePolicy.MergeStartedRows(
+                    now, savedPollutionRows, observations);
             for (int i = 0; i < baseline.Count; i++)
             {
                 activeObservedConditions.Add(ActiveObservedConditionState.FromSnapshot(baseline[i]));
             }
+
+            pollutionObservationVersion = CurrentPollutionObservationVersion;
         }
 
         // Pass 5: game conditions. The game owns start/end truth; we just read ActiveConditions and
@@ -634,6 +662,8 @@ namespace PawnDiary
                 activeObservedConditions = new List<ActiveObservedConditionState>();
             }
 
+            HashSet<int> selectedPageDecisions =
+                SelectedObservedConditionPageDecisionIndexes(plan, dueDefByKey);
             for (int i = 0; i < plan.decisions.Count; i++)
             {
                 ObservedConditionDecision decision = plan.decisions[i];
@@ -652,7 +682,7 @@ namespace PawnDiary
                 dueDefByKey.TryGetValue(decision.state.conditionKey, out def);
                 if (decision.recordPage)
                 {
-                    if (def != null)
+                    if (def != null && selectedPageDecisions.Contains(i))
                     {
                         pageSatisfied = RecordObservedConditionPage(decision, def);
                     }
@@ -706,6 +736,61 @@ namespace PawnDiary
                     activeObservedConditions.Add(ActiveObservedConditionState.FromSnapshot(toAdd));
                 }
             }
+        }
+
+        /// <summary>
+        /// Chooses at most one configured page per exclusive family, map, and transition phase while
+        /// leaving every lifecycle decision intact. A sudden pollution jump can therefore activate all
+        /// threshold rows for truthful reclamation, but only its strongest band writes a page.
+        /// </summary>
+        private static HashSet<int> SelectedObservedConditionPageDecisionIndexes(
+            ObservedConditionPlan plan,
+            Dictionary<string, DiaryObservedConditionDef> dueDefByKey)
+        {
+            List<ObservedConditionInfluenceRow> candidates =
+                new List<ObservedConditionInfluenceRow>();
+            if (plan?.decisions == null || dueDefByKey == null)
+            {
+                return new HashSet<int>();
+            }
+
+            for (int i = 0; i < plan.decisions.Count; i++)
+            {
+                ObservedConditionDecision decision = plan.decisions[i];
+                if (decision == null || decision.state == null || !decision.recordPage)
+                {
+                    continue;
+                }
+
+                DiaryObservedConditionDef def;
+                if (!dueDefByKey.TryGetValue(decision.state.conditionKey, out def) || def == null)
+                {
+                    continue;
+                }
+
+                bool isStart = decision.kind == ObservedConditionDecisionKind.StartRecorded;
+                if (isStart ? !def.recordStartEvent : !def.recordEndEvent)
+                {
+                    continue;
+                }
+
+                string phase = isStart ? ObservedConditionPhaseStart : ObservedConditionPhaseEnd;
+                candidates.Add(new ObservedConditionInfluenceRow
+                {
+                    sourceIndex = i,
+                    conditionKey = decision.state.conditionKey,
+                    // Phase belongs in the family identity: a future family may legitimately finish one
+                    // row while starting another in the same scan, and those are different stories.
+                    exclusiveFamilyKey = string.IsNullOrWhiteSpace(def.exclusiveFamilyKey)
+                        ? string.Empty
+                        : def.exclusiveFamilyKey.Trim() + "|" + phase,
+                    severityRank = def.severityRank,
+                    mapUniqueId = decision.state.mapUniqueId
+                });
+            }
+
+            return new HashSet<int>(
+                ObservedConditionExclusiveFamilyPolicy.SelectSourceIndexes(candidates));
         }
 
         // Records the optional start/end diary page for a condition transition, gated by the def's

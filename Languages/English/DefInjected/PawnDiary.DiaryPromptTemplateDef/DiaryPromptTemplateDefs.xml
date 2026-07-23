@@ -535,4 +535,14 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <DiaryPromptTemplate_SoloDayReflection.fields.38.label>belief context</DiaryPromptTemplate_SoloDayReflection.fields.38.label>
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>belief context</DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.16.label>belief context</DiaryPromptTemplate_SoloArcReflection.fields.16.label>
+  <!-- Master Wave 11 review hardening: pollution facts survive default/non-important routing. -->
+  <DiaryPromptTemplate_PairDefault.fields.30.label>pollution band</DiaryPromptTemplate_PairDefault.fields.30.label>
+  <DiaryPromptTemplate_PairDefault.fields.31.label>pollution transition</DiaryPromptTemplate_PairDefault.fields.31.label>
+  <DiaryPromptTemplate_PairDefault.fields.32.label>map</DiaryPromptTemplate_PairDefault.fields.32.label>
+  <DiaryPromptTemplate_PairDefault.fields.33.label>context facet</DiaryPromptTemplate_PairDefault.fields.33.label>
+  <DiaryPromptTemplate_SoloDefault.fields.45.label>pollution band</DiaryPromptTemplate_SoloDefault.fields.45.label>
+  <DiaryPromptTemplate_SoloDefault.fields.46.label>pollution transition</DiaryPromptTemplate_SoloDefault.fields.46.label>
+  <DiaryPromptTemplate_SoloDefault.fields.47.label>map</DiaryPromptTemplate_SoloDefault.fields.47.label>
+  <DiaryPromptTemplate_SoloDefault.fields.48.label>context facet</DiaryPromptTemplate_SoloDefault.fields.48.label>
+
 </LanguageData>

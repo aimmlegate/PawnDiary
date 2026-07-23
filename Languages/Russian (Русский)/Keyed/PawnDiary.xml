@@ -1585,4 +1585,25 @@
   <PawnDiary.Dev.PromptSuite.BeliefStructural.Text>{0} мысленно возвращается к моменту, созвучному заветам своей идеолигии.</PawnDiary.Dev.PromptSuite.BeliefStructural.Text>
   <PawnDiary.Dev.PromptSuite.BeliefLexical.Label>Контекст убеждений — лексическое совпадение</PawnDiary.Dev.PromptSuite.BeliefLexical.Label>
   <PawnDiary.Dev.PromptSuite.BeliefLexical.Text>{0} ловит себя на том, что думает словами своей идеолигии.</PawnDiary.Dev.PromptSuite.BeliefLexical.Text>
+  <!-- Master Wave 11 / Biotech Phase 7 — качественные переходы загрязнения и давление среды. -->
+  <PawnDiary.Event.ObservedCondition.BiotechPollutionMeaningful.Start>{0} замечает, что загрязнение на карте «{1}» уже невозможно игнорировать.</PawnDiary.Event.ObservedCondition.BiotechPollutionMeaningful.Start>
+  <PawnDiary.Event.ObservedCondition.BiotechPollutionMeaningful.End>{0} видит, что карту «{1}» удалось очистить от охватившего её загрязнения.</PawnDiary.Event.ObservedCondition.BiotechPollutionMeaningful.End>
+  <PawnDiary.Event.ObservedCondition.BiotechPollutionSevere.Start>{0} понимает, что сильное загрязнение на карте «{1}» уже давит на повседневную жизнь.</PawnDiary.Event.ObservedCondition.BiotechPollutionSevere.Start>
+  <PawnDiary.Event.ObservedCondition.BiotechPollutionCritical.Start>{0} сталкивается с тем, что загрязнение на карте «{1}» достигло критического уровня.</PawnDiary.Event.ObservedCondition.BiotechPollutionCritical.Start>
+
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Priority>Пусть загрязнение, меняющее этот дом, влияет на запись.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Priority>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Condition>Загрязнение стало заметной частью повседневной жизни на этой карте.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Condition>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Description>Передавай давление среды качественно и опирайся лишь на то, что может заметить персонаж.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Description>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Cue.Home>Покажи, как изменившийся ландшафт меняет ощущение дома, не приводя измерений.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionMeaningful.Cue.Home>
+
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Priority>Пусть сильное загрязнение всей карты заметно давит на запись.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Priority>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Condition>Сильное загрязнение ограничивает привычный уклад и ощущение дома.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Condition>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Description>Опиши общее давление загрязнённой среды, не выдумывая единственную причину или единственного пострадавшего.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Description>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Cue.Pressure>Пусть загрязнённая местность фоном окрашивает планы, работу и тревогу о будущем.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionSevere.Cue.Pressure>
+
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Priority>Пусть критическое загрязнение всей карты определяет давление среды в записи.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Priority>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Condition>Из-за критического загрязнения сама карта стала враждебной к обычной жизни.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Condition>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Description>Сохраняй кризис общим для всей карты, описывай его качественно и ограничивайся видимыми последствиями.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Description>
+  <PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Cue.Critical>Сосредоточься на тяжести жизни в критически загрязнённом доме, не раскрывая проценты или игровые механики.</PawnDiary.Prompt.ObservedCondition.BiotechPollutionCritical.Cue.Critical>
+
 </LanguageData>

@@ -580,4 +580,14 @@
   <DiaryPromptTemplate_SoloDayReflection.fields.38.label>контекст убеждений</DiaryPromptTemplate_SoloDayReflection.fields.38.label>
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>контекст убеждений</DiaryPromptTemplate_SoloQuadrumReflection.fields.13.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.16.label>контекст убеждений</DiaryPromptTemplate_SoloArcReflection.fields.16.label>
+  <!-- Усиление после ревью Master Wave 11: факты о загрязнении доступны и обычным шаблонам. -->
+  <DiaryPromptTemplate_PairDefault.fields.30.label>уровень загрязнения</DiaryPromptTemplate_PairDefault.fields.30.label>
+  <DiaryPromptTemplate_PairDefault.fields.31.label>изменение загрязнения</DiaryPromptTemplate_PairDefault.fields.31.label>
+  <DiaryPromptTemplate_PairDefault.fields.32.label>карта</DiaryPromptTemplate_PairDefault.fields.32.label>
+  <DiaryPromptTemplate_PairDefault.fields.33.label>аспект контекста</DiaryPromptTemplate_PairDefault.fields.33.label>
+  <DiaryPromptTemplate_SoloDefault.fields.45.label>уровень загрязнения</DiaryPromptTemplate_SoloDefault.fields.45.label>
+  <DiaryPromptTemplate_SoloDefault.fields.46.label>изменение загрязнения</DiaryPromptTemplate_SoloDefault.fields.46.label>
+  <DiaryPromptTemplate_SoloDefault.fields.47.label>карта</DiaryPromptTemplate_SoloDefault.fields.47.label>
+  <DiaryPromptTemplate_SoloDefault.fields.48.label>аспект контекста</DiaryPromptTemplate_SoloDefault.fields.48.label>
+
 </LanguageData>

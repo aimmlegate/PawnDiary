@@ -38,6 +38,7 @@ namespace DiaryObservedConditionTests
             TestZeroWitnessCapPreservesExistingFanOut();
             TestUnavailablePollutionProducesNoBaselineRows();
             TestOldSavePollutionBaselineIsSilent();
+            TestPollutionBaselinePreservesSavedLifecycleProgress();
 
             Console.WriteLine("DiaryObservedConditionTests passed " + assertions + " assertions.");
             return 0;
@@ -467,6 +468,34 @@ namespace DiaryObservedConditionTests
             AssertEqual("baseline never marks a catch-up end", false,
                 rows[0].endRecorded || rows[1].endRecorded);
             AssertEqual("baseline anchors current transition-free tick", 400, rows[0].firstObservedTick);
+        }
+
+        private static void TestPollutionBaselinePreservesSavedLifecycleProgress()
+        {
+            ObservedConditionStateSnapshot pendingStart =
+                Started("meaningful", firstObserved: 100, mapId: 12);
+            pendingStart.startRecorded = false;
+            pendingStart.lastObservedTick = 250;
+
+            ObservedConditionStateSnapshot pendingEnd =
+                Started("severe", firstObserved: 20, mapId: 12);
+            pendingEnd.lastObservedTick = 300;
+            pendingEnd.firstMissingTick = 350;
+
+            List<ObservedConditionStateSnapshot> rows =
+                ObservedConditionBaselinePolicy.MergeStartedRows(
+                    500,
+                    States(pendingStart, pendingEnd),
+                    Observations(
+                        ObsMap("meaningful", 12),
+                        ObsMap("critical", 12)));
+
+            AssertEqual("load migration retains saved rows and adds only missing active bands", 3, rows.Count);
+            AssertEqual("load migration preserves pending start flag", false, rows[0].startRecorded);
+            AssertEqual("load migration preserves first-observed decay anchor", 100, rows[0].firstObservedTick);
+            AssertEqual("load migration preserves pending end debounce anchor", 350, rows[1].firstMissingTick);
+            AssertEqual("newly discovered old-save band is silently started", true, rows[2].startRecorded);
+            AssertEqual("newly discovered old-save band anchors at migration tick", 500, rows[2].firstObservedTick);
         }
 
         // ----- builders / helpers -----

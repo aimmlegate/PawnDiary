@@ -207,9 +207,53 @@ namespace PawnDiary
         }
     }
 
-    /// <summary>Builds silently-started rows from live observations at a save-load boundary.</summary>
+    /// <summary>
+    /// Reconciles a one-time old-save baseline without rewriting rows already owned by the lifecycle.
+    /// </summary>
     internal static class ObservedConditionBaselinePolicy
     {
+        /// <summary>
+        /// Keeps every distinct saved row exactly as it was, then silently starts only live identities
+        /// that the old save did not know about. Preserving saved ticks and recorded flags is essential:
+        /// replacing those rows on every load would restart decay and erase pending start/end debounce.
+        /// </summary>
+        public static List<ObservedConditionStateSnapshot> MergeStartedRows(int now,
+            IList<ObservedConditionStateSnapshot> savedRows,
+            IList<ObservedConditionObservation> observations)
+        {
+            List<ObservedConditionStateSnapshot> rows = new List<ObservedConditionStateSnapshot>();
+            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+            if (savedRows != null)
+            {
+                for (int i = 0; i < savedRows.Count; i++)
+                {
+                    ObservedConditionStateSnapshot saved = savedRows[i];
+                    if (saved == null || string.IsNullOrWhiteSpace(saved.conditionKey))
+                    {
+                        continue;
+                    }
+
+                    if (seen.Add(saved.IdentityKey()))
+                    {
+                        rows.Add(saved.Clone());
+                    }
+                }
+            }
+
+            List<ObservedConditionStateSnapshot> baseline = BuildStartedRows(now, observations);
+            for (int i = 0; i < baseline.Count; i++)
+            {
+                ObservedConditionStateSnapshot row = baseline[i];
+                if (row != null && seen.Add(row.IdentityKey()))
+                {
+                    rows.Add(row);
+                }
+            }
+
+            return rows;
+        }
+
+        /// <summary>Builds silently-started rows from live observations at an old-save boundary.</summary>
         public static List<ObservedConditionStateSnapshot> BuildStartedRows(int now,
             IList<ObservedConditionObservation> observations)
         {
