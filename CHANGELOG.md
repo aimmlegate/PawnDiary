@@ -3427,188 +3427,67 @@ pre-release version ladder for project history.
 
 ## 2026-06-28
 
-- **Prompt and condition style cleanup.** Memory-decay hediffs now stay prompt context instead of
-  forcing a lost-thread style, hediff style overrides suppress duplicate matching prompt guidance,
-  external game/mod text included in prompts is flattened and capped, and bad title/quest follow-up
-  text now falls back to safe humanized excerpts.
-- **Russian localization shipped and polished.** A full Russian Keyed/DefInjected set now ships with
-  glossary-aligned RimWorld terms, rewritten writing styles, localized humor cues, neutral
-  placeholder guidance, UI/prompt copyedits, complete DefInjected coverage, and key/placeholder
-  parity checks.
-- **Russian Workshop payload support.** `scripts/publish.ps1` now builds Russian as a separate
-  language-mod payload with translated metadata, localized preview art, separate Workshop id support,
-  and local junction installs alongside the main payload.
-- **Dev/UI access fixes.** Dev mode can export all saved diary pages and backing records to a UTF-8
-  text file, prompt-suite fixtures ignore live prompt enchantments, and Diary tab registration/opening
-  is retried defensively after startup.
-- **Condition and event-window features.** XML hediff style overrides can temporarily force writing
-  styles for active conditions; event windows now cover birthdays, heart attacks, and prison breaks.
-  Review hardening added trigger-rule prefilters, isolated optional event-window failures from other
-  capture paths, and restored missing English DefInjected stubs.
+- **Russian localization shipped; prompt, condition, and dev/UI fixes.** A full Russian Keyed/DefInjected
+  translation (plus a separate Workshop payload) landed alongside hediff prompt/style cleanup, XML-driven
+  event windows (birthdays, heart attacks, prison breaks), and dev-mode export/reliability fixes.
 
 ## 2026-06-27
 
-- **XML event-window support expanded.** `DiaryEventWindowDef` can now create start/end/timeout
-  diary entries from incident, quest lifecycle, spawned-thing, and letter signals, with built-in
-  windows for metalhorror suspicion, ancient dangers, and void monolith discovery or activation.
-
-- **Anomaly and hediff prompt routing improved.** `DeathPall` and `UnnaturalDarkness` now route
-  through more specific mood groups, Anomaly hediffs such as revenant hypnosis and cube effects can
-  trigger immediate/progression entries, and common drug hediffs gained localized prompt condition
-  overrides.
-
-- **Long-history retention and UI performance reworked.** The history cap is now per pawn, the
-  retention plan is covered by pure tests, background maintenance uses a bounded hot window, and the
-  Diary tab virtualizes long lists with sliced loading, unread flags, pawn-view reuse, stale-entry
-  handling, archived-pending fallbacks, and dev-mode stress history.
+- **Event windows, Anomaly/hediff prompt routing, and history performance.** `DiaryEventWindowDef` added
+  start/end/timeout entries for incidents, quests, and letters (metalhorror, ancient dangers, void
+  monolith); Anomaly/hediff prompt routing improved; and history retention moved to a per-pawn cap with
+  a virtualized, cached Diary tab.
 
 ## 2026-06-26
 
-- **Localization, packaging, and maintainer docs cleaned up.** DefInjected folder names were fixed,
-  the Workshop preview was replaced with human-made art, publish output now includes source and
-  reference docs, and `repowiki/README.md` was condensed into a current-state guide.
-
-- **Generation and retention reliability improved.** Catch-up scans became demand-driven, orphan
-  recovery moved to its own pass, retained diary events gained a settings cap, and completed LLM
-  results now drain while the game is paused.
-
-- **Prompt and compatibility policy expanded.** Event prompt lookup now falls back through several
-  XML keys for modded compatibility, SpeakUp rows route as promoted chitchat, tagged social-log
-  grammar uses a reply-suppression guard, and stock writing styles were retuned around distinct
-  mechanics.
-
-- **Runtime and UI hardening landed.** Diary hooks, ticks, save/load work, startup tab injection,
-  and immediate-mode drawing now isolate failures; mental-break card styling was softened; unread
-  markers skip world inspect panes; and thinking-model self-edit cleanup gained parser coverage.
+- **Docs, generation reliability, prompt fallback, and runtime hardening.** Localization/packaging docs
+  were cleaned up, catch-up/orphan recovery and paused-game LLM draining improved reliability, prompt
+  lookup gained modded-compatibility fallbacks, and diary hooks/ticks/save-load/UI drawing were isolated
+  against failures.
 
 ## 2026-06-25
 
-- **Diary tab surfaced as the default.** Fresh settings now use the pawn inspect tab, selected
-  humanlike corpses can show Diary too, unread markers appear in tab mode, and command mode remains
-  available with its underline/writing dots.
-- **Generation controls expanded.** Event prompts can prefer a configured model while keeping normal
-  failover, dev-mode cards can regenerate a saved POV page, raids gained timing/prompt tuning, and
-  eligible first-person entries can receive subtle XML-tuned humor cues.
-- **Large structural extraction pass.** Per-POV state collapsed into `PovSlot`, saved events moved
-  into `DiaryEventRepository`, generation code split by stage, Harmony patches split by capture
-  domain, settings/UI code moved into focused files, and dead diary-bound helpers were removed while
-  preserving existing Scribe keys and behavior.
-- **Diary tab performance and cache work.** Long-history drawing now memoizes counts by render token,
-  culls offscreen cards, caches expanded-card measurements, and routes visible-entry reuse/year
-  ordering through `DiaryTabVisibleEntriesCache`.
-- **Pure helpers and tests broadened.** Prompt enchantment planning, text decorations, LLM request
-  JSON, parser speech-marker guards, API lane identity, and context-builder substeps moved into
-  focused pure helpers with targeted coverage.
-- **XML/localization boundaries tightened.** Consciousness/stagger/mood/intoxication policy moved to
-  XML fallbacks, localized colony naming moved out of saved models, instruction resolution moved out
-  of settings DTOs, live pawn fact capture moved to `PawnFactCapture`, and English DefInjected stubs
-  were filled for new prompt/event text.
-- **Release and review cleanup.** Workshop metadata, README/publish output, and package-id handling
-  were prepared for public release; review fixes addressed stale card-height caching, unknown
-  decoration validation, shared API pinning, and small dead facade surface.
+- **Diary tab became the default entry point.** Fresh settings now use the pawn inspect tab (with unread
+  markers); generation controls, humor cues, and raid tuning were expanded.
+- **Major structural refactor and hardening.** Per-POV state moved to `PovSlot`, saved events to
+  `DiaryEventRepository`, generation/Harmony/settings code split into focused files, tab rendering
+  cached/virtualized, and XML/localization boundaries and pure-test coverage broadened ahead of release.
 
 ## 2026-06-24
 
-- **Native Ollama API mode removed.** API lanes now use OpenAI-compatible Chat Completions or
-  OpenAI Responses only; local Ollama remains usable through its OpenAI-compatible endpoint.
-
-- **Harmony declared as a mod dependency.** `About/About.xml` now declares `brrainz.harmony` for
-  RimWorld 1.6 while keeping the bundled DLL as a run-from-clone fallback.
-
-- **API lanes hardened for free-tier pools.** Routing modes, lane reordering, auth modes, Gemini
-  reasoning support, exponential cooldowns, failover snapshots, settings cleanup, byte-capped reads,
-  and prompt-lab auth options were added.
-
-- **Pawn ability-use events added.** Successful ability activations can create cooldown-weighted solo
-  entries with ability, category, target, and cooldown context.
-
-- **Anomaly psychic ritual events added.** Completed psychic rituals fan out to relevant pawns with
-  quality/context text and darker XML-guided prompt rules.
-
-- **Ideology ritual events added.** Finished non-canceled rituals create role-aware entries for
-  authors, targets, participants, and spectators, with DLC-safe edge-group policy.
-
-- **Important-event status context added.** Prompt enchantments can add one weighted Royalty title or
-  Ideology role cue for important events.
-
-- **Personas reworked into writing styles.** Settings, picker text, prompt defaults, and presets now
-  describe writing mechanics instead of chat personas while keeping internal save keys stable.
-
-- **Per-event-type prompt variation.** Interaction groups can define instruction and tone variant
-  pools, with persisted instruction rolls and deterministic tone picks.
-
-- **Diary UI tweaks.** Older cards collapse by default after the first three entries, and save-time
-  cleanup strips echoed schema punctuation while preserving prose.
-
-- **Reliability fixes.** Startup patching, cooldown failover, no-auth lane identity, query-key URL
-  fragments, and prompt-variant seeds were hardened.
-
-- **Docs and live-smoke coverage added.** RimBridge/GABS hook-validation notes, an auto-test
-  scenario, and a live-smoke Lua fixture were added.
-
-- **Save compatibility documented.** Player metadata and persistence docs now state that diary
-  history is self-contained and does not attach gameplay defs/components to pawns or maps.
+- **New event sources: abilities, psychic rituals, and Ideology rituals.** Successful ability
+  activations, completed psychic rituals, and finished Ideology rituals now generate context-aware
+  entries, plus optional Royalty/Ideology status flavor for important events.
+- **API and platform hardening.** Native Ollama API mode was removed for OpenAI-compatible lanes
+  (Harmony became a declared dependency); free-tier lane routing, auth, cooldowns, and failover were
+  hardened; and personas were reframed as writing styles with per-event-type prompt variation.
+- **UI, reliability, and docs polish.** Older diary cards collapse by default, save-time cleanup
+  improved, startup/cooldown/query-key reliability fixes landed, and save-compatibility and
+  hook-validation docs were added.
 
 ## 2026-06-23
 
-- **Settings window compacted.** Request tuning, Prompt Studio, writing-style editing, and the hidden
-  generated-speech Social-log toggle were reorganized into a smaller settings surface.
-
-- **Diary entry point moved to pawn selection.** Selecting one eligible colonist or corpse now shows
-  a Diary command button instead of the old inspector tab-strip button.
-
-- **Mod icon added.** `About/ModIcon.png`, `modIconPath`, and publish-script texture copying were
-  added for the mod icon and runtime command icons.
-
-- **Save-time tag sanitizer improved.** Valid speech blocks are preserved while malformed closers and
-  hallucinated bracket tags are repaired or stripped.
-
-- **Prompt-lab coverage expanded.** Static prompt fields, generated Romance/Raid/Quest contexts, and
-  XML template/event prompt checks are now covered.
-
-- **Thinking-model response parsing fixed.** Typed visible output now wins over flattened reasoning,
-  more reasoning part types are skipped, and blank Ollama messages fall back to root `response`.
-
-- **Prompt Studio can edit event-source guidance.** XML catalog prompt and enhancement text can now
-  be overridden per event source.
-
-- **Review hardening pass landed.** Save/load dedup, endpoint editing, capped HTTP reads, deferred
-  PlayLog grammar rendering, reflection warnings, diary lookup null tolerance, name-highlight
-  throttling, DLC context reads, and death-context wording were tightened.
-
-- **Day reflections require an XML-controlled important signal.** End-of-day summaries now skip
-  filler-only days by default, with XML able to re-enable quiet summaries.
+- **Settings compacted and Diary moved to pawn selection.** The settings window was reorganized into a
+  smaller surface, the Diary entry point moved to a pawn-selection command button, and a mod icon was
+  added.
+- **Prompt, parsing, and reflection fixes.** Save-time tag sanitizing, thinking-model response parsing,
+  and important-signal-gated day reflections were fixed, and Prompt Studio gained per-event-source
+  guidance editing plus expanded prompt-lab coverage.
 
 ## 2026-06-22
 
-- **Quest event source added.** Accepted and ended quests now create lifecycle entries with compact
-  quest, issuer, reward, and result context.
-
-- **Raid event source added.** Raid incidents fan out solo entries to eligible colonists with
-  incident/faction/points payloads and colony-level deduplication.
-
-- **Prompt structure split.** Shared system prompts were shortened, with event-source guidance moved
-  into `DiaryEventPromptDef` rows before group instruction/tone flavor.
-
-- **Diary prose nudged toward immediacy.** Prompt guidance now asks for one sensory detail, one
-  emotional beat, and an implied consequence from supplied facts.
-
-- **Diary tab and prompt suite updated.** The tab is taller, dev cards gained copy support, and the
-  Prompt suite became a data-driven dropdown with clearable prompt-only cards.
+- **Quest and raid event sources added; prompt structure split.** Accepted/ended quests and raid
+  incidents now generate entries, shared prompts were shortened with guidance moved to
+  `DiaryEventPromptDef`, prose was nudged toward sensory immediacy, and the Diary tab/Prompt suite got UI
+  polish.
 
 ## 2026-06-21
 
-- **Formatting system matured.** Dev previews, stronger staggered speech, conflict/mental-break page
-  washes, dark/strange speech variants, and status-aware pawn-name highlighting were added.
-
-- **Event Catalog completed for current live sources.** Capture decisions now cover solo, pair,
-  batch, ambient, day-reflection, and neutral arrival/death routes.
-
-- **Romance relation events added.** Lover, spouse, ex-lover, and ex-spouse changes now route through
-  the Romance domain.
-
-- **Hardening pass landed.** Work sampling, catalog dispatch tests, recorders, age/consciousness
-  gating, save/load behavior, parser handling, caches, MiniJson, and provider support were tightened.
+- **Formatting, event catalog, and romance events matured.** Dev previews, staggered speech, mood/
+  conflict page washes, and status-aware name highlighting landed; the Event Catalog now covers all live
+  sources; and Romance relation changes (lover/spouse/ex) route through their own domain.
+- **Hardening pass.** Work sampling, catalog dispatch, recorders, age/consciousness gating, save/load,
+  parsing, caching, and provider support were tightened.
 
 ## 2026-06-19 - 2026-06-20
 
@@ -3617,17 +3496,11 @@ pre-release version ladder for project history.
 
 ## 2026-06-17 - 2026-06-18
 
-- **Workshop release and publishing flow prepared.** Workshop metadata, preview art, publish script,
-  package-id cleanup, and verification hooks were added.
-
-- **LLM compatibility broadened.** Chat Completions, OpenAI Responses, native Ollama Chat, reasoning
-  cleanup, and raw-response debug views were added; native Ollama was later removed.
-
-- **Pipeline extracted into pure contracts.** Prompt planning, response parsing, text decorations,
-  domain recovery, and diary architecture moved into focused helpers with tests.
-
-- **Health, combat, and social capture expanded.** Hediff progression, combat tale batching, insult
-  batching, direct-speech POV rules, and important health/capacity cues were added.
+- **Workshop release prep and pipeline extraction.** Workshop metadata/publish script, broadened LLM
+  compatibility (Chat Completions, OpenAI Responses, native Ollama — later removed), and a pure-contract
+  pipeline extraction (planning, parsing, decorations, recovery) landed.
+- **Capture expanded.** Hediff progression, combat/insult batching, direct-speech POV rules, and key
+  health/capacity cues were added.
 
 ## 2026-06-16
 
