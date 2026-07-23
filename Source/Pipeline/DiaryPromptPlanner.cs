@@ -179,6 +179,9 @@ namespace PawnDiary
             string projectedGameContext = OdysseyContextFormatter.ProjectPairRoleForPov(
                 payload.gameContext,
                 request.povRole);
+            projectedGameContext = PollutionContextFormatter.ProjectForDetail(
+                projectedGameContext,
+                DetailToken(request.contextDetailLevel));
             string victimRole = DiaryContextFields.Value(payload.gameContext, "death_victim_role");
             string victimName = DiaryContextFields.Value(payload.gameContext, "death_victim");
             string arrivalPawnName = DiaryContextFields.Value(payload.gameContext, "arrival_pawn");

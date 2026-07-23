@@ -297,6 +297,36 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// Pins the Phase 7 adapter to the maintained world-tile value and proves its Biotech guard
+        /// returns a detached empty result when the package is absent.
+        /// </summary>
+        [Test]
+        public static void MapPollutionReadIsPackageGatedAndUsesWorldTileState()
+        {
+            float nullFraction;
+            PawnDiaryRimTestScope.Require(
+                !DlcContext.TryReadMapPollution(null, out nullFraction) && nullFraction == 0f,
+                "A null map must always return false/zero from the pollution adapter.");
+
+            Map homeMap = Find.AnyPlayerHomeMap;
+            float fraction;
+            bool read = DlcContext.TryReadMapPollution(homeMap, out fraction);
+            if (!ModsConfig.BiotechActive || homeMap == null)
+            {
+                PawnDiaryRimTestScope.Require(
+                    !read && fraction == 0f,
+                    "Without Biotech (or a home map), pollution must be unavailable and zero.");
+                return;
+            }
+
+            float expected = Find.WorldGrid[homeMap.Tile].pollution;
+            expected = expected < 0f ? 0f : expected > 1f ? 1f : expected;
+            PawnDiaryRimTestScope.Require(
+                read && Math.Abs(fraction - expected) < 0.0001f,
+                "Pollution must come from the maintained world-tile fraction, not a map-cell scan.");
+        }
+
+        /// <summary>
         /// The null-pawn contract must hold even in an all-DLC process. This catches accessors that only
         /// appear safe in a base-only run because their ModsConfig guard short-circuits before a missing
         /// pawn dereference. Summary builders and optional adapters legitimately ask about a pawn that

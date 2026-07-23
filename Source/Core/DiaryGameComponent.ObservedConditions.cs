@@ -79,7 +79,7 @@ namespace PawnDiary
                 for (int i = 0; i < allDefs.Count; i++)
                 {
                     DiaryObservedConditionDef def = allDefs[i];
-                    if (def == null || !def.enabled)
+                    if (def == null || !def.enabled || !ObservedConditionAvailable(def))
                     {
                         continue;
                     }
@@ -168,6 +168,9 @@ namespace PawnDiary
                 case ObservedConditionObserverType.MapHiddenHediff:
                     CollectMapHiddenHediffObservations(def, observations);
                     break;
+                case ObservedConditionObserverType.MapPollution:
+                    CollectMapPollutionObservations(def, observations);
+                    break;
                 case ObservedConditionObserverType.RecentEvidence:
                     // No live feed yet (see the Event System pages in repowiki/). Intentionally a no-op.
                     break;
@@ -207,6 +210,86 @@ namespace PawnDiary
                 {
                     observations.Add(NewObservation(def, map.uniqueID, null, string.Empty, string.Empty, 0));
                 }
+            }
+        }
+
+        // Biotech pollution. DlcContext owns every live read and returns one already-maintained
+        // world-tile fraction. This path never touches PollutionGrid, cells, Things, or pawns.
+        private void CollectMapPollutionObservations(DiaryObservedConditionDef def,
+            List<ObservedConditionObservation> observations)
+        {
+            List<Map> maps = Find.Maps;
+            for (int i = 0; i < maps.Count; i++)
+            {
+                Map map = maps[i];
+                float pollutionFraction;
+                if (!DlcContext.TryReadMapPollution(map, out pollutionFraction)
+                    || !ObservedConditionPollutionPolicy.IsActive(
+                        pollutionFraction, def.minPollutionFraction, def.maxPollutionFraction))
+                {
+                    continue;
+                }
+
+                // severityRank is detached integer evidence for policy/debugging only. The prompt
+                // formatter emits a qualitative band token and never exposes this rank.
+                observations.Add(NewObservation(def, map.uniqueID, null,
+                    string.Empty, string.Empty, Math.Max(0, def.severityRank)));
+            }
+        }
+
+        /// <summary>
+        /// Silently reconciles pollution rows to the loaded world. Existing rows remain the only save
+        /// model; no transition page or cooldown is created at a load boundary.
+        /// </summary>
+        private void BaselineMapPollutionConditionsOnLoad()
+        {
+            if (!ModsConfig.BiotechActive)
+            {
+                return;
+            }
+
+            List<DiaryObservedConditionDef> allDefs =
+                DefDatabase<DiaryObservedConditionDef>.AllDefsListForReading;
+            List<ObservedConditionObservation> observations = new List<ObservedConditionObservation>();
+            HashSet<string> pollutionKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (allDefs != null)
+            {
+                for (int i = 0; i < allDefs.Count; i++)
+                {
+                    DiaryObservedConditionDef def = allDefs[i];
+                    if (def == null || !def.enabled
+                        || def.observerType != ObservedConditionObserverType.MapPollution)
+                    {
+                        continue;
+                    }
+
+                    pollutionKeys.Add(def.EffectiveConditionKey());
+                    CollectMapPollutionObservations(def, observations);
+                }
+            }
+
+            if (activeObservedConditions == null)
+            {
+                activeObservedConditions = new List<ActiveObservedConditionState>();
+            }
+
+            for (int i = activeObservedConditions.Count - 1; i >= 0; i--)
+            {
+                ActiveObservedConditionState row = activeObservedConditions[i];
+                DiaryObservedConditionDef def = ObservedConditionDefFor(row);
+                if (row != null && (pollutionKeys.Contains(row.conditionKey)
+                    || def != null && def.observerType == ObservedConditionObserverType.MapPollution))
+                {
+                    activeObservedConditions.RemoveAt(i);
+                }
+            }
+
+            int now = Find.TickManager?.TicksGame ?? 0;
+            List<ObservedConditionStateSnapshot> baseline =
+                ObservedConditionBaselinePolicy.BuildStartedRows(now, observations);
+            for (int i = 0; i < baseline.Count; i++)
+            {
+                activeObservedConditions.Add(ActiveObservedConditionState.FromSnapshot(baseline[i]));
             }
         }
 
@@ -655,7 +738,8 @@ namespace PawnDiary
                 return true;
             }
 
-            List<Pawn> pawns = ObservedConditionPawns(def, decision.state);
+            int transitionTick = Find.TickManager.TicksGame;
+            List<Pawn> pawns = ObservedConditionPawns(def, decision.state, transitionTick);
             if (pawns.Count == 0)
             {
                 return false; // retryable: no recipient right now.
@@ -741,6 +825,8 @@ namespace PawnDiary
             int pawnMapUniqueId = MapUniqueId(pawn.Map);
             string pawnId = pawn.GetUniqueLoadID();
             int now = Find.TickManager.TicksGame;
+            List<ObservedConditionInfluenceRow> eligibleRows =
+                new List<ObservedConditionInfluenceRow>();
             for (int i = 0; i < activeObservedConditions.Count; i++)
             {
                 ActiveObservedConditionState active = activeObservedConditions[i];
@@ -750,7 +836,8 @@ namespace PawnDiary
                 }
 
                 DiaryObservedConditionDef def = ObservedConditionDefFor(active);
-                if (def == null || !def.enabled || !def.promptEnabled)
+                if (def == null || !def.enabled || !def.promptEnabled
+                    || !ObservedConditionAvailable(def))
                 {
                     continue;
                 }
@@ -764,6 +851,33 @@ namespace PawnDiary
                 }
 
                 if (!ObservedConditionAppliesToPawn(def, active, pawnMapUniqueId, pawnId))
+                {
+                    continue;
+                }
+
+                eligibleRows.Add(new ObservedConditionInfluenceRow
+                {
+                    sourceIndex = i,
+                    conditionKey = active.conditionKey,
+                    exclusiveFamilyKey = def.exclusiveFamilyKey,
+                    severityRank = Math.Max(0, def.severityRank),
+                    mapUniqueId = active.mapUniqueId
+                });
+            }
+
+            List<int> selectedIndexes =
+                ObservedConditionExclusiveFamilyPolicy.SelectSourceIndexes(eligibleRows);
+            for (int selected = 0; selected < selectedIndexes.Count; selected++)
+            {
+                int activeIndex = selectedIndexes[selected];
+                if (activeIndex < 0 || activeIndex >= activeObservedConditions.Count)
+                {
+                    continue;
+                }
+
+                ActiveObservedConditionState active = activeObservedConditions[activeIndex];
+                DiaryObservedConditionDef def = ObservedConditionDefFor(active);
+                if (active == null || def == null)
                 {
                     continue;
                 }
@@ -839,7 +953,8 @@ namespace PawnDiary
         // Page helpers
         // ---------------------------------------------------------------------------------------------
 
-        private List<Pawn> ObservedConditionPawns(DiaryObservedConditionDef def, ObservedConditionStateSnapshot state)
+        private List<Pawn> ObservedConditionPawns(DiaryObservedConditionDef def,
+            ObservedConditionStateSnapshot state, int transitionTick)
         {
             List<Pawn> pawns = new List<Pawn>();
             if (def.recordScope == ObservedConditionRecordScope.SubjectPawn)
@@ -858,6 +973,12 @@ namespace PawnDiary
             if (map != null)
             {
                 AddEventWindowPawnsFromMap(map, pawns, seenPawnIds);
+                return ApplyObservedConditionWitnessCap(def, state, transitionTick, pawns);
+            }
+
+            if (def.observerType == ObservedConditionObserverType.MapPollution)
+            {
+                // Never redirect a pollution transition from a missing map to another colony map.
                 return pawns;
             }
 
@@ -868,7 +989,58 @@ namespace PawnDiary
                 AddEventWindowPawnsFromMap(maps[i], pawns, seenPawnIds);
             }
 
-            return pawns;
+            return ApplyObservedConditionWitnessCap(def, state, transitionTick, pawns);
+        }
+
+        private static List<Pawn> ApplyObservedConditionWitnessCap(DiaryObservedConditionDef def,
+            ObservedConditionStateSnapshot state, int transitionTick, List<Pawn> pawns)
+        {
+            if (def == null || state == null || pawns == null || def.maxPagePawns <= 0)
+            {
+                return pawns ?? new List<Pawn>();
+            }
+
+            List<ObservedConditionWitnessCandidate> detached =
+                new List<ObservedConditionWitnessCandidate>();
+            Dictionary<string, Pawn> pawnById = new Dictionary<string, Pawn>(StringComparer.Ordinal);
+            for (int i = 0; i < pawns.Count; i++)
+            {
+                Pawn pawn = pawns[i];
+                if (pawn == null || !IsDiaryEligible(pawn))
+                {
+                    continue;
+                }
+
+                string pawnId = pawn.GetUniqueLoadID();
+                if (string.IsNullOrWhiteSpace(pawnId) || pawnById.ContainsKey(pawnId))
+                {
+                    continue;
+                }
+
+                pawnById[pawnId] = pawn;
+                detached.Add(new ObservedConditionWitnessCandidate
+                {
+                    pawnId = pawnId,
+                    hasVisibleRelevantHealth =
+                        def.observerType == ObservedConditionObserverType.MapPollution
+                        && DlcContext.HasVisiblePollutionHealthRelevance(pawn)
+                });
+            }
+
+            List<string> selectedIds = ObservedConditionWitnessPolicy.SelectPawnIds(
+                def.EffectiveConditionKey(), state.mapUniqueId, transitionTick, detached,
+                def.maxPagePawns);
+            List<Pawn> selected = new List<Pawn>();
+            for (int i = 0; i < selectedIds.Count; i++)
+            {
+                Pawn pawn;
+                if (pawnById.TryGetValue(selectedIds[i], out pawn))
+                {
+                    selected.Add(pawn);
+                }
+            }
+
+            return selected;
         }
 
         private static Pawn ObservedConditionSubjectPawn(string pawnId)
@@ -948,6 +1120,15 @@ namespace PawnDiary
         private static string ObservedConditionSignalLabel(DiaryObservedConditionDef def,
             ObservedConditionStateSnapshot state, string label)
         {
+            if (def.observerType == ObservedConditionObserverType.MapPollution)
+            {
+                string mapLabel = ObservedConditionMapLabel(state.mapUniqueId);
+                if (!string.IsNullOrWhiteSpace(mapLabel))
+                {
+                    return mapLabel;
+                }
+            }
+
             string evidence = DiaryLineCleaner.CleanLine(state.lastSeenEvidenceLabel);
             if (!string.IsNullOrWhiteSpace(evidence))
             {
@@ -962,6 +1143,17 @@ namespace PawnDiary
         private static string BuildObservedConditionGameContext(DiaryObservedConditionDef def,
             ObservedConditionStateSnapshot state, string phase)
         {
+            if (def.observerType == ObservedConditionObserverType.MapPollution)
+            {
+                bool isStart = string.Equals(
+                    phase, ObservedConditionPhaseStart, StringComparison.OrdinalIgnoreCase);
+                return PollutionContextFormatter.Format(
+                    PollutionContextFormatter.BandForSeverity(def.severityRank),
+                    PollutionContextFormatter.TransitionFor(def.severityRank, isStart),
+                    ObservedConditionMapLabel(state.mapUniqueId),
+                    NarrativeDetailLevelTokens.Full);
+            }
+
             // Reuses the event-window context-part helpers (SafeContextValue / AddContextPart) so the
             // gameContext string format stays consistent across both systems.
             List<string> parts = new List<string>
@@ -979,6 +1171,17 @@ namespace PawnDiary
 
             AddContextPart(parts, "subject_id", state.subjectPawnId);
             return string.Join("; ", parts.ToArray());
+        }
+
+        private static string ObservedConditionMapLabel(int mapUniqueId)
+        {
+            Map map = MapForUniqueId(mapUniqueId);
+            if (map == null || map.Parent == null)
+            {
+                return string.Empty;
+            }
+
+            return DiaryLineCleaner.CleanLine(map.Parent.LabelCap);
         }
 
         // ---------------------------------------------------------------------------------------------
@@ -1131,6 +1334,13 @@ namespace PawnDiary
             }
 
             return map.IsPlayerHome || def.includeNonPlayerMaps;
+        }
+
+        private static bool ObservedConditionAvailable(DiaryObservedConditionDef def)
+        {
+            return def != null
+                && (def.observerType != ObservedConditionObserverType.MapPollution
+                    || ModsConfig.BiotechActive);
         }
 
         private static int CountSpawnedHostiles(Map map, int cap)

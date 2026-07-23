@@ -26,6 +26,56 @@ namespace PawnDiary
     internal static partial class DlcContext
     {
         /// <summary>
+        /// Biotech pollution adapter: reads the fraction vanilla already copied onto the map's world
+        /// tile. It never asks PollutionGrid for cell-derived totals and never enumerates map contents.
+        /// </summary>
+        public static bool TryReadMapPollution(Map map, out float pollutionFraction)
+        {
+            pollutionFraction = 0f;
+            if (!ModsConfig.BiotechActive || map == null || !map.IsPlayerHome
+                || Find.WorldGrid == null || !map.Tile.Valid)
+            {
+                return false;
+            }
+
+            float maintained = Find.WorldGrid[map.Tile].pollution;
+            if (float.IsNaN(maintained) || float.IsInfinity(maintained))
+            {
+                return false;
+            }
+
+            pollutionFraction = Math.Max(0f, Math.Min(1f, maintained));
+            return true;
+        }
+
+        /// <summary>
+        /// Biotech pollution witness hint. Only exact visible health rows are considered; absence is a
+        /// normal result and never implies that other map pawns are unaffected.
+        /// </summary>
+        public static bool HasVisiblePollutionHealthRelevance(Pawn pawn)
+        {
+            if (!ModsConfig.BiotechActive || pawn?.health?.hediffSet?.hediffs == null)
+            {
+                return false;
+            }
+
+            List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
+            for (int i = 0; i < hediffs.Count; i++)
+            {
+                Hediff hediff = hediffs[i];
+                string defName = hediff?.def?.defName;
+                if (hediff != null && hediff.Visible
+                    && (string.Equals(defName, "ToxicBuildup", StringComparison.Ordinal)
+                        || string.Equals(defName, "PollutionStimulus", StringComparison.Ordinal)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Biotech: copies the live child facts needed for an age-7/10/13 growth diff. The caller
         /// supplies the exact birthday age/tier captured by the owning hook; no live object escapes.
         /// </summary>

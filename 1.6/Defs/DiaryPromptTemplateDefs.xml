@@ -169,6 +169,12 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>memory</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
+      <!-- Biotech Phase 7 pollution projection. Raw fractions, cells, ticks, map IDs, and ranks
+           never become template fields. Compact keeps the three required qualitative facts. -->
+      <li><label>pollution band</label><source>GameContext</source><contextKey>pollution_band</contextKey></li>
+      <li><label>pollution transition</label><source>GameContext</source><contextKey>pollution_transition</contextKey></li>
+      <li><label>map</label><source>GameContext</source><contextKey>map_label</contextKey></li>
+      <li><label>context facet</label><source>GameContext</source><contextKey>facet</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -484,6 +490,11 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
       <li><label>memory</label><source>MemoryContext</source></li>
       <!-- Ideology Phase 1: absent/irrelevant belief context is omitted by PromptAssembler. -->
       <li><label>belief context</label><source>BeliefContext</source></li>
+      <!-- Biotech Phase 7 pollution projection; see PairImportant for the privacy contract. -->
+      <li><label>pollution band</label><source>GameContext</source><contextKey>pollution_band</contextKey></li>
+      <li><label>pollution transition</label><source>GameContext</source><contextKey>pollution_transition</contextKey></li>
+      <li><label>map</label><source>GameContext</source><contextKey>map_label</contextKey></li>
+      <li><label>context facet</label><source>GameContext</source><contextKey>facet</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

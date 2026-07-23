@@ -34,6 +34,9 @@ namespace PawnDiary
         // WITHOUT revealing the hidden mechanic. Use only with matchDefNames; treat the result as "the
         // colony is/isn't in this state", not "who has it".
         MapHiddenHediff,
+        // Biotech: active while the already-maintained world-tile pollution fraction for an eligible
+        // player home map meets this Def's threshold. The adapter is DLC-gated and never scans cells.
+        MapPollution,
         // Bounded fallback: a recent signal/letter, given a TTL and labelled "recent evidence".
         // Defined for completeness; no live scanner feeds it yet (see the Event System pages in repowiki/).
         RecentEvidence
@@ -123,6 +126,16 @@ namespace PawnDiary
         public bool includeHomeMapsOnly = true;
         public bool includeNonPlayerMaps = false;
 
+        // ---- MapPollution / exclusive-family / bounded-page tuning ----
+        // maxPollutionFraction < 0 means no upper bound. Family/rank are prompt-selection metadata only:
+        // the saved lifecycle keeps every active threshold row so reclamation remains truthful.
+        public float minPollutionFraction = 0f;
+        public float maxPollutionFraction = -1f;
+        public string exclusiveFamilyKey;
+        public int severityRank = 0;
+        // Zero/unset preserves the historical all-recipient fan-out.
+        public int maxPagePawns = 0;
+
         // ---- ThingPresent / RecentEvidence caps ----
         public int maxEvidenceLabels = 3;
         public int maxEvidenceChars = 200;
@@ -166,7 +179,9 @@ namespace PawnDiary
         internal ObservedConditionDefSnapshot ToDefSnapshot()
         {
             return ObservedConditionDefSnapshot.Create(
-                EffectiveConditionKey(), startDebounceTicks, endDebounceTicks);
+                EffectiveConditionKey(), startDebounceTicks, endDebounceTicks,
+                minPollutionFraction, maxPollutionFraction, exclusiveFamilyKey, severityRank,
+                maxPagePawns);
         }
 
         /// <summary>
@@ -195,6 +210,35 @@ namespace PawnDiary
             {
                 yield return "includeHomeMapsOnly=true makes includeNonPlayerMaps=true ineffective; "
                     + "set includeHomeMapsOnly=false to observe non-player maps.";
+            }
+
+            if (observerType == ObservedConditionObserverType.MapPollution)
+            {
+                if (scope != ObservedConditionScope.Map)
+                {
+                    yield return "observerType=MapPollution requires scope=Map.";
+                }
+
+                if (minPollutionFraction < 0f || minPollutionFraction > 1f)
+                {
+                    yield return "minPollutionFraction must be between 0 and 1.";
+                }
+
+                if (maxPollutionFraction >= 0f
+                    && (maxPollutionFraction > 1f || maxPollutionFraction <= minPollutionFraction))
+                {
+                    yield return "maxPollutionFraction must be greater than minPollutionFraction and at most 1.";
+                }
+            }
+
+            if (severityRank < 0)
+            {
+                yield return "severityRank cannot be negative.";
+            }
+
+            if (maxPagePawns < 0)
+            {
+                yield return "maxPagePawns cannot be negative; use 0 for unlimited.";
             }
         }
     }

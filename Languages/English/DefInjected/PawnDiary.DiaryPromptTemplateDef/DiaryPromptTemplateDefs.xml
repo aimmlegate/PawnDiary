@@ -518,10 +518,18 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
   <!-- Ideology Phase 1 additive field; indices append to preserve every existing translation. -->
   <DiaryPromptTemplate_PairDefault.fields.29.label>belief context</DiaryPromptTemplate_PairDefault.fields.29.label>
   <DiaryPromptTemplate_PairImportant.fields.76.label>belief context</DiaryPromptTemplate_PairImportant.fields.76.label>
+  <DiaryPromptTemplate_PairImportant.fields.77.label>pollution band</DiaryPromptTemplate_PairImportant.fields.77.label>
+  <DiaryPromptTemplate_PairImportant.fields.78.label>pollution transition</DiaryPromptTemplate_PairImportant.fields.78.label>
+  <DiaryPromptTemplate_PairImportant.fields.79.label>map</DiaryPromptTemplate_PairImportant.fields.79.label>
+  <DiaryPromptTemplate_PairImportant.fields.80.label>context facet</DiaryPromptTemplate_PairImportant.fields.80.label>
   <DiaryPromptTemplate_PairCombat.fields.32.label>belief context</DiaryPromptTemplate_PairCombat.fields.32.label>
   <DiaryPromptTemplate_PairBatched.fields.28.label>belief context</DiaryPromptTemplate_PairBatched.fields.28.label>
   <DiaryPromptTemplate_SoloDefault.fields.44.label>belief context</DiaryPromptTemplate_SoloDefault.fields.44.label>
   <DiaryPromptTemplate_SoloImportant.fields.124.label>belief context</DiaryPromptTemplate_SoloImportant.fields.124.label>
+  <DiaryPromptTemplate_SoloImportant.fields.125.label>pollution band</DiaryPromptTemplate_SoloImportant.fields.125.label>
+  <DiaryPromptTemplate_SoloImportant.fields.126.label>pollution transition</DiaryPromptTemplate_SoloImportant.fields.126.label>
+  <DiaryPromptTemplate_SoloImportant.fields.127.label>map</DiaryPromptTemplate_SoloImportant.fields.127.label>
+  <DiaryPromptTemplate_SoloImportant.fields.128.label>context facet</DiaryPromptTemplate_SoloImportant.fields.128.label>
   <DiaryPromptTemplate_SoloInternalState.fields.40.label>belief context</DiaryPromptTemplate_SoloInternalState.fields.40.label>
   <DiaryPromptTemplate_SoloBatched.fields.40.label>belief context</DiaryPromptTemplate_SoloBatched.fields.40.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.38.label>belief context</DiaryPromptTemplate_SoloDayReflection.fields.38.label>

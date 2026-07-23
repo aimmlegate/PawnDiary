@@ -18,5 +18,8 @@
     <Compile Include="..\..\Source\Pipeline\DiaryGenerationStatus.cs" Link="DiaryGenerationStatus.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyContracts.cs" Link="AnomalyContracts.cs" />
     <Compile Include="..\..\Source\Capture\Policies\AnomalyPersistencePolicy.cs" Link="AnomalyPersistencePolicy.cs" />
+    <Compile Include="..\..\Source\Capture\ObservedConditions\ObservedConditionObservation.cs" Link="ObservedConditionObservation.cs" />
+    <Compile Include="..\..\Source\Capture\ObservedConditions\ObservedConditionStateSnapshot.cs" Link="ObservedConditionStateSnapshot.cs" />
+    <Compile Include="..\..\Source\Capture\ObservedConditions\ObservedConditionSelectionPolicy.cs" Link="ObservedConditionSelectionPolicy.cs" />
   </ItemGroup>
 </Project>

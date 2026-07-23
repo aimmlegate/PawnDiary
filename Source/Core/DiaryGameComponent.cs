@@ -314,6 +314,10 @@ namespace PawnDiary
             ResetBiotechFamilyTransientState();
             nextBiotechBirthNamingPollTick = 0;
             BootstrapBiotechFamilyArcsForLoadedSave();
+            // Pollution uses the ordinary activeObservedConditions rows. Reconcile those rows directly
+            // to the loaded world's current tile fractions so no start/escalation/reclamation catches up
+            // merely because time passed outside this session.
+            BaselineMapPollutionConditionsOnLoad();
             InvalidateBiotechGeneObservationsWithoutDlc();
             NormalizeBeliefStatesForLoadedSave();
             // Do this synchronously at load, not only on the periodic scanner: a paused game may be
