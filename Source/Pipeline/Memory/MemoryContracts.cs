@@ -231,6 +231,10 @@ namespace PawnDiary
         public int maxCoreLoreSeedsPerPawnLifetime = 2;
         public int coreLoreRecallCooldownTicks = 1200000;
         public int maxProgressionLoreSeedsPerPawnLifetime = 4;
+        // The audited registered progression event Def tokens that may attach a progression lore
+        // seed (LORE_MEMORY_SEED_PLAN §8.3, L5). Exact defName tokens only — never model-facing
+        // progression_kind text (§16 G11); no secret behavior for disabled/dropped families.
+        public List<string> progressionLoreSeedEventDefNames = new List<string>();
 
         // Eviction (design §10).
         public int maxFragmentsPerPawn = 60;
@@ -309,6 +313,15 @@ namespace PawnDiary
             policy.contextKeywordKeys.Add("animal_name");
             policy.contextKeywordKeys.Add("room");
             policy.contextKeywordKeys.Add("place");
+
+            // L5 progression lore attachment points: the audited registered event Def tokens
+            // (verified against ProgressionEventData / MechanitorLifecyclePolicy constants).
+            policy.progressionLoreSeedEventDefNames.Add("PsylinkLevel");
+            policy.progressionLoreSeedEventDefNames.Add("XenotypeChanged");
+            policy.progressionLoreSeedEventDefNames.Add("GeneIdentityChanged");
+            policy.progressionLoreSeedEventDefNames.Add("BiotechMechlinkInstalled");
+            policy.progressionLoreSeedEventDefNames.Add("RoyalTitleGained");
+            policy.progressionLoreSeedEventDefNames.Add("RoyalTitlePromoted");
 
             // Age bands (design §8.4), evaluated in order. The final band is the "else" catch-all.
             policy.ageBands.Add(new MemoryAgeBand { maxAgeTicks = 300000, label = "a few days ago" });

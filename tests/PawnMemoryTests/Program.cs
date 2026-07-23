@@ -48,6 +48,7 @@ namespace PawnMemoryTests
             TestLoreSeedPlanInitialDeterminismAndCaps();
             TestLoreSeedSpecificReservationAndMutex();
             TestLoreSeedNarrativeOffsetClamp();
+            TestLoreSeedPlanProgression();
             TestCoreLoreCooldownGate();
             TestEvictionLoreSuppression();
             TestAuthoredKeywordNormalization();
@@ -219,6 +220,9 @@ namespace PawnMemoryTests
 
             AssertSequence("XML context keyword keys", policy.contextKeywordKeys.ToArray(),
                 XmlStringList(def.Element("contextKeywordKeys")));
+            AssertSequence("XML progression lore event tokens",
+                policy.progressionLoreSeedEventDefNames.ToArray(),
+                XmlStringList(def.Element("progressionLoreSeedEventDefNames")));
 
             List<XElement> ageRows = XmlRows(def, "ageBands");
             AssertEqual("XML age band row count", policy.ageBands.Count, ageRows.Count);
@@ -1413,6 +1417,136 @@ namespace PawnMemoryTests
                 LoreSeedPlanner.ClampNarrativeOffset(7200000, -3L));
         }
 
+        /// <summary>
+        /// LORE_MEMORY_SEED_PLAN §7.2 (L5): PlanProgression matches the exact registered event
+        /// token only, returns at most one deterministic pick, excludes every used Def name, and
+        /// enforces the progression and core lifetime capacities.
+        /// </summary>
+        private static void TestLoreSeedPlanProgression()
+        {
+            LoreSeedPolicy policy = new LoreSeedPolicy();
+            LoreSeedPawnFacts facts = LoreFacts(cats: Tags("Civil"));
+            List<LoreSeedCandidate> catalog = new List<LoreSeedCandidate>
+            {
+                ProgressionSeed("p1", "XenotypeChanged"),
+                ProgressionSeed("p2", "XenotypeChanged"),
+                ProgressionSeed("q1", "PsylinkLevel"),
+                LoreSeed("g1") // initial usage: never a progression pick
+            };
+
+            LoreSeedProgressionFacts xenotype = new LoreSeedProgressionFacts
+            {
+                eventId = "evt-1",
+                eventDefName = "XenotypeChanged"
+            };
+            LoreSeedPick pick = LoreSeedPlanner.PlanProgression(catalog, facts, xenotype, policy, 9);
+            AssertTrue("a matching token yields one pick",
+                pick != null && (pick.seedDefName == "p1" || pick.seedDefName == "p2"));
+            LoreSeedPick again = LoreSeedPlanner.PlanProgression(catalog, facts, xenotype, policy, 9);
+            AssertEqual("same seed same pick", pick.seedDefName, again.seedDefName);
+
+            AssertTrue("a non-matching token yields nothing",
+                LoreSeedPlanner.PlanProgression(catalog, facts, new LoreSeedProgressionFacts
+                {
+                    eventId = "evt-2",
+                    eventDefName = "RoyalTitleGained"
+                }, policy, 9) == null);
+            AssertTrue("initial-usage seeds are never progression-eligible",
+                !LoreSeedPlanner.IsEligibleForProgression(LoreSeed("g1"), facts, "XenotypeChanged"));
+
+            // Exact-Def uniqueness across the roster and both histories (§6).
+            LoreSeedPawnFacts used = LoreFacts(cats: Tags("Civil"));
+            used.initialTargetDefNames.Add("p1");
+            used.progressionDefNamesEverDeposited.Add("p2");
+            AssertTrue("used names are excluded, exhausting the pool",
+                LoreSeedPlanner.PlanProgression(catalog, used, xenotype, policy, 9) == null);
+
+            // Progression lifetime cap (default 4).
+            LoreSeedPawnFacts capped = LoreFacts(cats: Tags("Civil"));
+            capped.progressionDefNamesEverDeposited.AddRange(
+                new[] { "old1", "old2", "old3", "old4" });
+            AssertTrue("the progression lifetime cap blocks a fifth seed",
+                LoreSeedPlanner.PlanProgression(catalog, capped, xenotype, policy, 9) == null);
+
+            // Core capacity: a core progression candidate is skipped once the lifetime is spent.
+            List<LoreSeedCandidate> coreOnly = new List<LoreSeedCandidate>
+            {
+                ProgressionSeed("c1", "XenotypeChanged", tier: "core", xenos: Tags("Hussar"))
+            };
+            LoreSeedPawnFacts hussar = LoreFacts(cats: Tags("Civil"), xeno: "Hussar");
+            LoreSeedPick corePick = LoreSeedPlanner.PlanProgression(coreOnly, hussar, xenotype, policy, 9);
+            AssertTrue("a core progression pick is possible with capacity",
+                corePick != null && corePick.core);
+            LoreSeedPawnFacts coreSpent = LoreFacts(cats: Tags("Civil"), xeno: "Hussar");
+            coreSpent.coreDefNamesEverDeposited.Add("old1");
+            coreSpent.coreDefNamesEverDeposited.Add("old2");
+            AssertTrue("spent core lifetime blocks a core progression pick",
+                LoreSeedPlanner.PlanProgression(coreOnly, coreSpent, xenotype, policy, 9) == null);
+
+            // Pawn constraints still apply to progression candidates.
+            AssertTrue("pawn constraints gate progression eligibility",
+                !LoreSeedPlanner.IsEligibleForProgression(
+                    ProgressionSeed("x1", "XenotypeChanged", xenos: Tags("Sanguophage")),
+                    facts, "XenotypeChanged"));
+
+            AssertTrue("disabled policy plans nothing",
+                LoreSeedPlanner.PlanProgression(catalog, facts, xenotype,
+                    new LoreSeedPolicy { enabled = false }, 9) == null);
+
+            // Null/empty guards never throw and never pick.
+            AssertTrue("null candidates yield nothing",
+                LoreSeedPlanner.PlanProgression(null, facts, xenotype, policy, 9) == null);
+            AssertTrue("null facts yield nothing",
+                LoreSeedPlanner.PlanProgression(catalog, null, xenotype, policy, 9) == null);
+            AssertTrue("null progression facts yield nothing",
+                LoreSeedPlanner.PlanProgression(catalog, facts, null, policy, 9) == null);
+            AssertTrue("blank event token yields nothing",
+                LoreSeedPlanner.PlanProgression(catalog, facts,
+                    new LoreSeedProgressionFacts { eventId = "evt-3" }, policy, 9) == null);
+            AssertTrue("a zero progression lifetime plans nothing",
+                LoreSeedPlanner.PlanProgression(catalog, facts, xenotype,
+                    new LoreSeedPolicy { maxProgressionSeedsLifetime = 0 }, 9) == null);
+
+            // §7.2: mutexGroup has NO cross-event semantics — after one sibling is deposited,
+            // the other stays plantable for a later event; only exact-Def reuse is blocked.
+            List<LoreSeedCandidate> mutexed = new List<LoreSeedCandidate>
+            {
+                ProgressionSeed("m1", "XenotypeChanged"),
+                ProgressionSeed("m2", "XenotypeChanged")
+            };
+            mutexed[0].mutexGroup = "prog_pair";
+            mutexed[1].mutexGroup = "prog_pair";
+            LoreSeedPick firstEvent = LoreSeedPlanner.PlanProgression(mutexed, facts, xenotype, policy, 21);
+            AssertTrue("first event picks one mutex sibling", firstEvent != null);
+            LoreSeedPawnFacts afterFirst = LoreFacts(cats: Tags("Civil"));
+            afterFirst.progressionDefNamesEverDeposited.Add(firstEvent.seedDefName);
+            LoreSeedPick secondEvent = LoreSeedPlanner.PlanProgression(mutexed, afterFirst,
+                new LoreSeedProgressionFacts { eventId = "evt-4", eventDefName = "XenotypeChanged" },
+                policy, 22);
+            AssertTrue("the mutex sibling stays plantable for a later event",
+                secondEvent != null && secondEvent.seedDefName != firstEvent.seedDefName);
+
+            // 'both' usage: eligible for initial AND progression, but one lifetime deposit total.
+            LoreSeedCandidate dual = LoreSeed("dual", usage: "both");
+            dual.progressionEventDefNames.Add("XenotypeChanged");
+            AssertTrue("'both' usage is initial-eligible",
+                LoreSeedPlanner.IsEligible(dual, facts));
+            AssertTrue("'both' usage is progression-eligible",
+                LoreSeedPlanner.IsEligibleForProgression(dual, facts, "XenotypeChanged"));
+            LoreSeedPawnFacts dualUsed = LoreFacts(cats: Tags("Civil"));
+            dualUsed.initialTargetDefNames.Add("dual");
+            AssertTrue("a 'both' seed used as an initial target is progression-excluded",
+                !LoreSeedPlanner.IsEligibleForProgression(dual, dualUsed, "XenotypeChanged"));
+        }
+
+        private static LoreSeedCandidate ProgressionSeed(string name, string eventToken,
+            string tier = "ordinary", string[] xenos = null)
+        {
+            LoreSeedCandidate candidate = LoreSeed(name, usage: "progression", tier: tier, xenos: xenos);
+            candidate.progressionEventDefNames.Add(eventToken);
+            return candidate;
+        }
+
         private static void TestCoreLoreCooldownGate()
         {
             MemoryPolicySnapshot policy = RecallPolicy();
@@ -1531,7 +1665,16 @@ namespace PawnMemoryTests
         {
             "distance", "cryptosleep", "glitterworld", "homeworld", "archotech", "psychic",
             "mechanoid_origin", "insectoid", "xeno_identity", "empire", "void", "legends",
-            "vatgrown", "outlaw", "tribal_root", "rim_life", "weather_lore", "trade"
+            "vatgrown", "outlaw", "tribal_root", "rim_life", "weather_lore", "trade",
+            "prog_psylink", "prog_xenotype", "prog_genes", "prog_mechlink", "prog_title"
+        };
+
+        // The audited registered progression event tokens (§8.3); must mirror the tuning Def's
+        // progressionLoreSeedEventDefNames defaults and the shipped XML list.
+        private static readonly string[] AuditedProgressionEventTokens =
+        {
+            "PsylinkLevel", "XenotypeChanged", "GeneIdentityChanged",
+            "BiotechMechlinkInstalled", "RoyalTitleGained", "RoyalTitlePromoted"
         };
 
         private sealed class CatalogRow
@@ -1562,8 +1705,21 @@ namespace PawnMemoryTests
                 AssertTrue(id + " label authored", !string.IsNullOrWhiteSpace(row.label));
                 AssertTrue(id + " text authored within 200 chars",
                     !string.IsNullOrWhiteSpace(row.text) && row.text.Trim().Length <= 200);
-                AssertTrue(id + " usage is initial for the L3 catalog",
-                    row.candidate.usage == "initial");
+                AssertTrue(id + " usage token",
+                    row.candidate.usage == "initial" || row.candidate.usage == "progression"
+                    || row.candidate.usage == "both");
+                if (row.candidate.usage != "initial")
+                {
+                    AssertTrue(id + " progression usage declares event tokens",
+                        row.candidate.progressionEventDefNames.Count > 0);
+                    for (int j = 0; j < row.candidate.progressionEventDefNames.Count; j++)
+                    {
+                        AssertTrue(id + " progression token audited: "
+                            + row.candidate.progressionEventDefNames[j],
+                            IndexOfOrdinal(AuditedProgressionEventTokens,
+                                row.candidate.progressionEventDefNames[j]) >= 0);
+                    }
+                }
                 AssertTrue(id + " retention tier token",
                     row.candidate.retentionTier == "ordinary" || row.candidate.retentionTier == "core");
                 AssertTrue(id + " positive finite weight",
@@ -1638,17 +1794,52 @@ namespace PawnMemoryTests
                 AssertTrue("fixture " + i + " satisfies the reserved specific slot", specific);
             }
 
-            // Every catalog seed is reachable by at least one supported fixture (§14.2).
+            // Every catalog seed is reachable by at least one supported fixture (§14.2). Initial
+            // seeds use the initial matrix; progression seeds must be reachable by their exact
+            // event token plus a matching pawn fixture, and PlanProgression must actually pick one.
             for (int i = 0; i < candidates.Count; i++)
             {
+                LoreSeedCandidate candidate = candidates[i];
                 bool reachable = false;
-                for (int j = 0; j < fixtures.Count && !reachable; j++)
+                if (candidate.usage == "initial" || candidate.usage == "both")
                 {
-                    reachable = LoreSeedPlanner.IsEligible(candidates[i], fixtures[j]);
+                    for (int j = 0; j < fixtures.Count && !reachable; j++)
+                    {
+                        reachable = LoreSeedPlanner.IsEligible(candidate, fixtures[j]);
+                    }
                 }
 
-                AssertTrue("seed reachable by a supported fixture: " + candidates[i].seedDefName,
+                if (candidate.usage == "progression" || candidate.usage == "both")
+                {
+                    for (int j = 0; j < fixtures.Count && !reachable; j++)
+                    {
+                        for (int t = 0; t < candidate.progressionEventDefNames.Count && !reachable; t++)
+                        {
+                            reachable = LoreSeedPlanner.IsEligibleForProgression(
+                                candidate, fixtures[j], candidate.progressionEventDefNames[t]);
+                        }
+                    }
+                }
+
+                AssertTrue("seed reachable by a supported fixture: " + candidate.seedDefName,
                     reachable);
+            }
+
+            // Every audited progression event token yields exactly one pick for a plain fixture.
+            for (int t = 0; t < AuditedProgressionEventTokens.Length; t++)
+            {
+                LoreSeedPick pick = LoreSeedPlanner.PlanProgression(
+                    candidates,
+                    LoreFacts(cats: Tags("Civil")),
+                    new LoreSeedProgressionFacts
+                    {
+                        eventId = "evt-prog-" + t,
+                        eventDefName = AuditedProgressionEventTokens[t]
+                    },
+                    policy,
+                    500 + t);
+                AssertTrue("progression token yields a catalog pick: "
+                    + AuditedProgressionEventTokens[t], pick != null);
             }
         }
 

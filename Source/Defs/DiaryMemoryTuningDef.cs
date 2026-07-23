@@ -100,6 +100,8 @@ namespace PawnDiary
         public int maxCoreLoreSeedsPerPawnLifetime = 2;
         public int coreLoreRecallCooldownTicks = 1200000;
         public int maxProgressionLoreSeedsPerPawnLifetime = 4;
+        // Exact registered progression event Def tokens that may attach a progression lore seed.
+        public List<string> progressionLoreSeedEventDefNames;
 
         // Eviction (design §10).
         public int maxFragmentsPerPawn = 60;
@@ -168,6 +170,7 @@ namespace PawnDiary
             snapshot.maxCoreLoreSeedsPerPawnLifetime = Math.Max(0, source.maxCoreLoreSeedsPerPawnLifetime);
             snapshot.coreLoreRecallCooldownTicks = Math.Max(0, source.coreLoreRecallCooldownTicks);
             snapshot.maxProgressionLoreSeedsPerPawnLifetime = Math.Max(0, source.maxProgressionLoreSeedsPerPawnLifetime);
+            CopyKeywordKeys(source.progressionLoreSeedEventDefNames, snapshot.progressionLoreSeedEventDefNames);
             snapshot.maxFragmentsPerPawn = PositiveOrFallback(source.maxFragmentsPerPawn, snapshot.maxFragmentsPerPawn);
             snapshot.coreImportanceThreshold = Clamp01(source.coreImportanceThreshold);
             snapshot.maxCoreFragmentsPerPawn = PositiveOrFallback(source.maxCoreFragmentsPerPawn, snapshot.maxCoreFragmentsPerPawn);

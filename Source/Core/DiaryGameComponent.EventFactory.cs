@@ -199,7 +199,7 @@ namespace PawnDiary
             EnsureLoreSeedsForPawn(initiator);
             EnsureLoreSeedsForPawn(recipient);
             ApplyMemoryContextForEvent(diaryEvent);
-            DepositMemoryFragments(diaryEvent);
+            DepositMemoryFragments(diaryEvent, initiator);
             if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
             {
                 NotifyEntryStatusChanged(diaryEvent, DiaryEvent.InitiatorRole);
@@ -364,7 +364,7 @@ namespace PawnDiary
             // cannot recall its own fragment.
             EnsureLoreSeedsForPawn(pawn);
             ApplyMemoryContextForEvent(diaryEvent);
-            DepositMemoryFragments(diaryEvent);
+            DepositMemoryFragments(diaryEvent, pawn);
             if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
             {
                 NotifyEntryStatusChanged(diaryEvent, DiaryEvent.InitiatorRole);

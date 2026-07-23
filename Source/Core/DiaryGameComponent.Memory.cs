@@ -156,9 +156,11 @@ namespace PawnDiary
         /// <summary>
         /// Deposits memory fragments for each first-person POV on a just-registered event.
         /// Called AFTER recall. A skipped POV still deposits (the pawn experienced the event);
-        /// only recall is skipped for skipped POVs (design §13).
+        /// only recall is skipped for skipped POVs (design §13). ownerPawn is the live initiator
+        /// pawn, used only for the L5 progression lore attachment (§8.3) — the ordinary deposits
+        /// keep reading frozen event strings exclusively.
         /// </summary>
-        private void DepositMemoryFragments(DiaryEvent diaryEvent)
+        private void DepositMemoryFragments(DiaryEvent diaryEvent, Pawn ownerPawn)
         {
             if (!MemorySystemEnabled())
             {
@@ -174,12 +176,20 @@ namespace PawnDiary
                 }
 
                 // Initiator POV (always present).
-                DepositMemoryForRole(diaryEvent, DiaryEvent.InitiatorRole, policy);
+                bool ownerDeposited = DepositMemoryForRole(diaryEvent, DiaryEvent.InitiatorRole, policy);
 
-                // Recipient POV (pairwise events only).
+                // Recipient POV (pairwise events only). Witnesses never receive progression lore.
                 if (!diaryEvent.solo && !string.IsNullOrWhiteSpace(diaryEvent.recipientPawnId))
                 {
                     DepositMemoryForRole(diaryEvent, DiaryEvent.RecipientRole, policy);
+                }
+
+                // L5 (§8.3): at most one owner-only progression lore seed, attached immediately
+                // after the ordinary lived memory actually deposited for a registered
+                // identity-changing event. A replayed or noise-gated event never triggers.
+                if (ownerDeposited)
+                {
+                    TryDepositProgressionLoreSeed(diaryEvent, ownerPawn, policy);
                 }
             }
             catch (Exception e)
@@ -290,20 +300,22 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Deposits one fragment for one POV role if the event clears the noise gate.
+        /// Deposits one fragment for one POV role if the event clears the noise gate. Returns
+        /// true only when a NEW fragment was actually registered — the L5 progression attachment
+        /// keys off this so replays and noise-gated events never trigger it.
         /// </summary>
-        private void DepositMemoryForRole(DiaryEvent diaryEvent, string povRole, MemoryPolicySnapshot policy)
+        private bool DepositMemoryForRole(DiaryEvent diaryEvent, string povRole, MemoryPolicySnapshot policy)
         {
             string pawnId = MemoryRolePawnId(diaryEvent, povRole);
             if (string.IsNullOrWhiteSpace(pawnId))
             {
-                return;
+                return false;
             }
 
             // Idempotency preflight: one event deposits at most one fragment per pawn.
             if (memories.HasDeposit(pawnId, diaryEvent.eventId))
             {
-                return;
+                return false;
             }
 
             MemoryExtractionInput input = BuildExtractionInput(diaryEvent, povRole);
@@ -313,7 +325,7 @@ namespace PawnDiary
             if (extraction.importance < policy.minDepositImportance
                 || string.IsNullOrWhiteSpace(extraction.fragmentText))
             {
-                return;
+                return false;
             }
 
             MemoryFragment fragment = new MemoryFragment
@@ -331,6 +343,7 @@ namespace PawnDiary
             };
 
             memories.Register(fragment);
+            return true;
         }
 
         /// <summary>
@@ -729,6 +742,165 @@ namespace PawnDiary
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// L5 progression lore attachment (§8.3): after the ordinary lived memory deposited for a
+        /// registered identity-changing event, plan and deposit AT MOST ONE owner-only progression
+        /// seed. Triggers only for the initiator/owner (witnesses never), only for the exact
+        /// audited event Def tokens, with real ticks, ZERO narrative offset, and the synthetic
+        /// non-colliding progression sentinel. Lifetime histories record only actual deposits,
+        /// after repository registration succeeds.
+        /// </summary>
+        private void TryDepositProgressionLoreSeed(
+            DiaryEvent diaryEvent, Pawn ownerPawn, MemoryPolicySnapshot policy)
+        {
+            if (ownerPawn == null || !LoreSeedsActive(policy))
+            {
+                return;
+            }
+
+            string eventDefName = diaryEvent.interactionDefName ?? string.Empty;
+            if (!IsProgressionLoreEvent(policy, eventDefName))
+            {
+                return;
+            }
+
+            try
+            {
+                string pawnId = ownerPawn.GetUniqueLoadID();
+                if (string.IsNullOrWhiteSpace(pawnId)
+                    || !string.Equals(pawnId, diaryEvent.initiatorPawnId, StringComparison.OrdinalIgnoreCase))
+                {
+                    // The owner is the event's initiator by contract; anything else is a witness.
+                    return;
+                }
+
+                List<DiaryLoreSeedDef> allDefs = DefDatabase<DiaryLoreSeedDef>.AllDefsListForReading;
+                if (allDefs == null || allDefs.Count == 0)
+                {
+                    return;
+                }
+
+                PawnLoreSeedState state;
+                loreSeedStateByPawnId.TryGetValue(pawnId, out state);
+                LoreSeedPolicy lorePolicy = LoreSeedPolicy.FromMemoryPolicy(policy, true);
+                List<LoreSeedCandidate> candidates = new List<LoreSeedCandidate>(allDefs.Count);
+                for (int i = 0; i < allDefs.Count; i++)
+                {
+                    if (allDefs[i] != null)
+                    {
+                        candidates.Add(allDefs[i].ToCandidate(policy));
+                    }
+                }
+
+                LoreSeedPawnFacts facts = CollectLoreSeedPawnFacts(ownerPawn, pawnId, state);
+                LoreSeedPick pick = LoreSeedPlanner.PlanProgression(
+                    candidates,
+                    facts,
+                    new LoreSeedProgressionFacts
+                    {
+                        eventId = diaryEvent.eventId ?? string.Empty,
+                        eventDefName = eventDefName
+                    },
+                    lorePolicy,
+                    HumorChancePolicy.StableSeed(
+                        (diaryEvent.eventId ?? string.Empty) + "|" + eventDefName,
+                        "loreprog|" + pawnId));
+                if (pick == null)
+                {
+                    return;
+                }
+
+                string sourceEventId = LoreSeedProvenance.ProgressionSourceEventId(
+                    diaryEvent.eventId, pick.seedDefName);
+                if (memories.HasDeposit(pawnId, sourceEventId))
+                {
+                    // Belt-and-braces: the fresh-deposit trigger already blocks replays.
+                    return;
+                }
+
+                DiaryLoreSeedDef def = DefDatabase<DiaryLoreSeedDef>.GetNamedSilentFail(pick.seedDefName);
+                if (def == null)
+                {
+                    return;
+                }
+
+                LoreSeedCandidate candidate = def.ToCandidate(policy);
+                List<string> tags = new List<string>(candidate.tags);
+                if (!tags.Contains(MemoryTagTokens.Lore))
+                {
+                    tags.Add(MemoryTagTokens.Lore);
+                }
+
+                string text = candidate.fallbackText;
+                if (text.Length > Math.Max(1, policy.fragmentTextMaxChars))
+                {
+                    text = text.Substring(0, Math.Max(1, policy.fragmentTextMaxChars)).Trim();
+                }
+
+                int now = Find.TickManager.TicksGame;
+                MemoryFragment fragment = new MemoryFragment
+                {
+                    memoryId = Guid.NewGuid().ToString("N"),
+                    pawnId = pawnId,
+                    sourceEventId = sourceEventId,
+                    text = text,
+                    tags = tags,
+                    keywords = candidate.keywords,
+                    importance = pick.core ? lorePolicy.coreImportance : lorePolicy.ordinaryImportance,
+                    createdTick = now,
+                    lastRecalledTick = now,
+                    recallCount = 0,
+                    loreSeedDefName = pick.seedDefName,
+                    // §8.3: a progression memory is a memory OF the change — zero narrative offset.
+                    narrativeAgeOffsetTicks = 0
+                };
+
+                memories.Register(fragment);
+
+                if (state == null)
+                {
+                    state = new PawnLoreSeedState { pawnId = pawnId };
+                    pawnLoreSeedStates.Add(state);
+                    loreSeedStateByPawnId[pawnId] = state;
+                }
+
+                if (!state.progressionDefNamesEverDeposited.Contains(pick.seedDefName))
+                {
+                    state.progressionDefNamesEverDeposited.Add(pick.seedDefName);
+                }
+
+                if (pick.core && !state.coreDefNamesEverDeposited.Contains(pick.seedDefName))
+                {
+                    state.coreDefNamesEverDeposited.Add(pick.seedDefName);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[Pawn Diary] Progression lore seed failed for event "
+                    + (diaryEvent?.eventId ?? "?") + ": " + e,
+                    "PawnDiary.Memory.LoreSeeds.Progression".GetHashCode());
+            }
+        }
+
+        private static bool IsProgressionLoreEvent(MemoryPolicySnapshot policy, string eventDefName)
+        {
+            List<string> tokens = policy.progressionLoreSeedEventDefNames;
+            if (tokens == null || string.IsNullOrWhiteSpace(eventDefName))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < tokens.Count; i++)
+            {
+                if (string.Equals(tokens[i], eventDefName, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void RemoveLoreSeedState(string pawnId)

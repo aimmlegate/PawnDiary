@@ -39,10 +39,18 @@ namespace PawnDiary.RimTests
             typeof(DiaryGameComponent).GetField("loreSeedStateByPawnId",
                 BindingFlags.Instance | BindingFlags.NonPublic);
 
+        private const string TestProgressionSeedDefName = "PDTest_LoreSeed_Progression";
+
+        private static readonly MethodInfo DepositMethod =
+            typeof(DiaryGameComponent).GetMethod("DepositMemoryFragments",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
         private static PawnDiaryRimTestScope scope;
         private static Pawn pawnA;
         private static Pawn pawnB;
         private static DiaryLoreSeedDef testSeedDef;
+        private static List<DiaryLoreSeedDef> hiddenCatalog;
+        private static List<string> registeredTestDefNames;
 
         [BeforeEach]
         public static void SetUp()
@@ -66,6 +74,10 @@ namespace PawnDiary.RimTests
             PawnDiaryMod.Settings.enableMemorySystem = true;
             PawnDiaryMod.Settings.enableLoreSeeds = true;
 
+            // Isolate from the shipped L3 catalog: these fixtures assert exact rosters and
+            // fragment counts, which only stay deterministic against the injected test Defs.
+            HideShippedCatalog();
+            registeredTestDefNames = new List<string>();
             RegisterTestSeedDef();
         }
 
@@ -75,7 +87,17 @@ namespace PawnDiary.RimTests
             try
             {
                 CleanupLoreForTestPawns();
-                RemoveTestSeedDef();
+                RemoveDefIfPresent(TestSeedDefName);
+                RemoveDefIfPresent(TestProgressionSeedDefName);
+                if (registeredTestDefNames != null)
+                {
+                    for (int i = 0; i < registeredTestDefNames.Count; i++)
+                    {
+                        RemoveDefIfPresent(registeredTestDefNames[i]);
+                    }
+                }
+
+                RestoreShippedCatalog();
                 scope?.TearDown();
             }
             finally
@@ -84,6 +106,8 @@ namespace PawnDiary.RimTests
                 pawnA = null;
                 pawnB = null;
                 testSeedDef = null;
+                hiddenCatalog = null;
+                registeredTestDefNames = null;
             }
         }
 
@@ -228,6 +252,174 @@ namespace PawnDiary.RimTests
             Require(rosterAfter.Count == rosterBefore.Count
                 && rosterAfter.Contains(TestSeedDefName),
                 "The retry must never resample or grow the persisted roster.");
+        }
+
+        // ── Test 3c: L5 progression attachment ───────────────────────────────────────────────────────
+
+        /// <summary>
+        /// LORE_MEMORY_SEED_PLAN §8.3 (L5): a registered identity-changing event attaches at most
+        /// one owner-only progression seed with the synthetic non-colliding sentinel, zero
+        /// narrative offset, and a lifetime-history record; the witness never receives one, and a
+        /// second event of the same family cannot reuse the exhausted Def.
+        /// </summary>
+        [Test]
+        public static void ProgressionEventAttachesOwnerOnlySeed()
+        {
+            RegisterProgressionSeedDef();
+            string pawnAId = pawnA.GetUniqueLoadID();
+            string pawnBId = pawnB.GetUniqueLoadID();
+
+            DiaryEvent progressionEvent = AddRawPairEvent(pawnA, pawnB, "XenotypeChanged", "identity shift");
+
+            MemoryFragment seed = FindProgressionFragment(pawnAId);
+            Require(seed != null,
+                "A registered XenotypeChanged event must attach a progression lore seed to the owner.");
+            Require(seed.sourceEventId ==
+                "loreseed-progression:" + progressionEvent.eventId + ":" + TestProgressionSeedDefName,
+                "The progression sentinel must be eventId + seed Def, got '" + seed.sourceEventId + "'.");
+            Require(seed.loreSeedDefName == TestProgressionSeedDefName,
+                "The fragment must carry its progression Def provenance.");
+            Require(seed.narrativeAgeOffsetTicks == 0,
+                "A progression memory is a memory OF the change: zero narrative offset (§8.3).");
+            Require(seed.createdTick == seed.lastRecalledTick,
+                "A fresh progression deposit must never be backdated.");
+
+            Require(FindProgressionFragment(pawnBId) == null,
+                "The witness (recipient) must never receive a progression lore seed.");
+
+            PawnLoreSeedState state = LoreStateFor(pawnAId);
+            Require(state != null
+                && state.progressionDefNamesEverDeposited.Contains(TestProgressionSeedDefName),
+                "The progression lifetime history must record the actual deposit.");
+
+            int countAfterFirst = CountProgressionFragments(pawnAId);
+            AddRawPairEvent(pawnA, pawnB, "XenotypeChanged", "identity shift again");
+            Require(CountProgressionFragments(pawnAId) == countAfterFirst,
+                "Exact-Def lifetime uniqueness must block a second deposit of the same seed.");
+        }
+
+        // ── Test 3d: replay barrier ──────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// §8.3: the progression attachment fires only when the ordinary lived memory FRESHLY
+        /// deposited. Re-running the deposit funnel for the same event (a staged replay) finds
+        /// the lived sentinel already present and never attaches a second progression seed.
+        /// </summary>
+        [Test]
+        public static void ReplayedDepositNeverAttachesProgressionSeedTwice()
+        {
+            if (DepositMethod == null)
+            {
+                throw new AssertionException(
+                    "Reflection handle for DepositMemoryFragments is null — method was renamed.");
+            }
+
+            RegisterProgressionSeedDef();
+            string pawnAId = pawnA.GetUniqueLoadID();
+
+            DiaryEvent progressionEvent = AddRawPairEvent(pawnA, pawnB, "XenotypeChanged", "identity shift");
+            Require(CountProgressionFragments(pawnAId) == 1,
+                "Setup: the first pass must attach exactly one progression seed.");
+
+            DepositMethod.Invoke(scope.Component, new object[] { progressionEvent, pawnA });
+            Require(CountProgressionFragments(pawnAId) == 1,
+                "A replayed deposit pass must never attach a second progression seed.");
+        }
+
+        // ── Test 3e: toggle gate ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// With lore seeds disabled, a matching identity-changing event still deposits its
+        /// ordinary lived memory but never attaches a progression seed; re-enabling does not
+        /// retroactively attach one for the already-consumed event.
+        /// </summary>
+        [Test]
+        public static void DisabledToggleSuppressesProgressionAttachment()
+        {
+            RegisterProgressionSeedDef();
+            string pawnAId = pawnA.GetUniqueLoadID();
+
+            PawnDiaryMod.Settings.enableLoreSeeds = false;
+            DiaryEvent progressionEvent = AddRawPairEvent(pawnA, pawnB, "XenotypeChanged", "identity shift");
+            Require(GetMemories().HasDeposit(pawnAId, progressionEvent.eventId),
+                "The ordinary lived memory must still deposit while lore is disabled.");
+            Require(CountProgressionFragments(pawnAId) == 0,
+                "Disabled lore seeds must suppress the progression attachment.");
+
+            PawnDiaryMod.Settings.enableLoreSeeds = true;
+            Require(CountProgressionFragments(pawnAId) == 0,
+                "Re-enabling must not retroactively attach a seed for a consumed event.");
+        }
+
+        // ── Test 3f: progression lifetime cap ────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// §6: at most four progression seeds per pawn lifetime. With five matching candidate
+        /// Defs and five events, exactly four deposit and the history stops at four.
+        /// </summary>
+        [Test]
+        public static void ProgressionLifetimeCapStopsAtFour()
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                AddProgressionTestDef("PDTest_LoreSeed_ProgCap" + i,
+                    LoreSeedTokens.TierOrdinary, hediffDefNames: null);
+            }
+
+            string pawnAId = pawnA.GetUniqueLoadID();
+            for (int i = 0; i < 5; i++)
+            {
+                AddRawPairEvent(pawnA, pawnB, "XenotypeChanged", "identity shift " + i);
+            }
+
+            Require(CountProgressionFragments(pawnAId) == 4,
+                "The progression lifetime cap must stop deposits at four, got "
+                + CountProgressionFragments(pawnAId) + ".");
+            PawnLoreSeedState state = LoreStateFor(pawnAId);
+            Require(state != null && state.progressionDefNamesEverDeposited.Count == 4,
+                "The lifetime history must record exactly four progression deposits.");
+        }
+
+        // ── Test 3g: core progression seeds ──────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// §8.3/§4: a core progression seed (exact hediff evidence) deposits at core importance
+        /// and records the core lifetime history; the two-core lifetime cap blocks a third even
+        /// though progression capacity remains.
+        /// </summary>
+        [Test]
+        public static void CoreProgressionSeedsRespectCoreLifetimeCap()
+        {
+            HediffDef flu = DefDatabase<HediffDef>.GetNamedSilentFail("Flu");
+            if (flu == null)
+            {
+                throw new AssertionException("Base-game hediff 'Flu' not found for the core fixture.");
+            }
+
+            pawnA.health.AddHediff(flu);
+            for (int i = 0; i < 3; i++)
+            {
+                AddProgressionTestDef("PDTest_LoreSeed_ProgCore" + i,
+                    LoreSeedTokens.TierCore, new List<string> { "Flu" });
+            }
+
+            string pawnAId = pawnA.GetUniqueLoadID();
+            for (int i = 0; i < 3; i++)
+            {
+                AddRawPairEvent(pawnA, pawnB, "XenotypeChanged", "identity shift " + i);
+            }
+
+            Require(CountProgressionFragments(pawnAId) == 2,
+                "The two-core lifetime cap must stop core progression deposits at two, got "
+                + CountProgressionFragments(pawnAId) + ".");
+            PawnLoreSeedState state = LoreStateFor(pawnAId);
+            Require(state != null && state.coreDefNamesEverDeposited.Count == 2,
+                "The core lifetime history must record exactly two deposits.");
+
+            MemoryFragment coreSeed = FindProgressionFragment(pawnAId);
+            Require(coreSeed != null && coreSeed.importance >= 0.8f,
+                "A core progression seed must deposit at core importance, got "
+                + (coreSeed == null ? "none" : coreSeed.importance.ToString()) + ".");
         }
 
         // ── Test 4: Scribe round-trip ────────────────────────────────────────────────────────────────
@@ -461,12 +653,20 @@ namespace PawnDiary.RimTests
 
         private static void RemoveTestSeedDef()
         {
-            DiaryLoreSeedDef def = DefDatabase<DiaryLoreSeedDef>.GetNamedSilentFail(TestSeedDefName);
-            if (def == null)
-            {
-                return;
-            }
+            RemoveDefIfPresent(TestSeedDefName);
+        }
 
+        private static void RemoveDefIfPresent(string defName)
+        {
+            DiaryLoreSeedDef def = DefDatabase<DiaryLoreSeedDef>.GetNamedSilentFail(defName);
+            if (def != null)
+            {
+                RemoveDef(def);
+            }
+        }
+
+        private static void RemoveDef(DiaryLoreSeedDef def)
+        {
             MethodInfo remove = typeof(DefDatabase<DiaryLoreSeedDef>).GetMethod(
                 "Remove", BindingFlags.Static | BindingFlags.NonPublic);
             if (remove == null)
@@ -476,6 +676,62 @@ namespace PawnDiary.RimTests
             }
 
             remove.Invoke(null, new object[] { def });
+        }
+
+        /// <summary>Temporarily removes every shipped lore seed Def so fixtures stay exact.</summary>
+        private static void HideShippedCatalog()
+        {
+            hiddenCatalog = new List<DiaryLoreSeedDef>(
+                DefDatabase<DiaryLoreSeedDef>.AllDefsListForReading);
+            for (int i = 0; i < hiddenCatalog.Count; i++)
+            {
+                RemoveDef(hiddenCatalog[i]);
+            }
+        }
+
+        private static void RestoreShippedCatalog()
+        {
+            if (hiddenCatalog == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < hiddenCatalog.Count; i++)
+            {
+                if (DefDatabase<DiaryLoreSeedDef>.GetNamedSilentFail(hiddenCatalog[i].defName) == null)
+                {
+                    DefDatabase<DiaryLoreSeedDef>.Add(hiddenCatalog[i]);
+                }
+            }
+        }
+
+        private static void RegisterProgressionSeedDef()
+        {
+            AddProgressionTestDef(TestProgressionSeedDefName,
+                LoreSeedTokens.TierOrdinary, hediffDefNames: null);
+        }
+
+        private static void AddProgressionTestDef(string defName, string tier,
+            List<string> hediffDefNames)
+        {
+            if (DefDatabase<DiaryLoreSeedDef>.GetNamedSilentFail(defName) != null)
+            {
+                return;
+            }
+
+            registeredTestDefNames?.Add(defName);
+            DefDatabase<DiaryLoreSeedDef>.Add(new DiaryLoreSeedDef
+            {
+                defName = defName,
+                label = "test progression seed " + defName,
+                text = "The day my blood changed, it kept a before and an after. (" + defName + ")",
+                usage = LoreSeedTokens.UsageProgression,
+                retentionTier = tier,
+                weight = 1f,
+                tags = new List<string> { "body" },
+                hediffDefNames = hediffDefNames,
+                progressionEventDefNames = new List<string> { "XenotypeChanged" }
+            });
         }
 
         private static PawnMemoryRepository GetMemories()
@@ -498,6 +754,58 @@ namespace PawnDiary.RimTests
             PawnLoreSeedState state = null;
             index?.TryGetValue(pawnId, out state);
             return state;
+        }
+
+        /// <summary>Creates one raw pair page with an arbitrary event defName (progression seam).</summary>
+        private static DiaryEvent AddRawPairEvent(Pawn initiator, Pawn recipient, string defName, string label)
+        {
+            DiaryEvent diaryEvent = scope.Component.AddPairwiseEvent(
+                initiator,
+                recipient,
+                defName,
+                label,
+                initiator.LabelShortCap + " went through " + label + ".",
+                recipient.LabelShortCap + " watched " + label + ".",
+                string.Empty,
+                string.Empty);
+            if (diaryEvent == null)
+            {
+                throw new AssertionException(
+                    "EventFactory did not create the raw " + defName + " fixture page.");
+            }
+
+            return diaryEvent;
+        }
+
+        private static MemoryFragment FindProgressionFragment(string pawnId)
+        {
+            IReadOnlyList<MemoryFragment> owned = GetMemories().ForPawn(pawnId);
+            for (int i = 0; i < owned.Count; i++)
+            {
+                if (owned[i].sourceEventId != null
+                    && owned[i].sourceEventId.StartsWith("loreseed-progression:", StringComparison.Ordinal))
+                {
+                    return owned[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static int CountProgressionFragments(string pawnId)
+        {
+            int count = 0;
+            IReadOnlyList<MemoryFragment> owned = GetMemories().ForPawn(pawnId);
+            for (int i = 0; i < owned.Count; i++)
+            {
+                if (owned[i].sourceEventId != null
+                    && owned[i].sourceEventId.StartsWith("loreseed-progression:", StringComparison.Ordinal))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static MemoryFragment FindLoreFragment(string pawnId)

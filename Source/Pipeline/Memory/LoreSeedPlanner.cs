@@ -122,6 +122,106 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Plans AT MOST ONE progression lore seed for one successfully registered
+        /// identity-changing event (§7.2, deferred L5). Filters to progression/both candidates
+        /// whose progressionEventDefNames contain the EXACT registered event Def token and whose
+        /// pawn constraints match, excludes every name the pawn has ever targeted or received,
+        /// enforces the remaining progression and core lifetime capacities, then draws one
+        /// deterministic weighted pick. mutexGroup deliberately has no cross-event semantics —
+        /// one event yields one seed and the lifetime history blocks exact-Def reuse only.
+        /// </summary>
+        public static LoreSeedPick PlanProgression(
+            List<LoreSeedCandidate> candidates,
+            LoreSeedPawnFacts pawnFacts,
+            LoreSeedProgressionFacts progressionFacts,
+            LoreSeedPolicy policy,
+            int deterministicSeed)
+        {
+            LoreSeedPolicy safePolicy = policy ?? new LoreSeedPolicy();
+            if (!safePolicy.enabled || pawnFacts == null || candidates == null
+                || progressionFacts == null
+                || string.IsNullOrWhiteSpace(progressionFacts.eventDefName))
+            {
+                return null;
+            }
+
+            int remainingProgression = Math.Max(0,
+                safePolicy.maxProgressionSeedsLifetime - Count(pawnFacts.progressionDefNamesEverDeposited));
+            if (remainingProgression == 0)
+            {
+                return null;
+            }
+
+            int coreCapacity = Math.Max(0,
+                safePolicy.maxCoreSeedsLifetime - Count(pawnFacts.coreDefNamesEverDeposited));
+            List<LoreSeedCandidate> pool = new List<LoreSeedCandidate>();
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                LoreSeedCandidate candidate = candidates[i];
+                if (!IsEligibleForProgression(candidate, pawnFacts, progressionFacts.eventDefName))
+                {
+                    continue;
+                }
+
+                if (IsCore(candidate) && coreCapacity <= 0)
+                {
+                    continue;
+                }
+
+                if (!ContainsCandidate(pool, candidate.seedDefName))
+                {
+                    pool.Add(candidate);
+                }
+            }
+
+            if (pool.Count == 0)
+            {
+                return null;
+            }
+
+            LoreSeedCandidate picked = SampleWeighted(pool, new Random(deterministicSeed));
+            return picked == null ? null : new LoreSeedPick
+            {
+                seedDefName = picked.seedDefName,
+                core = IsCore(picked),
+                specific = IsSpecific(picked)
+            };
+        }
+
+        /// <summary>
+        /// Progression eligibility (§7.2): progression/both usage, the exact registered event Def
+        /// token, the shared pawn-constraint matrix, and one-Def-per-pawn-lifetime exclusion.
+        /// </summary>
+        public static bool IsEligibleForProgression(
+            LoreSeedCandidate candidate, LoreSeedPawnFacts facts, string eventDefName)
+        {
+            if (candidate == null || facts == null
+                || string.IsNullOrWhiteSpace(candidate.seedDefName))
+            {
+                return false;
+            }
+
+            if (candidate.usage != LoreSeedTokens.UsageProgression
+                && candidate.usage != LoreSeedTokens.UsageBoth)
+            {
+                return false;
+            }
+
+            if (!(candidate.weight > 0f) || float.IsInfinity(candidate.weight))
+            {
+                return false;
+            }
+
+            if (!ContainsName(candidate.progressionEventDefNames, eventDefName))
+            {
+                return false;
+            }
+
+            return !IsUsedName(candidate.seedDefName, facts)
+                && MatchesPawnConstraints(candidate, facts);
+        }
+
+        /// <summary>
         /// Clamps the authored narrative-age offset to the pawn's biological age (§3.1, §16 G2):
         /// no configuration can make a pawn remember a time before their own life.
         /// </summary>
@@ -146,9 +246,10 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Full eligibility matrix (§7.1 step 1): any-of within a populated positive list, all
-        /// populated positive list TYPES required, exclusion lists always honored, and every name
-        /// the pawn has ever targeted or received excluded (§6: one Def at most once per pawn).
+        /// Initial-plan eligibility (§7.1 step 1): initial/both usage, the shared pawn-constraint
+        /// matrix (any-of within a populated positive list, all populated positive list TYPES
+        /// required, exclusion lists always honored), and every name the pawn has ever targeted
+        /// or received excluded (§6: one Def at most once per pawn).
         /// </summary>
         public static bool IsEligible(LoreSeedCandidate candidate, LoreSeedPawnFacts facts)
         {
@@ -169,13 +270,24 @@ namespace PawnDiary
                 return false;
             }
 
-            if (ContainsName(facts.initialTargetDefNames, candidate.seedDefName)
-                || ContainsName(facts.progressionDefNamesEverDeposited, candidate.seedDefName)
-                || ContainsName(facts.coreDefNamesEverDeposited, candidate.seedDefName))
-            {
-                return false;
-            }
+            return !IsUsedName(candidate.seedDefName, facts)
+                && MatchesPawnConstraints(candidate, facts);
+        }
 
+        /// <summary>One Def at most once per pawn across roster and both lifetime histories (§6).</summary>
+        private static bool IsUsedName(string seedDefName, LoreSeedPawnFacts facts)
+        {
+            return ContainsName(facts.initialTargetDefNames, seedDefName)
+                || ContainsName(facts.progressionDefNamesEverDeposited, seedDefName)
+                || ContainsName(facts.coreDefNamesEverDeposited, seedDefName);
+        }
+
+        /// <summary>
+        /// The shared pawn-constraint matrix: any-of within a populated positive list, all
+        /// populated positive list TYPES required together, exclusion lists always honored.
+        /// </summary>
+        private static bool MatchesPawnConstraints(LoreSeedCandidate candidate, LoreSeedPawnFacts facts)
+        {
             if (Count(candidate.backstoryCategories) > 0
                 && !AnyOverlap(candidate.backstoryCategories, facts.backstoryCategories))
             {

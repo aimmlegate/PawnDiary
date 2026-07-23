@@ -26,7 +26,13 @@
 
     mutexGroups (one member per initial plan): distance, cryptosleep, glitterworld, homeworld,
     archotech, psychic, mechanoid_origin, insectoid, xeno_identity, empire, void, legends,
-    vatgrown, outlaw, tribal_root, rim_life, weather_lore, trade.
+    vatgrown, outlaw, tribal_root, rim_life, weather_lore, trade; progression groups (L5, no
+    cross-event semantics): prog_psylink, prog_xenotype, prog_genes, prog_mechlink, prog_title.
+
+    L5 progression seeds (usage=progression) attach via the audited registered event Def tokens
+    only: PsylinkLevel, XenotypeChanged, GeneIdentityChanged, BiotechMechlinkInstalled,
+    RoyalTitleGained, RoyalTitlePromoted (mirrors the tuning Def's
+    progressionLoreSeedEventDefNames list).
   -->
 
   <!-- ===== distance: no-FTL, distance is grief (corpus §1/§15) ===== -->
@@ -462,6 +468,84 @@
     <mutexGroup>weather_lore</mutexGroup>
     <tags><li>dread</li></tags>
     <keywords><li>SolarFlare</li><li>Eclipse</li><li>SolarFlareActive</li></keywords>
+  </PawnDiary.DiaryLoreSeedDef>
+
+  <!-- ===== L5 progression seeds: one owner-only memory of an identity-changing day ===== -->
+
+  <PawnDiary.DiaryLoreSeedDef>
+    <defName>LoreSeed_Prog_Psylink</defName>
+    <label>the day the link took</label>
+    <text>The day the link took, every quiet room stopped being empty. I had joined a conversation older than any city, and it had noticed me.</text>
+    <usage>progression</usage>
+    <retentionTier>ordinary</retentionTier>
+    <weight>1.0</weight>
+    <mutexGroup>prog_psylink</mutexGroup>
+    <tags><li>psychic</li></tags>
+    <keywords><li>PsychicAmplifier</li></keywords>
+    <progressionEventDefNames><li>PsylinkLevel</li></progressionEventDefNames>
+  </PawnDiary.DiaryLoreSeedDef>
+
+  <PawnDiary.DiaryLoreSeedDef>
+    <defName>LoreSeed_Prog_Xenotype</defName>
+    <label>a before and after in the blood</label>
+    <text>I went to sleep one kind of human and woke another. My own blood keeps a before and an after now, and both of them answer to my name.</text>
+    <usage>progression</usage>
+    <retentionTier>ordinary</retentionTier>
+    <weight>1.0</weight>
+    <mutexGroup>prog_xenotype</mutexGroup>
+    <tags><li>body</li></tags>
+    <progressionEventDefNames><li>XenotypeChanged</li></progressionEventDefNames>
+  </PawnDiary.DiaryLoreSeedDef>
+
+  <PawnDiary.DiaryLoreSeedDef>
+    <defName>LoreSeed_Prog_Genes</defName>
+    <label>rewritten line by line</label>
+    <text>They rewrote me line by line, and I signed for it. Whoever wakes in my bed tomorrow will remember being me; I try to find that comforting.</text>
+    <usage>progression</usage>
+    <retentionTier>ordinary</retentionTier>
+    <weight>1.0</weight>
+    <mutexGroup>prog_genes</mutexGroup>
+    <tags><li>body</li><li>dread</li></tags>
+    <progressionEventDefNames><li>GeneIdentityChanged</li></progressionEventDefNames>
+  </PawnDiary.DiaryLoreSeedDef>
+
+  <PawnDiary.DiaryLoreSeedDef>
+    <defName>LoreSeed_Prog_Mechlink</defName>
+    <label>when the silence of machines ended</label>
+    <text>The day the mechlink settled in, the silence of machines ended for me. Now I know what the old commanders heard: everything, waiting.</text>
+    <usage>progression</usage>
+    <retentionTier>ordinary</retentionTier>
+    <weight>1.0</weight>
+    <mutexGroup>prog_mechlink</mutexGroup>
+    <tags><li>psychic</li><li>work</li></tags>
+    <keywords><li>MechlinkImplant</li><li>Mechanoid</li></keywords>
+    <progressionEventDefNames><li>BiotechMechlinkInstalled</li></progressionEventDefNames>
+  </PawnDiary.DiaryLoreSeedDef>
+
+  <PawnDiary.DiaryLoreSeedDef>
+    <defName>LoreSeed_Prog_TitleGained</defName>
+    <label>a name grown heavier</label>
+    <text>The day the Empire first spoke my title aloud, my name grew heavier. Some doors opened; others closed forever behind the honorific.</text>
+    <usage>progression</usage>
+    <retentionTier>ordinary</retentionTier>
+    <weight>1.0</weight>
+    <mutexGroup>prog_title</mutexGroup>
+    <tags><li>royalty</li><li>ritual</li></tags>
+    <keywords><li>Empire</li></keywords>
+    <progressionEventDefNames><li>RoyalTitleGained</li></progressionEventDefNames>
+  </PawnDiary.DiaryLoreSeedDef>
+
+  <PawnDiary.DiaryLoreSeedDef>
+    <defName>LoreSeed_Prog_TitlePromoted</defName>
+    <label>rank is a debt</label>
+    <text>With every new title I learned the same lesson again: rank is a debt the Empire lets you carry in public, with interest due at court.</text>
+    <usage>progression</usage>
+    <retentionTier>ordinary</retentionTier>
+    <weight>1.0</weight>
+    <mutexGroup>prog_title</mutexGroup>
+    <tags><li>royalty</li></tags>
+    <keywords><li>Empire</li></keywords>
+    <progressionEventDefNames><li>RoyalTitlePromoted</li></progressionEventDefNames>
   </PawnDiary.DiaryLoreSeedDef>
 
   <PawnDiary.DiaryLoreSeedDef>

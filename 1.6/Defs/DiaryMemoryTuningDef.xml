@@ -138,6 +138,16 @@
     <!-- 20 RimWorld days: a surfaced core identity seed stays ineligible this long. -->
     <coreLoreRecallCooldownTicks>1200000</coreLoreRecallCooldownTicks>
     <maxProgressionLoreSeedsPerPawnLifetime>4</maxProgressionLoreSeedsPerPawnLifetime>
+    <!-- L5: exact registered progression event Def tokens that may attach one owner-only
+         progression lore seed after the ordinary lived deposit succeeds (§8.3). -->
+    <progressionLoreSeedEventDefNames>
+      <li>PsylinkLevel</li>
+      <li>XenotypeChanged</li>
+      <li>GeneIdentityChanged</li>
+      <li>BiotechMechlinkInstalled</li>
+      <li>RoyalTitleGained</li>
+      <li>RoyalTitlePromoted</li>
+    </progressionLoreSeedEventDefNames>
 
     <!-- Age -> label bands, evaluated in order; the last row is the "else" catch-all. Labels reach
          the LLM prompt, so translations override them via DefInjected. -->

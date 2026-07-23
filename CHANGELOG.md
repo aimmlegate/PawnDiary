@@ -8,6 +8,15 @@ pre-release version ladder for project history.
 
 ## 2026-07-23
 
+- **Lore memory L5 — progression lore seeds.** Identity-changing events (psylink, xenotype, gene
+  identity, mechlink, royal titles — the six audited registered event Def tokens, XML-owned in
+  `progressionLoreSeedEventDefNames`) now attach at most one owner-only authored memory
+  immediately after the ordinary lived deposit succeeds: pure deterministic
+  `LoreSeedPlanner.PlanProgression` with exact-Def lifetime uniqueness, the four-seed progression
+  and two-core lifetime caps, synthetic non-colliding `loreseed-progression:` sentinels, real
+  ticks with zero narrative offset, and six new EN/RU catalog seeds (catalog now 40). Witnesses
+  never receive one; replays and noise-gated events never trigger. The full
+  LORE_MEMORY_SEED_PLAN is now implemented.
 - **Lore memory L3 — the full EN/RU seed catalog.** Shipped all four §11 passes as one gate:
   the stable-keyword audit added five Def-name-valued context keys (`raid`, `faction`, `hediff`,
   `mood_event`, `observed_condition`) ahead of the localized keys in `contextKeywordKeys`; a

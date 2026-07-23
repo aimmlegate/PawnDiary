@@ -2,6 +2,13 @@
 
 ## Update Summary
 **Changes Made**
+- Lore L5 (design/LORE_MEMORY_SEED_PLAN.md §7.2/§8.3): `LoreSeedPlanner.PlanProgression` +
+  `TryDepositProgressionLoreSeed` in `DiaryGameComponent.Memory.cs` attach at most one owner-only
+  progression seed after the lived deposit succeeds for one of the six audited registered event
+  tokens (XML list `progressionLoreSeedEventDefNames`); `loreseed-progression:` sentinels, zero
+  narrative offset, exact-Def lifetime uniqueness, progression cap 4 / core cap 2; catalog grew
+  to 40 with six EN/RU progression seeds; the RimTest lore fixture now isolates the shipped
+  catalog per test and covers owner-only attachment, witness exclusion, and Def exhaustion
 - Lore L3 (design/LORE_MEMORY_SEED_PLAN.md §11): shipped the 34-seed EN/RU catalog
   (`1.6/Defs/DiaryLoreSeedDefs.xml`, 18 mutex groups, 6 exact-evidence core seeds) plus the
   pass-1 vocabulary audit — `contextKeywordKeys` now leads with five stable Def-name-valued keys

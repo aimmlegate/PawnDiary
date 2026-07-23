@@ -104,6 +104,24 @@
   <LoreSeed_Rim_ColdDark.label>свечи не просто так</LoreSeed_Rim_ColdDark.label>
   <LoreSeed_Rim_ColdDark.text>Хуже всего были ночи, когда отказывало само небо: солнце гасло или машины замирали разом. Старики держали свечи не просто так.</LoreSeed_Rim_ColdDark.text>
 
+  <LoreSeed_Prog_Psylink.label>день, когда связь взялась</LoreSeed_Prog_Psylink.label>
+  <LoreSeed_Prog_Psylink.text>В день, когда связь взялась, тихие комнаты перестали быть пустыми. Я вступил в разговор старше любых городов — и он меня заметил.</LoreSeed_Prog_Psylink.text>
+
+  <LoreSeed_Prog_Xenotype.label>до и после в крови</LoreSeed_Prog_Xenotype.label>
+  <LoreSeed_Prog_Xenotype.text>Я уснул одним человеком, а проснулся другим. Теперь моя кровь хранит «до» и «после», и оба отзываются на моё имя.</LoreSeed_Prog_Xenotype.text>
+
+  <LoreSeed_Prog_Genes.label>переписанный строка за строкой</LoreSeed_Prog_Genes.label>
+  <LoreSeed_Prog_Genes.text>Меня переписали строка за строкой, и я сам это подписал. Тот, кто завтра проснётся в моей постели, будет помнить, что был мной; я стараюсь находить в этом утешение.</LoreSeed_Prog_Genes.text>
+
+  <LoreSeed_Prog_Mechlink.label>когда закончилось молчание машин</LoreSeed_Prog_Mechlink.label>
+  <LoreSeed_Prog_Mechlink.text>В день, когда мехлинк прижился, молчание машин для меня закончилось. Теперь я знаю, что слышали старые командиры: всё разом — и оно ждёт.</LoreSeed_Prog_Mechlink.text>
+
+  <LoreSeed_Prog_TitleGained.label>имя стало тяжелее</LoreSeed_Prog_TitleGained.label>
+  <LoreSeed_Prog_TitleGained.text>В день, когда Империя впервые произнесла мой титул вслух, моё имя стало тяжелее. Одни двери открылись; другие закрылись за титулом навсегда.</LoreSeed_Prog_TitleGained.text>
+
+  <LoreSeed_Prog_TitlePromoted.label>ранг — это долг</LoreSeed_Prog_TitlePromoted.label>
+  <LoreSeed_Prog_TitlePromoted.text>С каждым новым титулом я заново учил один урок: ранг — это долг, который Империя позволяет носить на людях, с процентами к уплате при дворе.</LoreSeed_Prog_TitlePromoted.text>
+
   <LoreSeed_Trader_Roads.label>спать под скрип колёс</LoreSeed_Trader_Roads.label>
   <LoreSeed_Trader_Roads.text>Я научился засыпать под скрип колёс и просыпаться от чужих колоколов. Всё, что есть на окраине, кто-то усталый однажды принёс.</LoreSeed_Trader_Roads.text>
 </LanguageData>
