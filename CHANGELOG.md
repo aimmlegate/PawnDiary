@@ -8,6 +8,14 @@ pre-release version ladder for project history.
 
 ## 2026-07-23
 
+- **Lore memory L2 — initial planner, persistence, settings, and wiring.** Added `DiaryLoreSeedDef`
+  (closed usage/tier tokens, config-error validation, core-requires-exact-evidence), the pure
+  deterministic `LoreSeedPlanner.PlanInitial` (eligibility matrices, one reserved pawn-specific
+  slot with core-first preference, weighted sampling, plan-local mutex, lifetime core cap),
+  persisted per-pawn rosters/histories, the default-true `enableLoreSeeds` setting (EN/RU), lazy
+  pre-recall deposits with `loreseed:` sentinels and live DefInjected prose, the 20-day hard core
+  recall cooldown, and disabled-lore recall/eviction exclusion that preserves rows. Catalog ships
+  in L3; the layer no-ops until then.
 - **Lore memory L1 — contracts, truthfulness, and bounded prompt projection.** Memory fragments
   gained optional lore provenance and a narrative-age offset (age band + minimum-age guard only;
   real ticks keep driving decay/cooldown/eviction); recall is now gated on the finally chosen

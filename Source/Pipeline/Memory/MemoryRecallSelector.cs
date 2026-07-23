@@ -215,11 +215,23 @@ namespace PawnDiary
                 return 0f;
             }
 
+            // Core lore hard cooldown (LORE_MEMORY_SEED_PLAN §4): after a core identity seed has
+            // actually surfaced in a prompt, it stays INELIGIBLE for the long XML-tunable window
+            // (default 20 days) rather than merely penalized. A freshly deposited core seed
+            // (lastRecalledTick == createdTick) has never surfaced and is immediately eligible.
+            int sinceRecall = currentTick - fragment.lastRecalledTick;
+            bool recalledBefore = fragment.lastRecalledTick > fragment.createdTick && sinceRecall >= 0;
+            if (recalledBefore
+                && !string.IsNullOrEmpty(fragment.loreSeedDefName)
+                && Clamp01(fragment.importance) >= Clamp01(policy.coreImportanceThreshold)
+                && sinceRecall < Math.Max(0, policy.coreLoreRecallCooldownTicks))
+            {
+                return 0f;
+            }
+
             // Anti-repetition without any extra recently-used list: a fragment recalled inside
             // the cooldown window simply scores at quarter strength.
-            int sinceRecall = currentTick - fragment.lastRecalledTick;
-            if (fragment.lastRecalledTick > fragment.createdTick && sinceRecall >= 0
-                && sinceRecall < Math.Max(0, policy.recallCooldownTicks))
+            if (recalledBefore && sinceRecall < Math.Max(0, policy.recallCooldownTicks))
             {
                 score *= Clamp01(policy.repetitionPenaltyFactor);
             }

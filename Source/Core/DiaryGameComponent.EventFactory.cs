@@ -193,7 +193,11 @@ namespace PawnDiary
             AddEventRef(initiator, diaryEvent.eventId, historicalTick >= 0);
             AddEventRef(recipient, diaryEvent.eventId, historicalTick >= 0);
             ApplyDiaryEventLimits();
-            // Associative memory: recall BEFORE deposit so this event cannot recall its own fragment.
+            // Lore seeds land BEFORE recall (LORE_MEMORY_SEED_PLAN §8.1) so an authored memory
+            // can surface on this very first prompt; then recall BEFORE deposit so this event
+            // cannot recall its own fragment.
+            EnsureLoreSeedsForPawn(initiator);
+            EnsureLoreSeedsForPawn(recipient);
             ApplyMemoryContextForEvent(diaryEvent);
             DepositMemoryFragments(diaryEvent);
             if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
@@ -355,7 +359,10 @@ namespace PawnDiary
             events.Register(diaryEvent);
             AddEventRef(pawn, diaryEvent.eventId, historicalTick >= 0);
             ApplyDiaryEventLimits();
-            // Associative memory: recall BEFORE deposit so this event cannot recall its own fragment.
+            // Lore seeds land BEFORE recall (LORE_MEMORY_SEED_PLAN §8.1) so an authored memory
+            // can surface on this very first prompt; then recall BEFORE deposit so this event
+            // cannot recall its own fragment.
+            EnsureLoreSeedsForPawn(pawn);
             ApplyMemoryContextForEvent(diaryEvent);
             DepositMemoryFragments(diaryEvent);
             if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))

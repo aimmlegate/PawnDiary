@@ -89,6 +89,18 @@ namespace PawnDiary
         // is missing or a translation has not supplied the optional instruction.
         public string memoryContextInstruction = string.Empty;
 
+        // Lore seeds (LORE_MEMORY_SEED_PLAN §13). The XML half of the lore gate; the player's
+        // enableLoreSeeds setting is ANDed in at the impure adapter edge.
+        public bool loreSeedsEnabled = true;
+        public int maxInitialLoreSeedsPerPawn = 4;
+        public int minSpecificInitialLoreSeedsPerPawn = 1;
+        public float loreSeedOrdinaryImportance = 0.35f;
+        public float loreSeedCoreImportance = 0.85f;
+        public int loreSeedNarrativeAgeOffsetTicks = 7200000;
+        public int maxCoreLoreSeedsPerPawnLifetime = 2;
+        public int coreLoreRecallCooldownTicks = 1200000;
+        public int maxProgressionLoreSeedsPerPawnLifetime = 4;
+
         // Eviction (design §10).
         public int maxFragmentsPerPawn = 60;
         public float coreImportanceThreshold = 0.8f;
@@ -147,6 +159,15 @@ namespace PawnDiary
             snapshot.memoryContextMaxChars = PositiveOrFallback(source.memoryContextMaxChars, snapshot.memoryContextMaxChars);
             snapshot.memoryContextMaxLines = PositiveOrFallback(source.memoryContextMaxLines, snapshot.memoryContextMaxLines);
             snapshot.memoryContextInstruction = source.memoryContextInstruction ?? string.Empty;
+            snapshot.loreSeedsEnabled = source.loreSeedsEnabled;
+            snapshot.maxInitialLoreSeedsPerPawn = Math.Max(0, source.maxInitialLoreSeedsPerPawn);
+            snapshot.minSpecificInitialLoreSeedsPerPawn = Math.Max(0, source.minSpecificInitialLoreSeedsPerPawn);
+            snapshot.loreSeedOrdinaryImportance = Clamp01(source.loreSeedOrdinaryImportance);
+            snapshot.loreSeedCoreImportance = Clamp01(source.loreSeedCoreImportance);
+            snapshot.loreSeedNarrativeAgeOffsetTicks = Math.Max(0, source.loreSeedNarrativeAgeOffsetTicks);
+            snapshot.maxCoreLoreSeedsPerPawnLifetime = Math.Max(0, source.maxCoreLoreSeedsPerPawnLifetime);
+            snapshot.coreLoreRecallCooldownTicks = Math.Max(0, source.coreLoreRecallCooldownTicks);
+            snapshot.maxProgressionLoreSeedsPerPawnLifetime = Math.Max(0, source.maxProgressionLoreSeedsPerPawnLifetime);
             snapshot.maxFragmentsPerPawn = PositiveOrFallback(source.maxFragmentsPerPawn, snapshot.maxFragmentsPerPawn);
             snapshot.coreImportanceThreshold = Clamp01(source.coreImportanceThreshold);
             snapshot.maxCoreFragmentsPerPawn = PositiveOrFallback(source.maxCoreFragmentsPerPawn, snapshot.maxCoreFragmentsPerPawn);

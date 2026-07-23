@@ -210,6 +210,10 @@ namespace PawnDiary
                     ref Settings.enablePsychotypes,
                     "PawnDiary.Settings.EnablePsychotypesTip".Translate());
                 listing.CheckboxLabeled(
+                    "PawnDiary.Settings.EnableLoreSeeds".Translate(),
+                    ref Settings.enableLoreSeeds,
+                    "PawnDiary.Settings.EnableLoreSeedsTip".Translate());
+                listing.CheckboxLabeled(
                     "PawnDiary.Settings.AllowExternalIntegrations".Translate(),
                     ref Settings.allowExternalIntegrations,
                     "PawnDiary.Settings.AllowExternalIntegrationsTip".Translate());

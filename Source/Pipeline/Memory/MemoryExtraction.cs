@@ -266,6 +266,37 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Normalizes AUTHORED lore-seed keywords (LORE_MEMORY_SEED_PLAN §5/§10) with the exact
+        /// identity tokenizer used for deposit/query values — never a copy of its rules. Values
+        /// are stable Def names or closed tokens ("MechanoidCluster"), so the identity path keeps
+        /// short tokens and stopword-lookalikes intact. Order preserved, duplicates dropped,
+        /// bounded by the caller's keyword cap.
+        /// </summary>
+        public static List<string> NormalizeAuthoredKeywords(List<string> values, int maxKeywords)
+        {
+            List<string> keywords = new List<string>();
+            if (values == null)
+            {
+                return keywords;
+            }
+
+            int cap = Math.Max(0, maxKeywords);
+            for (int i = 0; i < values.Count && keywords.Count < cap; i++)
+            {
+                List<string> tokens = TokenizeIdentity(values[i]);
+                for (int j = 0; j < tokens.Count && keywords.Count < cap; j++)
+                {
+                    if (!ContainsOrdinal(keywords, tokens[j]))
+                    {
+                        keywords.Add(tokens[j]);
+                    }
+                }
+            }
+
+            return keywords;
+        }
+
+        /// <summary>
         /// Normalizes free text into keyword tokens: lowercase-invariant, alphanumerics only,
         /// length >= 3, stopwords dropped, first occurrence order preserved.
         /// </summary>

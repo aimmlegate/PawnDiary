@@ -43,6 +43,13 @@ namespace PawnMemoryTests
             TestEvictionCapsAndTieBreaks();
             TestEvictionGlobalCapAndNoMutation();
             TestPromptCompose();
+            TestLoreSeedProvenanceAndTokens();
+            TestLoreSeedEligibility();
+            TestLoreSeedPlanInitialDeterminismAndCaps();
+            TestLoreSeedSpecificReservationAndMutex();
+            TestLoreSeedNarrativeOffsetClamp();
+            TestCoreLoreCooldownGate();
+            TestEvictionLoreSuppression();
             Console.WriteLine("PawnMemoryTests passed " + assertions + " assertions.");
             return 0;
         }
@@ -158,6 +165,15 @@ namespace PawnMemoryTests
             AssertXmlFloat(def, "repetitionPenaltyFactor", policy.repetitionPenaltyFactor);
             AssertXmlInt(def, "memoryContextMaxChars", policy.memoryContextMaxChars);
             AssertXmlInt(def, "memoryContextMaxLines", policy.memoryContextMaxLines);
+            AssertXmlBool(def, "loreSeedsEnabled", policy.loreSeedsEnabled);
+            AssertXmlInt(def, "maxInitialLoreSeedsPerPawn", policy.maxInitialLoreSeedsPerPawn);
+            AssertXmlInt(def, "minSpecificInitialLoreSeedsPerPawn", policy.minSpecificInitialLoreSeedsPerPawn);
+            AssertXmlFloat(def, "loreSeedOrdinaryImportance", policy.loreSeedOrdinaryImportance);
+            AssertXmlFloat(def, "loreSeedCoreImportance", policy.loreSeedCoreImportance);
+            AssertXmlInt(def, "loreSeedNarrativeAgeOffsetTicks", policy.loreSeedNarrativeAgeOffsetTicks);
+            AssertXmlInt(def, "maxCoreLoreSeedsPerPawnLifetime", policy.maxCoreLoreSeedsPerPawnLifetime);
+            AssertXmlInt(def, "coreLoreRecallCooldownTicks", policy.coreLoreRecallCooldownTicks);
+            AssertXmlInt(def, "maxProgressionLoreSeedsPerPawnLifetime", policy.maxProgressionLoreSeedsPerPawnLifetime);
             AssertXmlInt(def, "maxFragmentsPerPawn", policy.maxFragmentsPerPawn);
             AssertXmlFloat(def, "coreImportanceThreshold", policy.coreImportanceThreshold);
             AssertXmlInt(def, "maxCoreFragmentsPerPawn", policy.maxCoreFragmentsPerPawn);
@@ -1178,6 +1194,349 @@ namespace PawnMemoryTests
                 MemoryContextPrompt.Compose("lines", "instr"));
             AssertEqual("both sides are trimmed", "instr\nlines",
                 MemoryContextPrompt.Compose("  lines  ", "  instr  "));
+        }
+
+        // ---------------------------------------------------------------------------------------------
+        // Lore seeds (LORE_MEMORY_SEED_PLAN L2)
+        // ---------------------------------------------------------------------------------------------
+
+        private static void TestLoreSeedProvenanceAndTokens()
+        {
+            AssertEqual("initial sentinel shape", "loreseed:LoreSeed_X",
+                LoreSeedProvenance.InitialSourceEventId("LoreSeed_X"));
+            AssertEqual("progression sentinel shape", "loreseed-progression:evt-1:LoreSeed_X",
+                LoreSeedProvenance.ProgressionSourceEventId("evt-1", "LoreSeed_X"));
+            AssertTrue("initial sentinel detected",
+                LoreSeedProvenance.IsLoreSourceEventId("loreseed:LoreSeed_X"));
+            AssertTrue("progression sentinel detected",
+                LoreSeedProvenance.IsLoreSourceEventId("loreseed-progression:evt-1:LoreSeed_X"));
+            AssertTrue("guid event ids are never lore",
+                !LoreSeedProvenance.IsLoreSourceEventId("3f9c2d5a41f04e28b7a9d2c8e5f01234"));
+
+            AssertTrue("usage tokens", LoreSeedTokens.IsKnownUsage("initial")
+                && LoreSeedTokens.IsKnownUsage("progression") && LoreSeedTokens.IsKnownUsage("both")
+                && !LoreSeedTokens.IsKnownUsage("Initial") && !LoreSeedTokens.IsKnownUsage(""));
+            AssertTrue("tier tokens", LoreSeedTokens.IsKnownTier("ordinary")
+                && LoreSeedTokens.IsKnownTier("core") && !LoreSeedTokens.IsKnownTier("Core"));
+
+            MemoryPolicySnapshot policy = MemoryPolicySnapshot.CreateDefault();
+            AssertTrue("default loreSeedsEnabled", policy.loreSeedsEnabled);
+            AssertEqual("default maxInitialLoreSeedsPerPawn", 4, policy.maxInitialLoreSeedsPerPawn);
+            AssertEqual("default minSpecificInitialLoreSeedsPerPawn", 1, policy.minSpecificInitialLoreSeedsPerPawn);
+            AssertNear("default loreSeedOrdinaryImportance", 0.35f, policy.loreSeedOrdinaryImportance, 0.0001f);
+            AssertNear("default loreSeedCoreImportance", 0.85f, policy.loreSeedCoreImportance, 0.0001f);
+            AssertEqual("default loreSeedNarrativeAgeOffsetTicks", 7200000, policy.loreSeedNarrativeAgeOffsetTicks);
+            AssertEqual("default maxCoreLoreSeedsPerPawnLifetime", 2, policy.maxCoreLoreSeedsPerPawnLifetime);
+            AssertEqual("default coreLoreRecallCooldownTicks", 1200000, policy.coreLoreRecallCooldownTicks);
+            AssertEqual("default maxProgressionLoreSeedsPerPawnLifetime", 4, policy.maxProgressionLoreSeedsPerPawnLifetime);
+
+            LoreSeedPolicy lore = LoreSeedPolicy.FromMemoryPolicy(policy, true);
+            AssertTrue("policy copy enabled", lore.enabled);
+            AssertNear("core importance clears the core threshold",
+                Math.Max(0.85f, policy.coreImportanceThreshold), lore.coreImportance, 0.0001f);
+            LoreSeedPolicy disabled = LoreSeedPolicy.FromMemoryPolicy(policy, false);
+            AssertTrue("setting=false disables the copied policy", !disabled.enabled);
+        }
+
+        private static void TestLoreSeedEligibility()
+        {
+            LoreSeedPawnFacts facts = LoreFacts(
+                cats: Tags("Tribal", "Offworld"),
+                backstories: Tags("TribalChild4", "Hunter12"),
+                xeno: "Hussar",
+                hediffs: Tags("MechlinkImplant"));
+
+            AssertTrue("generic seed always eligible",
+                LoreSeedPlanner.IsEligible(LoreSeed("g"), facts));
+            AssertTrue("matching category eligible",
+                LoreSeedPlanner.IsEligible(LoreSeed("c", cats: Tags("Tribal")), facts));
+            AssertTrue("non-matching category ineligible",
+                !LoreSeedPlanner.IsEligible(LoreSeed("c2", cats: Tags("Imperial")), facts));
+            AssertTrue("exclusion category blocks",
+                !LoreSeedPlanner.IsEligible(LoreSeed("x", excludeCats: Tags("Offworld")), facts));
+            AssertTrue("exact backstory eligible",
+                LoreSeedPlanner.IsEligible(LoreSeed("b", backstories: Tags("Hunter12")), facts));
+            AssertTrue("missing exact backstory ineligible",
+                !LoreSeedPlanner.IsEligible(LoreSeed("b2", backstories: Tags("Urchin3")), facts));
+            AssertTrue("exclude exact backstory blocks",
+                !LoreSeedPlanner.IsEligible(LoreSeed("b3", excludeBackstories: Tags("TribalChild4")), facts));
+            AssertTrue("xenotype match eligible",
+                LoreSeedPlanner.IsEligible(LoreSeed("xe", xenos: Tags("Hussar")), facts));
+            AssertTrue("xenotype mismatch ineligible",
+                !LoreSeedPlanner.IsEligible(LoreSeed("xe2", xenos: Tags("Sanguophage")), facts));
+            AssertTrue("hediff match eligible",
+                LoreSeedPlanner.IsEligible(LoreSeed("h", hediffs: Tags("MechlinkImplant")), facts));
+            AssertTrue("all populated positive types are required together",
+                !LoreSeedPlanner.IsEligible(
+                    LoreSeed("mix", cats: Tags("Tribal"), xenos: Tags("Sanguophage")), facts));
+            AssertTrue("progression usage never eligible for the initial plan",
+                !LoreSeedPlanner.IsEligible(LoreSeed("p", usage: "progression"), facts));
+            AssertTrue("zero weight ineligible",
+                !LoreSeedPlanner.IsEligible(LoreSeed("w", weight: 0f), facts));
+
+            LoreSeedPawnFacts used = LoreFacts();
+            used.initialTargetDefNames.Add("g");
+            AssertTrue("a name already in the roster is excluded",
+                !LoreSeedPlanner.IsEligible(LoreSeed("g"), used));
+            used.progressionDefNamesEverDeposited.Add("p2");
+            AssertTrue("a name in the progression history is excluded",
+                !LoreSeedPlanner.IsEligible(LoreSeed("p2"), used));
+
+            AssertTrue("generic is not specific", !LoreSeedPlanner.IsSpecific(LoreSeed("g")));
+            AssertTrue("category constraint is specific",
+                LoreSeedPlanner.IsSpecific(LoreSeed("c", cats: Tags("Tribal"))));
+            AssertTrue("hediff constraint is specific",
+                LoreSeedPlanner.IsSpecific(LoreSeed("h", hediffs: Tags("MechlinkImplant"))));
+        }
+
+        private static void TestLoreSeedPlanInitialDeterminismAndCaps()
+        {
+            LoreSeedPolicy policy = new LoreSeedPolicy();
+            LoreSeedPawnFacts facts = LoreFacts(backstories: Tags("Hunter12"));
+            List<LoreSeedCandidate> catalog = new List<LoreSeedCandidate>
+            {
+                LoreSeed("g1"), LoreSeed("g2"), LoreSeed("g3"),
+                LoreSeed("g4"), LoreSeed("g5"), LoreSeed("g6")
+            };
+
+            List<LoreSeedPick> first = LoreSeedPlanner.PlanInitial(catalog, facts, policy, 42);
+            List<LoreSeedPick> second = LoreSeedPlanner.PlanInitial(catalog, facts, policy, 42);
+            AssertEqual("roster fills to the initial maximum", 4, first.Count);
+            AssertEqual("same seed same roster size", first.Count, second.Count);
+            for (int i = 0; i < first.Count; i++)
+            {
+                AssertEqual("same seed same roster order " + i,
+                    first[i].seedDefName, second[i].seedDefName);
+            }
+
+            LoreSeedPawnFacts partial = LoreFacts();
+            partial.initialTargetDefNames.Add("g1");
+            partial.initialTargetDefNames.Add("g2");
+            partial.initialTargetDefNames.Add("g3");
+            List<LoreSeedPick> remaining = LoreSeedPlanner.PlanInitial(catalog, partial, policy, 42);
+            AssertEqual("existing roster consumes lifetime capacity", 1, remaining.Count);
+            AssertTrue("remaining pick avoids used names",
+                remaining[0].seedDefName != "g1" && remaining[0].seedDefName != "g2"
+                && remaining[0].seedDefName != "g3");
+
+            // Core lifetime cap: core candidates beyond capacity are discarded without
+            // consuming a roster slot.
+            List<LoreSeedCandidate> coreHeavy = new List<LoreSeedCandidate>
+            {
+                LoreSeed("c1", tier: "core", backstories: Tags("Hunter12")),
+                LoreSeed("c2", tier: "core", backstories: Tags("Hunter12")),
+                LoreSeed("c3", tier: "core", backstories: Tags("Hunter12")),
+                LoreSeed("o1"), LoreSeed("o2"), LoreSeed("o3")
+            };
+            List<LoreSeedPick> capped = LoreSeedPlanner.PlanInitial(coreHeavy, facts, policy, 7);
+            AssertEqual("roster still fills all four slots", 4, capped.Count);
+            AssertTrue("core picks never exceed the lifetime cap of two",
+                CountCore(capped) >= 1 && CountCore(capped) <= 2);
+
+            LoreSeedPawnFacts coreSpent = LoreFacts(backstories: Tags("Hunter12"));
+            coreSpent.coreDefNamesEverDeposited.Add("old1");
+            coreSpent.coreDefNamesEverDeposited.Add("old2");
+            List<LoreSeedPick> noCore = LoreSeedPlanner.PlanInitial(coreHeavy, coreSpent, policy, 7);
+            AssertEqual("spent core history admits zero new core seeds", 0, CountCore(noCore));
+            AssertEqual("ordinary seeds still fill what they can", 3, noCore.Count);
+
+            List<LoreSeedPick> disabled = LoreSeedPlanner.PlanInitial(
+                catalog, facts, new LoreSeedPolicy { enabled = false }, 42);
+            AssertEqual("disabled policy plans nothing", 0, disabled.Count);
+        }
+
+        private static void TestLoreSeedSpecificReservationAndMutex()
+        {
+            LoreSeedPolicy policy = new LoreSeedPolicy();
+            LoreSeedPawnFacts facts = LoreFacts(
+                cats: Tags("Tribal"), backstories: Tags("Hunter12"));
+
+            List<LoreSeedCandidate> catalog = new List<LoreSeedCandidate>
+            {
+                LoreSeed("g1"), LoreSeed("g2"), LoreSeed("g3"),
+                LoreSeed("s1", cats: Tags("Tribal")),
+                LoreSeed("c1", tier: "core", backstories: Tags("Hunter12"))
+            };
+
+            List<LoreSeedPick> picks = LoreSeedPlanner.PlanInitial(catalog, facts, policy, 11);
+            AssertEqual("reserved slot is drawn first and is core-specific", "c1",
+                picks[0].seedDefName);
+            AssertTrue("reserved pick is flagged specific", picks[0].specific && picks[0].core);
+
+            LoreSeedPawnFacts coreSpent = LoreFacts(
+                cats: Tags("Tribal"), backstories: Tags("Hunter12"));
+            coreSpent.coreDefNamesEverDeposited.Add("old1");
+            coreSpent.coreDefNamesEverDeposited.Add("old2");
+            List<LoreSeedPick> ordinaryReserved = LoreSeedPlanner.PlanInitial(catalog, coreSpent, policy, 11);
+            AssertEqual("without core capacity the reserved slot is the ordinary specific seed",
+                "s1", ordinaryReserved[0].seedDefName);
+            AssertTrue("no core pick without capacity", CountCore(ordinaryReserved) == 0);
+
+            List<LoreSeedCandidate> genericOnly = new List<LoreSeedCandidate>
+            {
+                LoreSeed("g1"), LoreSeed("g2")
+            };
+            List<LoreSeedPick> unfilled = LoreSeedPlanner.PlanInitial(genericOnly, facts, policy, 11);
+            AssertEqual("no specific candidate fills the roster with generics anyway", 2, unfilled.Count);
+            AssertTrue("no pick is falsely flagged specific",
+                !unfilled[0].specific && !unfilled[1].specific);
+
+            // Mutex applies only inside this one construction: picking one member of the group
+            // removes its siblings from the pool.
+            LoreSeedPolicy two = new LoreSeedPolicy { maxInitialSeeds = 3, minSpecificInitialSeeds = 0 };
+            List<LoreSeedCandidate> mutexed = new List<LoreSeedCandidate>
+            {
+                LoreSeed("m1", mutex: "origin"), LoreSeed("m2", mutex: "origin"), LoreSeed("o1")
+            };
+            List<LoreSeedPick> mutexPicks = LoreSeedPlanner.PlanInitial(mutexed, LoreFacts(), two, 5);
+            AssertEqual("mutex group yields one member plus the outsider", 2, mutexPicks.Count);
+            bool m1Picked = ContainsPick(mutexPicks, "m1");
+            bool m2Picked = ContainsPick(mutexPicks, "m2");
+            AssertTrue("exactly one mutex sibling is picked", m1Picked != m2Picked);
+            AssertTrue("the outsider always fits", ContainsPick(mutexPicks, "o1"));
+        }
+
+        private static void TestLoreSeedNarrativeOffsetClamp()
+        {
+            AssertEqual("offset clamps to a young pawn's biological age", 100000,
+                LoreSeedPlanner.ClampNarrativeOffset(7200000, 100000L));
+            AssertEqual("offset passes through under an old pawn's age", 7200000,
+                LoreSeedPlanner.ClampNarrativeOffset(7200000, 100000000L));
+            AssertEqual("negative policy offset clamps to zero", 0,
+                LoreSeedPlanner.ClampNarrativeOffset(-5, 100000L));
+            AssertEqual("negative biological age clamps to zero", 0,
+                LoreSeedPlanner.ClampNarrativeOffset(7200000, -3L));
+        }
+
+        private static void TestCoreLoreCooldownGate()
+        {
+            MemoryPolicySnapshot policy = RecallPolicy();
+            List<MemoryFragmentSnapshot> store = new List<MemoryFragmentSnapshot>
+            {
+                Frag("core-seed", 0, Tags("combat", "danger"), Tags("yorick", "rifle", "fire"),
+                    0.85f, "The elders' machine story."),
+                Frag("f1", 0, Tags("work"), Tags("fields"), 0.4f, "Working the fields."),
+                Frag("f2", 0, Tags("illness"), Tags("flu"), 0.4f, "A bad flu week."),
+                Frag("f3", 0, Tags("family"), Tags("mother"), 0.4f, "A letter from mother.")
+            };
+            store[0].loreSeedDefName = "LoreSeed_Test";
+
+            // Never surfaced (lastRecalledTick == createdTick): immediately eligible.
+            MemoryRecallResult fresh = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags("yorick", "rifle", "fire"), 1000000), store, policy);
+            AssertEqual("an unsurfaced core seed is immediately eligible", 1, fresh.picks.Count);
+
+            // Surfaced 500k ticks ago: past the ordinary 300k cooldown but inside the 1.2M core
+            // window -> hard-ineligible, not merely quartered.
+            store[0].lastRecalledTick = 500000;
+            MemoryRecallResult gated = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags("yorick", "rifle", "fire"), 1000000), store, policy);
+            AssertEqual("a surfaced core seed is hard-gated for 20 days", 0, gated.picks.Count);
+
+            // An ordinary lore row with the same recall pattern stays eligible.
+            store[0].importance = 0.35f;
+            MemoryRecallResult ordinary = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags("yorick", "rifle", "fire"), 1000000), store, policy);
+            AssertEqual("ordinary lore keeps the normal cooldown behavior", 1, ordinary.picks.Count);
+
+            // At exactly the core-cooldown boundary the seed is merely eligible again.
+            store[0].importance = 0.85f;
+            MemoryRecallResult expired = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags("yorick", "rifle", "fire"), 1700000), store, policy);
+            AssertEqual("the core cooldown boundary restores eligibility", 1, expired.picks.Count);
+
+            // A high-importance LIVED memory (no lore provenance) never hits the core-lore gate.
+            store[0].loreSeedDefName = string.Empty;
+            MemoryRecallResult lived = MemoryRecallSelector.Recall(
+                Query(Tags("combat", "danger"), Tags("yorick", "rifle", "fire"), 1000000), store, policy);
+            AssertEqual("core lived memories are unaffected by the lore gate", 1, lived.picks.Count);
+        }
+
+        private static void TestEvictionLoreSuppression()
+        {
+            MemoryPolicySnapshot policy = MemoryPolicySnapshot.CreateDefault();
+            policy.maxFragmentsPerPawn = 2;
+            const int now = 10000000;
+
+            // A stale ordinary lore row plus two fresh lived rows.
+            List<MemoryFragmentSnapshot> fragments = new List<MemoryFragmentSnapshot>
+            {
+                Frag("lore-stale", 100, Tags("dread"), Tags("monolith"), 0.35f, "Old lore."),
+                Frag("lived-1", now - 1000, Tags("work"), Tags("fields"), 0.5f, "Fresh one."),
+                Frag("lived-2", now - 2000, Tags("joy"), Tags("party"), 0.5f, "Fresh two.")
+            };
+            fragments[0].loreSeedDefName = "LoreSeed_Test";
+
+            List<string> suppressed = MemoryEvictionPlanner.Plan(fragments, now, policy, suppressLore: true);
+            AssertEqual("suppressed lore is neither counted nor evicted", 0, suppressed.Count);
+
+            List<string> active = MemoryEvictionPlanner.Plan(fragments, now, policy);
+            AssertContains("enabled lore is subject to the normal stale rule", active, "lore-stale");
+
+            policy.maxTotalFragments = 2;
+            List<string> globalSuppressed = MemoryEvictionPlanner.PlanGlobalCap(
+                fragments, now, policy, suppressLore: true);
+            AssertEqual("suppressed lore does not count toward the global cap", 0, globalSuppressed.Count);
+            List<string> globalActive = MemoryEvictionPlanner.PlanGlobalCap(fragments, now, policy);
+            AssertEqual("enabled lore counts toward the global cap", 1, globalActive.Count);
+        }
+
+        private static LoreSeedCandidate LoreSeed(string name, string usage = "initial",
+            string tier = "ordinary", float weight = 1f, string mutex = "",
+            string[] cats = null, string[] excludeCats = null,
+            string[] backstories = null, string[] excludeBackstories = null,
+            string[] xenos = null, string[] hediffs = null)
+        {
+            return new LoreSeedCandidate
+            {
+                seedDefName = name,
+                fallbackText = "Seed text for " + name + ".",
+                usage = usage,
+                retentionTier = tier,
+                weight = weight,
+                mutexGroup = mutex,
+                backstoryCategories = ListOf(cats ?? new string[0]),
+                excludeBackstoryCategories = ListOf(excludeCats ?? new string[0]),
+                backstoryDefNames = ListOf(backstories ?? new string[0]),
+                excludeBackstoryDefNames = ListOf(excludeBackstories ?? new string[0]),
+                xenotypeDefNames = ListOf(xenos ?? new string[0]),
+                hediffDefNames = ListOf(hediffs ?? new string[0])
+            };
+        }
+
+        private static LoreSeedPawnFacts LoreFacts(string[] cats = null, string[] backstories = null,
+            string xeno = "", string[] hediffs = null)
+        {
+            return new LoreSeedPawnFacts
+            {
+                pawnId = "pawn1",
+                biologicalAgeTicks = 100000000L,
+                backstoryCategories = ListOf(cats ?? new string[0]),
+                backstoryDefNames = ListOf(backstories ?? new string[0]),
+                xenotypeDefName = xeno,
+                hediffDefNames = ListOf(hediffs ?? new string[0])
+            };
+        }
+
+        private static int CountCore(List<LoreSeedPick> picks)
+        {
+            int count = 0;
+            for (int i = 0; i < picks.Count; i++)
+            {
+                if (picks[i].core) count++;
+            }
+
+            return count;
+        }
+
+        private static bool ContainsPick(List<LoreSeedPick> picks, string seedDefName)
+        {
+            for (int i = 0; i < picks.Count; i++)
+            {
+                if (picks[i].seedDefName == seedDefName) return true;
+            }
+
+            return false;
         }
 
         // ---------------------------------------------------------------------------------------------

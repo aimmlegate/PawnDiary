@@ -117,6 +117,21 @@
          (associative first), never truncated mid-memory (LORE_MEMORY_SEED_PLAN §9). -->
     <memoryContextMaxLines>2</memoryContextMaxLines>
 
+    <!-- Authored lore-seed memories (LORE_MEMORY_SEED_PLAN §13). loreSeedsEnabled is the XML
+         half of the gate; the player's enableLoreSeeds setting is ANDed in by the adapter.
+         The narrative-age offset (two in-game years) affects only the rendered age band and the
+         minimum-age guard, and is clamped to the pawn's biological age at deposit. -->
+    <loreSeedsEnabled>true</loreSeedsEnabled>
+    <maxInitialLoreSeedsPerPawn>4</maxInitialLoreSeedsPerPawn>
+    <minSpecificInitialLoreSeedsPerPawn>1</minSpecificInitialLoreSeedsPerPawn>
+    <loreSeedOrdinaryImportance>0.35</loreSeedOrdinaryImportance>
+    <loreSeedCoreImportance>0.85</loreSeedCoreImportance>
+    <loreSeedNarrativeAgeOffsetTicks>7200000</loreSeedNarrativeAgeOffsetTicks>
+    <maxCoreLoreSeedsPerPawnLifetime>2</maxCoreLoreSeedsPerPawnLifetime>
+    <!-- 20 RimWorld days: a surfaced core identity seed stays ineligible this long. -->
+    <coreLoreRecallCooldownTicks>1200000</coreLoreRecallCooldownTicks>
+    <maxProgressionLoreSeedsPerPawnLifetime>4</maxProgressionLoreSeedsPerPawnLifetime>
+
     <!-- Age -> label bands, evaluated in order; the last row is the "else" catch-all. Labels reach
          the LLM prompt, so translations override them via DefInjected. -->
     <ageBands>

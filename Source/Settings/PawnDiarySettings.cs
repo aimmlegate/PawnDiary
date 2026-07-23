@@ -160,6 +160,11 @@ namespace PawnDiary
         // memory fragments from significant events and related memories surface in later diary prompts.
         // When false, no deposits or recalls occur; existing fragments stay saved but inert.
         public bool enableMemorySystem = true;
+        // Authored lore-seed memories (LORE_MEMORY_SEED_PLAN §13). Independent of the primer
+        // toggle (L4). When false: no new lore deposits, lore rows are filtered out of recall,
+        // and they are excluded from cap-based eviction — never deleted (§16 G8). Existing saves
+        // inherit true and acquire seeds lazily once a catalog ships.
+        public bool enableLoreSeeds = true;
         // Global prompt-context detail level. Full preserves the original prompt shape; smaller levels
         // dynamically choose the most relevant optional fields for small local models.
         public PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full;
@@ -278,6 +283,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
             Scribe_Values.Look(ref enablePsychotypes, "enablePsychotypes", true);
             Scribe_Values.Look(ref enableMemorySystem, "enableMemorySystem", true);
+            Scribe_Values.Look(ref enableLoreSeeds, "enableLoreSeeds", true);
             Scribe_Values.Look(ref contextDetailLevel, "contextDetailLevel", PromptContextDetailLevel.Full);
             Scribe_Values.Look(ref allowExternalIntegrations, "allowExternalIntegrations", true);
             Scribe_Values.Look(ref enableExternalKeySharing, "enableExternalKeySharing", false);

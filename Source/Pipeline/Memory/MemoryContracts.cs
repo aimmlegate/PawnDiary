@@ -68,6 +68,58 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>
+    /// Centralized lore-seed provenance construction/parsing (LORE_MEMORY_SEED_PLAN §3). Real
+    /// event IDs are GUID "N" strings, so these prefixed sentinels can never collide with a lived
+    /// deposit. Nothing outside this class may build or parse the prefix strings.
+    /// </summary>
+    internal static class LoreSeedProvenance
+    {
+        public const string InitialPrefix = "loreseed:";
+        public const string ProgressionPrefix = "loreseed-progression:";
+
+        /// <summary>The idempotency sentinel for one pawn's initial deposit of one seed Def.</summary>
+        public static string InitialSourceEventId(string seedDefName)
+        {
+            return InitialPrefix + (seedDefName ?? string.Empty).Trim();
+        }
+
+        /// <summary>The deferred L5 progression sentinel; unique per registered event + seed.</summary>
+        public static string ProgressionSourceEventId(string eventId, string seedDefName)
+        {
+            return ProgressionPrefix + (eventId ?? string.Empty).Trim() + ":"
+                + (seedDefName ?? string.Empty).Trim();
+        }
+
+        /// <summary>True when a fragment row carries lore provenance (either sentinel family).</summary>
+        public static bool IsLoreSourceEventId(string sourceEventId)
+        {
+            string value = sourceEventId ?? string.Empty;
+            return value.StartsWith(InitialPrefix, StringComparison.Ordinal)
+                || value.StartsWith(ProgressionPrefix, StringComparison.Ordinal);
+        }
+    }
+
+    /// <summary>Closed usage/retention tokens for DiaryLoreSeedDef (LORE_MEMORY_SEED_PLAN §5).</summary>
+    internal static class LoreSeedTokens
+    {
+        public const string UsageInitial = "initial";
+        public const string UsageProgression = "progression";
+        public const string UsageBoth = "both";
+        public const string TierOrdinary = "ordinary";
+        public const string TierCore = "core";
+
+        public static bool IsKnownUsage(string value)
+        {
+            return value == UsageInitial || value == UsageProgression || value == UsageBoth;
+        }
+
+        public static bool IsKnownTier(string value)
+        {
+            return value == TierOrdinary || value == TierCore;
+        }
+    }
+
     /// <summary>Stable dev-only diagnostic tokens emitted by the pure recall selector.</summary>
     internal static class MemoryDiagnosticTokens
     {
@@ -167,6 +219,18 @@ namespace PawnDiary
         public int memoryContextMaxLines = 2;
         public List<MemoryAgeBand> ageBands = new List<MemoryAgeBand>();
         public string memoryContextInstruction = string.Empty;
+
+        // Lore seeds (LORE_MEMORY_SEED_PLAN §13). loreSeedsEnabled is the XML side of the gate;
+        // the player-facing enableLoreSeeds setting is ANDed in by the impure adapter.
+        public bool loreSeedsEnabled = true;
+        public int maxInitialLoreSeedsPerPawn = 4;
+        public int minSpecificInitialLoreSeedsPerPawn = 1;
+        public float loreSeedOrdinaryImportance = 0.35f;
+        public float loreSeedCoreImportance = 0.85f;
+        public int loreSeedNarrativeAgeOffsetTicks = 7200000;
+        public int maxCoreLoreSeedsPerPawnLifetime = 2;
+        public int coreLoreRecallCooldownTicks = 1200000;
+        public int maxProgressionLoreSeedsPerPawnLifetime = 4;
 
         // Eviction (design §10).
         public int maxFragmentsPerPawn = 60;
@@ -283,6 +347,98 @@ namespace PawnDiary
         // Narrative-age offset (§3.1): rendered age band + minimum-age guard only. Real ticks
         // above stay authoritative for recency decay, cooldowns, and eviction.
         public int narrativeAgeOffsetTicks;
+    }
+
+    /// <summary>
+    /// Plain copy of one DiaryLoreSeedDef for the pure planner (LORE_MEMORY_SEED_PLAN §7). The
+    /// impure adapter copies Def rows into these; the planner never touches a live Def. Matcher
+    /// lists hold stable Def names / spawn-category tokens only — never localized text.
+    /// </summary>
+    internal sealed class LoreSeedCandidate
+    {
+        public string seedDefName = string.Empty;
+        public string fallbackText = string.Empty;
+        public List<string> tags = new List<string>();
+        public List<string> keywords = new List<string>();
+        public string usage = LoreSeedTokens.UsageInitial;
+        public string retentionTier = LoreSeedTokens.TierOrdinary;
+        public float weight = 1f;
+        public string mutexGroup = string.Empty;
+        public List<string> backstoryCategories = new List<string>();
+        public List<string> excludeBackstoryCategories = new List<string>();
+        public List<string> backstoryDefNames = new List<string>();
+        public List<string> excludeBackstoryDefNames = new List<string>();
+        public List<string> xenotypeDefNames = new List<string>();
+        public List<string> hediffDefNames = new List<string>();
+        public List<string> progressionEventDefNames = new List<string>();
+    }
+
+    /// <summary>Plain deposit-time pawn facts for lore-seed eligibility (§7).</summary>
+    internal sealed class LoreSeedPawnFacts
+    {
+        public string pawnId = string.Empty;
+        public long biologicalAgeTicks;
+        public List<string> backstoryCategories = new List<string>();
+        public List<string> backstoryDefNames = new List<string>();
+        public string xenotypeDefName = string.Empty;
+        public List<string> hediffDefNames = new List<string>();
+        public List<string> initialTargetDefNames = new List<string>();
+        public List<string> progressionDefNamesEverDeposited = new List<string>();
+        public List<string> coreDefNamesEverDeposited = new List<string>();
+    }
+
+    /// <summary>Deferred L5 progression facts (§7). Carried now so contracts stay stable.</summary>
+    internal sealed class LoreSeedProgressionFacts
+    {
+        public string eventId = string.Empty;
+        public string eventDefName = string.Empty;
+    }
+
+    /// <summary>Plain lore policy for one planning call, copied from MemoryPolicySnapshot (§7).</summary>
+    internal sealed class LoreSeedPolicy
+    {
+        public bool enabled = true;
+        public int maxInitialSeeds = 4;
+        public int minSpecificInitialSeeds = 1;
+        public int maxProgressionSeedsLifetime = 4;
+        public int maxCoreSeedsLifetime = 2;
+        public float ordinaryImportance = 0.35f;
+        public float coreImportance = 0.85f;
+        public int narrativeAgeOffsetTicks = 7200000;
+
+        /// <summary>Copies the lore slice of the memory policy; effectiveEnabled ANDs the setting.</summary>
+        public static LoreSeedPolicy FromMemoryPolicy(MemoryPolicySnapshot policy, bool effectiveEnabled)
+        {
+            MemoryPolicySnapshot safe = policy ?? MemoryPolicySnapshot.CreateDefault();
+            return new LoreSeedPolicy
+            {
+                enabled = effectiveEnabled && safe.loreSeedsEnabled,
+                maxInitialSeeds = Math.Max(0, safe.maxInitialLoreSeedsPerPawn),
+                minSpecificInitialSeeds = Math.Max(0, safe.minSpecificInitialLoreSeedsPerPawn),
+                maxProgressionSeedsLifetime = Math.Max(0, safe.maxProgressionLoreSeedsPerPawnLifetime),
+                maxCoreSeedsLifetime = Math.Max(0, safe.maxCoreLoreSeedsPerPawnLifetime),
+                ordinaryImportance = Clamp01Value(safe.loreSeedOrdinaryImportance),
+                // §4: a core row's resolved importance must clear the active core threshold, so
+                // the eviction planner's existing core protection applies to it by construction.
+                coreImportance = Math.Max(Clamp01Value(safe.loreSeedCoreImportance),
+                    Clamp01Value(safe.coreImportanceThreshold)),
+                narrativeAgeOffsetTicks = Math.Max(0, safe.loreSeedNarrativeAgeOffsetTicks)
+            };
+        }
+
+        private static float Clamp01Value(float value)
+        {
+            return Math.Max(0f, Math.Min(1f, value));
+        }
+    }
+
+    /// <summary>One planned lore-seed deposit target (§7). Plain data keyed by seed Def name.</summary>
+    internal sealed class LoreSeedPick
+    {
+        public string seedDefName = string.Empty;
+        public bool core;
+        // True when the pick satisfied the reserved pawn-specific slot (diagnostics/tests only).
+        public bool specific;
     }
 
     /// <summary>

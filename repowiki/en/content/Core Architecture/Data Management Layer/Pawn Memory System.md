@@ -2,6 +2,14 @@
 
 ## Update Summary
 **Changes Made**
+- Lore L2 (design/LORE_MEMORY_SEED_PLAN.md): `DiaryLoreSeedDef` + pure deterministic
+  `LoreSeedPlanner.PlanInitial` (Source/Pipeline/Memory/LoreSeedPlanner.cs) build a one-time
+  per-pawn roster persisted in `PawnLoreSeedState` beside the repository; the EventFactory
+  funnels call `EnsureLoreSeedsForPawn` BEFORE recall so seeds surface on the first prompt;
+  deposits use `loreseed:<defName>` sentinels for idempotency, live DefInjected prose with saved
+  fallback, and the implied `lore` tag; core lore gets a hard 20-day recall cooldown; the
+  default-true `enableLoreSeeds` setting suppresses recall/deposit/cap-eviction without deleting
+  rows. The authored catalog arrives in L3 — the layer no-ops on an empty DefDatabase
 - Lore L1 (design/LORE_MEMORY_SEED_PLAN.md): MemoryFragment carries optional lore provenance
   (`loreSeedDefName`) and a `narrativeAgeOffsetTicks` that affects only the rendered age band and
   the minimum-recall-age guard (recency decay, cooldowns, and eviction stay on real ticks); the

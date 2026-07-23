@@ -12,6 +12,7 @@
     <Compile Include="..\..\Source\Pipeline\Memory\MemoryExtraction.cs" Link="MemoryExtraction.cs" />
     <Compile Include="..\..\Source\Pipeline\Memory\MemoryRecallSelector.cs" Link="MemoryRecallSelector.cs" />
     <Compile Include="..\..\Source\Pipeline\Memory\MemoryEvictionPlanner.cs" Link="MemoryEvictionPlanner.cs" />
+    <Compile Include="..\..\Source\Pipeline\Memory\LoreSeedPlanner.cs" Link="LoreSeedPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\Memory\MemoryContextPrompt.cs" Link="MemoryContextPrompt.cs" />
     <Compile Include="..\..\Source\Pipeline\DiarySentenceExcerpt.cs" Link="DiarySentenceExcerpt.cs" />
     <Compile Include="..\..\Source\Pipeline\TextTruncation.cs" Link="TextTruncation.cs" />

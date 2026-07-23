@@ -32,6 +32,13 @@ namespace PawnDiary
         // Deadline gate for the periodic eviction scan (W3). Not scribed — rebuilt on load.
         private int nextMemoryEvictionScanTick;
 
+        // Per-pawn lore-seed rosters and lifetime histories (LORE_MEMORY_SEED_PLAN §6). Persisted
+        // additively; the dictionary index is rebuilt on load. Rosters are history — never
+        // resampled after they are first persisted (§16 G3).
+        private List<PawnLoreSeedState> pawnLoreSeedStates = new List<PawnLoreSeedState>();
+        private Dictionary<string, PawnLoreSeedState> loreSeedStateByPawnId =
+            new Dictionary<string, PawnLoreSeedState>(StringComparer.OrdinalIgnoreCase);
+
         /// <summary>
         /// Serializes the memory repository and tombstone map. Called from ExposeData after
         /// archive.ExposeArchive. Additive keys: old saves simply load empty collections.
@@ -42,6 +49,7 @@ namespace PawnDiary
             Scribe_Collections.Look(ref memoryOwnerAbsentSinceTick, "memoryOwnerAbsentSinceTick",
                 LookMode.Value, LookMode.Value,
                 ref memoryOwnerAbsentKeys, ref memoryOwnerAbsentValues);
+            Scribe_Collections.Look(ref pawnLoreSeedStates, "pawnLoreSeedStates", LookMode.Deep);
         }
 
         /// <summary>
@@ -56,6 +64,7 @@ namespace PawnDiary
                 memoryOwnerAbsentSinceTick = new Dictionary<string, int>();
             }
 
+            RebuildLoreSeedStateIndex();
             memories.RebuildIndex();
             ApplyMemoryEviction();
             nextMemoryEvictionScanTick = 0;
@@ -67,7 +76,32 @@ namespace PawnDiary
         private void ResetMemoryForNewGame()
         {
             memoryOwnerAbsentSinceTick.Clear();
+            pawnLoreSeedStates.Clear();
+            loreSeedStateByPawnId.Clear();
             nextMemoryEvictionScanTick = 0;
+        }
+
+        /// <summary>Repairs a null list and rebuilds the pawnId -> lore state index after load.</summary>
+        private void RebuildLoreSeedStateIndex()
+        {
+            if (pawnLoreSeedStates == null)
+            {
+                pawnLoreSeedStates = new List<PawnLoreSeedState>();
+            }
+
+            loreSeedStateByPawnId.Clear();
+            for (int i = pawnLoreSeedStates.Count - 1; i >= 0; i--)
+            {
+                PawnLoreSeedState state = pawnLoreSeedStates[i];
+                if (state == null || string.IsNullOrWhiteSpace(state.pawnId)
+                    || loreSeedStateByPawnId.ContainsKey(state.pawnId))
+                {
+                    pawnLoreSeedStates.RemoveAt(i);
+                    continue;
+                }
+
+                loreSeedStateByPawnId[state.pawnId] = state;
+            }
         }
 
         // ── Capture hooks (called from EventFactory funnels) ─────────────────────────────────────────
@@ -205,7 +239,27 @@ namespace PawnDiary
             }
 
             IReadOnlyList<MemoryFragment> owned = memories.ForPawn(pawnId);
-            if (owned.Count < Math.Max(0, policy.minFragmentsForRecall))
+
+            // Copy live rows to snapshots for the pure selector. Disabled lore rows are filtered
+            // OUT here (LORE_MEMORY_SEED_PLAN §8.2) so they neither surface nor count toward the
+            // store-size gate; enabled lore rows get their prose refreshed from the current
+            // language's Def text with the saved prose as fallback (§3.2).
+            bool loreActive = LoreSeedsActive(policy);
+            List<MemoryFragmentSnapshot> snapshots = new List<MemoryFragmentSnapshot>(owned.Count);
+            for (int i = 0; i < owned.Count; i++)
+            {
+                MemoryFragment row = owned[i];
+                if (!loreActive && !string.IsNullOrEmpty(row.loreSeedDefName))
+                {
+                    continue;
+                }
+
+                MemoryFragmentSnapshot snapshot = row.ToSnapshot();
+                ApplyLiveLoreText(snapshot);
+                snapshots.Add(snapshot);
+            }
+
+            if (snapshots.Count < Math.Max(0, policy.minFragmentsForRecall))
             {
                 return;
             }
@@ -221,13 +275,6 @@ namespace PawnDiary
                 currentTick = diaryEvent.tick,
                 seed = HumorChancePolicy.StableSeed(diaryEvent.eventId, pawnId)
             };
-
-            // Copy live rows to snapshots for the pure selector.
-            List<MemoryFragmentSnapshot> snapshots = new List<MemoryFragmentSnapshot>(owned.Count);
-            for (int i = 0; i < owned.Count; i++)
-            {
-                snapshots.Add(owned[i].ToSnapshot());
-            }
 
             MemoryRecallResult result = MemoryRecallSelector.Recall(query, snapshots, policy);
             if (string.IsNullOrWhiteSpace(result.memoryContext))
@@ -346,6 +393,356 @@ namespace PawnDiary
                 : diaryEvent.initiatorPawnId;
         }
 
+        // ── Lore seeds (LORE_MEMORY_SEED_PLAN §8) ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// The effective lore gate: XML policy AND the player setting. Callers already ensured
+        /// the memory system itself is on.
+        /// </summary>
+        private static bool LoreSeedsActive(MemoryPolicySnapshot policy)
+        {
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            return settings != null && settings.enableLoreSeeds
+                && policy != null && policy.loreSeedsEnabled;
+        }
+
+        /// <summary>
+        /// Live localized prose with saved fallback (§3.2): a resolvable lore Def supplies the
+        /// current language's text; a removed/renamed Def leaves the saved prose in place. Only
+        /// prose is refreshed — tags, keywords, and importance stay frozen (§16 G4).
+        /// </summary>
+        private static void ApplyLiveLoreText(MemoryFragmentSnapshot snapshot)
+        {
+            if (string.IsNullOrEmpty(snapshot.loreSeedDefName))
+            {
+                return;
+            }
+
+            DiaryLoreSeedDef def = DefDatabase<DiaryLoreSeedDef>.GetNamedSilentFail(snapshot.loreSeedDefName);
+            if (def != null && !string.IsNullOrWhiteSpace(def.text))
+            {
+                snapshot.text = def.text.Trim();
+            }
+        }
+
+        /// <summary>
+        /// Lazy initial-seed lifecycle (§8.1), called from the EventFactory funnels immediately
+        /// before recall so a seed can surface on the pawn's very first prompt. First eligible
+        /// event plans and persists the one-time roster; every later call is a cheap idempotent
+        /// missing-target check. Old saves migrate lazily through this same path — no bulk pass.
+        /// </summary>
+        private void EnsureLoreSeedsForPawn(Pawn pawn)
+        {
+            if (pawn == null || !MemorySystemEnabled())
+            {
+                return;
+            }
+
+            try
+            {
+                MemoryPolicySnapshot policy = DiaryMemoryPolicy.Snapshot();
+                if (!policy.enabled || !LoreSeedsActive(policy))
+                {
+                    return;
+                }
+
+                string pawnId = pawn.GetUniqueLoadID();
+                if (string.IsNullOrWhiteSpace(pawnId))
+                {
+                    return;
+                }
+
+                PawnLoreSeedState state;
+                loreSeedStateByPawnId.TryGetValue(pawnId, out state);
+
+                // Fast path: roster exists and every target row is already deposited.
+                if (state != null && state.initialTargetDefNames.Count > 0
+                    && AllInitialTargetsDeposited(pawnId, state))
+                {
+                    return;
+                }
+
+                List<DiaryLoreSeedDef> allDefs = DefDatabase<DiaryLoreSeedDef>.AllDefsListForReading;
+                if (state == null && (allDefs == null || allDefs.Count == 0))
+                {
+                    // No catalog loaded (pre-L3 or all rows removed): nothing to plan.
+                    return;
+                }
+
+                LoreSeedPolicy lorePolicy = LoreSeedPolicy.FromMemoryPolicy(policy, true);
+                if (state == null || state.initialTargetDefNames.Count == 0)
+                {
+                    state = PlanInitialRoster(pawn, pawnId, state, allDefs, policy, lorePolicy);
+                    if (state == null)
+                    {
+                        return;
+                    }
+                }
+
+                DepositMissingInitialTargets(pawn, pawnId, state, policy, lorePolicy);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[Pawn Diary] Lore seed preparation failed for pawn "
+                    + (pawn?.LabelShort ?? "?") + ": " + e,
+                    "PawnDiary.Memory.LoreSeeds".GetHashCode());
+            }
+        }
+
+        /// <summary>
+        /// Runs the pure planner once and persists the returned roster BEFORE any deposit attempt
+        /// (§6). Returns null when nothing was eligible — planning simply retries on a later
+        /// event, which matters for old saves that predate an L3 catalog.
+        /// </summary>
+        private PawnLoreSeedState PlanInitialRoster(
+            Pawn pawn,
+            string pawnId,
+            PawnLoreSeedState existing,
+            List<DiaryLoreSeedDef> allDefs,
+            MemoryPolicySnapshot policy,
+            LoreSeedPolicy lorePolicy)
+        {
+            List<LoreSeedCandidate> candidates = new List<LoreSeedCandidate>(allDefs.Count);
+            for (int i = 0; i < allDefs.Count; i++)
+            {
+                if (allDefs[i] != null)
+                {
+                    candidates.Add(allDefs[i].ToCandidate(policy));
+                }
+            }
+
+            LoreSeedPawnFacts facts = CollectLoreSeedPawnFacts(pawn, pawnId, existing);
+            int seed = HumorChancePolicy.StableSeed(
+                Find.World?.info?.seedString ?? string.Empty, "loreseed|" + pawnId);
+            List<LoreSeedPick> picks = LoreSeedPlanner.PlanInitial(candidates, facts, lorePolicy, seed);
+            if (picks.Count == 0)
+            {
+                return null;
+            }
+
+            // Best-effort quota diagnostic (§7.1): unknown modded pawns may have no authored
+            // match; generic seeds fill the roster and we say so once instead of inventing one.
+            if (lorePolicy.minSpecificInitialSeeds > 0 && !AnySpecificPick(picks))
+            {
+                Log.WarningOnce("[Pawn Diary] No pawn-specific lore seed matched "
+                    + pawn.LabelShort + "; generic seeds fill the roster.",
+                    ("PawnDiary.Memory.LoreSeeds.NoSpecific|" + pawnId).GetHashCode());
+            }
+
+            PawnLoreSeedState state = existing;
+            if (state == null)
+            {
+                state = new PawnLoreSeedState { pawnId = pawnId };
+                pawnLoreSeedStates.Add(state);
+                loreSeedStateByPawnId[pawnId] = state;
+            }
+
+            for (int i = 0; i < picks.Count; i++)
+            {
+                if (!state.HasSeedDefName(picks[i].seedDefName))
+                {
+                    state.initialTargetDefNames.Add(picks[i].seedDefName);
+                }
+            }
+
+            return state;
+        }
+
+        /// <summary>
+        /// Deposits every roster target whose sentinel row is missing (§8.1 step 3). A removed
+        /// Def is skipped without replacement (§6); a partial/faulted earlier attempt safely
+        /// resumes here because deposit identity is the stable per-Def sentinel.
+        /// </summary>
+        private void DepositMissingInitialTargets(
+            Pawn pawn,
+            string pawnId,
+            PawnLoreSeedState state,
+            MemoryPolicySnapshot policy,
+            LoreSeedPolicy lorePolicy)
+        {
+            int now = Find.TickManager.TicksGame;
+            for (int i = 0; i < state.initialTargetDefNames.Count; i++)
+            {
+                string seedDefName = state.initialTargetDefNames[i];
+                string sourceEventId = LoreSeedProvenance.InitialSourceEventId(seedDefName);
+                if (memories.HasDeposit(pawnId, sourceEventId))
+                {
+                    continue;
+                }
+
+                DiaryLoreSeedDef def = DefDatabase<DiaryLoreSeedDef>.GetNamedSilentFail(seedDefName);
+                if (def == null)
+                {
+                    continue;
+                }
+
+                bool core = def.retentionTier == LoreSeedTokens.TierCore;
+                bool coreAlreadyCounted = state.coreDefNamesEverDeposited.Contains(seedDefName);
+                if (core && !coreAlreadyCounted
+                    && state.coreDefNamesEverDeposited.Count >= lorePolicy.maxCoreSeedsLifetime)
+                {
+                    // Defensive lifetime guard: the planner respects the cap, so this only fires
+                    // on hand-edited or legacy state. Never over-allocate identity facts (§4).
+                    continue;
+                }
+
+                LoreSeedCandidate candidate = def.ToCandidate(policy);
+                List<string> tags = new List<string>(candidate.tags);
+                if (!tags.Contains(MemoryTagTokens.Lore))
+                {
+                    tags.Add(MemoryTagTokens.Lore);
+                }
+
+                string text = candidate.fallbackText;
+                if (text.Length > Math.Max(1, policy.fragmentTextMaxChars))
+                {
+                    // ConfigErrors already flags oversized prose; this is a last-resort bound so
+                    // a malformed modded row can never bloat the store.
+                    text = text.Substring(0, Math.Max(1, policy.fragmentTextMaxChars)).Trim();
+                }
+
+                MemoryFragment fragment = new MemoryFragment
+                {
+                    memoryId = Guid.NewGuid().ToString("N"),
+                    pawnId = pawnId,
+                    sourceEventId = sourceEventId,
+                    text = text,
+                    tags = tags,
+                    keywords = candidate.keywords,
+                    importance = core ? lorePolicy.coreImportance : lorePolicy.ordinaryImportance,
+                    createdTick = now,
+                    lastRecalledTick = now,
+                    recallCount = 0,
+                    loreSeedDefName = seedDefName,
+                    narrativeAgeOffsetTicks = LoreSeedPlanner.ClampNarrativeOffset(
+                        lorePolicy.narrativeAgeOffsetTicks, pawn.ageTracker?.AgeBiologicalTicks ?? 0L)
+                };
+
+                memories.Register(fragment);
+                if (core && !coreAlreadyCounted)
+                {
+                    // Lifetime history records only ACTUAL deposits, after registration succeeds.
+                    state.coreDefNamesEverDeposited.Add(seedDefName);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Deposit-time pawn facts for eligibility (§8.1): exact childhood/adulthood backstory
+        /// Def names plus the union of their spawn categories, guarded xenotype state, hediff
+        /// Def names, and the persisted rosters/histories. Plain strings only.
+        /// </summary>
+        private static LoreSeedPawnFacts CollectLoreSeedPawnFacts(
+            Pawn pawn, string pawnId, PawnLoreSeedState state)
+        {
+            LoreSeedPawnFacts facts = new LoreSeedPawnFacts
+            {
+                pawnId = pawnId,
+                biologicalAgeTicks = pawn.ageTracker?.AgeBiologicalTicks ?? 0L,
+                xenotypeDefName = DlcContext.XenotypeDefName(pawn)
+            };
+
+            AddBackstoryFacts(facts, pawn.story?.Childhood);
+            AddBackstoryFacts(facts, pawn.story?.Adulthood);
+
+            List<Hediff> hediffs = pawn.health?.hediffSet?.hediffs;
+            if (hediffs != null)
+            {
+                for (int i = 0; i < hediffs.Count; i++)
+                {
+                    string hediffDefName = hediffs[i]?.def?.defName;
+                    if (!string.IsNullOrWhiteSpace(hediffDefName)
+                        && !facts.hediffDefNames.Contains(hediffDefName))
+                    {
+                        facts.hediffDefNames.Add(hediffDefName);
+                    }
+                }
+            }
+
+            if (state != null)
+            {
+                facts.initialTargetDefNames.AddRange(state.initialTargetDefNames);
+                facts.progressionDefNamesEverDeposited.AddRange(state.progressionDefNamesEverDeposited);
+                facts.coreDefNamesEverDeposited.AddRange(state.coreDefNamesEverDeposited);
+            }
+
+            return facts;
+        }
+
+        private static void AddBackstoryFacts(LoreSeedPawnFacts facts, BackstoryDef backstory)
+        {
+            if (backstory == null)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(backstory.defName)
+                && !facts.backstoryDefNames.Contains(backstory.defName))
+            {
+                facts.backstoryDefNames.Add(backstory.defName);
+            }
+
+            List<string> categories = backstory.spawnCategories;
+            if (categories == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < categories.Count; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(categories[i])
+                    && !facts.backstoryCategories.Contains(categories[i]))
+                {
+                    facts.backstoryCategories.Add(categories[i]);
+                }
+            }
+        }
+
+        private static bool AnySpecificPick(List<LoreSeedPick> picks)
+        {
+            for (int i = 0; i < picks.Count; i++)
+            {
+                if (picks[i].specific)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool AllInitialTargetsDeposited(string pawnId, PawnLoreSeedState state)
+        {
+            for (int i = 0; i < state.initialTargetDefNames.Count; i++)
+            {
+                string sourceEventId = LoreSeedProvenance.InitialSourceEventId(state.initialTargetDefNames[i]);
+                if (!memories.HasDeposit(pawnId, sourceEventId))
+                {
+                    // A removed Def can never deposit; do not spin on it forever.
+                    if (DefDatabase<DiaryLoreSeedDef>.GetNamedSilentFail(state.initialTargetDefNames[i]) == null)
+                    {
+                        continue;
+                    }
+
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void RemoveLoreSeedState(string pawnId)
+        {
+            PawnLoreSeedState state;
+            if (!loreSeedStateByPawnId.TryGetValue(pawnId, out state))
+            {
+                return;
+            }
+
+            loreSeedStateByPawnId.Remove(pawnId);
+            pawnLoreSeedStates.Remove(state);
+        }
+
         // ── Eviction + lifecycle (design §10) ────────────────────────────────────────────────────────
 
         /// <summary>
@@ -370,6 +767,9 @@ namespace PawnDiary
 
                 int now = Find.TickManager.TicksGame;
                 HashSet<string> evictIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                // §8.2: while the player has lore disabled, lore rows are invisible to cap
+                // planning — preserved, never counted, never evicted by caps.
+                bool suppressLore = !LoreSeedsActive(policy);
 
                 // Per-owner eviction plans.
                 List<string> ownerIds = memories.OwnerPawnIds();
@@ -383,7 +783,7 @@ namespace PawnDiary
                         snapshots.Add(owned[j].ToSnapshot());
                     }
 
-                    List<string> plan = MemoryEvictionPlanner.Plan(snapshots, now, policy);
+                    List<string> plan = MemoryEvictionPlanner.Plan(snapshots, now, policy, suppressLore);
                     for (int j = 0; j < plan.Count; j++)
                     {
                         evictIds.Add(plan[j]);
@@ -408,7 +808,7 @@ namespace PawnDiary
                     }
                 }
 
-                List<string> globalPlan = MemoryEvictionPlanner.PlanGlobalCap(allSnapshots, now, policy);
+                List<string> globalPlan = MemoryEvictionPlanner.PlanGlobalCap(allSnapshots, now, policy, suppressLore);
                 if (globalPlan.Count > 0)
                 {
                     HashSet<string> globalIds = new HashSet<string>(globalPlan, StringComparer.OrdinalIgnoreCase);
@@ -433,12 +833,23 @@ namespace PawnDiary
         /// </summary>
         private void CleanupDeadOwners(int now, MemoryPolicySnapshot policy)
         {
+            // Lore rosters ride the same tombstone/grace lifecycle as fragments: a pawn can hold
+            // a roster with zero fragments (all evicted), so the candidate set is the union.
+            HashSet<string> candidateIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             List<string> ownerIds = memories.OwnerPawnIds();
-            HashSet<string> livePawnIds = BuildLiveColonistIdSet();
-
             for (int i = 0; i < ownerIds.Count; i++)
             {
-                string ownerId = ownerIds[i];
+                candidateIds.Add(ownerIds[i]);
+            }
+
+            foreach (string loreOwnerId in loreSeedStateByPawnId.Keys)
+            {
+                candidateIds.Add(loreOwnerId);
+            }
+
+            HashSet<string> livePawnIds = BuildLiveColonistIdSet();
+            foreach (string ownerId in candidateIds)
+            {
                 if (livePawnIds.Contains(ownerId))
                 {
                     // Owner is alive; clear any tombstone.
@@ -457,6 +868,7 @@ namespace PawnDiary
                 if (now - absentSince >= Math.Max(0, policy.deadOwnerGraceTicks))
                 {
                     memories.RemoveOwner(ownerId);
+                    RemoveLoreSeedState(ownerId);
                     memoryOwnerAbsentSinceTick.Remove(ownerId);
                 }
             }

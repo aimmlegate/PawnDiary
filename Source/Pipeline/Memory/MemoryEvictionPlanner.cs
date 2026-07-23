@@ -26,11 +26,12 @@ namespace PawnDiary
         public static List<string> Plan(
             List<MemoryFragmentSnapshot> fragments,
             int currentTick,
-            MemoryPolicySnapshot policy)
+            MemoryPolicySnapshot policy,
+            bool suppressLore = false)
         {
             List<string> evict = new List<string>();
             MemoryPolicySnapshot safePolicy = policy ?? MemoryPolicySnapshot.CreateDefault();
-            List<MemoryFragmentSnapshot> usable = Usable(fragments);
+            List<MemoryFragmentSnapshot> usable = Usable(fragments, suppressLore);
             float coreThreshold = Clamp01(safePolicy.coreImportanceThreshold);
 
             // 1. Stale rule: an ordinary (non-core) memory that has neither been created nor
@@ -108,11 +109,12 @@ namespace PawnDiary
         public static List<string> PlanGlobalCap(
             List<MemoryFragmentSnapshot> all,
             int currentTick,
-            MemoryPolicySnapshot policy)
+            MemoryPolicySnapshot policy,
+            bool suppressLore = false)
         {
             List<string> evict = new List<string>();
             MemoryPolicySnapshot safePolicy = policy ?? MemoryPolicySnapshot.CreateDefault();
-            List<MemoryFragmentSnapshot> usable = Usable(all);
+            List<MemoryFragmentSnapshot> usable = Usable(all, suppressLore);
             int maxTotal = Math.Max(0, safePolicy.maxTotalFragments);
             if (usable.Count <= maxTotal)
             {
@@ -177,7 +179,14 @@ namespace PawnDiary
                 StringComparison.Ordinal);
         }
 
-        private static List<MemoryFragmentSnapshot> Usable(List<MemoryFragmentSnapshot> fragments)
+        /// <summary>
+        /// Null/blank-id rows are always skipped. When lore is suppressed (the player disabled
+        /// lore seeds, LORE_MEMORY_SEED_PLAN §8.2), lore rows are excluded entirely: they neither
+        /// count toward any cap nor get planned for eviction — disabled does not mean deleted
+        /// (§16 G8). Dead-owner cleanup runs outside this planner and may still remove them.
+        /// </summary>
+        private static List<MemoryFragmentSnapshot> Usable(
+            List<MemoryFragmentSnapshot> fragments, bool suppressLore)
         {
             List<MemoryFragmentSnapshot> usable = new List<MemoryFragmentSnapshot>();
             if (fragments == null)
@@ -187,10 +196,17 @@ namespace PawnDiary
 
             for (int i = 0; i < fragments.Count; i++)
             {
-                if (fragments[i] != null && !string.IsNullOrWhiteSpace(fragments[i].memoryId))
+                if (fragments[i] == null || string.IsNullOrWhiteSpace(fragments[i].memoryId))
                 {
-                    usable.Add(fragments[i]);
+                    continue;
                 }
+
+                if (suppressLore && !string.IsNullOrEmpty(fragments[i].loreSeedDefName))
+                {
+                    continue;
+                }
+
+                usable.Add(fragments[i]);
             }
 
             return usable;
