@@ -56,6 +56,8 @@ namespace DiaryPipelineTests
             TestP1SentenceCountAnchorsAgree(catalog);
             TestP1VoiceBlockSeparators(catalog);
             TestP1TemplateFieldRowsFrozen(catalog);
+            TestP2VoiceRuleCaps(catalog);
+            TestP2CompactOmitsHumor(catalog);
             PrintBaselineReport(catalog);
 
             Console.WriteLine("PromptFootprintTests passed " + assertions + " assertions.");
@@ -366,7 +368,7 @@ namespace DiaryPipelineTests
         /// <summary>Neutral death/arrival and title templates suppress the whole voice block.</summary>
         private static void TestNeutralAndTitleTemplatesDropVoice(EnglishPromptCatalog catalog)
         {
-            string voiceBlock = BuildVoiceBlock(catalog, true);
+            string voiceBlock = BuildVoiceBlock(catalog, PromptContextDetailLevel.Full);
 
             DiaryPromptRequest deathRequest = CanonicalRequest(catalog, PromptContextDetailLevel.Full);
             deathRequest.payload.hasDeathDescription = true;
@@ -493,7 +495,7 @@ namespace DiaryPipelineTests
             AssertTrue("composed system never contains an empty paragraph (no triple newline)",
                 !full.systemPrompt.Contains("\n\n\n"));
 
-            string noHumor = BuildVoiceBlock(catalog, false);
+            string noHumor = BuildVoiceBlock(catalog, PromptContextDetailLevel.Compact);
             AssertTrue("voice block without humor has no trailing separator",
                 !noHumor.EndsWith("\n") && !noHumor.Contains("\n\n\n"));
 
@@ -557,6 +559,78 @@ namespace DiaryPipelineTests
             AssertTrue(name + " within cap (" + text.Length + " <= " + cap + ")", text.Length <= cap);
         }
 
+        // =========================================================================================
+        // P2 — voice-rule caps (plan §5.3) and Compact humor omission (plan §8.3)
+        // =========================================================================================
+
+        /// <summary>
+        /// Every shipped psychotype rule stays one strong bias (≤120 chars, label-free); every
+        /// shipped writing-style rule keeps its mechanic within 240 chars; Neutral stays blank; the
+        /// mute style keeps its safety clauses.
+        /// </summary>
+        private static void TestP2VoiceRuleCaps(EnglishPromptCatalog catalog)
+        {
+            List<CatalogEntry> psychotypes = catalog.Entries.Where(e => e.category == "psychotypeRule").ToList();
+            AssertTrue("full psychotype catalog present (" + psychotypes.Count + ")", psychotypes.Count >= 25);
+            foreach (CatalogEntry entry in psychotypes)
+            {
+                if (entry.id == "DiaryPsychotype_Neutral")
+                {
+                    AssertEqual("Neutral psychotype rule stays blank", 0, entry.chars);
+                    continue;
+                }
+
+                AssertTrue("psychotype rule " + entry.id + " within 120 (" + entry.chars + ")",
+                    entry.chars > 0 && entry.chars <= 120);
+            }
+
+            List<CatalogEntry> styles = catalog.Entries.Where(e => e.category == "styleRule").ToList();
+            AssertTrue("full writing-style catalog present (" + styles.Count + ")", styles.Count >= 50);
+            foreach (CatalogEntry entry in styles)
+            {
+                AssertTrue("style rule " + entry.id + " within 240 (" + entry.chars + ")",
+                    entry.chars > 0 && entry.chars <= 240);
+            }
+
+            // Mute/speech-incapable style must keep every safety clause a shorter rule could lose.
+            string mute = catalog.StyleRule("DiaryPersona_TraumaSavantSilent");
+            AssertContains("mute style states the pawn cannot speak", mute, "cannot speak");
+            AssertContains("mute style forbids the exact speech marker", mute, "[[speech]]");
+            AssertContains("mute style forbids dialogue", mute, "dialogue");
+            AssertContains("mute style forbids speech tags", mute, "speech tags");
+        }
+
+        /// <summary>
+        /// Full and Balanced render psychotype + style + humor; Compact renders psychotype + style
+        /// and omits the humor layer entirely — decided by the pure production VoiceBlockPolicy.
+        /// </summary>
+        private static void TestP2CompactOmitsHumor(EnglishPromptCatalog catalog)
+        {
+            AssertTrue("VoiceBlockPolicy includes humor at Full",
+                VoiceBlockPolicy.IncludeHumor(PromptContextDetailLevel.Full));
+            AssertTrue("VoiceBlockPolicy includes humor at Balanced",
+                VoiceBlockPolicy.IncludeHumor(PromptContextDetailLevel.Balanced));
+            AssertTrue("VoiceBlockPolicy omits humor at Compact",
+                !VoiceBlockPolicy.IncludeHumor(PromptContextDetailLevel.Compact));
+            AssertTrue("VoiceBlockPolicy normalizes invalid levels to Full behavior",
+                VoiceBlockPolicy.IncludeHumor((PromptContextDetailLevel)99));
+
+            string humorAnchor = WrapperAnchor(catalog, "PawnDiary.Prompt.HumorVoice");
+            string psychotypeAnchor = WrapperAnchor(catalog, "PawnDiary.Prompt.PsychotypeLens");
+            string styleAnchor = WrapperAnchor(catalog, "PawnDiary.Prompt.PersonaVoice");
+
+            DiaryPromptPlan full = DiaryPromptPlanner.Build(CanonicalRequest(catalog, PromptContextDetailLevel.Full));
+            DiaryPromptPlan balanced = DiaryPromptPlanner.Build(CanonicalRequest(catalog, PromptContextDetailLevel.Balanced));
+            DiaryPromptPlan compact = DiaryPromptPlanner.Build(CanonicalRequest(catalog, PromptContextDetailLevel.Compact));
+
+            AssertContains("Full keeps the humor layer", full.systemPrompt, humorAnchor);
+            AssertContains("Balanced keeps the humor layer", balanced.systemPrompt, humorAnchor);
+            AssertTrue("Compact omits the humor layer", !compact.systemPrompt.Contains(humorAnchor));
+            int psychotypeAt = compact.systemPrompt.IndexOf(psychotypeAnchor, StringComparison.Ordinal);
+            int styleAt = compact.systemPrompt.IndexOf(styleAnchor, StringComparison.Ordinal);
+            AssertTrue("Compact keeps psychotype then style", psychotypeAt >= 0 && styleAt > psychotypeAt);
+        }
+
         private static void AssertFixedProseCap(EnglishPromptCatalog catalog, string name, int cap, string key)
         {
             string text = catalog.Keyed(key);
@@ -602,7 +676,7 @@ namespace DiaryPipelineTests
         private static CanonicalPlans BuildCanonicalPlans(EnglishPromptCatalog catalog)
         {
             CanonicalPlans plans = new CanonicalPlans();
-            plans.fullVoiceBlock = BuildVoiceBlock(catalog, true);
+            plans.fullVoiceBlock = BuildVoiceBlock(catalog, PromptContextDetailLevel.Full);
             plans.groupInstruction = catalog.DeepTalkGroupInstructionVariant(1);
             plans.finalInstruction = catalog.TemplateFinalInstruction(DiaryPipelineTemplates.PairImportant);
             plans.initiatorTail = Format(
@@ -665,7 +739,7 @@ namespace DiaryPipelineTests
                 payload = payload,
                 policy = policy,
                 povRole = DiaryPipelineRoles.Initiator,
-                personaVoiceBlock = BuildVoiceBlock(catalog, true),
+                personaVoiceBlock = BuildVoiceBlock(catalog, level),
                 promptEnchantment = catalog.ObservedConditionBundle("AnomalyGrayFleshEvidence"),
                 directSpeechInstruction = Format(
                     catalog.Keyed("PawnDiary.Prompt.PairDirectSpeechInstruction.Initiator"),
@@ -677,19 +751,21 @@ namespace DiaryPipelineTests
         }
 
         /// <summary>
-        /// Mirrors the adapter's voice-block composition: each Keyed wrapper takes the raw rule via
+        /// Mirrors the adapter's voice-block composition: each Keyed wrapper takes the rule via
         /// "{0}" replacement (never args-Translate), blocks joined by one blank line in the order
-        /// psychotype, writing style, humor. P2 makes humor level-dependent; the flag is here so the
-        /// fixture can follow that production decision.
+        /// psychotype, writing style, humor. The writing style is injected as "label: rule"
+        /// (DiaryPersonas.RuleFor); the psychotype rule is label-free (DiaryPsychotypes.RuleFor).
+        /// Whether humor renders is the production VoiceBlockPolicy decision per detail level.
         /// </summary>
-        private static string BuildVoiceBlock(EnglishPromptCatalog catalog, bool includeHumor)
+        private static string BuildVoiceBlock(EnglishPromptCatalog catalog, PromptContextDetailLevel level)
         {
             List<string> parts = new List<string>();
             parts.Add(catalog.Keyed("PawnDiary.Prompt.PsychotypeLens")
                 .Replace("{0}", catalog.PsychotypeRule("DiaryPsychotype_Dutiful").Trim()));
-            parts.Add(catalog.Keyed("PawnDiary.Prompt.PersonaVoice")
-                .Replace("{0}", catalog.StyleRule("DiaryPersona_InhumanizedVoid").Trim()));
-            if (includeHumor)
+            string styleRule = catalog.StyleLabel("DiaryPersona_InhumanizedVoid") + ": "
+                + catalog.StyleRule("DiaryPersona_InhumanizedVoid");
+            parts.Add(catalog.Keyed("PawnDiary.Prompt.PersonaVoice").Replace("{0}", styleRule.Trim()));
+            if (VoiceBlockPolicy.IncludeHumor(level))
             {
                 parts.Add(catalog.Keyed("PawnDiary.Prompt.HumorVoice")
                     .Replace("{0}", catalog.HumorRule("DiaryHumorCue_UnderstatementCoda").Trim()));
@@ -983,6 +1059,11 @@ namespace DiaryPipelineTests
             public string StyleRule(string defName)
             {
                 return DefText(defName, "rule");
+            }
+
+            public string StyleLabel(string defName)
+            {
+                return DefText(defName, "label");
             }
 
             public string HumorRule(string defName)

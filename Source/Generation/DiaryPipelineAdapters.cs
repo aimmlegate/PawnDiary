@@ -30,6 +30,7 @@ namespace PawnDiary
         {
             DiaryEventPayload payload = ToPayload(diaryEvent);
             string normalizedRole = string.IsNullOrWhiteSpace(povRole) ? DiaryPipelineRoles.Initiator : povRole;
+            PromptContextDetailLevel normalizedLevel = PromptContextSelector.Normalize(contextDetailLevel);
             return new DiaryPromptRequest
             {
                 payload = payload,
@@ -40,17 +41,19 @@ namespace PawnDiary
                 // The psychotype (outlook) block, the writing-style block, and the per-entry humor cue all
                 // ride inside one combined voice block rather than separate request fields, so no
                 // planner/contract change is needed and the whole block is automatically suppressed when a
-                // template opts out of persona text (neutral death/arrival/title). Order matters: outlook
-                // first, then style, then humor — style stays last as the harder mechanical constraint.
+                // template opts out of persona text (neutral death/arrival/title). Order is fixed:
+                // outlook first, then writing style, then the optional humor license. Compact omits the
+                // humor layer entirely (pure VoiceBlockPolicy decision) so the two identity layers keep
+                // the model's attention; humor selection/reroll state on the event is untouched.
                 personaVoiceBlock = CombinedVoiceBlock(
                     PsychotypeLensBlock(psychotypeRule),
                     PersonaVoiceBlock(personaRule),
-                    HumorVoiceBlock(humorCue)),
+                    HumorVoiceBlock(VoiceBlockPolicy.IncludeHumor(normalizedLevel) ? humorCue : string.Empty)),
                 promptEnchantment = promptEnchantment,
                 priorInitiatorEntry = priorInitiatorEntry,
                 entryText = entryText,
                 directSpeechInstruction = titleRequest ? string.Empty : DirectSpeechInstructionFor(diaryEvent, normalizedRole),
-                contextDetailLevel = PromptContextSelector.Normalize(contextDetailLevel),
+                contextDetailLevel = normalizedLevel,
                 // Snapshot the XML-tuned budgets on the main thread (DefDatabase read); the pure planner
                 // and off-thread worker only ever see the resulting plain data.
                 contextBudgets = ContextDetailPolicy.Budgets(),

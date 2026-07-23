@@ -29,6 +29,7 @@
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefMutationPolicy.cs" Link="BeliefMutationPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefContextFormatter.cs" Link="BeliefContextFormatter.cs" />
     <Compile Include="..\..\Source\Pipeline\PromptContextDetail.cs" Link="PromptContextDetail.cs" />
+    <Compile Include="..\..\Source\Pipeline\VoiceBlockPolicy.cs" Link="VoiceBlockPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEventDomainClassifier.cs" Link="DiaryEventDomainClassifier.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryResponsePostprocessor.cs" Link="DiaryResponsePostprocessor.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryDirectSpeechParser.cs" Link="DiaryDirectSpeechParser.cs" />

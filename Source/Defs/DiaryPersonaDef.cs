@@ -56,12 +56,13 @@ namespace PawnDiary
             "void"
         };
 
-        // Hardcoded fallback used when no XML Defs are loaded at all (e.g. during early startup or missing mod files).
+        // Hardcoded fallback used when no XML Defs are loaded at all (e.g. during early startup or
+        // missing mod files). Mirrors the shipped DiaryPersona_StoicSurvivor rule verbatim.
         private static readonly DiaryPersonaDef Fallback = new DiaryPersonaDef
         {
             defName = "DiaryPersona_StoicSurvivor",
             label = "spare-iceberg",
-            rule = "This pawn tends to write two short concrete sentences: visible action first, feeling only implied by the final detail. No explanation. For example: \"Door patched. My hands kept shaking.\""
+            rule = "This pawn tends to write short concrete sentences: visible action first, feeling only implied by the final detail. No explanation. For example: \"Meal gone cold. I ate anyway.\""
         };
 
         // Wrapped in a list so All can return a non-null IReadOnlyList even with zero XML defs.
