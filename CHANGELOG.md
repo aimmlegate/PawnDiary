@@ -8,7 +8,7 @@ pre-release version ladder for project history.
 
 ## 2026-07-23
 
-- **Master Wave 12 / Narrative N4.** Unified the existing major/annual arc, quadrum, and day rest-time reflections under XML-priority/cooldown arbitration with deferred major requests, success-only state consumption, disabled-debt bounds, and silent old-save baselines.
+- **Master Wave 12 / Narrative N4.1.** Unified the existing major/annual arc, quadrum, and day rest-time reflections under XML-priority/cooldown arbitration with deferred major requests, success-only state consumption, disabled-debt bounds, silent old-save baselines, and ambient-fallback-safe review hardening.
 - **Lore-memory prompt trim.** Removed the world-lore primer and its setting; authored lore now reaches prompts only through relevant memory recall.
 - **Odyssey Phase O3 Mechhive ending.** Verified and patched the exact private Cerebrex-core destroy/scavenge owner, transactionally defers the matching generic Quest page, commits normalized replay state, writes one operator-only EN/RU ending while failing open on every missing gate, isolates its surroundings flavor from RimWorld's gameplay RNG, and offers that major event to the existing rate-limited arc-reflection scheduler.
 - **Odyssey Phase O3 exploration.** Extended exact visible asteroid/station/Mechhive destination categories and enriched the existing Quest route for all nine installed gravcore roots without guessing recovery or the terminal choice.

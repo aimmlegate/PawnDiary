@@ -1,10 +1,10 @@
 // In-game flow tests for Pawn Diary's rare pawn life-arc reflection path (design/TEST_COVERAGE_PLAN.md §3, EVT-20).
 //
-// The live orchestration is DiaryGameComponent.TryFlushArcReflectionForPawn (DiaryGameComponent.ArcReflection.cs):
-// once a year (forced after a calendar day) or after a major progression event it snapshots the pawn's saved
-// PawnArcScheduleState, asks the pure ArcReflectionSchedulePolicy whether cadence allows an entry, samples the
-// pawn's existing hot/archive diary pages through the pure ArcReflectionMemorySelector, and — when enough
-// memories survive filtering — submits an ArcReflectionSignal. That orchestrator is private and needs the
+// The live orchestration is DiaryGameComponent.ArbitrateReflectionsForPawn: its arc candidate snapshots
+// the pawn's saved PawnArcScheduleState, asks the pure ArcReflectionSchedulePolicy whether cadence allows
+// an entry, samples hot/archive diary pages through the pure ArcReflectionMemorySelector, and — when enough
+// memories survive filtering and the coordinator selects it — submits an ArcReflectionSignal. That
+// orchestrator is private and needs the
 // storyteller clock, a colony scan, and the pawn's whole event graph, so (following the Phase 1 pattern) these
 // tests drive its exact sub-units directly instead of reproducing the scan:
 //   - the memory selector (filtering + dedup of seeded ArcMemoryCandidate rows, the production memory-context

@@ -1,7 +1,7 @@
 // Day/quadrum-reflection ingestion signal — the emit half of the reflection source. Unlike the
-// other sources this is not a discrete captured event: the component's sleep-path flush
-// (FlushDaySummaryForPawn) aggregates the day's most notable signals, consumes the per-day filler and
-// hediff batches, or selects a bounded list of quadrum highlights, then builds the reflection text.
+// other sources this is not a discrete captured event: the component's unified rest-time arbitration
+// prepares the day's most notable signals or a bounded list of quadrum highlights, then builds the
+// selected reflection text and consumes its per-day filler/hediff batches only after Dispatch succeeds.
 // That aggregation stays on the component (it reads and mutates day-summary state); this signal is
 // the thin carrier that runs the catalog decision and emits the finished entry through the shared
 // dispatcher.

@@ -1,11 +1,11 @@
 // In-game flow tests for Pawn Diary's end-of-day reflection (EVT-19 Day/quadrum reflection).
 //
 // The real trigger is the sleep-path scan FlushAmbientNotesForSleepingPawns, which iterates every
-// resting colonist on every map and calls the private per-pawn flush FlushDaySummaryForPawn(pawn).
+// resting colonist on every map and calls the unified per-pawn reflection arbitration.
 // Reproducing the storyteller, a loaded map, and a bedded-down colonist is neither deterministic nor
 // mapless, so — following the Phase 1 pattern (drive the per-unit production work directly) — these
 // tests seed the pawn/day evidence store the live AddHediff hook fills (pendingDayHediffs) and then
-// invoke that same per-pawn flush unit by reflection. The flush gathers the day's candidate signals,
+// invoke the retained dev/test seam by reflection. It enters the same arbitration, gathers day candidates,
 // runs the weighted highlight selection, consumes the pending evidence, and dispatches one
 // DayReflection page through the shared bus — exactly the work the sleep scan does per colonist.
 //
@@ -199,6 +199,55 @@ namespace PawnDiary.RimTests
         }
 
         /// <summary>
+        /// N4 review regression. Turning day summaries off must preserve ambient notes so the production
+        /// sleep path can fall through to its documented per-source ambient-note writers.
+        /// </summary>
+        [Test]
+        public static void DisabledDaySummaryPreservesAmbientFallbackEvidence()
+        {
+            int day = CurrentDayIndex();
+            string ambientKey = SeedPendingAmbientInteraction(day);
+            RegisterAmbientFallbackCleanup(ambientKey);
+            tuning.daySummaryEnabled = false;
+            tuning.quadrumReflectionEnabled = false;
+            tuning.arcReflectionEnabled = false;
+
+            scope.RequireNoNewEvent(() => InvokeFlush(pawn));
+
+            PawnDiaryRimTestScope.Require(
+                PendingAmbientInteractionNotes().Contains(ambientKey),
+                "Disabled day-summary debt bounding must leave the ambient note for the fallback writer.");
+            PawnDiaryRimTestScope.Require(
+                !WrittenAmbientInteractionContains(ambientKey),
+                "Debt bounding must not falsely mark an ambient note written before the fallback emits it.");
+        }
+
+        /// <summary>
+        /// N4 review regression. The silent additive-state baseline must also preserve newly accumulated
+        /// ambient notes when day summaries are disabled; those notes are not historical reflection debt.
+        /// </summary>
+        [Test]
+        public static void OldSaveBaselinePreservesDisabledDaySummaryFallback()
+        {
+            int day = CurrentDayIndex();
+            string ambientKey = SeedPendingAmbientInteraction(day);
+            RegisterAmbientFallbackCleanup(ambientKey);
+            DiaryRecord().reflectionState = new PawnReflectionState();
+            tuning.daySummaryEnabled = false;
+            tuning.quadrumReflectionEnabled = false;
+            tuning.arcReflectionEnabled = false;
+
+            scope.RequireNoNewEvent(() => InvokeFlush(pawn));
+
+            PawnDiaryRimTestScope.Require(
+                PendingAmbientInteractionNotes().Contains(ambientKey),
+                "The old-save baseline must preserve ambient evidence owned by the disabled-summary fallback.");
+            PawnDiaryRimTestScope.Require(
+                !WrittenAmbientInteractionContains(ambientKey),
+                "The old-save baseline must not mark preserved fallback evidence as written.");
+        }
+
+        /// <summary>
         /// N4. A record that lacks the additive runtime row baselines its current cadence window silently.
         /// Repeated scans in that same rest/day cannot turn the pre-upgrade evidence into a catch-up page.
         /// </summary>
@@ -229,9 +278,8 @@ namespace PawnDiary.RimTests
 
         // ----- production seam invocation ---------------------------------------------------------
 
-        // Invokes the private per-pawn sleep-path flush directly. This is the exact per-colonist unit
-        // that FlushAmbientNotesForSleepingPawns runs for each resting pawn; calling it here keeps the
-        // test mapless and free of the storyteller/rest scheduling the real scan needs.
+        // Invokes the retained private dev/test seam, which delegates to the same per-pawn arbitration
+        // used by FlushAmbientNotesForSleepingPawns while avoiding storyteller/rest scheduling.
         private static void InvokeFlush(Pawn target)
         {
             MethodInfo flush = typeof(DiaryGameComponent).GetMethod("FlushDaySummaryForPawn", NonPublicInstance);
@@ -315,6 +363,74 @@ namespace PawnDiary.RimTests
             }
 
             return dictionary;
+        }
+
+        private static string SeedPendingAmbientInteraction(int day)
+        {
+            const string keyPrefix = "review-day-fallback|";
+            string key = keyPrefix + day + "|" + pawn.GetUniqueLoadID();
+            Type noteType = typeof(DiaryGameComponent).GetNestedType(
+                "PendingAmbientInteractionNote", BindingFlags.NonPublic);
+            if (noteType == null)
+            {
+                throw new AssertionException(
+                    "Could not locate DiaryGameComponent.PendingAmbientInteractionNote.");
+            }
+
+            object note = Activator.CreateInstance(noteType);
+            SetRecordField(noteType, note, "key", key);
+            SetRecordField(noteType, note, "pawn", pawn);
+            SetRecordField(noteType, note, "pawnId", pawn.GetUniqueLoadID());
+            SetRecordField(noteType, note, "dayIndex", day);
+            SetRecordField(noteType, note, "eventCount", 1);
+            PendingAmbientInteractionNotes()[key] = note;
+            return key;
+        }
+
+        private static IDictionary PendingAmbientInteractionNotes()
+        {
+            FieldInfo field = typeof(DiaryGameComponent).GetField(
+                "pendingAmbientInteractionNotes", NonPublicInstance);
+            IDictionary dictionary = field?.GetValue(scope.Component) as IDictionary;
+            if (dictionary == null)
+            {
+                throw new AssertionException(
+                    "Could not read DiaryGameComponent.pendingAmbientInteractionNotes.");
+            }
+
+            return dictionary;
+        }
+
+        private static bool WrittenAmbientInteractionContains(string key)
+        {
+            object written = WrittenAmbientInteractionNotes();
+            MethodInfo contains = written.GetType().GetMethod("Contains", new[] { typeof(string) });
+            return contains != null && (bool)contains.Invoke(written, new object[] { key });
+        }
+
+        private static void RegisterAmbientFallbackCleanup(string key)
+        {
+            scope.RegisterCleanup(() =>
+            {
+                PendingAmbientInteractionNotes().Remove(key);
+                object written = WrittenAmbientInteractionNotes();
+                written.GetType().GetMethod("Remove", new[] { typeof(string) })
+                    ?.Invoke(written, new object[] { key });
+            });
+        }
+
+        private static object WrittenAmbientInteractionNotes()
+        {
+            FieldInfo field = typeof(DiaryGameComponent).GetField(
+                "writtenAmbientInteractionNotes", NonPublicInstance);
+            object written = field?.GetValue(scope.Component);
+            if (written == null)
+            {
+                throw new AssertionException(
+                    "Could not read DiaryGameComponent.writtenAmbientInteractionNotes.");
+            }
+
+            return written;
         }
 
         // Matches DiaryGameComponent.DaySummaryKey(pawnId, day): "pawnId|day".

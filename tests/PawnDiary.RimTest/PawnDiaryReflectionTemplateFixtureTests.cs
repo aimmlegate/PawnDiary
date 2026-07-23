@@ -6,9 +6,9 @@
 // stamps it on the event, and STOPS before any network call. Every reflection is a SOLO event queued on
 // the initiator role, so it captures synchronously the instant it is submitted.
 //
-// The reflections are normally produced by the sleep-path summary flush
-// (DiaryGameComponent.FlushDaySummaryForPawn / TryFlushQuadrumReflectionForPawn /
-// TryFlushArcReflectionForPawn). Reproducing that scan needs the storyteller clock, a bedded-down
+// The reflections are normally produced by DiaryGameComponent.ArbitrateReflectionsForPawn during the
+// sleep-path scan, using the source-specific PrepareDay/Quadrum/ArcReflectionCandidate helpers.
+// Reproducing that scan needs the storyteller clock, a bedded-down
 // colonist, and the pawn's whole event graph, so — following the EVT-19/EVT-20 pattern in
 // PawnDiaryDayReflectionFlowTests / PawnDiaryArcReflectionFlowTests — these tests build the exact
 // reflection signal each flush would Dispatch and submit it directly through DiaryEvents.Submit,

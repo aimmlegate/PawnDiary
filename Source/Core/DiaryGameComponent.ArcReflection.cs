@@ -41,55 +41,15 @@ namespace PawnDiary
                 // A real post-upgrade event establishes the N4 boundary immediately, so its new pending
                 // request is preserved without allowing older annual/day/quadrum debt to catch up.
                 BaselineReflectionState(
-                    diary, pawnId, CurrentDayIndex, Find.TickManager.TicksGame, reflectionState);
+                    diary,
+                    pawnId,
+                    CurrentDayIndex,
+                    Find.TickManager.TicksGame,
+                    reflectionState,
+                    DaySummaryOwnsFiller(DiaryNarrativeContinuityPolicy.Snapshot()));
             }
 
             reflectionState.QueueMajorArc(Find.TickManager.TicksGame, avoidRelatedEventId);
-        }
-
-        /// <summary>
-        /// Attempts to emit a yearly/major arc reflection. Returns true only when an entry was created.
-        /// An optional <paramref name="avoidRelatedEventId"/> lets a caller point the request at its
-        /// just-created canonical event so the reflection does not merely recap that same page.
-        /// </summary>
-        private bool TryFlushArcReflectionForPawn(Pawn pawn, string pawnId, int day,
-            bool majorEventTrigger, string avoidRelatedEventId = null)
-        {
-            if (pawn == null || string.IsNullOrWhiteSpace(pawnId))
-            {
-                return false;
-            }
-
-            PawnDiaryRecord diary = FindDiary(pawn, true);
-            if (diary == null)
-            {
-                return false;
-            }
-
-            ReflectionRuntimeCandidate candidate = PrepareArcReflectionCandidate(
-                pawn,
-                diary,
-                pawnId,
-                day,
-                majorEventTrigger,
-                avoidRelatedEventId,
-                pendingOwner: null,
-                collectEvidence: true);
-            if (candidate?.opportunity == null
-                || !candidate.opportunity.groupEnabled
-                || !candidate.opportunity.due)
-            {
-                candidate?.SettleIneligible();
-                return false;
-            }
-
-            if (!candidate.Dispatch())
-            {
-                return false;
-            }
-
-            candidate.ConsumeAfterDispatch();
-            return true;
         }
 
         /// <summary>
@@ -110,6 +70,9 @@ namespace PawnDiary
             int dayOfYear = CurrentRimYearDay();
             int recentCap = Math.Max(0, DiaryTuning.Current.arcReflectionRecentlyUsedMemoryCap);
             PawnArcScheduleState schedule = diary.EnsureArcSchedule();
+            // Applying a lowered XML cap and rolling the saved yearly counter forward are maintenance,
+            // not cadence consumption, so they remain safe before the coordinator selects anything.
+            schedule.NormalizeForYear(currentYear, recentCap);
 
             int nowTick = Find.TickManager.TicksGame;
             ArcReflectionScheduleTuning cadence = ArcScheduleTuning();

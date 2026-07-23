@@ -868,6 +868,8 @@ namespace PawnDiary
                 return;
             }
 
+            NarrativePolicySnapshot reflectionPolicy = DiaryNarrativeContinuityPolicy.Snapshot();
+            bool daySummaryOwnsFiller = DaySummaryOwnsFiller(reflectionPolicy);
             List<Pawn> colonists = SnapshotFreeColonists();
             for (int i = 0; i < colonists.Count; i++)
             {
@@ -877,11 +879,13 @@ namespace PawnDiary
                     continue;
                 }
 
-                bool reflectionWritten = ArbitrateReflectionsForPawn(pawn);
-                if (daySummary)
+                bool reflectionWritten = ArbitrateReflectionsForPawn(
+                    pawn, reflectionPolicy, daySummaryOwnsFiller);
+                if (daySummaryOwnsFiller)
                 {
                     // Day-summary mode owns the filler even when the pure planner finds no eligible page.
-                    // The selected day candidate consumes it only after successful Dispatch.
+                    // The selected day candidate consumes it only after successful Dispatch. A disabled
+                    // shared policy/group instead falls through to the old ambient-note writers below.
                     continue;
                 }
 

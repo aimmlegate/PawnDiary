@@ -5,6 +5,7 @@
 // New to C#/RimWorld? See AGENTS.md ("persistence & ticking" and "architecture barriers").
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using Verse;
 
 namespace PawnDiary
@@ -50,6 +51,19 @@ namespace PawnDiary
         /// </summary>
         private bool ArbitrateReflectionsForPawn(Pawn pawn)
         {
+            NarrativePolicySnapshot policy = DiaryNarrativeContinuityPolicy.Snapshot();
+            return ArbitrateReflectionsForPawn(pawn, policy, DaySummaryOwnsFiller(policy));
+        }
+
+        /// <summary>
+        /// Uses the scan's shared policy snapshot so a multi-pawn rest pass does not rebuild identical
+        /// XML-backed lists for every colonist.
+        /// </summary>
+        private bool ArbitrateReflectionsForPawn(
+            Pawn pawn,
+            NarrativePolicySnapshot policy,
+            bool daySummaryOwnsFiller)
+        {
             if (pawn == null || !IsDiaryEligible(pawn))
             {
                 return false;
@@ -65,13 +79,14 @@ namespace PawnDiary
             int day = CurrentDayIndex;
             int nowTick = Find.TickManager.TicksGame;
             PawnReflectionState state = diary.EnsureReflectionState();
+            policy = policy ?? DiaryNarrativeContinuityPolicy.Snapshot();
             if (state.baselineOnNextOpportunity)
             {
-                BaselineReflectionState(diary, pawnId, day, nowTick, state);
+                BaselineReflectionState(
+                    diary, pawnId, day, nowTick, state, daySummaryOwnsFiller);
                 return false;
             }
 
-            NarrativePolicySnapshot policy = DiaryNarrativeContinuityPolicy.Snapshot();
             List<ReflectionHistoryEntry> history = state.HistorySnapshot();
             bool globalCooldown = ReflectionCoordinator.IsGlobalCooldownActive(
                 nowTick, state.lastReflectionTick, policy);
@@ -149,7 +164,8 @@ namespace PawnDiary
             string pawnId,
             int day,
             int nowTick,
-            PawnReflectionState state)
+            PawnReflectionState state,
+            bool consumeDayFiller)
         {
             state.baselineOnNextOpportunity = false;
             state.ClearPendingMajorArc();
@@ -161,7 +177,10 @@ namespace PawnDiary
             schedule.forcedArcYear = CurrentRimYear();
             writtenDayReflections.Add(DaySummaryKey(pawnId, day));
             writtenQuadrumReflections.Add(QuadrumSummaryKey(pawnId, QuadrumIndexForDay(day)));
-            ConsumePawnDayFiller(pawnId, day);
+            if (consumeDayFiller)
+            {
+                ConsumePawnDayFiller(pawnId, day);
+            }
             pendingDayHediffs.Remove(DaySummaryKey(pawnId, day));
         }
 
@@ -230,6 +249,17 @@ namespace PawnDiary
             return group != null
                 && PawnDiaryMod.Settings != null
                 && PawnDiaryMod.Settings.IsGroupEnabled(group.defName);
+        }
+
+        /// <summary>
+        /// True only when the day-reflection path, rather than the ambient fallback, owns today's
+        /// filler batches.
+        /// </summary>
+        private static bool DaySummaryOwnsFiller(NarrativePolicySnapshot policy)
+        {
+            return DiaryTuning.Current.daySummaryEnabled
+                && policy?.enabled == true
+                && IsReflectionGroupEnabled(DayReflectionEventData.DefNameToken);
         }
 
         /// <summary>Cheap guard used only when every reflection feature was switched off after queuing.</summary>

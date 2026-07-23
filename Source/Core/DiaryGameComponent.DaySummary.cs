@@ -93,7 +93,8 @@ namespace PawnDiary
             runtime.advanceDisabledDebt = () =>
             {
                 writtenDayReflections.Add(dayKey);
-                ConsumePawnDayFiller(pawnId, day);
+                // The day cadence is bounded, but ambient notes stay available to the documented
+                // daySummaryEnabled=false fallback (and to the shared-policy-disabled fallback).
                 pendingDayHediffs.Remove(dayKey);
             };
             if (!groupEnabled)
@@ -182,32 +183,6 @@ namespace PawnDiary
                 data.Day, data.HighlightCount, data.CandidateCount, data.FillerMomentCount, data.SignalTags);
 
             return Dispatch(new DayReflectionSignal(data, pawn, label, text, instruction, gameContext));
-        }
-
-        /// <summary>
-        /// Writes the rare long quadrum reflection when this pawn's spread-out timing window has
-        /// opened and the quadrum contains enough important entries. Returns true only when the
-        /// reflection actually emitted; callers use that to skip the ordinary day reflection.
-        /// </summary>
-        private bool TryFlushQuadrumReflectionForPawn(Pawn pawn, string pawnId, int day)
-        {
-            if (pawn == null || string.IsNullOrWhiteSpace(pawnId))
-            {
-                return false;
-            }
-
-            ReflectionRuntimeCandidate candidate = PrepareQuadrumReflectionCandidate(
-                pawn, pawnId, day, collectEvidence: true);
-            if (candidate?.opportunity == null
-                || !candidate.opportunity.groupEnabled
-                || !candidate.opportunity.due
-                || !candidate.Dispatch())
-            {
-                return false;
-            }
-
-            candidate.ConsumeAfterDispatch();
-            return true;
         }
 
         /// <summary>Collects one detached quadrum opportunity without advancing its once-per-window guard.</summary>

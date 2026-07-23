@@ -1855,6 +1855,26 @@ namespace NarrativeContinuityTests
             AssertDiagnostic(cooldown, NarrativeReflectionKindTokens.Belief,
                 NarrativeDiagnosticTokens.ReflectionCooldown);
 
+            ReflectionPlan cooldownBoundaryBlocked = ReflectionCoordinator.Plan(new ReflectionPlanningRequest
+            {
+                policy = policy,
+                currentTick = 199999,
+                lastReflectionTick = 140000,
+                opportunities = new List<ReflectionOpportunity> { belief }
+            });
+            AssertTrue("global reflection cooldown remains active one tick before its exact boundary",
+                cooldownBoundaryBlocked.selectedOpportunity == null);
+
+            ReflectionPlan cooldownBoundaryOpen = ReflectionCoordinator.Plan(new ReflectionPlanningRequest
+            {
+                policy = policy,
+                currentTick = 200000,
+                lastReflectionTick = 140000,
+                opportunities = new List<ReflectionOpportunity> { belief }
+            });
+            AssertEqual("global reflection cooldown opens exactly at its XML-owned boundary",
+                NarrativeReflectionKindTokens.Belief, cooldownBoundaryOpen.selectedOpportunity.kind);
+
             ReflectionOpportunity disabled = Opportunity(NarrativeReflectionKindTokens.Day);
             disabled.groupEnabled = false;
             ReflectionPlan disabledPlan = ReflectionCoordinator.Plan(new ReflectionPlanningRequest
