@@ -92,6 +92,7 @@ namespace PawnDiary
                 dayReflection = diaryEvent.IsDayReflection(),
                 quadrumReflection = diaryEvent.IsQuadrumReflection(),
                 arcReflection = diaryEvent.IsArcReflection(),
+                beliefReflection = diaryEvent.IsBeliefReflection(),
                 supportsDirectSpeechInstruction = IsInteractionPrompt(diaryEvent),
                 initiator = PovFor(diaryEvent, DiaryPipelineRoles.Initiator),
                 recipient = PovFor(diaryEvent, DiaryPipelineRoles.Recipient),
@@ -163,6 +164,7 @@ namespace PawnDiary
             AddTemplate(snapshot, DiaryPipelineTemplates.SoloDayReflection);
             AddTemplate(snapshot, DiaryPipelineTemplates.SoloQuadrumReflection);
             AddTemplate(snapshot, DiaryPipelineTemplates.SoloArcReflection);
+            AddTemplate(snapshot, DiaryPipelineTemplates.SoloBeliefReflection);
             AddTemplate(snapshot, DiaryPipelineTemplates.DeathDescription);
             AddTemplate(snapshot, DiaryPipelineTemplates.ArrivalDescription);
             AddTemplate(snapshot, DiaryPipelineTemplates.Title);
@@ -242,6 +244,10 @@ namespace PawnDiary
             else if (maxTokens <= 0 && string.Equals(templateKey, DiaryPipelineTemplates.SoloArcReflection, StringComparison.OrdinalIgnoreCase))
             {
                 maxTokens = Math.Max(1, DiaryTuning.Current.arcReflectionMaxTokens);
+            }
+            else if (maxTokens <= 0 && string.Equals(templateKey, DiaryPipelineTemplates.SoloBeliefReflection, StringComparison.OrdinalIgnoreCase))
+            {
+                maxTokens = Math.Max(1, DiaryBeliefPolicy.Snapshot().beliefReflectionMaxTokens);
             }
 
             snapshot.templates.Add(new DiaryTemplatePolicy
@@ -522,6 +528,11 @@ namespace PawnDiary
             if (payload.arcReflection)
             {
                 return "ArcReflection";
+            }
+
+            if (payload.beliefReflection)
+            {
+                return "BeliefReflection";
             }
 
             if (payload.dayReflection)

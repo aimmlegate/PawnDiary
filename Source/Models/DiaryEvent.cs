@@ -1134,6 +1134,12 @@ namespace PawnDiary
             return DiaryContextFields.IsTrue(gameContext, "arc_reflection");
         }
 
+        /// <summary>Returns true when this page is the standalone N4 Ideology belief reflection.</summary>
+        public bool IsBeliefReflection()
+        {
+            return DiaryContextFields.IsTrue(gameContext, "belief_reflection");
+        }
+
         /// <summary>
         /// The emotional-register cue for this event's group (e.g. "with creeping dread"), or empty
         /// when the group sets no tone. Event-driven and appended to the user prompt as a "tone:"

@@ -755,6 +755,33 @@ Do not write a report, biography, or list. Output only the diary entry. End with
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
+  <!-- Ideology Phase 4 / Narrative N4. The event already carries one frozen, bounded belief
+       context block; this template asks for reflection without re-reading live doctrine. -->
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_SoloBeliefReflection</defName>
+    <templateKey>SoloBeliefReflection</templateKey>
+    <maxTokens>360</maxTokens>
+    <appendDirectSpeechInstruction>false</appendDirectSpeechInstruction>
+    <systemPrompt>Write 4-7 first-person diary sentences: a private reflection on belief, doubt, conviction, or changed faith in the colonist's writing style. You are the colonist named in "pov"; write as "I", never your name.
+Treat the supplied belief context as factual boundaries. Reflect on what the lived moment or accumulated change means without inventing doctrine, rituals, commandments, memories, or a conversion.
+Do not write a report, sermon, doctrine summary, or list. Output only the diary entry. End with normal punctuation.</systemPrompt>
+    <finalInstruction>Write a private belief reflection grounded only in the supplied event and belief context. Show conviction, doubt, or change at the supplied strength without inventing doctrine or declaring an unsupplied conversion. Output only the entry.</finalInstruction>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>pov</label><source>PovName</source></li>
+      <li><label>what happened</label><source>PovText</source></li>
+      <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>you</label><source>PawnSummary</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>belief context</label><source>BeliefContext</source></li>
+      <li><label>belief trigger</label><source>GameContext</source><contextKey>belief_reflection_trigger</contextKey></li>
+      <li><label>setting</label><source>Setting</source></li>
+      <li><label>my last opening line (do not reuse)</label><source>LastOpener</source></li>
+      <li><label>how my previous entry ended (continuity; do not retell it)</label><source>PreviousEntryEnding</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
   <PawnDiary.DiaryPromptTemplateDef>
     <defName>DiaryPromptTemplate_DeathDescription</defName>
     <templateKey>DeathDescription</templateKey>

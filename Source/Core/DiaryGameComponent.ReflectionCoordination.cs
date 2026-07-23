@@ -86,6 +86,11 @@ namespace PawnDiary
                     diary, pawnId, day, nowTick, state, daySummaryOwnsFiller);
                 return false;
             }
+            if (state.linkedBaselineOnNextOpportunity)
+            {
+                BaselineLinkedReflectionState(diary, day, nowTick, state);
+                return false;
+            }
 
             List<ReflectionHistoryEntry> history = state.HistorySnapshot();
             bool globalCooldown = ReflectionCoordinator.IsGlobalCooldownActive(
@@ -93,6 +98,12 @@ namespace PawnDiary
             bool collectArcEvidence = policy.enabled && !globalCooldown
                 && !ReflectionCoordinator.IsKindCooldownActive(
                 NarrativeReflectionKindTokens.MajorArc, nowTick, history, policy);
+            bool collectCrossArcEvidence = policy.enabled && !globalCooldown
+                && !ReflectionCoordinator.IsKindCooldownActive(
+                NarrativeReflectionKindTokens.CrossArc, nowTick, history, policy);
+            bool collectBeliefEvidence = policy.enabled && !globalCooldown
+                && !ReflectionCoordinator.IsKindCooldownActive(
+                NarrativeReflectionKindTokens.Belief, nowTick, history, policy);
             bool collectQuadrumEvidence = policy.enabled && !globalCooldown
                 && !ReflectionCoordinator.IsKindCooldownActive(
                 NarrativeReflectionKindTokens.Quadrum, nowTick, history, policy);
@@ -111,6 +122,10 @@ namespace PawnDiary
                     state.pendingMajorArcAvoidEventId,
                     state,
                     collectArcEvidence),
+                PrepareCrossArcReflectionCandidate(
+                    pawn, diary, pawnId, state, policy, collectCrossArcEvidence),
+                PrepareBeliefReflectionCandidate(
+                    pawn, diary, pawnId, day, collectBeliefEvidence),
                 PrepareQuadrumReflectionCandidate(pawn, pawnId, day, collectQuadrumEvidence),
                 PrepareDayReflectionCandidate(pawn, pawnId, day, collectDayEvidence)
             };
@@ -168,10 +183,15 @@ namespace PawnDiary
             bool consumeDayFiller)
         {
             state.baselineOnNextOpportunity = false;
+            state.linkedBaselineOnNextOpportunity = false;
             state.ClearPendingMajorArc();
             state.MarkWritten(NarrativeReflectionKindTokens.MajorArc, nowTick);
+            state.MarkWritten(NarrativeReflectionKindTokens.CrossArc, nowTick);
+            state.MarkWritten(NarrativeReflectionKindTokens.Belief, nowTick);
             state.MarkWritten(NarrativeReflectionKindTokens.Quadrum, nowTick);
             state.MarkWritten(NarrativeReflectionKindTokens.Day, nowTick);
+            diary.EnsureBeliefState().BaselineReflection(
+                day, nowTick, DiaryBeliefPolicy.Snapshot());
 
             PawnArcScheduleState schedule = diary.EnsureArcSchedule();
             schedule.forcedArcYear = CurrentRimYear();
@@ -182,6 +202,22 @@ namespace PawnDiary
                 ConsumePawnDayFiller(pawnId, day);
             }
             pendingDayHediffs.Remove(DaySummaryKey(pawnId, day));
+        }
+
+        /// <summary>
+        /// Establishes the additive N4.2 boundary on saves whose earlier N4.1 baseline already ran.
+        /// Historical linked/belief state is observed and cleared without creating a catch-up page.
+        /// </summary>
+        private static void BaselineLinkedReflectionState(
+            PawnDiaryRecord diary,
+            int day,
+            int nowTick,
+            PawnReflectionState state)
+        {
+            state.linkedBaselineOnNextOpportunity = false;
+            state.MarkWritten(NarrativeReflectionKindTokens.CrossArc, nowTick);
+            state.MarkWritten(NarrativeReflectionKindTokens.Belief, nowTick);
+            diary?.EnsureBeliefState()?.BaselineReflection(day, nowTick, DiaryBeliefPolicy.Snapshot());
         }
 
         private static ReflectionRuntimeCandidate FindRuntimeCandidate(
@@ -268,6 +304,22 @@ namespace PawnDiary
             for (int i = 0; i < diaries.Count; i++)
             {
                 if (diaries[i]?.reflectionState?.pendingMajorArc == true)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Cheap rest-scan guard used to clear saved belief debt after policy disablement.</summary>
+        private bool HasPendingBeliefReflection()
+        {
+            for (int i = 0; i < diaries.Count; i++)
+            {
+                PawnBeliefState belief = diaries[i]?.beliefState;
+                if (belief != null
+                    && (belief.hasPendingCertainty || belief.pendingIdeologyChange))
                 {
                     return true;
                 }

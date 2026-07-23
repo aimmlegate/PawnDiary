@@ -860,8 +860,10 @@ namespace PawnDiary
         public bool includeKeyDeity = true;
         public bool allowDeterministicAlternativeDeity;
         public float quietReflectionChance = 0.08f;
+        public int recentBeliefEventWindowTicks = 180000;
         public int beliefReflectionCooldownTicks = 900000;
         public int maximumBeliefReflectionsPerQuadrum = 2;
+        public int beliefReflectionMaxTokens = 360;
         public List<BeliefTokenScore> tierScores = new List<BeliefTokenScore>();
         public List<BeliefTokenScore> eventFieldWeights = new List<BeliefTokenScore>();
         public List<BeliefTokenScore> beliefFieldWeights = new List<BeliefTokenScore>();
@@ -1014,8 +1016,10 @@ namespace PawnDiary
         public readonly bool includeKeyDeity;
         public readonly bool allowDeterministicAlternativeDeity;
         public readonly float quietReflectionChance;
+        public readonly int recentBeliefEventWindowTicks;
         public readonly int beliefReflectionCooldownTicks;
         public readonly int maximumBeliefReflectionsPerQuadrum;
+        public readonly int beliefReflectionMaxTokens;
         public readonly IReadOnlyList<BeliefTokenScore> tierScores;
         public readonly IReadOnlyList<BeliefTokenScore> eventFieldWeights;
         public readonly IReadOnlyList<BeliefTokenScore> beliefFieldWeights;
@@ -1091,8 +1095,11 @@ namespace PawnDiary
             includeKeyDeity = value.includeKeyDeity;
             allowDeterministicAlternativeDeity = value.allowDeterministicAlternativeDeity;
             quietReflectionChance = Clamp01(value.quietReflectionChance, 0.08f);
+            recentBeliefEventWindowTicks = Clamp(
+                value.recentBeliefEventWindowTicks, 0, 3600000, 180000);
             beliefReflectionCooldownTicks = Math.Max(0, value.beliefReflectionCooldownTicks);
             maximumBeliefReflectionsPerQuadrum = Clamp(value.maximumBeliefReflectionsPerQuadrum, 0, 16, 2);
+            beliefReflectionMaxTokens = Clamp(value.beliefReflectionMaxTokens, 1, 4000, 360);
             tierScores = CopyScores(value.tierScores);
             eventFieldWeights = CopyScores(value.eventFieldWeights);
             beliefFieldWeights = CopyScores(value.beliefFieldWeights);

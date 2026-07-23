@@ -156,6 +156,99 @@ namespace PawnDiary.RimTests
                 "A disconnected Odyssey POV received optional home context.");
         }
 
+        /// <summary>
+        /// N4.2 wiring: one hot page's own evidence and one compact archive row's saved reference
+        /// project into the same detached selector opportunity without re-reading any DLC state.
+        /// </summary>
+        [Test]
+        public static void HotAndArchiveExactReferencesReachCrossArcOpportunity()
+        {
+            const string pawnId = "Thing_Human_NarrativeFixture";
+            DiaryEvent hot = new DiaryEvent
+            {
+                eventId = "rimtest-cross-hot",
+                tick = 100,
+                date = "1st Aprimay 5502",
+                interactionDefName = "RimTestHot",
+                interactionLabel = "first chapter",
+                solo = true,
+                initiatorPawnId = pawnId,
+                initiatorName = "Mira",
+                initiatorText = "Mira began the journey."
+            };
+            NarrativeEvidence hotEvidence = Evidence();
+            hotEvidence.eventId = hot.eventId;
+            hotEvidence.tick = hot.tick;
+            hotEvidence.povPawnId = pawnId;
+            hotEvidence.phase = "departed";
+            hotEvidence.arcKey = "journey|rimtest-ship";
+            hotEvidence.subjectKind = NarrativeSubjectKindTokens.Ship;
+            hotEvidence.subjectId = "rimtest-ship";
+            hotEvidence.facet = NarrativeFacetTokens.JourneyChapter;
+            hot.ApplyNarrativeContext(DiaryEvent.InitiatorRole, new NarrativeContextBuildResult
+            {
+                evidence = new List<NarrativeEvidence> { hotEvidence },
+                selection = new NarrativeContextSelection()
+            });
+
+            ArchivedDiaryEntry archived = new ArchivedDiaryEntry
+            {
+                eventId = "rimtest-cross-archive",
+                pawnId = pawnId,
+                povRole = DiaryEvent.InitiatorRole,
+                tick = 200,
+                date = "2nd Aprimay 5502",
+                text = "Mira reached the destination.",
+                interactionDefName = "RimTestArchive",
+                interactionLabel = "second chapter",
+                narrativeReferences = NarrativeStatePersistence.FromReferences(
+                    new List<NarrativeReference>
+                    {
+                        new NarrativeReference
+                        {
+                            facet = NarrativeFacetTokens.JourneyChapter,
+                            phase = "landed",
+                            subjectKind = NarrativeSubjectKindTokens.Ship,
+                            subjectId = "rimtest-ship",
+                            arcKey = "journey|rimtest-ship",
+                            sourceEventId = "rimtest-cross-archive",
+                            sourceTick = 200
+                        }
+                    })
+            };
+
+            CrossArcMemoryCandidate hotCandidate = DiaryGameComponent.CrossArcCandidateFromEvent(
+                hot, pawnId, DiaryEvent.InitiatorRole);
+            CrossArcMemoryCandidate archiveCandidate =
+                DiaryGameComponent.CrossArcCandidateFromArchive(archived);
+            Require(hotCandidate != null && hotCandidate.references.Count > 0,
+                "The hot-page projection dropped its own exact source evidence.");
+            Require(archiveCandidate != null && archiveCandidate.references.Count == 1,
+                "The compact archive projection dropped its saved exact reference.");
+
+            CrossArcMemorySelection selected = CrossArcReflectionMemorySelector.Select(
+                new CrossArcMemorySelectionRequest
+                {
+                    pawnId = pawnId,
+                    currentTick = 300,
+                    minimumLinkedMemories = 2,
+                    minimumDistinctPhases = 2,
+                    maximumSpanTicks = 1000,
+                    requireChangeOrConsequence = true,
+                    changeOrConsequenceFacets = new List<string>
+                    {
+                        NarrativeFacetTokens.JourneyChapter
+                    },
+                    candidates = new List<CrossArcMemoryCandidate>
+                    {
+                        archiveCandidate,
+                        hotCandidate
+                    }
+                });
+            Require(selected.qualified && selected.sourceEventIds.Count == 2,
+                "Hot plus archive exact references did not produce one detached cross-arc opportunity.");
+        }
+
         private static NarrativeContextBuildResult Build(
             PromptContextDetailLevel detail,
             List<NarrativeLensCandidate> candidates)

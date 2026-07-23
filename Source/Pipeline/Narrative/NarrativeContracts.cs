@@ -322,8 +322,12 @@ namespace PawnDiary
             new List<NarrativeCategoryCoexistenceRule>();
         public int reflectionGlobalCooldownTicks = 60000;
         public int reflectionMinimumLinkedMemories = 2;
+        public int reflectionMinimumDistinctPhases = 2;
+        public int reflectionCandidateScanCap = 64;
         public int reflectionMemoryCap = 8;
         public int reflectionMaximumSpanTicks = 3600000;
+        public bool reflectionRequireChangeOrConsequence = true;
+        public List<string> reflectionChangeOrConsequenceFacets = new List<string>();
         public List<NarrativeReflectionPriority> reflectionPriorities =
             new List<NarrativeReflectionPriority>();
 
@@ -376,6 +380,10 @@ namespace PawnDiary
             AddWeight(policy.salienceScores, NarrativeSalienceTokens.Meaningful, 8f);
             AddWeight(policy.salienceScores, NarrativeSalienceTokens.Major, 15f);
             AddWeight(policy.salienceScores, NarrativeSalienceTokens.Terminal, 20f);
+            policy.reflectionChangeOrConsequenceFacets.Add(NarrativeFacetTokens.IdentityTransition);
+            policy.reflectionChangeOrConsequenceFacets.Add(NarrativeFacetTokens.BondLifecycle);
+            policy.reflectionChangeOrConsequenceFacets.Add(NarrativeFacetTokens.JourneyChapter);
+            policy.reflectionChangeOrConsequenceFacets.Add(NarrativeFacetTokens.AmbientPressure);
             policy.reflectionPriorities.Add(new NarrativeReflectionPriority
             {
                 kind = NarrativeReflectionKindTokens.MajorArc,
@@ -466,6 +474,7 @@ namespace PawnDiary
         public bool cooldownSatisfied = true;
         public bool hasCoherentLink;
         public bool hasPhaseChange;
+        public bool hasChangeOrConsequence;
         public bool groupEnabled = true;
     }
 

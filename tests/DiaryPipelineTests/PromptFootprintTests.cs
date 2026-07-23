@@ -169,6 +169,7 @@ namespace DiaryPipelineTests
             AssertEntry(catalog, "system", "DiaryPromptTemplate_SoloImportant.systemPrompt");
             AssertEntry(catalog, "system", "DiaryPromptTemplate_SoloQuadrumReflection.systemPrompt");
             AssertEntry(catalog, "system", "DiaryPromptTemplate_SoloArcReflection.systemPrompt");
+            AssertEntry(catalog, "system", "DiaryPromptTemplate_SoloBeliefReflection.systemPrompt");
 
             AssertEntry(catalog, "final", "Diary_Prompts.singlePovInstruction");
             AssertEntry(catalog, "final", "Diary_Prompts.recipientFollowupInstruction");
@@ -179,6 +180,7 @@ namespace DiaryPipelineTests
             AssertEntry(catalog, "final", "DiaryPromptTemplate_PairImportant.recipientFinalInstruction");
             AssertEntry(catalog, "final", "DiaryPromptTemplate_SoloQuadrumReflection.finalInstruction");
             AssertEntry(catalog, "final", "DiaryPromptTemplate_SoloArcReflection.finalInstruction");
+            AssertEntry(catalog, "final", "DiaryPromptTemplate_SoloBeliefReflection.finalInstruction");
 
             AssertEntry(catalog, "wrapper", "PawnDiary.Prompt.PsychotypeLens");
             AssertEntry(catalog, "wrapper", "PawnDiary.Prompt.PersonaVoice");
@@ -423,6 +425,8 @@ namespace DiaryPipelineTests
                 catalog.TemplateSystemPrompt(DiaryPipelineTemplates.SoloQuadrumReflection));
             AssertCap(catalog, "arc-reflection system", 550,
                 catalog.TemplateSystemPrompt(DiaryPipelineTemplates.SoloArcReflection));
+            AssertCap(catalog, "belief-reflection system", 650,
+                catalog.TemplateSystemPrompt(DiaryPipelineTemplates.SoloBeliefReflection));
             AssertCap(catalog, "neutral system", 220, catalog.PromptDefText("systemPromptNeutral"));
             AssertCap(catalog, "title system", 220, catalog.PromptDefText("titleSystemPrompt"));
 
@@ -448,6 +452,8 @@ namespace DiaryPipelineTests
                 catalog.TemplateFinalInstruction(DiaryPipelineTemplates.SoloQuadrumReflection));
             AssertCap(catalog, "arc-reflection final", 200,
                 catalog.TemplateFinalInstruction(DiaryPipelineTemplates.SoloArcReflection));
+            AssertCap(catalog, "belief-reflection final", 240,
+                catalog.TemplateFinalInstruction(DiaryPipelineTemplates.SoloBeliefReflection));
             AssertCap(catalog, "title final", 150, catalog.PromptDefText("titleUserInstruction"));
         }
 
@@ -531,6 +537,7 @@ namespace DiaryPipelineTests
                 { "SoloDayReflection", "40|27" },
                 { "SoloQuadrumReflection", "15|" },
                 { "SoloArcReflection", "18|" },
+                { "SoloBeliefReflection", "12|" },
                 { "DeathDescription", "15|" },
                 { "ArrivalDescription", "8|" },
                 { "Title", "1|" }
@@ -1134,7 +1141,8 @@ namespace DiaryPipelineTests
 
                 if (Eq(templateKey, DiaryPipelineTemplates.SoloDayReflection)
                     || Eq(templateKey, DiaryPipelineTemplates.SoloQuadrumReflection)
-                    || Eq(templateKey, DiaryPipelineTemplates.SoloArcReflection))
+                    || Eq(templateKey, DiaryPipelineTemplates.SoloArcReflection)
+                    || Eq(templateKey, DiaryPipelineTemplates.SoloBeliefReflection))
                 {
                     return PromptDefText("systemPromptReflection");
                 }

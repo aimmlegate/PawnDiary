@@ -804,7 +804,8 @@ namespace PawnDiary
         {
             return string.Equals(defName, DayReflectionEventData.DefNameToken, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(defName, DayReflectionEventData.QuadrumDefNameToken, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(defName, ArcReflectionEventData.DefNameToken, StringComparison.OrdinalIgnoreCase);
+                || string.Equals(defName, ArcReflectionEventData.DefNameToken, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(defName, BeliefReflectionEventData.DefNameToken, StringComparison.OrdinalIgnoreCase);
         }
 
         private static int QuadrumIndexForDay(int day)

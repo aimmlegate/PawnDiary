@@ -175,8 +175,10 @@ namespace PawnDiary
         public bool includeKeyDeity = true;
         public bool allowDeterministicAlternativeDeity;
         public float quietReflectionChance = 0.08f;
+        public int recentBeliefEventWindowTicks = 180000;
         public int beliefReflectionCooldownTicks = 900000;
         public int maximumBeliefReflectionsPerQuadrum = 2;
+        public int beliefReflectionMaxTokens = 360;
         // DefInjected model-facing text. These are read on the main thread and copied into the plain
         // prompt-policy contract; pure/background code never calls Translate().
         public string promptFieldLabel = "belief context";
@@ -313,8 +315,10 @@ namespace PawnDiary
             builder.includeKeyDeity = source.includeKeyDeity;
             builder.allowDeterministicAlternativeDeity = source.allowDeterministicAlternativeDeity;
             builder.quietReflectionChance = source.quietReflectionChance;
+            builder.recentBeliefEventWindowTicks = source.recentBeliefEventWindowTicks;
             builder.beliefReflectionCooldownTicks = source.beliefReflectionCooldownTicks;
             builder.maximumBeliefReflectionsPerQuadrum = source.maximumBeliefReflectionsPerQuadrum;
+            builder.beliefReflectionMaxTokens = source.beliefReflectionMaxTokens;
 
             CopyScores(source.tierScores, builder.tierScores);
             CopyScores(source.eventFieldWeights, builder.eventFieldWeights);

@@ -71,8 +71,10 @@
     <includeKeyDeity>true</includeKeyDeity>
     <allowDeterministicAlternativeDeity>false</allowDeterministicAlternativeDeity>
     <quietReflectionChance>0.08</quietReflectionChance>
+    <recentBeliefEventWindowTicks>180000</recentBeliefEventWindowTicks>
     <beliefReflectionCooldownTicks>900000</beliefReflectionCooldownTicks>
     <maximumBeliefReflectionsPerQuadrum>2</maximumBeliefReflectionsPerQuadrum>
+    <beliefReflectionMaxTokens>360</beliefReflectionMaxTokens>
 
     <!-- DefInjected prompt wording. The saved block contains facts only; this guidance is prepended
          after Full/Balanced/Compact filtering at prompt-build time. -->

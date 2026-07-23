@@ -29,6 +29,7 @@ namespace NarrativeContinuityTests
             TestOdysseyProviderEvidenceAndCrossDlcGates();
             TestOdysseyEnvironmentalPressureGatesAndComposition();
             TestIdeologyInterpretationCompositionAndIsolation();
+            TestCrossArcMemorySelection();
             TestReflectionPriorityAndDeferredConsumption();
             Console.WriteLine("NarrativeContinuityTests passed " + assertions + " assertions.");
             return 0;
@@ -1949,10 +1950,85 @@ namespace NarrativeContinuityTests
             AssertDiagnostic(perKindCooldown, NarrativeReflectionKindTokens.Quadrum,
                 NarrativeDiagnosticTokens.ReflectionCooldown);
 
+            ReflectionPlan crossKindCooldown = ReflectionCoordinator.Plan(new ReflectionPlanningRequest
+            {
+                policy = policy,
+                currentTick = 200000,
+                opportunities = new List<ReflectionOpportunity> { cross, belief, quadrum, day },
+                history = new List<ReflectionHistoryEntry>
+                {
+                    new ReflectionHistoryEntry
+                    {
+                        kind = NarrativeReflectionKindTokens.CrossArc,
+                        writtenTick = 199999
+                    }
+                }
+            });
+            AssertEqual("cross-arc kind cooldown falls through to belief before shorter cadences",
+                NarrativeReflectionKindTokens.Belief, crossKindCooldown.selectedOpportunity.kind);
+            AssertDiagnostic(crossKindCooldown, NarrativeReflectionKindTokens.CrossArc,
+                NarrativeDiagnosticTokens.ReflectionCooldown);
+
             AssertTrue("failed dispatch cannot acknowledge selected cadence state",
                 !ReflectionCoordinator.CanConsumeAfterDispatch(shorterCadences, false));
             AssertTrue("successful dispatch acknowledges only the selected cadence state",
                 ReflectionCoordinator.CanConsumeAfterDispatch(shorterCadences, true));
+        }
+
+        private static void TestCrossArcMemorySelection()
+        {
+            CrossArcMemorySelection linked = CrossArcReflectionMemorySelector.Select(
+                CrossRequest(
+                    CrossMemory("event-start", 100, "family|7", "began"),
+                    CrossMemory("event-change", 200, "family|7", "changed")));
+            AssertTrue("two exact linked phases qualify", linked.qualified);
+            AssertEqual("linked selection records two distinct phases", 2, linked.distinctPhaseCount);
+            AssertEqual("linked selection keeps oldest-to-newest order", "event-start",
+                linked.sourceEventIds[0]);
+
+            CrossArcMemorySelection unrelatedDlcPages = CrossArcReflectionMemorySelector.Select(
+                CrossRequest(
+                    CrossMemory("royalty-page", 100, "royal|pawn-1", "gained"),
+                    CrossMemory("biotech-page", 200, "gene|pawn-1", "changed")));
+            AssertTrue("different DLC memories without an exact shared arc or subject do not qualify",
+                !unrelatedDlcPages.qualified);
+
+            CrossArcMemoryCandidate priorReflection =
+                CrossMemory("reflection-page", 200, "family|7", "changed");
+            priorReflection.reflection = true;
+            CrossArcMemorySelection reflectionsExcluded = CrossArcReflectionMemorySelector.Select(
+                CrossRequest(
+                    CrossMemory("event-start", 100, "family|7", "began"),
+                    priorReflection));
+            AssertTrue("prior reflection pages are excluded from linked memory selection",
+                !reflectionsExcluded.qualified);
+
+            // Runtime archive rows project their saved NarrativeReference into this same DTO. No hot
+            // DiaryEvent or provider object is required for the exact link to remain selectable.
+            CrossArcMemorySelection archiveOnly = CrossArcReflectionMemorySelector.Select(
+                CrossRequest(
+                    CrossMemory("archive-start", 100, "journey|ship-2", "departed"),
+                    CrossMemory("archive-end", 300, "journey|ship-2", "landed")));
+            AssertTrue("archive-only exact saved references remain eligible", archiveOnly.qualified);
+            AssertEqual("archive-only selection preserves both source ids", 2,
+                archiveOnly.sourceEventIds.Count);
+
+            CrossArcMemorySelection stableA = CrossArcReflectionMemorySelector.Select(
+                CrossRequest(
+                    CrossMemory("z-old", 100, "z-arc", "began"),
+                    CrossMemory("z-new", 300, "z-arc", "ended"),
+                    CrossMemory("a-old", 100, "a-arc", "began"),
+                    CrossMemory("a-new", 300, "a-arc", "ended")));
+            CrossArcMemorySelection stableB = CrossArcReflectionMemorySelector.Select(
+                CrossRequest(
+                    CrossMemory("a-new", 300, "a-arc", "ended"),
+                    CrossMemory("z-new", 300, "z-arc", "ended"),
+                    CrossMemory("a-old", 100, "a-arc", "began"),
+                    CrossMemory("z-old", 100, "z-arc", "began")));
+            AssertEqual("equal linked groups use lexical arc tie-breaking", "a-old",
+                stableA.sourceEventIds[0]);
+            AssertEqual("candidate input order cannot change linked selection",
+                string.Join("|", stableA.sourceEventIds), string.Join("|", stableB.sourceEventIds));
         }
 
         private static NarrativeLensCandidate AssertAnomalyMapping(
@@ -2185,7 +2261,59 @@ namespace NarrativeContinuityTests
                 importance = NarrativeSalienceTokens.Major,
                 due = true,
                 hasCoherentLink = true,
-                hasPhaseChange = true
+                hasPhaseChange = true,
+                hasChangeOrConsequence = true
+            };
+        }
+
+        private static CrossArcMemorySelectionRequest CrossRequest(
+            params CrossArcMemoryCandidate[] candidates)
+        {
+            return new CrossArcMemorySelectionRequest
+            {
+                pawnId = "pawn-1",
+                currentTick = 1000,
+                candidateScanCap = 16,
+                memoryCap = 8,
+                minimumLinkedMemories = 2,
+                minimumDistinctPhases = 2,
+                maximumSpanTicks = 1000,
+                requireChangeOrConsequence = true,
+                changeOrConsequenceFacets = new List<string>
+                {
+                    NarrativeFacetTokens.IdentityTransition,
+                    NarrativeFacetTokens.BondLifecycle,
+                    NarrativeFacetTokens.JourneyChapter,
+                    NarrativeFacetTokens.AmbientPressure
+                },
+                candidates = new List<CrossArcMemoryCandidate>(candidates)
+            };
+        }
+
+        private static CrossArcMemoryCandidate CrossMemory(
+            string eventId,
+            int tick,
+            string arcKey,
+            string phase)
+        {
+            return new CrossArcMemoryCandidate
+            {
+                eventId = eventId,
+                pawnId = "pawn-1",
+                tick = tick,
+                text = eventId,
+                salience = NarrativeSalienceTokens.Meaningful,
+                references = new List<NarrativeReference>
+                {
+                    new NarrativeReference
+                    {
+                        arcKey = arcKey,
+                        phase = phase,
+                        facet = NarrativeFacetTokens.IdentityTransition,
+                        sourceEventId = eventId,
+                        sourceTick = tick
+                    }
+                }
             };
         }
 

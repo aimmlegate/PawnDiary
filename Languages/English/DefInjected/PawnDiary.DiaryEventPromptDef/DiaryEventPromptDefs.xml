@@ -62,6 +62,9 @@
   <DiaryEventPrompt_ArcReflection.label>arc reflection</DiaryEventPrompt_ArcReflection.label>
   <DiaryEventPrompt_ArcReflection.prompt>Write a rare life-arc diary entry about who the pawn is becoming across the selected memories.</DiaryEventPrompt_ArcReflection.prompt>
   <DiaryEventPrompt_ArcReflection.enhancement>Use the selected memories as anchors, not as a checklist. Connect only a few memories into a private sense of change, regret, pride, fear, or resolve. Do not mention every memory.</DiaryEventPrompt_ArcReflection.enhancement>
+  <DiaryEventPrompt_BeliefReflection.label>belief reflection</DiaryEventPrompt_BeliefReflection.label>
+  <DiaryEventPrompt_BeliefReflection.prompt>Write a private reflection on the supplied belief experience, accumulated certainty change, or change of faith.</DiaryEventPrompt_BeliefReflection.prompt>
+  <DiaryEventPrompt_BeliefReflection.enhancement>Stay inside the frozen belief context and exact trigger. Do not invent doctrine, commandments, rituals, memories, a former ideoligion, or a conversion that the supplied facts do not prove.</DiaryEventPrompt_BeliefReflection.enhancement>
   <DiaryEventPrompt_Arrival.label>arrival</DiaryEventPrompt_Arrival.label>
   <DiaryEventPrompt_Arrival.prompt>Write a factual colony-arrival note about how this pawn joined or began here.</DiaryEventPrompt_Arrival.prompt>
   <DiaryEventPrompt_Arrival.enhancement>Make the arrival feel like a threshold: dust, shock, silence, relief, suspicion, or first sight of shelter. Use only scenario and arrival facts.</DiaryEventPrompt_Arrival.enhancement>

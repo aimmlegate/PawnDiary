@@ -890,6 +890,10 @@ namespace PawnDiary.RimTests
                 pendingPreviousIdeologyName = "Old Path",
                 pendingCurrentIdeologyId = "Ideo_QuietFlame",
                 pendingCurrentIdeologyName = "The Quiet Flame",
+                lastReflectionTick = observedTick,
+                lastReflectionDay = observedTick / 60000,
+                lastReflectionQuadrum = (observedTick / 60000) / 15,
+                reflectionsThisQuadrum = 1,
                 lastReflectedSourceIds = new List<string> { "evt_belief_1", "evt_belief_2" },
                 recentSelectedPreceptDefNames = new List<string> { "SyntheticPrecept" },
                 recentSelectedMemeDefNames = new List<string> { "SyntheticMeme" },
@@ -898,8 +902,11 @@ namespace PawnDiary.RimTests
             PawnReflectionState reflection = new PawnReflectionState
             {
                 baselineOnNextOpportunity = false,
+                linkedBaselineOnNextOpportunity = false,
                 lastReflectionTick = observedTick,
                 lastMajorArcTick = Math.Max(0, observedTick - 30),
+                lastCrossArcTick = Math.Max(0, observedTick - 25),
+                lastBeliefTick = Math.Max(0, observedTick - 22),
                 lastQuadrumTick = Math.Max(0, observedTick - 20),
                 lastDayTick = Math.Max(0, observedTick - 10),
                 pendingMajorArc = true,
@@ -1044,16 +1051,25 @@ namespace PawnDiary.RimTests
             AssertStrList(belief.recentSelectedMemeDefNames,
                 loaded.beliefState.recentSelectedMemeDefNames,
                 "record belief recent memes");
+            AssertInt(observedTick, loaded.beliefState.lastReflectionTick,
+                "record belief reflection tick");
+            AssertInt(1, loaded.beliefState.reflectionsThisQuadrum,
+                "record belief quadrum reflection count");
 
             Require(loaded.reflectionState != null,
                 "record reflectionState should be non-null after load.");
             Require(!loaded.reflectionState.baselineOnNextOpportunity
+                    && !loaded.reflectionState.linkedBaselineOnNextOpportunity
                     && loaded.reflectionState.pendingMajorArc,
                 "record active/pending N4 reflection flags should survive load.");
             AssertInt(observedTick, loaded.reflectionState.lastReflectionTick,
                 "record reflection global cooldown tick");
             AssertInt(Math.Max(0, observedTick - 30), loaded.reflectionState.lastMajorArcTick,
                 "record reflection major-arc cooldown tick");
+            AssertInt(Math.Max(0, observedTick - 25), loaded.reflectionState.lastCrossArcTick,
+                "record reflection cross-arc cooldown tick");
+            AssertInt(Math.Max(0, observedTick - 22), loaded.reflectionState.lastBeliefTick,
+                "record reflection belief cooldown tick");
             AssertInt(Math.Max(0, observedTick - 20), loaded.reflectionState.lastQuadrumTick,
                 "record reflection quadrum cooldown tick");
             AssertInt(Math.Max(0, observedTick - 10), loaded.reflectionState.lastDayTick,

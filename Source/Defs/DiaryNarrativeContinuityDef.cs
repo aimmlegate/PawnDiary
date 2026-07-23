@@ -82,8 +82,12 @@ namespace PawnDiary
         public List<DiaryNarrativeCategoryCoexistenceDef> categoryCoexistence;
         public int reflectionGlobalCooldownTicks = 60000;
         public int reflectionMinimumLinkedMemories = 2;
+        public int reflectionMinimumDistinctPhases = 2;
+        public int reflectionCandidateScanCap = 64;
         public int reflectionMemoryCap = 8;
         public int reflectionMaximumSpanTicks = 3600000;
+        public bool reflectionRequireChangeOrConsequence = true;
+        public List<string> reflectionChangeOrConsequenceFacets;
         public List<DiaryNarrativeReflectionPriorityDef> reflectionPriorities;
     }
 
@@ -126,9 +130,16 @@ namespace PawnDiary
             snapshot.reflectionGlobalCooldownTicks = Math.Max(0, source.reflectionGlobalCooldownTicks);
             snapshot.reflectionMinimumLinkedMemories = PositiveOrFallback(
                 source.reflectionMinimumLinkedMemories, snapshot.reflectionMinimumLinkedMemories);
+            snapshot.reflectionMinimumDistinctPhases = PositiveOrFallback(
+                source.reflectionMinimumDistinctPhases, snapshot.reflectionMinimumDistinctPhases);
+            snapshot.reflectionCandidateScanCap = PositiveOrFallback(
+                source.reflectionCandidateScanCap, snapshot.reflectionCandidateScanCap);
             snapshot.reflectionMemoryCap = PositiveOrFallback(source.reflectionMemoryCap, snapshot.reflectionMemoryCap);
             snapshot.reflectionMaximumSpanTicks = PositiveOrFallback(
                 source.reflectionMaximumSpanTicks, snapshot.reflectionMaximumSpanTicks);
+            snapshot.reflectionRequireChangeOrConsequence = source.reflectionRequireChangeOrConsequence;
+            CopyKnownFacets(source.reflectionChangeOrConsequenceFacets,
+                snapshot.reflectionChangeOrConsequenceFacets);
 
             CopyDetailBudgets(source.detailBudgets, snapshot);
             CopyWeights(source.relationshipScores, snapshot.relationshipScores);
@@ -295,6 +306,30 @@ namespace PawnDiary
                         priority = row.priority,
                         cooldownTicks = Math.Max(0, row.cooldownTicks)
                     });
+                }
+            }
+
+            if (copied.Count > 0)
+            {
+                destination.Clear();
+                destination.AddRange(copied);
+            }
+        }
+
+        private static void CopyKnownFacets(List<string> source, List<string> destination)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            List<string> copied = new List<string>();
+            for (int i = 0; i < source.Count; i++)
+            {
+                string value = (source[i] ?? string.Empty).Trim();
+                if (NarrativeFacetTokens.IsKnown(value) && !copied.Contains(value))
+                {
+                    copied.Add(value);
                 }
             }
 

@@ -1,5 +1,6 @@
 // Per-pawn runtime coordination state for the unified reflection scheduler. This stores only bounded
-// cadence and one pending major-arc request; diary events remain the factual history.
+// cadence, the N4 linked-memory baseline, and one pending major-arc request; diary events remain the
+// factual history.
 //
 // New to C#/RimWorld? See AGENTS.md ("IExposable" and "persistence & ticking").
 using System;
@@ -17,8 +18,13 @@ namespace PawnDiary
         private const int MaximumRelatedEventIdLength = 256;
 
         public bool baselineOnNextOpportunity = true;
+        // N4.2 is additive after N4.1. Existing saves may already have baselineOnNextOpportunity=false,
+        // so this separate default-true marker prevents historical continuity/belief debt from firing.
+        public bool linkedBaselineOnNextOpportunity = true;
         public int lastReflectionTick = -1;
         public int lastMajorArcTick = -1;
+        public int lastCrossArcTick = -1;
+        public int lastBeliefTick = -1;
         public int lastQuadrumTick = -1;
         public int lastDayTick = -1;
         public bool pendingMajorArc;
@@ -29,8 +35,12 @@ namespace PawnDiary
         public void ExposeData()
         {
             Scribe_Values.Look(ref baselineOnNextOpportunity, "baselineOnNextOpportunity", true);
+            Scribe_Values.Look(ref linkedBaselineOnNextOpportunity,
+                "linkedBaselineOnNextOpportunity", true);
             Scribe_Values.Look(ref lastReflectionTick, "lastReflectionTick", -1);
             Scribe_Values.Look(ref lastMajorArcTick, "lastMajorArcTick", -1);
+            Scribe_Values.Look(ref lastCrossArcTick, "lastCrossArcTick", -1);
+            Scribe_Values.Look(ref lastBeliefTick, "lastBeliefTick", -1);
             Scribe_Values.Look(ref lastQuadrumTick, "lastQuadrumTick", -1);
             Scribe_Values.Look(ref lastDayTick, "lastDayTick", -1);
             Scribe_Values.Look(ref pendingMajorArc, "pendingMajorArc", false);
@@ -48,6 +58,8 @@ namespace PawnDiary
         {
             lastReflectionTick = Math.Max(-1, lastReflectionTick);
             lastMajorArcTick = Math.Max(-1, lastMajorArcTick);
+            lastCrossArcTick = Math.Max(-1, lastCrossArcTick);
+            lastBeliefTick = Math.Max(-1, lastBeliefTick);
             lastQuadrumTick = Math.Max(-1, lastQuadrumTick);
             lastDayTick = Math.Max(-1, lastDayTick);
             pendingMajorArcRequestedTick = Math.Max(-1, pendingMajorArcRequestedTick);
@@ -83,6 +95,14 @@ namespace PawnDiary
             {
                 lastMajorArcTick = normalizedTick;
             }
+            else if (kind == NarrativeReflectionKindTokens.CrossArc)
+            {
+                lastCrossArcTick = normalizedTick;
+            }
+            else if (kind == NarrativeReflectionKindTokens.Belief)
+            {
+                lastBeliefTick = normalizedTick;
+            }
             else if (kind == NarrativeReflectionKindTokens.Quadrum)
             {
                 lastQuadrumTick = normalizedTick;
@@ -98,6 +118,8 @@ namespace PawnDiary
         {
             List<ReflectionHistoryEntry> history = new List<ReflectionHistoryEntry>();
             AddHistory(history, NarrativeReflectionKindTokens.MajorArc, lastMajorArcTick);
+            AddHistory(history, NarrativeReflectionKindTokens.CrossArc, lastCrossArcTick);
+            AddHistory(history, NarrativeReflectionKindTokens.Belief, lastBeliefTick);
             AddHistory(history, NarrativeReflectionKindTokens.Quadrum, lastQuadrumTick);
             AddHistory(history, NarrativeReflectionKindTokens.Day, lastDayTick);
             return history;

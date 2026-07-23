@@ -6,6 +6,10 @@ Companion: [repowiki/README.md](repowiki/README.md) describes the current state.
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-24
+
+- **Master Wave 12 / Narrative N4 complete.** Added deterministic exact-reference cross-arc selection across hot and compacted pages plus Ideology belief reflections, preserving one-rest priority, success-only consumption, cooldown/debt bounds, silent upgrade baselines, DLC-off safety, and dedicated EN/RU prompt policy.
+
 ## 2026-07-23
 
 - **Prompt footprint optimization (P0-P4).** Distilled the complete shipped English model-facing prompt catalog for instruction-following models from roughly 12B up: one owner per rule (system prompts keep POV/facts/one-reaction boundary/speech markers; finals become short last-position anchors), voice rules capped at 120/240 chars with the mute style's no-dialogue safety intact, Compact now omits the humor voice layer, exact duplicate previous-entry continuity is suppressed per request, role-less room "none" labels are structurally omitted, and every event/group/observed-condition/policy instruction and assembled bundle fits 300 chars with spoiler firewalls preserved. All budgets are enforced by pure tests (PromptFootprintTests); canonical deep-talk input shrank from 4931 to 3043 chars at Full and 3952 to 2184 at Compact. Russian port follows after the English in-game review.

@@ -17,6 +17,7 @@
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativePersistencePolicy.cs" Link="NarrativePersistencePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeContextPrompt.cs" Link="NarrativeContextPrompt.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\NarrativeProviders.cs" Link="NarrativeProviders.cs" />
+    <Compile Include="..\..\Source\Pipeline\Narrative\CrossArcReflectionMemorySelector.cs" Link="CrossArcReflectionMemorySelector.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\BeliefContracts.cs" Link="BeliefContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\Belief\IdeologyNarrativeProvider.cs" Link="IdeologyNarrativeProvider.cs" />
     <Compile Include="..\..\Source\Pipeline\Narrative\ReflectionCoordinator.cs" Link="ReflectionCoordinator.cs" />

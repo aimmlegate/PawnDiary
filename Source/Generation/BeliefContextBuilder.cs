@@ -57,7 +57,7 @@ namespace PawnDiary
                 if (!snapshot.ideologyActive) return BeliefContextBuildResult.Empty();
 
                 return Resolve(snapshot, evidence, eventId, pawnId, policy,
-                    recentSelectedCandidateKeys);
+                    recentSelectedCandidateKeys, BeliefResolutionModeTokens.EventEnrichment);
             }
             catch (Exception exception)
             {
@@ -88,7 +88,78 @@ namespace PawnDiary
             if (!effective.enabled || snapshot?.ideologyActive != true
                 || !BeliefEventEvidenceFactory.HasUsefulVisibleEvidence(evidence))
                 return BeliefContextBuildResult.Empty();
-            return Resolve(snapshot, evidence, eventId, pawnId, effective, null);
+            return Resolve(snapshot, evidence, eventId, pawnId, effective, null,
+                BeliefResolutionModeTokens.EventEnrichment);
+        }
+
+        /// <summary>
+        /// Builds the primary saved context for one standalone belief reflection. The live doctrine is
+        /// read once at rest; pending before/after facts come only from the saved Phase-3 state.
+        /// </summary>
+        public static BeliefContextBuildResult BuildReflection(
+            Pawn pawn,
+            PawnBeliefState saved,
+            string eventId,
+            int eventTick,
+            string trigger,
+            BeliefPolicySnapshot policy)
+        {
+            try
+            {
+                BeliefPolicySnapshot effective = policy ?? DiaryBeliefPolicy.Snapshot();
+                if (!ModsConfig.IdeologyActive || pawn == null || saved == null || !effective.enabled)
+                    return BeliefContextBuildResult.Empty();
+
+                BeliefSnapshot snapshot = DlcContext.CaptureBeliefSnapshot(pawn, effective);
+                if (!snapshot.ideologyActive) return BeliefContextBuildResult.Empty();
+                string pawnId = pawn.GetUniqueLoadID();
+                BeliefEventEvidence evidence = BeliefEventEvidenceFactory.ForEvent(
+                    pawnId,
+                    eventTick,
+                    "ideology",
+                    "PawnBeliefReflection",
+                    DiaryEvent.InitiatorRole,
+                    saved.lastIdeologyName,
+                    "belief_reflection");
+                evidence.currentBeliefFactsRelevant = true;
+                evidence.narrative.eventId = eventId ?? string.Empty;
+                evidence.narrative.facet = NarrativeFacetTokens.IdentityTransition;
+                evidence.narrative.phase = trigger ?? BeliefReflectionTriggerTokens.Quiet;
+                evidence.narrative.subjectKind = NarrativeSubjectKindTokens.Pawn;
+                evidence.narrative.subjectId = pawnId;
+                evidence.narrative.salience = saved.pendingIdeologyChange
+                    ? NarrativeSalienceTokens.Major
+                    : NarrativeSalienceTokens.Meaningful;
+                evidence.mutation = ReflectionMutation(saved, pawnId, eventTick);
+
+                BeliefStanceResolution resolution = EventRelativeStanceResolver.Resolve(
+                    new BeliefResolutionRequest
+                    {
+                        snapshot = snapshot,
+                        evidence = evidence,
+                        policy = effective,
+                        mode = BeliefResolutionModeTokens.QuietReflection,
+                        deterministicSeed = HumorChancePolicy.StableSeed(eventId, pawnId),
+                        recentSelectionDefNames = new List<string>(
+                            saved.recentSelectedPreceptDefNames ?? new List<string>())
+                    });
+                return new BeliefContextBuildResult
+                {
+                    evaluated = true,
+                    resolution = resolution,
+                    fullContext = BeliefContextFormatter.Format(
+                        resolution, NarrativeDetailLevelTokens.Full, effective)
+                };
+            }
+            catch (Exception exception)
+            {
+                Type type = exception.GetType();
+                Log.WarningOnce(
+                    "[Pawn Diary] Ideology belief-reflection context failed; no page was created: "
+                    + type.FullName + ": " + exception.Message,
+                    ("PawnDiary.BeliefContextBuilder.Reflection." + type.FullName).GetHashCode());
+                return BeliefContextBuildResult.Empty();
+            }
         }
 
         private static BeliefContextBuildResult Resolve(
@@ -97,7 +168,8 @@ namespace PawnDiary
             string eventId,
             string pawnId,
             BeliefPolicySnapshot policy,
-            IList<string> recentSelectedCandidateKeys)
+            IList<string> recentSelectedCandidateKeys,
+            string mode)
         {
             List<string> boundedRecentKeys = NarrativePersistencePolicy.NormalizeSelectedCandidateKeys(
                 recentSelectedCandidateKeys);
@@ -107,7 +179,7 @@ namespace PawnDiary
                     snapshot = snapshot,
                     evidence = evidence,
                     policy = policy,
-                    mode = BeliefResolutionModeTokens.EventEnrichment,
+                    mode = mode,
                     deterministicSeed = HumorChancePolicy.StableSeed(eventId, pawnId),
                     recentSelectionDefNames = IdeologyNarrativeSelectionHistory.PreceptDefNames(
                         boundedRecentKeys, snapshot, policy.maximumRecentSelections)
@@ -126,6 +198,37 @@ namespace PawnDiary
                         policy,
                         FormatInterpretationFact(resolution, policy))
                     : null
+            };
+        }
+
+        private static BeliefMutationSnapshot ReflectionMutation(
+            PawnBeliefState saved,
+            string pawnId,
+            int eventTick)
+        {
+            if (!saved.pendingIdeologyChange && !saved.hasPendingCertainty) return null;
+            return new BeliefMutationSnapshot
+            {
+                pawnId = pawnId,
+                capturedTick = Math.Max(0, eventTick),
+                beforeIdeologyId = saved.pendingIdeologyChange
+                    ? saved.pendingPreviousIdeologyId
+                    : saved.lastIdeologyId,
+                beforeIdeologyName = saved.pendingIdeologyChange
+                    ? saved.pendingPreviousIdeologyName
+                    : saved.lastIdeologyName,
+                afterIdeologyId = saved.pendingIdeologyChange
+                    ? saved.pendingCurrentIdeologyId
+                    : saved.lastIdeologyId,
+                afterIdeologyName = saved.pendingIdeologyChange
+                    ? saved.pendingCurrentIdeologyName
+                    : saved.lastIdeologyName,
+                hasBeforeCertainty = saved.hasPendingCertainty,
+                beforeCertainty = saved.pendingCertaintyBefore,
+                hasAfterCertainty = saved.hasPendingCertainty,
+                afterCertainty = saved.pendingCertaintyAfter,
+                ideologyChanged = saved.pendingIdeologyChange,
+                certaintyChanged = saved.hasPendingCertainty
             };
         }
 

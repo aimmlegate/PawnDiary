@@ -63,6 +63,9 @@
   <DiaryEventPrompt_ArcReflection.label>годовое размышление</DiaryEventPrompt_ArcReflection.label>
   <DiaryEventPrompt_ArcReflection.prompt>Напиши редкую личную запись о том, каким становится поселенец через выбранные воспоминания.</DiaryEventPrompt_ArcReflection.prompt>
   <DiaryEventPrompt_ArcReflection.enhancement>Воспоминания — опорные точки, а не список обязательных пунктов. Свяжи несколько из них в ощущение перемены, сожаления, гордости, страха или решимости; не пытайся упомянуть каждое.</DiaryEventPrompt_ArcReflection.enhancement>
+  <DiaryEventPrompt_BeliefReflection.label>размышление об убеждениях</DiaryEventPrompt_BeliefReflection.label>
+  <DiaryEventPrompt_BeliefReflection.prompt>Напиши личное размышление о переданном переживании веры, накопившейся перемене уверенности или смене веры.</DiaryEventPrompt_BeliefReflection.prompt>
+  <DiaryEventPrompt_BeliefReflection.enhancement>Оставайся в границах сохранённого контекста убеждений и точного повода. Не выдумывай учение, заповеди, ритуалы, воспоминания, прежнюю идеологию или обращение, не подтверждённое переданными фактами.</DiaryEventPrompt_BeliefReflection.enhancement>
   <DiaryEventPrompt_Arrival.label>появление</DiaryEventPrompt_Arrival.label>
   <DiaryEventPrompt_Arrival.prompt>Напиши фактическую заметку о том, как поселенец оказался в поселении.</DiaryEventPrompt_Arrival.prompt>
   <DiaryEventPrompt_Arrival.enhancement>Покажи прибытие как переход к новой жизни: пыль, потрясение, тишина, облегчение, подозрение или первый вид убежища. Используй только факты сценария и прибытия.</DiaryEventPrompt_Arrival.enhancement>

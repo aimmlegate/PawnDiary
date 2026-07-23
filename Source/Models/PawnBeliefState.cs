@@ -204,6 +204,73 @@ namespace PawnDiary
             pendingCurrentIdeologyName = value.pendingCurrentIdeologyName;
         }
 
+        /// <summary>
+        /// Silently establishes the N4 reflection boundary and clears pre-feature pending debt.
+        /// Observation fields remain intact so the next scan compares against the real current baseline.
+        /// </summary>
+        internal void BaselineReflection(int day, int tick, BeliefPolicySnapshot policy)
+        {
+            int normalizedDay = Math.Max(0, day);
+            lastReflectionTick = Math.Max(0, tick);
+            lastReflectionDay = normalizedDay;
+            lastReflectionQuadrum = normalizedDay / GenDate.DaysPerQuadrum;
+            reflectionsThisQuadrum = 0;
+            lastReflectedSourceIds.Clear();
+            ClearPendingCertainty();
+            ClearPendingIdeologyChange();
+            Normalize(Math.Max(0, tick), policy);
+        }
+
+        /// <summary>Consumes only the belief facts used by a successfully created reflection page.</summary>
+        internal void MarkReflection(
+            int day,
+            int tick,
+            IList<string> sourceEventIds,
+            BeliefStanceResolution resolution,
+            BeliefPolicySnapshot policy)
+        {
+            BeliefPolicySnapshot effective = policy ?? BeliefPolicySnapshot.CreateDefault();
+            int normalizedDay = Math.Max(0, day);
+            int quadrum = normalizedDay / GenDate.DaysPerQuadrum;
+            if (lastReflectionQuadrum != quadrum)
+            {
+                reflectionsThisQuadrum = 0;
+            }
+            lastReflectionTick = Math.Max(0, tick);
+            lastReflectionDay = normalizedDay;
+            lastReflectionQuadrum = quadrum;
+            reflectionsThisQuadrum = Math.Min(
+                effective.maximumBeliefReflectionsPerQuadrum,
+                Math.Max(0, reflectionsThisQuadrum) + 1);
+            AppendIds(lastReflectedSourceIds, sourceEventIds,
+                effective.maximumReflectedBeliefSourceIds, effective.maximumIdentifierCharacters);
+
+            List<string> precepts = new List<string>();
+            List<string> memes = new List<string>();
+            if (resolution?.stances != null)
+            {
+                for (int i = 0; i < resolution.stances.Count; i++)
+                {
+                    ResolvedBeliefStance stance = resolution.stances[i];
+                    if (stance?.precept != null) precepts.Add(stance.precept.defName);
+                    if (stance?.supportingMeme != null) memes.Add(stance.supportingMeme.defName);
+                }
+            }
+            if (resolution?.supportingMemes != null)
+            {
+                for (int i = 0; i < resolution.supportingMemes.Count; i++)
+                    if (resolution.supportingMemes[i] != null)
+                        memes.Add(resolution.supportingMemes[i].defName);
+            }
+            AppendIds(recentSelectedPreceptDefNames, precepts,
+                effective.maximumRecentSelections, effective.maximumIdentifierCharacters);
+            AppendIds(recentSelectedMemeDefNames, memes,
+                effective.maximumRecentSelections, effective.maximumIdentifierCharacters);
+            ClearPendingCertainty();
+            ClearPendingIdeologyChange();
+            Normalize(Math.Max(0, tick), effective);
+        }
+
         private void ClearPendingCertainty()
         {
             hasPendingCertainty = false;
@@ -236,6 +303,23 @@ namespace PawnDiary
             }
             reverse.Reverse();
             return reverse;
+        }
+
+        private static void AppendIds(
+            List<string> target,
+            IList<string> source,
+            int cap,
+            int characterCap)
+        {
+            if (target == null || source == null) return;
+            for (int i = 0; i < source.Count; i++)
+            {
+                string value = Clean(source[i], characterCap);
+                if (value.Length > 0) target.Add(value);
+            }
+            List<string> normalized = NormalizeIds(target, cap, characterCap);
+            target.Clear();
+            target.AddRange(normalized);
         }
 
         private static string Clean(string value, int cap)

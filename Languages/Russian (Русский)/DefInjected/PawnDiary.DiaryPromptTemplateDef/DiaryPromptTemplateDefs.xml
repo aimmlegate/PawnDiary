@@ -372,6 +372,22 @@
   <DiaryPromptTemplate_SoloArcReflection.fields.12.label>обстановка</DiaryPromptTemplate_SoloArcReflection.fields.12.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.13.label>моё последнее начало (не повторять)</DiaryPromptTemplate_SoloArcReflection.fields.13.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.14.label>конец моей прошлой записи (для продолжения; не пересказывать)</DiaryPromptTemplate_SoloArcReflection.fields.14.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.systemPrompt>Напиши 4–7 предложений от первого лица: личное размышление о вере, сомнении, убеждённости или перемене веры в манере письма поселенца. Ты — поселенец из поля «точка зрения»; пиши от «я» и не называй себя по имени.
+Переданный контекст убеждений задаёт границы фактов. Размышляй о значении прожитого момента или накопившейся перемены, не выдумывая учения, ритуалов, заповедей, воспоминаний или обращения в новую веру.
+Не пиши отчёт, проповедь, пересказ учения или список. Выведи только текст дневника и закончи обычной пунктуацией.</DiaryPromptTemplate_SoloBeliefReflection.systemPrompt>
+  <DiaryPromptTemplate_SoloBeliefReflection.finalInstruction>Напиши личное размышление об убеждениях, основанное только на переданных событии и контексте веры. Покажи убеждённость, сомнение или перемену указанной силы, не выдумывая учение и не объявляя неподтверждённое обращение. Выведи только запись.</DiaryPromptTemplate_SoloBeliefReflection.finalInstruction>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.0.label>событие</DiaryPromptTemplate_SoloBeliefReflection.fields.0.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.1.label>точка зрения</DiaryPromptTemplate_SoloBeliefReflection.fields.1.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.2.label>что произошло</DiaryPromptTemplate_SoloBeliefReflection.fields.2.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.3.label>инструкция</DiaryPromptTemplate_SoloBeliefReflection.fields.3.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.4.label>ты</DiaryPromptTemplate_SoloBeliefReflection.fields.4.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.5.label>указание для события</DiaryPromptTemplate_SoloBeliefReflection.fields.5.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.6.label>дополнительное указание для события</DiaryPromptTemplate_SoloBeliefReflection.fields.6.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.7.label>контекст убеждений</DiaryPromptTemplate_SoloBeliefReflection.fields.7.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.8.label>повод для размышления</DiaryPromptTemplate_SoloBeliefReflection.fields.8.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.9.label>обстановка</DiaryPromptTemplate_SoloBeliefReflection.fields.9.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.10.label>моё последнее начало (не повторять)</DiaryPromptTemplate_SoloBeliefReflection.fields.10.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.11.label>конец моей прошлой записи (для продолжения; не пересказывать)</DiaryPromptTemplate_SoloBeliefReflection.fields.11.label>
   <DiaryPromptTemplate_DeathDescription.fields.0.label>событие</DiaryPromptTemplate_DeathDescription.fields.0.label>
   <DiaryPromptTemplate_DeathDescription.fields.1.label>указание для события</DiaryPromptTemplate_DeathDescription.fields.1.label>
   <DiaryPromptTemplate_DeathDescription.fields.2.label>дополнительное указание для события</DiaryPromptTemplate_DeathDescription.fields.2.label>

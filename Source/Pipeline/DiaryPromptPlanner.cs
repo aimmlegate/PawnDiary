@@ -120,6 +120,11 @@ namespace PawnDiary
                 return DiaryPipelineTemplates.SoloArcReflection;
             }
 
+            if (payload.beliefReflection)
+            {
+                return DiaryPipelineTemplates.SoloBeliefReflection;
+            }
+
             if (payload.quadrumReflection)
             {
                 return DiaryPipelineTemplates.SoloQuadrumReflection;

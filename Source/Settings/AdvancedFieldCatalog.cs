@@ -1478,6 +1478,10 @@ namespace PawnDiary
                 .LongText("systemPrompt").LongText("finalInstruction")
                 .Bool("includePromptEnchantment").Bool("includePersona").Bool("appendDirectSpeechInstruction")
                 .Int("maxTokens", 0, 4000).CustomLongText("fields", FormatPromptFields, ParsePromptFields);
+            b.Template(DiaryPromptTemplates.SoloBeliefReflection, "PawnDiary.Settings.Adv.Group.TmplBeliefReflection")
+                .LongText("systemPrompt").LongText("finalInstruction")
+                .Bool("includePromptEnchantment").Bool("includePersona").Bool("appendDirectSpeechInstruction")
+                .Int("maxTokens", 0, 4000).CustomLongText("fields", FormatPromptFields, ParsePromptFields);
             b.Template(DiaryPromptTemplates.DeathDescription, "PawnDiary.Settings.Adv.Group.TmplDeath")
                 .LongText("systemPrompt").LongText("finalInstruction")
                 .Bool("includePromptEnchantment").Bool("includePersona").Bool("appendDirectSpeechInstruction")

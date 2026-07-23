@@ -187,6 +187,7 @@ namespace PawnDiary
         public const string SoloDayReflection = "SoloDayReflection";
         public const string SoloQuadrumReflection = "SoloQuadrumReflection";
         public const string SoloArcReflection = "SoloArcReflection";
+        public const string SoloBeliefReflection = "SoloBeliefReflection";
         public const string DeathDescription = "DeathDescription";
         public const string ArrivalDescription = "ArrivalDescription";
         public const string Title = "Title";
@@ -264,7 +265,8 @@ namespace PawnDiary
 
             if (string.Equals(templateKey, SoloDayReflection, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(templateKey, SoloQuadrumReflection, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(templateKey, SoloArcReflection, StringComparison.OrdinalIgnoreCase))
+                || string.Equals(templateKey, SoloArcReflection, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(templateKey, SoloBeliefReflection, StringComparison.OrdinalIgnoreCase))
             {
                 return PawnDiaryMod.Settings == null
                     ? DiaryPrompts.Current.systemPromptReflection
@@ -404,6 +406,23 @@ namespace PawnDiary
                     Field("previous diary ending (continue from this)", "PreviousEntryEnding"),
                     Field("event prompt", "EventPrompt"),
                     Field("event enhancement", "EventEnhancement"));
+            }
+
+            if (string.Equals(templateKey, SoloBeliefReflection, StringComparison.OrdinalIgnoreCase))
+            {
+                return Fields(
+                    Field("event", "EventNoun"),
+                    Field("pov", "PovName"),
+                    Field("what happened", "PovText"),
+                    Field("instruction", "Instruction"),
+                    Field("you", "PawnSummary"),
+                    Field("event prompt", "EventPrompt"),
+                    Field("event enhancement", "EventEnhancement"),
+                    Field("belief context", BeliefContextPrompt.Source),
+                    ContextField("belief trigger", "belief_reflection_trigger"),
+                    Field("setting", "Setting"),
+                    Field("my last opener (not repeat)", "LastOpener"),
+                    Field("previous diary ending (continue from this)", "PreviousEntryEnding"));
             }
 
             // Persona is intentionally absent: it is injected into the system prompt

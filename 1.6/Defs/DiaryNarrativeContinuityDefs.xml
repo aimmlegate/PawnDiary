@@ -81,11 +81,20 @@
       <li><firstCategory>home</firstCategory><secondCategory>pressure</secondCategory><allowed>true</allowed></li>
     </categoryCoexistence>
 
-    <!-- N4 will consume these pure scheduling values through ReflectionCoordinator; N1 dispatches no reflection. -->
+    <!-- N4 reflection scheduling and exact-reference linked-memory qualification. -->
     <reflectionGlobalCooldownTicks>60000</reflectionGlobalCooldownTicks>
     <reflectionMinimumLinkedMemories>2</reflectionMinimumLinkedMemories>
+    <reflectionMinimumDistinctPhases>2</reflectionMinimumDistinctPhases>
+    <reflectionCandidateScanCap>64</reflectionCandidateScanCap>
     <reflectionMemoryCap>8</reflectionMemoryCap>
     <reflectionMaximumSpanTicks>3600000</reflectionMaximumSpanTicks>
+    <reflectionRequireChangeOrConsequence>true</reflectionRequireChangeOrConsequence>
+    <reflectionChangeOrConsequenceFacets>
+      <li>identity_transition</li>
+      <li>bond_lifecycle</li>
+      <li>journey_chapter</li>
+      <li>ambient_pressure</li>
+    </reflectionChangeOrConsequenceFacets>
     <reflectionPriorities>
       <li><kind>major_arc</kind><priority>500</priority><cooldownTicks>120000</cooldownTicks></li>
       <li><kind>cross_arc</kind><priority>400</priority><cooldownTicks>120000</cooldownTicks></li>

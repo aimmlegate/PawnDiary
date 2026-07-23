@@ -854,7 +854,13 @@ namespace PawnDiary
             bool daySummary = DiaryTuning.Current.daySummaryEnabled;
             bool arcReflection = DiaryTuning.Current.arcReflectionEnabled;
             bool quadrumReflection = DiaryTuning.Current.quadrumReflectionEnabled;
-            bool anyReflectionSource = daySummary || arcReflection || quadrumReflection;
+            // Belief reflection has its own XML policy and may remain enabled when the three older
+            // reflection toggles are off. A disabled policy still gets one rest pass when saved debt
+            // exists, so the coordinator can bound it instead of leaving a catch-up page behind.
+            bool beliefReflection = ModsConfig.IdeologyActive
+                && (DiaryBeliefPolicy.Enabled || HasPendingBeliefReflection());
+            bool anyReflectionSource = daySummary || arcReflection || quadrumReflection
+                || beliefReflection;
             bool pendingMajorReflection = !anyReflectionSource && HasPendingMajorReflection();
 
             // A reflection can be due with no pending filler. A queued major request also needs one final

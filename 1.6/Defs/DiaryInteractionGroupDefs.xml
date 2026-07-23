@@ -883,6 +883,7 @@
       <li>DayReflection</li>
       <li>QuadrumReflection</li>
       <li>PawnArcReflection</li>
+      <li>PawnBeliefReflection</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 

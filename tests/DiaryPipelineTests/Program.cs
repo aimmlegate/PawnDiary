@@ -834,7 +834,8 @@ namespace DiaryPipelineTests
             {
                 "PairDefault", "PairImportant", "PairCombat", "PairBatched",
                 "SoloDefault", "SoloImportant", "SoloInternalState", "SoloBatched",
-                "SoloDayReflection", "SoloQuadrumReflection", "SoloArcReflection"
+                "SoloDayReflection", "SoloQuadrumReflection", "SoloArcReflection",
+                "SoloBeliefReflection"
             };
             for (int i = 0; i < firstPersonTemplates.Length; i++)
             {
@@ -2093,6 +2094,19 @@ namespace DiaryPipelineTests
             });
             AssertEqual("arc reflection wins over quadrum reflection", DiaryPipelineTemplates.SoloArcReflection, arcPlan.templateKey);
             AssertEqual("arc reflection template token cap", 420, arcPlan.responseRules.maxTokens);
+
+            thoughtPayload.arcReflection = false;
+            thoughtPayload.beliefReflection = true;
+            DiaryPromptPlan beliefPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = thoughtPayload,
+                policy = Policy(combat: false, important: true),
+                povRole = DiaryPipelineRoles.Initiator
+            });
+            AssertEqual("belief reflection wins over quadrum and day reflection",
+                DiaryPipelineTemplates.SoloBeliefReflection, beliefPlan.templateKey);
+            AssertEqual("belief reflection template token cap", 360,
+                beliefPlan.responseRules.maxTokens);
         }
 
         private static void TestSoloBatchSelection()
@@ -2769,6 +2783,7 @@ namespace DiaryPipelineTests
                 AssertTrue("UI style defines color cue " + expectedCues[i],
                     HasCueColor(style, expectedCues[i]));
             }
+
         }
 
         private static void TestPromptTextSanitizer()
@@ -6707,6 +6722,7 @@ namespace DiaryPipelineTests
             AddTemplate(policy, DiaryPipelineTemplates.SoloDayReflection, includePersona: true);
             AddTemplate(policy, DiaryPipelineTemplates.SoloQuadrumReflection, includePersona: true);
             AddTemplate(policy, DiaryPipelineTemplates.SoloArcReflection, includePersona: true);
+            AddTemplate(policy, DiaryPipelineTemplates.SoloBeliefReflection, includePersona: true);
             AddTemplate(policy, DiaryPipelineTemplates.DeathDescription, includePersona: false);
             AddTemplate(policy, DiaryPipelineTemplates.ArrivalDescription, includePersona: false);
             AddTemplate(policy, DiaryPipelineTemplates.Title, includePersona: false);
@@ -6883,9 +6899,11 @@ namespace DiaryPipelineTests
                 includePersona = includePersona,
                 includePromptEnchantment = key != DiaryPipelineTemplates.Title,
                 appendDirectSpeechInstruction = key != DiaryPipelineTemplates.Title
-                    && key != DiaryPipelineTemplates.SoloArcReflection,
+                    && key != DiaryPipelineTemplates.SoloArcReflection
+                    && key != DiaryPipelineTemplates.SoloBeliefReflection,
                 maxTokens = key == DiaryPipelineTemplates.SoloQuadrumReflection ? 350
-                    : key == DiaryPipelineTemplates.SoloArcReflection ? 420 : 0,
+                    : key == DiaryPipelineTemplates.SoloArcReflection ? 420
+                    : key == DiaryPipelineTemplates.SoloBeliefReflection ? 360 : 0,
                 fields = fields
             };
             policy.templates.Add(template);
@@ -8523,6 +8541,7 @@ namespace DiaryPipelineTests
                 DiaryPipelineTemplates.SoloDayReflection,
                 DiaryPipelineTemplates.SoloQuadrumReflection,
                 DiaryPipelineTemplates.SoloArcReflection,
+                DiaryPipelineTemplates.SoloBeliefReflection,
                 DiaryPipelineTemplates.DeathDescription,
                 DiaryPipelineTemplates.ArrivalDescription,
                 DiaryPipelineTemplates.Title

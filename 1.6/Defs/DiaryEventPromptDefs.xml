@@ -203,6 +203,17 @@
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_BeliefReflection</defName>
+    <label>belief reflection</label>
+    <eventType>BeliefReflection</eventType>
+    <enableWhenPackageIdsLoaded>
+      <li>Ludeon.RimWorld.Ideology</li>
+    </enableWhenPackageIdsLoaded>
+    <prompt>Write a private reflection on the supplied belief experience, accumulated certainty change, or change of faith.</prompt>
+    <enhancement>Stay inside the frozen belief context and exact trigger. Do not invent doctrine, commandments, rituals, memories, a former ideoligion, or a conversion that the supplied facts do not prove.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Arrival</defName>
     <label>arrival</label>
     <eventType>Arrival</eventType>

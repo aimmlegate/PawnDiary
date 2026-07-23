@@ -49,6 +49,7 @@
     <Compile Include="..\..\Source\Capture\Events\DayReflectionEventData.cs" Link="Capture\Events\DayReflectionEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\QuadrumReflectionPolicy.cs" Link="Capture\Events\QuadrumReflectionPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Events\ArcReflectionEventData.cs" Link="Capture\Events\ArcReflectionEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\BeliefReflectionEventData.cs" Link="Capture\Events\BeliefReflectionEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\RaidEventData.cs" Link="Capture\Events\RaidEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\QuestEventData.cs" Link="Capture\Events\QuestEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\RitualEventData.cs" Link="Capture\Events\RitualEventData.cs" />
@@ -87,6 +88,7 @@
     <Compile Include="..\..\Source\Capture\Specs\ProgressionEventSpec.cs" Link="Capture\Specs\ProgressionEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\DayReflectionEventSpec.cs" Link="Capture\Specs\DayReflectionEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\ArcReflectionEventSpec.cs" Link="Capture\Specs\ArcReflectionEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\BeliefReflectionEventSpec.cs" Link="Capture\Specs\BeliefReflectionEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\RaidEventSpec.cs" Link="Capture\Specs\RaidEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\QuestEventSpec.cs" Link="Capture\Specs\QuestEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\RitualEventSpec.cs" Link="Capture\Specs\RitualEventSpec.cs" />

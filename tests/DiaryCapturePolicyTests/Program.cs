@@ -2123,6 +2123,27 @@ namespace DiaryCapturePolicyTests
                 CaptureDecision.GenerateSolo,
                 arcReflectionSpec.Decide(ArcReflection(), Ctx()));
 
+            DiaryEventSpec beliefReflectionSpec = DiaryEventCatalog.Get(DiaryEventType.BeliefReflection);
+            AssertTrue("catalog has BeliefReflection spec",
+                beliefReflectionSpec is BeliefReflectionEventSpec);
+            BeliefReflectionEventData beliefReflection = new BeliefReflectionEventData
+            {
+                PawnId = "Pawn_1",
+                DefName = BeliefReflectionEventData.DefNameToken,
+                Trigger = "certainty_shift",
+                HasBeliefContext = true
+            };
+            AssertEqual("catalog dispatches factual belief reflection",
+                CaptureDecision.GenerateSolo,
+                beliefReflectionSpec.Decide(beliefReflection, Ctx()));
+            beliefReflection.HasBeliefContext = false;
+            AssertEqual("belief reflection without frozen context drops",
+                CaptureDecision.Drop,
+                beliefReflectionSpec.Decide(beliefReflection, Ctx()));
+            AssertEqual("belief reflection context preserves exact trigger",
+                "belief_reflection=true; belief_reflection_trigger=certainty_shift",
+                BeliefReflectionEventData.BuildGameContext("certainty_shift"));
+
             DiaryEventSpec growthSpec = DiaryEventCatalog.Get(DiaryEventType.GrowthMoment);
             AssertTrue("catalog has GrowthMoment spec", growthSpec is GrowthMomentEventSpec);
             AssertEqual("catalog dispatches GrowthMoment decision", CaptureDecision.GenerateSolo,

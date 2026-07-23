@@ -591,6 +591,7 @@
   <PawnDiary.Settings.Adv.Group.TmplDayReflection>Шаблон: итог дня</PawnDiary.Settings.Adv.Group.TmplDayReflection>
   <PawnDiary.Settings.Adv.Group.TmplQuadrumReflection>Шаблон: итог квадрума</PawnDiary.Settings.Adv.Group.TmplQuadrumReflection>
   <PawnDiary.Settings.Adv.Group.TmplArcReflection>Шаблон: годовое размышление</PawnDiary.Settings.Adv.Group.TmplArcReflection>
+  <PawnDiary.Settings.Adv.Group.TmplBeliefReflection>Шаблон: размышление об убеждениях</PawnDiary.Settings.Adv.Group.TmplBeliefReflection>
   <PawnDiary.Settings.Adv.Group.TmplDeath>Шаблон: смерть</PawnDiary.Settings.Adv.Group.TmplDeath>
   <PawnDiary.Settings.Adv.Group.TmplArrival>Шаблон: прибытие</PawnDiary.Settings.Adv.Group.TmplArrival>
   <PawnDiary.Settings.Adv.Group.TmplTitle>Шаблон: заголовок</PawnDiary.Settings.Adv.Group.TmplTitle>
@@ -715,6 +716,7 @@
   <PawnDiary.Settings.Adv.GroupHelp.TmplDayReflection>Шаблон вечернего итога дня.</PawnDiary.Settings.Adv.GroupHelp.TmplDayReflection>
   <PawnDiary.Settings.Adv.GroupHelp.TmplQuadrumReflection>Шаблон итога квадрума.</PawnDiary.Settings.Adv.GroupHelp.TmplQuadrumReflection>
   <PawnDiary.Settings.Adv.GroupHelp.TmplArcReflection>Шаблон годового размышления.</PawnDiary.Settings.Adv.GroupHelp.TmplArcReflection>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplBeliefReflection>Шаблон размышления об убеждениях из «Идеологии».</PawnDiary.Settings.Adv.GroupHelp.TmplBeliefReflection>
   <PawnDiary.Settings.Adv.GroupHelp.TmplDeath>Шаблон нейтрального описания смерти.</PawnDiary.Settings.Adv.GroupHelp.TmplDeath>
   <PawnDiary.Settings.Adv.GroupHelp.TmplArrival>Шаблон нейтрального описания прибытия.</PawnDiary.Settings.Adv.GroupHelp.TmplArrival>
   <PawnDiary.Settings.Adv.GroupHelp.TmplTitle>Шаблон короткого заголовка страницы.</PawnDiary.Settings.Adv.GroupHelp.TmplTitle>
@@ -1030,6 +1032,12 @@
   <PawnDiary.Event.ArcReflectionHeader>Воспоминания {0} за {1} год:</PawnDiary.Event.ArcReflectionHeader>
   <PawnDiary.Event.ArcReflectionEvidenceLine>{0}: {1}</PawnDiary.Event.ArcReflectionEvidenceLine>
   <PawnDiary.Event.ArcReflectionInstruction>редкая личная запись о жизненном пути {0} в {1} году; свяжи выбранные воспоминания с тем, как меняется характер поселенца</PawnDiary.Event.ArcReflectionInstruction>
+  <PawnDiary.Event.CrossArcReflectionLabel>Связанное размышление о жизни</PawnDiary.Event.CrossArcReflectionLabel>
+  <PawnDiary.Event.CrossArcReflectionHeader>Связанные воспоминания {0}:</PawnDiary.Event.CrossArcReflectionHeader>
+  <PawnDiary.Event.CrossArcReflectionInstruction>личное размышление {0}, связывающее переданные этапы одной настоящей жизненной линии; используй только эти связанные воспоминания</PawnDiary.Event.CrossArcReflectionInstruction>
+  <PawnDiary.Event.BeliefReflectionLabel>Размышление об убеждениях</PawnDiary.Event.BeliefReflectionLabel>
+  <PawnDiary.Event.BeliefReflectionText>{0} останавливается, чтобы понять, что теперь значат вера, сомнение или изменившаяся убеждённость.</PawnDiary.Event.BeliefReflectionText>
+  <PawnDiary.Event.BeliefReflectionInstruction>личное размышление об убеждениях {0}; оставайся в границах сохранённых фактов и не выдумывай учение или обращение</PawnDiary.Event.BeliefReflectionInstruction>
 
   <!-- Тестовые записи режима разработки: только для кнопки нагрузочного теста вкладки «Дневник». -->
   <PawnDiary.Dev.MockLabel>Тест интерфейса дневника</PawnDiary.Dev.MockLabel>

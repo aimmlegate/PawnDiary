@@ -326,6 +326,7 @@ namespace PawnDiary
                     || Eq(contextKey, "quadrum")
                     || Eq(contextKey, "quadrum_dates")
                     || Eq(contextKey, "arc_year")
+                    || Eq(contextKey, "belief_reflection_trigger")
                     || IsRequiredQuestContextKey(contextKey)
                     || IsRequiredBiotechContextKey(contextKey)
                     || IsRequiredPollutionContextKey(contextKey)
@@ -710,7 +711,8 @@ namespace PawnDiary
             PromptContextBudgets b = budgets ?? PromptContextBudgets.Defaults;
             bool reflection = Eq(templateKey, DiaryPipelineTemplates.SoloDayReflection)
                 || Eq(templateKey, DiaryPipelineTemplates.SoloQuadrumReflection)
-                || Eq(templateKey, DiaryPipelineTemplates.SoloArcReflection);
+                || Eq(templateKey, DiaryPipelineTemplates.SoloArcReflection)
+                || Eq(templateKey, DiaryPipelineTemplates.SoloBeliefReflection);
             bool neutral = Eq(templateKey, DiaryPipelineTemplates.DeathDescription)
                 || Eq(templateKey, DiaryPipelineTemplates.ArrivalDescription);
             if (level == PromptContextDetailLevel.Balanced)

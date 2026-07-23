@@ -389,9 +389,21 @@ namespace PawnDiary
 
         private static string BuildArcReflectionText(Pawn pawn, int arcYear, List<ArcMemoryCandidate> memories)
         {
+            string header = "PawnDiary.Event.ArcReflectionHeader"
+                .Translate(pawn.LabelShortCap, arcYear).Resolve();
+            return BuildReflectionEvidenceText(header, memories);
+        }
+
+        /// <summary>
+        /// Formats already-selected factual memory lines below a localized header. Annual and linked
+        /// reflections share this evidence shape, while each caller owns its truthful time framing.
+        /// </summary>
+        private static string BuildReflectionEvidenceText(
+            string header,
+            List<ArcMemoryCandidate> memories)
+        {
             StringBuilder builder = new StringBuilder();
-            builder.Append("PawnDiary.Event.ArcReflectionHeader"
-                .Translate(pawn.LabelShortCap, arcYear).Resolve());
+            builder.Append(header ?? string.Empty);
             int cap = Math.Max(40, DiaryTuning.Current.arcReflectionMemorySnippetMaxChars);
             for (int i = 0; i < memories.Count; i++)
             {

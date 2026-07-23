@@ -27,6 +27,7 @@ namespace PawnDiary.Capture
         DayReflection,
         Progression,
         ArcReflection,
+        BeliefReflection,
 
         // ── Net-new sources added on top of the Event Catalog ──
         // Romance: pair events for Lover/Spouse/ExLover/ExSpouse relation changes (the first

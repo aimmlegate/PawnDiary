@@ -133,12 +133,28 @@ namespace PawnDiary
                 linkedPreviewText = link?.TruncatedText ?? string.Empty,
                 linkedGenerated = link != null && link.Generated,
                 linkedTitle = link?.Title ?? string.Empty,
+                // Archive the page's own exact evidence references before selected context pointers.
+                // This is what lets N4 find two linked phases after both hot events have compacted.
                 narrativeReferences = NarrativeStatePersistence.FromReferences(
-                    NarrativePersistencePolicy.NormalizeReferences(
-                        diaryEvent.NarrativeReferencesForRole(view.PovRole))),
+                    ArchiveNarrativeReferences(diaryEvent, view.PovRole)),
                 narrativeSelectedCandidateKeys = NarrativeStatePersistence.NormalizeSelectedCandidateKeys(
                     diaryEvent.NarrativeSelectedCandidateKeysForRole(view.PovRole))
             };
+        }
+
+        private static List<NarrativeReference> ArchiveNarrativeReferences(
+            DiaryEvent diaryEvent,
+            string povRole)
+        {
+            List<NarrativeReference> references = new List<NarrativeReference>();
+            List<NarrativeEvidence> evidence = diaryEvent.NarrativeEvidenceForRole(povRole);
+            for (int i = 0; i < evidence.Count; i++)
+            {
+                references.Add(NarrativeReferencePolicy.FromEvidence(evidence[i]));
+            }
+
+            references.AddRange(diaryEvent.NarrativeReferencesForRole(povRole));
+            return NarrativePersistencePolicy.NormalizeReferences(references);
         }
 
         /// <summary>Builds the immutable UI view used by the Diary tab.</summary>

@@ -322,6 +322,22 @@ Do not write a report, biography, or list. Output only the diary entry. End with
   <DiaryPromptTemplate_SoloArcReflection.fields.12.label>setting</DiaryPromptTemplate_SoloArcReflection.fields.12.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.13.label>my last opening line (do not reuse)</DiaryPromptTemplate_SoloArcReflection.fields.13.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.14.label>how my previous entry ended (continuity; do not retell it)</DiaryPromptTemplate_SoloArcReflection.fields.14.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.systemPrompt>Write 4-7 first-person diary sentences: a private reflection on belief, doubt, conviction, or changed faith in the colonist&apos;s writing style. You are the colonist named in &quot;pov&quot;; write as &quot;I&quot;, never your name.
+Treat the supplied belief context as factual boundaries. Reflect on what the lived moment or accumulated change means without inventing doctrine, rituals, commandments, memories, or a conversion.
+Do not write a report, sermon, doctrine summary, or list. Output only the diary entry. End with normal punctuation.</DiaryPromptTemplate_SoloBeliefReflection.systemPrompt>
+  <DiaryPromptTemplate_SoloBeliefReflection.finalInstruction>Write a private belief reflection grounded only in the supplied event and belief context. Show conviction, doubt, or change at the supplied strength without inventing doctrine or declaring an unsupplied conversion. Output only the entry.</DiaryPromptTemplate_SoloBeliefReflection.finalInstruction>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.0.label>event</DiaryPromptTemplate_SoloBeliefReflection.fields.0.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.1.label>pov</DiaryPromptTemplate_SoloBeliefReflection.fields.1.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.2.label>what happened</DiaryPromptTemplate_SoloBeliefReflection.fields.2.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.3.label>instruction</DiaryPromptTemplate_SoloBeliefReflection.fields.3.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.4.label>you</DiaryPromptTemplate_SoloBeliefReflection.fields.4.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.5.label>event prompt</DiaryPromptTemplate_SoloBeliefReflection.fields.5.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.6.label>event enhancement</DiaryPromptTemplate_SoloBeliefReflection.fields.6.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.7.label>belief context</DiaryPromptTemplate_SoloBeliefReflection.fields.7.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.8.label>belief trigger</DiaryPromptTemplate_SoloBeliefReflection.fields.8.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.9.label>setting</DiaryPromptTemplate_SoloBeliefReflection.fields.9.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.10.label>my last opening line (do not reuse)</DiaryPromptTemplate_SoloBeliefReflection.fields.10.label>
+  <DiaryPromptTemplate_SoloBeliefReflection.fields.11.label>how my previous entry ended (continuity; do not retell it)</DiaryPromptTemplate_SoloBeliefReflection.fields.11.label>
   <DiaryPromptTemplate_DeathDescription.fields.0.label>event</DiaryPromptTemplate_DeathDescription.fields.0.label>
   <DiaryPromptTemplate_DeathDescription.fields.1.label>event prompt</DiaryPromptTemplate_DeathDescription.fields.1.label>
   <DiaryPromptTemplate_DeathDescription.fields.2.label>event enhancement</DiaryPromptTemplate_DeathDescription.fields.2.label>

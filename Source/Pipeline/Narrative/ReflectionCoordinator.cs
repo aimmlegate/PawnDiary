@@ -197,7 +197,10 @@ namespace PawnDiary
 
             if (opportunity.kind == NarrativeReflectionKindTokens.CrossArc
                 && (opportunity.linkedMemoryCount < Math.Max(2, policy.reflectionMinimumLinkedMemories)
-                    || !opportunity.hasCoherentLink || !opportunity.hasPhaseChange))
+                    || !opportunity.hasCoherentLink
+                    || !opportunity.hasPhaseChange
+                    || (policy.reflectionRequireChangeOrConsequence
+                        && !opportunity.hasChangeOrConsequence)))
             {
                 rejection = NarrativeDiagnosticTokens.ReflectionNeedsLink;
                 return false;

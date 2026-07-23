@@ -600,6 +600,7 @@
   <PawnDiary.Settings.Adv.Group.TmplDayReflection>Template: Day reflection</PawnDiary.Settings.Adv.Group.TmplDayReflection>
   <PawnDiary.Settings.Adv.Group.TmplQuadrumReflection>Template: Quadrum reflection</PawnDiary.Settings.Adv.Group.TmplQuadrumReflection>
   <PawnDiary.Settings.Adv.Group.TmplArcReflection>Template: Arc reflection</PawnDiary.Settings.Adv.Group.TmplArcReflection>
+  <PawnDiary.Settings.Adv.Group.TmplBeliefReflection>Template: Belief reflection</PawnDiary.Settings.Adv.Group.TmplBeliefReflection>
   <PawnDiary.Settings.Adv.Group.TmplDeath>Template: Death description</PawnDiary.Settings.Adv.Group.TmplDeath>
   <PawnDiary.Settings.Adv.Group.TmplArrival>Template: Arrival description</PawnDiary.Settings.Adv.Group.TmplArrival>
   <PawnDiary.Settings.Adv.Group.TmplTitle>Template: Title</PawnDiary.Settings.Adv.Group.TmplTitle>
@@ -730,6 +731,7 @@
   <PawnDiary.Settings.Adv.GroupHelp.TmplDayReflection>Prompt template for the end-of-day reflection.</PawnDiary.Settings.Adv.GroupHelp.TmplDayReflection>
   <PawnDiary.Settings.Adv.GroupHelp.TmplQuadrumReflection>Prompt template for the end-of-quadrum reflection.</PawnDiary.Settings.Adv.GroupHelp.TmplQuadrumReflection>
   <PawnDiary.Settings.Adv.GroupHelp.TmplArcReflection>Prompt template for the yearly arc reflection.</PawnDiary.Settings.Adv.GroupHelp.TmplArcReflection>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplBeliefReflection>Prompt template for an Ideology belief reflection.</PawnDiary.Settings.Adv.GroupHelp.TmplBeliefReflection>
   <PawnDiary.Settings.Adv.GroupHelp.TmplDeath>Prompt template for the neutral death description.</PawnDiary.Settings.Adv.GroupHelp.TmplDeath>
   <PawnDiary.Settings.Adv.GroupHelp.TmplArrival>Prompt template for the neutral arrival description.</PawnDiary.Settings.Adv.GroupHelp.TmplArrival>
   <PawnDiary.Settings.Adv.GroupHelp.TmplTitle>Prompt template for generating a short page title.</PawnDiary.Settings.Adv.GroupHelp.TmplTitle>
@@ -1381,6 +1383,12 @@
   <PawnDiary.Event.ArcReflectionHeader>{0}'s memories from year {1}:</PawnDiary.Event.ArcReflectionHeader>
   <PawnDiary.Event.ArcReflectionEvidenceLine>{0}: {1}</PawnDiary.Event.ArcReflectionEvidenceLine>
   <PawnDiary.Event.ArcReflectionInstruction>a rare private life-arc reflection for {0} in year {1}; connect selected memories into who they are becoming</PawnDiary.Event.ArcReflectionInstruction>
+  <PawnDiary.Event.CrossArcReflectionLabel>Linked life reflection</PawnDiary.Event.CrossArcReflectionLabel>
+  <PawnDiary.Event.CrossArcReflectionHeader>{0}&apos;s linked memories:</PawnDiary.Event.CrossArcReflectionHeader>
+  <PawnDiary.Event.CrossArcReflectionInstruction>a private reflection for {0} connecting the supplied phases of one real life arc; use only those linked memories</PawnDiary.Event.CrossArcReflectionInstruction>
+  <PawnDiary.Event.BeliefReflectionLabel>Belief reflection</PawnDiary.Event.BeliefReflectionLabel>
+  <PawnDiary.Event.BeliefReflectionText>{0} pauses to consider what belief, doubt, or changed conviction now means.</PawnDiary.Event.BeliefReflectionText>
+  <PawnDiary.Event.BeliefReflectionInstruction>a private belief reflection for {0}; stay inside the frozen belief facts and do not invent doctrine or conversion</PawnDiary.Event.BeliefReflectionInstruction>
 
   <PawnDiary.Ctx.Opinion>opinion {0}</PawnDiary.Ctx.Opinion>
   <PawnDiary.Ctx.Because>because {0}</PawnDiary.Ctx.Because>
