@@ -290,9 +290,25 @@ namespace PawnDiary
         // Rolls the per-weather chance (from DiaryTuningDef.weatherMentionChances) to decide whether
         // this outdoor entry mentions the weather. Clear (mapped to 0) never passes; the harshest
         // weather almost always does. Mild weather was dominating diary openings, so it is weighted low.
-        private static bool ShouldMentionWeather(WeatherDef weather)
+        private static bool ShouldMentionWeather(WeatherDef weather, Pawn pawn)
         {
-            return weather != null && Rand.Chance(WeatherMentionChanceFor(weather));
+            if (weather == null || pawn == null)
+            {
+                return false;
+            }
+
+            // Prompt flavor must not advance RimWorld's gameplay RNG. A stable pawn/weather seed
+            // also makes Regenerate rebuild the same visible surroundings for the same live facts.
+            Rand.PushState(HumorChancePolicy.StableSeed(
+                pawn.GetUniqueLoadID(), weather.defName ?? string.Empty));
+            try
+            {
+                return Rand.Chance(WeatherMentionChanceFor(weather));
+            }
+            finally
+            {
+                Rand.PopState();
+            }
         }
 
         private static float WeatherMentionChanceFor(WeatherDef weather)
@@ -379,7 +395,7 @@ namespace PawnDiary
             if (outdoors)
             {
                 WeatherDef weather = pawn.Map.weatherManager?.CurWeatherPerceived;
-                if (ShouldMentionWeather(weather))
+                if (ShouldMentionWeather(weather, pawn))
                 {
                     parts.Add(ExternalText(weather.label));
                 }

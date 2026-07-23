@@ -1,6 +1,6 @@
-// In-game O1.2-O2/N2-O/N3-O fixtures for Odyssey policy, guarded context, persistence, state-only
-// takeoff/travel boundaries, canonical successful-landing ownership, narrative evidence, and the
-// package-safe seasonal-flood pressure projection.
+// In-game O1.2-O3/N2-O/N3-O fixtures for Odyssey policy, guarded context, persistence, state-only
+// takeoff/travel boundaries, canonical successful-landing ownership, gameplay-RNG-safe surroundings,
+// narrative evidence, and the package-safe seasonal-flood pressure projection.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -922,6 +922,61 @@ namespace PawnDiary.RimTests
             finally
             {
                 observedField.SetValue(scope.Component, previousObserved);
+                scope.TearDown();
+            }
+        }
+
+        /// <summary>
+        /// Visible surroundings are stable for the same live facts and never advance the gameplay RNG.
+        /// This guards every caller, including the O3 Mechhive prefix that runs before vanilla placement.
+        /// </summary>
+        [Test]
+        public static void SurroundingsContextPreservesGameplayRandomState()
+        {
+            const int seed = 739241;
+            PawnDiaryRimTestScope scope = PawnDiaryRimTestScope.Begin();
+            Pawn pawn = scope.CreateAdultColonist();
+            try
+            {
+                scope.SpawnAsLiveColonist(pawn);
+
+                float expectedNext;
+                Rand.PushState(seed);
+                try
+                {
+                    expectedNext = Rand.Value;
+                }
+                finally
+                {
+                    Rand.PopState();
+                }
+
+                string first;
+                string second;
+                float actualNext;
+                Rand.PushState(seed);
+                try
+                {
+                    first = DiaryContextBuilder.BuildSurroundingsSummary(pawn);
+                    actualNext = Rand.Value;
+
+                    // Shift the outer test stream before the second build. Stable seeding inside the
+                    // context builder must make the cosmetic weather decision independent of it.
+                    Rand.Chance(0.5f);
+                    second = DiaryContextBuilder.BuildSurroundingsSummary(pawn);
+                }
+                finally
+                {
+                    Rand.PopState();
+                }
+
+                Require(actualNext == expectedNext,
+                    "Building visible surroundings advanced RimWorld's gameplay RNG stream.");
+                Require(first == second,
+                    "The same live surroundings changed when only the outer RNG cursor changed.");
+            }
+            finally
+            {
                 scope.TearDown();
             }
         }
